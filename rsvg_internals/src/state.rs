@@ -1,22 +1,24 @@
 use cairo::{self, MatrixTrait};
+use cssparser;
+use glib;
 use glib::translate::*;
 use glib_sys;
 use libc;
-use pango;
-use pango_sys;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::ptr;
 
 use attributes::Attribute;
-use color::{Color, ColorSpec};
+use color::{rgba_to_argb, Color, ColorSpec};
+use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
-use opacity::{Opacity, OpacitySpec};
+use opacity::{Opacity, OpacitySpec, opacity_to_u8};
 use paint_server::PaintServer;
 use parsers::Parse;
+use property_bag::PropertyBag;
 use property_macros::Property;
 use util::utf8_cstr;
 
@@ -43,10 +45,14 @@ pub struct State {
     pub clip_path: Option<ClipPath>,
     pub clip_rule: Option<ClipRule>,
     pub comp_op: Option<CompOp>,
+    pub direction: Option<Direction>,
     pub display: Option<Display>,
     pub enable_background: Option<EnableBackground>,
+    pub fill_opacity: Option<FillOpacity>,
     pub fill_rule: Option<FillRule>,
     pub filter: Option<Filter>,
+    pub flood_color: Option<FloodColor>,
+    pub flood_opacity: Option<FloodOpacity>,
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
     pub font_stretch: Option<FontStretch>,
@@ -64,6 +70,7 @@ pub struct State {
     pub stroke_dashoffset: Option<StrokeDashoffset>,
     pub stroke_line_cap: Option<StrokeLinecap>,
     pub stroke_line_join: Option<StrokeLinejoin>,
+    pub stroke_opacity: Option<StrokeOpacity>,
     pub stroke_miterlimit: Option<StrokeMiterlimit>,
     pub stroke_width: Option<StrokeWidth>,
     pub text_anchor: Option<TextAnchor>,
@@ -71,10 +78,12 @@ pub struct State {
     pub text_rendering: Option<TextRendering>,
     pub unicode_bidi: Option<UnicodeBidi>,
     pub visibility: Option<Visibility>,
+    pub writing_mode: Option<WritingMode>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 
-    important_styles: RefCell<HashSet<String>>,
+    important_styles: RefCell<HashSet<Attribute>>,
+    cond: bool,
 }
 
 impl State {
@@ -87,10 +96,14 @@ impl State {
             clip_path: Default::default(),
             clip_rule: Default::default(),
             comp_op: Default::default(),
+            direction: Default::default(),
             display: Default::default(),
             enable_background: Default::default(),
+            fill_opacity: Default::default(),
             fill_rule: Default::default(),
             filter: Default::default(),
+            flood_color: Default::default(),
+            flood_opacity: Default::default(),
             font_family: Default::default(),
             font_size: Default::default(),
             font_stretch: Default::default(),
@@ -108,6 +121,7 @@ impl State {
             stroke_dashoffset: Default::default(),
             stroke_line_cap: Default::default(),
             stroke_line_join: Default::default(),
+            stroke_opacity: Default::default(),
             stroke_miterlimit: Default::default(),
             stroke_width: Default::default(),
             text_anchor: Default::default(),
@@ -115,10 +129,12 @@ impl State {
             text_rendering: Default::default(),
             unicode_bidi: Default::default(),
             visibility: Default::default(),
+            writing_mode: Default::default(),
             xml_lang: Default::default(),
             xml_space: Default::default(),
 
             important_styles: Default::default(),
+            cond: true,
         }
     }
 
@@ -146,6 +162,10 @@ impl State {
                 self.comp_op = parse_property(value, ())?;
             }
 
+            Attribute::Direction => {
+                self.direction = parse_property(value, ())?;
+            }
+
             Attribute::Display => {
                 self.display = parse_property(value, ())?;
             }
@@ -154,12 +174,24 @@ impl State {
                 self.enable_background = parse_property(value, ())?;
             }
 
+            Attribute::FillOpacity => {
+                self.fill_opacity = parse_property(value, ())?;
+            }
+
             Attribute::FillRule => {
                 self.fill_rule = parse_property(value, ())?;
             }
 
             Attribute::Filter => {
                 self.filter = parse_property(value, ())?;
+            }
+
+            Attribute::FloodColor => {
+                self.flood_color = parse_property(value, ())?;
+            }
+
+            Attribute::FloodOpacity => {
+                self.flood_opacity = parse_property(value, ())?;
             }
 
             Attribute::FontFamily => {
@@ -244,6 +276,10 @@ impl State {
                 self.stroke_line_join = parse_property(value, ())?;
             }
 
+            Attribute::StrokeOpacity => {
+                self.stroke_opacity = parse_property(value, ())?;
+            }
+
             Attribute::StrokeMiterlimit => {
                 self.stroke_miterlimit = parse_property(value, ())?;
             }
@@ -272,6 +308,10 @@ impl State {
                 self.visibility = parse_property(value, ())?;
             }
 
+            Attribute::WritingMode => {
+                self.writing_mode = parse_property(value, ())?;
+            }
+
             Attribute::XmlLang => {
                 // xml:lang is not a property; it is a non-presentation attribute and as such
                 // cannot have the "inherit" value.  So, we don't call parse_property() for it,
@@ -289,6 +329,34 @@ impl State {
             _ => {
                 // Maybe it's an attribute not parsed here, but in the
                 // node implementations.
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn parse_conditional_processing_attributes(
+        &mut self,
+        pbag: &PropertyBag,
+    ) -> Result<(), AttributeError> {
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::RequiredExtensions if self.cond => {
+                    self.cond =
+                        RequiredExtensions::parse(value, ()).map(|RequiredExtensions(res)| res)?;
+                }
+
+                Attribute::RequiredFeatures if self.cond => {
+                    self.cond =
+                        RequiredFeatures::parse(value, ()).map(|RequiredFeatures(res)| res)?;
+                }
+
+                Attribute::SystemLanguage if self.cond => {
+                    self.cond = SystemLanguage::parse(value, &glib::get_language_names())
+                        .map(|SystemLanguage(res, _)| res)?;
+                }
+
+                _ => {}
             }
         }
 
@@ -319,17 +387,11 @@ extern "C" {
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
-    fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
-    fn rsvg_state_set_cond_true(state: *const RsvgState, cond_true: glib_sys::gboolean);
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
-    fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
-    fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
-    fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
-    fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
 
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
@@ -403,13 +465,12 @@ pub fn is_visible(state: *const RsvgState) -> bool {
     }
 }
 
-pub fn get_cond_true(state: *const RsvgState) -> bool {
-    unsafe { from_glib(rsvg_state_get_cond_true(state)) }
-}
+pub fn text_gravity_is_vertical(state: *const RsvgState) -> bool {
+    let rstate = get_state_rust(state);
 
-pub fn set_cond_true(state: *const RsvgState, cond_true: bool) {
-    unsafe {
-        rsvg_state_set_cond_true(state, cond_true.to_glib());
+    match rstate.writing_mode {
+        Some(WritingMode::Tb) | Some(WritingMode::TbRl) => true,
+        _ => false,
     }
 }
 
@@ -456,15 +517,12 @@ pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
 }
 
 pub fn get_stroke_opacity(state: *const RsvgState) -> u8 {
-    unsafe { rsvg_state_get_stroke_opacity(state) }
-}
+    let rstate = get_state_rust(state);
 
-pub fn get_text_dir(state: *const RsvgState) -> pango::Direction {
-    unsafe { from_glib(rsvg_state_get_text_dir(state)) }
-}
-
-pub fn get_text_gravity(state: *const RsvgState) -> pango::Gravity {
-    unsafe { from_glib(rsvg_state_get_text_gravity(state)) }
+    match rstate.stroke_opacity {
+        Some(StrokeOpacity(Opacity::Specified(opacity))) => opacity_to_u8(opacity),
+        _ => 255,
+    }
 }
 
 pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
@@ -480,7 +538,12 @@ pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
 }
 
 pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
-    unsafe { rsvg_state_get_fill_opacity(state) }
+    let rstate = get_state_rust(state);
+
+    match rstate.fill_opacity {
+        Some(FillOpacity(Opacity::Specified(opacity))) => opacity_to_u8(opacity),
+        _ => 255,
+    }
 }
 
 pub fn dominate(state: *mut RsvgState, src: *const RsvgState) {
@@ -499,6 +562,16 @@ pub fn reinherit(state: *mut RsvgState, src: *const RsvgState) {
     unsafe {
         rsvg_state_reinherit(state, src);
     }
+}
+
+pub fn get_cond(state: *mut RsvgState) -> bool {
+    get_state_rust(state).cond
+}
+
+pub fn set_cond(state: *mut RsvgState, value: bool) {
+    let rstate = get_state_rust(state);
+
+    rstate.cond = value;
 }
 
 pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
@@ -582,6 +655,16 @@ make_property!(
 );
 
 make_property!(
+    Direction,
+    default: Ltr,
+    inherits_automatically: true,
+
+    identifiers:
+    "ltr" => Ltr,
+    "rtl" => Rtl,
+);
+
+make_property!(
     Display,
     default: Inline,
     inherits_automatically: true,
@@ -617,6 +700,13 @@ make_property!(
 );
 
 make_property!(
+    FillOpacity,
+    default: Opacity::Specified(1.0),
+    inherits_automatically: true,
+    newtype_from_str: Opacity
+);
+
+make_property!(
     FillRule,
     default: NonZero,
     inherits_automatically: true,
@@ -632,6 +722,21 @@ make_property!(
     inherits_automatically: false,
     newtype_parse: IRI,
     parse_data_type: ()
+);
+
+make_property!(
+    FloodColor,
+    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
+    inherits_automatically: true,
+    newtype_parse: cssparser::Color,
+    parse_data_type: ()
+);
+
+make_property!(
+    FloodOpacity,
+    default: Opacity::Specified(1.0),
+    inherits_automatically: true,
+    newtype_from_str: Opacity
 );
 
 make_property!(
@@ -813,6 +918,13 @@ make_property!(
 );
 
 make_property!(
+    StrokeOpacity,
+    default: Opacity::Specified(1.0),
+    inherits_automatically: true,
+    newtype_from_str: Opacity
+);
+
+make_property!(
     StrokeMiterlimit,
     default: 4f64,
     inherits_automatically: true,
@@ -896,6 +1008,20 @@ make_property!(
 );
 
 make_property!(
+    WritingMode,
+    default: LrTb,
+    inherits_automatically: true,
+
+    identifiers:
+    "lr" => Lr,
+    "lr-tb" => LrTb,
+    "rl" => Rl,
+    "rl-tb" => RlTb,
+    "tb" => Tb,
+    "tb-rl" => TbRl,
+);
+
+make_property!(
     XmlLang,
     default: "C".to_string(),
     inherits_automatically: true,
@@ -927,6 +1053,21 @@ pub extern "C" fn rsvg_state_is_visible(state: *const RsvgState) -> glib_sys::gb
     is_visible(state).to_glib()
 }
 
+#[no_mangle]
+pub extern "C" fn rsvg_state_parse_conditional_processing_attributes(
+    state: *mut RsvgState,
+    pbag: *const PropertyBag,
+) -> glib_sys::gboolean {
+    let state = unsafe { &mut *state };
+    let pbag = unsafe { &*pbag };
+
+    let rstate = get_state_rust(state);
+    match rstate.parse_conditional_processing_attributes(pbag) {
+        Ok(_) => true.to_glib(),
+        Err(_) => false.to_glib(),
+    }
+}
+
 // Rust State API for consumption from C ----------------------------------------
 
 #[no_mangle]
@@ -953,26 +1094,18 @@ pub extern "C" fn rsvg_state_rust_clone(state: *const State) -> *mut State {
 #[no_mangle]
 pub extern "C" fn rsvg_state_rust_contains_important_style(
     state: *const State,
-    name: *const libc::c_char,
+    attr: Attribute,
 ) -> glib_sys::gboolean {
     let state = unsafe { &*state };
-    let name = unsafe { utf8_cstr(name) };
 
-    state.important_styles.borrow().contains(name).to_glib()
+    state.important_styles.borrow().contains(&attr).to_glib()
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_insert_important_style(
-    state: *mut State,
-    name: *const libc::c_char,
-) {
+pub extern "C" fn rsvg_state_rust_insert_important_style(state: *mut State, attr: Attribute) {
     let state = unsafe { &mut *state };
-    let name = unsafe { utf8_cstr(name) };
 
-    state
-        .important_styles
-        .borrow_mut()
-        .insert(String::from(name));
+    state.important_styles.borrow_mut().insert(attr);
 }
 
 #[no_mangle]
@@ -1030,8 +1163,12 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     // please keep these sorted
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
     inherit(inherit_fn, &mut dst.clip_rule, &src.clip_rule);
+    inherit(inherit_fn, &mut dst.direction, &src.direction);
     inherit(inherit_fn, &mut dst.display, &src.display);
+    inherit(inherit_fn, &mut dst.fill_opacity, &src.fill_opacity);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
+    inherit(inherit_fn, &mut dst.flood_color, &src.flood_color);
+    inherit(inherit_fn, &mut dst.flood_opacity, &src.flood_opacity);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
     inherit(inherit_fn, &mut dst.font_stretch, &src.font_stretch);
@@ -1052,6 +1189,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     );
     inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);
     inherit(inherit_fn, &mut dst.stroke_line_join, &src.stroke_line_join);
+    inherit(inherit_fn, &mut dst.stroke_opacity, &src.stroke_opacity);
     inherit(
         inherit_fn,
         &mut dst.stroke_miterlimit,
@@ -1065,6 +1203,8 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.visibility, &src.visibility);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
+
+    dst.cond = src.cond;
 
     if from_glib(inheritunheritables) {
         dst.clip_path.clone_from(&src.clip_path);
@@ -1096,6 +1236,29 @@ pub extern "C" fn rsvg_state_rust_get_comp_op(state: *const State) -> cairo::Ope
     unsafe {
         let state = &*state;
         cairo::Operator::from(state.comp_op.unwrap_or_default())
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_flood_color(state: *const State) -> u32 {
+    unsafe {
+        let state = &*state;
+        match state.flood_color {
+            Some(FloodColor(cssparser::Color::RGBA(rgba))) => rgba_to_argb(rgba),
+            // FIXME: fallback to current color if Color::inherit and current color is set
+            _ => 0xff000000,
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_flood_opacity(state: *const State) -> u8 {
+    unsafe {
+        let state = &*state;
+        match state.flood_opacity {
+            Some(FloodOpacity(Opacity::Specified(opacity))) => opacity_to_u8(opacity),
+            _ => 255,
+        }
     }
 }
 

@@ -168,7 +168,7 @@ fn generate_phf_of_svg_attributes() {
     let mut file = BufWriter::new(File::create(&path).unwrap());
 
     writeln!(&mut file, "#[repr(C)]").unwrap();
-    writeln!(&mut file, "#[derive(Debug, Clone, Copy, PartialEq)]").unwrap();
+    writeln!(&mut file, "#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]").unwrap();
     writeln!(&mut file, "pub enum Attribute {{").unwrap();
 
     for &(_, valname) in attribute_defs.iter() {

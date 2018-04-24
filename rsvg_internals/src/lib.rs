@@ -31,12 +31,6 @@ pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
 pub use color::{rsvg_css_parse_color, AllowCurrentColor, AllowInherit, ColorKind, ColorSpec};
 
-pub use cond::{
-    rsvg_cond_check_required_extensions,
-    rsvg_cond_check_required_features,
-    rsvg_cond_check_system_language,
-};
-
 pub use draw::rsvg_cairo_add_clipping_rect;
 
 pub use drawing_ctx::{rsvg_drawing_ctx_state_pop, rsvg_drawing_ctx_state_push};
@@ -92,7 +86,6 @@ pub use paint_server::{
     rsvg_paint_server_parse,
     rsvg_paint_server_ref,
     rsvg_paint_server_unref,
-    rsvg_set_source_rsvg_paint_server,
 };
 
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
@@ -119,6 +112,7 @@ pub use shapes::{
 
 pub use state::{
     rsvg_state_is_visible,
+    rsvg_state_parse_conditional_processing_attributes,
     rsvg_state_reconstruct,
     rsvg_state_rust_clone,
     rsvg_state_rust_contains_important_style,
@@ -126,6 +120,8 @@ pub use state::{
     rsvg_state_rust_get_affine,
     rsvg_state_rust_get_clip_path,
     rsvg_state_rust_get_comp_op,
+    rsvg_state_rust_get_flood_color,
+    rsvg_state_rust_get_flood_opacity,
     rsvg_state_rust_get_enable_background,
     rsvg_state_rust_get_filter,
     rsvg_state_rust_get_mask,

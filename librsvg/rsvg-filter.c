@@ -3538,8 +3538,8 @@ rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 
     state = rsvg_node_get_state (node);
 
-    guint32 color = state->flood_color;
-    guint8 opacity = state->flood_opacity;
+    guint32 color = rsvg_state_get_flood_color (state);
+    guint8 opacity = rsvg_state_get_flood_opacity (state);
 
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
@@ -5068,7 +5068,7 @@ rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, 
             case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
                 state = rsvg_state_new ();
                 rsvg_state_reconstruct (state, node);
-                filter->lightingcolor = state->current_color;
+                filter->lightingcolor = rsvg_state_get_current_color (state);
                 break;
 
             case RSVG_CSS_COLOR_SPEC_ARGB:
@@ -5278,7 +5278,7 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl,
             case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
                 state = rsvg_state_new ();
                 rsvg_state_reconstruct (state, node);
-                filter->lightingcolor = state->current_color;
+                filter->lightingcolor = rsvg_state_get_current_color (state);
                 break;
 
             case RSVG_CSS_COLOR_SPEC_ARGB:

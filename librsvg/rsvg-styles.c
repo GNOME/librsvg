@@ -45,18 +45,23 @@ extern State *rsvg_state_rust_clone(State *state);
 extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
+extern guint32 rsvg_state_rust_get_flood_color(const State *state);
+extern guint8 rsvg_state_rust_get_flood_opacity(const State *state);
 extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
 extern char *rsvg_state_rust_get_clip_path(const State *state);
 extern char *rsvg_state_rust_get_filter(const State *state);
 extern char *rsvg_state_rust_get_mask(const State *state);
 
-extern gboolean rsvg_state_rust_contains_important_style(State *state, const gchar *name);
-extern gboolean rsvg_state_rust_insert_important_style(State *state, const gchar *name);
+extern gboolean rsvg_state_rust_contains_important_style(State *state, RsvgAttribute attr);
+extern gboolean rsvg_state_rust_insert_important_style(State *state, RsvgAttribute attr);
 
 extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value, gboolean accept_shorthands)
     G_GNUC_WARN_UNUSED_RESULT;
 
 extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn, gboolean inherituninheritables);
+
+extern gboolean rsvg_state_parse_conditional_processing_attributes (RsvgState *state, RsvgPropertyBag *pbag)
+    G_GNUC_WARN_UNUSED_RESULT;
 
 typedef struct _StyleValueData {
     gchar *value;
@@ -97,8 +102,6 @@ rsvg_state_init (RsvgState * state)
                                         * opaque black instead of transparent.
                                         */
     state->fill = rsvg_paint_server_parse (NULL, "#000");
-    state->fill_opacity = 0xff;
-    state->stroke_opacity = 0xff;
 
     /* The following two start as INHERIT, even though has_stop_color and
      * has_stop_opacity get initialized to FALSE below.  This is so that the
@@ -110,25 +113,11 @@ rsvg_state_init (RsvgState * state)
     state->stop_color.kind = RSVG_CSS_COLOR_SPEC_INHERIT;
     state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
 
-    state->flood_color = 0;
-    state->flood_opacity = 255;
-
-    state->text_dir = PANGO_DIRECTION_LTR;
-    state->text_gravity = PANGO_GRAVITY_SOUTH;
-    state->cond_true = TRUE;
-
     state->has_current_color = FALSE;
-    state->has_flood_color = FALSE;
-    state->has_flood_opacity = FALSE;
     state->has_fill_server = FALSE;
-    state->has_fill_opacity = FALSE;
     state->has_stroke_server = FALSE;
-    state->has_stroke_opacity = FALSE;
-    state->has_cond = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
-    state->has_text_dir = FALSE;
-    state->has_text_gravity = FALSE;
 
     state->state_rust = rsvg_state_rust_new();
 }
@@ -218,26 +207,18 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
 {
     if (function (dst->has_current_color, src->has_current_color))
         dst->current_color = src->current_color;
-    if (function (dst->has_flood_color, src->has_flood_color))
-        dst->flood_color = src->flood_color;
-    if (function (dst->has_flood_opacity, src->has_flood_opacity))
-        dst->flood_opacity = src->flood_opacity;
     if (function (dst->has_fill_server, src->has_fill_server)) {
         rsvg_paint_server_ref (src->fill);
         if (dst->fill)
             rsvg_paint_server_unref (dst->fill);
         dst->fill = src->fill;
     }
-    if (function (dst->has_fill_opacity, src->has_fill_opacity))
-        dst->fill_opacity = src->fill_opacity;
     if (function (dst->has_stroke_server, src->has_stroke_server)) {
         rsvg_paint_server_ref (src->stroke);
         if (dst->stroke)
             rsvg_paint_server_unref (dst->stroke);
         dst->stroke = src->stroke;
     }
-    if (function (dst->has_stroke_opacity, src->has_stroke_opacity))
-        dst->stroke_opacity = src->stroke_opacity;
     if (function (dst->has_stop_color, src->has_stop_color)) {
         if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
             dst->has_stop_color = TRUE;
@@ -250,12 +231,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
             dst->stop_opacity = src->stop_opacity;
         }
     }
-    if (function (dst->has_cond, src->has_cond))
-        dst->cond_true = src->cond_true;
-    if (function (dst->has_text_dir, src->has_text_dir))
-        dst->text_dir = src->text_dir;
-    if (function (dst->has_text_gravity, src->has_text_gravity))
-        dst->text_gravity = src->text_gravity;
 
     rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
 
@@ -347,7 +322,6 @@ typedef enum {
 
 static gboolean
 rsvg_parse_style_pair (RsvgState *state,
-                       const gchar *name,
                        RsvgAttribute attr,
                        const gchar *value,
                        gboolean important,
@@ -356,7 +330,6 @@ rsvg_parse_style_pair (RsvgState *state,
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static gboolean
 rsvg_parse_style_pair (RsvgState *state,
-                       const gchar *name,
                        RsvgAttribute attr,
                        const gchar *value,
                        gboolean important,
@@ -364,14 +337,14 @@ rsvg_parse_style_pair (RsvgState *state,
 {
     gboolean success = TRUE;
 
-    if (name == NULL || value == NULL)
+    if (value == NULL)
         return success;
 
     if (!important) {
-        if (rsvg_state_rust_contains_important_style (state->state_rust, name))
+        if (rsvg_state_rust_contains_important_style (state->state_rust, attr))
             return success;
     } else {
-        rsvg_state_rust_insert_important_style (state->state_rust, name);
+        rsvg_state_rust_insert_important_style (state->state_rust, attr);
     }
 
     switch (attr) {
@@ -416,76 +389,12 @@ rsvg_parse_style_pair (RsvgState *state,
     }
     break;
 
-    case RSVG_ATTRIBUTE_FLOOD_COLOR:
-    {
-        RsvgCssColorSpec spec;
-
-        spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
-        switch (spec.kind) {
-        case RSVG_CSS_COLOR_SPEC_INHERIT:
-            /* FIXME: we should inherit; see how stop-color is handled in rsvg-styles.c */
-            state->has_current_color = FALSE;
-            break;
-
-        case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
-            /* FIXME: in the caller, fix up the current color */
-            state->has_flood_color = FALSE;
-            break;
-
-        case RSVG_CSS_COLOR_SPEC_ARGB:
-            state->flood_color = spec.argb;
-            state->has_flood_color = TRUE;
-            break;
-
-        case RSVG_CSS_COLOR_PARSE_ERROR:
-            /* FIXME: no error handling */
-            state->has_current_color = FALSE;
-            break;
-
-        default:
-            g_assert_not_reached ();
-        }
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FLOOD_OPACITY:
-    {
-        RsvgOpacitySpec spec;
-
-        spec = rsvg_css_parse_opacity (value);
-        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
-            state->flood_opacity = spec.opacity;
-        } else {
-            state->flood_opacity = 0;
-            /* FIXME: handle INHERIT and PARSE_ERROR */
-        }
-
-        state->has_flood_opacity = TRUE;
-    }
-    break;
-
     case RSVG_ATTRIBUTE_FILL:
     {
         RsvgPaintServer *fill = state->fill;
         state->fill =
             rsvg_paint_server_parse (&state->has_fill_server, value);
         rsvg_paint_server_unref (fill);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FILL_OPACITY:
-    {
-        RsvgOpacitySpec spec;
-
-        spec = rsvg_css_parse_opacity (value);
-        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
-            state->fill_opacity = spec.opacity;
-        } else {
-            state->fill_opacity = 0;
-            /* FIXME: handle INHERIT and PARSE_ERROR */
-        }
-
-        state->has_fill_opacity = TRUE;
     }
     break;
 
@@ -497,59 +406,6 @@ rsvg_parse_style_pair (RsvgState *state,
             rsvg_paint_server_parse (&state->has_stroke_server, value);
 
         rsvg_paint_server_unref (stroke);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STROKE_OPACITY:
-    {
-        RsvgOpacitySpec spec;
-
-        spec = rsvg_css_parse_opacity (value);
-        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
-            state->stroke_opacity = spec.opacity;
-        } else {
-            state->stroke_opacity = 0;
-            /* FIXME: handle INHERIT and PARSE_ERROR */
-        }
-
-        state->has_stroke_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_DIRECTION:
-    {
-        state->has_text_dir = TRUE;
-        if (g_str_equal (value, "inherit")) {
-            state->text_dir = PANGO_DIRECTION_LTR;
-            state->has_text_dir = FALSE;
-        } else if (g_str_equal (value, "rtl"))
-            state->text_dir = PANGO_DIRECTION_RTL;
-        else                    /* ltr */
-            state->text_dir = PANGO_DIRECTION_LTR;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_WRITING_MODE:
-    {
-        /* TODO: these aren't quite right... */
-
-        state->has_text_dir = TRUE;
-        state->has_text_gravity = TRUE;
-        if (g_str_equal (value, "inherit")) {
-            state->text_dir = PANGO_DIRECTION_LTR;
-            state->has_text_dir = FALSE;
-            state->text_gravity = PANGO_GRAVITY_SOUTH;
-            state->has_text_gravity = FALSE;
-        } else if (g_str_equal (value, "lr-tb") || g_str_equal (value, "lr")) {
-            state->text_dir = PANGO_DIRECTION_LTR;
-            state->text_gravity = PANGO_GRAVITY_SOUTH;
-        } else if (g_str_equal (value, "rl-tb") || g_str_equal (value, "rl")) {
-            state->text_dir = PANGO_DIRECTION_RTL;
-            state->text_gravity = PANGO_GRAVITY_SOUTH;
-        } else if (g_str_equal (value, "tb-rl") || g_str_equal (value, "tb")) {
-            state->text_dir = PANGO_DIRECTION_LTR;
-            state->text_gravity = PANGO_GRAVITY_EAST;
-        }
     }
     break;
 
@@ -578,53 +434,6 @@ rsvg_parse_style_pair (RsvgState *state,
     return success;
 }
 
-/* returns TRUE if this element should be processed according to <switch> semantics
-   http://www.w3.org/TR/SVG/struct.html#SwitchElement */
-static gboolean
-rsvg_eval_switch_attributes (RsvgPropertyBag * atts, gboolean * p_has_cond)
-{
-    gboolean required_features_ok = TRUE;
-    gboolean required_extensions_ok = TRUE;
-    gboolean system_language_ok = TRUE;
-    gboolean has_cond = FALSE;
-
-    RsvgPropertyBagIter *iter;
-    const char *key;
-    RsvgAttribute attr;
-    const char *value;
-
-    iter = rsvg_property_bag_iter_begin (atts);
-
-    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        switch (attr) {
-        case RSVG_ATTRIBUTE_REQUIRED_FEATURES:
-            required_features_ok = rsvg_cond_check_required_features (value);
-            has_cond = TRUE;
-            break;
-
-        case RSVG_ATTRIBUTE_REQUIRED_EXTENSIONS:
-            required_extensions_ok = rsvg_cond_check_required_extensions (value);
-            has_cond = TRUE;
-            break;
-
-        case RSVG_ATTRIBUTE_SYSTEM_LANGUAGE:
-            system_language_ok = rsvg_cond_check_system_language (value);
-            has_cond = TRUE;
-            break;
-
-        default:
-            break;
-        }
-    }
-
-    rsvg_property_bag_iter_end (iter);
-
-    if (p_has_cond)
-        *p_has_cond = has_cond;
-
-    return required_features_ok && required_extensions_ok && system_language_ok;
-}
-
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
 void
 rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
@@ -640,25 +449,13 @@ rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
     iter = rsvg_property_bag_iter_begin (atts);
 
     while (success && rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        success = rsvg_parse_style_pair (state, key, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
+        success = rsvg_parse_style_pair (state, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
     }
 
     rsvg_property_bag_iter_end (iter);
 
     if (!success) {
         return; /* FIXME: propagate errors upstream */
-    }
-
-    {
-        /* TODO: this conditional behavior isn't quite correct, and i'm not sure it should reside here */
-        gboolean cond_true, has_cond;
-
-        cond_true = rsvg_eval_switch_attributes (atts, &has_cond);
-
-        if (has_cond) {
-            state->cond_true = cond_true;
-            state->has_cond = TRUE;
-        }
     }
 }
 
@@ -733,7 +530,6 @@ rsvg_parse_style_attribute_contents (RsvgState *state, const char *str)
 
                 if (rsvg_attribute_from_name (first_value, &attr)) {
                     success = rsvg_parse_style_pair (state,
-                                                     first_value,
                                                      attr,
                                                      style_value,
                                                      important,
@@ -993,8 +789,11 @@ apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
     RsvgAttribute attr;
 
     if (rsvg_attribute_from_name (key, &attr)) {
-        gboolean success = rsvg_parse_style_pair (
-            state, key, attr, value->value, value->important, PAIR_SOURCE_STYLE);
+        gboolean success = rsvg_parse_style_pair (state,
+                                                  attr,
+                                                  value->value,
+                                                  value->important,
+                                                  PAIR_SOURCE_STYLE);
         /* FIXME: propagate errors upstream */
     }
 }
@@ -1043,6 +842,9 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     state = rsvg_node_get_state (node);
 
     rsvg_parse_presentation_attributes (state, atts);
+
+    /* TODO: i'm not sure it should reside here */
+    success = success && rsvg_state_parse_conditional_processing_attributes (state, atts);
 
     /* Try to properly support all of the following, including inheritance:
      * *
@@ -1205,24 +1007,6 @@ rsvg_state_get_stroke (RsvgState *state)
     return state->stroke;
 }
 
-guint8
-rsvg_state_get_stroke_opacity (RsvgState *state)
-{
-    return state->stroke_opacity;
-}
-
-gboolean
-rsvg_state_get_cond_true (RsvgState *state)
-{
-    return state->cond_true;
-}
-
-void
-rsvg_state_set_cond_true (RsvgState *state, gboolean cond_true)
-{
-    state->cond_true = cond_true;
-}
-
 RsvgCssColorSpec *
 rsvg_state_get_stop_color (RsvgState *state)
 {
@@ -1249,28 +1033,22 @@ rsvg_state_get_current_color (RsvgState *state)
     return state->current_color;
 }
 
-PangoDirection
-rsvg_state_get_text_dir (RsvgState *state)
-{
-    return state->text_dir;
-}
-
-PangoGravity
-rsvg_state_get_text_gravity (RsvgState *state)
-{
-    return state->text_gravity;
-}
-
 RsvgPaintServer *
 rsvg_state_get_fill (RsvgState *state)
 {
     return state->fill;
 }
 
-guint8
-rsvg_state_get_fill_opacity (RsvgState *state)
+guint32
+rsvg_state_get_flood_color (RsvgState *state)
 {
-    return state->fill_opacity;
+    return rsvg_state_rust_get_flood_color (state->state_rust);
+}
+
+guint8
+rsvg_state_get_flood_opacity (RsvgState *state)
+{
+    return rsvg_state_rust_get_flood_opacity (state->state_rust);
 }
 
 cairo_operator_t

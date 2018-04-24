@@ -265,22 +265,6 @@ pub fn _set_source_rsvg_paint_server(
     had_paint_server
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_set_source_rsvg_paint_server(
-    c_ctx: *mut drawing_ctx::RsvgDrawingCtx,
-    c_ps: *const PaintServer,
-    opacity: u8,
-    bbox: RsvgBbox,
-    current_color: u32,
-) -> glib_sys::gboolean {
-    assert!(!c_ctx.is_null());
-    assert!(!c_ps.is_null());
-
-    let ps = unsafe { &*c_ps };
-
-    _set_source_rsvg_paint_server(c_ctx, ps, opacity, &bbox, Color::from(current_color)).to_glib()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

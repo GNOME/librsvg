@@ -52,20 +52,9 @@ struct _RsvgState {
 
     RsvgPaintServer *fill;
     gboolean has_fill_server;
-    guint8 fill_opacity;        /* 0..255 */
-    gboolean has_fill_opacity;
 
     RsvgPaintServer *stroke;
     gboolean has_stroke_server;
-    guint8 stroke_opacity;      /* 0..255 */
-    gboolean has_stroke_opacity;
-
-    PangoDirection text_dir;
-    gboolean has_text_dir;
-    PangoGravity text_gravity;
-    gboolean has_text_gravity;
-
-    guint text_offset;
 
     RsvgCssColorSpec stop_color;
     gboolean has_stop_color;
@@ -73,17 +62,8 @@ struct _RsvgState {
     RsvgOpacitySpec stop_opacity;
     gboolean has_stop_opacity;
 
-    gboolean has_cond;
-    gboolean cond_true;
-
     guint32 current_color;
     gboolean has_current_color;
-
-    guint32 flood_color;
-    gboolean has_flood_color;
-
-    guchar flood_opacity;
-    gboolean has_flood_opacity;
 
     GHashTable *styles;
 
@@ -153,15 +133,6 @@ G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_stroke (RsvgState *state);
 
 G_GNUC_INTERNAL
-guint8 rsvg_state_get_stroke_opacity (RsvgState *state);
-
-G_GNUC_INTERNAL
-gboolean rsvg_state_get_cond_true (RsvgState *state);
-
-G_GNUC_INTERNAL
-void rsvg_state_set_cond_true (RsvgState *state, gboolean cond_true);
-
-G_GNUC_INTERNAL
 RsvgCssColorSpec *rsvg_state_get_stop_color (RsvgState *state);
 
 G_GNUC_INTERNAL
@@ -171,16 +142,13 @@ G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
 
 G_GNUC_INTERNAL
-PangoDirection rsvg_state_get_text_dir (RsvgState *state);
-
-G_GNUC_INTERNAL
-PangoGravity rsvg_state_get_text_gravity (RsvgState *state);
-
-G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);
 
 G_GNUC_INTERNAL
-guint8 rsvg_state_get_fill_opacity (RsvgState *state);
+guint32 rsvg_state_get_flood_color (RsvgState *state);
+
+G_GNUC_INTERNAL
+guint8 rsvg_state_get_flood_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
