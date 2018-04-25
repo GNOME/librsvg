@@ -137,7 +137,7 @@ impl Color {
     }
 }
 
-fn rgba_from_argb(argb: u32) -> cssparser::RGBA {
+pub fn rgba_from_argb(argb: u32) -> cssparser::RGBA {
     cssparser::RGBA::new(
         ((argb & 0x00ff_0000) >> 16) as u8,
         ((argb & 0x0000_ff00) >> 8) as u8,
