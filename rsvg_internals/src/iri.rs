@@ -1,4 +1,4 @@
-use cssparser::{Parser, ParserInput};
+use cssparser;
 use std::str;
 
 use parsers::Parse;
@@ -21,23 +21,21 @@ impl Parse for IRI {
     type Err = ParseError;
 
     fn parse(s: &str, _: Self::Data) -> Result<IRI, ParseError> {
-        match s.trim() {
-            "none" => Ok(IRI::None),
+        let mut input = cssparser::ParserInput::new(s);
+        let mut parser = cssparser::Parser::new(&mut input);
 
-            _ => {
-                let mut input = ParserInput::new(s);
-                let mut parser = Parser::new(&mut input);
+        if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
+            Ok(IRI::None)
+        } else {
+            let url = parser
+                .expect_url()
+                .map_err(|_| ParseError::new("expected url"))?;
 
-                let url = parser
-                    .expect_url()
-                    .map_err(|_| ParseError::new("expected url"))?;
+            parser
+                .expect_exhausted()
+                .map_err(|_| ParseError::new("expected url"))?;
 
-                parser
-                    .expect_exhausted()
-                    .map_err(|_| ParseError::new("expected url"))?;
-
-                Ok(IRI::Resource(url.as_ref().to_owned()))
-            }
+            Ok(IRI::Resource(url.as_ref().to_owned()))
         }
     }
 }
