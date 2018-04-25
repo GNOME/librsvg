@@ -4,7 +4,7 @@ Contributing to librsvg
 Thank you for looking in this file!  There are different ways of
 contributing to librsvg, and we appreciate all of them.
 
-* [Source repository](#source-code)
+* [Source repository](#source-repository)
 * [Reporting bugs](#reporting-bugs)
 * [Feature requests](#feature-requests)
 * [Hacking on librsvg](#hacking-on-librsvg)
