@@ -45,6 +45,7 @@ extern State *rsvg_state_rust_clone(State *state);
 extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
+extern guint32 rsvg_state_rust_get_color(const State *state);
 extern guint32 rsvg_state_rust_get_flood_color(const State *state);
 extern guint8 rsvg_state_rust_get_flood_opacity(const State *state);
 extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
@@ -97,10 +98,6 @@ rsvg_state_init (RsvgState * state)
     state->parent = NULL;
 
     state->opacity = 0xff;
-    state->current_color = 0xff000000; /* See bgo#764808; we don't inherit CSS
-                                        * from the public API, so start off with
-                                        * opaque black instead of transparent.
-                                        */
     state->fill = rsvg_paint_server_parse (NULL, "#000");
 
     /* The following two start as INHERIT, even though has_stop_color and
@@ -113,7 +110,6 @@ rsvg_state_init (RsvgState * state)
     state->stop_color.kind = RSVG_CSS_COLOR_SPEC_INHERIT;
     state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
 
-    state->has_current_color = FALSE;
     state->has_fill_server = FALSE;
     state->has_stroke_server = FALSE;
     state->has_stop_color = FALSE;
@@ -205,8 +201,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
                         const InheritanceFunction function,
                         gboolean inherituninheritables)
 {
-    if (function (dst->has_current_color, src->has_current_color))
-        dst->current_color = src->current_color;
     if (function (dst->has_fill_server, src->has_fill_server)) {
         rsvg_paint_server_ref (src->fill);
         if (dst->fill)
@@ -348,33 +342,6 @@ rsvg_parse_style_pair (RsvgState *state,
     }
 
     switch (attr) {
-    case RSVG_ATTRIBUTE_COLOR:
-    {
-        RsvgCssColorSpec spec;
-
-        spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_NO);
-        switch (spec.kind) {
-        case RSVG_CSS_COLOR_SPEC_INHERIT:
-            /* FIXME: we should inherit; see how stop-color is handled in rsvg-styles.c */
-            state->has_current_color = FALSE;
-            break;
-
-        case RSVG_CSS_COLOR_SPEC_ARGB:
-            state->current_color = spec.argb;
-            state->has_current_color = TRUE;
-            break;
-
-        case RSVG_CSS_COLOR_PARSE_ERROR:
-            /* FIXME: no error handling */
-            state->has_current_color = FALSE;
-            break;
-
-        default:
-            g_assert_not_reached ();
-        }
-    }
-    break;
-
     case RSVG_ATTRIBUTE_OPACITY:
     {
         RsvgOpacitySpec spec;
@@ -1030,7 +997,7 @@ rsvg_state_get_stop_opacity (RsvgState *state)
 guint32
 rsvg_state_get_current_color (RsvgState *state)
 {
-    return state->current_color;
+    return rsvg_state_rust_get_color (state->state_rust);
 }
 
 RsvgPaintServer *

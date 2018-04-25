@@ -119,6 +119,7 @@ pub use state::{
     rsvg_state_rust_free,
     rsvg_state_rust_get_affine,
     rsvg_state_rust_get_clip_path,
+    rsvg_state_rust_get_color,
     rsvg_state_rust_get_comp_op,
     rsvg_state_rust_get_flood_color,
     rsvg_state_rust_get_flood_opacity,
