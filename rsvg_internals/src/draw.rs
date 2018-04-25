@@ -5,6 +5,7 @@ use pango_sys;
 use pangocairo;
 
 use bbox::RsvgBbox;
+use color::Color;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
@@ -70,13 +71,18 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
     let fill = state::get_fill(state);
     let stroke = state::get_stroke(state);
 
+    let current_color = match state::get_current_color(state) {
+        Color::RGBA(rgba) => rgba,
+        _ => unreachable!(),
+    };
+
     if let Some(fill) = fill {
         if paint_server::_set_source_rsvg_paint_server(
             draw_ctx,
             fill,
             state::get_fill_opacity(state),
             &bbox,
-            state::get_current_color(state),
+            &current_color,
         ) {
             if stroke.is_some() {
                 cr.fill_preserve();
@@ -92,7 +98,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
             stroke,
             state::get_stroke_opacity(state),
             &bbox,
-            state::get_current_color(state),
+            &current_color,
         ) {
             cr.stroke();
         }
@@ -356,6 +362,11 @@ pub fn draw_pango_layout(
         cr.rotate(-rotation);
     }
 
+    let current_color = match state::get_current_color(state) {
+        Color::RGBA(rgba) => rgba,
+        _ => unreachable!(),
+    };
+
     if !clipping {
         if let Some(fill) = fill {
             if paint_server::_set_source_rsvg_paint_server(
@@ -363,7 +374,7 @@ pub fn draw_pango_layout(
                 fill,
                 state::get_fill_opacity(state),
                 &bbox,
-                state::get_current_color(state),
+                &current_color,
             ) {
                 pangocairo::functions::update_layout(&cr, layout);
                 pangocairo::functions::show_layout(&cr, layout);
@@ -382,7 +393,7 @@ pub fn draw_pango_layout(
                 stroke.unwrap(),
                 state::get_stroke_opacity(state),
                 &bbox,
-                state::get_current_color(state),
+                &current_color,
             );
     }
 
