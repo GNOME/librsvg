@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use std::ptr;
 
 use attributes::Attribute;
-use color::{rgba_to_argb, Color, ColorSpec};
+use color::{rgba_from_argb, rgba_to_argb, Color, ColorSpec};
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use iri::IRI;
@@ -498,10 +498,10 @@ pub fn get_stop_opacity(state: *const RsvgState) -> Result<Option<Opacity>, Attr
     }
 }
 
-pub fn get_current_color(state: *const RsvgState) -> Color {
+pub fn get_current_color(state: *const RsvgState) -> cssparser::RGBA {
     let argb = unsafe { rsvg_state_get_current_color(state) };
 
-    Color::from(argb)
+    rgba_from_argb(argb)
 }
 
 pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {

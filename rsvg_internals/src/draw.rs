@@ -5,7 +5,6 @@ use pango_sys;
 use pangocairo;
 
 use bbox::RsvgBbox;
-use color::Color;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
@@ -71,10 +70,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
     let fill = state::get_fill(state);
     let stroke = state::get_stroke(state);
 
-    let current_color = match state::get_current_color(state) {
-        Color::RGBA(rgba) => rgba,
-        _ => unreachable!(),
-    };
+    let current_color = state::get_current_color(state);
 
     if let Some(fill) = fill {
         if paint_server::_set_source_rsvg_paint_server(
@@ -362,10 +358,7 @@ pub fn draw_pango_layout(
         cr.rotate(-rotation);
     }
 
-    let current_color = match state::get_current_color(state) {
-        Color::RGBA(rgba) => rgba,
-        _ => unreachable!(),
-    };
+    let current_color = state::get_current_color(state);
 
     if !clipping {
         if let Some(fill) = fill {
