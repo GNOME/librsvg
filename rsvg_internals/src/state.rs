@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use std::ptr;
 
 use attributes::Attribute;
-use color::{rgba_to_argb, Color, ColorSpec};
+use color::{self, rgba_to_argb};
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use iri::IRI;
@@ -45,6 +45,7 @@ pub struct State {
     pub clip_path: Option<ClipPath>,
     pub clip_rule: Option<ClipRule>,
     pub comp_op: Option<CompOp>,
+    pub color: Option<Color>,
     pub direction: Option<Direction>,
     pub display: Option<Display>,
     pub enable_background: Option<EnableBackground>,
@@ -95,6 +96,7 @@ impl State {
             baseline_shift: Default::default(),
             clip_path: Default::default(),
             clip_rule: Default::default(),
+            color: Default::default(),
             comp_op: Default::default(),
             direction: Default::default(),
             display: Default::default(),
@@ -156,6 +158,10 @@ impl State {
 
             Attribute::ClipRule => {
                 self.clip_rule = parse_property(value, ())?;
+            }
+
+            Attribute::Color => {
+                self.color = parse_property(value, ())?;
             }
 
             Attribute::CompOp => {
@@ -387,9 +393,8 @@ extern "C" {
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
-    fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
+    fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const color::ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
-    fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
 
@@ -474,14 +479,14 @@ pub fn text_gravity_is_vertical(state: *const RsvgState) -> bool {
     }
 }
 
-pub fn get_stop_color(state: *const RsvgState) -> Result<Option<Color>, AttributeError> {
+pub fn get_stop_color(state: *const RsvgState) -> Result<Option<color::Color>, AttributeError> {
     unsafe {
         let spec_ptr = rsvg_state_get_stop_color(state);
 
         if spec_ptr.is_null() {
             Ok(None)
         } else {
-            Color::from_color_spec(&*spec_ptr).map(Some)
+            color::Color::from_color_spec(&*spec_ptr).map(Some)
         }
     }
 }
@@ -496,12 +501,6 @@ pub fn get_stop_opacity(state: *const RsvgState) -> Result<Option<Opacity>, Attr
             Opacity::from_opacity_spec(&*opacity_ptr).map(Some)
         }
     }
-}
-
-pub fn get_current_color(state: *const RsvgState) -> Color {
-    let argb = unsafe { rsvg_state_get_current_color(state) };
-
-    Color::from(argb)
 }
 
 pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
@@ -620,6 +619,16 @@ make_property!(
     identifiers:
     "nonzero" => NonZero,
     "evenodd" => EvenOdd,
+);
+
+// See bgo#764808: we don't inherit CSS from the public API,
+// so start off with opaque black instead of transparent.
+make_property!(
+    Color,
+    default: cssparser::RGBA::new(0, 0, 0, 0xff),
+    inherits_automatically: true,
+    newtype_parse: cssparser::RGBA,
+    parse_data_type: ()
 );
 
 make_property!(
@@ -1163,6 +1172,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     // please keep these sorted
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
     inherit(inherit_fn, &mut dst.clip_rule, &src.clip_rule);
+    inherit(inherit_fn, &mut dst.color, &src.color);
     inherit(inherit_fn, &mut dst.direction, &src.direction);
     inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.fill_opacity, &src.fill_opacity);
@@ -1228,6 +1238,20 @@ pub extern "C" fn rsvg_state_rust_set_affine(state: *mut State, affine: cairo::M
     unsafe {
         let state = &mut *state;
         state.affine = affine;
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_color(state: *const State) -> u32 {
+    unsafe {
+        let state = &*state;
+
+        let current_color = state
+            .color
+            .as_ref()
+            .map_or_else(|| Color::default().0, |c| c.0);
+
+        rgba_to_argb(current_color)
     }
 }
 

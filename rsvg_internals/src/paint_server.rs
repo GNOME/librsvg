@@ -8,7 +8,6 @@ use std::ptr;
 use std::rc::Rc;
 
 use bbox::RsvgBbox;
-use color::Color;
 use drawing_ctx;
 use error::*;
 use gradient;
@@ -44,58 +43,12 @@ impl Default for PaintServerSpread {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {
+    Inherit,
     Iri {
         iri: String,
-        alternate: Option<Color>,
+        alternate: Option<cssparser::Color>,
     },
-    SolidColor(Color),
-}
-
-impl PaintServer {
-    pub fn parse_input<'i, 't>(
-        input: &mut cssparser::Parser<'i, 't>,
-    ) -> Result<Self, AttributeError> {
-        if let Ok(url) = input.try(|i| i.expect_url()) {
-            Ok(PaintServer::Iri {
-                iri: String::from(url.as_ref()),
-                alternate: PaintServer::parse_fallback(input),
-            })
-        } else {
-            PaintServer::parse_color(input).map(PaintServer::SolidColor)
-        }
-    }
-
-    fn parse_color<'i, 't>(input: &mut cssparser::Parser<'i, 't>) -> Result<Color, AttributeError> {
-        if input.try(|i| i.expect_ident_matching("inherit")).is_ok() {
-            Ok(Color::Inherit)
-        } else if input
-            .try(|i| i.expect_ident_matching("currentColor"))
-            .is_ok()
-        {
-            Ok(Color::CurrentColor)
-        } else {
-            input
-                .try(|i| cssparser::Color::parse(i))
-                .map(Color::from)
-                .map_err(AttributeError::from)
-        }
-    }
-
-    fn parse_fallback<'i, 't>(input: &mut cssparser::Parser<'i, 't>) -> Option<Color> {
-        if input.try(|i| i.expect_ident_matching("none")).is_ok() {
-            None
-        } else if input
-            .try(|i| i.expect_ident_matching("currentColor"))
-            .is_ok()
-        {
-            Some(Color::CurrentColor)
-        } else {
-            input
-                .try(|i| cssparser::Color::parse(i))
-                .ok()
-                .map(Color::from)
-        }
-    }
+    SolidColor(cssparser::Color),
 }
 
 impl Parse for PaintServer {
@@ -104,37 +57,50 @@ impl Parse for PaintServer {
 
     fn parse(s: &str, _: ()) -> Result<PaintServer, AttributeError> {
         let mut input = cssparser::ParserInput::new(s);
-        PaintServer::parse_input(&mut cssparser::Parser::new(&mut input))
+        let mut parser = cssparser::Parser::new(&mut input);
+
+        if parser.try(|i| i.expect_ident_matching("inherit")).is_ok() {
+            Ok(PaintServer::Inherit)
+        } else if let Ok(url) = parser.try(|i| i.expect_url()) {
+            let alternate = if !parser.is_exhausted() {
+                if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
+                    None
+                } else {
+                    Some(parser.try(|i| cssparser::Color::parse(i))?)
+                }
+            } else {
+                None
+            };
+
+            Ok(PaintServer::Iri {
+                iri: String::from(url.as_ref()),
+                alternate: alternate,
+            })
+        } else {
+            cssparser::Color::parse(&mut parser)
+                .map(PaintServer::SolidColor)
+                .map_err(AttributeError::from)
+        }
     }
 }
 
 fn _set_source_rsvg_solid_color(
     ctx: *mut drawing_ctx::RsvgDrawingCtx,
-    color: &Color,
+    color: &cssparser::Color,
     opacity: u8,
-    current_color: Color,
+    current_color: &cssparser::RGBA,
 ) {
-    let rgba_color = match *color {
-        Color::RGBA(rgba) => Some(rgba),
-        Color::CurrentColor => {
-            if let Color::RGBA(rgba) = current_color {
-                Some(rgba)
-            } else {
-                None
-            }
-        }
-
-        _ => None,
+    let rgba = match *color {
+        cssparser::Color::RGBA(ref rgba) => rgba,
+        cssparser::Color::CurrentColor => current_color,
     };
 
-    if let Some(rgba) = rgba_color {
-        drawing_ctx::get_cairo_context(ctx).set_source_rgba(
-            f64::from(rgba.red_f32()),
-            f64::from(rgba.green_f32()),
-            f64::from(rgba.blue_f32()),
-            f64::from(rgba.alpha_f32()) * (f64::from(opacity) / 255.0),
-        );
-    }
+    drawing_ctx::get_cairo_context(ctx).set_source_rgba(
+        f64::from(rgba.red_f32()),
+        f64::from(rgba.green_f32()),
+        f64::from(rgba.blue_f32()),
+        f64::from(rgba.alpha_f32()) * (f64::from(opacity) / 255.0),
+    );
 }
 
 /// Parses the paint specification, creating a new paint server object.
@@ -154,23 +120,13 @@ pub extern "C" fn rsvg_paint_server_parse(
         }
     }
 
-    let mut paint_server = PaintServer::parse(unsafe { utf8_cstr(str) }, ());
+    let paint_server = PaintServer::parse(unsafe { utf8_cstr(str) }, ());
 
-    if let Ok(PaintServer::SolidColor(ref mut color)) = paint_server {
-        if *color == Color::Inherit {
-            // FIXME: this is incorrect; we should inherit the paint server
-            if !inherit.is_null() {
-                unsafe {
-                    *inherit = false.to_glib();
-                }
+    if let Ok(PaintServer::Inherit) = paint_server {
+        if !inherit.is_null() {
+            unsafe {
+                *inherit = false.to_glib();
             }
-
-            *color = Color::RGBA(cssparser::RGBA {
-                red: 0,
-                green: 0,
-                blue: 0,
-                alpha: 255,
-            });
         }
     }
 
@@ -218,7 +174,7 @@ pub fn _set_source_rsvg_paint_server(
     ps: &PaintServer,
     opacity: u8,
     bbox: &RsvgBbox,
-    current_color: Color,
+    current_color: &cssparser::RGBA,
 ) -> bool {
     let mut had_paint_server = false;
 
@@ -260,6 +216,8 @@ pub fn _set_source_rsvg_paint_server(
             _set_source_rsvg_solid_color(c_ctx, &color, opacity, current_color);
             had_paint_server = true;
         }
+
+        _ => {}
     };
 
     had_paint_server
@@ -290,20 +248,22 @@ mod tests {
     }
 
     #[test]
+    fn parses_inherit() {
+        assert_eq!(PaintServer::parse("inherit", ()), Ok(PaintServer::Inherit));
+    }
+
+    #[test]
     fn parses_solid_color() {
         assert_eq!(
             PaintServer::parse("rgb(255, 128, 64, 0.5)", ()),
-            Ok(PaintServer::SolidColor(Color::from(0x80ff8040)))
-        );
-
-        assert_eq!(
-            PaintServer::parse("inherit", ()),
-            Ok(PaintServer::SolidColor(Color::Inherit))
+            Ok(PaintServer::SolidColor(cssparser::Color::RGBA(
+                cssparser::RGBA::new(255, 128, 64, 128)
+            )))
         );
 
         assert_eq!(
             PaintServer::parse("currentColor", ()),
-            Ok(PaintServer::SolidColor(Color::CurrentColor))
+            Ok(PaintServer::SolidColor(cssparser::Color::CurrentColor))
         );
     }
 
@@ -329,7 +289,12 @@ mod tests {
             PaintServer::parse("url(#link) #ff8040", ()),
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
-                alternate: Some(Color::from(0xffff8040)),
+                alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
+                    255,
+                    128,
+                    64,
+                    255
+                ))),
             },)
         );
 
@@ -337,7 +302,12 @@ mod tests {
             PaintServer::parse("url(#link) rgb(255, 128, 64, 0.5)", ()),
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
-                alternate: Some(Color::from(0x80ff8040)),
+                alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
+                    255,
+                    128,
+                    64,
+                    128
+                ))),
             },)
         );
 
@@ -345,17 +315,11 @@ mod tests {
             PaintServer::parse("url(#link) currentColor", ()),
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
-                alternate: Some(Color::CurrentColor),
+                alternate: Some(cssparser::Color::CurrentColor),
             },)
         );
 
-        assert_eq!(
-            PaintServer::parse("url(#link) inherit", ()),
-            Ok(PaintServer::Iri {
-                iri: "#link".to_string(),
-                alternate: None,
-            },)
-        );
+        assert!(PaintServer::parse("url(#link) invalid", ()).is_err());
     }
 
     #[test]

@@ -17,6 +17,24 @@ impl Parse for cssparser::Color {
     }
 }
 
+impl Parse for cssparser::RGBA {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: Self::Data) -> Result<cssparser::RGBA, AttributeError> {
+        let mut input = cssparser::ParserInput::new(s);
+        match cssparser::Color::parse(&mut cssparser::Parser::new(&mut input)) {
+            Ok(cssparser::Color::RGBA(rgba)) => Ok(rgba),
+            Ok(cssparser::Color::CurrentColor) => Err(AttributeError::Value(
+                "currentColor is not allowed here".to_string(),
+            )),
+            _ => Err(AttributeError::Parse(ParseError::new(
+                "invalid syntax for color",
+            ))),
+        }
+    }
+}
+
 // There are two quirks here:
 //
 // First, we need to expose the Color algebraic type *and* a parse
@@ -137,7 +155,7 @@ impl Color {
     }
 }
 
-fn rgba_from_argb(argb: u32) -> cssparser::RGBA {
+pub fn rgba_from_argb(argb: u32) -> cssparser::RGBA {
     cssparser::RGBA::new(
         ((argb & 0x00ff_0000) >> 16) as u8,
         ((argb & 0x0000_ff00) >> 8) as u8,

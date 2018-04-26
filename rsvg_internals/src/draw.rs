@@ -13,6 +13,7 @@ use path_builder::PathBuilder;
 use state::{
     self,
     ClipRule,
+    Color,
     CompOp,
     FillRule,
     RsvgState,
@@ -62,13 +63,19 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
 
     let bbox = compute_bbox_from_stroke_and_fill(cr, state);
 
-    // Update the bbox in the rendering context.  Below, we actually set the fill/stroke
-    // patterns on the cairo_t.  That process requires the rendering context to have
-    // an updated bbox; for example, for the coordinate system in patterns.
+    // Update the bbox in the rendering context.  Below, we actually set the
+    // fill/stroke patterns on the cairo_t.  That process requires the
+    // rendering context to have an updated bbox; for example, for the
+    // coordinate system in patterns.
     drawing_ctx::insert_bbox(draw_ctx, &bbox);
 
     let fill = state::get_fill(state);
     let stroke = state::get_stroke(state);
+
+    let current_color = rstate
+        .color
+        .as_ref()
+        .map_or_else(|| Color::default().0, |c| c.0);
 
     if let Some(fill) = fill {
         if paint_server::_set_source_rsvg_paint_server(
@@ -76,7 +83,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
             fill,
             state::get_fill_opacity(state),
             &bbox,
-            state::get_current_color(state),
+            &current_color,
         ) {
             if stroke.is_some() {
                 cr.fill_preserve();
@@ -92,7 +99,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
             stroke,
             state::get_stroke_opacity(state),
             &bbox,
-            state::get_current_color(state),
+            &current_color,
         ) {
             cr.stroke();
         }
@@ -356,6 +363,11 @@ pub fn draw_pango_layout(
         cr.rotate(-rotation);
     }
 
+    let current_color = rstate
+        .color
+        .as_ref()
+        .map_or_else(|| Color::default().0, |c| c.0);
+
     if !clipping {
         if let Some(fill) = fill {
             if paint_server::_set_source_rsvg_paint_server(
@@ -363,7 +375,7 @@ pub fn draw_pango_layout(
                 fill,
                 state::get_fill_opacity(state),
                 &bbox,
-                state::get_current_color(state),
+                &current_color,
             ) {
                 pangocairo::functions::update_layout(&cr, layout);
                 pangocairo::functions::show_layout(&cr, layout);
@@ -382,7 +394,7 @@ pub fn draw_pango_layout(
                 stroke.unwrap(),
                 state::get_stroke_opacity(state),
                 &bbox,
-                state::get_current_color(state),
+                &current_color,
             );
     }
 

@@ -117,6 +117,11 @@ impl NodeTrait for NodeStop {
         let stop_color =
             state::get_stop_color(state).map_err(|e| NodeError::attribute_error("stop-color", e))?;
 
+        let current_color = state::get_state_rust(inherited_state)
+            .color
+            .as_ref()
+            .map_or_else(|| state::Color::default().0, |c| c.0);
+
         match stop_color {
             None => color_rgba = cssparser::RGBA::transparent(),
 
@@ -128,25 +133,12 @@ impl NodeTrait for NodeStop {
                     None => unreachable!(),
 
                     Some(Color::Inherit) => color_rgba = cssparser::RGBA::transparent(),
-                    Some(Color::CurrentColor) => {
-                        let color = state::get_current_color(inherited_state);
-                        match color {
-                            Color::RGBA(rgba) => color_rgba = rgba,
-                            _ => unreachable!(),
-                        }
-                    }
-
+                    Some(Color::CurrentColor) => color_rgba = current_color,
                     Some(Color::RGBA(rgba)) => color_rgba = rgba,
                 }
             }
 
-            Some(Color::CurrentColor) => {
-                let color = state::get_current_color(inherited_state);
-                match color {
-                    Color::RGBA(rgba) => color_rgba = rgba,
-                    _ => unreachable!(),
-                }
-            }
+            Some(Color::CurrentColor) => color_rgba = current_color,
 
             Some(Color::RGBA(rgba)) => color_rgba = rgba,
         }
