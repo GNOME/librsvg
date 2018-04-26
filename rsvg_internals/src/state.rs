@@ -15,7 +15,7 @@ use error::*;
 use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
-use opacity::{Opacity, OpacitySpec};
+use opacity;
 use paint_server::PaintServer;
 use parsers::Parse;
 use property_bag::PropertyBag;
@@ -66,6 +66,7 @@ pub struct State {
     pub marker_mid: Option<MarkerMid>,
     pub marker_start: Option<MarkerStart>,
     pub mask: Option<Mask>,
+    pub opacity: Option<Opacity>,
     pub overflow: Option<Overflow>,
     pub shape_rendering: Option<ShapeRendering>,
     pub stroke_dasharray: Option<StrokeDasharray>,
@@ -118,6 +119,7 @@ impl State {
             marker_mid: Default::default(),
             marker_start: Default::default(),
             mask: Default::default(),
+            opacity: Default::default(),
             overflow: Default::default(),
             shape_rendering: Default::default(),
             stroke_dasharray: Default::default(),
@@ -259,6 +261,10 @@ impl State {
                 self.mask = parse_property(value, ())?;
             }
 
+            Attribute::Opacity => {
+                self.opacity = parse_property(value, ())?;
+            }
+
             Attribute::Overflow => {
                 self.overflow = parse_property(value, ())?;
             }
@@ -395,7 +401,7 @@ extern "C" {
     fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const color::ColorSpec;
-    fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
+    fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const opacity::OpacitySpec;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
 
@@ -492,14 +498,14 @@ pub fn get_stop_color(state: *const RsvgState) -> Result<Option<color::Color>, A
     }
 }
 
-pub fn get_stop_opacity(state: *const RsvgState) -> Result<Option<Opacity>, AttributeError> {
+pub fn get_stop_opacity(state: *const RsvgState) -> Result<Option<opacity::Opacity>, AttributeError> {
     unsafe {
         let opacity_ptr = rsvg_state_get_stop_opacity(state);
 
         if opacity_ptr.is_null() {
             Ok(None)
         } else {
-            Opacity::from_opacity_spec(&*opacity_ptr).map(Some)
+            opacity::Opacity::from_opacity_spec(&*opacity_ptr).map(Some)
         }
     }
 }
@@ -845,6 +851,13 @@ make_property!(
     inherits_automatically: false,
     newtype_parse: IRI,
     parse_data_type: ()
+);
+
+make_property!(
+    Opacity,
+    default: UnitInterval(1.0),
+    inherits_automatically: false,
+    newtype_from_str: UnitInterval
 );
 
 make_property!(
@@ -1205,6 +1218,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
         dst.enable_background.clone_from(&src.enable_background);
         dst.filter.clone_from(&src.filter);
         dst.mask.clone_from(&src.mask);
+        dst.opacity.clone_from(&src.opacity);
     }
 }
 
@@ -1330,5 +1344,19 @@ pub extern "C" fn rsvg_state_rust_get_mask(state: *const State) -> *mut libc::c_
             Some(Mask(IRI::Resource(ref m))) => m.to_glib_full(),
             _ => ptr::null_mut(),
         }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_opacity(state: *const State) -> u8 {
+    unsafe {
+        let state = &*state;
+
+        u8::from(
+            state
+                .opacity
+                .as_ref()
+                .map_or_else(|| FloodOpacity::default().0, |o| o.0),
+        )
     }
 }

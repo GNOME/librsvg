@@ -48,8 +48,6 @@ typedef struct State State;
 struct _RsvgState {
     RsvgState *parent;
 
-    guint8 opacity;             /* 0..255 */
-
     RsvgPaintServer *fill;
     gboolean has_fill_server;
 
