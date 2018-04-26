@@ -122,6 +122,7 @@ pub use state::{
     rsvg_state_rust_get_flood_color,
     rsvg_state_rust_get_flood_opacity,
     rsvg_state_rust_get_mask,
+    rsvg_state_rust_get_opacity,
     rsvg_state_rust_inherit_run,
     rsvg_state_rust_insert_important_style,
     rsvg_state_rust_new,

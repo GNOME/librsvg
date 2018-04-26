@@ -46,6 +46,7 @@ extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
 extern guint32 rsvg_state_rust_get_color(const State *state);
+extern guint8 rsvg_state_rust_get_opacity(const State *state);
 extern guint32 rsvg_state_rust_get_flood_color(const State *state);
 extern guint8 rsvg_state_rust_get_flood_opacity(const State *state);
 extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
@@ -97,7 +98,6 @@ rsvg_state_init (RsvgState * state)
 
     state->parent = NULL;
 
-    state->opacity = 0xff;
     state->fill = rsvg_paint_server_parse (NULL, "#000");
 
     /* The following two start as INHERIT, even though has_stop_color and
@@ -227,10 +227,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
 
     rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
-
-    if (inherituninheritables) {
-        dst->opacity = src->opacity;
-    }
 }
 
 /*
@@ -342,20 +338,6 @@ rsvg_parse_style_pair (RsvgState *state,
     }
 
     switch (attr) {
-    case RSVG_ATTRIBUTE_OPACITY:
-    {
-        RsvgOpacitySpec spec;
-
-        spec = rsvg_css_parse_opacity (value);
-        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
-            state->opacity = spec.opacity;
-        } else {
-            state->opacity = 0;
-            /* FIXME: handle INHERIT and PARSE_ERROR */
-        }
-    }
-    break;
-
     case RSVG_ATTRIBUTE_FILL:
     {
         RsvgPaintServer *fill = state->fill;
@@ -965,7 +947,7 @@ rsvg_state_get_mask (RsvgState *state)
 guint8
 rsvg_state_get_opacity (RsvgState *state)
 {
-    return state->opacity;
+    return rsvg_state_rust_get_opacity (state->state_rust);
 }
 
 RsvgPaintServer *
