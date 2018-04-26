@@ -199,6 +199,7 @@ mod stop;
 mod structure;
 mod text;
 mod transform;
+mod unitinterval;
 mod util;
 mod viewbox;
 mod viewport;
