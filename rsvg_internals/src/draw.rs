@@ -348,10 +348,7 @@ fn compute_stroke_and_fill_extents(cr: &cairo::Context, state: *mut RsvgState) -
 
     cr.set_tolerance(backup_tolerance);
 
-    Extents {
-        bbox,
-        ink_bbox
-    }
+    Extents { bbox, ink_bbox }
 }
 
 pub fn draw_pango_layout(
@@ -377,11 +374,6 @@ pub fn draw_pango_layout(
 
     let fill = state::get_fill(state);
     let stroke = state::get_stroke(state);
-
-    if !clipping && (fill.is_some() || stroke.is_some()) {
-        // FIXME: this is wrong; we should have the stroke width in here
-        drawing_ctx::insert_ink_bbox(draw_ctx, &bbox);
-    }
 
     if !clipping {
         drawing_ctx::insert_bbox(draw_ctx, &bbox);
@@ -443,7 +435,20 @@ pub fn draw_pango_layout(
         pangocairo::functions::layout_path(&cr, layout);
 
         if !clipping {
+            let mut ink_bbox = RsvgBbox::new(&rstate.affine);
+
+            let (x, y, w, h) = cr.stroke_extents();
+
+            ink_bbox.set_rect(&cairo::Rectangle {
+                x,
+                y,
+                width: w - x,
+                height: h - y,
+            });
+
             cr.stroke();
+
+            drawing_ctx::insert_ink_bbox(draw_ctx, &ink_bbox);
         }
     }
 
