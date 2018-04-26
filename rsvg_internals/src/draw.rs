@@ -1,4 +1,5 @@
 use cairo;
+use cairo_sys;
 use glib::translate::*;
 use pango::{self, ContextExt, LayoutExt};
 use pango_sys;
@@ -61,13 +62,13 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
 
     setup_cr_for_stroke(cr, draw_ctx, state);
 
-    let bbox = compute_bbox_from_stroke_and_fill(cr, state);
+    let extents = compute_stroke_and_fill_extents(cr, state);
 
     // Update the bbox in the rendering context.  Below, we actually set the
     // fill/stroke patterns on the cairo_t.  That process requires the
     // rendering context to have an updated bbox; for example, for the
     // coordinate system in patterns.
-    drawing_ctx::insert_bbox(draw_ctx, &bbox);
+    extents.to_drawing_ctx(draw_ctx);
 
     let fill = state::get_fill(state);
     let stroke = state::get_stroke(state);
@@ -82,7 +83,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
             draw_ctx,
             fill,
             state::get_fill_opacity(state),
-            &bbox,
+            &extents.bbox,
             &current_color,
         ) {
             if stroke.is_some() {
@@ -98,7 +99,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
             draw_ctx,
             stroke,
             state::get_stroke_opacity(state),
-            &bbox,
+            &extents.bbox,
             &current_color,
         ) {
             cr.stroke();
@@ -251,28 +252,42 @@ fn setup_cr_for_stroke(
     }
 }
 
-fn compute_bbox_from_stroke_and_fill(cr: &cairo::Context, state: *mut RsvgState) -> RsvgBbox {
+struct Extents {
+    bbox: RsvgBbox,
+    ink_bbox: RsvgBbox,
+}
+
+impl Extents {
+    fn to_drawing_ctx(&self, draw_ctx: *mut RsvgDrawingCtx) {
+        drawing_ctx::insert_bbox(draw_ctx, &self.bbox);
+        drawing_ctx::insert_ink_bbox(draw_ctx, &self.ink_bbox);
+    }
+}
+
+// remove this binding once cairo-rs has Context::path_extents()
+fn path_extents(cr: &cairo::Context) -> (f64, f64, f64, f64) {
+    let mut x1: f64 = 0.0;
+    let mut y1: f64 = 0.0;
+    let mut x2: f64 = 0.0;
+    let mut y2: f64 = 0.0;
+
+    unsafe {
+        cairo_sys::cairo_path_extents(cr.to_glib_none().0, &mut x1, &mut y1, &mut x2, &mut y2);
+    }
+    (x1, y1, x2, y2)
+}
+
+fn compute_stroke_and_fill_extents(cr: &cairo::Context, state: *mut RsvgState) -> Extents {
     let rstate = state::get_state_rust(state);
 
     let mut bbox = RsvgBbox::new(&rstate.affine);
+    let mut ink_bbox = RsvgBbox::new(&rstate.affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
     // really needed here? */
     let backup_tolerance = cr.get_tolerance();
     cr.set_tolerance(1.0);
-
-    // FIXME: See https://www.w3.org/TR/SVG/coords.html#ObjectBoundingBox for
-    // discussion on how to compute bounding boxes to be used for viewports and
-    // clipping.  It looks like we should be using cairo_path_extents() for
-    // that, not cairo_fill_extents().
-    //
-    // We may need to maintain *two* sets of bounding boxes - one for
-    // viewports/clipping, and one for user applications like a
-    // rsvg_compute_ink_rect() function in the future.
-    //
-    // See https://gitlab.gnome.org/GNOME/librsvg/issues/128 for discussion of a
-    // public API to get the ink rectangle.
 
     // Bounding box for fill
     //
@@ -294,7 +309,7 @@ fn compute_bbox_from_stroke_and_fill(cr: &cairo::Context, state: *mut RsvgState)
             height: h - y,
         });
 
-        bbox.insert(&fb);
+        ink_bbox.insert(&fb);
     }
 
     // Bounding box for stroke
@@ -311,12 +326,32 @@ fn compute_bbox_from_stroke_and_fill(cr: &cairo::Context, state: *mut RsvgState)
             height: h - y,
         });
 
-        bbox.insert(&sb);
+        ink_bbox.insert(&sb);
     }
+
+    // objectBoundingBox
+
+    let mut ob = RsvgBbox::new(&rstate.affine);
+
+    let (x, y, w, h) = path_extents(cr);
+
+    ob.set_rect(&cairo::Rectangle {
+        x,
+        y,
+        width: w - x,
+        height: h - y,
+    });
+
+    bbox.insert(&ob);
+
+    // restore tolerance
 
     cr.set_tolerance(backup_tolerance);
 
-    bbox
+    Extents {
+        bbox,
+        ink_bbox
+    }
 }
 
 pub fn draw_pango_layout(
@@ -344,6 +379,11 @@ pub fn draw_pango_layout(
     let stroke = state::get_stroke(state);
 
     if !clipping && (fill.is_some() || stroke.is_some()) {
+        // FIXME: this is wrong; we should have the stroke width in here
+        drawing_ctx::insert_ink_bbox(draw_ctx, &bbox);
+    }
+
+    if !clipping {
         drawing_ctx::insert_bbox(draw_ctx, &bbox);
     }
 
