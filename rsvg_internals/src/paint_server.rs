@@ -44,6 +44,7 @@ impl Default for PaintServerSpread {
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {
     Inherit,
+    None,
     Iri {
         iri: String,
         alternate: Option<cssparser::Color>,
@@ -61,6 +62,8 @@ impl Parse for PaintServer {
 
         if parser.try(|i| i.expect_ident_matching("inherit")).is_ok() {
             Ok(PaintServer::Inherit)
+        } else if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
+            Ok(PaintServer::None)
         } else if let Ok(url) = parser.try(|i| i.expect_url()) {
             let alternate = if !parser.is_exhausted() {
                 if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
@@ -176,13 +179,15 @@ pub fn _set_source_rsvg_paint_server(
     bbox: &RsvgBbox,
     current_color: &cssparser::RGBA,
 ) -> bool {
-    let mut had_paint_server = false;
+    let mut had_paint_server;
 
     match *ps {
         PaintServer::Iri {
             ref iri,
             ref alternate,
         } => {
+            had_paint_server = false;
+
             if let Some(acquired) = drawing_ctx::get_acquired_node(c_ctx, iri.as_str()) {
                 let node = acquired.get();
 
@@ -214,7 +219,13 @@ pub fn _set_source_rsvg_paint_server(
             had_paint_server = true;
         }
 
-        _ => {}
+        PaintServer::None => {
+            had_paint_server = false;
+        }
+
+        PaintServer::Inherit => {
+            unreachable!();
+        }
     };
 
     had_paint_server
@@ -254,6 +265,11 @@ mod tests {
     #[test]
     fn parses_inherit() {
         assert_eq!(PaintServer::parse("inherit", ()), Ok(PaintServer::Inherit));
+    }
+
+    #[test]
+    fn parses_none() {
+        assert_eq!(PaintServer::parse("none", ()), Ok(PaintServer::None));
     }
 
     #[test]
