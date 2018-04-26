@@ -49,8 +49,18 @@ struct _RsvgCairoRender {
 
     GList *cr_stack;
 
+    /* Bounding box for path extents, without stroke width */
     RsvgBbox bbox;
+
+    /* Bounding box for ink rectangle, with everything */
+    RsvgBbox ink_bbox;
+
+    /* Stack for bounding boxes with path extents */
     GList *bb_stack;
+
+    /* Stack for bounding boxes with ink extents */
+    GList *ink_bb_stack;
+
     GList *surfaces_stack;
 
 #ifdef HAVE_PANGOFT2

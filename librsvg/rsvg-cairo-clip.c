@@ -49,8 +49,10 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
     RsvgCoordUnits clip_units;
     GList *orig_cr_stack;
     GList *orig_bb_stack;
+    GList *orig_ink_bb_stack;
     GList *orig_surfaces_stack;
     RsvgBbox orig_bbox;
+    RsvgBbox orig_ink_bbox;
 
     g_assert (rsvg_node_get_type (node_clip_path) == RSVG_NODE_TYPE_CLIP_PATH);
     clip_units = rsvg_node_clip_path_get_units (node_clip_path);
@@ -76,9 +78,11 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
 
     orig_cr_stack = save->cr_stack;
     orig_bb_stack = save->bb_stack;
+    orig_ink_bb_stack = save->ink_bb_stack;
     orig_surfaces_stack = save->surfaces_stack;
 
     orig_bbox = save->bbox;
+    orig_ink_bbox = save->ink_bbox;
 
     rsvg_drawing_ctx_state_push (ctx);
     rsvg_node_draw_children (node_clip_path, ctx, 0, TRUE);
@@ -90,6 +94,7 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
 
     g_assert (save->cr_stack == orig_cr_stack);
     g_assert (save->bb_stack == orig_bb_stack);
+    g_assert (save->ink_bb_stack == orig_ink_bb_stack);
     g_assert (save->surfaces_stack == orig_surfaces_stack);
 
     /* FIXME: this is an EPIC HACK to keep the clipping context from
@@ -98,6 +103,7 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
      * general drawing loop.
      */
     save->bbox = orig_bbox;
+    save->ink_bbox = orig_ink_bbox;
 
     cairo_clip (cr);
 }

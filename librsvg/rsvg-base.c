@@ -546,6 +546,14 @@ rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
     rsvg_bbox_insert (&render->bbox, bbox);
 }
 
+void
+rsvg_drawing_ctx_insert_ink_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *ink_bbox)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (draw_ctx->render);
+
+    rsvg_bbox_insert (&render->ink_bbox, ink_bbox);
+}
+
 cairo_surface_t *
 rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
                                   const char *href,
