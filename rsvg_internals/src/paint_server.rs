@@ -51,18 +51,22 @@ pub enum PaintServer {
     SolidColor(cssparser::Color),
 }
 
-impl PaintServer {
-    pub fn parse_input<'i, 't>(
-        input: &mut cssparser::Parser<'i, 't>,
-    ) -> Result<Self, AttributeError> {
-        if input.try(|i| i.expect_ident_matching("inherit")).is_ok() {
+impl Parse for PaintServer {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: ()) -> Result<PaintServer, AttributeError> {
+        let mut input = cssparser::ParserInput::new(s);
+        let mut parser = cssparser::Parser::new(&mut input);
+
+        if parser.try(|i| i.expect_ident_matching("inherit")).is_ok() {
             Ok(PaintServer::Inherit)
-        } else if let Ok(url) = input.try(|i| i.expect_url()) {
-            let alternate = if !input.is_exhausted() {
-                if input.try(|i| i.expect_ident_matching("none")).is_ok() {
+        } else if let Ok(url) = parser.try(|i| i.expect_url()) {
+            let alternate = if !parser.is_exhausted() {
+                if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
                     None
                 } else {
-                    Some(input.try(|i| cssparser::Color::parse(i))?)
+                    Some(parser.try(|i| cssparser::Color::parse(i))?)
                 }
             } else {
                 None
@@ -73,20 +77,10 @@ impl PaintServer {
                 alternate: alternate,
             })
         } else {
-            cssparser::Color::parse(input)
+            cssparser::Color::parse(&mut parser)
                 .map(PaintServer::SolidColor)
                 .map_err(AttributeError::from)
         }
-    }
-}
-
-impl Parse for PaintServer {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _: ()) -> Result<PaintServer, AttributeError> {
-        let mut input = cssparser::ParserInput::new(s);
-        PaintServer::parse_input(&mut cssparser::Parser::new(&mut input))
     }
 }
 
