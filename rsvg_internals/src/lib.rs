@@ -82,11 +82,7 @@ pub use node::{
 
 pub use opacity::{rsvg_css_parse_opacity, OpacityKind, OpacitySpec};
 
-pub use paint_server::{
-    rsvg_paint_server_parse,
-    rsvg_paint_server_ref,
-    rsvg_paint_server_unref,
-};
+pub use paint_server::{rsvg_paint_server_parse, rsvg_paint_server_ref, rsvg_paint_server_unref};
 
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
 
@@ -121,10 +117,10 @@ pub use state::{
     rsvg_state_rust_get_clip_path,
     rsvg_state_rust_get_color,
     rsvg_state_rust_get_comp_op,
-    rsvg_state_rust_get_flood_color,
-    rsvg_state_rust_get_flood_opacity,
     rsvg_state_rust_get_enable_background,
     rsvg_state_rust_get_filter,
+    rsvg_state_rust_get_flood_color,
+    rsvg_state_rust_get_flood_opacity,
     rsvg_state_rust_get_mask,
     rsvg_state_rust_inherit_run,
     rsvg_state_rust_insert_important_style,

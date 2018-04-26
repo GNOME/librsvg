@@ -131,7 +131,7 @@ macro_rules! make_property {
 }
 
 macro_rules! impl_default {
-    ($name: ident, $default: expr) => {
+    ($name:ident, $default:expr) => {
         impl Default for $name {
             fn default() -> $name {
                 $default
@@ -141,7 +141,7 @@ macro_rules! impl_default {
 }
 
 macro_rules! impl_property {
-    ($name: ident, $inherits_automatically: expr) => {
+    ($name:ident, $inherits_automatically:expr) => {
         impl ::property_macros::Property for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically

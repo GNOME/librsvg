@@ -74,7 +74,7 @@ impl Parse for PaintServer {
 
             Ok(PaintServer::Iri {
                 iri: String::from(url.as_ref()),
-                alternate: alternate,
+                alternate,
             })
         } else {
             cssparser::Color::parse(&mut parser)
@@ -190,10 +190,7 @@ pub fn _set_source_rsvg_paint_server(
                     || node.get_type() == NodeType::RadialGradient
                 {
                     had_paint_server = gradient::gradient_resolve_fallbacks_and_set_pattern(
-                        &node,
-                        c_ctx,
-                        opacity,
-                        bbox,
+                        &node, c_ctx, opacity, bbox,
                     );
                 } else if node.get_type() == NodeType::Pattern {
                     had_paint_server =
@@ -290,10 +287,7 @@ mod tests {
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
-                    255,
-                    128,
-                    64,
-                    255
+                    255, 128, 64, 255
                 ))),
             },)
         );
@@ -303,10 +297,7 @@ mod tests {
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
-                    255,
-                    128,
-                    64,
-                    128
+                    255, 128, 64, 128
                 ))),
             },)
         );

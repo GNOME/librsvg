@@ -15,7 +15,7 @@ use error::*;
 use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
-use opacity::{Opacity, OpacitySpec, opacity_to_u8};
+use opacity::{opacity_to_u8, Opacity, OpacitySpec};
 use paint_server::PaintServer;
 use parsers::Parse;
 use property_bag::PropertyBag;

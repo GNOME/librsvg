@@ -17,8 +17,8 @@ use iri::IRI;
 use length::{LengthDir, RsvgLength};
 use node::*;
 use parsers;
-use parsers::{parse, Parse};
 use parsers::ParseError;
+use parsers::{parse, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
 use state::{self, StrokeWidth};
@@ -1131,30 +1131,30 @@ mod directionality_tests {
 
     #[test]
     fn curve_has_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0))
-                .unwrap();
+        let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
+            1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0,
+        )).unwrap();
         assert_eq!((2.0, 3.0), (v1x, v1y));
         assert_eq!((12.0, 20.0), (v2x, v2y));
     }
 
     #[test]
     fn curves_with_loops_and_coincident_ends_have_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0))
-                .unwrap();
+        let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
+            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0,
+        )).unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-4.0, -4.0), (v2x, v2y));
 
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0))
-                .unwrap();
+        let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
+            1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0,
+        )).unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
 
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0))
-                .unwrap();
+        let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
+            1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0,
+        )).unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
     }
@@ -1169,18 +1169,18 @@ mod directionality_tests {
 
     #[test]
     fn curve_with_123_coincident_has_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0))
-                .unwrap();
+        let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0,
+        )).unwrap();
         assert_eq!((20.0, 40.0), (v1x, v1y));
         assert_eq!((20.0, 40.0), (v2x, v2y));
     }
 
     #[test]
     fn curve_with_234_coincident_has_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
-                .unwrap();
+        let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
+            20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        )).unwrap();
 
         assert_eq!((-20.0, -40.0), (v1x, v1y));
         assert_eq!((-20.0, -40.0), (v2x, v2y));
@@ -1189,14 +1189,7 @@ mod directionality_tests {
     #[test]
     fn curve_with_12_34_coincident_has_directionality() {
         let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
-            20.0,
-            40.0,
-            20.0,
-            40.0,
-            60.0,
-            70.0,
-            60.0,
-            70.0,
+            20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0,
         )).unwrap();
 
         assert_eq!((40.0, 30.0), (v1x, v1y));
