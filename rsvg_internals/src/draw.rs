@@ -16,6 +16,7 @@ use state::{
     ClipRule,
     Color,
     CompOp,
+    FillOpacity,
     FillRule,
     RsvgState,
     ShapeRendering,
@@ -24,6 +25,7 @@ use state::{
     StrokeLinecap,
     StrokeLinejoin,
     StrokeMiterlimit,
+    StrokeOpacity,
     StrokeWidth,
     TextRendering,
 };
@@ -78,11 +80,16 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
         .as_ref()
         .map_or_else(|| Color::default().0, |c| c.0);
 
+    let fill_opacity = rstate
+        .fill_opacity
+        .as_ref()
+        .map_or_else(|| FillOpacity::default().0, |o| o.0);
+
     if let Some(fill) = fill {
         if paint_server::_set_source_rsvg_paint_server(
             draw_ctx,
             fill,
-            state::get_fill_opacity(state),
+            u8::from(fill_opacity),
             &extents.bbox,
             &current_color,
         ) {
@@ -94,11 +101,16 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
         }
     }
 
+    let stroke_opacity = rstate
+        .stroke_opacity
+        .as_ref()
+        .map_or_else(|| StrokeOpacity::default().0, |o| o.0);
+
     if let Some(stroke) = stroke {
         if paint_server::_set_source_rsvg_paint_server(
             draw_ctx,
             stroke,
-            state::get_stroke_opacity(state),
+            u8::from(stroke_opacity),
             &extents.bbox,
             &current_color,
         ) {
@@ -400,12 +412,17 @@ pub fn draw_pango_layout(
         .as_ref()
         .map_or_else(|| Color::default().0, |c| c.0);
 
+    let fill_opacity = rstate
+        .fill_opacity
+        .as_ref()
+        .map_or_else(|| FillOpacity::default().0, |o| o.0);
+
     if !clipping {
         if let Some(fill) = fill {
             if paint_server::_set_source_rsvg_paint_server(
                 draw_ctx,
                 fill,
-                state::get_fill_opacity(state),
+                u8::from(fill_opacity),
                 &bbox,
                 &current_color,
             ) {
@@ -414,6 +431,11 @@ pub fn draw_pango_layout(
             }
         }
     }
+
+    let stroke_opacity = rstate
+        .stroke_opacity
+        .as_ref()
+        .map_or_else(|| StrokeOpacity::default().0, |o| o.0);
 
     let need_layout_path;
 
@@ -424,7 +446,7 @@ pub fn draw_pango_layout(
             && paint_server::_set_source_rsvg_paint_server(
                 draw_ctx,
                 stroke.unwrap(),
-                state::get_stroke_opacity(state),
+                u8::from(stroke_opacity),
                 &bbox,
                 &current_color,
             );
