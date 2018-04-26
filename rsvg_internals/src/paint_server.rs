@@ -245,6 +245,13 @@ mod tests {
     }
 
     #[test]
+    fn catches_invalid_syntax() {
+        assert!(PaintServer::parse("", ()).is_err());
+        assert!(PaintServer::parse("42", ()).is_err());
+        assert!(PaintServer::parse("invalid", ()).is_err());
+    }
+
+    #[test]
     fn parses_inherit() {
         assert_eq!(PaintServer::parse("inherit", ()), Ok(PaintServer::Inherit));
     }
