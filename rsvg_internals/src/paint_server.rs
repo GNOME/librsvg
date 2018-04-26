@@ -58,22 +58,24 @@ impl PaintServer {
         if input.try(|i| i.expect_ident_matching("inherit")).is_ok() {
             Ok(PaintServer::Inherit)
         } else if let Ok(url) = input.try(|i| i.expect_url()) {
+            let alternate = if !input.is_exhausted() {
+                if input.try(|i| i.expect_ident_matching("none")).is_ok() {
+                    None
+                } else {
+                    Some(input.try(|i| cssparser::Color::parse(i))?)
+                }
+            } else {
+                None
+            };
+
             Ok(PaintServer::Iri {
                 iri: String::from(url.as_ref()),
-                alternate: PaintServer::parse_fallback(input),
+                alternate: alternate,
             })
         } else {
             cssparser::Color::parse(input)
                 .map(PaintServer::SolidColor)
                 .map_err(AttributeError::from)
-        }
-    }
-
-    fn parse_fallback<'i, 't>(input: &mut cssparser::Parser<'i, 't>) -> Option<cssparser::Color> {
-        if input.try(|i| i.expect_ident_matching("none")).is_ok() {
-            None
-        } else {
-            input.try(|i| cssparser::Color::parse(i)).ok()
         }
     }
 }
@@ -323,13 +325,7 @@ mod tests {
             },)
         );
 
-        assert_eq!(
-            PaintServer::parse("url(#link) inherit", ()),
-            Ok(PaintServer::Iri {
-                iri: "#link".to_string(),
-                alternate: None,
-            },)
-        );
+        assert!(PaintServer::parse("url(#link) invalid", ()).is_err());
     }
 
     #[test]
