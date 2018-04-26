@@ -15,11 +15,12 @@ use error::*;
 use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
-use opacity::{Opacity, OpacitySpec, opacity_to_u8};
+use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
 use parsers::Parse;
 use property_bag::PropertyBag;
 use property_macros::Property;
+use unitinterval::UnitInterval;
 use util::utf8_cstr;
 
 pub enum RsvgState {}
@@ -515,15 +516,6 @@ pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
     }
 }
 
-pub fn get_stroke_opacity(state: *const RsvgState) -> u8 {
-    let rstate = get_state_rust(state);
-
-    match rstate.stroke_opacity {
-        Some(StrokeOpacity(Opacity::Specified(opacity))) => opacity_to_u8(opacity),
-        _ => 255,
-    }
-}
-
 pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
     unsafe {
         let ps = rsvg_state_get_fill(state);
@@ -533,15 +525,6 @@ pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
         } else {
             Some(&*ps)
         }
-    }
-}
-
-pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
-    let rstate = get_state_rust(state);
-
-    match rstate.fill_opacity {
-        Some(FillOpacity(Opacity::Specified(opacity))) => opacity_to_u8(opacity),
-        _ => 255,
     }
 }
 
@@ -710,9 +693,9 @@ make_property!(
 
 make_property!(
     FillOpacity,
-    default: Opacity::Specified(1.0),
+    default: UnitInterval(1.0),
     inherits_automatically: true,
-    newtype_from_str: Opacity
+    newtype_from_str: UnitInterval
 );
 
 make_property!(
@@ -743,9 +726,9 @@ make_property!(
 
 make_property!(
     FloodOpacity,
-    default: Opacity::Specified(1.0),
+    default: UnitInterval(1.0),
     inherits_automatically: true,
-    newtype_from_str: Opacity
+    newtype_from_str: UnitInterval
 );
 
 make_property!(
@@ -928,9 +911,9 @@ make_property!(
 
 make_property!(
     StrokeOpacity,
-    default: Opacity::Specified(1.0),
+    default: UnitInterval(1.0),
     inherits_automatically: true,
-    newtype_from_str: Opacity
+    newtype_from_str: UnitInterval
 );
 
 make_property!(
@@ -1279,10 +1262,13 @@ pub extern "C" fn rsvg_state_rust_get_flood_color(state: *const State) -> u32 {
 pub extern "C" fn rsvg_state_rust_get_flood_opacity(state: *const State) -> u8 {
     unsafe {
         let state = &*state;
-        match state.flood_opacity {
-            Some(FloodOpacity(Opacity::Specified(opacity))) => opacity_to_u8(opacity),
-            _ => 255,
-        }
+
+        u8::from(
+            state
+                .flood_opacity
+                .as_ref()
+                .map_or_else(|| FloodOpacity::default().0, |o| o.0),
+        )
     }
 }
 
