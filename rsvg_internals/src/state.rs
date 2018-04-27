@@ -508,7 +508,9 @@ pub fn get_stop_color(state: *const RsvgState) -> Result<Option<color::Color>, A
     }
 }
 
-pub fn get_stop_opacity(state: *const RsvgState) -> Result<Option<opacity::Opacity>, AttributeError> {
+pub fn get_stop_opacity(
+    state: *const RsvgState,
+) -> Result<Option<opacity::Opacity>, AttributeError> {
     unsafe {
         let opacity_ptr = rsvg_state_get_stop_opacity(state);
 
