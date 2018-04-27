@@ -50,6 +50,7 @@ pub struct State {
     pub direction: Option<Direction>,
     pub display: Option<Display>,
     pub enable_background: Option<EnableBackground>,
+    pub fill: Option<Fill>,
     pub fill_opacity: Option<FillOpacity>,
     pub fill_rule: Option<FillRule>,
     pub filter: Option<Filter>,
@@ -69,6 +70,7 @@ pub struct State {
     pub opacity: Option<Opacity>,
     pub overflow: Option<Overflow>,
     pub shape_rendering: Option<ShapeRendering>,
+    pub stroke: Option<Stroke>,
     pub stroke_dasharray: Option<StrokeDasharray>,
     pub stroke_dashoffset: Option<StrokeDashoffset>,
     pub stroke_line_cap: Option<StrokeLinecap>,
@@ -103,6 +105,7 @@ impl State {
             direction: Default::default(),
             display: Default::default(),
             enable_background: Default::default(),
+            fill: Default::default(),
             fill_opacity: Default::default(),
             fill_rule: Default::default(),
             filter: Default::default(),
@@ -122,6 +125,7 @@ impl State {
             opacity: Default::default(),
             overflow: Default::default(),
             shape_rendering: Default::default(),
+            stroke: Default::default(),
             stroke_dasharray: Default::default(),
             stroke_dashoffset: Default::default(),
             stroke_line_cap: Default::default(),
@@ -181,6 +185,10 @@ impl State {
 
             Attribute::EnableBackground => {
                 self.enable_background = parse_property(value, ())?;
+            }
+
+            Attribute::Fill => {
+                self.fill = parse_property(value, ())?;
             }
 
             Attribute::FillOpacity => {
@@ -271,6 +279,10 @@ impl State {
 
             Attribute::ShapeRendering => {
                 self.shape_rendering = parse_property(value, ())?;
+            }
+
+            Attribute::Stroke => {
+                self.stroke = parse_property(value, ())?;
             }
 
             Attribute::StrokeDasharray => {
@@ -402,8 +414,6 @@ extern "C" {
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const color::ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const opacity::OpacitySpec;
-    fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
-    fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
 
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
@@ -506,30 +516,6 @@ pub fn get_stop_opacity(state: *const RsvgState) -> Result<Option<opacity::Opaci
             Ok(None)
         } else {
             opacity::Opacity::from_opacity_spec(&*opacity_ptr).map(Some)
-        }
-    }
-}
-
-pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
-    unsafe {
-        let ps = rsvg_state_get_stroke(state);
-
-        if ps.is_null() {
-            None
-        } else {
-            Some(&*ps)
-        }
-    }
-}
-
-pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
-    unsafe {
-        let ps = rsvg_state_get_fill(state);
-
-        if ps.is_null() {
-            None
-        } else {
-            Some(&*ps)
         }
     }
 }
@@ -695,6 +681,14 @@ make_property!(
     identifiers:
     "accumulate" => Accumulate,
     "new" => New,
+);
+
+make_property!(
+    Fill,
+    default: PaintServer::parse("#000", ()).unwrap(),
+    inherits_automatically: true,
+    newtype_parse: PaintServer,
+    parse_data_type: ()
 );
 
 make_property!(
@@ -882,6 +876,14 @@ make_property!(
     "optimizeSpeed" => OptimizeSpeed,
     "geometricPrecision" => GeometricPrecision,
     "crispEdges" => CrispEdges,
+);
+
+make_property!(
+    Stroke,
+    default: PaintServer::parse("#000", ()).unwrap(),
+    inherits_automatically: true,
+    newtype_parse: PaintServer,
+    parse_data_type: ()
 );
 
 make_property!(
@@ -1171,6 +1173,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.color, &src.color);
     inherit(inherit_fn, &mut dst.direction, &src.direction);
     inherit(inherit_fn, &mut dst.display, &src.display);
+    inherit(inherit_fn, &mut dst.fill, &src.fill);
     inherit(inherit_fn, &mut dst.fill_opacity, &src.fill_opacity);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.flood_color, &src.flood_color);
@@ -1187,6 +1190,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.marker_start, &src.marker_start);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
     inherit(inherit_fn, &mut dst.shape_rendering, &src.shape_rendering);
+    inherit(inherit_fn, &mut dst.stroke, &src.stroke);
     inherit(inherit_fn, &mut dst.stroke_dasharray, &src.stroke_dasharray);
     inherit(
         inherit_fn,

@@ -82,8 +82,6 @@ pub use node::{
 
 pub use opacity::{rsvg_css_parse_opacity, OpacityKind, OpacitySpec};
 
-pub use paint_server::{rsvg_paint_server_parse, rsvg_paint_server_ref, rsvg_paint_server_unref};
-
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
 
 pub use pattern::rsvg_node_pattern_new;

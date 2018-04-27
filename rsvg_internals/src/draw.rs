@@ -17,9 +17,11 @@ use state::{
     Color,
     CompOp,
     FillOpacity,
+    Fill,
     FillRule,
     RsvgState,
     ShapeRendering,
+    Stroke,
     StrokeDasharray,
     StrokeDashoffset,
     StrokeLinecap,
@@ -72,9 +74,6 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
     // coordinate system in patterns.
     extents.to_drawing_ctx(draw_ctx);
 
-    let fill = state::get_fill(state);
-    let stroke = state::get_stroke(state);
-
     let current_color = rstate
         .color
         .as_ref()
@@ -85,19 +84,29 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
         .as_ref()
         .map_or_else(|| FillOpacity::default().0, |o| o.0);
 
-    if let Some(fill) = fill {
-        if paint_server::_set_source_rsvg_paint_server(
+    let success = match rstate.fill {
+        Some(Fill(ref fill)) => paint_server::_set_source_rsvg_paint_server(
             draw_ctx,
             fill,
             u8::from(fill_opacity),
             &extents.bbox,
             &current_color,
-        ) {
-            if stroke.is_some() {
-                cr.fill_preserve();
-            } else {
-                cr.fill();
-            }
+        ),
+
+        _ => paint_server::_set_source_rsvg_paint_server(
+            draw_ctx,
+            &Fill::default().0,
+            u8::from(fill_opacity),
+            &extents.bbox,
+            &current_color,
+        ),
+    };
+
+    if success {
+        if rstate.stroke.is_some() {
+            cr.fill_preserve();
+        } else {
+            cr.fill();
         }
     }
 
@@ -106,7 +115,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
         .as_ref()
         .map_or_else(|| StrokeOpacity::default().0, |o| o.0);
 
-    if let Some(stroke) = stroke {
+    if let Some(Stroke(ref stroke)) = rstate.stroke {
         if paint_server::_set_source_rsvg_paint_server(
             draw_ctx,
             stroke,
@@ -326,7 +335,7 @@ fn compute_stroke_and_fill_extents(cr: &cairo::Context, state: *mut RsvgState) -
 
     // Bounding box for stroke
 
-    if state::get_stroke(state).is_some() {
+    if rstate.stroke.is_some() {
         let mut sb = RsvgBbox::new(&rstate.affine);
 
         let (x, y, w, h) = cr.stroke_extents();
@@ -384,9 +393,6 @@ pub fn draw_pango_layout(
 
     let bbox = compute_text_bbox(&ink, x, y, &rstate.affine, gravity);
 
-    let fill = state::get_fill(state);
-    let stroke = state::get_stroke(state);
-
     if !clipping {
         drawing_ctx::insert_bbox(draw_ctx, &bbox);
     }
@@ -418,17 +424,27 @@ pub fn draw_pango_layout(
         .map_or_else(|| FillOpacity::default().0, |o| o.0);
 
     if !clipping {
-        if let Some(fill) = fill {
-            if paint_server::_set_source_rsvg_paint_server(
+        let success = match rstate.fill {
+            Some(Fill(ref fill)) => paint_server::_set_source_rsvg_paint_server(
                 draw_ctx,
                 fill,
                 u8::from(fill_opacity),
                 &bbox,
                 &current_color,
-            ) {
-                pangocairo::functions::update_layout(&cr, layout);
-                pangocairo::functions::show_layout(&cr, layout);
-            }
+            ),
+
+            _ => paint_server::_set_source_rsvg_paint_server(
+                draw_ctx,
+                &Fill::default().0,
+                u8::from(fill_opacity),
+                &bbox,
+                &current_color,
+            ),
+        };
+
+        if success {
+            pangocairo::functions::update_layout(&cr, layout);
+            pangocairo::functions::show_layout(&cr, layout);
         }
     }
 
@@ -437,19 +453,20 @@ pub fn draw_pango_layout(
         .as_ref()
         .map_or_else(|| StrokeOpacity::default().0, |o| o.0);
 
-    let need_layout_path;
+    let mut need_layout_path = clipping;
 
-    if clipping {
-        need_layout_path = true;
-    } else {
-        need_layout_path = stroke.is_some()
-            && paint_server::_set_source_rsvg_paint_server(
+    if !clipping {
+        if let Some(Stroke(ref stroke)) = rstate.stroke {
+            if paint_server::_set_source_rsvg_paint_server(
                 draw_ctx,
-                stroke.unwrap(),
+                stroke,
                 u8::from(stroke_opacity),
                 &bbox,
                 &current_color,
-            );
+            ) {
+                need_layout_path = true;
+            }
+        }
     }
 
     if need_layout_path {

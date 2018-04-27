@@ -98,8 +98,6 @@ rsvg_state_init (RsvgState * state)
 
     state->parent = NULL;
 
-    state->fill = rsvg_paint_server_parse (NULL, "#000");
-
     /* The following two start as INHERIT, even though has_stop_color and
      * has_stop_opacity get initialized to FALSE below.  This is so that the
      * first pass of rsvg_state_inherit_run(), called from
@@ -110,8 +108,6 @@ rsvg_state_init (RsvgState * state)
     state->stop_color.kind = RSVG_CSS_COLOR_SPEC_INHERIT;
     state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
 
-    state->has_fill_server = FALSE;
-    state->has_stroke_server = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
 
@@ -144,12 +140,6 @@ rsvg_state_new (void)
 static void
 rsvg_state_finalize (RsvgState * state)
 {
-    rsvg_paint_server_unref (state->fill);
-    state->fill = NULL;
-
-    rsvg_paint_server_unref (state->stroke);
-    state->stroke = NULL;
-
     if (state->state_rust) {
         rsvg_state_rust_free (state->state_rust);
         state->state_rust = NULL;
@@ -183,8 +173,6 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
     *dst = *src;
     dst->parent = parent;
-    rsvg_paint_server_ref (dst->fill);
-    rsvg_paint_server_ref (dst->stroke);
 
     dst->state_rust = rsvg_state_rust_clone(src->state_rust);
 }
@@ -201,18 +189,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
                         const InheritanceFunction function,
                         gboolean inherituninheritables)
 {
-    if (function (dst->has_fill_server, src->has_fill_server)) {
-        rsvg_paint_server_ref (src->fill);
-        if (dst->fill)
-            rsvg_paint_server_unref (dst->fill);
-        dst->fill = src->fill;
-    }
-    if (function (dst->has_stroke_server, src->has_stroke_server)) {
-        rsvg_paint_server_ref (src->stroke);
-        if (dst->stroke)
-            rsvg_paint_server_unref (dst->stroke);
-        dst->stroke = src->stroke;
-    }
     if (function (dst->has_stop_color, src->has_stop_color)) {
         if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
             dst->has_stop_color = TRUE;
@@ -338,26 +314,6 @@ rsvg_parse_style_pair (RsvgState *state,
     }
 
     switch (attr) {
-    case RSVG_ATTRIBUTE_FILL:
-    {
-        RsvgPaintServer *fill = state->fill;
-        state->fill =
-            rsvg_paint_server_parse (&state->has_fill_server, value);
-        rsvg_paint_server_unref (fill);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STROKE:
-    {
-        RsvgPaintServer *stroke = state->stroke;
-
-        state->stroke =
-            rsvg_paint_server_parse (&state->has_stroke_server, value);
-
-        rsvg_paint_server_unref (stroke);
-    }
-    break;
-
     case RSVG_ATTRIBUTE_STOP_COLOR:
     {
         state->has_stop_color = TRUE;
@@ -950,12 +906,6 @@ rsvg_state_get_opacity (RsvgState *state)
     return rsvg_state_rust_get_opacity (state->state_rust);
 }
 
-RsvgPaintServer *
-rsvg_state_get_stroke (RsvgState *state)
-{
-    return state->stroke;
-}
-
 RsvgCssColorSpec *
 rsvg_state_get_stop_color (RsvgState *state)
 {
@@ -980,12 +930,6 @@ guint32
 rsvg_state_get_current_color (RsvgState *state)
 {
     return rsvg_state_rust_get_color (state->state_rust);
-}
-
-RsvgPaintServer *
-rsvg_state_get_fill (RsvgState *state)
-{
-    return state->fill;
 }
 
 guint32

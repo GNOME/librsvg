@@ -48,12 +48,6 @@ typedef struct State State;
 struct _RsvgState {
     RsvgState *parent;
 
-    RsvgPaintServer *fill;
-    gboolean has_fill_server;
-
-    RsvgPaintServer *stroke;
-    gboolean has_stroke_server;
-
     RsvgCssColorSpec stop_color;
     gboolean has_stop_color;
 
@@ -125,9 +119,6 @@ G_GNUC_INTERNAL
 guint8 rsvg_state_get_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
-RsvgPaintServer *rsvg_state_get_stroke (RsvgState *state);
-
-G_GNUC_INTERNAL
 RsvgCssColorSpec *rsvg_state_get_stop_color (RsvgState *state);
 
 G_GNUC_INTERNAL
@@ -135,9 +126,6 @@ RsvgOpacitySpec *rsvg_state_get_stop_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
-
-G_GNUC_INTERNAL
-RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_flood_color (RsvgState *state);

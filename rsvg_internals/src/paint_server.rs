@@ -1,11 +1,5 @@
 use cairo;
 use cssparser;
-use glib::translate::*;
-use glib_sys;
-use libc;
-
-use std::ptr;
-use std::rc::Rc;
 
 use bbox::RsvgBbox;
 use drawing_ctx;
@@ -14,7 +8,6 @@ use gradient;
 use node::NodeType;
 use parsers::{Parse, ParseError};
 use pattern;
-use util::utf8_cstr;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PaintServerSpread(pub cairo::enums::Extend);
@@ -43,7 +36,6 @@ impl Default for PaintServerSpread {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {
-    Inherit,
     None,
     Iri {
         iri: String,
@@ -60,9 +52,7 @@ impl Parse for PaintServer {
         let mut input = cssparser::ParserInput::new(s);
         let mut parser = cssparser::Parser::new(&mut input);
 
-        if parser.try(|i| i.expect_ident_matching("inherit")).is_ok() {
-            Ok(PaintServer::Inherit)
-        } else if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
+        if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
             Ok(PaintServer::None)
         } else if let Ok(url) = parser.try(|i| i.expect_url()) {
             let alternate = if !parser.is_exhausted() {
@@ -104,72 +94,6 @@ fn _set_source_rsvg_solid_color(
         f64::from(rgba.blue_f32()),
         f64::from(rgba.alpha_f32()) * (f64::from(opacity) / 255.0),
     );
-}
-
-/// Parses the paint specification, creating a new paint server object.
-/// Return value: (nullable): The newly created paint server, or NULL on error.
-///
-/// # Arguments
-///
-/// * `str` - The SVG paint specification string to parse.
-#[no_mangle]
-pub extern "C" fn rsvg_paint_server_parse(
-    inherit: *mut glib_sys::gboolean,
-    str: *const libc::c_char,
-) -> *const PaintServer {
-    if !inherit.is_null() {
-        unsafe {
-            *inherit = true.to_glib();
-        }
-    }
-
-    let paint_server = PaintServer::parse(unsafe { utf8_cstr(str) }, ());
-
-    if let Ok(PaintServer::Inherit) = paint_server {
-        if !inherit.is_null() {
-            unsafe {
-                *inherit = false.to_glib();
-            }
-        }
-    }
-
-    match paint_server {
-        Ok(m) => Rc::into_raw(Rc::new(m)),
-        Err(_) => ptr::null_mut(),
-    }
-}
-
-/// Increase references counter of `PaintServer`.
-///
-/// # Arguments
-///
-/// * `paint_server` - must be constructed with `rsvg_paint_server_parse`.
-#[no_mangle]
-pub extern "C" fn rsvg_paint_server_ref(paint_server: *const PaintServer) {
-    if paint_server.is_null() {
-        return;
-    }
-
-    let server: Rc<PaintServer> = unsafe { Rc::from_raw(paint_server) };
-
-    // forget about references
-    Rc::into_raw(server.clone());
-    Rc::into_raw(server);
-}
-
-/// Decrease references counter of `PaintServer`.
-///
-/// # Arguments
-///
-/// * `paint_server` - must be constructed with `rsvg_paint_server_parse`.
-#[no_mangle]
-pub extern "C" fn rsvg_paint_server_unref(paint_server: *const PaintServer) {
-    if paint_server.is_null() {
-        return;
-    }
-
-    // drop reference
-    unsafe { Rc::from_raw(paint_server) };
 }
 
 pub fn _set_source_rsvg_paint_server(
@@ -222,10 +146,6 @@ pub fn _set_source_rsvg_paint_server(
         PaintServer::None => {
             had_paint_server = false;
         }
-
-        PaintServer::Inherit => {
-            unreachable!();
-        }
     };
 
     had_paint_server
@@ -260,11 +180,6 @@ mod tests {
         assert!(PaintServer::parse("", ()).is_err());
         assert!(PaintServer::parse("42", ()).is_err());
         assert!(PaintServer::parse("invalid", ()).is_err());
-    }
-
-    #[test]
-    fn parses_inherit() {
-        assert_eq!(PaintServer::parse("inherit", ()), Ok(PaintServer::Inherit));
     }
 
     #[test]
@@ -334,21 +249,5 @@ mod tests {
         );
 
         assert!(PaintServer::parse("url(#link) invalid", ()).is_err());
-    }
-
-    #[test]
-    fn paint_server_refs_and_unrefs() {
-        let rc = Rc::new(PaintServer::parse("#ffffff", ()).unwrap());
-        let weak = Rc::downgrade(&rc);
-        let ps = Rc::into_raw(rc);
-
-        rsvg_paint_server_ref(ps);
-        assert!(weak.upgrade().is_some());
-
-        rsvg_paint_server_unref(ps);
-        assert!(weak.upgrade().is_some());
-
-        rsvg_paint_server_unref(ps);
-        assert!(weak.upgrade().is_none());
     }
 }
