@@ -54,8 +54,6 @@ struct _RsvgState {
     RsvgOpacitySpec stop_opacity;
     gboolean has_stop_opacity;
 
-    GHashTable *styles;
-
     State *state_rust;
 };
 
