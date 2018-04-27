@@ -8,6 +8,7 @@ use gradient;
 use node::NodeType;
 use parsers::{Parse, ParseError};
 use pattern;
+use unitinterval::UnitInterval;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PaintServerSpread(pub cairo::enums::Extend);
@@ -80,7 +81,7 @@ impl Parse for PaintServer {
 fn _set_source_rsvg_solid_color(
     ctx: *mut drawing_ctx::RsvgDrawingCtx,
     color: &cssparser::Color,
-    opacity: u8,
+    opacity: &UnitInterval,
     current_color: &cssparser::RGBA,
 ) {
     let rgba = match *color {
@@ -88,18 +89,19 @@ fn _set_source_rsvg_solid_color(
         cssparser::Color::CurrentColor => current_color,
     };
 
+    let &UnitInterval(o) = opacity;
     drawing_ctx::get_cairo_context(ctx).set_source_rgba(
         f64::from(rgba.red_f32()),
         f64::from(rgba.green_f32()),
         f64::from(rgba.blue_f32()),
-        f64::from(rgba.alpha_f32()) * (f64::from(opacity) / 255.0),
+        f64::from(rgba.alpha_f32()) * o,
     );
 }
 
 pub fn _set_source_rsvg_paint_server(
     c_ctx: *mut drawing_ctx::RsvgDrawingCtx,
     ps: &PaintServer,
-    opacity: u8,
+    opacity: &UnitInterval,
     bbox: &RsvgBbox,
     current_color: &cssparser::RGBA,
 ) -> bool {
