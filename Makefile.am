@@ -20,6 +20,8 @@ enum_sources = 				\
 BUILT_SOURCES += $(enum_sources)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
+	librsvg/filters/common.c		\
+	librsvg/filters/common.h		\
 	librsvg/librsvg-enum-types.c		\
 	librsvg/librsvg-enum-types.h		\
 	librsvg/librsvg-features.c 		\
