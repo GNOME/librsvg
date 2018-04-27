@@ -85,16 +85,20 @@ RUST_SRC =					\
 	rsvg_internals/src/aspect_ratio.rs	\
 	rsvg_internals/src/attributes.rs	\
 	rsvg_internals/src/bbox.rs		\
+	rsvg_internals/src/chars.rs		\
 	rsvg_internals/src/clip_path.rs		\
 	rsvg_internals/src/cnode.rs		\
 	rsvg_internals/src/color.rs		\
+	rsvg_internals/src/cond.rs		\
 	rsvg_internals/src/coord_units.rs	\
 	rsvg_internals/src/draw.rs		\
 	rsvg_internals/src/drawing_ctx.rs	\
 	rsvg_internals/src/error.rs		\
+	rsvg_internals/src/float_eq_cairo.rs	\
 	rsvg_internals/src/gradient.rs		\
 	rsvg_internals/src/handle.rs		\
 	rsvg_internals/src/image.rs		\
+	rsvg_internals/src/iri.rs		\
 	rsvg_internals/src/length.rs		\
 	rsvg_internals/src/lib.rs		\
 	rsvg_internals/src/link.rs		\
