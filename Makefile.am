@@ -20,6 +20,26 @@ enum_sources = 				\
 BUILT_SOURCES += $(enum_sources)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
+	librsvg/filters/common.c		\
+	librsvg/filters/common.h		\
+	librsvg/filters/blend.c			\
+	librsvg/filters/color_matrix.c		\
+	librsvg/filters/component_transfer.c	\
+	librsvg/filters/composite.c		\
+	librsvg/filters/convolve_matrix.c	\
+	librsvg/filters/diffuse_lighting.c	\
+	librsvg/filters/displacement_map.c	\
+	librsvg/filters/erode.c			\
+	librsvg/filters/flood.c			\
+	librsvg/filters/gaussian_blur.c		\
+	librsvg/filters/image.c			\
+	librsvg/filters/light_source.c		\
+	librsvg/filters/light_source.h		\
+	librsvg/filters/merge.c			\
+	librsvg/filters/offset.c		\
+	librsvg/filters/specular_lighting.c	\
+	librsvg/filters/tile.c			\
+	librsvg/filters/turbulence.c		\
 	librsvg/librsvg-enum-types.c		\
 	librsvg/librsvg-enum-types.h		\
 	librsvg/librsvg-features.c 		\
