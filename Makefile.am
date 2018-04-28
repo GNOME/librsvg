@@ -47,8 +47,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-attributes.h		\
 	librsvg/rsvg-base-file-util.c 		\
 	librsvg/rsvg-base.c			\
-	librsvg/rsvg-cairo-clip.c		\
-	librsvg/rsvg-cairo-clip.h		\
 	librsvg/rsvg-cairo-draw.c		\
 	librsvg/rsvg-cairo-draw.h		\
 	librsvg/rsvg-cairo-render.c		\

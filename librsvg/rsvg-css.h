@@ -107,9 +107,6 @@ gboolean rsvg_css_parse_number_list (const char      *in_str,
                                      gdouble        **out_list,
                                      gsize           *out_list_len);
 
-G_GNUC_INTERNAL
-char        **rsvg_css_parse_xml_attribute_string   (const char *attribute_string);
-
 #endif /* RSVG_COMPILATION */
 
 G_END_DECLS

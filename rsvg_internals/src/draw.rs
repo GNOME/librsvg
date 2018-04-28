@@ -88,7 +88,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
         Some(Fill(ref fill)) => paint_server::_set_source_rsvg_paint_server(
             draw_ctx,
             fill,
-            u8::from(fill_opacity),
+            &fill_opacity,
             &extents.bbox,
             &current_color,
         ),
@@ -96,7 +96,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
         _ => paint_server::_set_source_rsvg_paint_server(
             draw_ctx,
             &Fill::default().0,
-            u8::from(fill_opacity),
+            &fill_opacity,
             &extents.bbox,
             &current_color,
         ),
@@ -119,7 +119,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
         if paint_server::_set_source_rsvg_paint_server(
             draw_ctx,
             stroke,
-            u8::from(stroke_opacity),
+            &stroke_opacity,
             &extents.bbox,
             &current_color,
         ) {
@@ -428,7 +428,7 @@ pub fn draw_pango_layout(
             Some(Fill(ref fill)) => paint_server::_set_source_rsvg_paint_server(
                 draw_ctx,
                 fill,
-                u8::from(fill_opacity),
+                &fill_opacity,
                 &bbox,
                 &current_color,
             ),
@@ -436,7 +436,7 @@ pub fn draw_pango_layout(
             _ => paint_server::_set_source_rsvg_paint_server(
                 draw_ctx,
                 &Fill::default().0,
-                u8::from(fill_opacity),
+                &fill_opacity,
                 &bbox,
                 &current_color,
             ),
@@ -460,7 +460,7 @@ pub fn draw_pango_layout(
             if paint_server::_set_source_rsvg_paint_server(
                 draw_ctx,
                 stroke,
-                u8::from(stroke_opacity),
+                &stroke_opacity,
                 &bbox,
                 &current_color,
             ) {

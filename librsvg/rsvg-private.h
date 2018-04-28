@@ -46,8 +46,8 @@
 G_BEGIN_DECLS 
 
 typedef struct RsvgSaxHandler RsvgSaxHandler;
+typedef struct _RsvgCairoRender RsvgCairoRender;
 typedef struct RsvgDrawingCtx RsvgDrawingCtx;
-typedef struct RsvgRender RsvgRender;
 typedef void   *RsvgPropertyBag;
 typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
@@ -169,11 +169,10 @@ typedef struct {
 /*Contextual information for the drawing phase*/
 
 struct RsvgDrawingCtx {
-    RsvgRender *render;
+    RsvgCairoRender *render;
     RsvgState *state;
     GError **error;
     RsvgDefs *defs;
-    PangoContext *pango_context;
     double dpi_x, dpi_y;
     RsvgViewBox vb;
     GSList *vb_stack;
@@ -188,34 +187,6 @@ typedef struct {
     cairo_matrix_t affine;
     gboolean virgin;
 } RsvgBbox;
-
-/*Abstract base class for context for our backends (one as yet)*/
-
-typedef enum {
-  RSVG_RENDER_TYPE_INVALID,
-
-  RSVG_RENDER_TYPE_BASE,
-
-  RSVG_RENDER_TYPE_CAIRO = 8,
-  RSVG_RENDER_TYPE_CAIRO_CLIP
-} RsvgRenderType;
-
-struct RsvgRender {
-    RsvgRenderType type;
-
-    void (*free) (RsvgRender * self);
-};
-
-static inline RsvgRender *
-_rsvg_render_check_type (RsvgRender *render,
-                         RsvgRenderType type)
-{
-  g_assert ((render->type & type) == type);
-  return render;
-}
-
-#define _RSVG_RENDER_CIC(render, render_type, RenderCType) \
-  ((RenderCType*) _rsvg_render_check_type ((render), (render_type)))
 
 /* Keep this in sync with rust/src/length.rs:LengthUnit */
 typedef enum {
@@ -445,6 +416,12 @@ G_GNUC_INTERNAL
 void rsvg_push_discrete_layer   (RsvgDrawingCtx *ctx, gboolean clipping);
 
 G_GNUC_INTERNAL
+RsvgDrawingCtx *rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle);
+
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
+
+G_GNUC_INTERNAL
 RsvgState *rsvg_drawing_ctx_get_current_state   (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_set_current_state         (RsvgDrawingCtx * ctx, RsvgState *state);
@@ -471,9 +448,6 @@ void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                             gboolean clipping);
 
 G_GNUC_INTERNAL
-void rsvg_render_free           (RsvgRender * render);
-
-G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
 G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
@@ -486,9 +460,6 @@ void rsvg_drawing_ctx_insert_ink_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *ink_b
 
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const char *href, GError ** error);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_free (RsvgDrawingCtx * handle);
 
 /* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL

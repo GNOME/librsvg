@@ -16,6 +16,7 @@ use paint_server::*;
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 use stop::*;
+use unitinterval::UnitInterval;
 use util::*;
 
 #[derive(Copy, Clone)]
@@ -325,16 +326,17 @@ impl Gradient {
         self.common.add_color_stop(offset, rgba);
     }
 
-    fn add_color_stops_to_pattern(&self, pattern: &mut cairo::Gradient, opacity: u8) {
+    fn add_color_stops_to_pattern(&self, pattern: &mut cairo::Gradient, opacity: &UnitInterval) {
         if let Some(stops) = self.common.stops.as_ref() {
             for stop in stops {
                 let rgba = stop.rgba;
+                let &UnitInterval(o) = opacity;
                 pattern.add_color_stop_rgba(
                     stop.offset,
                     (f64::from((rgba >> 24) & 0xff)) / 255.0,
                     (f64::from((rgba >> 16) & 0xff)) / 255.0,
                     (f64::from((rgba >> 8) & 0xff)) / 255.0,
-                    f64::from((rgba & 0xff) * u32::from(opacity)) / 255.0 / 255.0,
+                    (f64::from(rgba & 0xff) * o) / 255.0,
                 );
             }
         }
@@ -387,7 +389,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
     draw_ctx: *mut RsvgDrawingCtx,
     pattern: &mut P,
     bbox: &RsvgBbox,
-    opacity: u8,
+    opacity: &UnitInterval,
 ) {
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
 
@@ -420,7 +422,7 @@ fn set_linear_gradient_on_pattern(
     gradient: &Gradient,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &RsvgBbox,
-    opacity: u8,
+    opacity: &UnitInterval,
 ) -> bool {
     if let GradientVariant::Linear { x1, y1, x2, y2 } = gradient.variant {
         let units = gradient.common.units.unwrap();
@@ -499,7 +501,7 @@ fn set_radial_gradient_on_pattern(
     gradient: &Gradient,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &RsvgBbox,
-    opacity: u8,
+    opacity: &UnitInterval,
 ) -> bool {
     if let GradientVariant::Radial { cx, cy, r, fx, fy } = gradient.variant {
         let units = gradient.common.units.unwrap();
@@ -533,7 +535,7 @@ fn set_radial_gradient_on_pattern(
 fn set_pattern_on_draw_context(
     gradient: &Gradient,
     draw_ctx: *mut RsvgDrawingCtx,
-    opacity: u8,
+    opacity: &UnitInterval,
     bbox: &RsvgBbox,
 ) -> bool {
     assert!(gradient.is_resolved());
@@ -679,7 +681,7 @@ pub extern "C" fn rsvg_node_radial_gradient_new(
 fn resolve_fallbacks_and_set_pattern(
     gradient: &Gradient,
     draw_ctx: *mut RsvgDrawingCtx,
-    opacity: u8,
+    opacity: &UnitInterval,
     bbox: &RsvgBbox,
 ) -> bool {
     if bbox.is_empty() {
@@ -694,7 +696,7 @@ fn resolve_fallbacks_and_set_pattern(
 pub fn gradient_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
     draw_ctx: *mut RsvgDrawingCtx,
-    opacity: u8,
+    opacity: &UnitInterval,
     bbox: &RsvgBbox,
 ) -> bool {
     assert!(
