@@ -173,7 +173,6 @@ struct RsvgDrawingCtx {
     RsvgState *state;
     GError **error;
     RsvgDefs *defs;
-    PangoContext *pango_context;
     double dpi_x, dpi_y;
     RsvgViewBox vb;
     GSList *vb_stack;

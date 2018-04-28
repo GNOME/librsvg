@@ -183,7 +183,6 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     draw->dpi_y = handle->priv->dpi_y;
     draw->vb.rect.width = data.em;
     draw->vb.rect.height = data.ex;
-    draw->pango_context = NULL;
     draw->vb_stack = NULL;
     draw->drawsub_stack = NULL;
     draw->acquired_nodes = NULL;
@@ -226,9 +225,6 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 
     g_warn_if_fail (handle->acquired_nodes == NULL);
     g_slist_free (handle->acquired_nodes);
-
-    if (handle->pango_context != NULL)
-        g_object_unref (handle->pango_context);
 
     g_free (handle);
 }
