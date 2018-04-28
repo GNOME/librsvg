@@ -29,7 +29,7 @@ pub use clip_path::{rsvg_node_clip_path_get_units, rsvg_node_clip_path_new};
 
 pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
-pub use color::{rsvg_css_parse_color, AllowCurrentColor, AllowInherit, ColorKind, ColorSpec};
+pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use draw::rsvg_cairo_add_clipping_rect;
 

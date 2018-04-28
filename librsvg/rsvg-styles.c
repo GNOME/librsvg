@@ -317,7 +317,7 @@ rsvg_parse_style_pair (RsvgState *state,
     case RSVG_ATTRIBUTE_STOP_COLOR:
     {
         state->has_stop_color = TRUE;
-        state->stop_color = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
+        state->stop_color = rsvg_css_parse_color (value);
     }
     break;
 
@@ -966,9 +966,7 @@ rsvg_state_get_state_rust (RsvgState *state)
  * the benefit of rsvg-convert.c
  */
 RsvgCssColorSpec
-rsvg_css_parse_color_ (const char       *str,
-                       AllowInherit      allow_inherit,
-                       AllowCurrentColor allow_current_color)
+rsvg_css_parse_color_ (const char *str)
 {
-    return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
+    return rsvg_css_parse_color (str);
 }

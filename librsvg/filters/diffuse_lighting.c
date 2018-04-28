@@ -171,7 +171,7 @@ rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, 
         case RSVG_ATTRIBUTE_LIGHTING_COLOR: {
             RsvgCssColorSpec spec;
 
-            spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
+            spec = rsvg_css_parse_color (value);
 
             switch (spec.kind) {
             case RSVG_CSS_COLOR_SPEC_INHERIT:

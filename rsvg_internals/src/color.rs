@@ -66,22 +66,6 @@ pub struct ColorSpec {
     argb: u32,
 }
 
-// Keep in sync with rsvg-css.h:AllowInherit
-#[repr(C)]
-#[derive(PartialEq, Debug)]
-pub enum AllowInherit {
-    No,
-    Yes,
-}
-
-// Keep in sync with rsvg-css.h:AllowCurrentColor
-#[repr(C)]
-#[derive(PartialEq, Debug)]
-pub enum AllowCurrentColor {
-    No,
-    Yes,
-}
-
 // This is the Rust version of the above
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Color {
@@ -91,33 +75,16 @@ pub enum Color {
 }
 
 impl Parse for Color {
-    type Data = (AllowInherit, AllowCurrentColor);
+    type Data = ();
     type Err = AttributeError;
 
-    fn parse(
-        s: &str,
-        (allow_inherit, allow_current_color): (AllowInherit, AllowCurrentColor),
-    ) -> Result<Color, AttributeError> {
+    fn parse(s: &str, _: ()) -> Result<Color, AttributeError> {
         if s == "inherit" {
-            if allow_inherit == AllowInherit::Yes {
-                Ok(Color::Inherit)
-            } else {
-                Err(AttributeError::Value(
-                    "inherit is not allowed here".to_string(),
-                ))
-            }
+            Ok(Color::Inherit)
         } else {
             let mut input = cssparser::ParserInput::new(s);
             match cssparser::Color::parse(&mut cssparser::Parser::new(&mut input)) {
-                Ok(cssparser::Color::CurrentColor) => {
-                    if allow_current_color == AllowCurrentColor::Yes {
-                        Ok(Color::CurrentColor)
-                    } else {
-                        Err(AttributeError::Value(
-                            "currentColor is not allowed here".to_string(),
-                        ))
-                    }
-                }
+                Ok(cssparser::Color::CurrentColor) => Ok(Color::CurrentColor),
 
                 Ok(csscolor) => Ok(Color::from(csscolor)),
 
@@ -211,14 +178,10 @@ impl From<Result<Color, AttributeError>> for ColorSpec {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_css_parse_color(
-    string: *const libc::c_char,
-    allow_inherit: AllowInherit,
-    allow_current_color: AllowCurrentColor,
-) -> ColorSpec {
+pub extern "C" fn rsvg_css_parse_color(string: *const libc::c_char) -> ColorSpec {
     let s = unsafe { utf8_cstr(string) };
 
-    ColorSpec::from(Color::parse(s, (allow_inherit, allow_current_color)))
+    ColorSpec::from(Color::parse(s, ()))
 }
 
 #[cfg(test)]
@@ -227,12 +190,7 @@ mod tests {
     use glib::translate::*;
 
     fn parse(s: &str) -> ColorSpec {
-        // ColorSpec::from (Color::parse (s, (AllowInherit::Yes, AllowCurrentColor::Yes)))
-        rsvg_css_parse_color(
-            s.to_glib_none().0,
-            AllowInherit::Yes,
-            AllowCurrentColor::Yes,
-        )
+        rsvg_css_parse_color(s.to_glib_none().0)
     }
 
     #[test]
@@ -350,30 +308,8 @@ mod tests {
         assert_eq!(parse("rgb(1, 2, 3, 4, 5)"), make_error());
     }
 
-    #[test]
-    fn yields_error_on_disallowed_current_color() {
-        assert_eq!(
-            ColorSpec::from(Color::parse(
-                "currentColor",
-                (AllowInherit::Yes, AllowCurrentColor::No)
-            )),
-            make_error()
-        );
-    }
-
-    #[test]
-    fn yields_error_on_disallowed_inherit() {
-        assert_eq!(
-            ColorSpec::from(Color::parse(
-                "inherit",
-                (AllowInherit::No, AllowCurrentColor::Yes)
-            )),
-            make_error()
-        );
-    }
-
     fn test_roundtrip(s: &str) {
-        let result = Color::parse(s, (AllowInherit::Yes, AllowCurrentColor::Yes));
+        let result = Color::parse(s, ());
         let result2 = result.clone();
         let spec = ColorSpec::from(result2);
 
