@@ -31,9 +31,9 @@
 
 #include "rsvg-cairo-draw.h"
 #include "rsvg-cairo-render.h"
-#include "rsvg-cairo-clip.h"
 #include "rsvg-styles.h"
 #include "rsvg-filter.h"
+#include "rsvg-mask.h"
 #include "rsvg-structure.h"
 
 #include <math.h>
@@ -318,6 +318,75 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
                         nest ? 0 : render->offset_x,
                         nest ? 0 : render->offset_y);
     cairo_surface_destroy (surface);
+}
+
+static void
+rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
+{
+    RsvgCairoRender *save = RSVG_CAIRO_RENDER (ctx->render);
+    cairo_matrix_t affinesave;
+    RsvgState *clip_path_state;
+    cairo_t *cr;
+    RsvgCoordUnits clip_units;
+    GList *orig_cr_stack;
+    GList *orig_bb_stack;
+    GList *orig_ink_bb_stack;
+    GList *orig_surfaces_stack;
+    RsvgBbox orig_bbox;
+    RsvgBbox orig_ink_bbox;
+
+    g_assert (rsvg_node_get_type (node_clip_path) == RSVG_NODE_TYPE_CLIP_PATH);
+    clip_units = rsvg_node_clip_path_get_units (node_clip_path);
+
+    cr = save->cr;
+
+    clip_path_state = rsvg_node_get_state (node_clip_path);
+
+    /* Horribly dirty hack to have the bbox premultiplied to everything */
+    if (clip_units == objectBoundingBox) {
+        cairo_matrix_t bbtransform;
+        cairo_matrix_init (&bbtransform,
+                           bbox->rect.width,
+                           0,
+                           0,
+                           bbox->rect.height,
+                           bbox->rect.x,
+                           bbox->rect.y);
+        affinesave = rsvg_state_get_affine (clip_path_state);
+        cairo_matrix_multiply (&bbtransform, &bbtransform, &affinesave);
+        rsvg_state_set_affine (clip_path_state, bbtransform);
+    }
+
+    orig_cr_stack = save->cr_stack;
+    orig_bb_stack = save->bb_stack;
+    orig_ink_bb_stack = save->ink_bb_stack;
+    orig_surfaces_stack = save->surfaces_stack;
+
+    orig_bbox = save->bbox;
+    orig_ink_bbox = save->ink_bbox;
+
+    rsvg_drawing_ctx_state_push (ctx);
+    rsvg_node_draw_children (node_clip_path, ctx, 0, TRUE);
+    rsvg_drawing_ctx_state_pop (ctx);
+
+    if (clip_units == objectBoundingBox) {
+        rsvg_state_set_affine (clip_path_state, affinesave);
+    }
+
+    g_assert (save->cr_stack == orig_cr_stack);
+    g_assert (save->bb_stack == orig_bb_stack);
+    g_assert (save->ink_bb_stack == orig_ink_bb_stack);
+    g_assert (save->surfaces_stack == orig_surfaces_stack);
+
+    /* FIXME: this is an EPIC HACK to keep the clipping context from
+     * accumulating bounding boxes.  We'll remove this later, when we
+     * are able to extract bounding boxes from outside the
+     * general drawing loop.
+     */
+    save->bbox = orig_bbox;
+    save->ink_bbox = orig_ink_bbox;
+
+    cairo_clip (cr);
 }
 
 static void
