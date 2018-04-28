@@ -579,7 +579,7 @@ surface_get_alpha (cairo_surface_t *source,
 static cairo_surface_t *
 rsvg_compile_bg (RsvgDrawingCtx * ctx)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    RsvgCairoRender *render = ctx->render;
     cairo_surface_t *surface;
     cairo_t *cr;
     GList *i;

@@ -120,12 +120,11 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 {
     PangoFontMap *fontmap;
     PangoContext *context;
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     double dpi_y;
 
 #ifdef HAVE_PANGOFT2
     if (ctx->is_testing) {
-        fontmap = get_font_map_for_testing (render);
+        fontmap = get_font_map_for_testing (ctx->render);
     } else {
 #endif
         fontmap = pango_cairo_font_map_get_default ();
@@ -134,7 +133,7 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 #endif
 
     context = pango_font_map_create_context (fontmap);
-    pango_cairo_update_context (render->cr, context);
+    pango_cairo_update_context (ctx->render->cr, context);
 
     rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
     pango_cairo_context_set_resolution (context, dpi_y);
@@ -151,9 +150,7 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 cairo_t *
 rsvg_cairo_get_cairo_context (RsvgDrawingCtx *ctx)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-
-    return render->cr;
+    return ctx->render->cr;
 }
 
 /* FIXME: Usage of this function is more less a hack.  Some code does this:
@@ -177,15 +174,13 @@ rsvg_cairo_get_cairo_context (RsvgDrawingCtx *ctx)
 void
 rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-
-    render->cr = cr;
+    ctx->render->cr = cr;
 }
 
 static void
 rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, RsvgBbox *bbox)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    RsvgCairoRender *render = ctx->render;
     cairo_surface_t *surface;
     cairo_t *mask_cr, *save_cr;
     RsvgState *state;
@@ -323,7 +318,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
 static void
 rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
 {
-    RsvgCairoRender *save = RSVG_CAIRO_RENDER (ctx->render);
+    RsvgCairoRender *save = ctx->render;
     cairo_matrix_t affinesave;
     RsvgState *clip_path_state;
     cairo_t *cr;
@@ -392,7 +387,7 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
 static void
 rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    RsvgCairoRender *render = ctx->render;
     RsvgState *state;
     char *clip_path;
     char *filter;
@@ -487,20 +482,16 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 void
 rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx, gboolean clipping)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-
-    if (clipping) {
-        return;
+    if (!clipping) {
+        cairo_save (ctx->render->cr);
+        rsvg_cairo_push_render_stack (ctx);
     }
-
-    cairo_save (render->cr);
-    rsvg_cairo_push_render_stack (ctx);
 }
 
 static void
 rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    RsvgCairoRender *render = ctx->render;
     RsvgState *state;
     char *clip_path;
     char *filter;
@@ -615,14 +606,10 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 void
 rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx * ctx, gboolean clipping)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-
-    if (clipping) {
-        return;
+    if (!clipping) {
+        rsvg_cairo_pop_render_stack (ctx);
+        cairo_restore (ctx->render->cr);
     }
-
-    rsvg_cairo_pop_render_stack (ctx);
-    cairo_restore (render->cr);
 }
 
 cairo_surface_t *
@@ -634,7 +621,7 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     cairo_surface_t *surface;
     cairo_t *cr;
 
-    RsvgCairoRender *save_render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *save_render = ctx->render;
     RsvgCairoRender *render;
 
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
@@ -646,14 +633,14 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     cr = cairo_create (surface);
 
     render = rsvg_cairo_render_new (cr, width, height);
-    ctx->render = (RsvgRender *) render;
+    ctx->render = render;
 
     rsvg_drawing_ctx_draw_node_from_stack (ctx, drawable, 0, FALSE);
 
     cairo_destroy (cr);
 
-    rsvg_render_free (ctx->render);
-    ctx->render = (RsvgRender *) save_render;
+    rsvg_cairo_render_free (ctx->render);
+    ctx->render = save_render;
 
     return surface;
 }

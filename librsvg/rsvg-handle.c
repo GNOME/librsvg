@@ -745,6 +745,72 @@ rsvg_handle_get_desc (RsvgHandle * handle)
 }
 
 /**
+ * rsvg_handle_render_cairo_sub:
+ * @handle: A #RsvgHandle
+ * @cr: A Cairo renderer
+ * @id: (nullable): An element's id within the SVG, or %NULL to render
+ *   the whole SVG. For example, if you have a layer called "layer1"
+ *   that you wish to render, pass "##layer1" as the id.
+ *
+ * Draws a subset of a SVG to a Cairo surface
+ *
+ * Returns: %TRUE if drawing succeeded.
+ *
+ * Since: 2.14
+ */
+gboolean
+rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
+{
+    RsvgDrawingCtx *draw;
+    RsvgNode *drawsub = NULL;
+
+    g_return_val_if_fail (handle != NULL, FALSE);
+
+    if (handle->priv->hstate != RSVG_HANDLE_STATE_CLOSED_OK)
+        return FALSE;
+
+    if (id && *id)
+        drawsub = rsvg_defs_lookup (handle->priv->defs, id);
+
+    if (drawsub == NULL && id != NULL) {
+        /* todo: there's no way to signal that @id doesn't exist */
+        return FALSE;
+    }
+
+    draw = rsvg_drawing_ctx_new (cr, handle);
+    if (!draw)
+        return FALSE;
+
+    rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, drawsub);
+
+    cairo_save (cr);
+
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
+
+    cairo_restore (cr);
+
+    rsvg_drawing_ctx_free (draw);
+
+    return TRUE;
+}
+
+/**
+ * rsvg_handle_render_cairo:
+ * @handle: A #RsvgHandle
+ * @cr: A Cairo renderer
+ *
+ * Draws a SVG to a Cairo surface
+ *
+ * Returns: %TRUE if drawing succeeded.
+ * Since: 2.14
+ */
+gboolean
+rsvg_handle_render_cairo (RsvgHandle * handle, cairo_t * cr)
+{
+    return rsvg_handle_render_cairo_sub (handle, cr, NULL);
+}
+
+/**
  * rsvg_handle_get_dimensions:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
@@ -835,7 +901,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
                                              1, 1);
         cr = cairo_create  (target);
 
-        draw = rsvg_cairo_new_drawing_ctx (cr, handle);
+        draw = rsvg_drawing_ctx_new (cr, handle);
 
         if (!draw) {
             cairo_destroy (cr);
@@ -848,7 +914,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, sself);
 
         rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
-        ink_bbox = RSVG_CAIRO_RENDER (draw->render)->ink_bbox;
+        ink_bbox = draw->render->ink_bbox;
 
         rsvg_drawing_ctx_free (draw);
         cairo_destroy (cr);
@@ -927,7 +993,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 
     target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
     cr = cairo_create  (target);
-    draw = rsvg_cairo_new_drawing_ctx (cr, handle);
+    draw = rsvg_drawing_ctx_new (cr, handle);
     if (!draw)
         goto bail;
 
@@ -935,7 +1001,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
     rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
-    ink_bbox = RSVG_CAIRO_RENDER (draw->render)->ink_bbox;
+    ink_bbox = draw->render->ink_bbox;
 
     rsvg_drawing_ctx_free (draw);
 
