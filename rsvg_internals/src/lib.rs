@@ -39,6 +39,8 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_transformed_image_bounding_box,
 };
 
+pub use filters::offset::rsvg_new_filter_primitive_offset;
+
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
 
 pub use length::{
@@ -172,6 +174,8 @@ mod cond;
 mod draw;
 mod drawing_ctx;
 mod error;
+mod filter_context;
+mod filters;
 mod gradient;
 mod handle;
 mod image;

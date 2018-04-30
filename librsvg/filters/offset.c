@@ -150,8 +150,8 @@ rsvg_filter_primitive_offset_set_atts (RsvgNode *node, gpointer impl, RsvgHandle
     rsvg_property_bag_iter_end (iter);
 }
 
-RsvgNode *
-rsvg_new_filter_primitive_offset (const char *element_name, RsvgNode *parent)
+static RsvgNode *
+_rsvg_new_filter_primitive_offset (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveOffset *filter;
 

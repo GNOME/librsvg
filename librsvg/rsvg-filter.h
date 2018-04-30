@@ -56,8 +56,11 @@ G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_convolve_matrix      (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_gaussian_blur        (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/filters/offset.rs */
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_offset               (const char *element_name, RsvgNode *parent);
+
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_merge                (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
