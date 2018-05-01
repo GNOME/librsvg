@@ -15,7 +15,6 @@ use error::*;
 use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
-use opacity;
 use paint_server::PaintServer;
 use parsers::Parse;
 use property_bag::PropertyBag;
@@ -71,6 +70,7 @@ pub struct State {
     pub overflow: Option<Overflow>,
     pub shape_rendering: Option<ShapeRendering>,
     pub stop_color: Option<StopColor>,
+    pub stop_opacity: Option<StopOpacity>,
     pub stroke: Option<Stroke>,
     pub stroke_dasharray: Option<StrokeDasharray>,
     pub stroke_dashoffset: Option<StrokeDashoffset>,
@@ -133,6 +133,7 @@ impl State {
             // correctly initialize the destination state from the
             // toplevel element.
             stop_color: None,
+            stop_opacity: None,
 
             stroke: Default::default(),
             stroke_dasharray: Default::default(),
@@ -294,6 +295,10 @@ impl State {
                 self.stop_color = parse_property(value, ())?;
             }
 
+            Attribute::StopOpacity => {
+                self.stop_opacity = parse_property(value, ())?;
+            }
+
             Attribute::Stroke => {
                 self.stroke = parse_property(value, ())?;
             }
@@ -425,7 +430,6 @@ extern "C" {
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
-    fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const opacity::OpacitySpec;
 
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
@@ -505,20 +509,6 @@ pub fn text_gravity_is_vertical(state: *const RsvgState) -> bool {
     match rstate.writing_mode {
         Some(WritingMode::Tb) | Some(WritingMode::TbRl) => true,
         _ => false,
-    }
-}
-
-pub fn get_stop_opacity(
-    state: *const RsvgState,
-) -> Result<Option<opacity::Opacity>, AttributeError> {
-    unsafe {
-        let opacity_ptr = rsvg_state_get_stop_opacity(state);
-
-        if opacity_ptr.is_null() {
-            Ok(None)
-        } else {
-            opacity::Opacity::from_opacity_spec(&*opacity_ptr).map(Some)
-        }
     }
 }
 
@@ -889,6 +879,13 @@ make_property!(
 );
 
 make_property!(
+    StopOpacity,
+    default: UnitInterval(1.0),
+    inherits_automatically: false,
+    newtype_from_str: UnitInterval
+);
+
+make_property!(
     Stroke,
     default: PaintServer::parse("#000", ()).unwrap(),
     inherits_automatically: true,
@@ -1201,6 +1198,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
     inherit(inherit_fn, &mut dst.shape_rendering, &src.shape_rendering);
     inherit(inherit_fn, &mut dst.stop_color, &src.stop_color);
+    inherit(inherit_fn, &mut dst.stop_opacity, &src.stop_opacity);
     inherit(inherit_fn, &mut dst.stroke, &src.stroke);
     inherit(inherit_fn, &mut dst.stroke_dasharray, &src.stroke_dasharray);
     inherit(

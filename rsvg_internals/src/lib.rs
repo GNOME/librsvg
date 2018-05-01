@@ -80,8 +80,6 @@ pub use node::{
     rsvg_node_unref,
 };
 
-pub use opacity::{rsvg_css_parse_opacity, OpacityKind, OpacitySpec};
-
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
 
 pub use pattern::rsvg_node_pattern_new;
@@ -180,7 +178,6 @@ mod link;
 mod marker;
 mod mask;
 mod node;
-mod opacity;
 mod paint_server;
 mod parsers;
 mod path_builder;

@@ -12,10 +12,9 @@ use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use opacity::*;
 use parsers::{parse, ParseError};
 use property_bag::PropertyBag;
-use state::{self, RsvgState, StopColor};
+use state::{self, RsvgState, StopColor, StopOpacity};
 
 pub struct NodeStop {
     offset: Cell<f64>,
@@ -134,23 +133,13 @@ impl NodeTrait for NodeStop {
             Some(StopColor(Color::RGBA(rgba))) => color_rgba = rgba,
         }
 
-        let stop_opacity = state::get_stop_opacity(state)
-            .map_err(|e| NodeError::attribute_error("stop-opacity", e))?;
+        match rstate.stop_opacity {
+            None => match inherited_rstate.stop_opacity {
+                Some(StopOpacity(val)) => color_rgba.alpha = u8::from(val),
+                _ => color_rgba.alpha = 0xff,
+            },
 
-        match stop_opacity {
-            None => color_rgba.alpha = 0xff,
-
-            Some(Opacity::Inherit) => {
-                let inherited_opacity = state::get_stop_opacity(inherited_state)
-                    .map_err(|e| NodeError::attribute_error("stop-opacity", e))?;
-
-                match inherited_opacity {
-                    Some(Opacity::Specified(opacity)) => color_rgba.alpha = u8::from(opacity),
-                    _ => color_rgba.alpha = 0xff,
-                }
-            }
-
-            Some(Opacity::Specified(opacity)) => color_rgba.alpha = u8::from(opacity),
+            Some(StopOpacity(val)) => color_rgba.alpha = u8::from(val),
         }
 
         self.rgba.set(u32_from_rgba(color_rgba));

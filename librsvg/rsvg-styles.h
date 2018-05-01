@@ -48,9 +48,6 @@ typedef struct State State;
 struct _RsvgState {
     RsvgState *parent;
 
-    RsvgOpacitySpec stop_opacity;
-    gboolean has_stop_opacity;
-
     State *state_rust;
 };
 
@@ -112,9 +109,6 @@ char *rsvg_state_get_mask (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint8 rsvg_state_get_opacity (RsvgState *state);
-
-G_GNUC_INTERNAL
-RsvgOpacitySpec *rsvg_state_get_stop_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);

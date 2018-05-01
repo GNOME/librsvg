@@ -98,17 +98,6 @@ rsvg_state_init (RsvgState * state)
 
     state->parent = NULL;
 
-    /* The following two start as INHERIT, even though has_stop_color and
-     * has_stop_opacity get initialized to FALSE below.  This is so that the
-     * first pass of rsvg_state_inherit_run(), called from
-     * rsvg_state_reconstruct() from the "stop" element code, will correctly
-     * initialize the destination state from the toplevel element.
-     *
-     */
-    state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
-
-    state->has_stop_opacity = FALSE;
-
     state->state_rust = rsvg_state_rust_new();
 }
 
@@ -187,13 +176,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
                         const InheritanceFunction function,
                         gboolean inherituninheritables)
 {
-    if (function (dst->has_stop_opacity, src->has_stop_opacity)) {
-        if (dst->stop_opacity.kind == RSVG_OPACITY_INHERIT) {
-            dst->has_stop_opacity = TRUE;
-            dst->stop_opacity = src->stop_opacity;
-        }
-    }
-
     rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
 }
 
@@ -306,13 +288,6 @@ rsvg_parse_style_pair (RsvgState *state,
     }
 
     switch (attr) {
-    case RSVG_ATTRIBUTE_STOP_OPACITY:
-    {
-        state->stop_opacity = rsvg_css_parse_opacity (value);
-        state->has_stop_opacity = TRUE;
-    }
-    break;
-
     default:
         success = rsvg_state_rust_parse_style_pair(state->state_rust,
                                                    attr,
@@ -889,16 +864,6 @@ guint8
 rsvg_state_get_opacity (RsvgState *state)
 {
     return rsvg_state_rust_get_opacity (state->state_rust);
-}
-
-RsvgOpacitySpec *
-rsvg_state_get_stop_opacity (RsvgState *state)
-{
-    if (state->has_stop_opacity) {
-        return &state->stop_opacity;
-    } else {
-        return NULL;
-    }
 }
 
 guint32
