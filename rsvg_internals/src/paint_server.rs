@@ -52,7 +52,7 @@ impl Parse for PaintServer {
     }
 }
 
-fn _set_source_rsvg_solid_color(
+fn set_color(
     ctx: *mut drawing_ctx::RsvgDrawingCtx,
     color: &cssparser::Color,
     opacity: &UnitInterval,
@@ -72,7 +72,7 @@ fn _set_source_rsvg_solid_color(
     );
 }
 
-pub fn _set_source_rsvg_paint_server(
+pub fn set_source_paint_server(
     c_ctx: *mut drawing_ctx::RsvgDrawingCtx,
     ps: &PaintServer,
     opacity: &UnitInterval,
@@ -104,18 +104,13 @@ pub fn _set_source_rsvg_paint_server(
             }
 
             if !had_paint_server && alternate.is_some() {
-                _set_source_rsvg_solid_color(
-                    c_ctx,
-                    alternate.as_ref().unwrap(),
-                    opacity,
-                    current_color,
-                );
+                set_color(c_ctx, alternate.as_ref().unwrap(), opacity, current_color);
                 had_paint_server = true;
             }
         }
 
         PaintServer::SolidColor(color) => {
-            _set_source_rsvg_solid_color(c_ctx, &color, opacity, current_color);
+            set_color(c_ctx, &color, opacity, current_color);
             had_paint_server = true;
         }
 
