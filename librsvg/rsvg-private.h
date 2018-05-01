@@ -487,9 +487,6 @@ double rsvg_length_hand_normalize (const RsvgLength *length,
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_matrix_t *affine);
 
-G_GNUC_INTERNAL
-PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx);
-
 /* Implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
 RsvgLength rsvg_length_parse (const char *str, LengthDir dir);
