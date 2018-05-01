@@ -466,7 +466,6 @@ rsvg_new_node_light_source (const char *element_name, RsvgNode *parent)
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_LIGHT_SOURCE,
                                 parent,
-                                rsvg_state_new (),
                                 data,
                                 rsvg_node_light_source_set_atts,
                                 rsvg_filter_draw,

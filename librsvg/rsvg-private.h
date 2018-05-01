@@ -283,7 +283,6 @@ typedef void (* CNodeFree) (gpointer impl);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_rust_cnode_new (RsvgNodeType  node_type,
                                RsvgNode     *parent,
-                               RsvgState    *state,
                                gpointer      impl,
                                CNodeSetAtts  set_atts_fn,
                                CNodeDraw     draw_fn,

@@ -5,7 +5,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
 use property_bag::PropertyBag;
-use state::RsvgState;
+use state;
 
 use std::rc::*;
 
@@ -80,13 +80,11 @@ impl Drop for CNode {
 pub extern "C" fn rsvg_rust_cnode_new(
     node_type: NodeType,
     raw_parent: *const RsvgNode,
-    state: *mut RsvgState,
     c_node_impl: *const RsvgCNodeImpl,
     set_atts_fn: CNodeSetAtts,
     draw_fn: CNodeDraw,
     free_fn: CNodeFree,
 ) -> *const RsvgNode {
-    assert!(!state.is_null());
     assert!(!c_node_impl.is_null());
 
     let cnode = CNode {
@@ -99,7 +97,7 @@ pub extern "C" fn rsvg_rust_cnode_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
-        state,
+        state::new(),
         Box::new(cnode),
     )))
 }

@@ -233,7 +233,6 @@ rsvg_new_filter_primitive_diffuse_lighting (const char *element_name, RsvgNode *
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_DIFFUSE_LIGHTING,
                                 parent,
-                                rsvg_state_new (),
                                 filter,
                                 rsvg_filter_primitive_diffuse_lighting_set_atts,
                                 rsvg_filter_draw,
