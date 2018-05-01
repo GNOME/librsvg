@@ -503,7 +503,7 @@ pub fn get_stop_color(state: *const RsvgState) -> Result<Option<color::Color>, A
         if spec_ptr.is_null() {
             Ok(None)
         } else {
-            color::Color::from_color_spec(&*spec_ptr).map(Some)
+            color::from_color_spec(&*spec_ptr)
         }
     }
 }

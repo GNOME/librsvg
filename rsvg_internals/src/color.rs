@@ -6,6 +6,8 @@ use parsers::Parse;
 use parsers::ParseError;
 use util::utf8_cstr;
 
+pub use cssparser::Color;
+
 impl Parse for cssparser::Color {
     type Data = ();
     type Err = AttributeError;
@@ -66,59 +68,27 @@ pub struct ColorSpec {
     argb: u32,
 }
 
-// This is the Rust version of the above
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum Color {
-    Inherit,
-    CurrentColor,
-    RGBA(cssparser::RGBA),
-}
+pub fn from_color_spec(spec: &ColorSpec) -> Result<Option<cssparser::Color>, AttributeError> {
+    match *spec {
+        ColorSpec {
+            kind: ColorKind::Inherit,
+            ..
+        } => Ok(None),
 
-impl Parse for Color {
-    type Data = ();
-    type Err = AttributeError;
+        ColorSpec {
+            kind: ColorKind::CurrentColor,
+            ..
+        } => Ok(Some(cssparser::Color::CurrentColor)),
 
-    fn parse(s: &str, _: ()) -> Result<Color, AttributeError> {
-        if s == "inherit" {
-            Ok(Color::Inherit)
-        } else {
-            let mut input = cssparser::ParserInput::new(s);
-            match cssparser::Color::parse(&mut cssparser::Parser::new(&mut input)) {
-                Ok(cssparser::Color::CurrentColor) => Ok(Color::CurrentColor),
+        ColorSpec {
+            kind: ColorKind::ARGB,
+            argb,
+        } => Ok(Some(cssparser::Color::RGBA(rgba_from_argb(argb)))),
 
-                Ok(csscolor) => Ok(Color::from(csscolor)),
-
-                _ => Err(AttributeError::Parse(ParseError::new(
-                    "invalid syntax for color",
-                ))),
-            }
-        }
-    }
-}
-
-impl Color {
-    pub fn from_color_spec(spec: &ColorSpec) -> Result<Color, AttributeError> {
-        match *spec {
-            ColorSpec {
-                kind: ColorKind::Inherit,
-                ..
-            } => Ok(Color::Inherit),
-
-            ColorSpec {
-                kind: ColorKind::CurrentColor,
-                ..
-            } => Ok(Color::CurrentColor),
-
-            ColorSpec {
-                kind: ColorKind::ARGB,
-                argb,
-            } => Ok(Color::RGBA(rgba_from_argb(argb))),
-
-            ColorSpec {
-                kind: ColorKind::ParseError,
-                ..
-            } => Err(AttributeError::Parse(ParseError::new("parse error"))),
-        }
+        ColorSpec {
+            kind: ColorKind::ParseError,
+            ..
+        } => Err(AttributeError::Parse(ParseError::new("parse error"))),
     }
 }
 
@@ -136,35 +106,20 @@ pub fn rgba_to_argb(rgba: cssparser::RGBA) -> u32 {
         | u32::from(rgba.blue)
 }
 
-impl From<cssparser::Color> for Color {
-    fn from(c: cssparser::Color) -> Color {
-        match c {
-            cssparser::Color::CurrentColor => Color::CurrentColor,
-            cssparser::Color::RGBA(rgba) => Color::RGBA(rgba),
-        }
-    }
-}
-
-impl From<u32> for Color {
-    fn from(argb: u32) -> Color {
-        Color::RGBA(rgba_from_argb(argb))
-    }
-}
-
-impl From<Result<Color, AttributeError>> for ColorSpec {
-    fn from(result: Result<Color, AttributeError>) -> ColorSpec {
+impl From<Result<Option<cssparser::Color>, AttributeError>> for ColorSpec {
+    fn from(result: Result<Option<cssparser::Color>, AttributeError>) -> ColorSpec {
         match result {
-            Ok(Color::Inherit) => ColorSpec {
+            Ok(None) => ColorSpec {
                 kind: ColorKind::Inherit,
                 argb: 0,
             },
 
-            Ok(Color::CurrentColor) => ColorSpec {
+            Ok(Some(cssparser::Color::CurrentColor)) => ColorSpec {
                 kind: ColorKind::CurrentColor,
                 argb: 0,
             },
 
-            Ok(Color::RGBA(rgba)) => ColorSpec {
+            Ok(Some(cssparser::Color::RGBA(rgba))) => ColorSpec {
                 kind: ColorKind::ARGB,
                 argb: rgba_to_argb(rgba),
             },
@@ -181,7 +136,14 @@ impl From<Result<Color, AttributeError>> for ColorSpec {
 pub extern "C" fn rsvg_css_parse_color(string: *const libc::c_char) -> ColorSpec {
     let s = unsafe { utf8_cstr(string) };
 
-    ColorSpec::from(Color::parse(s, ()))
+    if s == "inherit" {
+        ColorSpec {
+            kind: ColorKind::Inherit,
+            argb: 0,
+        }
+    } else {
+        ColorSpec::from(<Color as Parse>::parse(s, ()).map(|v| Some(v)))
+    }
 }
 
 #[cfg(test)]
@@ -309,20 +271,19 @@ mod tests {
     }
 
     fn test_roundtrip(s: &str) {
-        let result = Color::parse(s, ());
+        let result = <Color as Parse>::parse(s, ()).map(|v| Some(v));
         let result2 = result.clone();
         let spec = ColorSpec::from(result2);
 
         if result.is_ok() {
-            assert_eq!(Color::from_color_spec(&spec), result);
+            assert_eq!(from_color_spec(&spec), result);
         } else {
-            assert!(Color::from_color_spec(&spec).is_err());
+            assert!(from_color_spec(&spec).is_err());
         }
     }
 
     #[test]
     fn roundtrips() {
-        test_roundtrip("inherit");
         test_roundtrip("currentColor");
         test_roundtrip("#aabbccdd");
         test_roundtrip("papadzul");
@@ -331,8 +292,8 @@ mod tests {
     #[test]
     fn from_argb() {
         assert_eq!(
-            Color::from(0xaabbccdd),
-            Color::RGBA(cssparser::RGBA::new(0xbb, 0xcc, 0xdd, 0xaa))
+            rgba_from_argb(0xaabbccdd),
+            cssparser::RGBA::new(0xbb, 0xcc, 0xdd, 0xaa)
         );
     }
 }

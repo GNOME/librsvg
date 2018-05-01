@@ -6,7 +6,7 @@ use libc;
 use std::cell::Cell;
 
 use attributes::Attribute;
-use color::*;
+use color::Color;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
 use handle::RsvgHandle;
@@ -123,16 +123,12 @@ impl NodeTrait for NodeStop {
             .map_or_else(|| state::Color::default().0, |c| c.0);
 
         match stop_color {
-            None => color_rgba = cssparser::RGBA::transparent(),
-
-            Some(Color::Inherit) => {
+            None => {
                 let inherited_stop_color = state::get_stop_color(inherited_state)
                     .map_err(|e| NodeError::attribute_error("stop-color", e))?;
 
                 match inherited_stop_color {
-                    None => unreachable!(),
-
-                    Some(Color::Inherit) => color_rgba = cssparser::RGBA::transparent(),
+                    None => color_rgba = cssparser::RGBA::transparent(),
                     Some(Color::CurrentColor) => color_rgba = current_color,
                     Some(Color::RGBA(rgba)) => color_rgba = rgba,
                 }
