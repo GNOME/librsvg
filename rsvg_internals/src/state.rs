@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use std::ptr;
 
 use attributes::Attribute;
-use color::{self, rgba_to_argb};
+use color::rgba_to_argb;
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use iri::IRI;
@@ -70,6 +70,7 @@ pub struct State {
     pub opacity: Option<Opacity>,
     pub overflow: Option<Overflow>,
     pub shape_rendering: Option<ShapeRendering>,
+    pub stop_color: Option<StopColor>,
     pub stroke: Option<Stroke>,
     pub stroke_dasharray: Option<StrokeDasharray>,
     pub stroke_dashoffset: Option<StrokeDashoffset>,
@@ -125,6 +126,14 @@ impl State {
             opacity: Default::default(),
             overflow: Default::default(),
             shape_rendering: Default::default(),
+
+            // The following two start as None (i.e. inherit).  This
+            // is so that the first pass of inherit_run(), called from
+            // reconstruct() from the "stop" element code, will
+            // correctly initialize the destination state from the
+            // toplevel element.
+            stop_color: None,
+
             stroke: Default::default(),
             stroke_dasharray: Default::default(),
             stroke_dashoffset: Default::default(),
@@ -281,6 +290,10 @@ impl State {
                 self.shape_rendering = parse_property(value, ())?;
             }
 
+            Attribute::StopColor => {
+                self.stop_color = parse_property(value, ())?;
+            }
+
             Attribute::Stroke => {
                 self.stroke = parse_property(value, ())?;
             }
@@ -412,7 +425,6 @@ extern "C" {
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
-    fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const color::ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const opacity::OpacitySpec;
 
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
@@ -493,18 +505,6 @@ pub fn text_gravity_is_vertical(state: *const RsvgState) -> bool {
     match rstate.writing_mode {
         Some(WritingMode::Tb) | Some(WritingMode::TbRl) => true,
         _ => false,
-    }
-}
-
-pub fn get_stop_color(state: *const RsvgState) -> Result<Option<color::Color>, AttributeError> {
-    unsafe {
-        let spec_ptr = rsvg_state_get_stop_color(state);
-
-        if spec_ptr.is_null() {
-            Ok(None)
-        } else {
-            color::from_color_spec(&*spec_ptr)
-        }
     }
 }
 
@@ -881,6 +881,14 @@ make_property!(
 );
 
 make_property!(
+    StopColor,
+    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
+    inherits_automatically: false,
+    newtype_parse: cssparser::Color,
+    parse_data_type: ()
+);
+
+make_property!(
     Stroke,
     default: PaintServer::parse("#000", ()).unwrap(),
     inherits_automatically: true,
@@ -1192,6 +1200,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.marker_start, &src.marker_start);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
     inherit(inherit_fn, &mut dst.shape_rendering, &src.shape_rendering);
+    inherit(inherit_fn, &mut dst.stop_color, &src.stop_color);
     inherit(inherit_fn, &mut dst.stroke, &src.stroke);
     inherit(inherit_fn, &mut dst.stroke_dasharray, &src.stroke_dasharray);
     inherit(

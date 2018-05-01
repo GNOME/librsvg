@@ -15,7 +15,7 @@ use node::*;
 use opacity::*;
 use parsers::{parse, ParseError};
 use property_bag::PropertyBag;
-use state::{self, RsvgState};
+use state::{self, RsvgState, StopColor};
 
 pub struct NodeStop {
     offset: Cell<f64>,
@@ -114,29 +114,24 @@ impl NodeTrait for NodeStop {
 
         let mut color_rgba: cssparser::RGBA;
 
-        let stop_color =
-            state::get_stop_color(state).map_err(|e| NodeError::attribute_error("stop-color", e))?;
+        let rstate = state::get_state_rust(state);
+        let inherited_rstate = state::get_state_rust(inherited_state);
 
         let current_color = state::get_state_rust(inherited_state)
             .color
             .as_ref()
             .map_or_else(|| state::Color::default().0, |c| c.0);
 
-        match stop_color {
-            None => {
-                let inherited_stop_color = state::get_stop_color(inherited_state)
-                    .map_err(|e| NodeError::attribute_error("stop-color", e))?;
+        match rstate.stop_color {
+            None => match inherited_rstate.stop_color {
+                None => color_rgba = cssparser::RGBA::transparent(),
+                Some(StopColor(Color::CurrentColor)) => color_rgba = current_color,
+                Some(StopColor(Color::RGBA(rgba))) => color_rgba = rgba,
+            },
 
-                match inherited_stop_color {
-                    None => color_rgba = cssparser::RGBA::transparent(),
-                    Some(Color::CurrentColor) => color_rgba = current_color,
-                    Some(Color::RGBA(rgba)) => color_rgba = rgba,
-                }
-            }
+            Some(StopColor(Color::CurrentColor)) => color_rgba = current_color,
 
-            Some(Color::CurrentColor) => color_rgba = current_color,
-
-            Some(Color::RGBA(rgba)) => color_rgba = rgba,
+            Some(StopColor(Color::RGBA(rgba))) => color_rgba = rgba,
         }
 
         let stop_opacity = state::get_stop_opacity(state)

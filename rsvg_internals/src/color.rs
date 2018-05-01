@@ -68,39 +68,6 @@ pub struct ColorSpec {
     argb: u32,
 }
 
-pub fn from_color_spec(spec: &ColorSpec) -> Result<Option<cssparser::Color>, AttributeError> {
-    match *spec {
-        ColorSpec {
-            kind: ColorKind::Inherit,
-            ..
-        } => Ok(None),
-
-        ColorSpec {
-            kind: ColorKind::CurrentColor,
-            ..
-        } => Ok(Some(cssparser::Color::CurrentColor)),
-
-        ColorSpec {
-            kind: ColorKind::ARGB,
-            argb,
-        } => Ok(Some(cssparser::Color::RGBA(rgba_from_argb(argb)))),
-
-        ColorSpec {
-            kind: ColorKind::ParseError,
-            ..
-        } => Err(AttributeError::Parse(ParseError::new("parse error"))),
-    }
-}
-
-pub fn rgba_from_argb(argb: u32) -> cssparser::RGBA {
-    cssparser::RGBA::new(
-        ((argb & 0x00ff_0000) >> 16) as u8,
-        ((argb & 0x0000_ff00) >> 8) as u8,
-        (argb & 0x0000_00ff) as u8,
-        ((argb & 0xff00_0000) >> 24) as u8,
-    )
-}
-
 pub fn rgba_to_argb(rgba: cssparser::RGBA) -> u32 {
     u32::from(rgba.alpha) << 24 | u32::from(rgba.red) << 16 | u32::from(rgba.green) << 8
         | u32::from(rgba.blue)
@@ -268,32 +235,5 @@ mod tests {
         assert_eq!(parse("foo"), make_error());
         assert_eq!(parse("rgb(chilaquil)"), make_error());
         assert_eq!(parse("rgb(1, 2, 3, 4, 5)"), make_error());
-    }
-
-    fn test_roundtrip(s: &str) {
-        let result = <Color as Parse>::parse(s, ()).map(|v| Some(v));
-        let result2 = result.clone();
-        let spec = ColorSpec::from(result2);
-
-        if result.is_ok() {
-            assert_eq!(from_color_spec(&spec), result);
-        } else {
-            assert!(from_color_spec(&spec).is_err());
-        }
-    }
-
-    #[test]
-    fn roundtrips() {
-        test_roundtrip("currentColor");
-        test_roundtrip("#aabbccdd");
-        test_roundtrip("papadzul");
-    }
-
-    #[test]
-    fn from_argb() {
-        assert_eq!(
-            rgba_from_argb(0xaabbccdd),
-            cssparser::RGBA::new(0xbb, 0xcc, 0xdd, 0xaa)
-        );
     }
 }
