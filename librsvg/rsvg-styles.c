@@ -287,14 +287,10 @@ rsvg_parse_style_pair (RsvgState *state,
         rsvg_state_rust_insert_important_style (state->state_rust, attr);
     }
 
-    switch (attr) {
-    default:
-        success = rsvg_state_rust_parse_style_pair(state->state_rust,
-                                                   attr,
-                                                   value,
-                                                   source == PAIR_SOURCE_STYLE);
-        break;
-    }
+    success = rsvg_state_rust_parse_style_pair(state->state_rust,
+                                               attr,
+                                               value,
+                                               source == PAIR_SOURCE_STYLE);
 
     return success;
 }
