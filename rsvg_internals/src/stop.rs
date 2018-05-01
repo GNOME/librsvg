@@ -145,12 +145,12 @@ impl NodeTrait for NodeStop {
                     .map_err(|e| NodeError::attribute_error("stop-opacity", e))?;
 
                 match inherited_opacity {
-                    Some(Opacity::Specified(opacity)) => color_rgba.alpha = opacity_to_u8(opacity),
+                    Some(Opacity::Specified(opacity)) => color_rgba.alpha = u8::from(opacity),
                     _ => color_rgba.alpha = 0xff,
                 }
             }
 
-            Some(Opacity::Specified(opacity)) => color_rgba.alpha = opacity_to_u8(opacity),
+            Some(Opacity::Specified(opacity)) => color_rgba.alpha = u8::from(opacity),
         }
 
         self.rgba.set(u32_from_rgba(color_rgba));

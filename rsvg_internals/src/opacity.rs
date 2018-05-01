@@ -1,12 +1,12 @@
 /// Struct to represent an inheritable opacity property
 /// <https://www.w3.org/TR/SVG/masking.html#OpacityProperty>
-use cssparser::{Parser, ParserInput, Token};
 use libc;
 
 use std::str::FromStr;
 
 use error::*;
 use parsers::ParseError;
+use unitinterval::UnitInterval;
 use util::utf8_cstr;
 
 // Keep this in sync with rsvg-css.h:RsvgOpacityKind
@@ -30,7 +30,7 @@ pub struct OpacitySpec {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Opacity {
     Inherit,
-    Specified(f64),
+    Specified(UnitInterval),
 }
 
 impl From<Result<Opacity, AttributeError>> for OpacitySpec {
@@ -43,7 +43,7 @@ impl From<Result<Opacity, AttributeError>> for OpacitySpec {
 
             Ok(Opacity::Specified(val)) => OpacitySpec {
                 kind: OpacityKind::Specified,
-                opacity: opacity_to_u8(val),
+                opacity: u8::from(val),
             },
 
             _ => OpacitySpec {
@@ -54,50 +54,15 @@ impl From<Result<Opacity, AttributeError>> for OpacitySpec {
     }
 }
 
-pub fn opacity_to_u8(val: f64) -> u8 {
-    (val * 255.0 + 0.5).floor() as u8
-}
-
-fn make_err() -> AttributeError {
-    AttributeError::Parse(ParseError::new("expected 'inherit' or number"))
-}
-
 impl FromStr for Opacity {
     type Err = AttributeError;
 
     fn from_str(s: &str) -> Result<Opacity, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
-        let opacity = {
-            let token = parser.next().map_err(|_| make_err())?;
-
-            match *token {
-                Token::Ident(ref cow) => {
-                    if cow.as_ref() == "inherit" {
-                        Opacity::Inherit
-                    } else {
-                        return Err(make_err());
-                    }
-                }
-
-                Token::Number { value, .. } => {
-                    if value < 0.0 {
-                        Opacity::Specified(0.0)
-                    } else if value > 1.0 {
-                        Opacity::Specified(1.0)
-                    } else {
-                        Opacity::Specified(f64::from(value))
-                    }
-                }
-
-                _ => return Err(make_err()),
-            }
-        };
-
-        parser.expect_exhausted().map_err(|_| make_err())?;
-
-        Ok(opacity)
+        if s == "inherit" {
+            Ok(Opacity::Inherit)
+        } else {
+            Ok(Opacity::Specified(UnitInterval::from_str(s)?))
+        }
     }
 }
 
@@ -112,7 +77,7 @@ impl Opacity {
             OpacitySpec {
                 kind: OpacityKind::Specified,
                 opacity,
-            } => Ok(Opacity::Specified(f64::from(opacity) / 255.0)),
+            } => Ok(Opacity::Specified(UnitInterval(f64::from(opacity) / 255.0))),
 
             OpacitySpec {
                 kind: OpacityKind::ParseError,
@@ -142,15 +107,30 @@ mod tests {
 
     #[test]
     fn parses_number() {
-        assert_eq!(Opacity::from_str("0"), Ok(Opacity::Specified(0.0)));
-        assert_eq!(Opacity::from_str("1"), Ok(Opacity::Specified(1.0)));
-        assert_eq!(Opacity::from_str("0.5"), Ok(Opacity::Specified(0.5)));
+        assert_eq!(
+            Opacity::from_str("0"),
+            Ok(Opacity::Specified(UnitInterval(0.0)))
+        );
+        assert_eq!(
+            Opacity::from_str("1"),
+            Ok(Opacity::Specified(UnitInterval(1.0)))
+        );
+        assert_eq!(
+            Opacity::from_str("0.5"),
+            Ok(Opacity::Specified(UnitInterval(0.5)))
+        );
     }
 
     #[test]
     fn parses_out_of_range_number() {
-        assert_eq!(Opacity::from_str("-10"), Ok(Opacity::Specified(0.0)));
-        assert_eq!(Opacity::from_str("10"), Ok(Opacity::Specified(1.0)));
+        assert_eq!(
+            Opacity::from_str("-10"),
+            Ok(Opacity::Specified(UnitInterval(0.0)))
+        );
+        assert_eq!(
+            Opacity::from_str("10"),
+            Ok(Opacity::Specified(UnitInterval(1.0)))
+        );
     }
 
     #[test]
