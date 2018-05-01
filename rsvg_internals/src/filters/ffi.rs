@@ -65,5 +65,10 @@ unsafe extern "C" fn render_callback<T: Filter>(
     assert!(!raw_node.is_null());
     let node: &RsvgNode = &*raw_node;
 
+    // Don't render filters if they are in error.
+    if node.is_in_error() {
+        return;
+    }
+
     node.with_impl(move |filter: &T| filter.render(ctx));
 }
