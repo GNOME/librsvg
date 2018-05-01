@@ -222,6 +222,10 @@ impl Node {
         *self.result.borrow_mut() = Err(error);
     }
 
+    pub fn is_in_error(&self) -> bool {
+        self.result.borrow().is_err()
+    }
+
     pub fn get_result(&self) -> NodeResult {
         self.result.borrow().clone()
     }
