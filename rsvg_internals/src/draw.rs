@@ -542,6 +542,7 @@ fn compute_text_bbox(
 
 pub fn draw_surface(
     draw_ctx: *mut RsvgDrawingCtx,
+    state: *mut RsvgState,
     surface: &cairo::ImageSurface,
     x: f64,
     y: f64,
@@ -553,7 +554,6 @@ pub fn draw_surface(
         return;
     }
 
-    let state = drawing_ctx::get_current_state(draw_ctx);
     let rstate = state::get_state_rust(state);
 
     let cr = drawing_ctx::get_cairo_context(draw_ctx);

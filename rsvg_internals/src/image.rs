@@ -123,7 +123,7 @@ impl NodeTrait for NodeImage {
                 h,
             );
 
-            draw_surface(draw_ctx, surface, x, y, w, h, clipping);
+            draw_surface(draw_ctx, drawing_ctx::get_current_state(draw_ctx), surface, x, y, w, h, clipping);
 
             drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         }
