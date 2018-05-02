@@ -27,7 +27,13 @@ fn render_path_builder(
     clipping: bool,
 ) {
     drawing_ctx::state_reinherit_top(draw_ctx, state, dominate);
-    draw_path_builder(draw_ctx, builder, clipping);
+
+    draw_path_builder(
+        draw_ctx,
+        drawing_ctx::get_current_state(draw_ctx),
+        builder,
+        clipping,
+    );
 
     if render_markers {
         marker::render_markers_for_path_builder(builder, draw_ctx, clipping);

@@ -32,12 +32,16 @@ use state::{
     TextRendering,
 };
 
-pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, clipping: bool) {
+pub fn draw_path_builder(
+    draw_ctx: *mut RsvgDrawingCtx,
+    state: *mut RsvgState,
+    builder: &PathBuilder,
+    clipping: bool,
+) {
     if !clipping {
         drawing_ctx::push_discrete_layer(draw_ctx, clipping);
     }
 
-    let state = drawing_ctx::get_current_state(draw_ctx);
     let rstate = state::get_state_rust(state);
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
 
@@ -50,14 +54,13 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, c
     } else {
         cr.set_fill_rule(cairo::FillRule::from(rstate.fill_rule.unwrap_or_default()));
 
-        stroke_and_fill(&cr, draw_ctx);
+        stroke_and_fill(&cr, draw_ctx, state);
 
         drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
     }
 }
 
-fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
-    let state = drawing_ctx::get_current_state(draw_ctx);
+fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: *mut RsvgState) {
     let rstate = state::get_state_rust(state);
 
     cr.set_antialias(cairo::Antialias::from(
