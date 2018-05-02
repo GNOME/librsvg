@@ -29,7 +29,6 @@
 #include "../rsvg-styles.h"
 #include "../rsvg-css.h"
 #include "../rsvg-cairo-draw.h"
-#include "../rsvg-cairo-render.h"
 #include "common.h"
 
 typedef struct _RsvgFilterPrimitiveOffset RsvgFilterPrimitiveOffset;
