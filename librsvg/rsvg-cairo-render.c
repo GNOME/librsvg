@@ -45,7 +45,6 @@ RsvgCairoRender *
 rsvg_cairo_render_new (cairo_t * cr, double width, double height)
 {
     RsvgCairoRender *cairo_render = g_new0 (RsvgCairoRender, 1);
-    cairo_matrix_t matrix;
 
     cairo_render->width = width;
     cairo_render->height = height;
@@ -62,10 +61,6 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->font_config_for_testing = NULL;
     cairo_render->font_map_for_testing = NULL;
 #endif
-
-    cairo_matrix_init_identity (&matrix);
-    rsvg_bbox_init (&cairo_render->bbox, &matrix);
-    rsvg_bbox_init (&cairo_render->ink_bbox, &matrix);
 
     return cairo_render;
 }

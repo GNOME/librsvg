@@ -206,8 +206,8 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     state_affine.x0 -= render->offset_x;
     state_affine.y0 -= render->offset_y;
 
-    rsvg_bbox_init (&((RsvgCairoRender *) draw->render)->bbox, &state_affine);
-    rsvg_bbox_init (&((RsvgCairoRender *) draw->render)->ink_bbox, &state_affine);
+    rsvg_bbox_init (&draw->bbox, &state_affine);
+    rsvg_bbox_init (&draw->ink_bbox, &state_affine);
 
     rsvg_state_set_affine (state, state_affine);
 
@@ -640,13 +640,13 @@ rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_
 void
 rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
 {
-    rsvg_bbox_insert (&draw_ctx->render->bbox, bbox);
+    rsvg_bbox_insert (&draw_ctx->bbox, bbox);
 }
 
 void
 rsvg_drawing_ctx_insert_ink_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *ink_bbox)
 {
-    rsvg_bbox_insert (&draw_ctx->render->ink_bbox, ink_bbox);
+    rsvg_bbox_insert (&draw_ctx->ink_bbox, ink_bbox);
 }
 
 cairo_surface_t *

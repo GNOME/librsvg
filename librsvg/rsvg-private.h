@@ -169,8 +169,14 @@ typedef struct {
     gboolean active;
 } RsvgViewBox;
 
-/*Contextual information for the drawing phase*/
+/* Keep this in sync with rust/src/bbox.rs:RsvgBbox */
+typedef struct {
+    cairo_rectangle_t rect;
+    cairo_matrix_t affine;
+    gboolean virgin;
+} RsvgBbox;
 
+/* Contextual information for the drawing phase */
 struct RsvgDrawingCtx {
     RsvgCairoRender *render;
     RsvgState *state;
@@ -182,14 +188,9 @@ struct RsvgDrawingCtx {
     GSList *drawsub_stack;
     GSList *acquired_nodes;
     gboolean is_testing;
+    RsvgBbox bbox;     /* Bounding box for path extents, without stroke width */
+    RsvgBbox ink_bbox; /* Bounding box for ink rectangle, with everything */
 };
-
-/* Keep this in sync with rust/src/bbox.rs:RsvgBbox */
-typedef struct {
-    cairo_rectangle_t rect;
-    cairo_matrix_t affine;
-    gboolean virgin;
-} RsvgBbox;
 
 /* Keep this in sync with rust/src/length.rs:LengthUnit */
 typedef enum {
