@@ -16,7 +16,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use state;
+use state::{self, RsvgState};
 
 struct NodeImage {
     aspect: Cell<AspectRatio>,
@@ -96,7 +96,14 @@ impl NodeTrait for NodeImage {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: *mut RsvgState,
+        dominate: i32,
+        clipping: bool,
+    ) {
         if let Some(ref surface) = *self.surface.borrow() {
             let x = self.x.get().normalize(draw_ctx);
             let y = self.y.get().normalize(draw_ctx);

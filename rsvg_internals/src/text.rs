@@ -115,7 +115,7 @@ impl NodeTrait for NodeChars {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
         // nothing
     }
 
@@ -158,15 +158,19 @@ impl NodeTrait for NodeText {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
-        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
-
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: *mut RsvgState,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         let mut x = self.x.get().normalize(draw_ctx);
         let mut y = self.y.get().normalize(draw_ctx);
         let mut dx = self.dx.get().normalize(draw_ctx);
         let mut dy = self.dy.get().normalize(draw_ctx);
 
-        let state = drawing_ctx::get_current_state(draw_ctx);
         let anchor = state::get_state_rust(state).text_anchor.unwrap_or_default();
 
         let offset = anchor_offset(node, draw_ctx, anchor, false);
@@ -253,7 +257,7 @@ impl NodeTrait for NodeTRef {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
         // nothing
     }
 
@@ -371,7 +375,7 @@ impl NodeTrait for NodeTSpan {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
         // nothing
     }
 

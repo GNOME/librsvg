@@ -21,7 +21,7 @@ use parsers::ParseError;
 use parsers::{parse, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
-use state::{self, StrokeWidth};
+use state::{self, RsvgState, StrokeWidth};
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -252,7 +252,7 @@ impl NodeTrait for NodeMarker {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
         // nothing; markers are drawn by their referencing shapes
     }
 

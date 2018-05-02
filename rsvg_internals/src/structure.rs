@@ -16,7 +16,7 @@ use length::*;
 use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state;
+use state::{self, RsvgState};
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -34,7 +34,14 @@ impl NodeTrait for NodeGroup {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        _: *mut RsvgState,
+        dominate: i32,
+        clipping: bool,
+    ) {
         node.draw_children(draw_ctx, dominate, clipping);
     }
 
@@ -57,7 +64,7 @@ impl NodeTrait for NodeDefs {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
         // nothing
     }
 
@@ -80,9 +87,14 @@ impl NodeTrait for NodeSwitch {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
-        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
-
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        _state: *mut RsvgState,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
         if let Some(child) = node.children().find(|c| state::get_cond(c.get_state())) {
@@ -178,15 +190,19 @@ impl NodeTrait for NodeSvg {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: *mut RsvgState,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         let nx = self.x.get().normalize(draw_ctx);
         let ny = self.y.get().normalize(draw_ctx);
         let nw = self.w.get().normalize(draw_ctx);
         let nh = self.h.get().normalize(draw_ctx);
 
-        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
-
-        let state = drawing_ctx::get_current_state(draw_ctx);
         let do_clip = !state::is_overflow(state) && node.get_parent().is_some();
         let affine = state::get_state_rust(state).affine;
 
@@ -265,7 +281,14 @@ impl NodeTrait for NodeUse {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: *mut RsvgState,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         let link = self.link.borrow();
 
         if link.is_none() {
@@ -308,9 +331,6 @@ impl NodeTrait for NodeUse {
             return;
         }
 
-        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
-
-        let state = drawing_ctx::get_current_state(draw_ctx);
         let rstate = state::get_state_rust(state);
 
         if child.get_type() != NodeType::Symbol {
@@ -390,7 +410,7 @@ impl NodeTrait for NodeSymbol {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
         // nothing
     }
 

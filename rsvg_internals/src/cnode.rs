@@ -5,7 +5,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
 use property_bag::PropertyBag;
-use state;
+use state::{self, RsvgState};
 
 use std::rc::*;
 
@@ -19,6 +19,7 @@ type CNodeDraw = unsafe extern "C" fn(
     node: *const RsvgNode,
     node_impl: *const RsvgCNodeImpl,
     draw_ctx: *mut RsvgDrawingCtx,
+    state: *mut RsvgState,
     dominate: i32,
     clipping: glib_sys::gboolean,
 );
@@ -51,12 +52,20 @@ impl NodeTrait for CNode {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: *mut RsvgState,
+        dominate: i32,
+        clipping: bool,
+    ) {
         unsafe {
             (self.draw_fn)(
                 node as *const RsvgNode,
                 self.c_node_impl,
                 draw_ctx,
+                state,
                 dominate,
                 clipping.to_glib(),
             );

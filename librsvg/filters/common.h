@@ -121,7 +121,12 @@ G_GNUC_INTERNAL
 void rsvg_filter_context_free (RsvgFilterContext * ctx);
 
 G_GNUC_INTERNAL
-void rsvg_filter_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate, gboolean clipping);
+void rsvg_filter_draw (RsvgNode *node,
+                       gpointer impl,
+                       RsvgDrawingCtx *ctx,
+                       RsvgState *state,
+                       int dominate,
+                       gboolean clipping);
 
 G_GNUC_INTERNAL
 void rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, RsvgBbox *bbox);

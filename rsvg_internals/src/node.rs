@@ -31,7 +31,14 @@ pub trait NodeTrait: Downcast {
         handle: *const RsvgHandle,
         pbag: &PropertyBag,
     ) -> NodeResult;
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool);
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: *mut RsvgState,
+        dominate: i32,
+        clipping: bool,
+    );
     fn get_c_impl(&self) -> *const RsvgCNodeImpl;
 }
 
@@ -195,7 +202,10 @@ impl Node {
         clipping: bool,
     ) {
         if self.result.borrow().is_ok() {
-            self.node_impl.draw(node, draw_ctx, dominate, clipping);
+            drawing_ctx::state_reinherit_top(draw_ctx, self.state, dominate);
+            let state = drawing_ctx::get_current_state(draw_ctx);
+            self.node_impl
+                .draw(node, draw_ctx, state, dominate, clipping);
         }
     }
 
@@ -554,7 +564,7 @@ mod tests {
             Ok(())
         }
 
-        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {}
+        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {}
 
         fn get_c_impl(&self) -> *const RsvgCNodeImpl {
             unreachable!();

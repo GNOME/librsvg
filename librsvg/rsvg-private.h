@@ -275,7 +275,12 @@ typedef enum {
 } RsvgNodeType;
 
 typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
-typedef void (* CNodeDraw) (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate, gboolean clipping);
+typedef void (* CNodeDraw) (RsvgNode *node,
+                            gpointer impl,
+                            RsvgDrawingCtx *ctx,
+                            RsvgState *state,
+                            int dominate,
+                            gboolean clipping);
 typedef void (* CNodeFree) (gpointer impl);
 
 /* Implemented in rust/src/node.rs */
