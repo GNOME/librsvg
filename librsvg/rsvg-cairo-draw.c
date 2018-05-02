@@ -187,7 +187,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
     guint8 opacity;
     guint8 *pixels;
     guint32 width = render->width, height = render->height;
-    guint32 rowstride = width * 4, row, i;
+    guint32 rowstride, row, i;
     cairo_matrix_t affinesave;
     RsvgLength mask_x, mask_y, mask_w, mask_h;
     double sx, sy, sw, sh;
