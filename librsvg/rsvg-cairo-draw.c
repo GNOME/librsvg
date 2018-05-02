@@ -329,8 +329,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     cairo_t *cr;
     RsvgCoordUnits clip_units;
     GList *orig_cr_stack;
-    GList *orig_bb_stack;
-    GList *orig_ink_bb_stack;
     GList *orig_surfaces_stack;
     RsvgBbox orig_bbox;
     RsvgBbox orig_ink_bbox;
@@ -358,8 +356,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     }
 
     orig_cr_stack = save->cr_stack;
-    orig_bb_stack = save->bb_stack;
-    orig_ink_bb_stack = save->ink_bb_stack;
     orig_surfaces_stack = save->surfaces_stack;
 
     orig_bbox = ctx->bbox;
@@ -374,8 +370,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     }
 
     g_assert (save->cr_stack == orig_cr_stack);
-    g_assert (save->bb_stack == orig_bb_stack);
-    g_assert (save->ink_bb_stack == orig_ink_bb_stack);
     g_assert (save->surfaces_stack == orig_surfaces_stack);
 
     /* FIXME: this is an EPIC HACK to keep the clipping context from
@@ -387,6 +381,28 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     ctx->ink_bbox = orig_ink_bbox;
 
     cairo_clip (cr);
+}
+
+static void
+push_bounding_box (RsvgDrawingCtx *ctx)
+{
+    RsvgState *state;
+    cairo_matrix_t affine;
+    RsvgBbox *bbox, *ink_bbox;
+
+    state = rsvg_drawing_ctx_get_current_state (ctx);
+
+    bbox = g_new0 (RsvgBbox, 1);
+    *bbox = ctx->bbox;
+    ctx->bb_stack = g_list_prepend (ctx->bb_stack, bbox);
+
+    ink_bbox = g_new0 (RsvgBbox, 1);
+    *ink_bbox = ctx->ink_bbox;
+    ctx->ink_bb_stack = g_list_prepend (ctx->ink_bb_stack, ink_bbox);
+
+    affine = rsvg_state_get_affine (state);
+    rsvg_bbox_init (&ctx->bbox, &affine);
+    rsvg_bbox_init (&ctx->ink_bbox, &affine);
 }
 
 static void
@@ -402,9 +418,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     RsvgEnableBackgroundType enable_background;
     cairo_surface_t *surface;
     cairo_t *child_cr;
-    RsvgBbox *bbox, *ink_bbox;
     gboolean lateclip = FALSE;
-    cairo_matrix_t affine;
 
     state = rsvg_drawing_ctx_get_current_state (ctx);
     clip_path = rsvg_state_get_clip_path (state);
@@ -471,17 +485,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     render->cr_stack = g_list_prepend (render->cr_stack, render->cr);
     render->cr = child_cr;
 
-    bbox = g_new0 (RsvgBbox, 1);
-    *bbox = ctx->bbox;
-    render->bb_stack = g_list_prepend (render->bb_stack, bbox);
-
-    ink_bbox = g_new0 (RsvgBbox, 1);
-    *ink_bbox = ctx->ink_bbox;
-    render->ink_bb_stack = g_list_prepend (render->ink_bb_stack, ink_bbox);
-
-    affine = rsvg_state_get_affine (state);
-    rsvg_bbox_init (&ctx->bbox, &affine);
-    rsvg_bbox_init (&ctx->ink_bbox, &affine);
+    push_bounding_box (ctx);
 }
 
 void
@@ -491,6 +495,22 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx, gboolean clipping)
         cairo_save (ctx->render->cr);
         rsvg_cairo_push_render_stack (ctx);
     }
+}
+
+static void
+pop_bounding_box (RsvgDrawingCtx *ctx)
+{
+    rsvg_bbox_insert ((RsvgBbox *) ctx->bb_stack->data, &ctx->bbox);
+    rsvg_bbox_insert ((RsvgBbox *) ctx->ink_bb_stack->data, &ctx->ink_bbox);
+
+    ctx->bbox = *((RsvgBbox *) ctx->bb_stack->data);
+    ctx->ink_bbox = *((RsvgBbox *) ctx->ink_bb_stack->data);
+
+    g_free (ctx->bb_stack->data);
+    g_free (ctx->ink_bb_stack->data);
+
+    ctx->bb_stack = g_list_delete_link (ctx->bb_stack, ctx->bb_stack);
+    ctx->ink_bb_stack = g_list_delete_link (ctx->ink_bb_stack, ctx->ink_bb_stack);
 }
 
 static void
@@ -591,17 +611,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     cairo_destroy (child_cr);
 
-    rsvg_bbox_insert ((RsvgBbox *) render->bb_stack->data, &ctx->bbox);
-    rsvg_bbox_insert ((RsvgBbox *) render->ink_bb_stack->data, &ctx->ink_bbox);
-
-    ctx->bbox = *((RsvgBbox *) render->bb_stack->data);
-    ctx->ink_bbox = *((RsvgBbox *) render->ink_bb_stack->data);
-
-    g_free (render->bb_stack->data);
-    g_free (render->ink_bb_stack->data);
-
-    render->bb_stack = g_list_delete_link (render->bb_stack, render->bb_stack);
-    render->ink_bb_stack = g_list_delete_link (render->ink_bb_stack, render->ink_bb_stack);
+    pop_bounding_box (ctx);
 
     if (needs_destroy) {
         cairo_surface_destroy (surface);

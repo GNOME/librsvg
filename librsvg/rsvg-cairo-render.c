@@ -53,8 +53,6 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->initial_cr = cr;
     cairo_render->cr = cr;
     cairo_render->cr_stack = NULL;
-    cairo_render->bb_stack = NULL;
-    cairo_render->ink_bb_stack = NULL;
     cairo_render->surfaces_stack = NULL;
 
 #ifdef HAVE_PANGOFT2
@@ -69,8 +67,6 @@ void
 rsvg_cairo_render_free (RsvgCairoRender *render)
 {
     g_assert (render->cr_stack == NULL);
-    g_assert (render->bb_stack == NULL);
-    g_assert (render->ink_bb_stack == NULL);
     g_assert (render->surfaces_stack == NULL);
 
 #ifdef HAVE_PANGOFT2

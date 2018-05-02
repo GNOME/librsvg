@@ -228,6 +228,9 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
     g_warn_if_fail (handle->acquired_nodes == NULL);
     g_slist_free (handle->acquired_nodes);
 
+    g_assert (handle->bb_stack == NULL);
+    g_assert (handle->ink_bb_stack == NULL);
+
     g_free (handle);
 }
 
