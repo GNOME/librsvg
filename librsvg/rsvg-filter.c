@@ -30,7 +30,6 @@
 #include "rsvg-styles.h"
 #include "rsvg-css.h"
 #include "rsvg-cairo-draw.h"
-#include "rsvg-cairo-render.h"
 #include "filters/common.h"
 
 /**

@@ -9,11 +9,11 @@ use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, AcquiredNode, RsvgDrawingCtx};
+use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use paint_server::*;
-use parsers::{parse, Parse};
+use parsers::{parse, Parse, ParseError};
 use property_bag::PropertyBag;
 use stop::*;
 use unitinterval::UnitInterval;
@@ -27,6 +27,45 @@ struct ColorStop {
 
 coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum SpreadMethod {
+    Pad,
+    Reflect,
+    Repeat,
+}
+
+impl Parse for SpreadMethod {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: ()) -> Result<SpreadMethod, AttributeError> {
+        match s {
+            "pad" => Ok(SpreadMethod::Pad),
+            "reflect" => Ok(SpreadMethod::Reflect),
+            "repeat" => Ok(SpreadMethod::Repeat),
+            _ => Err(AttributeError::Parse(ParseError::new(
+                "expected 'pad' | 'reflect' | 'repeat'",
+            ))),
+        }
+    }
+}
+
+impl Default for SpreadMethod {
+    fn default() -> SpreadMethod {
+        SpreadMethod::Pad
+    }
+}
+
+impl From<SpreadMethod> for cairo::enums::Extend {
+    fn from(s: SpreadMethod) -> cairo::enums::Extend {
+        match s {
+            SpreadMethod::Pad => cairo::enums::Extend::Pad,
+            SpreadMethod::Reflect => cairo::enums::Extend::Reflect,
+            SpreadMethod::Repeat => cairo::enums::Extend::Repeat,
+        }
+    }
+}
+
 // Any of the attributes in gradient elements may be omitted.  In turn, the missing
 // ones can be inherited from the gradient referenced by its "fallback" IRI.  We
 // represent these possibly-missing attributes as Option<foo>.
@@ -34,7 +73,7 @@ coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 struct GradientCommon {
     pub units: Option<GradientUnits>,
     pub affine: Option<cairo::Matrix>,
-    pub spread: Option<PaintServerSpread>,
+    pub spread: Option<SpreadMethod>,
     pub fallback: Option<String>,
     pub stops: Option<Vec<ColorStop>>,
 }
@@ -68,7 +107,7 @@ impl Default for GradientCommon {
         GradientCommon {
             units: Some(GradientUnits::default()),
             affine: Some(cairo::Matrix::identity()),
-            spread: Some(PaintServerSpread::default()),
+            spread: Some(SpreadMethod::default()),
             fallback: None,
             stops: Some(Vec::<ColorStop>::new()),
         }
@@ -411,7 +450,9 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
 
     affine.invert();
     pattern.set_matrix(affine);
-    pattern.set_extend(gradient.common.spread.unwrap().0);
+    pattern.set_extend(cairo::enums::Extend::from(
+        gradient.common.spread.unwrap_or_default(),
+    ));
 
     gradient.add_color_stops_to_pattern(pattern, opacity);
 
@@ -716,6 +757,17 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parses_spread_method() {
+        assert_eq!(SpreadMethod::parse("pad", ()), Ok(SpreadMethod::Pad));
+        assert_eq!(
+            SpreadMethod::parse("reflect", ()),
+            Ok(SpreadMethod::Reflect)
+        );
+        assert_eq!(SpreadMethod::parse("repeat", ()), Ok(SpreadMethod::Repeat));
+        assert!(SpreadMethod::parse("foobar", ()).is_err());
+    }
 
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {

@@ -56,10 +56,6 @@ extern "C" {
         affine: *const cairo::Matrix,
     );
 
-    fn rsvg_drawing_ctx_get_pango_context(
-        draw_ctx: *const RsvgDrawingCtx,
-    ) -> *mut pango_sys::PangoContext;
-
     fn rsvg_drawing_ctx_insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: *const RsvgBbox);
     fn rsvg_drawing_ctx_insert_ink_bbox(draw_ctx: *const RsvgDrawingCtx, ink_bbox: *const RsvgBbox);
 
@@ -75,6 +71,10 @@ extern "C" {
 
     fn rsvg_cairo_get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> *mut cairo_sys::cairo_t;
     fn rsvg_cairo_set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: *const cairo_sys::cairo_t);
+
+    fn rsvg_cairo_get_pango_context(
+        draw_ctx: *const RsvgDrawingCtx,
+    ) -> *mut pango_sys::PangoContext;
 }
 
 pub fn get_dpi(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
@@ -260,7 +260,7 @@ pub fn set_affine_on_cr(
 }
 
 pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
-    unsafe { from_glib_full(rsvg_drawing_ctx_get_pango_context(draw_ctx)) }
+    unsafe { from_glib_full(rsvg_cairo_get_pango_context(draw_ctx)) }
 }
 
 pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &RsvgBbox) {

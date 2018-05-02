@@ -85,7 +85,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
         .map_or_else(|| FillOpacity::default().0, |o| o.0);
 
     let success = match rstate.fill {
-        Some(Fill(ref fill)) => paint_server::_set_source_rsvg_paint_server(
+        Some(Fill(ref fill)) => paint_server::set_source_paint_server(
             draw_ctx,
             fill,
             &fill_opacity,
@@ -93,7 +93,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
             &current_color,
         ),
 
-        _ => paint_server::_set_source_rsvg_paint_server(
+        _ => paint_server::set_source_paint_server(
             draw_ctx,
             &Fill::default().0,
             &fill_opacity,
@@ -116,7 +116,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
         .map_or_else(|| StrokeOpacity::default().0, |o| o.0);
 
     if let Some(Stroke(ref stroke)) = rstate.stroke {
-        if paint_server::_set_source_rsvg_paint_server(
+        if paint_server::set_source_paint_server(
             draw_ctx,
             stroke,
             &stroke_opacity,
@@ -425,7 +425,7 @@ pub fn draw_pango_layout(
 
     if !clipping {
         let success = match rstate.fill {
-            Some(Fill(ref fill)) => paint_server::_set_source_rsvg_paint_server(
+            Some(Fill(ref fill)) => paint_server::set_source_paint_server(
                 draw_ctx,
                 fill,
                 &fill_opacity,
@@ -433,7 +433,7 @@ pub fn draw_pango_layout(
                 &current_color,
             ),
 
-            _ => paint_server::_set_source_rsvg_paint_server(
+            _ => paint_server::set_source_paint_server(
                 draw_ctx,
                 &Fill::default().0,
                 &fill_opacity,
@@ -457,7 +457,7 @@ pub fn draw_pango_layout(
 
     if !clipping {
         if let Some(Stroke(ref stroke)) = rstate.stroke {
-            if paint_server::_set_source_rsvg_paint_server(
+            if paint_server::set_source_paint_server(
                 draw_ctx,
                 stroke,
                 &stroke_opacity,
