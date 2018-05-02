@@ -109,11 +109,7 @@ rsvg_state_new_with_parent (RsvgState *parent)
     state = g_slice_new (RsvgState);
     rsvg_state_init (state);
 
-    if (parent) {
-        rsvg_state_reinherit (state, parent);
-        rsvg_state_set_affine (state, rsvg_state_get_affine (parent));
-        state->parent = parent;
-    }
+    state->parent = parent;
 
     return state;
 }

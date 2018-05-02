@@ -291,7 +291,17 @@ pub fn get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState {
 }
 
 pub fn state_push(draw_ctx: *mut RsvgDrawingCtx) {
-    let state = state::new_with_parent(get_current_state(draw_ctx));
+    let parent = get_current_state(draw_ctx);
+
+    let state = state::new_with_parent(parent);
+
+    if !parent.is_null() {
+        state::reinherit(state, parent);
+
+        let rstate = state::get_state_rust(state);
+        let parent_rstate = state::get_state_rust(parent);
+        rstate.affine = parent_rstate.affine;
+    }
 
     unsafe {
         rsvg_drawing_ctx_set_current_state(draw_ctx, state);
