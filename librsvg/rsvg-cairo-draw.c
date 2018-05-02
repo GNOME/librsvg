@@ -78,7 +78,7 @@ set_font_options_for_testing (PangoContext *context)
 }
 
 static void
-create_font_config_for_testing (RsvgCairoRender *render)
+create_font_config_for_testing (RsvgDrawingCtx *ctx)
 {
     const char *font_paths[] = {
         SRCDIR "/tests/resources/Roboto-Regular.ttf",
@@ -89,30 +89,30 @@ create_font_config_for_testing (RsvgCairoRender *render)
 
     int i;
 
-    if (render->font_config_for_testing != NULL)
+    if (ctx->font_config_for_testing != NULL)
         return;
 
-    render->font_config_for_testing = FcConfigCreate ();
+    ctx->font_config_for_testing = FcConfigCreate ();
 
     for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
-        if (!FcConfigAppFontAddFile (render->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
+        if (!FcConfigAppFontAddFile (ctx->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
             g_error ("Could not load font file \"%s\" for tests; aborting", font_paths[i]);
         }
     }
 }
 
 static PangoFontMap *
-get_font_map_for_testing (RsvgCairoRender *render)
+get_font_map_for_testing (RsvgDrawingCtx *ctx)
 {
-    create_font_config_for_testing (render);
+    create_font_config_for_testing (ctx);
 
-    if (!render->font_map_for_testing) {
-        render->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (render->font_map_for_testing),
-                                      render->font_config_for_testing);
+    if (ctx->font_map_for_testing == NULL) {
+        ctx->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
+        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (ctx->font_map_for_testing),
+                                      ctx->font_config_for_testing);
     }
 
-    return render->font_map_for_testing;
+    return ctx->font_map_for_testing;
 }
 #endif
 
@@ -125,7 +125,7 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 
 #ifdef HAVE_PANGOFT2
     if (ctx->is_testing) {
-        fontmap = get_font_map_for_testing (ctx->render);
+        fontmap = get_font_map_for_testing (ctx);
     } else {
 #endif
         fontmap = pango_cairo_font_map_get_default ();
