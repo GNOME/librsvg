@@ -22,18 +22,10 @@ fn render_path_builder(
     builder: &PathBuilder,
     draw_ctx: *mut RsvgDrawingCtx,
     state: *mut RsvgState,
-    dominate: i32,
     render_markers: bool,
     clipping: bool,
 ) {
-    drawing_ctx::state_reinherit_top(draw_ctx, state, dominate);
-
-    draw_path_builder(
-        draw_ctx,
-        drawing_ctx::get_current_state(draw_ctx),
-        builder,
-        clipping,
-    );
+    draw_path_builder(draw_ctx, state, builder, clipping);
 
     if render_markers {
         marker::render_markers_for_path_builder(builder, draw_ctx, clipping);
@@ -101,11 +93,12 @@ fn render_ellipse(
 
     builder.close_path();
 
+    drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
+
     render_path_builder(
         &builder,
         draw_ctx,
-        node.get_state(),
-        dominate,
+        drawing_ctx::get_current_state(draw_ctx),
         false,
         clipping,
     );
@@ -144,11 +137,12 @@ impl NodeTrait for NodePath {
 
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         if let Some(ref builder) = *self.builder.borrow() {
+            drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
+
             render_path_builder(
                 builder,
                 draw_ctx,
-                node.get_state(),
-                dominate,
+                drawing_ctx::get_current_state(draw_ctx),
                 true,
                 clipping,
             );
@@ -220,11 +214,12 @@ impl NodeTrait for NodePoly {
                 builder.close_path();
             }
 
+            drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
+
             render_path_builder(
                 &builder,
                 draw_ctx,
-                node.get_state(),
-                dominate,
+                drawing_ctx::get_current_state(draw_ctx),
                 true,
                 clipping,
             );
@@ -283,11 +278,12 @@ impl NodeTrait for NodeLine {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
+        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
+
         render_path_builder(
             &builder,
             draw_ctx,
-            node.get_state(),
-            dominate,
+            drawing_ctx::get_current_state(draw_ctx),
             true,
             clipping,
         );
@@ -499,11 +495,12 @@ impl NodeTrait for NodeRect {
             builder.close_path ();
         }
 
+        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
+
         render_path_builder(
             &builder,
             draw_ctx,
-            node.get_state(),
-            dominate,
+            drawing_ctx::get_current_state(draw_ctx),
             false,
             clipping,
         );
