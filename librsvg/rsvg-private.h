@@ -190,6 +190,8 @@ struct RsvgDrawingCtx {
     gboolean is_testing;
     RsvgBbox bbox;     /* Bounding box for path extents, without stroke width */
     RsvgBbox ink_bbox; /* Bounding box for ink rectangle, with everything */
+    GList *bb_stack;
+    GList *ink_bb_stack;
 };
 
 /* Keep this in sync with rust/src/length.rs:LengthUnit */
