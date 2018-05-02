@@ -377,12 +377,12 @@ fn compute_stroke_and_fill_extents(cr: &cairo::Context, state: *mut RsvgState) -
 
 pub fn draw_pango_layout(
     draw_ctx: *mut RsvgDrawingCtx,
+    state: *mut RsvgState,
     layout: &pango::Layout,
     x: f64,
     y: f64,
     clipping: bool,
 ) {
-    let state = drawing_ctx::get_current_state(draw_ctx);
     let rstate = state::get_state_rust(state);
 
     let cr = drawing_ctx::get_cairo_context(draw_ctx);

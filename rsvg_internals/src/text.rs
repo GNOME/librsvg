@@ -101,10 +101,10 @@ impl NodeChars {
         let offset = baseline + drawing_ctx::get_accumulated_baseline_shift(draw_ctx);
 
         if state::text_gravity_is_vertical(state) {
-            draw_pango_layout(draw_ctx, &layout, *x + offset, *y, clipping);
+            draw_pango_layout(draw_ctx, state, &layout, *x + offset, *y, clipping);
             *y += f64::from(width) / f64::from(pango::SCALE);
         } else {
-            draw_pango_layout(draw_ctx, &layout, *x, *y - offset, clipping);
+            draw_pango_layout(draw_ctx, state, &layout, *x, *y - offset, clipping);
             *x += f64::from(width) / f64::from(pango::SCALE);
         }
     }
