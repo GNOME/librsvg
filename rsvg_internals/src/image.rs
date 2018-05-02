@@ -98,10 +98,10 @@ impl NodeTrait for NodeImage {
 
     fn draw(
         &self,
-        node: &RsvgNode,
+        _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
         state: *mut RsvgState,
-        dominate: i32,
+        _dominate: i32,
         clipping: bool,
     ) {
         if let Some(ref surface) = *self.surface.borrow() {
@@ -110,16 +110,13 @@ impl NodeTrait for NodeImage {
             let w = self.w.get().normalize(draw_ctx);
             let h = self.h.get().normalize(draw_ctx);
 
-            let state = node.get_state();
-
-            drawing_ctx::state_reinherit_top(draw_ctx, state, dominate);
             drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
             let aspect = self.aspect.get();
 
             if !state::is_overflow(state) && aspect.is_slice() {
-                let ctx_rstate = state::get_state_rust(drawing_ctx::get_current_state(draw_ctx));
-                add_clipping_rect(draw_ctx, &ctx_rstate.affine, x, y, w, h);
+                let rstate = state::get_state_rust(state);
+                add_clipping_rect(draw_ctx, &rstate.affine, x, y, w, h);
             }
 
             let (x, y, w, h) = aspect.compute(
@@ -131,16 +128,7 @@ impl NodeTrait for NodeImage {
                 h,
             );
 
-            draw_surface(
-                draw_ctx,
-                drawing_ctx::get_current_state(draw_ctx),
-                surface,
-                x,
-                y,
-                w,
-                h,
-                clipping,
-            );
+            draw_surface(draw_ctx, state, surface, x, y, w, h, clipping);
 
             drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         }
