@@ -43,6 +43,10 @@
 # include <float.h>
 #endif
 
+#if defined(HAVE_PANGOFT2)
+#include <pango/pangofc-fontmap.h>
+#endif
+
 G_BEGIN_DECLS 
 
 typedef struct RsvgSaxHandler RsvgSaxHandler;
@@ -192,6 +196,11 @@ struct RsvgDrawingCtx {
     RsvgBbox ink_bbox; /* Bounding box for ink rectangle, with everything */
     GList *bb_stack;
     GList *ink_bb_stack;
+
+#ifdef HAVE_PANGOFT2
+    FcConfig *font_config_for_testing;
+    PangoFontMap *font_map_for_testing;
+#endif
 };
 
 /* Keep this in sync with rust/src/length.rs:LengthUnit */

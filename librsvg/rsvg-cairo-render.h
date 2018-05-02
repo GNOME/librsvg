@@ -31,10 +31,6 @@
 #include "rsvg-private.h"
 #include <cairo.h>
 
-#ifdef HAVE_PANGOFT2
-#include <pango/pangofc-fontmap.h>
-#endif
-
 G_BEGIN_DECLS
 
 struct _RsvgCairoRender {
@@ -48,11 +44,6 @@ struct _RsvgCairoRender {
 
     GList *cr_stack;
     GList *surfaces_stack;
-
-#ifdef HAVE_PANGOFT2
-    FcConfig *font_config_for_testing;
-    PangoFontMap *font_map_for_testing;
-#endif
 };
 
 G_GNUC_INTERNAL

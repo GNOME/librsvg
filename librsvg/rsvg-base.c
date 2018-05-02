@@ -211,6 +211,11 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
 
     rsvg_state_set_affine (state, state_affine);
 
+#ifdef HAVE_PANGOFT2
+    draw->font_config_for_testing = NULL;
+    draw->font_map_for_testing = NULL;
+#endif
+
     return draw;
 }
 
@@ -230,6 +235,18 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 
     g_assert (handle->bb_stack == NULL);
     g_assert (handle->ink_bb_stack == NULL);
+
+#ifdef HAVE_PANGOFT2
+    if (handle->font_config_for_testing) {
+        FcConfigDestroy (handle->font_config_for_testing);
+        handle->font_config_for_testing = NULL;
+    }
+
+    if (handle->font_map_for_testing) {
+        g_object_unref (handle->font_map_for_testing);
+        handle->font_map_for_testing = NULL;
+    }
+#endif
 
     g_free (handle);
 }
