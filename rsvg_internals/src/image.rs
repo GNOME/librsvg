@@ -111,7 +111,8 @@ impl NodeTrait for NodeImage {
             let aspect = self.aspect.get();
 
             if !state::is_overflow(state) && aspect.is_slice() {
-                add_clipping_rect(draw_ctx, x, y, w, h);
+                let ctx_rstate = state::get_state_rust(drawing_ctx::get_current_state(draw_ctx));
+                add_clipping_rect(draw_ctx, &ctx_rstate.affine, x, y, w, h);
             }
 
             let (x, y, w, h) = aspect.compute(
@@ -123,7 +124,16 @@ impl NodeTrait for NodeImage {
                 h,
             );
 
-            draw_surface(draw_ctx, drawing_ctx::get_current_state(draw_ctx), surface, x, y, w, h, clipping);
+            draw_surface(
+                draw_ctx,
+                drawing_ctx::get_current_state(draw_ctx),
+                surface,
+                x,
+                y,
+                w,
+                h,
+                clipping,
+            );
 
             drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         }

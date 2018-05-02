@@ -180,9 +180,23 @@ impl NodeMarker {
 
         if !state::is_overflow(state) {
             if let Some(vbox) = self.vbox.get() {
-                add_clipping_rect(draw_ctx, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
+                add_clipping_rect(
+                    draw_ctx,
+                    &rstate.affine,
+                    vbox.0.x,
+                    vbox.0.y,
+                    vbox.0.width,
+                    vbox.0.height,
+                );
             } else {
-                add_clipping_rect(draw_ctx, 0.0, 0.0, marker_width, marker_height);
+                add_clipping_rect(
+                    draw_ctx,
+                    &rstate.affine,
+                    0.0,
+                    0.0,
+                    marker_width,
+                    marker_height,
+                );
             }
         }
 

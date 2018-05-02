@@ -590,12 +590,17 @@ pub fn draw_surface(
     drawing_ctx::insert_bbox(draw_ctx, &bbox);
 }
 
-pub fn add_clipping_rect(draw_ctx: *mut RsvgDrawingCtx, x: f64, y: f64, w: f64, h: f64) {
-    let state = drawing_ctx::get_current_state(draw_ctx);
+pub fn add_clipping_rect(
+    draw_ctx: *mut RsvgDrawingCtx,
+    affine: &cairo::Matrix,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+) {
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
-    let affine = state::get_state_rust(state).affine;
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &affine);
+    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, affine);
 
     cr.rectangle(x, y, w, h);
     cr.clip();
@@ -604,10 +609,11 @@ pub fn add_clipping_rect(draw_ctx: *mut RsvgDrawingCtx, x: f64, y: f64, w: f64, 
 #[no_mangle]
 pub extern "C" fn rsvg_cairo_add_clipping_rect(
     draw_ctx: *mut RsvgDrawingCtx,
+    affine: *const cairo::Matrix,
     x: f64,
     y: f64,
     w: f64,
     h: f64,
 ) {
-    add_clipping_rect(draw_ctx, x, y, w, h);
+    add_clipping_rect(draw_ctx, unsafe { &*affine }, x, y, w, h);
 }

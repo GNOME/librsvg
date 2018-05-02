@@ -47,6 +47,7 @@
 /* Implemented in rsvg_internals/src/draw.rs */
 G_GNUC_INTERNAL
 void rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
+                                   cairo_matrix_t *affine,
                                    double x,
                                    double y,
                                    double w,
@@ -194,6 +195,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
     gboolean nest = cr != render->initial_cr;
     RsvgCoordUnits mask_units;
     RsvgCoordUnits content_units;
+    cairo_matrix_t affine;
 
     g_assert (rsvg_node_get_type (mask) == RSVG_NODE_TYPE_MASK);
 
@@ -229,14 +231,18 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
     save_cr = render->cr;
     render->cr = mask_cr;
 
+    state = rsvg_drawing_ctx_get_current_state (ctx);
+    affine = rsvg_state_get_affine (state);
+
     if (mask_units == objectBoundingBox)
         rsvg_cairo_add_clipping_rect (ctx,
+                                      &affine,
                                       sx * bbox->rect.width + bbox->rect.x,
                                       sy * bbox->rect.height + bbox->rect.y,
                                       sw * bbox->rect.width,
                                       sh * bbox->rect.height);
     else
-        rsvg_cairo_add_clipping_rect (ctx, sx, sy, sw, sh);
+        rsvg_cairo_add_clipping_rect (ctx, &affine, sx, sy, sw, sh);
 
     /* Horribly dirty hack to have the bbox premultiplied to everything */
     if (content_units == objectBoundingBox) {
@@ -274,7 +280,6 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
 
     render->cr = save_cr;
 
-    state = rsvg_drawing_ctx_get_current_state (ctx);
     opacity = rsvg_state_get_opacity (state);
 
     for (row = 0; row < height; row++) {
