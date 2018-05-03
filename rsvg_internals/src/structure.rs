@@ -335,20 +335,21 @@ impl NodeTrait for NodeUse {
             let mut affine = state.affine;
             affine.translate(nx, ny);
 
-            drawing_ctx::state_push(draw_ctx);
-            let state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
-
-            state.affine = affine;
-
             drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+
+            // push a new state so we can change its affine
+            drawing_ctx::state_push(draw_ctx);
+
+            let cur_state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
+            cur_state.affine = affine;
 
             let boxed_child = box_node(child.clone());
             drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 1, clipping);
             rsvg_node_unref(boxed_child);
 
-            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
-
             drawing_ctx::state_pop(draw_ctx);
+
+            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !state.is_overflow()
