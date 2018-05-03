@@ -427,7 +427,6 @@ extern "C" {
     fn rsvg_state_new() -> *mut RsvgState;
     fn rsvg_state_new_with_parent(parent: *mut RsvgState) -> *mut RsvgState;
     fn rsvg_state_free(state: *mut RsvgState);
-    fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
 
@@ -450,12 +449,6 @@ pub fn new_with_parent(parent: *mut RsvgState) -> *mut RsvgState {
 pub fn free(state: *mut RsvgState) {
     unsafe {
         rsvg_state_free(state);
-    }
-}
-
-pub fn reinit(state: *mut RsvgState) {
-    unsafe {
-        rsvg_state_reinit(state);
     }
 }
 

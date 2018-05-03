@@ -139,15 +139,6 @@ rsvg_state_free (RsvgState *state)
 }
 
 void
-rsvg_state_reinit (RsvgState * state)
-{
-    RsvgState *parent = state->parent;
-    rsvg_state_finalize (state);
-    rsvg_state_init (state);
-    state->parent = parent;
-}
-
-void
 rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 {
     RsvgState *parent = dst->parent;

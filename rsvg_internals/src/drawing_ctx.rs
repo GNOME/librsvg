@@ -308,6 +308,16 @@ pub fn state_push(draw_ctx: *mut RsvgDrawingCtx) {
     }
 }
 
+pub fn state_push_not_inherited(draw_ctx: *mut RsvgDrawingCtx) {
+    let parent = get_current_state(draw_ctx);
+
+    let state = state::new_with_parent(parent);
+
+    unsafe {
+        rsvg_drawing_ctx_set_current_state(draw_ctx, state);
+    }
+}
+
 pub fn state_pop(draw_ctx: *mut RsvgDrawingCtx) {
     let state = get_current_state(draw_ctx);
 

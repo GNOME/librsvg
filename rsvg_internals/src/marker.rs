@@ -169,10 +169,10 @@ impl NodeMarker {
             -self.ref_y.get().normalize(draw_ctx),
         );
 
-        drawing_ctx::state_push(draw_ctx);
+        drawing_ctx::state_push_not_inherited(draw_ctx);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
-        state::reinit(state);
+
         state::reconstruct(state, node);
 
         let rstate = state::get_state_rust(state);
