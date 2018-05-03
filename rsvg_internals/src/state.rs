@@ -547,6 +547,17 @@ impl State {
         Ok(())
     }
 
+    pub fn parse_presentation_attributes(
+        &mut self,
+        pbag: &PropertyBag,
+    ) -> Result<(), AttributeError> {
+        for (_key, attr, value) in pbag.iter() {
+            self.parse_style_pair(attr, value, false, false)?;
+        }
+
+        Ok(())
+    }
+
     pub fn parse_conditional_processing_attributes(
         &mut self,
         pbag: &PropertyBag,
@@ -1138,6 +1149,21 @@ pub extern "C" fn rsvg_state_is_visible(state: *const RsvgState) -> glib_sys::gb
     let state = from_c(state);
 
     state.is_visible().to_glib()
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_parse_presentation_attributes(
+    state: *mut RsvgState,
+    pbag: *const PropertyBag,
+) -> glib_sys::gboolean {
+    let state = from_c_mut(state);
+
+    let pbag = unsafe { &*pbag };
+
+    match state.parse_presentation_attributes(pbag) {
+        Ok(_) => true.to_glib(),
+        Err(_) => false.to_glib(),
+    }
 }
 
 #[no_mangle]

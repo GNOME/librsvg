@@ -40,6 +40,7 @@ typedef gboolean (*InheritanceFunction) (gboolean dst_has_prop, gboolean src_has
 
 /* Defined in rsvg_internals/src/state.rs */
 extern gboolean rsvg_state_parse_style_pair(RsvgState *state, RsvgAttribute attr, const char *value, gboolean important, gboolean accept_shorthands) G_GNUC_WARN_UNUSED_RESULT;
+extern gboolean rsvg_state_parse_presentation_attributes (RsvgState *state, RsvgPropertyBag *pbag) G_GNUC_WARN_UNUSED_RESULT;
 extern gboolean rsvg_state_parse_conditional_processing_attributes (RsvgState *state, RsvgPropertyBag *pbag) G_GNUC_WARN_UNUSED_RESULT;
 
 typedef struct _StyleValueData {
@@ -66,31 +67,6 @@ style_value_data_free (StyleValueData *value)
         return;
     g_free (value->value);
     g_free (value);
-}
-
-/* take a pair of the form (fill="#ff00ff") and parse it as a style */
-void
-rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
-{
-    RsvgPropertyBagIter *iter;
-    const char *key;
-    RsvgAttribute attr;
-    const char *value;
-    gboolean success;
-
-    success = TRUE;
-
-    iter = rsvg_property_bag_iter_begin (atts);
-
-    while (success && rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        success = rsvg_state_parse_style_pair(state, attr, value, FALSE, FALSE);
-    }
-
-    rsvg_property_bag_iter_end (iter);
-
-    if (!success) {
-        return; /* FIXME: propagate errors upstream */
-    }
 }
 
 static gboolean
@@ -472,7 +448,7 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
 
     state = rsvg_node_get_state (node);
 
-    rsvg_parse_presentation_attributes (state, atts);
+    success = rsvg_state_parse_presentation_attributes (state, atts);
 
     /* TODO: i'm not sure it should reside here */
     success = success && rsvg_state_parse_conditional_processing_attributes (state, atts);
