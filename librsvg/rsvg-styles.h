@@ -46,8 +46,6 @@ typedef enum {
 typedef struct State State;
 
 struct _RsvgState {
-    RsvgState *parent;
-
     State *state_rust;
 };
 

@@ -39,9 +39,10 @@
 typedef gboolean (*InheritanceFunction) (gboolean dst_has_prop, gboolean src_has_prop);
 
 /* Defined in rsvg_internals/src/state.rs */
-extern State *rsvg_state_rust_new(void);
+extern State *rsvg_state_rust_new(RsvgState *parent);
 extern void rsvg_state_rust_free(State *state);
-extern State *rsvg_state_rust_clone(State *state);
+extern RsvgState *rsvg_state_rust_get_parent(State *state);
+extern State *rsvg_state_rust_clone_and_reset_parent(State *state, RsvgState *parent);
 extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
@@ -91,25 +92,13 @@ style_value_data_free (StyleValueData *value)
     g_free (value);
 }
 
-static void
-rsvg_state_init (RsvgState * state)
-{
-    memset (state, 0, sizeof (RsvgState));
-
-    state->parent = NULL;
-
-    state->state_rust = rsvg_state_rust_new();
-}
-
 RsvgState *
 rsvg_state_new_with_parent (RsvgState *parent)
 {
     RsvgState *state;
 
     state = g_slice_new (RsvgState);
-    rsvg_state_init (state);
-
-    state->parent = parent;
+    state->state_rust = rsvg_state_rust_new (parent);
 
     return state;
 }
@@ -141,14 +130,10 @@ rsvg_state_free (RsvgState *state)
 void
 rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 {
-    RsvgState *parent = dst->parent;
+    RsvgState *parent = rsvg_state_rust_get_parent (dst->state_rust);
 
     rsvg_state_finalize (dst);
-
-    *dst = *src;
-    dst->parent = parent;
-
-    dst->state_rust = rsvg_state_rust_clone(src->state_rust);
+    dst->state_rust = rsvg_state_rust_clone_and_reset_parent(src->state_rust, parent);
 }
 
 /*
@@ -798,14 +783,14 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
 RsvgState *
 rsvg_state_parent (RsvgState * state)
 {
-    return state->parent;
+    return rsvg_state_rust_get_parent (state->state_rust);
 }
 
 void
 rsvg_state_free_all (RsvgState * state)
 {
     while (state) {
-        RsvgState *parent = state->parent;
+        RsvgState *parent = rsvg_state_parent (state);
 
         rsvg_state_free (state);
 

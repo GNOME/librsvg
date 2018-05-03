@@ -39,6 +39,8 @@ pub enum RsvgState {}
 /// `.unwrap_or_default()` to get the default value for the property.
 #[derive(Clone)]
 pub struct State {
+    pub parent: *const RsvgState,
+
     pub affine: cairo::Matrix,
 
     pub baseline_shift: Option<BaselineShift>,
@@ -93,8 +95,10 @@ pub struct State {
 }
 
 impl State {
-    fn new() -> State {
+    fn new(parent: *const RsvgState) -> State {
         State {
+            parent,
+
             affine: cairo::Matrix::identity(),
 
             // please keep these sorted
@@ -1078,8 +1082,8 @@ pub extern "C" fn rsvg_state_parse_conditional_processing_attributes(
 // Rust State API for consumption from C ----------------------------------------
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_new() -> *mut State {
-    Box::into_raw(Box::new(State::new()))
+pub extern "C" fn rsvg_state_rust_new(parent: *const RsvgState) -> *mut State {
+    Box::into_raw(Box::new(State::new(parent)))
 }
 
 #[no_mangle]
@@ -1092,10 +1096,25 @@ pub extern "C" fn rsvg_state_rust_free(state: *mut State) {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_clone(state: *const State) -> *mut State {
+pub extern "C" fn rsvg_state_rust_get_parent(state: *const State) -> *mut RsvgState {
     assert!(!state.is_null());
 
-    unsafe { Box::into_raw(Box::new((*state).clone())) }
+    unsafe { (*state).parent as *mut _ }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_clone_and_reset_parent(
+    state: *const State,
+    parent: *mut RsvgState,
+) -> *mut State {
+    assert!(!state.is_null());
+
+    unsafe {
+        let mut cloned = (*state).clone();
+        cloned.parent = parent;
+
+        Box::into_raw(Box::new(cloned))
+    }
 }
 
 #[no_mangle]
