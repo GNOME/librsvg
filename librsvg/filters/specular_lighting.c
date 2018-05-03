@@ -182,6 +182,7 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl,
                 state = rsvg_state_new ();
                 rsvg_state_reconstruct (state, node);
                 filter->lightingcolor = rsvg_state_get_current_color (state);
+                rsvg_state_free (state);
                 break;
 
             case RSVG_CSS_COLOR_SPEC_ARGB:
