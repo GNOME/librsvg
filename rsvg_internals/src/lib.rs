@@ -103,7 +103,6 @@ pub use shapes::{
 };
 
 pub use state::{
-    rsvg_state_contains_important_style,
     rsvg_state_free,
     rsvg_state_get_affine,
     rsvg_state_get_clip_path,
@@ -115,7 +114,6 @@ pub use state::{
     rsvg_state_get_flood_opacity,
     rsvg_state_get_mask,
     rsvg_state_get_opacity,
-    rsvg_state_insert_important_style,
     rsvg_state_is_visible,
     rsvg_state_new,
     rsvg_state_parent,

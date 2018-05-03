@@ -39,9 +39,7 @@
 typedef gboolean (*InheritanceFunction) (gboolean dst_has_prop, gboolean src_has_prop);
 
 /* Defined in rsvg_internals/src/state.rs */
-extern gboolean rsvg_state_contains_important_style(RsvgState *state, RsvgAttribute attr);
-extern gboolean rsvg_state_insert_important_style(RsvgState *state, RsvgAttribute attr);
-extern gboolean rsvg_state_parse_style_pair(RsvgState *state, RsvgAttribute attr, const char *value, gboolean accept_shorthands) G_GNUC_WARN_UNUSED_RESULT;
+extern gboolean rsvg_state_parse_style_pair(RsvgState *state, RsvgAttribute attr, const char *value, gboolean important, gboolean accept_shorthands) G_GNUC_WARN_UNUSED_RESULT;
 extern gboolean rsvg_state_parse_conditional_processing_attributes (RsvgState *state, RsvgPropertyBag *pbag) G_GNUC_WARN_UNUSED_RESULT;
 
 typedef struct _StyleValueData {
@@ -70,46 +68,6 @@ style_value_data_free (StyleValueData *value)
     g_free (value);
 }
 
-typedef enum {
-    PAIR_SOURCE_STYLE,
-    PAIR_SOURCE_PRESENTATION_ATTRIBUTE
-} PairSource;
-
-static gboolean
-rsvg_parse_style_pair (RsvgState *state,
-                       RsvgAttribute attr,
-                       const gchar *value,
-                       gboolean important,
-                       PairSource source) G_GNUC_WARN_UNUSED_RESULT;
-
-/* Parse a CSS2 style argument, setting the SVG context attributes. */
-static gboolean
-rsvg_parse_style_pair (RsvgState *state,
-                       RsvgAttribute attr,
-                       const gchar *value,
-                       gboolean important,
-                       PairSource source)
-{
-    gboolean success = TRUE;
-
-    if (value == NULL)
-        return success;
-
-    if (!important) {
-        if (rsvg_state_contains_important_style (state, attr))
-            return success;
-    } else {
-        rsvg_state_insert_important_style (state, attr);
-    }
-
-    success = rsvg_state_parse_style_pair(state,
-                                          attr,
-                                          value,
-                                          source == PAIR_SOURCE_STYLE);
-
-    return success;
-}
-
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
 void
 rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
@@ -125,7 +83,7 @@ rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
     iter = rsvg_property_bag_iter_begin (atts);
 
     while (success && rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        success = rsvg_parse_style_pair (state, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
+        success = rsvg_state_parse_style_pair(state, attr, value, FALSE, FALSE);
     }
 
     rsvg_property_bag_iter_end (iter);
@@ -205,11 +163,7 @@ rsvg_parse_style_attribute_contents (RsvgState *state, const char *str)
                 g_strstrip (first_value);
 
                 if (rsvg_attribute_from_name (first_value, &attr)) {
-                    success = rsvg_parse_style_pair (state,
-                                                     attr,
-                                                     style_value,
-                                                     important,
-                                                     PAIR_SOURCE_STYLE);
+                    success = rsvg_state_parse_style_pair(state, attr, style_value, important, TRUE);
                 }
             }
 
@@ -465,11 +419,12 @@ apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
     RsvgAttribute attr;
 
     if (rsvg_attribute_from_name (key, &attr)) {
-        gboolean success = rsvg_parse_style_pair (state,
-                                                  attr,
-                                                  value->value,
-                                                  value->important,
-                                                  PAIR_SOURCE_STYLE);
+        gboolean success = rsvg_state_parse_style_pair(state,
+                                                       attr,
+                                                       value->value,
+                                                       value->important,
+                                                       TRUE);
+
         /* FIXME: propagate errors upstream */
     }
 }
