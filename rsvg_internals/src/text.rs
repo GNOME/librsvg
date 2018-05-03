@@ -30,19 +30,12 @@ use state::{
     FontVariant,
     FontWeight,
     LetterSpacing,
-    RsvgState,
+    State,
     TextAnchor,
     UnicodeBidi,
     WritingMode,
     XmlLang,
 };
-
-extern "C" {
-    fn _rsvg_css_normalize_font_size(
-        state: *mut RsvgState,
-        draw_ctx: *const RsvgDrawingCtx,
-    ) -> libc::c_double;
-}
 
 /// In SVG text elements, we use `NodeChars` to store character data.  For example,
 /// an element like `<text>Foo Bar</text>` will be a `NodeText` with a single child,
@@ -82,29 +75,34 @@ impl NodeChars {
         self.string.borrow_mut().push_str(s);
     }
 
-    fn measure(&self, draw_ctx: *const RsvgDrawingCtx, length: &mut f64) {
+    fn measure(&self, draw_ctx: *const RsvgDrawingCtx, state: &State, length: &mut f64) {
         let s = self.string.borrow();
-        let layout = create_pango_layout(draw_ctx, &s);
+        let layout = create_pango_layout(draw_ctx, state, &s);
         let (width, _) = layout.get_size();
 
         *length = f64::from(width) / f64::from(pango::SCALE);
     }
 
-    fn render(&self, draw_ctx: *mut RsvgDrawingCtx, x: &mut f64, y: &mut f64, clipping: bool) {
+    fn render(
+        &self,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: &State,
+        x: &mut f64,
+        y: &mut f64,
+        clipping: bool,
+    ) {
         let s = self.string.borrow();
-        let layout = create_pango_layout(draw_ctx, &s);
+        let layout = create_pango_layout(draw_ctx, state, &s);
         let (width, _) = layout.get_size();
-
-        let state = drawing_ctx::get_current_state(draw_ctx);
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
         let offset = baseline + drawing_ctx::get_accumulated_baseline_shift(draw_ctx);
 
-        if state::text_gravity_is_vertical(state) {
-            draw_pango_layout(draw_ctx, &layout, *x + offset, *y, clipping);
+        if state.text_gravity_is_vertical() {
+            draw_pango_layout(draw_ctx, state, &layout, *x + offset, *y, clipping);
             *y += f64::from(width) / f64::from(pango::SCALE);
         } else {
-            draw_pango_layout(draw_ctx, &layout, *x, *y - offset, clipping);
+            draw_pango_layout(draw_ctx, state, &layout, *x, *y - offset, clipping);
             *x += f64::from(width) / f64::from(pango::SCALE);
         }
     }
@@ -115,7 +113,7 @@ impl NodeTrait for NodeChars {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing
     }
 
@@ -158,20 +156,24 @@ impl NodeTrait for NodeText {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
-        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
-
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: &State,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         let mut x = self.x.get().normalize(draw_ctx);
         let mut y = self.y.get().normalize(draw_ctx);
         let mut dx = self.dx.get().normalize(draw_ctx);
         let mut dy = self.dy.get().normalize(draw_ctx);
 
-        let state = drawing_ctx::get_current_state(draw_ctx);
-        let anchor = state::get_state_rust(state).text_anchor.unwrap_or_default();
+        let anchor = state.text_anchor.unwrap_or_default();
 
-        let offset = anchor_offset(node, draw_ctx, anchor, false);
+        let offset = anchor_offset(node, draw_ctx, state, anchor, false);
 
-        if state::text_gravity_is_vertical(state) {
+        if state.text_gravity_is_vertical() {
             y -= offset;
             dy = match anchor {
                 TextAnchor::Start => dy,
@@ -190,7 +192,7 @@ impl NodeTrait for NodeText {
         x += dx;
         y += dy;
 
-        render_children(node, draw_ctx, &mut x, &mut y, false, clipping);
+        render_children(node, draw_ctx, state, &mut x, &mut y, false, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -209,7 +211,7 @@ impl NodeTRef {
         }
     }
 
-    fn measure(&self, draw_ctx: *mut RsvgDrawingCtx, length: &mut f64) -> bool {
+    fn measure(&self, draw_ctx: *mut RsvgDrawingCtx, state: &State, length: &mut f64) -> bool {
         let l = self.link.borrow();
 
         if l.is_none() {
@@ -219,7 +221,7 @@ impl NodeTRef {
         let done =
             if let Some(acquired) = drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap()) {
                 let c = acquired.get();
-                measure_children(&c, draw_ctx, length, true)
+                measure_children(&c, draw_ctx, state, length, true)
             } else {
                 false
             };
@@ -227,7 +229,14 @@ impl NodeTRef {
         done
     }
 
-    fn render(&self, draw_ctx: *mut RsvgDrawingCtx, x: &mut f64, y: &mut f64, clipping: bool) {
+    fn render(
+        &self,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: &State,
+        x: &mut f64,
+        y: &mut f64,
+        clipping: bool,
+    ) {
         let l = self.link.borrow();
 
         if l.is_none() {
@@ -236,7 +245,7 @@ impl NodeTRef {
 
         if let Some(acquired) = drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap()) {
             let c = acquired.get();
-            render_children(&c, draw_ctx, x, y, true, clipping)
+            render_children(&c, draw_ctx, state, x, y, true, clipping)
         }
     }
 }
@@ -253,7 +262,7 @@ impl NodeTrait for NodeTRef {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing
     }
 
@@ -283,6 +292,7 @@ impl NodeTSpan {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
+        state: &State,
         length: &mut f64,
         usetextonly: bool,
     ) -> bool {
@@ -290,20 +300,20 @@ impl NodeTSpan {
             return true;
         }
 
-        let state = drawing_ctx::get_current_state(draw_ctx);
-        if state::text_gravity_is_vertical(state) {
+        if state.text_gravity_is_vertical() {
             *length += self.dy.get().normalize(draw_ctx);
         } else {
             *length += self.dx.get().normalize(draw_ctx);
         }
 
-        measure_children(node, draw_ctx, length, usetextonly)
+        measure_children(node, draw_ctx, state, length, usetextonly)
     }
 
     fn render(
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
+        _state: &State,
         x: &mut f64,
         y: &mut f64,
         usetextonly: bool,
@@ -312,14 +322,15 @@ impl NodeTSpan {
         drawing_ctx::state_push(draw_ctx);
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
 
+        let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
+
         let mut dx = self.dx.get().normalize(draw_ctx);
         let mut dy = self.dy.get().normalize(draw_ctx);
 
-        let state = drawing_ctx::get_current_state(draw_ctx);
-        let vertical = state::text_gravity_is_vertical(state);
-        let anchor = state::get_state_rust(state).text_anchor.unwrap_or_default();
+        let vertical = state.text_gravity_is_vertical();
+        let anchor = state.text_anchor.unwrap_or_default();
 
-        let offset = anchor_offset(node, draw_ctx, anchor, usetextonly);
+        let offset = anchor_offset(node, draw_ctx, state, anchor, usetextonly);
 
         if let Some(self_x) = self.x.get() {
             *x = self_x.normalize(draw_ctx);
@@ -347,7 +358,7 @@ impl NodeTSpan {
         }
         *y += dy;
 
-        render_children(node, draw_ctx, x, y, usetextonly, clipping);
+        render_children(node, draw_ctx, state, x, y, usetextonly, clipping);
 
         drawing_ctx::state_pop(draw_ctx);
     }
@@ -371,7 +382,7 @@ impl NodeTrait for NodeTSpan {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing
     }
 
@@ -481,24 +492,23 @@ impl From<WritingMode> for pango::Gravity {
     }
 }
 
-fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::Layout {
-    let state = drawing_ctx::get_current_state(draw_ctx);
-    let rstate = state::get_state_rust(state);
+fn create_pango_layout(
+    draw_ctx: *const RsvgDrawingCtx,
+    state: &State,
+    text: &str,
+) -> pango::Layout {
     let pango_context = drawing_ctx::get_pango_context(draw_ctx);
 
-    if let Some(XmlLang(ref lang)) = rstate.xml_lang {
+    if let Some(XmlLang(ref lang)) = state.xml_lang {
         let pango_lang = pango::Language::from_string(&lang);
         pango_context.set_language(&pango_lang);
     }
 
-    pango_context.set_base_gravity(pango::Gravity::from(
-        rstate.writing_mode.unwrap_or_default(),
-    ));
+    pango_context.set_base_gravity(pango::Gravity::from(state.writing_mode.unwrap_or_default()));
 
-    match (rstate.unicode_bidi, rstate.direction) {
+    match (state.unicode_bidi, state.direction) {
         (Some(UnicodeBidi::Override), _) | (Some(UnicodeBidi::Embed), _) => {
-            pango_context
-                .set_base_dir(pango::Direction::from(rstate.direction.unwrap_or_default()));
+            pango_context.set_base_dir(pango::Direction::from(state.direction.unwrap_or_default()));
         }
 
         (_, Some(direction)) => {
@@ -507,28 +517,24 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
         (_, _) => {
             pango_context.set_base_dir(pango::Direction::from(
-                rstate.writing_mode.unwrap_or_default(),
+                state.writing_mode.unwrap_or_default(),
             ));
         }
     }
 
     let mut font_desc = pango_context.get_font_description().unwrap();
 
-    if let Some(FontFamily(ref font_family)) = rstate.font_family {
+    if let Some(FontFamily(ref font_family)) = state.font_family {
         font_desc.set_family(&font_family);
     }
 
-    font_desc.set_style(pango::Style::from(rstate.font_style.unwrap_or_default()));
+    font_desc.set_style(pango::Style::from(state.font_style.unwrap_or_default()));
 
-    font_desc.set_variant(pango::Variant::from(
-        rstate.font_variant.unwrap_or_default(),
-    ));
+    font_desc.set_variant(pango::Variant::from(state.font_variant.unwrap_or_default()));
 
-    font_desc.set_weight(pango::Weight::from(rstate.font_weight.unwrap_or_default()));
+    font_desc.set_weight(pango::Weight::from(state.font_weight.unwrap_or_default()));
 
-    font_desc.set_stretch(pango::Stretch::from(
-        rstate.font_stretch.unwrap_or_default(),
-    ));
+    font_desc.set_stretch(pango::Stretch::from(state.font_stretch.unwrap_or_default()));
 
     let (_, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
     font_desc.set_size(to_pango_units(
@@ -540,13 +546,13 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     let attr_list = pango::AttrList::new();
 
-    if let Some(LetterSpacing(ref ls)) = rstate.letter_spacing {
+    if let Some(LetterSpacing(ref ls)) = state.letter_spacing {
         attr_list.insert(
             pango::Attribute::new_letter_spacing(to_pango_units(ls.normalize(draw_ctx))).unwrap(),
         );
     }
 
-    if let Some(ref td) = rstate.text_decoration {
+    if let Some(ref td) = state.text_decoration {
         if td.underline {
             attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single).unwrap());
         }
@@ -558,9 +564,9 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     layout.set_attributes(&attr_list);
 
-    layout.set_alignment(pango::Alignment::from(rstate.direction.unwrap_or_default()));
+    layout.set_alignment(pango::Alignment::from(state.direction.unwrap_or_default()));
 
-    let t = xml_space_normalize(rstate.xml_space.unwrap_or_default(), text);
+    let t = xml_space_normalize(state.xml_space.unwrap_or_default(), text);
     layout.set_text(&t);
 
     layout
@@ -569,6 +575,7 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 fn anchor_offset(
     node: &RsvgNode,
     draw_ctx: *mut RsvgDrawingCtx,
+    state: &State,
     anchor: TextAnchor,
     textonly: bool,
 ) -> f64 {
@@ -577,11 +584,11 @@ fn anchor_offset(
     match anchor {
         TextAnchor::Start => {}
         TextAnchor::Middle => {
-            measure_children(node, draw_ctx, &mut offset, textonly);
+            measure_children(node, draw_ctx, state, &mut offset, textonly);
             offset /= 2f64;
         }
         _ => {
-            measure_children(node, draw_ctx, &mut offset, textonly);
+            measure_children(node, draw_ctx, state, &mut offset, textonly);
         }
     }
 
@@ -591,13 +598,14 @@ fn anchor_offset(
 fn measure_children(
     node: &RsvgNode,
     draw_ctx: *mut RsvgDrawingCtx,
+    state: &State,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
     let mut done = false;
 
     for child in node.children() {
-        done = measure_child(&child, draw_ctx, length, textonly);
+        done = measure_child(&child, draw_ctx, state, length, textonly);
         if done {
             break;
         }
@@ -609,6 +617,7 @@ fn measure_children(
 fn measure_child(
     node: &RsvgNode,
     draw_ctx: *mut RsvgDrawingCtx,
+    _state: &State,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
@@ -617,21 +626,23 @@ fn measure_child(
     drawing_ctx::state_push(draw_ctx);
     drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
 
+    let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
+
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
-            node.with_impl(|chars: &NodeChars| chars.measure(draw_ctx, length));
+            node.with_impl(|chars: &NodeChars| chars.measure(draw_ctx, state, length));
         }
         (_, true) => {
-            done = measure_children(node, draw_ctx, length, textonly);
+            done = measure_children(node, draw_ctx, state, length, textonly);
         }
         (NodeType::TSpan, _) => {
             node.with_impl(|tspan: &NodeTSpan| {
-                done = tspan.measure(node, draw_ctx, length, textonly);
+                done = tspan.measure(node, draw_ctx, state, length, textonly);
             });
         }
         (NodeType::TRef, _) => {
             node.with_impl(|tref: &NodeTRef| {
-                done = tref.measure(draw_ctx, length);
+                done = tref.measure(draw_ctx, state, length);
             });
         }
         (_, _) => {}
@@ -645,6 +656,7 @@ fn measure_child(
 fn render_children(
     node: &RsvgNode,
     draw_ctx: *mut RsvgDrawingCtx,
+    state: &State,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,
@@ -653,7 +665,7 @@ fn render_children(
     drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
     for child in node.children() {
-        render_child(&child, draw_ctx, x, y, textonly, clipping);
+        render_child(&child, draw_ctx, state, x, y, textonly, clipping);
     }
 
     drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
@@ -662,6 +674,7 @@ fn render_children(
 fn render_child(
     node: &RsvgNode,
     draw_ctx: *mut RsvgDrawingCtx,
+    state: &State,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,
@@ -669,19 +682,19 @@ fn render_child(
 ) {
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
-            node.with_impl(|chars: &NodeChars| chars.render(draw_ctx, x, y, clipping));
+            node.with_impl(|chars: &NodeChars| chars.render(draw_ctx, state, x, y, clipping));
         }
         (_, true) => {
-            render_children(node, draw_ctx, x, y, textonly, clipping);
+            render_children(node, draw_ctx, state, x, y, textonly, clipping);
         }
         (NodeType::TSpan, _) => {
             node.with_impl(|tspan: &NodeTSpan| {
-                tspan.render(node, draw_ctx, x, y, textonly, clipping);
+                tspan.render(node, draw_ctx, state, x, y, textonly, clipping);
             });
         }
         (NodeType::TRef, _) => {
             node.with_impl(|tref: &NodeTRef| {
-                tref.render(draw_ctx, x, y, clipping);
+                tref.render(draw_ctx, state, x, y, clipping);
             });
         }
         (_, _) => {}
@@ -692,8 +705,8 @@ fn render_child(
 pub extern "C" fn rsvg_node_chars_new(raw_parent: *const RsvgNode) -> *const RsvgNode {
     let node = boxed_node_new(NodeType::Chars, raw_parent, Box::new(NodeChars::new()));
 
-    let state = rsvg_node_get_state(node);
-    state::set_cond(state, false);
+    let state = state::from_c_mut(rsvg_node_get_state(node));
+    state.cond = false;
 
     node
 }

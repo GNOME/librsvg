@@ -16,7 +16,7 @@ use length::*;
 use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state;
+use state::State;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -34,7 +34,14 @@ impl NodeTrait for NodeGroup {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        _: &State,
+        dominate: i32,
+        clipping: bool,
+    ) {
         node.draw_children(draw_ctx, dominate, clipping);
     }
 
@@ -57,7 +64,7 @@ impl NodeTrait for NodeDefs {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing
     }
 
@@ -80,12 +87,17 @@ impl NodeTrait for NodeSwitch {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
-        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
-
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        _state: &State,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
-        if let Some(child) = node.children().find(|c| state::get_cond(c.get_state())) {
+        if let Some(child) = node.children().find(|c| c.get_state().cond) {
             let boxed_child = box_node(child.clone());
 
             drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0, clipping);
@@ -178,17 +190,21 @@ impl NodeTrait for NodeSvg {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: &State,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         let nx = self.x.get().normalize(draw_ctx);
         let ny = self.y.get().normalize(draw_ctx);
         let nw = self.w.get().normalize(draw_ctx);
         let nh = self.h.get().normalize(draw_ctx);
 
-        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
-
-        let state = drawing_ctx::get_current_state(draw_ctx);
-        let do_clip = !state::is_overflow(state) && node.get_parent().is_some();
-        let affine = state::get_state_rust(state).affine;
+        let do_clip = !state.is_overflow() && node.get_parent().is_some();
+        let affine = state.affine;
 
         draw_in_viewport(
             nx,
@@ -265,7 +281,14 @@ impl NodeTrait for NodeUse {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: &State,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         let link = self.link.borrow();
 
         if link.is_none() {
@@ -308,27 +331,29 @@ impl NodeTrait for NodeUse {
             return;
         }
 
-        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
-
-        let state = drawing_ctx::get_current_state(draw_ctx);
-        let rstate = state::get_state_rust(state);
-
         if child.get_type() != NodeType::Symbol {
-            let mut affine = rstate.affine;
+            let mut affine = state.affine;
             affine.translate(nx, ny);
-            rstate.affine = affine;
 
             drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+
+            // push a new state so we can change its affine
+            drawing_ctx::state_push(draw_ctx);
+
+            let cur_state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
+            cur_state.affine = affine;
 
             let boxed_child = box_node(child.clone());
             drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 1, clipping);
             rsvg_node_unref(boxed_child);
 
+            drawing_ctx::state_pop(draw_ctx);
+
             drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
-                let do_clip = !state::is_overflow(state)
-                    || (rstate.overflow.is_none() && state::is_overflow(child.get_state()));
+                let do_clip = !state.is_overflow()
+                    || (state.overflow.is_none() && child.get_state().is_overflow());
 
                 draw_in_viewport(
                     nx,
@@ -339,7 +364,7 @@ impl NodeTrait for NodeUse {
                     do_clip,
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
-                    rstate.affine,
+                    state.affine,
                     draw_ctx,
                     clipping,
                     || {
@@ -390,7 +415,7 @@ impl NodeTrait for NodeSymbol {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing
     }
 

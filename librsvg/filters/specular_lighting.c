@@ -170,7 +170,7 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl,
             RsvgCssColorSpec spec;
             RsvgState *state;
 
-            spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
+            spec = rsvg_css_parse_color (value);
 
             switch (spec.kind) {
             case RSVG_CSS_COLOR_SPEC_INHERIT:
@@ -178,9 +178,10 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl,
                 break;
 
             case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
-                state = rsvg_state_new ();
+                state = rsvg_state_new (NULL);
                 rsvg_state_reconstruct (state, node);
                 filter->lightingcolor = rsvg_state_get_current_color (state);
+                rsvg_state_free (state);
                 break;
 
             case RSVG_CSS_COLOR_SPEC_ARGB:
@@ -235,7 +236,6 @@ rsvg_new_filter_primitive_specular_lighting (const char *element_name, RsvgNode 
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING,
                                 parent,
-                                rsvg_state_new (),
                                 filter,
                                 rsvg_filter_primitive_specular_lighting_set_atts,
                                 rsvg_filter_draw,

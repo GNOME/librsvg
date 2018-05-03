@@ -149,7 +149,6 @@ rsvg_new_filter_primitive_tile (const char *element_name, RsvgNode *parent)
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_TILE,
                                 parent,
-                                rsvg_state_new (),
                                 filter,
                                 rsvg_filter_primitive_tile_set_atts,
                                 rsvg_filter_draw,

@@ -19,7 +19,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use state;
+use state::State;
 use viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -220,7 +220,7 @@ impl NodeTrait for NodePattern {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 
@@ -303,8 +303,8 @@ fn set_pattern_on_draw_context(
         }
     }
 
-    let state = drawing_ctx::get_current_state(draw_ctx);
-    let affine = state::get_state_rust(state).affine;
+    let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
+    let affine = state.affine;
     let taffine = cairo::Matrix::multiply(&pattern_affine, &affine);
 
     let mut scwscale = (taffine.xx * taffine.xx + taffine.xy * taffine.xy).sqrt();
@@ -403,9 +403,8 @@ fn set_pattern_on_draw_context(
     drawing_ctx::set_cairo_context(draw_ctx, &cr_pattern);
 
     // Set up transformations to be determined by the contents units
-    let state = drawing_ctx::get_current_state(draw_ctx);
-    let rstate = state::get_state_rust(state);
-    rstate.affine = caffine;
+    let state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
+    state.affine = caffine;
 
     // Draw everything
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();

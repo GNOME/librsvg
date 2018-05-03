@@ -13,7 +13,7 @@ use error::*;
 use handle::RsvgHandle;
 use parsers::ParseError;
 use property_bag::PropertyBag;
-use state::{self, RsvgState};
+use state::{self, rsvg_state_new, RsvgState, State};
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
 // points to an  Rc<Node>, which is our refcounted Rust representation
@@ -31,7 +31,14 @@ pub trait NodeTrait: Downcast {
         handle: *const RsvgHandle,
         pbag: &PropertyBag,
     ) -> NodeResult;
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool);
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: &State,
+        dominate: i32,
+        clipping: bool,
+    );
     fn get_c_impl(&self) -> *const RsvgCNodeImpl;
 }
 
@@ -154,8 +161,12 @@ impl Node {
         self.node_type
     }
 
-    pub fn get_state(&self) -> *mut RsvgState {
-        self.state
+    pub fn get_state(&self) -> &State {
+        state::from_c(self.state)
+    }
+
+    pub fn get_state_mut(&self) -> &mut State {
+        state::from_c_mut(self.state)
     }
 
     pub fn get_parent(&self) -> Option<Rc<Node>> {
@@ -195,7 +206,12 @@ impl Node {
         clipping: bool,
     ) {
         if self.result.borrow().is_ok() {
-            self.node_impl.draw(node, draw_ctx, dominate, clipping);
+            let node_state = state::from_c(self.state);
+            drawing_ctx::state_reinherit_top(draw_ctx, node_state, dominate);
+
+            let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
+            self.node_impl
+                .draw(node, draw_ctx, state, dominate, clipping);
         }
     }
 
@@ -221,7 +237,7 @@ impl Node {
 
     pub fn draw_children(&self, draw_ctx: *const RsvgDrawingCtx, dominate: i32, clipping: bool) {
         if dominate != -1 {
-            drawing_ctx::state_reinherit_top(draw_ctx, self.state, dominate);
+            drawing_ctx::state_reinherit_top(draw_ctx, self.get_state(), dominate);
 
             drawing_ctx::push_discrete_layer(draw_ctx, clipping);
         }
@@ -281,7 +297,7 @@ pub fn boxed_node_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
-        state::new(),
+        rsvg_state_new(ptr::null_mut()),
         node_impl,
     )))
 }
@@ -404,7 +420,7 @@ pub extern "C" fn rsvg_node_get_state(raw_node: *const RsvgNode) -> *mut RsvgSta
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    node.get_state()
+    node.state
 }
 
 #[no_mangle]
@@ -554,7 +570,7 @@ mod tests {
             Ok(())
         }
 
-        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {}
+        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {}
 
         fn get_c_impl(&self) -> *const RsvgCNodeImpl {
             unreachable!();

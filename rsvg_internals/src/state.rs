@@ -9,13 +9,12 @@ use std::collections::HashSet;
 use std::ptr;
 
 use attributes::Attribute;
-use color::{self, rgba_to_argb};
+use color::rgba_to_argb;
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
-use opacity;
 use paint_server::PaintServer;
 use parsers::Parse;
 use property_bag::PropertyBag;
@@ -23,6 +22,7 @@ use property_macros::Property;
 use unitinterval::UnitInterval;
 use util::utf8_cstr;
 
+// This is only used as *const RsvgState or *mut RsvgState, as an opaque pointer for C
 pub enum RsvgState {}
 
 /// Holds the state of CSS properties
@@ -38,8 +38,14 @@ pub enum RsvgState {}
 /// If a property is `None`, is means it was not specified and must be
 /// inherited from the parent state, or in the end the caller can
 /// `.unwrap_or_default()` to get the default value for the property.
+
+// FIXME: #[derive(Clone)] is not correct here; states are not meant
+// to be cloned.  We should remove this when we remove the hack in
+// state_reinherit_top(), to clone_from() while preserving the parent
 #[derive(Clone)]
 pub struct State {
+    pub parent: *const RsvgState,
+
     pub affine: cairo::Matrix,
 
     pub baseline_shift: Option<BaselineShift>,
@@ -70,6 +76,8 @@ pub struct State {
     pub opacity: Option<Opacity>,
     pub overflow: Option<Overflow>,
     pub shape_rendering: Option<ShapeRendering>,
+    pub stop_color: Option<StopColor>,
+    pub stop_opacity: Option<StopOpacity>,
     pub stroke: Option<Stroke>,
     pub stroke_dasharray: Option<StrokeDasharray>,
     pub stroke_dashoffset: Option<StrokeDashoffset>,
@@ -88,12 +96,22 @@ pub struct State {
     pub xml_space: Option<XmlSpace>,
 
     important_styles: RefCell<HashSet<Attribute>>,
-    cond: bool,
+    pub cond: bool,
 }
 
 impl State {
-    fn new() -> State {
+    pub fn new_with_parent(parent: Option<&State>) -> State {
+        if let Some(parent) = parent {
+            State::new(to_c(parent))
+        } else {
+            State::new(ptr::null())
+        }
+    }
+
+    fn new(parent: *const RsvgState) -> State {
         State {
+            parent,
+
             affine: cairo::Matrix::identity(),
 
             // please keep these sorted
@@ -125,6 +143,15 @@ impl State {
             opacity: Default::default(),
             overflow: Default::default(),
             shape_rendering: Default::default(),
+
+            // The following two start as None (i.e. inherit).  This
+            // is so that the first pass of inherit_run(), called from
+            // reconstruct() from the "stop" element code, will
+            // correctly initialize the destination state from the
+            // toplevel element.
+            stop_color: None,
+            stop_opacity: None,
+
             stroke: Default::default(),
             stroke_dasharray: Default::default(),
             stroke_dashoffset: Default::default(),
@@ -144,6 +171,149 @@ impl State {
 
             important_styles: Default::default(),
             cond: true,
+        }
+    }
+
+    pub fn parent<'a>(&self) -> Option<&'a State> {
+        if self.parent.is_null() {
+            None
+        } else {
+            Some(from_c(self.parent))
+        }
+    }
+
+    pub fn reinherit(&mut self, src: &State) {
+        self.inherit_run(src, State::reinheritfunction, false);
+    }
+
+    pub fn inherit(&mut self, src: &State) {
+        self.inherit_run(src, State::inheritfunction, true);
+    }
+
+    pub fn force(&mut self, src: &State) {
+        self.inherit_run(src, State::forcefunction, false);
+    }
+
+    pub fn dominate(&mut self, src: &State) {
+        self.inherit_run(src, State::dominatefunction, false);
+    }
+
+    pub fn reconstruct(&mut self, node: &RsvgNode) {
+        if let Some(parent) = node.get_parent() {
+            self.reconstruct(&parent);
+            self.inherit(node.get_state());
+        }
+    }
+
+    // reinherit is given dst which is the top of the state stack
+    // and src which is the layer before in the state stack from
+    // which it should be inherited
+    fn reinheritfunction(dst: bool, _src: bool) -> bool {
+        if !dst {
+            true
+        } else {
+            false
+        }
+    }
+
+    // put something new on the inheritance stack, dst is the top of the stack,
+    // src is the state to be integrated, this is essentially the opposite of
+    // reinherit, because it is being given stuff to be integrated on the top,
+    // rather than the context underneath.
+    fn inheritfunction(_dst: bool, src: bool) -> bool {
+        src
+    }
+
+    // copy everything inheritable from the src to the dst */
+    fn forcefunction(_dst: bool, _src: bool) -> bool {
+        true
+    }
+
+    // dominate is given dst which is the top of the state stack and
+    // src which is the layer before in the state stack from which it
+    // should be inherited from, however if anything is directly
+    // specified in src (the second last layer) it will override
+    // anything on the top layer, this is for overrides in <use> tags
+    fn dominatefunction(dst: bool, src: bool) -> bool {
+        if !dst || src {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn inherit_run(
+        &mut self,
+        src: &State,
+        inherit_fn: fn(bool, bool) -> bool,
+        inherituninheritables: bool,
+    ) {
+        // please keep these sorted
+        inherit(inherit_fn, &mut self.baseline_shift, &src.baseline_shift);
+        inherit(inherit_fn, &mut self.clip_rule, &src.clip_rule);
+        inherit(inherit_fn, &mut self.color, &src.color);
+        inherit(inherit_fn, &mut self.direction, &src.direction);
+        inherit(inherit_fn, &mut self.display, &src.display);
+        inherit(inherit_fn, &mut self.fill, &src.fill);
+        inherit(inherit_fn, &mut self.fill_opacity, &src.fill_opacity);
+        inherit(inherit_fn, &mut self.fill_rule, &src.fill_rule);
+        inherit(inherit_fn, &mut self.flood_color, &src.flood_color);
+        inherit(inherit_fn, &mut self.flood_opacity, &src.flood_opacity);
+        inherit(inherit_fn, &mut self.font_family, &src.font_family);
+        inherit(inherit_fn, &mut self.font_size, &src.font_size);
+        inherit(inherit_fn, &mut self.font_stretch, &src.font_stretch);
+        inherit(inherit_fn, &mut self.font_style, &src.font_style);
+        inherit(inherit_fn, &mut self.font_variant, &src.font_variant);
+        inherit(inherit_fn, &mut self.font_weight, &src.font_weight);
+        inherit(inherit_fn, &mut self.letter_spacing, &src.letter_spacing);
+        inherit(inherit_fn, &mut self.marker_end, &src.marker_end);
+        inherit(inherit_fn, &mut self.marker_mid, &src.marker_mid);
+        inherit(inherit_fn, &mut self.marker_start, &src.marker_start);
+        inherit(inherit_fn, &mut self.overflow, &src.overflow);
+        inherit(inherit_fn, &mut self.shape_rendering, &src.shape_rendering);
+        inherit(inherit_fn, &mut self.stop_color, &src.stop_color);
+        inherit(inherit_fn, &mut self.stop_opacity, &src.stop_opacity);
+        inherit(inherit_fn, &mut self.stroke, &src.stroke);
+        inherit(
+            inherit_fn,
+            &mut self.stroke_dasharray,
+            &src.stroke_dasharray,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.stroke_dashoffset,
+            &src.stroke_dashoffset,
+        );
+        inherit(inherit_fn, &mut self.stroke_line_cap, &src.stroke_line_cap);
+        inherit(
+            inherit_fn,
+            &mut self.stroke_line_join,
+            &src.stroke_line_join,
+        );
+        inherit(inherit_fn, &mut self.stroke_opacity, &src.stroke_opacity);
+        inherit(
+            inherit_fn,
+            &mut self.stroke_miterlimit,
+            &src.stroke_miterlimit,
+        );
+        inherit(inherit_fn, &mut self.stroke_width, &src.stroke_width);
+        inherit(inherit_fn, &mut self.text_anchor, &src.text_anchor);
+        inherit(inherit_fn, &mut self.text_decoration, &src.text_decoration);
+        inherit(inherit_fn, &mut self.text_rendering, &src.text_rendering);
+        inherit(inherit_fn, &mut self.unicode_bidi, &src.unicode_bidi);
+        inherit(inherit_fn, &mut self.visibility, &src.visibility);
+        inherit(inherit_fn, &mut self.xml_lang, &src.xml_lang);
+        inherit(inherit_fn, &mut self.xml_space, &src.xml_space);
+
+        self.cond = src.cond;
+
+        if inherituninheritables {
+            self.clip_path.clone_from(&src.clip_path);
+            self.comp_op.clone_from(&src.comp_op);
+            self.enable_background.clone_from(&src.enable_background);
+            self.filter.clone_from(&src.filter);
+            self.mask.clone_from(&src.mask);
+            self.opacity.clone_from(&src.opacity);
         }
     }
 
@@ -281,6 +451,14 @@ impl State {
                 self.shape_rendering = parse_property(value, ())?;
             }
 
+            Attribute::StopColor => {
+                self.stop_color = parse_property(value, ())?;
+            }
+
+            Attribute::StopOpacity => {
+                self.stop_opacity = parse_property(value, ())?;
+            }
+
             Attribute::Stroke => {
                 self.stroke = parse_property(value, ())?;
             }
@@ -387,6 +565,28 @@ impl State {
 
         Ok(())
     }
+
+    pub fn is_overflow(&self) -> bool {
+        match self.overflow {
+            Some(Overflow::Auto) | Some(Overflow::Visible) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_visible(&self) -> bool {
+        match (self.display, self.visibility) {
+            (Some(Display::None), _) => false,
+            (_, None) | (_, Some(Visibility::Visible)) => true,
+            _ => false,
+        }
+    }
+
+    pub fn text_gravity_is_vertical(&self) -> bool {
+        match self.writing_mode {
+            Some(WritingMode::Tb) | Some(WritingMode::TbRl) => true,
+            _ => false,
+        }
+    }
 }
 
 // Parses the `value` for the type `T` of the property, including `inherit` values.
@@ -402,156 +602,6 @@ where
     } else {
         Parse::parse(value, data).map(Some)
     }
-}
-
-#[allow(improper_ctypes)]
-extern "C" {
-    fn rsvg_state_new() -> *mut RsvgState;
-    fn rsvg_state_new_with_parent(parent: *mut RsvgState) -> *mut RsvgState;
-    fn rsvg_state_free(state: *mut RsvgState);
-    fn rsvg_state_reinit(state: *mut RsvgState);
-    fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
-    fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
-    fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const color::ColorSpec;
-    fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const opacity::OpacitySpec;
-
-    fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
-    fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
-    fn rsvg_state_inherit(state: *mut RsvgState, src: *const RsvgState);
-    fn rsvg_state_reinherit(state: *mut RsvgState, src: *const RsvgState);
-
-    fn rsvg_state_get_state_rust(state: *const RsvgState) -> *mut State;
-}
-
-pub fn new() -> *mut RsvgState {
-    unsafe { rsvg_state_new() }
-}
-
-pub fn new_with_parent(parent: *mut RsvgState) -> *mut RsvgState {
-    unsafe { rsvg_state_new_with_parent(parent) }
-}
-
-pub fn free(state: *mut RsvgState) {
-    unsafe {
-        rsvg_state_free(state);
-    }
-}
-
-pub fn reinit(state: *mut RsvgState) {
-    unsafe {
-        rsvg_state_reinit(state);
-    }
-}
-
-pub fn reconstruct(state: *mut RsvgState, node: &RsvgNode) {
-    if let Some(parent) = node.get_parent() {
-        reconstruct(state, &parent);
-        unsafe {
-            rsvg_state_inherit(state, node.get_state());
-        }
-    }
-}
-
-pub fn clone_from(state: *mut RsvgState, src: *const RsvgState) {
-    unsafe {
-        rsvg_state_clone(state, src);
-    }
-}
-
-pub fn parent(state: *const RsvgState) -> Option<*mut RsvgState> {
-    let parent = unsafe { rsvg_state_parent(state) };
-
-    if parent.is_null() {
-        None
-    } else {
-        Some(parent)
-    }
-}
-
-pub fn is_overflow(state: *const RsvgState) -> bool {
-    let rstate = get_state_rust(state);
-
-    match rstate.overflow {
-        Some(Overflow::Auto) | Some(Overflow::Visible) => true,
-        _ => false,
-    }
-}
-
-pub fn is_visible(state: *const RsvgState) -> bool {
-    let rstate = get_state_rust(state);
-
-    match (rstate.display, rstate.visibility) {
-        (Some(Display::None), _) => false,
-        (_, None) | (_, Some(Visibility::Visible)) => true,
-        _ => false,
-    }
-}
-
-pub fn text_gravity_is_vertical(state: *const RsvgState) -> bool {
-    let rstate = get_state_rust(state);
-
-    match rstate.writing_mode {
-        Some(WritingMode::Tb) | Some(WritingMode::TbRl) => true,
-        _ => false,
-    }
-}
-
-pub fn get_stop_color(state: *const RsvgState) -> Result<Option<color::Color>, AttributeError> {
-    unsafe {
-        let spec_ptr = rsvg_state_get_stop_color(state);
-
-        if spec_ptr.is_null() {
-            Ok(None)
-        } else {
-            color::Color::from_color_spec(&*spec_ptr).map(Some)
-        }
-    }
-}
-
-pub fn get_stop_opacity(
-    state: *const RsvgState,
-) -> Result<Option<opacity::Opacity>, AttributeError> {
-    unsafe {
-        let opacity_ptr = rsvg_state_get_stop_opacity(state);
-
-        if opacity_ptr.is_null() {
-            Ok(None)
-        } else {
-            opacity::Opacity::from_opacity_spec(&*opacity_ptr).map(Some)
-        }
-    }
-}
-
-pub fn dominate(state: *mut RsvgState, src: *const RsvgState) {
-    unsafe {
-        rsvg_state_dominate(state, src);
-    }
-}
-
-pub fn force(state: *mut RsvgState, src: *const RsvgState) {
-    unsafe {
-        rsvg_state_force(state, src);
-    }
-}
-
-pub fn reinherit(state: *mut RsvgState, src: *const RsvgState) {
-    unsafe {
-        rsvg_state_reinherit(state, src);
-    }
-}
-
-pub fn get_cond(state: *mut RsvgState) -> bool {
-    get_state_rust(state).cond
-}
-
-pub fn set_cond(state: *mut RsvgState, value: bool) {
-    let rstate = get_state_rust(state);
-
-    rstate.cond = value;
-}
-
-pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
-    unsafe { &mut *rsvg_state_get_state_rust(state) }
 }
 
 make_property!(
@@ -881,6 +931,21 @@ make_property!(
 );
 
 make_property!(
+    StopColor,
+    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
+    inherits_automatically: false,
+    newtype_parse: cssparser::Color,
+    parse_data_type: ()
+);
+
+make_property!(
+    StopOpacity,
+    default: UnitInterval(1.0),
+    inherits_automatically: false,
+    newtype_from_str: UnitInterval
+);
+
+make_property!(
     Stroke,
     default: PaintServer::parse("#000", ()).unwrap(),
     inherits_automatically: true,
@@ -1051,15 +1116,19 @@ make_property!(
 
 #[no_mangle]
 pub extern "C" fn rsvg_state_reconstruct(state: *mut RsvgState, raw_node: *const RsvgNode) {
+    let state = from_c_mut(state);
+
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    reconstruct(state, node);
+    state.reconstruct(node);
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_state_is_visible(state: *const RsvgState) -> glib_sys::gboolean {
-    is_visible(state).to_glib()
+    let state = from_c(state);
+
+    state.is_visible().to_glib()
 }
 
 #[no_mangle]
@@ -1067,11 +1136,11 @@ pub extern "C" fn rsvg_state_parse_conditional_processing_attributes(
     state: *mut RsvgState,
     pbag: *const PropertyBag,
 ) -> glib_sys::gboolean {
-    let state = unsafe { &mut *state };
+    let state = from_c_mut(state);
+
     let pbag = unsafe { &*pbag };
 
-    let rstate = get_state_rust(state);
-    match rstate.parse_conditional_processing_attributes(pbag) {
+    match state.parse_conditional_processing_attributes(pbag) {
         Ok(_) => true.to_glib(),
         Err(_) => false.to_glib(),
     }
@@ -1079,14 +1148,34 @@ pub extern "C" fn rsvg_state_parse_conditional_processing_attributes(
 
 // Rust State API for consumption from C ----------------------------------------
 
-#[no_mangle]
-pub extern "C" fn rsvg_state_rust_new() -> *mut State {
-    Box::into_raw(Box::new(State::new()))
+pub fn from_c<'a>(state: *const RsvgState) -> &'a State {
+    assert!(!state.is_null());
+
+    unsafe { &*(state as *const State) }
+}
+
+pub fn from_c_mut<'a>(state: *mut RsvgState) -> &'a mut State {
+    assert!(!state.is_null());
+
+    unsafe { &mut *(state as *mut State) }
+}
+
+pub fn to_c(state: &State) -> *const RsvgState {
+    state as *const State as *const RsvgState
+}
+
+pub fn to_c_mut(state: &mut State) -> *mut RsvgState {
+    state as *mut State as *mut RsvgState
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_free(state: *mut State) {
-    assert!(!state.is_null());
+pub extern "C" fn rsvg_state_new(parent: *mut RsvgState) -> *mut RsvgState {
+    Box::into_raw(Box::new(State::new(parent))) as *mut RsvgState
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_free(state: *mut RsvgState) {
+    let state = from_c_mut(state);
 
     unsafe {
         Box::from_raw(state);
@@ -1094,40 +1183,40 @@ pub extern "C" fn rsvg_state_rust_free(state: *mut State) {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_clone(state: *const State) -> *mut State {
-    assert!(!state.is_null());
+pub extern "C" fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState {
+    let state = from_c(state);
 
-    unsafe { Box::into_raw(Box::new((*state).clone())) }
+    state.parent as *mut _
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_contains_important_style(
-    state: *const State,
+pub extern "C" fn rsvg_state_contains_important_style(
+    state: *const RsvgState,
     attr: Attribute,
 ) -> glib_sys::gboolean {
-    let state = unsafe { &*state };
+    let state = from_c(state);
 
     state.important_styles.borrow().contains(&attr).to_glib()
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_insert_important_style(state: *mut State, attr: Attribute) {
-    let state = unsafe { &mut *state };
+pub extern "C" fn rsvg_state_insert_important_style(state: *mut RsvgState, attr: Attribute) {
+    let state = from_c_mut(state);
 
     state.important_styles.borrow_mut().insert(attr);
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_parse_style_pair(
-    state: *mut State,
+pub extern "C" fn rsvg_state_parse_style_pair(
+    state: *mut RsvgState,
     attr: Attribute,
     value: *const libc::c_char,
     accept_shorthands: glib_sys::gboolean,
 ) -> glib_sys::gboolean {
-    assert!(!state.is_null());
+    let state = from_c_mut(state);
+
     assert!(!value.is_null());
 
-    let state = unsafe { &mut *state };
     let value = unsafe { utf8_cstr(value) };
 
     match state.parse_style_pair(attr, value, from_glib(accept_shorthands)) {
@@ -1136,160 +1225,67 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
     }
 }
 
-fn should_inherit_from_src(
-    inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
-    dst: bool,
-    src: bool,
-) -> bool {
-    from_glib(inherit_fn(dst.to_glib(), src.to_glib()))
-}
-
-fn inherit<T>(
-    inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
-    dst: &mut Option<T>,
-    src: &Option<T>,
-) where
+fn inherit<T>(inherit_fn: fn(bool, bool) -> bool, dst: &mut Option<T>, src: &Option<T>)
+where
     T: Property + Clone,
 {
-    if should_inherit_from_src(inherit_fn, dst.is_some(), src.is_some()) {
+    if inherit_fn(dst.is_some(), src.is_some()) {
         dst.clone_from(src);
     }
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_inherit_run(
-    dst: *mut State,
-    src: *const State,
-    inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
-    inheritunheritables: glib_sys::gboolean,
-) {
-    assert!(!dst.is_null());
-    assert!(!src.is_null());
+pub extern "C" fn rsvg_state_get_affine(state: *const RsvgState) -> cairo::Matrix {
+    let state = from_c(state);
 
-    let dst = unsafe { &mut *dst };
-    let src = unsafe { &*src };
+    state.affine
+}
 
-    // please keep these sorted
-    inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
-    inherit(inherit_fn, &mut dst.clip_rule, &src.clip_rule);
-    inherit(inherit_fn, &mut dst.color, &src.color);
-    inherit(inherit_fn, &mut dst.direction, &src.direction);
-    inherit(inherit_fn, &mut dst.display, &src.display);
-    inherit(inherit_fn, &mut dst.fill, &src.fill);
-    inherit(inherit_fn, &mut dst.fill_opacity, &src.fill_opacity);
-    inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
-    inherit(inherit_fn, &mut dst.flood_color, &src.flood_color);
-    inherit(inherit_fn, &mut dst.flood_opacity, &src.flood_opacity);
-    inherit(inherit_fn, &mut dst.font_family, &src.font_family);
-    inherit(inherit_fn, &mut dst.font_size, &src.font_size);
-    inherit(inherit_fn, &mut dst.font_stretch, &src.font_stretch);
-    inherit(inherit_fn, &mut dst.font_style, &src.font_style);
-    inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
-    inherit(inherit_fn, &mut dst.font_weight, &src.font_weight);
-    inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
-    inherit(inherit_fn, &mut dst.marker_end, &src.marker_end);
-    inherit(inherit_fn, &mut dst.marker_mid, &src.marker_mid);
-    inherit(inherit_fn, &mut dst.marker_start, &src.marker_start);
-    inherit(inherit_fn, &mut dst.overflow, &src.overflow);
-    inherit(inherit_fn, &mut dst.shape_rendering, &src.shape_rendering);
-    inherit(inherit_fn, &mut dst.stroke, &src.stroke);
-    inherit(inherit_fn, &mut dst.stroke_dasharray, &src.stroke_dasharray);
-    inherit(
-        inherit_fn,
-        &mut dst.stroke_dashoffset,
-        &src.stroke_dashoffset,
-    );
-    inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);
-    inherit(inherit_fn, &mut dst.stroke_line_join, &src.stroke_line_join);
-    inherit(inherit_fn, &mut dst.stroke_opacity, &src.stroke_opacity);
-    inherit(
-        inherit_fn,
-        &mut dst.stroke_miterlimit,
-        &src.stroke_miterlimit,
-    );
-    inherit(inherit_fn, &mut dst.stroke_width, &src.stroke_width);
-    inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
-    inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
-    inherit(inherit_fn, &mut dst.text_rendering, &src.text_rendering);
-    inherit(inherit_fn, &mut dst.unicode_bidi, &src.unicode_bidi);
-    inherit(inherit_fn, &mut dst.visibility, &src.visibility);
-    inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
-    inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
+#[no_mangle]
+pub extern "C" fn rsvg_state_set_affine(state: *mut RsvgState, affine: cairo::Matrix) {
+    let state = from_c_mut(state);
+    state.affine = affine;
+}
 
-    dst.cond = src.cond;
+#[no_mangle]
+pub extern "C" fn rsvg_state_get_current_color(state: *const RsvgState) -> u32 {
+    let state = from_c(state);
 
-    if from_glib(inheritunheritables) {
-        dst.clip_path.clone_from(&src.clip_path);
-        dst.comp_op.clone_from(&src.comp_op);
-        dst.enable_background.clone_from(&src.enable_background);
-        dst.filter.clone_from(&src.filter);
-        dst.mask.clone_from(&src.mask);
-        dst.opacity.clone_from(&src.opacity);
+    let current_color = state
+        .color
+        .as_ref()
+        .map_or_else(|| Color::default().0, |c| c.0);
+
+    rgba_to_argb(current_color)
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator {
+    let state = from_c(state);
+    cairo::Operator::from(state.comp_op.unwrap_or_default())
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_get_flood_color(state: *const RsvgState) -> u32 {
+    let state = from_c(state);
+
+    match state.flood_color {
+        Some(FloodColor(cssparser::Color::RGBA(rgba))) => rgba_to_argb(rgba),
+        // FIXME: fallback to current color if Color::inherit and current color is set
+        _ => 0xff000000,
     }
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_affine(state: *const State) -> cairo::Matrix {
-    unsafe {
-        let state = &*state;
-        state.affine
-    }
-}
+pub extern "C" fn rsvg_state_get_flood_opacity(state: *const RsvgState) -> u8 {
+    let state = from_c(state);
 
-#[no_mangle]
-pub extern "C" fn rsvg_state_rust_set_affine(state: *mut State, affine: cairo::Matrix) {
-    unsafe {
-        let state = &mut *state;
-        state.affine = affine;
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_color(state: *const State) -> u32 {
-    unsafe {
-        let state = &*state;
-
-        let current_color = state
-            .color
+    u8::from(
+        state
+            .flood_opacity
             .as_ref()
-            .map_or_else(|| Color::default().0, |c| c.0);
-
-        rgba_to_argb(current_color)
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_comp_op(state: *const State) -> cairo::Operator {
-    unsafe {
-        let state = &*state;
-        cairo::Operator::from(state.comp_op.unwrap_or_default())
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_flood_color(state: *const State) -> u32 {
-    unsafe {
-        let state = &*state;
-        match state.flood_color {
-            Some(FloodColor(cssparser::Color::RGBA(rgba))) => rgba_to_argb(rgba),
-            // FIXME: fallback to current color if Color::inherit and current color is set
-            _ => 0xff000000,
-        }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_flood_opacity(state: *const State) -> u8 {
-    unsafe {
-        let state = &*state;
-
-        u8::from(
-            state
-                .flood_opacity
-                .as_ref()
-                .map_or_else(|| FloodOpacity::default().0, |o| o.0),
-        )
-    }
+            .map_or_else(|| FloodOpacity::default().0, |o| o.0),
+    )
 }
 
 // Keep in sync with rsvg-styles.h:RsvgEnableBackgroundType
@@ -1310,59 +1306,49 @@ impl From<EnableBackground> for EnableBackgroundC {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_enable_background(state: *const State) -> EnableBackgroundC {
-    unsafe {
-        let state = &*state;
-        EnableBackgroundC::from(state.enable_background.unwrap_or_default())
+pub extern "C" fn rsvg_state_get_enable_background(state: *const RsvgState) -> EnableBackgroundC {
+    let state = from_c(state);
+    EnableBackgroundC::from(state.enable_background.unwrap_or_default())
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_get_clip_path(state: *const RsvgState) -> *mut libc::c_char {
+    let state = from_c(state);
+
+    match state.clip_path {
+        Some(ClipPath(IRI::Resource(ref p))) => p.to_glib_full(),
+        _ => ptr::null_mut(),
     }
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_clip_path(state: *const State) -> *mut libc::c_char {
-    unsafe {
-        let state = &*state;
+pub extern "C" fn rsvg_state_get_filter(state: *const RsvgState) -> *mut libc::c_char {
+    let state = from_c(state);
 
-        match state.clip_path {
-            Some(ClipPath(IRI::Resource(ref p))) => p.to_glib_full(),
-            _ => ptr::null_mut(),
-        }
+    match state.filter {
+        Some(Filter(IRI::Resource(ref f))) => f.to_glib_full(),
+        _ => ptr::null_mut(),
     }
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_filter(state: *const State) -> *mut libc::c_char {
-    unsafe {
-        let state = &*state;
+pub extern "C" fn rsvg_state_get_mask(state: *const RsvgState) -> *mut libc::c_char {
+    let state = from_c(state);
 
-        match state.filter {
-            Some(Filter(IRI::Resource(ref f))) => f.to_glib_full(),
-            _ => ptr::null_mut(),
-        }
+    match state.mask {
+        Some(Mask(IRI::Resource(ref m))) => m.to_glib_full(),
+        _ => ptr::null_mut(),
     }
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_mask(state: *const State) -> *mut libc::c_char {
-    unsafe {
-        let state = &*state;
+pub extern "C" fn rsvg_state_get_opacity(state: *const RsvgState) -> u8 {
+    let state = from_c(state);
 
-        match state.mask {
-            Some(Mask(IRI::Resource(ref m))) => m.to_glib_full(),
-            _ => ptr::null_mut(),
-        }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_opacity(state: *const State) -> u8 {
-    unsafe {
-        let state = &*state;
-
-        u8::from(
-            state
-                .opacity
-                .as_ref()
-                .map_or_else(|| FloodOpacity::default().0, |o| o.0),
-        )
-    }
+    u8::from(
+        state
+            .opacity
+            .as_ref()
+            .map_or_else(|| FloodOpacity::default().0, |o| o.0),
+    )
 }

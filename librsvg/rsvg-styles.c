@@ -39,31 +39,10 @@
 typedef gboolean (*InheritanceFunction) (gboolean dst_has_prop, gboolean src_has_prop);
 
 /* Defined in rsvg_internals/src/state.rs */
-extern State *rsvg_state_rust_new(void);
-extern void rsvg_state_rust_free(State *state);
-extern State *rsvg_state_rust_clone(State *state);
-extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
-extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
-extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
-extern guint32 rsvg_state_rust_get_color(const State *state);
-extern guint8 rsvg_state_rust_get_opacity(const State *state);
-extern guint32 rsvg_state_rust_get_flood_color(const State *state);
-extern guint8 rsvg_state_rust_get_flood_opacity(const State *state);
-extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
-extern char *rsvg_state_rust_get_clip_path(const State *state);
-extern char *rsvg_state_rust_get_filter(const State *state);
-extern char *rsvg_state_rust_get_mask(const State *state);
-
-extern gboolean rsvg_state_rust_contains_important_style(State *state, RsvgAttribute attr);
-extern gboolean rsvg_state_rust_insert_important_style(State *state, RsvgAttribute attr);
-
-extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value, gboolean accept_shorthands)
-    G_GNUC_WARN_UNUSED_RESULT;
-
-extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn, gboolean inherituninheritables);
-
-extern gboolean rsvg_state_parse_conditional_processing_attributes (RsvgState *state, RsvgPropertyBag *pbag)
-    G_GNUC_WARN_UNUSED_RESULT;
+extern gboolean rsvg_state_contains_important_style(RsvgState *state, RsvgAttribute attr);
+extern gboolean rsvg_state_insert_important_style(RsvgState *state, RsvgAttribute attr);
+extern gboolean rsvg_state_parse_style_pair(RsvgState *state, RsvgAttribute attr, const char *value, gboolean accept_shorthands) G_GNUC_WARN_UNUSED_RESULT;
+extern gboolean rsvg_state_parse_conditional_processing_attributes (RsvgState *state, RsvgPropertyBag *pbag) G_GNUC_WARN_UNUSED_RESULT;
 
 typedef struct _StyleValueData {
     gchar *value;
@@ -89,196 +68,6 @@ style_value_data_free (StyleValueData *value)
         return;
     g_free (value->value);
     g_free (value);
-}
-
-static void
-rsvg_state_init (RsvgState * state)
-{
-    memset (state, 0, sizeof (RsvgState));
-
-    state->parent = NULL;
-
-    /* The following two start as INHERIT, even though has_stop_color and
-     * has_stop_opacity get initialized to FALSE below.  This is so that the
-     * first pass of rsvg_state_inherit_run(), called from
-     * rsvg_state_reconstruct() from the "stop" element code, will correctly
-     * initialize the destination state from the toplevel element.
-     *
-     */
-    state->stop_color.kind = RSVG_CSS_COLOR_SPEC_INHERIT;
-    state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
-
-    state->has_stop_color = FALSE;
-    state->has_stop_opacity = FALSE;
-
-    state->state_rust = rsvg_state_rust_new();
-}
-
-RsvgState *
-rsvg_state_new_with_parent (RsvgState *parent)
-{
-    RsvgState *state;
-
-    state = g_slice_new (RsvgState);
-    rsvg_state_init (state);
-
-    if (parent) {
-        rsvg_state_reinherit (state, parent);
-        rsvg_state_set_affine (state, rsvg_state_get_affine (parent));
-        state->parent = parent;
-    }
-
-    return state;
-}
-
-RsvgState *
-rsvg_state_new (void)
-{
-    return rsvg_state_new_with_parent (NULL);
-}
-
-static void
-rsvg_state_finalize (RsvgState * state)
-{
-    if (state->state_rust) {
-        rsvg_state_rust_free (state->state_rust);
-        state->state_rust = NULL;
-    }
-}
-
-void
-rsvg_state_free (RsvgState *state)
-{
-    g_assert (state != NULL);
-
-    rsvg_state_finalize (state);
-    g_slice_free (RsvgState, state);
-}
-
-void
-rsvg_state_reinit (RsvgState * state)
-{
-    RsvgState *parent = state->parent;
-    rsvg_state_finalize (state);
-    rsvg_state_init (state);
-    state->parent = parent;
-}
-
-void
-rsvg_state_clone (RsvgState * dst, const RsvgState * src)
-{
-    RsvgState *parent = dst->parent;
-
-    rsvg_state_finalize (dst);
-
-    *dst = *src;
-    dst->parent = parent;
-
-    dst->state_rust = rsvg_state_rust_clone(src->state_rust);
-}
-
-/*
-  This function is where all inheritance takes place. It is given a 
-  base and a modifier state, as well as a function to determine
-  how the base is modified and a flag as to whether things that can
-  not be inherited are copied streight over, or ignored.
-*/
-
-static void
-rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
-                        const InheritanceFunction function,
-                        gboolean inherituninheritables)
-{
-    if (function (dst->has_stop_color, src->has_stop_color)) {
-        if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
-            dst->has_stop_color = TRUE;
-            dst->stop_color = src->stop_color;
-        }
-    }
-    if (function (dst->has_stop_opacity, src->has_stop_opacity)) {
-        if (dst->stop_opacity.kind == RSVG_OPACITY_INHERIT) {
-            dst->has_stop_opacity = TRUE;
-            dst->stop_opacity = src->stop_opacity;
-        }
-    }
-
-    rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
-}
-
-/*
-  reinherit is given dst which is the top of the state stack
-  and src which is the layer before in the state stack from
-  which it should be inherited from 
-*/
-
-static gboolean
-reinheritfunction (gboolean dst, gboolean src)
-{
-    if (!dst)
-        return TRUE;
-    return FALSE;
-}
-
-void
-rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
-{
-    rsvg_state_inherit_run (dst, src, reinheritfunction, 0);
-}
-
-/*
-  dominate is given dst which is the top of the state stack
-  and src which is the layer before in the state stack from
-  which it should be inherited from, however if anything is
-  directly specified in src (the second last layer) it will
-  override anything on the top layer, this is for overrides
-  in use tags 
-*/
-
-static gboolean
-dominatefunction (gboolean dst, gboolean src)
-{
-    if (!dst || src)
-        return TRUE;
-    return FALSE;
-}
-
-void
-rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
-{
-    rsvg_state_inherit_run (dst, src, dominatefunction, 0);
-}
-
-/* copy everything inheritable from the src to the dst */
-
-static gboolean
-forcefunction (gboolean dst, gboolean src)
-{
-    return TRUE;
-}
-
-void
-rsvg_state_force (RsvgState *dst, const RsvgState *src)
-{
-    rsvg_state_inherit_run (dst, src, forcefunction, 0);
-}
-
-/*
-  put something new on the inheritance stack, dst is the top of the stack, 
-  src is the state to be integrated, this is essentially the opposite of
-  reinherit, because it is being given stuff to be integrated on the top, 
-  rather than the context underneath.
-*/
-
-static gboolean
-inheritfunction (gboolean dst, gboolean src)
-{
-    return src;
-}
-
-void
-rsvg_state_inherit (RsvgState *dst, const RsvgState *src)
-{
-    rsvg_state_inherit_run (dst, src, inheritfunction, 1);
 }
 
 typedef enum {
@@ -307,34 +96,16 @@ rsvg_parse_style_pair (RsvgState *state,
         return success;
 
     if (!important) {
-        if (rsvg_state_rust_contains_important_style (state->state_rust, attr))
+        if (rsvg_state_contains_important_style (state, attr))
             return success;
     } else {
-        rsvg_state_rust_insert_important_style (state->state_rust, attr);
+        rsvg_state_insert_important_style (state, attr);
     }
 
-    switch (attr) {
-    case RSVG_ATTRIBUTE_STOP_COLOR:
-    {
-        state->has_stop_color = TRUE;
-        state->stop_color = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STOP_OPACITY:
-    {
-        state->stop_opacity = rsvg_css_parse_opacity (value);
-        state->has_stop_opacity = TRUE;
-    }
-    break;
-
-    default:
-        success = rsvg_state_rust_parse_style_pair(state->state_rust,
-                                                   attr,
-                                                   value,
-                                                   source == PAIR_SOURCE_STYLE);
-        break;
-    }
+    success = rsvg_state_parse_style_pair(state,
+                                          attr,
+                                          value,
+                                          source == PAIR_SOURCE_STYLE);
 
     return success;
 }
@@ -852,123 +623,11 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     /* return success; */
 }
 
-RsvgState *
-rsvg_state_parent (RsvgState * state)
-{
-    return state->parent;
-}
-
-void
-rsvg_state_free_all (RsvgState * state)
-{
-    while (state) {
-        RsvgState *parent = state->parent;
-
-        rsvg_state_free (state);
-
-        state = parent;
-    }
-}
-
-cairo_matrix_t
-rsvg_state_get_affine (const RsvgState *state)
-{
-    return rsvg_state_rust_get_affine (state->state_rust);
-}
-
-void
-rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine)
-{
-    rsvg_state_rust_set_affine (state->state_rust, affine);
-}
-
-char *
-rsvg_state_get_clip_path (RsvgState *state)
-{
-    return rsvg_state_rust_get_clip_path (state->state_rust);
-}
-
-char *
-rsvg_state_get_filter (RsvgState *state)
-{
-    return rsvg_state_rust_get_filter (state->state_rust);
-}
-
-char *
-rsvg_state_get_mask (RsvgState *state)
-{
-    return rsvg_state_rust_get_mask (state->state_rust);
-}
-
-guint8
-rsvg_state_get_opacity (RsvgState *state)
-{
-    return rsvg_state_rust_get_opacity (state->state_rust);
-}
-
-RsvgCssColorSpec *
-rsvg_state_get_stop_color (RsvgState *state)
-{
-    if (state->has_stop_color) {
-        return &state->stop_color;
-    } else {
-        return NULL;
-    }
-}
-
-RsvgOpacitySpec *
-rsvg_state_get_stop_opacity (RsvgState *state)
-{
-    if (state->has_stop_opacity) {
-        return &state->stop_opacity;
-    } else {
-        return NULL;
-    }
-}
-
-guint32
-rsvg_state_get_current_color (RsvgState *state)
-{
-    return rsvg_state_rust_get_color (state->state_rust);
-}
-
-guint32
-rsvg_state_get_flood_color (RsvgState *state)
-{
-    return rsvg_state_rust_get_flood_color (state->state_rust);
-}
-
-guint8
-rsvg_state_get_flood_opacity (RsvgState *state)
-{
-    return rsvg_state_rust_get_flood_opacity (state->state_rust);
-}
-
-cairo_operator_t
-rsvg_state_get_comp_op (RsvgState *state)
-{
-    return rsvg_state_rust_get_comp_op (state->state_rust);
-}
-
-RsvgEnableBackgroundType
-rsvg_state_get_enable_background (RsvgState *state)
-{
-    return rsvg_state_rust_get_enable_background (state->state_rust);
-}
-
-State *
-rsvg_state_get_state_rust (RsvgState *state)
-{
-    return state->state_rust;
-}
-
 /* This is defined like this so that we can export the Rust function... just for
  * the benefit of rsvg-convert.c
  */
 RsvgCssColorSpec
-rsvg_css_parse_color_ (const char       *str,
-                       AllowInherit      allow_inherit,
-                       AllowCurrentColor allow_current_color)
+rsvg_css_parse_color_ (const char *str)
 {
-    return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
+    return rsvg_css_parse_color (str);
 }

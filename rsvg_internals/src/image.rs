@@ -16,7 +16,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use state;
+use state::State;
 
 struct NodeImage {
     aspect: Cell<AspectRatio>,
@@ -96,22 +96,26 @@ impl NodeTrait for NodeImage {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        _node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: &State,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         if let Some(ref surface) = *self.surface.borrow() {
             let x = self.x.get().normalize(draw_ctx);
             let y = self.y.get().normalize(draw_ctx);
             let w = self.w.get().normalize(draw_ctx);
             let h = self.h.get().normalize(draw_ctx);
 
-            let state = node.get_state();
-
-            drawing_ctx::state_reinherit_top(draw_ctx, state, dominate);
             drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
             let aspect = self.aspect.get();
 
-            if !state::is_overflow(state) && aspect.is_slice() {
-                add_clipping_rect(draw_ctx, x, y, w, h);
+            if !state.is_overflow() && aspect.is_slice() {
+                add_clipping_rect(draw_ctx, &state.affine, x, y, w, h);
             }
 
             let (x, y, w, h) = aspect.compute(
@@ -123,7 +127,7 @@ impl NodeTrait for NodeImage {
                 h,
             );
 
-            draw_surface(draw_ctx, surface, x, y, w, h, clipping);
+            draw_surface(draw_ctx, state, surface, x, y, w, h, clipping);
 
             drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         }

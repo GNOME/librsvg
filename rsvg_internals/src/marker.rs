@@ -21,7 +21,7 @@ use parsers::ParseError;
 use parsers::{parse, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
-use state::{self, StrokeWidth};
+use state::{State, StrokeWidth};
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -129,8 +129,8 @@ impl NodeMarker {
             return;
         }
 
-        let state = drawing_ctx::get_current_state(draw_ctx);
-        let mut affine = state::get_state_rust(state).affine;
+        let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
+        let mut affine = state.affine;
 
         affine.translate(xpos, ypos);
 
@@ -169,20 +169,33 @@ impl NodeMarker {
             -self.ref_y.get().normalize(draw_ctx),
         );
 
-        drawing_ctx::state_push(draw_ctx);
+        drawing_ctx::state_push_not_inherited(draw_ctx);
 
-        let state = drawing_ctx::get_current_state(draw_ctx);
-        state::reinit(state);
-        state::reconstruct(state, node);
+        let state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
 
-        let rstate = state::get_state_rust(state);
-        rstate.affine = affine;
+        state.reconstruct(node);
 
-        if !state::is_overflow(state) {
+        state.affine = affine;
+
+        if !state.is_overflow() {
             if let Some(vbox) = self.vbox.get() {
-                add_clipping_rect(draw_ctx, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
+                add_clipping_rect(
+                    draw_ctx,
+                    &state.affine,
+                    vbox.0.x,
+                    vbox.0.y,
+                    vbox.0.width,
+                    vbox.0.height,
+                );
             } else {
-                add_clipping_rect(draw_ctx, 0.0, 0.0, marker_width, marker_height);
+                add_clipping_rect(
+                    draw_ctx,
+                    &state.affine,
+                    0.0,
+                    0.0,
+                    marker_width,
+                    marker_height,
+                );
             }
         }
 
@@ -238,7 +251,7 @@ impl NodeTrait for NodeMarker {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing; markers are drawn by their referencing shapes
     }
 
@@ -646,9 +659,8 @@ pub fn render_markers_for_path_builder(
     draw_ctx: *mut RsvgDrawingCtx,
     clipping: bool,
 ) {
-    let state = drawing_ctx::get_current_state(draw_ctx);
-    let rstate = state::get_state_rust(state);
-    let line_width = rstate
+    let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
+    let line_width = state
         .stroke_width
         .as_ref()
         .map_or_else(|| StrokeWidth::default().0, |w| w.0)
@@ -658,7 +670,7 @@ pub fn render_markers_for_path_builder(
         return;
     }
 
-    if rstate.marker_start.is_none() && rstate.marker_mid.is_none() && rstate.marker_end.is_none() {
+    if state.marker_start.is_none() && state.marker_mid.is_none() && state.marker_end.is_none() {
         return;
     }
 
@@ -666,9 +678,9 @@ pub fn render_markers_for_path_builder(
         builder,
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
             if let Some(&IRI::Resource(ref marker)) = match marker_type {
-                MarkerType::Start => rstate.marker_start.as_ref().map(|m| &m.0),
-                MarkerType::Middle => rstate.marker_mid.as_ref().map(|m| &m.0),
-                MarkerType::End => rstate.marker_end.as_ref().map(|m| &m.0),
+                MarkerType::Start => state.marker_start.as_ref().map(|m| &m.0),
+                MarkerType::Middle => state.marker_mid.as_ref().map(|m| &m.0),
+                MarkerType::End => state.marker_end.as_ref().map(|m| &m.0),
             } {
                 emit_marker_by_name(draw_ctx, marker, x, y, computed_angle, line_width, clipping);
             }

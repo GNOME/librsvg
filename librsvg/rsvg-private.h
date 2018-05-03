@@ -48,8 +48,11 @@ G_BEGIN_DECLS
 typedef struct RsvgSaxHandler RsvgSaxHandler;
 typedef struct _RsvgCairoRender RsvgCairoRender;
 typedef struct RsvgDrawingCtx RsvgDrawingCtx;
+
+/* Opaque; defined in rsvg_internals/src/state.rs */
+typedef struct RsvgState RsvgState;
+
 typedef void   *RsvgPropertyBag;
-typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgNode RsvgNode;
 typedef struct _RsvgFilter RsvgFilter;
@@ -275,7 +278,12 @@ typedef enum {
 } RsvgNodeType;
 
 typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
-typedef void (* CNodeDraw) (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate, gboolean clipping);
+typedef void (* CNodeDraw) (RsvgNode *node,
+                            gpointer impl,
+                            RsvgDrawingCtx *ctx,
+                            RsvgState *state,
+                            int dominate,
+                            gboolean clipping);
 typedef void (* CNodeFree) (gpointer impl);
 
 /* Implemented in rust/src/node.rs */
@@ -283,7 +291,6 @@ typedef void (* CNodeFree) (gpointer impl);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_rust_cnode_new (RsvgNodeType  node_type,
                                RsvgNode     *parent,
-                               RsvgState    *state,
                                gpointer      impl,
                                CNodeSetAtts  set_atts_fn,
                                CNodeDraw     draw_fn,

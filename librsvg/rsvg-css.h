@@ -49,28 +49,14 @@ typedef struct {
     guint32 argb; /* only valid if kind == RSVG_CSS_COLOR_SPEC_ARGB */
 } RsvgCssColorSpec;
 
-typedef enum {
-    ALLOW_INHERIT_NO,
-    ALLOW_INHERIT_YES,
-} AllowInherit;
-
-typedef enum {
-    ALLOW_CURRENT_COLOR_NO,
-    ALLOW_CURRENT_COLOR_YES
-} AllowCurrentColor;
-
 /* This one is semi-public for mis-use in rsvg-convert */
-RsvgCssColorSpec rsvg_css_parse_color_ (const char       *str,
-                                        AllowInherit      allow_inherit,
-                                        AllowCurrentColor allow_current_color);
+RsvgCssColorSpec rsvg_css_parse_color_ (const char *str);
 
 #ifdef RSVG_COMPILATION
 
 /* Implemented in rust/src/color.rs */
 G_GNUC_INTERNAL
-RsvgCssColorSpec rsvg_css_parse_color (const char       *str,
-                                       AllowInherit      allow_inherit,
-                                       AllowCurrentColor allow_current_color);
+RsvgCssColorSpec rsvg_css_parse_color (const char *str);
 
 /* Keep this in sync with rust/src/opacity.rs:OpacityKind */
 typedef enum {

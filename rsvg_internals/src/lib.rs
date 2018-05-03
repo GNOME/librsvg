@@ -29,7 +29,7 @@ pub use clip_path::{rsvg_node_clip_path_get_units, rsvg_node_clip_path_new};
 
 pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
-pub use color::{rsvg_css_parse_color, AllowCurrentColor, AllowInherit, ColorKind, ColorSpec};
+pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use draw::rsvg_cairo_add_clipping_rect;
 
@@ -80,8 +80,6 @@ pub use node::{
     rsvg_node_unref,
 };
 
-pub use opacity::{rsvg_css_parse_opacity, OpacityKind, OpacitySpec};
-
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
 
 pub use pattern::rsvg_node_pattern_new;
@@ -105,27 +103,26 @@ pub use shapes::{
 };
 
 pub use state::{
+    rsvg_state_contains_important_style,
+    rsvg_state_free,
+    rsvg_state_get_affine,
+    rsvg_state_get_clip_path,
+    rsvg_state_get_comp_op,
+    rsvg_state_get_current_color,
+    rsvg_state_get_enable_background,
+    rsvg_state_get_filter,
+    rsvg_state_get_flood_color,
+    rsvg_state_get_flood_opacity,
+    rsvg_state_get_mask,
+    rsvg_state_get_opacity,
+    rsvg_state_insert_important_style,
     rsvg_state_is_visible,
+    rsvg_state_new,
+    rsvg_state_parent,
     rsvg_state_parse_conditional_processing_attributes,
+    rsvg_state_parse_style_pair,
     rsvg_state_reconstruct,
-    rsvg_state_rust_clone,
-    rsvg_state_rust_contains_important_style,
-    rsvg_state_rust_free,
-    rsvg_state_rust_get_affine,
-    rsvg_state_rust_get_clip_path,
-    rsvg_state_rust_get_color,
-    rsvg_state_rust_get_comp_op,
-    rsvg_state_rust_get_enable_background,
-    rsvg_state_rust_get_filter,
-    rsvg_state_rust_get_flood_color,
-    rsvg_state_rust_get_flood_opacity,
-    rsvg_state_rust_get_mask,
-    rsvg_state_rust_get_opacity,
-    rsvg_state_rust_inherit_run,
-    rsvg_state_rust_insert_important_style,
-    rsvg_state_rust_new,
-    rsvg_state_rust_parse_style_pair,
-    rsvg_state_rust_set_affine,
+    rsvg_state_set_affine,
 };
 
 pub use stop::rsvg_node_stop_new;
@@ -180,7 +177,6 @@ mod link;
 mod marker;
 mod mask;
 mod node;
-mod opacity;
 mod paint_server;
 mod parsers;
 mod path_builder;

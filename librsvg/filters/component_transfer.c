@@ -282,7 +282,6 @@ rsvg_new_filter_primitive_component_transfer (const char *element_name, RsvgNode
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER,
                                 parent,
-                                rsvg_state_new (),
                                 filter,
                                 rsvg_filter_primitive_component_transfer_set_atts,
                                 rsvg_filter_draw,
@@ -401,7 +400,6 @@ rsvg_new_node_component_transfer_function (const char *element_name, RsvgNode *p
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION,
                                 parent,
-                                rsvg_state_new (),
                                 filter,
                                 rsvg_node_component_transfer_function_set_atts,
                                 rsvg_filter_draw,

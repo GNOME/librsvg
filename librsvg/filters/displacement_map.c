@@ -231,7 +231,6 @@ rsvg_new_filter_primitive_displacement_map (const char *element_name, RsvgNode *
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_DISPLACEMENT_MAP,
                                 parent,
-                                rsvg_state_new (),
                                 filter,
                                 rsvg_filter_primitive_displacement_map_set_atts,
                                 rsvg_filter_draw,

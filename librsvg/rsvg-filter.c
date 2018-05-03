@@ -117,7 +117,6 @@ rsvg_new_filter (const char *element_name, RsvgNode *parent)
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER,
                                 parent,
-                                rsvg_state_new (),
                                 filter,
                                 rsvg_filter_set_atts,
                                 rsvg_filter_draw,

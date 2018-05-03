@@ -102,7 +102,6 @@ RUST_SRC =					\
 	rsvg_internals/src/marker.rs		\
 	rsvg_internals/src/mask.rs		\
 	rsvg_internals/src/node.rs		\
-	rsvg_internals/src/opacity.rs		\
 	rsvg_internals/src/paint_server.rs	\
 	rsvg_internals/src/parsers.rs		\
 	rsvg_internals/src/path_builder.rs	\

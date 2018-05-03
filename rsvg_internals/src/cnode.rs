@@ -1,11 +1,13 @@
 use glib::translate::*;
 use glib_sys;
 
+use std::ptr;
+
 use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
 use property_bag::PropertyBag;
-use state::RsvgState;
+use state::{self, rsvg_state_new, RsvgState, State};
 
 use std::rc::*;
 
@@ -19,6 +21,7 @@ type CNodeDraw = unsafe extern "C" fn(
     node: *const RsvgNode,
     node_impl: *const RsvgCNodeImpl,
     draw_ctx: *mut RsvgDrawingCtx,
+    state: *const RsvgState,
     dominate: i32,
     clipping: glib_sys::gboolean,
 );
@@ -51,12 +54,20 @@ impl NodeTrait for CNode {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        state: &State,
+        dominate: i32,
+        clipping: bool,
+    ) {
         unsafe {
             (self.draw_fn)(
                 node as *const RsvgNode,
                 self.c_node_impl,
                 draw_ctx,
+                state::to_c(state),
                 dominate,
                 clipping.to_glib(),
             );
@@ -80,13 +91,11 @@ impl Drop for CNode {
 pub extern "C" fn rsvg_rust_cnode_new(
     node_type: NodeType,
     raw_parent: *const RsvgNode,
-    state: *mut RsvgState,
     c_node_impl: *const RsvgCNodeImpl,
     set_atts_fn: CNodeSetAtts,
     draw_fn: CNodeDraw,
     free_fn: CNodeFree,
 ) -> *const RsvgNode {
-    assert!(!state.is_null());
     assert!(!c_node_impl.is_null());
 
     let cnode = CNode {
@@ -99,7 +108,7 @@ pub extern "C" fn rsvg_rust_cnode_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
-        state,
+        rsvg_state_new(ptr::null_mut()),
         Box::new(cnode),
     )))
 }
