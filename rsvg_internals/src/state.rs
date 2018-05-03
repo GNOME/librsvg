@@ -321,8 +321,17 @@ impl State {
         &mut self,
         attr: Attribute,
         value: &str,
+        important: bool,
         accept_shorthands: bool,
     ) -> Result<(), AttributeError> {
+        if !important && self.important_styles.borrow().contains(&attr) {
+            return Ok(());
+        }
+
+        if important {
+            self.important_styles.borrow_mut().insert(attr);
+        }
+
         // please keep these sorted
         match attr {
             Attribute::BaselineShift => {
@@ -1190,27 +1199,11 @@ pub extern "C" fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_contains_important_style(
-    state: *const RsvgState,
-    attr: Attribute,
-) -> glib_sys::gboolean {
-    let state = from_c(state);
-
-    state.important_styles.borrow().contains(&attr).to_glib()
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_insert_important_style(state: *mut RsvgState, attr: Attribute) {
-    let state = from_c_mut(state);
-
-    state.important_styles.borrow_mut().insert(attr);
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_state_parse_style_pair(
     state: *mut RsvgState,
     attr: Attribute,
     value: *const libc::c_char,
+    important: glib_sys::gboolean,
     accept_shorthands: glib_sys::gboolean,
 ) -> glib_sys::gboolean {
     let state = from_c_mut(state);
@@ -1219,7 +1212,12 @@ pub extern "C" fn rsvg_state_parse_style_pair(
 
     let value = unsafe { utf8_cstr(value) };
 
-    match state.parse_style_pair(attr, value, from_glib(accept_shorthands)) {
+    match state.parse_style_pair(
+        attr,
+        value,
+        from_glib(important),
+        from_glib(accept_shorthands),
+    ) {
         Ok(_) => true.to_glib(),
         Err(_) => false.to_glib(),
     }
