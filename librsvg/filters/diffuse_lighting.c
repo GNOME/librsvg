@@ -179,7 +179,7 @@ rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, 
                 break;
 
             case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
-                state = rsvg_state_new ();
+                state = rsvg_state_new (NULL);
                 rsvg_state_reconstruct (state, node);
                 filter->lightingcolor = rsvg_state_get_current_color (state);
                 rsvg_state_free (state);

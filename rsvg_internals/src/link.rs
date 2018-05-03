@@ -12,7 +12,7 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use node::*;
 use property_bag::PropertyBag;
-use state::RsvgState;
+use state::State;
 
 struct NodeLink {
     link: RefCell<Option<String>>,
@@ -43,7 +43,7 @@ impl NodeTrait for NodeLink {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        _state: *mut RsvgState,
+        _state: &State,
         dominate: i32,
         clipping: bool,
     ) {

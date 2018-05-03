@@ -48,8 +48,11 @@ G_BEGIN_DECLS
 typedef struct RsvgSaxHandler RsvgSaxHandler;
 typedef struct _RsvgCairoRender RsvgCairoRender;
 typedef struct RsvgDrawingCtx RsvgDrawingCtx;
+
+/* Opaque; defined in rsvg_internals/src/state.rs */
+typedef struct RsvgState RsvgState;
+
 typedef void   *RsvgPropertyBag;
-typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgNode RsvgNode;
 typedef struct _RsvgFilter RsvgFilter;

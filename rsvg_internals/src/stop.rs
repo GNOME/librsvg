@@ -14,7 +14,7 @@ use length::*;
 use node::*;
 use parsers::{parse, ParseError};
 use property_bag::PropertyBag;
-use state::{self, RsvgState, StopColor, StopOpacity};
+use state::{self, RsvgState, State, StopColor, StopOpacity};
 
 pub struct NodeStop {
     offset: Cell<f64>,
@@ -64,7 +64,7 @@ fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
 
 impl NodeTrait for NodeStop {
     fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        let state = node.get_state();
+        let state = node.get_state_mut();
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
@@ -87,7 +87,7 @@ impl NodeTrait for NodeStop {
 
                     unsafe {
                         let success: bool = from_glib(rsvg_parse_style_attribute_contents(
-                            state,
+                            state::to_c_mut(state),
                             value.to_glib_none().0,
                         ));
 
@@ -105,24 +105,21 @@ impl NodeTrait for NodeStop {
         }
 
         unsafe {
-            rsvg_parse_presentation_attributes(state, pbag.ffi());
+            rsvg_parse_presentation_attributes(state::to_c_mut(state), pbag.ffi());
         }
 
-        let inherited_state = state::new();
-        state::reconstruct(inherited_state, node);
+        let mut inherited_state = State::new_with_parent(None);
+        inherited_state.reconstruct(node);
 
         let mut color_rgba: cssparser::RGBA;
 
-        let rstate = state::get_state_rust(state);
-        let inherited_rstate = state::get_state_rust(inherited_state);
-
-        let current_color = state::get_state_rust(inherited_state)
+        let current_color = inherited_state
             .color
             .as_ref()
             .map_or_else(|| state::Color::default().0, |c| c.0);
 
-        match rstate.stop_color {
-            None => match inherited_rstate.stop_color {
+        match state.stop_color {
+            None => match inherited_state.stop_color {
                 None => color_rgba = cssparser::RGBA::transparent(),
                 Some(StopColor(Color::CurrentColor)) => color_rgba = current_color,
                 Some(StopColor(Color::RGBA(rgba))) => color_rgba = rgba,
@@ -133,8 +130,8 @@ impl NodeTrait for NodeStop {
             Some(StopColor(Color::RGBA(rgba))) => color_rgba = rgba,
         }
 
-        match rstate.stop_opacity {
-            None => match inherited_rstate.stop_opacity {
+        match state.stop_opacity {
+            None => match inherited_state.stop_opacity {
                 Some(StopOpacity(val)) => color_rgba.alpha = u8::from(val),
                 _ => color_rgba.alpha = 0xff,
             },
@@ -144,12 +141,10 @@ impl NodeTrait for NodeStop {
 
         self.rgba.set(u32_from_rgba(color_rgba));
 
-        state::free(inherited_state);
-
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 

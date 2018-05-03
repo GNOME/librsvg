@@ -16,7 +16,7 @@ use length::*;
 use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state::{self, RsvgState};
+use state::State;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -38,7 +38,7 @@ impl NodeTrait for NodeGroup {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        _: *mut RsvgState,
+        _: &State,
         dominate: i32,
         clipping: bool,
     ) {
@@ -64,7 +64,7 @@ impl NodeTrait for NodeDefs {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing
     }
 
@@ -91,13 +91,13 @@ impl NodeTrait for NodeSwitch {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        _state: *mut RsvgState,
+        _state: &State,
         _dominate: i32,
         clipping: bool,
     ) {
         drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
-        if let Some(child) = node.children().find(|c| state::get_cond(c.get_state())) {
+        if let Some(child) = node.children().find(|c| c.get_state().cond) {
             let boxed_child = box_node(child.clone());
 
             drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0, clipping);
@@ -194,7 +194,7 @@ impl NodeTrait for NodeSvg {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: *mut RsvgState,
+        state: &State,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -203,8 +203,8 @@ impl NodeTrait for NodeSvg {
         let nw = self.w.get().normalize(draw_ctx);
         let nh = self.h.get().normalize(draw_ctx);
 
-        let do_clip = !state::is_overflow(state) && node.get_parent().is_some();
-        let affine = state::get_state_rust(state).affine;
+        let do_clip = !state.is_overflow() && node.get_parent().is_some();
+        let affine = state.affine;
 
         draw_in_viewport(
             nx,
@@ -285,7 +285,7 @@ impl NodeTrait for NodeUse {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: *mut RsvgState,
+        state: &State,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -331,12 +331,14 @@ impl NodeTrait for NodeUse {
             return;
         }
 
-        let rstate = state::get_state_rust(state);
-
         if child.get_type() != NodeType::Symbol {
-            let mut affine = rstate.affine;
+            let mut affine = state.affine;
             affine.translate(nx, ny);
-            rstate.affine = affine;
+
+            drawing_ctx::state_push(draw_ctx);
+            let state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
+
+            state.affine = affine;
 
             drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
@@ -345,10 +347,12 @@ impl NodeTrait for NodeUse {
             rsvg_node_unref(boxed_child);
 
             drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+
+            drawing_ctx::state_pop(draw_ctx);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
-                let do_clip = !state::is_overflow(state)
-                    || (rstate.overflow.is_none() && state::is_overflow(child.get_state()));
+                let do_clip = !state.is_overflow()
+                    || (state.overflow.is_none() && child.get_state().is_overflow());
 
                 draw_in_viewport(
                     nx,
@@ -359,7 +363,7 @@ impl NodeTrait for NodeUse {
                     do_clip,
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
-                    rstate.affine,
+                    state.affine,
                     draw_ctx,
                     clipping,
                     || {
@@ -410,7 +414,7 @@ impl NodeTrait for NodeSymbol {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing
     }
 

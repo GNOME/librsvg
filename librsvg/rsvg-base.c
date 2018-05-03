@@ -219,7 +219,9 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 {
     rsvg_cairo_render_free (handle->render);
 
-    rsvg_state_free_all (handle->state);
+    g_assert(handle->state);
+    g_assert(rsvg_state_parent(handle->state) == NULL);
+    rsvg_state_free (handle->state);
 
 	g_slist_free_full (handle->drawsub_stack, (GDestroyNotify) rsvg_node_unref);
 

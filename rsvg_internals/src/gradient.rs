@@ -15,7 +15,7 @@ use node::*;
 use paint_server::*;
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
-use state::RsvgState;
+use state::State;
 use stop::*;
 use unitinterval::UnitInterval;
 use util::*;
@@ -646,7 +646,7 @@ impl NodeTrait for NodeGradient {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: *mut RsvgState, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 

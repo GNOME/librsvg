@@ -16,7 +16,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use state::{self, RsvgState};
+use state::State;
 
 struct NodeImage {
     aspect: Cell<AspectRatio>,
@@ -100,7 +100,7 @@ impl NodeTrait for NodeImage {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: *mut RsvgState,
+        state: &State,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -114,9 +114,8 @@ impl NodeTrait for NodeImage {
 
             let aspect = self.aspect.get();
 
-            if !state::is_overflow(state) && aspect.is_slice() {
-                let rstate = state::get_state_rust(state);
-                add_clipping_rect(draw_ctx, &rstate.affine, x, y, w, h);
+            if !state.is_overflow() && aspect.is_slice() {
+                add_clipping_rect(draw_ctx, &state.affine, x, y, w, h);
             }
 
             let (x, y, w, h) = aspect.compute(
