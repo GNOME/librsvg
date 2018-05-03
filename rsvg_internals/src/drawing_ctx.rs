@@ -201,7 +201,9 @@ pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: &State, domin
         2 => current.force(state),
 
         dominate => {
+            let parent_save = current.parent;
             current.clone_from(state);
+            current.parent = parent_save;
 
             if let Some(parent) = current.parent() {
                 if dominate == 0 {
@@ -341,6 +343,7 @@ pub fn state_pop(draw_ctx: *mut RsvgDrawingCtx) {
 
     unsafe {
         let parent = state.parent;
+        assert!(!parent.is_null());
         rsvg_drawing_ctx_set_current_state(draw_ctx, parent as *mut _);
 
         Box::from_raw(state as *mut _);

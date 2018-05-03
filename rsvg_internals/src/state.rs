@@ -38,6 +38,10 @@ pub enum RsvgState {}
 /// If a property is `None`, is means it was not specified and must be
 /// inherited from the parent state, or in the end the caller can
 /// `.unwrap_or_default()` to get the default value for the property.
+
+// FIXME: #[derive(Clone)] is not correct here; states are not meant
+// to be cloned.  We should remove this when we remove the hack in
+// state_reinherit_top(), to clone_from() while preserving the parent
 #[derive(Clone)]
 pub struct State {
     pub parent: *const RsvgState,
