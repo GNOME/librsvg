@@ -463,7 +463,7 @@ node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, 
     rsvg_node_set_atts (node, handle, atts);
 
     /* The "svg" node is special; it will load its id/class
-     * attributes until the end, when rsvg_end_element() calls
+     * attributes until the end, when sax_end_element_cb() calls
      * rsvg_node_svg_apply_atts()
      */
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
