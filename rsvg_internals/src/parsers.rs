@@ -53,7 +53,7 @@ pub fn parse<T>(
     validate: Option<fn(T) -> Result<T, AttributeError>>,
 ) -> Result<T, NodeError>
 where
-    T: Parse<Err = AttributeError> + Copy,
+    T: Parse<Err = AttributeError>,
 {
     T::parse(value, data)
         .and_then(|v| {
