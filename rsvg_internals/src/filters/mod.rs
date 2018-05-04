@@ -58,6 +58,15 @@ struct PrimitiveWithInput {
     in_: RefCell<Option<Input>>,
 }
 
+// TODO: remove #[repr(C)] when it's not needed.
+#[repr(C)]
+pub struct IRect {
+    x0: i32,
+    y0: i32,
+    x1: i32,
+    y1: i32,
+}
+
 impl Primitive {
     /// Constructs a new `Primitive` with empty properties.
     #[inline]
