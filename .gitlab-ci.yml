@@ -24,6 +24,7 @@ variables:
 stages:
   - test
   - lint
+  - distcheck
   - cross_distro
   - rustc
 
@@ -134,6 +135,15 @@ clippy:
     - cargo install clippy --force
     - cargo clippy --all
   when: manual
+
+tarball:
+  image: $AMD64_FEDORA_LATEST
+  stage: distcheck
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  script:
+    - make distcheck
+  <<: *stage_2
 
 # STAGE 2 CROSS DISTRO TESTS
 #######################################################################
