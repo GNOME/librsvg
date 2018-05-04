@@ -1,4 +1,5 @@
 use std::cell::{Cell, RefCell};
+use std::ops::Deref;
 
 use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
@@ -156,5 +157,14 @@ impl NodeTrait for PrimitiveWithInput {
     #[inline]
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
         self.base.get_c_impl()
+    }
+}
+
+impl Deref for PrimitiveWithInput {
+    type Target = Primitive;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.base
     }
 }
