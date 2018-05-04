@@ -144,7 +144,7 @@ tarball:
     LIBRSVG_DEBUG: "yes"
   script:
     - rustc --version && cargo --version
-    - dnf install -y openssl-devel
+    - dnf install -y openssl-devel libssh2-devel
     - cargo install cargo-vendor
     - ./autogen.sh --enable-gtk-doc --enable-vala
     - make distcheck DESTDIR=/nonexistent
