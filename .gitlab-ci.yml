@@ -146,7 +146,7 @@ tarball:
     - rustc --version && cargo --version
     - cargo install cargo-vendor
     - ./autogen.sh --enable-gtk-doc --enable-vala
-    - make distcheck
+    - make distcheck DESTDIR=/nonexistent
   <<: *stage_2
 
 # STAGE 2 CROSS DISTRO TESTS
