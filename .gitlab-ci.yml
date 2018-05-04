@@ -89,6 +89,7 @@ stages:
     # update the following line from master to branch's name.
     - librsvg-2.42@GNOME/librsvg
     - master@GNOME/librsvg
+    - librsvg-2.42
     - schedules
     - tags
     - web
