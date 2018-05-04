@@ -1,12 +1,14 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
 use filter_context::RsvgFilterContext;
+use error::AttributeError;
+use filter_context::{FilterContext, RsvgFilterContext};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
-use node::{NodeTrait, NodeResult, RsvgNode, RsvgCNodeImpl};
-use parsers::parse;
+use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 use state::State;
 
@@ -37,10 +39,22 @@ struct Primitive {
     result: Cell<Option<String>>,
 }
 
-/// The base node for filters which accept input.
+/// An enumeration of possible inputs for a filter primitive.
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+enum Input {
+    SourceGraphic,
+    SourceAlpha,
+    BackgroundImage,
+    BackgroundAlpha,
+    FillPaint,
+    StrokePaint,
+    FilterResult(String),
+}
+
+/// The base node for filter primitives which accept input.
 struct PrimitiveWithInput {
     base: Primitive,
-    in_: Cell<Option<String>>, // TODO: enum { SourceGraphic | ... }
+    in_: RefCell<Option<Input>>,
 }
 
 impl Primitive {
@@ -87,24 +101,46 @@ impl NodeTrait for Primitive {
     }
 }
 
+impl Parse for Input {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _data: Self::Data) -> Result<Self, Self::Err> {
+        match s {
+            "SourceGraphic" => Ok(Input::SourceGraphic),
+            "SourceAlpha" => Ok(Input::SourceAlpha),
+            "BackgroundImage" => Ok(Input::BackgroundImage),
+            "BackgroundAlpha" => Ok(Input::BackgroundAlpha),
+            "FillPaint" => Ok(Input::FillPaint),
+            "StrokePaint" => Ok(Input::StrokePaint),
+            s => Ok(Input::FilterResult(s.to_string())),
+        }
+    }
+}
+
 impl PrimitiveWithInput {
     /// Constructs a new `PrimitiveWithInput` with empty properties.
     #[inline]
     fn new<T: Filter>() -> PrimitiveWithInput {
         PrimitiveWithInput {
-            base: Primitive::new::<T>(),
-            in_: Cell::new(None),
+            base: Primitive::new(),
+            in_: RefCell::new(None),
         }
     }
 }
 
 impl NodeTrait for PrimitiveWithInput {
-    fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        handle: *const RsvgHandle,
+        pbag: &PropertyBag,
+    ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::In => self.in_.set(Some(value.to_string())),
+                Attribute::In => drop(self.in_.replace(Some(parse("in", value, (), None)?))),
                 _ => (),
             }
         }
