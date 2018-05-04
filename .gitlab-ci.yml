@@ -143,6 +143,8 @@ tarball:
   variables:
     LIBRSVG_DEBUG: "yes"
   script:
+    - rustc --version && cargo --version
+    - ./autogen.sh --enable-gtk-doc --enable-vala
     - make distcheck
   <<: *stage_2
 
