@@ -83,6 +83,30 @@ impl Primitive {
             result: Cell::new(None),
         }
     }
+
+    fn get_bounds(&self, ctx: &FilterContext) -> IRect {
+        // TODO: replace with Rust code.
+        let mut primitive = RsvgFilterPrimitive::with_props(
+            self.x.get(),
+            self.y.get(),
+            self.width.get(),
+            self.height.get(),
+        );
+
+        extern "C" {
+            fn rsvg_filter_primitive_get_bounds(
+                primitive: *mut RsvgFilterPrimitive,
+                ctx: *mut RsvgFilterContext, // Actually *const because it doesn't modify it.
+            ) -> IRect;
+        }
+
+        unsafe {
+            rsvg_filter_primitive_get_bounds(
+                &mut primitive,
+                ctx.get_raw() as *mut RsvgFilterContext,
+            )
+        }
+    }
 }
 
 impl NodeTrait for Primitive {
