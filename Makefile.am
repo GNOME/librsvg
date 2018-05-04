@@ -78,6 +78,7 @@ RUST_SRC =					\
 	rsvg_internals/src/draw.rs		\
 	rsvg_internals/src/drawing_ctx.rs	\
 	rsvg_internals/src/error.rs		\
+	rsvg_internals/src/float_eq_cairo.rs	\
 	rsvg_internals/src/gradient.rs		\
 	rsvg_internals/src/handle.rs		\
 	rsvg_internals/src/image.rs		\
