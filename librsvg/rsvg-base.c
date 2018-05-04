@@ -206,10 +206,15 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     state_affine.x0 -= render->offset_x;
     state_affine.y0 -= render->offset_y;
 
-    rsvg_bbox_init (&((RsvgCairoRender *) draw->render)->bbox, &state_affine);
-    rsvg_bbox_init (&((RsvgCairoRender *) draw->render)->ink_bbox, &state_affine);
+    rsvg_bbox_init (&draw->bbox, &state_affine);
+    rsvg_bbox_init (&draw->ink_bbox, &state_affine);
 
     rsvg_state_set_affine (state, state_affine);
+
+#ifdef HAVE_PANGOFT2
+    draw->font_config_for_testing = NULL;
+    draw->font_map_for_testing = NULL;
+#endif
 
     return draw;
 }
@@ -227,6 +232,21 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 
     g_warn_if_fail (handle->acquired_nodes == NULL);
     g_slist_free (handle->acquired_nodes);
+
+    g_assert (handle->bb_stack == NULL);
+    g_assert (handle->ink_bb_stack == NULL);
+
+#ifdef HAVE_PANGOFT2
+    if (handle->font_config_for_testing) {
+        FcConfigDestroy (handle->font_config_for_testing);
+        handle->font_config_for_testing = NULL;
+    }
+
+    if (handle->font_map_for_testing) {
+        g_object_unref (handle->font_map_for_testing);
+        handle->font_map_for_testing = NULL;
+    }
+#endif
 
     g_free (handle);
 }
@@ -640,13 +660,13 @@ rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_
 void
 rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
 {
-    rsvg_bbox_insert (&draw_ctx->render->bbox, bbox);
+    rsvg_bbox_insert (&draw_ctx->bbox, bbox);
 }
 
 void
 rsvg_drawing_ctx_insert_ink_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *ink_bbox)
 {
-    rsvg_bbox_insert (&draw_ctx->render->ink_bbox, ink_bbox);
+    rsvg_bbox_insert (&draw_ctx->ink_bbox, ink_bbox);
 }
 
 cairo_surface_t *

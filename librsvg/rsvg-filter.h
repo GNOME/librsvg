@@ -46,7 +46,6 @@ G_GNUC_INTERNAL
 cairo_surface_t *rsvg_filter_render (RsvgNode *filter_node,
                                      cairo_surface_t *source,
                                      RsvgDrawingCtx *context, 
-                                     RsvgBbox *dimentions, 
                                      char *channelmap);
 
 G_GNUC_INTERNAL

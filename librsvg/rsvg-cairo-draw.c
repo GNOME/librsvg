@@ -78,7 +78,7 @@ set_font_options_for_testing (PangoContext *context)
 }
 
 static void
-create_font_config_for_testing (RsvgCairoRender *render)
+create_font_config_for_testing (RsvgDrawingCtx *ctx)
 {
     const char *font_paths[] = {
         SRCDIR "/tests/resources/Roboto-Regular.ttf",
@@ -89,30 +89,30 @@ create_font_config_for_testing (RsvgCairoRender *render)
 
     int i;
 
-    if (render->font_config_for_testing != NULL)
+    if (ctx->font_config_for_testing != NULL)
         return;
 
-    render->font_config_for_testing = FcConfigCreate ();
+    ctx->font_config_for_testing = FcConfigCreate ();
 
     for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
-        if (!FcConfigAppFontAddFile (render->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
+        if (!FcConfigAppFontAddFile (ctx->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
             g_error ("Could not load font file \"%s\" for tests; aborting", font_paths[i]);
         }
     }
 }
 
 static PangoFontMap *
-get_font_map_for_testing (RsvgCairoRender *render)
+get_font_map_for_testing (RsvgDrawingCtx *ctx)
 {
-    create_font_config_for_testing (render);
+    create_font_config_for_testing (ctx);
 
-    if (!render->font_map_for_testing) {
-        render->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (render->font_map_for_testing),
-                                      render->font_config_for_testing);
+    if (ctx->font_map_for_testing == NULL) {
+        ctx->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
+        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (ctx->font_map_for_testing),
+                                      ctx->font_config_for_testing);
     }
 
-    return render->font_map_for_testing;
+    return ctx->font_map_for_testing;
 }
 #endif
 
@@ -125,7 +125,7 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 
 #ifdef HAVE_PANGOFT2
     if (ctx->is_testing) {
-        fontmap = get_font_map_for_testing (ctx->render);
+        fontmap = get_font_map_for_testing (ctx);
     } else {
 #endif
         fontmap = pango_cairo_font_map_get_default ();
@@ -179,7 +179,7 @@ rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
 }
 
 static void
-rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, RsvgBbox *bbox)
+rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
 {
     RsvgCairoRender *render = ctx->render;
     cairo_surface_t *surface;
@@ -237,10 +237,10 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
     if (mask_units == objectBoundingBox)
         rsvg_cairo_add_clipping_rect (ctx,
                                       &affine,
-                                      sx * bbox->rect.width + bbox->rect.x,
-                                      sy * bbox->rect.height + bbox->rect.y,
-                                      sw * bbox->rect.width,
-                                      sh * bbox->rect.height);
+                                      sx * ctx->bbox.rect.width + ctx->bbox.rect.x,
+                                      sy * ctx->bbox.rect.height + ctx->bbox.rect.y,
+                                      sw * ctx->bbox.rect.width,
+                                      sh * ctx->bbox.rect.height);
     else
         rsvg_cairo_add_clipping_rect (ctx, &affine, sx, sy, sw, sh);
 
@@ -250,12 +250,12 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
         RsvgState *mask_state;
 
         cairo_matrix_init (&bbtransform,
-                           bbox->rect.width,
+                           ctx->bbox.rect.width,
                            0,
                            0,
-                           bbox->rect.height,
-                           bbox->rect.x,
-                           bbox->rect.y);
+                           ctx->bbox.rect.height,
+                           ctx->bbox.rect.x,
+                           ctx->bbox.rect.y);
 
         mask_state = rsvg_node_get_state (mask);
 
@@ -329,8 +329,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     cairo_t *cr;
     RsvgCoordUnits clip_units;
     GList *orig_cr_stack;
-    GList *orig_bb_stack;
-    GList *orig_ink_bb_stack;
     GList *orig_surfaces_stack;
     RsvgBbox orig_bbox;
     RsvgBbox orig_ink_bbox;
@@ -358,12 +356,10 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     }
 
     orig_cr_stack = save->cr_stack;
-    orig_bb_stack = save->bb_stack;
-    orig_ink_bb_stack = save->ink_bb_stack;
     orig_surfaces_stack = save->surfaces_stack;
 
-    orig_bbox = save->bbox;
-    orig_ink_bbox = save->ink_bbox;
+    orig_bbox = ctx->bbox;
+    orig_ink_bbox = ctx->ink_bbox;
 
     rsvg_drawing_ctx_state_push (ctx);
     rsvg_node_draw_children (node_clip_path, ctx, 0, TRUE);
@@ -374,8 +370,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     }
 
     g_assert (save->cr_stack == orig_cr_stack);
-    g_assert (save->bb_stack == orig_bb_stack);
-    g_assert (save->ink_bb_stack == orig_ink_bb_stack);
     g_assert (save->surfaces_stack == orig_surfaces_stack);
 
     /* FIXME: this is an EPIC HACK to keep the clipping context from
@@ -383,10 +377,32 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
      * are able to extract bounding boxes from outside the
      * general drawing loop.
      */
-    save->bbox = orig_bbox;
-    save->ink_bbox = orig_ink_bbox;
+    ctx->bbox = orig_bbox;
+    ctx->ink_bbox = orig_ink_bbox;
 
     cairo_clip (cr);
+}
+
+static void
+push_bounding_box (RsvgDrawingCtx *ctx)
+{
+    RsvgState *state;
+    cairo_matrix_t affine;
+    RsvgBbox *bbox, *ink_bbox;
+
+    state = rsvg_drawing_ctx_get_current_state (ctx);
+
+    bbox = g_new0 (RsvgBbox, 1);
+    *bbox = ctx->bbox;
+    ctx->bb_stack = g_list_prepend (ctx->bb_stack, bbox);
+
+    ink_bbox = g_new0 (RsvgBbox, 1);
+    *ink_bbox = ctx->ink_bbox;
+    ctx->ink_bb_stack = g_list_prepend (ctx->ink_bb_stack, ink_bbox);
+
+    affine = rsvg_state_get_affine (state);
+    rsvg_bbox_init (&ctx->bbox, &affine);
+    rsvg_bbox_init (&ctx->ink_bbox, &affine);
 }
 
 static void
@@ -402,9 +418,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     RsvgEnableBackgroundType enable_background;
     cairo_surface_t *surface;
     cairo_t *child_cr;
-    RsvgBbox *bbox, *ink_bbox;
     gboolean lateclip = FALSE;
-    cairo_matrix_t affine;
 
     state = rsvg_drawing_ctx_get_current_state (ctx);
     clip_path = rsvg_state_get_clip_path (state);
@@ -471,17 +485,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     render->cr_stack = g_list_prepend (render->cr_stack, render->cr);
     render->cr = child_cr;
 
-    bbox = g_new0 (RsvgBbox, 1);
-    *bbox = render->bbox;
-    render->bb_stack = g_list_prepend (render->bb_stack, bbox);
-
-    ink_bbox = g_new0 (RsvgBbox, 1);
-    *ink_bbox = render->ink_bbox;
-    render->ink_bb_stack = g_list_prepend (render->ink_bb_stack, ink_bbox);
-
-    affine = rsvg_state_get_affine (state);
-    rsvg_bbox_init (&render->bbox, &affine);
-    rsvg_bbox_init (&render->ink_bbox, &affine);
+    push_bounding_box (ctx);
 }
 
 void
@@ -491,6 +495,22 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx, gboolean clipping)
         cairo_save (ctx->render->cr);
         rsvg_cairo_push_render_stack (ctx);
     }
+}
+
+static void
+pop_bounding_box (RsvgDrawingCtx *ctx)
+{
+    rsvg_bbox_insert ((RsvgBbox *) ctx->bb_stack->data, &ctx->bbox);
+    rsvg_bbox_insert ((RsvgBbox *) ctx->ink_bb_stack->data, &ctx->ink_bbox);
+
+    ctx->bbox = *((RsvgBbox *) ctx->bb_stack->data);
+    ctx->ink_bbox = *((RsvgBbox *) ctx->ink_bb_stack->data);
+
+    g_free (ctx->bb_stack->data);
+    g_free (ctx->ink_bb_stack->data);
+
+    ctx->bb_stack = g_list_delete_link (ctx->bb_stack, ctx->bb_stack);
+    ctx->ink_bb_stack = g_list_delete_link (ctx->ink_bb_stack, ctx->ink_bb_stack);
 }
 
 static void
@@ -549,7 +569,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, filter, RSVG_NODE_TYPE_FILTER);
         if (node) {
             needs_destroy = TRUE;
-            surface = rsvg_filter_render (node, output, ctx, &render->bbox, "2103");
+            surface = rsvg_filter_render (node, output, ctx, "2103");
             rsvg_drawing_ctx_release_node (ctx, node);
 
             /* Don't destroy the output surface, it's owned by child_cr */
@@ -568,7 +588,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
                               nest ? 0 : render->offset_y);
 
     if (lateclip) {
-        rsvg_cairo_clip (ctx, lateclip, &render->bbox);
+        rsvg_cairo_clip (ctx, lateclip, &ctx->bbox);
         rsvg_drawing_ctx_release_node (ctx, lateclip);
     }
 
@@ -579,7 +599,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, mask, RSVG_NODE_TYPE_MASK);
         if (node) {
-            rsvg_cairo_generate_mask (render->cr, node, ctx, &render->bbox);
+            rsvg_cairo_generate_mask (render->cr, node, ctx);
             rsvg_drawing_ctx_release_node (ctx, node);
         }
 
@@ -591,17 +611,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     cairo_destroy (child_cr);
 
-    rsvg_bbox_insert ((RsvgBbox *) render->bb_stack->data, &render->bbox);
-    rsvg_bbox_insert ((RsvgBbox *) render->ink_bb_stack->data, &render->ink_bbox);
-
-    render->bbox = *((RsvgBbox *) render->bb_stack->data);
-    render->ink_bbox = *((RsvgBbox *) render->ink_bb_stack->data);
-
-    g_free (render->bb_stack->data);
-    g_free (render->ink_bb_stack->data);
-
-    render->bb_stack = g_list_delete_link (render->bb_stack, render->bb_stack);
-    render->ink_bb_stack = g_list_delete_link (render->ink_bb_stack, render->ink_bb_stack);
+    pop_bounding_box (ctx);
 
     if (needs_destroy) {
         cairo_surface_destroy (surface);

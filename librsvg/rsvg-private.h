@@ -43,6 +43,10 @@
 # include <float.h>
 #endif
 
+#if defined(HAVE_PANGOFT2)
+#include <pango/pangofc-fontmap.h>
+#endif
+
 G_BEGIN_DECLS 
 
 typedef struct RsvgSaxHandler RsvgSaxHandler;
@@ -169,8 +173,14 @@ typedef struct {
     gboolean active;
 } RsvgViewBox;
 
-/*Contextual information for the drawing phase*/
+/* Keep this in sync with rust/src/bbox.rs:RsvgBbox */
+typedef struct {
+    cairo_rectangle_t rect;
+    cairo_matrix_t affine;
+    gboolean virgin;
+} RsvgBbox;
 
+/* Contextual information for the drawing phase */
 struct RsvgDrawingCtx {
     RsvgCairoRender *render;
     RsvgState *state;
@@ -182,14 +192,16 @@ struct RsvgDrawingCtx {
     GSList *drawsub_stack;
     GSList *acquired_nodes;
     gboolean is_testing;
-};
+    RsvgBbox bbox;     /* Bounding box for path extents, without stroke width */
+    RsvgBbox ink_bbox; /* Bounding box for ink rectangle, with everything */
+    GList *bb_stack;
+    GList *ink_bb_stack;
 
-/* Keep this in sync with rust/src/bbox.rs:RsvgBbox */
-typedef struct {
-    cairo_rectangle_t rect;
-    cairo_matrix_t affine;
-    gboolean virgin;
-} RsvgBbox;
+#ifdef HAVE_PANGOFT2
+    FcConfig *font_config_for_testing;
+    PangoFontMap *font_map_for_testing;
+#endif
+};
 
 /* Keep this in sync with rust/src/length.rs:LengthUnit */
 typedef enum {

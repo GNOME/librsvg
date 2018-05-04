@@ -321,8 +321,17 @@ impl State {
         &mut self,
         attr: Attribute,
         value: &str,
+        important: bool,
         accept_shorthands: bool,
     ) -> Result<(), AttributeError> {
+        if !important && self.important_styles.borrow().contains(&attr) {
+            return Ok(());
+        }
+
+        if important {
+            self.important_styles.borrow_mut().insert(attr);
+        }
+
         // please keep these sorted
         match attr {
             Attribute::BaselineShift => {
@@ -533,6 +542,17 @@ impl State {
                 // Maybe it's an attribute not parsed here, but in the
                 // node implementations.
             }
+        }
+
+        Ok(())
+    }
+
+    pub fn parse_presentation_attributes(
+        &mut self,
+        pbag: &PropertyBag,
+    ) -> Result<(), AttributeError> {
+        for (_key, attr, value) in pbag.iter() {
+            self.parse_style_pair(attr, value, false, false)?;
         }
 
         Ok(())
@@ -1132,6 +1152,21 @@ pub extern "C" fn rsvg_state_is_visible(state: *const RsvgState) -> glib_sys::gb
 }
 
 #[no_mangle]
+pub extern "C" fn rsvg_state_parse_presentation_attributes(
+    state: *mut RsvgState,
+    pbag: *const PropertyBag,
+) -> glib_sys::gboolean {
+    let state = from_c_mut(state);
+
+    let pbag = unsafe { &*pbag };
+
+    match state.parse_presentation_attributes(pbag) {
+        Ok(_) => true.to_glib(),
+        Err(_) => false.to_glib(),
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn rsvg_state_parse_conditional_processing_attributes(
     state: *mut RsvgState,
     pbag: *const PropertyBag,
@@ -1190,27 +1225,11 @@ pub extern "C" fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_contains_important_style(
-    state: *const RsvgState,
-    attr: Attribute,
-) -> glib_sys::gboolean {
-    let state = from_c(state);
-
-    state.important_styles.borrow().contains(&attr).to_glib()
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_insert_important_style(state: *mut RsvgState, attr: Attribute) {
-    let state = from_c_mut(state);
-
-    state.important_styles.borrow_mut().insert(attr);
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_state_parse_style_pair(
     state: *mut RsvgState,
     attr: Attribute,
     value: *const libc::c_char,
+    important: glib_sys::gboolean,
     accept_shorthands: glib_sys::gboolean,
 ) -> glib_sys::gboolean {
     let state = from_c_mut(state);
@@ -1219,7 +1238,12 @@ pub extern "C" fn rsvg_state_parse_style_pair(
 
     let value = unsafe { utf8_cstr(value) };
 
-    match state.parse_style_pair(attr, value, from_glib(accept_shorthands)) {
+    match state.parse_style_pair(
+        attr,
+        value,
+        from_glib(important),
+        from_glib(accept_shorthands),
+    ) {
         Ok(_) => true.to_glib(),
         Err(_) => false.to_glib(),
     }

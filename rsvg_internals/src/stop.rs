@@ -77,8 +77,8 @@ impl NodeTrait for NodeStop {
                 }
 
                 Attribute::Style => {
-                    // FIXME: this is the only place where rsvg_parse_style_attribute_contents() and
-                    // rsvg_parse_presentation_attributes() are called outside of the
+                    // FIXME: this is the only place where parse_style_attribute_contents() and
+                    // parse_presentation_attributes() are called outside of the
                     // rsvg-base.c machinery.  That one indirectly calls them via
                     // rsvg_parse_style_attrs().
                     //
@@ -104,9 +104,12 @@ impl NodeTrait for NodeStop {
             }
         }
 
-        unsafe {
-            rsvg_parse_presentation_attributes(state::to_c_mut(state), pbag.ffi());
-        }
+        state.parse_presentation_attributes(pbag).map_err(|_| {
+            NodeError::parse_error(
+                "presentation",
+                ParseError::new("could not parse presentation attribute"),
+            )
+        })?;
 
         let mut inherited_state = State::new_with_parent(None);
         inherited_state.reconstruct(node);
@@ -160,7 +163,6 @@ fn u32_from_rgba(rgba: cssparser::RGBA) -> u32 {
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn rsvg_parse_presentation_attributes(state: *mut RsvgState, pbag: *const PropertyBag);
     fn rsvg_parse_style_attribute_contents(
         state: *mut RsvgState,
         string: *const libc::c_char,

@@ -31,10 +31,6 @@
 #include "rsvg-private.h"
 #include <cairo.h>
 
-#ifdef HAVE_PANGOFT2
-#include <pango/pangofc-fontmap.h>
-#endif
-
 G_BEGIN_DECLS
 
 struct _RsvgCairoRender {
@@ -47,25 +43,7 @@ struct _RsvgCairoRender {
     double offset_y;
 
     GList *cr_stack;
-
-    /* Bounding box for path extents, without stroke width */
-    RsvgBbox bbox;
-
-    /* Bounding box for ink rectangle, with everything */
-    RsvgBbox ink_bbox;
-
-    /* Stack for bounding boxes with path extents */
-    GList *bb_stack;
-
-    /* Stack for bounding boxes with ink extents */
-    GList *ink_bb_stack;
-
     GList *surfaces_stack;
-
-#ifdef HAVE_PANGOFT2
-    FcConfig *font_config_for_testing;
-    PangoFontMap *font_map_for_testing;
-#endif
 };
 
 G_GNUC_INTERNAL

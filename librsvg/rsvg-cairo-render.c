@@ -45,7 +45,6 @@ RsvgCairoRender *
 rsvg_cairo_render_new (cairo_t * cr, double width, double height)
 {
     RsvgCairoRender *cairo_render = g_new0 (RsvgCairoRender, 1);
-    cairo_matrix_t matrix;
 
     cairo_render->width = width;
     cairo_render->height = height;
@@ -54,18 +53,7 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->initial_cr = cr;
     cairo_render->cr = cr;
     cairo_render->cr_stack = NULL;
-    cairo_render->bb_stack = NULL;
-    cairo_render->ink_bb_stack = NULL;
     cairo_render->surfaces_stack = NULL;
-
-#ifdef HAVE_PANGOFT2
-    cairo_render->font_config_for_testing = NULL;
-    cairo_render->font_map_for_testing = NULL;
-#endif
-
-    cairo_matrix_init_identity (&matrix);
-    rsvg_bbox_init (&cairo_render->bbox, &matrix);
-    rsvg_bbox_init (&cairo_render->ink_bbox, &matrix);
 
     return cairo_render;
 }
@@ -74,21 +62,7 @@ void
 rsvg_cairo_render_free (RsvgCairoRender *render)
 {
     g_assert (render->cr_stack == NULL);
-    g_assert (render->bb_stack == NULL);
-    g_assert (render->ink_bb_stack == NULL);
     g_assert (render->surfaces_stack == NULL);
-
-#ifdef HAVE_PANGOFT2
-    if (render->font_config_for_testing) {
-        FcConfigDestroy (render->font_config_for_testing);
-        render->font_config_for_testing = NULL;
-    }
-
-    if (render->font_map_for_testing) {
-        g_object_unref (render->font_map_for_testing);
-        render->font_map_for_testing = NULL;
-    }
-#endif
 
     g_free (render);
 }

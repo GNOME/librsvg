@@ -914,7 +914,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, sself);
 
         rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
-        ink_bbox = draw->render->ink_bbox;
+        ink_bbox = draw->ink_bbox;
 
         rsvg_drawing_ctx_free (draw);
         cairo_destroy (cr);
@@ -1001,7 +1001,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
     rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
-    ink_bbox = draw->render->ink_bbox;
+    ink_bbox = draw->ink_bbox;
 
     rsvg_drawing_ctx_free (draw);
 
