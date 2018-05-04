@@ -1,6 +1,8 @@
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
+use cairo;
+
 use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
 use filter_context::RsvgFilterContext;
@@ -135,6 +137,30 @@ impl PrimitiveWithInput {
         PrimitiveWithInput {
             base: Primitive::new(),
             in_: RefCell::new(None),
+        }
+    }
+
+    /// Returns the input Cairo surface for this filter primitive.
+    // TODO: abstract over cairo::ImageSurface, will also allow to handle FillPaint and StrokePaint.
+    fn get_input(&self, ctx: &FilterContext) -> Option<cairo::ImageSurface> {
+        let in_ = self.in_.borrow();
+        if in_.is_none() {
+            // No value => use the last result.
+            // As per the SVG spec, if the filter primitive is the first in the chain, return the
+            // source graphic.
+            return Some(ctx.last_result().unwrap_or_else(|| ctx.source_graphic()));
+        }
+
+        match *in_.as_ref().unwrap() {
+            Input::SourceGraphic => Some(ctx.source_graphic()),
+            Input::SourceAlpha => unimplemented!(),
+            Input::BackgroundImage => Some(ctx.background_image()),
+            Input::BackgroundAlpha => unimplemented!(),
+
+            Input::FillPaint => unimplemented!(),
+            Input::StrokePaint => unimplemented!(),
+
+            Input::FilterResult(ref name) => ctx.filter_result(name),
         }
     }
 }
