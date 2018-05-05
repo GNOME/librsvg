@@ -22,9 +22,9 @@ variables:
   CLIPPY_NIGHTLY:            "registry.gitlab.com/alatiera/librsvg-oci-images/clippy:nightly"
 
 stages:
-  - distcheck
   - test
   - lint
+  - distcheck
   - cross_distro
   - rustc
 
