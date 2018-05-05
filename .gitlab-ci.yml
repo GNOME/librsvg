@@ -24,6 +24,7 @@ variables:
 stages:
   - test
   - lint
+  - distcheck
   - cross_distro
   - rustc
 
@@ -88,6 +89,7 @@ stages:
     # update the following line from master to branch's name.
     - librsvg-2.42@GNOME/librsvg
     - master@GNOME/librsvg
+    - librsvg-2.42
     - schedules
     - tags
     - web
@@ -134,6 +136,19 @@ clippy:
     - cargo install clippy --force
     - cargo clippy --all
   when: manual
+
+tarball:
+  image: $AMD64_FEDORA_LATEST
+  stage: distcheck
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  script:
+    - rustc --version && cargo --version
+    - dnf install -y openssl-devel libssh2-devel libgit2-devel cmake xz 
+    - cargo install cargo-vendor
+    - ./autogen.sh --enable-gtk-doc --enable-vala
+    - make distcheck DESTDIR=/tmp/distcheck
+  <<: *stage_2
 
 # STAGE 2 CROSS DISTRO TESTS
 #######################################################################
