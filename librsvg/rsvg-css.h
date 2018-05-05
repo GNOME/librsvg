@@ -58,23 +58,6 @@ RsvgCssColorSpec rsvg_css_parse_color_ (const char *str);
 G_GNUC_INTERNAL
 RsvgCssColorSpec rsvg_css_parse_color (const char *str);
 
-/* Keep this in sync with rust/src/opacity.rs:OpacityKind */
-typedef enum {
-    RSVG_OPACITY_INHERIT,
-    RSVG_OPACITY_SPECIFIED,
-    RSVG_OPACITY_PARSE_ERROR
-} RsvgOpacityKind;
-
-/* Keep this in sync with rust/src/opacity.rs:OpacitySpec */
-typedef struct {
-    RsvgOpacityKind kind;
-    guint8 opacity; /* 0..255; only valid if kind == RSVG_OPACITY_SPECIFIED */
-} RsvgOpacitySpec;
-
-/* This is implemented in rust/src/opacity.rs */
-G_GNUC_INTERNAL
-RsvgOpacitySpec rsvg_css_parse_opacity (const char *str);
-
 /* Implemented in rust/src/parsers.rs */
 G_GNUC_INTERNAL
 gboolean rsvg_css_parse_number_optional_number (const char *str, double *out_x, double *out_y);
