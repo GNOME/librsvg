@@ -73,6 +73,7 @@ RUST_SRC =					\
 	rsvg_internals/src/clip_path.rs		\
 	rsvg_internals/src/cnode.rs		\
 	rsvg_internals/src/color.rs		\
+	rsvg_internals/src/cond.rs		\
 	rsvg_internals/src/coord_units.rs	\
 	rsvg_internals/src/draw.rs		\
 	rsvg_internals/src/drawing_ctx.rs	\
