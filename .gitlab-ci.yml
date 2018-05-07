@@ -137,6 +137,16 @@ clippy:
     - cargo clippy --all
   when: manual
 
+dependency_scanning:
+  image: iceyec/cargo-audit
+  stage: lint
+  script:
+    - cargo audit || true
+    - cargo audit --format=json > gl-dependency-scanning-report.json
+  artifacts:
+    paths: [gl-dependency-scanning-report.json]
+  # allow_failure: true
+
 tarball:
   image: $AMD64_FEDORA_LATEST
   stage: distcheck
