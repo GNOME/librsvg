@@ -277,7 +277,8 @@ rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgFilterPrimitive *pr
     cairo_surface_t *output, *in;
     cairo_matrix_t affine;
 
-    affine = ctx->paffine;
+    cairo_matrix_t ctx_paffine = rsvg_filter_context_get_paffine(ctx);
+    affine = ctx_paffine;
     if (cairo_matrix_invert (&affine) != CAIRO_STATUS_SUCCESS)
       return;
 
@@ -304,6 +305,8 @@ rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgFilterPrimitive *pr
 
     output_pixels = cairo_image_surface_get_data (output);
 
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
+
     for (y = 0; y < tileHeight; y++) {
         for (x = 0; x < tileWidth; x++) {
             gint i;
@@ -327,18 +330,22 @@ rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgFilterPrimitive *pr
 
                 cr = CLAMP (cr, 0., 255.);
 
-                pixel[ctx->channelmap[i]] = (guchar) cr;
+                pixel[ctx_channelmap[i]] = (guchar) cr;
             }
             for (i = 0; i < 3; i++)
-                pixel[ctx->channelmap[i]] =
-                    pixel[ctx->channelmap[i]] * pixel[ctx->channelmap[3]] / 255;
+                pixel[ctx_channelmap[i]] =
+                    pixel[ctx_channelmap[i]] * pixel[ctx_channelmap[3]] / 255;
 
         }
     }
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);

@@ -6,7 +6,7 @@ use std::{mem, ptr};
 use cairo;
 use cairo::prelude::SurfaceExt;
 use cairo_sys::cairo_surface_t;
-use glib::translate::{FromGlibPtrFull, ToGlibPtr};
+use glib::translate::{from_glib_borrow, from_glib_full, ToGlibPtr};
 use glib_sys::*;
 use libc::c_char;
 
@@ -103,7 +103,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
     assert!(!context.is_null());
     assert!(!channelmap.is_null());
 
-    let source = cairo::Surface::from_glib_full(source);
+    let source: cairo::Surface = from_glib_borrow(source);
     assert_eq!(source.get_type(), cairo::SurfaceType::Image);
     let source = cairo::ImageSurface::from(source).unwrap();
 
@@ -129,7 +129,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
                 && c.get_type() < NodeType::FilterPrimitiveLast
         })
         .filter(|c| !c.is_in_error())
-        .for_each(|c| match c.get_type() {
+        .for_each(|mut c| match c.get_type() {
             NodeType::FilterPrimitiveOffset => {
                 let filter = &*(&*(c.get_c_impl() as *const FilterTraitObjectContainer)).filter;
                 filter.render(&mut filter_ctx);
@@ -137,13 +137,16 @@ pub unsafe extern "C" fn rsvg_filter_render(
             _ => {
                 let filter = &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive);
                 (filter.render.unwrap())(
-                    filter_node as *const RsvgNode as *mut RsvgNode,
+                    &mut c,
                     filter,
-                    filter_ctx.get_raw_mut(),
+                    &mut filter_ctx,
                 );
-                filter_ctx.refresh_from_c();
             }
         });
 
-    filter_ctx.into_result().to_glib_full()
+    // HACK because to_glib_full() is unimplemented!() on ImageSurface.
+    let result = filter_ctx.into_result();
+    let ptr = result.to_glib_none().0;
+    mem::forget(result);
+    ptr
 }

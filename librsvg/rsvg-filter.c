@@ -32,57 +32,57 @@
 #include "rsvg-drawing-ctx.h"
 #include "filters/common.h"
 
-static cairo_surface_t *
-_rsvg_filter_render (RsvgNode *filter_node,
-                    cairo_surface_t *source,
-                    RsvgDrawingCtx *context,
-                    char *channelmap)
-{
-    RsvgFilter *filter;
-    RsvgFilterContext *ctx;
-    RsvgNodeChildrenIter *iter;
-    RsvgNode *child;
-    guint i;
-    cairo_surface_t *output;
-
-    g_return_val_if_fail (source != NULL, NULL);
-    g_return_val_if_fail (cairo_surface_get_type (source) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
-
-    g_assert (rsvg_node_get_type (filter_node) == RSVG_NODE_TYPE_FILTER);
-    filter = rsvg_rust_cnode_get_impl (filter_node);
-
-    ctx = g_new0 (RsvgFilterContext, 1);
-    ctx->filter = filter;
-    ctx->source_surface = source;
-    ctx->bg_surface = NULL;
-    ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
-    ctx->ctx = context;
-
-    rsvg_filter_fix_coordinate_system (ctx, rsvg_drawing_ctx_get_current_state (context), &context->bbox);
-
-    ctx->lastresult.surface = cairo_surface_reference (source);
-    ctx->lastresult.bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);
-
-    for (i = 0; i < 4; i++)
-        ctx->channelmap[i] = channelmap[i] - '0';
-
-    iter = rsvg_node_children_iter_begin (filter_node);
-
-    while (rsvg_node_children_iter_next (iter, &child)) {
-        render_child_if_filter_primitive (child, ctx);
-        child = rsvg_node_unref (child);
-    }
-
-    rsvg_node_children_iter_end (iter);
-
-    output = ctx->lastresult.surface;
-
-    g_hash_table_destroy (ctx->results);
-
-    rsvg_filter_context_free (ctx);
-
-    return output;
-}
+// static cairo_surface_t *
+// _rsvg_filter_render (RsvgNode *filter_node,
+//                     cairo_surface_t *source,
+//                     RsvgDrawingCtx *context,
+//                     char *channelmap)
+// {
+//     RsvgFilter *filter;
+//     RsvgFilterContext *ctx;
+//     RsvgNodeChildrenIter *iter;
+//     RsvgNode *child;
+//     guint i;
+//     cairo_surface_t *output;
+// 
+//     g_return_val_if_fail (source != NULL, NULL);
+//     g_return_val_if_fail (cairo_surface_get_type (source) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
+// 
+//     g_assert (rsvg_node_get_type (filter_node) == RSVG_NODE_TYPE_FILTER);
+//     filter = rsvg_rust_cnode_get_impl (filter_node);
+// 
+//     ctx = g_new0 (RsvgFilterContext, 1);
+//     ctx->filter = filter;
+//     ctx->source_surface = source;
+//     ctx->bg_surface = NULL;
+//     ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
+//     ctx->ctx = context;
+// 
+//     rsvg_filter_fix_coordinate_system (ctx, rsvg_drawing_ctx_get_current_state (context), &context->bbox);
+// 
+//     ctx->lastresult.surface = cairo_surface_reference (source);
+//     ctx->lastresult.bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);
+// 
+//     for (i = 0; i < 4; i++)
+//         ctx->channelmap[i] = channelmap[i] - '0';
+// 
+//     iter = rsvg_node_children_iter_begin (filter_node);
+// 
+//     while (rsvg_node_children_iter_next (iter, &child)) {
+//         render_child_if_filter_primitive (child, ctx);
+//         child = rsvg_node_unref (child);
+//     }
+// 
+//     rsvg_node_children_iter_end (iter);
+// 
+//     output = ctx->lastresult.surface;
+// 
+//     g_hash_table_destroy (ctx->results);
+// 
+//     rsvg_filter_context_free (ctx);
+// 
+//     return output;
+// }
 
 /**
  * rsvg_new_filter:

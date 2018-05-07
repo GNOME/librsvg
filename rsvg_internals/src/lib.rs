@@ -39,6 +39,21 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_transformed_image_bounding_box,
 };
 
+pub use filter_context::{
+    rsvg_filter_context_get_affine,
+    rsvg_filter_context_get_bg_surface,
+    rsvg_filter_context_get_channelmap,
+    rsvg_filter_context_get_drawing_ctx,
+    rsvg_filter_context_get_filter,
+    rsvg_filter_context_get_height,
+    rsvg_filter_context_get_lastresult,
+    rsvg_filter_context_get_paffine,
+    rsvg_filter_context_get_previous_result,
+    rsvg_filter_context_get_source_surface,
+    rsvg_filter_context_get_width,
+    rsvg_filter_store_output,
+};
+
 pub use filters::offset::rsvg_new_filter_primitive_offset;
 
 pub use filters::rsvg_filter_render;

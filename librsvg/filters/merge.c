@@ -77,7 +77,7 @@ rsvg_filter_primitive_merge_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    output = _rsvg_image_surface_new (ctx->width, ctx->height);
+    output = _rsvg_image_surface_new (rsvg_filter_context_get_width (ctx), rsvg_filter_context_get_height (ctx));
     if (output == NULL) {
         return;
     }
@@ -91,7 +91,11 @@ rsvg_filter_primitive_merge_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 
     rsvg_node_children_iter_end (iter);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (output);
 }

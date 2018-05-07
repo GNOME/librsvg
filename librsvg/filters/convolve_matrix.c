@@ -87,12 +87,13 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgFilterPrimitiv
     height = cairo_image_surface_get_height (in);
     width = cairo_image_surface_get_width (in);
 
-    targetx = convolve->targetx * ctx->paffine.xx;
-    targety = convolve->targety * ctx->paffine.yy;
+    cairo_matrix_t ctx_paffine = rsvg_filter_context_get_paffine(ctx);
+    targetx = convolve->targetx * ctx_paffine.xx;
+    targety = convolve->targety * ctx_paffine.yy;
 
     if (convolve->dx != 0 || convolve->dy != 0) {
-        dx = convolve->dx * ctx->paffine.xx;
-        dy = convolve->dy * ctx->paffine.yy;
+        dx = convolve->dx * ctx_paffine.xx;
+        dy = convolve->dy * ctx_paffine.yy;
     } else
         dx = dy = 1;
 
@@ -106,10 +107,12 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgFilterPrimitiv
 
     output_pixels = cairo_image_surface_get_data (output);
 
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
+
     for (y = boundarys.y0; y < boundarys.y1; y++) {
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             for (umch = 0; umch < 3 + !convolve->preservealpha; umch++) {
-                ch = ctx->channelmap[umch];
+                ch = ctx_channelmap[umch];
                 sum = 0;
                 for (i = 0; i < convolve->ordery; i++) {
                     for (j = 0; j < convolve->orderx; j++) {
@@ -164,20 +167,24 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgFilterPrimitiv
                 output_pixels[4 * x + y * rowstride + ch] = tempresult;
             }
             if (convolve->preservealpha)
-                output_pixels[4 * x + y * rowstride + ctx->channelmap[3]] =
-                    in_pixels[4 * x + y * rowstride + ctx->channelmap[3]];
+                output_pixels[4 * x + y * rowstride + ctx_channelmap[3]] =
+                    in_pixels[4 * x + y * rowstride + ctx_channelmap[3]];
             for (umch = 0; umch < 3; umch++) {
-                ch = ctx->channelmap[umch];
+                ch = ctx_channelmap[umch];
                 output_pixels[4 * x + y * rowstride + ch] =
                     output_pixels[4 * x + y * rowstride + ch] *
-                    output_pixels[4 * x + y * rowstride + ctx->channelmap[3]] / 255;
+                    output_pixels[4 * x + y * rowstride + ctx_channelmap[3]] / 255;
             }
         }
     }
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);

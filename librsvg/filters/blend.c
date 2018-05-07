@@ -50,7 +50,7 @@ rsvg_filter_blend (RsvgFilterPrimitiveBlendMode mode,
                    cairo_surface_t *in2,
                    cairo_surface_t* output,
                    RsvgIRect boundarys,
-                   int *channelmap)
+                   const int *channelmap)
 {
     guchar i;
     gint x, y;
@@ -191,9 +191,14 @@ rsvg_filter_primitive_blend_render (RsvgNode *node, RsvgFilterPrimitive *primiti
         return;
     }
 
-    rsvg_filter_blend (blend->mode, in, in2, output, boundarys, ctx->channelmap);
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
+    rsvg_filter_blend (blend->mode, in, in2, output, boundarys, ctx_channelmap);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (in2);

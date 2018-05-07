@@ -66,7 +66,8 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgFilterPrimit
     if (source == NULL)
         return;
 
-    iaffine = ctx->paffine;
+    cairo_matrix_t ctx_paffine = rsvg_filter_context_get_paffine(ctx);
+    iaffine = ctx_paffine;
     if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
       return;
 
@@ -99,18 +100,21 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgFilterPrimit
 
     surfaceScale = specular_lighting->surfaceScale / 255.0;
 
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
+    RsvgDrawingCtx *drawing_ctx = rsvg_filter_context_get_drawing_ctx(ctx);
+
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
-            L = get_light_direction (source, x, y, z, &iaffine, ctx->ctx);
+            L = get_light_direction (source, x, y, z, &iaffine, drawing_ctx);
             L.z += 1;
             L = normalise (L);
 
-            lightcolor = get_light_color (source, color, x, y, z, &iaffine, ctx->ctx);
+            lightcolor = get_light_color (source, color, x, y, z, &iaffine, drawing_ctx);
             base = dotproduct (get_surface_normal (in_pixels, boundarys, x, y,
-                                                   1, 1, 1.0 / ctx->paffine.xx,
-                                                   1.0 / ctx->paffine.yy, specular_lighting->surfaceScale,
-                                                   rowstride, ctx->channelmap[3]), L);
+                                                   1, 1, 1.0 / ctx_paffine.xx,
+                                                   1.0 / ctx_paffine.yy, specular_lighting->surfaceScale,
+                                                   rowstride, ctx_channelmap[3]), L);
 
             factor = specular_lighting->specularConstant * pow (base, specular_lighting->specularExponent) * 255;
 
@@ -128,16 +132,20 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgFilterPrimit
             if (max < 0)
                 max = 0;
 
-            output_pixels[y * rowstride + x * 4 + ctx->channelmap[0]] = lightcolor.x * max;
-            output_pixels[y * rowstride + x * 4 + ctx->channelmap[1]] = lightcolor.y * max;
-            output_pixels[y * rowstride + x * 4 + ctx->channelmap[2]] = lightcolor.z * max;
-            output_pixels[y * rowstride + x * 4 + ctx->channelmap[3]] = max;
+            output_pixels[y * rowstride + x * 4 + ctx_channelmap[0]] = lightcolor.x * max;
+            output_pixels[y * rowstride + x * 4 + ctx_channelmap[1]] = lightcolor.y * max;
+            output_pixels[y * rowstride + x * 4 + ctx_channelmap[2]] = lightcolor.z * max;
+            output_pixels[y * rowstride + x * 4 + ctx_channelmap[3]] = max;
 
         }
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);

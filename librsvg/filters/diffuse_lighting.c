@@ -67,7 +67,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimiti
     if (source == NULL)
         return;
 
-    iaffine = ctx->paffine;
+    iaffine = rsvg_filter_context_get_paffine(ctx);
     if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
       return;
 
@@ -100,40 +100,49 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimiti
 
     surfaceScale = diffuse_lighting->surfaceScale / 255.0;
 
+    cairo_matrix_t ctx_paffine = rsvg_filter_context_get_paffine(ctx);
+
     if (diffuse_lighting->dy < 0 || diffuse_lighting->dx < 0) {
         dx = 1;
         dy = 1;
         rawdx = 1;
         rawdy = 1;
     } else {
-        dx = diffuse_lighting->dx * ctx->paffine.xx;
-        dy = diffuse_lighting->dy * ctx->paffine.yy;
+        dx = diffuse_lighting->dx * ctx_paffine.xx;
+        dy = diffuse_lighting->dy * ctx_paffine.yy;
         rawdx = diffuse_lighting->dx;
         rawdy = diffuse_lighting->dy;
     }
 
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
+    RsvgDrawingCtx *drawing_ctx = rsvg_filter_context_get_drawing_ctx(ctx);
+
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
-            z = surfaceScale * (double) in_pixels[y * rowstride + x * 4 + ctx->channelmap[3]];
-            L = get_light_direction (source, x, y, z, &iaffine, ctx->ctx);
+            z = surfaceScale * (double) in_pixels[y * rowstride + x * 4 + ctx_channelmap[3]];
+            L = get_light_direction (source, x, y, z, &iaffine, drawing_ctx);
             N = get_surface_normal (in_pixels, boundarys, x, y,
                                     dx, dy, rawdx, rawdy, diffuse_lighting->surfaceScale,
-                                    rowstride, ctx->channelmap[3]);
-            lightcolor = get_light_color (source, color, x, y, z, &iaffine, ctx->ctx);
+                                    rowstride, ctx_channelmap[3]);
+            lightcolor = get_light_color (source, color, x, y, z, &iaffine, drawing_ctx);
             factor = dotproduct (N, L);
 
-            output_pixels[y * rowstride + x * 4 + ctx->channelmap[0]] =
+            output_pixels[y * rowstride + x * 4 + ctx_channelmap[0]] =
                 MAX (0, MIN (255, diffuse_lighting->diffuseConstant * factor * lightcolor.x * 255.0));
-            output_pixels[y * rowstride + x * 4 + ctx->channelmap[1]] =
+            output_pixels[y * rowstride + x * 4 + ctx_channelmap[1]] =
                 MAX (0, MIN (255, diffuse_lighting->diffuseConstant * factor * lightcolor.y * 255.0));
-            output_pixels[y * rowstride + x * 4 + ctx->channelmap[2]] =
+            output_pixels[y * rowstride + x * 4 + ctx_channelmap[2]] =
                 MAX (0, MIN (255, diffuse_lighting->diffuseConstant * factor * lightcolor.z * 255.0));
-            output_pixels[y * rowstride + x * 4 + ctx->channelmap[3]] = 255;
+            output_pixels[y * rowstride + x * 4 + ctx_channelmap[3]] = 255;
         }
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);

@@ -46,7 +46,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
     RsvgNode *drawable;
     cairo_surface_t *result;
 
-    ctx = context->ctx;
+    ctx = rsvg_filter_context_get_drawing_ctx (context);
 
     if (!image->href)
         return NULL;
@@ -55,9 +55,9 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
     if (!drawable)
         return NULL;
 
-    rsvg_state_set_affine (rsvg_drawing_ctx_get_current_state (ctx), context->paffine);
+    rsvg_state_set_affine (rsvg_drawing_ctx_get_current_state (ctx), rsvg_filter_context_get_paffine (context));
 
-    result = rsvg_drawing_ctx_get_surface_of_node (ctx, drawable, context->width, context->height);
+    result = rsvg_drawing_ctx_get_surface_of_node (ctx, drawable, rsvg_filter_context_get_width (context), rsvg_filter_context_get_height (context));
 
     rsvg_drawing_ctx_release_node (ctx, drawable);
 
@@ -92,12 +92,13 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive *self, RsvgFilterCon
     if (!img)
         return NULL;
 
+    cairo_matrix_t ctx_paffine = rsvg_filter_context_get_paffine(ctx);
     intermediate = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
     if (cairo_surface_status (intermediate) != CAIRO_STATUS_SUCCESS ||
         !rsvg_art_affine_image (img, intermediate,
-                                &ctx->paffine,
-                                (gdouble) width / ctx->paffine.xx,
-                                (gdouble) height / ctx->paffine.yy)) {
+                                &ctx_paffine,
+                                (gdouble) width / ctx_paffine.xx,
+                                (gdouble) height / ctx_paffine.yy)) {
         cairo_surface_destroy (intermediate);
         cairo_surface_destroy (img);
         return NULL;
@@ -107,8 +108,11 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive *self, RsvgFilterCon
 
     length = cairo_image_surface_get_height (intermediate) *
              cairo_image_surface_get_stride (intermediate);
+
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
+
     for (i = 0; i < 4; i++)
-        channelmap[i] = ctx->channelmap[i];
+        channelmap[i] = ctx_channelmap[i];
     pixels = cairo_image_surface_get_data (intermediate);
     for (i = 0; i < length; i += 4) {
         unsigned char alpha;
@@ -145,7 +149,7 @@ rsvg_filter_primitive_image_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    output = _rsvg_image_surface_new (ctx->width, ctx->height);
+    output = _rsvg_image_surface_new (rsvg_filter_context_get_width (ctx), rsvg_filter_context_get_height (ctx));
     if (output == NULL)
         return;
 

@@ -139,9 +139,11 @@ component_transfer_render_child (RsvgNode *node, struct component_transfer_closu
 
     f = rsvg_rust_cnode_get_impl (node);
 
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(closure->ctx);
+
     if (f->channel == closure->channel) {
-        closure->functions[closure->ctx->channelmap[closure->channel_num]] = f->function;
-        closure->channels[closure->ctx->channelmap[closure->channel_num]] = f;
+        closure->functions[ctx_channelmap[closure->channel_num]] = f->function;
+        closure->channels[ctx_channelmap[closure->channel_num]] = f;
         closure->set_func = TRUE;
     }
 }
@@ -153,7 +155,8 @@ rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgFilterPrimi
     gint rowstride, height, width;
     RsvgIRect boundarys;
     guchar *inpix, outpix[4];
-    gint achan = ctx->channelmap[3];
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
+    gint achan = ctx_channelmap[3];
     guchar *in_pixels;
     guchar *output_pixels;
     cairo_surface_t *output, *in;
@@ -180,7 +183,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgFilterPrimi
         rsvg_node_children_iter_end (iter);
 
         if (!closure.set_func)
-            closure.functions[ctx->channelmap[c]] = identity_component_transfer_func;
+            closure.functions[ctx_channelmap[c]] = identity_component_transfer_func;
     }
 
     in = rsvg_filter_get_in (primitive->in, ctx);
@@ -226,14 +229,18 @@ rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgFilterPrimi
                 outpix[c] = temp;
             }
             for (c = 0; c < 3; c++)
-                output_pixels[y * rowstride + x * 4 + ctx->channelmap[c]] =
-                    outpix[ctx->channelmap[c]] * outpix[achan] / 255;
+                output_pixels[y * rowstride + x * 4 + ctx_channelmap[c]] =
+                    outpix[ctx_channelmap[c]] * outpix[achan] / 255;
             output_pixels[y * rowstride + x * 4 + achan] = outpix[achan];
         }
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);

@@ -6,7 +6,7 @@ use cairo;
 use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
 use error::AttributeError;
-use filter_context::{FilterContext, RsvgFilterContext};
+use filter_context::{FilterContext, RsvgFilterContext, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
@@ -61,11 +61,12 @@ struct PrimitiveWithInput {
 
 // TODO: remove #[repr(C)] when it's not needed.
 #[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IRect {
-    x0: i32,
-    y0: i32,
-    x1: i32,
-    y1: i32,
+    pub x0: i32,
+    pub y0: i32,
+    pub x1: i32,
+    pub y1: i32,
 }
 
 impl Primitive {
@@ -95,14 +96,14 @@ impl Primitive {
         extern "C" {
             fn rsvg_filter_primitive_get_bounds(
                 primitive: *mut RsvgFilterPrimitive,
-                ctx: *mut RsvgFilterContext, // Actually *const because it doesn't modify it.
+                ctx: *const RsvgFilterContext,
             ) -> IRect;
         }
 
         unsafe {
             rsvg_filter_primitive_get_bounds(
                 &mut primitive,
-                ctx.get_raw() as *mut RsvgFilterContext,
+                ctx,
             )
         }
     }
@@ -178,26 +179,25 @@ impl PrimitiveWithInput {
     }
 
     /// Returns the input Cairo surface for this filter primitive.
-    // TODO: abstract over cairo::ImageSurface, will also allow to handle FillPaint and StrokePaint.
-    fn get_input(&self, ctx: &FilterContext) -> Option<cairo::ImageSurface> {
+    fn get_input(&self, ctx: &FilterContext) -> Option<FilterResult> {
         let in_ = self.in_.borrow();
         if in_.is_none() {
             // No value => use the last result.
             // As per the SVG spec, if the filter primitive is the first in the chain, return the
             // source graphic.
-            return Some(ctx.last_result().unwrap_or_else(|| ctx.source_graphic()));
+            return Some(ctx.last_result().cloned().unwrap_or_else(|| unimplemented!()));
         }
 
         match *in_.as_ref().unwrap() {
-            Input::SourceGraphic => Some(ctx.source_graphic()),
+            Input::SourceGraphic => unimplemented!(),
             Input::SourceAlpha => unimplemented!(),
-            Input::BackgroundImage => Some(ctx.background_image()),
+            Input::BackgroundImage => unimplemented!(),
             Input::BackgroundAlpha => unimplemented!(),
 
             Input::FillPaint => unimplemented!(),
             Input::StrokePaint => unimplemented!(),
 
-            Input::FilterResult(ref name) => ctx.filter_result(name),
+            Input::FilterResult(ref name) => ctx.filter_result(name).cloned(),
         }
     }
 }
