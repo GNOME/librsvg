@@ -9,7 +9,8 @@ Version 2.42.4
 - Make robust against patterns and gradients with no children.
 - Lots of code cleanups and refactorings (Jordan Petridis, Dmitry
   Kontsevoy, Ivan Molodetskikh).
-- Code moved to Rust: low-level path and PangoLayout drawing.
+- Code moved to Rust: low-level path and PangoLayout drawing, "switch"
+  element (Paolo Borelli).
 - New Rust dependencies: float_cmp, pangocairo crates.
 - We now require Rust 1.21 or later.
 
