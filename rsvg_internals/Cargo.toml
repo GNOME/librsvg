@@ -24,16 +24,16 @@ libc = "0.2"
 downcast-rs = "^1.0.0"
 regex = "^0.2.1"
 itertools = "0.7.4"
-pango = "0.3.0"
-pangocairo = "0.4.1"
-pango-sys = "0.5.0"
+pango = "0.4"
+pangocairo = "0.5"
+pango-sys = "0.6"
 cssparser = "0.23"
 lazy_static = "1.0.0"
 phf = "0.7.21"
 float-cmp = "0.4.0"
 
 [dependencies.cairo-sys-rs]
-version = "0.5.0"
+version = "0.6"
 #git = "https://github.com/gtk-rs/cairo.git"
 #branch = "master"
 #git = "https://github.com/federicomenaquintero/cairo.git"
@@ -42,19 +42,19 @@ version = "0.5.0"
 #features = ["png"]
 
 [dependencies.cairo-rs]
-version = "0.3.0"
+version = "0.4"
 #git = "https://github.com/gtk-rs/cairo.git"
 #branch = "master"
 #git = "file:///home/federico/src/gtk-rs/cairo"
 #features = ["png"]
 
 [dependencies.glib]
-version = "0.4.0"
+version = "0.5"
 #git = "https://github.com/gtk-rs/glib.git"
 #branch = "master"
 
 [dependencies.glib-sys]
-version = "0.5.0"
+version = "0.6"
 #git = "https://github.com/gtk-rs/sys"
 #branch = "master"
 
