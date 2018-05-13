@@ -49,10 +49,10 @@ extern "C" {
 
     fn rsvg_drawing_ctx_release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
 
-    fn rsvg_drawing_ctx_set_affine_on_cr(
+    fn rsvg_drawing_ctx_get_offset(
         draw_ctx: *const RsvgDrawingCtx,
-        cr: *mut cairo_sys::cairo_t,
-        affine: *const cairo::Matrix,
+        out_x: *mut f64,
+        out_y: *mut f64,
     );
 
     fn rsvg_drawing_ctx_insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: *const RsvgBbox);
@@ -70,6 +70,11 @@ extern "C" {
 
     fn rsvg_cairo_get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> *mut cairo_sys::cairo_t;
     fn rsvg_cairo_set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: *const cairo_sys::cairo_t);
+
+    fn rsvg_cairo_is_cairo_context_nested(
+        draw_ctx: *const RsvgDrawingCtx,
+        cr: *const cairo_sys::cairo_t,
+    ) -> glib_sys::gboolean;
 
     fn rsvg_cairo_get_pango_context(
         draw_ctx: *const RsvgDrawingCtx,
@@ -246,18 +251,23 @@ pub fn set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) {
     }
 }
 
-pub fn set_affine_on_cr(
-    draw_ctx: *const RsvgDrawingCtx,
-    cr: &cairo::Context,
-    affine: &cairo::Matrix,
-) {
+pub fn is_cairo_context_nested(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) -> bool {
     unsafe {
-        rsvg_drawing_ctx_set_affine_on_cr(
-            draw_ctx,
-            cr.to_glib_none().0,
-            affine as *const cairo::Matrix,
-        );
+        let raw_cr = cr.to_glib_none().0;
+
+        from_glib(rsvg_cairo_is_cairo_context_nested(draw_ctx, raw_cr))
     }
+}
+
+pub fn get_offset(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
+    let mut w: f64 = 0.0;
+    let mut h: f64 = 0.0;
+
+    unsafe {
+        rsvg_drawing_ctx_get_offset(draw_ctx, &mut w, &mut h);
+    }
+
+    (w, h)
 }
 
 pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {

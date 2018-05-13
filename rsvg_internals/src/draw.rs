@@ -1,4 +1,5 @@
 use cairo;
+use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
 use pango::{self, ContextExt, LayoutExt};
@@ -31,6 +32,24 @@ use state::{
     TextRendering,
 };
 
+fn set_affine_on_cr(draw_ctx: *mut RsvgDrawingCtx, cr: &cairo::Context, affine: &cairo::Matrix) {
+    let (x0, y0) = if drawing_ctx::is_cairo_context_nested(draw_ctx, cr) {
+        (0.0, 0.0)
+    } else {
+        drawing_ctx::get_offset(draw_ctx)
+    };
+
+    let matrix = cairo::Matrix::new(
+        affine.xx,
+        affine.yx,
+        affine.xy,
+        affine.yy,
+        affine.x0 + x0,
+        affine.y0 + y0,
+    );
+    cr.set_matrix(matrix);
+}
+
 pub fn draw_path_builder(
     draw_ctx: *mut RsvgDrawingCtx,
     state: &State,
@@ -43,7 +62,7 @@ pub fn draw_path_builder(
 
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &state.affine);
+    set_affine_on_cr(draw_ctx, &cr, &state.affine);
 
     builder.to_cairo(&cr);
 
@@ -392,7 +411,7 @@ pub fn draw_pango_layout(
 
     setup_cr_for_stroke(&cr, draw_ctx, state);
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &state.affine);
+    set_affine_on_cr(draw_ctx, &cr, &state.affine);
 
     let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
 
@@ -561,7 +580,7 @@ pub fn draw_surface(
         height,
     });
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &affine);
+    set_affine_on_cr(draw_ctx, &cr, &affine);
     cr.scale(w / width, h / height);
     let x = x * width / w;
     let y = y * height / h;
@@ -584,7 +603,7 @@ pub fn add_clipping_rect(
 ) {
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, affine);
+    set_affine_on_cr(draw_ctx, &cr, affine);
 
     cr.rectangle(x, y, w, h);
     cr.clip();

@@ -178,6 +178,12 @@ rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
     ctx->render->cr = cr;
 }
 
+gboolean
+rsvg_cairo_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr)
+{
+    return cr != ctx->render->initial_cr;
+}
+
 static void
 rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
 {

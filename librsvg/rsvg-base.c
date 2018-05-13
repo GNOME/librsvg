@@ -643,21 +643,6 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
 }
 
 void
-rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_matrix_t *affine)
-{
-    RsvgCairoRender *render = draw_ctx->render;
-    gboolean nest = cr != render->initial_cr;
-    cairo_matrix_t matrix;
-
-    cairo_matrix_init (&matrix,
-                       affine->xx, affine->yx,
-                       affine->xy, affine->yy,
-                       affine->x0 + (nest ? 0 : render->offset_x),
-                       affine->y0 + (nest ? 0 : render->offset_y));
-    cairo_set_matrix (cr, &matrix);
-}
-
-void
 rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y)
 {
     if (x != NULL) {
