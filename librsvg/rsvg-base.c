@@ -332,18 +332,6 @@ rsvg_cleanup (void)
     xmlCleanupParser ();
 }
 
-void
-rsvg_pop_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
-{
-    rsvg_cairo_pop_discrete_layer (ctx, clipping);
-}
-
-void
-rsvg_push_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
-{
-    rsvg_cairo_push_discrete_layer (ctx, clipping);
-}
-
 cairo_surface_t *
 rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
                                   const char *href,
