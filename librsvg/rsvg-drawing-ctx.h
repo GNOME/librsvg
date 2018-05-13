@@ -25,8 +25,8 @@
             Dom Lachowicz <cinamod@hotmail.com>, 
             Caleb Moore <c.moore@student.unsw.edu.au>
 */
-#ifndef RSVG_CAIRO_DRAW_H
-#define RSVG_CAIRO_DRAW_H
+#ifndef RSVG_DRAWING_CTX_H
+#define RSVG_DRAWING_CTX_H
 
 #include "rsvg-private.h"
 
@@ -138,4 +138,4 @@ cairo_surface_t*rsvg_cairo_get_surface_of_node  (RsvgDrawingCtx *ctx, RsvgNode *
 
 G_END_DECLS
 
-#endif /*RSVG_CAIRO_DRAW_H */
+#endif /*RSVG_DRAWING_CTX_H */

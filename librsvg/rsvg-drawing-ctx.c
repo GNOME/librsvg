@@ -29,7 +29,7 @@
 
 #include "config.h"
 
-#include "rsvg-cairo-draw.h"
+#include "rsvg-drawing-ctx.h"
 #include "rsvg-styles.h"
 #include "rsvg-filter.h"
 #include "rsvg-mask.h"

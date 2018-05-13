@@ -28,7 +28,7 @@
 #include "../rsvg-private.h"
 #include "../rsvg-styles.h"
 #include "../rsvg-css.h"
-#include "../rsvg-cairo-draw.h"
+#include "../rsvg-drawing-ctx.h"
 #include "common.h"
 
 void
@@ -740,7 +740,7 @@ rsvg_filter_draw (RsvgNode *node,
                   int dominate,
                   gboolean clipping)
 {
-    /* nothing; filters are drawn in rsvg-cairo-draw.c */
+    /* nothing; filters are drawn in rsvg-drawing-ctx.c */
 }
 
 void
