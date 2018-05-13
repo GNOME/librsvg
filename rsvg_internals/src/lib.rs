@@ -189,6 +189,7 @@ mod space;
 mod state;
 mod stop;
 mod structure;
+mod rect;
 mod text;
 mod transform;
 mod unitinterval;
