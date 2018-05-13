@@ -123,9 +123,9 @@ G_GNUC_INTERNAL
 PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
-void         rsvg_drawing_ctx_push_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping);
+void         rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx);
 G_GNUC_INTERNAL
-void         rsvg_drawing_ctx_pop_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping);
+void         rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,

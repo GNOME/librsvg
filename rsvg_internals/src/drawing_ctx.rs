@@ -83,14 +83,8 @@ extern "C" {
         draw_ctx: *const RsvgDrawingCtx,
     ) -> *mut pango_sys::PangoContext;
 
-    fn rsvg_drawing_ctx_push_discrete_layer(
-        draw_ctx: *const RsvgDrawingCtx,
-        clipping: glib_sys::gboolean
-    );
-    fn rsvg_drawing_ctx_pop_discrete_layer(
-        draw_ctx: *const RsvgDrawingCtx,
-        clipping: glib_sys::gboolean
-    );
+    fn rsvg_drawing_ctx_push_render_stack(draw_ctx: *const RsvgDrawingCtx);
+    fn rsvg_drawing_ctx_pop_render_stack(draw_ctx: *const RsvgDrawingCtx);
 }
 
 pub fn get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
@@ -260,14 +254,22 @@ pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: &State, domin
 }
 
 pub fn push_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: bool) {
-    unsafe {
-        rsvg_drawing_ctx_push_discrete_layer(draw_ctx, clipping.to_glib());
+    if !clipping {
+        get_cairo_context(draw_ctx).save();
+
+        unsafe {
+            rsvg_drawing_ctx_push_render_stack(draw_ctx);
+        }
     }
 }
 
 pub fn pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: bool) {
-    unsafe {
-        rsvg_drawing_ctx_pop_discrete_layer(draw_ctx, clipping.to_glib());
+    if !clipping {
+        unsafe {
+            rsvg_drawing_ctx_pop_render_stack(draw_ctx);
+        }
+
+        get_cairo_context(draw_ctx).restore();
     }
 }
 
