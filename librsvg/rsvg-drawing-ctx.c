@@ -52,137 +52,6 @@ void rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
                                    double w,
                                    double h);
 
-#ifdef HAVE_PANGOFT2
-static cairo_font_options_t *
-get_font_options_for_testing (void)
-{
-    cairo_font_options_t *options;
-
-    options = cairo_font_options_create ();
-    cairo_font_options_set_antialias (options, CAIRO_ANTIALIAS_GRAY);
-    cairo_font_options_set_hint_style (options, CAIRO_HINT_STYLE_FULL);
-    cairo_font_options_set_hint_metrics (options, CAIRO_HINT_METRICS_ON);
-
-    return options;
-}
-
-static void
-set_font_options_for_testing (PangoContext *context)
-{
-    cairo_font_options_t *font_options;
-
-    font_options = get_font_options_for_testing ();
-    pango_cairo_context_set_font_options (context, font_options);
-    cairo_font_options_destroy (font_options);
-}
-
-static void
-create_font_config_for_testing (RsvgDrawingCtx *ctx)
-{
-    const char *font_paths[] = {
-        SRCDIR "/tests/resources/Roboto-Regular.ttf",
-        SRCDIR "/tests/resources/Roboto-Italic.ttf",
-        SRCDIR "/tests/resources/Roboto-Bold.ttf",
-        SRCDIR "/tests/resources/Roboto-BoldItalic.ttf",
-    };
-
-    int i;
-
-    if (ctx->font_config_for_testing != NULL)
-        return;
-
-    ctx->font_config_for_testing = FcConfigCreate ();
-
-    for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
-        if (!FcConfigAppFontAddFile (ctx->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
-            g_error ("Could not load font file \"%s\" for tests; aborting", font_paths[i]);
-        }
-    }
-}
-
-static PangoFontMap *
-get_font_map_for_testing (RsvgDrawingCtx *ctx)
-{
-    create_font_config_for_testing (ctx);
-
-    if (ctx->font_map_for_testing == NULL) {
-        ctx->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (ctx->font_map_for_testing),
-                                      ctx->font_config_for_testing);
-    }
-
-    return ctx->font_map_for_testing;
-}
-#endif
-
-PangoContext *
-rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
-{
-    PangoFontMap *fontmap;
-    PangoContext *context;
-    double dpi_y;
-
-#ifdef HAVE_PANGOFT2
-    if (ctx->is_testing) {
-        fontmap = get_font_map_for_testing (ctx);
-    } else {
-#endif
-        fontmap = pango_cairo_font_map_get_default ();
-#ifdef HAVE_PANGOFT2
-    }
-#endif
-
-    context = pango_font_map_create_context (fontmap);
-    pango_cairo_update_context (ctx->cr, context);
-
-    rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
-    pango_cairo_context_set_resolution (context, dpi_y);
-
-#ifdef HAVE_PANGOFT2
-    if (ctx->is_testing) {
-        set_font_options_for_testing (context);
-    }
-#endif
-
-    return context;
-}
-
-cairo_t *
-rsvg_cairo_get_cairo_context (RsvgDrawingCtx *ctx)
-{
-    return ctx->cr;
-}
-
-/* FIXME: Usage of this function is more less a hack.  Some code does this:
- *
- *   save_cr = rsvg_cairo_get_cairo_context (ctx);
- *
- *   some_surface = create_surface ();
- *
- *   cr = cairo_create (some_surface);
- *
- *   rsvg_cairo_set_cairo_context (ctx, cr);
- *
- *   ... draw with ctx but to that temporary surface
- *
- *   rsvg_cairo_set_cairo_context (ctx, save_cr);
- *
- * It would be better to have an explicit push/pop for the cairo_t, or
- * pushing a temporary surface, or something that does not involve
- * monkeypatching the cr directly.
- */
-void
-rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
-{
-    ctx->cr = cr;
-}
-
-gboolean
-rsvg_cairo_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr)
-{
-    return cr != ctx->initial_cr;
-}
-
 static void
 rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
 {
@@ -387,495 +256,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
 }
 
 static void
-push_bounding_box (RsvgDrawingCtx *ctx)
-{
-    RsvgState *state;
-    cairo_matrix_t affine;
-    RsvgBbox *bbox, *ink_bbox;
-
-    state = rsvg_drawing_ctx_get_current_state (ctx);
-
-    bbox = g_new0 (RsvgBbox, 1);
-    *bbox = ctx->bbox;
-    ctx->bb_stack = g_list_prepend (ctx->bb_stack, bbox);
-
-    ink_bbox = g_new0 (RsvgBbox, 1);
-    *ink_bbox = ctx->ink_bbox;
-    ctx->ink_bb_stack = g_list_prepend (ctx->ink_bb_stack, ink_bbox);
-
-    affine = rsvg_state_get_affine (state);
-    rsvg_bbox_init (&ctx->bbox, &affine);
-    rsvg_bbox_init (&ctx->ink_bbox, &affine);
-}
-
-static void
-rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
-{
-    RsvgState *state;
-    char *clip_path;
-    char *filter;
-    char *mask;
-    guint8 opacity;
-    cairo_operator_t comp_op;
-    RsvgEnableBackgroundType enable_background;
-    cairo_surface_t *surface;
-    cairo_t *child_cr;
-    gboolean lateclip = FALSE;
-
-    state = rsvg_drawing_ctx_get_current_state (ctx);
-    clip_path = rsvg_state_get_clip_path (state);
-    filter = rsvg_state_get_filter (state);
-    mask = rsvg_state_get_mask (state);
-    opacity = rsvg_state_get_opacity (state);
-    comp_op = rsvg_state_get_comp_op (state);
-    enable_background = rsvg_state_get_enable_background (state);
-
-    if (clip_path) {
-        RsvgNode *node;
-        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, clip_path, RSVG_NODE_TYPE_CLIP_PATH);
-        if (node) {
-            switch (rsvg_node_clip_path_get_units (node)) {
-            case userSpaceOnUse:
-                rsvg_cairo_clip (ctx, node, NULL);
-                break;
-            case objectBoundingBox:
-                lateclip = TRUE;
-                break;
-
-            default:
-                g_assert_not_reached ();
-                break;
-            }
-
-            rsvg_drawing_ctx_release_node (ctx, node);
-        }
-
-        g_free (clip_path);
-    }
-
-    if (opacity == 0xFF
-        && !filter && !mask && !lateclip && (comp_op == CAIRO_OPERATOR_OVER)
-        && (enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
-        return;
-
-    g_free (mask);
-
-    if (!filter) {
-        surface = cairo_surface_create_similar (cairo_get_target (ctx->cr),
-                                                CAIRO_CONTENT_COLOR_ALPHA,
-                                                ctx->width, ctx->height);
-    } else {
-        surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-                                              ctx->width, ctx->height);
-
-        /* The surface reference is owned by the child_cr created below and put on the cr_stack! */
-        ctx->surfaces_stack = g_list_prepend (ctx->surfaces_stack, surface);
-
-        g_free (filter);
-    }
-
-#if 0
-    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
-        cairo_surface_destroy (surface);
-        return;
-    }
-#endif
-
-    child_cr = cairo_create (surface);
-    cairo_surface_destroy (surface);
-
-    ctx->cr_stack = g_list_prepend (ctx->cr_stack, ctx->cr);
-    ctx->cr = child_cr;
-
-    push_bounding_box (ctx);
-}
-
-void
-rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx, gboolean clipping)
-{
-    if (!clipping) {
-        cairo_save (ctx->cr);
-        rsvg_cairo_push_render_stack (ctx);
-    }
-}
-
-static void
-pop_bounding_box (RsvgDrawingCtx *ctx)
-{
-    rsvg_bbox_insert ((RsvgBbox *) ctx->bb_stack->data, &ctx->bbox);
-    rsvg_bbox_insert ((RsvgBbox *) ctx->ink_bb_stack->data, &ctx->ink_bbox);
-
-    ctx->bbox = *((RsvgBbox *) ctx->bb_stack->data);
-    ctx->ink_bbox = *((RsvgBbox *) ctx->ink_bb_stack->data);
-
-    g_free (ctx->bb_stack->data);
-    g_free (ctx->ink_bb_stack->data);
-
-    ctx->bb_stack = g_list_delete_link (ctx->bb_stack, ctx->bb_stack);
-    ctx->ink_bb_stack = g_list_delete_link (ctx->ink_bb_stack, ctx->ink_bb_stack);
-}
-
-static void
-rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
-{
-    RsvgState *state;
-    char *clip_path;
-    char *filter;
-    char *mask;
-    guint8 opacity;
-    cairo_operator_t comp_op;
-    RsvgEnableBackgroundType enable_background;
-    cairo_t *child_cr = ctx->cr;
-    RsvgNode *lateclip = NULL;
-    cairo_surface_t *surface = NULL;
-    gboolean needs_destroy = FALSE;
-    double offset_x = 0, offset_y = 0;
-
-    state = rsvg_drawing_ctx_get_current_state (ctx);
-    clip_path = rsvg_state_get_clip_path (state);
-    filter = rsvg_state_get_filter (state);
-    mask = rsvg_state_get_mask (state);
-    opacity = rsvg_state_get_opacity (state);
-    comp_op = rsvg_state_get_comp_op (state);
-    enable_background = rsvg_state_get_enable_background (state);
-
-    if (clip_path) {
-        RsvgNode *node;
-
-        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, clip_path, RSVG_NODE_TYPE_CLIP_PATH);
-        if (node) {
-            if (rsvg_node_clip_path_get_units (node) == objectBoundingBox) {
-                lateclip = node;
-            } else {
-                rsvg_drawing_ctx_release_node (ctx, node);
-            }
-        }
-
-        g_free (clip_path);
-    }
-
-    if (opacity == 0xFF
-        && !filter && !mask && !lateclip && (comp_op == CAIRO_OPERATOR_OVER)
-        && (enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
-        return;
-
-    surface = cairo_get_target (child_cr);
-
-    if (filter) {
-        RsvgNode *node;
-        cairo_surface_t *output;
-
-        output = ctx->surfaces_stack->data;
-        ctx->surfaces_stack = g_list_delete_link (ctx->surfaces_stack, ctx->surfaces_stack);
-
-        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, filter, RSVG_NODE_TYPE_FILTER);
-        if (node) {
-            needs_destroy = TRUE;
-            surface = rsvg_filter_render (node, output, ctx, "2103");
-            rsvg_drawing_ctx_release_node (ctx, node);
-
-            /* Don't destroy the output surface, it's owned by child_cr */
-        }
-
-        g_free (filter);
-    }
-
-    ctx->cr = (cairo_t *) ctx->cr_stack->data;
-    ctx->cr_stack = g_list_delete_link (ctx->cr_stack, ctx->cr_stack);
-
-    if (ctx->cr == ctx->initial_cr) {
-        rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
-    }
-
-    cairo_identity_matrix (ctx->cr);
-    cairo_set_source_surface (ctx->cr, surface, offset_x, offset_y);
-
-    if (lateclip) {
-        rsvg_cairo_clip (ctx, lateclip, &ctx->bbox);
-        rsvg_drawing_ctx_release_node (ctx, lateclip);
-    }
-
-    cairo_set_operator (ctx->cr, comp_op);
-
-    if (mask) {
-        RsvgNode *node;
-
-        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, mask, RSVG_NODE_TYPE_MASK);
-        if (node) {
-            rsvg_cairo_generate_mask (ctx->cr, node, ctx);
-            rsvg_drawing_ctx_release_node (ctx, node);
-        }
-
-        g_free (mask);
-    } else if (opacity != 0xFF)
-        cairo_paint_with_alpha (ctx->cr, (double) opacity / 255.0);
-    else
-        cairo_paint (ctx->cr);
-
-    cairo_destroy (child_cr);
-
-    pop_bounding_box (ctx);
-
-    if (needs_destroy) {
-        cairo_surface_destroy (surface);
-    }
-}
-
-void
-rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx * ctx, gboolean clipping)
-{
-    if (!clipping) {
-        rsvg_cairo_pop_render_stack (ctx);
-        cairo_restore (ctx->cr);
-    }
-}
-
-cairo_surface_t *
-rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
-                                RsvgNode *drawable,
-                                double width,
-                                double height)
-{
-    cairo_surface_t *surface;
-    cairo_t *cr;
-    cairo_t *save_cr = ctx->cr;
-    cairo_t *save_initial_cr = ctx->initial_cr;
-    double save_x = ctx->offset_x;
-    double save_y = ctx->offset_y;
-    double save_w = ctx->width;
-    double save_h = ctx->height;
-
-    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
-    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
-        cairo_surface_destroy (surface);
-        return NULL;
-    }
-
-    ctx->cr = cairo_create (surface);
-    ctx->initial_cr = ctx->cr;
-    ctx->offset_x = 0;
-    ctx->offset_y = 0;
-    ctx->width = width;
-    ctx->height = height;
-
-    rsvg_drawing_ctx_draw_node_from_stack (ctx, drawable, 0, FALSE);
-
-    cairo_destroy (ctx->cr);
-    ctx->cr = save_cr;
-    ctx->initial_cr = save_initial_cr;
-    ctx->offset_x = save_x;
-    ctx->offset_y = save_y;
-    ctx->width = save_w;
-    ctx->height = save_h;
-
-    return surface;
-}
-
-cairo_surface_t *
-rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf)
-{
-    gint width, height, gdk_rowstride, n_channels, cairo_rowstride;
-    guchar *gdk_pixels, *cairo_pixels;
-    cairo_format_t format;
-    cairo_surface_t *surface;
-    int j;
-
-    if (pixbuf == NULL)
-        return NULL;
-
-    width = gdk_pixbuf_get_width (pixbuf);
-    height = gdk_pixbuf_get_height (pixbuf);
-    gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
-    gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
-    n_channels = gdk_pixbuf_get_n_channels (pixbuf);
-
-    if (n_channels == 3)
-        format = CAIRO_FORMAT_RGB24;
-    else
-        format = CAIRO_FORMAT_ARGB32;
-
-    surface = cairo_image_surface_create (format, width, height);
-    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
-        cairo_surface_destroy (surface);
-        return NULL;
-    }
-
-    cairo_pixels = cairo_image_surface_get_data (surface);
-    cairo_rowstride = cairo_image_surface_get_stride (surface);
-
-    if (n_channels == 3) {
-        for (j = height; j; j--) {
-            guchar *p = gdk_pixels;
-            guchar *q = cairo_pixels;
-            guchar *end = p + 3 * width;
-
-            while (p < end) {
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-                q[0] = p[2];
-                q[1] = p[1];
-                q[2] = p[0];
-#else
-                q[1] = p[0];
-                q[2] = p[1];
-                q[3] = p[2];
-#endif
-                p += 3;
-                q += 4;
-            }
-
-            gdk_pixels += gdk_rowstride;
-            cairo_pixels += cairo_rowstride;
-        }
-    } else {
-        for (j = height; j; j--) {
-            guchar *p = gdk_pixels;
-            guchar *q = cairo_pixels;
-            guchar *end = p + 4 * width;
-            guint t1, t2, t3;
-
-#define MULT(d,c,a,t) G_STMT_START { t = c * a + 0x7f; d = ((t >> 8) + t) >> 8; } G_STMT_END
-
-            while (p < end) {
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-                MULT (q[0], p[2], p[3], t1);
-                MULT (q[1], p[1], p[3], t2);
-                MULT (q[2], p[0], p[3], t3);
-                q[3] = p[3];
-#else
-                q[0] = p[3];
-                MULT (q[1], p[0], p[3], t1);
-                MULT (q[2], p[1], p[3], t2);
-                MULT (q[3], p[2], p[3], t3);
-#endif
-
-                p += 4;
-                q += 4;
-            }
-
-#undef MULT
-            gdk_pixels += gdk_rowstride;
-            cairo_pixels += cairo_rowstride;
-        }
-    }
-
-    cairo_surface_mark_dirty (surface);
-    return surface;
-}
-
-/* Copied from gtk+/gdk/gdkpixbuf-drawable.c, LGPL 2+.
- *
- * Copyright (C) 1999 Michael Zucchi
- *
- * Authors: Michael Zucchi <zucchi@zedzone.mmc.com.au>
- *          Cody Russell <bratsche@dfw.net>
- *          Federico Mena-Quintero <federico@gimp.org>
- */
-
-static void
-convert_alpha (guchar *dest_data,
-               int     dest_stride,
-               guchar *src_data,
-               int     src_stride,
-               int     src_x,
-               int     src_y,
-               int     width,
-               int     height)
-{
-    int x, y;
-
-    src_data += src_stride * src_y + src_x * 4;
-
-    for (y = 0; y < height; y++) {
-        guint32 *src = (guint32 *) src_data;
-
-        for (x = 0; x < width; x++) {
-          guint alpha = src[x] >> 24;
-
-          if (alpha == 0) {
-              dest_data[x * 4 + 0] = 0;
-              dest_data[x * 4 + 1] = 0;
-              dest_data[x * 4 + 2] = 0;
-          } else {
-              dest_data[x * 4 + 0] = (((src[x] & 0xff0000) >> 16) * 255 + alpha / 2) / alpha;
-              dest_data[x * 4 + 1] = (((src[x] & 0x00ff00) >>  8) * 255 + alpha / 2) / alpha;
-              dest_data[x * 4 + 2] = (((src[x] & 0x0000ff) >>  0) * 255 + alpha / 2) / alpha;
-          }
-          dest_data[x * 4 + 3] = alpha;
-      }
-
-      src_data += src_stride;
-      dest_data += dest_stride;
-    }
-}
-
-static void
-convert_no_alpha (guchar *dest_data,
-                  int     dest_stride,
-                  guchar *src_data,
-                  int     src_stride,
-                  int     src_x,
-                  int     src_y,
-                  int     width,
-                  int     height)
-{
-    int x, y;
-
-    src_data += src_stride * src_y + src_x * 4;
-
-    for (y = 0; y < height; y++) {
-        guint32 *src = (guint32 *) src_data;
-
-        for (x = 0; x < width; x++) {
-            dest_data[x * 3 + 0] = src[x] >> 16;
-            dest_data[x * 3 + 1] = src[x] >>  8;
-            dest_data[x * 3 + 2] = src[x];
-        }
-
-        src_data += src_stride;
-        dest_data += dest_stride;
-    }
-}
-
-GdkPixbuf *
-rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface)
-{
-    cairo_content_t content;
-    GdkPixbuf *dest;
-    int width, height;
-
-    /* General sanity checks */
-    g_assert (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
-
-    width = cairo_image_surface_get_width (surface);
-    height = cairo_image_surface_get_height (surface);
-    if (width == 0 || height == 0)
-        return NULL;
-
-    content = cairo_surface_get_content (surface) | CAIRO_CONTENT_COLOR;
-    dest = gdk_pixbuf_new (GDK_COLORSPACE_RGB,
-                          !!(content & CAIRO_CONTENT_ALPHA),
-                          8,
-                          width, height);
-
-    if (gdk_pixbuf_get_has_alpha (dest))
-      convert_alpha (gdk_pixbuf_get_pixels (dest),
-                    gdk_pixbuf_get_rowstride (dest),
-                    cairo_image_surface_get_data (surface),
-                    cairo_image_surface_get_stride (surface),
-                    0, 0,
-                    width, height);
-    else
-      convert_no_alpha (gdk_pixbuf_get_pixels (dest),
-                        gdk_pixbuf_get_rowstride (dest),
-                        cairo_image_surface_get_data (surface),
-                        cairo_image_surface_get_stride (surface),
-                        0, 0,
-                        width, height);
-
-    return dest;
-}
-
-static void
 rsvg_cairo_transformed_image_bounding_box (cairo_matrix_t *affine,
                                            double width, double height,
                                            double *x0, double *y0, double *x1, double *y1)
@@ -1019,6 +399,42 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx *ctx)
     g_free (ctx);
 }
 
+cairo_t *
+rsvg_drawing_ctx_get_cairo_context (RsvgDrawingCtx *ctx)
+{
+    return ctx->cr;
+}
+
+/* FIXME: Usage of this function is more less a hack.  Some code does this:
+ *
+ *   save_cr = rsvg_drawing_ctx_get_cairo_context (ctx);
+ *
+ *   some_surface = create_surface ();
+ *
+ *   cr = cairo_create (some_surface);
+ *
+ *   rsvg_drawing_ctx_set_cairo_context (ctx, cr);
+ *
+ *   ... draw with ctx but to that temporary surface
+ *
+ *   rsvg_drawing_ctx_set_cairo_context (ctx, save_cr);
+ *
+ * It would be better to have an explicit push/pop for the cairo_t, or
+ * pushing a temporary surface, or something that does not involve
+ * monkeypatching the cr directly.
+ */
+void
+rsvg_drawing_ctx_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
+{
+    ctx->cr = cr;
+}
+
+gboolean
+rsvg_drawing_ctx_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr)
+{
+    return cr != ctx->initial_cr;
+}
+
 RsvgState *
 rsvg_drawing_ctx_get_current_state (RsvgDrawingCtx *ctx)
 {
@@ -1029,6 +445,250 @@ void
 rsvg_drawing_ctx_set_current_state (RsvgDrawingCtx *ctx, RsvgState *state)
 {
     ctx->state = state;
+}
+
+static void
+push_bounding_box (RsvgDrawingCtx *ctx)
+{
+    RsvgState *state;
+    cairo_matrix_t affine;
+    RsvgBbox *bbox, *ink_bbox;
+
+    state = rsvg_drawing_ctx_get_current_state (ctx);
+
+    bbox = g_new0 (RsvgBbox, 1);
+    *bbox = ctx->bbox;
+    ctx->bb_stack = g_list_prepend (ctx->bb_stack, bbox);
+
+    ink_bbox = g_new0 (RsvgBbox, 1);
+    *ink_bbox = ctx->ink_bbox;
+    ctx->ink_bb_stack = g_list_prepend (ctx->ink_bb_stack, ink_bbox);
+
+    affine = rsvg_state_get_affine (state);
+    rsvg_bbox_init (&ctx->bbox, &affine);
+    rsvg_bbox_init (&ctx->ink_bbox, &affine);
+}
+
+static void
+rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx * ctx)
+{
+    RsvgState *state;
+    char *clip_path;
+    char *filter;
+    char *mask;
+    guint8 opacity;
+    cairo_operator_t comp_op;
+    RsvgEnableBackgroundType enable_background;
+    cairo_surface_t *surface;
+    cairo_t *child_cr;
+    gboolean lateclip = FALSE;
+
+    state = rsvg_drawing_ctx_get_current_state (ctx);
+    clip_path = rsvg_state_get_clip_path (state);
+    filter = rsvg_state_get_filter (state);
+    mask = rsvg_state_get_mask (state);
+    opacity = rsvg_state_get_opacity (state);
+    comp_op = rsvg_state_get_comp_op (state);
+    enable_background = rsvg_state_get_enable_background (state);
+
+    if (clip_path) {
+        RsvgNode *node;
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, clip_path, RSVG_NODE_TYPE_CLIP_PATH);
+        if (node) {
+            switch (rsvg_node_clip_path_get_units (node)) {
+            case userSpaceOnUse:
+                rsvg_cairo_clip (ctx, node, NULL);
+                break;
+            case objectBoundingBox:
+                lateclip = TRUE;
+                break;
+
+            default:
+                g_assert_not_reached ();
+                break;
+            }
+
+            rsvg_drawing_ctx_release_node (ctx, node);
+        }
+
+        g_free (clip_path);
+    }
+
+    if (opacity == 0xFF
+        && !filter && !mask && !lateclip && (comp_op == CAIRO_OPERATOR_OVER)
+        && (enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
+        return;
+
+    g_free (mask);
+
+    if (!filter) {
+        surface = cairo_surface_create_similar (cairo_get_target (ctx->cr),
+                                                CAIRO_CONTENT_COLOR_ALPHA,
+                                                ctx->width, ctx->height);
+    } else {
+        surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+                                              ctx->width, ctx->height);
+
+        /* The surface reference is owned by the child_cr created below and put on the cr_stack! */
+        ctx->surfaces_stack = g_list_prepend (ctx->surfaces_stack, surface);
+
+        g_free (filter);
+    }
+
+#if 0
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        cairo_surface_destroy (surface);
+        return;
+    }
+#endif
+
+    child_cr = cairo_create (surface);
+    cairo_surface_destroy (surface);
+
+    ctx->cr_stack = g_list_prepend (ctx->cr_stack, ctx->cr);
+    ctx->cr = child_cr;
+
+    push_bounding_box (ctx);
+}
+
+static void
+pop_bounding_box (RsvgDrawingCtx *ctx)
+{
+    rsvg_bbox_insert ((RsvgBbox *) ctx->bb_stack->data, &ctx->bbox);
+    rsvg_bbox_insert ((RsvgBbox *) ctx->ink_bb_stack->data, &ctx->ink_bbox);
+
+    ctx->bbox = *((RsvgBbox *) ctx->bb_stack->data);
+    ctx->ink_bbox = *((RsvgBbox *) ctx->ink_bb_stack->data);
+
+    g_free (ctx->bb_stack->data);
+    g_free (ctx->ink_bb_stack->data);
+
+    ctx->bb_stack = g_list_delete_link (ctx->bb_stack, ctx->bb_stack);
+    ctx->ink_bb_stack = g_list_delete_link (ctx->ink_bb_stack, ctx->ink_bb_stack);
+}
+
+static void
+rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx * ctx)
+{
+    RsvgState *state;
+    char *clip_path;
+    char *filter;
+    char *mask;
+    guint8 opacity;
+    cairo_operator_t comp_op;
+    RsvgEnableBackgroundType enable_background;
+    cairo_t *child_cr = ctx->cr;
+    RsvgNode *lateclip = NULL;
+    cairo_surface_t *surface = NULL;
+    gboolean needs_destroy = FALSE;
+    double offset_x = 0, offset_y = 0;
+
+    state = rsvg_drawing_ctx_get_current_state (ctx);
+    clip_path = rsvg_state_get_clip_path (state);
+    filter = rsvg_state_get_filter (state);
+    mask = rsvg_state_get_mask (state);
+    opacity = rsvg_state_get_opacity (state);
+    comp_op = rsvg_state_get_comp_op (state);
+    enable_background = rsvg_state_get_enable_background (state);
+
+    if (clip_path) {
+        RsvgNode *node;
+
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, clip_path, RSVG_NODE_TYPE_CLIP_PATH);
+        if (node) {
+            if (rsvg_node_clip_path_get_units (node) == objectBoundingBox) {
+                lateclip = node;
+            } else {
+                rsvg_drawing_ctx_release_node (ctx, node);
+            }
+        }
+
+        g_free (clip_path);
+    }
+
+    if (opacity == 0xFF
+        && !filter && !mask && !lateclip && (comp_op == CAIRO_OPERATOR_OVER)
+        && (enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
+        return;
+
+    surface = cairo_get_target (child_cr);
+
+    if (filter) {
+        RsvgNode *node;
+        cairo_surface_t *output;
+
+        output = ctx->surfaces_stack->data;
+        ctx->surfaces_stack = g_list_delete_link (ctx->surfaces_stack, ctx->surfaces_stack);
+
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, filter, RSVG_NODE_TYPE_FILTER);
+        if (node) {
+            needs_destroy = TRUE;
+            surface = rsvg_filter_render (node, output, ctx, "2103");
+            rsvg_drawing_ctx_release_node (ctx, node);
+
+            /* Don't destroy the output surface, it's owned by child_cr */
+        }
+
+        g_free (filter);
+    }
+
+    ctx->cr = (cairo_t *) ctx->cr_stack->data;
+    ctx->cr_stack = g_list_delete_link (ctx->cr_stack, ctx->cr_stack);
+
+    if (ctx->cr == ctx->initial_cr) {
+        rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
+    }
+
+    cairo_identity_matrix (ctx->cr);
+    cairo_set_source_surface (ctx->cr, surface, offset_x, offset_y);
+
+    if (lateclip) {
+        rsvg_cairo_clip (ctx, lateclip, &ctx->bbox);
+        rsvg_drawing_ctx_release_node (ctx, lateclip);
+    }
+
+    cairo_set_operator (ctx->cr, comp_op);
+
+    if (mask) {
+        RsvgNode *node;
+
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, mask, RSVG_NODE_TYPE_MASK);
+        if (node) {
+            rsvg_cairo_generate_mask (ctx->cr, node, ctx);
+            rsvg_drawing_ctx_release_node (ctx, node);
+        }
+
+        g_free (mask);
+    } else if (opacity != 0xFF)
+        cairo_paint_with_alpha (ctx->cr, (double) opacity / 255.0);
+    else
+        cairo_paint (ctx->cr);
+
+    cairo_destroy (child_cr);
+
+    pop_bounding_box (ctx);
+
+    if (needs_destroy) {
+        cairo_surface_destroy (surface);
+    }
+}
+
+void
+rsvg_drawing_ctx_push_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
+{
+    if (!clipping) {
+        cairo_save (ctx->cr);
+        rsvg_drawing_ctx_push_render_stack (ctx);
+    }
+}
+
+void
+rsvg_drawing_ctx_pop_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
+{
+    if (!clipping) {
+        rsvg_drawing_ctx_pop_render_stack (ctx);
+        cairo_restore (ctx->cr);
+    }
 }
 
 /*
@@ -1233,4 +893,140 @@ rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dp
 
     if (out_dpi_y)
         *out_dpi_y = ctx->dpi_y;
+}
+
+#ifdef HAVE_PANGOFT2
+static cairo_font_options_t *
+get_font_options_for_testing (void)
+{
+    cairo_font_options_t *options;
+
+    options = cairo_font_options_create ();
+    cairo_font_options_set_antialias (options, CAIRO_ANTIALIAS_GRAY);
+    cairo_font_options_set_hint_style (options, CAIRO_HINT_STYLE_FULL);
+    cairo_font_options_set_hint_metrics (options, CAIRO_HINT_METRICS_ON);
+
+    return options;
+}
+
+static void
+set_font_options_for_testing (PangoContext *context)
+{
+    cairo_font_options_t *font_options;
+
+    font_options = get_font_options_for_testing ();
+    pango_cairo_context_set_font_options (context, font_options);
+    cairo_font_options_destroy (font_options);
+}
+
+static void
+create_font_config_for_testing (RsvgDrawingCtx *ctx)
+{
+    const char *font_paths[] = {
+        SRCDIR "/tests/resources/Roboto-Regular.ttf",
+        SRCDIR "/tests/resources/Roboto-Italic.ttf",
+        SRCDIR "/tests/resources/Roboto-Bold.ttf",
+        SRCDIR "/tests/resources/Roboto-BoldItalic.ttf",
+    };
+
+    int i;
+
+    if (ctx->font_config_for_testing != NULL)
+        return;
+
+    ctx->font_config_for_testing = FcConfigCreate ();
+
+    for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
+        if (!FcConfigAppFontAddFile (ctx->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
+            g_error ("Could not load font file \"%s\" for tests; aborting", font_paths[i]);
+        }
+    }
+}
+
+static PangoFontMap *
+get_font_map_for_testing (RsvgDrawingCtx *ctx)
+{
+    create_font_config_for_testing (ctx);
+
+    if (ctx->font_map_for_testing == NULL) {
+        ctx->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
+        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (ctx->font_map_for_testing),
+                                      ctx->font_config_for_testing);
+    }
+
+    return ctx->font_map_for_testing;
+}
+#endif
+
+PangoContext *
+rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx * ctx)
+{
+    PangoFontMap *fontmap;
+    PangoContext *context;
+    double dpi_y;
+
+#ifdef HAVE_PANGOFT2
+    if (ctx->is_testing) {
+        fontmap = get_font_map_for_testing (ctx);
+    } else {
+#endif
+        fontmap = pango_cairo_font_map_get_default ();
+#ifdef HAVE_PANGOFT2
+    }
+#endif
+
+    context = pango_font_map_create_context (fontmap);
+    pango_cairo_update_context (ctx->cr, context);
+
+    rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
+    pango_cairo_context_set_resolution (context, dpi_y);
+
+#ifdef HAVE_PANGOFT2
+    if (ctx->is_testing) {
+        set_font_options_for_testing (context);
+    }
+#endif
+
+    return context;
+}
+
+cairo_surface_t *
+rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
+                                      RsvgNode *drawable,
+                                      double width,
+                                      double height)
+{
+    cairo_surface_t *surface;
+    cairo_t *cr;
+    cairo_t *save_cr = ctx->cr;
+    cairo_t *save_initial_cr = ctx->initial_cr;
+    double save_x = ctx->offset_x;
+    double save_y = ctx->offset_y;
+    double save_w = ctx->width;
+    double save_h = ctx->height;
+
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        cairo_surface_destroy (surface);
+        return NULL;
+    }
+
+    ctx->cr = cairo_create (surface);
+    ctx->initial_cr = ctx->cr;
+    ctx->offset_x = 0;
+    ctx->offset_y = 0;
+    ctx->width = width;
+    ctx->height = height;
+
+    rsvg_drawing_ctx_draw_node_from_stack (ctx, drawable, 0, FALSE);
+
+    cairo_destroy (ctx->cr);
+    ctx->cr = save_cr;
+    ctx->initial_cr = save_initial_cr;
+    ctx->offset_x = save_x;
+    ctx->offset_y = save_y;
+    ctx->width = save_w;
+    ctx->height = save_h;
+
+    return surface;
 }
