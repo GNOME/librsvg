@@ -61,15 +61,18 @@ struct RsvgDrawingCtx {
 };
 
 G_GNUC_INTERNAL
-void rsvg_pop_discrete_layer    (RsvgDrawingCtx *ctx, gboolean clipping);
-G_GNUC_INTERNAL
-void rsvg_push_discrete_layer   (RsvgDrawingCtx *ctx, gboolean clipping);
-
-G_GNUC_INTERNAL
 RsvgDrawingCtx *rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
+
+G_GNUC_INTERNAL
+cairo_t *rsvg_drawing_ctx_get_cairo_context (RsvgDrawingCtx *ctx);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr);
+
+G_GNUC_INTERNAL
+gboolean rsvg_drawing_ctx_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr);
 
 G_GNUC_INTERNAL
 RsvgState *rsvg_drawing_ctx_get_current_state   (RsvgDrawingCtx * ctx);
@@ -117,24 +120,18 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
 
 G_GNUC_INTERNAL
-PangoContext    *rsvg_cairo_get_pango_context    (RsvgDrawingCtx *ctx);
+PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
-cairo_t *rsvg_cairo_get_cairo_context (RsvgDrawingCtx *ctx);
+void         rsvg_drawing_ctx_push_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping);
 G_GNUC_INTERNAL
-void rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr);
+void         rsvg_drawing_ctx_pop_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping);
 
 G_GNUC_INTERNAL
-gboolean rsvg_cairo_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr);
-
-G_GNUC_INTERNAL
-void         rsvg_cairo_push_discrete_layer	    (RsvgDrawingCtx *ctx, gboolean clipping);
-G_GNUC_INTERNAL
-void         rsvg_cairo_pop_discrete_layer      (RsvgDrawingCtx *ctx, gboolean clipping);
-
-G_GNUC_INTERNAL
-cairo_surface_t*rsvg_cairo_get_surface_of_node  (RsvgDrawingCtx *ctx, RsvgNode *drawable, 
-                                                 double width, double height);
+cairo_surface_t *rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
+                                                       RsvgNode *drawable,
+                                                       double width,
+                                                       double height);
 
 G_END_DECLS
 
