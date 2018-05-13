@@ -122,6 +122,7 @@
 
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
+#include "rsvg-cairo-draw.h"
 #include "rsvg-structure.h"
 
 enum {

@@ -180,34 +180,6 @@ typedef struct {
     gboolean virgin;
 } RsvgBbox;
 
-/* Contextual information for the drawing phase */
-struct RsvgDrawingCtx {
-    cairo_t *cr;
-    cairo_t *initial_cr;
-    GList *cr_stack;
-    GList *surfaces_stack;
-    RsvgState *state;
-    GError **error;
-    RsvgDefs *defs;
-    double dpi_x, dpi_y;
-    RsvgViewBox vb;
-    GSList *vb_stack;
-    GSList *drawsub_stack;
-    GSList *acquired_nodes;
-    gboolean is_testing;
-    double offset_x, offset_y;
-    double width, height;
-    RsvgBbox bbox;     /* Bounding box for path extents, without stroke width */
-    RsvgBbox ink_bbox; /* Bounding box for ink rectangle, with everything */
-    GList *bb_stack;
-    GList *ink_bb_stack;
-
-#ifdef HAVE_PANGOFT2
-    FcConfig *font_config_for_testing;
-    PangoFontMap *font_map_for_testing;
-#endif
-};
-
 /* Keep this in sync with rust/src/length.rs:LengthUnit */
 typedef enum {
     LENGTH_UNIT_DEFAULT,
@@ -435,52 +407,6 @@ G_GNUC_INTERNAL
 gboolean rsvg_cond_check_system_language (const char *value);
 
 G_GNUC_INTERNAL
-void rsvg_pop_discrete_layer    (RsvgDrawingCtx *ctx, gboolean clipping);
-G_GNUC_INTERNAL
-void rsvg_push_discrete_layer   (RsvgDrawingCtx *ctx, gboolean clipping);
-
-G_GNUC_INTERNAL
-RsvgDrawingCtx *rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
-
-G_GNUC_INTERNAL
-RsvgState *rsvg_drawing_ctx_get_current_state   (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_set_current_state         (RsvgDrawingCtx * ctx, RsvgState *state);
-
-/* Implemented in rust/src/drawing_ctx.rs */
-G_GNUC_INTERNAL
-void       rsvg_drawing_ctx_state_pop           (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-void       rsvg_drawing_ctx_state_push          (RsvgDrawingCtx * ctx);
-
-G_GNUC_INTERNAL
-RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const char *url);
-G_GNUC_INTERNAL
-RsvgNode *rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type);
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_release_node              (RsvgDrawingCtx * ctx, RsvgNode *node);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node);
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
-                                            RsvgNode *node,
-                                            int dominate,
-                                            gboolean clipping);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_insert_ink_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *ink_bbox);
-
-G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
 G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
@@ -514,16 +440,6 @@ double rsvg_length_hand_normalize (const RsvgLength *length,
 /* Implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
 RsvgLength rsvg_length_parse (const char *str, LengthDir dir);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h);
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_pop_view_box  (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_get_view_box_size (RsvgDrawingCtx *ctx, double *out_width, double *out_height);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
 
 G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
