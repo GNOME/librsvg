@@ -182,7 +182,10 @@ typedef struct {
 
 /* Contextual information for the drawing phase */
 struct RsvgDrawingCtx {
-    RsvgCairoRender *render;
+    cairo_t *cr;
+    cairo_t *initial_cr;
+    GList *cr_stack;
+    GList *surfaces_stack;
     RsvgState *state;
     GError **error;
     RsvgDefs *defs;

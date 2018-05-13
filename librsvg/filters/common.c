@@ -29,7 +29,6 @@
 #include "../rsvg-styles.h"
 #include "../rsvg-css.h"
 #include "../rsvg-cairo-draw.h"
-#include "../rsvg-cairo-render.h"
 #include "common.h"
 
 void
@@ -579,7 +578,6 @@ surface_get_alpha (cairo_surface_t *source,
 static cairo_surface_t *
 rsvg_compile_bg (RsvgDrawingCtx * ctx)
 {
-    RsvgCairoRender *render = ctx->render;
     cairo_surface_t *surface;
     cairo_t *cr;
     double x, y;
@@ -593,9 +591,9 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
 
     rsvg_drawing_ctx_get_offset (ctx, &x, &y);
 
-    for (i = g_list_last (render->cr_stack); i != NULL; i = g_list_previous (i)) {
+    for (i = g_list_last (ctx->cr_stack); i != NULL; i = g_list_previous (i)) {
         cairo_t *draw = i->data;
-        gboolean nest = draw != render->initial_cr;
+        gboolean nest = draw != ctx->initial_cr;
         cairo_set_source_surface (cr, cairo_get_target (draw),
                                   nest ? 0 : -x,
                                   nest ? 0 : -y);

@@ -34,7 +34,6 @@
 #include "rsvg-io.h"
 #include "rsvg-load.h"
 #include "rsvg-cairo-draw.h"
-#include "rsvg-cairo-render.h"
 
 #include <gio/gio.h>
 
@@ -146,7 +145,6 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
 {
     RsvgDimensionData data;
     RsvgDrawingCtx *draw;
-    RsvgCairoRender *render;
     RsvgState *state;
     cairo_matrix_t affine;
     cairo_matrix_t state_affine;
@@ -167,12 +165,10 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
                                                data.width, data.height,
                                                &bbx0, &bby0, &bbx1, &bby1);
 
-    render = rsvg_cairo_render_new (cr);
-
-    if (!render)
-        return NULL;
-
-    draw->render = render;
+    draw->initial_cr = cr;
+    draw->cr = cr;
+    draw->cr_stack = NULL;
+    draw->surfaces_stack = NULL;
 
     draw->offset_x = bbx0;
     draw->offset_y = bby0;
@@ -225,7 +221,8 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
 void
 rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 {
-    rsvg_cairo_render_free (handle->render);
+    g_assert (handle->cr_stack == NULL);
+    g_assert (handle->surfaces_stack == NULL);
 
     g_assert(handle->state);
     g_assert(rsvg_state_parent(handle->state) == NULL);
