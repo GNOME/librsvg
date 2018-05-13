@@ -469,8 +469,8 @@ push_bounding_box (RsvgDrawingCtx *ctx)
     rsvg_bbox_init (&ctx->ink_bbox, &affine);
 }
 
-static void
-rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx * ctx)
+void
+rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
 {
     RsvgState *state;
     char *clip_path;
@@ -567,8 +567,8 @@ pop_bounding_box (RsvgDrawingCtx *ctx)
     ctx->ink_bb_stack = g_list_delete_link (ctx->ink_bb_stack, ctx->ink_bb_stack);
 }
 
-static void
-rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx * ctx)
+void
+rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
 {
     RsvgState *state;
     char *clip_path;
@@ -670,24 +670,6 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx * ctx)
 
     if (needs_destroy) {
         cairo_surface_destroy (surface);
-    }
-}
-
-void
-rsvg_drawing_ctx_push_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
-{
-    if (!clipping) {
-        cairo_save (ctx->cr);
-        rsvg_drawing_ctx_push_render_stack (ctx);
-    }
-}
-
-void
-rsvg_drawing_ctx_pop_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
-{
-    if (!clipping) {
-        rsvg_drawing_ctx_pop_render_stack (ctx);
-        cairo_restore (ctx->cr);
     }
 }
 
