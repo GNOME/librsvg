@@ -33,7 +33,11 @@ pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use draw::rsvg_cairo_add_clipping_rect;
 
-pub use drawing_ctx::{rsvg_drawing_ctx_state_pop, rsvg_drawing_ctx_state_push};
+pub use drawing_ctx::{
+    rsvg_drawing_ctx_state_pop,
+    rsvg_drawing_ctx_state_push,
+    rsvg_drawing_ctx_transformed_image_bounding_box,
+};
 
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
 

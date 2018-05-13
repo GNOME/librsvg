@@ -11,6 +11,7 @@ use bbox::RsvgBbox;
 use length::LengthUnit;
 use node::NodeType;
 use node::RsvgNode;
+use rect;
 use state::{self, BaselineShift, FontSize, RsvgState, State};
 
 pub enum RsvgDrawingCtx {}
@@ -387,6 +388,34 @@ impl Drop for AcquiredNode {
 impl AcquiredNode {
     pub fn get(&self) -> RsvgNode {
         unsafe { (*self.1).clone() }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_transformed_image_bounding_box(
+    affine: *const cairo::Matrix,
+    w: f64,
+    h: f64,
+    x0: *mut libc::c_double,
+    y0: *mut libc::c_double,
+    x1: *mut libc::c_double,
+    y1: *mut libc::c_double,
+) {
+    let affine = unsafe { &*affine };
+    let r = cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: w,
+        height: h,
+    };
+
+    let r_out = rect::transform(affine, &r);
+
+    unsafe {
+        *x0 = r_out.x.floor();
+        *y0 = r_out.y.floor();
+        *x1 = (r_out.x + r_out.width).ceil();
+        *y1 = (r_out.y + r_out.height).ceil();
     }
 }
 
