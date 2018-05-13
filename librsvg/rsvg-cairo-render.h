@@ -35,8 +35,6 @@ G_BEGIN_DECLS
 
 struct _RsvgCairoRender {
     cairo_t *cr;
-    double width;
-    double height;
 
     cairo_t *initial_cr;
 
@@ -45,7 +43,7 @@ struct _RsvgCairoRender {
 };
 
 G_GNUC_INTERNAL
-RsvgCairoRender *rsvg_cairo_render_new (cairo_t *cr, double width, double height);
+RsvgCairoRender *rsvg_cairo_render_new (cairo_t *cr);
 
 G_GNUC_INTERNAL
 void rsvg_cairo_render_free (RsvgCairoRender *render);

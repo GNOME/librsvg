@@ -42,12 +42,10 @@
 #include "rsvg-structure.h"
 
 RsvgCairoRender *
-rsvg_cairo_render_new (cairo_t * cr, double width, double height)
+rsvg_cairo_render_new (cairo_t *cr)
 {
     RsvgCairoRender *cairo_render = g_new0 (RsvgCairoRender, 1);
 
-    cairo_render->width = width;
-    cairo_render->height = height;
     cairo_render->initial_cr = cr;
     cairo_render->cr = cr;
     cairo_render->cr_stack = NULL;

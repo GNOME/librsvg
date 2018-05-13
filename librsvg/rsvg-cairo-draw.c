@@ -193,7 +193,8 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
     RsvgState *state;
     guint8 opacity;
     guint8 *pixels;
-    guint32 width = render->width, height = render->height;
+    guint32 width = ctx->width;
+    guint32 height = ctx->height;
     guint32 rowstride, row, i;
     cairo_matrix_t affinesave;
     RsvgLength mask_x, mask_y, mask_w, mask_h;
@@ -469,10 +470,10 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     if (!filter) {
         surface = cairo_surface_create_similar (cairo_get_target (render->cr),
                                                 CAIRO_CONTENT_COLOR_ALPHA,
-                                                render->width, render->height);
+                                                ctx->width, ctx->height);
     } else {
         surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-                                              render->width, render->height);
+                                              ctx->width, ctx->height);
 
         /* The surface reference is owned by the child_cr created below and put on the cr_stack! */
         render->surfaces_stack = g_list_prepend (render->surfaces_stack, surface);
@@ -648,7 +649,8 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     RsvgCairoRender *save_render = ctx->render;
     double save_x = ctx->offset_x;
     double save_y = ctx->offset_y;
-    RsvgCairoRender *render;
+    double save_w = ctx->width;
+    double save_h = ctx->height;
 
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
     if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
@@ -658,10 +660,11 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
 
     cr = cairo_create (surface);
 
-    render = rsvg_cairo_render_new (cr, width, height);
-    ctx->render = render;
+    ctx->render = rsvg_cairo_render_new (cr);
     ctx->offset_x = 0;
     ctx->offset_y = 0;
+    ctx->width = width;
+    ctx->height = height;
 
     rsvg_drawing_ctx_draw_node_from_stack (ctx, drawable, 0, FALSE);
 
@@ -671,6 +674,8 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     ctx->render = save_render;
     ctx->offset_x = save_x;
     ctx->offset_y = save_y;
+    ctx->width = save_w;
+    ctx->height = save_h;
 
     return surface;
 }

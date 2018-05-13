@@ -585,7 +585,7 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
     double x, y;
     GList *i;
 
-    surface = _rsvg_image_surface_new (render->width, render->height);
+    surface = _rsvg_image_surface_new (ctx->width, ctx->height);
     if (surface == NULL)
         return NULL;
 
