@@ -298,3 +298,207 @@ rsvg_pixbuf_from_file_at_max_size (const gchar * file_name,
 
     return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
+
+cairo_surface_t *
+rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf)
+{
+    gint width, height, gdk_rowstride, n_channels, cairo_rowstride;
+    guchar *gdk_pixels, *cairo_pixels;
+    cairo_format_t format;
+    cairo_surface_t *surface;
+    int j;
+
+    if (pixbuf == NULL)
+        return NULL;
+
+    width = gdk_pixbuf_get_width (pixbuf);
+    height = gdk_pixbuf_get_height (pixbuf);
+    gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
+    gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+    n_channels = gdk_pixbuf_get_n_channels (pixbuf);
+
+    if (n_channels == 3)
+        format = CAIRO_FORMAT_RGB24;
+    else
+        format = CAIRO_FORMAT_ARGB32;
+
+    surface = cairo_image_surface_create (format, width, height);
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        cairo_surface_destroy (surface);
+        return NULL;
+    }
+
+    cairo_pixels = cairo_image_surface_get_data (surface);
+    cairo_rowstride = cairo_image_surface_get_stride (surface);
+
+    if (n_channels == 3) {
+        for (j = height; j; j--) {
+            guchar *p = gdk_pixels;
+            guchar *q = cairo_pixels;
+            guchar *end = p + 3 * width;
+
+            while (p < end) {
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+                q[0] = p[2];
+                q[1] = p[1];
+                q[2] = p[0];
+#else
+                q[1] = p[0];
+                q[2] = p[1];
+                q[3] = p[2];
+#endif
+                p += 3;
+                q += 4;
+            }
+
+            gdk_pixels += gdk_rowstride;
+            cairo_pixels += cairo_rowstride;
+        }
+    } else {
+        for (j = height; j; j--) {
+            guchar *p = gdk_pixels;
+            guchar *q = cairo_pixels;
+            guchar *end = p + 4 * width;
+            guint t1, t2, t3;
+
+#define MULT(d,c,a,t) G_STMT_START { t = c * a + 0x7f; d = ((t >> 8) + t) >> 8; } G_STMT_END
+
+            while (p < end) {
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+                MULT (q[0], p[2], p[3], t1);
+                MULT (q[1], p[1], p[3], t2);
+                MULT (q[2], p[0], p[3], t3);
+                q[3] = p[3];
+#else
+                q[0] = p[3];
+                MULT (q[1], p[0], p[3], t1);
+                MULT (q[2], p[1], p[3], t2);
+                MULT (q[3], p[2], p[3], t3);
+#endif
+
+                p += 4;
+                q += 4;
+            }
+
+#undef MULT
+            gdk_pixels += gdk_rowstride;
+            cairo_pixels += cairo_rowstride;
+        }
+    }
+
+    cairo_surface_mark_dirty (surface);
+    return surface;
+}
+
+/* Copied from gtk+/gdk/gdkpixbuf-drawable.c, LGPL 2+.
+ *
+ * Copyright (C) 1999 Michael Zucchi
+ *
+ * Authors: Michael Zucchi <zucchi@zedzone.mmc.com.au>
+ *          Cody Russell <bratsche@dfw.net>
+ *          Federico Mena-Quintero <federico@gimp.org>
+ */
+
+static void
+convert_alpha (guchar *dest_data,
+               int     dest_stride,
+               guchar *src_data,
+               int     src_stride,
+               int     src_x,
+               int     src_y,
+               int     width,
+               int     height)
+{
+    int x, y;
+
+    src_data += src_stride * src_y + src_x * 4;
+
+    for (y = 0; y < height; y++) {
+        guint32 *src = (guint32 *) src_data;
+
+        for (x = 0; x < width; x++) {
+          guint alpha = src[x] >> 24;
+
+          if (alpha == 0) {
+              dest_data[x * 4 + 0] = 0;
+              dest_data[x * 4 + 1] = 0;
+              dest_data[x * 4 + 2] = 0;
+          } else {
+              dest_data[x * 4 + 0] = (((src[x] & 0xff0000) >> 16) * 255 + alpha / 2) / alpha;
+              dest_data[x * 4 + 1] = (((src[x] & 0x00ff00) >>  8) * 255 + alpha / 2) / alpha;
+              dest_data[x * 4 + 2] = (((src[x] & 0x0000ff) >>  0) * 255 + alpha / 2) / alpha;
+          }
+          dest_data[x * 4 + 3] = alpha;
+      }
+
+      src_data += src_stride;
+      dest_data += dest_stride;
+    }
+}
+
+static void
+convert_no_alpha (guchar *dest_data,
+                  int     dest_stride,
+                  guchar *src_data,
+                  int     src_stride,
+                  int     src_x,
+                  int     src_y,
+                  int     width,
+                  int     height)
+{
+    int x, y;
+
+    src_data += src_stride * src_y + src_x * 4;
+
+    for (y = 0; y < height; y++) {
+        guint32 *src = (guint32 *) src_data;
+
+        for (x = 0; x < width; x++) {
+            dest_data[x * 3 + 0] = src[x] >> 16;
+            dest_data[x * 3 + 1] = src[x] >>  8;
+            dest_data[x * 3 + 2] = src[x];
+        }
+
+        src_data += src_stride;
+        dest_data += dest_stride;
+    }
+}
+
+GdkPixbuf *
+rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface)
+{
+    cairo_content_t content;
+    GdkPixbuf *dest;
+    int width, height;
+
+    /* General sanity checks */
+    g_assert (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
+
+    width = cairo_image_surface_get_width (surface);
+    height = cairo_image_surface_get_height (surface);
+    if (width == 0 || height == 0)
+        return NULL;
+
+    content = cairo_surface_get_content (surface) | CAIRO_CONTENT_COLOR;
+    dest = gdk_pixbuf_new (GDK_COLORSPACE_RGB,
+                          !!(content & CAIRO_CONTENT_ALPHA),
+                          8,
+                          width, height);
+
+    if (gdk_pixbuf_get_has_alpha (dest))
+      convert_alpha (gdk_pixbuf_get_pixels (dest),
+                    gdk_pixbuf_get_rowstride (dest),
+                    cairo_image_surface_get_data (surface),
+                    cairo_image_surface_get_stride (surface),
+                    0, 0,
+                    width, height);
+    else
+      convert_no_alpha (gdk_pixbuf_get_pixels (dest),
+                        gdk_pixbuf_get_rowstride (dest),
+                        cairo_image_surface_get_data (surface),
+                        cairo_image_surface_get_stride (surface),
+                        0, 0,
+                        width, height);
+
+    return dest;
+}
