@@ -192,10 +192,10 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
     cairo_matrix_t affinesave;
     RsvgLength mask_x, mask_y, mask_w, mask_h;
     double sx, sy, sw, sh;
-    gboolean nest = cr != render->initial_cr;
     RsvgCoordUnits mask_units;
     RsvgCoordUnits content_units;
     cairo_matrix_t affine;
+    double offset_x = 0, offset_y = 0;
 
     g_assert (rsvg_node_get_type (mask) == RSVG_NODE_TYPE_MASK);
 
@@ -313,10 +313,12 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
 
     cairo_destroy (mask_cr);
 
+    if (cr == render->initial_cr) {
+        rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
+    }
+
     cairo_identity_matrix (cr);
-    cairo_mask_surface (cr, surface,
-                        nest ? 0 : render->offset_x,
-                        nest ? 0 : render->offset_y);
+    cairo_mask_surface (cr, surface, offset_x, offset_y);
     cairo_surface_destroy (surface);
 }
 
@@ -527,7 +529,8 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     cairo_t *child_cr = render->cr;
     RsvgNode *lateclip = NULL;
     cairo_surface_t *surface = NULL;
-    gboolean nest, needs_destroy = FALSE;
+    gboolean needs_destroy = FALSE;
+    double offset_x = 0, offset_y = 0;
 
     state = rsvg_drawing_ctx_get_current_state (ctx);
     clip_path = rsvg_state_get_clip_path (state);
@@ -581,11 +584,12 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     render->cr = (cairo_t *) render->cr_stack->data;
     render->cr_stack = g_list_delete_link (render->cr_stack, render->cr_stack);
 
-    nest = render->cr != render->initial_cr;
+    if (render->cr == render->initial_cr) {
+        rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
+    }
+
     cairo_identity_matrix (render->cr);
-    cairo_set_source_surface (render->cr, surface,
-                              nest ? 0 : render->offset_x,
-                              nest ? 0 : render->offset_y);
+    cairo_set_source_surface (render->cr, surface, offset_x, offset_y);
 
     if (lateclip) {
         rsvg_cairo_clip (ctx, lateclip, &ctx->bbox);

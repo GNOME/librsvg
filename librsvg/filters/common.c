@@ -582,6 +582,7 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
     RsvgCairoRender *render = ctx->render;
     cairo_surface_t *surface;
     cairo_t *cr;
+    double x, y;
     GList *i;
 
     surface = _rsvg_image_surface_new (render->width, render->height);
@@ -590,12 +591,14 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
 
     cr = cairo_create (surface);
 
+    rsvg_drawing_ctx_get_offset (ctx, &x, &y);
+
     for (i = g_list_last (render->cr_stack); i != NULL; i = g_list_previous (i)) {
         cairo_t *draw = i->data;
         gboolean nest = draw != render->initial_cr;
         cairo_set_source_surface (cr, cairo_get_target (draw),
-                                  nest ? 0 : -render->offset_x,
-                                  nest ? 0 : -render->offset_y);
+                                  nest ? 0 : -x,
+                                  nest ? 0 : -y);
         cairo_paint (cr);
     }
 

@@ -467,15 +467,18 @@ void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                             gboolean clipping);
 
 G_GNUC_INTERNAL
-cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
-G_GNUC_INTERNAL
-GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
+void rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_insert_ink_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *ink_bbox);
+
+G_GNUC_INTERNAL
+cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
+G_GNUC_INTERNAL
+GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const char *href, GError ** error);

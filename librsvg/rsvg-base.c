@@ -658,6 +658,18 @@ rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_
 }
 
 void
+rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y)
+{
+    if (x != NULL) {
+        *x = draw_ctx->render->offset_x;
+    }
+
+    if (y != NULL) {
+        *y = draw_ctx->render->offset_y;
+    }
+}
+
+void
 rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
 {
     rsvg_bbox_insert (&draw_ctx->bbox, bbox);
