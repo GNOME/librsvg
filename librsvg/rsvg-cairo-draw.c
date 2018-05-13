@@ -645,8 +645,9 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
 {
     cairo_surface_t *surface;
     cairo_t *cr;
-
     RsvgCairoRender *save_render = ctx->render;
+    double save_x = ctx->offset_x;
+    double save_y = ctx->offset_y;
     RsvgCairoRender *render;
 
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
@@ -659,6 +660,8 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
 
     render = rsvg_cairo_render_new (cr, width, height);
     ctx->render = render;
+    ctx->offset_x = 0;
+    ctx->offset_y = 0;
 
     rsvg_drawing_ctx_draw_node_from_stack (ctx, drawable, 0, FALSE);
 
@@ -666,6 +669,8 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
 
     rsvg_cairo_render_free (ctx->render);
     ctx->render = save_render;
+    ctx->offset_x = save_x;
+    ctx->offset_y = save_y;
 
     return surface;
 }

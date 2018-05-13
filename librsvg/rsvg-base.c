@@ -173,8 +173,9 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
         return NULL;
 
     draw->render = render;
-    render->offset_x = bbx0;
-    render->offset_y = bby0;
+
+    draw->offset_x = bbx0;
+    draw->offset_y = bby0;
 
     draw->state = NULL;
 
@@ -203,8 +204,8 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     /* adjust transform so that the corner of the bounding box above is
      * at (0,0) - we compensate for this in _set_rsvg_affine() in
      * rsvg-cairo-render.c and a few other places */
-    state_affine.x0 -= render->offset_x;
-    state_affine.y0 -= render->offset_y;
+    state_affine.x0 -= draw->offset_x;
+    state_affine.y0 -= draw->offset_y;
 
     rsvg_bbox_init (&draw->bbox, &state_affine);
     rsvg_bbox_init (&draw->ink_bbox, &state_affine);
@@ -646,11 +647,11 @@ void
 rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y)
 {
     if (x != NULL) {
-        *x = draw_ctx->render->offset_x;
+        *x = draw_ctx->offset_x;
     }
 
     if (y != NULL) {
-        *y = draw_ctx->render->offset_y;
+        *y = draw_ctx->offset_y;
     }
 }
 

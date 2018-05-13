@@ -192,6 +192,7 @@ struct RsvgDrawingCtx {
     GSList *drawsub_stack;
     GSList *acquired_nodes;
     gboolean is_testing;
+    double offset_x, offset_y;
     RsvgBbox bbox;     /* Bounding box for path extents, without stroke width */
     RsvgBbox ink_bbox; /* Bounding box for ink rectangle, with everything */
     GList *bb_stack;

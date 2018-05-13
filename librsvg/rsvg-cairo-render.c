@@ -48,8 +48,6 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
 
     cairo_render->width = width;
     cairo_render->height = height;
-    cairo_render->offset_x = 0;
-    cairo_render->offset_y = 0;
     cairo_render->initial_cr = cr;
     cairo_render->cr = cr;
     cairo_render->cr_stack = NULL;
