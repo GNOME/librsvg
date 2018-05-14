@@ -20,6 +20,20 @@ extern "C" {
     fn rsvg_drawing_ctx_get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
     fn rsvg_drawing_ctx_set_current_state(draw_ctx: *mut RsvgDrawingCtx, state: *mut RsvgState);
 
+    fn rsvg_drawing_ctx_get_cairo_context(
+        draw_ctx: *const RsvgDrawingCtx,
+    ) -> *mut cairo_sys::cairo_t;
+
+    fn rsvg_drawing_ctx_set_cairo_context(
+        draw_ctx: *const RsvgDrawingCtx,
+        cr: *const cairo_sys::cairo_t,
+    );
+
+    fn rsvg_drawing_ctx_is_cairo_context_nested(
+        draw_ctx: *const RsvgDrawingCtx,
+        cr: *const cairo_sys::cairo_t,
+    ) -> glib_sys::gboolean;
+
     fn rsvg_drawing_ctx_get_dpi(
         draw_ctx: *const RsvgDrawingCtx,
         out_dpi_x: *mut f64,
@@ -49,10 +63,10 @@ extern "C" {
 
     fn rsvg_drawing_ctx_release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
 
-    fn rsvg_drawing_ctx_set_affine_on_cr(
+    fn rsvg_drawing_ctx_get_offset(
         draw_ctx: *const RsvgDrawingCtx,
-        cr: *mut cairo_sys::cairo_t,
-        affine: *const cairo::Matrix,
+        out_x: *mut f64,
+        out_y: *mut f64,
     );
 
     fn rsvg_drawing_ctx_insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: *const RsvgBbox);
@@ -65,15 +79,36 @@ extern "C" {
         clipping: glib_sys::gboolean,
     );
 
-    fn rsvg_push_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: glib_sys::gboolean);
-    fn rsvg_pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: glib_sys::gboolean);
-
-    fn rsvg_cairo_get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> *mut cairo_sys::cairo_t;
-    fn rsvg_cairo_set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: *const cairo_sys::cairo_t);
-
-    fn rsvg_cairo_get_pango_context(
+    fn rsvg_drawing_ctx_get_pango_context(
         draw_ctx: *const RsvgDrawingCtx,
     ) -> *mut pango_sys::PangoContext;
+
+    fn rsvg_drawing_ctx_push_render_stack(draw_ctx: *const RsvgDrawingCtx);
+    fn rsvg_drawing_ctx_pop_render_stack(draw_ctx: *const RsvgDrawingCtx);
+}
+
+pub fn get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
+    unsafe {
+        let raw_cr = rsvg_drawing_ctx_get_cairo_context(draw_ctx);
+
+        cairo::Context::from_glib_none(raw_cr)
+    }
+}
+
+pub fn set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) {
+    unsafe {
+        let raw_cr = cr.to_glib_none().0;
+
+        rsvg_drawing_ctx_set_cairo_context(draw_ctx, raw_cr);
+    }
+}
+
+pub fn is_cairo_context_nested(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) -> bool {
+    unsafe {
+        let raw_cr = cr.to_glib_none().0;
+
+        from_glib(rsvg_drawing_ctx_is_cairo_context_nested(draw_ctx, raw_cr))
+    }
 }
 
 pub fn get_dpi(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
@@ -219,49 +254,38 @@ pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: &State, domin
 }
 
 pub fn push_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: bool) {
-    unsafe {
-        rsvg_push_discrete_layer(draw_ctx, clipping.to_glib());
+    if !clipping {
+        get_cairo_context(draw_ctx).save();
+
+        unsafe {
+            rsvg_drawing_ctx_push_render_stack(draw_ctx);
+        }
     }
 }
 
 pub fn pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: bool) {
-    unsafe {
-        rsvg_pop_discrete_layer(draw_ctx, clipping.to_glib());
+    if !clipping {
+        unsafe {
+            rsvg_drawing_ctx_pop_render_stack(draw_ctx);
+        }
+
+        get_cairo_context(draw_ctx).restore();
     }
 }
 
-pub fn get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
+pub fn get_offset(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
+    let mut w: f64 = 0.0;
+    let mut h: f64 = 0.0;
+
     unsafe {
-        let raw_cr = rsvg_cairo_get_cairo_context(draw_ctx);
-
-        cairo::Context::from_glib_none(raw_cr)
+        rsvg_drawing_ctx_get_offset(draw_ctx, &mut w, &mut h);
     }
-}
 
-pub fn set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) {
-    unsafe {
-        let raw_cr = cr.to_glib_none().0;
-
-        rsvg_cairo_set_cairo_context(draw_ctx, raw_cr);
-    }
-}
-
-pub fn set_affine_on_cr(
-    draw_ctx: *const RsvgDrawingCtx,
-    cr: &cairo::Context,
-    affine: &cairo::Matrix,
-) {
-    unsafe {
-        rsvg_drawing_ctx_set_affine_on_cr(
-            draw_ctx,
-            cr.to_glib_none().0,
-            affine as *const cairo::Matrix,
-        );
-    }
+    (w, h)
 }
 
 pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
-    unsafe { from_glib_full(rsvg_cairo_get_pango_context(draw_ctx)) }
+    unsafe { from_glib_full(rsvg_drawing_ctx_get_pango_context(draw_ctx)) }
 }
 
 pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &RsvgBbox) {

@@ -28,7 +28,7 @@
 #include "../rsvg-private.h"
 #include "../rsvg-styles.h"
 #include "../rsvg-css.h"
-#include "../rsvg-cairo-draw.h"
+#include "../rsvg-drawing-ctx.h"
 #include "common.h"
 
 typedef struct _RsvgFilterPrimitiveConvolveMatrix RsvgFilterPrimitiveConvolveMatrix;

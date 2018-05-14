@@ -28,7 +28,7 @@
 #include "../rsvg-private.h"
 #include "../rsvg-styles.h"
 #include "../rsvg-css.h"
-#include "../rsvg-cairo-draw.h"
+#include "../rsvg-drawing-ctx.h"
 #include "common.h"
 
 typedef struct _RsvgFilterPrimitiveImage RsvgFilterPrimitiveImage;
@@ -57,7 +57,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
 
     rsvg_state_set_affine (rsvg_drawing_ctx_get_current_state (ctx), context->paffine);
 
-    result = rsvg_cairo_get_surface_of_node (ctx, drawable, context->width, context->height);
+    result = rsvg_drawing_ctx_get_surface_of_node (ctx, drawable, context->width, context->height);
 
     rsvg_drawing_ctx_release_node (ctx, drawable);
 
