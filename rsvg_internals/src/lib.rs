@@ -154,6 +154,9 @@ pub use viewbox::RsvgViewBox;
 mod coord_units;
 
 #[macro_use]
+mod float_eq_cairo;
+
+#[macro_use]
 mod property_macros;
 
 mod aspect_ratio;
@@ -166,7 +169,6 @@ mod cond;
 mod draw;
 mod drawing_ctx;
 mod error;
-mod float_eq_cairo;
 mod gradient;
 mod handle;
 mod image;
