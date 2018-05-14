@@ -979,7 +979,6 @@ rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
                                       double height)
 {
     cairo_surface_t *surface;
-    cairo_t *cr;
     cairo_t *save_cr = ctx->cr;
     cairo_t *save_initial_cr = ctx->initial_cr;
     double save_x = ctx->offset_x;
