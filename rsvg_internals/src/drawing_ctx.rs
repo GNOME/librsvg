@@ -396,10 +396,10 @@ pub extern "C" fn rsvg_drawing_ctx_transformed_image_bounding_box(
     affine: *const cairo::Matrix,
     w: f64,
     h: f64,
-    x0: *mut libc::c_double,
-    y0: *mut libc::c_double,
-    x1: *mut libc::c_double,
-    y1: *mut libc::c_double,
+    bbx: *mut libc::c_double,
+    bby: *mut libc::c_double,
+    bbw: *mut libc::c_double,
+    bbh: *mut libc::c_double,
 ) {
     let affine = unsafe { &*affine };
     let r = cairo::Rectangle {
@@ -409,13 +409,14 @@ pub extern "C" fn rsvg_drawing_ctx_transformed_image_bounding_box(
         height: h,
     };
 
-    let r_out = rect::transform(affine, &r);
+    let r_tr = rect::transform(affine, &r);
+    let r_out = rect::outer(&r_tr);
 
     unsafe {
-        *x0 = r_out.x.floor();
-        *y0 = r_out.y.floor();
-        *x1 = (r_out.x + r_out.width).ceil();
-        *y1 = (r_out.y + r_out.height).ceil();
+        *bbx = r_out.x;
+        *bby = r_out.y;
+        *bbw = r_out.width;
+        *bbh = r_out.height;
     }
 }
 

@@ -56,7 +56,7 @@ void rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_transformed_image_bounding_box (cairo_matrix_t *affine,
                                                       double width, double height,
-                                                      double *x0, double *y0, double *x1, double *y1);
+                                                      double *bbx, double *bby, double *bbw, double *bbh);
 
 static void
 rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
@@ -269,7 +269,7 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     RsvgState *state;
     cairo_matrix_t affine;
     cairo_matrix_t state_affine;
-    double bbx0, bby0, bbx1, bby1;
+    double bbx, bby, bbw, bbh;
 
     rsvg_handle_get_dimensions (handle, &data);
     if (data.width == 0 || data.height == 0)
@@ -284,17 +284,17 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
      * surfaces allocated during drawing. */
     rsvg_drawing_ctx_transformed_image_bounding_box (&affine,
                                                      data.width, data.height,
-                                                     &bbx0, &bby0, &bbx1, &bby1);
+                                                     &bbx, &bby, &bbw, &bbh);
 
     draw->initial_cr = cr;
     draw->cr = cr;
     draw->cr_stack = NULL;
     draw->surfaces_stack = NULL;
 
-    draw->offset_x = bbx0;
-    draw->offset_y = bby0;
-    draw->width = bbx1 - bbx0;
-    draw->height = bby1 - bby0;
+    draw->offset_x = bbx;
+    draw->offset_y = bby;
+    draw->width = bbw;
+    draw->height = bbh;
 
     draw->state = NULL;
 

@@ -89,6 +89,17 @@ pub fn transform(affine: &cairo::Matrix, rect: &cairo::Rectangle) -> cairo::Rect
     }
 }
 
+pub fn outer(r: &cairo::Rectangle) -> cairo::Rectangle {
+    let (x, y) = (r.x.floor(), r.y.floor());
+
+    cairo::Rectangle {
+        x: x,
+        y: y,
+        width: (r.x + r.width).ceil() - x,
+        height: (r.y + r.height).ceil() - y,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,5 +196,21 @@ mod tests {
         assert_approx_eq_cairo!(2.34_f64, tr.y);
         assert_approx_eq_cairo!(6.28_f64, tr.width);
         assert_approx_eq_cairo!(6.28_f64, tr.height);
+    }
+
+    #[test]
+    fn outer_rect() {
+        let r = cairo::Rectangle {
+            x: 1.42,
+            y: 1.42,
+            width: 3.14,
+            height: 3.14,
+        };
+
+        let or = outer(&r);
+        assert_eq!(1.0, or.x);
+        assert_eq!(1.0, or.y);
+        assert_eq!(4.0, or.width);
+        assert_eq!(4.0, or.height);
     }
 }
