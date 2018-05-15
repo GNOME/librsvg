@@ -52,6 +52,12 @@ void rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
                                    double w,
                                    double h);
 
+/* Implemented in rsvg_internals/src/draw.rs */
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_transformed_image_bounding_box (cairo_matrix_t *affine,
+                                                      double width, double height,
+                                                      double *bbx, double *bby, double *bbw, double *bbh);
+
 static void
 rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
 {
@@ -255,39 +261,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     cairo_clip (ctx->cr);
 }
 
-static void
-rsvg_cairo_transformed_image_bounding_box (cairo_matrix_t *affine,
-                                           double width, double height,
-                                           double *x0, double *y0, double *x1, double *y1)
-{
-    double x00 = 0, x01 = 0, x10 = width, x11 = width;
-    double y00 = 0, y01 = height, y10 = 0, y11 = height;
-    double t;
-
-    /* transform the four corners of the image */
-    cairo_matrix_transform_point (affine, &x00, &y00);
-    cairo_matrix_transform_point (affine, &x01, &y01);
-    cairo_matrix_transform_point (affine, &x10, &y10);
-    cairo_matrix_transform_point (affine, &x11, &y11);
-
-    /* find minimum and maximum coordinates */
-    t = x00  < x01 ? x00  : x01;
-    t = t < x10 ? t : x10;
-    *x0 = floor (t < x11 ? t : x11);
-
-    t = y00  < y01 ? y00  : y01;
-    t = t < y10 ? t : y10;
-    *y0 = floor (t < y11 ? t : y11);
-
-    t = x00  > x01 ? x00  : x01;
-    t = t > x10 ? t : x10;
-    *x1 = ceil (t > x11 ? t : x11);
-
-    t = y00  > y01 ? y00  : y01;
-    t = t > y10 ? t : y10;
-    *y1 = ceil (t > y11 ? t : y11);
-}
-
 RsvgDrawingCtx *
 rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
 {
@@ -296,7 +269,7 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     RsvgState *state;
     cairo_matrix_t affine;
     cairo_matrix_t state_affine;
-    double bbx0, bby0, bbx1, bby1;
+    double bbx, bby, bbw, bbh;
 
     rsvg_handle_get_dimensions (handle, &data);
     if (data.width == 0 || data.height == 0)
@@ -309,19 +282,19 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     /* find bounding box of image as transformed by the current cairo context
      * The size of this bounding box determines the size of the intermediate
      * surfaces allocated during drawing. */
-    rsvg_cairo_transformed_image_bounding_box (&affine,
-                                               data.width, data.height,
-                                               &bbx0, &bby0, &bbx1, &bby1);
+    rsvg_drawing_ctx_transformed_image_bounding_box (&affine,
+                                                     data.width, data.height,
+                                                     &bbx, &bby, &bbw, &bbh);
 
     draw->initial_cr = cr;
     draw->cr = cr;
     draw->cr_stack = NULL;
     draw->surfaces_stack = NULL;
 
-    draw->offset_x = bbx0;
-    draw->offset_y = bby0;
-    draw->width = bbx1 - bbx0;
-    draw->height = bby1 - bby0;
+    draw->offset_x = bbx;
+    draw->offset_y = bby;
+    draw->width = bbw;
+    draw->height = bbh;
 
     draw->state = NULL;
 

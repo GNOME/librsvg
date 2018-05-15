@@ -1,6 +1,7 @@
 use float_cmp::ApproxEq;
 
-// The following are copied from cairo/src/{cairo-fixed-private.h, cairo-fixed-type-private.h}
+// The following are copied from cairo/src/{cairo-fixed-private.h,
+// cairo-fixed-type-private.h}
 
 const CAIRO_FIXED_FRAC_BITS: u64 = 8;
 const CAIRO_MAGIC_NUMBER_FIXED: f64 = (1u64 << (52 - CAIRO_FIXED_FRAC_BITS)) as f64 * 1.5;
@@ -62,6 +63,22 @@ impl ApproxEqCairo for f64 {
     }
 }
 
+// Macro for usage in unit tests
+#[macro_export]
+macro_rules! assert_approx_eq_cairo {
+    ($left:expr, $right:expr) => ({
+        match (&$left, &$right) {
+            (l, r) => {
+                if !l.approx_eq_cairo(r) {
+                    panic!(r#"assertion failed: `(left == right)`
+  left: `{:?}`,
+ right: `{:?}`"#, l, r)
+                }
+            }
+        }
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,5 +134,16 @@ mod tests {
         // 2 ULPs away, and we don't consider them equal.
         assert!(9_007_199_254_740_992.0.approx_eq_cairo(&9_007_199_254_740_994.0));
         assert!(!9_007_199_254_740_992.0.approx_eq_cairo(&9_007_199_254_740_996.0));
+    }
+
+    #[test]
+    fn assert_approx_eq_cairo_should_not_panic() {
+        assert_approx_eq_cairo!(42_f64, 42_f64);
+    }
+
+    #[test]
+    #[should_panic]
+    fn assert_approx_eq_cairo_should_panic() {
+        assert_approx_eq_cairo!(3_f64, 42_f64);
     }
 }

@@ -107,6 +107,7 @@ RUST_SRC =					\
 	rsvg_internals/src/pattern.rs		\
 	rsvg_internals/src/property_bag.rs	\
 	rsvg_internals/src/property_macros.rs	\
+	rsvg_internals/src/rect.rs		\
 	rsvg_internals/src/shapes.rs		\
 	rsvg_internals/src/space.rs		\
 	rsvg_internals/src/state.rs		\

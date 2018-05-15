@@ -33,7 +33,11 @@ pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use draw::rsvg_cairo_add_clipping_rect;
 
-pub use drawing_ctx::{rsvg_drawing_ctx_state_pop, rsvg_drawing_ctx_state_push};
+pub use drawing_ctx::{
+    rsvg_drawing_ctx_state_pop,
+    rsvg_drawing_ctx_state_push,
+    rsvg_drawing_ctx_transformed_image_bounding_box,
+};
 
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
 
@@ -154,6 +158,9 @@ pub use viewbox::RsvgViewBox;
 mod coord_units;
 
 #[macro_use]
+mod float_eq_cairo;
+
+#[macro_use]
 mod property_macros;
 
 mod aspect_ratio;
@@ -166,7 +173,6 @@ mod cond;
 mod draw;
 mod drawing_ctx;
 mod error;
-mod float_eq_cairo;
 mod gradient;
 mod handle;
 mod image;
@@ -187,6 +193,7 @@ mod space;
 mod state;
 mod stop;
 mod structure;
+mod rect;
 mod text;
 mod transform;
 mod unitinterval;
