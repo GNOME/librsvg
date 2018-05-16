@@ -66,17 +66,20 @@ impl ApproxEqCairo for f64 {
 // Macro for usage in unit tests
 #[macro_export]
 macro_rules! assert_approx_eq_cairo {
-    ($left:expr, $right:expr) => ({
+    ($left:expr, $right:expr) => {{
         match (&$left, &$right) {
             (l, r) => {
                 if !l.approx_eq_cairo(r) {
-                    panic!(r#"assertion failed: `(left == right)`
+                    panic!(
+                        r#"assertion failed: `(left == right)`
   left: `{:?}`,
- right: `{:?}`"#, l, r)
+ right: `{:?}`"#,
+                        l, r
+                    )
                 }
             }
         }
-    });
+    }};
 }
 
 #[cfg(test)]

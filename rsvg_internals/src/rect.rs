@@ -93,8 +93,8 @@ pub fn outer(r: &cairo::Rectangle) -> cairo::Rectangle {
     let (x, y) = (r.x.floor(), r.y.floor());
 
     cairo::Rectangle {
-        x: x,
-        y: y,
+        x,
+        y,
         width: (r.x + r.width).ceil() - x,
         height: (r.y + r.height).ceil() - y,
     }
