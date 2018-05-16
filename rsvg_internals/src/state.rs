@@ -24,6 +24,45 @@ use property_macros::Property;
 use unitinterval::UnitInterval;
 use util::{utf8_cstr, utf8_cstr_opt};
 
+pub enum SpecifiedValue<T>
+where
+    T: Property + Clone + Default,
+{
+    Unspecified,
+    Inherit,
+    Specified(T),
+}
+
+impl<T> SpecifiedValue<T>
+where
+    T: Property + Clone + Default,
+{
+    pub fn inherit_from(&self, src: &T) -> T {
+        match *self {
+            SpecifiedValue::Unspecified => {
+                if <T as Property>::inherits_automatically() {
+                    src.clone()
+                } else {
+                    Default::default()
+                }
+            }
+
+            SpecifiedValue::Inherit => src.clone(),
+
+            SpecifiedValue::Specified(ref v) => v.clone(),
+        }
+    }
+}
+
+impl<T> Default for SpecifiedValue<T>
+where
+    T: Default + Property + Clone,
+{
+    fn default() -> SpecifiedValue<T> {
+        SpecifiedValue::Unspecified
+    }
+}
+
 // This is only used as *const RsvgState or *mut RsvgState, as an opaque pointer for C
 pub enum RsvgState {}
 
@@ -99,6 +138,162 @@ pub struct State {
 
     important_styles: RefCell<HashSet<Attribute>>,
     pub cond: bool,
+}
+
+#[derive(Default)]
+pub struct SpecifiedValues {
+    pub baseline_shift: SpecifiedValue<BaselineShift>,
+    pub clip_path: SpecifiedValue<ClipPath>,
+    pub clip_rule: SpecifiedValue<ClipRule>,
+    pub comp_op: SpecifiedValue<CompOp>,
+    pub color: SpecifiedValue<Color>,
+    pub direction: SpecifiedValue<Direction>,
+    pub display: SpecifiedValue<Display>,
+    pub enable_background: SpecifiedValue<EnableBackground>,
+    pub fill: SpecifiedValue<Fill>,
+    pub fill_opacity: SpecifiedValue<FillOpacity>,
+    pub fill_rule: SpecifiedValue<FillRule>,
+    pub filter: SpecifiedValue<Filter>,
+    pub flood_color: SpecifiedValue<FloodColor>,
+    pub flood_opacity: SpecifiedValue<FloodOpacity>,
+    pub font_family: SpecifiedValue<FontFamily>,
+    pub font_size: SpecifiedValue<FontSize>,
+    pub font_stretch: SpecifiedValue<FontStretch>,
+    pub font_style: SpecifiedValue<FontStyle>,
+    pub font_variant: SpecifiedValue<FontVariant>,
+    pub font_weight: SpecifiedValue<FontWeight>,
+    pub letter_spacing: SpecifiedValue<LetterSpacing>,
+    pub marker_end: SpecifiedValue<MarkerEnd>,
+    pub marker_mid: SpecifiedValue<MarkerMid>,
+    pub marker_start: SpecifiedValue<MarkerStart>,
+    pub mask: SpecifiedValue<Mask>,
+    pub opacity: SpecifiedValue<Opacity>,
+    pub overflow: SpecifiedValue<Overflow>,
+    pub shape_rendering: SpecifiedValue<ShapeRendering>,
+    pub stop_color: SpecifiedValue<StopColor>,
+    pub stop_opacity: SpecifiedValue<StopOpacity>,
+    pub stroke: SpecifiedValue<Stroke>,
+    pub stroke_dasharray: SpecifiedValue<StrokeDasharray>,
+    pub stroke_dashoffset: SpecifiedValue<StrokeDashoffset>,
+    pub stroke_line_cap: SpecifiedValue<StrokeLinecap>,
+    pub stroke_line_join: SpecifiedValue<StrokeLinejoin>,
+    pub stroke_opacity: SpecifiedValue<StrokeOpacity>,
+    pub stroke_miterlimit: SpecifiedValue<StrokeMiterlimit>,
+    pub stroke_width: SpecifiedValue<StrokeWidth>,
+    pub text_anchor: SpecifiedValue<TextAnchor>,
+    pub text_decoration: SpecifiedValue<TextDecoration>,
+    pub text_rendering: SpecifiedValue<TextRendering>,
+    pub unicode_bidi: SpecifiedValue<UnicodeBidi>,
+    pub visibility: SpecifiedValue<Visibility>,
+    pub writing_mode: SpecifiedValue<WritingMode>,
+    pub xml_lang: SpecifiedValue<XmlLang>, // not a property, but a non-presentation attribute
+    pub xml_space: SpecifiedValue<XmlSpace>, // not a property, but a non-presentation attribute
+}
+
+#[derive(Default, Clone)]
+pub struct ComputedValues {
+    pub affine: cairo::Matrix,
+    pub baseline_shift: BaselineShift,
+    pub clip_path: ClipPath,
+    pub clip_rule: ClipRule,
+    pub comp_op: CompOp,
+    pub color: Color,
+    pub direction: Direction,
+    pub display: Display,
+    pub enable_background: EnableBackground,
+    pub fill: Fill,
+    pub fill_opacity: FillOpacity,
+    pub fill_rule: FillRule,
+    pub filter: Filter,
+    pub flood_color: FloodColor,
+    pub flood_opacity: FloodOpacity,
+    pub font_family: FontFamily,
+    pub font_size: FontSize,
+    pub font_stretch: FontStretch,
+    pub font_style: FontStyle,
+    pub font_variant: FontVariant,
+    pub font_weight: FontWeight,
+    pub letter_spacing: LetterSpacing,
+    pub marker_end: MarkerEnd,
+    pub marker_mid: MarkerMid,
+    pub marker_start: MarkerStart,
+    pub mask: Mask,
+    pub opacity: Opacity,
+    pub overflow: Overflow,
+    pub shape_rendering: ShapeRendering,
+    pub stop_color: StopColor,
+    pub stop_opacity: StopOpacity,
+    pub stroke: Stroke,
+    pub stroke_dasharray: StrokeDasharray,
+    pub stroke_dashoffset: StrokeDashoffset,
+    pub stroke_line_cap: StrokeLinecap,
+    pub stroke_line_join: StrokeLinejoin,
+    pub stroke_opacity: StrokeOpacity,
+    pub stroke_miterlimit: StrokeMiterlimit,
+    pub stroke_width: StrokeWidth,
+    pub text_anchor: TextAnchor,
+    pub text_decoration: TextDecoration,
+    pub text_rendering: TextRendering,
+    pub unicode_bidi: UnicodeBidi,
+    pub visibility: Visibility,
+    pub writing_mode: WritingMode,
+    /* pub xml_lang: XmlLang,   // not a property, but a non-presentation attribute
+     * pub xml_space: XmlSpace, // not a property, but a non-presentation attribute */
+}
+
+macro_rules! inherit_from {
+    ($self:ident, $computed:ident, $name:ident) => {
+        $computed.$name = $self.$name.inherit_from(&$computed.$name)
+    };
+}
+
+impl SpecifiedValues {
+    fn to_computed_values(&self, computed: &mut ComputedValues) {
+        inherit_from!(self, computed, baseline_shift);
+        inherit_from!(self, computed, clip_path);
+        inherit_from!(self, computed, clip_rule);
+        inherit_from!(self, computed, comp_op);
+        inherit_from!(self, computed, color);
+        inherit_from!(self, computed, direction);
+        inherit_from!(self, computed, display);
+        inherit_from!(self, computed, enable_background);
+        inherit_from!(self, computed, fill);
+        inherit_from!(self, computed, fill_opacity);
+        inherit_from!(self, computed, fill_rule);
+        inherit_from!(self, computed, filter);
+        inherit_from!(self, computed, flood_color);
+        inherit_from!(self, computed, flood_opacity);
+        inherit_from!(self, computed, font_family);
+        inherit_from!(self, computed, font_size);
+        inherit_from!(self, computed, font_stretch);
+        inherit_from!(self, computed, font_style);
+        inherit_from!(self, computed, font_variant);
+        inherit_from!(self, computed, font_weight);
+        inherit_from!(self, computed, letter_spacing);
+        inherit_from!(self, computed, marker_end);
+        inherit_from!(self, computed, marker_mid);
+        inherit_from!(self, computed, marker_start);
+        inherit_from!(self, computed, mask);
+        inherit_from!(self, computed, opacity);
+        inherit_from!(self, computed, overflow);
+        inherit_from!(self, computed, shape_rendering);
+        inherit_from!(self, computed, stop_color);
+        inherit_from!(self, computed, stop_opacity);
+        inherit_from!(self, computed, stroke);
+        inherit_from!(self, computed, stroke_dasharray);
+        inherit_from!(self, computed, stroke_dashoffset);
+        inherit_from!(self, computed, stroke_line_cap);
+        inherit_from!(self, computed, stroke_line_join);
+        inherit_from!(self, computed, stroke_opacity);
+        inherit_from!(self, computed, stroke_miterlimit);
+        inherit_from!(self, computed, stroke_width);
+        inherit_from!(self, computed, text_anchor);
+        inherit_from!(self, computed, text_decoration);
+        inherit_from!(self, computed, text_rendering);
+        inherit_from!(self, computed, unicode_bidi);
+        inherit_from!(self, computed, visibility);
+        inherit_from!(self, computed, writing_mode);
+    }
 }
 
 impl State {
