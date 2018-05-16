@@ -33,7 +33,6 @@
 #include "rsvg-styles.h"
 #include "rsvg-io.h"
 #include "rsvg-load.h"
-#include "rsvg-drawing-ctx.h"
 
 #include <gio/gio.h>
 
