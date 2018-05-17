@@ -17,6 +17,22 @@ impl FromStr for Attribute {
     }
 }
 
+impl Attribute {
+    // This is horribly inefficient, but for now I'm too lazy to have a
+    // compile-time bijective mapping from attributes to names.  Hopefully
+    // this function is only called when *printing* errors, which, uh,
+    // should not be done too often.
+    pub fn to_str(&self) -> &'static str {
+        for (k, v) in ATTRIBUTES.entries() {
+            if *v == *self {
+                return k;
+            }
+        }
+
+        unreachable!();
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn rsvg_attribute_from_name(
     raw_name: *const libc::c_char,
@@ -70,5 +86,12 @@ mod tests {
             &mut a as *mut Attribute,
         ));
         assert!(!res);
+    }
+
+    #[test]
+    fn converts_attributes_back_to_strings() {
+        assert_eq!(Attribute::ClipPath.to_str(), "clip-path");
+        assert_eq!(Attribute::KernelUnitLength.to_str(), "kernelUnitLength");
+        assert_eq!(Attribute::Offset.to_str(), "offset");
     }
 }
