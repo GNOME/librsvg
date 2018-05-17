@@ -404,7 +404,7 @@ apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
     }
 }
 
-static gboolean
+gboolean
 rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState * state)
 {
     GHashTable *styles;
