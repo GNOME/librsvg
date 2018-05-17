@@ -540,6 +540,7 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
                 rsvg_node_set_attribute_parse_error (node,
                                                      "transform",
                                                      "Invalid transformation");
+                success = FALSE;
             }
             break;
 
@@ -549,9 +550,6 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     }
 
     rsvg_property_bag_iter_end (iter);
-
-    /* FIXME: propagate errors upstream */
-    /* return success; */
 }
 
 /* This is defined like this so that we can export the Rust function... just for
