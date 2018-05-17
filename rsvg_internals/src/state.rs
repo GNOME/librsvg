@@ -323,7 +323,7 @@ impl State {
         value: &str,
         important: bool,
         accept_shorthands: bool,
-    ) -> Result<(), AttributeError> {
+    ) -> Result<(), NodeError> {
         if !important && self.important_styles.borrow().contains(&attr) {
             return Ok(());
         }
@@ -332,225 +332,227 @@ impl State {
             self.important_styles.borrow_mut().insert(attr);
         }
 
-        // please keep these sorted
-        match attr {
-            Attribute::BaselineShift => {
-                self.baseline_shift = parse_property(value, ())?;
-            }
+        // FIXME: move this to "do catch" when we can bump the rustc version dependency
+        let mut parse = || {
+            // please keep these sorted
+            match attr {
+                Attribute::BaselineShift => {
+                    self.baseline_shift = parse_property(value, ())?;
+                }
 
-            Attribute::ClipPath => {
-                self.clip_path = parse_property(value, ())?;
-            }
+                Attribute::ClipPath => {
+                    self.clip_path = parse_property(value, ())?;
+                }
 
-            Attribute::ClipRule => {
-                self.clip_rule = parse_property(value, ())?;
-            }
+                Attribute::ClipRule => {
+                    self.clip_rule = parse_property(value, ())?;
+                }
 
-            Attribute::Color => {
-                self.color = parse_property(value, ())?;
-            }
+                Attribute::Color => {
+                    self.color = parse_property(value, ())?;
+                }
 
-            Attribute::CompOp => {
-                self.comp_op = parse_property(value, ())?;
-            }
+                Attribute::CompOp => {
+                    self.comp_op = parse_property(value, ())?;
+                }
 
-            Attribute::Direction => {
-                self.direction = parse_property(value, ())?;
-            }
+                Attribute::Direction => {
+                    self.direction = parse_property(value, ())?;
+                }
 
-            Attribute::Display => {
-                self.display = parse_property(value, ())?;
-            }
+                Attribute::Display => {
+                    self.display = parse_property(value, ())?;
+                }
 
-            Attribute::EnableBackground => {
-                self.enable_background = parse_property(value, ())?;
-            }
+                Attribute::EnableBackground => {
+                    self.enable_background = parse_property(value, ())?;
+                }
 
-            Attribute::Fill => {
-                self.fill = parse_property(value, ())?;
-            }
+                Attribute::Fill => {
+                    self.fill = parse_property(value, ())?;
+                }
 
-            Attribute::FillOpacity => {
-                self.fill_opacity = parse_property(value, ())?;
-            }
+                Attribute::FillOpacity => {
+                    self.fill_opacity = parse_property(value, ())?;
+                }
 
-            Attribute::FillRule => {
-                self.fill_rule = parse_property(value, ())?;
-            }
+                Attribute::FillRule => {
+                    self.fill_rule = parse_property(value, ())?;
+                }
 
-            Attribute::Filter => {
-                self.filter = parse_property(value, ())?;
-            }
+                Attribute::Filter => {
+                    self.filter = parse_property(value, ())?;
+                }
 
-            Attribute::FloodColor => {
-                self.flood_color = parse_property(value, ())?;
-            }
+                Attribute::FloodColor => {
+                    self.flood_color = parse_property(value, ())?;
+                }
 
-            Attribute::FloodOpacity => {
-                self.flood_opacity = parse_property(value, ())?;
-            }
+                Attribute::FloodOpacity => {
+                    self.flood_opacity = parse_property(value, ())?;
+                }
 
-            Attribute::FontFamily => {
-                self.font_family = parse_property(value, ())?;
-            }
+                Attribute::FontFamily => {
+                    self.font_family = parse_property(value, ())?;
+                }
 
-            Attribute::FontSize => {
-                self.font_size = parse_property(value, LengthDir::Both)?;
-            }
+                Attribute::FontSize => {
+                    self.font_size = parse_property(value, LengthDir::Both)?;
+                }
 
-            Attribute::FontStretch => {
-                self.font_stretch = parse_property(value, ())?;
-            }
+                Attribute::FontStretch => {
+                    self.font_stretch = parse_property(value, ())?;
+                }
 
-            Attribute::FontStyle => {
-                self.font_style = parse_property(value, ())?;
-            }
+                Attribute::FontStyle => {
+                    self.font_style = parse_property(value, ())?;
+                }
 
-            Attribute::FontVariant => {
-                self.font_variant = parse_property(value, ())?;
-            }
+                Attribute::FontVariant => {
+                    self.font_variant = parse_property(value, ())?;
+                }
 
-            Attribute::FontWeight => {
-                self.font_weight = parse_property(value, ())?;
-            }
+                Attribute::FontWeight => {
+                    self.font_weight = parse_property(value, ())?;
+                }
 
-            Attribute::LetterSpacing => {
-                self.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
-            }
+                Attribute::LetterSpacing => {
+                    self.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
+                }
 
-            Attribute::MarkerEnd => {
-                self.marker_end = parse_property(value, ())?;
-            }
-
-            Attribute::MarkerMid => {
-                self.marker_mid = parse_property(value, ())?;
-            }
-
-            Attribute::MarkerStart => {
-                self.marker_start = parse_property(value, ())?;
-            }
-
-            Attribute::Marker if accept_shorthands => {
-                if self.marker_end.is_none() {
+                Attribute::MarkerEnd => {
                     self.marker_end = parse_property(value, ())?;
                 }
 
-                if self.marker_mid.is_none() {
+                Attribute::MarkerMid => {
                     self.marker_mid = parse_property(value, ())?;
                 }
 
-                if self.marker_start.is_none() {
+                Attribute::MarkerStart => {
                     self.marker_start = parse_property(value, ())?;
+                }
+
+                Attribute::Marker if accept_shorthands => {
+                    if self.marker_end.is_none() {
+                        self.marker_end = parse_property(value, ())?;
+                    }
+
+                    if self.marker_mid.is_none() {
+                        self.marker_mid = parse_property(value, ())?;
+                    }
+
+                    if self.marker_start.is_none() {
+                        self.marker_start = parse_property(value, ())?;
+                    }
+                }
+
+                Attribute::Mask => {
+                    self.mask = parse_property(value, ())?;
+                }
+
+                Attribute::Opacity => {
+                    self.opacity = parse_property(value, ())?;
+                }
+
+                Attribute::Overflow => {
+                    self.overflow = parse_property(value, ())?;
+                }
+
+                Attribute::ShapeRendering => {
+                    self.shape_rendering = parse_property(value, ())?;
+                }
+
+                Attribute::StopColor => {
+                    self.stop_color = parse_property(value, ())?;
+                }
+
+                Attribute::StopOpacity => {
+                    self.stop_opacity = parse_property(value, ())?;
+                }
+
+                Attribute::Stroke => {
+                    self.stroke = parse_property(value, ())?;
+                }
+
+                Attribute::StrokeDasharray => {
+                    self.stroke_dasharray = parse_property(value, ())?;
+                }
+
+                Attribute::StrokeDashoffset => {
+                    self.stroke_dashoffset = parse_property(value, LengthDir::Both)?;
+                }
+
+                Attribute::StrokeLinecap => {
+                    self.stroke_line_cap = parse_property(value, ())?;
+                }
+
+                Attribute::StrokeLinejoin => {
+                    self.stroke_line_join = parse_property(value, ())?;
+                }
+
+                Attribute::StrokeOpacity => {
+                    self.stroke_opacity = parse_property(value, ())?;
+                }
+
+                Attribute::StrokeMiterlimit => {
+                    self.stroke_miterlimit = parse_property(value, ())?;
+                }
+
+                Attribute::StrokeWidth => {
+                    self.stroke_width = parse_property(value, LengthDir::Both)?;
+                }
+
+                Attribute::TextAnchor => {
+                    self.text_anchor = parse_property(value, ())?;
+                }
+
+                Attribute::TextDecoration => {
+                    self.text_decoration = parse_property(value, ())?;
+                }
+
+                Attribute::TextRendering => {
+                    self.text_rendering = parse_property(value, ())?;
+                }
+
+                Attribute::UnicodeBidi => {
+                    self.unicode_bidi = parse_property(value, ())?;
+                }
+
+                Attribute::Visibility => {
+                    self.visibility = parse_property(value, ())?;
+                }
+
+                Attribute::WritingMode => {
+                    self.writing_mode = parse_property(value, ())?;
+                }
+
+                Attribute::XmlLang => {
+                    // xml:lang is not a property; it is a non-presentation attribute and as such
+                    // cannot have the "inherit" value.  So, we don't call parse_property() for it,
+                    // but rather call its parser directly.
+                    self.xml_lang = Some(XmlLang::parse(value, ())?);
+                }
+
+                Attribute::XmlSpace => {
+                    // xml:space is not a property; it is a non-presentation attribute and as such
+                    // cannot have the "inherit" value.  So, we don't call parse_property() for it,
+                    // but rather call its parser directly.
+                    self.xml_space = Some(XmlSpace::parse(value, ())?);
+                }
+
+                _ => {
+                    // Maybe it's an attribute not parsed here, but in the
+                    // node implementations.
                 }
             }
 
-            Attribute::Mask => {
-                self.mask = parse_property(value, ())?;
-            }
+            Ok(())
+        };
 
-            Attribute::Opacity => {
-                self.opacity = parse_property(value, ())?;
-            }
-
-            Attribute::Overflow => {
-                self.overflow = parse_property(value, ())?;
-            }
-
-            Attribute::ShapeRendering => {
-                self.shape_rendering = parse_property(value, ())?;
-            }
-
-            Attribute::StopColor => {
-                self.stop_color = parse_property(value, ())?;
-            }
-
-            Attribute::StopOpacity => {
-                self.stop_opacity = parse_property(value, ())?;
-            }
-
-            Attribute::Stroke => {
-                self.stroke = parse_property(value, ())?;
-            }
-
-            Attribute::StrokeDasharray => {
-                self.stroke_dasharray = parse_property(value, ())?;
-            }
-
-            Attribute::StrokeDashoffset => {
-                self.stroke_dashoffset = parse_property(value, LengthDir::Both)?;
-            }
-
-            Attribute::StrokeLinecap => {
-                self.stroke_line_cap = parse_property(value, ())?;
-            }
-
-            Attribute::StrokeLinejoin => {
-                self.stroke_line_join = parse_property(value, ())?;
-            }
-
-            Attribute::StrokeOpacity => {
-                self.stroke_opacity = parse_property(value, ())?;
-            }
-
-            Attribute::StrokeMiterlimit => {
-                self.stroke_miterlimit = parse_property(value, ())?;
-            }
-
-            Attribute::StrokeWidth => {
-                self.stroke_width = parse_property(value, LengthDir::Both)?;
-            }
-
-            Attribute::TextAnchor => {
-                self.text_anchor = parse_property(value, ())?;
-            }
-
-            Attribute::TextDecoration => {
-                self.text_decoration = parse_property(value, ())?;
-            }
-
-            Attribute::TextRendering => {
-                self.text_rendering = parse_property(value, ())?;
-            }
-
-            Attribute::UnicodeBidi => {
-                self.unicode_bidi = parse_property(value, ())?;
-            }
-
-            Attribute::Visibility => {
-                self.visibility = parse_property(value, ())?;
-            }
-
-            Attribute::WritingMode => {
-                self.writing_mode = parse_property(value, ())?;
-            }
-
-            Attribute::XmlLang => {
-                // xml:lang is not a property; it is a non-presentation attribute and as such
-                // cannot have the "inherit" value.  So, we don't call parse_property() for it,
-                // but rather call its parser directly.
-                self.xml_lang = Some(XmlLang::parse(value, ())?);
-            }
-
-            Attribute::XmlSpace => {
-                // xml:space is not a property; it is a non-presentation attribute and as such
-                // cannot have the "inherit" value.  So, we don't call parse_property() for it,
-                // but rather call its parser directly.
-                self.xml_space = Some(XmlSpace::parse(value, ())?);
-            }
-
-            _ => {
-                // Maybe it's an attribute not parsed here, but in the
-                // node implementations.
-            }
-        }
-
-        Ok(())
+        parse().map_err(|e| NodeError::attribute_error(attr, e))
     }
 
-    pub fn parse_presentation_attributes(
-        &mut self,
-        pbag: &PropertyBag,
-    ) -> Result<(), AttributeError> {
+    pub fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
         for (_key, attr, value) in pbag.iter() {
             self.parse_style_pair(attr, value, false, false)?;
         }
