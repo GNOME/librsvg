@@ -563,26 +563,33 @@ impl State {
     pub fn parse_conditional_processing_attributes(
         &mut self,
         pbag: &PropertyBag,
-    ) -> Result<(), AttributeError> {
+    ) -> Result<(), NodeError> {
         for (_key, attr, value) in pbag.iter() {
-            match attr {
-                Attribute::RequiredExtensions if self.cond => {
-                    self.cond =
-                        RequiredExtensions::parse(value, ()).map(|RequiredExtensions(res)| res)?;
+            // FIXME: move this to "do catch" when we can bump the rustc version dependency
+            let mut parse = || {
+                match attr {
+                    Attribute::RequiredExtensions if self.cond => {
+                        self.cond = RequiredExtensions::parse(value, ())
+                            .map(|RequiredExtensions(res)| res)?;
+                    }
+
+                    Attribute::RequiredFeatures if self.cond => {
+                        self.cond =
+                            RequiredFeatures::parse(value, ()).map(|RequiredFeatures(res)| res)?;
+                    }
+
+                    Attribute::SystemLanguage if self.cond => {
+                        self.cond = SystemLanguage::parse(value, &glib::get_language_names())
+                            .map(|SystemLanguage(res, _)| res)?;
+                    }
+
+                    _ => {}
                 }
 
-                Attribute::RequiredFeatures if self.cond => {
-                    self.cond =
-                        RequiredFeatures::parse(value, ()).map(|RequiredFeatures(res)| res)?;
-                }
+                Ok(())
+            };
 
-                Attribute::SystemLanguage if self.cond => {
-                    self.cond = SystemLanguage::parse(value, &glib::get_language_names())
-                        .map(|SystemLanguage(res, _)| res)?;
-                }
-
-                _ => {}
-            }
+            parse().map_err(|e| NodeError::attribute_error(attr, e))?;
         }
 
         Ok(())
