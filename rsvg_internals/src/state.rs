@@ -12,15 +12,16 @@ use attributes::Attribute;
 use color::rgba_to_argb;
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
+use handle::RsvgHandle;
 use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
 use paint_server::PaintServer;
-use parsers::Parse;
+use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
 use property_macros::Property;
 use unitinterval::UnitInterval;
-use util::utf8_cstr;
+use util::{utf8_cstr, utf8_cstr_opt};
 
 // This is only used as *const RsvgState or *mut RsvgState, as an opaque pointer for C
 pub enum RsvgState {}
@@ -1384,4 +1385,181 @@ pub extern "C" fn rsvg_state_get_opacity(state: *const RsvgState) -> u8 {
             .as_ref()
             .map_or_else(|| FloodOpacity::default().0, |o| o.0),
     )
+}
+
+extern "C" {
+    fn rsvg_lookup_apply_css_style(
+        handle: *const RsvgHandle,
+        target: *const libc::c_char,
+        state: *mut RsvgState,
+    ) -> glib_sys::gboolean;
+
+    fn rsvg_parse_style_attribute_contents(
+        state: *mut RsvgState,
+        string: *const libc::c_char,
+    ) -> glib_sys::gboolean;
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_parse_style_attrs(
+    handle: *const RsvgHandle,
+    raw_node: *const RsvgNode,
+    tag: *const libc::c_char,
+    klazz: *const libc::c_char,
+    id: *const libc::c_char,
+    pbag: *const PropertyBag,
+) {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    let tag = unsafe { utf8_cstr(tag) };
+
+    let klazz = unsafe { utf8_cstr_opt(klazz) };
+    let id = unsafe { utf8_cstr_opt(id) };
+
+    let pbag = unsafe { &*pbag };
+
+    parse_style_attrs(handle, node, tag, klazz, id, pbag);
+}
+
+// Sets the node's state from the attributes in the pbag.  Also
+// applies CSS rules in our limited way based on the node's
+// tag/klazz/id.
+fn parse_style_attrs(
+    handle: *const RsvgHandle,
+    node: &RsvgNode,
+    tag: &str,
+    klazz: Option<&str>,
+    id: Option<&str>,
+    pbag: &PropertyBag,
+) {
+    let state = node.get_state_mut();
+
+    match state.parse_presentation_attributes(pbag) {
+        Ok(_) => (),
+        Err(_) => (),
+        /* FIXME: we'll ignore errors here for now.  If we return, we expose
+         * buggy handling of the enable-background property; we are not parsing it correctly.
+         * This causes tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
+         * because it has enable-background="new 0 0 1179.75118 687.74173" in the toplevel svg
+         * element.
+         *        Err(e) => (),
+         *        {
+         *            node.set_error(e);
+         *            return;
+         *        } */
+    }
+
+    match state.parse_conditional_processing_attributes(pbag) {
+        Ok(_) => (),
+        Err(e) => {
+            node.set_error(e);
+            return;
+        }
+    }
+
+    // Try to properly support all of the following, including inheritance:
+    // *
+    // #id
+    // tag
+    // tag#id
+    // tag.class
+    // tag.class#id
+    //
+    // This is basically a semi-compliant CSS2 selection engine
+
+    unsafe {
+        // *
+        rsvg_lookup_apply_css_style(handle, "*".to_glib_none().0, to_c_mut(state));
+
+        // tag
+        rsvg_lookup_apply_css_style(handle, tag.to_glib_none().0, to_c_mut(state));
+
+        if let Some(klazz) = klazz {
+            for cls in klazz.split_whitespace() {
+                let mut found = false;
+
+                if !cls.is_empty() {
+                    // tag.class#id
+                    if let Some(id) = id {
+                        let target = format!("{}.{}#{}", tag, cls, id);
+                        found = found
+                            || from_glib(rsvg_lookup_apply_css_style(
+                                handle,
+                                target.to_glib_none().0,
+                                to_c_mut(state),
+                            ));
+                    }
+
+                    // .class#id
+                    if let Some(id) = id {
+                        let target = format!(".{}#{}", cls, id);
+                        found = found
+                            || from_glib(rsvg_lookup_apply_css_style(
+                                handle,
+                                target.to_glib_none().0,
+                                to_c_mut(state),
+                            ));
+                    }
+
+                    // tag.class
+                    let target = format!("{}.{}", tag, cls);
+                    found = found
+                        || from_glib(rsvg_lookup_apply_css_style(
+                            handle,
+                            target.to_glib_none().0,
+                            to_c_mut(state),
+                        ));
+
+                    if !found {
+                        // didn't find anything more specific, just apply the class style
+                        let target = format!(".{}", cls);
+                        rsvg_lookup_apply_css_style(
+                            handle,
+                            target.to_glib_none().0,
+                            to_c_mut(state),
+                        );
+                    }
+                }
+            }
+        }
+
+        if let Some(id) = id {
+            // id
+            let target = format!("#{}", id);
+            rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, to_c_mut(state));
+
+            // tag#id
+            let target = format!("{}#{}", tag, id);
+            rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, to_c_mut(state));
+        }
+
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Style => {
+                    if !bool::from_glib(rsvg_parse_style_attribute_contents(
+                        to_c_mut(state),
+                        value.to_glib_none().0,
+                    )) {
+                        node.set_error(NodeError::parse_error(
+                            Attribute::Style,
+                            ParseError::new("Invalid style value"),
+                        ));
+                        break;
+                    }
+                }
+
+                Attribute::Transform => match cairo::Matrix::parse(value, ()) {
+                    Ok(affine) => state.affine = cairo::Matrix::multiply(&affine, &state.affine),
+
+                    Err(e) => {
+                        node.set_error(NodeError::attribute_error(Attribute::Transform, e));
+                        break;
+                    }
+                },
+
+                _ => (),
+            }
+        }
+    }
 }

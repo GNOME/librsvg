@@ -54,6 +54,8 @@ G_GNUC_INTERNAL
 gboolean rsvg_parse_style_attribute_contents (RsvgState *state, const char *str) G_GNUC_WARN_UNUSED_RESULT;
 G_GNUC_INTERNAL
 void rsvg_parse_cssbuffer   (RsvgHandle *handle, const char *buff, size_t buflen);
+
+/* Defined in rsvg_internals/src/state.rs */
 G_GNUC_INTERNAL
 void rsvg_parse_style_attrs (RsvgHandle *handle, RsvgNode *node, const char *tag,
                              const char *klazz, const char *id, RsvgPropertyBag * atts);

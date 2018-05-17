@@ -107,6 +107,7 @@ pub use shapes::{
 };
 
 pub use state::{
+    rsvg_parse_style_attrs,
     rsvg_state_free,
     rsvg_state_get_affine,
     rsvg_state_get_clip_path,
