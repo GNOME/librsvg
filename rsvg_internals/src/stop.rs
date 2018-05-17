@@ -104,13 +104,7 @@ impl NodeTrait for NodeStop {
             }
         }
 
-        state.parse_presentation_attributes(pbag).map_err(|_| {
-            // FIXME: just a placeholder; we don't know which attribute failed
-            NodeError::parse_error(
-                Attribute::Style,
-                ParseError::new("could not parse presentation attribute"),
-            )
-        })?;
+        state.parse_presentation_attributes(pbag)?;
 
         let mut inherited_state = State::new_with_parent(None);
         inherited_state.reconstruct(node);
