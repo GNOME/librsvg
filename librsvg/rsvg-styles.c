@@ -395,13 +395,12 @@ apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
     RsvgAttribute attr;
 
     if (rsvg_attribute_from_name (key, &attr)) {
-        gboolean success = rsvg_state_parse_style_pair(state,
-                                                       attr,
-                                                       value->value,
-                                                       value->important,
-                                                       TRUE);
-
-        /* FIXME: propagate errors upstream */
+        /* FIXME: this is ignoring errors */
+        gboolean success = rsvg_state_parse_style_pair (state,
+                                                        attr,
+                                                        value->value,
+                                                        value->important,
+                                                        TRUE);
     }
 }
 
@@ -448,10 +447,16 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
 
     state = rsvg_node_get_state (node);
 
-    success = rsvg_state_parse_presentation_attributes (state, atts);
-
-    /* TODO: i'm not sure it should reside here */
-    success = success && rsvg_state_parse_conditional_processing_attributes (state, atts);
+    if (!(rsvg_state_parse_presentation_attributes (state, atts)
+          && rsvg_state_parse_conditional_processing_attributes (state, atts))) {
+        /*
+          FIXME: we don't know which attribute failed to parse
+           rsvg_node_set_attribute_parse_error (node,
+           FIXME,
+           FIXME);
+        */
+        return;
+    }
 
     /* Try to properly support all of the following, including inheritance:
      * *
@@ -529,10 +534,17 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
 
     iter = rsvg_property_bag_iter_begin (atts);
 
+    success = TRUE;
+
     while (success && rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
         switch (attr) {
         case RSVG_ATTRIBUTE_STYLE:
-            success = rsvg_parse_style_attribute_contents (state, value);
+            if (!rsvg_parse_style_attribute_contents (state, value)) {
+                rsvg_node_set_attribute_parse_error (node,
+                                                     "style",
+                                                     "Invalid style value");
+                success = FALSE;
+            }
             break;
 
         case RSVG_ATTRIBUTE_TRANSFORM:
