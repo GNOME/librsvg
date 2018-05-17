@@ -93,7 +93,7 @@ impl NodeTrait for NodeStop {
 
                         if !success {
                             return Err(NodeError::parse_error(
-                                "style",
+                                attr,
                                 ParseError::new("could not parse style"),
                             ));
                         }
@@ -105,8 +105,9 @@ impl NodeTrait for NodeStop {
         }
 
         state.parse_presentation_attributes(pbag).map_err(|_| {
+            // FIXME: just a placeholder; we don't know which attribute failed
             NodeError::parse_error(
-                "presentation",
+                Attribute::Style,
                 ParseError::new("could not parse presentation attribute"),
             )
         })?;

@@ -166,7 +166,7 @@ impl NodePoly {
 
 impl NodeTrait for NodePoly {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, attr, value) in pbag.iter() {
+        for (_key, attr, value) in pbag.iter() {
             // support for svg < 1.0 which used verts
             if attr == Attribute::Points || attr == Attribute::Verts {
                 let result = parsers::list_of_points(value.trim());
@@ -178,7 +178,7 @@ impl NodeTrait for NodePoly {
                     }
 
                     Err(e) => {
-                        return Err(NodeError::parse_error(key, e));
+                        return Err(NodeError::parse_error(attr, e));
                     }
                 }
             }

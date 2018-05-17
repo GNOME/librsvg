@@ -7,8 +7,9 @@ use std::f64::consts::*;
 use std::mem;
 use std::ptr;
 use std::slice;
-use std::str;
+use std::str::{self, FromStr};
 
+use attributes::Attribute;
 use error::{AttributeError, NodeError};
 use util::utf8_cstr;
 
@@ -62,7 +63,7 @@ where
                 Ok(v)
             }
         })
-        .map_err(|e| NodeError::attribute_error(key, e))
+        .map_err(|e| NodeError::attribute_error(Attribute::from_str(key).unwrap(), e))
 }
 
 // angle:

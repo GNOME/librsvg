@@ -6,7 +6,9 @@ use libc;
 use std::cell::{Ref, RefCell};
 use std::ptr;
 use std::rc::{Rc, Weak};
+use std::str::FromStr;
 
+use attributes::Attribute;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
@@ -14,6 +16,7 @@ use handle::RsvgHandle;
 use parsers::ParseError;
 use property_bag::PropertyBag;
 use state::{self, rsvg_state_new, RsvgState, State};
+use util::utf8_cstr;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
 // points to an  Rc<Node>, which is our refcounted Rust representation
@@ -474,8 +477,11 @@ pub extern "C" fn rsvg_node_set_attribute_parse_error(
     assert!(!description.is_null());
 
     unsafe {
+        let attr_name = utf8_cstr(attr_name);
+        let attr = Attribute::from_str(attr_name).unwrap();
+
         node.set_error(NodeError::parse_error(
-            &String::from_glib_none(attr_name),
+            attr,
             ParseError::new(&String::from_glib_none(description)),
         ));
     }

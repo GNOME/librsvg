@@ -3,6 +3,7 @@ use std::fmt;
 
 use cssparser::BasicParseError;
 
+use attributes::Attribute;
 use parsers::ParseError;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -16,30 +17,27 @@ pub enum AttributeError {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
-    attr_name: String,
+    attr: Attribute,
     err: AttributeError,
 }
 
 impl NodeError {
-    pub fn parse_error(attr_name: &str, error: ParseError) -> NodeError {
+    pub fn parse_error(attr: Attribute, error: ParseError) -> NodeError {
         NodeError {
-            attr_name: attr_name.to_string(),
+            attr,
             err: AttributeError::Parse(error),
         }
     }
 
-    pub fn value_error(attr_name: &str, description: &str) -> NodeError {
+    pub fn value_error(attr: Attribute, description: &str) -> NodeError {
         NodeError {
-            attr_name: attr_name.to_string(),
+            attr,
             err: AttributeError::Value(description.to_string()),
         }
     }
 
-    pub fn attribute_error(attr_name: &str, error: AttributeError) -> NodeError {
-        NodeError {
-            attr_name: attr_name.to_string(),
-            err: error,
-        }
+    pub fn attribute_error(attr: Attribute, error: AttributeError) -> NodeError {
+        NodeError { attr, err: error }
     }
 }
 
@@ -58,13 +56,15 @@ impl fmt::Display for NodeError {
             AttributeError::Parse(ref n) => write!(
                 f,
                 "error parsing value for attribute \"{}\": {}",
-                self.attr_name, n.display
+                self.attr.to_str(),
+                n.display
             ),
 
             AttributeError::Value(ref s) => write!(
                 f,
                 "invalid value for attribute \"{}\": {}",
-                self.attr_name, s
+                self.attr.to_str(),
+                s
             ),
         }
     }
