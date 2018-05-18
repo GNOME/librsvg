@@ -133,6 +133,9 @@ cairo_surface_t *rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
                                                        double width,
                                                        double height);
 
+G_GNUC_INTERNAL
+const RsvgBbox *rsvg_drawing_ctx_get_bbox (const RsvgDrawingCtx *ctx);
+
 G_END_DECLS
 
 #endif /*RSVG_DRAWING_CTX_H */

@@ -86,6 +86,8 @@ extern "C" {
 
     fn rsvg_drawing_ctx_push_render_stack(draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_drawing_ctx_pop_render_stack(draw_ctx: *const RsvgDrawingCtx);
+
+    fn rsvg_drawing_ctx_get_bbox(draw_ctx: *const RsvgDrawingCtx) -> *const RsvgBbox;
 }
 
 pub fn get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
@@ -373,6 +375,10 @@ pub fn state_pop(draw_ctx: *mut RsvgDrawingCtx) {
 
         Box::from_raw(state as *mut _);
     }
+}
+
+pub fn get_bbox(draw_ctx: *const RsvgDrawingCtx) -> *const RsvgBbox {
+    unsafe { rsvg_drawing_ctx_get_bbox(draw_ctx) }
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);

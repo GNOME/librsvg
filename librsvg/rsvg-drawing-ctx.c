@@ -984,3 +984,9 @@ rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
 
     return surface;
 }
+
+const RsvgBbox *
+rsvg_drawing_ctx_get_bbox (const RsvgDrawingCtx *ctx)
+{
+    return &ctx->bbox;
+}
