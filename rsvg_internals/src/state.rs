@@ -866,6 +866,59 @@ impl State {
             _ => false,
         }
     }
+
+    fn get_computed_values(&self) -> ComputedValues {
+        ComputedValues {
+            affine: self.affine,
+
+            baseline_shift: self.baseline_shift.unwrap_or_default(),
+            clip_path: self.clip_path.unwrap_or_default(),
+            clip_rule: self.clip_rule.unwrap_or_default(),
+            comp_op: self.comp_op.unwrap_or_default(),
+            color: self.color.unwrap_or_default(),
+            direction: self.direction.unwrap_or_default(),
+            display: self.display.unwrap_or_default(),
+            enable_background: self.enable_background.unwrap_or_default(),
+            fill: self.fill.unwrap_or_default(),
+            fill_opacity: self.fill_opacity.unwrap_or_default(),
+            fill_rule: self.fill_rule.unwrap_or_default(),
+            filter: self.filter.unwrap_or_default(),
+            flood_color: self.flood_color.unwrap_or_default(),
+            flood_opacity: self.flood_opacity.unwrap_or_default(),
+            font_family: self.font_family.unwrap_or_default(),
+            font_size: self.font_size.unwrap_or_default(),
+            font_stretch: self.font_stretch.unwrap_or_default(),
+            font_style: self.font_style.unwrap_or_default(),
+            font_variant: self.font_variant.unwrap_or_default(),
+            font_weight: self.font_weight.unwrap_or_default(),
+            letter_spacing: self.letter_spacing.unwrap_or_default(),
+            marker_end: self.marker_end.unwrap_or_default(),
+            marker_mid: self.marker_mid.unwrap_or_default(),
+            marker_start: self.marker_start.unwrap_or_default(),
+            mask: self.mask.unwrap_or_default(),
+            opacity: self.opacity.unwrap_or_default(),
+            overflow: self.overflow.unwrap_or_default(),
+            shape_rendering: self.shape_rendering.unwrap_or_default(),
+            stop_color: self.stop_color.unwrap_or_default(),
+            stop_opacity: self.stop_opacity.unwrap_or_default(),
+            stroke: self.stroke.unwrap_or_default(),
+            stroke_dasharray: self.stroke_dasharray.unwrap_or_default(),
+            stroke_dashoffset: self.stroke_dashoffset.unwrap_or_default(),
+            stroke_line_cap: self.stroke_line_cap.unwrap_or_default(),
+            stroke_line_join: self.stroke_line_join.unwrap_or_default(),
+            stroke_opacity: self.stroke_opacity.unwrap_or_default(),
+            stroke_miterlimit: self.stroke_miterlimit.unwrap_or_default(),
+            stroke_width: self.stroke_width.unwrap_or_default(),
+            text_anchor: self.text_anchor.unwrap_or_default(),
+            text_decoration: self.text_decoration.unwrap_or_default(),
+            text_rendering: self.text_rendering.unwrap_or_default(),
+            unicode_bidi: self.unicode_bidi.unwrap_or_default(),
+            visibility: self.visibility.unwrap_or_default(),
+            writing_mode: self.writing_mode.unwrap_or_default(),
+            xml_lang: self.xml_lang.unwrap_or_default(),
+            xml_space: self.xml_space.unwrap_or_default(),
+        }
+    }
 }
 
 // Parses the `value` for the type `T` of the property, including `inherit` values.
