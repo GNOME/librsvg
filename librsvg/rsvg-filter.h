@@ -42,10 +42,23 @@ struct _RsvgFilter {
     RsvgFilterUnits primitiveunits;
 };
 
+/**
+ * rsvg_filter_render:
+ * @node: a pointer to the filter node to use
+ * @source: the a #cairo_surface_t of type %CAIRO_SURFACE_TYPE_IMAGE
+ * @context: the context
+ *
+ * Create a new surface applied the filter. This function will create
+ * a context for itself, set up the coordinate systems execute all its
+ * little primatives and then clean up its own mess.
+ *
+ * Returns: (transfer full): a new #cairo_surface_t
+ **/
+/* Implemented in rust/src/filters/ffi.rs */
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_filter_render (RsvgNode *filter_node,
                                      cairo_surface_t *source,
-                                     RsvgDrawingCtx *context, 
+                                     RsvgDrawingCtx *context,
                                      char *channelmap);
 
 G_GNUC_INTERNAL

@@ -1,21 +1,36 @@
 //! Internal FFI and marshalling things.
 
 use std::default::Default;
-use std::ptr;
+use std::{mem, ptr};
 
-use glib_sys::{gboolean, GString};
+use cairo;
+use cairo::prelude::SurfaceExt;
+use cairo_sys::cairo_surface_t;
+use glib::translate::{FromGlibPtrFull, ToGlibPtr};
+use glib_sys::*;
+use libc::c_char;
 
+use bbox::RsvgBbox;
+use drawing_ctx::RsvgDrawingCtx;
+use filter_context::{FilterContext, RsvgFilter, RsvgFilterContext};
 use length::RsvgLength;
-use node::RsvgNode;
-use filter_context::RsvgFilterContext;
+use node::{NodeType, RsvgNode};
 
 use super::Filter;
 
+/// Contains a pointer to the `Filter` trait object. Pointer to this struct is passed back to C
+/// code in place of `RsvgFilterPrimitive` for Rust filters. The pointer straight to the trait
+/// object cannot be passed as it is a fat pointer.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct FilterTraitObjectContainer {
+    filter: *const Filter,
+}
+
+// Required by the C code until all filters are ported to Rust.
 // Keep this in sync with
 // ../../librsvg/librsvg/filters/common.h:_RsvgFilterPrimitive
-/// Required by the C code until all filters are ported to Rust.
 #[repr(C)]
-pub(super) struct RsvgFilterPrimitive {
+pub struct RsvgFilterPrimitive {
     x: RsvgLength,
     y: RsvgLength,
     width: RsvgLength,
@@ -32,43 +47,103 @@ pub(super) struct RsvgFilterPrimitive {
     >,
 }
 
-impl RsvgFilterPrimitive {
-    /// Creates a new `RsvgFilterPrimitive` with the proper render callback.
+impl FilterTraitObjectContainer {
+    /// Returns the struct with the given pointer.
     #[inline]
-    pub(super) fn new<T: Filter>() -> RsvgFilterPrimitive {
-        RsvgFilterPrimitive {
-            x: Default::default(),
-            y: Default::default(),
-            width: Default::default(),
-            height: Default::default(),
-            x_specified: Default::default(),
-            y_specified: Default::default(),
-            width_specified: Default::default(),
-            height_specified: Default::default(),
-            in_: ptr::null_mut(),
-            result: ptr::null_mut(),
+    pub(super) fn new(filter: &Filter) -> Self {
+        Self { filter }
+    }
 
-            render: Some(render_callback::<T>),
+    /// Returns the struct with an uninitialized pointer.
+    #[inline]
+    pub(super) fn uninitialized() -> Self {
+        Self {
+            filter: unsafe { mem::uninitialized() },
         }
     }
 }
 
-/// Calls `Filter::render()` for this filter primitive.
-///
-/// # Safety
-/// `raw_node` and `ctx` must be valid pointers.
-unsafe extern "C" fn render_callback<T: Filter>(
-    raw_node: *mut RsvgNode,
-    _primitive: *mut RsvgFilterPrimitive,
-    ctx: *mut RsvgFilterContext,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = &*raw_node;
+impl RsvgFilterPrimitive {
+    /// Creates a new `RsvgFilterPrimitive` with the given properties.
+    #[inline]
+    pub(super) fn with_props(
+        x: Option<RsvgLength>,
+        y: Option<RsvgLength>,
+        width: Option<RsvgLength>,
+        height: Option<RsvgLength>,
+    ) -> Self {
+        Self {
+            x: x.unwrap_or_else(Default::default),
+            y: y.unwrap_or_else(Default::default),
+            width: width.unwrap_or_else(Default::default),
+            height: height.unwrap_or_else(Default::default),
+            x_specified: if x.is_some() { 1 } else { 0 },
+            y_specified: if y.is_some() { 1 } else { 0 },
+            width_specified: if width.is_some() { 1 } else { 0 },
+            height_specified: if height.is_some() { 1 } else { 0 },
 
-    // Don't render filters if they are in error.
-    if node.is_in_error() {
-        return;
+            in_: ptr::null_mut(),
+            result: ptr::null_mut(),
+            render: None,
+        }
+    }
+}
+
+/// Creates a new surface applied the filter. This function will create a context for itself, set up
+/// the coordinate systems execute all its little primitives and then clean up its own mess.
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_filter_render(
+    filter_node: *mut RsvgNode,
+    source: *mut cairo_surface_t,
+    context: *mut RsvgDrawingCtx,
+    channelmap: *mut c_char,
+) -> *mut cairo_surface_t {
+    assert!(!filter_node.is_null());
+    assert!(!source.is_null());
+    assert!(!context.is_null());
+    assert!(!channelmap.is_null());
+
+    let source = cairo::Surface::from_glib_full(source);
+    assert_eq!(source.get_type(), cairo::SurfaceType::Image);
+    let source = cairo::ImageSurface::from(source).unwrap();
+
+    let filter_node = &*filter_node;
+    assert_eq!(filter_node.get_type(), NodeType::Filter);
+
+    let mut channelmap_arr = [0; 4];
+    for i in 0..4 {
+        channelmap_arr[i] = i32::from(*channelmap.offset(i as isize) - '0' as i8);
     }
 
-    node.with_impl(move |filter: &T| filter.render(ctx));
+    let mut filter_ctx = FilterContext::new(
+        filter_node.get_c_impl() as *mut RsvgFilter,
+        source,
+        context,
+        channelmap_arr,
+    );
+
+    filter_node
+        .children()
+        .filter(|c| {
+            c.get_type() > NodeType::FilterPrimitiveFirst
+                && c.get_type() < NodeType::FilterPrimitiveLast
+        })
+        .filter(|c| !c.is_in_error())
+        .for_each(|c| match c.get_type() {
+            NodeType::FilterPrimitiveOffset => {
+                let filter = &*(&*(c.get_c_impl() as *const FilterTraitObjectContainer)).filter;
+                filter.render(&mut filter_ctx);
+            }
+            _ => {
+                let filter = &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive);
+                (filter.render.unwrap())(
+                    filter_node as *const RsvgNode as *mut RsvgNode,
+                    filter,
+                    filter_ctx.get_raw_mut(),
+                );
+                filter_ctx.refresh_from_c();
+            }
+        });
+
+    filter_ctx.into_result().to_glib_full()
 }

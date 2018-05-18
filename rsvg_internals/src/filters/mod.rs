@@ -5,7 +5,6 @@ use cairo;
 
 use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
-use filter_context::RsvgFilterContext;
 use error::AttributeError;
 use filter_context::{FilterContext, RsvgFilterContext};
 use handle::RsvgHandle;
@@ -17,6 +16,7 @@ use state::State;
 
 mod ffi;
 use self::ffi::*;
+pub use self::ffi::{rsvg_filter_render, RsvgFilterPrimitive};
 
 pub mod offset;
 
@@ -26,14 +26,13 @@ trait Filter: NodeTrait {
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
     /// property hasn't been provided), return without drawing anything.
-    fn render(&self, ctx: *mut RsvgFilterContext);
+    fn render(&self, ctx: &mut FilterContext);
 }
 
-/// The base filter node containing common properties.
+/// The base filter primitive node containing common properties.
 struct Primitive {
-    // The only purpose of this field is to communicate the render callback back to C code.
-    // TODO: get rid of this once all filters have been ported to Rust.
-    c_struct: RsvgFilterPrimitive,
+    // The purpose of this field is to pass the Filter trait object through the C code.
+    filter_to: RefCell<FilterTraitObjectContainer>,
 
     x: Cell<Option<RsvgLength>>,
     y: Cell<Option<RsvgLength>>,
@@ -72,9 +71,9 @@ pub struct IRect {
 impl Primitive {
     /// Constructs a new `Primitive` with empty properties.
     #[inline]
-    fn new<T: Filter>() -> Primitive {
+    fn new() -> Primitive {
         Primitive {
-            c_struct: RsvgFilterPrimitive::new::<T>(),
+            filter_to: RefCell::new(FilterTraitObjectContainer::uninitialized()),
 
             x: Cell::new(None),
             y: Cell::new(None),
@@ -107,16 +106,31 @@ impl Primitive {
             )
         }
     }
+
+    /// Sets the filter trait object.
+    #[inline]
+    fn set_filter(&self, this: &Filter) {
+        self.filter_to
+            .replace(FilterTraitObjectContainer::new(this));
+    }
 }
 
 impl NodeTrait for Primitive {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(Some(parse("x", value, LengthDir::Horizontal, None)?)),
-                Attribute::Y => self.y.set(Some(parse("y", value, LengthDir::Vertical, None)?)),
-                Attribute::Width => self.width.set(Some(parse("width", value, LengthDir::Horizontal, None)?)),
-                Attribute::Height => self.height.set(Some(parse("height", value, LengthDir::Vertical, None)?)),
+                Attribute::X => self.x
+                    .set(Some(parse("x", value, LengthDir::Horizontal, None)?)),
+                Attribute::Y => self.y
+                    .set(Some(parse("y", value, LengthDir::Vertical, None)?)),
+                Attribute::Width => {
+                    self.width
+                        .set(Some(parse("width", value, LengthDir::Horizontal, None)?))
+                }
+                Attribute::Height => {
+                    self.height
+                        .set(Some(parse("height", value, LengthDir::Vertical, None)?))
+                }
                 Attribute::Result => self.result.set(Some(value.to_string())),
                 _ => (),
             }
@@ -132,8 +146,7 @@ impl NodeTrait for Primitive {
 
     #[inline]
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        // At least for now we have to return a *const RsvgFilterPrimitive.
-        &self.c_struct as *const RsvgFilterPrimitive as *const RsvgCNodeImpl
+        self.filter_to.borrow().deref() as *const FilterTraitObjectContainer as *const RsvgCNodeImpl
     }
 }
 
@@ -157,7 +170,7 @@ impl Parse for Input {
 impl PrimitiveWithInput {
     /// Constructs a new `PrimitiveWithInput` with empty properties.
     #[inline]
-    fn new<T: Filter>() -> PrimitiveWithInput {
+    fn new() -> PrimitiveWithInput {
         PrimitiveWithInput {
             base: Primitive::new(),
             in_: RefCell::new(None),

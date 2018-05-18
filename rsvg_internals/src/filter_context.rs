@@ -64,7 +64,6 @@ impl FilterContext {
         filter: *mut RsvgFilter,
         source_surface: cairo::ImageSurface,
         ctx: *mut RsvgDrawingCtx,
-        bbox: RsvgBbox,
         channelmap: [i32; 4],
     ) -> Self {
         extern "C" {
@@ -121,7 +120,7 @@ impl FilterContext {
             rsvg_filter_fix_coordinate_system(
                 &mut rv.c_struct,
                 drawing_ctx::get_current_state_ptr(ctx),
-                &bbox as *const RsvgBbox as *mut RsvgBbox,
+                drawing_ctx::get_bbox(ctx) as *mut RsvgBbox,
             )
         };
 

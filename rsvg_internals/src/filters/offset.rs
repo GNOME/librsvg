@@ -4,10 +4,10 @@ use libc::c_char;
 
 use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
-use filter_context::RsvgFilterContext;
+use filter_context::FilterContext;
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode, NodeType, boxed_node_new};
+use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 use state::State;
@@ -25,11 +25,16 @@ impl Offset {
     /// Constructs a new `Offset` with empty properties.
     #[inline]
     fn new() -> Offset {
-        Offset {
-            base: PrimitiveWithInput::new::<Self>(),
+        let rv = Offset {
+            base: PrimitiveWithInput::new(),
             dx: Cell::new(RsvgLength::parse("0", LengthDir::Horizontal).unwrap()),
             dy: Cell::new(RsvgLength::parse("0", LengthDir::Vertical).unwrap()),
-        }
+        };
+
+        // TODO: I really don't like how this currently works.
+        rv.base.set_filter(&rv);
+
+        rv
     }
 }
 
@@ -66,8 +71,9 @@ impl NodeTrait for Offset {
 }
 
 impl Filter for Offset {
-    fn render(&self, _ctx: *mut RsvgFilterContext) {
-        unimplemented!("Hello there: dx = {:?}, dy = {:?}", self.dx.get(), self.dy.get());
+    fn render(&self, ctx: &mut FilterContext) {
+        let bounds = self.base.get_bounds(ctx);
+        unimplemented!();
     }
 }
 
