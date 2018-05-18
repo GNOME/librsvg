@@ -1279,7 +1279,7 @@ make_property!(
 
 make_property!(
     Stroke,
-    default: PaintServer::parse("#000", ()).unwrap(),
+    default: PaintServer::None,
     inherits_automatically: true,
     newtype_parse: PaintServer,
     parse_data_type: ()
