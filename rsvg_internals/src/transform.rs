@@ -1,7 +1,4 @@
 use cairo;
-use glib::translate::*;
-use glib_sys;
-use libc;
 
 use std::f64::consts::*;
 
@@ -10,7 +7,6 @@ use cssparser::{ParseError as CssParseError, Parser, ParserInput, Token};
 
 use error::*;
 use parsers::{optional_comma, Parse, ParseError};
-use util::utf8_cstr;
 
 impl Parse for cairo::Matrix {
     type Data = ();
@@ -205,30 +201,6 @@ fn make_rotation_matrix(angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
 
     m = cairo::Matrix::multiply(&cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
     m
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_parse_transform(
-    out_matrix: *mut cairo::Matrix,
-    s: *const libc::c_char,
-) -> glib_sys::gboolean {
-    assert!(!out_matrix.is_null());
-    assert!(!s.is_null());
-
-    let string = unsafe { utf8_cstr(s) };
-    let matrix: &mut cairo::Matrix = unsafe { &mut *out_matrix };
-
-    match parse_transform(string) {
-        Ok(m) => {
-            *matrix = m;
-            true.to_glib()
-        }
-
-        Err(_) => {
-            *matrix = cairo::Matrix::identity();
-            false.to_glib()
-        }
-    }
 }
 
 #[cfg(test)]

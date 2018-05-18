@@ -151,8 +151,6 @@ pub use text::{
     rsvg_node_tspan_new,
 };
 
-pub use transform::rsvg_parse_transform;
-
 pub use viewbox::RsvgViewBox;
 
 #[macro_use]
