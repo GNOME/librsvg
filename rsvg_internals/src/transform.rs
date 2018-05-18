@@ -13,22 +13,18 @@ impl Parse for cairo::Matrix {
     type Err = AttributeError;
 
     fn parse(s: &str, _: ()) -> Result<cairo::Matrix, AttributeError> {
-        parse_transform(s)
+        let matrix = parse_transform_list(s)?;
+
+        matrix
+            .try_invert()
+            .map(|_| matrix)
+            .map_err(|_| AttributeError::Value("invalid transformation matrix".to_string()))
     }
 }
 
 // This parser is for the "transform" attribute in SVG.
 // Its operataion and grammar are described here:
 // https://www.w3.org/TR/SVG/coords.html#TransformAttribute
-
-pub fn parse_transform(s: &str) -> Result<cairo::Matrix, AttributeError> {
-    let matrix = parse_transform_list(s)?;
-
-    matrix
-        .try_invert()
-        .map(|_| matrix)
-        .map_err(|_| AttributeError::Value("invalid transformation matrix".to_string()))
-}
 
 fn parse_transform_list(s: &str) -> Result<cairo::Matrix, AttributeError> {
     let mut input = ParserInput::new(s);
@@ -204,8 +200,12 @@ fn make_rotation_matrix(angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
+
+    fn parse_transform(s: &str) -> Result<cairo::Matrix, AttributeError> {
+        cairo::Matrix::parse(s, ())
+    }
 
     #[test]
     fn parses_valid_transform() {
@@ -264,11 +264,6 @@ mod test {
             }
         }
     }
-}
-
-#[cfg(test)]
-mod parser_tests {
-    use super::*;
 
     #[test]
     fn parses_matrix() {
