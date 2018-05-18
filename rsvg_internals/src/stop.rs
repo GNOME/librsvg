@@ -1,6 +1,4 @@
 use cssparser;
-use glib::translate::*;
-use glib_sys;
 use libc;
 
 use std::cell::Cell;
@@ -12,9 +10,9 @@ use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use parsers::{parse, ParseError};
+use parsers::parse;
 use property_bag::PropertyBag;
-use state::{self, RsvgState, State, StopColor, StopOpacity};
+use state::{self, State, StopColor, StopOpacity};
 
 pub struct NodeStop {
     offset: Cell<f64>,
@@ -77,7 +75,7 @@ impl NodeTrait for NodeStop {
                 }
 
                 Attribute::Style => {
-                    // FIXME: this is the only place where parse_style_attribute_contents() and
+                    // FIXME: this is the only place where parse_style_declarations() and
                     // parse_presentation_attributes() are called outside of the
                     // rsvg-base.c machinery.  That one indirectly calls them via
                     // rsvg_parse_style_attrs().
@@ -85,19 +83,7 @@ impl NodeTrait for NodeStop {
                     // Should we resolve the stop-color / stop-opacity at
                     // rendering time?
 
-                    unsafe {
-                        let success: bool = from_glib(rsvg_parse_style_attribute_contents(
-                            state::to_c_mut(state),
-                            value.to_glib_none().0,
-                        ));
-
-                        if !success {
-                            return Err(NodeError::parse_error(
-                                attr,
-                                ParseError::new("could not parse style"),
-                            ));
-                        }
-                    }
+                    state.parse_style_declarations(value)?;
                 }
 
                 _ => (),
@@ -154,14 +140,6 @@ impl NodeTrait for NodeStop {
 fn u32_from_rgba(rgba: cssparser::RGBA) -> u32 {
     (u32::from(rgba.red) << 24) | (u32::from(rgba.green) << 16) | (u32::from(rgba.blue) << 8)
         | u32::from(rgba.alpha)
-}
-
-#[allow(improper_ctypes)]
-extern "C" {
-    fn rsvg_parse_style_attribute_contents(
-        state: *mut RsvgState,
-        string: *const libc::c_char,
-    ) -> glib_sys::gboolean;
 }
 
 #[no_mangle]

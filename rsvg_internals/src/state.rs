@@ -7,6 +7,7 @@ use libc;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::ptr;
+use std::str::FromStr;
 
 use attributes::Attribute;
 use color::rgba_to_argb;
@@ -17,7 +18,7 @@ use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
 use paint_server::PaintServer;
-use parsers::{Parse, ParseError};
+use parsers::Parse;
 use property_bag::PropertyBag;
 use property_macros::Property;
 use unitinterval::UnitInterval;
@@ -591,6 +592,52 @@ impl State {
             };
 
             parse().map_err(|e| NodeError::attribute_error(attr, e))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn parse_style_declarations(&mut self, declarations: &str) -> Result<(), NodeError> {
+        // Split an attribute value like style="foo: bar; baz: beep;" into
+        // individual CSS declarations ("foo: bar" and "baz: beep") and
+        // set them onto the state struct.
+        //
+        // FIXME: It's known that this is _way_ out of spec. A more complete
+        // CSS2 implementation will happen later.
+
+        for decl in declarations.split(';') {
+            if let Some(colon_pos) = decl.find(':') {
+                let (prop_name, value) = decl.split_at(colon_pos);
+
+                let prop_name = prop_name.trim();
+                let value = value[1..].trim();
+
+                if !prop_name.is_empty() && !value.is_empty() {
+                    // Just remove single quotes in a trivial way.  No handling for any
+                    // special character inside the quotes is done.  This relates
+                    // especially to font-family names.
+                    let value = value.replace('\'', "");
+
+                    let mut important = false;
+
+                    let value = if let Some(bang_pos) = value.find('!') {
+                        let (before_bang, bang_and_after) = value.split_at(bang_pos);
+
+                        if bang_and_after[1..].trim() == "important" {
+                            important = true;
+                        }
+
+                        before_bang.trim()
+                    } else {
+                        &value
+                    };
+
+                    if let Ok(attr) = Attribute::from_str(prop_name) {
+                        self.parse_style_pair(attr, value, important, true)?
+                    }
+                    // else unknown property name; ignore
+                }
+            }
         }
 
         Ok(())
@@ -1393,11 +1440,6 @@ extern "C" {
         target: *const libc::c_char,
         state: *mut RsvgState,
     ) -> glib_sys::gboolean;
-
-    fn rsvg_parse_style_attribute_contents(
-        state: *mut RsvgState,
-        string: *const libc::c_char,
-    ) -> glib_sys::gboolean;
 }
 
 #[no_mangle]
@@ -1537,14 +1579,8 @@ fn parse_style_attrs(
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::Style => {
-                    if !bool::from_glib(rsvg_parse_style_attribute_contents(
-                        to_c_mut(state),
-                        value.to_glib_none().0,
-                    )) {
-                        node.set_error(NodeError::parse_error(
-                            Attribute::Style,
-                            ParseError::new("Invalid style value"),
-                        ));
+                    if let Err(e) = state.parse_style_declarations(value) {
+                        node.set_error(e);
                         break;
                     }
                 }
