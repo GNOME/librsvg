@@ -3,23 +3,23 @@
 variables:
   # Container(OCI) images for various distros and architectures and compilers
 
-  AMD64_FEDORA_LATEST:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest"
-  AMD64_FEDORA_RAWHIDE:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:rawhide"
-  AMD64_OPENSUSE_TUMBLEWEED: "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed"
-  AMD64_DEBIAN_TESTING:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing"
-  AMD64_UBUNTU_BIONIC:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/ubuntu:18.04"
+  AMD64_FEDORA_LATEST:       "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/fedora:latest"
+  AMD64_FEDORA_RAWHIDE:      "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/fedora:rawhide"
+  AMD64_OPENSUSE_TUMBLEWEED: "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/opensuse:tumbleweed"
+  AMD64_DEBIAN_TESTING:      "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/debian:testing"
+  AMD64_UBUNTU_BIONIC:       "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/ubuntu:18.04"
 
-  I386_DEBIAN_TESTING:       "registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing"
-  I386_UBUNTU_BIONIC:        "registry.gitlab.com/alatiera/librsvg-oci-images/i386/ubuntu:18.04"
+  I386_DEBIAN_TESTING:       "registry.gitlab.gnome.org/gnome/librsvg-oci-images/i386/debian:testing"
+  I386_UBUNTU_BIONIC:        "registry.gitlab.gnome.org/gnome/librsvg-oci-images/i386/ubuntu:18.04"
 
-  RUSTC_1_21:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.21"
-  RUSTC_1_22:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.22"
-  RUSTC_1_23:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.23"
-  RUSTC_1_24:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.24"
-  RUSTC_1_25:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.25"
+  RUSTC_1_21:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.21"
+  RUSTC_1_22:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.22"
+  RUSTC_1_23:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.23"
+  RUSTC_1_24:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.24"
+  RUSTC_1_25:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.25"
 
   RUSTFMT_NIGHTLY:           "registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly"
-  CLIPPY_NIGHTLY:            "registry.gitlab.com/alatiera/librsvg-oci-images/clippy:nightly"
+  CLIPPY_NIGHTLY:            "registry.gitlab.gnome.org/gnome/librsvg-oci-images/clippy:nightly"
 
 stages:
   - test
@@ -144,8 +144,6 @@ tarball:
     LIBRSVG_DEBUG: "yes"
   script:
     - rustc --version && cargo --version
-    - dnf install -y openssl-devel libssh2-devel libgit2-devel cmake xz 
-    - cargo install cargo-vendor
     - ./autogen.sh --enable-gtk-doc --enable-vala
     - make distcheck DESTDIR=/tmp/distcheck
   <<: *stage_2
