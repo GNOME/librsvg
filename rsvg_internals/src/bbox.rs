@@ -8,8 +8,6 @@ use float_eq_cairo::ApproxEqCairo;
 
 use rect::RectangleExt;
 
-// Keep this in sync with ../../rsvg-private.h:RsvgBbox
-#[repr(C)]
 #[derive(Copy, Clone)]
 pub struct RsvgBbox {
     pub rect: cairo::Rectangle,
@@ -78,23 +76,39 @@ impl RsvgBbox {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_bbox_init(
-    raw_bbox: *mut RsvgBbox,
+pub extern "C" fn rsvg_bbox_new(
     raw_matrix: *const cairo::Matrix,
     raw_rect: *const cairo::Rectangle,
-) {
-    assert!(!raw_bbox.is_null());
+) -> *const RsvgBbox {
     assert!(!raw_matrix.is_null());
 
-    let bbox: &mut RsvgBbox = unsafe { &mut (*raw_bbox) };
     let matrix = unsafe { &*raw_matrix };
-
-    *bbox = RsvgBbox::new(matrix);
+    let mut bbox = RsvgBbox::new(matrix);
 
     if !raw_rect.is_null() {
         let rect = unsafe { &*raw_rect };
         bbox.set_rect(rect);
     }
+
+    Box::into_raw(Box::new(bbox))
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_bbox_free(bbox: *mut RsvgBbox) {
+    assert!(!bbox.is_null());
+
+    unsafe {
+        let bbox = &mut *(bbox as *mut RsvgBbox);
+        Box::from_raw(bbox);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_bbox_clone(bbox: *mut RsvgBbox) -> *const RsvgBbox {
+    assert!(!bbox.is_null());
+
+    let bbox = unsafe { &*bbox };
+    Box::into_raw(Box::new(bbox.clone()))
 }
 
 #[no_mangle]
