@@ -101,7 +101,7 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
     cairo_rectangle_t rect;
 
     cairo_matrix_init_identity (&affine);
-    box = rsvg_bbox_new (&affine, NULL);
+    box = rsvg_bbox_new (&affine, NULL, NULL);
 
     if (ctx->filter->filterunits == objectBoundingBox)
         rsvg_drawing_ctx_push_view_box (ctx->ctx, 1., 1.);
@@ -112,7 +112,7 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
     if (ctx->filter->filterunits == objectBoundingBox)
         rsvg_drawing_ctx_pop_view_box (ctx->ctx);
 
-    otherbox = rsvg_bbox_new (&ctx->affine, &rect);
+    otherbox = rsvg_bbox_new (&ctx->affine, &rect, NULL);
     rsvg_bbox_insert (box, otherbox);
     rsvg_bbox_free (otherbox);
 
@@ -143,7 +143,7 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 rsvg_drawing_ctx_pop_view_box (ctx->ctx);
 
-            otherbox = rsvg_bbox_new (&ctx->paffine, &rect);
+            otherbox = rsvg_bbox_new (&ctx->paffine, &rect, NULL);
             rsvg_bbox_clip (box, otherbox);
             rsvg_bbox_free (otherbox);
         }
@@ -154,14 +154,14 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
     rect.width = ctx->width;
     rect.height = ctx->height;
 
-    otherbox = rsvg_bbox_new (&affine, &rect);
+    otherbox = rsvg_bbox_new (&affine, &rect, NULL);
     rsvg_bbox_clip (box, otherbox);
     rsvg_bbox_free (otherbox);
 
     {
         cairo_rectangle_t box_rect;
 
-        rsvg_bbox_get_rect (box, &box_rect);
+        rsvg_bbox_get_rect (box, &box_rect, NULL);
         RsvgIRect output = {
             box_rect.x,
             box_rect.y,
@@ -244,7 +244,7 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, R
     cairo_rectangle_t rect;
     int x, y, width, height;
 
-    rsvg_bbox_get_rect (bbox, &rect);
+    rsvg_bbox_get_rect (bbox, &rect, NULL);
     x = rect.x;
     y = rect.y;
     width = rect.width;

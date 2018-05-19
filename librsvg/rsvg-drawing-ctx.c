@@ -117,7 +117,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
     if (mask_units == objectBoundingBox) {
         cairo_rectangle_t rect;
 
-        rsvg_bbox_get_rect (ctx->bbox, &rect);
+        rsvg_bbox_get_rect (ctx->bbox, &rect, NULL);
         rsvg_cairo_add_clipping_rect (ctx,
                                       &affine,
                                       sx * rect.width + rect.x,
@@ -134,7 +134,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
         cairo_matrix_t bbtransform;
         RsvgState *mask_state;
 
-        rsvg_bbox_get_rect (ctx->bbox, &rect);
+        rsvg_bbox_get_rect (ctx->bbox, &rect, NULL);
         cairo_matrix_init (&bbtransform,
                            rect.width,
                            0,
@@ -217,7 +217,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     GList *orig_cr_stack;
     GList *orig_surfaces_stack;
     RsvgBbox *orig_bbox;
-    RsvgBbox *orig_ink_bbox;
 
     g_assert (rsvg_node_get_type (node_clip_path) == RSVG_NODE_TYPE_CLIP_PATH);
     clip_units = rsvg_node_clip_path_get_units (node_clip_path);
@@ -229,7 +228,7 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
         cairo_rectangle_t rect;
         cairo_matrix_t bbtransform;
 
-        rsvg_bbox_get_rect (bbox, &rect);
+        rsvg_bbox_get_rect (bbox, &rect, NULL);
         cairo_matrix_init (&bbtransform,
                            rect.width,
                            0,
@@ -246,7 +245,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     orig_surfaces_stack = ctx->surfaces_stack;
 
     orig_bbox = rsvg_bbox_clone (ctx->bbox);
-    orig_ink_bbox = rsvg_bbox_clone (ctx->ink_bbox);
 
     rsvg_drawing_ctx_state_push (ctx);
     rsvg_node_draw_children (node_clip_path, ctx, 0, TRUE);
@@ -265,9 +263,7 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
      * general drawing loop.
      */
     rsvg_bbox_free (ctx->bbox);
-    rsvg_bbox_free (ctx->ink_bbox);
     ctx->bbox = orig_bbox;
-    ctx->ink_bbox = orig_ink_bbox;
 
     cairo_clip (ctx->cr);
 }
@@ -337,8 +333,7 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     state_affine.x0 -= draw->offset_x;
     state_affine.y0 -= draw->offset_y;
 
-    draw->bbox = rsvg_bbox_new (&state_affine, NULL);
-    draw->ink_bbox = rsvg_bbox_new (&state_affine, NULL);
+    draw->bbox = rsvg_bbox_new (&state_affine, NULL, NULL);
 
     rsvg_state_set_affine (state, state_affine);
 
@@ -366,10 +361,8 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx *ctx)
     g_slist_free (ctx->acquired_nodes);
 
     g_assert (ctx->bb_stack == NULL);
-    g_assert (ctx->ink_bb_stack == NULL);
 
     rsvg_bbox_free (ctx->bbox);
-    rsvg_bbox_free (ctx->ink_bbox);
 
 #ifdef HAVE_PANGOFT2
     if (ctx->font_config_for_testing) {
@@ -444,9 +437,7 @@ push_bounding_box (RsvgDrawingCtx *ctx)
     affine = rsvg_state_get_affine (state);
 
     ctx->bb_stack = g_list_prepend (ctx->bb_stack, ctx->bbox);
-    ctx->ink_bb_stack = g_list_prepend (ctx->ink_bb_stack, ctx->ink_bbox);
-    ctx->bbox = rsvg_bbox_new (&affine, NULL);
-    ctx->ink_bbox = rsvg_bbox_new (&affine, NULL);
+    ctx->bbox = rsvg_bbox_new (&affine, NULL, NULL);
 }
 
 void
@@ -535,13 +526,8 @@ static void
 pop_bounding_box (RsvgDrawingCtx *ctx)
 {
     rsvg_bbox_insert ((RsvgBbox *) ctx->bb_stack->data, ctx->bbox);
-    rsvg_bbox_insert ((RsvgBbox *) ctx->ink_bb_stack->data, ctx->ink_bbox);
-
     ctx->bbox = (RsvgBbox *) ctx->bb_stack->data;
-    ctx->ink_bbox = (RsvgBbox *) ctx->ink_bb_stack->data;
-
     ctx->bb_stack = g_list_delete_link (ctx->bb_stack, ctx->bb_stack);
-    ctx->ink_bb_stack = g_list_delete_link (ctx->ink_bb_stack, ctx->ink_bb_stack);
 }
 
 void
@@ -814,12 +800,6 @@ void
 rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
 {
     rsvg_bbox_insert (draw_ctx->bbox, bbox);
-}
-
-void
-rsvg_drawing_ctx_insert_ink_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *ink_bbox)
-{
-    rsvg_bbox_insert (draw_ctx->ink_bbox, ink_bbox);
 }
 
 void

@@ -9,7 +9,8 @@ pub enum RsvgBbox {}
 #[derive(Copy, Clone)]
 pub struct BoundingBox {
     pub affine: cairo::Matrix,
-    pub rect: Option<cairo::Rectangle>,
+    pub rect: Option<cairo::Rectangle>,     // without stroke
+    pub ink_rect: Option<cairo::Rectangle>, // with stroke
 }
 
 impl BoundingBox {
@@ -17,11 +18,12 @@ impl BoundingBox {
         BoundingBox {
             affine: *affine,
             rect: None,
+            ink_rect: None,
         }
     }
 
     fn combine(&mut self, src: &BoundingBox, clip: bool) {
-        if src.rect.is_none() {
+        if src.rect.is_none() && src.ink_rect.is_none() {
             return;
         }
 
@@ -31,13 +33,8 @@ impl BoundingBox {
         affine.invert();
         affine = cairo::Matrix::multiply(&src.affine, &affine);
 
-        let src_rect = src.rect.unwrap().transform(&affine);
-
-        self.rect = match (self.rect, clip) {
-            (None, _) => Some(src_rect),
-            (Some(r), true) => Some(r.intersect(&src_rect)),
-            (Some(r), false) => Some(r.union(&src_rect)),
-        };
+        self.rect = combine_rects(self.rect, src.rect, &affine, clip);
+        self.ink_rect = combine_rects(self.ink_rect, src.ink_rect, &affine, clip);
     }
 
     pub fn insert(&mut self, src: &BoundingBox) {
@@ -49,10 +46,25 @@ impl BoundingBox {
     }
 }
 
+fn combine_rects(
+    r1: Option<cairo::Rectangle>,
+    r2: Option<cairo::Rectangle>,
+    affine: &cairo::Matrix,
+    clip: bool,
+) -> Option<cairo::Rectangle> {
+    match (r1, r2, clip) {
+        (r1, None, _) => r1,
+        (None, Some(r2), _) => Some(r2.transform(&affine)),
+        (Some(r1), Some(r2), true) => Some(r2.transform(&affine).intersect(&r1)),
+        (Some(r1), Some(r2), false) => Some(r2.transform(&affine).union(&r1)),
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn rsvg_bbox_new(
     raw_matrix: *const cairo::Matrix,
     raw_rect: *const cairo::Rectangle,
+    raw_ink_rect: *const cairo::Rectangle,
 ) -> *const RsvgBbox {
     assert!(!raw_matrix.is_null());
 
@@ -62,6 +74,11 @@ pub extern "C" fn rsvg_bbox_new(
     if !raw_rect.is_null() {
         let rect = unsafe { &*raw_rect };
         bbox.rect = Some(*rect);
+    }
+
+    if !raw_ink_rect.is_null() {
+        let ink_rect = unsafe { &*raw_ink_rect };
+        bbox.ink_rect = Some(*ink_rect);
     }
 
     Box::into_raw(Box::new(bbox)) as *const RsvgBbox
@@ -108,7 +125,11 @@ pub extern "C" fn rsvg_bbox_clip(raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbo
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_bbox_get_rect(bbox: *const RsvgBbox, rect: *mut cairo::Rectangle) {
+pub extern "C" fn rsvg_bbox_get_rect(
+    bbox: *const RsvgBbox,
+    rect: *mut cairo::Rectangle,
+    ink_rect: *mut cairo::Rectangle,
+) {
     assert!(!bbox.is_null());
 
     let bbox: &BoundingBox = unsafe { &*(bbox as *const BoundingBox) };
@@ -116,6 +137,12 @@ pub extern "C" fn rsvg_bbox_get_rect(bbox: *const RsvgBbox, rect: *mut cairo::Re
     if !rect.is_null() {
         if let Some(r) = bbox.rect {
             unsafe { *rect = r };
+        }
+    }
+
+    if !ink_rect.is_null() {
+        if let Some(r) = bbox.ink_rect {
+            unsafe { *ink_rect = r };
         }
     }
 }

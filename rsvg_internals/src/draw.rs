@@ -84,13 +84,12 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: &S
 
     setup_cr_for_stroke(cr, draw_ctx, state);
 
-    let extents = compute_stroke_and_fill_extents(cr, state);
-
     // Update the bbox in the rendering context.  Below, we actually set the
     // fill/stroke patterns on the cairo_t.  That process requires the
     // rendering context to have an updated bbox; for example, for the
     // coordinate system in patterns.
-    extents.to_drawing_ctx(draw_ctx);
+    let bbox = compute_stroke_and_fill_box(cr, state);
+    drawing_ctx::insert_bbox(draw_ctx, &bbox);
 
     let current_color = state
         .color
@@ -107,7 +106,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: &S
             draw_ctx,
             fill,
             &fill_opacity,
-            &extents.bbox,
+            &bbox,
             &current_color,
         ),
 
@@ -115,7 +114,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: &S
             draw_ctx,
             &Fill::default().0,
             &fill_opacity,
-            &extents.bbox,
+            &bbox,
             &current_color,
         ),
     };
@@ -138,7 +137,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: &S
             draw_ctx,
             stroke,
             &stroke_opacity,
-            &extents.bbox,
+            &bbox,
             &current_color,
         ) {
             cr.stroke();
@@ -285,18 +284,6 @@ fn setup_cr_for_stroke(cr: &cairo::Context, draw_ctx: *const RsvgDrawingCtx, sta
     }
 }
 
-struct Extents {
-    bbox: BoundingBox,
-    ink_bbox: BoundingBox,
-}
-
-impl Extents {
-    fn to_drawing_ctx(&self, draw_ctx: *mut RsvgDrawingCtx) {
-        drawing_ctx::insert_bbox(draw_ctx, &self.bbox);
-        drawing_ctx::insert_ink_bbox(draw_ctx, &self.ink_bbox);
-    }
-}
-
 // remove this binding once cairo-rs has Context::path_extents()
 fn path_extents(cr: &cairo::Context) -> (f64, f64, f64, f64) {
     let mut x1: f64 = 0.0;
@@ -313,22 +300,27 @@ fn path_extents(cr: &cairo::Context) -> (f64, f64, f64, f64) {
 fn bbox_from_extents(
     affine: &cairo::Matrix,
     (x1, y1, x2, y2): (f64, f64, f64, f64),
+    ink: bool,
 ) -> BoundingBox {
     let mut bb = BoundingBox::new(affine);
-
-    bb.rect = Some(cairo::Rectangle {
+    let rect = cairo::Rectangle {
         x: x1,
         y: y1,
         width: x2 - x1,
         height: y2 - y1,
-    });
+    };
+
+    if ink {
+        bb.ink_rect = Some(rect);
+    } else {
+        bb.rect = Some(rect);
+    }
 
     bb
 }
 
-fn compute_stroke_and_fill_extents(cr: &cairo::Context, state: &State) -> Extents {
+fn compute_stroke_and_fill_box(cr: &cairo::Context, state: &State) -> BoundingBox {
     let mut bbox = BoundingBox::new(&state.affine);
-    let mut ink_bbox = BoundingBox::new(&state.affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
@@ -344,26 +336,26 @@ fn compute_stroke_and_fill_extents(cr: &cairo::Context, state: &State) -> Extent
     // paths for the icon's shape.  We need to be able to compute the bounding
     // rectangle's extents, even when it has no fill nor stroke.
 
-    let fb = bbox_from_extents(&state.affine, cr.fill_extents());
-    ink_bbox.insert(&fb);
+    let fb = bbox_from_extents(&state.affine, cr.fill_extents(), true);
+    bbox.insert(&fb);
 
     // Bounding box for stroke
 
     if state.stroke.is_some() {
-        let sb = bbox_from_extents(&state.affine, cr.stroke_extents());
-        ink_bbox.insert(&sb);
+        let sb = bbox_from_extents(&state.affine, cr.stroke_extents(), true);
+        bbox.insert(&sb);
     }
 
     // objectBoundingBox
 
-    let ob = bbox_from_extents(&state.affine, path_extents(cr));
+    let ob = bbox_from_extents(&state.affine, path_extents(cr), false);
     bbox.insert(&ob);
 
     // restore tolerance
 
     cr.set_tolerance(backup_tolerance);
 
-    Extents { bbox, ink_bbox }
+    bbox
 }
 
 pub fn draw_pango_layout(
@@ -466,9 +458,9 @@ pub fn draw_pango_layout(
         pangocairo::functions::layout_path(&cr, layout);
 
         if !clipping {
-            let ib = bbox_from_extents(&state.affine, cr.stroke_extents());
+            let ib = bbox_from_extents(&state.affine, cr.stroke_extents(), true);
             cr.stroke();
-            drawing_ctx::insert_ink_bbox(draw_ctx, &ib);
+            drawing_ctx::insert_bbox(draw_ctx, &ib);
         }
     }
 
