@@ -313,7 +313,7 @@ fn path_extents(cr: &cairo::Context) -> (f64, f64, f64, f64) {
 fn bbox_from_extents(affine: &cairo::Matrix, (x1, y1, x2, y2): (f64, f64, f64, f64)) -> RsvgBbox {
     let mut bb = RsvgBbox::new(affine);
 
-    bb.set_rect(&cairo::Rectangle {
+    bb.rect = Some(cairo::Rectangle {
         x: x1,
         y: y1,
         width: x2 - x1,
@@ -497,14 +497,14 @@ fn compute_text_bbox(
     let ink_height = f64::from(ink.height);
 
     if gravity_is_vertical(gravity) {
-        bbox.set_rect(&cairo::Rectangle {
+        bbox.rect = Some(cairo::Rectangle {
             x: x + (ink_x - ink_height) / pango_scale,
             y: y + ink_y / pango_scale,
             width: ink_height / pango_scale,
             height: ink_width / pango_scale,
         });
     } else {
-        bbox.set_rect(&cairo::Rectangle {
+        bbox.rect = Some(cairo::Rectangle {
             x: x + ink_x / pango_scale,
             y: y + ink_y / pango_scale,
             width: ink_width / pango_scale,
@@ -543,7 +543,7 @@ pub fn draw_surface(
     let height = f64::from(height);
 
     let mut bbox = RsvgBbox::new(&affine);
-    bbox.set_rect(&cairo::Rectangle {
+    bbox.rect = Some(cairo::Rectangle {
         x,
         y,
         width,

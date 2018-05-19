@@ -438,13 +438,14 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
     let units = gradient.common.units.unwrap();
 
     if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+        let bbox_rect = bbox.rect.unwrap();
         let bbox_matrix = cairo::Matrix::new(
-            bbox.rect.width,
+            bbox_rect.width,
             0.0,
             0.0,
-            bbox.rect.height,
-            bbox.rect.x,
-            bbox.rect.y,
+            bbox_rect.height,
+            bbox_rect.x,
+            bbox_rect.y,
         );
         affine = cairo::Matrix::multiply(&affine, &bbox_matrix);
     }
