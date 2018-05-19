@@ -98,36 +98,30 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
 {
     RsvgBbox box, otherbox;
     cairo_matrix_t affine;
+    cairo_rectangle_t rect;
 
     cairo_matrix_init_identity (&affine);
-    rsvg_bbox_init (&box, &affine);
-    rsvg_bbox_init (&otherbox, &ctx->affine);
-    otherbox.virgin = 0;
+    rsvg_bbox_init (&box, &affine, NULL);
+
     if (ctx->filter->filterunits == objectBoundingBox)
         rsvg_drawing_ctx_push_view_box (ctx->ctx, 1., 1.);
-    otherbox.rect.x = rsvg_length_normalize (&ctx->filter->x, ctx->ctx);
-    otherbox.rect.y = rsvg_length_normalize (&ctx->filter->y, ctx->ctx);
-    otherbox.rect.width = rsvg_length_normalize (&ctx->filter->width, ctx->ctx);
-    otherbox.rect.height = rsvg_length_normalize (&ctx->filter->height, ctx->ctx);
+    rect.x = rsvg_length_normalize (&ctx->filter->x, ctx->ctx);
+    rect.y = rsvg_length_normalize (&ctx->filter->y, ctx->ctx);
+    rect.width = rsvg_length_normalize (&ctx->filter->width, ctx->ctx);
+    rect.height = rsvg_length_normalize (&ctx->filter->height, ctx->ctx);
     if (ctx->filter->filterunits == objectBoundingBox)
         rsvg_drawing_ctx_pop_view_box (ctx->ctx);
 
+    rsvg_bbox_init (&otherbox, &ctx->affine, &rect);
     rsvg_bbox_insert (&box, &otherbox);
 
     if (self != NULL) {
         if (self->x_specified || self->y_specified || self->width_specified || self->height_specified) {
-            rsvg_bbox_init (&otherbox, &ctx->paffine);
-            otherbox.virgin = 0;
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 rsvg_drawing_ctx_push_view_box (ctx->ctx, 1., 1.);
-            if (self->x_specified)
-                otherbox.rect.x = rsvg_length_normalize (&self->x, ctx->ctx);
-            else
-                otherbox.rect.x = 0;
-            if (self->y_specified)
-                otherbox.rect.y = rsvg_length_normalize (&self->y, ctx->ctx);
-            else
-                otherbox.rect.y = 0;
+
+            rect.x = self->x_specified ? rsvg_length_normalize (&self->x, ctx->ctx) : 0;
+            rect.y = self->y_specified ? rsvg_length_normalize (&self->y, ctx->ctx) : 0;
 
             if (self->width_specified || self->height_specified) {
                 double curr_vbox_w, curr_vbox_h;
@@ -135,34 +129,43 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
                 rsvg_drawing_ctx_get_view_box_size (ctx->ctx, &curr_vbox_w, &curr_vbox_h);
 
                 if (self->width_specified)
-                    otherbox.rect.width = rsvg_length_normalize (&self->width, ctx->ctx);
+                    rect.width = rsvg_length_normalize (&self->width, ctx->ctx);
                 else
-                    otherbox.rect.width = curr_vbox_w;
+                    rect.width = curr_vbox_w;
 
                 if (self->height_specified)
-                    otherbox.rect.height = rsvg_length_normalize (&self->height, ctx->ctx);
+                    rect.height = rsvg_length_normalize (&self->height, ctx->ctx);
                 else
-                    otherbox.rect.height = curr_vbox_h;
+                    rect.height = curr_vbox_h;
             }
 
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 rsvg_drawing_ctx_pop_view_box (ctx->ctx);
+
+            rsvg_bbox_init (&otherbox, &ctx->paffine, &rect);
             rsvg_bbox_clip (&box, &otherbox);
         }
     }
 
-    rsvg_bbox_init (&otherbox, &affine);
-    otherbox.virgin = 0;
-    otherbox.rect.x = 0;
-    otherbox.rect.y = 0;
-    otherbox.rect.width = ctx->width;
-    otherbox.rect.height = ctx->height;
+    rect.x = 0;
+    rect.y = 0;
+    rect.width = ctx->width;
+    rect.height = ctx->height;
+
+    rsvg_bbox_init (&otherbox, &affine, &rect);
     rsvg_bbox_clip (&box, &otherbox);
+
     {
-        RsvgIRect output = { box.rect.x, box.rect.y,
-            box.rect.x + box.rect.width,
-            box.rect.y + box.rect.height
+        cairo_rectangle_t box_rect;
+
+        rsvg_bbox_get_rect (&box, &box_rect);
+        RsvgIRect output = {
+            box_rect.x,
+            box_rect.y,
+            box_rect.x + box_rect.width,
+            box_rect.y + box_rect.height
         };
+
         return output;
     }
 }
@@ -235,12 +238,14 @@ get_interp_pixel (guchar * src, gdouble ox, gdouble oy, guchar ch, RsvgIRect bou
 void
 rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, RsvgBbox *bbox)
 {
-    int x, y, height, width;
+    cairo_rectangle_t rect;
+    int x, y, width, height;
 
-    x = bbox->rect.x;
-    y = bbox->rect.y;
-    width = bbox->rect.width;
-    height = bbox->rect.height;
+    rsvg_bbox_get_rect (bbox, &rect);
+    x = rect.x;
+    y = rect.y;
+    width = rect.width;
+    height = rect.height;
 
     ctx->width = cairo_image_surface_get_width (ctx->source_surface);
     ctx->height = cairo_image_surface_get_height (ctx->source_surface);
