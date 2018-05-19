@@ -1,6 +1,6 @@
 use cssparser;
 
-use bbox::RsvgBbox;
+use bbox::BoundingBox;
 use drawing_ctx;
 use error::*;
 use gradient;
@@ -76,7 +76,7 @@ pub fn set_source_paint_server(
     c_ctx: *mut drawing_ctx::RsvgDrawingCtx,
     ps: &PaintServer,
     opacity: &UnitInterval,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
     current_color: &cssparser::RGBA,
 ) -> bool {
     let mut had_paint_server;
