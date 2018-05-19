@@ -14,17 +14,9 @@ use bbox::RsvgBbox;
 use drawing_ctx::RsvgDrawingCtx;
 use filter_context::{FilterContext, RsvgFilter, RsvgFilterContext};
 use length::RsvgLength;
-use node::{NodeType, RsvgNode};
+use node::{NodeType, RsvgCNodeImpl, RsvgNode};
 
 use super::Filter;
-
-/// Contains a pointer to the `Filter` trait object. Pointer to this struct is passed back to C
-/// code in place of `RsvgFilterPrimitive` for Rust filters. The pointer straight to the trait
-/// object cannot be passed as it is a fat pointer.
-#[derive(Debug, Clone, Copy)]
-pub(super) struct FilterTraitObjectContainer {
-    filter: *const Filter,
-}
 
 // Required by the C code until all filters are ported to Rust.
 // Keep this in sync with
@@ -45,22 +37,6 @@ pub struct RsvgFilterPrimitive {
     render: Option<
         unsafe extern "C" fn(*mut RsvgNode, *mut RsvgFilterPrimitive, *mut RsvgFilterContext),
     >,
-}
-
-impl FilterTraitObjectContainer {
-    /// Returns the struct with the given pointer.
-    #[inline]
-    pub(super) fn new(filter: &Filter) -> Self {
-        Self { filter }
-    }
-
-    /// Returns the struct with an uninitialized pointer.
-    #[inline]
-    pub(super) fn uninitialized() -> Self {
-        Self {
-            filter: unsafe { mem::uninitialized() },
-        }
-    }
 }
 
 impl RsvgFilterPrimitive {
@@ -87,6 +63,14 @@ impl RsvgFilterPrimitive {
             render: None,
         }
     }
+}
+
+/// The type of the render function below.
+pub(super) type RenderFunctionType = fn(&RsvgNode, &mut FilterContext);
+
+/// Downcasts the given `node` to the type `T` and calls `Filter::render()` on it.
+pub(super) fn render<T: Filter>(node: &RsvgNode, ctx: &mut FilterContext) {
+    node.with_impl(|filter: &T| filter.render(ctx));
 }
 
 /// Creates a new surface applied the filter. This function will create a context for itself, set up
@@ -131,16 +115,13 @@ pub unsafe extern "C" fn rsvg_filter_render(
         .filter(|c| !c.is_in_error())
         .for_each(|mut c| match c.get_type() {
             NodeType::FilterPrimitiveOffset => {
-                let filter = &*(&*(c.get_c_impl() as *const FilterTraitObjectContainer)).filter;
-                filter.render(&mut filter_ctx);
+                let render =
+                    *(&c.get_c_impl() as *const *const RsvgCNodeImpl as *const RenderFunctionType);
+                render(&c, &mut filter_ctx);
             }
             _ => {
                 let filter = &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive);
-                (filter.render.unwrap())(
-                    &mut c,
-                    filter,
-                    &mut filter_ctx,
-                );
+                (filter.render.unwrap())(&mut c, filter, &mut filter_ctx);
             }
         });
 

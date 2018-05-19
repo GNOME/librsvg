@@ -7,12 +7,12 @@ use cairo::{self, MatrixTrait};
 use cairo_sys::cairo_surface_t;
 use glib::translate::{from_glib_none, ToGlibPtr};
 use glib_sys::*;
-use libc::c_char;
+use libc::{c_char, c_void};
 
 use bbox::RsvgBbox;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
-use filters::{IRect, RsvgFilterPrimitive};
+use filters::IRect;
 use length::RsvgLength;
 use state::RsvgState;
 use util::utf8_cstr;
@@ -127,13 +127,13 @@ impl FilterContext {
             bounds: {
                 extern "C" {
                     fn rsvg_filter_primitive_get_bounds(
-                        primitive: *mut RsvgFilterPrimitive,
+                        primitive: *mut c_void,
                         ctx: *const RsvgFilterContext,
                     ) -> IRect;
                 }
 
                 unsafe { rsvg_filter_primitive_get_bounds(ptr::null_mut(), &rv) }
-            }
+            },
         };
 
         rv.last_result = Some(last_result);
@@ -279,7 +279,7 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
             bounds: {
                 extern "C" {
                     fn rsvg_filter_primitive_get_bounds(
-                        primitive: *mut RsvgFilterPrimitive,
+                        primitive: *mut c_void,
                         ctx: *const RsvgFilterContext,
                     ) -> IRect;
                 }

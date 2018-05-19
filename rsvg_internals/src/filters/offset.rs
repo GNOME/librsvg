@@ -25,16 +25,11 @@ impl Offset {
     /// Constructs a new `Offset` with empty properties.
     #[inline]
     fn new() -> Offset {
-        let rv = Offset {
-            base: PrimitiveWithInput::new(),
+        Offset {
+            base: PrimitiveWithInput::new::<Self>(),
             dx: Cell::new(RsvgLength::parse("0", LengthDir::Horizontal).unwrap()),
             dy: Cell::new(RsvgLength::parse("0", LengthDir::Vertical).unwrap()),
-        };
-
-        // TODO: I really don't like how this currently works.
-        rv.base.set_filter(&rv);
-
-        rv
+        }
     }
 }
 
