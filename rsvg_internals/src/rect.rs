@@ -1,102 +1,111 @@
 use cairo;
 use cairo::MatrixTrait;
 
-#[allow(dead_code)]
-pub fn is_empty(r: &cairo::Rectangle) -> bool {
-    r.width == 0.0 || r.height == 0.0
+pub trait RectangleExt {
+    fn is_empty(&self) -> bool;
+    fn intersect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
+    fn union(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
+    fn transform(&self, affine: &cairo::Matrix) -> cairo::Rectangle;
+    fn outer(&self) -> cairo::Rectangle;
 }
 
-pub fn intersect(r1: &cairo::Rectangle, r2: &cairo::Rectangle) -> cairo::Rectangle {
-    let (x1, y1, x2, y2) = (
-        r1.x.max(r2.x),
-        r1.y.max(r2.y),
-        (r1.x + r1.width).min(r2.x + r2.width),
-        (r1.y + r1.height).min(r2.y + r2.height),
-    );
+impl RectangleExt for cairo::Rectangle {
+    fn is_empty(&self) -> bool {
+        self.width == 0.0 || self.height == 0.0
+    }
 
-    if x2 > x1 && y2 > y1 {
+    fn intersect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
+        let (x1, y1, x2, y2) = (
+            self.x.max(rect.x),
+            self.y.max(rect.y),
+            (self.x + self.width).min(rect.x + rect.width),
+            (self.y + self.height).min(rect.y + rect.height),
+        );
+
+        if x2 > x1 && y2 > y1 {
+            cairo::Rectangle {
+                x: x1,
+                y: y1,
+                width: x2 - x1,
+                height: y2 - y1,
+            }
+        } else {
+            cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+            }
+        }
+    }
+
+    fn union(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
+        let (x1, y1, x2, y2) = (
+            self.x.min(rect.x),
+            self.y.min(rect.y),
+            (self.x + self.width).max(rect.x + rect.width),
+            (self.y + self.height).max(rect.y + rect.height),
+        );
+
         cairo::Rectangle {
             x: x1,
             y: y1,
             width: x2 - x1,
             height: y2 - y1,
         }
-    } else {
+    }
+
+    fn transform(&self, affine: &cairo::Matrix) -> cairo::Rectangle {
+        let points = vec![
+            affine.transform_point(self.x, self.y),
+            affine.transform_point(self.x + self.width, self.y),
+            affine.transform_point(self.x, self.y + self.height),
+            affine.transform_point(self.x + self.width, self.y + self.height),
+        ];
+
+        let (mut xmin, mut ymin, mut xmax, mut ymax) = {
+            let (x, y) = points[0];
+
+            (x, y, x, y)
+        };
+
+        for i in 1..4 {
+            let (x, y) = points[i];
+
+            if x < xmin {
+                xmin = x;
+            }
+
+            if x > xmax {
+                xmax = x;
+            }
+
+            if y < ymin {
+                ymin = y;
+            }
+
+            if y > ymax {
+                ymax = y;
+            }
+        }
+
         cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 0.0,
-            height: 0.0,
-        }
-    }
-}
-
-pub fn union(r1: &cairo::Rectangle, r2: &cairo::Rectangle) -> cairo::Rectangle {
-    let (x1, y1, x2, y2) = (
-        r1.x.min(r2.x),
-        r1.y.min(r2.y),
-        (r1.x + r1.width).max(r2.x + r2.width),
-        (r1.y + r1.height).max(r2.y + r2.height),
-    );
-
-    cairo::Rectangle {
-        x: x1,
-        y: y1,
-        width: x2 - x1,
-        height: y2 - y1,
-    }
-}
-
-pub fn transform(affine: &cairo::Matrix, rect: &cairo::Rectangle) -> cairo::Rectangle {
-    let points = vec![
-        affine.transform_point(rect.x, rect.y),
-        affine.transform_point(rect.x + rect.width, rect.y),
-        affine.transform_point(rect.x, rect.y + rect.height),
-        affine.transform_point(rect.x + rect.width, rect.y + rect.height),
-    ];
-
-    let (mut xmin, mut ymin, mut xmax, mut ymax) = {
-        let (x, y) = points[0];
-
-        (x, y, x, y)
-    };
-
-    for i in 1..4 {
-        let (x, y) = points[i];
-
-        if x < xmin {
-            xmin = x;
-        }
-
-        if x > xmax {
-            xmax = x;
-        }
-
-        if y < ymin {
-            ymin = y;
-        }
-
-        if y > ymax {
-            ymax = y;
+            x: xmin,
+            y: ymin,
+            width: xmax - xmin,
+            height: ymax - ymin,
         }
     }
 
-    cairo::Rectangle {
-        x: xmin,
-        y: ymin,
-        width: xmax - xmin,
-        height: ymax - ymin,
-    }
-}
+    fn outer(&self) -> cairo::Rectangle {
+        let (x, y) = (self.x.floor(), self.y.floor());
 
-pub fn outer(r: &cairo::Rectangle) -> cairo::Rectangle {
-    let (x, y) = (r.x.floor(), r.y.floor());
-
-    cairo::Rectangle {
-        x,
-        y,
-        width: (r.x + r.width).ceil() - x,
-        height: (r.y + r.height).ceil() - y,
+        cairo::Rectangle {
+            x,
+            y,
+            width: (self.x + self.width).ceil() - x,
+            height: (self.y + self.height).ceil() - y,
+        }
     }
 }
 
@@ -120,8 +129,8 @@ mod tests {
             height: 3.14,
         };
 
-        assert!(is_empty(&empty));
-        assert!(!is_empty(&not_empty));
+        assert!(empty.is_empty());
+        assert!(!not_empty.is_empty());
     }
 
     #[test]
@@ -145,14 +154,14 @@ mod tests {
             height: 3.14,
         };
 
-        let r = intersect(&r1, &r2);
+        let r = r1.intersect(&r2);
         assert_approx_eq_cairo!(0.42_f64, r.x);
         assert_approx_eq_cairo!(0.42_f64, r.y);
         assert_approx_eq_cairo!(2.94_f64, r.width);
         assert_approx_eq_cairo!(2.94_f64, r.height);
 
-        let r = intersect(&r1, &r3);
-        assert!(is_empty(&r));
+        let r = r1.intersect(&r3);
+        assert!(r.is_empty());
     }
 
     #[test]
@@ -170,7 +179,7 @@ mod tests {
             height: 3.14,
         };
 
-        let r = union(&r1, &r2);
+        let r = r1.union(&r2);
         assert_approx_eq_cairo!(0.22_f64, r.x);
         assert_approx_eq_cairo!(0.22_f64, r.y);
         assert_approx_eq_cairo!(4.34_f64, r.width);
@@ -187,11 +196,11 @@ mod tests {
         };
 
         let m = cairo::Matrix::identity();
-        let tr = transform(&m, &r);
+        let tr = r.transform(&m);
         assert_eq!(tr, r);
 
         let m = cairo::Matrix::new(2.0, 0.0, 0.0, 2.0, 1.5, 1.5);
-        let tr = transform(&m, &r);
+        let tr = r.transform(&m);
         assert_approx_eq_cairo!(2.34_f64, tr.x);
         assert_approx_eq_cairo!(2.34_f64, tr.y);
         assert_approx_eq_cairo!(6.28_f64, tr.width);
@@ -207,7 +216,7 @@ mod tests {
             height: 3.14,
         };
 
-        let or = outer(&r);
+        let or = r.outer();
         assert_eq!(1.0, or.x);
         assert_eq!(1.0, or.y);
         assert_eq!(4.0, or.width);
