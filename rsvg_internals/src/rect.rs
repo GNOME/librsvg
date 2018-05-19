@@ -1,6 +1,8 @@
 use cairo;
 use cairo::MatrixTrait;
 
+use float_eq_cairo::ApproxEqCairo;
+
 pub trait RectangleExt {
     fn is_empty(&self) -> bool;
     fn intersect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
@@ -11,7 +13,7 @@ pub trait RectangleExt {
 
 impl RectangleExt for cairo::Rectangle {
     fn is_empty(&self) -> bool {
-        self.width == 0.0 || self.height == 0.0
+        self.width.approx_eq_cairo(&0.0) || self.height.approx_eq_cairo(&0.0)
     }
 
     fn intersect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
@@ -112,7 +114,6 @@ impl RectangleExt for cairo::Rectangle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use float_eq_cairo::ApproxEqCairo;
 
     #[test]
     fn empty_rect() {
