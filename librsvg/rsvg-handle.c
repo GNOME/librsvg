@@ -893,6 +893,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     }
 
     if (handle_subelement == TRUE) {
+        RsvgBbox *bbox;
         cairo_rectangle_t ink_rect;
 
         target = cairo_image_surface_create (CAIRO_FORMAT_RGB24,
@@ -913,7 +914,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
         rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
 
-        rsvg_bbox_get_rect (draw->ink_bbox, &ink_rect);
+        bbox = rsvg_drawing_ctx_get_bbox (draw);
+        rsvg_bbox_get_rect (bbox, NULL, &ink_rect);
         dimension_data->width = ink_rect.width;
         dimension_data->height = ink_rect.height;
 
@@ -955,6 +957,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     RsvgDrawingCtx		*draw;
     RsvgNode			*node;
     RsvgDimensionData    dimension_data;
+    RsvgBbox            *bbox;
     cairo_rectangle_t    ink_rect;
     cairo_surface_t		*target = NULL;
     cairo_t				*cr = NULL;
@@ -996,7 +999,8 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
     rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
-    rsvg_bbox_get_rect (draw->ink_bbox, &ink_rect);
+    bbox = rsvg_drawing_ctx_get_bbox (draw);
+    rsvg_bbox_get_rect (bbox, NULL, &ink_rect);
     rsvg_drawing_ctx_free (draw);
 
     position_data->x = ink_rect.x;
