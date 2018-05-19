@@ -1,8 +1,5 @@
 use cairo;
-use glib_sys;
-
 use cairo::MatrixTrait;
-use glib::translate::*;
 
 use float_eq_cairo::ApproxEqCairo;
 
@@ -10,42 +7,26 @@ use rect::RectangleExt;
 
 #[derive(Copy, Clone)]
 pub struct RsvgBbox {
-    pub rect: cairo::Rectangle,
     pub affine: cairo::Matrix,
-    virgin: glib_sys::gboolean,
+    pub rect: Option<cairo::Rectangle>,
 }
 
 impl RsvgBbox {
     pub fn new(affine: &cairo::Matrix) -> RsvgBbox {
         RsvgBbox {
-            rect: cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 0.0,
-                height: 0.0,
-            },
-
             affine: *affine,
-            virgin: true.to_glib(),
+            rect: None,
         }
     }
 
-    pub fn is_virgin(&self) -> bool {
-        from_glib(self.virgin)
-    }
-
     pub fn is_empty(&self) -> bool {
-        from_glib(self.virgin) || self.rect.width.approx_eq_cairo(&0.0)
-            || self.rect.height.approx_eq_cairo(&0.0)
-    }
-
-    pub fn set_rect(&mut self, r: &cairo::Rectangle) {
-        self.rect = *r;
-        self.virgin = false.to_glib();
+        self.rect.map_or(true, |r| {
+            r.width.approx_eq_cairo(&0.0) || r.height.approx_eq_cairo(&0.0)
+        })
     }
 
     fn combine(&mut self, src: &RsvgBbox, clip: bool) {
-        if src.is_virgin() {
+        if src.rect.is_none() {
             return;
         }
 
@@ -55,15 +36,13 @@ impl RsvgBbox {
         affine.invert();
         affine = cairo::Matrix::multiply(&src.affine, &affine);
 
-        let rect = src.rect.transform(&affine);
+        let src_rect = src.rect.unwrap().transform(&affine);
 
-        if self.is_virgin() {
-            self.set_rect(&rect);
-        } else if clip {
-            self.rect = self.rect.intersect(&rect);
-        } else {
-            self.rect = self.rect.union(&rect);
-        }
+        self.rect = match (self.rect, clip) {
+            (None, _) => Some(src_rect),
+            (Some(r), true) => Some(r.intersect(&src_rect)),
+            (Some(r), false) => Some(r.union(&src_rect)),
+        };
     }
 
     pub fn insert(&mut self, src: &RsvgBbox) {
@@ -87,7 +66,7 @@ pub extern "C" fn rsvg_bbox_new(
 
     if !raw_rect.is_null() {
         let rect = unsafe { &*raw_rect };
-        bbox.set_rect(rect);
+        bbox.rect = Some(*rect);
     }
 
     Box::into_raw(Box::new(bbox))
@@ -139,7 +118,9 @@ pub extern "C" fn rsvg_bbox_get_rect(bbox: *const RsvgBbox, rect: *mut cairo::Re
 
     let bbox: &RsvgBbox = unsafe { &*bbox };
 
-    if !rect.is_null() && !bbox.is_virgin() {
-        unsafe { *rect = bbox.rect };
+    if !rect.is_null() {
+        if let Some(r) = bbox.rect {
+            unsafe { *rect = r };
+        }
     }
 }

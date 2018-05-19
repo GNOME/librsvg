@@ -293,8 +293,9 @@ fn set_pattern_on_draw_context(
 
     match units {
         PatternUnits(CoordUnits::ObjectBoundingBox) => {
-            bbwscale = bbox.rect.width;
-            bbhscale = bbox.rect.height;
+            let bbrect = bbox.rect.unwrap();
+            bbwscale = bbrect.width;
+            bbhscale = bbrect.height;
         }
 
         PatternUnits(CoordUnits::UserSpaceOnUse) => {
@@ -328,9 +329,10 @@ fn set_pattern_on_draw_context(
     // Create the pattern coordinate system
     match units {
         PatternUnits(CoordUnits::ObjectBoundingBox) => {
+            let bbrect = bbox.rect.unwrap();
             affine.translate(
-                bbox.rect.x + pattern_x * bbox.rect.width,
-                bbox.rect.y + pattern_y * bbox.rect.height,
+                bbrect.x + pattern_x * bbrect.width,
+                bbrect.y + pattern_y * bbrect.height,
             );
         }
 
@@ -367,9 +369,10 @@ fn set_pattern_on_draw_context(
         pushed_view_box = true;
     } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
         // If coords are in terms of the bounding box, use them
+        let bbrect = bbox.rect.unwrap();
 
         caffine = cairo::Matrix::identity();
-        caffine.scale(bbox.rect.width, bbox.rect.height);
+        caffine.scale(bbrect.width, bbrect.height);
 
         drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
         pushed_view_box = true;
