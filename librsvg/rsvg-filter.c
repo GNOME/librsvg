@@ -70,7 +70,7 @@ rsvg_filter_render (RsvgNode *filter_node,
     ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
     ctx->ctx = context;
 
-    rsvg_filter_fix_coordinate_system (ctx, rsvg_drawing_ctx_get_current_state (context), &context->bbox);
+    rsvg_filter_fix_coordinate_system (ctx, rsvg_drawing_ctx_get_current_state (context), context->bbox);
 
     ctx->lastresult.surface = cairo_surface_reference (source);
     ctx->lastresult.bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);
