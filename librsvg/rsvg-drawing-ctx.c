@@ -114,28 +114,34 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
     state = rsvg_drawing_ctx_get_current_state (ctx);
     affine = rsvg_state_get_affine (state);
 
-    if (mask_units == objectBoundingBox)
+    if (mask_units == objectBoundingBox) {
+        cairo_rectangle_t rect;
+
+        rsvg_bbox_get_rect (&ctx->bbox, &rect);
         rsvg_cairo_add_clipping_rect (ctx,
                                       &affine,
-                                      sx * ctx->bbox.rect.width + ctx->bbox.rect.x,
-                                      sy * ctx->bbox.rect.height + ctx->bbox.rect.y,
-                                      sw * ctx->bbox.rect.width,
-                                      sh * ctx->bbox.rect.height);
-    else
+                                      sx * rect.width + rect.x,
+                                      sy * rect.height + rect.y,
+                                      sw * rect.width,
+                                      sh * rect.height);
+    } else {
         rsvg_cairo_add_clipping_rect (ctx, &affine, sx, sy, sw, sh);
+    }
 
     /* Horribly dirty hack to have the bbox premultiplied to everything */
     if (content_units == objectBoundingBox) {
+        cairo_rectangle_t rect;
         cairo_matrix_t bbtransform;
         RsvgState *mask_state;
 
+        rsvg_bbox_get_rect (&ctx->bbox, &rect);
         cairo_matrix_init (&bbtransform,
-                           ctx->bbox.rect.width,
+                           rect.width,
                            0,
                            0,
-                           ctx->bbox.rect.height,
-                           ctx->bbox.rect.x,
-                           ctx->bbox.rect.y);
+                           rect.height,
+                           rect.x,
+                           rect.y);
 
         mask_state = rsvg_node_get_state (mask);
 
@@ -220,14 +226,17 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
 
     /* Horribly dirty hack to have the bbox premultiplied to everything */
     if (clip_units == objectBoundingBox) {
+        cairo_rectangle_t rect;
         cairo_matrix_t bbtransform;
+
+        rsvg_bbox_get_rect (bbox, &rect);
         cairo_matrix_init (&bbtransform,
-                           bbox->rect.width,
+                           rect.width,
                            0,
                            0,
-                           bbox->rect.height,
-                           bbox->rect.x,
-                           bbox->rect.y);
+                           rect.height,
+                           rect.x,
+                           rect.y);
         affinesave = rsvg_state_get_affine (clip_path_state);
         cairo_matrix_multiply (&bbtransform, &bbtransform, &affinesave);
         rsvg_state_set_affine (clip_path_state, bbtransform);
@@ -326,8 +335,8 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     state_affine.x0 -= draw->offset_x;
     state_affine.y0 -= draw->offset_y;
 
-    rsvg_bbox_init (&draw->bbox, &state_affine);
-    rsvg_bbox_init (&draw->ink_bbox, &state_affine);
+    rsvg_bbox_init (&draw->bbox, &state_affine, NULL);
+    rsvg_bbox_init (&draw->ink_bbox, &state_affine, NULL);
 
     rsvg_state_set_affine (state, state_affine);
 
@@ -438,8 +447,8 @@ push_bounding_box (RsvgDrawingCtx *ctx)
     ctx->ink_bb_stack = g_list_prepend (ctx->ink_bb_stack, ink_bbox);
 
     affine = rsvg_state_get_affine (state);
-    rsvg_bbox_init (&ctx->bbox, &affine);
-    rsvg_bbox_init (&ctx->ink_bbox, &affine);
+    rsvg_bbox_init (&ctx->bbox, &affine, NULL);
+    rsvg_bbox_init (&ctx->ink_bbox, &affine, NULL);
 }
 
 void
