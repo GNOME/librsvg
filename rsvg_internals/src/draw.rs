@@ -310,6 +310,19 @@ fn path_extents(cr: &cairo::Context) -> (f64, f64, f64, f64) {
     (x1, y1, x2, y2)
 }
 
+fn bbox_from_extents(affine: &cairo::Matrix, (x1, y1, x2, y2): (f64, f64, f64, f64)) -> RsvgBbox {
+    let mut bb = RsvgBbox::new(affine);
+
+    bb.set_rect(&cairo::Rectangle {
+        x: x1,
+        y: y1,
+        width: x2 - x1,
+        height: y2 - y1,
+    });
+
+    bb
+}
+
 fn compute_stroke_and_fill_extents(cr: &cairo::Context, state: &State) -> Extents {
     let mut bbox = RsvgBbox::new(&state.affine);
     let mut ink_bbox = RsvgBbox::new(&state.affine);
@@ -328,51 +341,19 @@ fn compute_stroke_and_fill_extents(cr: &cairo::Context, state: &State) -> Extent
     // paths for the icon's shape.  We need to be able to compute the bounding
     // rectangle's extents, even when it has no fill nor stroke.
 
-    {
-        let mut fb = RsvgBbox::new(&state.affine);
-
-        let (x, y, w, h) = cr.fill_extents();
-
-        fb.set_rect(&cairo::Rectangle {
-            x,
-            y,
-            width: w - x,
-            height: h - y,
-        });
-
-        ink_bbox.insert(&fb);
-    }
+    let fb = bbox_from_extents(&state.affine, cr.fill_extents());
+    ink_bbox.insert(&fb);
 
     // Bounding box for stroke
 
     if state.stroke.is_some() {
-        let mut sb = RsvgBbox::new(&state.affine);
-
-        let (x, y, w, h) = cr.stroke_extents();
-
-        sb.set_rect(&cairo::Rectangle {
-            x,
-            y,
-            width: w - x,
-            height: h - y,
-        });
-
+        let sb = bbox_from_extents(&state.affine, cr.stroke_extents());
         ink_bbox.insert(&sb);
     }
 
     // objectBoundingBox
 
-    let mut ob = RsvgBbox::new(&state.affine);
-
-    let (x, y, w, h) = path_extents(cr);
-
-    ob.set_rect(&cairo::Rectangle {
-        x,
-        y,
-        width: w - x,
-        height: h - y,
-    });
-
+    let ob = bbox_from_extents(&state.affine, path_extents(cr));
     bbox.insert(&ob);
 
     // restore tolerance
@@ -482,20 +463,9 @@ pub fn draw_pango_layout(
         pangocairo::functions::layout_path(&cr, layout);
 
         if !clipping {
-            let mut ink_bbox = RsvgBbox::new(&state.affine);
-
-            let (x, y, w, h) = cr.stroke_extents();
-
-            ink_bbox.set_rect(&cairo::Rectangle {
-                x,
-                y,
-                width: w - x,
-                height: h - y,
-            });
-
+            let ib = bbox_from_extents(&state.affine, cr.stroke_extents());
             cr.stroke();
-
-            drawing_ctx::insert_ink_bbox(draw_ctx, &ink_bbox);
+            drawing_ctx::insert_ink_bbox(draw_ctx, &ib);
         }
     }
 
