@@ -49,10 +49,8 @@ struct RsvgDrawingCtx {
     gboolean is_testing;
     double offset_x, offset_y;
     double width, height;
-    RsvgBbox *bbox;     /* Bounding box for path extents, without stroke width */
-    RsvgBbox *ink_bbox; /* Bounding box for ink rectangle, with everything */
+    RsvgBbox *bbox;
     GList *bb_stack;
-    GList *ink_bb_stack;
 
 #ifdef HAVE_PANGOFT2
     FcConfig *font_config_for_testing;
@@ -105,9 +103,6 @@ void rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_insert_ink_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *ink_bbox);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h);

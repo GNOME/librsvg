@@ -71,7 +71,6 @@ extern "C" {
     );
 
     fn rsvg_drawing_ctx_insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: *const RsvgBbox);
-    fn rsvg_drawing_ctx_insert_ink_bbox(draw_ctx: *const RsvgDrawingCtx, ink_bbox: *const RsvgBbox);
 
     fn rsvg_drawing_ctx_draw_node_from_stack(
         draw_ctx: *const RsvgDrawingCtx,
@@ -292,15 +291,6 @@ pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
 pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &BoundingBox) {
     unsafe {
         rsvg_drawing_ctx_insert_bbox(draw_ctx, bbox as *const BoundingBox as *const RsvgBbox);
-    }
-}
-
-pub fn insert_ink_bbox(draw_ctx: *const RsvgDrawingCtx, ink_bbox: &BoundingBox) {
-    unsafe {
-        rsvg_drawing_ctx_insert_ink_bbox(
-            draw_ctx,
-            ink_bbox as *const BoundingBox as *const RsvgBbox,
-        );
     }
 }
 
