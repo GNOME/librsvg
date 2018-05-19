@@ -1,8 +1,6 @@
 use cairo;
 use cairo::MatrixTrait;
 
-use float_eq_cairo::ApproxEqCairo;
-
 use rect::RectangleExt;
 
 #[derive(Copy, Clone)]
@@ -17,12 +15,6 @@ impl RsvgBbox {
             affine: *affine,
             rect: None,
         }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.rect.map_or(true, |r| {
-            r.width.approx_eq_cairo(&0.0) || r.height.approx_eq_cairo(&0.0)
-        })
     }
 
     fn combine(&mut self, src: &RsvgBbox, clip: bool) {

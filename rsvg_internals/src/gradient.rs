@@ -15,6 +15,7 @@ use length::*;
 use node::*;
 use parsers::{parse, Parse, ParseError};
 use property_bag::PropertyBag;
+use rect::RectangleExt;
 use state::State;
 use stop::*;
 use unitinterval::UnitInterval;
@@ -727,13 +728,14 @@ fn resolve_fallbacks_and_set_pattern(
     opacity: &UnitInterval,
     bbox: &RsvgBbox,
 ) -> bool {
-    if bbox.is_empty() {
-        return true;
+    match bbox.rect {
+        Some(r) if !r.is_empty() => {
+            let resolved = resolve_gradient(gradient, draw_ctx);
+            set_pattern_on_draw_context(&resolved, draw_ctx, opacity, bbox)
+        }
+
+        _ => true
     }
-
-    let resolved = resolve_gradient(gradient, draw_ctx);
-
-    set_pattern_on_draw_context(&resolved, draw_ctx, opacity, bbox)
 }
 
 pub fn gradient_resolve_fallbacks_and_set_pattern(
