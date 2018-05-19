@@ -45,10 +45,10 @@ pub struct RsvgFilterPrimitiveOutput {
 #[derive(Debug, Clone)]
 pub struct FilterResult {
     /// The surface after the filter primitive was applied.
-    surface: cairo::ImageSurface,
+    pub surface: cairo::ImageSurface,
 
     /// The filter primitive subregion.
-    bounds: IRect,
+    pub bounds: IRect,
 }
 
 /// The filter rendering context.
@@ -174,12 +174,25 @@ impl FilterContext {
     }
 
     /// Stores a filter primitive result into the context.
-    pub fn store_result(&mut self, name: String, result: FilterResult) {
-        if !name.is_empty() {
+    #[inline]
+    pub fn store_result(&mut self, name: Option<String>, result: FilterResult) {
+        if let Some(name) = name {
             self.previous_results.insert(name, result.clone());
         }
 
         self.last_result = Some(result);
+    }
+
+    /// Returns the drawing context for this filter context.
+    #[inline]
+    pub fn drawing_context(&self) -> *const RsvgDrawingCtx {
+        self.drawing_ctx
+    }
+
+    /// Returns the paffine matrix.
+    #[inline]
+    pub fn paffine(&self) -> cairo::Matrix {
+        self.paffine
     }
 }
 
@@ -336,5 +349,5 @@ pub unsafe extern "C" fn rsvg_filter_store_output(
         bounds: result.bounds,
     };
 
-    (*ctx).store_result(name, result);
+    (*ctx).store_result(Some(name), result);
 }

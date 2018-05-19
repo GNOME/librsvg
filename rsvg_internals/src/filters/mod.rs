@@ -38,7 +38,7 @@ struct Primitive {
     y: Cell<Option<RsvgLength>>,
     width: Cell<Option<RsvgLength>>,
     height: Cell<Option<RsvgLength>>,
-    result: Cell<Option<String>>,
+    result: RefCell<Option<String>>,
 }
 
 /// An enumeration of possible inputs for a filter primitive.
@@ -80,7 +80,7 @@ impl Primitive {
             y: Cell::new(None),
             width: Cell::new(None),
             height: Cell::new(None),
-            result: Cell::new(None),
+            result: RefCell::new(None),
         }
     }
 
@@ -120,7 +120,7 @@ impl NodeTrait for Primitive {
                     self.height
                         .set(Some(parse("height", value, LengthDir::Vertical, None)?))
                 }
-                Attribute::Result => self.result.set(Some(value.to_string())),
+                Attribute::Result => *self.result.borrow_mut() = Some(value.to_string()),
                 _ => (),
             }
         }
@@ -174,15 +174,29 @@ impl PrimitiveWithInput {
             // No value => use the last result.
             // As per the SVG spec, if the filter primitive is the first in the chain, return the
             // source graphic.
-            return Some(
-                ctx.last_result()
-                    .cloned()
-                    .unwrap_or_else(|| unimplemented!()),
-            );
+            return Some(ctx.last_result().cloned().unwrap_or_else(|| FilterResult {
+                surface: ctx.source_graphic().clone(),
+                // TODO
+                bounds: IRect {
+                    x0: 0,
+                    y0: 0,
+                    x1: 0,
+                    y1: 0,
+                },
+            }));
         }
 
         match *in_.as_ref().unwrap() {
-            Input::SourceGraphic => unimplemented!(),
+            Input::SourceGraphic => Some(FilterResult {
+                surface: ctx.source_graphic().clone(),
+                // TODO
+                bounds: IRect {
+                    x0: 0,
+                    y0: 0,
+                    x1: 0,
+                    y1: 0,
+                },
+            }),
             Input::SourceAlpha => unimplemented!(),
             Input::BackgroundImage => unimplemented!(),
             Input::BackgroundAlpha => unimplemented!(),

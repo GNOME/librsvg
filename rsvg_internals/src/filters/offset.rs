@@ -1,10 +1,14 @@
 use std::cell::Cell;
+use std::slice;
 
+use cairo::prelude::SurfaceExt;
+use cairo::{self, ImageSurface};
+use cairo_sys;
 use libc::c_char;
 
 use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
-use filter_context::FilterContext;
+use filter_context::{FilterContext, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
@@ -68,7 +72,70 @@ impl NodeTrait for Offset {
 impl Filter for Offset {
     fn render(&self, ctx: &mut FilterContext) {
         let bounds = self.base.get_bounds(ctx);
-        unimplemented!();
+
+        let dx = self.dx.get().normalize(ctx.drawing_context());
+        let dy = self.dy.get().normalize(ctx.drawing_context());
+        let paffine = ctx.paffine();
+        let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
+        let oy = (paffine.yx * dx + paffine.yy * dy) as i32;
+
+        let input_surface = match self.base.get_input(ctx) {
+            Some(FilterResult { surface, .. }) => surface,
+            None => return,
+        };
+
+        let width = input_surface.get_width();
+        let height = input_surface.get_height();
+        let input_stride = input_surface.get_stride();
+
+        // TODO: this currently gives "non-exclusive access" (can we make read-only borrows?)
+        // let input_data = input_surface.get_data().unwrap();
+        input_surface.flush();
+        if input_surface.status() != cairo::Status::Success {
+            return;
+        }
+        let input_data_ptr =
+            unsafe { cairo_sys::cairo_image_surface_get_data(input_surface.to_raw_none()) };
+        if input_data_ptr.is_null() {
+            return;
+        }
+        let input_data_len = input_stride as usize * height as usize;
+        let input_data = unsafe { slice::from_raw_parts(input_data_ptr, input_data_len) };
+
+        let mut output_surface = match ImageSurface::create(cairo::Format::ARgb32, width, height) {
+            Ok(surface) => surface,
+            Err(_) => return,
+        };
+
+        let output_stride = output_surface.get_stride();
+        {
+            let mut output_data = output_surface.get_data().unwrap();
+
+            for y in bounds.y0..bounds.y1 {
+                for x in bounds.x0..bounds.x1 {
+                    if x - ox < bounds.x0 || x - ox >= bounds.x1 || y - oy < bounds.y0
+                        || y - oy >= bounds.y1
+                    {
+                        continue;
+                    }
+
+                    for ch in 0..4 {
+                        let input_index = ((y - oy) * input_stride + (x - ox) * 4 + ch) as usize;
+                        let output_index = (y * output_stride + x * 4 + ch) as usize;
+
+                        output_data[output_index] = input_data[input_index];
+                    }
+                }
+            }
+        }
+
+        ctx.store_result(
+            self.base.result.borrow().clone(),
+            FilterResult {
+                surface: output_surface,
+                bounds,
+            },
+        );
     }
 }
 
