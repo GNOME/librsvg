@@ -104,6 +104,9 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y);
 
 G_GNUC_INTERNAL
+RsvgBbox *rsvg_drawing_ctx_get_bbox (RsvgDrawingCtx *draw_ctx);
+
+G_GNUC_INTERNAL
 void rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox);
 
 G_GNUC_INTERNAL

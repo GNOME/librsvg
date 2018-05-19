@@ -804,6 +804,12 @@ rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y)
     }
 }
 
+RsvgBbox *
+rsvg_drawing_ctx_get_bbox (RsvgDrawingCtx *ctx)
+{
+    return ctx->bbox;
+}
+
 void
 rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
 {
