@@ -7,7 +7,7 @@ use libc;
 use pango;
 use pango_sys;
 
-use bbox::RsvgBbox;
+use bbox::{BoundingBox, RsvgBbox};
 use length::LengthUnit;
 use node::NodeType;
 use node::RsvgNode;
@@ -289,15 +289,18 @@ pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
     unsafe { from_glib_full(rsvg_drawing_ctx_get_pango_context(draw_ctx)) }
 }
 
-pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &RsvgBbox) {
+pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &BoundingBox) {
     unsafe {
-        rsvg_drawing_ctx_insert_bbox(draw_ctx, bbox as *const _);
+        rsvg_drawing_ctx_insert_bbox(draw_ctx, bbox as *const BoundingBox as *const RsvgBbox);
     }
 }
 
-pub fn insert_ink_bbox(draw_ctx: *const RsvgDrawingCtx, ink_bbox: &RsvgBbox) {
+pub fn insert_ink_bbox(draw_ctx: *const RsvgDrawingCtx, ink_bbox: &BoundingBox) {
     unsafe {
-        rsvg_drawing_ctx_insert_ink_bbox(draw_ctx, ink_bbox as *const _);
+        rsvg_drawing_ctx_insert_ink_bbox(
+            draw_ctx,
+            ink_bbox as *const BoundingBox as *const RsvgBbox,
+        );
     }
 }
 

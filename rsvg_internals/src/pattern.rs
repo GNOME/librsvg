@@ -257,7 +257,7 @@ fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern 
 fn set_pattern_on_draw_context(
     pattern: &Pattern,
     draw_ctx: *mut RsvgDrawingCtx,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
 ) -> bool {
     assert!(pattern.is_resolved());
 
@@ -441,7 +441,7 @@ fn set_pattern_on_draw_context(
 fn resolve_fallbacks_and_set_pattern(
     pattern: &Pattern,
     draw_ctx: *mut RsvgDrawingCtx,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
 ) -> bool {
     let resolved = resolve_pattern(pattern, draw_ctx);
 
@@ -459,7 +459,7 @@ pub extern "C" fn rsvg_node_pattern_new(
 pub fn pattern_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
     draw_ctx: *mut RsvgDrawingCtx,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
 ) -> bool {
     assert!(node.get_type() == NodeType::Pattern);
 

@@ -429,7 +429,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
     gradient: &Gradient,
     draw_ctx: *mut RsvgDrawingCtx,
     pattern: &mut P,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
     opacity: &UnitInterval,
 ) {
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
@@ -465,7 +465,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
 fn set_linear_gradient_on_pattern(
     gradient: &Gradient,
     draw_ctx: *mut RsvgDrawingCtx,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
     opacity: &UnitInterval,
 ) -> bool {
     if let GradientVariant::Linear { x1, y1, x2, y2 } = gradient.variant {
@@ -544,7 +544,7 @@ fn fix_focus_point(mut fx: f64, mut fy: f64, cx: f64, cy: f64, radius: f64) -> (
 fn set_radial_gradient_on_pattern(
     gradient: &Gradient,
     draw_ctx: *mut RsvgDrawingCtx,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
     opacity: &UnitInterval,
 ) -> bool {
     if let GradientVariant::Radial { cx, cy, r, fx, fy } = gradient.variant {
@@ -580,7 +580,7 @@ fn set_pattern_on_draw_context(
     gradient: &Gradient,
     draw_ctx: *mut RsvgDrawingCtx,
     opacity: &UnitInterval,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
 ) -> bool {
     assert!(gradient.is_resolved());
 
@@ -726,7 +726,7 @@ fn resolve_fallbacks_and_set_pattern(
     gradient: &Gradient,
     draw_ctx: *mut RsvgDrawingCtx,
     opacity: &UnitInterval,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
 ) -> bool {
     match bbox.rect {
         Some(r) if !r.is_empty() => {
@@ -742,7 +742,7 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
     draw_ctx: *mut RsvgDrawingCtx,
     opacity: &UnitInterval,
-    bbox: &RsvgBbox,
+    bbox: &BoundingBox,
 ) -> bool {
     assert!(
         node.get_type() == NodeType::LinearGradient || node.get_type() == NodeType::RadialGradient

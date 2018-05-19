@@ -6,7 +6,7 @@ use pango::{self, ContextExt, LayoutExt};
 use pango_sys;
 use pangocairo;
 
-use bbox::RsvgBbox;
+use bbox::BoundingBox;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
@@ -286,8 +286,8 @@ fn setup_cr_for_stroke(cr: &cairo::Context, draw_ctx: *const RsvgDrawingCtx, sta
 }
 
 struct Extents {
-    bbox: RsvgBbox,
-    ink_bbox: RsvgBbox,
+    bbox: BoundingBox,
+    ink_bbox: BoundingBox,
 }
 
 impl Extents {
@@ -310,8 +310,11 @@ fn path_extents(cr: &cairo::Context) -> (f64, f64, f64, f64) {
     (x1, y1, x2, y2)
 }
 
-fn bbox_from_extents(affine: &cairo::Matrix, (x1, y1, x2, y2): (f64, f64, f64, f64)) -> RsvgBbox {
-    let mut bb = RsvgBbox::new(affine);
+fn bbox_from_extents(
+    affine: &cairo::Matrix,
+    (x1, y1, x2, y2): (f64, f64, f64, f64),
+) -> BoundingBox {
+    let mut bb = BoundingBox::new(affine);
 
     bb.rect = Some(cairo::Rectangle {
         x: x1,
@@ -324,8 +327,8 @@ fn bbox_from_extents(affine: &cairo::Matrix, (x1, y1, x2, y2): (f64, f64, f64, f
 }
 
 fn compute_stroke_and_fill_extents(cr: &cairo::Context, state: &State) -> Extents {
-    let mut bbox = RsvgBbox::new(&state.affine);
-    let mut ink_bbox = RsvgBbox::new(&state.affine);
+    let mut bbox = BoundingBox::new(&state.affine);
+    let mut ink_bbox = BoundingBox::new(&state.affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
@@ -486,10 +489,10 @@ fn compute_text_bbox(
     y: f64,
     affine: &cairo::Matrix,
     gravity: pango::Gravity,
-) -> RsvgBbox {
+) -> BoundingBox {
     let pango_scale = f64::from(pango::SCALE);
 
-    let mut bbox = RsvgBbox::new(affine);
+    let mut bbox = BoundingBox::new(affine);
 
     let ink_x = f64::from(ink.x);
     let ink_y = f64::from(ink.y);
@@ -542,7 +545,7 @@ pub fn draw_surface(
     let width = f64::from(width);
     let height = f64::from(height);
 
-    let mut bbox = RsvgBbox::new(&affine);
+    let mut bbox = BoundingBox::new(&affine);
     bbox.rect = Some(cairo::Rectangle {
         x,
         y,
