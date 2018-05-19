@@ -96,12 +96,12 @@ rsvg_filter_primitive_render (RsvgNode *node, RsvgFilterPrimitive *primitive, Rs
 RsvgIRect
 rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
-    RsvgBbox box, otherbox;
+    RsvgBbox *box, *otherbox;
     cairo_matrix_t affine;
     cairo_rectangle_t rect;
 
     cairo_matrix_init_identity (&affine);
-    rsvg_bbox_init (&box, &affine, NULL);
+    box = rsvg_bbox_new (&affine, NULL);
 
     if (ctx->filter->filterunits == objectBoundingBox)
         rsvg_drawing_ctx_push_view_box (ctx->ctx, 1., 1.);
@@ -112,8 +112,9 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
     if (ctx->filter->filterunits == objectBoundingBox)
         rsvg_drawing_ctx_pop_view_box (ctx->ctx);
 
-    rsvg_bbox_init (&otherbox, &ctx->affine, &rect);
-    rsvg_bbox_insert (&box, &otherbox);
+    otherbox = rsvg_bbox_new (&ctx->affine, &rect);
+    rsvg_bbox_insert (box, otherbox);
+    rsvg_bbox_free (otherbox);
 
     if (self != NULL) {
         if (self->x_specified || self->y_specified || self->width_specified || self->height_specified) {
@@ -142,8 +143,9 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 rsvg_drawing_ctx_pop_view_box (ctx->ctx);
 
-            rsvg_bbox_init (&otherbox, &ctx->paffine, &rect);
-            rsvg_bbox_clip (&box, &otherbox);
+            otherbox = rsvg_bbox_new (&ctx->paffine, &rect);
+            rsvg_bbox_clip (box, otherbox);
+            rsvg_bbox_free (otherbox);
         }
     }
 
@@ -152,13 +154,14 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
     rect.width = ctx->width;
     rect.height = ctx->height;
 
-    rsvg_bbox_init (&otherbox, &affine, &rect);
-    rsvg_bbox_clip (&box, &otherbox);
+    otherbox = rsvg_bbox_new (&affine, &rect);
+    rsvg_bbox_clip (box, otherbox);
+    rsvg_bbox_free (otherbox);
 
     {
         cairo_rectangle_t box_rect;
 
-        rsvg_bbox_get_rect (&box, &box_rect);
+        rsvg_bbox_get_rect (box, &box_rect);
         RsvgIRect output = {
             box_rect.x,
             box_rect.y,

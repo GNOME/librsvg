@@ -913,7 +913,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
         rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
 
-        rsvg_bbox_get_rect (&draw->ink_bbox, &ink_rect);
+        rsvg_bbox_get_rect (draw->ink_bbox, &ink_rect);
         dimension_data->width = ink_rect.width;
         dimension_data->height = ink_rect.height;
 
@@ -996,7 +996,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
     rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
-    rsvg_bbox_get_rect (&draw->ink_bbox, &ink_rect);
+    rsvg_bbox_get_rect (draw->ink_bbox, &ink_rect);
     rsvg_drawing_ctx_free (draw);
 
     position_data->x = ink_rect.x;
