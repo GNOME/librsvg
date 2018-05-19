@@ -11,7 +11,7 @@ use bbox::RsvgBbox;
 use length::LengthUnit;
 use node::NodeType;
 use node::RsvgNode;
-use rect;
+use rect::RectangleExt;
 use state::{self, BaselineShift, FontSize, RsvgState, State};
 
 pub enum RsvgDrawingCtx {}
@@ -407,16 +407,14 @@ pub extern "C" fn rsvg_drawing_ctx_transformed_image_bounding_box(
         y: 0.0,
         width: w,
         height: h,
-    };
-
-    let r_tr = rect::transform(affine, &r);
-    let r_out = rect::outer(&r_tr);
+    }.transform(affine)
+        .outer();
 
     unsafe {
-        *bbx = r_out.x;
-        *bby = r_out.y;
-        *bbw = r_out.width;
-        *bbh = r_out.height;
+        *bbx = r.x;
+        *bby = r.y;
+        *bbw = r.width;
+        *bbh = r.height;
     }
 }
 

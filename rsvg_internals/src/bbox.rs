@@ -6,7 +6,7 @@ use glib::translate::*;
 
 use float_eq_cairo::ApproxEqCairo;
 
-use rect;
+use rect::RectangleExt;
 
 // Keep this in sync with ../../rsvg-private.h:RsvgBbox
 #[repr(C)]
@@ -46,7 +46,7 @@ impl RsvgBbox {
         self.virgin = false.to_glib();
     }
 
-    pub fn insert(&mut self, src: &RsvgBbox) {
+    fn combine(&mut self, src: &RsvgBbox, clip: bool) {
         if src.is_virgin() {
             return;
         }
@@ -57,32 +57,23 @@ impl RsvgBbox {
         affine.invert();
         affine = cairo::Matrix::multiply(&src.affine, &affine);
 
-        let rect = rect::transform(&affine, &src.rect);
+        let rect = src.rect.transform(&affine);
 
         if self.is_virgin() {
             self.set_rect(&rect);
+        } else if clip {
+            self.rect = self.rect.intersect(&rect);
         } else {
-            self.rect = rect::union(&rect, &self.rect);
+            self.rect = self.rect.union(&rect);
         }
     }
 
+    pub fn insert(&mut self, src: &RsvgBbox) {
+        self.combine(src, false);
+    }
+
     pub fn clip(&mut self, src: &RsvgBbox) {
-        if src.is_virgin() {
-            return;
-        }
-
-        let mut affine = self.affine;
-
-        affine.invert();
-        affine = cairo::Matrix::multiply(&src.affine, &affine);
-
-        let rect = rect::transform(&affine, &src.rect);
-
-        if self.is_virgin() {
-            self.set_rect(&rect);
-        } else {
-            self.rect = rect::intersect(&rect, &self.rect);
-        }
+        self.combine(src, true);
     }
 }
 
