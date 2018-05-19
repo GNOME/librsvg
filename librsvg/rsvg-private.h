@@ -269,12 +269,6 @@ typedef enum {
 } RsvgNodeType;
 
 typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
-typedef void (* CNodeDraw) (RsvgNode *node,
-                            gpointer impl,
-                            RsvgDrawingCtx *ctx,
-                            RsvgState *state,
-                            int dominate,
-                            gboolean clipping);
 typedef void (* CNodeFree) (gpointer impl);
 
 /* Implemented in rust/src/node.rs */
@@ -284,7 +278,6 @@ RsvgNode *rsvg_rust_cnode_new (RsvgNodeType  node_type,
                                RsvgNode     *parent,
                                gpointer      impl,
                                CNodeSetAtts  set_atts_fn,
-                               CNodeDraw     draw_fn,
                                CNodeFree     free_fn) G_GNUC_WARN_UNUSED_RESULT;
 
 /* Implemented in rust/src/node.rs */

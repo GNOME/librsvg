@@ -140,7 +140,6 @@ rsvg_new_filter_primitive_merge (const char *element_name, RsvgNode *parent)
                                 parent,
                                 filter,
                                 rsvg_filter_primitive_merge_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_filter_primitive_free);
 }
 
@@ -189,6 +188,5 @@ rsvg_new_filter_primitive_merge_node (const char *element_name, RsvgNode *parent
                                 parent,
                                 filter,
                                 rsvg_filter_primitive_merge_node_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_filter_primitive_free);
 }

@@ -723,17 +723,6 @@ rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPro
 }
 
 void
-rsvg_filter_draw (RsvgNode *node,
-                  gpointer impl,
-                  RsvgDrawingCtx *ctx,
-                  RsvgState *state,
-                  int dominate,
-                  gboolean clipping)
-{
-    /* nothing; filters are drawn in rsvg-drawing-ctx.c */
-}
-
-void
 rsvg_filter_free (gpointer impl)
 {
     RsvgFilter *filter = impl;

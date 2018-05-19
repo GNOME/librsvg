@@ -244,6 +244,5 @@ rsvg_new_filter_primitive_diffuse_lighting (const char *element_name, RsvgNode *
                                 parent,
                                 filter,
                                 rsvg_filter_primitive_diffuse_lighting_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_filter_primitive_free);
 }

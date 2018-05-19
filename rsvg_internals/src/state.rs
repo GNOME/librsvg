@@ -190,7 +190,7 @@ pub struct SpecifiedValues {
     pub xml_space: SpecifiedValue<XmlSpace>, // not a property, but a non-presentation attribute
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct ComputedValues {
     pub affine: cairo::Matrix,
     pub baseline_shift: BaselineShift,
@@ -237,8 +237,82 @@ pub struct ComputedValues {
     pub unicode_bidi: UnicodeBidi,
     pub visibility: Visibility,
     pub writing_mode: WritingMode,
-    /* pub xml_lang: XmlLang,   // not a property, but a non-presentation attribute
-     * pub xml_space: XmlSpace, // not a property, but a non-presentation attribute */
+    pub xml_lang: XmlLang,   // not a property, but a non-presentation attribute
+    pub xml_space: XmlSpace, // not a property, but a non-presentation attribute
+}
+
+impl ComputedValues {
+    pub fn is_overflow(&self) -> bool {
+        match self.overflow {
+            Overflow::Auto | Overflow::Visible => true,
+            _ => false,
+        }
+    }
+
+    pub fn text_gravity_is_vertical(&self) -> bool {
+        match self.writing_mode {
+            WritingMode::Tb | WritingMode::TbRl => true,
+            _ => false,
+        }
+    }
+}
+
+impl Default for ComputedValues {
+    fn default() -> ComputedValues {
+        ComputedValues {
+            affine: cairo::Matrix::identity(),
+
+            // please keep these sorted
+            baseline_shift: Default::default(),
+            clip_path: Default::default(),
+            clip_rule: Default::default(),
+            color: Default::default(),
+            comp_op: Default::default(),
+            direction: Default::default(),
+            display: Default::default(),
+            enable_background: Default::default(),
+            fill: Default::default(),
+            fill_opacity: Default::default(),
+            fill_rule: Default::default(),
+            filter: Default::default(),
+            flood_color: Default::default(),
+            flood_opacity: Default::default(),
+            font_family: Default::default(),
+            font_size: Default::default(),
+            font_stretch: Default::default(),
+            font_style: Default::default(),
+            font_variant: Default::default(),
+            font_weight: Default::default(),
+            letter_spacing: Default::default(),
+            marker_end: Default::default(),
+            marker_mid: Default::default(),
+            marker_start: Default::default(),
+            mask: Default::default(),
+            opacity: Default::default(),
+            overflow: Default::default(),
+            shape_rendering: Default::default(),
+
+            stop_color: Default::default(),
+            stop_opacity: Default::default(),
+
+            stroke: Default::default(),
+            stroke_dasharray: Default::default(),
+            stroke_dashoffset: Default::default(),
+            stroke_line_cap: Default::default(),
+            stroke_line_join: Default::default(),
+            stroke_opacity: Default::default(),
+            stroke_miterlimit: Default::default(),
+            stroke_width: Default::default(),
+            text_anchor: Default::default(),
+            text_decoration: Default::default(),
+            text_rendering: Default::default(),
+            unicode_bidi: Default::default(),
+            visibility: Default::default(),
+            writing_mode: Default::default(),
+            xml_lang: Default::default(),
+            xml_space: Default::default(),
+        }
+    }
 }
 
 macro_rules! inherit_from {
@@ -860,62 +934,55 @@ impl State {
         }
     }
 
-    pub fn text_gravity_is_vertical(&self) -> bool {
-        match self.writing_mode {
-            Some(WritingMode::Tb) | Some(WritingMode::TbRl) => true,
-            _ => false,
-        }
-    }
-
-    fn get_computed_values(&self) -> ComputedValues {
+    pub fn get_computed_values(&self) -> ComputedValues {
         ComputedValues {
             affine: self.affine,
 
-            baseline_shift: self.baseline_shift.unwrap_or_default(),
-            clip_path: self.clip_path.unwrap_or_default(),
+            baseline_shift: self.baseline_shift.clone().unwrap_or_default(),
+            clip_path: self.clip_path.clone().unwrap_or_default(),
             clip_rule: self.clip_rule.unwrap_or_default(),
             comp_op: self.comp_op.unwrap_or_default(),
-            color: self.color.unwrap_or_default(),
+            color: self.color.clone().unwrap_or_default(),
             direction: self.direction.unwrap_or_default(),
             display: self.display.unwrap_or_default(),
             enable_background: self.enable_background.unwrap_or_default(),
-            fill: self.fill.unwrap_or_default(),
-            fill_opacity: self.fill_opacity.unwrap_or_default(),
+            fill: self.fill.clone().unwrap_or_default(),
+            fill_opacity: self.fill_opacity.clone().unwrap_or_default(),
             fill_rule: self.fill_rule.unwrap_or_default(),
-            filter: self.filter.unwrap_or_default(),
-            flood_color: self.flood_color.unwrap_or_default(),
-            flood_opacity: self.flood_opacity.unwrap_or_default(),
-            font_family: self.font_family.unwrap_or_default(),
-            font_size: self.font_size.unwrap_or_default(),
+            filter: self.filter.clone().unwrap_or_default(),
+            flood_color: self.flood_color.clone().unwrap_or_default(),
+            flood_opacity: self.flood_opacity.clone().unwrap_or_default(),
+            font_family: self.font_family.clone().unwrap_or_default(),
+            font_size: self.font_size.clone().unwrap_or_default(),
             font_stretch: self.font_stretch.unwrap_or_default(),
             font_style: self.font_style.unwrap_or_default(),
             font_variant: self.font_variant.unwrap_or_default(),
             font_weight: self.font_weight.unwrap_or_default(),
-            letter_spacing: self.letter_spacing.unwrap_or_default(),
-            marker_end: self.marker_end.unwrap_or_default(),
-            marker_mid: self.marker_mid.unwrap_or_default(),
-            marker_start: self.marker_start.unwrap_or_default(),
-            mask: self.mask.unwrap_or_default(),
-            opacity: self.opacity.unwrap_or_default(),
+            letter_spacing: self.letter_spacing.clone().unwrap_or_default(),
+            marker_end: self.marker_end.clone().unwrap_or_default(),
+            marker_mid: self.marker_mid.clone().unwrap_or_default(),
+            marker_start: self.marker_start.clone().unwrap_or_default(),
+            mask: self.mask.clone().unwrap_or_default(),
+            opacity: self.opacity.clone().unwrap_or_default(),
             overflow: self.overflow.unwrap_or_default(),
             shape_rendering: self.shape_rendering.unwrap_or_default(),
-            stop_color: self.stop_color.unwrap_or_default(),
-            stop_opacity: self.stop_opacity.unwrap_or_default(),
-            stroke: self.stroke.unwrap_or_default(),
-            stroke_dasharray: self.stroke_dasharray.unwrap_or_default(),
-            stroke_dashoffset: self.stroke_dashoffset.unwrap_or_default(),
+            stop_color: self.stop_color.clone().unwrap_or_default(),
+            stop_opacity: self.stop_opacity.clone().unwrap_or_default(),
+            stroke: self.stroke.clone().unwrap_or_default(),
+            stroke_dasharray: self.stroke_dasharray.clone().unwrap_or_default(),
+            stroke_dashoffset: self.stroke_dashoffset.clone().unwrap_or_default(),
             stroke_line_cap: self.stroke_line_cap.unwrap_or_default(),
             stroke_line_join: self.stroke_line_join.unwrap_or_default(),
-            stroke_opacity: self.stroke_opacity.unwrap_or_default(),
-            stroke_miterlimit: self.stroke_miterlimit.unwrap_or_default(),
-            stroke_width: self.stroke_width.unwrap_or_default(),
+            stroke_opacity: self.stroke_opacity.clone().unwrap_or_default(),
+            stroke_miterlimit: self.stroke_miterlimit.clone().unwrap_or_default(),
+            stroke_width: self.stroke_width.clone().unwrap_or_default(),
             text_anchor: self.text_anchor.unwrap_or_default(),
-            text_decoration: self.text_decoration.unwrap_or_default(),
+            text_decoration: self.text_decoration.clone().unwrap_or_default(),
             text_rendering: self.text_rendering.unwrap_or_default(),
             unicode_bidi: self.unicode_bidi.unwrap_or_default(),
             visibility: self.visibility.unwrap_or_default(),
             writing_mode: self.writing_mode.unwrap_or_default(),
-            xml_lang: self.xml_lang.unwrap_or_default(),
+            xml_lang: self.xml_lang.clone().unwrap_or_default(),
             xml_space: self.xml_space.unwrap_or_default(),
         }
     }
@@ -1429,7 +1496,7 @@ make_property!(
 
 make_property!(
     XmlLang,
-    default: "C".to_string(),
+    default: "".to_string(), // see create_pango_layout()
     inherits_automatically: true,
     newtype_from_str: String
 );

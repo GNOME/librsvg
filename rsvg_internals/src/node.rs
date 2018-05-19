@@ -15,7 +15,7 @@ use error::*;
 use handle::RsvgHandle;
 use parsers::ParseError;
 use property_bag::PropertyBag;
-use state::{self, rsvg_state_new, RsvgState, State};
+use state::{self, rsvg_state_new, ComputedValues, RsvgState, State};
 use util::utf8_cstr;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
@@ -38,7 +38,7 @@ pub trait NodeTrait: Downcast {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
+        state: &ComputedValues,
         dominate: i32,
         clipping: bool,
     );
@@ -213,8 +213,9 @@ impl Node {
             drawing_ctx::state_reinherit_top(draw_ctx, node_state, dominate);
 
             let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
+            let computed = state.get_computed_values();
             self.node_impl
-                .draw(node, draw_ctx, state, dominate, clipping);
+                .draw(node, draw_ctx, &computed, dominate, clipping);
         }
     }
 
@@ -580,7 +581,7 @@ mod tests {
             Ok(())
         }
 
-        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {}
+        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {}
 
         fn get_c_impl(&self) -> *const RsvgCNodeImpl {
             unreachable!();

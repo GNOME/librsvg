@@ -291,7 +291,6 @@ rsvg_new_filter_primitive_component_transfer (const char *element_name, RsvgNode
                                 parent,
                                 filter,
                                 rsvg_filter_primitive_component_transfer_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_filter_primitive_free);
 }
 
@@ -409,6 +408,5 @@ rsvg_new_node_component_transfer_function (const char *element_name, RsvgNode *p
                                 parent,
                                 filter,
                                 rsvg_node_component_transfer_function_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_node_component_transfer_function_free);
 }

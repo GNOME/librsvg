@@ -19,7 +19,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use state::State;
+use state::ComputedValues;
 use viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -226,7 +226,7 @@ impl NodeTrait for NodePattern {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 

@@ -16,7 +16,7 @@ use length::*;
 use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state::State;
+use state::{ComputedValues, Overflow};
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -38,7 +38,7 @@ impl NodeTrait for NodeGroup {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        _: &State,
+        _: &ComputedValues,
         dominate: i32,
         clipping: bool,
     ) {
@@ -64,7 +64,7 @@ impl NodeTrait for NodeDefs {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
         // nothing
     }
 
@@ -91,7 +91,7 @@ impl NodeTrait for NodeSwitch {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        _state: &State,
+        _state: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -194,7 +194,7 @@ impl NodeTrait for NodeSvg {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
+        state: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -285,7 +285,7 @@ impl NodeTrait for NodeUse {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
+        state: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -355,7 +355,7 @@ impl NodeTrait for NodeUse {
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !state.is_overflow()
-                    || (state.overflow.is_none() && child.get_state().is_overflow());
+                    || (state.overflow == Overflow::Visible && child.get_state().is_overflow());
 
                 draw_in_viewport(
                     nx,
@@ -417,7 +417,7 @@ impl NodeTrait for NodeSymbol {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &State, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
         // nothing
     }
 

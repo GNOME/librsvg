@@ -293,6 +293,5 @@ rsvg_new_filter_primitive_color_matrix (const char *element_name, RsvgNode *pare
                                 parent,
                                 filter,
                                 rsvg_filter_primitive_color_matrix_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_filter_primitive_color_matrix_free);
 }

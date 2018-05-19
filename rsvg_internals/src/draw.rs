@@ -11,24 +11,17 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
 use paint_server;
+use paint_server::PaintServer;
 use path_builder::PathBuilder;
 use state::{
     ClipRule,
-    Color,
     CompOp,
-    Fill,
-    FillOpacity,
+    ComputedValues,
     FillRule,
     ShapeRendering,
-    State,
-    Stroke,
     StrokeDasharray,
-    StrokeDashoffset,
     StrokeLinecap,
     StrokeLinejoin,
-    StrokeMiterlimit,
-    StrokeOpacity,
-    StrokeWidth,
     TextRendering,
 };
 
@@ -52,7 +45,7 @@ fn set_affine_on_cr(draw_ctx: *mut RsvgDrawingCtx, cr: &cairo::Context, affine: 
 
 pub fn draw_path_builder(
     draw_ctx: *mut RsvgDrawingCtx,
-    state: &State,
+    state: &ComputedValues,
     builder: &PathBuilder,
     clipping: bool,
 ) {
@@ -67,9 +60,9 @@ pub fn draw_path_builder(
     builder.to_cairo(&cr);
 
     if clipping {
-        cr.set_fill_rule(cairo::FillRule::from(state.clip_rule.unwrap_or_default()));
+        cr.set_fill_rule(cairo::FillRule::from(state.clip_rule));
     } else {
-        cr.set_fill_rule(cairo::FillRule::from(state.fill_rule.unwrap_or_default()));
+        cr.set_fill_rule(cairo::FillRule::from(state.fill_rule));
 
         stroke_and_fill(&cr, draw_ctx, state);
 
@@ -77,10 +70,8 @@ pub fn draw_path_builder(
     }
 }
 
-fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: &State) {
-    cr.set_antialias(cairo::Antialias::from(
-        state.shape_rendering.unwrap_or_default(),
-    ));
+fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: &ComputedValues) {
+    cr.set_antialias(cairo::Antialias::from(state.shape_rendering));
 
     setup_cr_for_stroke(cr, draw_ctx, state);
 
@@ -91,57 +82,34 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: &S
     let bbox = compute_stroke_and_fill_box(cr, state);
     drawing_ctx::insert_bbox(draw_ctx, &bbox);
 
-    let current_color = state
-        .color
-        .as_ref()
-        .map_or_else(|| Color::default().0, |c| c.0);
+    let current_color = &state.color.0;
 
-    let fill_opacity = state
-        .fill_opacity
-        .as_ref()
-        .map_or_else(|| FillOpacity::default().0, |o| o.0);
+    let fill_opacity = &state.fill_opacity.0;
 
-    let success = match state.fill {
-        Some(Fill(ref fill)) => paint_server::set_source_paint_server(
-            draw_ctx,
-            fill,
-            &fill_opacity,
-            &bbox,
-            &current_color,
-        ),
-
-        _ => paint_server::set_source_paint_server(
-            draw_ctx,
-            &Fill::default().0,
-            &fill_opacity,
-            &bbox,
-            &current_color,
-        ),
-    };
-
-    if success {
-        if state.stroke.is_some() {
-            cr.fill_preserve();
-        } else {
+    if paint_server::set_source_paint_server(
+        draw_ctx,
+        &state.fill.0,
+        fill_opacity,
+        &bbox,
+        current_color,
+    ) {
+        if state.stroke.0 == PaintServer::None {
             cr.fill();
+        } else {
+            cr.fill_preserve();
         }
     }
 
-    let stroke_opacity = state
-        .stroke_opacity
-        .as_ref()
-        .map_or_else(|| StrokeOpacity::default().0, |o| o.0);
+    let stroke_opacity = state.stroke_opacity.0;
 
-    if let Some(Stroke(ref stroke)) = state.stroke {
-        if paint_server::set_source_paint_server(
-            draw_ctx,
-            stroke,
-            &stroke_opacity,
-            &bbox,
-            &current_color,
-        ) {
-            cr.stroke();
-        }
+    if paint_server::set_source_paint_server(
+        draw_ctx,
+        &state.stroke.0,
+        &stroke_opacity,
+        &bbox,
+        &current_color,
+    ) {
+        cr.stroke();
     }
 
     // clear the path in case stroke == fill == None; otherwise
@@ -238,47 +206,25 @@ impl From<TextRendering> for cairo::Antialias {
     }
 }
 
-fn setup_cr_for_stroke(cr: &cairo::Context, draw_ctx: *const RsvgDrawingCtx, state: &State) {
-    cr.set_line_width(
-        state
-            .stroke_width
-            .as_ref()
-            .map_or_else(|| StrokeWidth::default().0, |w| w.0)
-            .normalize(draw_ctx),
-    );
-    cr.set_miter_limit(
-        state
-            .stroke_miterlimit
-            .as_ref()
-            .map_or_else(|| StrokeMiterlimit::default().0, |l| l.0),
-    );
-    cr.set_line_cap(cairo::LineCap::from(
-        state.stroke_line_cap.unwrap_or_default(),
-    ));
-    cr.set_line_join(cairo::LineJoin::from(
-        state.stroke_line_join.unwrap_or_default(),
-    ));
+fn setup_cr_for_stroke(
+    cr: &cairo::Context,
+    draw_ctx: *const RsvgDrawingCtx,
+    state: &ComputedValues,
+) {
+    cr.set_line_width(state.stroke_width.0.normalize(draw_ctx));
+    cr.set_miter_limit(state.stroke_miterlimit.0);
+    cr.set_line_cap(cairo::LineCap::from(state.stroke_line_cap));
+    cr.set_line_join(cairo::LineJoin::from(state.stroke_line_join));
 
-    match state.stroke_dasharray {
-        Some(StrokeDasharray(Dasharray::Array(ref dashes))) => {
-            let normalized_dashes: Vec<f64> =
-                dashes.iter().map(|l| l.normalize(draw_ctx)).collect();
+    if let StrokeDasharray(Dasharray::Array(ref dashes)) = state.stroke_dasharray {
+        let normalized_dashes: Vec<f64> = dashes.iter().map(|l| l.normalize(draw_ctx)).collect();
 
-            let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
+        let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
 
-            if total_length > 0.0 {
-                let offset = state
-                    .stroke_dashoffset
-                    .as_ref()
-                    .map_or_else(|| StrokeDashoffset::default().0, |o| o.0)
-                    .normalize(draw_ctx);
-                cr.set_dash(&normalized_dashes, offset);
-            } else {
-                cr.set_dash(&[], 0.0);
-            }
-        }
-
-        _ => {
+        if total_length > 0.0 {
+            let offset = state.stroke_dashoffset.0.normalize(draw_ctx);
+            cr.set_dash(&normalized_dashes, offset);
+        } else {
             cr.set_dash(&[], 0.0);
         }
     }
@@ -319,7 +265,7 @@ fn bbox_from_extents(
     bb
 }
 
-fn compute_stroke_and_fill_box(cr: &cairo::Context, state: &State) -> BoundingBox {
+fn compute_stroke_and_fill_box(cr: &cairo::Context, state: &ComputedValues) -> BoundingBox {
     let mut bbox = BoundingBox::new(&state.affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
@@ -341,7 +287,7 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, state: &State) -> BoundingBo
 
     // Bounding box for stroke
 
-    if state.stroke.is_some() {
+    if state.stroke.0 != PaintServer::None {
         let sb = bbox_from_extents(&state.affine, cr.stroke_extents(), true);
         bbox.insert(&sb);
     }
@@ -360,7 +306,7 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, state: &State) -> BoundingBo
 
 pub fn draw_pango_layout(
     draw_ctx: *mut RsvgDrawingCtx,
-    state: &State,
+    state: &ComputedValues,
     layout: &pango::Layout,
     x: f64,
     y: f64,
@@ -381,9 +327,7 @@ pub fn draw_pango_layout(
         drawing_ctx::insert_bbox(draw_ctx, &bbox);
     }
 
-    cr.set_antialias(cairo::Antialias::from(
-        state.text_rendering.unwrap_or_default(),
-    ));
+    cr.set_antialias(cairo::Antialias::from(state.text_rendering));
 
     setup_cr_for_stroke(&cr, draw_ctx, state);
 
@@ -397,59 +341,36 @@ pub fn draw_pango_layout(
         cr.rotate(-rotation);
     }
 
-    let current_color = state
-        .color
-        .as_ref()
-        .map_or_else(|| Color::default().0, |c| c.0);
+    let current_color = &state.color.0;
 
-    let fill_opacity = state
-        .fill_opacity
-        .as_ref()
-        .map_or_else(|| FillOpacity::default().0, |o| o.0);
+    let fill_opacity = &state.fill_opacity.0;
 
     if !clipping {
-        let success = match state.fill {
-            Some(Fill(ref fill)) => paint_server::set_source_paint_server(
-                draw_ctx,
-                fill,
-                &fill_opacity,
-                &bbox,
-                &current_color,
-            ),
-
-            _ => paint_server::set_source_paint_server(
-                draw_ctx,
-                &Fill::default().0,
-                &fill_opacity,
-                &bbox,
-                &current_color,
-            ),
-        };
-
-        if success {
+        if paint_server::set_source_paint_server(
+            draw_ctx,
+            &state.fill.0,
+            fill_opacity,
+            &bbox,
+            current_color,
+        ) {
             pangocairo::functions::update_layout(&cr, layout);
             pangocairo::functions::show_layout(&cr, layout);
         }
     }
 
-    let stroke_opacity = state
-        .stroke_opacity
-        .as_ref()
-        .map_or_else(|| StrokeOpacity::default().0, |o| o.0);
+    let stroke_opacity = &state.stroke_opacity.0;
 
     let mut need_layout_path = clipping;
 
     if !clipping {
-        if let Some(Stroke(ref stroke)) = state.stroke {
-            if paint_server::set_source_paint_server(
-                draw_ctx,
-                stroke,
-                &stroke_opacity,
-                &bbox,
-                &current_color,
-            ) {
-                need_layout_path = true;
-            }
+        if paint_server::set_source_paint_server(
+            draw_ctx,
+            &state.stroke.0,
+            stroke_opacity,
+            &bbox,
+            &current_color,
+        ) {
+            need_layout_path = true;
         }
     }
 
@@ -512,7 +433,7 @@ fn compute_text_bbox(
 
 pub fn draw_surface(
     draw_ctx: *mut RsvgDrawingCtx,
-    state: &State,
+    state: &ComputedValues,
     surface: &cairo::ImageSurface,
     x: f64,
     y: f64,
@@ -550,7 +471,7 @@ pub fn draw_surface(
     let x = x * width / w;
     let y = y * height / h;
 
-    cr.set_operator(cairo::Operator::from(state.comp_op.unwrap_or_default()));
+    cr.set_operator(cairo::Operator::from(state.comp_op));
 
     cr.set_source_surface(&surface, x, y);
     cr.paint();

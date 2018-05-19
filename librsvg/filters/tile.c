@@ -155,6 +155,5 @@ rsvg_new_filter_primitive_tile (const char *element_name, RsvgNode *parent)
                                 parent,
                                 filter,
                                 rsvg_filter_primitive_tile_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_filter_primitive_free);
 }

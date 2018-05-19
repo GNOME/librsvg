@@ -15,12 +15,12 @@ use parsers::{self, parse};
 use path_builder::*;
 use path_parser;
 use property_bag::PropertyBag;
-use state::State;
+use state::ComputedValues;
 
 fn render_path_builder(
     builder: &PathBuilder,
     draw_ctx: *mut RsvgDrawingCtx,
-    state: &State,
+    state: &ComputedValues,
     render_markers: bool,
     clipping: bool,
 ) {
@@ -37,7 +37,7 @@ fn render_ellipse(
     rx: f64,
     ry: f64,
     draw_ctx: *mut RsvgDrawingCtx,
-    state: &State,
+    state: &ComputedValues,
     clipping: bool,
 ) {
     // Per the spec, rx and ry must be nonnegative
@@ -129,7 +129,7 @@ impl NodeTrait for NodePath {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
+        state: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -191,7 +191,7 @@ impl NodeTrait for NodePoly {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
+        state: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -261,7 +261,7 @@ impl NodeTrait for NodeLine {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
+        state: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -353,7 +353,7 @@ impl NodeTrait for NodeRect {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
+        state: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -542,7 +542,7 @@ impl NodeTrait for NodeCircle {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
+        state: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -610,7 +610,7 @@ impl NodeTrait for NodeEllipse {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
+        state: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {

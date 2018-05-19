@@ -365,6 +365,5 @@ rsvg_new_filter_primitive_convolve_matrix (const char *element_name, RsvgNode *p
                                 parent,
                                 filter,
                                 rsvg_filter_primitive_convolve_matrix_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_filter_primitive_convolve_matrix_free);
 }

@@ -240,6 +240,5 @@ rsvg_new_filter_primitive_displacement_map (const char *element_name, RsvgNode *
                                 parent,
                                 filter,
                                 rsvg_filter_primitive_displacement_map_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_filter_primitive_displacement_map_free);
 }

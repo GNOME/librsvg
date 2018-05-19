@@ -467,6 +467,5 @@ rsvg_new_node_light_source (const char *element_name, RsvgNode *parent)
                                 parent,
                                 data,
                                 rsvg_node_light_source_set_atts,
-                                rsvg_filter_draw,
                                 g_free);
 }

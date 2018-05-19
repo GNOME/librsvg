@@ -1,13 +1,10 @@
-use glib::translate::*;
-use glib_sys;
-
 use std::ptr;
 
 use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
 use property_bag::PropertyBag;
-use state::{self, rsvg_state_new, RsvgState, State};
+use state::{rsvg_state_new, ComputedValues};
 
 use std::rc::*;
 
@@ -17,21 +14,12 @@ type CNodeSetAtts = unsafe extern "C" fn(
     handle: *const RsvgHandle,
     pbag: *const PropertyBag,
 );
-type CNodeDraw = unsafe extern "C" fn(
-    node: *const RsvgNode,
-    node_impl: *const RsvgCNodeImpl,
-    draw_ctx: *mut RsvgDrawingCtx,
-    state: *const RsvgState,
-    dominate: i32,
-    clipping: glib_sys::gboolean,
-);
 type CNodeFree = unsafe extern "C" fn(node_impl: *const RsvgCNodeImpl);
 
 struct CNode {
     c_node_impl: *const RsvgCNodeImpl,
 
     set_atts_fn: CNodeSetAtts,
-    draw_fn: CNodeDraw,
     free_fn: CNodeFree,
 }
 
@@ -56,22 +44,13 @@ impl NodeTrait for CNode {
 
     fn draw(
         &self,
-        node: &RsvgNode,
-        draw_ctx: *mut RsvgDrawingCtx,
-        state: &State,
-        dominate: i32,
-        clipping: bool,
+        _node: &RsvgNode,
+        _draw_ctx: *mut RsvgDrawingCtx,
+        _state: &ComputedValues,
+        _dominate: i32,
+        _clipping: bool,
     ) {
-        unsafe {
-            (self.draw_fn)(
-                node as *const RsvgNode,
-                self.c_node_impl,
-                draw_ctx,
-                state::to_c(state),
-                dominate,
-                clipping.to_glib(),
-            );
-        }
+        // nothing; the only remaining cnodes are filters, and those don't draw() themselves
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -93,7 +72,6 @@ pub extern "C" fn rsvg_rust_cnode_new(
     raw_parent: *const RsvgNode,
     c_node_impl: *const RsvgCNodeImpl,
     set_atts_fn: CNodeSetAtts,
-    draw_fn: CNodeDraw,
     free_fn: CNodeFree,
 ) -> *const RsvgNode {
     assert!(!c_node_impl.is_null());
@@ -101,7 +79,6 @@ pub extern "C" fn rsvg_rust_cnode_new(
     let cnode = CNode {
         c_node_impl,
         set_atts_fn,
-        draw_fn,
         free_fn,
     };
 

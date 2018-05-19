@@ -246,6 +246,5 @@ rsvg_new_filter_primitive_specular_lighting (const char *element_name, RsvgNode 
                                 parent,
                                 filter,
                                 rsvg_filter_primitive_specular_lighting_set_atts,
-                                rsvg_filter_draw,
                                 rsvg_filter_primitive_free);
 }
