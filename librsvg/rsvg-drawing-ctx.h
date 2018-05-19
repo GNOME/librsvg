@@ -49,8 +49,8 @@ struct RsvgDrawingCtx {
     gboolean is_testing;
     double offset_x, offset_y;
     double width, height;
-    RsvgBbox bbox;     /* Bounding box for path extents, without stroke width */
-    RsvgBbox ink_bbox; /* Bounding box for ink rectangle, with everything */
+    RsvgBbox *bbox;     /* Bounding box for path extents, without stroke width */
+    RsvgBbox *ink_bbox; /* Bounding box for ink rectangle, with everything */
     GList *bb_stack;
     GList *ink_bb_stack;
 

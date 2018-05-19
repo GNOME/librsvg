@@ -173,12 +173,8 @@ typedef struct {
     gboolean active;
 } RsvgViewBox;
 
-/* Keep this in sync with rust/src/bbox.rs:RsvgBbox */
-typedef struct {
-    cairo_rectangle_t rect;
-    cairo_matrix_t affine;
-    gboolean virgin;
-} RsvgBbox;
+/* Opaque; defined in rsvg_internals/src/bbox.rs */
+typedef struct RsvgBbox RsvgBbox;
 
 /* Keep this in sync with rust/src/length.rs:LengthUnit */
 typedef enum {
@@ -416,7 +412,13 @@ cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const cha
 
 /* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
-void rsvg_bbox_init (RsvgBbox *self, cairo_matrix_t *matrix, cairo_rectangle_t *rect);
+RsvgBbox *rsvg_bbox_new (cairo_matrix_t *matrix, cairo_rectangle_t *rect);
+
+/* Implemented in rust/src/bbox.rs */
+void rsvg_bbox_free (RsvgBbox *bbox);
+
+/* Implemented in rust/src/bbox.rs */
+RsvgBbox *rsvg_bbox_clone (RsvgBbox *bbox);
 
 /* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
