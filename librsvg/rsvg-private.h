@@ -416,15 +416,19 @@ cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const cha
 
 /* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
-void rsvg_bbox_init     (RsvgBbox * self, cairo_matrix_t *matrix);
+void rsvg_bbox_init (RsvgBbox *self, cairo_matrix_t *matrix, cairo_rectangle_t *rect);
 
 /* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
-void rsvg_bbox_insert   (RsvgBbox * dst, RsvgBbox * src);
+void rsvg_bbox_insert (RsvgBbox *dst, RsvgBbox *src);
 
 /* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
-void rsvg_bbox_clip     (RsvgBbox * dst, RsvgBbox * src);
+void rsvg_bbox_clip (RsvgBbox *dst, RsvgBbox *src);
+
+/* Implemented in rust/src/bbox.rs */
+G_GNUC_INTERNAL
+void rsvg_bbox_get_rect (RsvgBbox *bbox, cairo_rectangle_t *rect);
 
 /* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL

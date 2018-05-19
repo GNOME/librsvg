@@ -78,7 +78,11 @@ impl RsvgBbox {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_bbox_init(raw_bbox: *mut RsvgBbox, raw_matrix: *const cairo::Matrix) {
+pub extern "C" fn rsvg_bbox_init(
+    raw_bbox: *mut RsvgBbox,
+    raw_matrix: *const cairo::Matrix,
+    raw_rect: *const cairo::Rectangle,
+) {
     assert!(!raw_bbox.is_null());
     assert!(!raw_matrix.is_null());
 
@@ -86,6 +90,11 @@ pub extern "C" fn rsvg_bbox_init(raw_bbox: *mut RsvgBbox, raw_matrix: *const cai
     let matrix = unsafe { &*raw_matrix };
 
     *bbox = RsvgBbox::new(matrix);
+
+    if !raw_rect.is_null() {
+        let rect = unsafe { &*raw_rect };
+        bbox.set_rect(rect);
+    }
 }
 
 #[no_mangle]
@@ -108,4 +117,15 @@ pub extern "C" fn rsvg_bbox_clip(raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbo
     let src: &RsvgBbox = unsafe { &*raw_src };
 
     dst.clip(src);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_bbox_get_rect(bbox: *const RsvgBbox, rect: *mut cairo::Rectangle) {
+    assert!(!bbox.is_null());
+
+    let bbox: &RsvgBbox = unsafe { &*bbox };
+
+    if !rect.is_null() && !bbox.is_virgin() {
+        unsafe { *rect = bbox.rect };
+    }
 }
