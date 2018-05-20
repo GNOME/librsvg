@@ -43,6 +43,7 @@ struct RsvgDrawingCtx {
     RsvgDefs *defs;
     double dpi_x, dpi_y;
     cairo_rectangle_t rect;
+    PangoFontMap *font_map;
     RsvgViewBox vb;
     GSList *vb_stack;
     GSList *drawsub_stack;
@@ -50,11 +51,6 @@ struct RsvgDrawingCtx {
     gboolean is_testing;
     RsvgBbox *bbox;
     GList *bb_stack;
-
-#ifdef HAVE_PANGOFT2
-    FcConfig *font_config_for_testing;
-    PangoFontMap *font_map_for_testing;
-#endif
 };
 
 G_GNUC_INTERNAL

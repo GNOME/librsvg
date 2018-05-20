@@ -413,6 +413,66 @@ rsvg_return_if_fail_warning (const char *pretty_function, const char *expression
     g_set_error (error, RSVG_ERROR, 0, _("%s: assertion `%s' failed"), pretty_function, expression);
 }
 
+#ifdef HAVE_PANGOFT2
+
+static void
+create_font_config_for_testing (RsvgHandle *handle)
+{
+    const char *font_paths[] = {
+        SRCDIR "/tests/resources/Roboto-Regular.ttf",
+        SRCDIR "/tests/resources/Roboto-Italic.ttf",
+        SRCDIR "/tests/resources/Roboto-Bold.ttf",
+        SRCDIR "/tests/resources/Roboto-BoldItalic.ttf",
+    };
+
+    int i;
+
+    if (handle->priv->font_config_for_testing != NULL)
+        return;
+
+    handle->priv->font_config_for_testing = FcConfigCreate ();
+
+    for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
+        if (!FcConfigAppFontAddFile (handle->priv->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
+            g_error ("Could not load font file \"%s\" for tests; aborting", font_paths[i]);
+        }
+    }
+}
+
+static PangoFontMap *
+get_font_map_for_testing (RsvgHandle *handle)
+{
+    create_font_config_for_testing (handle);
+
+    if (handle->priv->font_map_for_testing == NULL) {
+        handle->priv->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
+        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (handle->priv->font_map_for_testing),
+                                      handle->priv->font_config_for_testing);
+    }
+
+    return handle->priv->font_map_for_testing;
+}
+
+#endif
+
+PangoFontMap *
+rsvg_handle_get_font_map (RsvgHandle *handle)
+{
+    PangoFontMap *fontmap;
+
+#ifdef HAVE_PANGOFT2
+    if (handle->priv->is_testing) {
+        fontmap = get_font_map_for_testing (handle);
+    } else {
+#endif
+        fontmap = pango_cairo_font_map_get_default ();
+#ifdef HAVE_PANGOFT2
+    }
+#endif
+
+    return fontmap;
+}
+
 gboolean
 rsvg_allow_load (GFile       *base_gfile,
                  const char  *uri,
