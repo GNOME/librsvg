@@ -1,8 +1,6 @@
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
-use cairo;
-
 use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
 use error::AttributeError;

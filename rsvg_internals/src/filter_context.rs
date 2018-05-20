@@ -1,21 +1,18 @@
 use std::collections::HashMap;
 use std::ffi::CStr;
-use std::{mem, ptr, slice};
+use std::ptr;
 
 use cairo::prelude::SurfaceExt;
 use cairo::{self, MatrixTrait};
 use cairo_sys::cairo_surface_t;
 use glib::translate::{from_glib_none, ToGlibPtr};
 use glib_sys::*;
-use libc::{c_char, c_void};
+use libc::c_void;
 
-use bbox::RsvgBbox;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use filters::IRect;
 use length::RsvgLength;
-use state::RsvgState;
-use util::utf8_cstr;
 
 // Required by the C code until all filters are ported to Rust.
 // Keep this in sync with

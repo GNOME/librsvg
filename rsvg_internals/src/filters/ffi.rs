@@ -6,11 +6,10 @@ use std::{mem, ptr};
 use cairo;
 use cairo::prelude::SurfaceExt;
 use cairo_sys::cairo_surface_t;
-use glib::translate::{from_glib_borrow, from_glib_full, ToGlibPtr};
+use glib::translate::{from_glib_borrow, ToGlibPtr};
 use glib_sys::*;
 use libc::c_char;
 
-use bbox::RsvgBbox;
 use drawing_ctx::RsvgDrawingCtx;
 use filter_context::{FilterContext, RsvgFilter, RsvgFilterContext};
 use length::RsvgLength;
