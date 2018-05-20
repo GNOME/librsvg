@@ -367,6 +367,7 @@ dependencies = [
  "pango 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pango-sys 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pangocairo 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pangocairo-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf_codegen 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -4,8 +4,9 @@ use cairo_sys;
 use glib::translate::*;
 use glib_sys;
 use libc;
-use pango;
-use pango_sys;
+use pango::{self, FontMapExt};
+use pangocairo;
+use pango_cairo_sys;
 
 use bbox::{BoundingBox, RsvgBbox};
 use length::LengthUnit;
@@ -79,9 +80,7 @@ extern "C" {
         clipping: glib_sys::gboolean,
     );
 
-    fn rsvg_drawing_ctx_get_pango_context(
-        draw_ctx: *const RsvgDrawingCtx,
-    ) -> *mut pango_sys::PangoContext;
+    fn rsvg_drawing_ctx_is_testing(draw_ctx: *const RsvgDrawingCtx) -> glib_sys::gboolean;
 
     fn rsvg_drawing_ctx_push_render_stack(draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_drawing_ctx_pop_render_stack(draw_ctx: *const RsvgDrawingCtx);
@@ -284,8 +283,43 @@ pub fn get_offset(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
     (w, h)
 }
 
+// remove this binding once pangocairo-rs has ContextExt::set_resolution()
+fn set_resolution(context: &pango::Context, dpi: f64) {
+    unsafe {
+        pango_cairo_sys::pango_cairo_context_set_resolution(context.to_glib_none().0, dpi);
+    }
+}
+
+// remove this binding once pangocairo-rs has ContextExt::set_font_options()
+fn set_font_options(context: &pango::Context, options: &cairo::FontOptions) {
+    unsafe {
+        pango_cairo_sys::pango_cairo_context_set_font_options(
+            context.to_glib_none().0,
+            options.to_glib_none().0,
+        );
+    }
+}
+
 pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
-    unsafe { from_glib_full(rsvg_drawing_ctx_get_pango_context(draw_ctx)) }
+    let font_map = pangocairo::FontMap::get_default().unwrap();
+    let context = font_map.create_context().unwrap();
+    let cr = get_cairo_context(draw_ctx);
+    pangocairo::functions::update_context(&cr, &context);
+
+    set_resolution(&context, get_dpi(draw_ctx).1);
+
+    let testing = unsafe { from_glib(rsvg_drawing_ctx_is_testing(draw_ctx)) };
+    if testing {
+        let mut options = cairo::FontOptions::new();
+
+        options.set_antialias(cairo::Antialias::Gray);
+        options.set_hint_style(cairo::enums::HintStyle::Full);
+        options.set_hint_metrics(cairo::enums::HintMetrics::On);
+
+        set_font_options(&context, &options);
+    }
+
+    context
 }
 
 pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &BoundingBox) {

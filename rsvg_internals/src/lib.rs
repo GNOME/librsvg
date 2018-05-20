@@ -11,6 +11,7 @@ extern crate glib_sys;
 extern crate itertools;
 extern crate libc;
 extern crate pango;
+extern crate pango_cairo_sys;
 extern crate pango_sys;
 extern crate pangocairo;
 extern crate regex;
