@@ -13,6 +13,7 @@ extern crate libc;
 extern crate pango;
 extern crate pango_sys;
 extern crate pangocairo;
+extern crate pango_cairo_sys;
 extern crate regex;
 
 #[macro_use]

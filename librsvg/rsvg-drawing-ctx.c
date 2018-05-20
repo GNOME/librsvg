@@ -832,34 +832,10 @@ rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dp
         *out_dpi_y = ctx->dpi_y;
 }
 
-PangoContext *
-rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *ctx)
+gboolean
+rsvg_drawing_ctx_is_testing (RsvgDrawingCtx *ctx)
 {
-    PangoFontMap *fontmap;
-    PangoContext *context;
-    double dpi_y;
-
-    fontmap = pango_cairo_font_map_get_default ();
-    context = pango_font_map_create_context (fontmap);
-    pango_cairo_update_context (ctx->cr, context);
-
-    rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
-    pango_cairo_context_set_resolution (context, dpi_y);
-
-    if (ctx->is_testing) {
-        cairo_font_options_t *options;
-
-        options = cairo_font_options_create ();
-        cairo_font_options_set_antialias (options, CAIRO_ANTIALIAS_GRAY);
-        cairo_font_options_set_hint_style (options, CAIRO_HINT_STYLE_FULL);
-        cairo_font_options_set_hint_metrics (options, CAIRO_HINT_METRICS_ON);
-
-        pango_cairo_context_set_font_options (context, options);
-
-        cairo_font_options_destroy (options);
-    }
-
-    return context;
+    ctx->is_testing;
 }
 
 cairo_surface_t *
