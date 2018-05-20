@@ -171,6 +171,11 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->in_loop = FALSE;
 
     self->priv->is_testing = FALSE;
+
+#ifdef HAVE_PANGOFT2
+    self->priv->font_config_for_testing = NULL;
+    self->priv->font_map_for_testing = NULL;
+#endif
 }
 
 static void
@@ -225,6 +230,18 @@ rsvg_handle_dispose (GObject *instance)
         treebase = rsvg_node_unref (treebase);
         self->priv->load = NULL;
     }
+
+#ifdef HAVE_PANGOFT2
+    if (self->priv->font_config_for_testing) {
+        FcConfigDestroy (self->priv->font_config_for_testing);
+        self->priv->font_config_for_testing = NULL;
+    }
+
+    if (self->priv->font_map_for_testing) {
+        g_object_unref (self->priv->font_map_for_testing);
+        self->priv->font_map_for_testing = NULL;
+    }
+#endif
 
     g_clear_object (&self->priv->cancellable);
 
@@ -1242,4 +1259,6 @@ rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
     handle->priv->is_testing = testing ? TRUE : FALSE;
+
+    rsvg_handle_update_font_map_for_testing (handle);
 }
