@@ -208,7 +208,11 @@ impl NodeMarker {
 }
 
 impl NodeTrait for NodeMarker {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        // marker element has overflow:hidden
+        // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
+        node.set_overflow_hidden();
+
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::MarkerUnits => self.units.set(parse("markerUnits", value, (), None)?),

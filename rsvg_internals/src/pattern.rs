@@ -173,6 +173,10 @@ impl NodePattern {
 
 impl NodeTrait for NodePattern {
     fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        // pattern element has overflow:hidden
+        // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
+        node.set_overflow_hidden();
+
         let mut p = self.pattern.borrow_mut();
 
         p.node = Some(Rc::downgrade(node));

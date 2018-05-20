@@ -41,7 +41,16 @@ impl NodeImage {
 }
 
 impl NodeTrait for NodeImage {
-    fn set_atts(&self, _: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        handle: *const RsvgHandle,
+        pbag: &PropertyBag,
+    ) -> NodeResult {
+        // SVG element has overflow:hidden
+        // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
+        node.set_overflow_hidden();
+
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),

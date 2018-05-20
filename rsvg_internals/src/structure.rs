@@ -140,6 +140,10 @@ impl NodeSvg {
 
 impl NodeTrait for NodeSvg {
     fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        // SVG element has overflow:hidden
+        // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
+        node.set_overflow_hidden();
+
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         let is_inner_svg = node.get_parent().is_some();
@@ -400,7 +404,11 @@ impl NodeSymbol {
 }
 
 impl NodeTrait for NodeSymbol {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        // symbol element has overflow:hidden
+        // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
+        node.set_overflow_hidden();
+
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
