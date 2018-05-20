@@ -123,7 +123,8 @@ rustfmt:
   stage: lint
   script:
     - rustc --version && cargo --version
-    - cargo fmt --all -- --write-mode=diff
+    - cargo fmt --version
+    - cargo fmt --all -- --check
 
 
 # Configure and run clippy on nightly
