@@ -39,9 +39,6 @@
 #include <string.h>
 
 #include <pango/pangocairo.h>
-#ifdef HAVE_PANGO_FT2
-#include <pango/pangofc-fontmap.h>
-#endif
 
 /* Implemented in rsvg_internals/src/draw.rs */
 G_GNUC_INTERNAL
@@ -303,6 +300,9 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     draw->rect.width = bbw;
     draw->rect.height = bbh;
 
+    draw->font_map = rsvg_handle_get_font_map (handle);
+    g_object_ref (draw->font_map);
+
     draw->state = NULL;
 
     draw->defs = handle->priv->defs;
@@ -337,11 +337,6 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
 
     rsvg_state_set_affine (state, state_affine);
 
-#ifdef HAVE_PANGOFT2
-    draw->font_config_for_testing = NULL;
-    draw->font_map_for_testing = NULL;
-#endif
-
     return draw;
 }
 
@@ -355,6 +350,11 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx *ctx)
     g_assert(rsvg_state_parent(ctx->state) == NULL);
     rsvg_state_free (ctx->state);
 
+    if (ctx->font_map) {
+        g_object_unref (ctx->font_map);
+        ctx->font_map = NULL;
+    }
+
 	g_slist_free_full (ctx->drawsub_stack, (GDestroyNotify) rsvg_node_unref);
 
     g_warn_if_fail (ctx->acquired_nodes == NULL);
@@ -363,18 +363,6 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx *ctx)
     g_assert (ctx->bb_stack == NULL);
 
     rsvg_bbox_free (ctx->bbox);
-
-#ifdef HAVE_PANGOFT2
-    if (ctx->font_config_for_testing) {
-        FcConfigDestroy (ctx->font_config_for_testing);
-        ctx->font_config_for_testing = NULL;
-    }
-
-    if (ctx->font_map_for_testing) {
-        g_object_unref (ctx->font_map_for_testing);
-        ctx->font_map_for_testing = NULL;
-    }
-#endif
 
     g_free (ctx);
 }
@@ -852,97 +840,31 @@ rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dp
         *out_dpi_y = ctx->dpi_y;
 }
 
-#ifdef HAVE_PANGOFT2
-static cairo_font_options_t *
-get_font_options_for_testing (void)
-{
-    cairo_font_options_t *options;
-
-    options = cairo_font_options_create ();
-    cairo_font_options_set_antialias (options, CAIRO_ANTIALIAS_GRAY);
-    cairo_font_options_set_hint_style (options, CAIRO_HINT_STYLE_FULL);
-    cairo_font_options_set_hint_metrics (options, CAIRO_HINT_METRICS_ON);
-
-    return options;
-}
-
-static void
-set_font_options_for_testing (PangoContext *context)
-{
-    cairo_font_options_t *font_options;
-
-    font_options = get_font_options_for_testing ();
-    pango_cairo_context_set_font_options (context, font_options);
-    cairo_font_options_destroy (font_options);
-}
-
-static void
-create_font_config_for_testing (RsvgDrawingCtx *ctx)
-{
-    const char *font_paths[] = {
-        SRCDIR "/tests/resources/Roboto-Regular.ttf",
-        SRCDIR "/tests/resources/Roboto-Italic.ttf",
-        SRCDIR "/tests/resources/Roboto-Bold.ttf",
-        SRCDIR "/tests/resources/Roboto-BoldItalic.ttf",
-    };
-
-    int i;
-
-    if (ctx->font_config_for_testing != NULL)
-        return;
-
-    ctx->font_config_for_testing = FcConfigCreate ();
-
-    for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
-        if (!FcConfigAppFontAddFile (ctx->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
-            g_error ("Could not load font file \"%s\" for tests; aborting", font_paths[i]);
-        }
-    }
-}
-
-static PangoFontMap *
-get_font_map_for_testing (RsvgDrawingCtx *ctx)
-{
-    create_font_config_for_testing (ctx);
-
-    if (ctx->font_map_for_testing == NULL) {
-        ctx->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (ctx->font_map_for_testing),
-                                      ctx->font_config_for_testing);
-    }
-
-    return ctx->font_map_for_testing;
-}
-#endif
-
 PangoContext *
-rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx * ctx)
+rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *ctx)
 {
     PangoFontMap *fontmap;
     PangoContext *context;
     double dpi_y;
 
-#ifdef HAVE_PANGOFT2
-    if (ctx->is_testing) {
-        fontmap = get_font_map_for_testing (ctx);
-    } else {
-#endif
-        fontmap = pango_cairo_font_map_get_default ();
-#ifdef HAVE_PANGOFT2
-    }
-#endif
-
-    context = pango_font_map_create_context (fontmap);
+    context = pango_font_map_create_context (ctx->font_map);
     pango_cairo_update_context (ctx->cr, context);
 
     rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
     pango_cairo_context_set_resolution (context, dpi_y);
 
-#ifdef HAVE_PANGOFT2
     if (ctx->is_testing) {
-        set_font_options_for_testing (context);
+        cairo_font_options_t *options;
+
+        options = cairo_font_options_create ();
+        cairo_font_options_set_antialias (options, CAIRO_ANTIALIAS_GRAY);
+        cairo_font_options_set_hint_style (options, CAIRO_HINT_STYLE_FULL);
+        cairo_font_options_set_hint_metrics (options, CAIRO_HINT_METRICS_ON);
+
+        pango_cairo_context_set_font_options (context, options);
+
+        cairo_font_options_destroy (options);
     }
-#endif
 
     return context;
 }

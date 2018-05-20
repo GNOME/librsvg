@@ -43,7 +43,8 @@
 # include <float.h>
 #endif
 
-#if defined(HAVE_PANGOFT2)
+#include <pango/pangocairo.h>
+#ifdef HAVE_PANGOFT2
 #include <pango/pangofc-fontmap.h>
 #endif
 
@@ -165,6 +166,11 @@ struct RsvgHandlePrivate {
     gboolean in_loop;		/* see get_dimension() */
 
     gboolean is_testing; /* Are we being run from the test suite? */
+
+#ifdef HAVE_PANGOFT2
+    FcConfig *font_config_for_testing;
+    PangoFontMap *font_map_for_testing;
+#endif
 };
 
 /* Keep this in sync with rust/src/viewbox.rs::RsvgViewBox */
@@ -460,6 +466,9 @@ void rsvg_add_node_to_handle (RsvgHandle *handle, RsvgNode *node);
 G_GNUC_INTERNAL
 char *rsvg_handle_resolve_uri (RsvgHandle *handle,
                                const char *uri);
+
+G_GNUC_INTERNAL
+PangoFontMap *rsvg_handle_get_font_map (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
 gboolean rsvg_allow_load (GFile       *base_gfile,
