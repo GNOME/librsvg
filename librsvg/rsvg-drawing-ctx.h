@@ -42,13 +42,12 @@ struct RsvgDrawingCtx {
     GError **error;
     RsvgDefs *defs;
     double dpi_x, dpi_y;
+    cairo_rectangle_t rect;
     RsvgViewBox vb;
     GSList *vb_stack;
     GSList *drawsub_stack;
     GSList *acquired_nodes;
     gboolean is_testing;
-    double offset_x, offset_y;
-    double width, height;
     RsvgBbox *bbox;
     GList *bb_stack;
 
@@ -97,6 +96,12 @@ void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                             RsvgNode *node,
                                             int dominate,
                                             gboolean clipping);
+
+G_GNUC_INTERNAL
+double rsvg_drawing_ctx_get_width (RsvgDrawingCtx *draw_ctx);
+
+G_GNUC_INTERNAL
+double rsvg_drawing_ctx_get_height (RsvgDrawingCtx *draw_ctx);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y);
