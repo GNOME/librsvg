@@ -66,8 +66,8 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
     RsvgState *state;
     guint8 opacity;
     guint8 *pixels;
-    guint32 width = ctx->width;
-    guint32 height = ctx->height;
+    guint32 width = ctx->rect.width;
+    guint32 height = ctx->rect.height;
     guint32 rowstride, row, i;
     cairo_matrix_t affinesave;
     RsvgLength mask_x, mask_y, mask_w, mask_h;
@@ -298,10 +298,10 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     draw->cr_stack = NULL;
     draw->surfaces_stack = NULL;
 
-    draw->offset_x = bbx;
-    draw->offset_y = bby;
-    draw->width = bbw;
-    draw->height = bbh;
+    draw->rect.x = bbx;
+    draw->rect.y = bby;
+    draw->rect.width = bbw;
+    draw->rect.height = bbh;
 
     draw->state = NULL;
 
@@ -330,8 +330,8 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     /* adjust transform so that the corner of the bounding box above is
      * at (0,0) - we compensate for this in _set_rsvg_affine() in
      * rsvg-cairo-render.c and a few other places */
-    state_affine.x0 -= draw->offset_x;
-    state_affine.y0 -= draw->offset_y;
+    state_affine.x0 -= draw->rect.x;
+    state_affine.y0 -= draw->rect.y;
 
     draw->bbox = rsvg_bbox_new (&state_affine, NULL, NULL);
 
@@ -495,10 +495,10 @@ rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
     if (!filter) {
         surface = cairo_surface_create_similar (cairo_get_target (ctx->cr),
                                                 CAIRO_CONTENT_COLOR_ALPHA,
-                                                ctx->width, ctx->height);
+                                                ctx->rect.width, ctx->rect.height);
     } else {
         surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-                                              ctx->width, ctx->height);
+                                              ctx->rect.width, ctx->rect.height);
 
         /* The surface reference is owned by the child_cr created below and put on the cr_stack! */
         ctx->surfaces_stack = g_list_prepend (ctx->surfaces_stack, surface);
@@ -778,15 +778,27 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
     ctx->drawsub_stack = stacksave;
 }
 
+double
+rsvg_drawing_ctx_get_width (RsvgDrawingCtx *draw_ctx)
+{
+    draw_ctx->rect.width;
+}
+
+double
+rsvg_drawing_ctx_get_height (RsvgDrawingCtx *draw_ctx)
+{
+    draw_ctx->rect.height;
+}
+
 void
 rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y)
 {
     if (x != NULL) {
-        *x = draw_ctx->offset_x;
+        *x = draw_ctx->rect.x;
     }
 
     if (y != NULL) {
-        *y = draw_ctx->offset_y;
+        *y = draw_ctx->rect.y;
     }
 }
 
@@ -944,10 +956,7 @@ rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
     cairo_surface_t *surface;
     cairo_t *save_cr = ctx->cr;
     cairo_t *save_initial_cr = ctx->initial_cr;
-    double save_x = ctx->offset_x;
-    double save_y = ctx->offset_y;
-    double save_w = ctx->width;
-    double save_h = ctx->height;
+    cairo_rectangle_t save_rect = ctx->rect;
 
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
     if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
@@ -957,20 +966,17 @@ rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
 
     ctx->cr = cairo_create (surface);
     ctx->initial_cr = ctx->cr;
-    ctx->offset_x = 0;
-    ctx->offset_y = 0;
-    ctx->width = width;
-    ctx->height = height;
+    ctx->rect.x = 0;
+    ctx->rect.y = 0;
+    ctx->rect.width = width;
+    ctx->rect.height = height;
 
     rsvg_drawing_ctx_draw_node_from_stack (ctx, drawable, 0, FALSE);
 
     cairo_destroy (ctx->cr);
     ctx->cr = save_cr;
     ctx->initial_cr = save_initial_cr;
-    ctx->offset_x = save_x;
-    ctx->offset_y = save_y;
-    ctx->width = save_w;
-    ctx->height = save_h;
+    ctx->rect = save_rect;
 
     return surface;
 }
