@@ -118,9 +118,6 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
 
 G_GNUC_INTERNAL
-PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *ctx);
-
-G_GNUC_INTERNAL
 void         rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx);
 G_GNUC_INTERNAL
 void         rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx);
@@ -130,6 +127,9 @@ cairo_surface_t *rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
                                                        RsvgNode *drawable,
                                                        double width,
                                                        double height);
+
+G_GNUC_INTERNAL
+gboolean rsvg_drawing_ctx_is_testing (RsvgDrawingCtx *ctx);
 
 G_END_DECLS
 
