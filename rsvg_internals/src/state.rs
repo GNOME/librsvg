@@ -335,7 +335,7 @@ impl State {
         }
 
         // FIXME: move this to "do catch" when we can bump the rustc version dependency
-        let mut parse = || {
+        let mut parse = || -> Result<(), AttributeError> {
             // please keep these sorted
             match attr {
                 Attribute::BaselineShift => {
@@ -551,7 +551,14 @@ impl State {
             Ok(())
         };
 
-        parse().map_err(|e| NodeError::attribute_error(attr, e))
+        // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
+        // Ignore unsupported / illegal values; don't set the whole
+        // node to be in error in that case.
+        // parse().map_err(|e| NodeError::attribute_error(attr, e))
+
+        let _ = parse();
+
+        Ok(())
     }
 
     pub fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
@@ -633,7 +640,7 @@ impl State {
                     };
 
                     if let Ok(attr) = Attribute::from_str(prop_name) {
-                        self.parse_style_pair(attr, value, important, true)?
+                        self.parse_style_pair(attr, value, important, true)?;
                     }
                     // else unknown property name; ignore
                 }
