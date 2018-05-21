@@ -316,11 +316,13 @@ impl NodeTrait for NodeUse {
         // From https://www.w3.org/TR/SVG/struct.html#UseElement in
         // "If the ‘use’ element references a ‘symbol’ element"
 
-        let nw = self.w
+        let nw = self
+            .w
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Horizontal).unwrap())
             .normalize(draw_ctx);
-        let nh = self.h
+        let nh = self
+            .h
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Vertical).unwrap())
             .normalize(draw_ctx);

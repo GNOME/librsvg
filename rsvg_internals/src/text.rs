@@ -146,7 +146,8 @@ impl NodeTrait for NodeText {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
-                Attribute::Dx => self.dx
+                Attribute::Dx => self
+                    .dx
                     .set(parse("dx", value, LengthDir::Horizontal, None)?),
                 Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical, None)?),
                 _ => (),
@@ -368,11 +369,14 @@ impl NodeTrait for NodeTSpan {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x
+                Attribute::X => self
+                    .x
                     .set(parse("x", value, LengthDir::Horizontal, None).map(Some)?),
-                Attribute::Y => self.y
+                Attribute::Y => self
+                    .y
                     .set(parse("y", value, LengthDir::Vertical, None).map(Some)?),
-                Attribute::Dx => self.dx
+                Attribute::Dx => self
+                    .dx
                     .set(parse("dx", value, LengthDir::Horizontal, None)?),
                 Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical, None)?),
                 _ => (),

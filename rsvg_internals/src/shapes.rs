@@ -242,10 +242,12 @@ impl NodeTrait for NodeLine {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X1 => self.x1
+                Attribute::X1 => self
+                    .x1
                     .set(parse("x1", value, LengthDir::Horizontal, None)?),
                 Attribute::Y1 => self.y1.set(parse("y1", value, LengthDir::Vertical, None)?),
-                Attribute::X2 => self.x2
+                Attribute::X2 => self
+                    .x2
                     .set(parse("x2", value, LengthDir::Horizontal, None)?),
                 Attribute::Y2 => self.y2.set(parse("y2", value, LengthDir::Vertical, None)?),
                 _ => (),
@@ -518,7 +520,8 @@ impl NodeTrait for NodeCircle {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx
+                Attribute::Cx => self
+                    .cx
                     .set(parse("cx", value, LengthDir::Horizontal, None)?),
                 Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
                 Attribute::R => self.r.set(parse(
@@ -578,7 +581,8 @@ impl NodeTrait for NodeEllipse {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx
+                Attribute::Cx => self
+                    .cx
                     .set(parse("cx", value, LengthDir::Horizontal, None)?),
                 Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
 

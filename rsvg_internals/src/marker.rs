@@ -218,7 +218,8 @@ impl NodeTrait for NodeMarker {
                         .set(parse("refX", value, LengthDir::Horizontal, None)?)
                 }
 
-                Attribute::RefY => self.ref_y
+                Attribute::RefY => self
+                    .ref_y
                     .set(parse("refY", value, LengthDir::Vertical, None)?),
 
                 Attribute::MarkerWidth => self.width.set(parse(
@@ -826,10 +827,12 @@ mod parser_tests {
 
     #[test]
     fn parsing_invalid_marker_units_yields_error() {
-        assert!(is_parse_error(&MarkerUnits::parse("", ()).map_err(|e| AttributeError::from(e))));
-        assert!(
-            is_parse_error(&MarkerUnits::parse("foo", ()).map_err(|e| AttributeError::from(e)))
-        );
+        assert!(is_parse_error(
+            &MarkerUnits::parse("", ()).map_err(|e| AttributeError::from(e))
+        ));
+        assert!(is_parse_error(
+            &MarkerUnits::parse("foo", ()).map_err(|e| AttributeError::from(e))
+        ));
     }
 
     #[test]
@@ -846,13 +849,15 @@ mod parser_tests {
 
     #[test]
     fn parsing_invalid_marker_orient_yields_error() {
-        assert!(is_parse_error(&MarkerOrient::parse("", ()).map_err(|e| AttributeError::from(e))));
-        assert!(
-            is_parse_error(&MarkerOrient::parse("blah", ()).map_err(|e| AttributeError::from(e)))
-        );
-        assert!(
-            is_parse_error(&MarkerOrient::parse("45blah", ()).map_err(|e| AttributeError::from(e)))
-        );
+        assert!(is_parse_error(
+            &MarkerOrient::parse("", ()).map_err(|e| AttributeError::from(e))
+        ));
+        assert!(is_parse_error(
+            &MarkerOrient::parse("blah", ()).map_err(|e| AttributeError::from(e))
+        ));
+        assert!(is_parse_error(
+            &MarkerOrient::parse("45blah", ()).map_err(|e| AttributeError::from(e))
+        ));
     }
 
     #[test]
