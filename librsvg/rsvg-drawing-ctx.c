@@ -789,12 +789,6 @@ rsvg_drawing_ctx_get_bbox (RsvgDrawingCtx *ctx)
 }
 
 void
-rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
-{
-    rsvg_bbox_insert (draw_ctx->bbox, bbox);
-}
-
-void
 rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx *ctx, double w, double h)
 {
     RsvgViewBox *vb = g_new0 (RsvgViewBox, 1);

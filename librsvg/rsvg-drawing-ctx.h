@@ -105,9 +105,6 @@ G_GNUC_INTERNAL
 RsvgBbox *rsvg_drawing_ctx_get_bbox (RsvgDrawingCtx *draw_ctx);
 
 G_GNUC_INTERNAL
-void rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox);
-
-G_GNUC_INTERNAL
 void rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h);
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_pop_view_box  (RsvgDrawingCtx * ctx);
