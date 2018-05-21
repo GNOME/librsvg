@@ -166,7 +166,11 @@ rsvg_filter_primitive_composite_render (RsvgNode *node, RsvgFilterPrimitive *pri
         cairo_destroy (cr);
     }
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (in2);

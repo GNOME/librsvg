@@ -75,8 +75,9 @@ rsvg_filter_primitive_erode_render (RsvgNode *node, RsvgFilterPrimitive *primiti
     rowstride = cairo_image_surface_get_stride (in);
 
     /* scale the radius values */
-    kx = erode->rx * ctx->paffine.xx;
-    ky = erode->ry * ctx->paffine.yy;
+    cairo_matrix_t ctx_paffine = rsvg_filter_context_get_paffine(ctx);
+    kx = erode->rx * ctx_paffine.xx;
+    ky = erode->ry * ctx_paffine.yy;
 
     output = _rsvg_image_surface_new (width, height);
     if (output == NULL) {
@@ -115,7 +116,11 @@ rsvg_filter_primitive_erode_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);

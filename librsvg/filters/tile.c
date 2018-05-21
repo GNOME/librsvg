@@ -78,7 +78,7 @@ rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgFilterPrimitive *primitiv
 
     in_pixels = cairo_image_surface_get_data (in);
 
-    output = _rsvg_image_surface_new (ctx->width, ctx->height);
+    output = _rsvg_image_surface_new (rsvg_filter_context_get_width (ctx), rsvg_filter_context_get_height (ctx));
     if (output == NULL) {
         cairo_surface_destroy (in);
         return;
@@ -100,7 +100,11 @@ rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgFilterPrimitive *primitiv
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);

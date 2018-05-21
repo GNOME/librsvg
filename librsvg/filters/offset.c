@@ -58,6 +58,8 @@ rsvg_filter_primitive_offset_render (RsvgNode *node, RsvgFilterPrimitive *primit
     double dx, dy;
     int ox, oy;
 
+    RsvgDrawingCtx *drawing_ctx = rsvg_filter_context_get_drawing_ctx(ctx);
+
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
     in = rsvg_filter_get_in (primitive->in, ctx);
@@ -81,11 +83,12 @@ rsvg_filter_primitive_offset_render (RsvgNode *node, RsvgFilterPrimitive *primit
 
     output_pixels = cairo_image_surface_get_data (output);
 
-    dx = rsvg_length_normalize (&offset->dx, ctx->ctx);
-    dy = rsvg_length_normalize (&offset->dy, ctx->ctx);
+    dx = rsvg_length_normalize (&offset->dx, drawing_ctx);
+    dy = rsvg_length_normalize (&offset->dy, drawing_ctx);
 
-    ox = ctx->paffine.xx * dx + ctx->paffine.xy * dy;
-    oy = ctx->paffine.yx * dx + ctx->paffine.yy * dy;
+    cairo_matrix_t ctx_paffine = rsvg_filter_context_get_paffine(ctx);
+    ox = ctx_paffine.xx * dx + ctx_paffine.xy * dy;
+    oy = ctx_paffine.yx * dx + ctx_paffine.yy * dy;
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
@@ -150,8 +153,8 @@ rsvg_filter_primitive_offset_set_atts (RsvgNode *node, gpointer impl, RsvgHandle
     rsvg_property_bag_iter_end (iter);
 }
 
-RsvgNode *
-rsvg_new_filter_primitive_offset (const char *element_name, RsvgNode *parent)
+static RsvgNode *
+_rsvg_new_filter_primitive_offset (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveOffset *filter;
 

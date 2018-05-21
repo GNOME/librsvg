@@ -127,18 +127,21 @@ rsvg_filter_primitive_displacement_map_render (RsvgNode *node, RsvgFilterPrimiti
         break;
     }
 
-    xch = ctx->channelmap[xch];
-    ych = ctx->channelmap[ych];
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
+    cairo_matrix_t ctx_paffine = rsvg_filter_context_get_paffine(ctx);
+
+    xch = ctx_channelmap[xch];
+    ych = ctx_channelmap[ych];
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             if (xch != 4)
-                ox = x + displacement_map->scale * ctx->paffine.xx *
+                ox = x + displacement_map->scale * ctx_paffine.xx *
                     ((double) in2_pixels[y * rowstride + x * 4 + xch] / 255.0 - 0.5);
             else
                 ox = x;
 
             if (ych != 4)
-                oy = y + displacement_map->scale * ctx->paffine.yy *
+                oy = y + displacement_map->scale * ctx_paffine.yy *
                     ((double) in2_pixels[y * rowstride + x * 4 + ych] / 255.0 - 0.5);
             else
                 oy = y;
@@ -151,7 +154,11 @@ rsvg_filter_primitive_displacement_map_render (RsvgNode *node, RsvgFilterPrimiti
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (primitive->result, output, ctx);
+    RsvgFilterPrimitiveOutput op;
+    op.surface = output;
+    op.bounds = boundarys;
+    rsvg_filter_store_output(primitive->result, op, ctx);
+    /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (in2);

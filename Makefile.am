@@ -88,6 +88,10 @@ RUST_SRC =					\
 	rsvg_internals/src/coord_units.rs	\
 	rsvg_internals/src/draw.rs		\
 	rsvg_internals/src/drawing_ctx.rs	\
+	rsvg_internals/src/filter_context.rs	\
+	rsvg_internals/src/filters/ffi.rs	\
+	rsvg_internals/src/filters/mod.rs	\
+	rsvg_internals/src/filters/offset.rs	\
 	rsvg_internals/src/error.rs		\
 	rsvg_internals/src/float_eq_cairo.rs	\
 	rsvg_internals/src/gradient.rs		\

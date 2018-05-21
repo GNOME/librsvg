@@ -87,7 +87,7 @@ pub struct Children<'a> {
 
 // Keep this in sync with rsvg-private.h:RsvgNodeType
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum NodeType {
     Invalid = 0,
 
@@ -220,6 +220,10 @@ impl Node {
 
     pub fn set_error(&self, error: NodeError) {
         *self.result.borrow_mut() = Err(error);
+    }
+
+    pub fn is_in_error(&self) -> bool {
+        self.result.borrow().is_err()
     }
 
     pub fn get_result(&self) -> NodeResult {

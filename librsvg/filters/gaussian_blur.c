@@ -611,8 +611,9 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgFilterPrimitive 
     }
 
     /* scale the SD values */
-    sdx = fabs (gaussian->sdx * ctx->paffine.xx);
-    sdy = fabs (gaussian->sdy * ctx->paffine.yy);
+    cairo_matrix_t ctx_paffine = rsvg_filter_context_get_paffine(ctx);
+    sdx = fabs (gaussian->sdx * ctx_paffine.xx);
+    sdy = fabs (gaussian->sdy * ctx_paffine.yy);
 
     gaussian_blur_surface (in, output, sdx, sdy);
 

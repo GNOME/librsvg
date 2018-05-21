@@ -51,8 +51,8 @@ rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    height = ctx->height;
-    width = ctx->width;
+    height = rsvg_filter_context_get_height(ctx);
+    width = rsvg_filter_context_get_width(ctx);
     output = _rsvg_image_surface_new (width, height);
     if (output == NULL)
         return;
@@ -66,10 +66,12 @@ rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgFilterPrimitive *primiti
                               (&color))[2 - i]) * opacity / 255;
     pixcolor[3] = opacity;
 
+    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
+
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++)
             for (i = 0; i < 4; i++)
-                output_pixels[4 * x + y * rowstride + ctx->channelmap[i]] = pixcolor[i];
+                output_pixels[4 * x + y * rowstride + ctx_channelmap[i]] = pixcolor[i];
 
     cairo_surface_mark_dirty (output);
 

@@ -323,10 +323,7 @@ pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
 }
 
 pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &BoundingBox) {
-    let draw_ctx_bbox: &mut BoundingBox = unsafe {
-        let bb = rsvg_drawing_ctx_get_bbox(draw_ctx);
-        &mut *(bb as *mut BoundingBox)
-    };
+    let draw_ctx_bbox = get_bbox_mut(draw_ctx);
 
     draw_ctx_bbox.insert(bbox);
 }
@@ -403,6 +400,17 @@ pub fn state_pop(draw_ctx: *mut RsvgDrawingCtx) {
 
         Box::from_raw(state as *mut _);
     }
+}
+
+pub fn get_bbox_mut<'a>(draw_ctx: *const RsvgDrawingCtx) -> &'a mut BoundingBox {
+    unsafe {
+        let bb = rsvg_drawing_ctx_get_bbox(draw_ctx);
+        &mut *(bb as *mut BoundingBox)
+    }
+}
+
+pub fn get_bbox<'a>(draw_ctx: *const RsvgDrawingCtx) -> &'a BoundingBox {
+    get_bbox_mut(draw_ctx)
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
