@@ -114,6 +114,14 @@ RsvgNode *rsvg_node_stop_new (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_mask_new (const char *element_name, RsvgNode *node);
 
+/* Implemented in rust/src/clip_path.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_clip_path_new (const char *element_name, RsvgNode *node);
+
+/* Implemented in rust/src/clip_path.rs */
+G_GNUC_INTERNAL
+RsvgCoordUnits rsvg_node_clip_path_get_units (RsvgNode *node);
+
 /* Implemented in rust/src/shapes.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_path_new (const char *element_name, RsvgNode *parent);

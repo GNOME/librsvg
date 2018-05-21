@@ -17,6 +17,7 @@ use filters::rsvg_filter_render;
 use iri::IRI;
 use length::LengthUnit;
 use node::{box_node, NodeType, RsvgNode};
+use mask::NodeMask;
 use rect::RectangleExt;
 use state::{
     self,
@@ -263,6 +264,18 @@ pub fn pop_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues
     }
 }
 
+pub fn get_width(draw_ctx: *const RsvgDrawingCtx) -> f64 {
+    unsafe {
+        rsvg_drawing_ctx_get_width(draw_ctx)
+    }
+}
+
+pub fn get_height(draw_ctx: *const RsvgDrawingCtx) -> f64 {
+    unsafe {
+        rsvg_drawing_ctx_get_height(draw_ctx)
+    }
+}
+
 pub fn get_offset(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
     let mut w: f64 = 0.0;
     let mut h: f64 = 0.0;
@@ -406,11 +419,6 @@ pub fn get_bbox<'a>(draw_ctx: *const RsvgDrawingCtx) -> &'a BoundingBox {
 
 extern "C" {
     fn rsvg_cairo_clip(draw_ctx: *mut RsvgDrawingCtx, node: *const RsvgNode, bbox: *const RsvgBbox);
-    fn rsvg_cairo_generate_mask(
-        cr: *const cairo_sys::cairo_t,
-        mask: *const RsvgNode,
-        draw_ctx: *mut RsvgDrawingCtx,
-    );
 
     fn rsvg_drawing_ctx_get_width(draw_ctx: *const RsvgDrawingCtx) -> f64;
     fn rsvg_drawing_ctx_get_height(draw_ctx: *const RsvgDrawingCtx) -> f64;
@@ -624,9 +632,12 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
 
     if let Some(mask) = mask {
         if let Some(acquired) = get_acquired_node_of_type(draw_ctx, mask, NodeType::Mask) {
-            unsafe {
-                rsvg_cairo_generate_mask(cr.to_raw_none(), acquired.1, draw_ctx);
-            }
+            let node = acquired.get();
+            let state = get_current_state(draw_ctx).unwrap();
+
+            node.with_impl(|mask: &NodeMask| {
+                mask.generate_cairo_mask(&node, draw_ctx, &state.get_computed_values());
+            });
         }
     } else if opacity != 0xff {
         cr.paint_with_alpha(f64::from(opacity) / 255.0);

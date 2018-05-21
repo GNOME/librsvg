@@ -31,8 +31,8 @@
 
 #include "rsvg-drawing-ctx.h"
 #include "rsvg-styles.h"
+#include "rsvg-defs.h"
 #include "rsvg-filter.h"
-#include "rsvg-mask.h"
 #include "rsvg-structure.h"
 
 #include <math.h>
@@ -49,159 +49,11 @@ void rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
                                    double w,
                                    double h);
 
-/* Implemented in rsvg_internals/src/draw.rs */
+/* Implemented in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_transformed_image_bounding_box (cairo_matrix_t *affine,
                                                       double width, double height,
                                                       double *bbx, double *bby, double *bbw, double *bbh);
-
-void
-rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
-{
-    cairo_surface_t *surface;
-    cairo_t *mask_cr, *save_cr;
-    RsvgState *state;
-    guint8 opacity;
-    guint8 *pixels;
-    guint32 width = ctx->rect.width;
-    guint32 height = ctx->rect.height;
-    guint32 rowstride, row, i;
-    cairo_matrix_t affinesave;
-    RsvgLength mask_x, mask_y, mask_w, mask_h;
-    double sx, sy, sw, sh;
-    RsvgCoordUnits mask_units;
-    RsvgCoordUnits content_units;
-    cairo_matrix_t affine;
-    double offset_x, offset_y;
-
-    g_assert (rsvg_node_get_type (mask) == RSVG_NODE_TYPE_MASK);
-
-    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
-    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
-        cairo_surface_destroy (surface);
-        return;
-    }
-
-    pixels = cairo_image_surface_get_data (surface);
-    rowstride = cairo_image_surface_get_stride (surface);
-
-    mask_units    = rsvg_node_mask_get_units (mask);
-    content_units = rsvg_node_mask_get_content_units (mask);
-
-    if (mask_units == objectBoundingBox)
-        rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
-
-    mask_x = rsvg_node_mask_get_x (mask);
-    mask_y = rsvg_node_mask_get_y (mask);
-    mask_w = rsvg_node_mask_get_width (mask);
-    mask_h = rsvg_node_mask_get_height (mask);
-
-    sx = rsvg_length_normalize (&mask_x, ctx);
-    sy = rsvg_length_normalize (&mask_y, ctx);
-    sw = rsvg_length_normalize (&mask_w, ctx);
-    sh = rsvg_length_normalize (&mask_h, ctx);
-
-    if (mask_units == objectBoundingBox)
-        rsvg_drawing_ctx_pop_view_box (ctx);
-
-    mask_cr = cairo_create (surface);
-    save_cr = ctx->cr;
-    ctx->cr = mask_cr;
-
-    state = rsvg_drawing_ctx_get_current_state (ctx);
-    affine = rsvg_state_get_affine (state);
-
-    if (mask_units == objectBoundingBox) {
-        cairo_rectangle_t rect;
-
-        rsvg_bbox_get_rect (ctx->bbox, &rect, NULL);
-        rsvg_cairo_add_clipping_rect (ctx,
-                                      &affine,
-                                      sx * rect.width + rect.x,
-                                      sy * rect.height + rect.y,
-                                      sw * rect.width,
-                                      sh * rect.height);
-    } else {
-        rsvg_cairo_add_clipping_rect (ctx, &affine, sx, sy, sw, sh);
-    }
-
-    /* Horribly dirty hack to have the bbox premultiplied to everything */
-    if (content_units == objectBoundingBox) {
-        cairo_rectangle_t rect;
-        cairo_matrix_t bbtransform;
-        RsvgState *mask_state;
-
-        rsvg_bbox_get_rect (ctx->bbox, &rect, NULL);
-        cairo_matrix_init (&bbtransform,
-                           rect.width,
-                           0,
-                           0,
-                           rect.height,
-                           rect.x,
-                           rect.y);
-
-        mask_state = rsvg_node_get_state (mask);
-
-        affinesave = rsvg_state_get_affine (mask_state);
-        cairo_matrix_multiply (&bbtransform, &bbtransform, &affinesave);
-        rsvg_state_set_affine (mask_state, bbtransform);
-        rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
-    }
-
-    rsvg_drawing_ctx_state_push (ctx);
-    rsvg_node_draw_children (mask, ctx, FALSE);
-    rsvg_drawing_ctx_state_pop (ctx);
-
-    if (content_units == objectBoundingBox) {
-        RsvgState *mask_state;
-
-        rsvg_drawing_ctx_pop_view_box (ctx);
-
-        mask_state = rsvg_node_get_state (mask);
-        rsvg_state_set_affine (mask_state, affinesave);
-    }
-
-    ctx->cr = save_cr;
-
-    opacity = rsvg_state_get_opacity (state);
-
-    for (row = 0; row < height; row++) {
-        guint8 *row_data = (pixels + (row * rowstride));
-        for (i = 0; i < width; i++) {
-            guint32 *pixel = (guint32 *) row_data + i;
-            /*
-             *  Assuming, the pixel is linear RGB (not sRGB)
-             *  y = luminance
-             *  Y = 0.2126 R + 0.7152 G + 0.0722 B
-             *  1.0 opacity = 255
-             *
-             *  When Y = 1.0, pixel for mask should be 0xFFFFFFFF
-             *  	(you get 1.0 luminance from 255 from R, G and B)
-             *
-             *	r_mult = 0xFFFFFFFF / (255.0 * 255.0) * .2126 = 14042.45  ~= 14042
-             *	g_mult = 0xFFFFFFFF / (255.0 * 255.0) * .7152 = 47239.69  ~= 47240
-             *	b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
-             *
-             * 	This allows for the following expected behaviour:
-             *  (we only care about the most sig byte)
-             *	if pixel = 0x00FFFFFF, pixel' = 0xFF......
-             *	if pixel = 0x00020202, pixel' = 0x02......
-             *	if pixel = 0x00000000, pixel' = 0x00......
-             */
-            *pixel = ((((*pixel & 0x00ff0000) >> 16) * 14042 +
-                       ((*pixel & 0x0000ff00) >>  8) * 47240 +
-                       ((*pixel & 0x000000ff)      ) * 4769    ) * opacity);
-        }
-    }
-
-    cairo_destroy (mask_cr);
-
-    rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
-
-    cairo_identity_matrix (cr);
-    cairo_mask_surface (cr, surface, offset_x, offset_y);
-    cairo_surface_destroy (surface);
-}
 
 void
 rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)

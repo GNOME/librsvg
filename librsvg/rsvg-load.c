@@ -27,10 +27,11 @@
 #include <string.h>
 
 #include "rsvg-attributes.h"
+#include "rsvg-defs.h"
 #include "rsvg-filter.h"
 #include "rsvg-load.h"
-#include "rsvg-mask.h"
 #include "rsvg-structure.h"
+#include "rsvg-styles.h"
 #include "rsvg-xml.h"
 
 typedef enum {

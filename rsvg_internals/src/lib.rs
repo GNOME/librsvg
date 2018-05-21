@@ -84,15 +84,7 @@ pub use link::rsvg_node_link_new;
 
 pub use marker::rsvg_node_marker_new;
 
-pub use mask::{
-    rsvg_node_mask_get_content_units,
-    rsvg_node_mask_get_height,
-    rsvg_node_mask_get_units,
-    rsvg_node_mask_get_width,
-    rsvg_node_mask_get_x,
-    rsvg_node_mask_get_y,
-    rsvg_node_mask_new,
-};
+pub use mask::rsvg_node_mask_new;
 
 pub use node::{
     rsvg_node_add_child,
