@@ -123,10 +123,11 @@ G_GNUC_INTERNAL
 void         rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
-cairo_surface_t *rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
-                                                       RsvgNode *drawable,
-                                                       double width,
-                                                       double height);
+void rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
+                                            RsvgNode *drawable,
+                                            cairo_surface_t *surface,
+                                            double width,
+                                            double height);
 
 G_GNUC_INTERNAL
 gboolean rsvg_drawing_ctx_is_testing (RsvgDrawingCtx *ctx);

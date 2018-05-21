@@ -838,22 +838,16 @@ rsvg_drawing_ctx_is_testing (RsvgDrawingCtx *ctx)
     return ctx->is_testing;
 }
 
-cairo_surface_t *
-rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
-                                      RsvgNode *drawable,
-                                      double width,
-                                      double height)
+void
+rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
+                                       RsvgNode *drawable,
+                                       cairo_surface_t *surface,
+                                       double width,
+                                       double height)
 {
-    cairo_surface_t *surface;
     cairo_t *save_cr = ctx->cr;
     cairo_t *save_initial_cr = ctx->initial_cr;
     cairo_rectangle_t save_rect = ctx->rect;
-
-    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
-    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
-        cairo_surface_destroy (surface);
-        return NULL;
-    }
 
     ctx->cr = cairo_create (surface);
     ctx->initial_cr = ctx->cr;
@@ -868,6 +862,4 @@ rsvg_drawing_ctx_get_surface_of_node (RsvgDrawingCtx *ctx,
     ctx->cr = save_cr;
     ctx->initial_cr = save_initial_cr;
     ctx->rect = save_rect;
-
-    return surface;
 }

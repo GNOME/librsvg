@@ -57,7 +57,11 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
 
     rsvg_state_set_affine (rsvg_drawing_ctx_get_current_state (ctx), context->paffine);
 
-    result = rsvg_drawing_ctx_get_surface_of_node (ctx, drawable, context->width, context->height);
+    result = _rsvg_image_surface_new (context->width, context->height);
+    if (!result)
+        return NULL;
+
+    rsvg_drawing_ctx_draw_node_on_surface (ctx, drawable, result, context->width, context->height);
 
     rsvg_drawing_ctx_release_node (ctx, drawable);
 
