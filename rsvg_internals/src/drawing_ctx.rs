@@ -325,7 +325,7 @@ pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
 pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &BoundingBox) {
     let draw_ctx_bbox: &mut BoundingBox = unsafe {
         let bb = rsvg_drawing_ctx_get_bbox(draw_ctx);
-         &mut *(bb as *mut BoundingBox)
+        &mut *(bb as *mut BoundingBox)
     };
 
     draw_ctx_bbox.insert(bbox);
