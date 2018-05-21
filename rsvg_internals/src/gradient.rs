@@ -734,7 +734,7 @@ fn resolve_fallbacks_and_set_pattern(
             set_pattern_on_draw_context(&resolved, draw_ctx, opacity, bbox)
         }
 
-        _ => true
+        _ => true,
     }
 }
 

@@ -25,13 +25,13 @@ extern crate downcast_rs;
 pub use attributes::rsvg_attribute_from_name;
 
 pub use bbox::{
-    rsvg_bbox_free,
     rsvg_bbox_clip,
     rsvg_bbox_clone,
+    rsvg_bbox_free,
     rsvg_bbox_get_rect,
-    rsvg_bbox_new,
     rsvg_bbox_insert,
-    RsvgBbox
+    rsvg_bbox_new,
+    RsvgBbox,
 };
 
 pub use clip_path::{rsvg_node_clip_path_get_units, rsvg_node_clip_path_new};

@@ -5,8 +5,8 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 use pango::{self, FontMapExt};
-use pangocairo;
 use pango_cairo_sys;
+use pangocairo;
 
 use bbox::{BoundingBox, RsvgBbox};
 use length::LengthUnit;
