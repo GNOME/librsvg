@@ -761,13 +761,13 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
 double
 rsvg_drawing_ctx_get_width (RsvgDrawingCtx *draw_ctx)
 {
-    draw_ctx->rect.width;
+    return draw_ctx->rect.width;
 }
 
 double
 rsvg_drawing_ctx_get_height (RsvgDrawingCtx *draw_ctx)
 {
-    draw_ctx->rect.height;
+    return draw_ctx->rect.height;
 }
 
 void
@@ -835,7 +835,7 @@ rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dp
 gboolean
 rsvg_drawing_ctx_is_testing (RsvgDrawingCtx *ctx)
 {
-    ctx->is_testing;
+    return ctx->is_testing;
 }
 
 cairo_surface_t *
