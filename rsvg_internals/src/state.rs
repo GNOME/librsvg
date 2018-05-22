@@ -970,7 +970,7 @@ impl State {
 
     pub fn to_computed_values(&self, values: &mut ComputedValues) {
         self.values.to_computed_values(values);
-        values.affine = self.affine;
+        values.affine = cairo::Matrix::multiply(&self.affine, &values.affine);
     }
 }
 
