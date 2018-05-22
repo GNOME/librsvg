@@ -377,6 +377,8 @@ impl SpecifiedValues {
         inherit_from!(self, computed, unicode_bidi);
         inherit_from!(self, computed, visibility);
         inherit_from!(self, computed, writing_mode);
+        inherit_from!(self, computed, xml_lang);
+        inherit_from!(self, computed, xml_space);
     }
 }
 
