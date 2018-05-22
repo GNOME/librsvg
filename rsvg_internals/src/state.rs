@@ -24,6 +24,16 @@ use property_macros::Property;
 use unitinterval::UnitInterval;
 use util::{utf8_cstr, utf8_cstr_opt};
 
+/// Representation of a single CSS property value.
+///
+/// `Unspecified` is the `Default`; it means that the corresponding property is not present.
+///
+/// `Inherit` means that the property is explicitly set to inherit
+/// from the parent element.  This is useful for properties which the
+/// SVG or CSS specs mandate that should not be inherited by default.
+///
+/// `Specified` is a value given by the SVG or CSS stylesheet.  This will later be
+/// resolved into part of a `ComputedValues` struct.
 pub enum SpecifiedValue<T>
 where
     T: Property + Clone + Default,
