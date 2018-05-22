@@ -238,10 +238,16 @@ impl Node {
             let node_state = state::from_c(self.state);
             drawing_ctx::state_reinherit_top(draw_ctx, node_state, dominate);
 
-            let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
-            let computed = state.get_computed_values();
-            self.node_impl
-                .draw(node, draw_ctx, &computed, dominate, clipping);
+            // let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
+            // let computed = state.get_computed_values();
+            let computed = self.get_computed_values();
+            self.node_impl.draw(
+                node,
+                draw_ctx,
+                computed.as_ref().unwrap(),
+                dominate,
+                clipping,
+            );
         }
     }
 
