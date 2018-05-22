@@ -174,9 +174,9 @@ impl Node {
         state::from_c_mut(self.state)
     }
 
-    pub fn set_computed_values(&self, values: ComputedValues) {
+    pub fn set_computed_values(&self, values: &ComputedValues) {
         if self.values.borrow().is_none() {
-            *self.values.borrow_mut() = Some(values);
+            *self.values.borrow_mut() = Some(values.clone());
         } else {
             unreachable!("computed values cannot be set twice on a node");
         }
@@ -184,6 +184,18 @@ impl Node {
 
     pub fn get_computed_values(&self) -> Ref<Option<ComputedValues>> {
         self.values.borrow()
+    }
+
+    pub fn cascade(&self, values: &ComputedValues) {
+        let mut values = values.clone();
+        let state = self.get_state();
+
+        state.to_computed_values(&mut values);
+        self.set_computed_values(&values);
+
+        for child in self.children() {
+            child.cascade(&values);
+        }
     }
 
     pub fn get_parent(&self) -> Option<Rc<Node>> {

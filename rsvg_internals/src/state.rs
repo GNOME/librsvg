@@ -963,10 +963,14 @@ impl State {
     pub fn get_computed_values(&self) -> ComputedValues {
         let mut computed = ComputedValues::default();
 
-        self.values.to_computed_values(&mut computed);
-        computed.affine = self.affine;
+        self.to_computed_values(&mut computed);
 
         computed
+    }
+
+    pub fn to_computed_values(&self, values: &mut ComputedValues) {
+        self.values.to_computed_values(values);
+        values.affine = self.affine;
     }
 }
 
