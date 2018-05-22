@@ -75,6 +75,7 @@ pub struct Node {
     children: RefCell<Vec<Rc<Node>>>, // strong references to children
     state: *mut RsvgState,
     result: RefCell<NodeResult>,
+    values: RefCell<Option<ComputedValues>>,
     node_impl: Box<NodeTrait>,
 }
 
@@ -156,6 +157,7 @@ impl Node {
             children: RefCell::new(Vec::new()),
             state,
             result: RefCell::new(Ok(())),
+            values: RefCell::new(None),
             node_impl,
         }
     }
@@ -170,6 +172,18 @@ impl Node {
 
     pub fn get_state_mut(&self) -> &mut State {
         state::from_c_mut(self.state)
+    }
+
+    pub fn set_computed_values(&self, values: ComputedValues) {
+        if self.values.borrow().is_none() {
+            *self.values.borrow_mut() = Some(values);
+        } else {
+            unreachable!("computed values cannot be set twice on a node");
+        }
+    }
+
+    pub fn get_computed_values(&self) -> Ref<Option<ComputedValues>> {
+        self.values.borrow()
     }
 
     pub fn get_parent(&self) -> Option<Rc<Node>> {
