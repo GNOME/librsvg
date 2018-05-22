@@ -149,7 +149,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
     }
 
     rsvg_drawing_ctx_state_push (ctx);
-    rsvg_node_draw_children (mask, ctx, 0, FALSE);
+    rsvg_node_draw_children (mask, ctx, FALSE);
     rsvg_drawing_ctx_state_pop (ctx);
 
     if (content_units == objectBoundingBox) {
@@ -244,7 +244,7 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     orig_bbox = rsvg_bbox_clone (ctx->bbox);
 
     rsvg_drawing_ctx_state_push (ctx);
-    rsvg_node_draw_children (node_clip_path, ctx, 0, TRUE);
+    rsvg_node_draw_children (node_clip_path, ctx, TRUE);
     rsvg_drawing_ctx_state_pop (ctx);
 
     if (clip_units == objectBoundingBox) {

@@ -562,13 +562,10 @@ pub extern "C" fn rsvg_node_children_iter_next_back(
 pub extern "C" fn rsvg_node_draw_children(
     raw_node: *const RsvgNode,
     draw_ctx: *const RsvgDrawingCtx,
-    dominate: i32,
     clipping: glib_sys::gboolean,
 ) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
-
-    assert!(dominate == 0);
 
     let clipping: bool = from_glib(clipping);
 
