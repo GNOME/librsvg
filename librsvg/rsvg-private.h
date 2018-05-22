@@ -467,6 +467,9 @@ char *rsvg_handle_resolve_uri (RsvgHandle *handle,
                                const char *uri);
 
 G_GNUC_INTERNAL
+void rsvg_handle_cascade (RsvgHandle *handle);
+
+G_GNUC_INTERNAL
 void rsvg_handle_update_font_map_for_testing (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
