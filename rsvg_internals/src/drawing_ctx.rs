@@ -13,7 +13,7 @@ use length::LengthUnit;
 use node::NodeType;
 use node::RsvgNode;
 use rect::RectangleExt;
-use state::{self, BaselineShift, FontSize, RsvgState, State};
+use state::{self, BaselineShift, RsvgState, SpecifiedValue, State};
 
 pub enum RsvgDrawingCtx {}
 
@@ -130,7 +130,7 @@ pub fn get_accumulated_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
 
     let mut state = get_current_state(draw_ctx).unwrap();
     while let Some(parent) = state.parent() {
-        if let Some(BaselineShift(ref s)) = state.baseline_shift {
+        if let SpecifiedValue::Specified(BaselineShift(ref s)) = state.values.baseline_shift {
             let parent_font_size = normalize_font_size(draw_ctx, parent);
             shift += s * parent_font_size;
         }
@@ -142,10 +142,7 @@ pub fn get_accumulated_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
 
 // Recursive evaluation of all parent elements regarding absolute font size
 fn normalize_font_size(draw_ctx: *const RsvgDrawingCtx, state: &State) -> f64 {
-    let font_size = state
-        .font_size
-        .as_ref()
-        .map_or_else(|| FontSize::default().0, |fs| fs.0);
+    let font_size = state.values.font_size.inherit_from(&Default::default()).0;
 
     match font_size.unit {
         LengthUnit::Percent | LengthUnit::FontEm | LengthUnit::FontEx => {

@@ -12,7 +12,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use state::{self, ComputedValues, State, StopColor, StopOpacity};
+use state::{ComputedValues, SpecifiedValue, State, StopColor, StopOpacity};
 
 pub struct NodeStop {
     offset: Cell<f64>,
@@ -98,29 +98,38 @@ impl NodeTrait for NodeStop {
         let mut color_rgba: cssparser::RGBA;
 
         let current_color = inherited_state
+            .values
             .color
-            .as_ref()
-            .map_or_else(|| state::Color::default().0, |c| c.0);
+            .inherit_from(&Default::default())
+            .0;
 
-        match state.stop_color {
-            None => match inherited_state.stop_color {
-                None => color_rgba = cssparser::RGBA::transparent(),
-                Some(StopColor(Color::CurrentColor)) => color_rgba = current_color,
-                Some(StopColor(Color::RGBA(rgba))) => color_rgba = rgba,
+        match state.values.stop_color {
+            SpecifiedValue::Unspecified => color_rgba = cssparser::RGBA::transparent(),
+
+            SpecifiedValue::Inherit => match inherited_state.values.stop_color {
+                SpecifiedValue::Unspecified | SpecifiedValue::Inherit => {
+                    color_rgba = cssparser::RGBA::transparent()
+                }
+                SpecifiedValue::Specified(StopColor(Color::CurrentColor)) => {
+                    color_rgba = current_color
+                }
+                SpecifiedValue::Specified(StopColor(Color::RGBA(rgba))) => color_rgba = rgba,
             },
 
-            Some(StopColor(Color::CurrentColor)) => color_rgba = current_color,
+            SpecifiedValue::Specified(StopColor(Color::CurrentColor)) => color_rgba = current_color,
 
-            Some(StopColor(Color::RGBA(rgba))) => color_rgba = rgba,
+            SpecifiedValue::Specified(StopColor(Color::RGBA(rgba))) => color_rgba = rgba,
         }
 
-        match state.stop_opacity {
-            None => match inherited_state.stop_opacity {
-                Some(StopOpacity(val)) => color_rgba.alpha = u8::from(val),
-                _ => color_rgba.alpha = 0xff,
+        match state.values.stop_opacity {
+            SpecifiedValue::Unspecified => color_rgba.alpha = 0xff,
+
+            SpecifiedValue::Inherit => match inherited_state.values.stop_opacity {
+                SpecifiedValue::Unspecified | SpecifiedValue::Inherit => color_rgba.alpha = 0xff,
+                SpecifiedValue::Specified(StopOpacity(val)) => color_rgba.alpha = u8::from(val),
             },
 
-            Some(StopOpacity(val)) => color_rgba.alpha = u8::from(val),
+            SpecifiedValue::Specified(StopOpacity(val)) => color_rgba.alpha = u8::from(val),
         }
 
         self.rgba.set(u32_from_rgba(color_rgba));

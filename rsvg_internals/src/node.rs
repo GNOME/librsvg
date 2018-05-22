@@ -15,7 +15,7 @@ use error::*;
 use handle::RsvgHandle;
 use parsers::ParseError;
 use property_bag::PropertyBag;
-use state::{self, rsvg_state_new, ComputedValues, Overflow, RsvgState, State};
+use state::{self, rsvg_state_new, ComputedValues, Overflow, RsvgState, SpecifiedValue, State};
 use util::utf8_cstr;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
@@ -273,7 +273,7 @@ impl Node {
 
     pub fn set_overflow_hidden(&self) {
         let state = self.get_state_mut();
-        state.overflow = Some(Overflow::Hidden);
+        state.values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
 }
 

@@ -34,6 +34,7 @@ use util::{utf8_cstr, utf8_cstr_opt};
 ///
 /// `Specified` is a value given by the SVG or CSS stylesheet.  This will later be
 /// resolved into part of a `ComputedValues` struct.
+#[derive(Clone)]
 pub enum SpecifiedValue<T>
 where
     T: Property + Clone + Default,
@@ -99,58 +100,13 @@ pub struct State {
 
     pub affine: cairo::Matrix,
 
-    pub baseline_shift: Option<BaselineShift>,
-    pub clip_path: Option<ClipPath>,
-    pub clip_rule: Option<ClipRule>,
-    pub comp_op: Option<CompOp>,
-    pub color: Option<Color>,
-    pub direction: Option<Direction>,
-    pub display: Option<Display>,
-    pub enable_background: Option<EnableBackground>,
-    pub fill: Option<Fill>,
-    pub fill_opacity: Option<FillOpacity>,
-    pub fill_rule: Option<FillRule>,
-    pub filter: Option<Filter>,
-    pub flood_color: Option<FloodColor>,
-    pub flood_opacity: Option<FloodOpacity>,
-    pub font_family: Option<FontFamily>,
-    pub font_size: Option<FontSize>,
-    pub font_stretch: Option<FontStretch>,
-    pub font_style: Option<FontStyle>,
-    pub font_variant: Option<FontVariant>,
-    pub font_weight: Option<FontWeight>,
-    pub letter_spacing: Option<LetterSpacing>,
-    pub marker_end: Option<MarkerEnd>,
-    pub marker_mid: Option<MarkerMid>,
-    pub marker_start: Option<MarkerStart>,
-    pub mask: Option<Mask>,
-    pub opacity: Option<Opacity>,
-    pub overflow: Option<Overflow>,
-    pub shape_rendering: Option<ShapeRendering>,
-    pub stop_color: Option<StopColor>,
-    pub stop_opacity: Option<StopOpacity>,
-    pub stroke: Option<Stroke>,
-    pub stroke_dasharray: Option<StrokeDasharray>,
-    pub stroke_dashoffset: Option<StrokeDashoffset>,
-    pub stroke_line_cap: Option<StrokeLinecap>,
-    pub stroke_line_join: Option<StrokeLinejoin>,
-    pub stroke_opacity: Option<StrokeOpacity>,
-    pub stroke_miterlimit: Option<StrokeMiterlimit>,
-    pub stroke_width: Option<StrokeWidth>,
-    pub text_anchor: Option<TextAnchor>,
-    pub text_decoration: Option<TextDecoration>,
-    pub text_rendering: Option<TextRendering>,
-    pub unicode_bidi: Option<UnicodeBidi>,
-    pub visibility: Option<Visibility>,
-    pub writing_mode: Option<WritingMode>,
-    pub xml_lang: Option<XmlLang>,
-    pub xml_space: Option<XmlSpace>,
+    pub values: SpecifiedValues,
 
     important_styles: RefCell<HashSet<Attribute>>,
     pub cond: bool,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct SpecifiedValues {
     pub baseline_shift: SpecifiedValue<BaselineShift>,
     pub clip_path: SpecifiedValue<ClipPath>,
@@ -301,10 +257,8 @@ impl Default for ComputedValues {
             opacity: Default::default(),
             overflow: Default::default(),
             shape_rendering: Default::default(),
-
             stop_color: Default::default(),
             stop_opacity: Default::default(),
-
             stroke: Default::default(),
             stroke_dasharray: Default::default(),
             stroke_dashoffset: Default::default(),
@@ -397,60 +351,7 @@ impl State {
 
             affine: cairo::Matrix::identity(),
 
-            // please keep these sorted
-            baseline_shift: Default::default(),
-            clip_path: Default::default(),
-            clip_rule: Default::default(),
-            color: Default::default(),
-            comp_op: Default::default(),
-            direction: Default::default(),
-            display: Default::default(),
-            enable_background: Default::default(),
-            fill: Default::default(),
-            fill_opacity: Default::default(),
-            fill_rule: Default::default(),
-            filter: Default::default(),
-            flood_color: Default::default(),
-            flood_opacity: Default::default(),
-            font_family: Default::default(),
-            font_size: Default::default(),
-            font_stretch: Default::default(),
-            font_style: Default::default(),
-            font_variant: Default::default(),
-            font_weight: Default::default(),
-            letter_spacing: Default::default(),
-            marker_end: Default::default(),
-            marker_mid: Default::default(),
-            marker_start: Default::default(),
-            mask: Default::default(),
-            opacity: Default::default(),
-            overflow: Default::default(),
-            shape_rendering: Default::default(),
-
-            // The following two start as None (i.e. inherit).  This
-            // is so that the first pass of inherit_run(), called from
-            // reconstruct() from the "stop" element code, will
-            // correctly initialize the destination state from the
-            // toplevel element.
-            stop_color: None,
-            stop_opacity: None,
-
-            stroke: Default::default(),
-            stroke_dasharray: Default::default(),
-            stroke_dashoffset: Default::default(),
-            stroke_line_cap: Default::default(),
-            stroke_line_join: Default::default(),
-            stroke_opacity: Default::default(),
-            stroke_miterlimit: Default::default(),
-            stroke_width: Default::default(),
-            text_anchor: Default::default(),
-            text_decoration: Default::default(),
-            text_rendering: Default::default(),
-            unicode_bidi: Default::default(),
-            visibility: Default::default(),
-            writing_mode: Default::default(),
-            xml_lang: Default::default(),
-            xml_space: Default::default(),
+            values: Default::default(),
 
             important_styles: Default::default(),
             cond: true,
@@ -532,71 +433,189 @@ impl State {
         inherituninheritables: bool,
     ) {
         // please keep these sorted
-        inherit(inherit_fn, &mut self.baseline_shift, &src.baseline_shift);
-        inherit(inherit_fn, &mut self.clip_rule, &src.clip_rule);
-        inherit(inherit_fn, &mut self.color, &src.color);
-        inherit(inherit_fn, &mut self.direction, &src.direction);
-        inherit(inherit_fn, &mut self.display, &src.display);
-        inherit(inherit_fn, &mut self.fill, &src.fill);
-        inherit(inherit_fn, &mut self.fill_opacity, &src.fill_opacity);
-        inherit(inherit_fn, &mut self.fill_rule, &src.fill_rule);
-        inherit(inherit_fn, &mut self.flood_color, &src.flood_color);
-        inherit(inherit_fn, &mut self.flood_opacity, &src.flood_opacity);
-        inherit(inherit_fn, &mut self.font_family, &src.font_family);
-        inherit(inherit_fn, &mut self.font_size, &src.font_size);
-        inherit(inherit_fn, &mut self.font_stretch, &src.font_stretch);
-        inherit(inherit_fn, &mut self.font_style, &src.font_style);
-        inherit(inherit_fn, &mut self.font_variant, &src.font_variant);
-        inherit(inherit_fn, &mut self.font_weight, &src.font_weight);
-        inherit(inherit_fn, &mut self.letter_spacing, &src.letter_spacing);
-        inherit(inherit_fn, &mut self.marker_end, &src.marker_end);
-        inherit(inherit_fn, &mut self.marker_mid, &src.marker_mid);
-        inherit(inherit_fn, &mut self.marker_start, &src.marker_start);
-        inherit(inherit_fn, &mut self.overflow, &src.overflow);
-        inherit(inherit_fn, &mut self.shape_rendering, &src.shape_rendering);
-        inherit(inherit_fn, &mut self.stop_color, &src.stop_color);
-        inherit(inherit_fn, &mut self.stop_opacity, &src.stop_opacity);
-        inherit(inherit_fn, &mut self.stroke, &src.stroke);
         inherit(
             inherit_fn,
-            &mut self.stroke_dasharray,
-            &src.stroke_dasharray,
+            &mut self.values.baseline_shift,
+            &src.values.baseline_shift,
         );
         inherit(
             inherit_fn,
-            &mut self.stroke_dashoffset,
-            &src.stroke_dashoffset,
+            &mut self.values.clip_rule,
+            &src.values.clip_rule,
         );
-        inherit(inherit_fn, &mut self.stroke_line_cap, &src.stroke_line_cap);
+        inherit(inherit_fn, &mut self.values.color, &src.values.color);
         inherit(
             inherit_fn,
-            &mut self.stroke_line_join,
-            &src.stroke_line_join,
+            &mut self.values.direction,
+            &src.values.direction,
         );
-        inherit(inherit_fn, &mut self.stroke_opacity, &src.stroke_opacity);
+        inherit(inherit_fn, &mut self.values.display, &src.values.display);
+        inherit(inherit_fn, &mut self.values.fill, &src.values.fill);
         inherit(
             inherit_fn,
-            &mut self.stroke_miterlimit,
-            &src.stroke_miterlimit,
+            &mut self.values.fill_opacity,
+            &src.values.fill_opacity,
         );
-        inherit(inherit_fn, &mut self.stroke_width, &src.stroke_width);
-        inherit(inherit_fn, &mut self.text_anchor, &src.text_anchor);
-        inherit(inherit_fn, &mut self.text_decoration, &src.text_decoration);
-        inherit(inherit_fn, &mut self.text_rendering, &src.text_rendering);
-        inherit(inherit_fn, &mut self.unicode_bidi, &src.unicode_bidi);
-        inherit(inherit_fn, &mut self.visibility, &src.visibility);
-        inherit(inherit_fn, &mut self.xml_lang, &src.xml_lang);
-        inherit(inherit_fn, &mut self.xml_space, &src.xml_space);
+        inherit(
+            inherit_fn,
+            &mut self.values.fill_rule,
+            &src.values.fill_rule,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.flood_color,
+            &src.values.flood_color,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.flood_opacity,
+            &src.values.flood_opacity,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.font_family,
+            &src.values.font_family,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.font_size,
+            &src.values.font_size,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.font_stretch,
+            &src.values.font_stretch,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.font_style,
+            &src.values.font_style,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.font_variant,
+            &src.values.font_variant,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.font_weight,
+            &src.values.font_weight,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.letter_spacing,
+            &src.values.letter_spacing,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.marker_end,
+            &src.values.marker_end,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.marker_mid,
+            &src.values.marker_mid,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.marker_start,
+            &src.values.marker_start,
+        );
+        inherit(inherit_fn, &mut self.values.overflow, &src.values.overflow);
+        inherit(
+            inherit_fn,
+            &mut self.values.shape_rendering,
+            &src.values.shape_rendering,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.stop_color,
+            &src.values.stop_color,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.stop_opacity,
+            &src.values.stop_opacity,
+        );
+        inherit(inherit_fn, &mut self.values.stroke, &src.values.stroke);
+        inherit(
+            inherit_fn,
+            &mut self.values.stroke_dasharray,
+            &src.values.stroke_dasharray,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.stroke_dashoffset,
+            &src.values.stroke_dashoffset,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.stroke_line_cap,
+            &src.values.stroke_line_cap,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.stroke_line_join,
+            &src.values.stroke_line_join,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.stroke_opacity,
+            &src.values.stroke_opacity,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.stroke_miterlimit,
+            &src.values.stroke_miterlimit,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.stroke_width,
+            &src.values.stroke_width,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.text_anchor,
+            &src.values.text_anchor,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.text_decoration,
+            &src.values.text_decoration,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.text_rendering,
+            &src.values.text_rendering,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.unicode_bidi,
+            &src.values.unicode_bidi,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.visibility,
+            &src.values.visibility,
+        );
+        inherit(inherit_fn, &mut self.values.xml_lang, &src.values.xml_lang);
+        inherit(
+            inherit_fn,
+            &mut self.values.xml_space,
+            &src.values.xml_space,
+        );
 
         self.cond = src.cond;
 
         if inherituninheritables {
-            self.clip_path.clone_from(&src.clip_path);
-            self.comp_op.clone_from(&src.comp_op);
-            self.enable_background.clone_from(&src.enable_background);
-            self.filter.clone_from(&src.filter);
-            self.mask.clone_from(&src.mask);
-            self.opacity.clone_from(&src.opacity);
+            self.values.clip_path.clone_from(&src.values.clip_path);
+            self.values.comp_op.clone_from(&src.values.comp_op);
+            self.values
+                .enable_background
+                .clone_from(&src.values.enable_background);
+            self.values.filter.clone_from(&src.values.filter);
+            self.values.mask.clone_from(&src.values.mask);
+            self.values.opacity.clone_from(&src.values.opacity);
         }
     }
 
@@ -620,207 +639,199 @@ impl State {
             // please keep these sorted
             match attr {
                 Attribute::BaselineShift => {
-                    self.baseline_shift = parse_property(value, ())?;
+                    self.values.baseline_shift = parse_property(value, ())?;
                 }
 
                 Attribute::ClipPath => {
-                    self.clip_path = parse_property(value, ())?;
+                    self.values.clip_path = parse_property(value, ())?;
                 }
 
                 Attribute::ClipRule => {
-                    self.clip_rule = parse_property(value, ())?;
+                    self.values.clip_rule = parse_property(value, ())?;
                 }
 
                 Attribute::Color => {
-                    self.color = parse_property(value, ())?;
+                    self.values.color = parse_property(value, ())?;
                 }
 
                 Attribute::CompOp => {
-                    self.comp_op = parse_property(value, ())?;
+                    self.values.comp_op = parse_property(value, ())?;
                 }
 
                 Attribute::Direction => {
-                    self.direction = parse_property(value, ())?;
+                    self.values.direction = parse_property(value, ())?;
                 }
 
                 Attribute::Display => {
-                    self.display = parse_property(value, ())?;
+                    self.values.display = parse_property(value, ())?;
                 }
 
                 Attribute::EnableBackground => {
-                    self.enable_background = parse_property(value, ())?;
+                    self.values.enable_background = parse_property(value, ())?;
                 }
 
                 Attribute::Fill => {
-                    self.fill = parse_property(value, ())?;
+                    self.values.fill = parse_property(value, ())?;
                 }
 
                 Attribute::FillOpacity => {
-                    self.fill_opacity = parse_property(value, ())?;
+                    self.values.fill_opacity = parse_property(value, ())?;
                 }
 
                 Attribute::FillRule => {
-                    self.fill_rule = parse_property(value, ())?;
+                    self.values.fill_rule = parse_property(value, ())?;
                 }
 
                 Attribute::Filter => {
-                    self.filter = parse_property(value, ())?;
+                    self.values.filter = parse_property(value, ())?;
                 }
 
                 Attribute::FloodColor => {
-                    self.flood_color = parse_property(value, ())?;
+                    self.values.flood_color = parse_property(value, ())?;
                 }
 
                 Attribute::FloodOpacity => {
-                    self.flood_opacity = parse_property(value, ())?;
+                    self.values.flood_opacity = parse_property(value, ())?;
                 }
 
                 Attribute::FontFamily => {
-                    self.font_family = parse_property(value, ())?;
+                    self.values.font_family = parse_property(value, ())?;
                 }
 
                 Attribute::FontSize => {
-                    self.font_size = parse_property(value, LengthDir::Both)?;
+                    self.values.font_size = parse_property(value, LengthDir::Both)?;
                 }
 
                 Attribute::FontStretch => {
-                    self.font_stretch = parse_property(value, ())?;
+                    self.values.font_stretch = parse_property(value, ())?;
                 }
 
                 Attribute::FontStyle => {
-                    self.font_style = parse_property(value, ())?;
+                    self.values.font_style = parse_property(value, ())?;
                 }
 
                 Attribute::FontVariant => {
-                    self.font_variant = parse_property(value, ())?;
+                    self.values.font_variant = parse_property(value, ())?;
                 }
 
                 Attribute::FontWeight => {
-                    self.font_weight = parse_property(value, ())?;
+                    self.values.font_weight = parse_property(value, ())?;
                 }
 
                 Attribute::LetterSpacing => {
-                    self.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
+                    self.values.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
                 }
 
                 Attribute::MarkerEnd => {
-                    self.marker_end = parse_property(value, ())?;
+                    self.values.marker_end = parse_property(value, ())?;
                 }
 
                 Attribute::MarkerMid => {
-                    self.marker_mid = parse_property(value, ())?;
+                    self.values.marker_mid = parse_property(value, ())?;
                 }
 
                 Attribute::MarkerStart => {
-                    self.marker_start = parse_property(value, ())?;
+                    self.values.marker_start = parse_property(value, ())?;
                 }
 
                 Attribute::Marker if accept_shorthands => {
-                    if self.marker_end.is_none() {
-                        self.marker_end = parse_property(value, ())?;
-                    }
-
-                    if self.marker_mid.is_none() {
-                        self.marker_mid = parse_property(value, ())?;
-                    }
-
-                    if self.marker_start.is_none() {
-                        self.marker_start = parse_property(value, ())?;
-                    }
+                    self.values.marker_end = parse_property(value, ())?;
+                    self.values.marker_mid = parse_property(value, ())?;
+                    self.values.marker_start = parse_property(value, ())?;
                 }
 
                 Attribute::Mask => {
-                    self.mask = parse_property(value, ())?;
+                    self.values.mask = parse_property(value, ())?;
                 }
 
                 Attribute::Opacity => {
-                    self.opacity = parse_property(value, ())?;
+                    self.values.opacity = parse_property(value, ())?;
                 }
 
                 Attribute::Overflow => {
-                    self.overflow = parse_property(value, ())?;
+                    self.values.overflow = parse_property(value, ())?;
                 }
 
                 Attribute::ShapeRendering => {
-                    self.shape_rendering = parse_property(value, ())?;
+                    self.values.shape_rendering = parse_property(value, ())?;
                 }
 
                 Attribute::StopColor => {
-                    self.stop_color = parse_property(value, ())?;
+                    self.values.stop_color = parse_property(value, ())?;
                 }
 
                 Attribute::StopOpacity => {
-                    self.stop_opacity = parse_property(value, ())?;
+                    self.values.stop_opacity = parse_property(value, ())?;
                 }
 
                 Attribute::Stroke => {
-                    self.stroke = parse_property(value, ())?;
+                    self.values.stroke = parse_property(value, ())?;
                 }
 
                 Attribute::StrokeDasharray => {
-                    self.stroke_dasharray = parse_property(value, ())?;
+                    self.values.stroke_dasharray = parse_property(value, ())?;
                 }
 
                 Attribute::StrokeDashoffset => {
-                    self.stroke_dashoffset = parse_property(value, LengthDir::Both)?;
+                    self.values.stroke_dashoffset = parse_property(value, LengthDir::Both)?;
                 }
 
                 Attribute::StrokeLinecap => {
-                    self.stroke_line_cap = parse_property(value, ())?;
+                    self.values.stroke_line_cap = parse_property(value, ())?;
                 }
 
                 Attribute::StrokeLinejoin => {
-                    self.stroke_line_join = parse_property(value, ())?;
+                    self.values.stroke_line_join = parse_property(value, ())?;
                 }
 
                 Attribute::StrokeOpacity => {
-                    self.stroke_opacity = parse_property(value, ())?;
+                    self.values.stroke_opacity = parse_property(value, ())?;
                 }
 
                 Attribute::StrokeMiterlimit => {
-                    self.stroke_miterlimit = parse_property(value, ())?;
+                    self.values.stroke_miterlimit = parse_property(value, ())?;
                 }
 
                 Attribute::StrokeWidth => {
-                    self.stroke_width = parse_property(value, LengthDir::Both)?;
+                    self.values.stroke_width = parse_property(value, LengthDir::Both)?;
                 }
 
                 Attribute::TextAnchor => {
-                    self.text_anchor = parse_property(value, ())?;
+                    self.values.text_anchor = parse_property(value, ())?;
                 }
 
                 Attribute::TextDecoration => {
-                    self.text_decoration = parse_property(value, ())?;
+                    self.values.text_decoration = parse_property(value, ())?;
                 }
 
                 Attribute::TextRendering => {
-                    self.text_rendering = parse_property(value, ())?;
+                    self.values.text_rendering = parse_property(value, ())?;
                 }
 
                 Attribute::UnicodeBidi => {
-                    self.unicode_bidi = parse_property(value, ())?;
+                    self.values.unicode_bidi = parse_property(value, ())?;
                 }
 
                 Attribute::Visibility => {
-                    self.visibility = parse_property(value, ())?;
+                    self.values.visibility = parse_property(value, ())?;
                 }
 
                 Attribute::WritingMode => {
-                    self.writing_mode = parse_property(value, ())?;
+                    self.values.writing_mode = parse_property(value, ())?;
                 }
 
                 Attribute::XmlLang => {
                     // xml:lang is not a property; it is a non-presentation attribute and as such
                     // cannot have the "inherit" value.  So, we don't call parse_property() for it,
                     // but rather call its parser directly.
-                    self.xml_lang = Some(XmlLang::parse(value, ())?);
+                    self.values.xml_lang = SpecifiedValue::Specified(XmlLang::parse(value, ())?);
                 }
 
                 Attribute::XmlSpace => {
                     // xml:space is not a property; it is a non-presentation attribute and as such
                     // cannot have the "inherit" value.  So, we don't call parse_property() for it,
                     // but rather call its parser directly.
-                    self.xml_space = Some(XmlSpace::parse(value, ())?);
+                    self.values.xml_space = SpecifiedValue::Specified(XmlSpace::parse(value, ())?);
                 }
 
                 _ => {
@@ -932,71 +943,30 @@ impl State {
     }
 
     pub fn is_overflow(&self) -> bool {
-        match self.overflow {
-            Some(Overflow::Auto) | Some(Overflow::Visible) => true,
+        match self.values.overflow {
+            SpecifiedValue::Specified(Overflow::Auto)
+            | SpecifiedValue::Specified(Overflow::Visible) => true,
             _ => false,
         }
     }
 
     pub fn is_visible(&self) -> bool {
-        match (self.display, self.visibility) {
-            (Some(Display::None), _) => false,
-            (_, None) | (_, Some(Visibility::Visible)) => true,
+        match (&self.values.display, &self.values.visibility) {
+            (&SpecifiedValue::Specified(Display::None), _) => false,
+            (_, &SpecifiedValue::Unspecified)
+            | (_, &SpecifiedValue::Inherit)
+            | (_, &SpecifiedValue::Specified(Visibility::Visible)) => true,
             _ => false,
         }
     }
 
     pub fn get_computed_values(&self) -> ComputedValues {
-        ComputedValues {
-            affine: self.affine,
+        let mut computed = ComputedValues::default();
 
-            baseline_shift: self.baseline_shift.clone().unwrap_or_default(),
-            clip_path: self.clip_path.clone().unwrap_or_default(),
-            clip_rule: self.clip_rule.unwrap_or_default(),
-            comp_op: self.comp_op.unwrap_or_default(),
-            color: self.color.clone().unwrap_or_default(),
-            direction: self.direction.unwrap_or_default(),
-            display: self.display.unwrap_or_default(),
-            enable_background: self.enable_background.unwrap_or_default(),
-            fill: self.fill.clone().unwrap_or_default(),
-            fill_opacity: self.fill_opacity.clone().unwrap_or_default(),
-            fill_rule: self.fill_rule.unwrap_or_default(),
-            filter: self.filter.clone().unwrap_or_default(),
-            flood_color: self.flood_color.clone().unwrap_or_default(),
-            flood_opacity: self.flood_opacity.clone().unwrap_or_default(),
-            font_family: self.font_family.clone().unwrap_or_default(),
-            font_size: self.font_size.clone().unwrap_or_default(),
-            font_stretch: self.font_stretch.unwrap_or_default(),
-            font_style: self.font_style.unwrap_or_default(),
-            font_variant: self.font_variant.unwrap_or_default(),
-            font_weight: self.font_weight.unwrap_or_default(),
-            letter_spacing: self.letter_spacing.clone().unwrap_or_default(),
-            marker_end: self.marker_end.clone().unwrap_or_default(),
-            marker_mid: self.marker_mid.clone().unwrap_or_default(),
-            marker_start: self.marker_start.clone().unwrap_or_default(),
-            mask: self.mask.clone().unwrap_or_default(),
-            opacity: self.opacity.clone().unwrap_or_default(),
-            overflow: self.overflow.unwrap_or_default(),
-            shape_rendering: self.shape_rendering.unwrap_or_default(),
-            stop_color: self.stop_color.clone().unwrap_or_default(),
-            stop_opacity: self.stop_opacity.clone().unwrap_or_default(),
-            stroke: self.stroke.clone().unwrap_or_default(),
-            stroke_dasharray: self.stroke_dasharray.clone().unwrap_or_default(),
-            stroke_dashoffset: self.stroke_dashoffset.clone().unwrap_or_default(),
-            stroke_line_cap: self.stroke_line_cap.unwrap_or_default(),
-            stroke_line_join: self.stroke_line_join.unwrap_or_default(),
-            stroke_opacity: self.stroke_opacity.clone().unwrap_or_default(),
-            stroke_miterlimit: self.stroke_miterlimit.clone().unwrap_or_default(),
-            stroke_width: self.stroke_width.clone().unwrap_or_default(),
-            text_anchor: self.text_anchor.unwrap_or_default(),
-            text_decoration: self.text_decoration.clone().unwrap_or_default(),
-            text_rendering: self.text_rendering.unwrap_or_default(),
-            unicode_bidi: self.unicode_bidi.unwrap_or_default(),
-            visibility: self.visibility.unwrap_or_default(),
-            writing_mode: self.writing_mode.unwrap_or_default(),
-            xml_lang: self.xml_lang.clone().unwrap_or_default(),
-            xml_space: self.xml_space.unwrap_or_default(),
-        }
+        self.values.to_computed_values(&mut computed);
+        computed.affine = self.affine;
+
+        computed
     }
 }
 
@@ -1004,14 +974,17 @@ impl State {
 //
 // If the `value` is `inherit`, returns `Ok(None)`; otherwise returns
 // `Ok(Some(T))`.
-fn parse_property<T>(value: &str, data: <T as Parse>::Data) -> Result<Option<T>, <T as Parse>::Err>
+fn parse_property<T>(
+    value: &str,
+    data: <T as Parse>::Data,
+) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
 where
-    T: Property + Parse,
+    T: Property + Parse + Default + Clone,
 {
     if value.trim() == "inherit" {
-        Ok(None)
+        Ok(SpecifiedValue::Inherit)
     } else {
-        Parse::parse(value, data).map(Some)
+        Parse::parse(value, data).map(SpecifiedValue::Specified)
     }
 }
 
@@ -1640,11 +1613,26 @@ pub extern "C" fn rsvg_state_parse_style_pair(
     }
 }
 
-fn inherit<T>(inherit_fn: fn(bool, bool) -> bool, dst: &mut Option<T>, src: &Option<T>)
-where
-    T: Property + Clone,
+fn inherit<T>(
+    inherit_fn: fn(bool, bool) -> bool,
+    dst: &mut SpecifiedValue<T>,
+    src: &SpecifiedValue<T>,
+) where
+    T: Property + Clone + Default,
 {
-    if inherit_fn(dst.is_some(), src.is_some()) {
+    let dst_has_val = if let SpecifiedValue::Specified(_) = *dst {
+        true
+    } else {
+        false
+    };
+
+    let src_has_val = if let SpecifiedValue::Specified(_) = *src {
+        true
+    } else {
+        false
+    };
+
+    if inherit_fn(dst_has_val, src_has_val) {
         dst.clone_from(src);
     }
 }
@@ -1666,10 +1654,7 @@ pub extern "C" fn rsvg_state_set_affine(state: *mut RsvgState, affine: cairo::Ma
 pub extern "C" fn rsvg_state_get_current_color(state: *const RsvgState) -> u32 {
     let state = from_c(state);
 
-    let current_color = state
-        .color
-        .as_ref()
-        .map_or_else(|| Color::default().0, |c| c.0);
+    let current_color = state.values.color.inherit_from(&Default::default()).0;
 
     rgba_to_argb(current_color)
 }
@@ -1677,15 +1662,15 @@ pub extern "C" fn rsvg_state_get_current_color(state: *const RsvgState) -> u32 {
 #[no_mangle]
 pub extern "C" fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator {
     let state = from_c(state);
-    cairo::Operator::from(state.comp_op.unwrap_or_default())
+    cairo::Operator::from(state.values.comp_op.inherit_from(&Default::default()))
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_state_get_flood_color(state: *const RsvgState) -> u32 {
     let state = from_c(state);
 
-    match state.flood_color {
-        Some(FloodColor(cssparser::Color::RGBA(rgba))) => rgba_to_argb(rgba),
+    match state.values.flood_color {
+        SpecifiedValue::Specified(FloodColor(cssparser::Color::RGBA(rgba))) => rgba_to_argb(rgba),
         // FIXME: fallback to current color if Color::inherit and current color is set
         _ => 0xff000000,
     }
@@ -1697,9 +1682,10 @@ pub extern "C" fn rsvg_state_get_flood_opacity(state: *const RsvgState) -> u8 {
 
     u8::from(
         state
+            .values
             .flood_opacity
-            .as_ref()
-            .map_or_else(|| FloodOpacity::default().0, |o| o.0),
+            .inherit_from(&Default::default())
+            .0,
     )
 }
 
@@ -1723,15 +1709,20 @@ impl From<EnableBackground> for EnableBackgroundC {
 #[no_mangle]
 pub extern "C" fn rsvg_state_get_enable_background(state: *const RsvgState) -> EnableBackgroundC {
     let state = from_c(state);
-    EnableBackgroundC::from(state.enable_background.unwrap_or_default())
+    EnableBackgroundC::from(
+        state
+            .values
+            .enable_background
+            .inherit_from(&Default::default()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_state_get_clip_path(state: *const RsvgState) -> *mut libc::c_char {
     let state = from_c(state);
 
-    match state.clip_path {
-        Some(ClipPath(IRI::Resource(ref p))) => p.to_glib_full(),
+    match state.values.clip_path {
+        SpecifiedValue::Specified(ClipPath(IRI::Resource(ref p))) => p.to_glib_full(),
         _ => ptr::null_mut(),
     }
 }
@@ -1740,8 +1731,8 @@ pub extern "C" fn rsvg_state_get_clip_path(state: *const RsvgState) -> *mut libc
 pub extern "C" fn rsvg_state_get_filter(state: *const RsvgState) -> *mut libc::c_char {
     let state = from_c(state);
 
-    match state.filter {
-        Some(Filter(IRI::Resource(ref f))) => f.to_glib_full(),
+    match state.values.filter {
+        SpecifiedValue::Specified(Filter(IRI::Resource(ref f))) => f.to_glib_full(),
         _ => ptr::null_mut(),
     }
 }
@@ -1750,8 +1741,8 @@ pub extern "C" fn rsvg_state_get_filter(state: *const RsvgState) -> *mut libc::c
 pub extern "C" fn rsvg_state_get_mask(state: *const RsvgState) -> *mut libc::c_char {
     let state = from_c(state);
 
-    match state.mask {
-        Some(Mask(IRI::Resource(ref m))) => m.to_glib_full(),
+    match state.values.mask {
+        SpecifiedValue::Specified(Mask(IRI::Resource(ref m))) => m.to_glib_full(),
         _ => ptr::null_mut(),
     }
 }
@@ -1760,12 +1751,7 @@ pub extern "C" fn rsvg_state_get_mask(state: *const RsvgState) -> *mut libc::c_c
 pub extern "C" fn rsvg_state_get_opacity(state: *const RsvgState) -> u8 {
     let state = from_c(state);
 
-    u8::from(
-        state
-            .opacity
-            .as_ref()
-            .map_or_else(|| FloodOpacity::default().0, |o| o.0),
-    )
+    u8::from(state.values.opacity.inherit_from(&Default::default()).0)
 }
 
 extern "C" {

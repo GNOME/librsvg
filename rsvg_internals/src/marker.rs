@@ -21,7 +21,7 @@ use parsers::ParseError;
 use parsers::{parse, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
-use state::{ComputedValues, StrokeWidth};
+use state::ComputedValues;
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -666,26 +666,42 @@ pub fn render_markers_for_path_builder(
 ) {
     let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
     let line_width = state
+        .values
         .stroke_width
-        .as_ref()
-        .map_or_else(|| StrokeWidth::default().0, |w| w.0)
+        .inherit_from(&Default::default())
+        .0
         .normalize(draw_ctx);
 
     if line_width.approx_eq_cairo(&0.0) {
         return;
     }
 
-    if state.marker_start.is_none() && state.marker_mid.is_none() && state.marker_end.is_none() {
-        return;
+    let marker_start = state
+        .values
+        .marker_start
+        .inherit_from(&Default::default())
+        .0;
+    let marker_mid = state.values.marker_mid.inherit_from(&Default::default()).0;
+    let marker_end = state.values.marker_end.inherit_from(&Default::default()).0;
+
+    match (marker_start, marker_mid, marker_end) {
+        (IRI::None, IRI::None, IRI::None) => return,
+        _ => (),
     }
 
     emit_markers_for_path_builder(
         builder,
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
-            if let Some(&IRI::Resource(ref marker)) = match marker_type {
-                MarkerType::Start => state.marker_start.as_ref().map(|m| &m.0),
-                MarkerType::Middle => state.marker_mid.as_ref().map(|m| &m.0),
-                MarkerType::End => state.marker_end.as_ref().map(|m| &m.0),
+            if let IRI::Resource(ref marker) = match marker_type {
+                MarkerType::Start => {
+                    state
+                        .values
+                        .marker_start
+                        .inherit_from(&Default::default())
+                        .0
+                }
+                MarkerType::Middle => state.values.marker_mid.inherit_from(&Default::default()).0,
+                MarkerType::End => state.values.marker_end.inherit_from(&Default::default()).0,
             } {
                 emit_marker_by_name(draw_ctx, marker, x, y, computed_angle, line_width, clipping);
             }
