@@ -110,6 +110,7 @@ pub use node::{
     rsvg_node_set_attribute_parse_error,
     rsvg_node_set_atts,
     rsvg_node_unref,
+    rsvg_root_node_cascade,
 };
 
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};

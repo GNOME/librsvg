@@ -167,6 +167,8 @@ struct RsvgHandlePrivate {
 
     gboolean is_testing; /* Are we being run from the test suite? */
 
+    gboolean already_cascaded;
+
 #ifdef HAVE_PANGOFT2
     FcConfig *font_config_for_testing;
     PangoFontMap *font_map_for_testing;
@@ -445,6 +447,10 @@ double rsvg_length_hand_normalize (const RsvgLength *length,
 /* Implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
 RsvgLength rsvg_length_parse (const char *str, LengthDir dir);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+void rsvg_root_node_cascade(RsvgNode *node);
 
 G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,

@@ -601,6 +601,16 @@ pub extern "C" fn rsvg_node_draw_children(
     drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
 }
 
+#[no_mangle]
+pub extern "C" fn rsvg_root_node_cascade(raw_node: *const RsvgNode) {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    let values = ComputedValues::default();
+
+    node.cascade(&values)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
