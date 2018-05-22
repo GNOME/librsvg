@@ -568,7 +568,14 @@ pub extern "C" fn rsvg_node_draw_children(
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    node.draw_children(draw_ctx, dominate, from_glib(clipping));
+    assert!(dominate == 0);
+
+    let clipping: bool = from_glib(clipping);
+
+    drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
+    drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+    node.draw_children(draw_ctx, -1, clipping);
+    drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
 }
 
 #[cfg(test)]
