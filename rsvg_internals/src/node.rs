@@ -236,11 +236,20 @@ impl Node {
     ) {
         if self.result.borrow().is_ok() {
             let node_state = state::from_c(self.state);
+            println!("node type: {:?}", self.node_type);
+            println!("node state affine: {:?}", node_state.affine);
+
             drawing_ctx::state_reinherit_top(draw_ctx, node_state, dominate);
+            println!(
+                "current state affine: {:?}",
+                drawing_ctx::get_current_state(draw_ctx).unwrap().affine
+            );
 
             // let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
             // let computed = state.get_computed_values();
             let computed = self.get_computed_values();
+            println!("computed affine: {:?}", computed.as_ref().unwrap().affine);
+
             self.node_impl.draw(
                 node,
                 draw_ctx,
