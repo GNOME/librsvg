@@ -211,8 +211,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     cairo_matrix_t affinesave;
     RsvgState *clip_path_state;
     RsvgCoordUnits clip_units;
-    GList *orig_cr_stack;
-    GList *orig_surfaces_stack;
     RsvgBbox *orig_bbox;
 
     g_assert (rsvg_node_get_type (node_clip_path) == RSVG_NODE_TYPE_CLIP_PATH);
@@ -238,9 +236,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
         rsvg_state_set_affine (clip_path_state, bbtransform);
     }
 
-    orig_cr_stack = ctx->cr_stack;
-    orig_surfaces_stack = ctx->surfaces_stack;
-
     orig_bbox = rsvg_bbox_clone (ctx->bbox);
 
     rsvg_drawing_ctx_state_push (ctx);
@@ -250,9 +245,6 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
     if (clip_units == objectBoundingBox) {
         rsvg_state_set_affine (clip_path_state, affinesave);
     }
-
-    g_assert (ctx->cr_stack == orig_cr_stack);
-    g_assert (ctx->surfaces_stack == orig_surfaces_stack);
 
     /* FIXME: this is an EPIC HACK to keep the clipping context from
      * accumulating bounding boxes.  We'll remove this later, when we
