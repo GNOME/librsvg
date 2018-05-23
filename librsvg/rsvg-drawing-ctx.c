@@ -418,6 +418,17 @@ push_surface (RsvgDrawingCtx *ctx, cairo_surface_t *surface)
     ctx->surfaces_stack = g_list_prepend (ctx->surfaces_stack, cairo_surface_reference (surface));
 }
 
+static void
+push_cr (RsvgDrawingCtx *ctx, cairo_t *cr)
+{
+    ctx->cr_stack = g_list_prepend (ctx->cr_stack, ctx->cr);
+    ctx->cr = cairo_reference (cr);
+
+    /* Note that the "top of the stack" will now be ctx->cr, even if it is not
+     * really in the list.
+     */
+}
+
 void
 rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
 {
@@ -493,8 +504,8 @@ rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
     child_cr = cairo_create (surface);
     cairo_surface_destroy (surface);
 
-    ctx->cr_stack = g_list_prepend (ctx->cr_stack, ctx->cr);
-    ctx->cr = child_cr;
+    push_cr (ctx, child_cr);
+    cairo_destroy (child_cr);
 
     push_bounding_box (ctx);
 }
@@ -520,6 +531,18 @@ pop_surface (RsvgDrawingCtx *ctx)
     return surface;
 }
 
+static void
+pop_cr (RsvgDrawingCtx *ctx)
+{
+    g_assert (ctx->cr != NULL);
+    cairo_destroy (ctx->cr);
+
+    g_assert (ctx->cr_stack != NULL);
+    ctx->cr = ctx->cr_stack->data;
+    g_assert (ctx->cr != NULL);
+    ctx->cr_stack = g_list_delete_link (ctx->cr_stack, ctx->cr_stack);
+}
+
 void
 rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
 {
@@ -533,7 +556,6 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
     cairo_t *child_cr = ctx->cr;
     RsvgNode *lateclip = NULL;
     cairo_surface_t *surface = NULL;
-    gboolean needs_destroy = FALSE;
     double offset_x = 0, offset_y = 0;
 
     state = rsvg_drawing_ctx_get_current_state (ctx);
@@ -564,7 +586,7 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
         && (enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
         return;
 
-    surface = cairo_get_target (child_cr);
+    surface = cairo_surface_reference (cairo_get_target (child_cr));
 
     if (filter) {
         RsvgNode *node;
@@ -574,7 +596,8 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
 
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, filter, RSVG_NODE_TYPE_FILTER);
         if (node) {
-            needs_destroy = TRUE;
+            cairo_surface_destroy (surface);
+
             surface = rsvg_filter_render (node, output, ctx, "2103");
 
             rsvg_drawing_ctx_release_node (ctx, node);
@@ -584,8 +607,7 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
         g_free (filter);
     }
 
-    ctx->cr = (cairo_t *) ctx->cr_stack->data;
-    ctx->cr_stack = g_list_delete_link (ctx->cr_stack, ctx->cr_stack);
+    pop_cr (ctx);
 
     if (ctx->cr == ctx->initial_cr) {
         rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
@@ -616,13 +638,9 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
     else
         cairo_paint (ctx->cr);
 
-    cairo_destroy (child_cr);
-
     pop_bounding_box (ctx);
 
-    if (needs_destroy) {
-        cairo_surface_destroy (surface);
-    }
+    cairo_surface_destroy (surface);
 }
 
 /*
