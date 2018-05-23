@@ -91,11 +91,11 @@ impl NodeTrait for NodeSwitch {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        _values: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
-        drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
         if let Some(child) = node.children().find(|c| c.get_state().cond) {
             let boxed_child = box_node(child.clone());
@@ -105,7 +105,7 @@ impl NodeTrait for NodeSwitch {
             rsvg_node_unref(boxed_child);
         }
 
-        drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -219,6 +219,7 @@ impl NodeTrait for NodeSvg {
             do_clip,
             self.vbox.get(),
             self.preserve_aspect_ratio.get(),
+            values,
             affine,
             draw_ctx,
             clipping,
@@ -341,7 +342,7 @@ impl NodeTrait for NodeUse {
             let mut affine = values.affine;
             affine.translate(nx, ny);
 
-            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
             // push a new state so we can change its affine
             drawing_ctx::state_push(draw_ctx);
@@ -355,7 +356,7 @@ impl NodeTrait for NodeUse {
 
             drawing_ctx::state_pop(draw_ctx);
 
-            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !values.is_overflow()
@@ -370,15 +371,24 @@ impl NodeTrait for NodeUse {
                     do_clip,
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
+                    values,
                     values.affine,
                     draw_ctx,
                     clipping,
                     || {
                         drawing_ctx::state_push(draw_ctx);
                         drawing_ctx::state_reinherit_top(draw_ctx, child.get_state(), 1);
-                        drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+                        drawing_ctx::push_discrete_layer(
+                            draw_ctx,
+                            child.get_computed_values().as_ref().unwrap(),
+                            clipping,
+                        );
                         child.draw_children(draw_ctx, -1, clipping);
-                        drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+                        drawing_ctx::pop_discrete_layer(
+                            draw_ctx,
+                            child.get_computed_values().as_ref().unwrap(),
+                            clipping,
+                        );
                         drawing_ctx::state_pop(draw_ctx);
                     },
                 );

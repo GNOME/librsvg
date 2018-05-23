@@ -22,6 +22,7 @@ use state::{
     self,
     BaselineShift,
     ClipPath,
+    ComputedValues,
     EnableBackground,
     Filter,
     Mask,
@@ -248,16 +249,16 @@ pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: &State, domin
     }
 }
 
-pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, clipping: bool) {
+pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {
     if !clipping {
         get_cairo_context(draw_ctx).save();
-        push_render_stack(draw_ctx);
+        push_render_stack(draw_ctx, values);
     }
 }
 
-pub fn pop_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, clipping: bool) {
+pub fn pop_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {
     if !clipping {
-        pop_render_stack(draw_ctx);
+        pop_render_stack(draw_ctx, values);
         get_cairo_context(draw_ctx).restore();
     }
 }
@@ -429,32 +430,27 @@ extern "C" {
     fn rsvg_drawing_ctx_pop_bounding_box(draw_ctx: *mut RsvgDrawingCtx);
 }
 
-fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx) {
-    let state = get_current_state(draw_ctx).unwrap();
-
-    let clip_path = match state.values.clip_path {
-        SpecifiedValue::Specified(ClipPath(IRI::Resource(ref p))) => Some(p),
+fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
+    let clip_path = match values.clip_path {
+        ClipPath(IRI::Resource(ref p)) => Some(p),
         _ => None,
     };
 
-    let filter = match state.values.filter {
-        SpecifiedValue::Specified(Filter(IRI::Resource(ref f))) => Some(f),
+    let filter = match values.filter {
+        Filter(IRI::Resource(ref f)) => Some(f),
         _ => None,
     };
 
-    let mask = match state.values.mask {
-        SpecifiedValue::Specified(Mask(IRI::Resource(ref m))) => Some(m),
+    let mask = match values.mask {
+        Mask(IRI::Resource(ref m)) => Some(m),
         _ => None,
     };
 
-    let opacity = u8::from(state.values.opacity.inherit_from(&Default::default()).0);
+    let opacity = u8::from(values.opacity.0);
 
-    let comp_op = cairo::Operator::from(state.values.comp_op.inherit_from(&Default::default()));
+    let comp_op = cairo::Operator::from(values.comp_op);
 
-    let enable_background = state
-        .values
-        .enable_background
-        .inherit_from(&Default::default());
+    let enable_background = values.enable_background;
 
     let mut late_clip = false;
 
@@ -518,34 +514,29 @@ fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx) {
     }
 }
 
-fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx) {
+fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
     let child_cr = get_cairo_context(draw_ctx);
 
-    let state = get_current_state(draw_ctx).unwrap();
-
-    let clip_path = match state.values.clip_path {
-        SpecifiedValue::Specified(ClipPath(IRI::Resource(ref p))) => Some(p),
+    let clip_path = match values.clip_path {
+        ClipPath(IRI::Resource(ref p)) => Some(p),
         _ => None,
     };
 
-    let filter = match state.values.filter {
-        SpecifiedValue::Specified(Filter(IRI::Resource(ref f))) => Some(f),
+    let filter = match values.filter {
+        Filter(IRI::Resource(ref f)) => Some(f),
         _ => None,
     };
 
-    let mask = match state.values.mask {
-        SpecifiedValue::Specified(Mask(IRI::Resource(ref m))) => Some(m),
+    let mask = match values.mask {
+        Mask(IRI::Resource(ref m)) => Some(m),
         _ => None,
     };
 
-    let opacity = u8::from(state.values.opacity.inherit_from(&Default::default()).0);
+    let opacity = u8::from(values.opacity.0);
 
-    let comp_op = cairo::Operator::from(state.values.comp_op.inherit_from(&Default::default()));
+    let comp_op = cairo::Operator::from(values.comp_op);
 
-    let enable_background = state
-        .values
-        .enable_background
-        .inherit_from(&Default::default());
+    let enable_background = values.enable_background;
 
     let mut late_clip = false;
 

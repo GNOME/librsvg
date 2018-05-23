@@ -114,6 +114,7 @@ impl NodeMarker {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
+        values: &ComputedValues,
         xpos: f64,
         ypos: f64,
         computed_angle: f64,
@@ -158,10 +159,10 @@ impl NodeMarker {
             affine.scale(w / vbox.0.width, h / vbox.0.height);
 
             drawing_ctx::push_view_box(draw_ctx, vbox.0.width, vbox.0.height);
-            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
         } else {
             drawing_ctx::push_view_box(draw_ctx, marker_width, marker_height);
-            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
         }
 
         affine.translate(
@@ -202,7 +203,7 @@ impl NodeMarker {
         node.draw_children(draw_ctx, -1, clipping); // dominate=-1 so it won't reinherit state / push a layer
 
         drawing_ctx::state_pop(draw_ctx);
-        drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
         drawing_ctx::pop_view_box(draw_ctx);
     }
 }
@@ -622,6 +623,7 @@ fn emit_marker_by_name(
             marker.render(
                 &node,
                 draw_ctx,
+                node.get_computed_values().as_ref().unwrap(),
                 xpos,
                 ypos,
                 computed_angle,

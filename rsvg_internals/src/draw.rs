@@ -46,7 +46,7 @@ pub fn draw_path_builder(
     clipping: bool,
 ) {
     if !clipping {
-        drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
     }
 
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
@@ -62,7 +62,7 @@ pub fn draw_path_builder(
 
         stroke_and_fill(&cr, draw_ctx, values);
 
-        drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
     }
 }
 

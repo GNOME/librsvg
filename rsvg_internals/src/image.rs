@@ -119,7 +119,7 @@ impl NodeTrait for NodeImage {
             let w = self.w.get().normalize(draw_ctx);
             let h = self.h.get().normalize(draw_ctx);
 
-            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
             let aspect = self.aspect.get();
 
@@ -138,7 +138,7 @@ impl NodeTrait for NodeImage {
 
             draw_surface(draw_ctx, values, surface, x, y, w, h, clipping);
 
-            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
         }
     }
 
