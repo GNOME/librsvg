@@ -138,11 +138,6 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
 
 G_GNUC_INTERNAL
-void         rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx);
-G_GNUC_INTERNAL
-void         rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx);
-
-G_GNUC_INTERNAL
 void rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
                                             RsvgNode *drawable,
                                             cairo_surface_t *surface,

@@ -12,7 +12,7 @@ use state::ComputedValues;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
-struct NodeClipPath {
+pub struct NodeClipPath {
     units: Cell<ClipPathUnits>,
 }
 

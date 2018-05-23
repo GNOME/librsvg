@@ -36,12 +36,6 @@
 
 G_BEGIN_DECLS 
 
-/* Keep in sync with rsvg_internals/src/state.c:EnableBackgroundC */
-typedef enum {
-    RSVG_ENABLE_BACKGROUND_ACCUMULATE,
-    RSVG_ENABLE_BACKGROUND_NEW
-} RsvgEnableBackgroundType;
-
 /* Defined in rsvg_internals/src/state.rs */
 G_GNUC_INTERNAL
 RsvgState *rsvg_state_new (RsvgState *parent);
@@ -90,14 +84,6 @@ char *rsvg_state_get_clip_path (RsvgState *state);
 
 /* Implemented in rsvg_internals/src/state.rs */
 G_GNUC_INTERNAL
-char *rsvg_state_get_filter (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-char *rsvg_state_get_mask (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
 guint8 rsvg_state_get_opacity (RsvgState *state);
 
 /* Implemented in rsvg_internals/src/state.rs */
@@ -111,14 +97,6 @@ guint32 rsvg_state_get_flood_color (RsvgState *state);
 /* Implemented in rsvg_internals/src/state.rs */
 G_GNUC_INTERNAL
 guint8 rsvg_state_get_flood_opacity (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-RsvgEnableBackgroundType rsvg_state_get_enable_background (RsvgState *state);
 
 G_END_DECLS
 

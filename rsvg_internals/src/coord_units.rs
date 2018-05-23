@@ -40,7 +40,7 @@ impl Parse for CoordUnits {
 macro_rules! coord_units {
     ($name:ident, $default:expr) => {
         #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-        struct $name(CoordUnits);
+        pub struct $name(pub CoordUnits);
 
         impl Default for $name {
             fn default() -> Self {

@@ -79,7 +79,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
     filter_node: *mut RsvgNode,
     source: *mut cairo_surface_t,
     context: *mut RsvgDrawingCtx,
-    channelmap: *mut c_char,
+    channelmap: *const c_char,
 ) -> *mut cairo_surface_t {
     assert!(!filter_node.is_null());
     assert!(!source.is_null());

@@ -288,7 +288,7 @@ impl Node {
         if dominate != -1 {
             drawing_ctx::state_reinherit_top(draw_ctx, self.get_state(), dominate);
 
-            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::push_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, clipping);
         }
 
         for child in self.children() {
@@ -300,7 +300,7 @@ impl Node {
         }
 
         if dominate != -1 {
-            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::pop_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, clipping);
         }
     }
 
@@ -611,9 +611,9 @@ pub extern "C" fn rsvg_node_draw_children(
     let clipping: bool = from_glib(clipping);
 
     drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
-    drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+    drawing_ctx::push_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, clipping);
     node.draw_children(draw_ctx, -1, clipping);
-    drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+    drawing_ctx::pop_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, clipping);
 }
 
 #[no_mangle]

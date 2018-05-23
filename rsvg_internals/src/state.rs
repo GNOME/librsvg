@@ -1664,12 +1664,6 @@ pub extern "C" fn rsvg_state_get_current_color(state: *const RsvgState) -> u32 {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator {
-    let state = from_c(state);
-    cairo::Operator::from(state.values.comp_op.inherit_from(&Default::default()))
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_state_get_flood_color(state: *const RsvgState) -> u32 {
     let state = from_c(state);
 
@@ -1691,64 +1685,6 @@ pub extern "C" fn rsvg_state_get_flood_opacity(state: *const RsvgState) -> u8 {
             .inherit_from(&Default::default())
             .0,
     )
-}
-
-// Keep in sync with rsvg-styles.h:RsvgEnableBackgroundType
-#[allow(dead_code)]
-#[repr(C)]
-pub enum EnableBackgroundC {
-    Accumulate,
-    New,
-}
-
-impl From<EnableBackground> for EnableBackgroundC {
-    fn from(e: EnableBackground) -> EnableBackgroundC {
-        match e {
-            EnableBackground::Accumulate => EnableBackgroundC::Accumulate,
-            EnableBackground::New => EnableBackgroundC::New,
-        }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_enable_background(state: *const RsvgState) -> EnableBackgroundC {
-    let state = from_c(state);
-    EnableBackgroundC::from(
-        state
-            .values
-            .enable_background
-            .inherit_from(&Default::default()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_clip_path(state: *const RsvgState) -> *mut libc::c_char {
-    let state = from_c(state);
-
-    match state.values.clip_path {
-        SpecifiedValue::Specified(ClipPath(IRI::Resource(ref p))) => p.to_glib_full(),
-        _ => ptr::null_mut(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_filter(state: *const RsvgState) -> *mut libc::c_char {
-    let state = from_c(state);
-
-    match state.values.filter {
-        SpecifiedValue::Specified(Filter(IRI::Resource(ref f))) => f.to_glib_full(),
-        _ => ptr::null_mut(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_mask(state: *const RsvgState) -> *mut libc::c_char {
-    let state = from_c(state);
-
-    match state.values.mask {
-        SpecifiedValue::Specified(Mask(IRI::Resource(ref m))) => m.to_glib_full(),
-        _ => ptr::null_mut(),
-    }
 }
 
 #[no_mangle]
