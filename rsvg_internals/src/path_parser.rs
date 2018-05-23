@@ -175,9 +175,7 @@ impl<'b> PathParser<'b> {
 
     fn lookahead_is_start_of_number(&mut self) -> bool {
         let mut c = ' ';
-        self.lookahead_is_digit(&mut c)
-            || self.lookahead_is('.')
-            || self.lookahead_is('+')
+        self.lookahead_is_digit(&mut c) || self.lookahead_is('.') || self.lookahead_is('+')
             || self.lookahead_is('-')
     }
 
@@ -491,15 +489,12 @@ impl<'b> PathParser<'b> {
     }
 
     fn drawto_command(&mut self) -> Result<bool, ParseError> {
-        Ok(self.close_path()?
-            || self.line_to()?
-            || self.horizontal_line_to()?
-            || self.vertical_line_to()?
-            || self.curve_to()?
-            || self.smooth_curve_to()?
-            || self.quadratic_bezier_curve_to()?
-            || self.smooth_quadratic_bezier_curve_to()?
-            || self.elliptical_arc()?)
+        Ok(
+            self.close_path()? || self.line_to()? || self.horizontal_line_to()?
+                || self.vertical_line_to()? || self.curve_to()?
+                || self.smooth_curve_to()? || self.quadratic_bezier_curve_to()?
+                || self.smooth_quadratic_bezier_curve_to()? || self.elliptical_arc()?,
+        )
     }
 
     fn close_path(&mut self) -> Result<bool, ParseError> {

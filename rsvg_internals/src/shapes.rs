@@ -20,11 +20,11 @@ use state::ComputedValues;
 fn render_path_builder(
     builder: &PathBuilder,
     draw_ctx: *mut RsvgDrawingCtx,
-    state: &ComputedValues,
+    values: &ComputedValues,
     render_markers: bool,
     clipping: bool,
 ) {
-    draw_path_builder(draw_ctx, state, builder, clipping);
+    draw_path_builder(draw_ctx, values, builder, clipping);
 
     if render_markers {
         marker::render_markers_for_path_builder(builder, draw_ctx, clipping);
@@ -37,7 +37,7 @@ fn render_ellipse(
     rx: f64,
     ry: f64,
     draw_ctx: *mut RsvgDrawingCtx,
-    state: &ComputedValues,
+    values: &ComputedValues,
     clipping: bool,
 ) {
     // Per the spec, rx and ry must be nonnegative
@@ -91,7 +91,7 @@ fn render_ellipse(
 
     builder.close_path();
 
-    render_path_builder(&builder, draw_ctx, state, false, clipping);
+    render_path_builder(&builder, draw_ctx, values, false, clipping);
 }
 
 // ************ NodePath ************
@@ -129,12 +129,12 @@ impl NodeTrait for NodePath {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
         if let Some(ref builder) = *self.builder.borrow() {
-            render_path_builder(builder, draw_ctx, state, true, clipping);
+            render_path_builder(builder, draw_ctx, values, true, clipping);
         }
     }
 
@@ -191,7 +191,7 @@ impl NodeTrait for NodePoly {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -210,7 +210,7 @@ impl NodeTrait for NodePoly {
                 builder.close_path();
             }
 
-            render_path_builder(&builder, draw_ctx, state, true, clipping);
+            render_path_builder(&builder, draw_ctx, values, true, clipping);
         }
     }
 
@@ -242,12 +242,10 @@ impl NodeTrait for NodeLine {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X1 => self
-                    .x1
+                Attribute::X1 => self.x1
                     .set(parse("x1", value, LengthDir::Horizontal, None)?),
                 Attribute::Y1 => self.y1.set(parse("y1", value, LengthDir::Vertical, None)?),
-                Attribute::X2 => self
-                    .x2
+                Attribute::X2 => self.x2
                     .set(parse("x2", value, LengthDir::Horizontal, None)?),
                 Attribute::Y2 => self.y2.set(parse("y2", value, LengthDir::Vertical, None)?),
                 _ => (),
@@ -261,7 +259,7 @@ impl NodeTrait for NodeLine {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -275,7 +273,7 @@ impl NodeTrait for NodeLine {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        render_path_builder(&builder, draw_ctx, state, true, clipping);
+        render_path_builder(&builder, draw_ctx, values, true, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -353,7 +351,7 @@ impl NodeTrait for NodeRect {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -491,7 +489,7 @@ impl NodeTrait for NodeRect {
             builder.close_path ();
         }
 
-        render_path_builder(&builder, draw_ctx, state, false, clipping);
+        render_path_builder(&builder, draw_ctx, values, false, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -520,8 +518,7 @@ impl NodeTrait for NodeCircle {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self
-                    .cx
+                Attribute::Cx => self.cx
                     .set(parse("cx", value, LengthDir::Horizontal, None)?),
                 Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
                 Attribute::R => self.r.set(parse(
@@ -542,7 +539,7 @@ impl NodeTrait for NodeCircle {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -550,7 +547,7 @@ impl NodeTrait for NodeCircle {
         let cy = self.cy.get().normalize(draw_ctx);
         let r = self.r.get().normalize(draw_ctx);
 
-        render_ellipse(cx, cy, r, r, draw_ctx, state, clipping);
+        render_ellipse(cx, cy, r, r, draw_ctx, values, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -581,8 +578,7 @@ impl NodeTrait for NodeEllipse {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self
-                    .cx
+                Attribute::Cx => self.cx
                     .set(parse("cx", value, LengthDir::Horizontal, None)?),
                 Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
 
@@ -610,7 +606,7 @@ impl NodeTrait for NodeEllipse {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -619,7 +615,7 @@ impl NodeTrait for NodeEllipse {
         let rx = self.rx.get().normalize(draw_ctx);
         let ry = self.ry.get().normalize(draw_ctx);
 
-        render_ellipse(cx, cy, rx, ry, draw_ctx, state, clipping);
+        render_ellipse(cx, cy, rx, ry, draw_ctx, values, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {

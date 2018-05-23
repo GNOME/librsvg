@@ -109,16 +109,10 @@ impl Pattern {
     }
 
     fn is_resolved(&self) -> bool {
-        self.units.is_some()
-            && self.content_units.is_some()
-            && self.vbox.is_some()
-            && self.preserve_aspect_ratio.is_some()
-            && self.affine.is_some()
-            && self.x.is_some()
-            && self.y.is_some()
-            && self.width.is_some()
-            && self.height.is_some()
-            && self.children_are_resolved()
+        self.units.is_some() && self.content_units.is_some() && self.vbox.is_some()
+            && self.preserve_aspect_ratio.is_some() && self.affine.is_some()
+            && self.x.is_some() && self.y.is_some() && self.width.is_some()
+            && self.height.is_some() && self.children_are_resolved()
     }
 
     fn children_are_resolved(&self) -> bool {

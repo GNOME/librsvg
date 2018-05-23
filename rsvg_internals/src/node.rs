@@ -38,7 +38,7 @@ pub trait NodeTrait: Downcast {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         dominate: i32,
         clipping: bool,
     );

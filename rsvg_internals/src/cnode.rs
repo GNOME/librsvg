@@ -46,7 +46,7 @@ impl NodeTrait for CNode {
         &self,
         _node: &RsvgNode,
         _draw_ctx: *mut RsvgDrawingCtx,
-        _state: &ComputedValues,
+        _values: &ComputedValues,
         _dominate: i32,
         _clipping: bool,
     ) {

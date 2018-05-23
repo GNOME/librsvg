@@ -48,8 +48,7 @@ impl NodeTrait for Offset {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::Dx => self
-                    .dx
+                Attribute::Dx => self.dx
                     .set(parse("dx", value, LengthDir::Horizontal, None)?),
                 Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical, None)?),
                 _ => (),
@@ -114,9 +113,7 @@ impl Filter for Offset {
 
             for y in bounds.y0..bounds.y1 {
                 for x in bounds.x0..bounds.x1 {
-                    if x - ox < bounds.x0
-                        || x - ox >= bounds.x1
-                        || y - oy < bounds.y0
+                    if x - ox < bounds.x0 || x - ox >= bounds.x1 || y - oy < bounds.y0
                         || y - oy >= bounds.y1
                     {
                         continue;

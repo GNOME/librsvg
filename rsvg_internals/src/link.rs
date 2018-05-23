@@ -43,7 +43,7 @@ impl NodeTrait for NodeLink {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        _state: &ComputedValues,
+        _values: &ComputedValues,
         dominate: i32,
         clipping: bool,
     ) {

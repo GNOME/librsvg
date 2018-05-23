@@ -106,11 +106,9 @@ impl NodeTrait for Primitive {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self
-                    .x
+                Attribute::X => self.x
                     .set(Some(parse("x", value, LengthDir::Horizontal, None)?)),
-                Attribute::Y => self
-                    .y
+                Attribute::Y => self.y
                     .set(Some(parse("y", value, LengthDir::Vertical, None)?)),
                 Attribute::Width => {
                     self.width

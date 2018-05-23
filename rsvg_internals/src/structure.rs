@@ -91,7 +91,7 @@ impl NodeTrait for NodeSwitch {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        _state: &ComputedValues,
+        _values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -198,7 +198,7 @@ impl NodeTrait for NodeSvg {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -207,8 +207,8 @@ impl NodeTrait for NodeSvg {
         let nw = self.w.get().normalize(draw_ctx);
         let nh = self.h.get().normalize(draw_ctx);
 
-        let do_clip = !state.is_overflow() && node.get_parent().is_some();
-        let affine = state.affine;
+        let do_clip = !values.is_overflow() && node.get_parent().is_some();
+        let affine = values.affine;
 
         draw_in_viewport(
             nx,
@@ -289,7 +289,7 @@ impl NodeTrait for NodeUse {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -320,13 +320,11 @@ impl NodeTrait for NodeUse {
         // From https://www.w3.org/TR/SVG/struct.html#UseElement in
         // "If the ‘use’ element references a ‘symbol’ element"
 
-        let nw = self
-            .w
+        let nw = self.w
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Horizontal).unwrap())
             .normalize(draw_ctx);
-        let nh = self
-            .h
+        let nh = self.h
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Vertical).unwrap())
             .normalize(draw_ctx);
@@ -338,7 +336,7 @@ impl NodeTrait for NodeUse {
         }
 
         if child.get_type() != NodeType::Symbol {
-            let mut affine = state.affine;
+            let mut affine = values.affine;
             affine.translate(nx, ny);
 
             drawing_ctx::push_discrete_layer(draw_ctx, clipping);
@@ -358,8 +356,8 @@ impl NodeTrait for NodeUse {
             drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
-                let do_clip = !state.is_overflow()
-                    || (state.overflow == Overflow::Visible && child.get_state().is_overflow());
+                let do_clip = !values.is_overflow()
+                    || (values.overflow == Overflow::Visible && child.get_state().is_overflow());
 
                 draw_in_viewport(
                     nx,
@@ -370,7 +368,7 @@ impl NodeTrait for NodeUse {
                     do_clip,
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
-                    state.affine,
+                    values.affine,
                     draw_ctx,
                     clipping,
                     || {

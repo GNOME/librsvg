@@ -109,7 +109,7 @@ impl NodeTrait for NodeImage {
         &self,
         _node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
+        values: &ComputedValues,
         _dominate: i32,
         clipping: bool,
     ) {
@@ -123,8 +123,8 @@ impl NodeTrait for NodeImage {
 
             let aspect = self.aspect.get();
 
-            if !state.is_overflow() && aspect.is_slice() {
-                add_clipping_rect(draw_ctx, &state.affine, x, y, w, h);
+            if !values.is_overflow() && aspect.is_slice() {
+                add_clipping_rect(draw_ctx, &values.affine, x, y, w, h);
             }
 
             let (x, y, w, h) = aspect.compute(
@@ -136,7 +136,7 @@ impl NodeTrait for NodeImage {
                 h,
             );
 
-            draw_surface(draw_ctx, state, surface, x, y, w, h, clipping);
+            draw_surface(draw_ctx, values, surface, x, y, w, h, clipping);
 
             drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         }

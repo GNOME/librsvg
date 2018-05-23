@@ -159,9 +159,7 @@ impl GradientCommon {
     }
 
     fn is_resolved(&self) -> bool {
-        self.units.is_some()
-            && self.affine.is_some()
-            && self.spread.is_some()
+        self.units.is_some() && self.affine.is_some() && self.spread.is_some()
             && self.stops.is_some()
     }
 
