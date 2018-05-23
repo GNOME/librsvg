@@ -397,8 +397,8 @@ rsvg_drawing_ctx_set_current_state (RsvgDrawingCtx *ctx, RsvgState *state)
     ctx->state = state;
 }
 
-static void
-push_bounding_box (RsvgDrawingCtx *ctx)
+void
+rsvg_drawing_ctx_push_bounding_box (RsvgDrawingCtx *ctx)
 {
     RsvgState *state;
     cairo_matrix_t affine;
@@ -410,14 +410,35 @@ push_bounding_box (RsvgDrawingCtx *ctx)
     ctx->bbox = rsvg_bbox_new (&affine, NULL, NULL);
 }
 
-static void
-push_surface (RsvgDrawingCtx *ctx, cairo_surface_t *surface)
+void
+rsvg_drawing_ctx_pop_bounding_box (RsvgDrawingCtx *ctx)
+{
+    rsvg_bbox_insert ((RsvgBbox *) ctx->bb_stack->data, ctx->bbox);
+    ctx->bbox = (RsvgBbox *) ctx->bb_stack->data;
+    ctx->bb_stack = g_list_delete_link (ctx->bb_stack, ctx->bb_stack);
+}
+
+void
+rsvg_drawing_ctx_push_surface (RsvgDrawingCtx *ctx, cairo_surface_t *surface)
 {
     ctx->surfaces_stack = g_list_prepend (ctx->surfaces_stack, cairo_surface_reference (surface));
 }
 
-static void
-push_cr (RsvgDrawingCtx *ctx, cairo_t *cr)
+cairo_surface_t *
+rsvg_drawing_ctx_pop_surface (RsvgDrawingCtx *ctx)
+{
+    cairo_surface_t *surface;
+
+    g_assert (ctx->surfaces_stack != NULL);
+
+    surface = ctx->surfaces_stack->data;
+    ctx->surfaces_stack = g_list_delete_link (ctx->surfaces_stack, ctx->surfaces_stack);
+
+    return surface;
+}
+
+void
+rsvg_drawing_ctx_push_cr (RsvgDrawingCtx *ctx, cairo_t *cr)
 {
     ctx->cr_stack = g_list_prepend (ctx->cr_stack, ctx->cr);
     ctx->cr = cairo_reference (cr);
@@ -425,6 +446,18 @@ push_cr (RsvgDrawingCtx *ctx, cairo_t *cr)
     /* Note that the "top of the stack" will now be ctx->cr, even if it is not
      * really in the list.
      */
+}
+
+void
+rsvg_drawing_ctx_pop_cr (RsvgDrawingCtx *ctx)
+{
+    g_assert (ctx->cr != NULL);
+    cairo_destroy (ctx->cr);
+
+    g_assert (ctx->cr_stack != NULL);
+    ctx->cr = ctx->cr_stack->data;
+    g_assert (ctx->cr != NULL);
+    ctx->cr_stack = g_list_delete_link (ctx->cr_stack, ctx->cr_stack);
 }
 
 void
@@ -489,7 +522,7 @@ rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
                                               rsvg_drawing_ctx_get_width (ctx),
                                               rsvg_drawing_ctx_get_height (ctx));
 
-        push_surface (ctx, surface);
+        rsvg_drawing_ctx_push_surface (ctx, surface);
 
         g_free (filter);
     }
@@ -504,43 +537,10 @@ rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
     child_cr = cairo_create (surface);
     cairo_surface_destroy (surface);
 
-    push_cr (ctx, child_cr);
+    rsvg_drawing_ctx_push_cr (ctx, child_cr);
     cairo_destroy (child_cr);
 
-    push_bounding_box (ctx);
-}
-
-static void
-pop_bounding_box (RsvgDrawingCtx *ctx)
-{
-    rsvg_bbox_insert ((RsvgBbox *) ctx->bb_stack->data, ctx->bbox);
-    ctx->bbox = (RsvgBbox *) ctx->bb_stack->data;
-    ctx->bb_stack = g_list_delete_link (ctx->bb_stack, ctx->bb_stack);
-}
-
-static cairo_surface_t *
-pop_surface (RsvgDrawingCtx *ctx)
-{
-    cairo_surface_t *surface;
-
-    g_assert (ctx->surfaces_stack != NULL);
-
-    surface = ctx->surfaces_stack->data;
-    ctx->surfaces_stack = g_list_delete_link (ctx->surfaces_stack, ctx->surfaces_stack);
-
-    return surface;
-}
-
-static void
-pop_cr (RsvgDrawingCtx *ctx)
-{
-    g_assert (ctx->cr != NULL);
-    cairo_destroy (ctx->cr);
-
-    g_assert (ctx->cr_stack != NULL);
-    ctx->cr = ctx->cr_stack->data;
-    g_assert (ctx->cr != NULL);
-    ctx->cr_stack = g_list_delete_link (ctx->cr_stack, ctx->cr_stack);
+    rsvg_drawing_ctx_push_bounding_box (ctx);
 }
 
 void
@@ -593,7 +593,7 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
         RsvgNode *node;
         cairo_surface_t *output;
 
-        output = pop_surface (ctx);
+        output = rsvg_drawing_ctx_pop_surface (ctx);
 
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, filter, RSVG_NODE_TYPE_FILTER);
         if (node) {
@@ -608,7 +608,7 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
         g_free (filter);
     }
 
-    pop_cr (ctx);
+    rsvg_drawing_ctx_pop_cr (ctx);
     cr = rsvg_drawing_ctx_get_cairo_context (ctx);
 
     rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
@@ -638,7 +638,7 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
     else
         cairo_paint (cr);
 
-    pop_bounding_box (ctx);
+    rsvg_drawing_ctx_pop_bounding_box (ctx);
 
     cairo_surface_destroy (surface);
 }

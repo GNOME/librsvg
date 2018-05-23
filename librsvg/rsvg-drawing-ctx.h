@@ -64,6 +64,11 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr);
 
 G_GNUC_INTERNAL
+void rsvg_drawing_ctx_push_cr (RsvgDrawingCtx *ctx, cairo_t *cr);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_pop_cr (RsvgDrawingCtx *ctx);
+
+G_GNUC_INTERNAL
 gboolean rsvg_drawing_ctx_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr);
 
 G_GNUC_INTERNAL
@@ -106,6 +111,10 @@ void rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y
 
 G_GNUC_INTERNAL
 RsvgBbox *rsvg_drawing_ctx_get_bbox (RsvgDrawingCtx *draw_ctx);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_push_bounding_box (RsvgDrawingCtx *draw_ctx);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_pop_bounding_box (RsvgDrawingCtx *draw_ctx);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h);
@@ -113,6 +122,11 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_pop_view_box  (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_view_box_size (RsvgDrawingCtx *ctx, double *out_width, double *out_height);
+
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_push_surface (RsvgDrawingCtx *draw_ctx, cairo_surface_t *surface);
+G_GNUC_INTERNAL
+cairo_surface_t *rsvg_drawing_ctx_pop_surface (RsvgDrawingCtx *draw_ctx);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
