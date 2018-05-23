@@ -59,6 +59,9 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
 
 G_GNUC_INTERNAL
+void rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox);
+
+G_GNUC_INTERNAL
 cairo_t *rsvg_drawing_ctx_get_cairo_context (RsvgDrawingCtx *ctx);
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr);
@@ -67,6 +70,9 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_push_cr (RsvgDrawingCtx *ctx, cairo_t *cr);
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_pop_cr (RsvgDrawingCtx *ctx);
+
+G_GNUC_INTERNAL
+void rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
 gboolean rsvg_drawing_ctx_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr);

@@ -55,7 +55,7 @@ void rsvg_drawing_ctx_transformed_image_bounding_box (cairo_matrix_t *affine,
                                                       double width, double height,
                                                       double *bbx, double *bby, double *bbw, double *bbh);
 
-static void
+void
 rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
 {
     cairo_surface_t *surface;
@@ -203,7 +203,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
     cairo_surface_destroy (surface);
 }
 
-static void
+void
 rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
 {
     cairo_matrix_t affinesave;
