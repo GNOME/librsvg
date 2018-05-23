@@ -482,10 +482,12 @@ rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
     if (!filter) {
         surface = cairo_surface_create_similar (cairo_get_target (ctx->cr),
                                                 CAIRO_CONTENT_COLOR_ALPHA,
-                                                ctx->rect.width, ctx->rect.height);
+                                                rsvg_drawing_ctx_get_width (ctx),
+                                                rsvg_drawing_ctx_get_height (ctx));
     } else {
         surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-                                              ctx->rect.width, ctx->rect.height);
+                                              rsvg_drawing_ctx_get_width (ctx),
+                                              rsvg_drawing_ctx_get_height (ctx));
 
         push_surface (ctx, surface);
 
