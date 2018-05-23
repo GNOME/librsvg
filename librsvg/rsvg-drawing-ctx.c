@@ -480,7 +480,7 @@ rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
     g_free (mask);
 
     if (!filter) {
-        surface = cairo_surface_create_similar (cairo_get_target (ctx->cr),
+        surface = cairo_surface_create_similar (cairo_get_target (rsvg_drawing_ctx_get_cairo_context (ctx)),
                                                 CAIRO_CONTENT_COLOR_ALPHA,
                                                 rsvg_drawing_ctx_get_width (ctx),
                                                 rsvg_drawing_ctx_get_height (ctx));
@@ -553,10 +553,11 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
     guint8 opacity;
     cairo_operator_t comp_op;
     RsvgEnableBackgroundType enable_background;
-    cairo_t *child_cr = ctx->cr;
+    cairo_t *child_cr = rsvg_drawing_ctx_get_cairo_context (ctx);
     RsvgNode *lateclip = NULL;
     cairo_surface_t *surface = NULL;
     double offset_x, offset_y;
+    cairo_t *cr;
 
     state = rsvg_drawing_ctx_get_current_state (ctx);
     clip_path = rsvg_state_get_clip_path (state);
@@ -608,33 +609,34 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
     }
 
     pop_cr (ctx);
+    cr = rsvg_drawing_ctx_get_cairo_context (ctx);
 
     rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
 
-    cairo_identity_matrix (ctx->cr);
-    cairo_set_source_surface (ctx->cr, surface, offset_x, offset_y);
+    cairo_identity_matrix (cr);
+    cairo_set_source_surface (cr, surface, offset_x, offset_y);
 
     if (lateclip) {
         rsvg_cairo_clip (ctx, lateclip, ctx->bbox);
         rsvg_drawing_ctx_release_node (ctx, lateclip);
     }
 
-    cairo_set_operator (ctx->cr, comp_op);
+    cairo_set_operator (cr, comp_op);
 
     if (mask) {
         RsvgNode *node;
 
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, mask, RSVG_NODE_TYPE_MASK);
         if (node) {
-            rsvg_cairo_generate_mask (ctx->cr, node, ctx);
+            rsvg_cairo_generate_mask (cr, node, ctx);
             rsvg_drawing_ctx_release_node (ctx, node);
         }
 
         g_free (mask);
     } else if (opacity != 0xFF)
-        cairo_paint_with_alpha (ctx->cr, (double) opacity / 255.0);
+        cairo_paint_with_alpha (cr, (double) opacity / 255.0);
     else
-        cairo_paint (ctx->cr);
+        cairo_paint (cr);
 
     pop_bounding_box (ctx);
 
