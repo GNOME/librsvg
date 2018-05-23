@@ -617,7 +617,7 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
     cairo_set_source_surface (cr, surface, offset_x, offset_y);
 
     if (lateclip) {
-        rsvg_cairo_clip (ctx, lateclip, ctx->bbox);
+        rsvg_cairo_clip (ctx, lateclip, rsvg_drawing_ctx_get_bbox (ctx));
         rsvg_drawing_ctx_release_node (ctx, lateclip);
     }
 
