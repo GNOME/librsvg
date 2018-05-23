@@ -160,11 +160,12 @@ impl AspectRatio {
                 .and_then(|ident| Align::parse_xy(ident))
         })?;
 
-        let fit = p.try(|p| {
-            p.expect_ident()
-                .map_err(|_| ())
-                .and_then(|ident| FitMode::parse(ident))
-        }).unwrap_or(FitMode::default());
+        let fit =
+            p.try(|p| {
+                p.expect_ident()
+                    .map_err(|_| ())
+                    .and_then(|ident| FitMode::parse(ident))
+            }).unwrap_or(FitMode::default());
 
         p.expect_exhausted().map_err(|_| ())?;
 
