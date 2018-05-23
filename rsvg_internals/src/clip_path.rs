@@ -22,6 +22,10 @@ impl NodeClipPath {
             units: Cell::new(ClipPathUnits::default()),
         }
     }
+
+    pub fn get_units(&self) -> ClipPathUnits {
+        self.units.get()
+    }
 }
 
 impl NodeTrait for NodeClipPath {
@@ -68,7 +72,7 @@ pub extern "C" fn rsvg_node_clip_path_get_units(raw_node: *const RsvgNode) -> Co
     let mut units = ClipPathUnits::default();
 
     node.with_impl(|clip_path: &NodeClipPath| {
-        units = clip_path.units.get();
+        units = clip_path.get_units();
     });
 
     CoordUnits::from(units)
