@@ -72,7 +72,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
     RsvgCoordUnits mask_units;
     RsvgCoordUnits content_units;
     cairo_matrix_t affine;
-    double offset_x = 0, offset_y = 0;
+    double offset_x, offset_y;
 
     g_assert (rsvg_node_get_type (mask) == RSVG_NODE_TYPE_MASK);
 
@@ -196,9 +196,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx)
 
     cairo_destroy (mask_cr);
 
-    if (cr == ctx->initial_cr) {
-        rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
-    }
+    rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
 
     cairo_identity_matrix (cr);
     cairo_mask_surface (cr, surface, offset_x, offset_y);
@@ -556,7 +554,7 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
     cairo_t *child_cr = ctx->cr;
     RsvgNode *lateclip = NULL;
     cairo_surface_t *surface = NULL;
-    double offset_x = 0, offset_y = 0;
+    double offset_x, offset_y;
 
     state = rsvg_drawing_ctx_get_current_state (ctx);
     clip_path = rsvg_state_get_clip_path (state);
@@ -609,9 +607,7 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
 
     pop_cr (ctx);
 
-    if (ctx->cr == ctx->initial_cr) {
-        rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
-    }
+    rsvg_drawing_ctx_get_offset (ctx, &offset_x, &offset_y);
 
     cairo_identity_matrix (ctx->cr);
     cairo_set_source_surface (ctx->cr, surface, offset_x, offset_y);
@@ -798,7 +794,7 @@ rsvg_drawing_ctx_get_height (RsvgDrawingCtx *draw_ctx)
 }
 
 void
-rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y)
+rsvg_drawing_ctx_get_raw_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y)
 {
     if (x != NULL) {
         *x = draw_ctx->rect.x;
@@ -806,6 +802,28 @@ rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y)
 
     if (y != NULL) {
         *y = draw_ctx->rect.y;
+    }
+}
+
+void
+rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y)
+{
+    double xofs, yofs;
+
+    if (rsvg_drawing_ctx_is_cairo_context_nested (draw_ctx, draw_ctx->cr)) {
+        xofs = 0.0;
+        yofs = 0.0;
+    } else {
+        xofs = draw_ctx->rect.x;
+        yofs = draw_ctx->rect.y;
+    }
+
+    if (x != NULL) {
+        *x = xofs;
+    }
+
+    if (y != NULL) {
+        *y = yofs;
     }
 }
 

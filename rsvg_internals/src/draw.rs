@@ -26,11 +26,7 @@ use state::{
 };
 
 fn set_affine_on_cr(draw_ctx: *mut RsvgDrawingCtx, cr: &cairo::Context, affine: &cairo::Matrix) {
-    let (x0, y0) = if drawing_ctx::is_cairo_context_nested(draw_ctx, cr) {
-        (0.0, 0.0)
-    } else {
-        drawing_ctx::get_offset(draw_ctx)
-    };
+    let (x0, y0) = drawing_ctx::get_offset(draw_ctx);
 
     let matrix = cairo::Matrix::new(
         affine.xx,

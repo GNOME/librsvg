@@ -31,11 +31,6 @@ extern "C" {
         cr: *const cairo_sys::cairo_t,
     );
 
-    fn rsvg_drawing_ctx_is_cairo_context_nested(
-        draw_ctx: *const RsvgDrawingCtx,
-        cr: *const cairo_sys::cairo_t,
-    ) -> glib_sys::gboolean;
-
     fn rsvg_drawing_ctx_get_dpi(
         draw_ctx: *const RsvgDrawingCtx,
         out_dpi_x: *mut f64,
@@ -99,14 +94,6 @@ pub fn set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) {
         let raw_cr = cr.to_glib_none().0;
 
         rsvg_drawing_ctx_set_cairo_context(draw_ctx, raw_cr);
-    }
-}
-
-pub fn is_cairo_context_nested(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) -> bool {
-    unsafe {
-        let raw_cr = cr.to_glib_none().0;
-
-        from_glib(rsvg_drawing_ctx_is_cairo_context_nested(draw_ctx, raw_cr))
     }
 }
 

@@ -575,11 +575,11 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
 
     cr = cairo_create (surface);
 
-    rsvg_drawing_ctx_get_offset (ctx, &x, &y);
+    rsvg_drawing_ctx_get_raw_offset (ctx, &x, &y);
 
     for (i = g_list_last (ctx->cr_stack); i != NULL; i = g_list_previous (i)) {
         cairo_t *draw = i->data;
-        gboolean nest = draw != ctx->initial_cr;
+        gboolean nest = rsvg_drawing_ctx_is_cairo_context_nested (ctx, draw);
         cairo_set_source_surface (cr, cairo_get_target (draw),
                                   nest ? 0 : -x,
                                   nest ? 0 : -y);

@@ -99,6 +99,9 @@ G_GNUC_INTERNAL
 double rsvg_drawing_ctx_get_height (RsvgDrawingCtx *draw_ctx);
 
 G_GNUC_INTERNAL
+void rsvg_drawing_ctx_get_raw_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y);
+
+G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y);
 
 G_GNUC_INTERNAL
