@@ -420,6 +420,12 @@ push_bounding_box (RsvgDrawingCtx *ctx)
     ctx->bbox = rsvg_bbox_new (&affine, NULL, NULL);
 }
 
+static void
+push_surface (RsvgDrawingCtx *ctx, cairo_surface_t *surface)
+{
+    ctx->surfaces_stack = g_list_prepend (ctx->surfaces_stack, cairo_surface_reference (surface));
+}
+
 void
 rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
 {
@@ -480,8 +486,7 @@ rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx)
         surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
                                               ctx->rect.width, ctx->rect.height);
 
-        /* The surface reference is owned by the child_cr created below and put on the cr_stack! */
-        ctx->surfaces_stack = g_list_prepend (ctx->surfaces_stack, surface);
+        push_surface (ctx, surface);
 
         g_free (filter);
     }
@@ -508,6 +513,19 @@ pop_bounding_box (RsvgDrawingCtx *ctx)
     rsvg_bbox_insert ((RsvgBbox *) ctx->bb_stack->data, ctx->bbox);
     ctx->bbox = (RsvgBbox *) ctx->bb_stack->data;
     ctx->bb_stack = g_list_delete_link (ctx->bb_stack, ctx->bb_stack);
+}
+
+static cairo_surface_t *
+pop_surface (RsvgDrawingCtx *ctx)
+{
+    cairo_surface_t *surface;
+
+    g_assert (ctx->surfaces_stack != NULL);
+
+    surface = ctx->surfaces_stack->data;
+    ctx->surfaces_stack = g_list_delete_link (ctx->surfaces_stack, ctx->surfaces_stack);
+
+    return surface;
 }
 
 void
@@ -560,18 +578,17 @@ rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx)
         RsvgNode *node;
         cairo_surface_t *output;
 
-        output = ctx->surfaces_stack->data;
-        ctx->surfaces_stack = g_list_delete_link (ctx->surfaces_stack, ctx->surfaces_stack);
+        output = pop_surface (ctx);
 
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, filter, RSVG_NODE_TYPE_FILTER);
         if (node) {
             needs_destroy = TRUE;
             surface = rsvg_filter_render (node, output, ctx, "2103");
-            rsvg_drawing_ctx_release_node (ctx, node);
 
-            /* Don't destroy the output surface, it's owned by child_cr */
+            rsvg_drawing_ctx_release_node (ctx, node);
         }
 
+        cairo_surface_destroy (output);
         g_free (filter);
     }
 
