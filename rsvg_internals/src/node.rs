@@ -22,6 +22,7 @@ use state::{
     rsvg_state_new,
     ComputedValues,
     Display,
+    FloodColor,
     LightingColor,
     Overflow,
     RsvgState,
@@ -626,6 +627,29 @@ pub extern "C" fn rsvg_node_draw_children(
         &node.get_computed_values(),
         clipping,
     );
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_values_get_flood_color_argb(raw_node: *const RsvgNode) -> u32 {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    let values = &node.get_computed_values();
+
+    match values.flood_color {
+        FloodColor(cssparser::Color::CurrentColor) => rgba_to_argb(values.color.0),
+        FloodColor(cssparser::Color::RGBA(ref rgba)) => rgba_to_argb(*rgba),
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_values_get_flood_opacity(raw_node: *const RsvgNode) -> u8 {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    let values = &node.get_computed_values();
+
+    u8::from(values.flood_opacity.0)
 }
 
 #[no_mangle]

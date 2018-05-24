@@ -10,7 +10,6 @@ use std::ptr;
 use std::str::FromStr;
 
 use attributes::Attribute;
-use color::rgba_to_argb;
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use handle::RsvgHandle;
@@ -1159,7 +1158,6 @@ make_property!(
     parse_data_type: ()
 );
 
-
 // https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
 make_property!(
     FloodColor,
@@ -1660,30 +1658,6 @@ pub extern "C" fn rsvg_state_get_affine(state: *const RsvgState) -> cairo::Matri
 pub extern "C" fn rsvg_state_set_affine(state: *mut RsvgState, affine: cairo::Matrix) {
     let state = from_c_mut(state);
     state.affine = affine;
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_flood_color(state: *const RsvgState) -> u32 {
-    let state = from_c(state);
-
-    match state.values.flood_color {
-        SpecifiedValue::Specified(FloodColor(cssparser::Color::RGBA(rgba))) => rgba_to_argb(rgba),
-        // FIXME: fallback to current color if Color::inherit and current color is set
-        _ => 0xff000000,
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_flood_opacity(state: *const RsvgState) -> u8 {
-    let state = from_c(state);
-
-    u8::from(
-        state
-            .values
-            .flood_opacity
-            .inherit_from(&Default::default())
-            .0,
-    )
 }
 
 extern "C" {

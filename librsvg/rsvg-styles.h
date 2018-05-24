@@ -74,14 +74,6 @@ cairo_matrix_t rsvg_state_get_affine (const RsvgState *state);
 G_GNUC_INTERNAL
 void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
 
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-guint32 rsvg_state_get_flood_color (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-guint8 rsvg_state_get_flood_opacity (RsvgState *state);
-
 G_END_DECLS
 
 #endif                          /* RSVG_STYLES_H */

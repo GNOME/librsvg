@@ -358,6 +358,14 @@ void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, gboolean clip
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
+guint32 rsvg_node_values_get_flood_color_argb (RsvgNode *node);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+guint8 rsvg_node_values_get_flood_opacity (RsvgNode *node);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
 guint32 rsvg_node_values_get_lighting_color_argb (RsvgNode *node);
 
 /* Implemented in rust/src/node.rs */
