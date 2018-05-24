@@ -373,23 +373,12 @@ impl State {
         self.inherit_run(src, State::reinheritfunction, false);
     }
 
-    pub fn inherit(&mut self, src: &State) {
-        self.inherit_run(src, State::inheritfunction, true);
-    }
-
     pub fn force(&mut self, src: &State) {
         self.inherit_run(src, State::forcefunction, false);
     }
 
     pub fn dominate(&mut self, src: &State) {
         self.inherit_run(src, State::dominatefunction, false);
-    }
-
-    pub fn reconstruct(&mut self, node: &RsvgNode) {
-        if let Some(parent) = node.get_parent() {
-            self.reconstruct(&parent);
-            self.inherit(node.get_state());
-        }
     }
 
     // reinherit is given dst which is the top of the state stack
@@ -401,14 +390,6 @@ impl State {
         } else {
             false
         }
-    }
-
-    // put something new on the inheritance stack, dst is the top of the stack,
-    // src is the state to be integrated, this is essentially the opposite of
-    // reinherit, because it is being given stuff to be integrated on the top,
-    // rather than the context underneath.
-    fn inheritfunction(_dst: bool, src: bool) -> bool {
-        src
     }
 
     // copy everything inheritable from the src to the dst */
