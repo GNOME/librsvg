@@ -21,6 +21,7 @@ use state::{
     self,
     BaselineShift,
     ClipPath,
+    CompOp,
     ComputedValues,
     EnableBackground,
     Filter,
@@ -29,6 +30,7 @@ use state::{
     SpecifiedValue,
     State,
 };
+use unitinterval::UnitInterval;
 
 pub enum RsvgDrawingCtx {}
 
@@ -452,10 +454,8 @@ fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
         _ => None,
     };
 
-    let opacity = u8::from(values.opacity.0);
-
-    let comp_op = cairo::Operator::from(values.comp_op);
-
+    let UnitInterval(opacity) = values.opacity.0;
+    let comp_op = values.comp_op;
     let enable_background = values.enable_background;
 
     let mut late_clip = false;
@@ -476,11 +476,11 @@ fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
         }
     }
 
-    if opacity == 0xff
+    if opacity == 1.0
         && filter.is_none()
         && mask.is_none()
         && !late_clip
-        && comp_op == cairo::Operator::Over
+        && comp_op == CompOp::SrcOver
         && enable_background == EnableBackground::Accumulate
     {
         return;
@@ -532,10 +532,8 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
         _ => None,
     };
 
-    let opacity = u8::from(values.opacity.0);
-
-    let comp_op = cairo::Operator::from(values.comp_op);
-
+    let UnitInterval(opacity) = values.opacity.0;
+    let comp_op = values.comp_op;
     let enable_background = values.enable_background;
 
     let mut late_clip = false;
@@ -560,11 +558,11 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
         }
     }
 
-    if opacity == 0xff
+    if opacity == 1.0
         && filter.is_none()
         && mask.is_none()
         && !late_clip
-        && comp_op == cairo::Operator::Over
+        && comp_op == CompOp::SrcOver
         && enable_background == EnableBackground::Accumulate
     {
         return;
@@ -622,7 +620,7 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
         }
     }
 
-    cr.set_operator(comp_op);
+    cr.set_operator(cairo::Operator::from(comp_op));
 
     if let Some(mask) = mask {
         if let Some(acquired) = get_acquired_node_of_type(draw_ctx, mask, NodeType::Mask) {
@@ -632,8 +630,8 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
                 mask.generate_cairo_mask(&node, draw_ctx);
             });
         }
-    } else if opacity != 0xff {
-        cr.paint_with_alpha(f64::from(opacity) / 255.0);
+    } else if opacity < 1.0 {
+        cr.paint_with_alpha(opacity);
     } else {
         cr.paint();
     }
