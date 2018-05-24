@@ -139,8 +139,9 @@ void rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, Rs
 G_GNUC_INTERNAL
 void rsvg_filter_primitive_free (gpointer impl);
 
+/* Implemented in rust/src/filter_context.rs */
 G_GNUC_INTERNAL
-RsvgIRect rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext * ctx);
+RsvgIRect rsvg_filter_primitive_get_bounds (const RsvgFilterPrimitive * self, const RsvgFilterContext * ctx);
 
 /* Implemented in rust/src/filter_context.rs */
 G_GNUC_INTERNAL

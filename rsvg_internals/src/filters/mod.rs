@@ -13,8 +13,8 @@ use property_bag::PropertyBag;
 use state::ComputedValues;
 
 mod ffi;
-pub use self::ffi::rsvg_filter_render;
 use self::ffi::*;
+pub use self::ffi::{rsvg_filter_render, RsvgFilterPrimitive};
 
 pub mod offset;
 

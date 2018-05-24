@@ -60,6 +60,7 @@ pub use filter_context::{
     rsvg_filter_context_get_previous_result,
     rsvg_filter_context_get_source_surface,
     rsvg_filter_context_get_width,
+    rsvg_filter_primitive_get_bounds,
     rsvg_filter_store_output,
 };
 

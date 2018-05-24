@@ -406,3 +406,36 @@ pub unsafe extern "C" fn rsvg_filter_store_output(
 
     (*ctx).store_result(Some(name), result);
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
+    primitive: *const RsvgFilterPrimitive,
+    ctx: *const RsvgFilterContext,
+) -> IRect {
+    assert!(!ctx.is_null());
+
+    let mut x = None;
+    let mut y = None;
+    let mut width = None;
+    let mut height = None;
+
+    if !primitive.is_null() {
+        if (*primitive).x_specified != 0 {
+            x = Some((*primitive).x)
+        };
+
+        if (*primitive).y_specified != 0 {
+            y = Some((*primitive).y)
+        };
+
+        if (*primitive).width_specified != 0 {
+            width = Some((*primitive).width)
+        };
+
+        if (*primitive).height_specified != 0 {
+            height = Some((*primitive).height)
+        };
+    }
+
+    (*ctx).compute_bounds(x, y, width, height)
+}
