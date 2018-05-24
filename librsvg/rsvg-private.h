@@ -352,11 +352,13 @@ gboolean rsvg_node_children_iter_next_back (RsvgNodeChildrenIter *iter,
 G_GNUC_INTERNAL
 void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
 
-/* generic function for drawing all of the children of a particular node */
-
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, gboolean clipping);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_node_values_is_visible (RsvgNode *node);
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 

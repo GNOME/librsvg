@@ -15,7 +15,17 @@ use error::*;
 use handle::RsvgHandle;
 use parsers::ParseError;
 use property_bag::PropertyBag;
-use state::{self, rsvg_state_new, ComputedValues, Overflow, RsvgState, SpecifiedValue, State};
+use state::{
+    self,
+    rsvg_state_new,
+    ComputedValues,
+    Display,
+    Overflow,
+    RsvgState,
+    SpecifiedValue,
+    State,
+    Visibility,
+};
 use util::utf8_cstr;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
@@ -613,6 +623,20 @@ pub extern "C" fn rsvg_node_draw_children(
         &node.get_computed_values(),
         clipping,
     );
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_values_is_visible(raw_node: *const RsvgNode) -> glib_sys::gboolean {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    let values = &node.get_computed_values();
+
+    match (values.display, values.visibility) {
+        (Display::None, _) => false,
+        (_, Visibility::Visible) => true,
+        _ => false,
+    }.to_glib()
 }
 
 #[no_mangle]

@@ -950,16 +950,6 @@ impl State {
         }
     }
 
-    pub fn is_visible(&self) -> bool {
-        match (&self.values.display, &self.values.visibility) {
-            (&SpecifiedValue::Specified(Display::None), _) => false,
-            (_, &SpecifiedValue::Unspecified)
-            | (_, &SpecifiedValue::Inherit)
-            | (_, &SpecifiedValue::Specified(Visibility::Visible)) => true,
-            _ => false,
-        }
-    }
-
     pub fn get_computed_values(&self) -> ComputedValues {
         let mut computed = ComputedValues::default();
 
@@ -1510,13 +1500,6 @@ pub extern "C" fn rsvg_state_reconstruct(state: *mut RsvgState, raw_node: *const
     let node: &RsvgNode = unsafe { &*raw_node };
 
     state.reconstruct(node);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_is_visible(state: *const RsvgState) -> glib_sys::gboolean {
-    let state = from_c(state);
-
-    state.is_visible().to_glib()
 }
 
 #[no_mangle]

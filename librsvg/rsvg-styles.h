@@ -76,10 +76,6 @@ void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
 
 /* Implemented in rsvg_internals/src/state.rs */
 G_GNUC_INTERNAL
-gboolean rsvg_state_is_visible (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
 char *rsvg_state_get_clip_path (RsvgState *state);
 
 /* Implemented in rsvg_internals/src/state.rs */

@@ -378,7 +378,6 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                        int dominate,
                                        gboolean clipping)
 {
-    RsvgState *state;
     GSList *stacksave;
 
     stacksave = ctx->drawsub_stack;
@@ -391,9 +390,7 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
         ctx->drawsub_stack = stacksave->next;
     }
 
-    state = rsvg_node_get_state (node);
-
-    if (rsvg_state_is_visible (state)) {
+    if (rsvg_node_values_is_visible (node)) {
         rsvg_drawing_ctx_state_push (ctx);
         rsvg_node_draw (node, ctx, dominate, clipping);
         rsvg_drawing_ctx_state_pop (ctx);

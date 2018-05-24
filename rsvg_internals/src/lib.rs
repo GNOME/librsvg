@@ -102,6 +102,7 @@ pub use node::{
     rsvg_node_set_attribute_parse_error,
     rsvg_node_set_atts,
     rsvg_node_unref,
+    rsvg_node_values_is_visible,
     rsvg_root_node_cascade,
 };
 
@@ -135,7 +136,6 @@ pub use state::{
     rsvg_state_get_flood_color,
     rsvg_state_get_flood_opacity,
     rsvg_state_get_opacity,
-    rsvg_state_is_visible,
     rsvg_state_new,
     rsvg_state_parent,
     rsvg_state_parse_conditional_processing_attributes,
