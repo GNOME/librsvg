@@ -16,7 +16,7 @@ use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
 use handle::RsvgHandle;
-use parsers::ParseError;
+use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
 use state::{
     self,
@@ -234,6 +234,21 @@ impl Node {
     }
 
     pub fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) {
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Transform => match Matrix::parse(value, ()) {
+                    Ok(affine) => self.transform.set(affine),
+
+                    Err(e) => {
+                        self.set_error(NodeError::attribute_error(Attribute::Transform, e));
+                        return;
+                    }
+                }
+
+                _ => (),
+            }
+        }
+
         *self.result.borrow_mut() = self.node_impl.set_atts(node, handle, pbag);
     }
 
