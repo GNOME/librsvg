@@ -1513,40 +1513,6 @@ make_property!(
     "preserve" => Preserve,
 );
 
-// C state API implemented in rust
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_parse_presentation_attributes(
-    state: *mut RsvgState,
-    pbag: *const PropertyBag,
-) -> glib_sys::gboolean {
-    let state = from_c_mut(state);
-
-    let pbag = unsafe { &*pbag };
-
-    match state.parse_presentation_attributes(pbag) {
-        Ok(_) => true.to_glib(),
-        Err(_) => false.to_glib(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_parse_conditional_processing_attributes(
-    state: *mut RsvgState,
-    pbag: *const PropertyBag,
-) -> glib_sys::gboolean {
-    let state = from_c_mut(state);
-
-    let pbag = unsafe { &*pbag };
-
-    match state.parse_conditional_processing_attributes(pbag) {
-        Ok(_) => true.to_glib(),
-        Err(_) => false.to_glib(),
-    }
-}
-
-// Rust State API for consumption from C ----------------------------------------
-
 pub fn from_c<'a>(state: *const RsvgState) -> &'a State {
     assert!(!state.is_null());
 
@@ -1566,6 +1532,8 @@ pub fn to_c(state: &State) -> *const RsvgState {
 pub fn to_c_mut(state: &mut State) -> *mut RsvgState {
     state as *mut State as *mut RsvgState
 }
+
+// Rust State API for consumption from C ----------------------------------------
 
 #[no_mangle]
 pub extern "C" fn rsvg_state_new(parent: *mut RsvgState) -> *mut RsvgState {
