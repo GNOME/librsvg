@@ -135,7 +135,6 @@ pub use state::{
     rsvg_state_get_current_color,
     rsvg_state_get_flood_color,
     rsvg_state_get_flood_opacity,
-    rsvg_state_get_opacity,
     rsvg_state_new,
     rsvg_state_parent,
     rsvg_state_parse_conditional_processing_attributes,

@@ -1670,13 +1670,6 @@ pub extern "C" fn rsvg_state_get_flood_opacity(state: *const RsvgState) -> u8 {
     )
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_opacity(state: *const RsvgState) -> u8 {
-    let state = from_c(state);
-
-    u8::from(state.values.opacity.inherit_from(&Default::default()).0)
-}
-
 extern "C" {
     fn rsvg_lookup_apply_css_style(
         handle: *const RsvgHandle,
