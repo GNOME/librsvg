@@ -358,6 +358,10 @@ void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, gboolean clip
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
+guint32 rsvg_node_values_get_lighting_color_argb (RsvgNode *node);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
 gboolean rsvg_node_values_is_visible (RsvgNode *node);
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);

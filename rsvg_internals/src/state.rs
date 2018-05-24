@@ -129,6 +129,7 @@ pub struct SpecifiedValues {
     pub font_variant: SpecifiedValue<FontVariant>,
     pub font_weight: SpecifiedValue<FontWeight>,
     pub letter_spacing: SpecifiedValue<LetterSpacing>,
+    pub lighting_color: SpecifiedValue<LightingColor>,
     pub marker_end: SpecifiedValue<MarkerEnd>,
     pub marker_mid: SpecifiedValue<MarkerMid>,
     pub marker_start: SpecifiedValue<MarkerStart>,
@@ -180,6 +181,7 @@ pub struct ComputedValues {
     pub font_variant: FontVariant,
     pub font_weight: FontWeight,
     pub letter_spacing: LetterSpacing,
+    pub lighting_color: LightingColor,
     pub marker_end: MarkerEnd,
     pub marker_mid: MarkerMid,
     pub marker_start: MarkerStart,
@@ -250,6 +252,7 @@ impl Default for ComputedValues {
             font_variant: Default::default(),
             font_weight: Default::default(),
             letter_spacing: Default::default(),
+            lighting_color: Default::default(),
             marker_end: Default::default(),
             marker_mid: Default::default(),
             marker_start: Default::default(),
@@ -308,6 +311,7 @@ impl SpecifiedValues {
         inherit_from!(self, computed, font_variant);
         inherit_from!(self, computed, font_weight);
         inherit_from!(self, computed, letter_spacing);
+        inherit_from!(self, computed, lighting_color);
         inherit_from!(self, computed, marker_end);
         inherit_from!(self, computed, marker_mid);
         inherit_from!(self, computed, marker_start);
@@ -505,6 +509,11 @@ impl State {
             inherit_fn,
             &mut self.values.letter_spacing,
             &src.values.letter_spacing,
+        );
+        inherit(
+            inherit_fn,
+            &mut self.values.lighting_color,
+            &src.values.lighting_color,
         );
         inherit(
             inherit_fn,
@@ -720,6 +729,10 @@ impl State {
 
                 Attribute::LetterSpacing => {
                     self.values.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
+                }
+
+                Attribute::LightingColor => {
+                    self.values.lighting_color = parse_property(value, ())?;
                 }
 
                 Attribute::MarkerEnd => {
@@ -1245,6 +1258,15 @@ make_property!(
     parse_data_type: LengthDir
 );
 
+// https://www.w3.org/TR/SVG/filters.html#LightingColorProperty
+make_property!(
+    LightingColor,
+    default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
+    inherits_automatically: false,
+    newtype_parse: cssparser::Color,
+    parse_data_type: ()
+);
+
 make_property!(
     MarkerEnd,
     default: IRI::None,
@@ -1635,15 +1657,6 @@ pub extern "C" fn rsvg_state_get_affine(state: *const RsvgState) -> cairo::Matri
 pub extern "C" fn rsvg_state_set_affine(state: *mut RsvgState, affine: cairo::Matrix) {
     let state = from_c_mut(state);
     state.affine = affine;
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_current_color(state: *const RsvgState) -> u32 {
-    let state = from_c(state);
-
-    let current_color = state.values.color.inherit_from(&Default::default()).0;
-
-    rgba_to_argb(current_color)
 }
 
 #[no_mangle]

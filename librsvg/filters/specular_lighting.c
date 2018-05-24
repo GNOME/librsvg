@@ -39,7 +39,6 @@ struct _RsvgFilterPrimitiveSpecularLighting {
     double specularConstant;
     double specularExponent;
     double surfaceScale;
-    guint32 lightingcolor;
 };
 
 static void
@@ -56,6 +55,8 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgFilterPrimit
     cairo_matrix_t iaffine;
     RsvgIRect boundarys;
     RsvgNodeLightSource *source = NULL;
+    guint32 lightingcolor;
+    guint32 *p_lightingcolor;
 
     guchar *in_pixels;
     guchar *output_pixels;
@@ -92,11 +93,14 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgFilterPrimit
         return;
     }
 
+    lightingcolor = rsvg_node_values_get_lighting_color_argb (node);
+    p_lightingcolor = &lightingcolor;
+
     output_pixels = cairo_image_surface_get_data (output);
 
-    color.x = ((guchar *) (&specular_lighting->lightingcolor))[2] / 255.0;
-    color.y = ((guchar *) (&specular_lighting->lightingcolor))[1] / 255.0;
-    color.z = ((guchar *) (&specular_lighting->lightingcolor))[0] / 255.0;
+    color.x = ((guchar *) p_lightingcolor)[2] / 255.0;
+    color.y = ((guchar *) p_lightingcolor)[1] / 255.0;
+    color.z = ((guchar *) p_lightingcolor)[0] / 255.0;
 
     surfaceScale = specular_lighting->surfaceScale / 255.0;
 
@@ -174,39 +178,6 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl,
             g_string_assign (filter->super.result, value);
             break;
 
-        case RSVG_ATTRIBUTE_LIGHTING_COLOR: {
-            RsvgCssColorSpec spec;
-            RsvgState *state;
-
-            spec = rsvg_css_parse_color (value);
-
-            switch (spec.kind) {
-            case RSVG_CSS_COLOR_SPEC_INHERIT:
-                /* FIXME: we should inherit; see how stop-color is handled in rsvg-styles.c */
-                break;
-
-            case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
-                state = rsvg_state_new (NULL);
-                rsvg_state_reconstruct (state, node);
-                filter->lightingcolor = rsvg_state_get_current_color (state);
-                rsvg_state_free (state);
-                break;
-
-            case RSVG_CSS_COLOR_SPEC_ARGB:
-                filter->lightingcolor = spec.argb;
-                break;
-
-            case RSVG_CSS_COLOR_PARSE_ERROR:
-                rsvg_node_set_attribute_parse_error (node, "lighting-color", "Invalid color");
-                goto out;
-
-            default:
-                g_assert_not_reached ();
-            }
-
-            break;
-        }
-
         case RSVG_ATTRIBUTE_SPECULAR_CONSTANT:
             filter->specularConstant = g_ascii_strtod (value, NULL);
             break;
@@ -224,7 +195,6 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl,
         }
     }
 
-out:
     rsvg_property_bag_iter_end (iter);
 }
 
@@ -239,7 +209,6 @@ rsvg_new_filter_primitive_specular_lighting (const char *element_name, RsvgNode 
     filter->surfaceScale = 1;
     filter->specularConstant = 1;
     filter->specularExponent = 1;
-    filter->lightingcolor = 0xFFFFFFFF;
     filter->super.render = rsvg_filter_primitive_specular_lighting_render;
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING,
