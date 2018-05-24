@@ -1516,16 +1516,6 @@ make_property!(
 // C state API implemented in rust
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_reconstruct(state: *mut RsvgState, raw_node: *const RsvgNode) {
-    let state = from_c_mut(state);
-
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    state.reconstruct(node);
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_state_parse_presentation_attributes(
     state: *mut RsvgState,
     pbag: *const PropertyBag,

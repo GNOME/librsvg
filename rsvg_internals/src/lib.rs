@@ -140,7 +140,6 @@ pub use state::{
     rsvg_state_parse_conditional_processing_attributes,
     rsvg_state_parse_presentation_attributes,
     rsvg_state_parse_style_pair,
-    rsvg_state_reconstruct,
     rsvg_state_set_affine,
 };
 
