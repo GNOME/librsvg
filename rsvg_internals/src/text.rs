@@ -617,6 +617,11 @@ fn measure_child(
 ) -> bool {
     let mut done = false;
 
+    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    cr.save();
+
+    cr.transform(node.get_transform());
+
     drawing_ctx::state_push(draw_ctx);
 
     match (node.get_type(), textonly) {
@@ -640,6 +645,8 @@ fn measure_child(
     }
 
     drawing_ctx::state_pop(draw_ctx);
+
+    cr.restore();
 
     done
 }
@@ -671,6 +678,11 @@ fn render_child(
     textonly: bool,
     clipping: bool,
 ) {
+    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    cr.save();
+
+    cr.transform(node.get_transform());
+
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
             node.with_impl(|chars: &NodeChars| chars.render(node, draw_ctx, x, y, clipping));
@@ -690,6 +702,8 @@ fn render_child(
         }
         (_, _) => {}
     }
+
+    cr.restore();
 }
 
 #[no_mangle]
