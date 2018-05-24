@@ -21,7 +21,6 @@ use parsers::ParseError;
 use parsers::{parse, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
-use state::ComputedValues;
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -114,13 +113,14 @@ impl NodeMarker {
         &self,
         node: &RsvgNode,
         draw_ctx: *mut RsvgDrawingCtx,
-        values: &ComputedValues,
         xpos: f64,
         ypos: f64,
         computed_angle: f64,
         line_width: f64,
         clipping: bool,
     ) {
+        let values = &node.get_computed_values();
+
         let marker_width = self.width.get().normalize(draw_ctx);
         let marker_height = self.height.get().normalize(draw_ctx);
 
@@ -257,7 +257,7 @@ impl NodeTrait for NodeMarker {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; markers are drawn by their referencing shapes
     }
 
@@ -623,7 +623,6 @@ fn emit_marker_by_name(
             marker.render(
                 &node,
                 draw_ctx,
-                node.get_computed_values().as_ref().unwrap(),
                 xpos,
                 ypos,
                 computed_angle,

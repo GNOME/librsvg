@@ -110,7 +110,7 @@ impl NodeTrait for NodeChars {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -154,14 +154,9 @@ impl NodeTrait for NodeText {
         Ok(())
     }
 
-    fn draw(
-        &self,
-        node: &RsvgNode,
-        draw_ctx: *mut RsvgDrawingCtx,
-        values: &ComputedValues,
-        _dominate: i32,
-        clipping: bool,
-    ) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, _dominate: i32, clipping: bool) {
+        let values = &node.get_computed_values();
+
         let mut x = self.x.get().normalize(draw_ctx);
         let mut y = self.y.get().normalize(draw_ctx);
         let mut dx = self.dx.get().normalize(draw_ctx);
@@ -265,7 +260,7 @@ impl NodeTrait for NodeTRef {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -389,7 +384,7 @@ impl NodeTrait for NodeTSpan {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 

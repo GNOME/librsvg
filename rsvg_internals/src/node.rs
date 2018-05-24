@@ -34,14 +34,7 @@ pub trait NodeTrait: Downcast {
         handle: *const RsvgHandle,
         pbag: &PropertyBag,
     ) -> NodeResult;
-    fn draw(
-        &self,
-        node: &RsvgNode,
-        draw_ctx: *mut RsvgDrawingCtx,
-        values: &ComputedValues,
-        dominate: i32,
-        clipping: bool,
-    );
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool);
     fn get_c_impl(&self) -> *const RsvgCNodeImpl;
 }
 
@@ -75,7 +68,7 @@ pub struct Node {
     children: RefCell<Vec<Rc<Node>>>, // strong references to children
     state: *mut RsvgState,
     result: RefCell<NodeResult>,
-    values: RefCell<Option<ComputedValues>>,
+    values: RefCell<ComputedValues>,
     node_impl: Box<NodeTrait>,
 }
 
@@ -157,7 +150,7 @@ impl Node {
             children: RefCell::new(Vec::new()),
             state,
             result: RefCell::new(Ok(())),
-            values: RefCell::new(None),
+            values: RefCell::new(ComputedValues::default()),
             node_impl,
         }
     }
@@ -175,14 +168,10 @@ impl Node {
     }
 
     pub fn set_computed_values(&self, values: &ComputedValues) {
-        if self.values.borrow().is_none() {
-            *self.values.borrow_mut() = Some(values.clone());
-        } else {
-            unreachable!("computed values cannot be set twice on a node");
-        }
+        *self.values.borrow_mut() = values.clone();
     }
 
-    pub fn get_computed_values(&self) -> Ref<Option<ComputedValues>> {
+    pub fn get_computed_values(&self) -> Ref<ComputedValues> {
         self.values.borrow()
     }
 
@@ -248,15 +237,9 @@ impl Node {
             // let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
             // let computed = state.get_computed_values();
             let computed = self.get_computed_values();
-            println!("computed affine: {:?}", computed.as_ref().unwrap().affine);
+            println!("computed affine: {:?}", computed.affine);
 
-            self.node_impl.draw(
-                node,
-                draw_ctx,
-                computed.as_ref().unwrap(),
-                dominate,
-                clipping,
-            );
+            self.node_impl.draw(node, draw_ctx, dominate, clipping);
         }
     }
 
@@ -290,7 +273,7 @@ impl Node {
 
             drawing_ctx::push_discrete_layer(
                 draw_ctx as *mut RsvgDrawingCtx,
-                self.get_computed_values().as_ref().unwrap(),
+                &self.get_computed_values(),
                 clipping,
             );
         }
@@ -306,7 +289,7 @@ impl Node {
         if dominate != -1 {
             drawing_ctx::pop_discrete_layer(
                 draw_ctx as *mut RsvgDrawingCtx,
-                self.get_computed_values().as_ref().unwrap(),
+                &self.get_computed_values(),
                 clipping,
             );
         }
@@ -621,13 +604,13 @@ pub extern "C" fn rsvg_node_draw_children(
     drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
     drawing_ctx::push_discrete_layer(
         draw_ctx as *mut RsvgDrawingCtx,
-        node.get_computed_values().as_ref().unwrap(),
+        &node.get_computed_values(),
         clipping,
     );
     node.draw_children(draw_ctx, -1, clipping);
     drawing_ctx::pop_discrete_layer(
         draw_ctx as *mut RsvgDrawingCtx,
-        node.get_computed_values().as_ref().unwrap(),
+        &node.get_computed_values(),
         clipping,
     );
 }
@@ -657,7 +640,7 @@ mod tests {
             Ok(())
         }
 
-        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {}
+        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {}
 
         fn get_c_impl(&self) -> *const RsvgCNodeImpl {
             unreachable!();

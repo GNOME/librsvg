@@ -12,7 +12,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use state::{ComputedValues, SpecifiedValue, State, StopColor, StopOpacity};
+use state::{SpecifiedValue, State, StopColor, StopOpacity};
 
 pub struct NodeStop {
     offset: Cell<f64>,
@@ -137,7 +137,7 @@ impl NodeTrait for NodeStop {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 

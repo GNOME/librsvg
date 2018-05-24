@@ -19,7 +19,6 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use state::ComputedValues;
 use viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -230,7 +229,7 @@ impl NodeTrait for NodePattern {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 
@@ -423,17 +422,9 @@ fn set_pattern_on_draw_context(
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();
 
     drawing_ctx::state_reinherit_top(draw_ctx, pattern_node.get_state(), 2);
-    drawing_ctx::push_discrete_layer(
-        draw_ctx,
-        pattern_node.get_computed_values().as_ref().unwrap(),
-        false,
-    );
+    drawing_ctx::push_discrete_layer(draw_ctx, &pattern_node.get_computed_values(), false);
     pattern_node.draw_children(draw_ctx, -1, false);
-    drawing_ctx::pop_discrete_layer(
-        draw_ctx,
-        pattern_node.get_computed_values().as_ref().unwrap(),
-        false,
-    );
+    drawing_ctx::pop_discrete_layer(draw_ctx, &pattern_node.get_computed_values(), false);
 
     // Return to the original coordinate system and rendering context
 

@@ -12,7 +12,6 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use node::*;
 use property_bag::PropertyBag;
-use state::ComputedValues;
 
 struct NodeLink {
     link: RefCell<Option<String>>,
@@ -39,14 +38,7 @@ impl NodeTrait for NodeLink {
         Ok(())
     }
 
-    fn draw(
-        &self,
-        node: &RsvgNode,
-        draw_ctx: *mut RsvgDrawingCtx,
-        _values: &ComputedValues,
-        dominate: i32,
-        clipping: bool,
-    ) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         let link = self.link.borrow();
 
         if link.is_some() && link.as_ref().unwrap() != "" {
