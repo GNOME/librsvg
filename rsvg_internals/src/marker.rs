@@ -130,8 +130,7 @@ impl NodeMarker {
             return;
         }
 
-        let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
-        let mut affine = state.affine;
+        let mut affine = values.affine;
 
         affine.translate(xpos, ypos);
 
@@ -172,31 +171,21 @@ impl NodeMarker {
 
         drawing_ctx::state_push_not_inherited(draw_ctx);
 
-        let state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
+        // FIXME: pass down the affine to draw_children() below
+        // state.affine = affine;
 
-        state.reconstruct(node);
-
-        state.affine = affine;
-
-        if !state.is_overflow() {
+        if !values.is_overflow() {
             if let Some(vbox) = self.vbox.get() {
                 add_clipping_rect(
                     draw_ctx,
-                    &state.affine,
+                    &affine,
                     vbox.0.x,
                     vbox.0.y,
                     vbox.0.width,
                     vbox.0.height,
                 );
             } else {
-                add_clipping_rect(
-                    draw_ctx,
-                    &state.affine,
-                    0.0,
-                    0.0,
-                    marker_width,
-                    marker_height,
-                );
+                add_clipping_rect(draw_ctx, &affine, 0.0, 0.0, marker_width, marker_height);
             }
         }
 
