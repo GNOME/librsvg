@@ -633,10 +633,9 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
     if let Some(mask) = mask {
         if let Some(acquired) = get_acquired_node_of_type(draw_ctx, mask, NodeType::Mask) {
             let node = acquired.get();
-            let state = get_current_state(draw_ctx).unwrap();
 
             node.with_impl(|mask: &NodeMask| {
-                mask.generate_cairo_mask(&node, draw_ctx, &state.get_computed_values());
+                mask.generate_cairo_mask(&node, draw_ctx);
             });
         }
     } else if opacity != 0xff {

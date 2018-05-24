@@ -13,7 +13,7 @@ use length::{LengthDir, RsvgLength};
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
-use state::{ComputedValues, Opacity};
+use state::Opacity;
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -59,12 +59,9 @@ impl NodeMask {
         RsvgLength::parse("120%", dir).unwrap()
     }
 
-    pub fn generate_cairo_mask(
-        &self,
-        node: &RsvgNode,
-        draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-    ) {
+    pub fn generate_cairo_mask(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
+        let values = &node.get_computed_values();
+
         let width = drawing_ctx::get_width(draw_ctx) as i32;
         let height = drawing_ctx::get_height(draw_ctx) as i32;
 
@@ -102,14 +99,14 @@ impl NodeMask {
 
                 draw::add_clipping_rect(
                     draw_ctx,
-                    &state.affine,
+                    &values.affine,
                     x * rect.width + rect.x,
                     y * rect.height + rect.y,
                     w * rect.width,
                     h * rect.height,
                 );
             } else {
-                draw::add_clipping_rect(draw_ctx, &state.affine, x, y, w, h);
+                draw::add_clipping_rect(draw_ctx, &values.affine, x, y, w, h);
             }
 
             // Horribly dirty hack to have the bbox premultiplied to everything
@@ -142,7 +139,7 @@ impl NodeMask {
             let rowstride = surface.get_stride() as usize;
             let mut pixels = surface.get_data().unwrap();
             let opacity = {
-                let Opacity(o) = state.opacity;
+                let Opacity(o) = values.opacity;
                 u8::from(o)
             };
 
