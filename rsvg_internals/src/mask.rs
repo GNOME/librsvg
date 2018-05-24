@@ -144,7 +144,7 @@ impl NodeMask {
             };
 
             for row in pixels.chunks_mut(rowstride) {
-                for p in row[..width as usize].chunks_mut(4) {
+                for p in row[..4 * width as usize].chunks_mut(4) {
                     //  Assuming, the pixel is linear RGB (not sRGB)
                     //  y = luminance
                     //  Y = 0.2126 R + 0.7152 G + 0.0722 B
