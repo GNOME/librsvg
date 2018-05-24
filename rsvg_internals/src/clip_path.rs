@@ -31,18 +31,17 @@ impl NodeClipPath {
     pub fn to_cairo_context(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
         let clip_units = self.units.get();
 
-        let clip_path_state = node.get_state_mut();
-        let affine_save = clip_path_state.affine;
-
         let orig_bbox = drawing_ctx::get_bbox(draw_ctx).clone();
+
+        let cr = drawing_ctx::get_cairo_context(draw_ctx);
+
+        let cr_save_transform = cr.get_matrix();
 
         if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
             let rect = orig_bbox.rect.unwrap();
 
             let bbtransform = cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
-
-            let bbtransform = cairo::Matrix::multiply(&bbtransform, &affine_save);
-            clip_path_state.affine = bbtransform;
+            cr.transform(bbtransform);
         }
 
         drawing_ctx::state_push(draw_ctx);
@@ -54,10 +53,6 @@ impl NodeClipPath {
 
         drawing_ctx::state_pop(draw_ctx);
 
-        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
-            clip_path_state.affine = affine_save;
-        }
-
         // FIXME: this is an EPIC HACK to keep the clipping context from
         // accumulating bounding boxes.  We'll remove this later, when we
         // are able to extract bounding boxes from outside the
@@ -66,6 +61,10 @@ impl NodeClipPath {
 
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
         cr.clip();
+
+        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+            cr.set_matrix(cr_save_transform);
+        }
     }
 }
 
