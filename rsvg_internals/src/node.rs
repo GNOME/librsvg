@@ -1,10 +1,11 @@
+use cairo::{Matrix, MatrixTrait};
 use cssparser;
 use downcast_rs::*;
 use glib::translate::*;
 use glib_sys;
 use libc;
 
-use std::cell::{Ref, RefCell};
+use std::cell::{Cell, Ref, RefCell};
 use std::ptr;
 use std::rc::{Rc, Weak};
 use std::str::FromStr;
@@ -82,6 +83,7 @@ pub struct Node {
     children: RefCell<Vec<Rc<Node>>>, // strong references to children
     state: *mut RsvgState,
     result: RefCell<NodeResult>,
+    transform: Cell<Matrix>,
     values: RefCell<ComputedValues>,
     node_impl: Box<NodeTrait>,
 }
@@ -163,6 +165,7 @@ impl Node {
             parent,
             children: RefCell::new(Vec::new()),
             state,
+            transform: Cell::new(Matrix::identity()),
             result: RefCell::new(Ok(())),
             values: RefCell::new(ComputedValues::default()),
             node_impl,
@@ -171,6 +174,10 @@ impl Node {
 
     pub fn get_type(&self) -> NodeType {
         self.node_type
+    }
+
+    pub fn get_transform(&self) -> Matrix {
+        self.transform.get()
     }
 
     pub fn get_state(&self) -> &State {
