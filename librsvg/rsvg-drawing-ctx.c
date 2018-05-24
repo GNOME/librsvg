@@ -55,58 +55,6 @@ void rsvg_drawing_ctx_transformed_image_bounding_box (cairo_matrix_t *affine,
                                                       double width, double height,
                                                       double *bbx, double *bby, double *bbw, double *bbh);
 
-void
-rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgNode *node_clip_path, RsvgBbox *bbox)
-{
-    cairo_matrix_t affinesave;
-    RsvgState *clip_path_state;
-    RsvgCoordUnits clip_units;
-    RsvgBbox *orig_bbox;
-
-    g_assert (rsvg_node_get_type (node_clip_path) == RSVG_NODE_TYPE_CLIP_PATH);
-    clip_units = rsvg_node_clip_path_get_units (node_clip_path);
-
-    clip_path_state = rsvg_node_get_state (node_clip_path);
-
-    /* Horribly dirty hack to have the bbox premultiplied to everything */
-    if (clip_units == objectBoundingBox) {
-        cairo_rectangle_t rect;
-        cairo_matrix_t bbtransform;
-
-        rsvg_bbox_get_rect (bbox, &rect, NULL);
-        cairo_matrix_init (&bbtransform,
-                           rect.width,
-                           0,
-                           0,
-                           rect.height,
-                           rect.x,
-                           rect.y);
-        affinesave = rsvg_state_get_affine (clip_path_state);
-        cairo_matrix_multiply (&bbtransform, &bbtransform, &affinesave);
-        rsvg_state_set_affine (clip_path_state, bbtransform);
-    }
-
-    orig_bbox = rsvg_bbox_clone (ctx->bbox);
-
-    rsvg_drawing_ctx_state_push (ctx);
-    rsvg_node_draw_children (node_clip_path, ctx, TRUE);
-    rsvg_drawing_ctx_state_pop (ctx);
-
-    if (clip_units == objectBoundingBox) {
-        rsvg_state_set_affine (clip_path_state, affinesave);
-    }
-
-    /* FIXME: this is an EPIC HACK to keep the clipping context from
-     * accumulating bounding boxes.  We'll remove this later, when we
-     * are able to extract bounding boxes from outside the
-     * general drawing loop.
-     */
-    rsvg_bbox_free (ctx->bbox);
-    ctx->bbox = orig_bbox;
-
-    cairo_clip (ctx->cr);
-}
-
 RsvgDrawingCtx *
 rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
 {

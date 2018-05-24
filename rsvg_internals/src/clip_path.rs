@@ -1,9 +1,11 @@
 use libc;
 use std::cell::Cell;
 
+use cairo::{self, MatrixTrait};
+
 use attributes::Attribute;
 use coord_units::CoordUnits;
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
@@ -24,6 +26,46 @@ impl NodeClipPath {
 
     pub fn get_units(&self) -> ClipPathUnits {
         self.units.get()
+    }
+
+    pub fn to_cairo_context(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
+        let clip_units = self.units.get();
+
+        let clip_path_state = node.get_state_mut();
+        let affine_save = clip_path_state.affine;
+
+        let orig_bbox = drawing_ctx::get_bbox(draw_ctx).clone();
+
+        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+            let rect = orig_bbox.rect.unwrap();
+
+            let bbtransform = cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
+
+            let bbtransform = cairo::Matrix::multiply(&bbtransform, &affine_save);
+            clip_path_state.affine = bbtransform;
+        }
+
+        drawing_ctx::state_push(draw_ctx);
+
+        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
+        drawing_ctx::push_discrete_layer(draw_ctx, &node.get_computed_values(), true);
+        node.draw_children(draw_ctx, -1, true);
+        drawing_ctx::pop_discrete_layer(draw_ctx, &node.get_computed_values(), true);
+
+        drawing_ctx::state_pop(draw_ctx);
+
+        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+            clip_path_state.affine = affine_save;
+        }
+
+        // FIXME: this is an EPIC HACK to keep the clipping context from
+        // accumulating bounding boxes.  We'll remove this later, when we
+        // are able to extract bounding boxes from outside the
+        // general drawing loop.
+        drawing_ctx::set_bbox(draw_ctx, &orig_bbox);
+
+        let cr = drawing_ctx::get_cairo_context(draw_ctx);
+        cr.clip();
     }
 }
 
@@ -61,18 +103,4 @@ pub extern "C" fn rsvg_node_clip_path_new(
         raw_parent,
         Box::new(NodeClipPath::new()),
     )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_clip_path_get_units(raw_node: *const RsvgNode) -> CoordUnits {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let mut units = ClipPathUnits::default();
-
-    node.with_impl(|clip_path: &NodeClipPath| {
-        units = clip_path.get_units();
-    });
-
-    CoordUnits::from(units)
 }

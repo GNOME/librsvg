@@ -1,5 +1,3 @@
-use std::ptr;
-
 use cairo;
 use cairo::MatrixTrait;
 use cairo_sys;
@@ -16,8 +14,8 @@ use coord_units::CoordUnits;
 use filters::rsvg_filter_render;
 use iri::IRI;
 use length::LengthUnit;
-use node::{box_node, NodeType, RsvgNode};
 use mask::NodeMask;
+use node::{box_node, NodeType, RsvgNode};
 use rect::RectangleExt;
 use state::{
     self,
@@ -265,15 +263,11 @@ pub fn pop_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues
 }
 
 pub fn get_width(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    unsafe {
-        rsvg_drawing_ctx_get_width(draw_ctx)
-    }
+    unsafe { rsvg_drawing_ctx_get_width(draw_ctx) }
 }
 
 pub fn get_height(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    unsafe {
-        rsvg_drawing_ctx_get_height(draw_ctx)
-    }
+    unsafe { rsvg_drawing_ctx_get_height(draw_ctx) }
 }
 
 pub fn get_offset(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
@@ -330,6 +324,12 @@ pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &BoundingBox) {
     let draw_ctx_bbox = get_bbox_mut(draw_ctx);
 
     draw_ctx_bbox.insert(bbox);
+}
+
+pub fn set_bbox(draw_ctx: *mut RsvgDrawingCtx, bbox: &BoundingBox) {
+    let draw_ctx_bbox = get_bbox_mut(draw_ctx);
+
+    *draw_ctx_bbox = *bbox;
 }
 
 pub fn draw_node_from_stack(
@@ -418,8 +418,6 @@ pub fn get_bbox<'a>(draw_ctx: *const RsvgDrawingCtx) -> &'a BoundingBox {
 }
 
 extern "C" {
-    fn rsvg_cairo_clip(draw_ctx: *mut RsvgDrawingCtx, node: *const RsvgNode, bbox: *const RsvgBbox);
-
     fn rsvg_drawing_ctx_get_width(draw_ctx: *const RsvgDrawingCtx) -> f64;
     fn rsvg_drawing_ctx_get_height(draw_ctx: *const RsvgDrawingCtx) -> f64;
 
@@ -466,21 +464,15 @@ fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
         if let Some(acquired) = get_acquired_node_of_type(draw_ctx, clip_path, NodeType::ClipPath) {
             let node = acquired.get();
 
-            let mut clip_path_units = ClipPathUnits::default();
-
-            node.with_impl(|clip_path: &NodeClipPath| {
-                clip_path_units = clip_path.get_units();
-            });
-
-            match clip_path_units {
-                ClipPathUnits(CoordUnits::UserSpaceOnUse) => unsafe {
-                    rsvg_cairo_clip(draw_ctx, acquired.1, ptr::null());
-                },
+            node.with_impl(|clip_path: &NodeClipPath| match clip_path.get_units() {
+                ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
+                    clip_path.to_cairo_context(&node, draw_ctx);
+                }
 
                 ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
                     late_clip = true;
                 }
-            }
+            });
         }
     }
 
@@ -621,9 +613,11 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
             if let Some(acquired) =
                 get_acquired_node_of_type(draw_ctx, clip_path, NodeType::ClipPath)
             {
-                unsafe {
-                    rsvg_cairo_clip(draw_ctx, acquired.1, rsvg_drawing_ctx_get_bbox(draw_ctx));
-                }
+                let node = acquired.get();
+
+                node.with_impl(|clip_path: &NodeClipPath| {
+                    clip_path.to_cairo_context(&node, draw_ctx);
+                });
             }
         }
     }
