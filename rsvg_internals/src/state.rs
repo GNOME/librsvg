@@ -1312,14 +1312,16 @@ make_property!(
     "crispEdges" => CrispEdges,
 );
 
+// https://www.w3.org/TR/SVG/pservers.html#StopColorProperty
 make_property!(
     StopColor,
-    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
+    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/pservers.html#StopOpacityProperty
 make_property!(
     StopOpacity,
     default: UnitInterval(1.0),
