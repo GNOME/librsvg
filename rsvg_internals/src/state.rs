@@ -865,7 +865,7 @@ impl State {
         Ok(())
     }
 
-    pub fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
+    fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
         for (_key, attr, value) in pbag.iter() {
             self.parse_style_pair(attr, value, false, false)?;
         }
@@ -908,7 +908,7 @@ impl State {
         Ok(())
     }
 
-    pub fn parse_style_declarations(&mut self, declarations: &str) -> Result<(), NodeError> {
+    fn parse_style_declarations(&mut self, declarations: &str) -> Result<(), NodeError> {
         // Split an attribute value like style="foo: bar; baz: beep;" into
         // individual CSS declarations ("foo: bar" and "baz: beep") and
         // set them onto the state struct.

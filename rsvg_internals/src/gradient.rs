@@ -1,9 +1,8 @@
-use cairo;
+use cairo::{self, MatrixTrait};
+use cssparser;
 use libc;
 
 use std::cell::RefCell;
-
-use cairo::MatrixTrait;
 
 use attributes::Attribute;
 use bbox::*;
@@ -16,6 +15,7 @@ use node::*;
 use parsers::{parse, Parse, ParseError};
 use property_bag::PropertyBag;
 use rect::RectangleExt;
+use state::StopColor;
 use stop::*;
 use unitinterval::UnitInterval;
 use util::*;
@@ -23,7 +23,8 @@ use util::*;
 #[derive(Copy, Clone)]
 struct ColorStop {
     pub offset: f64,
-    pub rgba: u32,
+    pub rgba: cssparser::RGBA,
+    pub opacity: UnitInterval,
 }
 
 coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
@@ -177,7 +178,7 @@ impl GradientCommon {
         self.fallback = clone_fallback_name(&fallback.fallback);
     }
 
-    fn add_color_stop(&mut self, mut offset: f64, rgba: u32) {
+    fn add_color_stop(&mut self, mut offset: f64, rgba: cssparser::RGBA, opacity: UnitInterval) {
         if self.stops.is_none() {
             self.stops = Some(Vec::<ColorStop>::new());
         }
@@ -193,7 +194,11 @@ impl GradientCommon {
                 offset = last_offset;
             }
 
-            stops.push(ColorStop { offset, rgba });
+            stops.push(ColorStop {
+                offset,
+                rgba,
+                opacity,
+            });
         } else {
             unreachable!();
         }
@@ -352,33 +357,39 @@ impl Gradient {
         );
 
         node.children()
-             .into_iter()
-             // just ignore this child; we are only interested in gradient stops
-             .filter(|child| child.get_type() == NodeType::Stop)
-             // don't add any more stops, Eq to break in for-loop
-             .take_while(|child| child.get_result().is_ok())
-             .for_each(|child| {
+            .into_iter()
+            // just ignore this child; we are only interested in gradient stops
+            .filter(|child| child.get_type() == NodeType::Stop)
+            // don't add any more stops, Eq to break in for-loop
+            .take_while(|child| child.get_result().is_ok())
+            .for_each(|child| {
                 child.with_impl(|stop: &NodeStop| {
-                    self.add_color_stop(stop.get_offset(), stop.get_rgba());
+                    let values = &child.get_computed_values();
+                    let rgba = match values.stop_color {
+                        StopColor(cssparser::Color::CurrentColor) => values.color.0,
+                        StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
+                    };
+                    self.add_color_stop(stop.get_offset(), rgba, values.stop_opacity.0);
                 })
             });
     }
 
-    fn add_color_stop(&mut self, offset: f64, rgba: u32) {
-        self.common.add_color_stop(offset, rgba);
+    fn add_color_stop(&mut self, offset: f64, rgba: cssparser::RGBA, opacity: UnitInterval) {
+        self.common.add_color_stop(offset, rgba, opacity);
     }
 
     fn add_color_stops_to_pattern(&self, pattern: &mut cairo::Gradient, opacity: &UnitInterval) {
         if let Some(stops) = self.common.stops.as_ref() {
             for stop in stops {
-                let rgba = stop.rgba;
                 let &UnitInterval(o) = opacity;
+                let UnitInterval(stop_opacity) = stop.opacity;
+
                 pattern.add_color_stop_rgba(
                     stop.offset,
-                    (f64::from((rgba >> 24) & 0xff)) / 255.0,
-                    (f64::from((rgba >> 16) & 0xff)) / 255.0,
-                    (f64::from((rgba >> 8) & 0xff)) / 255.0,
-                    (f64::from(rgba & 0xff) * o) / 255.0,
+                    f64::from(stop.rgba.red_f32()),
+                    f64::from(stop.rgba.green_f32()),
+                    f64::from(stop.rgba.blue_f32()),
+                    f64::from(stop.rgba.alpha_f32()) * stop_opacity * o,
                 );
             }
         }
