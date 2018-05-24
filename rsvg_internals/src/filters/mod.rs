@@ -4,7 +4,7 @@ use std::ops::Deref;
 use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
 use error::AttributeError;
-use filter_context::{FilterContext, FilterResult, RsvgFilterContext};
+use filter_context::{FilterContext, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
@@ -83,22 +83,12 @@ impl Primitive {
     }
 
     fn get_bounds(&self, ctx: &FilterContext) -> IRect {
-        // TODO: replace with Rust code.
-        let mut primitive = RsvgFilterPrimitive::with_props(
+        ctx.compute_bounds(
             self.x.get(),
             self.y.get(),
             self.width.get(),
             self.height.get(),
-        );
-
-        extern "C" {
-            fn rsvg_filter_primitive_get_bounds(
-                primitive: *mut RsvgFilterPrimitive,
-                ctx: *const RsvgFilterContext,
-            ) -> IRect;
-        }
-
-        unsafe { rsvg_filter_primitive_get_bounds(&mut primitive, ctx) }
+        )
     }
 }
 

@@ -1,17 +1,16 @@
 use std::collections::HashMap;
 use std::ffi::CStr;
-use std::ptr;
 
 use cairo::prelude::SurfaceExt;
 use cairo::{self, MatrixTrait};
 use cairo_sys::cairo_surface_t;
 use glib::translate::{from_glib_none, ToGlibPtr};
 use glib_sys::*;
-use libc::c_void;
 
+use bbox::BoundingBox;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
-use filters::IRect;
+use filters::{IRect, RsvgFilterPrimitive};
 use length::RsvgLength;
 
 // Required by the C code until all filters are ported to Rust.
@@ -122,16 +121,7 @@ impl FilterContext {
 
         let last_result = FilterResult {
             surface: rv.source_surface.clone(),
-            bounds: {
-                extern "C" {
-                    fn rsvg_filter_primitive_get_bounds(
-                        primitive: *mut c_void,
-                        ctx: *const RsvgFilterContext,
-                    ) -> IRect;
-                }
-
-                unsafe { rsvg_filter_primitive_get_bounds(ptr::null_mut(), &rv) }
-            },
+            bounds: rv.compute_bounds(None, None, None, None),
         };
 
         rv.last_result = Some(last_result);
@@ -191,6 +181,82 @@ impl FilterContext {
     #[inline]
     pub fn paffine(&self) -> cairo::Matrix {
         self.paffine
+    }
+
+    /// Computes and returns the filter primitive bounds.
+    pub fn compute_bounds(
+        &self,
+        x: Option<RsvgLength>,
+        y: Option<RsvgLength>,
+        width: Option<RsvgLength>,
+        height: Option<RsvgLength>,
+    ) -> IRect {
+        let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
+
+        if unsafe { (*self.filter).filterunits } == CoordUnits::ObjectBoundingBox {
+            drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
+        }
+
+        let rect = cairo::Rectangle {
+            x: unsafe { (*self.filter).x.normalize(self.drawing_ctx) },
+            y: unsafe { (*self.filter).y.normalize(self.drawing_ctx) },
+            width: unsafe { (*self.filter).width.normalize(self.drawing_ctx) },
+            height: unsafe { (*self.filter).height.normalize(self.drawing_ctx) },
+        };
+
+        if unsafe { (*self.filter).filterunits } == CoordUnits::ObjectBoundingBox {
+            drawing_ctx::pop_view_box(self.drawing_ctx);
+        }
+
+        let other_bbox = BoundingBox::new(&self.affine).with_rect(Some(rect));
+        bbox.insert(&other_bbox);
+
+        if x.is_some() || y.is_some() || width.is_some() || height.is_some() {
+            if unsafe { (*self.filter).primitiveunits } == CoordUnits::ObjectBoundingBox {
+                drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
+            }
+
+            let mut rect = cairo::Rectangle {
+                x: x.map(|x| x.normalize(self.drawing_ctx)).unwrap_or(0f64),
+                y: y.map(|y| y.normalize(self.drawing_ctx)).unwrap_or(0f64),
+                ..rect
+            };
+
+            if width.is_some() || height.is_some() {
+                let (vbox_width, vbox_height) = drawing_ctx::get_view_box_size(self.drawing_ctx);
+
+                rect.width = width
+                    .map(|w| w.normalize(self.drawing_ctx))
+                    .unwrap_or(vbox_width);
+                rect.height = height
+                    .map(|h| h.normalize(self.drawing_ctx))
+                    .unwrap_or(vbox_height);
+            }
+
+            if unsafe { (*self.filter).primitiveunits } == CoordUnits::ObjectBoundingBox {
+                drawing_ctx::pop_view_box(self.drawing_ctx);
+            }
+
+            let other_bbox = BoundingBox::new(&self.paffine).with_rect(Some(rect));
+            bbox.clip(&other_bbox);
+        }
+
+        let rect = cairo::Rectangle {
+            x: 0f64,
+            y: 0f64,
+            width: f64::from(self.source_surface.get_width()),
+            height: f64::from(self.source_surface.get_height()),
+        };
+        let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(Some(rect));
+        bbox.clip(&other_bbox);
+
+        let bbox_rect = bbox.rect.unwrap();
+        IRect {
+            x0: bbox_rect.x as i32,
+            y0: bbox_rect.y as i32,
+            x1: (bbox_rect.x + bbox_rect.width) as i32,
+            y1: (bbox_rect.y + bbox_rect.height) as i32,
+        }
     }
 }
 
@@ -287,16 +353,7 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
         },
         None => RsvgFilterPrimitiveOutput {
             surface: (*ctx).source_surface.to_glib_none().0,
-            bounds: {
-                extern "C" {
-                    fn rsvg_filter_primitive_get_bounds(
-                        primitive: *mut c_void,
-                        ctx: *const RsvgFilterContext,
-                    ) -> IRect;
-                }
-
-                rsvg_filter_primitive_get_bounds(ptr::null_mut(), ctx)
-            },
+            bounds: (*ctx).compute_bounds(None, None, None, None),
         },
     }
 }
