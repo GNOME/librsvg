@@ -490,15 +490,3 @@ pub fn add_clipping_rect(
     cr.rectangle(x, y, w, h);
     cr.clip();
 }
-
-#[no_mangle]
-pub extern "C" fn rsvg_cairo_add_clipping_rect(
-    draw_ctx: *mut RsvgDrawingCtx,
-    affine: *const cairo::Matrix,
-    x: f64,
-    y: f64,
-    w: f64,
-    h: f64,
-) {
-    add_clipping_rect(draw_ctx, unsafe { &*affine }, x, y, w, h);
-}

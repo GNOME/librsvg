@@ -40,15 +40,6 @@
 
 #include <pango/pangocairo.h>
 
-/* Implemented in rsvg_internals/src/draw.rs */
-G_GNUC_INTERNAL
-void rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
-                                   cairo_matrix_t *affine,
-                                   double x,
-                                   double y,
-                                   double w,
-                                   double h);
-
 /* Implemented in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_transformed_image_bounding_box (cairo_matrix_t *affine,
