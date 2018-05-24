@@ -1159,18 +1159,21 @@ make_property!(
     parse_data_type: ()
 );
 
+
+// https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
 make_property!(
     FloodColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
-    inherits_automatically: true,
+    inherits_automatically: false,
     newtype_parse: cssparser::Color,
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/filters.html#FloodOpacityProperty
 make_property!(
     FloodOpacity,
     default: UnitInterval(1.0),
-    inherits_automatically: true,
+    inherits_automatically: false,
     newtype_from_str: UnitInterval
 );
 
