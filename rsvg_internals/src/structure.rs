@@ -191,7 +191,6 @@ impl NodeTrait for NodeSvg {
         let nh = self.h.get().normalize(draw_ctx);
 
         let do_clip = !values.is_overflow() && node.get_parent().is_some();
-        let affine = values.affine;
 
         draw_in_viewport(
             nx,
@@ -203,7 +202,7 @@ impl NodeTrait for NodeSvg {
             self.vbox.get(),
             self.preserve_aspect_ratio.get(),
             values,
-            affine,
+            drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
             draw_ctx,
             clipping,
             || {
@@ -317,16 +316,13 @@ impl NodeTrait for NodeUse {
         }
 
         if child.get_type() != NodeType::Symbol {
-            let mut affine = values.affine;
-            affine.translate(nx, ny);
+            let cr = drawing_ctx::get_cairo_context(draw_ctx);
+            cr.save();
+            cr.translate(nx, ny);
 
             drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
-            // push a new state so we can change its affine
             drawing_ctx::state_push(draw_ctx);
-
-            let cur_state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
-            cur_state.affine = affine;
 
             let boxed_child = box_node(child.clone());
             drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 1, clipping);
@@ -335,6 +331,8 @@ impl NodeTrait for NodeUse {
             drawing_ctx::state_pop(draw_ctx);
 
             drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+
+            cr.restore();
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !values.is_overflow()
@@ -350,7 +348,7 @@ impl NodeTrait for NodeUse {
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
                     values,
-                    values.affine,
+                    drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
                     draw_ctx,
                     clipping,
                     || {

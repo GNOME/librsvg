@@ -83,8 +83,7 @@ impl ViewportCtx for RsvgDrawingCtxWrapper {
     }
 
     fn set_affine(&mut self, affine: cairo::Matrix) {
-        let state = drawing_ctx::get_current_state_mut(self.0).unwrap();
-        state.affine = affine;
+        drawing_ctx::get_cairo_context(self.0).set_matrix(affine);
     }
 }
 

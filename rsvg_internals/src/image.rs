@@ -115,10 +115,13 @@ impl NodeTrait for NodeImage {
 
             drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
+            let cr = drawing_ctx::get_cairo_context(draw_ctx);
+            cr.save();
+
             let aspect = self.aspect.get();
 
             if !values.is_overflow() && aspect.is_slice() {
-                add_clipping_rect(draw_ctx, &values.affine, x, y, w, h);
+                add_clipping_rect(draw_ctx, &cr.get_matrix(), x, y, w, h);
             }
 
             let (x, y, w, h) = aspect.compute(
@@ -131,6 +134,8 @@ impl NodeTrait for NodeImage {
             );
 
             draw_surface(draw_ctx, values, surface, x, y, w, h, clipping);
+
+            cr.restore();
 
             drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
         }

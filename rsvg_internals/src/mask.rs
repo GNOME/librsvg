@@ -99,14 +99,14 @@ impl NodeMask {
 
                 draw::add_clipping_rect(
                     draw_ctx,
-                    &values.affine,
+                    &node.get_transform(),
                     x * rect.width + rect.x,
                     y * rect.height + rect.y,
                     w * rect.width,
                     h * rect.height,
                 );
             } else {
-                draw::add_clipping_rect(draw_ctx, &values.affine, x, y, w, h);
+                draw::add_clipping_rect(draw_ctx, &node.get_transform(), x, y, w, h);
             }
 
             // Horribly dirty hack to have the bbox premultiplied to everything

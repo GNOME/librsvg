@@ -130,7 +130,7 @@ impl NodeMarker {
             return;
         }
 
-        let mut affine = values.affine;
+        let mut affine = node.get_transform();
 
         affine.translate(xpos, ypos);
 

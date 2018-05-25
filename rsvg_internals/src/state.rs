@@ -158,7 +158,6 @@ pub struct SpecifiedValues {
 
 #[derive(Clone)]
 pub struct ComputedValues {
-    pub affine: cairo::Matrix,
     pub baseline_shift: BaselineShift,
     pub clip_path: ClipPath,
     pub clip_rule: ClipRule,
@@ -227,8 +226,6 @@ impl ComputedValues {
 impl Default for ComputedValues {
     fn default() -> ComputedValues {
         ComputedValues {
-            affine: cairo::Matrix::identity(),
-
             // please keep these sorted
             baseline_shift: Default::default(),
             clip_path: Default::default(),
@@ -953,7 +950,6 @@ impl State {
 
     pub fn to_computed_values(&self, values: &mut ComputedValues) {
         self.values.to_computed_values(values);
-        values.affine = cairo::Matrix::multiply(&self.affine, &values.affine);
     }
 }
 

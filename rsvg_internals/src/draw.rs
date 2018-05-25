@@ -25,8 +25,10 @@ use state::{
     TextRendering,
 };
 
-fn set_affine_on_cr(draw_ctx: *mut RsvgDrawingCtx, cr: &cairo::Context, affine: &cairo::Matrix) {
+fn set_affine_on_cr(draw_ctx: *mut RsvgDrawingCtx, cr: &cairo::Context) {
     let (x0, y0) = drawing_ctx::get_offset(draw_ctx);
+
+    let affine = cr.get_matrix();
 
     let matrix = cairo::Matrix::new(
         affine.xx,
@@ -55,8 +57,9 @@ pub fn draw_path_builder(
     }
 
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    cr.save();
 
-    set_affine_on_cr(draw_ctx, &cr, &values.affine);
+    set_affine_on_cr(draw_ctx, &cr);
 
     builder.to_cairo(&cr);
 
@@ -66,7 +69,11 @@ pub fn draw_path_builder(
         cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
 
         stroke_and_fill(&cr, draw_ctx, values);
+    }
 
+    cr.restore();
+
+    if !clipping {
         drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
     }
 
@@ -269,7 +276,9 @@ fn bbox_from_extents(
 }
 
 fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> BoundingBox {
-    let mut bbox = BoundingBox::new(&values.affine);
+    let affine = cr.get_matrix();
+
+    let mut bbox = BoundingBox::new(&affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
@@ -285,19 +294,19 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     // paths for the icon's shape.  We need to be able to compute the bounding
     // rectangle's extents, even when it has no fill nor stroke.
 
-    let fb = bbox_from_extents(&values.affine, cr.fill_extents(), true);
+    let fb = bbox_from_extents(&affine, cr.fill_extents(), true);
     bbox.insert(&fb);
 
     // Bounding box for stroke
 
     if values.stroke.0 != PaintServer::None {
-        let sb = bbox_from_extents(&values.affine, cr.stroke_extents(), true);
+        let sb = bbox_from_extents(&affine, cr.stroke_extents(), true);
         bbox.insert(&sb);
     }
 
     // objectBoundingBox
 
-    let ob = bbox_from_extents(&values.affine, path_extents(cr), false);
+    let ob = bbox_from_extents(&affine, path_extents(cr), false);
     bbox.insert(&ob);
 
     // restore tolerance
@@ -315,7 +324,6 @@ pub fn draw_pango_layout(
     y: f64,
     clipping: bool,
 ) {
-    let cr = drawing_ctx::get_cairo_context(draw_ctx);
     let gravity = layout.get_context().unwrap().get_gravity();
 
     let (ink, _) = layout.get_extents();
@@ -324,7 +332,14 @@ pub fn draw_pango_layout(
         return;
     }
 
-    let bbox = compute_text_bbox(&ink, x, y, &values.affine, gravity);
+    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    cr.save();
+
+    set_affine_on_cr(draw_ctx, &cr);
+
+    let affine = cr.get_matrix();
+
+    let bbox = compute_text_bbox(&ink, x, y, &affine, gravity);
 
     if !clipping {
         drawing_ctx::insert_bbox(draw_ctx, &bbox);
@@ -334,11 +349,8 @@ pub fn draw_pango_layout(
 
     setup_cr_for_stroke(&cr, draw_ctx, values);
 
-    set_affine_on_cr(draw_ctx, &cr, &values.affine);
-
     let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
 
-    cr.save();
     cr.move_to(x, y);
     if !rotation.approx_eq_cairo(&0.0) {
         cr.rotate(-rotation);
@@ -382,7 +394,7 @@ pub fn draw_pango_layout(
         pangocairo::functions::layout_path(&cr, layout);
 
         if !clipping {
-            let ib = bbox_from_extents(&values.affine, cr.stroke_extents(), true);
+            let ib = bbox_from_extents(&affine, cr.stroke_extents(), true);
             cr.stroke();
             drawing_ctx::insert_bbox(draw_ctx, &ib);
         }
@@ -449,7 +461,8 @@ pub fn draw_surface(
     }
 
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
-    let affine = values.affine;
+
+    let affine = cr.get_matrix();
 
     let width = surface.get_width();
     let height = surface.get_height();
@@ -457,6 +470,8 @@ pub fn draw_surface(
     if width == 0 || height == 0 {
         return;
     }
+
+    cr.save();
 
     let width = f64::from(width);
     let height = f64::from(height);
@@ -469,7 +484,7 @@ pub fn draw_surface(
         height,
     });
 
-    set_affine_on_cr(draw_ctx, &cr, &affine);
+    set_affine_on_cr(draw_ctx, &cr);
     cr.scale(w / width, h / height);
     let x = x * width / w;
     let y = y * height / h;
@@ -478,6 +493,8 @@ pub fn draw_surface(
 
     cr.set_source_surface(&surface, x, y);
     cr.paint();
+
+    cr.restore();
 
     drawing_ctx::insert_bbox(draw_ctx, &bbox);
 }
@@ -491,8 +508,9 @@ pub fn add_clipping_rect(
     h: f64,
 ) {
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    cr.set_matrix(*affine);
 
-    set_affine_on_cr(draw_ctx, &cr, affine);
+    set_affine_on_cr(draw_ctx, &cr);
 
     cr.rectangle(x, y, w, h);
     cr.clip();
