@@ -315,8 +315,8 @@ fn set_pattern_on_draw_context(
         }
     }
 
-    let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
-    let affine = state.affine;
+    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let affine = cr.get_matrix();
     let taffine = cairo::Matrix::multiply(&pattern_affine, &affine);
 
     let mut scwscale = (taffine.xx * taffine.xx + taffine.xy * taffine.xy).sqrt();
@@ -417,15 +417,16 @@ fn set_pattern_on_draw_context(
     drawing_ctx::set_cairo_context(draw_ctx, &cr_pattern);
 
     // Set up transformations to be determined by the contents units
-    let state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
-    state.affine = caffine;
 
     // Draw everything
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();
 
     drawing_ctx::state_reinherit_top(draw_ctx, pattern_node.get_state(), 2);
     drawing_ctx::push_discrete_layer(draw_ctx, &pattern_node.get_computed_values(), false);
+
+    cr_pattern.set_matrix(caffine);
     pattern_node.draw_children(draw_ctx, -1, false);
+
     drawing_ctx::pop_discrete_layer(draw_ctx, &pattern_node.get_computed_values(), false);
 
     // Return to the original coordinate system and rendering context
