@@ -177,6 +177,9 @@ impl NodeMarker {
             -self.ref_y.get().normalize(draw_ctx),
         );
 
+        let cr2 = drawing_ctx::get_cairo_context(draw_ctx);
+        cr2.set_matrix(affine);
+
         if !values.is_overflow() {
             if let Some(vbox) = self.vbox.get() {
                 add_clipping_rect(
