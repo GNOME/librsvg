@@ -110,11 +110,11 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgFilterPrimit
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
-            L = get_light_direction (source, x, y, z, &iaffine, drawing_ctx);
+            L = get_light_direction (node, source, x, y, z, &iaffine, drawing_ctx);
             L.z += 1;
             L = normalise (L);
 
-            lightcolor = get_light_color (source, color, x, y, z, &iaffine, drawing_ctx);
+            lightcolor = get_light_color (node, source, color, x, y, z, &iaffine, drawing_ctx);
             base = dotproduct (get_surface_normal (in_pixels, boundarys, x, y,
                                                    1, 1, 1.0 / ctx_paffine.xx,
                                                    1.0 / ctx_paffine.yy, specular_lighting->surfaceScale,

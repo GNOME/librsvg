@@ -61,11 +61,13 @@ G_GNUC_INTERNAL
 RsvgNodeLightSource *find_light_source_in_children (RsvgNode *node);
 
 G_GNUC_INTERNAL
-vector3 get_light_color (RsvgNodeLightSource * source, vector3 color,
+vector3 get_light_color (RsvgNode *node,
+                         RsvgNodeLightSource * source, vector3 color,
                          gdouble x1, gdouble y1, gdouble z, cairo_matrix_t *affine, RsvgDrawingCtx * ctx);
 
 G_GNUC_INTERNAL
-vector3 get_light_direction (RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdouble z,
+vector3 get_light_direction (RsvgNode *node,
+                             RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdouble z,
                              cairo_matrix_t *affine, RsvgDrawingCtx * ctx);
 
 G_GNUC_INTERNAL

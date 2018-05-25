@@ -42,7 +42,7 @@ pub(super) type RenderFunctionType = fn(&RsvgNode, &mut FilterContext);
 
 /// Downcasts the given `node` to the type `T` and calls `Filter::render()` on it.
 pub(super) fn render<T: Filter>(node: &RsvgNode, ctx: &mut FilterContext) {
-    node.with_impl(|filter: &T| filter.render(ctx));
+    node.with_impl(|filter: &T| filter.render(node, ctx));
 }
 
 /// Creates a new surface applied the filter. This function will create a context for itself, set up
@@ -73,6 +73,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
 
     let mut filter_ctx = FilterContext::new(
         filter_node.get_c_impl() as *mut RsvgFilter,
+        filter_node,
         source,
         context,
         channelmap_arr,

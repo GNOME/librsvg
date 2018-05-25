@@ -156,7 +156,7 @@ pub struct SpecifiedValues {
     pub xml_space: SpecifiedValue<XmlSpace>, // not a property, but a non-presentation attribute
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ComputedValues {
     pub baseline_shift: BaselineShift,
     pub clip_path: ClipPath,

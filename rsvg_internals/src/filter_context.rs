@@ -12,6 +12,8 @@ use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use filters::{IRect, RsvgFilterPrimitive};
 use length::RsvgLength;
+use node::RsvgNode;
+use state::ComputedValues;
 
 // Required by the C code until all filters are ported to Rust.
 // Keep this in sync with
@@ -48,8 +50,9 @@ pub struct FilterResult {
 }
 
 /// The filter rendering context.
-#[derive(Debug)]
 pub struct FilterContext {
+    /// the <filter> node
+    node: RsvgNode,
     /// The source graphic surface.
     source_surface: cairo::ImageSurface,
     /// Output of the last filter primitive.
@@ -68,18 +71,21 @@ impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
         filter: *mut RsvgFilter,
+        filter_node: &RsvgNode,
         source_surface: cairo::ImageSurface,
-        ctx: *mut RsvgDrawingCtx,
+        draw_ctx: *mut RsvgDrawingCtx,
         channelmap: [i32; 4],
     ) -> Self {
         assert!(!filter.is_null());
 
-        let state = drawing_ctx::get_current_state(ctx).unwrap();
-        let bbox = drawing_ctx::get_bbox(ctx);
+        let values = &filter_node.get_computed_values();
+
+        let cr_affine = drawing_ctx::get_cairo_context(draw_ctx).get_matrix();
+        let bbox = drawing_ctx::get_bbox(draw_ctx);
         let bbox_rect = bbox.rect.unwrap();
 
         let affine = match unsafe { (*filter).filterunits } {
-            CoordUnits::UserSpaceOnUse => state.affine,
+            CoordUnits::UserSpaceOnUse => cr_affine,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
                     bbox_rect.width,
@@ -89,12 +95,12 @@ impl FilterContext {
                     bbox_rect.x,
                     bbox_rect.y,
                 );
-                cairo::Matrix::multiply(&affine, &state.affine)
+                cairo::Matrix::multiply(&affine, &cr_affine)
             }
         };
 
         let paffine = match unsafe { (*filter).primitiveunits } {
-            CoordUnits::UserSpaceOnUse => state.affine,
+            CoordUnits::UserSpaceOnUse => cr_affine,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
                     bbox_rect.width,
@@ -104,28 +110,33 @@ impl FilterContext {
                     bbox_rect.x,
                     bbox_rect.y,
                 );
-                cairo::Matrix::multiply(&affine, &state.affine)
+                cairo::Matrix::multiply(&affine, &cr_affine)
             }
         };
 
         let mut rv = Self {
+            node: filter_node.clone(),
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
             affine,
             paffine,
             filter,
-            drawing_ctx: ctx,
+            drawing_ctx: draw_ctx,
             channelmap,
         };
 
         let last_result = FilterResult {
             surface: rv.source_surface.clone(),
-            bounds: rv.compute_bounds(None, None, None, None),
+            bounds: rv.compute_bounds(values, None, None, None, None),
         };
 
         rv.last_result = Some(last_result);
         rv
+    }
+
+    pub fn get_filter_node(&self) -> RsvgNode {
+        self.node.clone()
     }
 
     /// Returns the surface corresponding to the last filter primitive's result.
@@ -186,6 +197,7 @@ impl FilterContext {
     /// Computes and returns the filter primitive bounds.
     pub fn compute_bounds(
         &self,
+        values: &ComputedValues,
         x: Option<RsvgLength>,
         y: Option<RsvgLength>,
         width: Option<RsvgLength>,
@@ -198,10 +210,10 @@ impl FilterContext {
         }
 
         let rect = cairo::Rectangle {
-            x: unsafe { (*self.filter).x.normalize(self.drawing_ctx) },
-            y: unsafe { (*self.filter).y.normalize(self.drawing_ctx) },
-            width: unsafe { (*self.filter).width.normalize(self.drawing_ctx) },
-            height: unsafe { (*self.filter).height.normalize(self.drawing_ctx) },
+            x: unsafe { (*self.filter).x.normalize(values, self.drawing_ctx) },
+            y: unsafe { (*self.filter).y.normalize(values, self.drawing_ctx) },
+            width: unsafe { (*self.filter).width.normalize(values, self.drawing_ctx) },
+            height: unsafe { (*self.filter).height.normalize(values, self.drawing_ctx) },
         };
 
         if unsafe { (*self.filter).filterunits } == CoordUnits::ObjectBoundingBox {
@@ -217,8 +229,10 @@ impl FilterContext {
             }
 
             let mut rect = cairo::Rectangle {
-                x: x.map(|x| x.normalize(self.drawing_ctx)).unwrap_or(0f64),
-                y: y.map(|y| y.normalize(self.drawing_ctx)).unwrap_or(0f64),
+                x: x.map(|x| x.normalize(values, self.drawing_ctx))
+                    .unwrap_or(0f64),
+                y: y.map(|y| y.normalize(values, self.drawing_ctx))
+                    .unwrap_or(0f64),
                 ..rect
             };
 
@@ -226,10 +240,10 @@ impl FilterContext {
                 let (vbox_width, vbox_height) = drawing_ctx::get_view_box_size(self.drawing_ctx);
 
                 rect.width = width
-                    .map(|w| w.normalize(self.drawing_ctx))
+                    .map(|w| w.normalize(values, self.drawing_ctx))
                     .unwrap_or(vbox_width);
                 rect.height = height
-                    .map(|h| h.normalize(self.drawing_ctx))
+                    .map(|h| h.normalize(values, self.drawing_ctx))
                     .unwrap_or(vbox_height);
             }
 
@@ -343,7 +357,11 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
 ) -> RsvgFilterPrimitiveOutput {
     assert!(!ctx.is_null());
 
-    match (*ctx).last_result {
+    let ctx = &*ctx;
+
+    let values = &ctx.node.get_computed_values();
+
+    match ctx.last_result {
         Some(FilterResult {
             ref surface,
             ref bounds,
@@ -352,8 +370,8 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
             bounds: *bounds,
         },
         None => RsvgFilterPrimitiveOutput {
-            surface: (*ctx).source_surface.to_glib_none().0,
-            bounds: (*ctx).compute_bounds(None, None, None, None),
+            surface: ctx.source_surface.to_glib_none().0,
+            bounds: ctx.compute_bounds(values, None, None, None, None),
         },
     }
 }
@@ -414,6 +432,9 @@ pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
 ) -> IRect {
     assert!(!ctx.is_null());
 
+    let ctx = &*ctx;
+    let values = &ctx.node.get_computed_values();
+
     let mut x = None;
     let mut y = None;
     let mut width = None;
@@ -437,5 +458,5 @@ pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
         };
     }
 
-    (*ctx).compute_bounds(x, y, width, height)
+    ctx.compute_bounds(values, x, y, width, height)
 }

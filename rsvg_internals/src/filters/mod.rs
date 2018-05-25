@@ -23,7 +23,7 @@ trait Filter: NodeTrait {
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
     /// property hasn't been provided), return without drawing anything.
-    fn render(&self, ctx: &mut FilterContext);
+    fn render(&self, node: &RsvgNode, ctx: &mut FilterContext);
 }
 
 /// The base filter primitive node containing common properties.
@@ -82,7 +82,11 @@ impl Primitive {
     }
 
     fn get_bounds(&self, ctx: &FilterContext) -> IRect {
+        let node = ctx.get_filter_node();
+        let values = &node.get_computed_values();
+
         ctx.compute_bounds(
+            values,
             self.x.get(),
             self.y.get(),
             self.width.get(),

@@ -70,7 +70,9 @@ impl NodeTrait for Offset {
 }
 
 impl Filter for Offset {
-    fn render(&self, ctx: &mut FilterContext) {
+    fn render(&self, node: &RsvgNode, ctx: &mut FilterContext) {
+        let values = &node.get_computed_values();
+
         let bounds = self.base.get_bounds(ctx);
 
         let dx = self.dx.get().normalize(values, ctx.drawing_context());
