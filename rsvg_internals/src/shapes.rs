@@ -27,7 +27,7 @@ fn render_path_builder(
     draw_path_builder(draw_ctx, values, builder, clipping);
 
     if render_markers {
-        marker::render_markers_for_path_builder(builder, draw_ctx, clipping);
+        marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping);
     }
 }
 
