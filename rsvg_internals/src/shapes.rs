@@ -256,12 +256,14 @@ impl NodeTrait for NodeLine {
     }
 
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, _dominate: i32, clipping: bool) {
+        let values = &node.get_computed_values();
+
         let mut builder = PathBuilder::new();
 
-        let x1 = self.x1.get().normalize(draw_ctx);
-        let y1 = self.y1.get().normalize(draw_ctx);
-        let x2 = self.x2.get().normalize(draw_ctx);
-        let y2 = self.y2.get().normalize(draw_ctx);
+        let x1 = self.x1.get().normalize(values, draw_ctx);
+        let y1 = self.y1.get().normalize(values, draw_ctx);
+        let x2 = self.x2.get().normalize(values, draw_ctx);
+        let y2 = self.y2.get().normalize(values, draw_ctx);
 
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
@@ -347,11 +349,13 @@ impl NodeTrait for NodeRect {
     }
 
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, _dominate: i32, clipping: bool) {
-        let x = self.x.get().normalize(draw_ctx);
-        let y = self.y.get().normalize(draw_ctx);
+        let values = &node.get_computed_values();
 
-        let w = self.w.get().normalize(draw_ctx);
-        let h = self.h.get().normalize(draw_ctx);
+        let x = self.x.get().normalize(values, draw_ctx);
+        let y = self.y.get().normalize(values, draw_ctx);
+
+        let w = self.w.get().normalize(values, draw_ctx);
+        let h = self.h.get().normalize(values, draw_ctx);
 
         let mut rx;
         let mut ry;
@@ -363,18 +367,18 @@ impl NodeTrait for NodeRect {
             }
 
             (Some(_rx), None) => {
-                rx = _rx.normalize(draw_ctx);
-                ry = _rx.normalize(draw_ctx);
+                rx = _rx.normalize(values, draw_ctx);
+                ry = _rx.normalize(values, draw_ctx);
             }
 
             (None, Some(_ry)) => {
-                rx = _ry.normalize(draw_ctx);
-                ry = _ry.normalize(draw_ctx);
+                rx = _ry.normalize(values, draw_ctx);
+                ry = _ry.normalize(values, draw_ctx);
             }
 
             (Some(_rx), Some(_ry)) => {
-                rx = _rx.normalize(draw_ctx);
-                ry = _ry.normalize(draw_ctx);
+                rx = _rx.normalize(values, draw_ctx);
+                ry = _ry.normalize(values, draw_ctx);
             }
         }
 
@@ -535,9 +539,11 @@ impl NodeTrait for NodeCircle {
     }
 
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, _dominate: i32, clipping: bool) {
-        let cx = self.cx.get().normalize(draw_ctx);
-        let cy = self.cy.get().normalize(draw_ctx);
-        let r = self.r.get().normalize(draw_ctx);
+        let values = &node.get_computed_values();
+
+        let cx = self.cx.get().normalize(values, draw_ctx);
+        let cy = self.cy.get().normalize(values, draw_ctx);
+        let r = self.r.get().normalize(values, draw_ctx);
 
         render_ellipse(
             cx,
@@ -604,10 +610,12 @@ impl NodeTrait for NodeEllipse {
     }
 
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, _dominate: i32, clipping: bool) {
-        let cx = self.cx.get().normalize(draw_ctx);
-        let cy = self.cy.get().normalize(draw_ctx);
-        let rx = self.rx.get().normalize(draw_ctx);
-        let ry = self.ry.get().normalize(draw_ctx);
+        let values = &node.get_computed_values();
+
+        let cx = self.cx.get().normalize(values, draw_ctx);
+        let cy = self.cy.get().normalize(values, draw_ctx);
+        let rx = self.rx.get().normalize(values, draw_ctx);
+        let ry = self.ry.get().normalize(values, draw_ctx);
 
         render_ellipse(
             cx,

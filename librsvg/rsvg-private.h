@@ -449,7 +449,7 @@ void rsvg_bbox_get_rect (RsvgBbox *bbox, cairo_rectangle_t *rect, cairo_rectangl
 
 /* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
-double rsvg_length_normalize (const RsvgLength *length, RsvgDrawingCtx * ctx);
+double rsvg_length_normalize (const RsvgLength *length, RsvgNode *node, RsvgDrawingCtx * ctx);
 
 /* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL

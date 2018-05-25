@@ -19,6 +19,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
+use state::ComputedValues;
 use viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -265,6 +266,7 @@ fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern 
 
 fn set_pattern_on_draw_context(
     pattern: &Pattern,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &BoundingBox,
 ) -> bool {
@@ -286,10 +288,10 @@ fn set_pattern_on_draw_context(
         drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
     }
 
-    let pattern_x = pattern.x.unwrap().normalize(draw_ctx);
-    let pattern_y = pattern.y.unwrap().normalize(draw_ctx);
-    let pattern_width = pattern.width.unwrap().normalize(draw_ctx);
-    let pattern_height = pattern.height.unwrap().normalize(draw_ctx);
+    let pattern_x = pattern.x.unwrap().normalize(values, draw_ctx);
+    let pattern_y = pattern.y.unwrap().normalize(values, draw_ctx);
+    let pattern_width = pattern.width.unwrap().normalize(values, draw_ctx);
+    let pattern_height = pattern.height.unwrap().normalize(values, draw_ctx);
 
     if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
         drawing_ctx::pop_view_box(draw_ctx);
@@ -453,12 +455,13 @@ fn set_pattern_on_draw_context(
 
 fn resolve_fallbacks_and_set_pattern(
     pattern: &Pattern,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &BoundingBox,
 ) -> bool {
     let resolved = resolve_pattern(pattern, draw_ctx);
 
-    set_pattern_on_draw_context(&resolved, draw_ctx, bbox)
+    set_pattern_on_draw_context(&resolved, values, draw_ctx, bbox)
 }
 
 #[no_mangle]
@@ -480,7 +483,8 @@ pub fn pattern_resolve_fallbacks_and_set_pattern(
 
     node.with_impl(|node_pattern: &NodePattern| {
         let pattern = &*node_pattern.pattern.borrow();
-        did_set_pattern = resolve_fallbacks_and_set_pattern(pattern, draw_ctx, bbox);
+        let values = &node.get_computed_values();
+        did_set_pattern = resolve_fallbacks_and_set_pattern(pattern, values, draw_ctx, bbox);
     });
 
     did_set_pattern

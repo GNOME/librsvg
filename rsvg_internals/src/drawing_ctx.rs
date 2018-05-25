@@ -120,10 +120,6 @@ pub fn get_dpi(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
     (dpi_x, dpi_y)
 }
 
-pub fn get_normalized_font_size(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    normalize_font_size(draw_ctx, get_current_state(draw_ctx).unwrap())
-}
-
 pub fn get_accumulated_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
     let mut shift = 0f64;
 
@@ -150,7 +146,7 @@ fn normalize_font_size(draw_ctx: *const RsvgDrawingCtx, state: &State) -> f64 {
         LengthUnit::RelativeLarger => parent_font_size(draw_ctx, state) * 1.2f64,
         LengthUnit::RelativeSmaller => parent_font_size(draw_ctx, state) / 1.2f64,
 
-        _ => font_size.normalize(draw_ctx),
+        _ => 1.0 // font_size.normalize(draw_ctx),
     }
 }
 

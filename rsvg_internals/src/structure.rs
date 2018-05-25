@@ -183,10 +183,10 @@ impl NodeTrait for NodeSvg {
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, _dominate: i32, clipping: bool) {
         let values = &node.get_computed_values();
 
-        let nx = self.x.get().normalize(draw_ctx);
-        let ny = self.y.get().normalize(draw_ctx);
-        let nw = self.w.get().normalize(draw_ctx);
-        let nh = self.h.get().normalize(draw_ctx);
+        let nx = self.x.get().normalize(values, draw_ctx);
+        let ny = self.y.get().normalize(values, draw_ctx);
+        let nw = self.w.get().normalize(values, draw_ctx);
+        let nh = self.h.get().normalize(values, draw_ctx);
 
         let do_clip = !values.is_overflow() && node.get_parent().is_some();
 
@@ -288,8 +288,8 @@ impl NodeTrait for NodeUse {
             return;
         }
 
-        let nx = self.x.get().normalize(draw_ctx);
-        let ny = self.y.get().normalize(draw_ctx);
+        let nx = self.x.get().normalize(values, draw_ctx);
+        let ny = self.y.get().normalize(values, draw_ctx);
 
         // If attributes ‘width’ and/or ‘height’ are not specified,
         // [...] use values of '100%' for these attributes.
@@ -300,12 +300,12 @@ impl NodeTrait for NodeUse {
             .w
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Horizontal).unwrap())
-            .normalize(draw_ctx);
+            .normalize(values, draw_ctx);
         let nh = self
             .h
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Vertical).unwrap())
-            .normalize(draw_ctx);
+            .normalize(values, draw_ctx);
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute

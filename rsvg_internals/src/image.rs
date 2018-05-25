@@ -108,10 +108,10 @@ impl NodeTrait for NodeImage {
         let values = &node.get_computed_values();
 
         if let Some(ref surface) = *self.surface.borrow() {
-            let x = self.x.get().normalize(draw_ctx);
-            let y = self.y.get().normalize(draw_ctx);
-            let w = self.w.get().normalize(draw_ctx);
-            let h = self.h.get().normalize(draw_ctx);
+            let x = self.x.get().normalize(values, draw_ctx);
+            let y = self.y.get().normalize(values, draw_ctx);
+            let w = self.w.get().normalize(values, draw_ctx);
+            let h = self.h.get().normalize(values, draw_ctx);
 
             drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 

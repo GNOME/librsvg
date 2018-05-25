@@ -15,7 +15,7 @@ use node::*;
 use parsers::{parse, Parse, ParseError};
 use property_bag::PropertyBag;
 use rect::RectangleExt;
-use state::StopColor;
+use state::{ComputedValues, StopColor};
 use stop::*;
 use unitinterval::UnitInterval;
 use util::*;
@@ -476,6 +476,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
 
 fn set_linear_gradient_on_pattern(
     gradient: &Gradient,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &BoundingBox,
     opacity: &UnitInterval,
@@ -488,10 +489,10 @@ fn set_linear_gradient_on_pattern(
         }
 
         let mut pattern = cairo::LinearGradient::new(
-            x1.as_ref().unwrap().normalize(draw_ctx),
-            y1.as_ref().unwrap().normalize(draw_ctx),
-            x2.as_ref().unwrap().normalize(draw_ctx),
-            y2.as_ref().unwrap().normalize(draw_ctx),
+            x1.as_ref().unwrap().normalize(values, draw_ctx),
+            y1.as_ref().unwrap().normalize(values, draw_ctx),
+            x2.as_ref().unwrap().normalize(values, draw_ctx),
+            y2.as_ref().unwrap().normalize(values, draw_ctx),
         );
 
         if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
@@ -555,6 +556,7 @@ fn fix_focus_point(mut fx: f64, mut fy: f64, cx: f64, cy: f64, radius: f64) -> (
 
 fn set_radial_gradient_on_pattern(
     gradient: &Gradient,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &BoundingBox,
     opacity: &UnitInterval,
@@ -566,11 +568,11 @@ fn set_radial_gradient_on_pattern(
             drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
         }
 
-        let n_cx = cx.as_ref().unwrap().normalize(draw_ctx);
-        let n_cy = cy.as_ref().unwrap().normalize(draw_ctx);
-        let n_r = r.as_ref().unwrap().normalize(draw_ctx);
-        let n_fx = fx.as_ref().unwrap().normalize(draw_ctx);
-        let n_fy = fy.as_ref().unwrap().normalize(draw_ctx);
+        let n_cx = cx.as_ref().unwrap().normalize(values, draw_ctx);
+        let n_cy = cy.as_ref().unwrap().normalize(values, draw_ctx);
+        let n_r = r.as_ref().unwrap().normalize(values, draw_ctx);
+        let n_fx = fx.as_ref().unwrap().normalize(values, draw_ctx);
+        let n_fy = fy.as_ref().unwrap().normalize(values, draw_ctx);
 
         let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
 
@@ -590,6 +592,7 @@ fn set_radial_gradient_on_pattern(
 
 fn set_pattern_on_draw_context(
     gradient: &Gradient,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
@@ -598,11 +601,11 @@ fn set_pattern_on_draw_context(
 
     match gradient.variant {
         GradientVariant::Linear { .. } => {
-            set_linear_gradient_on_pattern(gradient, draw_ctx, bbox, opacity)
+            set_linear_gradient_on_pattern(gradient, values, draw_ctx, bbox, opacity)
         }
 
         GradientVariant::Radial { .. } => {
-            set_radial_gradient_on_pattern(gradient, draw_ctx, bbox, opacity)
+            set_radial_gradient_on_pattern(gradient, values, draw_ctx, bbox, opacity)
         }
     }
 }
@@ -736,6 +739,7 @@ pub extern "C" fn rsvg_node_radial_gradient_new(
 
 fn resolve_fallbacks_and_set_pattern(
     gradient: &Gradient,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
@@ -743,7 +747,7 @@ fn resolve_fallbacks_and_set_pattern(
     match bbox.rect {
         Some(r) if !r.is_empty() => {
             let resolved = resolve_gradient(gradient, draw_ctx);
-            set_pattern_on_draw_context(&resolved, draw_ctx, opacity, bbox)
+            set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
         }
 
         _ => true,
@@ -764,7 +768,9 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
 
     node.with_impl(|node_gradient: &NodeGradient| {
         let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
-        did_set_gradient = resolve_fallbacks_and_set_pattern(&gradient, draw_ctx, opacity, bbox);
+        let values = &node.get_computed_values();
+        did_set_gradient =
+            resolve_fallbacks_and_set_pattern(&gradient, values, draw_ctx, opacity, bbox);
     });
 
     did_set_gradient

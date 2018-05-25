@@ -73,8 +73,8 @@ impl Filter for Offset {
     fn render(&self, ctx: &mut FilterContext) {
         let bounds = self.base.get_bounds(ctx);
 
-        let dx = self.dx.get().normalize(ctx.drawing_context());
-        let dy = self.dy.get().normalize(ctx.drawing_context());
+        let dx = self.dx.get().normalize(values, ctx.drawing_context());
+        let dy = self.dy.get().normalize(values, ctx.drawing_context());
         let paffine = ctx.paffine();
         let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;

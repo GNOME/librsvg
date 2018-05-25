@@ -221,18 +221,21 @@ fn setup_cr_for_stroke(
     draw_ctx: *const RsvgDrawingCtx,
     values: &ComputedValues,
 ) {
-    cr.set_line_width(values.stroke_width.0.normalize(draw_ctx));
+    cr.set_line_width(values.stroke_width.0.normalize(values, draw_ctx));
     cr.set_miter_limit(values.stroke_miterlimit.0);
     cr.set_line_cap(cairo::LineCap::from(values.stroke_line_cap));
     cr.set_line_join(cairo::LineJoin::from(values.stroke_line_join));
 
     if let StrokeDasharray(Dasharray::Array(ref dashes)) = values.stroke_dasharray {
-        let normalized_dashes: Vec<f64> = dashes.iter().map(|l| l.normalize(draw_ctx)).collect();
+        let normalized_dashes: Vec<f64> = dashes
+            .iter()
+            .map(|l| l.normalize(values, draw_ctx))
+            .collect();
 
         let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
 
         if total_length > 0.0 {
-            let offset = values.stroke_dashoffset.0.normalize(draw_ctx);
+            let offset = values.stroke_dashoffset.0.normalize(values, draw_ctx);
             cr.set_dash(&normalized_dashes, offset);
         } else {
             cr.set_dash(&[], 0.0);

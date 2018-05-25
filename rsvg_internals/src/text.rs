@@ -161,10 +161,10 @@ impl NodeTrait for NodeText {
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, _dominate: i32, clipping: bool) {
         let values = &node.get_computed_values();
 
-        let mut x = self.x.get().normalize(draw_ctx);
-        let mut y = self.y.get().normalize(draw_ctx);
-        let mut dx = self.dx.get().normalize(draw_ctx);
-        let mut dy = self.dy.get().normalize(draw_ctx);
+        let mut x = self.x.get().normalize(values, draw_ctx);
+        let mut y = self.y.get().normalize(values, draw_ctx);
+        let mut dx = self.dx.get().normalize(values, draw_ctx);
+        let mut dy = self.dy.get().normalize(values, draw_ctx);
 
         let anchor = values.text_anchor;
 
@@ -299,9 +299,9 @@ impl NodeTSpan {
         }
 
         if values.text_gravity_is_vertical() {
-            *length += self.dy.get().normalize(draw_ctx);
+            *length += self.dy.get().normalize(values, draw_ctx);
         } else {
-            *length += self.dx.get().normalize(draw_ctx);
+            *length += self.dx.get().normalize(values, draw_ctx);
         }
 
         measure_children(node, draw_ctx, length, usetextonly)
@@ -321,8 +321,8 @@ impl NodeTSpan {
         drawing_ctx::state_push(draw_ctx);
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
 
-        let mut dx = self.dx.get().normalize(draw_ctx);
-        let mut dy = self.dy.get().normalize(draw_ctx);
+        let mut dx = self.dx.get().normalize(values, draw_ctx);
+        let mut dy = self.dy.get().normalize(values, draw_ctx);
 
         let vertical = values.text_gravity_is_vertical();
         let anchor = values.text_anchor;
@@ -330,7 +330,7 @@ impl NodeTSpan {
         let offset = anchor_offset(node, draw_ctx, anchor, usetextonly);
 
         if let Some(self_x) = self.x.get() {
-            *x = self_x.normalize(draw_ctx);
+            *x = self_x.normalize(values, draw_ctx);
             if !vertical {
                 *x -= offset;
                 dx = match anchor {
@@ -343,7 +343,7 @@ impl NodeTSpan {
         *x += dx;
 
         if let Some(self_y) = self.y.get() {
-            *y = self_y.normalize(draw_ctx);
+            *y = self_y.normalize(values, draw_ctx);
             if vertical {
                 *y -= offset;
                 dy = match anchor {
@@ -537,7 +537,7 @@ fn create_pango_layout(
 
     let (_, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
     font_desc.set_size(to_pango_units(
-        values.font_size.0.normalize(draw_ctx) / dpi_y * 72.0,
+        values.font_size.0.normalize(values, draw_ctx) / dpi_y * 72.0,
     ));
 
     let layout = pango::Layout::new(&pango_context);
@@ -547,7 +547,7 @@ fn create_pango_layout(
 
     attr_list.insert(
         pango::Attribute::new_letter_spacing(to_pango_units(
-            values.letter_spacing.0.normalize(draw_ctx),
+            values.letter_spacing.0.normalize(values, draw_ctx),
         )).unwrap(),
     );
 

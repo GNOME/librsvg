@@ -122,8 +122,8 @@ impl NodeMarker {
     ) {
         let values = &node.get_computed_values();
 
-        let marker_width = self.width.get().normalize(draw_ctx);
-        let marker_height = self.height.get().normalize(draw_ctx);
+        let marker_width = self.width.get().normalize(values, draw_ctx);
+        let marker_height = self.height.get().normalize(values, draw_ctx);
 
         if marker_width.approx_eq_cairo(&0.0) || marker_height.approx_eq_cairo(&0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
@@ -173,8 +173,8 @@ impl NodeMarker {
         }
 
         affine.translate(
-            -self.ref_x.get().normalize(draw_ctx),
-            -self.ref_y.get().normalize(draw_ctx),
+            -self.ref_x.get().normalize(values, draw_ctx),
+            -self.ref_y.get().normalize(values, draw_ctx),
         );
 
         let cr2 = drawing_ctx::get_cairo_context(draw_ctx);
@@ -662,7 +662,7 @@ pub fn render_markers_for_path_builder(
     values: &ComputedValues,
     clipping: bool,
 ) {
-    let line_width = values.stroke_width.0.normalize(draw_ctx);
+    let line_width = values.stroke_width.0.normalize(values, draw_ctx);
 
     if line_width.approx_eq_cairo(&0.0) {
         return;
