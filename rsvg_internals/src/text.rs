@@ -537,7 +537,7 @@ fn create_pango_layout(
 
     let (_, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
     font_desc.set_size(to_pango_units(
-        drawing_ctx::get_normalized_font_size(draw_ctx) / dpi_y * 72.0,
+        values.font_size.0.normalize(draw_ctx) / dpi_y * 72.0,
     ));
 
     let layout = pango::Layout::new(&pango_context);

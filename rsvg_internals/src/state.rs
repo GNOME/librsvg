@@ -14,7 +14,7 @@ use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use handle::RsvgHandle;
 use iri::IRI;
-use length::{Dasharray, LengthDir, RsvgLength};
+use length::{Dasharray, LengthDir, LengthUnit, RsvgLength};
 use node::RsvgNode;
 use paint_server::PaintServer;
 use parsers::Parse;
@@ -1162,9 +1162,30 @@ make_property!(
 make_property!(
     FontSize,
     default: RsvgLength::parse("12.0", LengthDir::Both).unwrap(),
-    inherits_automatically: true,
     newtype_parse: RsvgLength,
-    parse_data_type: LengthDir
+    parse_data_type: LengthDir,
+    property_impl {
+        impl Property for FontSize {
+            fn inherits_automatically() -> bool {
+                true
+            }
+
+            fn inherit_from(&self, v: &Self) -> Self {
+                match self.0.unit {
+                    LengthUnit::Percent =>
+                        FontSize(RsvgLength::new(self.0.length * v.0.length, v.0.unit, LengthDir::Both)),
+
+                    LengthUnit::RelativeLarger =>
+                        FontSize(RsvgLength::new(v.0.length * 1.2, v.0.unit, LengthDir::Both)),
+
+                    LengthUnit::RelativeSmaller =>
+                        FontSize(RsvgLength::new(v.0.length / 1.2, v.0.unit, LengthDir::Both)),
+
+                    _ => self.clone(),
+                }
+            }
+        }
+    }
 );
 
 make_property!(
