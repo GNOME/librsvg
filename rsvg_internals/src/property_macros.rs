@@ -92,7 +92,39 @@ macro_rules! make_property {
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
-        impl_property!($name, $inherits_automatically);
+
+        impl ::property_macros::Property for $name {
+            fn inherits_automatically() -> bool {
+                $inherits_automatically
+            }
+
+            fn inherit_from(&self, _v: &Self) -> Self {
+                self.clone()
+            }
+        }
+
+        impl ::parsers::Parse for $name {
+            type Data = $parse_data_type;
+            type Err = ::error::AttributeError;
+
+            fn parse(s: &str, d: Self::Data) -> Result<$name, ::error::AttributeError> {
+                Ok($name(<$type as ::parsers::Parse>::parse(s, d)?))
+            }
+        }
+    };
+
+    ($name: ident,
+     default: $default: expr,
+     newtype_parse: $type: ty,
+     parse_data_type: $parse_data_type: ty,
+     property_impl { $prop: item }
+    ) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct $name(pub $type);
+
+        impl_default!($name, $name($default));
+
+        $prop
 
         impl ::parsers::Parse for $name {
             type Data = $parse_data_type;
@@ -148,7 +180,7 @@ macro_rules! impl_property {
                 $inherits_automatically
             }
 
-            fn inherit_from(&self, v: &Self) -> Self {
+            fn inherit_from(&self, _v: &Self) -> Self {
                 self.clone()
             }
         }
@@ -159,6 +191,7 @@ macro_rules! impl_property {
 mod tests {
     use super::*;
 
+    use cssparser::RGBA;
     use parsers::Parse;
 
     #[test]
@@ -203,5 +236,38 @@ mod tests {
         assert_eq!(<Baz as Default>::default(), Baz(42f64));
         assert_eq!(<Baz as Property>::inherits_automatically(), true);
         assert_eq!(<Baz as Parse>::parse("42", ()), Ok(Baz(42f64)));
+    }
+
+    #[test]
+    fn check_inherit_from() {
+        make_property! {
+            AddColor,
+            default: RGBA::new(1, 1, 1, 1),
+            newtype_parse: RGBA,
+            parse_data_type: (),
+            property_impl {
+                impl Property for AddColor {
+                    fn inherits_automatically() -> bool {
+                        true
+                    }
+
+                    fn inherit_from(&self, v: &Self) -> Self {
+                        AddColor(RGBA::new(
+                            self.0.red + v.0.red,
+                            self.0.green + v.0.green,
+                            self.0.blue + v.0.blue,
+                            self.0.alpha + v.0.alpha
+                        ))
+                    }
+                }
+            }
+        }
+
+        let a = <AddColor as Parse>::parse("#01010101", ()).unwrap();
+        let b = <AddColor as Parse>::parse("#02030405", ()).unwrap();
+
+        let c = b.inherit_from(&a);
+
+        assert_eq!(c, AddColor(RGBA::new(3, 4, 5, 6)));
     }
 }
