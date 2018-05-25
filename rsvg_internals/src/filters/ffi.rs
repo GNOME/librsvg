@@ -1,7 +1,6 @@
 //! Internal FFI and marshalling things.
 
-use std::default::Default;
-use std::{mem, ptr};
+use std::mem;
 
 use cairo;
 use cairo::prelude::SurfaceExt;
@@ -22,46 +21,20 @@ use super::Filter;
 // ../../librsvg/librsvg/filters/common.h:_RsvgFilterPrimitive
 #[repr(C)]
 pub struct RsvgFilterPrimitive {
-    x: RsvgLength,
-    y: RsvgLength,
-    width: RsvgLength,
-    height: RsvgLength,
-    x_specified: gboolean,
-    y_specified: gboolean,
-    width_specified: gboolean,
-    height_specified: gboolean,
+    pub x: RsvgLength,
+    pub y: RsvgLength,
+    pub width: RsvgLength,
+    pub height: RsvgLength,
+    pub x_specified: gboolean,
+    pub y_specified: gboolean,
+    pub width_specified: gboolean,
+    pub height_specified: gboolean,
     in_: *mut GString,
     result: *mut GString,
 
     render: Option<
         unsafe extern "C" fn(*mut RsvgNode, *mut RsvgFilterPrimitive, *mut RsvgFilterContext),
     >,
-}
-
-impl RsvgFilterPrimitive {
-    /// Creates a new `RsvgFilterPrimitive` with the given properties.
-    #[inline]
-    pub(super) fn with_props(
-        x: Option<RsvgLength>,
-        y: Option<RsvgLength>,
-        width: Option<RsvgLength>,
-        height: Option<RsvgLength>,
-    ) -> Self {
-        Self {
-            x: x.unwrap_or_else(Default::default),
-            y: y.unwrap_or_else(Default::default),
-            width: width.unwrap_or_else(Default::default),
-            height: height.unwrap_or_else(Default::default),
-            x_specified: if x.is_some() { 1 } else { 0 },
-            y_specified: if y.is_some() { 1 } else { 0 },
-            width_specified: if width.is_some() { 1 } else { 0 },
-            height_specified: if height.is_some() { 1 } else { 0 },
-
-            in_: ptr::null_mut(),
-            result: ptr::null_mut(),
-            render: None,
-        }
-    }
 }
 
 /// The type of the render function below.

@@ -22,6 +22,10 @@ impl BoundingBox {
         }
     }
 
+    pub fn with_rect(self, rect: Option<cairo::Rectangle>) -> BoundingBox {
+        BoundingBox { rect, ..self }
+    }
+
     fn combine(&mut self, src: &BoundingBox, clip: bool) {
         if src.rect.is_none() && src.ink_rect.is_none() {
             return;

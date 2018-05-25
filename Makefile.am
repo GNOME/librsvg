@@ -36,7 +36,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/filters/light_source.c		\
 	librsvg/filters/light_source.h		\
 	librsvg/filters/merge.c			\
-	librsvg/filters/offset.c		\
 	librsvg/filters/specular_lighting.c	\
 	librsvg/filters/tile.c			\
 	librsvg/filters/turbulence.c		\
