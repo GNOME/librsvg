@@ -37,6 +37,8 @@ fn set_affine_on_cr(draw_ctx: *mut RsvgDrawingCtx, cr: &cairo::Context, affine: 
         affine.y0 + y0,
     );
     cr.set_matrix(matrix);
+
+    println!("set_affine_on_cr: {:?}", matrix);
 }
 
 pub fn draw_path_builder(

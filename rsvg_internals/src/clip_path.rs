@@ -42,6 +42,9 @@ impl NodeClipPath {
 
             let bbtransform = cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
             cr.transform(bbtransform);
+            println!("clipping objectBoundingBox");
+        } else {
+            println!("clipping userSpaceOnUse");
         }
 
         drawing_ctx::state_push(draw_ctx);

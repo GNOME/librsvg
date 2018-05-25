@@ -243,7 +243,7 @@ impl Node {
                         self.set_error(NodeError::attribute_error(Attribute::Transform, e));
                         return;
                     }
-                }
+                },
 
                 _ => (),
             }
