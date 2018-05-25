@@ -4,8 +4,6 @@ use libc;
 use std::cell::Cell;
 use std::cell::RefCell;
 
-use cairo::MatrixTrait;
-
 use aspect_ratio::*;
 use attributes::Attribute;
 use drawing_ctx;
