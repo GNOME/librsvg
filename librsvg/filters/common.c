@@ -93,89 +93,89 @@ rsvg_filter_primitive_render (RsvgNode *node, RsvgFilterPrimitive *primitive, Rs
     primitive->render (node, primitive, ctx);
 }
 
-RsvgIRect
-rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
-{
-    RsvgBbox *box, *otherbox;
-    cairo_matrix_t affine, ctx_affine;
-    cairo_rectangle_t rect;
-    const RsvgFilter *ctx_filter = rsvg_filter_context_get_filter(ctx);
-    RsvgDrawingCtx *drawing_ctx = rsvg_filter_context_get_drawing_ctx(ctx);
-
-    cairo_matrix_init_identity (&affine);
-
-    box = rsvg_bbox_new (&affine, NULL, NULL);
-
-    ctx_affine = rsvg_filter_context_get_affine(ctx);
-
-    if (ctx_filter->filterunits == objectBoundingBox)
-        rsvg_drawing_ctx_push_view_box (drawing_ctx, 1., 1.);
-
-    rect.x = rsvg_length_normalize (&ctx_filter->x, drawing_ctx);
-    rect.y = rsvg_length_normalize (&ctx_filter->y, drawing_ctx);
-    rect.width = rsvg_length_normalize (&ctx_filter->width, drawing_ctx);
-    rect.height = rsvg_length_normalize (&ctx_filter->height, drawing_ctx);
-
-    if (ctx_filter->filterunits == objectBoundingBox)
-        rsvg_drawing_ctx_pop_view_box (drawing_ctx);
-
-    otherbox = rsvg_bbox_new (&ctx_affine, &rect, NULL);
-    rsvg_bbox_insert (box, otherbox);
-    rsvg_bbox_free (otherbox);
-
-    if (self != NULL) {
-        if (self->x_specified || self->y_specified || self->width_specified || self->height_specified) {
-            cairo_matrix_t ctx_paffine;
-
-            ctx_paffine = rsvg_filter_context_get_paffine(ctx);
-
-            if (ctx_filter->primitiveunits == objectBoundingBox)
-                rsvg_drawing_ctx_push_view_box (drawing_ctx, 1., 1.);
-
-            rect.x = self->x_specified ? rsvg_length_normalize (&self->x, drawing_ctx) : 0;
-            rect.y = self->y_specified ? rsvg_length_normalize (&self->y, drawing_ctx) : 0;
-
-            if (self->width_specified || self->height_specified) {
-                double curr_vbox_w, curr_vbox_h;
-
-                rsvg_drawing_ctx_get_view_box_size (drawing_ctx, &curr_vbox_w, &curr_vbox_h);
-
-                rect.width = self->width_specified ? rsvg_length_normalize (&self->width, drawing_ctx) : curr_vbox_w;
-                rect.height = self->height_specified ? rsvg_length_normalize (&self->height, drawing_ctx) : curr_vbox_h;
-            }
-
-            if (ctx_filter->primitiveunits == objectBoundingBox)
-                rsvg_drawing_ctx_pop_view_box (drawing_ctx);
-
-            otherbox = rsvg_bbox_new (&ctx_paffine, &rect, NULL);
-            rsvg_bbox_clip (box, otherbox);
-            rsvg_bbox_free (otherbox);
-        }
-    }
-
-    rect.x = 0;
-    rect.y = 0;
-    rect.width = rsvg_filter_context_get_width(ctx);
-    rect.height = rsvg_filter_context_get_height(ctx);
-
-    otherbox = rsvg_bbox_new (&affine, &rect, NULL);
-    rsvg_bbox_clip (box, otherbox);
-    rsvg_bbox_free (otherbox);
-
-    {
-        cairo_rectangle_t box_rect;
-
-        rsvg_bbox_get_rect (box, &box_rect, NULL);
-        RsvgIRect output = {
-            box_rect.x,
-            box_rect.y,
-            box_rect.x + box_rect.width,
-            box_rect.y + box_rect.height
-        };
-
-        return output;
-    }
-}
+// RsvgIRect
+// rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+// {
+//     RsvgBbox *box, *otherbox;
+//     cairo_matrix_t affine, ctx_affine;
+//     cairo_rectangle_t rect;
+//     const RsvgFilter *ctx_filter = rsvg_filter_context_get_filter(ctx);
+//     RsvgDrawingCtx *drawing_ctx = rsvg_filter_context_get_drawing_ctx(ctx);
+// 
+//     cairo_matrix_init_identity (&affine);
+// 
+//     box = rsvg_bbox_new (&affine, NULL, NULL);
+// 
+//     ctx_affine = rsvg_filter_context_get_affine(ctx);
+// 
+//     if (ctx_filter->filterunits == objectBoundingBox)
+//         rsvg_drawing_ctx_push_view_box (drawing_ctx, 1., 1.);
+// 
+//     rect.x = rsvg_length_normalize (&ctx_filter->x, drawing_ctx);
+//     rect.y = rsvg_length_normalize (&ctx_filter->y, drawing_ctx);
+//     rect.width = rsvg_length_normalize (&ctx_filter->width, drawing_ctx);
+//     rect.height = rsvg_length_normalize (&ctx_filter->height, drawing_ctx);
+// 
+//     if (ctx_filter->filterunits == objectBoundingBox)
+//         rsvg_drawing_ctx_pop_view_box (drawing_ctx);
+// 
+//     otherbox = rsvg_bbox_new (&ctx_affine, &rect, NULL);
+//     rsvg_bbox_insert (box, otherbox);
+//     rsvg_bbox_free (otherbox);
+// 
+//     if (self != NULL) {
+//         if (self->x_specified || self->y_specified || self->width_specified || self->height_specified) {
+//             cairo_matrix_t ctx_paffine;
+// 
+//             ctx_paffine = rsvg_filter_context_get_paffine(ctx);
+// 
+//             if (ctx_filter->primitiveunits == objectBoundingBox)
+//                 rsvg_drawing_ctx_push_view_box (drawing_ctx, 1., 1.);
+// 
+//             rect.x = self->x_specified ? rsvg_length_normalize (&self->x, drawing_ctx) : 0;
+//             rect.y = self->y_specified ? rsvg_length_normalize (&self->y, drawing_ctx) : 0;
+// 
+//             if (self->width_specified || self->height_specified) {
+//                 double curr_vbox_w, curr_vbox_h;
+// 
+//                 rsvg_drawing_ctx_get_view_box_size (drawing_ctx, &curr_vbox_w, &curr_vbox_h);
+// 
+//                 rect.width = self->width_specified ? rsvg_length_normalize (&self->width, drawing_ctx) : curr_vbox_w;
+//                 rect.height = self->height_specified ? rsvg_length_normalize (&self->height, drawing_ctx) : curr_vbox_h;
+//             }
+// 
+//             if (ctx_filter->primitiveunits == objectBoundingBox)
+//                 rsvg_drawing_ctx_pop_view_box (drawing_ctx);
+// 
+//             otherbox = rsvg_bbox_new (&ctx_paffine, &rect, NULL);
+//             rsvg_bbox_clip (box, otherbox);
+//             rsvg_bbox_free (otherbox);
+//         }
+//     }
+// 
+//     rect.x = 0;
+//     rect.y = 0;
+//     rect.width = rsvg_filter_context_get_width(ctx);
+//     rect.height = rsvg_filter_context_get_height(ctx);
+// 
+//     otherbox = rsvg_bbox_new (&affine, &rect, NULL);
+//     rsvg_bbox_clip (box, otherbox);
+//     rsvg_bbox_free (otherbox);
+// 
+//     {
+//         cairo_rectangle_t box_rect;
+// 
+//         rsvg_bbox_get_rect (box, &box_rect, NULL);
+//         RsvgIRect output = {
+//             box_rect.x,
+//             box_rect.y,
+//             box_rect.x + box_rect.width,
+//             box_rect.y + box_rect.height
+//         };
+// 
+//         return output;
+//     }
+// }
 
 cairo_surface_t *
 _rsvg_image_surface_new (int width, int height)
