@@ -1,5 +1,6 @@
 pub trait Property {
     fn inherits_automatically() -> bool;
+    fn inherit_from(&self, &Self) -> Self;
 }
 
 /// Generates a property definition that simply parses strings to enum variants
@@ -145,6 +146,10 @@ macro_rules! impl_property {
         impl ::property_macros::Property for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically
+            }
+
+            fn inherit_from(&self, v: &Self) -> Self {
+                self.clone()
             }
         }
     };

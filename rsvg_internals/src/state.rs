@@ -59,7 +59,7 @@ where
 
             SpecifiedValue::Inherit => src.clone(),
 
-            SpecifiedValue::Specified(ref v) => v.clone(),
+            SpecifiedValue::Specified(ref v) => v.inherit_from(src),
         }
     }
 }
