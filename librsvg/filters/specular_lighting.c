@@ -93,7 +93,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgComputedValu
         return;
     }
 
-    lightingcolor = rsvg_node_values_get_lighting_color_argb (node);
+    lightingcolor = rsvg_computed_values_get_lighting_color_argb (values);
     p_lightingcolor = &lightingcolor;
 
     output_pixels = cairo_image_surface_get_data (output);

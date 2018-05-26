@@ -1,5 +1,4 @@
 use cairo::{Matrix, MatrixTrait};
-use cssparser;
 use downcast_rs::*;
 use glib::translate::*;
 use glib_sys;
@@ -11,7 +10,6 @@ use std::rc::{Rc, Weak};
 use std::str::FromStr;
 
 use attributes::Attribute;
-use color::rgba_to_argb;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
@@ -23,8 +21,6 @@ use state::{
     rsvg_state_new,
     ComputedValues,
     Display,
-    FloodColor,
-    LightingColor,
     Overflow,
     RsvgComputedValues,
     RsvgState,
@@ -639,42 +635,6 @@ pub extern "C" fn rsvg_node_children_iter_next_back(
             *out_child = ptr::null_mut();
         }
         false.to_glib()
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_values_get_flood_color_argb(raw_node: *const RsvgNode) -> u32 {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let values = &node.get_computed_values();
-
-    match values.flood_color {
-        FloodColor(cssparser::Color::CurrentColor) => rgba_to_argb(values.color.0),
-        FloodColor(cssparser::Color::RGBA(ref rgba)) => rgba_to_argb(*rgba),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_values_get_flood_opacity(raw_node: *const RsvgNode) -> u8 {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let values = &node.get_computed_values();
-
-    u8::from(values.flood_opacity.0)
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_values_get_lighting_color_argb(raw_node: *const RsvgNode) -> u32 {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let values = &node.get_computed_values();
-
-    match values.lighting_color {
-        LightingColor(cssparser::Color::CurrentColor) => rgba_to_argb(values.color.0),
-        LightingColor(cssparser::Color::RGBA(ref rgba)) => rgba_to_argb(*rgba),
     }
 }
 

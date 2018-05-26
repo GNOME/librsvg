@@ -43,8 +43,8 @@ rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgComputedValues *values, 
     char pixcolor[4];
     RsvgFilterPrimitiveOutput out;
 
-    guint32 color = rsvg_node_values_get_flood_color_argb (node);
-    guint8 opacity = rsvg_node_values_get_flood_opacity (node);
+    guint32 color = rsvg_computed_values_get_flood_color_argb (values);
+    guint8 opacity = rsvg_computed_values_get_flood_opacity (values);
 
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
