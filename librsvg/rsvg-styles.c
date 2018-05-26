@@ -36,8 +36,6 @@
 
 #include <libcroco/libcroco.h>
 
-typedef gboolean (*InheritanceFunction) (gboolean dst_has_prop, gboolean src_has_prop);
-
 /* Defined in rsvg_internals/src/state.rs */
 extern gboolean rsvg_state_parse_style_pair(RsvgState *state, RsvgAttribute attr, const char *value, gboolean important, gboolean accept_shorthands) G_GNUC_WARN_UNUSED_RESULT;
 

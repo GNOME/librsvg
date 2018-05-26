@@ -40,8 +40,6 @@ pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
-pub use draw::rsvg_cairo_add_clipping_rect;
-
 pub use drawing_ctx::{
     rsvg_drawing_ctx_state_pop,
     rsvg_drawing_ctx_state_push,
