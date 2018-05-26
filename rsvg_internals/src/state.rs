@@ -979,27 +979,28 @@ make_property!(
     BaselineShift,
     default: 0f64,
     inherits_automatically: true,
-    newtype: f64
-);
+    newtype: f64,
+    parse_impl {
+        impl Parse for BaselineShift {
+            type Data = ();
+            type Err = AttributeError;
 
-impl Parse for BaselineShift {
-    type Data = ();
-    type Err = AttributeError;
+            // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
+            // see sp_style_merge_baseline_shift_from_parent()
+            fn parse(s: &str, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
+                match s.trim() {
+                    "baseline" => Ok(BaselineShift(0f64)),
+                    "sub" => Ok(BaselineShift(-0.2f64)),
+                    "super" => Ok(BaselineShift(0.4f64)),
 
-    // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
-    // see sp_style_merge_baseline_shift_from_parent()
-    fn parse(s: &str, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
-        match s.trim() {
-            "baseline" => Ok(BaselineShift(0f64)),
-            "sub" => Ok(BaselineShift(-0.2f64)),
-            "super" => Ok(BaselineShift(0.4f64)),
-
-            _ => Err(::error::AttributeError::from(::parsers::ParseError::new(
-                "invalid value",
-            ))),
+                    _ => Err(::error::AttributeError::from(::parsers::ParseError::new(
+                        "invalid value",
+                    ))),
+                }
+            }
         }
     }
-}
+);
 
 make_property!(
     ClipPath,
@@ -1433,24 +1434,27 @@ make_property!(
     TextDecoration,
     inherits_automatically: true,
 
-    fields:
-    overline: bool, default: false,
-    underline: bool, default: false,
-    strike: bool, default: false,
-);
-
-impl Parse for TextDecoration {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _: Self::Data) -> Result<TextDecoration, AttributeError> {
-        Ok(TextDecoration {
-            overline: s.contains("overline"),
-            underline: s.contains("underline"),
-            strike: s.contains("strike") || s.contains("line-through"),
-        })
+    fields: {
+        overline: bool, default: false,
+        underline: bool, default: false,
+        strike: bool, default: false,
     }
-}
+
+    parse_impl {
+        impl Parse for TextDecoration {
+            type Data = ();
+            type Err = AttributeError;
+
+            fn parse(s: &str, _: Self::Data) -> Result<TextDecoration, AttributeError> {
+                Ok(TextDecoration {
+                    overline: s.contains("overline"),
+                    underline: s.contains("underline"),
+                    strike: s.contains("strike") || s.contains("line-through"),
+                })
+            }
+        }
+    }
+);
 
 make_property!(
     TextRendering,

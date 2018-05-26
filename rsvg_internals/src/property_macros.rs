@@ -139,19 +139,24 @@ macro_rules! make_property {
     ($name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
-     newtype: $type: ty
+     newtype: $type: ty,
+     parse_impl { $parse: item }
     ) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
         impl_property!($name, $inherits_automatically);
+
+        $parse
     };
 
     ($name: ident,
      inherits_automatically: $inherits_automatically: expr,
-     fields:
-     $($field_name: ident : $field_type: ty, default: $field_default : expr,)+
+     fields: {
+       $($field_name: ident : $field_type: ty, default: $field_default : expr,)+
+     }
+     parse_impl { $parse: item }
     ) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name {
@@ -160,6 +165,8 @@ macro_rules! make_property {
 
         impl_default!($name, $name { $($field_name: $field_default),+ });
         impl_property!($name, $inherits_automatically);
+
+        $parse
     };
 }
 
