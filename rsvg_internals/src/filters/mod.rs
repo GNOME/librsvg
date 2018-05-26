@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use attributes::Attribute;
 use error::AttributeError;
-use filter_context::{FilterContext, FilterResult};
+use filter_context::{FilterContext, FilterOutput, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
@@ -14,6 +14,9 @@ mod ffi;
 use self::ffi::*;
 pub use self::ffi::{rsvg_filter_render, RsvgFilterPrimitive};
 
+mod error;
+use self::error::FilterError;
+
 pub mod offset;
 
 /// A filter primitive interface.
@@ -21,8 +24,8 @@ trait Filter: NodeTrait {
     /// Renders this filter primitive.
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
-    /// property hasn't been provided), return without drawing anything.
-    fn render(&self, node: &RsvgNode, ctx: &mut FilterContext);
+    /// property hasn't been provided), an error is returned.
+    fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError>;
 }
 
 /// The base filter primitive node containing common properties.
@@ -46,7 +49,7 @@ enum Input {
     BackgroundAlpha,
     FillPaint,
     StrokePaint,
-    FilterResult(String),
+    FilterOutput(String),
 }
 
 /// The base node for filter primitives which accept input.
@@ -140,7 +143,7 @@ impl Parse for Input {
             "BackgroundAlpha" => Ok(Input::BackgroundAlpha),
             "FillPaint" => Ok(Input::FillPaint),
             "StrokePaint" => Ok(Input::StrokePaint),
-            s => Ok(Input::FilterResult(s.to_string())),
+            s => Ok(Input::FilterOutput(s.to_string())),
         }
     }
 }
@@ -156,13 +159,13 @@ impl PrimitiveWithInput {
     }
 
     /// Returns the input Cairo surface for this filter primitive.
-    fn get_input(&self, ctx: &FilterContext) -> Option<FilterResult> {
+    fn get_input(&self, ctx: &FilterContext) -> Option<FilterOutput> {
         let in_ = self.in_.borrow();
         if in_.is_none() {
             // No value => use the last result.
             // As per the SVG spec, if the filter primitive is the first in the chain, return the
             // source graphic.
-            return Some(ctx.last_result().cloned().unwrap_or_else(|| FilterResult {
+            return Some(ctx.last_result().cloned().unwrap_or_else(|| FilterOutput {
                 surface: ctx.source_graphic().clone(),
                 // TODO
                 bounds: IRect {
@@ -175,7 +178,7 @@ impl PrimitiveWithInput {
         }
 
         match *in_.as_ref().unwrap() {
-            Input::SourceGraphic => Some(FilterResult {
+            Input::SourceGraphic => Some(FilterOutput {
                 surface: ctx.source_graphic().clone(),
                 // TODO
                 bounds: IRect {
@@ -192,7 +195,7 @@ impl PrimitiveWithInput {
             Input::FillPaint => unimplemented!(),
             Input::StrokePaint => unimplemented!(),
 
-            Input::FilterResult(ref name) => ctx.filter_result(name).cloned(),
+            Input::FilterOutput(ref name) => ctx.filter_output(name).cloned(),
         }
     }
 }

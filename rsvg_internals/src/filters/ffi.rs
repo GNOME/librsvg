@@ -15,7 +15,7 @@ use length::RsvgLength;
 use node::{NodeType, RsvgCNodeImpl, RsvgNode};
 use state::{ComputedValues, RsvgComputedValues};
 
-use super::Filter;
+use super::{Filter, FilterError, FilterResult};
 
 // Required by the C code until all filters are ported to Rust.
 // Keep this in sync with
@@ -44,11 +44,15 @@ pub struct RsvgFilterPrimitive {
 }
 
 /// The type of the render function below.
-pub(super) type RenderFunctionType = fn(&RsvgNode, &mut FilterContext);
+pub(super) type RenderFunctionType =
+    fn(&RsvgNode, &FilterContext) -> Result<FilterResult, FilterError>;
 
 /// Downcasts the given `node` to the type `T` and calls `Filter::render()` on it.
-pub(super) fn render<T: Filter>(node: &RsvgNode, ctx: &mut FilterContext) {
-    node.with_impl(|filter: &T| filter.render(node, ctx));
+pub(super) fn render<T: Filter>(
+    node: &RsvgNode,
+    ctx: &FilterContext,
+) -> Result<FilterResult, FilterError> {
+    node.with_impl(|filter: &T| filter.render(node, ctx))
 }
 
 /// Creates a new surface applied the filter. This function will create a context for itself, set up
@@ -96,7 +100,10 @@ pub unsafe extern "C" fn rsvg_filter_render(
             NodeType::FilterPrimitiveOffset => {
                 let render =
                     *(&c.get_c_impl() as *const *const RsvgCNodeImpl as *const RenderFunctionType);
-                render(&c, &mut filter_ctx);
+                match render(&c, &filter_ctx) {
+                    Ok(result) => filter_ctx.store_result(result),
+                    Err(_) => { /* Do nothing for now */ }
+                }
             }
             _ => {
                 let filter = &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive);
@@ -110,8 +117,8 @@ pub unsafe extern "C" fn rsvg_filter_render(
         });
 
     // HACK because to_glib_full() is unimplemented!() on ImageSurface.
-    let result = filter_ctx.into_result();
-    let ptr = result.to_glib_none().0;
-    mem::forget(result);
+    let output = filter_ctx.into_output();
+    let ptr = output.to_glib_none().0;
+    mem::forget(output);
     ptr
 }

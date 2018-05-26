@@ -39,14 +39,24 @@ pub struct RsvgFilterPrimitiveOutput {
     bounds: IRect,
 }
 
-/// A filter primitive result.
+/// A filter primitive output.
 #[derive(Debug, Clone)]
-pub struct FilterResult {
+pub struct FilterOutput {
     /// The surface after the filter primitive was applied.
     pub surface: cairo::ImageSurface,
 
     /// The filter primitive subregion.
     pub bounds: IRect,
+}
+
+/// A filter primitive result.
+#[derive(Debug, Clone)]
+pub struct FilterResult {
+    /// The name of this result: the value of the `result` attribute.
+    pub name: Option<String>,
+
+    /// The output.
+    pub output: FilterOutput,
 }
 
 /// The filter rendering context.
@@ -56,9 +66,9 @@ pub struct FilterContext {
     /// The source graphic surface.
     source_surface: cairo::ImageSurface,
     /// Output of the last filter primitive.
-    last_result: Option<FilterResult>,
+    last_result: Option<FilterOutput>,
     /// Surfaces of the previous filter primitives by name.
-    previous_results: HashMap<String, FilterResult>,
+    previous_results: HashMap<String, FilterOutput>,
 
     affine: cairo::Matrix,
     paffine: cairo::Matrix,
@@ -127,7 +137,7 @@ impl FilterContext {
             channelmap,
         };
 
-        let last_result = FilterResult {
+        let last_result = FilterOutput {
             surface: rv.source_surface.clone(),
             bounds: rv.compute_bounds(&values, None, None, None, None),
         };
@@ -142,7 +152,7 @@ impl FilterContext {
 
     /// Returns the surface corresponding to the last filter primitive's result.
     #[inline]
-    pub fn last_result(&self) -> Option<&FilterResult> {
+    pub fn last_result(&self) -> Option<&FilterOutput> {
         self.last_result.as_ref()
     }
 
@@ -158,29 +168,29 @@ impl FilterContext {
         unimplemented!()
     }
 
-    /// Returns the surface corresponding to the result of the given filter primitive.
+    /// Returns the output of the filter primitive by its result name.
     #[inline]
-    pub fn filter_result(&self, name: &str) -> Option<&FilterResult> {
+    pub fn filter_output(&self, name: &str) -> Option<&FilterOutput> {
         self.previous_results.get(name)
     }
 
-    /// Converts this `FilterContext` into the surface corresponding to the result of the filter
+    /// Converts this `FilterContext` into the surface corresponding to the output of the filter
     /// chain.
     #[inline]
-    pub fn into_result(self) -> cairo::ImageSurface {
+    pub fn into_output(self) -> cairo::ImageSurface {
         self.last_result
-            .map(|FilterResult { surface, .. }| surface)
+            .map(|FilterOutput { surface, .. }| surface)
             .unwrap_or(self.source_surface)
     }
 
     /// Stores a filter primitive result into the context.
     #[inline]
-    pub fn store_result(&mut self, name: Option<String>, result: FilterResult) {
-        if let Some(name) = name {
-            self.previous_results.insert(name, result.clone());
+    pub fn store_result(&mut self, result: FilterResult) {
+        if let Some(name) = result.name {
+            self.previous_results.insert(name, result.output.clone());
         }
 
-        self.last_result = Some(result);
+        self.last_result = Some(result.output);
     }
 
     /// Returns the drawing context for this filter context.
@@ -365,7 +375,7 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
     let values = cascaded.get();
 
     match ctx.last_result {
-        Some(FilterResult {
+        Some(FilterOutput {
             ref surface,
             ref bounds,
         }) => RsvgFilterPrimitiveOutput {
@@ -389,10 +399,10 @@ pub unsafe extern "C" fn rsvg_filter_context_get_previous_result(
     assert!(!ctx.is_null());
     assert!(!output.is_null());
 
-    if let Some(&FilterResult {
+    if let Some(&FilterOutput {
         ref surface,
         ref bounds,
-    }) = (*ctx).filter_result(&CStr::from_ptr((*name).str).to_string_lossy())
+    }) = (*ctx).filter_output(&CStr::from_ptr((*name).str).to_string_lossy())
     {
         *output = RsvgFilterPrimitiveOutput {
             surface: surface.to_glib_none().0,
@@ -421,11 +431,14 @@ pub unsafe extern "C" fn rsvg_filter_store_output(
     let surface = cairo::ImageSurface::from(surface).unwrap();
 
     let result = FilterResult {
-        surface,
-        bounds: result.bounds,
+        name: Some(name),
+        output: FilterOutput {
+            surface,
+            bounds: result.bounds,
+        },
     };
 
-    (*ctx).store_result(Some(name), result);
+    (*ctx).store_result(result);
 }
 
 #[no_mangle]
