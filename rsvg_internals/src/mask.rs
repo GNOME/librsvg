@@ -170,12 +170,11 @@ impl NodeMask {
         }
 
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
-        cr.save();
+
         cr.identity_matrix();
 
         let (xofs, yofs) = drawing_ctx::get_offset(draw_ctx);
         cairo_mask_surface(&cr, &surface, xofs, yofs);
-        cr.restore();
     }
 }
 
