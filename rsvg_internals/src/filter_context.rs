@@ -191,20 +191,21 @@ impl FilterContext {
         width: Option<RsvgLength>,
         height: Option<RsvgLength>,
     ) -> IRect {
+        let filter = unsafe { &*self.filter };
         let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
 
-        if unsafe { (*self.filter).filterunits } == CoordUnits::ObjectBoundingBox {
+        if filter.filterunits == CoordUnits::ObjectBoundingBox {
             drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
         }
 
         let rect = cairo::Rectangle {
-            x: unsafe { (*self.filter).x.normalize(self.drawing_ctx) },
-            y: unsafe { (*self.filter).y.normalize(self.drawing_ctx) },
-            width: unsafe { (*self.filter).width.normalize(self.drawing_ctx) },
-            height: unsafe { (*self.filter).height.normalize(self.drawing_ctx) },
+            x: filter.x.normalize(self.drawing_ctx),
+            y: filter.y.normalize(self.drawing_ctx),
+            width: filter.width.normalize(self.drawing_ctx),
+            height: filter.height.normalize(self.drawing_ctx),
         };
 
-        if unsafe { (*self.filter).filterunits } == CoordUnits::ObjectBoundingBox {
+        if filter.filterunits == CoordUnits::ObjectBoundingBox {
             drawing_ctx::pop_view_box(self.drawing_ctx);
         }
 
@@ -212,7 +213,7 @@ impl FilterContext {
         bbox.insert(&other_bbox);
 
         if x.is_some() || y.is_some() || width.is_some() || height.is_some() {
-            if unsafe { (*self.filter).primitiveunits } == CoordUnits::ObjectBoundingBox {
+            if filter.primitiveunits == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
             }
 
@@ -233,7 +234,7 @@ impl FilterContext {
                     .unwrap_or(vbox_height);
             }
 
-            if unsafe { (*self.filter).primitiveunits } == CoordUnits::ObjectBoundingBox {
+            if filter.primitiveunits == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::pop_view_box(self.drawing_ctx);
             }
 
