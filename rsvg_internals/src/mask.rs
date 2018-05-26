@@ -90,7 +90,10 @@ impl NodeMask {
         // reference to the surface before we access the pixels
         {
             let save_cr = drawing_ctx::get_cairo_context(draw_ctx);
+
             let mask_cr = cairo::Context::new(&surface);
+            mask_cr.set_matrix(save_cr.get_matrix());
+
             drawing_ctx::set_cairo_context(draw_ctx, &mask_cr);
 
             if mask_units == CoordUnits::ObjectBoundingBox {
@@ -109,17 +112,14 @@ impl NodeMask {
                 draw::add_clipping_rect(draw_ctx, &node.get_transform(), x, y, w, h);
             }
 
-            // Horribly dirty hack to have the bbox premultiplied to everything
-            let node_state = node.get_state_mut();
-            let affinesave = node_state.affine;
             if content_units == CoordUnits::ObjectBoundingBox {
                 let bbox = drawing_ctx::get_bbox(draw_ctx);
                 let rect = bbox.rect.unwrap();
-                let mut bbtransform =
+                let bbtransform =
                     cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
 
-                bbtransform = cairo::Matrix::multiply(&bbtransform, &affinesave);
-                node_state.affine = bbtransform;
+                mask_cr.transform(bbtransform);
+
                 drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
             }
 
@@ -129,7 +129,6 @@ impl NodeMask {
 
             if content_units == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::pop_view_box(draw_ctx);
-                node_state.affine = affinesave;
             }
 
             drawing_ctx::set_cairo_context(draw_ctx, &save_cr);
@@ -162,17 +161,21 @@ impl NodeMask {
                     // if pixel = 0x00FFFFFF, pixel' = 0xFF......
                     // if pixel = 0x00020202, pixel' = 0x02......
                     // if pixel = 0x00000000, pixel' = 0x00......
-                    let (r, g, b, o) = (p[1] as u32, p[2] as u32, p[3] as u32, opacity as u32);
-                    p[0] = (((r * 14042 + g * 47240 + b * 4769) * o) >> 24) as u8;
+                    //
+                    // NOTE: the following assumes little-endian
+                    let (r, g, b, o) = (p[2] as u32, p[1] as u32, p[0] as u32, opacity as u32);
+                    p[3] = (((r * 14042 + g * 47240 + b * 4769) * o) >> 24) as u8;
                 }
             }
         }
 
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
+        cr.save();
         cr.identity_matrix();
 
         let (xofs, yofs) = drawing_ctx::get_offset(draw_ctx);
         cairo_mask_surface(&cr, &surface, xofs, yofs);
+        cr.restore();
     }
 }
 
