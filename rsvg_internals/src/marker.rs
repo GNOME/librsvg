@@ -21,7 +21,7 @@ use parsers::ParseError;
 use parsers::{parse, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
-use state::ComputedValues;
+use state::{ComputedValues, SpecifiedValue};
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -209,6 +209,10 @@ impl NodeTrait for NodeMarker {
         // marker element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
+
+        // markers are always displayed, even if <marker> or its ancestors are display:none
+        let state = node.get_state_mut();
+        state.values.display = SpecifiedValue::Specified(Default::default());
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
