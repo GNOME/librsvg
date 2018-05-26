@@ -13,6 +13,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use filter_context::{FilterContext, RsvgFilter, RsvgFilterContext};
 use length::RsvgLength;
 use node::{NodeType, RsvgCNodeImpl, RsvgNode};
+use state::{ComputedValues, RsvgComputedValues};
 
 use super::Filter;
 
@@ -33,7 +34,12 @@ pub struct RsvgFilterPrimitive {
     result: *mut GString,
 
     render: Option<
-        unsafe extern "C" fn(*mut RsvgNode, *mut RsvgFilterPrimitive, *mut RsvgFilterContext),
+        unsafe extern "C" fn(
+            *mut RsvgNode,
+            RsvgComputedValues,
+            *mut RsvgFilterPrimitive,
+            *mut RsvgFilterContext,
+        ),
     >,
 }
 
@@ -66,6 +72,8 @@ pub unsafe extern "C" fn rsvg_filter_render(
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);
 
+    let values = &filter_node.get_computed_values() as &ComputedValues;
+
     let mut channelmap_arr = [0; 4];
     for i in 0..4 {
         channelmap_arr[i] = i32::from(*channelmap.offset(i as isize) - '0' as i8);
@@ -94,7 +102,12 @@ pub unsafe extern "C" fn rsvg_filter_render(
             }
             _ => {
                 let filter = &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive);
-                (filter.render.unwrap())(&mut c, filter, &mut filter_ctx);
+                (filter.render.unwrap())(
+                    &mut c,
+                    values as RsvgComputedValues,
+                    filter,
+                    &mut filter_ctx,
+                );
             }
         });
 

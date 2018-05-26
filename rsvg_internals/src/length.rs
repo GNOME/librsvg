@@ -6,10 +6,9 @@ use std::f64::consts::*;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
-use node::RsvgNode;
 use parsers::Parse;
 use parsers::ParseError;
-use state::ComputedValues;
+use state::{ComputedValues, RsvgComputedValues};
 use util::utf8_cstr;
 
 // Keep this in sync with ../../rsvg-private.h:LengthUnit
@@ -416,16 +415,14 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
 #[no_mangle]
 pub extern "C" fn rsvg_length_normalize(
     raw_length: *const RsvgLength,
-    raw_node: *const RsvgNode,
+    values: RsvgComputedValues,
     draw_ctx: *const RsvgDrawingCtx,
 ) -> f64 {
     assert!(!raw_length.is_null());
     let length: &RsvgLength = unsafe { &*raw_length };
 
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let values = &node.get_computed_values();
+    assert!(!values.is_null());
+    let values = unsafe { &*values };
 
     length.normalize(values, draw_ctx)
 }

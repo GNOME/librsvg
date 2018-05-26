@@ -46,7 +46,7 @@ mod (int a, int b)
 }
 
 static void
-rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     guchar i;
     gint x, y, rowstride;

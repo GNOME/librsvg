@@ -25,6 +25,7 @@ use state::{
     EnableBackground,
     Filter,
     Mask,
+    RsvgComputedValues,
     RsvgState,
     SpecifiedValue,
     State,
@@ -85,6 +86,7 @@ extern "C" {
 
     fn rsvg_drawing_ctx_draw_node_from_stack(
         draw_ctx: *const RsvgDrawingCtx,
+        values: RsvgComputedValues,
         node: *const RsvgNode,
         dominate: i32,
         clipping: glib_sys::gboolean,
@@ -330,12 +332,19 @@ pub fn set_bbox(draw_ctx: *mut RsvgDrawingCtx, bbox: &BoundingBox) {
 
 pub fn draw_node_from_stack(
     draw_ctx: *const RsvgDrawingCtx,
+    values: &ComputedValues,
     node: *const RsvgNode,
     dominate: i32,
     clipping: bool,
 ) {
     unsafe {
-        rsvg_drawing_ctx_draw_node_from_stack(draw_ctx, node, dominate, clipping.to_glib());
+        rsvg_drawing_ctx_draw_node_from_stack(
+            draw_ctx,
+            values as RsvgComputedValues,
+            node,
+            dominate,
+            clipping.to_glib(),
+        );
     }
 }
 

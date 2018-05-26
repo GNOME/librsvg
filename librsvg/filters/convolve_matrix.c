@@ -52,7 +52,7 @@ struct _RsvgFilterPrimitiveConvolveMatrix {
 };
 
 static void
-rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveConvolveMatrix *convolve = (RsvgFilterPrimitiveConvolveMatrix *) primitive;
 

@@ -26,6 +26,7 @@ use state::{
     FloodColor,
     LightingColor,
     Overflow,
+    RsvgComputedValues,
     RsvgState,
     SpecifiedValue,
     State,
@@ -49,7 +50,16 @@ pub trait NodeTrait: Downcast {
         handle: *const RsvgHandle,
         pbag: &PropertyBag,
     ) -> NodeResult;
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool);
+
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        values: &ComputedValues,
+        draw_ctx: *mut RsvgDrawingCtx,
+        dominate: i32,
+        clipping: bool,
+    );
+
     fn get_c_impl(&self) -> *const RsvgCNodeImpl;
 }
 
@@ -255,6 +265,7 @@ impl Node {
     pub fn draw(
         &self,
         node: &RsvgNode,
+        _parent_values: &ComputedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         dominate: i32,
         clipping: bool,
@@ -265,7 +276,9 @@ impl Node {
 
             cr.transform(self.get_transform());
 
-            self.node_impl.draw(node, draw_ctx, dominate, clipping);
+            let values = &self.get_computed_values();
+            self.node_impl
+                .draw(node, values, draw_ctx, dominate, clipping);
 
             cr.restore();
         }
@@ -295,31 +308,29 @@ impl Node {
         }
     }
 
-    pub fn draw_children(&self, draw_ctx: *const RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    pub fn draw_children(
+        &self,
+        values: &ComputedValues,
+        draw_ctx: *const RsvgDrawingCtx,
+        dominate: i32,
+        clipping: bool,
+    ) {
         if dominate != -1 {
             drawing_ctx::state_reinherit_top(draw_ctx, self.get_state(), dominate);
 
-            drawing_ctx::push_discrete_layer(
-                draw_ctx as *mut RsvgDrawingCtx,
-                &self.get_computed_values(),
-                clipping,
-            );
+            drawing_ctx::push_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
         }
 
         for child in self.children() {
             let boxed_child = box_node(child.clone());
 
-            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0, clipping);
+            drawing_ctx::draw_node_from_stack(draw_ctx, values, boxed_child, 0, clipping);
 
             rsvg_node_unref(boxed_child);
         }
 
         if dominate != -1 {
-            drawing_ctx::pop_discrete_layer(
-                draw_ctx as *mut RsvgDrawingCtx,
-                &self.get_computed_values(),
-                clipping,
-            );
+            drawing_ctx::pop_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
         }
     }
 
@@ -524,6 +535,7 @@ pub extern "C" fn rsvg_node_set_atts(
 #[no_mangle]
 pub extern "C" fn rsvg_node_draw(
     raw_node: *const RsvgNode,
+    parent_values: RsvgComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     dominate: i32,
     clipping: glib_sys::gboolean,
@@ -531,7 +543,19 @@ pub extern "C" fn rsvg_node_draw(
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    node.draw(node, draw_ctx, dominate, from_glib(clipping));
+    // FIXME: parent_values == NULL is special.  This means we are
+    // being called on the first node to be rendered by the C code
+    // (not necessarily the handle->treebase; it could be a
+    // render_cairo_sub(node).  In this case, we use the computed
+    // values from the node, not any "current" cascade.
+
+    if parent_values.is_null() {
+        let parent_values = &node.get_computed_values();
+        node.draw(node, parent_values, draw_ctx, dominate, from_glib(clipping));
+    } else {
+        let parent_values = unsafe { &*(parent_values) };
+        node.draw(node, parent_values, draw_ctx, dominate, from_glib(clipping));
+    };
 }
 
 #[no_mangle]
@@ -619,31 +643,6 @@ pub extern "C" fn rsvg_node_children_iter_next_back(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_draw_children(
-    raw_node: *const RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
-    clipping: glib_sys::gboolean,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let clipping: bool = from_glib(clipping);
-
-    drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
-    drawing_ctx::push_discrete_layer(
-        draw_ctx as *mut RsvgDrawingCtx,
-        &node.get_computed_values(),
-        clipping,
-    );
-    node.draw_children(draw_ctx, -1, clipping);
-    drawing_ctx::pop_discrete_layer(
-        draw_ctx as *mut RsvgDrawingCtx,
-        &node.get_computed_values(),
-        clipping,
-    );
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_values_get_flood_color_argb(raw_node: *const RsvgNode) -> u32 {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
@@ -718,7 +717,7 @@ mod tests {
             Ok(())
         }
 
-        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {}
+        fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {}
 
         fn get_c_impl(&self) -> *const RsvgCNodeImpl {
             unreachable!();

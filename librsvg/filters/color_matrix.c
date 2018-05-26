@@ -39,7 +39,7 @@ struct _RsvgFilterPrimitiveColorMatrix {
 };
 
 static void
-rsvg_filter_primitive_color_matrix_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_color_matrix_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveColorMatrix *color_matrix = (RsvgFilterPrimitiveColorMatrix *) primitive;
 

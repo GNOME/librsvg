@@ -275,7 +275,7 @@ get_surface_normal (guchar * I, RsvgIRect boundarys, gint x, gint y,
 }
 
 vector3
-get_light_direction (RsvgNode *node,
+get_light_direction (RsvgComputedValues *values,
                      RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdouble z,
                      cairo_matrix_t *affine, RsvgDrawingCtx * ctx)
 {
@@ -292,9 +292,9 @@ get_light_direction (RsvgNode *node,
             double x, y;
             x = affine->xx * x1 + affine->xy * y1 + affine->x0;
             y = affine->yx * x1 + affine->yy * y1 + affine->y0;
-            output.x = rsvg_length_normalize (&source->x, node, ctx) - x;
-            output.y = rsvg_length_normalize (&source->y, node, ctx) - y;
-            output.z = rsvg_length_normalize (&source->z, node, ctx) - z;
+            output.x = rsvg_length_normalize (&source->x, values, ctx) - x;
+            output.y = rsvg_length_normalize (&source->y, values, ctx) - y;
+            output.z = rsvg_length_normalize (&source->z, values, ctx) - z;
             output = normalise (output);
         }
         break;
@@ -303,7 +303,7 @@ get_light_direction (RsvgNode *node,
 }
 
 vector3
-get_light_color (RsvgNode *node,
+get_light_color (RsvgComputedValues *values,
                  RsvgNodeLightSource * source, vector3 color,
                  gdouble x1, gdouble y1, gdouble z, cairo_matrix_t *affine, RsvgDrawingCtx * ctx)
 {
@@ -316,12 +316,12 @@ get_light_color (RsvgNode *node,
     if (source->type != SPOTLIGHT)
         return color;
 
-    sx = rsvg_length_normalize (&source->x, node, ctx);
-    sy = rsvg_length_normalize (&source->y, node, ctx);
-    sz = rsvg_length_normalize (&source->z, node, ctx);
-    spx = rsvg_length_normalize (&source->pointsAtX, node, ctx);
-    spy = rsvg_length_normalize (&source->pointsAtY, node, ctx);
-    spz = rsvg_length_normalize (&source->pointsAtZ, node, ctx);
+    sx = rsvg_length_normalize (&source->x, values, ctx);
+    sy = rsvg_length_normalize (&source->y, values, ctx);
+    sz = rsvg_length_normalize (&source->z, values, ctx);
+    spx = rsvg_length_normalize (&source->pointsAtX, values, ctx);
+    spy = rsvg_length_normalize (&source->pointsAtY, values, ctx);
+    spz = rsvg_length_normalize (&source->pointsAtZ, values, ctx);
 
     x = affine->xx * x1 + affine->xy * y1 + affine->x0;
     y = affine->yx * x1 + affine->yy * y1 + affine->y0;

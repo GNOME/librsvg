@@ -267,7 +267,7 @@ feTurbulence_turbulence (RsvgFilterPrimitiveTurbulence * filter,
 }
 
 static void
-rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveTurbulence *turbulence = (RsvgFilterPrimitiveTurbulence *) primitive;
 

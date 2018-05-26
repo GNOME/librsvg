@@ -40,7 +40,7 @@ struct _RsvgFilterPrimitiveImage {
 };
 
 static cairo_surface_t *
-rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilterContext * context)
+rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilterContext * context, RsvgComputedValues *values)
 {
     RsvgDrawingCtx *ctx;
     RsvgNode *drawable;
@@ -63,6 +63,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
         return NULL;
 
     rsvg_drawing_ctx_draw_node_on_surface (ctx,
+                                           values,
                                            drawable,
                                            result,
                                            rsvg_filter_context_get_width (context),
@@ -145,7 +146,7 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive *self, RsvgFilterCon
 }
 
 static void
-rsvg_filter_primitive_image_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_image_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveImage *image = (RsvgFilterPrimitiveImage *) primitive;
 
@@ -162,7 +163,7 @@ rsvg_filter_primitive_image_render (RsvgNode *node, RsvgFilterPrimitive *primiti
     if (output == NULL)
         return;
 
-    img = rsvg_filter_primitive_image_render_in (image, ctx);
+    img = rsvg_filter_primitive_image_render_in (image, ctx, values);
     if (img == NULL) {
         img = rsvg_filter_primitive_image_render_ext (primitive, ctx);
     }

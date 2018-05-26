@@ -13,7 +13,7 @@ use length::{LengthDir, RsvgLength};
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
-use state::Opacity;
+use state::{ComputedValues, Opacity};
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -124,7 +124,7 @@ impl NodeMask {
             }
 
             drawing_ctx::state_push(draw_ctx);
-            node.draw_children(draw_ctx, 0, false);
+            node.draw_children(values, draw_ctx, 0, false);
             drawing_ctx::state_pop(draw_ctx);
 
             if content_units == CoordUnits::ObjectBoundingBox {
@@ -209,7 +209,7 @@ impl NodeTrait for NodeMask {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; masks are handled specially
     }
 

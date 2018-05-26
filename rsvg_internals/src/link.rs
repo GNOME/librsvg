@@ -12,6 +12,7 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use node::*;
 use property_bag::PropertyBag;
+use state::ComputedValues;
 
 struct NodeLink {
     link: RefCell<Option<String>>,
@@ -38,7 +39,14 @@ impl NodeTrait for NodeLink {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        values: &ComputedValues,
+        draw_ctx: *mut RsvgDrawingCtx,
+        dominate: i32,
+        clipping: bool,
+    ) {
         let link = self.link.borrow();
 
         if link.is_some() && link.as_ref().unwrap() != "" {
@@ -49,10 +57,10 @@ impl NodeTrait for NodeLink {
             drawing_ctx::get_cairo_context(draw_ctx).with_tag(
                 CAIRO_TAG_LINK,
                 attributes.as_ref().map(|i| i.as_str()),
-                || node.draw_children(draw_ctx, dominate, clipping),
+                || node.draw_children(values, draw_ctx, dominate, clipping),
             )
         } else {
-            node.draw_children(draw_ctx, dominate, clipping)
+            node.draw_children(values, draw_ctx, dominate, clipping)
         }
     }
 

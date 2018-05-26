@@ -374,6 +374,7 @@ rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, Rsvg
 
 void
 rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
+                                       RsvgComputedValues *values,
                                        RsvgNode *node,
                                        int dominate,
                                        gboolean clipping)
@@ -392,7 +393,7 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
 
     if (rsvg_node_values_is_visible (node)) {
         rsvg_drawing_ctx_state_push (ctx);
-        rsvg_node_draw (node, ctx, dominate, clipping);
+        rsvg_node_draw (node, values, ctx, dominate, clipping);
         rsvg_drawing_ctx_state_pop (ctx);
     }
 
@@ -497,6 +498,7 @@ rsvg_drawing_ctx_is_testing (RsvgDrawingCtx *ctx)
 
 void
 rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
+                                       RsvgComputedValues *values,
                                        RsvgNode *drawable,
                                        cairo_surface_t *surface,
                                        double width,
@@ -513,7 +515,7 @@ rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
     ctx->rect.width = width;
     ctx->rect.height = height;
 
-    rsvg_drawing_ctx_draw_node_from_stack (ctx, drawable, 0, FALSE);
+    rsvg_drawing_ctx_draw_node_from_stack (ctx, values, drawable, 0, FALSE);
 
     cairo_destroy (ctx->cr);
     ctx->cr = save_cr;

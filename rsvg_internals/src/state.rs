@@ -156,6 +156,9 @@ pub struct SpecifiedValues {
     pub xml_space: SpecifiedValue<XmlSpace>, // not a property, but a non-presentation attribute
 }
 
+// Used to transfer pointers to a ComputedValues to the C code
+pub type RsvgComputedValues = *const ComputedValues;
+
 #[derive(Debug, Clone)]
 pub struct ComputedValues {
     pub baseline_shift: BaselineShift,

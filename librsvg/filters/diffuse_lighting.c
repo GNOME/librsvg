@@ -42,7 +42,7 @@ struct _RsvgFilterPrimitiveDiffuseLighting {
 };
 
 static void
-rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveDiffuseLighting *diffuse_lighting = (RsvgFilterPrimitiveDiffuseLighting *) primitive;
 
@@ -124,11 +124,11 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimiti
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             z = surfaceScale * (double) in_pixels[y * rowstride + x * 4 + ctx_channelmap[3]];
-            L = get_light_direction (node, source, x, y, z, &iaffine, drawing_ctx);
+            L = get_light_direction (values, source, x, y, z, &iaffine, drawing_ctx);
             N = get_surface_normal (in_pixels, boundarys, x, y,
                                     dx, dy, rawdx, rawdy, diffuse_lighting->surfaceScale,
                                     rowstride, ctx_channelmap[3]);
-            lightcolor = get_light_color (node, source, color, x, y, z, &iaffine, drawing_ctx);
+            lightcolor = get_light_color (values, source, color, x, y, z, &iaffine, drawing_ctx);
             factor = dotproduct (N, L);
 
             output_pixels[y * rowstride + x * 4 + ctx_channelmap[0]] =

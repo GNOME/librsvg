@@ -10,6 +10,7 @@ use length::{LengthDir, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
+use state::ComputedValues;
 
 mod ffi;
 use self::ffi::*;
@@ -122,7 +123,7 @@ impl NodeTrait for Primitive {
     }
 
     #[inline]
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // Nothing; filters are drawn in rsvg-cairo-draw.c.
     }
 
@@ -222,7 +223,7 @@ impl NodeTrait for PrimitiveWithInput {
     }
 
     #[inline]
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // Nothing; filters are drawn in rsvg-cairo-draw.c.
     }
 

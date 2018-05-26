@@ -42,7 +42,7 @@ struct _RsvgFilterPrimitiveDisplacementMap {
 };
 
 static void
-rsvg_filter_primitive_displacement_map_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_displacement_map_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveDisplacementMap *displacement_map = (RsvgFilterPrimitiveDisplacementMap *) primitive;
     guchar ch, xch, ych;

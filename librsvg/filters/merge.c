@@ -68,7 +68,7 @@ merge_render_child(RsvgNode          *node,
 }
 
 static void
-rsvg_filter_primitive_merge_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_merge_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgNodeChildrenIter *iter;
     RsvgNode *child;
@@ -170,7 +170,7 @@ rsvg_filter_primitive_merge_node_set_atts (RsvgNode *node, gpointer impl, RsvgHa
 }
 
 static void
-rsvg_filter_primitive_merge_node_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_merge_node_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     /* todo */
 }

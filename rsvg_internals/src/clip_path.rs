@@ -10,6 +10,7 @@ use handle::RsvgHandle;
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
+use state::ComputedValues;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
@@ -29,6 +30,8 @@ impl NodeClipPath {
     }
 
     pub fn to_cairo_context(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
+        let values = &node.get_computed_values();
+
         let clip_units = self.units.get();
 
         let orig_bbox = drawing_ctx::get_bbox(draw_ctx).clone();
@@ -50,9 +53,9 @@ impl NodeClipPath {
         drawing_ctx::state_push(draw_ctx);
 
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
-        drawing_ctx::push_discrete_layer(draw_ctx, &node.get_computed_values(), true);
-        node.draw_children(draw_ctx, -1, true);
-        drawing_ctx::pop_discrete_layer(draw_ctx, &node.get_computed_values(), true);
+        drawing_ctx::push_discrete_layer(draw_ctx, values, true);
+        node.draw_children(values, draw_ctx, -1, true);
+        drawing_ctx::pop_discrete_layer(draw_ctx, values, true);
 
         drawing_ctx::state_pop(draw_ctx);
 
@@ -86,7 +89,7 @@ impl NodeTrait for NodeClipPath {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; clip paths are handled specially
     }
 

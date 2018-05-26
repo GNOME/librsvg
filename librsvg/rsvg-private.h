@@ -270,6 +270,9 @@ typedef enum {
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST                /* just a marker; not a valid type */
 } RsvgNodeType;
 
+/* Defined in rsvg_internals/src/state.rs */
+typedef struct _RsvgComputedValues *RsvgComputedValues;
+
 typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
 typedef void (* CNodeFree) (gpointer impl);
 
@@ -326,7 +329,7 @@ void rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag att
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
-void rsvg_node_draw (RsvgNode *node, RsvgDrawingCtx *draw, int dominate, gboolean clipping);
+void rsvg_node_draw (RsvgNode *node, RsvgComputedValues *parent_values, RsvgDrawingCtx *draw, int dominate, gboolean clipping);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
@@ -351,10 +354,6 @@ gboolean rsvg_node_children_iter_next_back (RsvgNodeChildrenIter *iter,
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, gboolean clipping);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
@@ -449,7 +448,7 @@ void rsvg_bbox_get_rect (RsvgBbox *bbox, cairo_rectangle_t *rect, cairo_rectangl
 
 /* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
-double rsvg_length_normalize (const RsvgLength *length, RsvgNode *node, RsvgDrawingCtx * ctx);
+double rsvg_length_normalize (const RsvgLength *length, RsvgComputedValues *values, RsvgDrawingCtx * ctx);
 
 /* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL

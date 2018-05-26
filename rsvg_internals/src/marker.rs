@@ -195,7 +195,7 @@ impl NodeMarker {
             }
         }
 
-        node.draw_children(draw_ctx, -1, clipping); // dominate=-1 so it won't reinherit state / push a layer
+        node.draw_children(values, draw_ctx, -1, clipping); // dominate=-1 so it won't reinherit state / push a layer
 
         drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
         drawing_ctx::pop_view_box(draw_ctx);
@@ -253,7 +253,7 @@ impl NodeTrait for NodeMarker {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; markers are drawn by their referencing shapes
     }
 

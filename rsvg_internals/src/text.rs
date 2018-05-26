@@ -72,9 +72,13 @@ impl NodeChars {
         self.string.borrow_mut().push_str(s);
     }
 
-    fn measure(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, length: &mut f64) {
-        let values = &node.get_computed_values();
-
+    fn measure(
+        &self,
+        _node: &RsvgNode,
+        values: &ComputedValues,
+        draw_ctx: *const RsvgDrawingCtx,
+        length: &mut f64,
+    ) {
         let s = self.string.borrow();
         let layout = create_pango_layout(draw_ctx, values, &s);
         let (width, _) = layout.get_size();
@@ -84,14 +88,13 @@ impl NodeChars {
 
     fn render(
         &self,
-        node: &RsvgNode,
+        _node: &RsvgNode,
+        values: &ComputedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
     ) {
-        let values = &node.get_computed_values();
-
         let s = self.string.borrow();
         let layout = create_pango_layout(draw_ctx, values, &s);
         let (width, _) = layout.get_size();
@@ -114,7 +117,7 @@ impl NodeTrait for NodeChars {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -158,9 +161,14 @@ impl NodeTrait for NodeText {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, _dominate: i32, clipping: bool) {
-        let values = &node.get_computed_values();
-
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        values: &ComputedValues,
+        draw_ctx: *mut RsvgDrawingCtx,
+        _dominate: i32,
+        clipping: bool,
+    ) {
         let mut x = self.x.get().normalize(values, draw_ctx);
         let mut y = self.y.get().normalize(values, draw_ctx);
         let mut dx = self.dx.get().normalize(values, draw_ctx);
@@ -168,7 +176,7 @@ impl NodeTrait for NodeText {
 
         let anchor = values.text_anchor;
 
-        let offset = anchor_offset(node, draw_ctx, anchor, false);
+        let offset = anchor_offset(node, values, draw_ctx, anchor, false);
 
         if values.text_gravity_is_vertical() {
             y -= offset;
@@ -189,7 +197,7 @@ impl NodeTrait for NodeText {
         x += dx;
         y += dy;
 
-        render_children(node, draw_ctx, &mut x, &mut y, false, clipping);
+        render_children(node, values, draw_ctx, &mut x, &mut y, false, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -208,7 +216,13 @@ impl NodeTRef {
         }
     }
 
-    fn measure(&self, _node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, length: &mut f64) -> bool {
+    fn measure(
+        &self,
+        _node: &RsvgNode,
+        values: &ComputedValues,
+        draw_ctx: *mut RsvgDrawingCtx,
+        length: &mut f64,
+    ) -> bool {
         let l = self.link.borrow();
 
         if l.is_none() {
@@ -218,7 +232,7 @@ impl NodeTRef {
         let done =
             if let Some(acquired) = drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap()) {
                 let c = acquired.get();
-                measure_children(&c, draw_ctx, length, true)
+                measure_children(&c, values, draw_ctx, length, true)
             } else {
                 false
             };
@@ -229,6 +243,7 @@ impl NodeTRef {
     fn render(
         &self,
         _node: &RsvgNode,
+        values: &ComputedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         x: &mut f64,
         y: &mut f64,
@@ -242,7 +257,7 @@ impl NodeTRef {
 
         if let Some(acquired) = drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap()) {
             let c = acquired.get();
-            render_children(&c, draw_ctx, x, y, true, clipping)
+            render_children(&c, values, draw_ctx, x, y, true, clipping)
         }
     }
 }
@@ -259,7 +274,7 @@ impl NodeTrait for NodeTRef {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -288,12 +303,11 @@ impl NodeTSpan {
     fn measure(
         &self,
         node: &RsvgNode,
+        values: &ComputedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         length: &mut f64,
         usetextonly: bool,
     ) -> bool {
-        let values = &node.get_computed_values();
-
         if self.x.get().is_some() || self.y.get().is_some() {
             return true;
         }
@@ -304,20 +318,19 @@ impl NodeTSpan {
             *length += self.dx.get().normalize(values, draw_ctx);
         }
 
-        measure_children(node, draw_ctx, length, usetextonly)
+        measure_children(node, values, draw_ctx, length, usetextonly)
     }
 
     fn render(
         &self,
         node: &RsvgNode,
+        values: &ComputedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         x: &mut f64,
         y: &mut f64,
         usetextonly: bool,
         clipping: bool,
     ) {
-        let values = &node.get_computed_values();
-
         drawing_ctx::state_push(draw_ctx);
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
 
@@ -327,7 +340,7 @@ impl NodeTSpan {
         let vertical = values.text_gravity_is_vertical();
         let anchor = values.text_anchor;
 
-        let offset = anchor_offset(node, draw_ctx, anchor, usetextonly);
+        let offset = anchor_offset(node, values, draw_ctx, anchor, usetextonly);
 
         if let Some(self_x) = self.x.get() {
             *x = self_x.normalize(values, draw_ctx);
@@ -355,7 +368,7 @@ impl NodeTSpan {
         }
         *y += dy;
 
-        render_children(node, draw_ctx, x, y, usetextonly, clipping);
+        render_children(node, values, draw_ctx, x, y, usetextonly, clipping);
 
         drawing_ctx::state_pop(draw_ctx);
     }
@@ -382,7 +395,7 @@ impl NodeTrait for NodeTSpan {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -571,6 +584,7 @@ fn create_pango_layout(
 
 fn anchor_offset(
     node: &RsvgNode,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     anchor: TextAnchor,
     textonly: bool,
@@ -580,11 +594,11 @@ fn anchor_offset(
     match anchor {
         TextAnchor::Start => {}
         TextAnchor::Middle => {
-            measure_children(node, draw_ctx, &mut offset, textonly);
+            measure_children(node, values, draw_ctx, &mut offset, textonly);
             offset /= 2f64;
         }
         _ => {
-            measure_children(node, draw_ctx, &mut offset, textonly);
+            measure_children(node, values, draw_ctx, &mut offset, textonly);
         }
     }
 
@@ -593,6 +607,7 @@ fn anchor_offset(
 
 fn measure_children(
     node: &RsvgNode,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     length: &mut f64,
     textonly: bool,
@@ -600,7 +615,7 @@ fn measure_children(
     let mut done = false;
 
     for child in node.children() {
-        done = measure_child(&child, draw_ctx, length, textonly);
+        done = measure_child(&child, values, draw_ctx, length, textonly);
         if done {
             break;
         }
@@ -611,6 +626,7 @@ fn measure_children(
 
 fn measure_child(
     node: &RsvgNode,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     length: &mut f64,
     textonly: bool,
@@ -626,19 +642,19 @@ fn measure_child(
 
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
-            node.with_impl(|chars: &NodeChars| chars.measure(node, draw_ctx, length));
+            node.with_impl(|chars: &NodeChars| chars.measure(node, values, draw_ctx, length));
         }
         (_, true) => {
-            done = measure_children(node, draw_ctx, length, textonly);
+            done = measure_children(node, values, draw_ctx, length, textonly);
         }
         (NodeType::TSpan, _) => {
             node.with_impl(|tspan: &NodeTSpan| {
-                done = tspan.measure(node, draw_ctx, length, textonly);
+                done = tspan.measure(node, values, draw_ctx, length, textonly);
             });
         }
         (NodeType::TRef, _) => {
             node.with_impl(|tref: &NodeTRef| {
-                done = tref.measure(node, draw_ctx, length);
+                done = tref.measure(node, values, draw_ctx, length);
             });
         }
         (_, _) => {}
@@ -653,18 +669,17 @@ fn measure_child(
 
 fn render_children(
     node: &RsvgNode,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,
     clipping: bool,
 ) {
-    let values = &node.get_computed_values();
-
     drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
     for child in node.children() {
-        render_child(&child, draw_ctx, x, y, textonly, clipping);
+        render_child(&child, values, draw_ctx, x, y, textonly, clipping);
     }
 
     drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
@@ -672,6 +687,7 @@ fn render_children(
 
 fn render_child(
     node: &RsvgNode,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     x: &mut f64,
     y: &mut f64,
@@ -685,19 +701,21 @@ fn render_child(
 
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
-            node.with_impl(|chars: &NodeChars| chars.render(node, draw_ctx, x, y, clipping));
+            node.with_impl(|chars: &NodeChars| {
+                chars.render(node, values, draw_ctx, x, y, clipping)
+            });
         }
         (_, true) => {
-            render_children(node, draw_ctx, x, y, textonly, clipping);
+            render_children(node, values, draw_ctx, x, y, textonly, clipping);
         }
         (NodeType::TSpan, _) => {
             node.with_impl(|tspan: &NodeTSpan| {
-                tspan.render(node, draw_ctx, x, y, textonly, clipping);
+                tspan.render(node, values, draw_ctx, x, y, textonly, clipping);
             });
         }
         (NodeType::TRef, _) => {
             node.with_impl(|tref: &NodeTRef| {
-                tref.render(node, draw_ctx, x, y, clipping);
+                tref.render(node, values, draw_ctx, x, y, clipping);
             });
         }
         (_, _) => {}

@@ -582,7 +582,7 @@ gaussian_blur_surface (cairo_surface_t *in,
 }
 
 static void
-rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveGaussianBlur *gaussian = (RsvgFilterPrimitiveGaussianBlur *) primitive;
 

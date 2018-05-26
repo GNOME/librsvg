@@ -230,7 +230,7 @@ impl NodeTrait for NodePattern {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 
@@ -420,14 +420,15 @@ fn set_pattern_on_draw_context(
 
     // Draw everything
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();
+    let pattern_values = &pattern_node.get_computed_values();
 
     drawing_ctx::state_reinherit_top(draw_ctx, pattern_node.get_state(), 2);
-    drawing_ctx::push_discrete_layer(draw_ctx, &pattern_node.get_computed_values(), false);
+    drawing_ctx::push_discrete_layer(draw_ctx, pattern_values, false);
 
     cr_pattern.set_matrix(caffine);
-    pattern_node.draw_children(draw_ctx, -1, false);
+    pattern_node.draw_children(pattern_values, draw_ctx, -1, false);
 
-    drawing_ctx::pop_discrete_layer(draw_ctx, &pattern_node.get_computed_values(), false);
+    drawing_ctx::pop_discrete_layer(draw_ctx, pattern_values, false);
 
     // Return to the original coordinate system and rendering context
 

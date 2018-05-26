@@ -165,7 +165,7 @@ rsvg_filter_blend (RsvgFilterPrimitiveBlendMode mode,
 }
 
 static void
-rsvg_filter_primitive_blend_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_blend_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveBlend *blend = (RsvgFilterPrimitiveBlend *) primitive;
     RsvgIRect boundarys;
