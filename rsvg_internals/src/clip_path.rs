@@ -38,23 +38,30 @@ impl NodeClipPath {
 
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
 
-        let cr_save_transform = cr.get_matrix();
+        //        let cr_save_transform = cr.get_matrix();
 
-        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+        let child_matrix = if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
             let rect = orig_bbox.rect.unwrap();
 
-            let bbtransform = cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
-            cr.transform(bbtransform);
+            let mut bbtransform =
+                cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
             println!("clipping objectBoundingBox");
+            cairo::Matrix::multiply(&bbtransform, &cr.get_matrix())
         } else {
             println!("clipping userSpaceOnUse");
-        }
+            cr.get_matrix()
+        };
 
         drawing_ctx::state_push(draw_ctx);
 
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
         drawing_ctx::push_discrete_layer(draw_ctx, values, true);
+
+        let cr = drawing_ctx::get_cairo_context(draw_ctx);
+        cr.set_matrix(child_matrix);
+
         node.draw_children(values, draw_ctx, -1, true);
+
         drawing_ctx::pop_discrete_layer(draw_ctx, values, true);
 
         drawing_ctx::state_pop(draw_ctx);
@@ -68,9 +75,9 @@ impl NodeClipPath {
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
         cr.clip();
 
-        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
-            cr.set_matrix(cr_save_transform);
-        }
+        //        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+        //            cr.set_matrix(cr_save_transform);
+        //        }
     }
 }
 
