@@ -55,14 +55,11 @@ impl NodeClipPath {
         drawing_ctx::state_push(draw_ctx);
 
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
-        drawing_ctx::push_discrete_layer(draw_ctx, values, true);
 
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
         cr.set_matrix(child_matrix);
 
         node.draw_children(values, draw_ctx, -1, true);
-
-        drawing_ctx::pop_discrete_layer(draw_ctx, values, true);
 
         drawing_ctx::state_pop(draw_ctx);
 
