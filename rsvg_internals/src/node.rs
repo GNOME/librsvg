@@ -390,9 +390,13 @@ impl Node {
         self.node_impl.get_c_impl()
     }
 
-    pub fn with_impl<T: NodeTrait, F: FnOnce(&T)>(&self, f: F) {
+    pub fn with_impl<T, F, U>(&self, f: F) -> U
+    where
+        T: NodeTrait,
+        F: FnOnce(&T) -> U,
+    {
         if let Some(t) = (&self.node_impl).downcast_ref::<T>() {
-            f(t);
+            f(t)
         } else {
             panic!("could not downcast");
         }
