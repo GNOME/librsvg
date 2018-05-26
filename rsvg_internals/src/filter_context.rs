@@ -252,10 +252,10 @@ impl FilterContext {
 
         let bbox_rect = bbox.rect.unwrap();
         IRect {
-            x0: bbox_rect.x as i32,
-            y0: bbox_rect.y as i32,
-            x1: (bbox_rect.x + bbox_rect.width) as i32,
-            y1: (bbox_rect.y + bbox_rect.height) as i32,
+            x0: bbox_rect.x.round() as i32,
+            y0: bbox_rect.y.round() as i32,
+            x1: (bbox_rect.x + bbox_rect.width).round() as i32,
+            y1: (bbox_rect.y + bbox_rect.height).round() as i32,
         }
     }
 }
