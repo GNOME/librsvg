@@ -626,7 +626,7 @@ fn measure_children(
 
 fn measure_child(
     node: &RsvgNode,
-    values: &ComputedValues,
+    _values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     length: &mut f64,
     textonly: bool,
@@ -640,21 +640,25 @@ fn measure_child(
 
     drawing_ctx::state_push(draw_ctx);
 
+    // FIXME: if we are inside a <use>, look at the dominate and
+    // cascade, otherwise use the node's computed values
+    let child_values = &node.get_computed_values();
+
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
-            node.with_impl(|chars: &NodeChars| chars.measure(node, values, draw_ctx, length));
+            node.with_impl(|chars: &NodeChars| chars.measure(node, child_values, draw_ctx, length));
         }
         (_, true) => {
-            done = measure_children(node, values, draw_ctx, length, textonly);
+            done = measure_children(node, child_values, draw_ctx, length, textonly);
         }
         (NodeType::TSpan, _) => {
             node.with_impl(|tspan: &NodeTSpan| {
-                done = tspan.measure(node, values, draw_ctx, length, textonly);
+                done = tspan.measure(node, child_values, draw_ctx, length, textonly);
             });
         }
         (NodeType::TRef, _) => {
             node.with_impl(|tref: &NodeTRef| {
-                done = tref.measure(node, values, draw_ctx, length);
+                done = tref.measure(node, child_values, draw_ctx, length);
             });
         }
         (_, _) => {}
@@ -687,7 +691,7 @@ fn render_children(
 
 fn render_child(
     node: &RsvgNode,
-    values: &ComputedValues,
+    _values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     x: &mut f64,
     y: &mut f64,
@@ -699,23 +703,27 @@ fn render_child(
 
     cr.transform(node.get_transform());
 
+    // FIXME: if we are inside a <use>, look at the dominate and
+    // cascade, otherwise use the node's computed values
+    let child_values = &node.get_computed_values();
+
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
             node.with_impl(|chars: &NodeChars| {
-                chars.render(node, values, draw_ctx, x, y, clipping)
+                chars.render(node, child_values, draw_ctx, x, y, clipping)
             });
         }
         (_, true) => {
-            render_children(node, values, draw_ctx, x, y, textonly, clipping);
+            render_children(node, child_values, draw_ctx, x, y, textonly, clipping);
         }
         (NodeType::TSpan, _) => {
             node.with_impl(|tspan: &NodeTSpan| {
-                tspan.render(node, values, draw_ctx, x, y, textonly, clipping);
+                tspan.render(node, child_values, draw_ctx, x, y, textonly, clipping);
             });
         }
         (NodeType::TRef, _) => {
             node.with_impl(|tref: &NodeTRef| {
-                tref.render(node, values, draw_ctx, x, y, clipping);
+                tref.render(node, child_values, draw_ctx, x, y, clipping);
             });
         }
         (_, _) => {}
