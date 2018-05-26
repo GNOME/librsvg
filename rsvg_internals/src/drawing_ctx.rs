@@ -509,6 +509,7 @@ fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
     }
 
     let child_cr = cairo::Context::new(&surface);
+    child_cr.set_matrix(get_cairo_context(draw_ctx).get_matrix());
 
     unsafe {
         rsvg_drawing_ctx_push_cr(draw_ctx, child_cr.to_raw_none());
