@@ -268,7 +268,7 @@ impl Node {
     ) {
         if self.result.borrow().is_ok() {
             let cr = drawing_ctx::get_cairo_context(draw_ctx);
-            cr.save();
+            let save_affine = cr.get_matrix();
 
             cr.transform(self.get_transform());
 
@@ -276,7 +276,7 @@ impl Node {
             self.node_impl
                 .draw(node, values, draw_ctx, dominate, clipping);
 
-            cr.restore();
+            cr.set_matrix(save_affine);
         }
     }
 

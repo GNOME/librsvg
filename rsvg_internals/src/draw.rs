@@ -39,8 +39,6 @@ fn set_affine_on_cr(draw_ctx: *mut RsvgDrawingCtx, cr: &cairo::Context) {
         affine.y0 + y0,
     );
     cr.set_matrix(matrix);
-
-    println!("set_affine_on_cr: {:?}", matrix);
 }
 
 pub fn draw_path_builder(
@@ -50,14 +48,10 @@ pub fn draw_path_builder(
     clipping: bool,
 ) {
     if !clipping {
-        println!("draw_path_builder {{");
         drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-    } else {
-        println!("draw_path_builder clipping {{");
     }
 
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
-    cr.save();
 
     set_affine_on_cr(draw_ctx, &cr);
 
@@ -69,15 +63,9 @@ pub fn draw_path_builder(
         cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
 
         stroke_and_fill(&cr, draw_ctx, values);
-    }
 
-    cr.restore();
-
-    if !clipping {
         drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
     }
-
-    println!("}}");
 }
 
 fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
