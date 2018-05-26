@@ -980,7 +980,7 @@ make_property!(
     default: 0f64,
     inherits_automatically: true,
     newtype: f64,
-    parse_impl {
+    parse_impl: {
         impl Parse for BaselineShift {
             type Data = ();
             type Err = AttributeError;
@@ -1169,7 +1169,7 @@ make_property!(
     default: RsvgLength::parse("12.0", LengthDir::Both).unwrap(),
     newtype_parse: RsvgLength,
     parse_data_type: LengthDir,
-    property_impl {
+    property_impl: {
         impl Property for FontSize {
             fn inherits_automatically() -> bool {
                 true
@@ -1440,7 +1440,7 @@ make_property!(
         strike: bool, default: false,
     }
 
-    parse_impl {
+    parse_impl: {
         impl Parse for TextDecoration {
             type Data = ();
             type Err = AttributeError;

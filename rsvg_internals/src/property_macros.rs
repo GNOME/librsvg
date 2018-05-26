@@ -117,7 +117,7 @@ macro_rules! make_property {
      default: $default: expr,
      newtype_parse: $type: ty,
      parse_data_type: $parse_data_type: ty,
-     property_impl { $prop: item }
+     property_impl: { $prop: item }
     ) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
@@ -140,7 +140,7 @@ macro_rules! make_property {
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype: $type: ty,
-     parse_impl { $parse: item }
+     parse_impl: { $parse: item }
     ) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
@@ -156,7 +156,7 @@ macro_rules! make_property {
      fields: {
        $($field_name: ident : $field_type: ty, default: $field_default : expr,)+
      }
-     parse_impl { $parse: item }
+     parse_impl: { $parse: item }
     ) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name {
@@ -252,7 +252,7 @@ mod tests {
             default: RGBA::new(1, 1, 1, 1),
             newtype_parse: RGBA,
             parse_data_type: (),
-            property_impl {
+            property_impl: {
                 impl Property for AddColor {
                     fn inherits_automatically() -> bool {
                         true
