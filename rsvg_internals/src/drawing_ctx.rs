@@ -13,13 +13,11 @@ use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
 use filters::rsvg_filter_render;
 use iri::IRI;
-use length::LengthUnit;
 use mask::NodeMask;
 use node::{box_node, NodeType, RsvgNode};
 use rect::RectangleExt;
 use state::{
     self,
-    BaselineShift,
     ClipPath,
     CompOp,
     ComputedValues,
@@ -28,7 +26,6 @@ use state::{
     Mask,
     RsvgComputedValues,
     RsvgState,
-    SpecifiedValue,
     State,
 };
 use unitinterval::UnitInterval;
@@ -122,44 +119,6 @@ pub fn get_dpi(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
     }
 
     (dpi_x, dpi_y)
-}
-
-pub fn get_accumulated_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    let mut shift = 0f64;
-
-    let mut state = get_current_state(draw_ctx).unwrap();
-    while let Some(parent) = state.parent() {
-        if let SpecifiedValue::Specified(BaselineShift(ref s)) = state.values.baseline_shift {
-            let parent_font_size = normalize_font_size(draw_ctx, parent);
-            shift += s * parent_font_size;
-        }
-        state = parent;
-    }
-
-    shift
-}
-
-// Recursive evaluation of all parent elements regarding absolute font size
-fn normalize_font_size(draw_ctx: *const RsvgDrawingCtx, state: &State) -> f64 {
-    if let SpecifiedValue::Specified(ref font_size) = state.values.font_size {
-        match font_size.0.unit {
-            LengthUnit::Percent | LengthUnit::FontEm | LengthUnit::FontEx => {
-                parent_font_size(draw_ctx, state) * font_size.0.length
-            }
-            LengthUnit::RelativeLarger => parent_font_size(draw_ctx, state) * 1.2f64,
-            LengthUnit::RelativeSmaller => parent_font_size(draw_ctx, state) / 1.2f64,
-
-            _ => 1.0 // font_size.normalize(draw_ctx),
-        }
-    } else {
-        1.0
-    }
-}
-
-fn parent_font_size(draw_ctx: *const RsvgDrawingCtx, state: &State) -> f64 {
-    state
-        .parent()
-        .map_or(12f64, |p| normalize_font_size(draw_ctx, p))
 }
 
 pub fn get_view_box_size(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {

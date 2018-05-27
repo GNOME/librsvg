@@ -100,7 +100,7 @@ impl NodeChars {
         let (width, _) = layout.get_size();
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let offset = baseline + drawing_ctx::get_accumulated_baseline_shift(draw_ctx);
+        let offset = baseline + values.baseline_shift.0.normalize(values, draw_ctx);
 
         if values.text_gravity_is_vertical() {
             draw_pango_layout(draw_ctx, values, &layout, *x + offset, *y, clipping);

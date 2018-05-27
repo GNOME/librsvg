@@ -978,9 +978,27 @@ where
 make_property!(
     ComputedValues,
     BaselineShift,
-    default: 0f64,
-    inherits_automatically: true,
-    newtype: f64,
+    default: RsvgLength::parse("0.0", LengthDir::Both).unwrap(),
+    newtype: RsvgLength,
+    property_impl: {
+        impl Property<ComputedValues> for BaselineShift {
+            fn inherits_automatically() -> bool {
+                true
+            }
+
+            fn compute(&self, v: &ComputedValues) -> Self {
+                // FIXME: this implementation has limitations:
+                // 1) we only handle 'percent' shifts, but it could also be an absolute offset
+                // 2) we should be able to normalize the lengths and add even if they have
+                //    different units, but at the moment that requires access to the draw_ctx
+                if self.0.unit != LengthUnit::Percent || v.baseline_shift.0.unit != v.font_size.0.unit {
+                    return BaselineShift(RsvgLength::new(v.baseline_shift.0.length, v.baseline_shift.0.unit, LengthDir::Both));
+                }
+
+                BaselineShift(RsvgLength::new(self.0.length * v.font_size.0.length + v.baseline_shift.0.length, v.font_size.0.unit, LengthDir::Both))
+            }
+        }
+    },
     parse_impl: {
         impl Parse for BaselineShift {
             type Data = ();
@@ -990,13 +1008,10 @@ make_property!(
             // see sp_style_merge_baseline_shift_from_parent()
             fn parse(s: &str, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
                 match s.trim() {
-                    "baseline" => Ok(BaselineShift(0f64)),
-                    "sub" => Ok(BaselineShift(-0.2f64)),
-                    "super" => Ok(BaselineShift(0.4f64)),
-
-                    _ => Err(::error::AttributeError::from(::parsers::ParseError::new(
-                        "invalid value",
-                    ))),
+                    "baseline" => Ok(BaselineShift(RsvgLength::new(0.0, LengthUnit::Percent, LengthDir::Both))),
+                    "sub" => Ok(BaselineShift(RsvgLength::new(-0.2, LengthUnit::Percent, LengthDir::Both))),
+                    "super" => Ok(BaselineShift(RsvgLength::new(0.4, LengthUnit::Percent, LengthDir::Both))),
+                    _ => Ok(BaselineShift(RsvgLength::parse(s, LengthDir::Both)?)),
                 }
             }
         }

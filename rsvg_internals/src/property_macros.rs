@@ -143,15 +143,16 @@ macro_rules! make_property {
     ($computed_values_type: ty,
      $name: ident,
      default: $default: expr,
-     inherits_automatically: $inherits_automatically: expr,
      newtype: $type: ty,
+     property_impl: { $prop: item },
      parse_impl: { $parse: item }
     ) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
-        impl_property!($computed_values_type, $name, $inherits_automatically);
+
+        $prop
 
         $parse
     };
