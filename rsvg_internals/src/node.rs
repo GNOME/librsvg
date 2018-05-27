@@ -343,7 +343,7 @@ impl Children {
     // true if self.next_back's next sibling is self.next
     fn finished(&self) -> bool {
         match &self.next_back {
-            Some(next_back) => {
+            &Some(next_back) => {
                 next_back
                     .next_sib
                     .borrow()
