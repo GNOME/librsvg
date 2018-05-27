@@ -37,7 +37,7 @@ use util::{utf8_cstr, utf8_cstr_opt};
 #[derive(Clone)]
 pub enum SpecifiedValue<T>
 where
-    T: Property + Clone + Default,
+    T: Property<ComputedValues> + Clone + Default,
 {
     Unspecified,
     Inherit,
@@ -46,12 +46,12 @@ where
 
 impl<T> SpecifiedValue<T>
 where
-    T: Property + Clone + Default,
+    T: Property<ComputedValues> + Clone + Default,
 {
-    pub fn inherit_from(&self, src: &T) -> T {
+    pub fn compute(&self, src: &T, src_values: &ComputedValues) -> T {
         match *self {
             SpecifiedValue::Unspecified => {
-                if <T as Property>::inherits_automatically() {
+                if <T as Property<ComputedValues>>::inherits_automatically() {
                     src.clone()
                 } else {
                     Default::default()
@@ -60,14 +60,14 @@ where
 
             SpecifiedValue::Inherit => src.clone(),
 
-            SpecifiedValue::Specified(ref v) => v.inherit_from(src),
+            SpecifiedValue::Specified(ref v) => v.compute(src_values),
         }
     }
 }
 
 impl<T> Default for SpecifiedValue<T>
 where
-    T: Default + Property + Clone,
+    T: Property<ComputedValues> + Clone + Default,
 {
     fn default() -> SpecifiedValue<T> {
         SpecifiedValue::Unspecified
@@ -282,61 +282,61 @@ impl Default for ComputedValues {
     }
 }
 
-macro_rules! inherit_from {
+macro_rules! compute_value {
     ($self:ident, $computed:ident, $name:ident) => {
-        $computed.$name = $self.$name.inherit_from(&$computed.$name)
+        $computed.$name = $self.$name.compute(&$computed.$name, &$computed)
     };
 }
 
 impl SpecifiedValues {
     fn to_computed_values(&self, computed: &mut ComputedValues) {
-        inherit_from!(self, computed, baseline_shift);
-        inherit_from!(self, computed, clip_path);
-        inherit_from!(self, computed, clip_rule);
-        inherit_from!(self, computed, comp_op);
-        inherit_from!(self, computed, color);
-        inherit_from!(self, computed, direction);
-        inherit_from!(self, computed, display);
-        inherit_from!(self, computed, enable_background);
-        inherit_from!(self, computed, fill);
-        inherit_from!(self, computed, fill_opacity);
-        inherit_from!(self, computed, fill_rule);
-        inherit_from!(self, computed, filter);
-        inherit_from!(self, computed, flood_color);
-        inherit_from!(self, computed, flood_opacity);
-        inherit_from!(self, computed, font_family);
-        inherit_from!(self, computed, font_size);
-        inherit_from!(self, computed, font_stretch);
-        inherit_from!(self, computed, font_style);
-        inherit_from!(self, computed, font_variant);
-        inherit_from!(self, computed, font_weight);
-        inherit_from!(self, computed, letter_spacing);
-        inherit_from!(self, computed, lighting_color);
-        inherit_from!(self, computed, marker_end);
-        inherit_from!(self, computed, marker_mid);
-        inherit_from!(self, computed, marker_start);
-        inherit_from!(self, computed, mask);
-        inherit_from!(self, computed, opacity);
-        inherit_from!(self, computed, overflow);
-        inherit_from!(self, computed, shape_rendering);
-        inherit_from!(self, computed, stop_color);
-        inherit_from!(self, computed, stop_opacity);
-        inherit_from!(self, computed, stroke);
-        inherit_from!(self, computed, stroke_dasharray);
-        inherit_from!(self, computed, stroke_dashoffset);
-        inherit_from!(self, computed, stroke_line_cap);
-        inherit_from!(self, computed, stroke_line_join);
-        inherit_from!(self, computed, stroke_opacity);
-        inherit_from!(self, computed, stroke_miterlimit);
-        inherit_from!(self, computed, stroke_width);
-        inherit_from!(self, computed, text_anchor);
-        inherit_from!(self, computed, text_decoration);
-        inherit_from!(self, computed, text_rendering);
-        inherit_from!(self, computed, unicode_bidi);
-        inherit_from!(self, computed, visibility);
-        inherit_from!(self, computed, writing_mode);
-        inherit_from!(self, computed, xml_lang);
-        inherit_from!(self, computed, xml_space);
+        compute_value!(self, computed, baseline_shift);
+        compute_value!(self, computed, clip_path);
+        compute_value!(self, computed, clip_rule);
+        compute_value!(self, computed, comp_op);
+        compute_value!(self, computed, color);
+        compute_value!(self, computed, direction);
+        compute_value!(self, computed, display);
+        compute_value!(self, computed, enable_background);
+        compute_value!(self, computed, fill);
+        compute_value!(self, computed, fill_opacity);
+        compute_value!(self, computed, fill_rule);
+        compute_value!(self, computed, filter);
+        compute_value!(self, computed, flood_color);
+        compute_value!(self, computed, flood_opacity);
+        compute_value!(self, computed, font_family);
+        compute_value!(self, computed, font_size);
+        compute_value!(self, computed, font_stretch);
+        compute_value!(self, computed, font_style);
+        compute_value!(self, computed, font_variant);
+        compute_value!(self, computed, font_weight);
+        compute_value!(self, computed, letter_spacing);
+        compute_value!(self, computed, lighting_color);
+        compute_value!(self, computed, marker_end);
+        compute_value!(self, computed, marker_mid);
+        compute_value!(self, computed, marker_start);
+        compute_value!(self, computed, mask);
+        compute_value!(self, computed, opacity);
+        compute_value!(self, computed, overflow);
+        compute_value!(self, computed, shape_rendering);
+        compute_value!(self, computed, stop_color);
+        compute_value!(self, computed, stop_opacity);
+        compute_value!(self, computed, stroke);
+        compute_value!(self, computed, stroke_dasharray);
+        compute_value!(self, computed, stroke_dashoffset);
+        compute_value!(self, computed, stroke_line_cap);
+        compute_value!(self, computed, stroke_line_join);
+        compute_value!(self, computed, stroke_opacity);
+        compute_value!(self, computed, stroke_miterlimit);
+        compute_value!(self, computed, stroke_width);
+        compute_value!(self, computed, text_anchor);
+        compute_value!(self, computed, text_decoration);
+        compute_value!(self, computed, text_rendering);
+        compute_value!(self, computed, unicode_bidi);
+        compute_value!(self, computed, visibility);
+        compute_value!(self, computed, writing_mode);
+        compute_value!(self, computed, xml_lang);
+        compute_value!(self, computed, xml_space);
     }
 }
 
@@ -966,7 +966,7 @@ fn parse_property<T>(
     data: <T as Parse>::Data,
 ) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
 where
-    T: Property + Parse + Default + Clone,
+    T: Property<ComputedValues> + Clone + Default + Parse,
 {
     if value.trim() == "inherit" {
         Ok(SpecifiedValue::Inherit)
@@ -976,6 +976,7 @@ where
 }
 
 make_property!(
+    ComputedValues,
     BaselineShift,
     default: 0f64,
     inherits_automatically: true,
@@ -1003,6 +1004,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     ClipPath,
     default: IRI::None,
     inherits_automatically: false,
@@ -1011,6 +1013,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     ClipRule,
     default: NonZero,
     inherits_automatically: true,
@@ -1023,6 +1026,7 @@ make_property!(
 // See bgo#764808: we don't inherit CSS from the public API,
 // so start off with opaque black instead of transparent.
 make_property!(
+    ComputedValues,
     Color,
     default: cssparser::RGBA::new(0, 0, 0, 0xff),
     inherits_automatically: true,
@@ -1031,6 +1035,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     CompOp,
     default: SrcOver,
     inherits_automatically: false,
@@ -1063,6 +1068,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     Direction,
     default: Ltr,
     inherits_automatically: true,
@@ -1073,6 +1079,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     Display,
     default: Inline,
     inherits_automatically: true,
@@ -1098,6 +1105,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     EnableBackground,
     default: Accumulate,
     inherits_automatically: false,
@@ -1108,6 +1116,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     Fill,
     default: PaintServer::parse("#000", ()).unwrap(),
     inherits_automatically: true,
@@ -1116,6 +1125,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     FillOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
@@ -1123,6 +1133,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     FillRule,
     default: NonZero,
     inherits_automatically: true,
@@ -1133,6 +1144,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     Filter,
     default: IRI::None,
     inherits_automatically: false,
@@ -1142,6 +1154,7 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
 make_property!(
+    ComputedValues,
     FloodColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
     inherits_automatically: false,
@@ -1151,6 +1164,7 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/filters.html#FloodOpacityProperty
 make_property!(
+    ComputedValues,
     FloodOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
@@ -1158,6 +1172,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     FontFamily,
     default: "Times New Roman".to_string(),
     inherits_automatically: true,
@@ -1165,26 +1180,27 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     FontSize,
     default: RsvgLength::parse("12.0", LengthDir::Both).unwrap(),
     newtype_parse: RsvgLength,
     parse_data_type: LengthDir,
     property_impl: {
-        impl Property for FontSize {
+        impl Property<ComputedValues> for FontSize {
             fn inherits_automatically() -> bool {
                 true
             }
 
-            fn inherit_from(&self, v: &Self) -> Self {
+            fn compute(&self, v: &ComputedValues) -> Self {
                 match self.0.unit {
                     LengthUnit::Percent =>
-                        FontSize(RsvgLength::new(self.0.length * v.0.length, v.0.unit, LengthDir::Both)),
+                        FontSize(RsvgLength::new(self.0.length * v.font_size.0.length, v.font_size.0.unit, LengthDir::Both)),
 
                     LengthUnit::RelativeLarger =>
-                        FontSize(RsvgLength::new(v.0.length * 1.2, v.0.unit, LengthDir::Both)),
+                        FontSize(RsvgLength::new(v.font_size.0.length * 1.2, v.font_size.0.unit, LengthDir::Both)),
 
                     LengthUnit::RelativeSmaller =>
-                        FontSize(RsvgLength::new(v.0.length / 1.2, v.0.unit, LengthDir::Both)),
+                        FontSize(RsvgLength::new(v.font_size.0.length / 1.2, v.font_size.0.unit, LengthDir::Both)),
 
                     _ => self.clone(),
                 }
@@ -1194,6 +1210,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     FontStretch,
     default: Normal,
     inherits_automatically: true,
@@ -1213,6 +1230,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     FontStyle,
     default: Normal,
     inherits_automatically: true,
@@ -1224,6 +1242,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     FontVariant,
     default: Normal,
     inherits_automatically: true,
@@ -1234,6 +1253,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     FontWeight,
     default: Normal,
     inherits_automatically: true,
@@ -1255,6 +1275,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     LetterSpacing,
     default: RsvgLength::default(),
     inherits_automatically: true,
@@ -1264,6 +1285,7 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/filters.html#LightingColorProperty
 make_property!(
+    ComputedValues,
     LightingColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
     inherits_automatically: false,
@@ -1272,6 +1294,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     MarkerEnd,
     default: IRI::None,
     inherits_automatically: true,
@@ -1280,6 +1303,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     MarkerMid,
     default: IRI::None,
     inherits_automatically: true,
@@ -1288,6 +1312,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     MarkerStart,
     default: IRI::None,
     inherits_automatically: true,
@@ -1296,6 +1321,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     Mask,
     default: IRI::None,
     inherits_automatically: false,
@@ -1304,6 +1330,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     Opacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
@@ -1311,6 +1338,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     Overflow,
     default: Visible,
     inherits_automatically: true,
@@ -1323,6 +1351,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     ShapeRendering,
     default: Auto,
     inherits_automatically: true,
@@ -1336,6 +1365,7 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/pservers.html#StopColorProperty
 make_property!(
+    ComputedValues,
     StopColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
@@ -1345,6 +1375,7 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/pservers.html#StopOpacityProperty
 make_property!(
+    ComputedValues,
     StopOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
@@ -1352,6 +1383,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     Stroke,
     default: PaintServer::None,
     inherits_automatically: true,
@@ -1360,6 +1392,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     StrokeDasharray,
     default: Dasharray::default(),
     inherits_automatically: true,
@@ -1368,6 +1401,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     StrokeDashoffset,
     default: RsvgLength::default(),
     inherits_automatically: true,
@@ -1376,6 +1410,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     StrokeLinecap,
     default: Butt,
     inherits_automatically: true,
@@ -1387,6 +1422,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     StrokeLinejoin,
     default: Miter,
     inherits_automatically: true,
@@ -1398,6 +1434,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     StrokeOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
@@ -1405,6 +1442,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     StrokeMiterlimit,
     default: 4f64,
     inherits_automatically: true,
@@ -1412,6 +1450,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     StrokeWidth,
     default: RsvgLength::parse("1.0", LengthDir::Both).unwrap(),
     inherits_automatically: true,
@@ -1420,6 +1459,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     TextAnchor,
     default: Start,
     inherits_automatically: true,
@@ -1431,6 +1471,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     TextDecoration,
     inherits_automatically: true,
 
@@ -1457,6 +1498,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     TextRendering,
     default: Auto,
     inherits_automatically: true,
@@ -1469,6 +1511,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     UnicodeBidi,
     default: Normal,
     inherits_automatically: true,
@@ -1480,6 +1523,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     Visibility,
     default: Visible,
     inherits_automatically: true,
@@ -1491,6 +1535,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     WritingMode,
     default: LrTb,
     inherits_automatically: true,
@@ -1505,6 +1550,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     XmlLang,
     default: "".to_string(), // see create_pango_layout()
     inherits_automatically: true,
@@ -1512,6 +1558,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     XmlSpace,
     default: Default,
     inherits_automatically: true,
@@ -1594,7 +1641,7 @@ fn inherit<T>(
     dst: &mut SpecifiedValue<T>,
     src: &SpecifiedValue<T>,
 ) where
-    T: Property + Clone + Default,
+    T: Property<ComputedValues> + Clone + Default,
 {
     let dst_has_val = if let SpecifiedValue::Specified(_) = *dst {
         true

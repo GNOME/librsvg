@@ -141,16 +141,18 @@ pub fn get_accumulated_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
 
 // Recursive evaluation of all parent elements regarding absolute font size
 fn normalize_font_size(draw_ctx: *const RsvgDrawingCtx, state: &State) -> f64 {
-    let font_size = state.values.font_size.inherit_from(&Default::default()).0;
+    if let SpecifiedValue::Specified(ref font_size) = state.values.font_size {
+        match font_size.0.unit {
+            LengthUnit::Percent | LengthUnit::FontEm | LengthUnit::FontEx => {
+                parent_font_size(draw_ctx, state) * font_size.0.length
+            }
+            LengthUnit::RelativeLarger => parent_font_size(draw_ctx, state) * 1.2f64,
+            LengthUnit::RelativeSmaller => parent_font_size(draw_ctx, state) / 1.2f64,
 
-    match font_size.unit {
-        LengthUnit::Percent | LengthUnit::FontEm | LengthUnit::FontEx => {
-            parent_font_size(draw_ctx, state) * font_size.length
+            _ => 1.0 // font_size.normalize(draw_ctx),
         }
-        LengthUnit::RelativeLarger => parent_font_size(draw_ctx, state) * 1.2f64,
-        LengthUnit::RelativeSmaller => parent_font_size(draw_ctx, state) / 1.2f64,
-
-        _ => 1.0 // font_size.normalize(draw_ctx),
+    } else {
+        1.0
     }
 }
 

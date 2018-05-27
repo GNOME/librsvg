@@ -1,6 +1,6 @@
-pub trait Property {
+pub trait Property<T> {
     fn inherits_automatically() -> bool;
-    fn inherit_from(&self, &Self) -> Self;
+    fn compute(&self, &T) -> Self;
 }
 
 /// Generates a property definition that simply parses strings to enum variants
@@ -28,7 +28,8 @@ pub trait Property {
 /// `type Data = ()` and `type Err = AttributeError`.
 #[macro_export]
 macro_rules! make_property {
-    ($name: ident,
+    ($computed_values_type: ty,
+     $name: ident,
      default: $default: ident,
      inherits_automatically: $inherits_automatically: expr,
      identifiers:
@@ -40,7 +41,7 @@ macro_rules! make_property {
         }
 
         impl_default!($name, $name::$default);
-        impl_property!($name, $inherits_automatically);
+        impl_property!($computed_values_type, $name, $inherits_automatically);
 
         impl ::parsers::Parse for $name {
             type Data = ();
@@ -56,7 +57,8 @@ macro_rules! make_property {
         }
     };
 
-    ($name: ident,
+    ($computed_values_type: ty,
+     $name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype_from_str: $type: ty
@@ -65,7 +67,7 @@ macro_rules! make_property {
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
-        impl_property!($name, $inherits_automatically);
+        impl_property!($computed_values_type, $name, $inherits_automatically);
 
         impl ::parsers::Parse for $name {
             type Data = ();
@@ -82,7 +84,8 @@ macro_rules! make_property {
         }
     };
 
-    ($name: ident,
+    ($computed_values_type: ty,
+     $name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype_parse: $type: ty,
@@ -93,12 +96,12 @@ macro_rules! make_property {
 
         impl_default!($name, $name($default));
 
-        impl ::property_macros::Property for $name {
+        impl ::property_macros::Property<$computed_values_type> for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically
             }
 
-            fn inherit_from(&self, _v: &Self) -> Self {
+            fn compute(&self, _v: &$computed_values_type) -> Self {
                 self.clone()
             }
         }
@@ -113,7 +116,8 @@ macro_rules! make_property {
         }
     };
 
-    ($name: ident,
+    ($computed_values_type: ty,
+     $name: ident,
      default: $default: expr,
      newtype_parse: $type: ty,
      parse_data_type: $parse_data_type: ty,
@@ -136,7 +140,8 @@ macro_rules! make_property {
         }
     };
 
-    ($name: ident,
+    ($computed_values_type: ty,
+     $name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype: $type: ty,
@@ -146,12 +151,13 @@ macro_rules! make_property {
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
-        impl_property!($name, $inherits_automatically);
+        impl_property!($computed_values_type, $name, $inherits_automatically);
 
         $parse
     };
 
-    ($name: ident,
+    ($computed_values_type: ty,
+     $name: ident,
      inherits_automatically: $inherits_automatically: expr,
      fields: {
        $($field_name: ident : $field_type: ty, default: $field_default : expr,)+
@@ -164,7 +170,7 @@ macro_rules! make_property {
         }
 
         impl_default!($name, $name { $($field_name: $field_default),+ });
-        impl_property!($name, $inherits_automatically);
+        impl_property!($computed_values_type, $name, $inherits_automatically);
 
         $parse
     };
@@ -181,13 +187,13 @@ macro_rules! impl_default {
 }
 
 macro_rules! impl_property {
-    ($name:ident, $inherits_automatically:expr) => {
-        impl ::property_macros::Property for $name {
+    ($computed_values_type: ty, $name:ident, $inherits_automatically:expr) => {
+        impl ::property_macros::Property<$computed_values_type> for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically
             }
 
-            fn inherit_from(&self, _v: &Self) -> Self {
+            fn compute(&self, _v: &$computed_values_type) -> Self {
                 self.clone()
             }
         }
@@ -204,6 +210,7 @@ mod tests {
     #[test]
     fn check_generated_property() {
         make_property! {
+            (),
             Foo,
             default: Def,
             inherits_automatically: true,
@@ -215,11 +222,12 @@ mod tests {
         }
 
         assert_eq!(<Foo as Default>::default(), Foo::Def);
-        assert_eq!(<Foo as Property>::inherits_automatically(), true);
+        assert_eq!(<Foo as Property<()>>::inherits_automatically(), true);
         assert!(<Foo as Parse>::parse("blargh", ()).is_err());
         assert_eq!(<Foo as Parse>::parse("bar", ()), Ok(Foo::Bar));
 
         make_property! {
+            (),
             Bar,
             default: "bar".to_string(),
             inherits_automatically: true,
@@ -227,13 +235,14 @@ mod tests {
         }
 
         assert_eq!(<Bar as Default>::default(), Bar("bar".to_string()));
-        assert_eq!(<Bar as Property>::inherits_automatically(), true);
+        assert_eq!(<Bar as Property<()>>::inherits_automatically(), true);
         assert_eq!(
             <Bar as Parse>::parse("test", ()),
             Ok(Bar("test".to_string()))
         );
 
         make_property! {
+            (),
             Baz,
             default: 42f64,
             inherits_automatically: true,
@@ -241,40 +250,40 @@ mod tests {
         }
 
         assert_eq!(<Baz as Default>::default(), Baz(42f64));
-        assert_eq!(<Baz as Property>::inherits_automatically(), true);
+        assert_eq!(<Baz as Property<()>>::inherits_automatically(), true);
         assert_eq!(<Baz as Parse>::parse("42", ()), Ok(Baz(42f64)));
     }
 
     #[test]
-    fn check_inherit_from() {
+    fn check_compute() {
         make_property! {
+            RGBA,
             AddColor,
             default: RGBA::new(1, 1, 1, 1),
             newtype_parse: RGBA,
             parse_data_type: (),
             property_impl: {
-                impl Property for AddColor {
+                impl Property<RGBA> for AddColor {
                     fn inherits_automatically() -> bool {
                         true
                     }
 
-                    fn inherit_from(&self, v: &Self) -> Self {
+                    fn compute(&self, v: &RGBA) -> Self {
                         AddColor(RGBA::new(
-                            self.0.red + v.0.red,
-                            self.0.green + v.0.green,
-                            self.0.blue + v.0.blue,
-                            self.0.alpha + v.0.alpha
+                            self.0.red + v.red,
+                            self.0.green + v.green,
+                            self.0.blue + v.blue,
+                            self.0.alpha + v.alpha
                         ))
                     }
                 }
             }
         }
 
-        let a = <AddColor as Parse>::parse("#01010101", ()).unwrap();
-        let b = <AddColor as Parse>::parse("#02030405", ()).unwrap();
+        let color = RGBA::new(1, 1, 1, 1);
+        let a = <AddColor as Parse>::parse("#02030405", ()).unwrap();
+        let b = a.compute(&color);
 
-        let c = b.inherit_from(&a);
-
-        assert_eq!(c, AddColor(RGBA::new(3, 4, 5, 6)));
+        assert_eq!(b, AddColor(RGBA::new(3, 4, 5, 6)));
     }
 }
