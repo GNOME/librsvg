@@ -45,10 +45,8 @@ impl NodeClipPath {
 
             let mut bbtransform =
                 cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
-            println!("clipping objectBoundingBox");
             cairo::Matrix::multiply(&bbtransform, &cr.get_matrix())
         } else {
-            println!("clipping userSpaceOnUse");
             cr.get_matrix()
         };
 
