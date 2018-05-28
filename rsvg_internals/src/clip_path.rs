@@ -52,8 +52,6 @@ impl NodeClipPath {
             cr.get_matrix()
         };
 
-        drawing_ctx::state_push(draw_ctx);
-
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
 
         let cr = drawing_ctx::get_cairo_context(draw_ctx);

@@ -123,7 +123,6 @@ impl NodeMask {
                 drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
             }
 
-            drawing_ctx::state_push(draw_ctx);
             node.draw_children(values, draw_ctx, 0, false);
 
             if content_units == CoordUnits::ObjectBoundingBox {

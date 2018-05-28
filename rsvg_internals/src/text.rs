@@ -331,7 +331,6 @@ impl NodeTSpan {
         usetextonly: bool,
         clipping: bool,
     ) {
-        drawing_ctx::state_push(draw_ctx);
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
 
         let mut dx = self.dx.get().normalize(values, draw_ctx);
@@ -635,8 +634,6 @@ fn measure_child(
     cr.save();
 
     cr.transform(node.get_transform());
-
-    drawing_ctx::state_push(draw_ctx);
 
     // FIXME: if we are inside a <use>, look at the dominate and
     // cascade, otherwise use the node's computed values

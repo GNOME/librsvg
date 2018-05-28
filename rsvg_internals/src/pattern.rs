@@ -406,7 +406,6 @@ fn set_pattern_on_draw_context(
     // Draw to another surface
 
     let cr_save = drawing_ctx::get_cairo_context(draw_ctx);
-    drawing_ctx::state_push(draw_ctx);
 
     let surface = cr_save
         .get_target()
