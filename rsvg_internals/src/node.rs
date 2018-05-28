@@ -336,8 +336,6 @@ impl Node {
         clipping: bool,
     ) {
         if dominate != -1 {
-            drawing_ctx::state_reinherit_top(draw_ctx, self.get_state(), dominate);
-
             drawing_ctx::push_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
         }
 

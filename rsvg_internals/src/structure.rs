@@ -221,7 +221,7 @@ impl NodeTrait for NodeSvg {
             draw_ctx,
             clipping,
             || {
-                node.draw_children(values, draw_ctx, -1, clipping); // dominate==-1 so it won't reinherit or push a layer
+                node.draw_children(values, draw_ctx, -1, clipping); // dominate==-1 so it won't push a layer
             },
         );
     }
@@ -366,7 +366,6 @@ impl NodeTrait for NodeUse {
                     draw_ctx,
                     clipping,
                     || {
-                        drawing_ctx::state_reinherit_top(draw_ctx, child.get_state(), 1);
                         drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
                         child.draw_children(values, draw_ctx, -1, clipping); // FIXME: cascade values to child
                         drawing_ctx::pop_discrete_layer(

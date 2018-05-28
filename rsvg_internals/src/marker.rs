@@ -195,7 +195,7 @@ impl NodeMarker {
             }
         }
 
-        node.draw_children(values, draw_ctx, -1, clipping); // dominate=-1 so it won't reinherit state / push a layer
+        node.draw_children(values, draw_ctx, -1, clipping); // dominate=-1 so it won't push a layer
 
         drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
         drawing_ctx::pop_view_box(draw_ctx);

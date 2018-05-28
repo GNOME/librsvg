@@ -15,16 +15,7 @@ use iri::IRI;
 use mask::NodeMask;
 use node::{box_node, NodeType, RsvgNode};
 use rect::RectangleExt;
-use state::{
-    ClipPath,
-    CompOp,
-    ComputedValues,
-    EnableBackground,
-    Filter,
-    Mask,
-    RsvgComputedValues,
-    State,
-};
+use state::{ClipPath, CompOp, ComputedValues, EnableBackground, Filter, Mask, RsvgComputedValues};
 use unitinterval::UnitInterval;
 
 pub enum RsvgDrawingCtx {}
@@ -162,46 +153,6 @@ pub fn get_acquired_node_of_type(
     } else {
         Some(AcquiredNode(draw_ctx, raw_node))
     }
-}
-
-// A function for modifying the top of the state stack depending on a
-// flag given. If that flag is 0, style and transform will inherit
-// normally. If that flag is 1, style will inherit normally with the
-// exception that any value explicity set on the second last level
-// will have a higher precedence than values set on the last level.
-// If the flag equals two then the style will be overridden totally
-// however the transform will be left as is. This is because of
-// patterns which are not based on the context of their use and are
-// rather based wholly on their own loading context. Other things
-// may want to have this totally disabled, and a value of three will
-// achieve this.
-pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: &State, dominate: i32) {
-    // let current = get_current_state_mut(draw_ctx).unwrap();
-    //
-    // match dominate {
-    // 3 => unreachable!(),
-    //
-    // This is a special domination mode for patterns, the transform
-    // is simply left as is, wheras the style is totally overridden
-    // 2 => current.force(state),
-    //
-    // dominate => {
-    // let parent_save = current.parent;
-    // current.clone_from(state);
-    // current.parent = parent_save;
-    //
-    // if let Some(parent) = current.parent() {
-    // if dominate == 0 {
-    // current.reinherit(parent);
-    // } else {
-    // current.dominate(parent);
-    // }
-    //
-    // current.affine = cairo::Matrix::multiply(&current.affine, &parent.affine);
-    // }
-    // }
-    // }
-    //
 }
 
 pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {

@@ -50,21 +50,9 @@ void rsvg_parse_style_attrs (RsvgHandle *handle, RsvgNode *node, const char *tag
 G_GNUC_INTERNAL
 gboolean rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState * state);
 
-/* Implemented in rsvg_internals/src/transform.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src) G_GNUC_WARN_UNUSED_RESULT;
-
 /* Defined in rsvg_internals/src/state.rs */
 G_GNUC_INTERNAL
 RsvgState *rsvg_state_parent (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-cairo_matrix_t rsvg_state_get_affine (const RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
 
 G_END_DECLS
 
