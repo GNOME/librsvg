@@ -975,6 +975,7 @@ where
     }
 }
 
+// https://www.w3.org/TR/SVG/text.html#BaselineShiftProperty
 make_property!(
     ComputedValues,
     BaselineShift,
@@ -983,7 +984,7 @@ make_property!(
     property_impl: {
         impl Property<ComputedValues> for BaselineShift {
             fn inherits_automatically() -> bool {
-                true
+                false
             }
 
             fn compute(&self, v: &ComputedValues) -> Self {

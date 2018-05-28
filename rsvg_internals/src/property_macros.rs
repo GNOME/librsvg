@@ -188,7 +188,7 @@ macro_rules! impl_default {
 }
 
 macro_rules! impl_property {
-    ($computed_values_type: ty, $name:ident, $inherits_automatically:expr) => {
+    ($computed_values_type:ty, $name:ident, $inherits_automatically:expr) => {
         impl ::property_macros::Property<$computed_values_type> for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically

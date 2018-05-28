@@ -626,7 +626,7 @@ fn measure_children(
 
 fn measure_child(
     node: &RsvgNode,
-    _values: &ComputedValues,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     length: &mut f64,
     textonly: bool,
@@ -646,7 +646,11 @@ fn measure_child(
 
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
-            node.with_impl(|chars: &NodeChars| chars.measure(node, child_values, draw_ctx, length));
+            // here we use the values from the current element,
+            // instead of child_values because NodeChars does not
+            // represent a real SVG element - it is just our container
+            // for character data.
+            node.with_impl(|chars: &NodeChars| chars.measure(node, values, draw_ctx, length));
         }
         (_, true) => {
             done = measure_children(node, child_values, draw_ctx, length, textonly);
@@ -691,7 +695,7 @@ fn render_children(
 
 fn render_child(
     node: &RsvgNode,
-    _values: &ComputedValues,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     x: &mut f64,
     y: &mut f64,
@@ -710,7 +714,11 @@ fn render_child(
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
             node.with_impl(|chars: &NodeChars| {
-                chars.render(node, child_values, draw_ctx, x, y, clipping)
+                // here we use the values from the current element,
+                // instead of child_values because NodeChars does not
+                // represent a real SVG element - it is just our container
+                // for character data.
+                chars.render(node, values, draw_ctx, x, y, clipping)
             });
         }
         (_, true) => {
