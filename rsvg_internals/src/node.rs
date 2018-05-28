@@ -496,14 +496,6 @@ pub extern "C" fn rsvg_node_is_same(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_get_state(raw_node: *const RsvgNode) -> *mut RsvgState {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    node.state
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_add_child(raw_node: *mut RsvgNode, raw_child: *const RsvgNode) {
     assert!(!raw_node.is_null());
     assert!(!raw_child.is_null());

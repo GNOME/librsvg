@@ -307,10 +307,6 @@ RsvgNode *rsvg_node_ref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_unref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
 
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-RsvgState *rsvg_node_get_state (RsvgNode *node);
-
 /* Implemented in rust/src/node.rs
  *
  * Returns a new strong reference to the parent (or NULL); use rsvg_node_unref()

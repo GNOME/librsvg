@@ -11,7 +11,6 @@ use handle::RsvgHandle;
 use length::*;
 use node::{
     boxed_node_new,
-    rsvg_node_get_state,
     NodeResult,
     NodeTrait,
     NodeType,
@@ -22,7 +21,6 @@ use parsers::parse;
 use property_bag::PropertyBag;
 use space::xml_space_normalize;
 use state::{
-    self,
     ComputedValues,
     Direction,
     FontStretch,
@@ -735,12 +733,13 @@ fn render_child(
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_chars_new(raw_parent: *const RsvgNode) -> *const RsvgNode {
-    let node = boxed_node_new(NodeType::Chars, raw_parent, Box::new(NodeChars::new()));
+    let boxed_node = boxed_node_new(NodeType::Chars, raw_parent, Box::new(NodeChars::new()));
 
-    let state = state::from_c_mut(rsvg_node_get_state(node));
+    let node = unsafe { &*boxed_node };
+    let state = node.get_state_mut();
     state.cond = false;
 
-    node
+    boxed_node
 }
 
 #[no_mangle]

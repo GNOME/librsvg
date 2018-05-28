@@ -1,5 +1,4 @@
 use cairo;
-use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
 use glib_sys;
@@ -17,7 +16,6 @@ use mask::NodeMask;
 use node::{box_node, NodeType, RsvgNode};
 use rect::RectangleExt;
 use state::{
-    self,
     ClipPath,
     CompOp,
     ComputedValues,
@@ -25,7 +23,6 @@ use state::{
     Filter,
     Mask,
     RsvgComputedValues,
-    RsvgState,
     State,
 };
 use unitinterval::UnitInterval;
