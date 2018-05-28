@@ -44,6 +44,8 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
 {
     RsvgDrawingCtx *ctx;
     RsvgNode *drawable;
+    cairo_matrix_t paffine;
+    cairo_t *cr;
     cairo_surface_t *result;
 
     ctx = rsvg_filter_context_get_drawing_ctx (context);
@@ -55,7 +57,10 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
     if (!drawable)
         return NULL;
 
-    rsvg_state_set_affine (rsvg_drawing_ctx_get_current_state (ctx), rsvg_filter_context_get_paffine (context));
+
+    cr = rsvg_drawing_ctx_get_cairo_context (ctx);
+    paffine = rsvg_filter_context_get_paffine (context);
+    cairo_set_matrix (cr, &paffine);
 
     result = _rsvg_image_surface_new (rsvg_filter_context_get_width (context),
                                       rsvg_filter_context_get_height (context));
