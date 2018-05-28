@@ -191,11 +191,11 @@ rsvg_drawing_ctx_set_current_state (RsvgDrawingCtx *ctx, RsvgState *state)
 void
 rsvg_drawing_ctx_push_bounding_box (RsvgDrawingCtx *ctx)
 {
-    RsvgState *state;
+    cairo_t *cr;
     cairo_matrix_t affine;
 
-    state = rsvg_drawing_ctx_get_current_state (ctx);
-    affine = rsvg_state_get_affine (state);
+    cr = rsvg_drawing_ctx_get_cairo_context (ctx);
+    cairo_get_matrix (cr, &affine);
 
     ctx->bb_stack = g_list_prepend (ctx->bb_stack, ctx->bbox);
     ctx->bbox = rsvg_bbox_new (&affine, NULL, NULL);
