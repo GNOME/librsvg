@@ -39,6 +39,14 @@ pub type RsvgNode = Rc<Node>;
 // struct for a particular node type.
 pub enum RsvgCNodeImpl {}
 
+pub enum DrawCascade<'a> {
+    /// Node should use its own computed values
+    NodeValues,
+
+    /// Node should cascade from the given values, for instancing with the Use element
+    CascadeFrom(&'a ComputedValues),
+}
+
 pub trait NodeTrait: Downcast {
     fn set_atts(
         &self,
@@ -261,7 +269,7 @@ impl Node {
     pub fn draw(
         &self,
         node: &RsvgNode,
-        _parent_values: &ComputedValues,
+        cascade: DrawCascade,
         draw_ctx: *mut RsvgDrawingCtx,
         dominate: i32,
         clipping: bool,
@@ -272,9 +280,25 @@ impl Node {
 
             cr.transform(self.get_transform());
 
-            let values = &self.get_computed_values();
-            self.node_impl
-                .draw(node, values, draw_ctx, dominate, clipping);
+            match cascade {
+                DrawCascade::NodeValues => {
+                    self.node_impl.draw(
+                        node,
+                        &self.get_computed_values(),
+                        draw_ctx,
+                        dominate,
+                        clipping,
+                    );
+                }
+
+                DrawCascade::CascadeFrom(v) => {
+                    let mut v = v.clone();
+                    let state = self.get_state();
+
+                    state.to_computed_values(&mut v);
+                    self.node_impl.draw(node, &v, draw_ctx, dominate, clipping);
+                }
+            }
 
             cr.set_matrix(save_affine);
         }
@@ -539,10 +563,22 @@ pub extern "C" fn rsvg_node_draw(
 
     if parent_values.is_null() {
         let parent_values = &node.get_computed_values();
-        node.draw(node, parent_values, draw_ctx, dominate, from_glib(clipping));
+        node.draw(
+            node,
+            DrawCascade::NodeValues,
+            draw_ctx,
+            dominate,
+            from_glib(clipping),
+        );
     } else {
         let parent_values = unsafe { &*(parent_values) };
-        node.draw(node, parent_values, draw_ctx, dominate, from_glib(clipping));
+        node.draw(
+            node,
+            DrawCascade::CascadeFrom(parent_values),
+            draw_ctx,
+            dominate,
+            from_glib(clipping),
+        );
     };
 }
 
