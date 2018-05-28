@@ -421,7 +421,6 @@ fn set_pattern_on_draw_context(
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();
     let pattern_values = &pattern_node.get_computed_values();
 
-    drawing_ctx::state_reinherit_top(draw_ctx, pattern_node.get_state(), 2);
     drawing_ctx::push_discrete_layer(draw_ctx, pattern_values, false);
 
     cr_pattern.set_matrix(caffine);

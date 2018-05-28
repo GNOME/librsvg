@@ -322,8 +322,6 @@ impl NodeTSpan {
         usetextonly: bool,
         clipping: bool,
     ) {
-        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
-
         let mut dx = self.dx.get().normalize(values, draw_ctx);
         let mut dy = self.dy.get().normalize(values, draw_ctx);
 
