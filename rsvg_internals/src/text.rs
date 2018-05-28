@@ -9,14 +9,7 @@ use draw::draw_pango_layout;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::*;
-use node::{
-    boxed_node_new,
-    NodeResult,
-    NodeTrait,
-    NodeType,
-    RsvgCNodeImpl,
-    RsvgNode,
-};
+use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 use space::xml_space_normalize;
@@ -733,13 +726,7 @@ fn render_child(
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_chars_new(raw_parent: *const RsvgNode) -> *const RsvgNode {
-    let boxed_node = boxed_node_new(NodeType::Chars, raw_parent, Box::new(NodeChars::new()));
-
-    let node = unsafe { &*boxed_node };
-    let state = node.get_state_mut();
-    state.cond = false;
-
-    boxed_node
+    boxed_node_new(NodeType::Chars, raw_parent, Box::new(NodeChars::new()))
 }
 
 #[no_mangle]

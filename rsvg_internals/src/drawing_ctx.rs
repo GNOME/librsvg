@@ -176,33 +176,32 @@ pub fn get_acquired_node_of_type(
 // may want to have this totally disabled, and a value of three will
 // achieve this.
 pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: &State, dominate: i32) {
-    /*
-    let current = get_current_state_mut(draw_ctx).unwrap();
-
-    match dominate {
-        3 => unreachable!(),
-
-        // This is a special domination mode for patterns, the transform
-        // is simply left as is, wheras the style is totally overridden
-        2 => current.force(state),
-
-        dominate => {
-            let parent_save = current.parent;
-            current.clone_from(state);
-            current.parent = parent_save;
-
-            if let Some(parent) = current.parent() {
-                if dominate == 0 {
-                    current.reinherit(parent);
-                } else {
-                    current.dominate(parent);
-                }
-
-                current.affine = cairo::Matrix::multiply(&current.affine, &parent.affine);
-            }
-        }
-    }
-    */
+    // let current = get_current_state_mut(draw_ctx).unwrap();
+    //
+    // match dominate {
+    // 3 => unreachable!(),
+    //
+    // This is a special domination mode for patterns, the transform
+    // is simply left as is, wheras the style is totally overridden
+    // 2 => current.force(state),
+    //
+    // dominate => {
+    // let parent_save = current.parent;
+    // current.clone_from(state);
+    // current.parent = parent_save;
+    //
+    // if let Some(parent) = current.parent() {
+    // if dominate == 0 {
+    // current.reinherit(parent);
+    // } else {
+    // current.dominate(parent);
+    // }
+    //
+    // current.affine = cairo::Matrix::multiply(&current.affine, &parent.affine);
+    // }
+    // }
+    // }
+    //
 }
 
 pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {
