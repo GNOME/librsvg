@@ -38,7 +38,6 @@ struct RsvgDrawingCtx {
     cairo_t *initial_cr;
     GList *cr_stack;
     GList *surfaces_stack;
-    RsvgState *state;
     GError **error;
     RsvgDefs *defs;
     double dpi_x, dpi_y;
@@ -73,15 +72,6 @@ void rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx
 
 G_GNUC_INTERNAL
 gboolean rsvg_drawing_ctx_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr);
-
-G_GNUC_INTERNAL
-RsvgState *rsvg_drawing_ctx_get_current_state   (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_set_current_state         (RsvgDrawingCtx * ctx, RsvgState *state);
-
-/* Implemented in rust/src/drawing_ctx.rs */
-G_GNUC_INTERNAL
-void       rsvg_drawing_ctx_state_push          (RsvgDrawingCtx * ctx);
 
 G_GNUC_INTERNAL
 RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const char *url);

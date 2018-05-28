@@ -80,8 +80,6 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     draw->rect.width = bbw;
     draw->rect.height = bbh;
 
-    draw->state = NULL;
-
     draw->defs = handle->priv->defs;
     draw->dpi_x = handle->priv->dpi_x;
     draw->dpi_y = handle->priv->dpi_y;
@@ -115,11 +113,7 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx *ctx)
     g_assert (ctx->cr_stack == NULL);
     g_assert (ctx->surfaces_stack == NULL);
 
-    g_assert(ctx->state);
-    g_assert(rsvg_state_parent(ctx->state) == NULL);
-    rsvg_state_free (ctx->state);
-
-	g_slist_free_full (ctx->drawsub_stack, (GDestroyNotify) rsvg_node_unref);
+    g_slist_free_full (ctx->drawsub_stack, (GDestroyNotify) rsvg_node_unref);
 
     g_warn_if_fail (ctx->acquired_nodes == NULL);
     g_slist_free (ctx->acquired_nodes);
@@ -165,18 +159,6 @@ gboolean
 rsvg_drawing_ctx_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr)
 {
     return cr != ctx->initial_cr;
-}
-
-RsvgState *
-rsvg_drawing_ctx_get_current_state (RsvgDrawingCtx *ctx)
-{
-    return ctx->state;
-}
-
-void
-rsvg_drawing_ctx_set_current_state (RsvgDrawingCtx *ctx, RsvgState *state)
-{
-    ctx->state = state;
 }
 
 void
@@ -374,7 +356,6 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
     }
 
     if (rsvg_node_values_is_visible (node)) {
-        rsvg_drawing_ctx_state_push (ctx);
         rsvg_node_draw (node, values, ctx, dominate, clipping);
     }
 

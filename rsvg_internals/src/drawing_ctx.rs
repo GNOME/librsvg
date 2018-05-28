@@ -34,9 +34,6 @@ pub enum RsvgDrawingCtx {}
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn rsvg_drawing_ctx_get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
-    fn rsvg_drawing_ctx_set_current_state(draw_ctx: *mut RsvgDrawingCtx, state: *mut RsvgState);
-
     fn rsvg_drawing_ctx_get_cairo_context(
         draw_ctx: *const RsvgDrawingCtx,
     ) -> *mut cairo_sys::cairo_t;
@@ -182,6 +179,7 @@ pub fn get_acquired_node_of_type(
 // may want to have this totally disabled, and a value of three will
 // achieve this.
 pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: &State, dominate: i32) {
+    /*
     let current = get_current_state_mut(draw_ctx).unwrap();
 
     match dominate {
@@ -207,6 +205,7 @@ pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: &State, domin
             }
         }
     }
+    */
 }
 
 pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {
@@ -308,47 +307,6 @@ pub fn draw_node_from_stack(
             dominate,
             clipping.to_glib(),
         );
-    }
-}
-
-pub fn get_current_state_ptr(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState {
-    unsafe { rsvg_drawing_ctx_get_current_state(draw_ctx) }
-}
-
-pub fn get_current_state<'a>(draw_ctx: *const RsvgDrawingCtx) -> Option<&'a State> {
-    let state = get_current_state_ptr(draw_ctx);
-
-    if state.is_null() {
-        None
-    } else {
-        Some(state::from_c(state))
-    }
-}
-
-pub fn get_current_state_mut<'a>(draw_ctx: *const RsvgDrawingCtx) -> Option<&'a mut State> {
-    let state = get_current_state_ptr(draw_ctx);
-
-    if state.is_null() {
-        None
-    } else {
-        Some(state::from_c_mut(state))
-    }
-}
-
-pub fn state_push(draw_ctx: *mut RsvgDrawingCtx) {
-    let parent = get_current_state(draw_ctx);
-
-    let mut state = State::new_with_parent(parent);
-
-    if let Some(parent) = parent {
-        state.reinherit(parent);
-        state.affine = parent.affine;
-        return;
-    }
-
-    unsafe {
-        let c_state = Box::into_raw(Box::new(state)) as *mut RsvgState;
-        rsvg_drawing_ctx_set_current_state(draw_ctx, c_state);
     }
 }
 
@@ -627,9 +585,4 @@ pub extern "C" fn rsvg_drawing_ctx_transformed_image_bounding_box(
         *bbw = r.width;
         *bbh = r.height;
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_state_push(draw_ctx: *mut RsvgDrawingCtx) {
-    state_push(draw_ctx);
 }
