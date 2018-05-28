@@ -51,9 +51,8 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
 {
     RsvgDimensionData data;
     RsvgDrawingCtx *draw;
-    RsvgState *state;
     cairo_matrix_t affine;
-    cairo_matrix_t state_affine;
+    cairo_matrix_t scale;
     double bbx, bby, bbw, bbh;
 
     rsvg_handle_get_dimensions (handle, &data);
@@ -93,27 +92,19 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     draw->acquired_nodes = NULL;
     draw->is_testing = handle->priv->is_testing;
 
-    rsvg_drawing_ctx_state_push (draw);
-    state = rsvg_drawing_ctx_get_current_state (draw);
-
-    state_affine = rsvg_state_get_affine (state);
-
-    /* apply cairo transformation to our affine transform */
-    cairo_matrix_multiply (&state_affine, &affine, &state_affine);
-
     /* scale according to size set by size_func callback */
-    cairo_matrix_init_scale (&affine, data.width / data.em, data.height / data.ex);
-    cairo_matrix_multiply (&state_affine, &affine, &state_affine);
+    cairo_matrix_init_scale (&scale, data.width / data.em, data.height / data.ex);
+    cairo_matrix_multiply (&affine, &affine, &scale);
 
     /* adjust transform so that the corner of the bounding box above is
      * at (0,0) - we compensate for this in _set_rsvg_affine() in
      * rsvg-cairo-render.c and a few other places */
-    state_affine.x0 -= draw->rect.x;
-    state_affine.y0 -= draw->rect.y;
+    affine.x0 -= draw->rect.x;
+    affine.y0 -= draw->rect.y;
 
-    draw->bbox = rsvg_bbox_new (&state_affine, NULL, NULL);
+    cairo_set_matrix (cr, &affine);
 
-    rsvg_state_set_affine (state, state_affine);
+    draw->bbox = rsvg_bbox_new (&affine, NULL, NULL);
 
     return draw;
 }
