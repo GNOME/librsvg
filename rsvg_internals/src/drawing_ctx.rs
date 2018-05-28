@@ -343,23 +343,12 @@ pub fn state_push(draw_ctx: *mut RsvgDrawingCtx) {
     if let Some(parent) = parent {
         state.reinherit(parent);
         state.affine = parent.affine;
+        return;
     }
 
     unsafe {
         let c_state = Box::into_raw(Box::new(state)) as *mut RsvgState;
         rsvg_drawing_ctx_set_current_state(draw_ctx, c_state);
-    }
-}
-
-pub fn state_pop(draw_ctx: *mut RsvgDrawingCtx) {
-    let state = get_current_state_mut(draw_ctx).unwrap();
-
-    unsafe {
-        let parent = state.parent;
-        assert!(!parent.is_null());
-        rsvg_drawing_ctx_set_current_state(draw_ctx, parent as *mut _);
-
-        Box::from_raw(state as *mut _);
     }
 }
 
@@ -643,9 +632,4 @@ pub extern "C" fn rsvg_drawing_ctx_transformed_image_bounding_box(
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_state_push(draw_ctx: *mut RsvgDrawingCtx) {
     state_push(draw_ctx);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_state_pop(draw_ctx: *mut RsvgDrawingCtx) {
-    state_pop(draw_ctx);
 }

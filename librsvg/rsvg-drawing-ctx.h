@@ -81,8 +81,6 @@ void rsvg_drawing_ctx_set_current_state         (RsvgDrawingCtx * ctx, RsvgState
 
 /* Implemented in rust/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
-void       rsvg_drawing_ctx_state_pop           (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
 void       rsvg_drawing_ctx_state_push          (RsvgDrawingCtx * ctx);
 
 G_GNUC_INTERNAL

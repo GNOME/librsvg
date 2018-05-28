@@ -61,8 +61,6 @@ impl NodeClipPath {
 
         node.draw_children(values, draw_ctx, -1, true);
 
-        drawing_ctx::state_pop(draw_ctx);
-
         // FIXME: this is an EPIC HACK to keep the clipping context from
         // accumulating bounding boxes.  We'll remove this later, when we
         // are able to extract bounding boxes from outside the

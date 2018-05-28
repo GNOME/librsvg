@@ -223,7 +223,6 @@ impl NodeTrait for NodeSvg {
             || {
                 drawing_ctx::state_push(draw_ctx);
                 node.draw_children(values, draw_ctx, -1, clipping); // dominate==-1 so it won't reinherit or push a layer
-                drawing_ctx::state_pop(draw_ctx);
             },
         );
     }
@@ -348,8 +347,6 @@ impl NodeTrait for NodeUse {
             drawing_ctx::draw_node_from_stack(draw_ctx, values, boxed_child, 1, clipping);
             rsvg_node_unref(boxed_child);
 
-            drawing_ctx::state_pop(draw_ctx);
-
             drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
 
             cr.restore();
@@ -381,7 +378,6 @@ impl NodeTrait for NodeUse {
                             values, // FIXME: cascade values to child
                             clipping,
                         );
-                        drawing_ctx::state_pop(draw_ctx);
                     },
                 );
             });

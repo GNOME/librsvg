@@ -125,7 +125,6 @@ impl NodeMask {
 
             drawing_ctx::state_push(draw_ctx);
             node.draw_children(values, draw_ctx, 0, false);
-            drawing_ctx::state_pop(draw_ctx);
 
             if content_units == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::pop_view_box(draw_ctx);

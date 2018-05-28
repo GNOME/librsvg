@@ -369,8 +369,6 @@ impl NodeTSpan {
         *y += dy;
 
         render_children(node, values, draw_ctx, x, y, usetextonly, clipping);
-
-        drawing_ctx::state_pop(draw_ctx);
     }
 }
 
@@ -667,8 +665,6 @@ fn measure_child(
         }
         (_, _) => {}
     }
-
-    drawing_ctx::state_pop(draw_ctx);
 
     cr.restore();
 

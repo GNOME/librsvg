@@ -385,7 +385,6 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
     if (rsvg_node_values_is_visible (node)) {
         rsvg_drawing_ctx_state_push (ctx);
         rsvg_node_draw (node, values, ctx, dominate, clipping);
-        rsvg_drawing_ctx_state_pop (ctx);
     }
 
     ctx->drawsub_stack = stacksave;

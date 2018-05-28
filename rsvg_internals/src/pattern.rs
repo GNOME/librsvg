@@ -432,7 +432,6 @@ fn set_pattern_on_draw_context(
 
     // Return to the original coordinate system and rendering context
 
-    drawing_ctx::state_pop(draw_ctx);
     drawing_ctx::set_cairo_context(draw_ctx, &cr_save);
 
     if pushed_view_box {
