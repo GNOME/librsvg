@@ -5,6 +5,7 @@ use glib_sys;
 use libc;
 
 use std::cell::{Cell, Ref, RefCell};
+use std::ops::Deref;
 use std::ptr;
 use std::rc::{Rc, Weak};
 use std::str::FromStr;
@@ -34,6 +35,19 @@ pub enum DrawCascade<'a> {
 
     /// Node should cascade from the given values, for instancing with the Use element
     CascadeFrom(&'a ComputedValues),
+}
+
+pub struct CascadedValues<'a> {
+    node: &'a Node,
+    borrowed_values: Ref<'a, ComputedValues>,
+}
+
+impl<'a> Deref for CascadedValues<'a> {
+    type Target = ComputedValues;
+
+    fn deref(&self) -> &ComputedValues {
+        &self.borrowed_values
+    }
 }
 
 pub trait NodeTrait: Downcast {
@@ -195,8 +209,11 @@ impl Node {
         *self.values.borrow_mut() = values.clone();
     }
 
-    pub fn get_computed_values(&self) -> Ref<ComputedValues> {
-        self.values.borrow()
+    pub fn get_computed_values(&self) -> CascadedValues {
+        CascadedValues {
+            node: self,
+            borrowed_values: self.values.borrow(),
+        }
     }
 
     pub fn cascade(&self, values: &ComputedValues) {
