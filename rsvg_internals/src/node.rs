@@ -16,18 +16,7 @@ use error::*;
 use handle::RsvgHandle;
 use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
-use state::{
-    self,
-    rsvg_state_new,
-    ComputedValues,
-    Display,
-    Overflow,
-    RsvgComputedValues,
-    RsvgState,
-    SpecifiedValue,
-    State,
-    Visibility,
-};
+use state::{self, rsvg_state_new, ComputedValues, Overflow, RsvgState, SpecifiedValue, State};
 use util::utf8_cstr;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
@@ -331,7 +320,7 @@ impl Node {
     pub fn draw_children(
         &self,
         values: &ComputedValues,
-        draw_ctx: *const RsvgDrawingCtx,
+        draw_ctx: *mut RsvgDrawingCtx,
         dominate: i32,
         clipping: bool,
     ) {
@@ -340,11 +329,13 @@ impl Node {
         }
 
         for child in self.children() {
-            let boxed_child = box_node(child.clone());
-
-            drawing_ctx::draw_node_from_stack(draw_ctx, values, boxed_child, 0, clipping);
-
-            rsvg_node_unref(boxed_child);
+            drawing_ctx::draw_node_from_stack(
+                draw_ctx,
+                DrawCascade::CascadeFrom(values),
+                &child,
+                0,
+                clipping,
+            );
         }
 
         if dominate != -1 {
@@ -543,44 +534,6 @@ pub extern "C" fn rsvg_node_set_atts(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_draw(
-    raw_node: *const RsvgNode,
-    parent_values: RsvgComputedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
-    dominate: i32,
-    clipping: glib_sys::gboolean,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    // FIXME: parent_values == NULL is special.  This means we are
-    // being called on the first node to be rendered by the C code
-    // (not necessarily the handle->treebase; it could be a
-    // render_cairo_sub(node).  In this case, we use the computed
-    // values from the node, not any "current" cascade.
-
-    if parent_values.is_null() {
-        let parent_values = &node.get_computed_values();
-        node.draw(
-            node,
-            DrawCascade::NodeValues,
-            draw_ctx,
-            dominate,
-            from_glib(clipping),
-        );
-    } else {
-        let parent_values = unsafe { &*(parent_values) };
-        node.draw(
-            node,
-            DrawCascade::CascadeFrom(parent_values),
-            draw_ctx,
-            dominate,
-            from_glib(clipping),
-        );
-    };
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_set_attribute_parse_error(
     raw_node: *const RsvgNode,
     attr_name: *const libc::c_char,
@@ -662,20 +615,6 @@ pub extern "C" fn rsvg_node_children_iter_next_back(
         }
         false.to_glib()
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_values_is_visible(raw_node: *const RsvgNode) -> glib_sys::gboolean {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let values = &node.get_computed_values();
-
-    match (values.display, values.visibility) {
-        (Display::None, _) => false,
-        (_, Visibility::Visible) => true,
-        _ => false,
-    }.to_glib()
 }
 
 #[no_mangle]

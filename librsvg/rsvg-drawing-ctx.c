@@ -366,24 +366,6 @@ rsvg_drawing_ctx_restore_stack (RsvgDrawingCtx *ctx,
     ctx->drawsub_stack = stacksave;
 }
 
-void
-rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
-                                       RsvgComputedValues *values,
-                                       RsvgNode *node,
-                                       int dominate,
-                                       gboolean clipping)
-{
-    GSList *stacksave;
-
-    if (rsvg_drawing_ctx_should_draw_node_from_stack (ctx, node, &stacksave)) {
-        if (rsvg_node_values_is_visible (node)) {
-            rsvg_node_draw (node, values, ctx, dominate, clipping);
-        }
-    }
-
-    rsvg_drawing_ctx_restore_stack (ctx, stacksave);
-}
-
 double
 rsvg_drawing_ctx_get_width (RsvgDrawingCtx *draw_ctx)
 {
@@ -503,7 +485,7 @@ rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
     ctx->rect.width = width;
     ctx->rect.height = height;
 
-    rsvg_drawing_ctx_draw_node_from_stack (ctx, NULL, node, 0, FALSE);
+    rsvg_drawing_ctx_draw_node_from_stack (ctx, node, 0, FALSE);
 
     cairo_destroy (ctx->cr);
     ctx->cr = save_cr;

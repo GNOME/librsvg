@@ -92,9 +92,9 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_restore_stack (RsvgDrawingCtx *ctx,
                                      GSList *stacksave);
 
+/* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
-                                            RsvgComputedValues *values,
                                             RsvgNode *node,
                                             int dominate,
                                             gboolean clipping);

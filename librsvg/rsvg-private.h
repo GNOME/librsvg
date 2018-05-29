@@ -363,10 +363,6 @@ guint8 rsvg_computed_values_get_flood_opacity (RsvgComputedValues *values);
 G_GNUC_INTERNAL
 guint32 rsvg_computed_values_get_lighting_color_argb (RsvgComputedValues *values);
 
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_node_values_is_visible (RsvgNode *node);
-
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
 /* Implemented in rust/src/property_bag.rs */

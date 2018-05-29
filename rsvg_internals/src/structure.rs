@@ -96,11 +96,13 @@ impl NodeTrait for NodeSwitch {
         drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
         if let Some(child) = node.children().find(|c| c.get_state().cond) {
-            let boxed_child = box_node(child.clone());
-
-            drawing_ctx::draw_node_from_stack(draw_ctx, values, boxed_child, 0, clipping);
-
-            rsvg_node_unref(boxed_child);
+            drawing_ctx::draw_node_from_stack(
+                draw_ctx,
+                DrawCascade::CascadeFrom(values),
+                &child,
+                0,
+                clipping,
+            );
         }
 
         drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
@@ -340,9 +342,13 @@ impl NodeTrait for NodeUse {
 
             drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
-            let boxed_child = box_node(child.clone());
-            drawing_ctx::draw_node_from_stack(draw_ctx, values, boxed_child, 1, clipping);
-            rsvg_node_unref(boxed_child);
+            drawing_ctx::draw_node_from_stack(
+                draw_ctx,
+                DrawCascade::CascadeFrom(values),
+                &child,
+                1,
+                clipping,
+            );
 
             drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
 

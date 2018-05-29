@@ -1,3 +1,5 @@
+use std::ptr;
+
 use cairo;
 use cairo_sys;
 use glib::translate::*;
@@ -13,9 +15,9 @@ use coord_units::CoordUnits;
 use filters::rsvg_filter_render;
 use iri::IRI;
 use mask::NodeMask;
-use node::{box_node, NodeType, RsvgNode};
+use node::{box_node, DrawCascade, NodeType, RsvgNode};
 use rect::RectangleExt;
-use state::{ClipPath, CompOp, ComputedValues, EnableBackground, Filter, Mask, RsvgComputedValues};
+use state::{ClipPath, CompOp, ComputedValues, EnableBackground, Filter, Mask};
 use unitinterval::UnitInterval;
 
 pub enum RsvgDrawingCtx {}
@@ -67,14 +69,6 @@ extern "C" {
     );
 
     fn rsvg_drawing_ctx_get_bbox(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgBbox;
-
-    fn rsvg_drawing_ctx_draw_node_from_stack(
-        draw_ctx: *const RsvgDrawingCtx,
-        values: RsvgComputedValues,
-        node: *const RsvgNode,
-        dominate: i32,
-        clipping: glib_sys::gboolean,
-    );
 
     fn rsvg_drawing_ctx_is_testing(draw_ctx: *const RsvgDrawingCtx) -> glib_sys::gboolean;
 }
@@ -237,24 +231,6 @@ pub fn set_bbox(draw_ctx: *mut RsvgDrawingCtx, bbox: &BoundingBox) {
     let draw_ctx_bbox = get_bbox_mut(draw_ctx);
 
     *draw_ctx_bbox = *bbox;
-}
-
-pub fn draw_node_from_stack(
-    draw_ctx: *const RsvgDrawingCtx,
-    values: &ComputedValues,
-    node: *const RsvgNode,
-    dominate: i32,
-    clipping: bool,
-) {
-    unsafe {
-        rsvg_drawing_ctx_draw_node_from_stack(
-            draw_ctx,
-            values as RsvgComputedValues,
-            node,
-            dominate,
-            clipping.to_glib(),
-        );
-    }
 }
 
 pub fn get_bbox_mut<'a>(draw_ctx: *const RsvgDrawingCtx) -> &'a mut BoundingBox {
@@ -489,6 +465,64 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
     unsafe {
         rsvg_drawing_ctx_pop_bounding_box(draw_ctx);
     }
+}
+
+extern "C" {
+    fn rsvg_drawing_ctx_should_draw_node_from_stack(
+        draw_ctx: *const RsvgDrawingCtx,
+        raw_node: *const RsvgNode,
+        out_stacksave: *mut *const libc::c_void,
+    ) -> glib_sys::gboolean;
+
+    fn rsvg_drawing_ctx_restore_stack(
+        draw_ctx: *const RsvgDrawingCtx,
+        stacksave: *const libc::c_void,
+    );
+
+}
+
+pub fn draw_node_from_stack(
+    draw_ctx: *mut RsvgDrawingCtx,
+    cascade: DrawCascade,
+    node: &RsvgNode,
+    dominate: i32,
+    clipping: bool,
+) {
+    let mut stacksave = ptr::null();
+
+    unsafe {
+        let should_draw = from_glib(rsvg_drawing_ctx_should_draw_node_from_stack(
+            draw_ctx,
+            node as *const RsvgNode,
+            &mut stacksave,
+        ));
+
+        if should_draw {
+            let values = &node.get_computed_values();
+            if values.is_visible() {
+                node.draw(node, cascade, draw_ctx, dominate, clipping);
+            }
+        }
+
+        rsvg_drawing_ctx_restore_stack(draw_ctx, stacksave);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
+    draw_ctx: *mut RsvgDrawingCtx,
+    raw_node: *const RsvgNode,
+    dominate: i32,
+    clipping: glib_sys::gboolean,
+) {
+    assert!(!draw_ctx.is_null());
+
+    assert!(!raw_node.is_null());
+    let node = unsafe { &*raw_node };
+
+    let clipping: bool = from_glib(clipping);
+
+    draw_node_from_stack(draw_ctx, DrawCascade::NodeValues, node, dominate, clipping);
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);

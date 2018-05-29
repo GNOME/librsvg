@@ -40,7 +40,10 @@ pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
-pub use drawing_ctx::rsvg_drawing_ctx_transformed_image_bounding_box;
+pub use drawing_ctx::{
+    rsvg_drawing_ctx_draw_node_from_stack,
+    rsvg_drawing_ctx_transformed_image_bounding_box,
+};
 
 pub use filter_context::{
     rsvg_filter_context_get_affine,
@@ -87,7 +90,6 @@ pub use node::{
     rsvg_node_children_iter_end,
     rsvg_node_children_iter_next,
     rsvg_node_children_iter_next_back,
-    rsvg_node_draw,
     rsvg_node_get_parent,
     rsvg_node_get_type,
     rsvg_node_is_same,
@@ -95,7 +97,6 @@ pub use node::{
     rsvg_node_set_attribute_parse_error,
     rsvg_node_set_atts,
     rsvg_node_unref,
-    rsvg_node_values_is_visible,
     rsvg_root_node_cascade,
 };
 

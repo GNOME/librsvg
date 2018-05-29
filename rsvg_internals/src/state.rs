@@ -215,6 +215,14 @@ impl ComputedValues {
         }
     }
 
+    pub fn is_visible(&self) -> bool {
+        match (self.display, self.visibility) {
+            (Display::None, _) => false,
+            (_, Visibility::Visible) => true,
+            _ => false,
+        }
+    }
+
     pub fn text_gravity_is_vertical(&self) -> bool {
         match self.writing_mode {
             WritingMode::Tb | WritingMode::TbRl => true,
