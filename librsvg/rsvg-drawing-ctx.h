@@ -82,6 +82,16 @@ void rsvg_drawing_ctx_release_node              (RsvgDrawingCtx * ctx, RsvgNode 
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node);
+
+G_GNUC_INTERNAL
+gboolean rsvg_drawing_ctx_should_draw_node_from_stack (RsvgDrawingCtx *ctx,
+                                                       RsvgNode *node,
+                                                       GSList **out_stacksave);
+
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_restore_stack (RsvgDrawingCtx *ctx,
+                                     GSList *stacksave);
+
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                             RsvgComputedValues *values,

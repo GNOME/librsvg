@@ -336,6 +336,36 @@ rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, Rsvg
     }
 }
 
+gboolean
+rsvg_drawing_ctx_should_draw_node_from_stack (RsvgDrawingCtx *ctx,
+                                              RsvgNode *node,
+                                              GSList **out_stacksave)
+{
+    GSList *stacksave;
+    gboolean should_draw = TRUE;
+
+    stacksave = ctx->drawsub_stack;
+    if (stacksave) {
+        RsvgNode *stack_node = stacksave->data;
+
+        if (!rsvg_node_is_same (stack_node, node)) {
+            should_draw = FALSE;
+        }
+
+        ctx->drawsub_stack = stacksave->next;
+    }
+
+    *out_stacksave = stacksave;
+    return should_draw;
+}
+
+void
+rsvg_drawing_ctx_restore_stack (RsvgDrawingCtx *ctx,
+                                GSList *stacksave)
+{
+    ctx->drawsub_stack = stacksave;
+}
+
 void
 rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                        RsvgComputedValues *values,
@@ -345,21 +375,13 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
 {
     GSList *stacksave;
 
-    stacksave = ctx->drawsub_stack;
-    if (stacksave) {
-        RsvgNode *stack_node = stacksave->data;
-
-        if (!rsvg_node_is_same (stack_node, node))
-            return;
-
-        ctx->drawsub_stack = stacksave->next;
+    if (rsvg_drawing_ctx_should_draw_node_from_stack (ctx, node, &stacksave)) {
+        if (rsvg_node_values_is_visible (node)) {
+            rsvg_node_draw (node, values, ctx, dominate, clipping);
+        }
     }
 
-    if (rsvg_node_values_is_visible (node)) {
-        rsvg_node_draw (node, values, ctx, dominate, clipping);
-    }
-
-    ctx->drawsub_stack = stacksave;
+    rsvg_drawing_ctx_restore_stack (ctx, stacksave);
 }
 
 double
