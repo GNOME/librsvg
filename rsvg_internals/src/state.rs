@@ -1381,19 +1381,6 @@ pub extern "C" fn rsvg_state_parse_style_pair(
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_affine(state: *const RsvgState) -> cairo::Matrix {
-    let state = from_c(state);
-
-    state.affine
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_set_affine(state: *mut RsvgState, affine: cairo::Matrix) {
-    let state = from_c_mut(state);
-    state.affine = affine;
-}
-
 extern "C" {
     fn rsvg_lookup_apply_css_style(
         handle: *const RsvgHandle,
