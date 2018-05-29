@@ -78,7 +78,8 @@ impl FilterContext {
     ) -> Self {
         assert!(!filter.is_null());
 
-        let values = &filter_node.get_cascaded_values();
+        let cascaded = filter_node.get_cascaded_values();
+        let values = cascaded.get();
 
         let cr_affine = drawing_ctx::get_cairo_context(draw_ctx).get_matrix();
         let bbox = drawing_ctx::get_bbox(draw_ctx);
@@ -128,7 +129,7 @@ impl FilterContext {
 
         let last_result = FilterResult {
             surface: rv.source_surface.clone(),
-            bounds: rv.compute_bounds(values, None, None, None, None),
+            bounds: rv.compute_bounds(&values, None, None, None, None),
         };
 
         rv.last_result = Some(last_result);
@@ -359,7 +360,8 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
 
     let ctx = &*ctx;
 
-    let values = &ctx.node.get_cascaded_values();
+    let cascaded = ctx.node.get_cascaded_values();
+    let values = cascaded.get();
 
     match ctx.last_result {
         Some(FilterResult {
@@ -371,7 +373,7 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
         },
         None => RsvgFilterPrimitiveOutput {
             surface: ctx.source_surface.to_glib_none().0,
-            bounds: ctx.compute_bounds(values, None, None, None, None),
+            bounds: ctx.compute_bounds(&values, None, None, None, None),
         },
     }
 }
@@ -433,7 +435,8 @@ pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
     assert!(!ctx.is_null());
 
     let ctx = &*ctx;
-    let values = &ctx.node.get_cascaded_values();
+    let cascaded = ctx.node.get_cascaded_values();
+    let values = cascaded.get();
 
     let mut x = None;
     let mut y = None;
@@ -458,5 +461,5 @@ pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
         };
     }
 
-    ctx.compute_bounds(values, x, y, width, height)
+    ctx.compute_bounds(&values, x, y, width, height)
 }

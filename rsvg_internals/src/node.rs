@@ -5,7 +5,6 @@ use glib_sys;
 use libc;
 
 use std::cell::{Cell, Ref, RefCell};
-use std::ops::Deref;
 use std::ptr;
 use std::rc::{Rc, Weak};
 use std::str::FromStr;
@@ -45,19 +44,40 @@ pub enum DrawCascade<'a> {
 /// elsewhere in the SVG; it causes the instanced subtree to re-cascade from the computed values for
 /// the `<use>` element.
 ///
-/// This structure gets created by `Node.get_cascaded_values()`.  It is used simply through the
-/// `Deref` trait: you can write `&my_cascaded_values` and it will deref to a `&ComputedValues`
-/// whose fields you can access.
+/// This structure gets created by `Node.get_cascaded_values()`.  You can then call the `get()`
+/// method on the resulting `CascadedValues` to get a `&ComputedValues` whose fields you can access.
 pub struct CascadedValues<'a> {
-    node: &'a Node,
-    borrowed_values: Ref<'a, ComputedValues>,
+    inner: CascadedInner<'a>,
 }
 
-impl<'a> Deref for CascadedValues<'a> {
-    type Target = ComputedValues;
+enum CascadedInner<'a> {
+    FromNode(Ref<'a, ComputedValues>),
+    FromValues(ComputedValues),
+}
 
-    fn deref(&self) -> &ComputedValues {
-        &self.borrowed_values
+impl<'a> CascadedValues<'a> {
+    fn new_from_node(node: &Node) -> CascadedValues {
+        CascadedValues {
+            inner: CascadedInner::FromNode(node.values.borrow()),
+        }
+    }
+
+    fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
+        let mut v = values.clone();
+        let state = node.get_state();
+
+        state.to_computed_values(&mut v);
+        
+        CascadedValues {
+            inner: CascadedInner::FromValues(v),
+        }
+    }
+
+    pub fn get(&'a self) -> &'a ComputedValues {
+        match self.inner {
+            CascadedInner::FromNode(ref r) => &*r,
+            CascadedInner::FromValues(ref v) => v,
+        }
     }
 }
 
@@ -222,8 +242,7 @@ impl Node {
 
     pub fn get_cascaded_values(&self) -> CascadedValues {
         CascadedValues {
-            node: self,
-            borrowed_values: self.values.borrow(),
+            inner: CascadedInner::FromNode(self.values.borrow())
         }
     }
 
@@ -297,25 +316,11 @@ impl Node {
 
             cr.transform(self.get_transform());
 
-            match cascade {
-                DrawCascade::NodeValues => {
-                    self.node_impl.draw(
-                        node,
-                        &self.get_cascaded_values(),
-                        draw_ctx,
-                        dominate,
-                        clipping,
-                    );
-                }
+            // FIXME: pass the cascade
+            let cascaded = node.get_cascaded_values();
+            let values = cascaded.get();
 
-                DrawCascade::CascadeFrom(v) => {
-                    let mut v = v.clone();
-                    let state = self.get_state();
-
-                    state.to_computed_values(&mut v);
-                    self.node_impl.draw(node, &v, draw_ctx, dominate, clipping);
-                }
-            }
+            self.node_impl.draw(node, values, draw_ctx, dominate, clipping);
 
             cr.set_matrix(save_affine);
         }

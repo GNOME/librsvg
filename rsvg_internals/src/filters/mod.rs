@@ -84,10 +84,11 @@ impl Primitive {
 
     fn get_bounds(&self, ctx: &FilterContext) -> IRect {
         let node = ctx.get_filter_node();
-        let values = &node.get_cascaded_values();
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
 
         ctx.compute_bounds(
-            values,
+            &values,
             self.x.get(),
             self.y.get(),
             self.width.get(),

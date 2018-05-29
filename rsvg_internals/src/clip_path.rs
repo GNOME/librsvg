@@ -30,7 +30,8 @@ impl NodeClipPath {
     }
 
     pub fn to_cairo_context(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
-        let values = &node.get_cascaded_values();
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
 
         let clip_units = self.units.get();
 
@@ -53,7 +54,7 @@ impl NodeClipPath {
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
         cr.set_matrix(child_matrix);
 
-        node.draw_children(values, draw_ctx, -1, true);
+        node.draw_children(&values, draw_ctx, -1, true);
 
         // FIXME: this is an EPIC HACK to keep the clipping context from
         // accumulating bounding boxes.  We'll remove this later, when we

@@ -60,7 +60,8 @@ impl NodeMask {
     }
 
     pub fn generate_cairo_mask(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
-        let values = &node.get_cascaded_values();
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
 
         let width = drawing_ctx::get_width(draw_ctx) as i32;
         let height = drawing_ctx::get_height(draw_ctx) as i32;
@@ -77,10 +78,10 @@ impl NodeMask {
             drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
         }
 
-        let x = self.x.get().normalize(values, draw_ctx);
-        let y = self.y.get().normalize(values, draw_ctx);
-        let w = self.width.get().normalize(values, draw_ctx);
-        let h = self.height.get().normalize(values, draw_ctx);
+        let x = self.x.get().normalize(&values, draw_ctx);
+        let y = self.y.get().normalize(&values, draw_ctx);
+        let w = self.width.get().normalize(&values, draw_ctx);
+        let h = self.height.get().normalize(&values, draw_ctx);
 
         if mask_units == CoordUnits::ObjectBoundingBox {
             drawing_ctx::pop_view_box(draw_ctx);
@@ -123,7 +124,7 @@ impl NodeMask {
                 drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
             }
 
-            node.draw_children(values, draw_ctx, 0, false);
+            node.draw_children(&values, draw_ctx, 0, false);
 
             if content_units == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::pop_view_box(draw_ctx);

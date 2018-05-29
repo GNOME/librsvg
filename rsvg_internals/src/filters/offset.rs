@@ -72,12 +72,13 @@ impl NodeTrait for Offset {
 
 impl Filter for Offset {
     fn render(&self, node: &RsvgNode, ctx: &mut FilterContext) {
-        let values = &node.get_cascaded_values();
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
 
         let bounds = self.base.get_bounds(ctx);
 
-        let dx = self.dx.get().normalize(values, ctx.drawing_context());
-        let dy = self.dy.get().normalize(values, ctx.drawing_context());
+        let dx = self.dx.get().normalize(&values, ctx.drawing_context());
+        let dy = self.dy.get().normalize(&values, ctx.drawing_context());
         let paffine = ctx.paffine();
         let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;

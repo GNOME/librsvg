@@ -120,10 +120,11 @@ impl NodeMarker {
         line_width: f64,
         clipping: bool,
     ) {
-        let values = &node.get_cascaded_values();
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
 
-        let marker_width = self.width.get().normalize(values, draw_ctx);
-        let marker_height = self.height.get().normalize(values, draw_ctx);
+        let marker_width = self.width.get().normalize(&values, draw_ctx);
+        let marker_height = self.height.get().normalize(&values, draw_ctx);
 
         if marker_width.approx_eq_cairo(&0.0) || marker_height.approx_eq_cairo(&0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
@@ -164,17 +165,17 @@ impl NodeMarker {
             cr.set_matrix(affine);
 
             drawing_ctx::push_view_box(draw_ctx, vbox.0.width, vbox.0.height);
-            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
+            drawing_ctx::push_discrete_layer(draw_ctx, &values, clipping);
         } else {
             cr.set_matrix(affine);
 
             drawing_ctx::push_view_box(draw_ctx, marker_width, marker_height);
-            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
+            drawing_ctx::push_discrete_layer(draw_ctx, &values, clipping);
         }
 
         affine.translate(
-            -self.ref_x.get().normalize(values, draw_ctx),
-            -self.ref_y.get().normalize(values, draw_ctx),
+            -self.ref_x.get().normalize(&values, draw_ctx),
+            -self.ref_y.get().normalize(&values, draw_ctx),
         );
 
         let cr2 = drawing_ctx::get_cairo_context(draw_ctx);
@@ -188,9 +189,9 @@ impl NodeMarker {
             }
         }
 
-        node.draw_children(values, draw_ctx, -1, clipping); // dominate=-1 so it won't push a layer
+        node.draw_children(&values, draw_ctx, -1, clipping); // dominate=-1 so it won't push a layer
 
-        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+        drawing_ctx::pop_discrete_layer(draw_ctx, &values, clipping);
         drawing_ctx::pop_view_box(draw_ctx);
 
         cr.restore();
