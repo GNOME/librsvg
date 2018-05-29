@@ -419,7 +419,7 @@ fn set_pattern_on_draw_context(
 
     // Draw everything
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();
-    let pattern_values = &pattern_node.get_computed_values();
+    let pattern_values = &pattern_node.get_cascaded_values();
 
     drawing_ctx::push_discrete_layer(draw_ctx, pattern_values, false);
 
@@ -482,7 +482,7 @@ pub fn pattern_resolve_fallbacks_and_set_pattern(
 
     node.with_impl(|node_pattern: &NodePattern| {
         let pattern = &*node_pattern.pattern.borrow();
-        let values = &node.get_computed_values();
+        let values = &node.get_cascaded_values();
         did_set_pattern = resolve_fallbacks_and_set_pattern(pattern, values, draw_ctx, bbox);
     });
 

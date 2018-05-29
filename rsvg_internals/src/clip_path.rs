@@ -30,7 +30,7 @@ impl NodeClipPath {
     }
 
     pub fn to_cairo_context(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
-        let values = &node.get_computed_values();
+        let values = &node.get_cascaded_values();
 
         let clip_units = self.units.get();
 

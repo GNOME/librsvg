@@ -72,7 +72,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);
 
-    let values = &filter_node.get_computed_values() as &ComputedValues;
+    let values = &filter_node.get_cascaded_values() as &ComputedValues;
 
     let mut channelmap_arr = [0; 4];
     for i in 0..4 {
@@ -104,7 +104,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
                 let filter = &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive);
                 (filter.render.unwrap())(
                     &mut c,
-                    &c.get_computed_values() as &ComputedValues as RsvgComputedValues,
+                    &c.get_cascaded_values() as &ComputedValues as RsvgComputedValues,
                     filter,
                     &mut filter_ctx,
                 );

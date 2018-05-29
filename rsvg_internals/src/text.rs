@@ -626,7 +626,7 @@ fn measure_child(
 
     // FIXME: if we are inside a <use>, look at the dominate and
     // cascade, otherwise use the node's computed values
-    let child_values = &node.get_computed_values();
+    let child_values = &node.get_cascaded_values();
 
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
@@ -691,7 +691,7 @@ fn render_child(
 
     // FIXME: if we are inside a <use>, look at the dominate and
     // cascade, otherwise use the node's computed values
-    let child_values = &node.get_computed_values();
+    let child_values = &node.get_cascaded_values();
 
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {

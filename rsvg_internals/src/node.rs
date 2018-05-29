@@ -45,7 +45,7 @@ pub enum DrawCascade<'a> {
 /// elsewhere in the SVG; it causes the instanced subtree to re-cascade from the computed values for
 /// the `<use>` element.
 ///
-/// This structure gets created by `Node.get_computed_values()`.  It is used simply through the
+/// This structure gets created by `Node.get_cascaded_values()`.  It is used simply through the
 /// `Deref` trait: you can write `&my_cascaded_values` and it will deref to a `&ComputedValues`
 /// whose fields you can access.
 pub struct CascadedValues<'a> {
@@ -220,7 +220,7 @@ impl Node {
         *self.values.borrow_mut() = values.clone();
     }
 
-    pub fn get_computed_values(&self) -> CascadedValues {
+    pub fn get_cascaded_values(&self) -> CascadedValues {
         CascadedValues {
             node: self,
             borrowed_values: self.values.borrow(),
@@ -301,7 +301,7 @@ impl Node {
                 DrawCascade::NodeValues => {
                     self.node_impl.draw(
                         node,
-                        &self.get_computed_values(),
+                        &self.get_cascaded_values(),
                         draw_ctx,
                         dominate,
                         clipping,

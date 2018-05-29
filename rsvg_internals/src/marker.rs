@@ -120,7 +120,7 @@ impl NodeMarker {
         line_width: f64,
         clipping: bool,
     ) {
-        let values = &node.get_computed_values();
+        let values = &node.get_cascaded_values();
 
         let marker_width = self.width.get().normalize(values, draw_ctx);
         let marker_height = self.height.get().normalize(values, draw_ctx);

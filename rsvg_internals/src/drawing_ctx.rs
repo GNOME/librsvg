@@ -498,7 +498,7 @@ pub fn draw_node_from_stack(
         ));
 
         if should_draw {
-            let values = &node.get_computed_values();
+            let values = &node.get_cascaded_values();
             if values.is_visible() {
                 node.draw(node, cascade, draw_ctx, dominate, clipping);
             }

@@ -78,7 +78,7 @@ impl FilterContext {
     ) -> Self {
         assert!(!filter.is_null());
 
-        let values = &filter_node.get_computed_values();
+        let values = &filter_node.get_cascaded_values();
 
         let cr_affine = drawing_ctx::get_cairo_context(draw_ctx).get_matrix();
         let bbox = drawing_ctx::get_bbox(draw_ctx);
@@ -359,7 +359,7 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
 
     let ctx = &*ctx;
 
-    let values = &ctx.node.get_computed_values();
+    let values = &ctx.node.get_cascaded_values();
 
     match ctx.last_result {
         Some(FilterResult {
@@ -433,7 +433,7 @@ pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
     assert!(!ctx.is_null());
 
     let ctx = &*ctx;
-    let values = &ctx.node.get_computed_values();
+    let values = &ctx.node.get_cascaded_values();
 
     let mut x = None;
     let mut y = None;

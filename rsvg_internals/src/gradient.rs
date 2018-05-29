@@ -364,7 +364,7 @@ impl Gradient {
             .take_while(|child| child.get_result().is_ok())
             .for_each(|child| {
                 child.with_impl(|stop: &NodeStop| {
-                    let values = &child.get_computed_values();
+                    let values = &child.get_cascaded_values();
                     let rgba = match values.stop_color {
                         StopColor(cssparser::Color::CurrentColor) => values.color.0,
                         StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
@@ -768,7 +768,7 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
 
     node.with_impl(|node_gradient: &NodeGradient| {
         let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
-        let values = &node.get_computed_values();
+        let values = &node.get_cascaded_values();
         did_set_gradient =
             resolve_fallbacks_and_set_pattern(&gradient, values, draw_ctx, opacity, bbox);
     });

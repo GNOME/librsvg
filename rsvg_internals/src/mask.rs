@@ -60,7 +60,7 @@ impl NodeMask {
     }
 
     pub fn generate_cairo_mask(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
-        let values = &node.get_computed_values();
+        let values = &node.get_cascaded_values();
 
         let width = drawing_ctx::get_width(draw_ctx) as i32;
         let height = drawing_ctx::get_height(draw_ctx) as i32;
