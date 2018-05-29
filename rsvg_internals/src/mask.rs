@@ -93,6 +93,7 @@ impl NodeMask {
 
             let mask_cr = cairo::Context::new(&surface);
             mask_cr.set_matrix(save_cr.get_matrix());
+            mask_cr.transform(node.get_transform());
 
             drawing_ctx::set_cairo_context(draw_ctx, &mask_cr);
 
@@ -102,14 +103,13 @@ impl NodeMask {
 
                 draw::add_clipping_rect(
                     draw_ctx,
-                    &node.get_transform(),
                     x * rect.width + rect.x,
                     y * rect.height + rect.y,
                     w * rect.width,
                     h * rect.height,
                 );
             } else {
-                draw::add_clipping_rect(draw_ctx, &node.get_transform(), x, y, w, h);
+                draw::add_clipping_rect(draw_ctx, x, y, w, h);
             }
 
             if content_units == CoordUnits::ObjectBoundingBox {

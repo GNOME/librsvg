@@ -127,7 +127,7 @@ impl NodeTrait for NodeImage {
             let aspect = self.aspect.get();
 
             if !values.is_overflow() && aspect.is_slice() {
-                add_clipping_rect(draw_ctx, &cr.get_matrix(), x, y, w, h);
+                add_clipping_rect(draw_ctx, x, y, w, h);
             }
 
             let (x, y, w, h) = aspect.compute(

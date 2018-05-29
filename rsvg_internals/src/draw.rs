@@ -490,19 +490,16 @@ pub fn draw_surface(
     drawing_ctx::insert_bbox(draw_ctx, &bbox);
 }
 
-pub fn add_clipping_rect(
-    draw_ctx: *mut RsvgDrawingCtx,
-    affine: &cairo::Matrix,
-    x: f64,
-    y: f64,
-    w: f64,
-    h: f64,
-) {
+/// Adds a clipping rectangle to the curent Cairo context
+pub fn add_clipping_rect(draw_ctx: *mut RsvgDrawingCtx, x: f64, y: f64, w: f64, h: f64) {
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
-    cr.set_matrix(*affine);
+
+    let save_affine = cr.get_matrix();
 
     set_affine_on_cr(draw_ctx, &cr);
 
     cr.rectangle(x, y, w, h);
     cr.clip();
+
+    cr.set_matrix(save_affine);
 }
