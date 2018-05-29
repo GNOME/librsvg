@@ -104,7 +104,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
                 let filter = &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive);
                 (filter.render.unwrap())(
                     &mut c,
-                    values as RsvgComputedValues,
+                    &c.get_computed_values() as &ComputedValues as RsvgComputedValues,
                     filter,
                     &mut filter_ctx,
                 );
