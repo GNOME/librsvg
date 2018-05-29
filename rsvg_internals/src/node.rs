@@ -453,7 +453,7 @@ pub fn boxed_node_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
-        rsvg_state_new(ptr::null_mut()),
+        rsvg_state_new(),
         node_impl,
     )))
 }

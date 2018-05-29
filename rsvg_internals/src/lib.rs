@@ -131,7 +131,6 @@ pub use state::{
     rsvg_state_free,
     rsvg_state_get_affine,
     rsvg_state_new,
-    rsvg_state_parent,
     rsvg_state_parse_style_pair,
     rsvg_state_set_affine,
 };
