@@ -468,8 +468,13 @@ rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
     cairo_t *save_cr = ctx->cr;
     cairo_t *save_initial_cr = ctx->initial_cr;
     cairo_rectangle_t save_rect = ctx->rect;
+    cairo_matrix_t save_affine;
+
+    cairo_get_matrix (save_cr, &save_affine);
 
     ctx->cr = cairo_create (surface);
+    cairo_set_matrix (ctx->cr, &save_affine);
+
     ctx->initial_cr = ctx->cr;
     ctx->rect.x = 0;
     ctx->rect.y = 0;
