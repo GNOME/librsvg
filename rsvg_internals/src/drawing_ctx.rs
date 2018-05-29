@@ -15,7 +15,7 @@ use coord_units::CoordUnits;
 use filters::rsvg_filter_render;
 use iri::IRI;
 use mask::NodeMask;
-use node::{box_node, DrawCascade, NodeType, RsvgNode};
+use node::{box_node, CascadedValues, NodeType, RsvgNode};
 use rect::RectangleExt;
 use state::{ClipPath, CompOp, ComputedValues, EnableBackground, Filter, Mask};
 use unitinterval::UnitInterval;
@@ -483,7 +483,7 @@ extern "C" {
 
 pub fn draw_node_from_stack(
     draw_ctx: *mut RsvgDrawingCtx,
-    cascade: DrawCascade,
+    cascaded: &CascadedValues,
     node: &RsvgNode,
     dominate: i32,
     clipping: bool,
@@ -498,11 +498,9 @@ pub fn draw_node_from_stack(
         ));
 
         if should_draw {
-            let cascaded = node.get_cascaded_values();
             let values = cascaded.get();
-
             if values.is_visible() {
-                node.draw(node, cascade, draw_ctx, dominate, clipping);
+                node.draw(node, cascaded, draw_ctx, dominate, clipping);
             }
         }
 
@@ -524,7 +522,13 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
 
     let clipping: bool = from_glib(clipping);
 
-    draw_node_from_stack(draw_ctx, DrawCascade::NodeValues, node, dominate, clipping);
+    draw_node_from_stack(
+        draw_ctx,
+        &node.get_cascaded_values(),
+        node,
+        dominate,
+        clipping,
+    );
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);

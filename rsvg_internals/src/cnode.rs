@@ -4,7 +4,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
 use property_bag::PropertyBag;
-use state::{rsvg_state_new, ComputedValues};
+use state::rsvg_state_new;
 
 use std::rc::*;
 
@@ -45,7 +45,7 @@ impl NodeTrait for CNode {
     fn draw(
         &self,
         _node: &RsvgNode,
-        _values: &ComputedValues,
+        _cascaded: &CascadedValues,
         _draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         _clipping: bool,

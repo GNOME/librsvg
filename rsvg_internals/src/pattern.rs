@@ -230,7 +230,7 @@ impl NodeTrait for NodePattern {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 
@@ -425,7 +425,7 @@ fn set_pattern_on_draw_context(
     drawing_ctx::push_discrete_layer(draw_ctx, pattern_values, false);
 
     cr_pattern.set_matrix(caffine);
-    pattern_node.draw_children(pattern_values, draw_ctx, -1, false);
+    pattern_node.draw_children(&pattern_cascaded, draw_ctx, -1, false);
 
     drawing_ctx::pop_discrete_layer(draw_ctx, pattern_values, false);
 

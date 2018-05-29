@@ -28,14 +28,6 @@ pub type RsvgNode = Rc<Node>;
 // struct for a particular node type.
 pub enum RsvgCNodeImpl {}
 
-pub enum DrawCascade<'a> {
-    /// Node should use its own computed values
-    NodeValues,
-
-    /// Node should cascade from the given values, for instancing with the Use element
-    CascadeFrom(&'a ComputedValues),
-}
-
 /// Can obtain computed values from a node
 ///
 /// In our tree of SVG elements (Node in our parlance), each node stores a `ComputedValues` that
@@ -56,23 +48,52 @@ enum CascadedInner<'a> {
 }
 
 impl<'a> CascadedValues<'a> {
+    /// Creates a `CascadedValues` that has the same cascading mode as &self
+    ///
+    /// This is what nodes should normally use to draw their children from their `draw()` method.
+    /// Nodes that need to override the cascade for their children can use `new_from_values()`
+    /// instead.
+    pub fn new(&self, node: &'a Node) -> CascadedValues<'a> {
+        match self.inner {
+            CascadedInner::FromNode(_) => CascadedValues {
+                inner: CascadedInner::FromNode(node.values.borrow()),
+            },
+
+            CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, v),
+        }
+    }
+
+    /// Creates a `CascadedValues` that will hold the `node`'s computed values
+    ///
+    /// This is to be used only in the toplevel drawing function, or in elements like `<marker>`
+    /// that don't propagate their parent's cascade to their children.  All others should use
+    /// `new()` to derive the cascade from an existing one.
     fn new_from_node(node: &Node) -> CascadedValues {
         CascadedValues {
             inner: CascadedInner::FromNode(node.values.borrow()),
         }
     }
 
-    fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
+    /// Creates a `CascadedValues` that will override the `node`'s cascade with the specified
+    /// `values`
+    ///
+    /// This is for the `<use>` element, which draws the element which it references with the
+    /// `<use>`'s own cascade, not wih the element's original cascade.
+    pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
         let mut v = values.clone();
         let state = node.get_state();
 
         state.to_computed_values(&mut v);
-        
+
         CascadedValues {
             inner: CascadedInner::FromValues(v),
         }
     }
 
+    /// Returns the cascaded `ComputedValues`.
+    ///
+    /// Nodes should use this from their `NodeTrait::draw()` implementation to get the
+    /// `ComputedValues` from the `CascadedValues` that got passed to `draw()`.
     pub fn get(&'a self) -> &'a ComputedValues {
         match self.inner {
             CascadedInner::FromNode(ref r) => &*r,
@@ -92,7 +113,7 @@ pub trait NodeTrait: Downcast {
     fn draw(
         &self,
         node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         dominate: i32,
         clipping: bool,
@@ -241,9 +262,7 @@ impl Node {
     }
 
     pub fn get_cascaded_values(&self) -> CascadedValues {
-        CascadedValues {
-            inner: CascadedInner::FromNode(self.values.borrow())
-        }
+        CascadedValues::new_from_node(self)
     }
 
     pub fn cascade(&self, values: &ComputedValues) {
@@ -305,7 +324,7 @@ impl Node {
     pub fn draw(
         &self,
         node: &RsvgNode,
-        cascade: DrawCascade,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         dominate: i32,
         clipping: bool,
@@ -316,11 +335,8 @@ impl Node {
 
             cr.transform(self.get_transform());
 
-            // FIXME: pass the cascade
-            let cascaded = node.get_cascaded_values();
-            let values = cascaded.get();
-
-            self.node_impl.draw(node, values, draw_ctx, dominate, clipping);
+            self.node_impl
+                .draw(node, cascaded, draw_ctx, dominate, clipping);
 
             cr.set_matrix(save_affine);
         }
@@ -352,11 +368,13 @@ impl Node {
 
     pub fn draw_children(
         &self,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         if dominate != -1 {
             drawing_ctx::push_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
         }
@@ -364,7 +382,7 @@ impl Node {
         for child in self.children() {
             drawing_ctx::draw_node_from_stack(
                 draw_ctx,
-                DrawCascade::CascadeFrom(values),
+                &CascadedValues::new(cascaded, &child),
                 &child,
                 0,
                 clipping,
@@ -675,7 +693,7 @@ mod tests {
             Ok(())
         }
 
-        fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {}
+        fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {}
 
         fn get_c_impl(&self) -> *const RsvgCNodeImpl {
             unreachable!();

@@ -7,10 +7,17 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
-use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
+use node::{
+    boxed_node_new,
+    CascadedValues,
+    NodeResult,
+    NodeTrait,
+    NodeType,
+    RsvgCNodeImpl,
+    RsvgNode,
+};
 use parsers::parse;
 use property_bag::PropertyBag;
-use state::ComputedValues;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
@@ -31,7 +38,6 @@ impl NodeClipPath {
 
     pub fn to_cairo_context(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
         let cascaded = node.get_cascaded_values();
-        let values = cascaded.get();
 
         let clip_units = self.units.get();
 
@@ -54,7 +60,7 @@ impl NodeClipPath {
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
         cr.set_matrix(child_matrix);
 
-        node.draw_children(&values, draw_ctx, -1, true);
+        node.draw_children(&cascaded, draw_ctx, -1, true);
 
         // FIXME: this is an EPIC HACK to keep the clipping context from
         // accumulating bounding boxes.  We'll remove this later, when we
@@ -86,7 +92,7 @@ impl NodeTrait for NodeClipPath {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; clip paths are handled specially
     }
 

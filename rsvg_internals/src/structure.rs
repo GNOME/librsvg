@@ -14,7 +14,7 @@ use length::*;
 use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state::{ComputedValues, Overflow};
+use state::Overflow;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -35,12 +35,12 @@ impl NodeTrait for NodeGroup {
     fn draw(
         &self,
         node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         dominate: i32,
         clipping: bool,
     ) {
-        node.draw_children(values, draw_ctx, dominate, clipping);
+        node.draw_children(cascaded, draw_ctx, dominate, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -62,7 +62,7 @@ impl NodeTrait for NodeDefs {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -88,17 +88,19 @@ impl NodeTrait for NodeSwitch {
     fn draw(
         &self,
         node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
         if let Some(child) = node.children().find(|c| c.get_state().cond) {
             drawing_ctx::draw_node_from_stack(
                 draw_ctx,
-                DrawCascade::CascadeFrom(values),
+                &CascadedValues::new(cascaded, &child),
                 &child,
                 0,
                 clipping,
@@ -197,11 +199,13 @@ impl NodeTrait for NodeSvg {
     fn draw(
         &self,
         node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         let nx = self.x.get().normalize(values, draw_ctx);
         let ny = self.y.get().normalize(values, draw_ctx);
         let nw = self.w.get().normalize(values, draw_ctx);
@@ -223,7 +227,7 @@ impl NodeTrait for NodeSvg {
             draw_ctx,
             clipping,
             || {
-                node.draw_children(values, draw_ctx, -1, clipping); // dominate==-1 so it won't push a layer
+                node.draw_children(cascaded, draw_ctx, -1, clipping); // dominate==-1 so it won't push a layer
             },
         );
     }
@@ -286,11 +290,13 @@ impl NodeTrait for NodeUse {
     fn draw(
         &self,
         node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         let link = self.link.borrow();
 
         if link.is_none() {
@@ -344,7 +350,7 @@ impl NodeTrait for NodeUse {
 
             drawing_ctx::draw_node_from_stack(
                 draw_ctx,
-                DrawCascade::CascadeFrom(values),
+                &CascadedValues::new_from_values(&child, values),
                 &child,
                 1,
                 clipping,
@@ -373,12 +379,13 @@ impl NodeTrait for NodeUse {
                     clipping,
                     || {
                         drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-                        child.draw_children(values, draw_ctx, -1, clipping); // FIXME: cascade values to child
-                        drawing_ctx::pop_discrete_layer(
+                        child.draw_children(
+                            &CascadedValues::new_from_values(&child, values),
                             draw_ctx,
-                            values, // FIXME: cascade values to child
+                            -1,
                             clipping,
                         );
+                        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
                     },
                 );
             });
@@ -427,7 +434,7 @@ impl NodeTrait for NodeSymbol {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 

@@ -11,10 +11,17 @@ use drawing_ctx::RsvgDrawingCtx;
 use filter_context::{FilterContext, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
-use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
+use node::{
+    boxed_node_new,
+    CascadedValues,
+    NodeResult,
+    NodeTrait,
+    NodeType,
+    RsvgCNodeImpl,
+    RsvgNode,
+};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
-use state::ComputedValues;
 
 use super::{Filter, PrimitiveWithInput};
 
@@ -60,7 +67,7 @@ impl NodeTrait for Offset {
     }
 
     #[inline]
-    fn draw(&self, _: &RsvgNode, _: &ComputedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // Nothing; filters are drawn in rsvg-cairo-draw.c.
     }
 

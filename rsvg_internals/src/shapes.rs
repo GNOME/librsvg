@@ -128,11 +128,13 @@ impl NodeTrait for NodePath {
     fn draw(
         &self,
         _node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         if let Some(ref builder) = *self.builder.borrow() {
             render_path_builder(builder, draw_ctx, values, true, clipping);
         }
@@ -190,11 +192,13 @@ impl NodeTrait for NodePoly {
     fn draw(
         &self,
         _node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         if let Some(ref points) = *self.points.borrow() {
             let mut builder = PathBuilder::new();
 
@@ -260,11 +264,13 @@ impl NodeTrait for NodeLine {
     fn draw(
         &self,
         _node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         let mut builder = PathBuilder::new();
 
         let x1 = self.x1.get().normalize(values, draw_ctx);
@@ -352,11 +358,13 @@ impl NodeTrait for NodeRect {
     fn draw(
         &self,
         _node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         let x = self.x.get().normalize(values, draw_ctx);
         let y = self.y.get().normalize(values, draw_ctx);
 
@@ -541,11 +549,13 @@ impl NodeTrait for NodeCircle {
     fn draw(
         &self,
         _node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         let cx = self.cx.get().normalize(values, draw_ctx);
         let cy = self.cy.get().normalize(values, draw_ctx);
         let r = self.r.get().normalize(values, draw_ctx);
@@ -609,11 +619,13 @@ impl NodeTrait for NodeEllipse {
     fn draw(
         &self,
         _node: &RsvgNode,
-        values: &ComputedValues,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _dominate: i32,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         let cx = self.cx.get().normalize(values, draw_ctx);
         let cy = self.cy.get().normalize(values, draw_ctx);
         let rx = self.rx.get().normalize(values, draw_ctx);
