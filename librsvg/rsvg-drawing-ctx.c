@@ -460,8 +460,7 @@ rsvg_drawing_ctx_is_testing (RsvgDrawingCtx *ctx)
 
 void
 rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
-                                       RsvgComputedValues *values,
-                                       RsvgNode *drawable,
+                                       RsvgNode *node,
                                        cairo_surface_t *surface,
                                        double width,
                                        double height)
@@ -477,7 +476,7 @@ rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
     ctx->rect.width = width;
     ctx->rect.height = height;
 
-    rsvg_drawing_ctx_draw_node_from_stack (ctx, values, drawable, 0, FALSE);
+    rsvg_drawing_ctx_draw_node_from_stack (ctx, NULL, node, 0, FALSE);
 
     cairo_destroy (ctx->cr);
     ctx->cr = save_cr;
