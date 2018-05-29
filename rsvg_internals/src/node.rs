@@ -37,6 +37,17 @@ pub enum DrawCascade<'a> {
     CascadeFrom(&'a ComputedValues),
 }
 
+/// Can obtain computed values from a node
+///
+/// In our tree of SVG elements (Node in our parlance), each node stores a `ComputedValues` that
+/// gets computed during the initial CSS cascade.  However, sometimes nodes need to be rendered
+/// outside the normal hierarchy.  For example, the `<use>` element can "instance" a subtree from
+/// elsewhere in the SVG; it causes the instanced subtree to re-cascade from the computed values for
+/// the `<use>` element.
+///
+/// This structure gets created by `Node.get_computed_values()`.  It is used simply through the
+/// `Deref` trait: you can write `&my_cascaded_values` and it will deref to a `&ComputedValues`
+/// whose fields you can access.
 pub struct CascadedValues<'a> {
     node: &'a Node,
     borrowed_values: Ref<'a, ComputedValues>,
