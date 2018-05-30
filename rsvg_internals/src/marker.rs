@@ -21,7 +21,7 @@ use parsers::ParseError;
 use parsers::{parse, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
-use state::{ComputedValues, SpecifiedValue};
+use state::{ComputedValues, SpecifiedValue, State};
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -247,9 +247,8 @@ impl NodeTrait for NodeMarker {
         Ok(())
     }
 
-    fn set_overriden_properties(&self, node: &RsvgNode) {
+    fn set_overriden_properties(&self, state: &mut State) {
         // markers are always displayed, even if <marker> or its ancestors are display:none
-        let state = node.get_state_mut();
         state.values.display = SpecifiedValue::Specified(Default::default());
     }
 
