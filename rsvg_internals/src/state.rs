@@ -1,4 +1,3 @@
-use cairo::{self, MatrixTrait};
 use cssparser;
 use glib;
 use glib::translate::*;
@@ -91,7 +90,6 @@ pub enum RsvgState {}
 /// `.unwrap_or_default()` to get the default value for the property.
 
 pub struct State {
-    pub affine: cairo::Matrix,
     pub values: SpecifiedValues,
     important_styles: RefCell<HashSet<Attribute>>,
     pub cond: bool,
@@ -342,7 +340,6 @@ impl SpecifiedValues {
 impl State {
     fn new() -> State {
         State {
-            affine: cairo::Matrix::identity(),
             values: Default::default(),
             important_styles: Default::default(),
             cond: true,
@@ -1531,15 +1528,6 @@ fn parse_style_attrs(
                         break;
                     }
                 }
-
-                Attribute::Transform => match cairo::Matrix::parse(value, ()) {
-                    Ok(affine) => state.affine = cairo::Matrix::multiply(&affine, &state.affine),
-
-                    Err(e) => {
-                        node.set_error(NodeError::attribute_error(Attribute::Transform, e));
-                        break;
-                    }
-                },
 
                 _ => (),
             }
