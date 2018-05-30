@@ -167,6 +167,8 @@ struct RsvgHandlePrivate {
 
     gboolean is_testing; /* Are we being run from the test suite? */
 
+    gboolean already_cascaded;
+
 #ifdef HAVE_PANGOFT2
     FcConfig *font_config_for_testing;
     PangoFontMap *font_map_for_testing;
@@ -268,6 +270,9 @@ typedef enum {
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST                /* just a marker; not a valid type */
 } RsvgNodeType;
 
+/* Defined in rsvg_internals/src/state.rs */
+typedef struct _RsvgComputedValues *RsvgComputedValues;
+
 typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
 typedef void (* CNodeFree) (gpointer impl);
 
@@ -302,10 +307,6 @@ RsvgNode *rsvg_node_ref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_unref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
 
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-RsvgState *rsvg_node_get_state (RsvgNode *node);
-
 /* Implemented in rust/src/node.rs
  *
  * Returns a new strong reference to the parent (or NULL); use rsvg_node_unref()
@@ -324,7 +325,11 @@ void rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag att
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
-void rsvg_node_draw (RsvgNode *node, RsvgDrawingCtx *draw, int dominate, gboolean clipping);
+void rsvg_node_set_overriden_properties (RsvgNode *node);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+void rsvg_node_draw (RsvgNode *node, RsvgComputedValues *parent_values, RsvgDrawingCtx *draw, int dominate, gboolean clipping);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
@@ -350,11 +355,17 @@ gboolean rsvg_node_children_iter_next_back (RsvgNodeChildrenIter *iter,
 G_GNUC_INTERNAL
 void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
 
-/* generic function for drawing all of the children of a particular node */
-
-/* Implemented in rust/src/node.rs */
+/* Implemented in rust/src/state.rs */
 G_GNUC_INTERNAL
-void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, gboolean clipping);
+guint32 rsvg_computed_values_get_flood_color_argb (RsvgComputedValues *values);
+
+/* Implemented in rust/src/state.rs */
+G_GNUC_INTERNAL
+guint8 rsvg_computed_values_get_flood_opacity (RsvgComputedValues *values);
+
+/* Implemented in rust/src/state.rs */
+G_GNUC_INTERNAL
+guint32 rsvg_computed_values_get_lighting_color_argb (RsvgComputedValues *values);
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
@@ -433,7 +444,7 @@ void rsvg_bbox_get_rect (RsvgBbox *bbox, cairo_rectangle_t *rect, cairo_rectangl
 
 /* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
-double rsvg_length_normalize (const RsvgLength *length, RsvgDrawingCtx * ctx);
+double rsvg_length_normalize (const RsvgLength *length, RsvgComputedValues *values, RsvgDrawingCtx * ctx);
 
 /* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
@@ -445,6 +456,10 @@ double rsvg_length_hand_normalize (const RsvgLength *length,
 /* Implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
 RsvgLength rsvg_length_parse (const char *str, LengthDir dir);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+void rsvg_root_node_cascade(RsvgNode *node);
 
 G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
@@ -459,6 +474,9 @@ void rsvg_add_node_to_handle (RsvgHandle *handle, RsvgNode *node);
 G_GNUC_INTERNAL
 char *rsvg_handle_resolve_uri (RsvgHandle *handle,
                                const char *uri);
+
+G_GNUC_INTERNAL
+void rsvg_handle_cascade (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
 void rsvg_handle_update_font_map_for_testing (RsvgHandle *handle);

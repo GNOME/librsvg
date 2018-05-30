@@ -32,9 +32,8 @@
 #include "common.h"
 
 static void
-rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
-    RsvgState *state;
     guchar i;
     gint x, y;
     gint rowstride, height, width;
@@ -44,10 +43,8 @@ rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgFilterPrimitive *primiti
     char pixcolor[4];
     RsvgFilterPrimitiveOutput out;
 
-    state = rsvg_node_get_state (node);
-
-    guint32 color = rsvg_state_get_flood_color (state);
-    guint8 opacity = rsvg_state_get_flood_opacity (state);
+    guint32 color = rsvg_computed_values_get_flood_color_argb (values);
+    guint8 opacity = rsvg_computed_values_get_flood_opacity (values);
 
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 

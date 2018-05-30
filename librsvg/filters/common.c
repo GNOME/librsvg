@@ -88,9 +88,9 @@ filter_primitive_set_x_y_width_height_atts (RsvgFilterPrimitive *prim, RsvgPrope
 }
 
 static void
-rsvg_filter_primitive_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
-    primitive->render (node, primitive, ctx);
+    primitive->render (node, values, primitive, ctx);
 }
 
 // RsvgIRect
@@ -472,13 +472,13 @@ node_is_filter_primitive (RsvgNode *node)
 }
 
 void
-render_child_if_filter_primitive (RsvgNode *node, RsvgFilterContext *filter_ctx)
+render_child_if_filter_primitive (RsvgNode *node, RsvgComputedValues *values, RsvgFilterContext *filter_ctx)
 {
     if (node_is_filter_primitive (node)) {
         RsvgFilterPrimitive *primitive;
 
         primitive = rsvg_rust_cnode_get_impl (node);
-        rsvg_filter_primitive_render (node, primitive, filter_ctx);
+        rsvg_filter_primitive_render (node, values, primitive, filter_ctx);
     }
 }
 
@@ -575,11 +575,11 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
 
     cr = cairo_create (surface);
 
-    rsvg_drawing_ctx_get_offset (ctx, &x, &y);
+    rsvg_drawing_ctx_get_raw_offset (ctx, &x, &y);
 
     for (i = g_list_last (ctx->cr_stack); i != NULL; i = g_list_previous (i)) {
         cairo_t *draw = i->data;
-        gboolean nest = draw != ctx->initial_cr;
+        gboolean nest = rsvg_drawing_ctx_is_cairo_context_nested (ctx, draw);
         cairo_set_source_surface (cr, cairo_get_target (draw),
                                   nest ? 0 : -x,
                                   nest ? 0 : -y);

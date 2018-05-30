@@ -8,6 +8,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use error::*;
 use parsers::Parse;
 use parsers::ParseError;
+use state::{ComputedValues, RsvgComputedValues};
 use util::utf8_cstr;
 
 // Keep this in sync with ../../rsvg-private.h:LengthUnit
@@ -153,7 +154,7 @@ impl RsvgLength {
         }
     }
 
-    pub fn normalize(&self, draw_ctx: *const RsvgDrawingCtx) -> f64 {
+    pub fn normalize(&self, values: &ComputedValues, draw_ctx: *const RsvgDrawingCtx) -> f64 {
         match self.unit {
             LengthUnit::Default => self.length,
 
@@ -167,25 +168,15 @@ impl RsvgLength {
                 }
             }
 
-            LengthUnit::FontEm => self.length * drawing_ctx::get_normalized_font_size(draw_ctx),
+            LengthUnit::FontEm => self.length * font_size_from_values(values, draw_ctx),
 
-            LengthUnit::FontEx => {
-                self.length * drawing_ctx::get_normalized_font_size(draw_ctx) / 2.0
-            }
+            LengthUnit::FontEx => self.length * font_size_from_values(values, draw_ctx) / 2.0,
 
-            LengthUnit::Inch => {
-                let (dpi_x, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
+            LengthUnit::Inch => font_size_from_inch(self.length, self.dir, draw_ctx),
 
-                match self.dir {
-                    LengthDir::Horizontal => self.length * dpi_x,
-                    LengthDir::Vertical => self.length * dpi_y,
-                    LengthDir::Both => self.length * viewport_percentage(dpi_x, dpi_y),
-                }
-            }
+            LengthUnit::RelativeLarger => font_size_from_values(values, draw_ctx) * 1.2,
 
-            LengthUnit::RelativeLarger | LengthUnit::RelativeSmaller => {
-                drawing_ctx::get_normalized_font_size(draw_ctx)
-            }
+            LengthUnit::RelativeSmaller => font_size_from_values(values, draw_ctx) / 1.2,
         }
     }
 
@@ -321,6 +312,34 @@ impl RsvgLength {
     }
 }
 
+fn font_size_from_inch(length: f64, dir: LengthDir, draw_ctx: *const RsvgDrawingCtx) -> f64 {
+    let (dpi_x, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
+
+    match dir {
+        LengthDir::Horizontal => length * dpi_x,
+        LengthDir::Vertical => length * dpi_y,
+        LengthDir::Both => length * viewport_percentage(dpi_x, dpi_y),
+    }
+}
+
+fn font_size_from_values(values: &ComputedValues, draw_ctx: *const RsvgDrawingCtx) -> f64 {
+    let v = &values.font_size.0;
+
+    match v.unit {
+        LengthUnit::Default => v.length,
+
+        LengthUnit::Inch => font_size_from_inch(v.length, v.dir, draw_ctx),
+
+        LengthUnit::Percent
+        | LengthUnit::FontEm
+        | LengthUnit::FontEx
+        | LengthUnit::RelativeLarger
+        | LengthUnit::RelativeSmaller => {
+            unreachable!("ComputedValues can't have a relative font size")
+        }
+    }
+}
+
 fn viewport_percentage(x: f64, y: f64) -> f64 {
     // https://www.w3.org/TR/SVG/coords.html#Units
     // "For any other length value expressed as a percentage of the viewport, the
@@ -396,13 +415,16 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
 #[no_mangle]
 pub extern "C" fn rsvg_length_normalize(
     raw_length: *const RsvgLength,
+    values: RsvgComputedValues,
     draw_ctx: *const RsvgDrawingCtx,
 ) -> f64 {
     assert!(!raw_length.is_null());
-
     let length: &RsvgLength = unsafe { &*raw_length };
 
-    length.normalize(draw_ctx)
+    assert!(!values.is_null());
+    let values = unsafe { &*values };
+
+    length.normalize(values, draw_ctx)
 }
 
 #[no_mangle]

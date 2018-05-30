@@ -761,6 +761,16 @@ rsvg_handle_get_desc (RsvgHandle * handle)
     return NULL;
 }
 
+void
+rsvg_handle_cascade (RsvgHandle *handle)
+{
+    if (!handle->priv->already_cascaded) {
+        handle->priv->already_cascaded = TRUE;
+
+        rsvg_root_node_cascade(handle->priv->treebase);
+    }
+}
+
 /**
  * rsvg_handle_render_cairo_sub:
  * @handle: A #RsvgHandle
@@ -802,7 +812,8 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     cairo_save (cr);
 
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
+    rsvg_handle_cascade (handle);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, FALSE);
 
     cairo_restore (cr);
 
@@ -929,7 +940,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         g_assert (sself != NULL);
         rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, sself);
 
-        rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
+        rsvg_handle_cascade (handle);
+        rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, FALSE);
 
         bbox = rsvg_drawing_ctx_get_bbox (draw);
         rsvg_bbox_get_rect (bbox, NULL, &ink_rect);
@@ -1015,7 +1027,8 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     g_assert (node != NULL);
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0, FALSE);
+    rsvg_handle_cascade (handle);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, FALSE);
     bbox = rsvg_drawing_ctx_get_bbox (draw);
     rsvg_bbox_get_rect (bbox, NULL, &ink_rect);
     rsvg_drawing_ctx_free (draw);

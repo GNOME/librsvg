@@ -229,14 +229,6 @@ impl NodeTrait for NodePattern {
 
         Ok(())
     }
-
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
-        // nothing; paint servers are handled specially
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern {
@@ -266,6 +258,7 @@ fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern 
 
 fn set_pattern_on_draw_context(
     pattern: &Pattern,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &BoundingBox,
 ) -> bool {
@@ -287,10 +280,10 @@ fn set_pattern_on_draw_context(
         drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
     }
 
-    let pattern_x = pattern.x.unwrap().normalize(draw_ctx);
-    let pattern_y = pattern.y.unwrap().normalize(draw_ctx);
-    let pattern_width = pattern.width.unwrap().normalize(draw_ctx);
-    let pattern_height = pattern.height.unwrap().normalize(draw_ctx);
+    let pattern_x = pattern.x.unwrap().normalize(values, draw_ctx);
+    let pattern_y = pattern.y.unwrap().normalize(values, draw_ctx);
+    let pattern_width = pattern.width.unwrap().normalize(values, draw_ctx);
+    let pattern_height = pattern.height.unwrap().normalize(values, draw_ctx);
 
     if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
         drawing_ctx::pop_view_box(draw_ctx);
@@ -314,8 +307,8 @@ fn set_pattern_on_draw_context(
         }
     }
 
-    let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
-    let affine = state.affine;
+    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let affine = cr.get_matrix();
     let taffine = cairo::Matrix::multiply(&pattern_affine, &affine);
 
     let mut scwscale = (taffine.xx * taffine.xx + taffine.xy * taffine.xy).sqrt();
@@ -405,7 +398,6 @@ fn set_pattern_on_draw_context(
     // Draw to another surface
 
     let cr_save = drawing_ctx::get_cairo_context(draw_ctx);
-    drawing_ctx::state_push(draw_ctx);
 
     let surface = cr_save
         .get_target()
@@ -416,20 +408,21 @@ fn set_pattern_on_draw_context(
     drawing_ctx::set_cairo_context(draw_ctx, &cr_pattern);
 
     // Set up transformations to be determined by the contents units
-    let state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
-    state.affine = caffine;
 
     // Draw everything
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();
+    let pattern_cascaded = pattern_node.get_cascaded_values();
+    let pattern_values = pattern_cascaded.get();
 
-    drawing_ctx::state_reinherit_top(draw_ctx, pattern_node.get_state(), 2);
-    drawing_ctx::push_discrete_layer(draw_ctx, false);
-    pattern_node.draw_children(draw_ctx, -1, false);
-    drawing_ctx::pop_discrete_layer(draw_ctx, false);
+    drawing_ctx::push_discrete_layer(draw_ctx, pattern_values, false);
+
+    cr_pattern.set_matrix(caffine);
+    pattern_node.draw_children(&pattern_cascaded, draw_ctx, false, false);
+
+    drawing_ctx::pop_discrete_layer(draw_ctx, pattern_values, false);
 
     // Return to the original coordinate system and rendering context
 
-    drawing_ctx::state_pop(draw_ctx);
     drawing_ctx::set_cairo_context(draw_ctx, &cr_save);
 
     if pushed_view_box {
@@ -454,12 +447,13 @@ fn set_pattern_on_draw_context(
 
 fn resolve_fallbacks_and_set_pattern(
     pattern: &Pattern,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &BoundingBox,
 ) -> bool {
     let resolved = resolve_pattern(pattern, draw_ctx);
 
-    set_pattern_on_draw_context(&resolved, draw_ctx, bbox)
+    set_pattern_on_draw_context(&resolved, values, draw_ctx, bbox)
 }
 
 #[no_mangle]
@@ -481,7 +475,10 @@ pub fn pattern_resolve_fallbacks_and_set_pattern(
 
     node.with_impl(|node_pattern: &NodePattern| {
         let pattern = &*node_pattern.pattern.borrow();
-        did_set_pattern = resolve_fallbacks_and_set_pattern(pattern, draw_ctx, bbox);
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
+
+        did_set_pattern = resolve_fallbacks_and_set_pattern(pattern, values, draw_ctx, bbox);
     });
 
     did_set_pattern

@@ -1,4 +1,3 @@
-use cairo::{self, MatrixTrait};
 use cssparser;
 use glib;
 use glib::translate::*;
@@ -6,7 +5,6 @@ use glib_sys;
 use libc;
 use std::cell::RefCell;
 use std::collections::HashSet;
-use std::ptr;
 use std::str::FromStr;
 
 use attributes::Attribute;
@@ -15,7 +13,7 @@ use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use handle::RsvgHandle;
 use iri::IRI;
-use length::{Dasharray, LengthDir, RsvgLength};
+use length::{Dasharray, LengthDir, LengthUnit, RsvgLength};
 use node::RsvgNode;
 use paint_server::PaintServer;
 use parsers::Parse;
@@ -37,7 +35,7 @@ use util::{utf8_cstr, utf8_cstr_opt};
 #[derive(Clone)]
 pub enum SpecifiedValue<T>
 where
-    T: Property + Clone + Default,
+    T: Property<ComputedValues> + Clone + Default,
 {
     Unspecified,
     Inherit,
@@ -46,12 +44,12 @@ where
 
 impl<T> SpecifiedValue<T>
 where
-    T: Property + Clone + Default,
+    T: Property<ComputedValues> + Clone + Default,
 {
-    pub fn inherit_from(&self, src: &T) -> T {
+    pub fn compute(&self, src: &T, src_values: &ComputedValues) -> T {
         match *self {
             SpecifiedValue::Unspecified => {
-                if <T as Property>::inherits_automatically() {
+                if <T as Property<ComputedValues>>::inherits_automatically() {
                     src.clone()
                 } else {
                     Default::default()
@@ -60,14 +58,14 @@ where
 
             SpecifiedValue::Inherit => src.clone(),
 
-            SpecifiedValue::Specified(ref v) => v.clone(),
+            SpecifiedValue::Specified(ref v) => v.compute(src_values),
         }
     }
 }
 
 impl<T> Default for SpecifiedValue<T>
 where
-    T: Default + Property + Clone,
+    T: Property<ComputedValues> + Clone + Default,
 {
     fn default() -> SpecifiedValue<T> {
         SpecifiedValue::Unspecified
@@ -91,17 +89,8 @@ pub enum RsvgState {}
 /// inherited from the parent state, or in the end the caller can
 /// `.unwrap_or_default()` to get the default value for the property.
 
-// FIXME: #[derive(Clone)] is not correct here; states are not meant
-// to be cloned.  We should remove this when we remove the hack in
-// state_reinherit_top(), to clone_from() while preserving the parent
-#[derive(Clone)]
 pub struct State {
-    pub parent: *const RsvgState,
-
-    pub affine: cairo::Matrix,
-
     pub values: SpecifiedValues,
-
     important_styles: RefCell<HashSet<Attribute>>,
     pub cond: bool,
 }
@@ -129,6 +118,7 @@ pub struct SpecifiedValues {
     pub font_variant: SpecifiedValue<FontVariant>,
     pub font_weight: SpecifiedValue<FontWeight>,
     pub letter_spacing: SpecifiedValue<LetterSpacing>,
+    pub lighting_color: SpecifiedValue<LightingColor>,
     pub marker_end: SpecifiedValue<MarkerEnd>,
     pub marker_mid: SpecifiedValue<MarkerMid>,
     pub marker_start: SpecifiedValue<MarkerStart>,
@@ -156,9 +146,11 @@ pub struct SpecifiedValues {
     pub xml_space: SpecifiedValue<XmlSpace>, // not a property, but a non-presentation attribute
 }
 
-#[derive(Clone)]
+// Used to transfer pointers to a ComputedValues to the C code
+pub type RsvgComputedValues = *const ComputedValues;
+
+#[derive(Debug, Clone)]
 pub struct ComputedValues {
-    pub affine: cairo::Matrix,
     pub baseline_shift: BaselineShift,
     pub clip_path: ClipPath,
     pub clip_rule: ClipRule,
@@ -180,6 +172,7 @@ pub struct ComputedValues {
     pub font_variant: FontVariant,
     pub font_weight: FontWeight,
     pub letter_spacing: LetterSpacing,
+    pub lighting_color: LightingColor,
     pub marker_end: MarkerEnd,
     pub marker_mid: MarkerMid,
     pub marker_start: MarkerStart,
@@ -215,6 +208,14 @@ impl ComputedValues {
         }
     }
 
+    pub fn is_visible(&self) -> bool {
+        match (self.display, self.visibility) {
+            (Display::None, _) => false,
+            (_, Visibility::Visible) => true,
+            _ => false,
+        }
+    }
+
     pub fn text_gravity_is_vertical(&self) -> bool {
         match self.writing_mode {
             WritingMode::Tb | WritingMode::TbRl => true,
@@ -226,8 +227,6 @@ impl ComputedValues {
 impl Default for ComputedValues {
     fn default() -> ComputedValues {
         ComputedValues {
-            affine: cairo::Matrix::identity(),
-
             // please keep these sorted
             baseline_shift: Default::default(),
             clip_path: Default::default(),
@@ -250,6 +249,7 @@ impl Default for ComputedValues {
             font_variant: Default::default(),
             font_weight: Default::default(),
             letter_spacing: Default::default(),
+            lighting_color: Default::default(),
             marker_end: Default::default(),
             marker_mid: Default::default(),
             marker_start: Default::default(),
@@ -279,343 +279,70 @@ impl Default for ComputedValues {
     }
 }
 
-macro_rules! inherit_from {
+macro_rules! compute_value {
     ($self:ident, $computed:ident, $name:ident) => {
-        $computed.$name = $self.$name.inherit_from(&$computed.$name)
+        $computed.$name = $self.$name.compute(&$computed.$name, &$computed)
     };
 }
 
 impl SpecifiedValues {
     fn to_computed_values(&self, computed: &mut ComputedValues) {
-        inherit_from!(self, computed, baseline_shift);
-        inherit_from!(self, computed, clip_path);
-        inherit_from!(self, computed, clip_rule);
-        inherit_from!(self, computed, comp_op);
-        inherit_from!(self, computed, color);
-        inherit_from!(self, computed, direction);
-        inherit_from!(self, computed, display);
-        inherit_from!(self, computed, enable_background);
-        inherit_from!(self, computed, fill);
-        inherit_from!(self, computed, fill_opacity);
-        inherit_from!(self, computed, fill_rule);
-        inherit_from!(self, computed, filter);
-        inherit_from!(self, computed, flood_color);
-        inherit_from!(self, computed, flood_opacity);
-        inherit_from!(self, computed, font_family);
-        inherit_from!(self, computed, font_size);
-        inherit_from!(self, computed, font_stretch);
-        inherit_from!(self, computed, font_style);
-        inherit_from!(self, computed, font_variant);
-        inherit_from!(self, computed, font_weight);
-        inherit_from!(self, computed, letter_spacing);
-        inherit_from!(self, computed, marker_end);
-        inherit_from!(self, computed, marker_mid);
-        inherit_from!(self, computed, marker_start);
-        inherit_from!(self, computed, mask);
-        inherit_from!(self, computed, opacity);
-        inherit_from!(self, computed, overflow);
-        inherit_from!(self, computed, shape_rendering);
-        inherit_from!(self, computed, stop_color);
-        inherit_from!(self, computed, stop_opacity);
-        inherit_from!(self, computed, stroke);
-        inherit_from!(self, computed, stroke_dasharray);
-        inherit_from!(self, computed, stroke_dashoffset);
-        inherit_from!(self, computed, stroke_line_cap);
-        inherit_from!(self, computed, stroke_line_join);
-        inherit_from!(self, computed, stroke_opacity);
-        inherit_from!(self, computed, stroke_miterlimit);
-        inherit_from!(self, computed, stroke_width);
-        inherit_from!(self, computed, text_anchor);
-        inherit_from!(self, computed, text_decoration);
-        inherit_from!(self, computed, text_rendering);
-        inherit_from!(self, computed, unicode_bidi);
-        inherit_from!(self, computed, visibility);
-        inherit_from!(self, computed, writing_mode);
-        inherit_from!(self, computed, xml_lang);
-        inherit_from!(self, computed, xml_space);
+        compute_value!(self, computed, baseline_shift);
+        compute_value!(self, computed, clip_path);
+        compute_value!(self, computed, clip_rule);
+        compute_value!(self, computed, comp_op);
+        compute_value!(self, computed, color);
+        compute_value!(self, computed, direction);
+        compute_value!(self, computed, display);
+        compute_value!(self, computed, enable_background);
+        compute_value!(self, computed, fill);
+        compute_value!(self, computed, fill_opacity);
+        compute_value!(self, computed, fill_rule);
+        compute_value!(self, computed, filter);
+        compute_value!(self, computed, flood_color);
+        compute_value!(self, computed, flood_opacity);
+        compute_value!(self, computed, font_family);
+        compute_value!(self, computed, font_size);
+        compute_value!(self, computed, font_stretch);
+        compute_value!(self, computed, font_style);
+        compute_value!(self, computed, font_variant);
+        compute_value!(self, computed, font_weight);
+        compute_value!(self, computed, letter_spacing);
+        compute_value!(self, computed, lighting_color);
+        compute_value!(self, computed, marker_end);
+        compute_value!(self, computed, marker_mid);
+        compute_value!(self, computed, marker_start);
+        compute_value!(self, computed, mask);
+        compute_value!(self, computed, opacity);
+        compute_value!(self, computed, overflow);
+        compute_value!(self, computed, shape_rendering);
+        compute_value!(self, computed, stop_color);
+        compute_value!(self, computed, stop_opacity);
+        compute_value!(self, computed, stroke);
+        compute_value!(self, computed, stroke_dasharray);
+        compute_value!(self, computed, stroke_dashoffset);
+        compute_value!(self, computed, stroke_line_cap);
+        compute_value!(self, computed, stroke_line_join);
+        compute_value!(self, computed, stroke_opacity);
+        compute_value!(self, computed, stroke_miterlimit);
+        compute_value!(self, computed, stroke_width);
+        compute_value!(self, computed, text_anchor);
+        compute_value!(self, computed, text_decoration);
+        compute_value!(self, computed, text_rendering);
+        compute_value!(self, computed, unicode_bidi);
+        compute_value!(self, computed, visibility);
+        compute_value!(self, computed, writing_mode);
+        compute_value!(self, computed, xml_lang);
+        compute_value!(self, computed, xml_space);
     }
 }
 
 impl State {
-    pub fn new_with_parent(parent: Option<&State>) -> State {
-        if let Some(parent) = parent {
-            State::new(to_c(parent))
-        } else {
-            State::new(ptr::null())
-        }
-    }
-
-    fn new(parent: *const RsvgState) -> State {
+    fn new() -> State {
         State {
-            parent,
-
-            affine: cairo::Matrix::identity(),
-
             values: Default::default(),
-
             important_styles: Default::default(),
             cond: true,
-        }
-    }
-
-    pub fn parent<'a>(&self) -> Option<&'a State> {
-        if self.parent.is_null() {
-            None
-        } else {
-            Some(from_c(self.parent))
-        }
-    }
-
-    pub fn reinherit(&mut self, src: &State) {
-        self.inherit_run(src, State::reinheritfunction, false);
-    }
-
-    pub fn inherit(&mut self, src: &State) {
-        self.inherit_run(src, State::inheritfunction, true);
-    }
-
-    pub fn force(&mut self, src: &State) {
-        self.inherit_run(src, State::forcefunction, false);
-    }
-
-    pub fn dominate(&mut self, src: &State) {
-        self.inherit_run(src, State::dominatefunction, false);
-    }
-
-    pub fn reconstruct(&mut self, node: &RsvgNode) {
-        if let Some(parent) = node.get_parent() {
-            self.reconstruct(&parent);
-            self.inherit(node.get_state());
-        }
-    }
-
-    // reinherit is given dst which is the top of the state stack
-    // and src which is the layer before in the state stack from
-    // which it should be inherited
-    fn reinheritfunction(dst: bool, _src: bool) -> bool {
-        if !dst {
-            true
-        } else {
-            false
-        }
-    }
-
-    // put something new on the inheritance stack, dst is the top of the stack,
-    // src is the state to be integrated, this is essentially the opposite of
-    // reinherit, because it is being given stuff to be integrated on the top,
-    // rather than the context underneath.
-    fn inheritfunction(_dst: bool, src: bool) -> bool {
-        src
-    }
-
-    // copy everything inheritable from the src to the dst */
-    fn forcefunction(_dst: bool, _src: bool) -> bool {
-        true
-    }
-
-    // dominate is given dst which is the top of the state stack and
-    // src which is the layer before in the state stack from which it
-    // should be inherited from, however if anything is directly
-    // specified in src (the second last layer) it will override
-    // anything on the top layer, this is for overrides in <use> tags
-    fn dominatefunction(dst: bool, src: bool) -> bool {
-        if !dst || src {
-            true
-        } else {
-            false
-        }
-    }
-
-    fn inherit_run(
-        &mut self,
-        src: &State,
-        inherit_fn: fn(bool, bool) -> bool,
-        inherituninheritables: bool,
-    ) {
-        // please keep these sorted
-        inherit(
-            inherit_fn,
-            &mut self.values.baseline_shift,
-            &src.values.baseline_shift,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.clip_rule,
-            &src.values.clip_rule,
-        );
-        inherit(inherit_fn, &mut self.values.color, &src.values.color);
-        inherit(
-            inherit_fn,
-            &mut self.values.direction,
-            &src.values.direction,
-        );
-        inherit(inherit_fn, &mut self.values.display, &src.values.display);
-        inherit(inherit_fn, &mut self.values.fill, &src.values.fill);
-        inherit(
-            inherit_fn,
-            &mut self.values.fill_opacity,
-            &src.values.fill_opacity,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.fill_rule,
-            &src.values.fill_rule,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.flood_color,
-            &src.values.flood_color,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.flood_opacity,
-            &src.values.flood_opacity,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.font_family,
-            &src.values.font_family,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.font_size,
-            &src.values.font_size,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.font_stretch,
-            &src.values.font_stretch,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.font_style,
-            &src.values.font_style,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.font_variant,
-            &src.values.font_variant,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.font_weight,
-            &src.values.font_weight,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.letter_spacing,
-            &src.values.letter_spacing,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.marker_end,
-            &src.values.marker_end,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.marker_mid,
-            &src.values.marker_mid,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.marker_start,
-            &src.values.marker_start,
-        );
-        inherit(inherit_fn, &mut self.values.overflow, &src.values.overflow);
-        inherit(
-            inherit_fn,
-            &mut self.values.shape_rendering,
-            &src.values.shape_rendering,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.stop_color,
-            &src.values.stop_color,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.stop_opacity,
-            &src.values.stop_opacity,
-        );
-        inherit(inherit_fn, &mut self.values.stroke, &src.values.stroke);
-        inherit(
-            inherit_fn,
-            &mut self.values.stroke_dasharray,
-            &src.values.stroke_dasharray,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.stroke_dashoffset,
-            &src.values.stroke_dashoffset,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.stroke_line_cap,
-            &src.values.stroke_line_cap,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.stroke_line_join,
-            &src.values.stroke_line_join,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.stroke_opacity,
-            &src.values.stroke_opacity,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.stroke_miterlimit,
-            &src.values.stroke_miterlimit,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.stroke_width,
-            &src.values.stroke_width,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.text_anchor,
-            &src.values.text_anchor,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.text_decoration,
-            &src.values.text_decoration,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.text_rendering,
-            &src.values.text_rendering,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.unicode_bidi,
-            &src.values.unicode_bidi,
-        );
-        inherit(
-            inherit_fn,
-            &mut self.values.visibility,
-            &src.values.visibility,
-        );
-        inherit(inherit_fn, &mut self.values.xml_lang, &src.values.xml_lang);
-        inherit(
-            inherit_fn,
-            &mut self.values.xml_space,
-            &src.values.xml_space,
-        );
-
-        self.cond = src.cond;
-
-        if inherituninheritables {
-            self.values.clip_path.clone_from(&src.values.clip_path);
-            self.values.comp_op.clone_from(&src.values.comp_op);
-            self.values
-                .enable_background
-                .clone_from(&src.values.enable_background);
-            self.values.filter.clone_from(&src.values.filter);
-            self.values.mask.clone_from(&src.values.mask);
-            self.values.opacity.clone_from(&src.values.opacity);
         }
     }
 
@@ -720,6 +447,10 @@ impl State {
 
                 Attribute::LetterSpacing => {
                     self.values.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
+                }
+
+                Attribute::LightingColor => {
+                    self.values.lighting_color = parse_property(value, ())?;
                 }
 
                 Attribute::MarkerEnd => {
@@ -853,7 +584,7 @@ impl State {
         Ok(())
     }
 
-    pub fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
+    fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
         for (_key, attr, value) in pbag.iter() {
             self.parse_style_pair(attr, value, false, false)?;
         }
@@ -896,7 +627,7 @@ impl State {
         Ok(())
     }
 
-    pub fn parse_style_declarations(&mut self, declarations: &str) -> Result<(), NodeError> {
+    fn parse_style_declarations(&mut self, declarations: &str) -> Result<(), NodeError> {
         // Split an attribute value like style="foo: bar; baz: beep;" into
         // individual CSS declarations ("foo: bar" and "baz: beep") and
         // set them onto the state struct.
@@ -950,23 +681,16 @@ impl State {
         }
     }
 
-    pub fn is_visible(&self) -> bool {
-        match (&self.values.display, &self.values.visibility) {
-            (&SpecifiedValue::Specified(Display::None), _) => false,
-            (_, &SpecifiedValue::Unspecified)
-            | (_, &SpecifiedValue::Inherit)
-            | (_, &SpecifiedValue::Specified(Visibility::Visible)) => true,
-            _ => false,
-        }
-    }
-
     pub fn get_computed_values(&self) -> ComputedValues {
         let mut computed = ComputedValues::default();
 
-        self.values.to_computed_values(&mut computed);
-        computed.affine = self.affine;
+        self.to_computed_values(&mut computed);
 
         computed
+    }
+
+    pub fn to_computed_values(&self, values: &mut ComputedValues) {
+        self.values.to_computed_values(values);
     }
 }
 
@@ -979,7 +703,7 @@ fn parse_property<T>(
     data: <T as Parse>::Data,
 ) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
 where
-    T: Property + Parse + Default + Clone,
+    T: Property<ComputedValues> + Clone + Default + Parse,
 {
     if value.trim() == "inherit" {
         Ok(SpecifiedValue::Inherit)
@@ -988,33 +712,53 @@ where
     }
 }
 
+// https://www.w3.org/TR/SVG/text.html#BaselineShiftProperty
 make_property!(
+    ComputedValues,
     BaselineShift,
-    default: 0f64,
-    inherits_automatically: true,
-    newtype: f64
-);
+    default: RsvgLength::parse("0.0", LengthDir::Both).unwrap(),
+    newtype: RsvgLength,
+    property_impl: {
+        impl Property<ComputedValues> for BaselineShift {
+            fn inherits_automatically() -> bool {
+                false
+            }
 
-impl Parse for BaselineShift {
-    type Data = ();
-    type Err = AttributeError;
+            fn compute(&self, v: &ComputedValues) -> Self {
+                // FIXME: this implementation has limitations:
+                // 1) we only handle 'percent' shifts, but it could also be an absolute offset
+                // 2) we should be able to normalize the lengths and add even if they have
+                //    different units, but at the moment that requires access to the draw_ctx
+                if self.0.unit != LengthUnit::Percent || v.baseline_shift.0.unit != v.font_size.0.unit {
+                    return BaselineShift(RsvgLength::new(v.baseline_shift.0.length, v.baseline_shift.0.unit, LengthDir::Both));
+                }
 
-    // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
-    // see sp_style_merge_baseline_shift_from_parent()
-    fn parse(s: &str, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
-        match s.trim() {
-            "baseline" => Ok(BaselineShift(0f64)),
-            "sub" => Ok(BaselineShift(-0.2f64)),
-            "super" => Ok(BaselineShift(0.4f64)),
+                BaselineShift(RsvgLength::new(self.0.length * v.font_size.0.length + v.baseline_shift.0.length, v.font_size.0.unit, LengthDir::Both))
+            }
+        }
+    },
+    parse_impl: {
+        impl Parse for BaselineShift {
+            type Data = ();
+            type Err = AttributeError;
 
-            _ => Err(::error::AttributeError::from(::parsers::ParseError::new(
-                "invalid value",
-            ))),
+            // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
+            // see sp_style_merge_baseline_shift_from_parent()
+            fn parse(s: &str, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
+                match s.trim() {
+                    "baseline" => Ok(BaselineShift(RsvgLength::new(0.0, LengthUnit::Percent, LengthDir::Both))),
+                    "sub" => Ok(BaselineShift(RsvgLength::new(-0.2, LengthUnit::Percent, LengthDir::Both))),
+                    "super" => Ok(BaselineShift(RsvgLength::new(0.4, LengthUnit::Percent, LengthDir::Both))),
+                    _ => Ok(BaselineShift(RsvgLength::parse(s, LengthDir::Both)?)),
+                }
+            }
         }
     }
-}
+);
 
+// https://www.w3.org/TR/SVG/masking.html#ClipPathProperty
 make_property!(
+    ComputedValues,
     ClipPath,
     default: IRI::None,
     inherits_automatically: false,
@@ -1022,7 +766,9 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/masking.html#ClipRuleProperty
 make_property!(
+    ComputedValues,
     ClipRule,
     default: NonZero,
     inherits_automatically: true,
@@ -1032,17 +778,25 @@ make_property!(
     "evenodd" => EvenOdd,
 );
 
-// See bgo#764808: we don't inherit CSS from the public API,
-// so start off with opaque black instead of transparent.
+// https://www.w3.org/TR/SVG/color.html#ColorProperty
 make_property!(
+    ComputedValues,
     Color,
+    // The SVG spec allows the user agent to choose its own default for the "color" property.
+    // We don't allow passing in an initial CSS in the public API, so we'll start with black.
+    //
+    // See https://bugzilla.gnome.org/show_bug.cgi?id=764808 for a case where this would
+    // be useful - rendering equations with currentColor, so they take on the color of the
+    // surrounding text.
     default: cssparser::RGBA::new(0, 0, 0, 0xff),
     inherits_automatically: true,
     newtype_parse: cssparser::RGBA,
     parse_data_type: ()
 );
 
+// https://gitlab.gnome.org/GNOME/librsvg/issues/268 - can we remove this property?
 make_property!(
+    ComputedValues,
     CompOp,
     default: SrcOver,
     inherits_automatically: false,
@@ -1074,7 +828,9 @@ make_property!(
     "exclusion" => Exclusion,
 );
 
+// https://www.w3.org/TR/SVG/text.html#DirectionProperty
 make_property!(
+    ComputedValues,
     Direction,
     default: Ltr,
     inherits_automatically: true,
@@ -1084,10 +840,12 @@ make_property!(
     "rtl" => Rtl,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#DisplayProperty
 make_property!(
+    ComputedValues,
     Display,
     default: Inline,
-    inherits_automatically: true,
+    inherits_automatically: false,
 
     identifiers:
     "inline" => Inline,
@@ -1109,7 +867,9 @@ make_property!(
     "none" => None,
 );
 
+// https://www.w3.org/TR/SVG/filters.html#EnableBackgroundProperty
 make_property!(
+    ComputedValues,
     EnableBackground,
     default: Accumulate,
     inherits_automatically: false,
@@ -1119,7 +879,9 @@ make_property!(
     "new" => New,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#FillProperty
 make_property!(
+    ComputedValues,
     Fill,
     default: PaintServer::parse("#000", ()).unwrap(),
     inherits_automatically: true,
@@ -1127,14 +889,18 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#FillOpacityProperty
 make_property!(
+    ComputedValues,
     FillOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
     newtype_from_str: UnitInterval
 );
 
+// https://www.w3.org/TR/SVG/painting.html#FillRuleProperty
 make_property!(
+    ComputedValues,
     FillRule,
     default: NonZero,
     inherits_automatically: true,
@@ -1144,7 +910,9 @@ make_property!(
     "evenodd" => EvenOdd,
 );
 
+// https://www.w3.org/TR/SVG/filters.html#FilterProperty
 make_property!(
+    ComputedValues,
     Filter,
     default: IRI::None,
     inherits_automatically: false,
@@ -1152,37 +920,68 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
 make_property!(
+    ComputedValues,
     FloodColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
-    inherits_automatically: true,
+    inherits_automatically: false,
     newtype_parse: cssparser::Color,
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/filters.html#FloodOpacityProperty
 make_property!(
+    ComputedValues,
     FloodOpacity,
     default: UnitInterval(1.0),
-    inherits_automatically: true,
+    inherits_automatically: false,
     newtype_from_str: UnitInterval
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
 make_property!(
+    ComputedValues,
     FontFamily,
     default: "Times New Roman".to_string(),
     inherits_automatically: true,
     newtype_from_str: String
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontSizeProperty
 make_property!(
+    ComputedValues,
     FontSize,
     default: RsvgLength::parse("12.0", LengthDir::Both).unwrap(),
-    inherits_automatically: true,
     newtype_parse: RsvgLength,
-    parse_data_type: LengthDir
+    parse_data_type: LengthDir,
+    property_impl: {
+        impl Property<ComputedValues> for FontSize {
+            fn inherits_automatically() -> bool {
+                true
+            }
+
+            fn compute(&self, v: &ComputedValues) -> Self {
+                match self.0.unit {
+                    LengthUnit::Percent =>
+                        FontSize(RsvgLength::new(self.0.length * v.font_size.0.length, v.font_size.0.unit, LengthDir::Both)),
+
+                    LengthUnit::RelativeLarger =>
+                        FontSize(RsvgLength::new(v.font_size.0.length * 1.2, v.font_size.0.unit, LengthDir::Both)),
+
+                    LengthUnit::RelativeSmaller =>
+                        FontSize(RsvgLength::new(v.font_size.0.length / 1.2, v.font_size.0.unit, LengthDir::Both)),
+
+                    _ => self.clone(),
+                }
+            }
+        }
+    }
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontStretchProperty
 make_property!(
+    ComputedValues,
     FontStretch,
     default: Normal,
     inherits_automatically: true,
@@ -1201,7 +1000,9 @@ make_property!(
     "ultra-expanded" => UltraExpanded,
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontStyleProperty
 make_property!(
+    ComputedValues,
     FontStyle,
     default: Normal,
     inherits_automatically: true,
@@ -1212,7 +1013,9 @@ make_property!(
     "oblique" => Oblique,
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontVariantProperty
 make_property!(
+    ComputedValues,
     FontVariant,
     default: Normal,
     inherits_automatically: true,
@@ -1222,7 +1025,9 @@ make_property!(
     "small-caps" => SmallCaps,
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontWeightProperty
 make_property!(
+    ComputedValues,
     FontWeight,
     default: Normal,
     inherits_automatically: true,
@@ -1243,7 +1048,9 @@ make_property!(
     "900" => W900,
 );
 
+// https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty
 make_property!(
+    ComputedValues,
     LetterSpacing,
     default: RsvgLength::default(),
     inherits_automatically: true,
@@ -1251,7 +1058,19 @@ make_property!(
     parse_data_type: LengthDir
 );
 
+// https://www.w3.org/TR/SVG/filters.html#LightingColorProperty
 make_property!(
+    ComputedValues,
+    LightingColor,
+    default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
+    inherits_automatically: false,
+    newtype_parse: cssparser::Color,
+    parse_data_type: ()
+);
+
+// https://www.w3.org/TR/SVG/painting.html#MarkerEndProperty
+make_property!(
+    ComputedValues,
     MarkerEnd,
     default: IRI::None,
     inherits_automatically: true,
@@ -1259,7 +1078,9 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#MarkerMidProperty
 make_property!(
+    ComputedValues,
     MarkerMid,
     default: IRI::None,
     inherits_automatically: true,
@@ -1267,7 +1088,9 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#MarkerStartProperty
 make_property!(
+    ComputedValues,
     MarkerStart,
     default: IRI::None,
     inherits_automatically: true,
@@ -1275,7 +1098,9 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/masking.html#MaskProperty
 make_property!(
+    ComputedValues,
     Mask,
     default: IRI::None,
     inherits_automatically: false,
@@ -1283,17 +1108,21 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/masking.html#OpacityProperty
 make_property!(
+    ComputedValues,
     Opacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
     newtype_from_str: UnitInterval
 );
 
+// https://www.w3.org/TR/SVG/masking.html#OverflowProperty
 make_property!(
+    ComputedValues,
     Overflow,
     default: Visible,
-    inherits_automatically: true,
+    inherits_automatically: false,
 
     identifiers:
     "visible" => Visible,
@@ -1302,7 +1131,9 @@ make_property!(
     "auto" => Auto,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#ShapeRenderingProperty
 make_property!(
+    ComputedValues,
     ShapeRendering,
     default: Auto,
     inherits_automatically: true,
@@ -1314,22 +1145,28 @@ make_property!(
     "crispEdges" => CrispEdges,
 );
 
+// https://www.w3.org/TR/SVG/pservers.html#StopColorProperty
 make_property!(
+    ComputedValues,
     StopColor,
-    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
+    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/pservers.html#StopOpacityProperty
 make_property!(
+    ComputedValues,
     StopOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
     newtype_from_str: UnitInterval
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeProperty
 make_property!(
+    ComputedValues,
     Stroke,
     default: PaintServer::None,
     inherits_automatically: true,
@@ -1337,7 +1174,9 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeDasharrayProperty
 make_property!(
+    ComputedValues,
     StrokeDasharray,
     default: Dasharray::default(),
     inherits_automatically: true,
@@ -1345,7 +1184,9 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeDashoffsetProperty
 make_property!(
+    ComputedValues,
     StrokeDashoffset,
     default: RsvgLength::default(),
     inherits_automatically: true,
@@ -1353,7 +1194,9 @@ make_property!(
     parse_data_type: LengthDir
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeLinecapProperty
 make_property!(
+    ComputedValues,
     StrokeLinecap,
     default: Butt,
     inherits_automatically: true,
@@ -1364,7 +1207,9 @@ make_property!(
     "square" => Square,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeLinejoinProperty
 make_property!(
+    ComputedValues,
     StrokeLinejoin,
     default: Miter,
     inherits_automatically: true,
@@ -1375,21 +1220,27 @@ make_property!(
     "bevel" => Bevel,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeMiterlimitProperty
 make_property!(
-    StrokeOpacity,
-    default: UnitInterval(1.0),
-    inherits_automatically: true,
-    newtype_from_str: UnitInterval
-);
-
-make_property!(
+    ComputedValues,
     StrokeMiterlimit,
     default: 4f64,
     inherits_automatically: true,
     newtype_from_str: f64
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeOpacityProperty
 make_property!(
+    ComputedValues,
+    StrokeOpacity,
+    default: UnitInterval(1.0),
+    inherits_automatically: true,
+    newtype_from_str: UnitInterval
+);
+
+// https://www.w3.org/TR/SVG/painting.html#StrokeWidthProperty
+make_property!(
+    ComputedValues,
     StrokeWidth,
     default: RsvgLength::parse("1.0", LengthDir::Both).unwrap(),
     inherits_automatically: true,
@@ -1397,7 +1248,9 @@ make_property!(
     parse_data_type: LengthDir
 );
 
+// https://www.w3.org/TR/SVG/text.html#TextAnchorProperty
 make_property!(
+    ComputedValues,
     TextAnchor,
     default: Start,
     inherits_automatically: true,
@@ -1408,30 +1261,37 @@ make_property!(
     "end" => End,
 );
 
+// https://www.w3.org/TR/SVG/text.html#TextDecorationProperty
 make_property!(
+    ComputedValues,
     TextDecoration,
-    inherits_automatically: true,
+    inherits_automatically: false,
 
-    fields:
-    overline: bool, default: false,
-    underline: bool, default: false,
-    strike: bool, default: false,
+    fields: {
+        overline: bool, default: false,
+        underline: bool, default: false,
+        strike: bool, default: false,
+    }
+
+    parse_impl: {
+        impl Parse for TextDecoration {
+            type Data = ();
+            type Err = AttributeError;
+
+            fn parse(s: &str, _: Self::Data) -> Result<TextDecoration, AttributeError> {
+                Ok(TextDecoration {
+                    overline: s.contains("overline"),
+                    underline: s.contains("underline"),
+                    strike: s.contains("strike") || s.contains("line-through"),
+                })
+            }
+        }
+    }
 );
 
-impl Parse for TextDecoration {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _: Self::Data) -> Result<TextDecoration, AttributeError> {
-        Ok(TextDecoration {
-            overline: s.contains("overline"),
-            underline: s.contains("underline"),
-            strike: s.contains("strike") || s.contains("line-through"),
-        })
-    }
-}
-
+// https://www.w3.org/TR/SVG/painting.html#TextRenderingProperty
 make_property!(
+    ComputedValues,
     TextRendering,
     default: Auto,
     inherits_automatically: true,
@@ -1443,10 +1303,12 @@ make_property!(
     "geometricPrecision" => GeometricPrecision,
 );
 
+// https://www.w3.org/TR/SVG/text.html#UnicodeBidiProperty
 make_property!(
+    ComputedValues,
     UnicodeBidi,
     default: Normal,
-    inherits_automatically: true,
+    inherits_automatically: false,
 
     identifiers:
     "normal" => Normal,
@@ -1454,7 +1316,9 @@ make_property!(
     "bidi-override" => Override,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#VisibilityProperty
 make_property!(
+    ComputedValues,
     Visibility,
     default: Visible,
     inherits_automatically: true,
@@ -1465,7 +1329,9 @@ make_property!(
     "collapse" => Collapse,
 );
 
+// https://www.w3.org/TR/SVG/text.html#WritingModeProperty
 make_property!(
+    ComputedValues,
     WritingMode,
     default: LrTb,
     inherits_automatically: true,
@@ -1480,6 +1346,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     XmlLang,
     default: "".to_string(), // see create_pango_layout()
     inherits_automatically: true,
@@ -1487,6 +1354,7 @@ make_property!(
 );
 
 make_property!(
+    ComputedValues,
     XmlSpace,
     default: Default,
     inherits_automatically: true,
@@ -1495,57 +1363,6 @@ make_property!(
     "default" => Default,
     "preserve" => Preserve,
 );
-
-// C state API implemented in rust
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_reconstruct(state: *mut RsvgState, raw_node: *const RsvgNode) {
-    let state = from_c_mut(state);
-
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    state.reconstruct(node);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_is_visible(state: *const RsvgState) -> glib_sys::gboolean {
-    let state = from_c(state);
-
-    state.is_visible().to_glib()
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_parse_presentation_attributes(
-    state: *mut RsvgState,
-    pbag: *const PropertyBag,
-) -> glib_sys::gboolean {
-    let state = from_c_mut(state);
-
-    let pbag = unsafe { &*pbag };
-
-    match state.parse_presentation_attributes(pbag) {
-        Ok(_) => true.to_glib(),
-        Err(_) => false.to_glib(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_parse_conditional_processing_attributes(
-    state: *mut RsvgState,
-    pbag: *const PropertyBag,
-) -> glib_sys::gboolean {
-    let state = from_c_mut(state);
-
-    let pbag = unsafe { &*pbag };
-
-    match state.parse_conditional_processing_attributes(pbag) {
-        Ok(_) => true.to_glib(),
-        Err(_) => false.to_glib(),
-    }
-}
-
-// Rust State API for consumption from C ----------------------------------------
 
 pub fn from_c<'a>(state: *const RsvgState) -> &'a State {
     assert!(!state.is_null());
@@ -1559,17 +1376,15 @@ pub fn from_c_mut<'a>(state: *mut RsvgState) -> &'a mut State {
     unsafe { &mut *(state as *mut State) }
 }
 
-pub fn to_c(state: &State) -> *const RsvgState {
-    state as *const State as *const RsvgState
-}
-
 pub fn to_c_mut(state: &mut State) -> *mut RsvgState {
     state as *mut State as *mut RsvgState
 }
 
+// Rust State API for consumption from C ----------------------------------------
+
 #[no_mangle]
-pub extern "C" fn rsvg_state_new(parent: *mut RsvgState) -> *mut RsvgState {
-    Box::into_raw(Box::new(State::new(parent))) as *mut RsvgState
+pub extern "C" fn rsvg_state_new() -> *mut RsvgState {
+    Box::into_raw(Box::new(State::new())) as *mut RsvgState
 }
 
 #[no_mangle]
@@ -1579,13 +1394,6 @@ pub extern "C" fn rsvg_state_free(state: *mut RsvgState) {
     unsafe {
         Box::from_raw(state);
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState {
-    let state = from_c(state);
-
-    state.parent as *mut _
 }
 
 #[no_mangle]
@@ -1611,147 +1419,6 @@ pub extern "C" fn rsvg_state_parse_style_pair(
         Ok(_) => true.to_glib(),
         Err(_) => false.to_glib(),
     }
-}
-
-fn inherit<T>(
-    inherit_fn: fn(bool, bool) -> bool,
-    dst: &mut SpecifiedValue<T>,
-    src: &SpecifiedValue<T>,
-) where
-    T: Property + Clone + Default,
-{
-    let dst_has_val = if let SpecifiedValue::Specified(_) = *dst {
-        true
-    } else {
-        false
-    };
-
-    let src_has_val = if let SpecifiedValue::Specified(_) = *src {
-        true
-    } else {
-        false
-    };
-
-    if inherit_fn(dst_has_val, src_has_val) {
-        dst.clone_from(src);
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_affine(state: *const RsvgState) -> cairo::Matrix {
-    let state = from_c(state);
-
-    state.affine
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_set_affine(state: *mut RsvgState, affine: cairo::Matrix) {
-    let state = from_c_mut(state);
-    state.affine = affine;
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_current_color(state: *const RsvgState) -> u32 {
-    let state = from_c(state);
-
-    let current_color = state.values.color.inherit_from(&Default::default()).0;
-
-    rgba_to_argb(current_color)
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator {
-    let state = from_c(state);
-    cairo::Operator::from(state.values.comp_op.inherit_from(&Default::default()))
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_flood_color(state: *const RsvgState) -> u32 {
-    let state = from_c(state);
-
-    match state.values.flood_color {
-        SpecifiedValue::Specified(FloodColor(cssparser::Color::RGBA(rgba))) => rgba_to_argb(rgba),
-        // FIXME: fallback to current color if Color::inherit and current color is set
-        _ => 0xff000000,
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_flood_opacity(state: *const RsvgState) -> u8 {
-    let state = from_c(state);
-
-    u8::from(
-        state
-            .values
-            .flood_opacity
-            .inherit_from(&Default::default())
-            .0,
-    )
-}
-
-// Keep in sync with rsvg-styles.h:RsvgEnableBackgroundType
-#[allow(dead_code)]
-#[repr(C)]
-pub enum EnableBackgroundC {
-    Accumulate,
-    New,
-}
-
-impl From<EnableBackground> for EnableBackgroundC {
-    fn from(e: EnableBackground) -> EnableBackgroundC {
-        match e {
-            EnableBackground::Accumulate => EnableBackgroundC::Accumulate,
-            EnableBackground::New => EnableBackgroundC::New,
-        }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_enable_background(state: *const RsvgState) -> EnableBackgroundC {
-    let state = from_c(state);
-    EnableBackgroundC::from(
-        state
-            .values
-            .enable_background
-            .inherit_from(&Default::default()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_clip_path(state: *const RsvgState) -> *mut libc::c_char {
-    let state = from_c(state);
-
-    match state.values.clip_path {
-        SpecifiedValue::Specified(ClipPath(IRI::Resource(ref p))) => p.to_glib_full(),
-        _ => ptr::null_mut(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_filter(state: *const RsvgState) -> *mut libc::c_char {
-    let state = from_c(state);
-
-    match state.values.filter {
-        SpecifiedValue::Specified(Filter(IRI::Resource(ref f))) => f.to_glib_full(),
-        _ => ptr::null_mut(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_mask(state: *const RsvgState) -> *mut libc::c_char {
-    let state = from_c(state);
-
-    match state.values.mask {
-        SpecifiedValue::Specified(Mask(IRI::Resource(ref m))) => m.to_glib_full(),
-        _ => ptr::null_mut(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_opacity(state: *const RsvgState) -> u8 {
-    let state = from_c(state);
-
-    u8::from(state.values.opacity.inherit_from(&Default::default()).0)
 }
 
 extern "C" {
@@ -1905,17 +1572,38 @@ fn parse_style_attrs(
                     }
                 }
 
-                Attribute::Transform => match cairo::Matrix::parse(value, ()) {
-                    Ok(affine) => state.affine = cairo::Matrix::multiply(&affine, &state.affine),
-
-                    Err(e) => {
-                        node.set_error(NodeError::attribute_error(Attribute::Transform, e));
-                        break;
-                    }
-                },
-
                 _ => (),
             }
         }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_computed_values_get_flood_color_argb(values: RsvgComputedValues) -> u32 {
+    assert!(!values.is_null());
+    let values = unsafe { &*values };
+
+    match values.flood_color {
+        FloodColor(cssparser::Color::CurrentColor) => rgba_to_argb(values.color.0),
+        FloodColor(cssparser::Color::RGBA(ref rgba)) => rgba_to_argb(*rgba),
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_computed_values_get_flood_opacity(values: RsvgComputedValues) -> u8 {
+    assert!(!values.is_null());
+    let values = unsafe { &*values };
+
+    u8::from(values.flood_opacity.0)
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_computed_values_get_lighting_color_argb(values: RsvgComputedValues) -> u32 {
+    assert!(!values.is_null());
+    let values = unsafe { &*values };
+
+    match values.lighting_color {
+        LightingColor(cssparser::Color::CurrentColor) => rgba_to_argb(values.color.0),
+        LightingColor(cssparser::Color::RGBA(ref rgba)) => rgba_to_argb(*rgba),
     }
 }

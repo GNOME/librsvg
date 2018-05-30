@@ -39,11 +39,10 @@ struct _RsvgFilterPrimitiveDiffuseLighting {
     gdouble dx, dy;
     double diffuseConstant;
     double surfaceScale;
-    guint32 lightingcolor;
 };
 
 static void
-rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveDiffuseLighting *diffuse_lighting = (RsvgFilterPrimitiveDiffuseLighting *) primitive;
 
@@ -57,6 +56,8 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimiti
     cairo_matrix_t iaffine;
     RsvgNodeLightSource *source = NULL;
     RsvgIRect boundarys;
+    guint32 lightingcolor;
+    guint32 *p_lightingcolor;
 
     guchar *in_pixels;
     guchar *output_pixels;
@@ -92,11 +93,14 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimiti
         return;
     }
 
+    lightingcolor = rsvg_computed_values_get_lighting_color_argb (values);
+    p_lightingcolor = &lightingcolor;
+
     output_pixels = cairo_image_surface_get_data (output);
 
-    color.x = ((guchar *) (&diffuse_lighting->lightingcolor))[2] / 255.0;
-    color.y = ((guchar *) (&diffuse_lighting->lightingcolor))[1] / 255.0;
-    color.z = ((guchar *) (&diffuse_lighting->lightingcolor))[0] / 255.0;
+    color.x = ((guchar *) p_lightingcolor)[2] / 255.0;
+    color.y = ((guchar *) p_lightingcolor)[1] / 255.0;
+    color.z = ((guchar *) p_lightingcolor)[0] / 255.0;
 
     surfaceScale = diffuse_lighting->surfaceScale / 255.0;
 
@@ -120,11 +124,11 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimiti
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             z = surfaceScale * (double) in_pixels[y * rowstride + x * 4 + ctx_channelmap[3]];
-            L = get_light_direction (source, x, y, z, &iaffine, drawing_ctx);
+            L = get_light_direction (values, source, x, y, z, &iaffine, drawing_ctx);
             N = get_surface_normal (in_pixels, boundarys, x, y,
                                     dx, dy, rawdx, rawdy, diffuse_lighting->surfaceScale,
                                     rowstride, ctx_channelmap[3]);
-            lightcolor = get_light_color (source, color, x, y, z, &iaffine, drawing_ctx);
+            lightcolor = get_light_color (values, source, color, x, y, z, &iaffine, drawing_ctx);
             factor = dotproduct (N, L);
 
             output_pixels[y * rowstride + x * 4 + ctx_channelmap[0]] =
@@ -152,7 +156,6 @@ static void
 rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveDiffuseLighting *filter = impl;
-    RsvgState *state;
     RsvgPropertyBagIter *iter;
     const char *key;
     RsvgAttribute attr;
@@ -176,38 +179,6 @@ rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, 
             rsvg_css_parse_number_optional_number (value, &filter->dx, &filter->dy);
             break;
 
-        case RSVG_ATTRIBUTE_LIGHTING_COLOR: {
-            RsvgCssColorSpec spec;
-
-            spec = rsvg_css_parse_color (value);
-
-            switch (spec.kind) {
-            case RSVG_CSS_COLOR_SPEC_INHERIT:
-                /* FIXME: we should inherit; see how stop-color is handled in rsvg-styles.c */
-                break;
-
-            case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
-                state = rsvg_state_new (NULL);
-                rsvg_state_reconstruct (state, node);
-                filter->lightingcolor = rsvg_state_get_current_color (state);
-                rsvg_state_free (state);
-                break;
-
-            case RSVG_CSS_COLOR_SPEC_ARGB:
-                filter->lightingcolor = spec.argb;
-                break;
-
-            case RSVG_CSS_COLOR_PARSE_ERROR:
-                rsvg_node_set_attribute_parse_error (node, "lighting-color", "Invalid color");
-                goto out;
-
-            default:
-                g_assert_not_reached ();
-            }
-
-            break;
-        }
-
         case RSVG_ATTRIBUTE_DIFFUSE_CONSTANT:
             filter->diffuseConstant = g_ascii_strtod (value, NULL);
             break;
@@ -221,7 +192,6 @@ rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, 
         }
     }
 
-out:
     rsvg_property_bag_iter_end (iter);
 }
 
@@ -237,7 +207,6 @@ rsvg_new_filter_primitive_diffuse_lighting (const char *element_name, RsvgNode *
     filter->diffuseConstant = 1;
     filter->dx = 1;
     filter->dy = 1;
-    filter->lightingcolor = 0xFFFFFFFF;
     filter->super.render = rsvg_filter_primitive_diffuse_lighting_render;
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_DIFFUSE_LIGHTING,

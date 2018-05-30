@@ -4,8 +4,6 @@ use libc;
 use std::cell::Cell;
 use std::cell::RefCell;
 
-use cairo::MatrixTrait;
-
 use aspect_ratio::*;
 use attributes::Attribute;
 use drawing_ctx;
@@ -16,7 +14,7 @@ use length::*;
 use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state::{ComputedValues, Overflow};
+use state::Overflow;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -37,16 +35,12 @@ impl NodeTrait for NodeGroup {
     fn draw(
         &self,
         node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _: &ComputedValues,
-        dominate: i32,
+        with_layer: bool,
         clipping: bool,
     ) {
-        node.draw_children(draw_ctx, dominate, clipping);
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
+        node.draw_children(cascaded, draw_ctx, with_layer, clipping);
     }
 }
 
@@ -62,14 +56,6 @@ impl NodeDefs {
 impl NodeTrait for NodeDefs {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
         Ok(())
-    }
-
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
-        // nothing
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -90,26 +76,26 @@ impl NodeTrait for NodeSwitch {
     fn draw(
         &self,
         node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _state: &ComputedValues,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
-        drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+        let values = cascaded.get();
+
+        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
         if let Some(child) = node.children().find(|c| c.get_state().cond) {
-            let boxed_child = box_node(child.clone());
-
-            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0, clipping);
-
-            rsvg_node_unref(boxed_child);
+            drawing_ctx::draw_node_from_stack(
+                draw_ctx,
+                &CascadedValues::new(cascaded, &child),
+                &child,
+                true,
+                clipping,
+            );
         }
 
-        drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
+        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
     }
 }
 
@@ -197,18 +183,19 @@ impl NodeTrait for NodeSvg {
     fn draw(
         &self,
         node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
-        let nx = self.x.get().normalize(draw_ctx);
-        let ny = self.y.get().normalize(draw_ctx);
-        let nw = self.w.get().normalize(draw_ctx);
-        let nh = self.h.get().normalize(draw_ctx);
+        let values = cascaded.get();
 
-        let do_clip = !state.is_overflow() && node.get_parent().is_some();
-        let affine = state.affine;
+        let nx = self.x.get().normalize(values, draw_ctx);
+        let ny = self.y.get().normalize(values, draw_ctx);
+        let nw = self.w.get().normalize(values, draw_ctx);
+        let nh = self.h.get().normalize(values, draw_ctx);
+
+        let do_clip = !values.is_overflow() && node.get_parent().is_some();
 
         draw_in_viewport(
             nx,
@@ -219,19 +206,14 @@ impl NodeTrait for NodeSvg {
             do_clip,
             self.vbox.get(),
             self.preserve_aspect_ratio.get(),
-            affine,
+            values,
+            drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
             draw_ctx,
             clipping,
             || {
-                drawing_ctx::state_push(draw_ctx);
-                node.draw_children(draw_ctx, -1, clipping); // dominate==-1 so it won't reinherit or push a layer
-                drawing_ctx::state_pop(draw_ctx);
+                node.draw_children(cascaded, draw_ctx, false, clipping);
             },
         );
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -288,11 +270,13 @@ impl NodeTrait for NodeUse {
     fn draw(
         &self,
         node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         let link = self.link.borrow();
 
         if link.is_none() {
@@ -312,8 +296,8 @@ impl NodeTrait for NodeUse {
             return;
         }
 
-        let nx = self.x.get().normalize(draw_ctx);
-        let ny = self.y.get().normalize(draw_ctx);
+        let nx = self.x.get().normalize(values, draw_ctx);
+        let ny = self.y.get().normalize(values, draw_ctx);
 
         // If attributes ‘width’ and/or ‘height’ are not specified,
         // [...] use values of '100%' for these attributes.
@@ -324,12 +308,12 @@ impl NodeTrait for NodeUse {
             .w
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Horizontal).unwrap())
-            .normalize(draw_ctx);
+            .normalize(values, draw_ctx);
         let nh = self
             .h
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Vertical).unwrap())
-            .normalize(draw_ctx);
+            .normalize(values, draw_ctx);
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
@@ -338,28 +322,24 @@ impl NodeTrait for NodeUse {
         }
 
         if child.get_type() != NodeType::Symbol {
-            let mut affine = state.affine;
-            affine.translate(nx, ny);
+            let cr = drawing_ctx::get_cairo_context(draw_ctx);
+            cr.translate(nx, ny);
 
-            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
-            // push a new state so we can change its affine
-            drawing_ctx::state_push(draw_ctx);
+            drawing_ctx::draw_node_from_stack(
+                draw_ctx,
+                &CascadedValues::new_from_values(&child, values),
+                &child,
+                true,
+                clipping,
+            );
 
-            let cur_state = drawing_ctx::get_current_state_mut(draw_ctx).unwrap();
-            cur_state.affine = affine;
-
-            let boxed_child = box_node(child.clone());
-            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 1, clipping);
-            rsvg_node_unref(boxed_child);
-
-            drawing_ctx::state_pop(draw_ctx);
-
-            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+            drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
-                let do_clip = !state.is_overflow()
-                    || (state.overflow == Overflow::Visible && child.get_state().is_overflow());
+                let do_clip = !values.is_overflow()
+                    || (values.overflow == Overflow::Visible && child.get_state().is_overflow());
 
                 draw_in_viewport(
                     nx,
@@ -370,24 +350,23 @@ impl NodeTrait for NodeUse {
                     do_clip,
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
-                    state.affine,
+                    values,
+                    drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
                     draw_ctx,
                     clipping,
                     || {
-                        drawing_ctx::state_push(draw_ctx);
-                        drawing_ctx::state_reinherit_top(draw_ctx, child.get_state(), 1);
-                        drawing_ctx::push_discrete_layer(draw_ctx, clipping);
-                        child.draw_children(draw_ctx, -1, clipping);
-                        drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
-                        drawing_ctx::state_pop(draw_ctx);
+                        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
+                        child.draw_children(
+                            &CascadedValues::new_from_values(&child, values),
+                            draw_ctx,
+                            false,
+                            clipping,
+                        );
+                        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
                     },
                 );
             });
         }
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -426,14 +405,6 @@ impl NodeTrait for NodeSymbol {
         }
 
         Ok(())
-    }
-
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
-        // nothing
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 

@@ -13,6 +13,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use filter_context::{FilterContext, RsvgFilter, RsvgFilterContext};
 use length::RsvgLength;
 use node::{NodeType, RsvgCNodeImpl, RsvgNode};
+use state::{ComputedValues, RsvgComputedValues};
 
 use super::Filter;
 
@@ -33,7 +34,12 @@ pub struct RsvgFilterPrimitive {
     result: *mut GString,
 
     render: Option<
-        unsafe extern "C" fn(*mut RsvgNode, *mut RsvgFilterPrimitive, *mut RsvgFilterContext),
+        unsafe extern "C" fn(
+            *mut RsvgNode,
+            RsvgComputedValues,
+            *mut RsvgFilterPrimitive,
+            *mut RsvgFilterContext,
+        ),
     >,
 }
 
@@ -42,7 +48,7 @@ pub(super) type RenderFunctionType = fn(&RsvgNode, &mut FilterContext);
 
 /// Downcasts the given `node` to the type `T` and calls `Filter::render()` on it.
 pub(super) fn render<T: Filter>(node: &RsvgNode, ctx: &mut FilterContext) {
-    node.with_impl(|filter: &T| filter.render(ctx));
+    node.with_impl(|filter: &T| filter.render(node, ctx));
 }
 
 /// Creates a new surface applied the filter. This function will create a context for itself, set up
@@ -52,7 +58,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
     filter_node: *mut RsvgNode,
     source: *mut cairo_surface_t,
     context: *mut RsvgDrawingCtx,
-    channelmap: *mut c_char,
+    channelmap: *const c_char,
 ) -> *mut cairo_surface_t {
     assert!(!filter_node.is_null());
     assert!(!source.is_null());
@@ -73,6 +79,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
 
     let mut filter_ctx = FilterContext::new(
         filter_node.get_c_impl() as *mut RsvgFilter,
+        filter_node,
         source,
         context,
         channelmap_arr,
@@ -93,7 +100,12 @@ pub unsafe extern "C" fn rsvg_filter_render(
             }
             _ => {
                 let filter = &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive);
-                (filter.render.unwrap())(&mut c, filter, &mut filter_ctx);
+                (filter.render.unwrap())(
+                    &mut c,
+                    &c.get_cascaded_values().get() as &ComputedValues as RsvgComputedValues,
+                    filter,
+                    &mut filter_ctx,
+                );
             }
         });
 

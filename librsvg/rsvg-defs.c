@@ -65,6 +65,7 @@ rsvg_defs_load_extern (const RsvgDefs * defs, const char *uri)
 
         if (rsvg_handle_write (handle, (guchar *) data, data_len, NULL)
             && rsvg_handle_close (handle, NULL)) {
+            rsvg_handle_cascade (handle);
             g_hash_table_insert (defs->externs, g_strdup (uri), handle);
         } else {
             g_object_unref (handle);

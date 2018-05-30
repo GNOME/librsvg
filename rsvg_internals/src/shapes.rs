@@ -20,14 +20,14 @@ use state::ComputedValues;
 fn render_path_builder(
     builder: &PathBuilder,
     draw_ctx: *mut RsvgDrawingCtx,
-    state: &ComputedValues,
+    values: &ComputedValues,
     render_markers: bool,
     clipping: bool,
 ) {
-    draw_path_builder(draw_ctx, state, builder, clipping);
+    draw_path_builder(draw_ctx, values, builder, clipping);
 
     if render_markers {
-        marker::render_markers_for_path_builder(builder, draw_ctx, clipping);
+        marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping);
     }
 }
 
@@ -37,7 +37,7 @@ fn render_ellipse(
     rx: f64,
     ry: f64,
     draw_ctx: *mut RsvgDrawingCtx,
-    state: &ComputedValues,
+    values: &ComputedValues,
     clipping: bool,
 ) {
     // Per the spec, rx and ry must be nonnegative
@@ -91,7 +91,7 @@ fn render_ellipse(
 
     builder.close_path();
 
-    render_path_builder(&builder, draw_ctx, state, false, clipping);
+    render_path_builder(&builder, draw_ctx, values, false, clipping);
 }
 
 // ************ NodePath ************
@@ -128,18 +128,16 @@ impl NodeTrait for NodePath {
     fn draw(
         &self,
         _node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
-        if let Some(ref builder) = *self.builder.borrow() {
-            render_path_builder(builder, draw_ctx, state, true, clipping);
-        }
-    }
+        let values = cascaded.get();
 
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
+        if let Some(ref builder) = *self.builder.borrow() {
+            render_path_builder(builder, draw_ctx, values, true, clipping);
+        }
     }
 }
 
@@ -190,11 +188,13 @@ impl NodeTrait for NodePoly {
     fn draw(
         &self,
         _node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         if let Some(ref points) = *self.points.borrow() {
             let mut builder = PathBuilder::new();
 
@@ -210,12 +210,8 @@ impl NodeTrait for NodePoly {
                 builder.close_path();
             }
 
-            render_path_builder(&builder, draw_ctx, state, true, clipping);
+            render_path_builder(&builder, draw_ctx, values, true, clipping);
         }
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -260,26 +256,24 @@ impl NodeTrait for NodeLine {
     fn draw(
         &self,
         _node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
+        let values = cascaded.get();
+
         let mut builder = PathBuilder::new();
 
-        let x1 = self.x1.get().normalize(draw_ctx);
-        let y1 = self.y1.get().normalize(draw_ctx);
-        let x2 = self.x2.get().normalize(draw_ctx);
-        let y2 = self.y2.get().normalize(draw_ctx);
+        let x1 = self.x1.get().normalize(values, draw_ctx);
+        let y1 = self.y1.get().normalize(values, draw_ctx);
+        let x2 = self.x2.get().normalize(values, draw_ctx);
+        let y2 = self.y2.get().normalize(values, draw_ctx);
 
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        render_path_builder(&builder, draw_ctx, state, true, clipping);
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
+        render_path_builder(&builder, draw_ctx, values, true, clipping);
     }
 }
 
@@ -352,16 +346,18 @@ impl NodeTrait for NodeRect {
     fn draw(
         &self,
         _node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
-        let x = self.x.get().normalize(draw_ctx);
-        let y = self.y.get().normalize(draw_ctx);
+        let values = cascaded.get();
 
-        let w = self.w.get().normalize(draw_ctx);
-        let h = self.h.get().normalize(draw_ctx);
+        let x = self.x.get().normalize(values, draw_ctx);
+        let y = self.y.get().normalize(values, draw_ctx);
+
+        let w = self.w.get().normalize(values, draw_ctx);
+        let h = self.h.get().normalize(values, draw_ctx);
 
         let mut rx;
         let mut ry;
@@ -373,18 +369,18 @@ impl NodeTrait for NodeRect {
             }
 
             (Some(_rx), None) => {
-                rx = _rx.normalize(draw_ctx);
-                ry = _rx.normalize(draw_ctx);
+                rx = _rx.normalize(values, draw_ctx);
+                ry = _rx.normalize(values, draw_ctx);
             }
 
             (None, Some(_ry)) => {
-                rx = _ry.normalize(draw_ctx);
-                ry = _ry.normalize(draw_ctx);
+                rx = _ry.normalize(values, draw_ctx);
+                ry = _ry.normalize(values, draw_ctx);
             }
 
             (Some(_rx), Some(_ry)) => {
-                rx = _rx.normalize(draw_ctx);
-                ry = _ry.normalize(draw_ctx);
+                rx = _rx.normalize(values, draw_ctx);
+                ry = _ry.normalize(values, draw_ctx);
             }
         }
 
@@ -491,11 +487,7 @@ impl NodeTrait for NodeRect {
             builder.close_path ();
         }
 
-        render_path_builder(&builder, draw_ctx, state, false, clipping);
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
+        render_path_builder(&builder, draw_ctx, values, false, clipping);
     }
 }
 
@@ -541,20 +533,18 @@ impl NodeTrait for NodeCircle {
     fn draw(
         &self,
         _node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
-        let cx = self.cx.get().normalize(draw_ctx);
-        let cy = self.cy.get().normalize(draw_ctx);
-        let r = self.r.get().normalize(draw_ctx);
+        let values = cascaded.get();
 
-        render_ellipse(cx, cy, r, r, draw_ctx, state, clipping);
-    }
+        let cx = self.cx.get().normalize(values, draw_ctx);
+        let cy = self.cy.get().normalize(values, draw_ctx);
+        let r = self.r.get().normalize(values, draw_ctx);
 
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
+        render_ellipse(cx, cy, r, r, draw_ctx, values, clipping);
     }
 }
 
@@ -609,21 +599,19 @@ impl NodeTrait for NodeEllipse {
     fn draw(
         &self,
         _node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
-        let cx = self.cx.get().normalize(draw_ctx);
-        let cy = self.cy.get().normalize(draw_ctx);
-        let rx = self.rx.get().normalize(draw_ctx);
-        let ry = self.ry.get().normalize(draw_ctx);
+        let values = cascaded.get();
 
-        render_ellipse(cx, cy, rx, ry, draw_ctx, state, clipping);
-    }
+        let cx = self.cx.get().normalize(values, draw_ctx);
+        let cy = self.cy.get().normalize(values, draw_ctx);
+        let rx = self.rx.get().normalize(values, draw_ctx);
+        let ry = self.ry.get().normalize(values, draw_ctx);
 
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
+        render_ellipse(cx, cy, rx, ry, draw_ctx, values, clipping);
     }
 }
 

@@ -2,7 +2,6 @@ use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
 use attributes::Attribute;
-use drawing_ctx::RsvgDrawingCtx;
 use error::AttributeError;
 use filter_context::{FilterContext, FilterResult};
 use handle::RsvgHandle;
@@ -10,7 +9,6 @@ use length::{LengthDir, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
-use state::ComputedValues;
 
 mod ffi;
 use self::ffi::*;
@@ -24,7 +22,7 @@ trait Filter: NodeTrait {
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
     /// property hasn't been provided), return without drawing anything.
-    fn render(&self, ctx: &mut FilterContext);
+    fn render(&self, node: &RsvgNode, ctx: &mut FilterContext);
 }
 
 /// The base filter primitive node containing common properties.
@@ -83,7 +81,12 @@ impl Primitive {
     }
 
     fn get_bounds(&self, ctx: &FilterContext) -> IRect {
+        let node = ctx.get_filter_node();
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
+
         ctx.compute_bounds(
+            &values,
             self.x.get(),
             self.y.get(),
             self.width.get(),
@@ -116,11 +119,6 @@ impl NodeTrait for Primitive {
         }
 
         Ok(())
-    }
-
-    #[inline]
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
-        // Nothing; filters are drawn in rsvg-cairo-draw.c.
     }
 
     #[inline]
@@ -216,11 +214,6 @@ impl NodeTrait for PrimitiveWithInput {
         }
 
         Ok(())
-    }
-
-    #[inline]
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
-        // Nothing; filters are drawn in rsvg-cairo-draw.c.
     }
 
     #[inline]

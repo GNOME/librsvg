@@ -72,7 +72,7 @@ struct _RsvgFilterPrimitive {
     GString *in;
     GString *result;
 
-    void (*render) (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx);
+    void (*render) (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx);
 };
 
 G_GNUC_INTERNAL
@@ -86,7 +86,7 @@ guchar get_interp_pixel (guchar * src, gdouble ox, gdouble oy, guchar ch, RsvgIR
                          guint rowstride);
 
 G_GNUC_INTERNAL
-void render_child_if_filter_primitive (RsvgNode *node, RsvgFilterContext *filter_ctx);
+void render_child_if_filter_primitive (RsvgNode *node, RsvgComputedValues *values, RsvgFilterContext *filter_ctx);
 
 G_GNUC_INTERNAL
 void rsvg_alpha_blt (cairo_surface_t *src,

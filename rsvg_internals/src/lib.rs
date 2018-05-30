@@ -34,17 +34,14 @@ pub use bbox::{
     RsvgBbox,
 };
 
-pub use clip_path::{rsvg_node_clip_path_get_units, rsvg_node_clip_path_new};
+pub use clip_path::rsvg_node_clip_path_new;
 
 pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
-pub use draw::rsvg_cairo_add_clipping_rect;
-
 pub use drawing_ctx::{
-    rsvg_drawing_ctx_state_pop,
-    rsvg_drawing_ctx_state_push,
+    rsvg_drawing_ctx_draw_node_from_stack,
     rsvg_drawing_ctx_transformed_image_bounding_box,
 };
 
@@ -85,15 +82,7 @@ pub use link::rsvg_node_link_new;
 
 pub use marker::rsvg_node_marker_new;
 
-pub use mask::{
-    rsvg_node_mask_get_content_units,
-    rsvg_node_mask_get_height,
-    rsvg_node_mask_get_units,
-    rsvg_node_mask_get_width,
-    rsvg_node_mask_get_x,
-    rsvg_node_mask_get_y,
-    rsvg_node_mask_new,
-};
+pub use mask::rsvg_node_mask_new;
 
 pub use node::{
     rsvg_node_add_child,
@@ -101,16 +90,15 @@ pub use node::{
     rsvg_node_children_iter_end,
     rsvg_node_children_iter_next,
     rsvg_node_children_iter_next_back,
-    rsvg_node_draw,
-    rsvg_node_draw_children,
     rsvg_node_get_parent,
-    rsvg_node_get_state,
     rsvg_node_get_type,
     rsvg_node_is_same,
     rsvg_node_ref,
     rsvg_node_set_attribute_parse_error,
     rsvg_node_set_atts,
+    rsvg_node_set_overriden_properties,
     rsvg_node_unref,
+    rsvg_root_node_cascade,
 };
 
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
@@ -136,26 +124,13 @@ pub use shapes::{
 };
 
 pub use state::{
+    rsvg_computed_values_get_flood_color_argb,
+    rsvg_computed_values_get_flood_opacity,
+    rsvg_computed_values_get_lighting_color_argb,
     rsvg_parse_style_attrs,
     rsvg_state_free,
-    rsvg_state_get_affine,
-    rsvg_state_get_clip_path,
-    rsvg_state_get_comp_op,
-    rsvg_state_get_current_color,
-    rsvg_state_get_enable_background,
-    rsvg_state_get_filter,
-    rsvg_state_get_flood_color,
-    rsvg_state_get_flood_opacity,
-    rsvg_state_get_mask,
-    rsvg_state_get_opacity,
-    rsvg_state_is_visible,
     rsvg_state_new,
-    rsvg_state_parent,
-    rsvg_state_parse_conditional_processing_attributes,
-    rsvg_state_parse_presentation_attributes,
     rsvg_state_parse_style_pair,
-    rsvg_state_reconstruct,
-    rsvg_state_set_affine,
 };
 
 pub use stop::rsvg_node_stop_new;

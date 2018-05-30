@@ -7,14 +7,12 @@ use cairo_sys;
 use libc::c_char;
 
 use attributes::Attribute;
-use drawing_ctx::RsvgDrawingCtx;
 use filter_context::{FilterContext, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
-use state::ComputedValues;
 
 use super::{Filter, PrimitiveWithInput};
 
@@ -60,22 +58,20 @@ impl NodeTrait for Offset {
     }
 
     #[inline]
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
-        // Nothing; filters are drawn in rsvg-cairo-draw.c.
-    }
-
-    #[inline]
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
         self.base.get_c_impl()
     }
 }
 
 impl Filter for Offset {
-    fn render(&self, ctx: &mut FilterContext) {
+    fn render(&self, node: &RsvgNode, ctx: &mut FilterContext) {
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
+
         let bounds = self.base.get_bounds(ctx);
 
-        let dx = self.dx.get().normalize(ctx.drawing_context());
-        let dy = self.dy.get().normalize(ctx.drawing_context());
+        let dx = self.dx.get().normalize(&values, ctx.drawing_context());
+        let dy = self.dy.get().normalize(&values, ctx.drawing_context());
         let paffine = ctx.paffine();
         let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;

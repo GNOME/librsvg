@@ -1,9 +1,10 @@
+use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
 use glib::translate::*;
 use glib_sys;
 use libc;
 
-use std::cell::RefCell;
+use std::cell::{Cell, Ref, RefCell};
 use std::ptr;
 use std::rc::{Rc, Weak};
 use std::str::FromStr;
@@ -13,7 +14,7 @@ use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
 use handle::RsvgHandle;
-use parsers::ParseError;
+use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
 use state::{self, rsvg_state_new, ComputedValues, Overflow, RsvgState, SpecifiedValue, State};
 use util::utf8_cstr;
@@ -27,22 +28,110 @@ pub type RsvgNode = Rc<Node>;
 // struct for a particular node type.
 pub enum RsvgCNodeImpl {}
 
+/// Can obtain computed values from a node
+///
+/// In our tree of SVG elements (Node in our parlance), each node stores a `ComputedValues` that
+/// gets computed during the initial CSS cascade.  However, sometimes nodes need to be rendered
+/// outside the normal hierarchy.  For example, the `<use>` element can "instance" a subtree from
+/// elsewhere in the SVG; it causes the instanced subtree to re-cascade from the computed values for
+/// the `<use>` element.
+///
+/// This structure gets created by `Node.get_cascaded_values()`.  You can then call the `get()`
+/// method on the resulting `CascadedValues` to get a `&ComputedValues` whose fields you can access.
+pub struct CascadedValues<'a> {
+    inner: CascadedInner<'a>,
+}
+
+enum CascadedInner<'a> {
+    FromNode(Ref<'a, ComputedValues>),
+    FromValues(ComputedValues),
+}
+
+impl<'a> CascadedValues<'a> {
+    /// Creates a `CascadedValues` that has the same cascading mode as &self
+    ///
+    /// This is what nodes should normally use to draw their children from their `draw()` method.
+    /// Nodes that need to override the cascade for their children can use `new_from_values()`
+    /// instead.
+    pub fn new(&self, node: &'a Node) -> CascadedValues<'a> {
+        match self.inner {
+            CascadedInner::FromNode(_) => CascadedValues {
+                inner: CascadedInner::FromNode(node.values.borrow()),
+            },
+
+            CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, v),
+        }
+    }
+
+    /// Creates a `CascadedValues` that will hold the `node`'s computed values
+    ///
+    /// This is to be used only in the toplevel drawing function, or in elements like `<marker>`
+    /// that don't propagate their parent's cascade to their children.  All others should use
+    /// `new()` to derive the cascade from an existing one.
+    fn new_from_node(node: &Node) -> CascadedValues {
+        CascadedValues {
+            inner: CascadedInner::FromNode(node.values.borrow()),
+        }
+    }
+
+    /// Creates a `CascadedValues` that will override the `node`'s cascade with the specified
+    /// `values`
+    ///
+    /// This is for the `<use>` element, which draws the element which it references with the
+    /// `<use>`'s own cascade, not wih the element's original cascade.
+    pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
+        let mut v = values.clone();
+        let state = node.get_state();
+
+        state.to_computed_values(&mut v);
+
+        CascadedValues {
+            inner: CascadedInner::FromValues(v),
+        }
+    }
+
+    /// Returns the cascaded `ComputedValues`.
+    ///
+    /// Nodes should use this from their `NodeTrait::draw()` implementation to get the
+    /// `ComputedValues` from the `CascadedValues` that got passed to `draw()`.
+    pub fn get(&'a self) -> &'a ComputedValues {
+        match self.inner {
+            CascadedInner::FromNode(ref r) => &*r,
+            CascadedInner::FromValues(ref v) => v,
+        }
+    }
+}
+
+/// The basic trait that all nodes must implement
 pub trait NodeTrait: Downcast {
+    /// Sets per-node attributes from the `pbag`
+    ///
+    /// Each node is supposed to iterate the `pbag`, and parse any attributes it needs.
     fn set_atts(
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
         pbag: &PropertyBag,
     ) -> NodeResult;
+
+    /// Sets any special-cased properties that the node may have, that are different
+    /// from defaults in the node's `State`.
+    fn set_overriden_properties(&self, _state: &mut State) {}
+
     fn draw(
         &self,
-        node: &RsvgNode,
-        draw_ctx: *mut RsvgDrawingCtx,
-        state: &ComputedValues,
-        dominate: i32,
-        clipping: bool,
-    );
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl;
+        _node: &RsvgNode,
+        _cascaded: &CascadedValues,
+        _draw_ctx: *mut RsvgDrawingCtx,
+        _with_layer: bool,
+        _clipping: bool,
+    ) {
+        // by default nodes don't draw themselves
+    }
+
+    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
+        unreachable!(); // no Rust nodes should have this method called for them
+    }
 }
 
 impl_downcast!(NodeTrait);
@@ -78,6 +167,8 @@ pub struct Node {
     prev_sib: RefCell<Option<Weak<Node>>>, // previous sibling; weak ref
     state: *mut RsvgState,
     result: RefCell<NodeResult>,
+    transform: Cell<Matrix>,
+    values: RefCell<ComputedValues>,
     node_impl: Box<NodeTrait>,
 }
 
@@ -160,7 +251,9 @@ impl Node {
             next_sib: RefCell::new(None),
             prev_sib: RefCell::new(None),
             state,
+            transform: Cell::new(Matrix::identity()),
             result: RefCell::new(Ok(())),
+            values: RefCell::new(ComputedValues::default()),
             node_impl,
         }
     }
@@ -169,12 +262,36 @@ impl Node {
         self.node_type
     }
 
+    pub fn get_transform(&self) -> Matrix {
+        self.transform.get()
+    }
+
     pub fn get_state(&self) -> &State {
         state::from_c(self.state)
     }
 
     pub fn get_state_mut(&self) -> &mut State {
         state::from_c_mut(self.state)
+    }
+
+    pub fn set_computed_values(&self, values: &ComputedValues) {
+        *self.values.borrow_mut() = values.clone();
+    }
+
+    pub fn get_cascaded_values(&self) -> CascadedValues {
+        CascadedValues::new_from_node(self)
+    }
+
+    pub fn cascade(&self, values: &ComputedValues) {
+        let mut values = values.clone();
+        let state = self.get_state();
+
+        state.to_computed_values(&mut values);
+        self.set_computed_values(&values);
+
+        for child in self.children() {
+            child.cascade(&values);
+        }
     }
 
     pub fn get_parent(&self) -> Option<Rc<Node>> {
@@ -213,24 +330,47 @@ impl Node {
     }
 
     pub fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) {
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Transform => match Matrix::parse(value, ()) {
+                    Ok(affine) => self.transform.set(affine),
+
+                    Err(e) => {
+                        self.set_error(NodeError::attribute_error(Attribute::Transform, e));
+                        return;
+                    }
+                },
+
+                _ => (),
+            }
+        }
+
         *self.result.borrow_mut() = self.node_impl.set_atts(node, handle, pbag);
+    }
+
+    pub fn set_overriden_properties(&self) {
+        let mut state = self.get_state_mut();
+        self.node_impl.set_overriden_properties(&mut state);
     }
 
     pub fn draw(
         &self,
         node: &RsvgNode,
+        cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        dominate: i32,
+        with_layer: bool,
         clipping: bool,
     ) {
         if self.result.borrow().is_ok() {
-            let node_state = state::from_c(self.state);
-            drawing_ctx::state_reinherit_top(draw_ctx, node_state, dominate);
+            let cr = drawing_ctx::get_cairo_context(draw_ctx);
+            let save_affine = cr.get_matrix();
 
-            let state = drawing_ctx::get_current_state(draw_ctx).unwrap();
-            let computed = state.get_computed_values();
+            cr.transform(self.get_transform());
+
             self.node_impl
-                .draw(node, draw_ctx, &computed, dominate, clipping);
+                .draw(node, cascaded, draw_ctx, with_layer, clipping);
+
+            cr.set_matrix(save_affine);
         }
     }
 
@@ -258,23 +398,31 @@ impl Node {
         }
     }
 
-    pub fn draw_children(&self, draw_ctx: *const RsvgDrawingCtx, dominate: i32, clipping: bool) {
-        if dominate != -1 {
-            drawing_ctx::state_reinherit_top(draw_ctx, self.get_state(), dominate);
+    pub fn draw_children(
+        &self,
+        cascaded: &CascadedValues,
+        draw_ctx: *mut RsvgDrawingCtx,
+        with_layer: bool,
+        clipping: bool,
+    ) {
+        let values = cascaded.get();
 
-            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
+        if with_layer {
+            drawing_ctx::push_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
         }
 
         for child in self.children() {
-            let boxed_child = box_node(child.clone());
-
-            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0, clipping);
-
-            rsvg_node_unref(boxed_child);
+            drawing_ctx::draw_node_from_stack(
+                draw_ctx,
+                &CascadedValues::new(cascaded, &child),
+                &child,
+                true,
+                clipping,
+            );
         }
 
-        if dominate != -1 {
-            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+        if with_layer {
+            drawing_ctx::pop_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
         }
     }
 
@@ -330,7 +478,7 @@ pub fn boxed_node_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
-        rsvg_state_new(ptr::null_mut()),
+        rsvg_state_new(),
         node_impl,
     )))
 }
@@ -457,14 +605,6 @@ pub extern "C" fn rsvg_node_is_same(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_get_state(raw_node: *const RsvgNode) -> *mut RsvgState {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    node.state
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_add_child(raw_node: *mut RsvgNode, raw_child: *const RsvgNode) {
     assert!(!raw_node.is_null());
     assert!(!raw_child.is_null());
@@ -490,16 +630,12 @@ pub extern "C" fn rsvg_node_set_atts(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_draw(
-    raw_node: *const RsvgNode,
-    draw_ctx: *mut RsvgDrawingCtx,
-    dominate: i32,
-    clipping: glib_sys::gboolean,
-) {
+pub extern "C" fn rsvg_node_set_overriden_properties(raw_node: *mut RsvgNode) {
     assert!(!raw_node.is_null());
+
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    node.draw(node, draw_ctx, dominate, from_glib(clipping));
+    node.set_overriden_properties();
 }
 
 #[no_mangle]
@@ -583,26 +719,18 @@ pub extern "C" fn rsvg_node_children_iter_next_back(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_draw_children(
-    raw_node: *const RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
-    clipping: glib_sys::gboolean,
-) {
+pub extern "C" fn rsvg_root_node_cascade(raw_node: *const RsvgNode) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    let clipping: bool = from_glib(clipping);
+    let values = ComputedValues::default();
 
-    drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
-    drawing_ctx::push_discrete_layer(draw_ctx, clipping);
-    node.draw_children(draw_ctx, -1, clipping);
-    drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
+    node.cascade(&values)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use drawing_ctx::RsvgDrawingCtx;
     use handle::RsvgHandle;
     use std::rc::Rc;
     use std::{mem, ptr};
@@ -612,12 +740,6 @@ mod tests {
     impl NodeTrait for TestNodeImpl {
         fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
             Ok(())
-        }
-
-        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {}
-
-        fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-            unreachable!();
         }
     }
 

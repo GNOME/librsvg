@@ -1,9 +1,8 @@
-use cairo;
+use cairo::{self, MatrixTrait};
+use cssparser;
 use libc;
 
 use std::cell::RefCell;
-
-use cairo::MatrixTrait;
 
 use attributes::Attribute;
 use bbox::*;
@@ -16,7 +15,7 @@ use node::*;
 use parsers::{parse, Parse, ParseError};
 use property_bag::PropertyBag;
 use rect::RectangleExt;
-use state::ComputedValues;
+use state::{ComputedValues, StopColor};
 use stop::*;
 use unitinterval::UnitInterval;
 use util::*;
@@ -24,7 +23,8 @@ use util::*;
 #[derive(Copy, Clone)]
 struct ColorStop {
     pub offset: f64,
-    pub rgba: u32,
+    pub rgba: cssparser::RGBA,
+    pub opacity: UnitInterval,
 }
 
 coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
@@ -178,7 +178,7 @@ impl GradientCommon {
         self.fallback = clone_fallback_name(&fallback.fallback);
     }
 
-    fn add_color_stop(&mut self, mut offset: f64, rgba: u32) {
+    fn add_color_stop(&mut self, mut offset: f64, rgba: cssparser::RGBA, opacity: UnitInterval) {
         if self.stops.is_none() {
             self.stops = Some(Vec::<ColorStop>::new());
         }
@@ -194,7 +194,11 @@ impl GradientCommon {
                 offset = last_offset;
             }
 
-            stops.push(ColorStop { offset, rgba });
+            stops.push(ColorStop {
+                offset,
+                rgba,
+                opacity,
+            });
         } else {
             unreachable!();
         }
@@ -353,33 +357,41 @@ impl Gradient {
         );
 
         node.children()
-             .into_iter()
-             // just ignore this child; we are only interested in gradient stops
-             .filter(|child| child.get_type() == NodeType::Stop)
-             // don't add any more stops, Eq to break in for-loop
-             .take_while(|child| child.get_result().is_ok())
-             .for_each(|child| {
+            .into_iter()
+            // just ignore this child; we are only interested in gradient stops
+            .filter(|child| child.get_type() == NodeType::Stop)
+            // don't add any more stops, Eq to break in for-loop
+            .take_while(|child| child.get_result().is_ok())
+            .for_each(|child| {
                 child.with_impl(|stop: &NodeStop| {
-                    self.add_color_stop(stop.get_offset(), stop.get_rgba());
+                    let cascaded = child.get_cascaded_values();
+                    let values = cascaded.get();
+
+                    let rgba = match values.stop_color {
+                        StopColor(cssparser::Color::CurrentColor) => values.color.0,
+                        StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
+                    };
+                    self.add_color_stop(stop.get_offset(), rgba, values.stop_opacity.0);
                 })
             });
     }
 
-    fn add_color_stop(&mut self, offset: f64, rgba: u32) {
-        self.common.add_color_stop(offset, rgba);
+    fn add_color_stop(&mut self, offset: f64, rgba: cssparser::RGBA, opacity: UnitInterval) {
+        self.common.add_color_stop(offset, rgba, opacity);
     }
 
     fn add_color_stops_to_pattern(&self, pattern: &mut cairo::Gradient, opacity: &UnitInterval) {
         if let Some(stops) = self.common.stops.as_ref() {
             for stop in stops {
-                let rgba = stop.rgba;
                 let &UnitInterval(o) = opacity;
+                let UnitInterval(stop_opacity) = stop.opacity;
+
                 pattern.add_color_stop_rgba(
                     stop.offset,
-                    (f64::from((rgba >> 24) & 0xff)) / 255.0,
-                    (f64::from((rgba >> 16) & 0xff)) / 255.0,
-                    (f64::from((rgba >> 8) & 0xff)) / 255.0,
-                    (f64::from(rgba & 0xff) * o) / 255.0,
+                    f64::from(stop.rgba.red_f32()),
+                    f64::from(stop.rgba.green_f32()),
+                    f64::from(stop.rgba.blue_f32()),
+                    f64::from(stop.rgba.alpha_f32()) * stop_opacity * o,
                 );
             }
         }
@@ -466,6 +478,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
 
 fn set_linear_gradient_on_pattern(
     gradient: &Gradient,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &BoundingBox,
     opacity: &UnitInterval,
@@ -478,10 +491,10 @@ fn set_linear_gradient_on_pattern(
         }
 
         let mut pattern = cairo::LinearGradient::new(
-            x1.as_ref().unwrap().normalize(draw_ctx),
-            y1.as_ref().unwrap().normalize(draw_ctx),
-            x2.as_ref().unwrap().normalize(draw_ctx),
-            y2.as_ref().unwrap().normalize(draw_ctx),
+            x1.as_ref().unwrap().normalize(values, draw_ctx),
+            y1.as_ref().unwrap().normalize(values, draw_ctx),
+            x2.as_ref().unwrap().normalize(values, draw_ctx),
+            y2.as_ref().unwrap().normalize(values, draw_ctx),
         );
 
         if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
@@ -545,6 +558,7 @@ fn fix_focus_point(mut fx: f64, mut fy: f64, cx: f64, cy: f64, radius: f64) -> (
 
 fn set_radial_gradient_on_pattern(
     gradient: &Gradient,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &BoundingBox,
     opacity: &UnitInterval,
@@ -556,11 +570,11 @@ fn set_radial_gradient_on_pattern(
             drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
         }
 
-        let n_cx = cx.as_ref().unwrap().normalize(draw_ctx);
-        let n_cy = cy.as_ref().unwrap().normalize(draw_ctx);
-        let n_r = r.as_ref().unwrap().normalize(draw_ctx);
-        let n_fx = fx.as_ref().unwrap().normalize(draw_ctx);
-        let n_fy = fy.as_ref().unwrap().normalize(draw_ctx);
+        let n_cx = cx.as_ref().unwrap().normalize(values, draw_ctx);
+        let n_cy = cy.as_ref().unwrap().normalize(values, draw_ctx);
+        let n_r = r.as_ref().unwrap().normalize(values, draw_ctx);
+        let n_fx = fx.as_ref().unwrap().normalize(values, draw_ctx);
+        let n_fy = fy.as_ref().unwrap().normalize(values, draw_ctx);
 
         let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
 
@@ -580,6 +594,7 @@ fn set_radial_gradient_on_pattern(
 
 fn set_pattern_on_draw_context(
     gradient: &Gradient,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
@@ -588,11 +603,11 @@ fn set_pattern_on_draw_context(
 
     match gradient.variant {
         GradientVariant::Linear { .. } => {
-            set_linear_gradient_on_pattern(gradient, draw_ctx, bbox, opacity)
+            set_linear_gradient_on_pattern(gradient, values, draw_ctx, bbox, opacity)
         }
 
         GradientVariant::Radial { .. } => {
-            set_radial_gradient_on_pattern(gradient, draw_ctx, bbox, opacity)
+            set_radial_gradient_on_pattern(gradient, values, draw_ctx, bbox, opacity)
         }
     }
 }
@@ -690,14 +705,6 @@ impl NodeTrait for NodeGradient {
 
         Ok(())
     }
-
-    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: &ComputedValues, _: i32, _: bool) {
-        // nothing; paint servers are handled specially
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 #[no_mangle]
@@ -726,6 +733,7 @@ pub extern "C" fn rsvg_node_radial_gradient_new(
 
 fn resolve_fallbacks_and_set_pattern(
     gradient: &Gradient,
+    values: &ComputedValues,
     draw_ctx: *mut RsvgDrawingCtx,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
@@ -733,7 +741,7 @@ fn resolve_fallbacks_and_set_pattern(
     match bbox.rect {
         Some(r) if !r.is_empty() => {
             let resolved = resolve_gradient(gradient, draw_ctx);
-            set_pattern_on_draw_context(&resolved, draw_ctx, opacity, bbox)
+            set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
         }
 
         _ => true,
@@ -754,7 +762,11 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
 
     node.with_impl(|node_gradient: &NodeGradient| {
         let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
-        did_set_gradient = resolve_fallbacks_and_set_pattern(&gradient, draw_ctx, opacity, bbox);
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
+
+        did_set_gradient =
+            resolve_fallbacks_and_set_pattern(&gradient, &values, draw_ctx, opacity, bbox);
     });
 
     did_set_gradient

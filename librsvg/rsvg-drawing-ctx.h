@@ -38,7 +38,6 @@ struct RsvgDrawingCtx {
     cairo_t *initial_cr;
     GList *cr_stack;
     GList *surfaces_stack;
-    RsvgState *state;
     GError **error;
     RsvgDefs *defs;
     double dpi_x, dpi_y;
@@ -64,18 +63,15 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr);
 
 G_GNUC_INTERNAL
+void rsvg_drawing_ctx_push_cr (RsvgDrawingCtx *ctx, cairo_t *cr);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_pop_cr (RsvgDrawingCtx *ctx);
+
+G_GNUC_INTERNAL
+void rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx);
+
+G_GNUC_INTERNAL
 gboolean rsvg_drawing_ctx_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr);
-
-G_GNUC_INTERNAL
-RsvgState *rsvg_drawing_ctx_get_current_state   (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_set_current_state         (RsvgDrawingCtx * ctx, RsvgState *state);
-
-/* Implemented in rust/src/drawing_ctx.rs */
-G_GNUC_INTERNAL
-void       rsvg_drawing_ctx_state_pop           (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-void       rsvg_drawing_ctx_state_push          (RsvgDrawingCtx * ctx);
 
 G_GNUC_INTERNAL
 RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const char *url);
@@ -86,10 +82,20 @@ void rsvg_drawing_ctx_release_node              (RsvgDrawingCtx * ctx, RsvgNode 
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node);
+
+G_GNUC_INTERNAL
+gboolean rsvg_drawing_ctx_should_draw_node_from_stack (RsvgDrawingCtx *ctx,
+                                                       RsvgNode *node,
+                                                       GSList **out_stacksave);
+
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_restore_stack (RsvgDrawingCtx *ctx,
+                                     GSList *stacksave);
+
+/* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                             RsvgNode *node,
-                                            int dominate,
                                             gboolean clipping);
 
 G_GNUC_INTERNAL
@@ -99,10 +105,17 @@ G_GNUC_INTERNAL
 double rsvg_drawing_ctx_get_height (RsvgDrawingCtx *draw_ctx);
 
 G_GNUC_INTERNAL
+void rsvg_drawing_ctx_get_raw_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y);
+
+G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_offset (RsvgDrawingCtx *draw_ctx, double *x, double *y);
 
 G_GNUC_INTERNAL
 RsvgBbox *rsvg_drawing_ctx_get_bbox (RsvgDrawingCtx *draw_ctx);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_push_bounding_box (RsvgDrawingCtx *draw_ctx);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_pop_bounding_box (RsvgDrawingCtx *draw_ctx);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h);
@@ -112,16 +125,16 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_view_box_size (RsvgDrawingCtx *ctx, double *out_width, double *out_height);
 
 G_GNUC_INTERNAL
+void rsvg_drawing_ctx_push_surface (RsvgDrawingCtx *draw_ctx, cairo_surface_t *surface);
+G_GNUC_INTERNAL
+cairo_surface_t *rsvg_drawing_ctx_pop_surface (RsvgDrawingCtx *draw_ctx);
+
+G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
 
 G_GNUC_INTERNAL
-void         rsvg_drawing_ctx_push_render_stack (RsvgDrawingCtx *ctx);
-G_GNUC_INTERNAL
-void         rsvg_drawing_ctx_pop_render_stack (RsvgDrawingCtx *ctx);
-
-G_GNUC_INTERNAL
 void rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
-                                            RsvgNode *drawable,
+                                            RsvgNode *node,
                                             cairo_surface_t *surface,
                                             double width,
                                             double height);

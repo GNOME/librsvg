@@ -71,7 +71,7 @@ composite_mode_to_cairo_operator (RsvgFilterPrimitiveCompositeMode mode)
 }
 
 static void
-rsvg_filter_primitive_composite_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_composite_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     RsvgFilterPrimitiveComposite *composite = (RsvgFilterPrimitiveComposite *) primitive;
     RsvgIRect boundarys;

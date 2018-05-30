@@ -1,10 +1,7 @@
-use std::ptr;
-
-use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
 use property_bag::PropertyBag;
-use state::{rsvg_state_new, ComputedValues};
+use state::rsvg_state_new;
 
 use std::rc::*;
 
@@ -42,17 +39,6 @@ impl NodeTrait for CNode {
         Ok(())
     }
 
-    fn draw(
-        &self,
-        _node: &RsvgNode,
-        _draw_ctx: *mut RsvgDrawingCtx,
-        _state: &ComputedValues,
-        _dominate: i32,
-        _clipping: bool,
-    ) {
-        // nothing; the only remaining cnodes are filters, and those don't draw() themselves
-    }
-
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
         self.c_node_impl
     }
@@ -85,7 +71,7 @@ pub extern "C" fn rsvg_rust_cnode_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
-        rsvg_state_new(ptr::null_mut()),
+        rsvg_state_new(),
         Box::new(cnode),
     )))
 }

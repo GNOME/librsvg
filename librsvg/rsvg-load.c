@@ -27,10 +27,11 @@
 #include <string.h>
 
 #include "rsvg-attributes.h"
+#include "rsvg-defs.h"
 #include "rsvg-filter.h"
 #include "rsvg-load.h"
-#include "rsvg-mask.h"
 #include "rsvg-structure.h"
+#include "rsvg-styles.h"
 #include "rsvg-xml.h"
 
 typedef enum {
@@ -473,6 +474,8 @@ node_set_atts (RsvgNode *node,
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
         rsvg_parse_style_attrs (handle, node, element_name, klazz, id, atts);
     }
+
+    rsvg_node_set_overriden_properties (node);
 }
 
 static void

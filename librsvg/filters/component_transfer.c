@@ -149,7 +149,7 @@ component_transfer_render_child (RsvgNode *node, struct component_transfer_closu
 }
 
 static void
-rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     gint x, y, c;
     gint rowstride, height, width;

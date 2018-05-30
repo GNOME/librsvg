@@ -36,16 +36,6 @@
 
 G_BEGIN_DECLS 
 
-/* Keep in sync with rsvg_internals/src/state.c:EnableBackgroundC */
-typedef enum {
-    RSVG_ENABLE_BACKGROUND_ACCUMULATE,
-    RSVG_ENABLE_BACKGROUND_NEW
-} RsvgEnableBackgroundType;
-
-/* Defined in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-RsvgState *rsvg_state_new (RsvgState *parent);
-
 /* Defined in rsvg_internals/src/state.rs */
 G_GNUC_INTERNAL
 void rsvg_state_free (RsvgState *state);
@@ -60,65 +50,9 @@ void rsvg_parse_style_attrs (RsvgHandle *handle, RsvgNode *node, const char *tag
 G_GNUC_INTERNAL
 gboolean rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState * state);
 
-/* Implemented in rsvg_internals/src/transform.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src) G_GNUC_WARN_UNUSED_RESULT;
-
 /* Defined in rsvg_internals/src/state.rs */
 G_GNUC_INTERNAL
 RsvgState *rsvg_state_parent (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-void rsvg_state_reconstruct (RsvgState *state, RsvgNode *current);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-cairo_matrix_t rsvg_state_get_affine (const RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_state_is_visible (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-char *rsvg_state_get_clip_path (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-char *rsvg_state_get_filter (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-char *rsvg_state_get_mask (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-guint8 rsvg_state_get_opacity (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-guint32 rsvg_state_get_current_color (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-guint32 rsvg_state_get_flood_color (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-guint8 rsvg_state_get_flood_opacity (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
-
-/* Implemented in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-RsvgEnableBackgroundType rsvg_state_get_enable_background (RsvgState *state);
 
 G_END_DECLS
 

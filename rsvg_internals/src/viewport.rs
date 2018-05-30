@@ -5,6 +5,7 @@ use aspect_ratio::AspectRatio;
 use draw::add_clipping_rect;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
+use state::ComputedValues;
 use viewbox::*;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -22,6 +23,7 @@ pub fn draw_in_viewport<F>(
     do_clip: bool,
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
+    values: &ComputedValues,
     affine: cairo::Matrix,
     draw_ctx: *mut RsvgDrawingCtx,
     clipping: bool,
@@ -41,6 +43,7 @@ pub fn draw_in_viewport<F>(
         do_clip,
         vbox,
         preserve_aspect_ratio,
+        values,
         affine,
         clipping,
         draw_fn,
@@ -50,9 +53,9 @@ pub fn draw_in_viewport<F>(
 trait ViewportCtx {
     fn push_view_box(&mut self, width: f64, height: f64);
     fn pop_view_box(&mut self);
-    fn push_discrete_layer(&mut self, cliping: bool);
-    fn pop_discrete_layer(&mut self, cliping: bool);
-    fn add_clipping_rect(&mut self, affine: &cairo::Matrix, x: f64, y: f64, w: f64, h: f64);
+    fn push_discrete_layer(&mut self, values: &ComputedValues, clipping: bool);
+    fn pop_discrete_layer(&mut self, values: &ComputedValues, clipping: bool);
+    fn add_clipping_rect(&mut self, x: f64, y: f64, w: f64, h: f64);
     fn set_affine(&mut self, affine: cairo::Matrix);
 }
 
@@ -67,21 +70,20 @@ impl ViewportCtx for RsvgDrawingCtxWrapper {
         drawing_ctx::pop_view_box(self.0);
     }
 
-    fn push_discrete_layer(&mut self, clipping: bool) {
-        drawing_ctx::push_discrete_layer(self.0, clipping);
+    fn push_discrete_layer(&mut self, values: &ComputedValues, clipping: bool) {
+        drawing_ctx::push_discrete_layer(self.0, values, clipping);
     }
 
-    fn pop_discrete_layer(&mut self, clipping: bool) {
-        drawing_ctx::pop_discrete_layer(self.0, clipping);
+    fn pop_discrete_layer(&mut self, values: &ComputedValues, clipping: bool) {
+        drawing_ctx::pop_discrete_layer(self.0, values, clipping);
     }
 
-    fn add_clipping_rect(&mut self, affine: &cairo::Matrix, x: f64, y: f64, w: f64, h: f64) {
-        add_clipping_rect(self.0, affine, x, y, w, h);
+    fn add_clipping_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
+        add_clipping_rect(self.0, x, y, w, h);
     }
 
     fn set_affine(&mut self, affine: cairo::Matrix) {
-        let state = drawing_ctx::get_current_state_mut(self.0).unwrap();
-        state.affine = affine;
+        drawing_ctx::get_cairo_context(self.0).set_matrix(affine);
     }
 }
 
@@ -95,6 +97,7 @@ fn in_viewport<F>(
     do_clip: bool,
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
+    values: &ComputedValues,
     mut affine: cairo::Matrix,
     clipping: bool,
     draw_fn: F,
@@ -124,7 +127,7 @@ fn in_viewport<F>(
         }
 
         ctx.push_view_box(vbox.0.width, vbox.0.height);
-        ctx.push_discrete_layer(clipping);
+        ctx.push_discrete_layer(values, clipping);
 
         let (x, y, w, h) =
             preserve_aspect_ratio.compute(vbox.0.width, vbox.0.height, vx, vy, vw, vh);
@@ -136,11 +139,11 @@ fn in_viewport<F>(
         ctx.set_affine(affine);
 
         if do_clip && clip_mode == ClipMode::ClipToVbox {
-            ctx.add_clipping_rect(&affine, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
+            ctx.add_clipping_rect(vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
         }
     } else {
         ctx.push_view_box(vw, vh);
-        ctx.push_discrete_layer(clipping);
+        ctx.push_discrete_layer(values, clipping);
 
         affine.translate(vx, vy);
         ctx.set_affine(affine);
@@ -148,13 +151,13 @@ fn in_viewport<F>(
 
     if do_clip && clip_mode == ClipMode::ClipToViewport {
         ctx.set_affine(old_affine);
-        ctx.add_clipping_rect(&old_affine, vx, vy, vw, vh);
+        ctx.add_clipping_rect(vx, vy, vw, vh);
         ctx.set_affine(affine);
     }
 
     draw_fn();
 
-    ctx.pop_discrete_layer(clipping);
+    ctx.pop_discrete_layer(values, clipping);
     ctx.pop_view_box();
 }
 
@@ -181,11 +184,11 @@ mod tests {
 
         fn pop_view_box(&mut self) {}
 
-        fn push_discrete_layer(&mut self, _clipping: bool) {}
+        fn push_discrete_layer(&mut self, _values: &ComputedValues, _clipping: bool) {}
 
-        fn pop_discrete_layer(&mut self, _clipping: bool) {}
+        fn pop_discrete_layer(&mut self, _values: &ComputedValues, _clipping: bool) {}
 
-        fn add_clipping_rect(&mut self, _affine: &cairo::Matrix, x: f64, y: f64, w: f64, h: f64) {
+        fn add_clipping_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
             self.clipping_rect = Some((x, y, w, h));
         }
 
@@ -216,6 +219,7 @@ mod tests {
             do_clip,
             vbox,
             preserve_aspect_ratio,
+            &ComputedValues::default(),
             affine,
             false,
             || (),
