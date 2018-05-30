@@ -45,15 +45,11 @@ stages:
     - ./autogen.sh --enable-gtk-doc --enable-vala
     - make check
 
-  after_script:
-    - mkdir png_artifacts
-    - cp /tmp/*.png png_artifacts
-
   artifacts:
     when: on_failure
     paths:
       - tests/*.log
-      - png_artifacts
+      - tests/output/
 
   cache:
     # JOB_NAME - Each job will have it's own cache
