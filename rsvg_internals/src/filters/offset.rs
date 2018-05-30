@@ -67,7 +67,7 @@ impl NodeTrait for Offset {
     }
 
     #[inline]
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // Nothing; filters are drawn in rsvg-cairo-draw.c.
     }
 

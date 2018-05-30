@@ -43,7 +43,7 @@ impl NodeTrait for NodeLink {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        dominate: i32,
+        with_layer: bool,
         clipping: bool,
     ) {
         let link = self.link.borrow();
@@ -60,7 +60,7 @@ impl NodeTrait for NodeLink {
                     node.draw_children(
                         &CascadedValues::new(cascaded, node),
                         draw_ctx,
-                        dominate,
+                        with_layer,
                         clipping,
                     )
                 },
@@ -69,7 +69,7 @@ impl NodeTrait for NodeLink {
             node.draw_children(
                 &CascadedValues::new(cascaded, node),
                 draw_ctx,
-                dominate,
+                with_layer,
                 clipping,
             )
         }

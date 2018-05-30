@@ -132,7 +132,7 @@ impl NodeMask {
                 drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
             }
 
-            node.draw_children(&cascaded, draw_ctx, 0, false);
+            node.draw_children(&cascaded, draw_ctx, true, false);
 
             if content_units == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::pop_view_box(draw_ctx);
@@ -218,7 +218,7 @@ impl NodeTrait for NodeMask {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // nothing; masks are handled specially
     }
 

@@ -189,7 +189,7 @@ impl NodeMarker {
             }
         }
 
-        node.draw_children(&cascaded, draw_ctx, -1, clipping); // dominate=-1 so it won't push a layer
+        node.draw_children(&cascaded, draw_ctx, false, clipping);
 
         drawing_ctx::pop_discrete_layer(draw_ctx, &values, clipping);
         drawing_ctx::pop_view_box(draw_ctx);
@@ -252,7 +252,7 @@ impl NodeTrait for NodeMarker {
         state.values.display = SpecifiedValue::Specified(Default::default());
     }
 
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // nothing; markers are drawn by their referencing shapes
     }
 

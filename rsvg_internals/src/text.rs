@@ -116,7 +116,7 @@ impl NodeTrait for NodeChars {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // nothing
     }
 
@@ -165,7 +165,7 @@ impl NodeTrait for NodeText {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -275,7 +275,7 @@ impl NodeTrait for NodeTRef {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // nothing
     }
 
@@ -395,7 +395,7 @@ impl NodeTrait for NodeTSpan {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // nothing
     }
 

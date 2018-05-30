@@ -45,7 +45,7 @@ impl NodeTrait for CNode {
         _node: &RsvgNode,
         _cascaded: &CascadedValues,
         _draw_ctx: *mut RsvgDrawingCtx,
-        _dominate: i32,
+        _with_layer: bool,
         _clipping: bool,
     ) {
         // nothing; the only remaining cnodes are filters, and those don't draw() themselves

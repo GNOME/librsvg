@@ -123,7 +123,7 @@ pub trait NodeTrait: Downcast {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        dominate: i32,
+        with_layer: bool,
         clipping: bool,
     );
 
@@ -339,7 +339,7 @@ impl Node {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        dominate: i32,
+        with_layer: bool,
         clipping: bool,
     ) {
         if self.result.borrow().is_ok() {
@@ -349,7 +349,7 @@ impl Node {
             cr.transform(self.get_transform());
 
             self.node_impl
-                .draw(node, cascaded, draw_ctx, dominate, clipping);
+                .draw(node, cascaded, draw_ctx, with_layer, clipping);
 
             cr.set_matrix(save_affine);
         }
@@ -383,12 +383,12 @@ impl Node {
         &self,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        dominate: i32,
+        with_layer: bool,
         clipping: bool,
     ) {
         let values = cascaded.get();
 
-        if dominate != -1 {
+        if with_layer {
             drawing_ctx::push_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
         }
 
@@ -397,12 +397,12 @@ impl Node {
                 draw_ctx,
                 &CascadedValues::new(cascaded, &child),
                 &child,
-                0,
+                true,
                 clipping,
             );
         }
 
-        if dominate != -1 {
+        if with_layer {
             drawing_ctx::pop_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
         }
     }
@@ -715,7 +715,8 @@ mod tests {
             Ok(())
         }
 
-        fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {}
+        fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
+        }
 
         fn get_c_impl(&self) -> *const RsvgCNodeImpl {
             unreachable!();

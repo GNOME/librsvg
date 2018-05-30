@@ -123,7 +123,7 @@ impl NodeTrait for Primitive {
     }
 
     #[inline]
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // Nothing; filters are drawn in rsvg-cairo-draw.c.
     }
 
@@ -223,7 +223,7 @@ impl NodeTrait for PrimitiveWithInput {
     }
 
     #[inline]
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // Nothing; filters are drawn in rsvg-cairo-draw.c.
     }
 

@@ -37,10 +37,10 @@ impl NodeTrait for NodeGroup {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        dominate: i32,
+        with_layer: bool,
         clipping: bool,
     ) {
-        node.draw_children(cascaded, draw_ctx, dominate, clipping);
+        node.draw_children(cascaded, draw_ctx, with_layer, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -62,7 +62,7 @@ impl NodeTrait for NodeDefs {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // nothing
     }
 
@@ -90,7 +90,7 @@ impl NodeTrait for NodeSwitch {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -102,7 +102,7 @@ impl NodeTrait for NodeSwitch {
                 draw_ctx,
                 &CascadedValues::new(cascaded, &child),
                 &child,
-                0,
+                true,
                 clipping,
             );
         }
@@ -201,7 +201,7 @@ impl NodeTrait for NodeSvg {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -227,7 +227,7 @@ impl NodeTrait for NodeSvg {
             draw_ctx,
             clipping,
             || {
-                node.draw_children(cascaded, draw_ctx, -1, clipping); // dominate==-1 so it won't push a layer
+                node.draw_children(cascaded, draw_ctx, false, clipping);
             },
         );
     }
@@ -292,7 +292,7 @@ impl NodeTrait for NodeUse {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _dominate: i32,
+        _with_layer: bool,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -351,7 +351,7 @@ impl NodeTrait for NodeUse {
                 draw_ctx,
                 &CascadedValues::new_from_values(&child, values),
                 &child,
-                1,
+                true,
                 clipping,
             );
 
@@ -379,7 +379,7 @@ impl NodeTrait for NodeUse {
                         child.draw_children(
                             &CascadedValues::new_from_values(&child, values),
                             draw_ctx,
-                            -1,
+                            false,
                             clipping,
                         );
                         drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
@@ -431,7 +431,7 @@ impl NodeTrait for NodeSymbol {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // nothing
     }
 

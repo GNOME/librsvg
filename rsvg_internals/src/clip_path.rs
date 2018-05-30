@@ -60,7 +60,7 @@ impl NodeClipPath {
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
         cr.set_matrix(child_matrix);
 
-        node.draw_children(&cascaded, draw_ctx, -1, true);
+        node.draw_children(&cascaded, draw_ctx, false, true);
 
         // FIXME: this is an EPIC HACK to keep the clipping context from
         // accumulating bounding boxes.  We'll remove this later, when we
@@ -92,7 +92,7 @@ impl NodeTrait for NodeClipPath {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
+    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
         // nothing; clip paths are handled specially
     }
 

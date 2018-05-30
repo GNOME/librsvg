@@ -485,7 +485,7 @@ pub fn draw_node_from_stack(
     draw_ctx: *mut RsvgDrawingCtx,
     cascaded: &CascadedValues,
     node: &RsvgNode,
-    dominate: i32,
+    with_layer: bool,
     clipping: bool,
 ) {
     let mut stacksave = ptr::null();
@@ -500,7 +500,7 @@ pub fn draw_node_from_stack(
         if should_draw {
             let values = cascaded.get();
             if values.is_visible() {
-                node.draw(node, cascaded, draw_ctx, dominate, clipping);
+                node.draw(node, cascaded, draw_ctx, with_layer, clipping);
             }
         }
 
@@ -521,7 +521,7 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
 
     let clipping: bool = from_glib(clipping);
 
-    draw_node_from_stack(draw_ctx, &node.get_cascaded_values(), node, 0, clipping);
+    draw_node_from_stack(draw_ctx, &node.get_cascaded_values(), node, true, clipping);
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
