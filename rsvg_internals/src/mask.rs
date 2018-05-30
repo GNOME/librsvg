@@ -59,7 +59,12 @@ impl NodeMask {
         RsvgLength::parse("120%", dir).unwrap()
     }
 
-    pub fn generate_cairo_mask(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
+    pub fn generate_cairo_mask(
+        &self,
+        node: &RsvgNode,
+        affine_before_mask: &cairo::Matrix,
+        draw_ctx: *mut RsvgDrawingCtx,
+    ) {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
@@ -93,7 +98,7 @@ impl NodeMask {
             let save_cr = drawing_ctx::get_cairo_context(draw_ctx);
 
             let mask_cr = cairo::Context::new(&surface);
-            mask_cr.set_matrix(save_cr.get_matrix());
+            mask_cr.set_matrix(*affine_before_mask);
             mask_cr.transform(node.get_transform());
 
             drawing_ctx::set_cairo_context(draw_ctx, &mask_cr);

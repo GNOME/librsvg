@@ -285,13 +285,15 @@ fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
 
     let mut late_clip = false;
 
+    let current_affine = get_cairo_context(draw_ctx).get_matrix();
+
     if let Some(clip_path) = clip_path {
         if let Some(acquired) = get_acquired_node_of_type(draw_ctx, clip_path, NodeType::ClipPath) {
             let node = acquired.get();
 
             node.with_impl(|clip_path: &NodeClipPath| match clip_path.get_units() {
                 ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
-                    clip_path.to_cairo_context(&node, draw_ctx);
+                    clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
                 }
 
                 ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
@@ -427,6 +429,8 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
 
     let cr = get_cairo_context(draw_ctx);
 
+    let current_affine = cr.get_matrix();
+
     let (xofs, yofs) = get_offset(draw_ctx);
 
     cr.identity_matrix();
@@ -440,7 +444,7 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
                 let node = acquired.get();
 
                 node.with_impl(|clip_path: &NodeClipPath| {
-                    clip_path.to_cairo_context(&node, draw_ctx);
+                    clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
                 });
             }
         }
@@ -453,7 +457,7 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
             let node = acquired.get();
 
             node.with_impl(|mask: &NodeMask| {
-                mask.generate_cairo_mask(&node, draw_ctx);
+                mask.generate_cairo_mask(&node, &current_affine, draw_ctx);
             });
         }
     } else if opacity < 1.0 {
@@ -461,6 +465,8 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
     } else {
         cr.paint();
     }
+
+    cr.set_matrix(current_affine);
 
     unsafe {
         rsvg_drawing_ctx_pop_bounding_box(draw_ctx);

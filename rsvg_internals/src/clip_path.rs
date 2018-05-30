@@ -28,31 +28,35 @@ impl NodeClipPath {
         self.units.get()
     }
 
-    pub fn to_cairo_context(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx) {
+    pub fn to_cairo_context(
+        &self,
+        node: &RsvgNode,
+        affine_before_clip: &cairo::Matrix,
+        draw_ctx: *mut RsvgDrawingCtx,
+    ) {
         let cascaded = node.get_cascaded_values();
 
         let clip_units = self.units.get();
 
         let orig_bbox = drawing_ctx::get_bbox(draw_ctx).clone();
 
-        let cr = drawing_ctx::get_cairo_context(draw_ctx);
-
-        //        let cr_save_transform = cr.get_matrix();
-
         let child_matrix = if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
             let rect = orig_bbox.rect.unwrap();
 
             let mut bbtransform =
                 cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
-            cairo::Matrix::multiply(&bbtransform, &cr.get_matrix())
+            cairo::Matrix::multiply(&bbtransform, affine_before_clip)
         } else {
-            cr.get_matrix()
+            *affine_before_clip
         };
 
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
+        let save_affine = cr.get_matrix();
         cr.set_matrix(child_matrix);
 
         node.draw_children(&cascaded, draw_ctx, false, true);
+
+        cr.set_matrix(save_affine);
 
         // FIXME: this is an EPIC HACK to keep the clipping context from
         // accumulating bounding boxes.  We'll remove this later, when we
@@ -62,10 +66,6 @@ impl NodeClipPath {
 
         let cr = drawing_ctx::get_cairo_context(draw_ctx);
         cr.clip();
-
-        //        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
-        //            cr.set_matrix(cr_save_transform);
-        //        }
     }
 }
 
