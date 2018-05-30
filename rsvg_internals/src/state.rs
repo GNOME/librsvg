@@ -1268,7 +1268,7 @@ make_property!(
     ComputedValues,
     UnicodeBidi,
     default: Normal,
-    inherits_automatically: true,
+    inherits_automatically: false,
 
     identifiers:
     "normal" => Normal,
