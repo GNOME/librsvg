@@ -756,6 +756,7 @@ make_property!(
     }
 );
 
+// https://www.w3.org/TR/SVG/masking.html#ClipPathProperty
 make_property!(
     ComputedValues,
     ClipPath,
@@ -765,6 +766,7 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/masking.html#ClipRuleProperty
 make_property!(
     ComputedValues,
     ClipRule,
@@ -776,17 +778,23 @@ make_property!(
     "evenodd" => EvenOdd,
 );
 
-// See bgo#764808: we don't inherit CSS from the public API,
-// so start off with opaque black instead of transparent.
+// https://www.w3.org/TR/SVG/color.html#ColorProperty
 make_property!(
     ComputedValues,
     Color,
+    // The SVG spec allows the user agent to choose its own default for the "color" property.
+    // We don't allow passing in an initial CSS in the public API, so we'll start with black.
+    //
+    // See https://bugzilla.gnome.org/show_bug.cgi?id=764808 for a case where this would
+    // be useful - rendering equations with currentColor, so they take on the color of the
+    // surrounding text.
     default: cssparser::RGBA::new(0, 0, 0, 0xff),
     inherits_automatically: true,
     newtype_parse: cssparser::RGBA,
     parse_data_type: ()
 );
 
+// https://gitlab.gnome.org/GNOME/librsvg/issues/268 - can we remove this property?
 make_property!(
     ComputedValues,
     CompOp,
@@ -820,6 +828,7 @@ make_property!(
     "exclusion" => Exclusion,
 );
 
+// https://www.w3.org/TR/SVG/text.html#DirectionProperty
 make_property!(
     ComputedValues,
     Direction,
@@ -858,6 +867,7 @@ make_property!(
     "none" => None,
 );
 
+// https://www.w3.org/TR/SVG/filters.html#EnableBackgroundProperty
 make_property!(
     ComputedValues,
     EnableBackground,
@@ -869,6 +879,7 @@ make_property!(
     "new" => New,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#FillProperty
 make_property!(
     ComputedValues,
     Fill,
@@ -878,6 +889,7 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#FillOpacityProperty
 make_property!(
     ComputedValues,
     FillOpacity,
@@ -886,6 +898,7 @@ make_property!(
     newtype_from_str: UnitInterval
 );
 
+// https://www.w3.org/TR/SVG/painting.html#FillRuleProperty
 make_property!(
     ComputedValues,
     FillRule,
@@ -897,6 +910,7 @@ make_property!(
     "evenodd" => EvenOdd,
 );
 
+// https://www.w3.org/TR/SVG/filters.html#FilterProperty
 make_property!(
     ComputedValues,
     Filter,
@@ -925,6 +939,7 @@ make_property!(
     newtype_from_str: UnitInterval
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
 make_property!(
     ComputedValues,
     FontFamily,
@@ -933,6 +948,7 @@ make_property!(
     newtype_from_str: String
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontSizeProperty
 make_property!(
     ComputedValues,
     FontSize,
@@ -963,6 +979,7 @@ make_property!(
     }
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontStretchProperty
 make_property!(
     ComputedValues,
     FontStretch,
@@ -983,6 +1000,7 @@ make_property!(
     "ultra-expanded" => UltraExpanded,
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontStyleProperty
 make_property!(
     ComputedValues,
     FontStyle,
@@ -995,6 +1013,7 @@ make_property!(
     "oblique" => Oblique,
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontVariantProperty
 make_property!(
     ComputedValues,
     FontVariant,
@@ -1006,6 +1025,7 @@ make_property!(
     "small-caps" => SmallCaps,
 );
 
+// https://www.w3.org/TR/SVG/text.html#FontWeightProperty
 make_property!(
     ComputedValues,
     FontWeight,
@@ -1028,6 +1048,7 @@ make_property!(
     "900" => W900,
 );
 
+// https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty
 make_property!(
     ComputedValues,
     LetterSpacing,
@@ -1047,6 +1068,7 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#MarkerEndProperty
 make_property!(
     ComputedValues,
     MarkerEnd,
@@ -1056,6 +1078,7 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#MarkerMidProperty
 make_property!(
     ComputedValues,
     MarkerMid,
@@ -1065,6 +1088,7 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#MarkerStartProperty
 make_property!(
     ComputedValues,
     MarkerStart,
@@ -1074,6 +1098,7 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/masking.html#MaskProperty
 make_property!(
     ComputedValues,
     Mask,
@@ -1083,6 +1108,7 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/masking.html#OpacityProperty
 make_property!(
     ComputedValues,
     Opacity,
@@ -1091,6 +1117,7 @@ make_property!(
     newtype_from_str: UnitInterval
 );
 
+// https://www.w3.org/TR/SVG/masking.html#OverflowProperty
 make_property!(
     ComputedValues,
     Overflow,
@@ -1104,6 +1131,7 @@ make_property!(
     "auto" => Auto,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#ShapeRenderingProperty
 make_property!(
     ComputedValues,
     ShapeRendering,
@@ -1136,6 +1164,7 @@ make_property!(
     newtype_from_str: UnitInterval
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeProperty
 make_property!(
     ComputedValues,
     Stroke,
@@ -1145,6 +1174,7 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeDasharrayProperty
 make_property!(
     ComputedValues,
     StrokeDasharray,
@@ -1154,6 +1184,7 @@ make_property!(
     parse_data_type: ()
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeDashoffsetProperty
 make_property!(
     ComputedValues,
     StrokeDashoffset,
@@ -1163,6 +1194,7 @@ make_property!(
     parse_data_type: LengthDir
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeLinecapProperty
 make_property!(
     ComputedValues,
     StrokeLinecap,
@@ -1175,6 +1207,7 @@ make_property!(
     "square" => Square,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeLinejoinProperty
 make_property!(
     ComputedValues,
     StrokeLinejoin,
@@ -1187,14 +1220,7 @@ make_property!(
     "bevel" => Bevel,
 );
 
-make_property!(
-    ComputedValues,
-    StrokeOpacity,
-    default: UnitInterval(1.0),
-    inherits_automatically: true,
-    newtype_from_str: UnitInterval
-);
-
+// https://www.w3.org/TR/SVG/painting.html#StrokeMiterlimitProperty
 make_property!(
     ComputedValues,
     StrokeMiterlimit,
@@ -1203,6 +1229,16 @@ make_property!(
     newtype_from_str: f64
 );
 
+// https://www.w3.org/TR/SVG/painting.html#StrokeOpacityProperty
+make_property!(
+    ComputedValues,
+    StrokeOpacity,
+    default: UnitInterval(1.0),
+    inherits_automatically: true,
+    newtype_from_str: UnitInterval
+);
+
+// https://www.w3.org/TR/SVG/painting.html#StrokeWidthProperty
 make_property!(
     ComputedValues,
     StrokeWidth,
@@ -1212,6 +1248,7 @@ make_property!(
     parse_data_type: LengthDir
 );
 
+// https://www.w3.org/TR/SVG/text.html#TextAnchorProperty
 make_property!(
     ComputedValues,
     TextAnchor,
@@ -1224,6 +1261,7 @@ make_property!(
     "end" => End,
 );
 
+// https://www.w3.org/TR/SVG/text.html#TextDecorationProperty
 make_property!(
     ComputedValues,
     TextDecoration,
@@ -1251,6 +1289,7 @@ make_property!(
     }
 );
 
+// https://www.w3.org/TR/SVG/painting.html#TextRenderingProperty
 make_property!(
     ComputedValues,
     TextRendering,
@@ -1264,6 +1303,7 @@ make_property!(
     "geometricPrecision" => GeometricPrecision,
 );
 
+// https://www.w3.org/TR/SVG/text.html#UnicodeBidiProperty
 make_property!(
     ComputedValues,
     UnicodeBidi,
@@ -1276,6 +1316,7 @@ make_property!(
     "bidi-override" => Override,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#VisibilityProperty
 make_property!(
     ComputedValues,
     Visibility,
@@ -1288,6 +1329,7 @@ make_property!(
     "collapse" => Collapse,
 );
 
+// https://www.w3.org/TR/SVG/text.html#WritingModeProperty
 make_property!(
     ComputedValues,
     WritingMode,
