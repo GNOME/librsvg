@@ -160,8 +160,11 @@ pub type NodeResult = Result<(), NodeError>;
 
 pub struct Node {
     node_type: NodeType,
-    parent: Option<Weak<Node>>,       // optional; weak ref to parent
-    children: RefCell<Vec<Rc<Node>>>, // strong references to children
+    parent: Option<Weak<Node>>, // optional; weak ref to parent
+    first_child: RefCell<Option<Rc<Node>>>,
+    last_child: RefCell<Option<Weak<Node>>>,
+    next_sib: RefCell<Option<Rc<Node>>>, // next sibling; strong ref
+    prev_sib: RefCell<Option<Weak<Node>>>, // previous sibling; weak ref
     state: *mut RsvgState,
     result: RefCell<NodeResult>,
     transform: Cell<Matrix>,
@@ -170,10 +173,9 @@ pub struct Node {
 }
 
 // An iterator over the Node's children
-pub struct Children<'a> {
-    children: Ref<'a, Vec<Rc<Node>>>,
-    index: usize,
-    reverse_index: usize,
+pub struct Children {
+    next: Option<Rc<Node>>,
+    next_back: Option<Rc<Node>>,
 }
 
 // Keep this in sync with rsvg-private.h:RsvgNodeType
@@ -244,7 +246,10 @@ impl Node {
         Node {
             node_type,
             parent,
-            children: RefCell::new(Vec::new()),
+            first_child: RefCell::new(None),
+            last_child: RefCell::new(None),
+            next_sib: RefCell::new(None),
+            prev_sib: RefCell::new(None),
             state,
             transform: Cell::new(Matrix::identity()),
             result: RefCell::new(Ok(())),
@@ -311,7 +316,17 @@ impl Node {
     }
 
     pub fn add_child(&self, child: &Rc<Node>) {
-        self.children.borrow_mut().push(child.clone());
+        assert!(child.next_sib.borrow().is_none());
+        assert!(child.prev_sib.borrow().is_none());
+
+        if let Some(last_child_weak) = self.last_child.replace(Some(Rc::downgrade(child))) {
+            if let Some(last_child) = last_child_weak.upgrade() {
+                child.prev_sib.replace(Some(last_child_weak));
+                last_child.next_sib.replace(Some(child.clone()));
+                return;
+            }
+        }
+        self.first_child.replace(Some(child.clone()));
     }
 
     pub fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) {
@@ -412,11 +427,16 @@ impl Node {
     }
 
     pub fn children(&self) -> Children {
-        Children::new(self.children.borrow())
+        let last_child = self
+            .last_child
+            .borrow()
+            .as_ref()
+            .and_then(|child_weak| child_weak.upgrade());
+        Children::new(self.first_child.borrow().clone(), last_child)
     }
 
     pub fn has_children(&self) -> bool {
-        self.children.borrow().len() > 0
+        self.first_child.borrow().is_some()
     }
 
     pub fn set_overflow_hidden(&self) {
@@ -463,48 +483,56 @@ pub fn boxed_node_new(
     )))
 }
 
-impl<'a> Children<'a> {
-    fn new(children: Ref<'a, Vec<Rc<Node>>>) -> Self {
-        let len = children.len();
-        Self {
-            children,
-            index: 0,
-            reverse_index: len,
+impl Children {
+    fn new(next: Option<Rc<Node>>, next_back: Option<Rc<Node>>) -> Self {
+        Self { next, next_back }
+    }
+
+    // true if self.next_back's next sibling is self.next
+    fn finished(&self) -> bool {
+        match &self.next_back {
+            &Some(ref next_back) => {
+                next_back
+                    .next_sib
+                    .borrow()
+                    .clone()
+                    .map(|rc| &*rc as *const Node)
+                    == self.next.clone().map(|rc| &*rc as *const Node)
+            }
+            _ => true,
         }
     }
 }
 
-impl<'a> Iterator for Children<'a> {
+impl Iterator for Children {
     type Item = Rc<Node>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index == self.reverse_index {
+        if self.finished() {
             return None;
         }
-
-        let item = self.children[self.index].clone();
-        self.index += 1;
-        Some(item)
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let count = self.reverse_index - self.index;
-        (count, Some(count))
+        self.next.take().and_then(|next| {
+            self.next = next.next_sib.borrow().clone();
+            Some(next)
+        })
     }
 }
 
-impl<'a> DoubleEndedIterator for Children<'a> {
+impl DoubleEndedIterator for Children {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.index == self.reverse_index {
+        if self.finished() {
             return None;
         }
-
-        self.reverse_index -= 1;
-        Some(self.children[self.reverse_index].clone())
+        self.next_back.take().and_then(|next_back| {
+            self.next_back = next_back
+                .prev_sib
+                .borrow()
+                .as_ref()
+                .and_then(|sib_weak| sib_weak.upgrade());
+            Some(next_back)
+        })
     }
 }
-
-impl<'a> ExactSizeIterator for Children<'a> {}
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_get_type(raw_node: *const RsvgNode) -> NodeType {
@@ -633,12 +661,8 @@ pub extern "C" fn rsvg_node_set_attribute_parse_error(
     }
 }
 
-// This should really return Children<'a> where 'a is the lifetime of raw_node,
-// but raw pointers don't have lifetimes so there's not much we can do.
 #[no_mangle]
-pub extern "C" fn rsvg_node_children_iter_begin<'a>(
-    raw_node: *const RsvgNode,
-) -> *mut Children<'a> {
+pub extern "C" fn rsvg_node_children_iter_begin(raw_node: *const RsvgNode) -> *mut Children {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 

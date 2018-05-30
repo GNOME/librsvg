@@ -204,20 +204,21 @@ impl FilterContext {
         width: Option<RsvgLength>,
         height: Option<RsvgLength>,
     ) -> IRect {
+        let filter = unsafe { &*self.filter };
         let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
 
-        if unsafe { (*self.filter).filterunits } == CoordUnits::ObjectBoundingBox {
+        if filter.filterunits == CoordUnits::ObjectBoundingBox {
             drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
         }
 
         let rect = cairo::Rectangle {
-            x: unsafe { (*self.filter).x.normalize(values, self.drawing_ctx) },
-            y: unsafe { (*self.filter).y.normalize(values, self.drawing_ctx) },
-            width: unsafe { (*self.filter).width.normalize(values, self.drawing_ctx) },
-            height: unsafe { (*self.filter).height.normalize(values, self.drawing_ctx) },
+            x: filter.x.normalize(values, self.drawing_ctx),
+            y: filter.y.normalize(values, self.drawing_ctx),
+            width: filter.width.normalize(values, self.drawing_ctx),
+            height: filter.height.normalize(values, self.drawing_ctx),
         };
 
-        if unsafe { (*self.filter).filterunits } == CoordUnits::ObjectBoundingBox {
+        if filter.filterunits == CoordUnits::ObjectBoundingBox {
             drawing_ctx::pop_view_box(self.drawing_ctx);
         }
 
@@ -225,7 +226,7 @@ impl FilterContext {
         bbox.insert(&other_bbox);
 
         if x.is_some() || y.is_some() || width.is_some() || height.is_some() {
-            if unsafe { (*self.filter).primitiveunits } == CoordUnits::ObjectBoundingBox {
+            if filter.primitiveunits == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
             }
 
@@ -248,7 +249,7 @@ impl FilterContext {
                     .unwrap_or(vbox_height);
             }
 
-            if unsafe { (*self.filter).primitiveunits } == CoordUnits::ObjectBoundingBox {
+            if filter.primitiveunits == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::pop_view_box(self.drawing_ctx);
             }
 
@@ -267,10 +268,10 @@ impl FilterContext {
 
         let bbox_rect = bbox.rect.unwrap();
         IRect {
-            x0: bbox_rect.x as i32,
-            y0: bbox_rect.y as i32,
-            x1: (bbox_rect.x + bbox_rect.width) as i32,
-            y1: (bbox_rect.y + bbox_rect.height) as i32,
+            x0: bbox_rect.x.floor() as i32,
+            y0: bbox_rect.y.floor() as i32,
+            x1: (bbox_rect.x + bbox_rect.width).ceil() as i32,
+            y1: (bbox_rect.y + bbox_rect.height).ceil() as i32,
         }
     }
 }
