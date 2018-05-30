@@ -343,7 +343,6 @@ impl NodeTrait for NodeUse {
 
         if child.get_type() != NodeType::Symbol {
             let cr = drawing_ctx::get_cairo_context(draw_ctx);
-            cr.save();
             cr.translate(nx, ny);
 
             drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
@@ -357,8 +356,6 @@ impl NodeTrait for NodeUse {
             );
 
             drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
-
-            cr.restore();
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !values.is_overflow()
