@@ -94,8 +94,9 @@ If there are differences in the output, the test will fail; see
 
 These files can go anywhere under the `fixtures/reftests`
 directory; the `rsvg-test` program will recursively look inside
-`fixtures/reftests` for all SVG files, render them, and compare them to
-the `-ref.png` reference images.
+`fixtures/reftests` for all SVG files, render them to `tests/output`, and
+compare them to the `-ref.png` reference images. The rendered files can
+later be removed up by running `make clean`.
 
 **Ignoring tests:** SVG test files or entire subdirectories in
 `fixtures/reftests` whose names begin with "`ignore`" will be skipped from
@@ -126,10 +127,10 @@ Let's say you run `make check` and see that one of the tests fails.
 For example, `rsvg-test.log` may have lines that look like
 
 ```
-# Storing test result image at /tmp/paths-data-18-f-out.png
+# Storing test result image at tests/output/paths-data-18-f-out.png
 # 6798 pixels differ (with maximum difference of 255) from reference image
 
-# Storing test result image at /tmp/paths-data-18-f-diff.png
+# Storing test result image at tests/output/paths-data-18-f-diff.png
 not ok 29 /rsvg-test/reftests/svg1.1/paths-data-18-f.svg
 FAIL: rsvg-test 29 /rsvg-test/reftests/svg1.1/paths-data-18-f.svg
 ```
@@ -141,11 +142,11 @@ test file `fixtures/reftests/svg1.1/paths-data-18-f.svg` got rendered,
 and produced incorrect output when compared to
 `fixtures/reftests/svg1.1/paths-data-18-f-ref.png`.
 
-When a test fails, rsvg-test creates two images in `/tmp`:
+When a test fails, rsvg-test creates two images in `tests/output`:
 
 ```
-/tmp/foo-out.png
-/tmp/foo-diff.png
+tests/output/foo-out.png
+tests/output/foo-diff.png
 ```
 
 In this case, `foo-out.png` is the actual rendered output, which is presumed to
