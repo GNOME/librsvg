@@ -102,13 +102,21 @@ impl<'a> CascadedValues<'a> {
     }
 }
 
+/// The basic trait that all nodes must implement
 pub trait NodeTrait: Downcast {
+    /// Sets per-node attributes from the `pbag`
+    ///
+    /// Each node is supposed to iterate the `pbag`, and parse any attributes it needs.
     fn set_atts(
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
         pbag: &PropertyBag,
     ) -> NodeResult;
+
+    /// Sets any special-cased properties that the node may have, that are different
+    /// from defaults in the node's `State`.
+    fn set_overriden_properties(&self, _node: &RsvgNode) {}
 
     fn draw(
         &self,
@@ -319,6 +327,10 @@ impl Node {
         }
 
         *self.result.borrow_mut() = self.node_impl.set_atts(node, handle, pbag);
+    }
+
+    pub fn set_overriden_properties(&self, node: &RsvgNode) {
+        self.node_impl.set_overriden_properties(node);
     }
 
     pub fn draw(
@@ -582,6 +594,15 @@ pub extern "C" fn rsvg_node_set_atts(
     let pbag = unsafe { &*pbag };
 
     node.set_atts(node, handle, pbag);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_set_overriden_properties(raw_node: *mut RsvgNode) {
+    assert!(!raw_node.is_null());
+
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    node.set_overriden_properties(node);
 }
 
 #[no_mangle]

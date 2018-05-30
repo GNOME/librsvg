@@ -96,6 +96,7 @@ pub use node::{
     rsvg_node_ref,
     rsvg_node_set_attribute_parse_error,
     rsvg_node_set_atts,
+    rsvg_node_set_overriden_properties,
     rsvg_node_unref,
     rsvg_root_node_cascade,
 };

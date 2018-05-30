@@ -474,6 +474,8 @@ node_set_atts (RsvgNode *node,
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
         rsvg_parse_style_attrs (handle, node, element_name, klazz, id, atts);
     }
+
+    rsvg_node_set_overriden_properties (node);
 }
 
 static void

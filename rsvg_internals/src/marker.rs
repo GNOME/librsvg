@@ -204,10 +204,6 @@ impl NodeTrait for NodeMarker {
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
 
-        // markers are always displayed, even if <marker> or its ancestors are display:none
-        let state = node.get_state_mut();
-        state.values.display = SpecifiedValue::Specified(Default::default());
-
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::MarkerUnits => self.units.set(parse("markerUnits", value, (), None)?),
@@ -249,6 +245,12 @@ impl NodeTrait for NodeMarker {
         }
 
         Ok(())
+    }
+
+    fn set_overriden_properties(&self, node: &RsvgNode) {
+        // markers are always displayed, even if <marker> or its ancestors are display:none
+        let state = node.get_state_mut();
+        state.values.display = SpecifiedValue::Specified(Default::default());
     }
 
     fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
