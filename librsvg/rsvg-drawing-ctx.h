@@ -96,7 +96,6 @@ void rsvg_drawing_ctx_restore_stack (RsvgDrawingCtx *ctx,
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                             RsvgNode *node,
-                                            int dominate,
                                             gboolean clipping);
 
 G_GNUC_INTERNAL
