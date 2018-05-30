@@ -831,11 +831,12 @@ make_property!(
     "rtl" => Rtl,
 );
 
+// https://www.w3.org/TR/SVG/painting.html#DisplayProperty
 make_property!(
     ComputedValues,
     Display,
     default: Inline,
-    inherits_automatically: true,
+    inherits_automatically: false,
 
     identifiers:
     "inline" => Inline,
