@@ -1227,7 +1227,7 @@ make_property!(
 make_property!(
     ComputedValues,
     TextDecoration,
-    inherits_automatically: true,
+    inherits_automatically: false,
 
     fields: {
         overline: bool, default: false,
