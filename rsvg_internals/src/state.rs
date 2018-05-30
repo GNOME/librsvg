@@ -6,7 +6,6 @@ use glib_sys;
 use libc;
 use std::cell::RefCell;
 use std::collections::HashSet;
-use std::ptr;
 use std::str::FromStr;
 
 use attributes::Attribute;
@@ -92,12 +91,8 @@ pub enum RsvgState {}
 /// `.unwrap_or_default()` to get the default value for the property.
 
 pub struct State {
-    pub parent: *const RsvgState,
-
     pub affine: cairo::Matrix,
-
     pub values: SpecifiedValues,
-
     important_styles: RefCell<HashSet<Attribute>>,
     pub cond: bool,
 }
@@ -345,32 +340,12 @@ impl SpecifiedValues {
 }
 
 impl State {
-    pub fn new_with_parent(parent: Option<&State>) -> State {
-        if let Some(parent) = parent {
-            State::new(to_c(parent))
-        } else {
-            State::new(ptr::null())
-        }
-    }
-
-    fn new(parent: *const RsvgState) -> State {
+    fn new() -> State {
         State {
-            parent,
-
             affine: cairo::Matrix::identity(),
-
             values: Default::default(),
-
             important_styles: Default::default(),
             cond: true,
-        }
-    }
-
-    pub fn parent<'a>(&self) -> Option<&'a State> {
-        if self.parent.is_null() {
-            None
-        } else {
-            Some(from_c(self.parent))
         }
     }
 
@@ -1361,10 +1336,6 @@ pub fn from_c_mut<'a>(state: *mut RsvgState) -> &'a mut State {
     unsafe { &mut *(state as *mut State) }
 }
 
-pub fn to_c(state: &State) -> *const RsvgState {
-    state as *const State as *const RsvgState
-}
-
 pub fn to_c_mut(state: &mut State) -> *mut RsvgState {
     state as *mut State as *mut RsvgState
 }
@@ -1372,8 +1343,8 @@ pub fn to_c_mut(state: &mut State) -> *mut RsvgState {
 // Rust State API for consumption from C ----------------------------------------
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_new(parent: *mut RsvgState) -> *mut RsvgState {
-    Box::into_raw(Box::new(State::new(parent))) as *mut RsvgState
+pub extern "C" fn rsvg_state_new() -> *mut RsvgState {
+    Box::into_raw(Box::new(State::new())) as *mut RsvgState
 }
 
 #[no_mangle]
@@ -1383,13 +1354,6 @@ pub extern "C" fn rsvg_state_free(state: *mut RsvgState) {
     unsafe {
         Box::from_raw(state);
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState {
-    let state = from_c(state);
-
-    state.parent as *mut _
 }
 
 #[no_mangle]
@@ -1415,19 +1379,6 @@ pub extern "C" fn rsvg_state_parse_style_pair(
         Ok(_) => true.to_glib(),
         Err(_) => false.to_glib(),
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_get_affine(state: *const RsvgState) -> cairo::Matrix {
-    let state = from_c(state);
-
-    state.affine
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_set_affine(state: *mut RsvgState, affine: cairo::Matrix) {
-    let state = from_c_mut(state);
-    state.affine = affine;
 }
 
 extern "C" {

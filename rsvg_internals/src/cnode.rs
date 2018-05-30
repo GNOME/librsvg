@@ -1,5 +1,3 @@
-use std::ptr;
-
 use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
@@ -85,7 +83,7 @@ pub extern "C" fn rsvg_rust_cnode_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
-        rsvg_state_new(ptr::null_mut()),
+        rsvg_state_new(),
         Box::new(cnode),
     )))
 }
