@@ -42,10 +42,6 @@ impl NodeTrait for NodeGroup {
     ) {
         node.draw_children(cascaded, draw_ctx, with_layer, clipping);
     }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 // ************ NodeDefs ************
@@ -60,14 +56,6 @@ impl NodeDefs {
 impl NodeTrait for NodeDefs {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
         Ok(())
-    }
-
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // nothing
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -108,10 +96,6 @@ impl NodeTrait for NodeSwitch {
         }
 
         drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -230,10 +214,6 @@ impl NodeTrait for NodeSvg {
                 node.draw_children(cascaded, draw_ctx, false, clipping);
             },
         );
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -388,10 +368,6 @@ impl NodeTrait for NodeUse {
             });
         }
     }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 // ************ NodeSymbol ************
@@ -429,14 +405,6 @@ impl NodeTrait for NodeSymbol {
         }
 
         Ok(())
-    }
-
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // nothing
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 

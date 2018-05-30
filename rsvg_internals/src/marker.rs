@@ -251,14 +251,6 @@ impl NodeTrait for NodeMarker {
         // markers are always displayed, even if <marker> or its ancestors are display:none
         state.values.display = SpecifiedValue::Specified(Default::default());
     }
-
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // nothing; markers are drawn by their referencing shapes
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 #[no_mangle]

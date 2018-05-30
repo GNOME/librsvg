@@ -1,4 +1,3 @@
-use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
 use property_bag::PropertyBag;
@@ -38,17 +37,6 @@ impl NodeTrait for CNode {
         }
 
         Ok(())
-    }
-
-    fn draw(
-        &self,
-        _node: &RsvgNode,
-        _cascaded: &CascadedValues,
-        _draw_ctx: *mut RsvgDrawingCtx,
-        _with_layer: bool,
-        _clipping: bool,
-    ) {
-        // nothing; the only remaining cnodes are filters, and those don't draw() themselves
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {

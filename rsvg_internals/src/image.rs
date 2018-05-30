@@ -147,10 +147,6 @@ impl NodeTrait for NodeImage {
             drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
         }
     }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 #[no_mangle]

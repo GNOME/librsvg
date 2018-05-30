@@ -9,15 +9,7 @@ use draw::draw_pango_layout;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::*;
-use node::{
-    boxed_node_new,
-    CascadedValues,
-    NodeResult,
-    NodeTrait,
-    NodeType,
-    RsvgCNodeImpl,
-    RsvgNode,
-};
+use node::{boxed_node_new, CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 use space::xml_space_normalize;
@@ -115,14 +107,6 @@ impl NodeTrait for NodeChars {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
         Ok(())
     }
-
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // nothing
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 struct NodeText {
@@ -200,10 +184,6 @@ impl NodeTrait for NodeText {
 
         render_children(node, cascaded, draw_ctx, &mut x, &mut y, false, clipping);
     }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 struct NodeTRef {
@@ -273,14 +253,6 @@ impl NodeTrait for NodeTRef {
         }
 
         Ok(())
-    }
-
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // nothing
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -393,14 +365,6 @@ impl NodeTrait for NodeTSpan {
         }
 
         Ok(())
-    }
-
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // nothing
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 

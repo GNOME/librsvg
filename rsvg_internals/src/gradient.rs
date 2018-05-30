@@ -705,14 +705,6 @@ impl NodeTrait for NodeGradient {
 
         Ok(())
     }
-
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // nothing; paint servers are handled specially
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 #[no_mangle]

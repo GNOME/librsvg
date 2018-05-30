@@ -3,7 +3,6 @@ use libc;
 use std::cell::Cell;
 
 use attributes::Attribute;
-use drawing_ctx::RsvgDrawingCtx;
 use error::*;
 use handle::RsvgHandle;
 use length::*;
@@ -68,14 +67,6 @@ impl NodeTrait for NodeStop {
         }
 
         Ok(())
-    }
-
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // nothing; paint servers are handled specially
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 

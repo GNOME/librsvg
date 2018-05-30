@@ -7,15 +7,7 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
-use node::{
-    boxed_node_new,
-    CascadedValues,
-    NodeResult,
-    NodeTrait,
-    NodeType,
-    RsvgCNodeImpl,
-    RsvgNode,
-};
+use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 
@@ -90,14 +82,6 @@ impl NodeTrait for NodeClipPath {
         }
 
         Ok(())
-    }
-
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // nothing; clip paths are handled specially
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 

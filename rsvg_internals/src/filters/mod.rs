@@ -2,12 +2,11 @@ use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
 use attributes::Attribute;
-use drawing_ctx::RsvgDrawingCtx;
 use error::AttributeError;
 use filter_context::{FilterContext, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
-use node::{CascadedValues, NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 
@@ -123,11 +122,6 @@ impl NodeTrait for Primitive {
     }
 
     #[inline]
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // Nothing; filters are drawn in rsvg-cairo-draw.c.
-    }
-
-    #[inline]
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
         // The code that deals with the return value is in ffi.rs.
         self.render_function as *const RenderFunctionType as *const RsvgCNodeImpl
@@ -220,11 +214,6 @@ impl NodeTrait for PrimitiveWithInput {
         }
 
         Ok(())
-    }
-
-    #[inline]
-    fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        // Nothing; filters are drawn in rsvg-cairo-draw.c.
     }
 
     #[inline]

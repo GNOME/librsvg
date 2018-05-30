@@ -120,14 +120,18 @@ pub trait NodeTrait: Downcast {
 
     fn draw(
         &self,
-        node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
-        with_layer: bool,
-        clipping: bool,
-    );
+        _node: &RsvgNode,
+        _cascaded: &CascadedValues,
+        _draw_ctx: *mut RsvgDrawingCtx,
+        _with_layer: bool,
+        _clipping: bool,
+    ) {
+        // by default nodes don't draw themselves
+    }
 
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl;
+    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
+        unreachable!(); // no Rust nodes should have this method called for them
+    }
 }
 
 impl_downcast!(NodeTrait);
@@ -703,7 +707,6 @@ pub extern "C" fn rsvg_root_node_cascade(raw_node: *const RsvgNode) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use drawing_ctx::RsvgDrawingCtx;
     use handle::RsvgHandle;
     use std::rc::Rc;
     use std::{mem, ptr};
@@ -713,13 +716,6 @@ mod tests {
     impl NodeTrait for TestNodeImpl {
         fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
             Ok(())
-        }
-
-        fn draw(&self, _: &RsvgNode, _: &CascadedValues, _: *mut RsvgDrawingCtx, _: bool, _: bool) {
-        }
-
-        fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-            unreachable!();
         }
     }
 

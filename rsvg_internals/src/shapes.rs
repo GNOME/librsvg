@@ -139,10 +139,6 @@ impl NodeTrait for NodePath {
             render_path_builder(builder, draw_ctx, values, true, clipping);
         }
     }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 // ************ NodePoly ************
@@ -217,10 +213,6 @@ impl NodeTrait for NodePoly {
             render_path_builder(&builder, draw_ctx, values, true, clipping);
         }
     }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 // ************ NodeLine ************
@@ -282,10 +274,6 @@ impl NodeTrait for NodeLine {
         builder.line_to(x2, y2);
 
         render_path_builder(&builder, draw_ctx, values, true, clipping);
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -501,10 +489,6 @@ impl NodeTrait for NodeRect {
 
         render_path_builder(&builder, draw_ctx, values, false, clipping);
     }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 // ************ NodeCircle ************
@@ -561,10 +545,6 @@ impl NodeTrait for NodeCircle {
         let r = self.r.get().normalize(values, draw_ctx);
 
         render_ellipse(cx, cy, r, r, draw_ctx, values, clipping);
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 
@@ -632,10 +612,6 @@ impl NodeTrait for NodeEllipse {
         let ry = self.ry.get().normalize(values, draw_ctx);
 
         render_ellipse(cx, cy, rx, ry, draw_ctx, values, clipping);
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
     }
 }
 

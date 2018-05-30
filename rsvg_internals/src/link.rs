@@ -74,10 +74,6 @@ impl NodeTrait for NodeLink {
             )
         }
     }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!();
-    }
 }
 
 /// escape quotes and backslashes with backslash
