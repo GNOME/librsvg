@@ -1095,7 +1095,7 @@ make_property!(
     ComputedValues,
     Overflow,
     default: Visible,
-    inherits_automatically: true,
+    inherits_automatically: false,
 
     identifiers:
     "visible" => Visible,
