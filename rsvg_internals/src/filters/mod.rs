@@ -125,43 +125,7 @@ impl PrimitiveWithInput {
 
     /// Returns the input Cairo surface for this filter primitive.
     fn get_input(&self, ctx: &FilterContext) -> Option<FilterOutput> {
-        let in_ = self.in_.borrow();
-        if in_.is_none() {
-            // No value => use the last result.
-            // As per the SVG spec, if the filter primitive is the first in the chain, return the
-            // source graphic.
-            return Some(ctx.last_result().cloned().unwrap_or_else(|| FilterOutput {
-                surface: ctx.source_graphic().clone(),
-                // TODO
-                bounds: IRect {
-                    x0: 0,
-                    y0: 0,
-                    x1: 0,
-                    y1: 0,
-                },
-            }));
-        }
-
-        match *in_.as_ref().unwrap() {
-            Input::SourceGraphic => Some(FilterOutput {
-                surface: ctx.source_graphic().clone(),
-                // TODO
-                bounds: IRect {
-                    x0: 0,
-                    y0: 0,
-                    x1: 0,
-                    y1: 0,
-                },
-            }),
-            Input::SourceAlpha => unimplemented!(),
-            Input::BackgroundImage => unimplemented!(),
-            Input::BackgroundAlpha => unimplemented!(),
-
-            Input::FillPaint => unimplemented!(),
-            Input::StrokePaint => unimplemented!(),
-
-            Input::FilterOutput(ref name) => ctx.filter_output(name).cloned(),
-        }
+        ctx.get_input(self.in_.borrow().as_ref())
     }
 }
 

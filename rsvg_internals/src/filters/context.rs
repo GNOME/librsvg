@@ -10,10 +10,12 @@ use glib_sys::*;
 use bbox::BoundingBox;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
-use filters::RsvgFilterPrimitive;
 use length::RsvgLength;
 use node::RsvgNode;
 use state::ComputedValues;
+
+use super::input::Input;
+use super::RsvgFilterPrimitive;
 
 // Required by the C code until all filters are ported to Rust.
 // Keep this in sync with
@@ -294,6 +296,46 @@ impl FilterContext {
             y0: bbox_rect.y.floor() as i32,
             x1: (bbox_rect.x + bbox_rect.width).ceil() as i32,
             y1: (bbox_rect.y + bbox_rect.height).ceil() as i32,
+        }
+    }
+
+    /// Retrieves the filter input surface according to the SVG rules.
+    pub fn get_input(&self, in_: Option<&Input>) -> Option<FilterOutput> {
+        if in_.is_none() {
+            // No value => use the last result.
+            // As per the SVG spec, if the filter primitive is the first in the chain, return the
+            // source graphic.
+            return Some(self.last_result().cloned().unwrap_or_else(|| FilterOutput {
+                surface: self.source_graphic().clone(),
+                // TODO
+                bounds: IRect {
+                    x0: 0,
+                    y0: 0,
+                    x1: 0,
+                    y1: 0,
+                },
+            }));
+        }
+
+        match *in_.unwrap() {
+            Input::SourceGraphic => Some(FilterOutput {
+                surface: self.source_graphic().clone(),
+                // TODO
+                bounds: IRect {
+                    x0: 0,
+                    y0: 0,
+                    x1: 0,
+                    y1: 0,
+                },
+            }),
+            Input::SourceAlpha => unimplemented!(),
+            Input::BackgroundImage => unimplemented!(),
+            Input::BackgroundAlpha => unimplemented!(),
+
+            Input::FillPaint => unimplemented!(),
+            Input::StrokePaint => unimplemented!(),
+
+            Input::FilterOutput(ref name) => self.filter_output(name).cloned(),
         }
     }
 }
