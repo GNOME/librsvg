@@ -73,6 +73,9 @@ RsvgNode    *rsvg_new_filter_primitive_gaussian_blur        (const char *element
 /* Implemented in rust/src/filters/offset.rs */
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_offset               (const char *element_name, RsvgNode *parent);
+/* Implemented in rust/src/filters/composite.rs */
+G_GNUC_INTERNAL
+RsvgNode    *rsvg_new_filter_primitive_composite            (const char *element_name, RsvgNode *parent);
 
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_merge                (const char *element_name, RsvgNode *parent);
@@ -86,8 +89,6 @@ G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_node_component_transfer_function      (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_erode                (const char *element_name, RsvgNode *parent);
-G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_composite            (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_flood                (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL

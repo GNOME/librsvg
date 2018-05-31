@@ -21,6 +21,7 @@ pub use self::ffi::{rsvg_filter_render, RsvgFilterPrimitive};
 pub mod input;
 use self::input::Input;
 
+pub mod composite;
 pub mod offset;
 
 /// A filter primitive interface.

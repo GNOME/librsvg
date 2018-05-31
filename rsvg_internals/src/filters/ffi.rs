@@ -97,7 +97,7 @@ pub unsafe extern "C" fn rsvg_filter_render(
         })
         .filter(|c| !c.is_in_error())
         .for_each(|mut c| match c.get_type() {
-            NodeType::FilterPrimitiveOffset => {
+            NodeType::FilterPrimitiveOffset | NodeType::FilterPrimitiveComposite => {
                 let render =
                     *(&c.get_c_impl() as *const *const RsvgCNodeImpl as *const RenderFunctionType);
                 match render(&c, &filter_ctx) {

@@ -61,6 +61,7 @@ pub use filters::context::{
     rsvg_filter_store_output,
 };
 
+pub use filters::composite::rsvg_new_filter_primitive_composite;
 pub use filters::offset::rsvg_new_filter_primitive_offset;
 
 pub use filters::rsvg_filter_render;
