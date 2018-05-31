@@ -47,10 +47,6 @@ pub fn draw_path_builder(
     builder: &PathBuilder,
     clipping: bool,
 ) {
-    if !clipping {
-        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-    }
-
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
 
     set_affine_on_cr(draw_ctx, &cr);
@@ -63,8 +59,6 @@ pub fn draw_path_builder(
         cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
 
         stroke_and_fill(&cr, draw_ctx, values);
-
-        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
     }
 }
 

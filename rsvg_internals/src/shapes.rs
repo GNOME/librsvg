@@ -5,7 +5,7 @@ use std::cell::RefCell;
 
 use attributes::Attribute;
 use draw::draw_path_builder;
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::{self, RsvgDrawingCtx};
 use error::*;
 use handle::RsvgHandle;
 use length::*;
@@ -24,7 +24,15 @@ fn render_path_builder(
     render_markers: bool,
     clipping: bool,
 ) {
+    if !clipping {
+        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
+    }
+
     draw_path_builder(draw_ctx, values, builder, clipping);
+
+    if !clipping {
+        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+    }
 
     if render_markers {
         marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping);
