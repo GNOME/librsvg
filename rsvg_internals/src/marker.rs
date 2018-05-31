@@ -165,13 +165,13 @@ impl NodeMarker {
             cr.set_matrix(affine);
 
             drawing_ctx::push_view_box(draw_ctx, vbox.0.width, vbox.0.height);
-            drawing_ctx::push_discrete_layer(draw_ctx, &values, clipping);
         } else {
             cr.set_matrix(affine);
 
             drawing_ctx::push_view_box(draw_ctx, marker_width, marker_height);
-            drawing_ctx::push_discrete_layer(draw_ctx, &values, clipping);
         }
+
+        drawing_ctx::push_discrete_layer(draw_ctx, &values, clipping);
 
         affine.translate(
             -self.ref_x.get().normalize(&values, draw_ctx),
@@ -192,6 +192,7 @@ impl NodeMarker {
         node.draw_children(&cascaded, draw_ctx, false, clipping);
 
         drawing_ctx::pop_discrete_layer(draw_ctx, &values, clipping);
+
         drawing_ctx::pop_view_box(draw_ctx);
 
         cr.restore();
