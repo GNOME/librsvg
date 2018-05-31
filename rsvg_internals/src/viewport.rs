@@ -116,6 +116,8 @@ fn in_viewport<F>(
 
     let old_affine = affine;
 
+    ctx.push_discrete_layer(values, clipping);
+
     if let Some(vbox) = vbox {
         // the preserveAspectRatio attribute is only used if viewBox is specified
         // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
@@ -127,7 +129,6 @@ fn in_viewport<F>(
         }
 
         ctx.push_view_box(vbox.0.width, vbox.0.height);
-        ctx.push_discrete_layer(values, clipping);
 
         let (x, y, w, h) =
             preserve_aspect_ratio.compute(vbox.0.width, vbox.0.height, vx, vy, vw, vh);
@@ -143,7 +144,6 @@ fn in_viewport<F>(
         }
     } else {
         ctx.push_view_box(vw, vh);
-        ctx.push_discrete_layer(values, clipping);
 
         affine.translate(vx, vy);
         ctx.set_affine(affine);
@@ -157,8 +157,8 @@ fn in_viewport<F>(
 
     draw_fn();
 
-    ctx.pop_discrete_layer(values, clipping);
     ctx.pop_view_box();
+    ctx.pop_discrete_layer(values, clipping);
 }
 
 #[cfg(test)]
