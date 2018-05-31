@@ -90,6 +90,7 @@ RUST_SRC =					\
 	rsvg_internals/src/filters/error.rs	\
 	rsvg_internals/src/filters/ffi.rs	\
 	rsvg_internals/src/filters/mod.rs	\
+	rsvg_internals/src/filters/input.rs	\
 	rsvg_internals/src/filters/offset.rs	\
 	rsvg_internals/src/error.rs		\
 	rsvg_internals/src/float_eq_cairo.rs	\

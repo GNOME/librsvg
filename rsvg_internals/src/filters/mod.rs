@@ -2,12 +2,11 @@ use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
 use attributes::Attribute;
-use error::AttributeError;
 use filter_context::{FilterContext, FilterOutput, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
-use parsers::{parse, Parse};
+use parsers::parse;
 use property_bag::PropertyBag;
 
 mod ffi;
@@ -16,6 +15,9 @@ pub use self::ffi::{rsvg_filter_render, RsvgFilterPrimitive};
 
 mod error;
 use self::error::FilterError;
+
+pub mod input;
+use self::input::Input;
 
 pub mod offset;
 
@@ -38,18 +40,6 @@ struct Primitive {
     width: Cell<Option<RsvgLength>>,
     height: Cell<Option<RsvgLength>>,
     result: RefCell<Option<String>>,
-}
-
-/// An enumeration of possible inputs for a filter primitive.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-enum Input {
-    SourceGraphic,
-    SourceAlpha,
-    BackgroundImage,
-    BackgroundAlpha,
-    FillPaint,
-    StrokePaint,
-    FilterOutput(String),
 }
 
 /// The base node for filter primitives which accept input.
@@ -128,23 +118,6 @@ impl NodeTrait for Primitive {
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
         // The code that deals with the return value is in ffi.rs.
         self.render_function as *const RenderFunctionType as *const RsvgCNodeImpl
-    }
-}
-
-impl Parse for Input {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _data: Self::Data) -> Result<Self, Self::Err> {
-        match s {
-            "SourceGraphic" => Ok(Input::SourceGraphic),
-            "SourceAlpha" => Ok(Input::SourceAlpha),
-            "BackgroundImage" => Ok(Input::BackgroundImage),
-            "BackgroundAlpha" => Ok(Input::BackgroundAlpha),
-            "FillPaint" => Ok(Input::FillPaint),
-            "StrokePaint" => Ok(Input::StrokePaint),
-            s => Ok(Input::FilterOutput(s.to_string())),
-        }
     }
 }
 
