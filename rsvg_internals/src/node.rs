@@ -408,7 +408,7 @@ impl Node {
         let values = cascaded.get();
 
         if with_layer {
-            drawing_ctx::push_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
+            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
         }
 
         for child in self.children() {
@@ -422,7 +422,7 @@ impl Node {
         }
 
         if with_layer {
-            drawing_ctx::pop_discrete_layer(draw_ctx as *mut RsvgDrawingCtx, values, clipping);
+            drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
         }
     }
 
