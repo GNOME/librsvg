@@ -14,7 +14,7 @@ pub trait Property<T> {
 /// make_property!(
 /// StrokeLinejoin,
 /// default: Miter,
-///
+///     
 /// "miter" => Miter,
 /// "round" => Round,
 /// "bevel" => Bevel,

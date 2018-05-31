@@ -247,18 +247,22 @@ impl NodeTrait for NodeUse {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
 
-                Attribute::Width => self.w.set(parse(
-                    "width",
-                    value,
-                    LengthDir::Horizontal,
-                    Some(RsvgLength::check_nonnegative),
-                ).map(Some)?),
-                Attribute::Height => self.h.set(parse(
-                    "height",
-                    value,
-                    LengthDir::Vertical,
-                    Some(RsvgLength::check_nonnegative),
-                ).map(Some)?),
+                Attribute::Width => self.w.set(
+                    parse(
+                        "width",
+                        value,
+                        LengthDir::Horizontal,
+                        Some(RsvgLength::check_nonnegative),
+                    ).map(Some)?,
+                ),
+                Attribute::Height => self.h.set(
+                    parse(
+                        "height",
+                        value,
+                        LengthDir::Vertical,
+                        Some(RsvgLength::check_nonnegative),
+                    ).map(Some)?,
+                ),
 
                 _ => (),
             }
