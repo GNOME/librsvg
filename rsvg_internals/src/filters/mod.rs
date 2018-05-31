@@ -2,19 +2,21 @@ use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
 use attributes::Attribute;
-use filter_context::{FilterContext, FilterOutput, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 
-mod ffi;
-use self::ffi::*;
-pub use self::ffi::{rsvg_filter_render, RsvgFilterPrimitive};
+pub mod context;
+use self::context::{FilterContext, FilterOutput, FilterResult};
 
 mod error;
 use self::error::FilterError;
+
+mod ffi;
+use self::ffi::*;
+pub use self::ffi::{rsvg_filter_render, RsvgFilterPrimitive};
 
 pub mod input;
 use self::input::Input;

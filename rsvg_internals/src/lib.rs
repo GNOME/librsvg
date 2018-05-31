@@ -45,7 +45,7 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_transformed_image_bounding_box,
 };
 
-pub use filter_context::{
+pub use filters::context::{
     rsvg_filter_context_get_affine,
     rsvg_filter_context_get_bg_surface,
     rsvg_filter_context_get_channelmap,
@@ -176,7 +176,6 @@ mod cond;
 mod draw;
 mod drawing_ctx;
 mod error;
-mod filter_context;
 mod filters;
 mod gradient;
 mod handle;

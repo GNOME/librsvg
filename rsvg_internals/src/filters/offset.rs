@@ -7,13 +7,13 @@ use cairo_sys;
 use libc::c_char;
 
 use attributes::Attribute;
-use filter_context::{FilterContext, FilterOutput, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 
+use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.

@@ -10,11 +10,11 @@ use glib_sys::*;
 use libc::c_char;
 
 use drawing_ctx::RsvgDrawingCtx;
-use filter_context::{FilterContext, RsvgFilter, RsvgFilterContext};
 use length::RsvgLength;
 use node::{NodeType, RsvgCNodeImpl, RsvgNode};
 use state::{ComputedValues, RsvgComputedValues};
 
+use super::context::{FilterContext, RsvgFilter, RsvgFilterContext};
 use super::{Filter, FilterError, FilterResult};
 
 // Required by the C code until all filters are ported to Rust.
