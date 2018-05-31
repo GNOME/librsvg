@@ -113,6 +113,16 @@ pub fn optional_comma(parser: &mut Parser) {
     let _ = parser.try(|p| p.expect_comma());
 }
 
+// number
+//
+// https://www.w3.org/TR/SVG11/types.html#DataTypeNumber
+pub fn number(s: &str) -> Result<f64, ParseError> {
+    let mut input = ParserInput::new(s);
+    let mut parser = Parser::new(&mut input);
+
+    Ok(f64::from(parser.expect_number()?))
+}
+
 // number-optional-number
 //
 // https://www.w3.org/TR/SVG/types.html#DataTypeNumberOptionalNumber
