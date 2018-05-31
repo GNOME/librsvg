@@ -25,8 +25,8 @@ stages:
   - test
   - lint
   - distcheck
-  - cross_distro
   - rustc
+  - cross_distro
 
 .test_template: &test
   before_script:
