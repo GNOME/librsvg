@@ -114,6 +114,7 @@ RUST_SRC =					\
 	rsvg_internals/src/rect.rs		\
 	rsvg_internals/src/shapes.rs		\
 	rsvg_internals/src/space.rs		\
+	rsvg_internals/src/srgb.rs		\
 	rsvg_internals/src/state.rs		\
 	rsvg_internals/src/stop.rs		\
 	rsvg_internals/src/structure.rs		\
