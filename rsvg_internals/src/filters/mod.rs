@@ -9,7 +9,7 @@ use parsers::parse;
 use property_bag::PropertyBag;
 
 pub mod context;
-use self::context::{FilterContext, FilterOutput, FilterResult};
+use self::context::{FilterContext, FilterOutput, FilterResult, IRect};
 
 mod error;
 use self::error::FilterError;
@@ -48,16 +48,6 @@ struct Primitive {
 struct PrimitiveWithInput {
     base: Primitive,
     in_: RefCell<Option<Input>>,
-}
-
-// TODO: remove #[repr(C)] when it's not needed.
-#[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct IRect {
-    pub x0: i32,
-    pub y0: i32,
-    pub x1: i32,
-    pub y1: i32,
 }
 
 impl Primitive {

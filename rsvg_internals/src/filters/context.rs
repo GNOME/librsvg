@@ -10,14 +10,26 @@ use glib_sys::*;
 use bbox::BoundingBox;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
-use filters::{IRect, RsvgFilterPrimitive};
+use filters::RsvgFilterPrimitive;
 use length::RsvgLength;
 use node::RsvgNode;
 use state::ComputedValues;
 
 // Required by the C code until all filters are ported to Rust.
 // Keep this in sync with
-// ../../librsvg/librsvg/rsvg-filter.g:_RsvgFilter
+// ../../librsvg/librsvg/rsvg-filter.h:RsvgIRect
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IRect {
+    pub x0: i32,
+    pub y0: i32,
+    pub x1: i32,
+    pub y1: i32,
+}
+
+// Required by the C code until all filters are ported to Rust.
+// Keep this in sync with
+// ../../librsvg/librsvg/rsvg-filter.h:_RsvgFilter
 #[repr(C)]
 pub struct RsvgFilter {
     pub x: RsvgLength,
