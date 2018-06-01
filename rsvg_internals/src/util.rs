@@ -33,3 +33,13 @@ pub unsafe fn utf8_cstr_opt<'a>(s: *const libc::c_char) -> Option<&'a str> {
         Some(utf8_cstr(s))
     }
 }
+
+pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {
+    if val < low {
+        low
+    } else if val > high {
+        high
+    } else {
+        val
+    }
+}

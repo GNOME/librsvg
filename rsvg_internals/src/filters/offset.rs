@@ -7,14 +7,14 @@ use cairo_sys;
 use libc::c_char;
 
 use attributes::Attribute;
-use filter_context::{FilterContext, FilterResult};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 
-use super::{Filter, PrimitiveWithInput};
+use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::{Filter, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
 struct Offset {
@@ -64,7 +64,7 @@ impl NodeTrait for Offset {
 }
 
 impl Filter for Offset {
-    fn render(&self, node: &RsvgNode, ctx: &mut FilterContext) {
+    fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
@@ -77,8 +77,8 @@ impl Filter for Offset {
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;
 
         let input_surface = match self.base.get_input(ctx) {
-            Some(FilterResult { surface, .. }) => surface,
-            None => return,
+            Some(FilterOutput { surface, .. }) => surface,
+            None => return Err(FilterError::InvalidInput),
         };
 
         let width = input_surface.get_width();
@@ -89,20 +89,18 @@ impl Filter for Offset {
         // let input_data = input_surface.get_data().unwrap();
         input_surface.flush();
         if input_surface.status() != cairo::Status::Success {
-            return;
+            return Err(FilterError::BadInputSurfaceStatus(input_surface.status()));
         }
         let input_data_ptr =
             unsafe { cairo_sys::cairo_image_surface_get_data(input_surface.to_raw_none()) };
         if input_data_ptr.is_null() {
-            return;
+            return Err(FilterError::InputSurfaceDataAccess);
         }
         let input_data_len = input_stride as usize * height as usize;
         let input_data = unsafe { slice::from_raw_parts(input_data_ptr, input_data_len) };
 
-        let mut output_surface = match ImageSurface::create(cairo::Format::ARgb32, width, height) {
-            Ok(surface) => surface,
-            Err(_) => return,
-        };
+        let mut output_surface = ImageSurface::create(cairo::Format::ARgb32, width, height)
+            .map_err(FilterError::OutputSurfaceCreation)?;
 
         let output_stride = output_surface.get_stride();
         {
@@ -128,13 +126,13 @@ impl Filter for Offset {
             }
         }
 
-        ctx.store_result(
-            self.base.result.borrow().clone(),
-            FilterResult {
+        Ok(FilterResult {
+            name: self.base.result.borrow().clone(),
+            output: FilterOutput {
                 surface: output_surface,
                 bounds,
             },
-        );
+        })
     }
 }
 

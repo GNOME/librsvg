@@ -4,6 +4,7 @@ use std::f64;
 use std::f64::consts::*;
 
 use float_eq_cairo::ApproxEqCairo;
+use util::clamp;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct LargeArc(pub bool);
@@ -279,16 +280,6 @@ impl PathBuilder {
         for s in &self.path_commands {
             s.to_cairo(cr);
         }
-    }
-}
-
-fn clamp(val: f64, low: f64, high: f64) -> f64 {
-    if val < low {
-        low
-    } else if val > high {
-        high
-    } else {
-        val
     }
 }
 

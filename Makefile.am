@@ -25,7 +25,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/filters/blend.c			\
 	librsvg/filters/color_matrix.c		\
 	librsvg/filters/component_transfer.c	\
-	librsvg/filters/composite.c		\
 	librsvg/filters/convolve_matrix.c	\
 	librsvg/filters/diffuse_lighting.c	\
 	librsvg/filters/displacement_map.c	\
@@ -86,9 +85,12 @@ RUST_SRC =					\
 	rsvg_internals/src/coord_units.rs	\
 	rsvg_internals/src/draw.rs		\
 	rsvg_internals/src/drawing_ctx.rs	\
-	rsvg_internals/src/filter_context.rs	\
+	rsvg_internals/src/filters/composite.rs	\
+	rsvg_internals/src/filters/context.rs	\
+	rsvg_internals/src/filters/error.rs	\
 	rsvg_internals/src/filters/ffi.rs	\
 	rsvg_internals/src/filters/mod.rs	\
+	rsvg_internals/src/filters/input.rs	\
 	rsvg_internals/src/filters/offset.rs	\
 	rsvg_internals/src/error.rs		\
 	rsvg_internals/src/float_eq_cairo.rs	\
@@ -112,6 +114,7 @@ RUST_SRC =					\
 	rsvg_internals/src/rect.rs		\
 	rsvg_internals/src/shapes.rs		\
 	rsvg_internals/src/space.rs		\
+	rsvg_internals/src/srgb.rs		\
 	rsvg_internals/src/state.rs		\
 	rsvg_internals/src/stop.rs		\
 	rsvg_internals/src/structure.rs		\

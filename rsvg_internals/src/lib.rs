@@ -45,7 +45,7 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_transformed_image_bounding_box,
 };
 
-pub use filter_context::{
+pub use filters::context::{
     rsvg_filter_context_get_affine,
     rsvg_filter_context_get_bg_surface,
     rsvg_filter_context_get_channelmap,
@@ -61,6 +61,7 @@ pub use filter_context::{
     rsvg_filter_store_output,
 };
 
+pub use filters::composite::rsvg_new_filter_primitive_composite;
 pub use filters::offset::rsvg_new_filter_primitive_offset;
 
 pub use filters::rsvg_filter_render;
@@ -176,7 +177,6 @@ mod cond;
 mod draw;
 mod drawing_ctx;
 mod error;
-mod filter_context;
 mod filters;
 mod gradient;
 mod handle;
@@ -196,6 +196,7 @@ mod property_bag;
 mod rect;
 mod shapes;
 mod space;
+mod srgb;
 mod state;
 mod stop;
 mod structure;
