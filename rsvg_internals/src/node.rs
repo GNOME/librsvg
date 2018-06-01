@@ -536,8 +536,8 @@ mod tests {
     use super::*;
     use drawing_ctx::RsvgDrawingCtx;
     use handle::RsvgHandle;
-    use std::{mem, ptr};
     use std::rc::Rc;
+    use std::{mem, ptr};
 
     struct TestNodeImpl {}
 

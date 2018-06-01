@@ -588,7 +588,7 @@ mod tests {
     #[test]
     fn parses_named_sizes() {
         let names = vec![
-            "xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"
+            "xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large",
         ];
 
         let mut previous_value: Option<f64> = None;

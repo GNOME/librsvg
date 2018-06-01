@@ -4,8 +4,8 @@ use glib_sys;
 
 use error::*;
 use parsers;
-use parsers::{ListLength, ParseError};
 use parsers::Parse;
+use parsers::{ListLength, ParseError};
 
 use self::glib::translate::*;
 

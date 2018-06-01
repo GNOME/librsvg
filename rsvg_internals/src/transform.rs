@@ -119,10 +119,12 @@ fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeE
         .parse_nested_block(|p| {
             let tx = f64::from(p.expect_number()?);
 
-            let ty = f64::from(p.try(|p| -> Result<f32, CssParseError<()>> {
-                optional_comma(p);
-                Ok(p.expect_number()?)
-            }).unwrap_or(0.0));
+            let ty = f64::from(
+                p.try(|p| -> Result<f32, CssParseError<()>> {
+                    optional_comma(p);
+                    Ok(p.expect_number()?)
+                }).unwrap_or(0.0),
+            );
 
             Ok(cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx, ty))
         })
@@ -135,11 +137,12 @@ fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
         .parse_nested_block(|p| {
             let x = f64::from(p.expect_number()?);
 
-            let y = p.try(|p| -> Result<f32, CssParseError<()>> {
-                optional_comma(p);
-                Ok(p.expect_number()?)
-            }).map(f64::from)
-                .unwrap_or(x);
+            let y =
+                p.try(|p| -> Result<f32, CssParseError<()>> {
+                    optional_comma(p);
+                    Ok(p.expect_number()?)
+                }).map(f64::from)
+                    .unwrap_or(x);
 
             Ok(cairo::Matrix::new(x, 0.0, 0.0, y, 0.0, 0.0))
         })
@@ -153,15 +156,16 @@ fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
             let angle = f64::from(p.expect_number()?) * PI / 180.0;
             let (s, c) = angle.sin_cos();
 
-            let (tx, ty) = p.try(|p| -> Result<_, CssParseError<()>> {
-                optional_comma(p);
-                let tx = f64::from(p.expect_number()?);
+            let (tx, ty) =
+                p.try(|p| -> Result<_, CssParseError<()>> {
+                    optional_comma(p);
+                    let tx = f64::from(p.expect_number()?);
 
-                optional_comma(p);
-                let ty = f64::from(p.expect_number()?);
+                    optional_comma(p);
+                    let ty = f64::from(p.expect_number()?);
 
-                Ok((tx, ty))
-            }).unwrap_or((0.0, 0.0));
+                    Ok((tx, ty))
+                }).unwrap_or((0.0, 0.0));
 
             let mut m = cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx, ty);
 

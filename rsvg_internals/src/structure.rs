@@ -247,18 +247,22 @@ impl NodeTrait for NodeUse {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
 
-                Attribute::Width => self.w.set(parse(
-                    "width",
-                    value,
-                    LengthDir::Horizontal,
-                    Some(RsvgLength::check_nonnegative),
-                ).map(Some)?),
-                Attribute::Height => self.h.set(parse(
-                    "height",
-                    value,
-                    LengthDir::Vertical,
-                    Some(RsvgLength::check_nonnegative),
-                ).map(Some)?),
+                Attribute::Width => self.w.set(
+                    parse(
+                        "width",
+                        value,
+                        LengthDir::Horizontal,
+                        Some(RsvgLength::check_nonnegative),
+                    ).map(Some)?,
+                ),
+                Attribute::Height => self.h.set(
+                    parse(
+                        "height",
+                        value,
+                        LengthDir::Vertical,
+                        Some(RsvgLength::check_nonnegative),
+                    ).map(Some)?,
+                ),
 
                 _ => (),
             }
@@ -295,11 +299,13 @@ impl NodeTrait for NodeUse {
         // From https://www.w3.org/TR/SVG/struct.html#UseElement in
         // "If the ‘use’ element references a ‘symbol’ element"
 
-        let nw = self.w
+        let nw = self
+            .w
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Horizontal).unwrap())
             .normalize(draw_ctx);
-        let nh = self.h
+        let nh = self
+            .h
             .get()
             .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Vertical).unwrap())
             .normalize(draw_ctx);

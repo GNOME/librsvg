@@ -35,7 +35,8 @@ impl RsvgBbox {
     }
 
     pub fn is_empty(&self) -> bool {
-        from_glib(self.virgin) || self.rect.width.approx_eq_cairo(&0.0)
+        from_glib(self.virgin)
+            || self.rect.width.approx_eq_cairo(&0.0)
             || self.rect.height.approx_eq_cairo(&0.0)
     }
 
