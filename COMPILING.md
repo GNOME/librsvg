@@ -21,6 +21,7 @@ explains librsvg's peculiarities.
 * [Debug or release builds](#debug-or-release-builds)
 * [Cross-compilation](#cross-compilation)
 * [Building with no network access](#building-with-no-network-access)
+* [Running `make distcheck`](#running-make-distcheck)
 
 # Installing dependencies for building
 
@@ -240,6 +241,22 @@ one of the Rust crates that librsvg uses internally.
 
 The source replacement information is in `rust/.cargo/config` in the
 unpacked tarball.  Your build system can patch this file as needed.
+
+# Running `make distcheck`
+
+The `make distcheck` command will built a release tarball, extract it,
+compile it and test it.  However, part of the `make install` process
+within that command will try to install the gdk-pixbuf loader in your
+system location, and it will fail.
+
+Please run `make distcheck` like this:
+
+```
+$ make distcheck DESTDIR=/tmp/foo
+```
+
+That `DESTDIR` will keep the gdk-pixbuf loader installation from
+trying to modify your system locations.
 
 [autotools]: https://autotools.io/index.html
 [blog]: https://people.gnome.org/~federico/blog/librsvg-build-infrastructure.html
