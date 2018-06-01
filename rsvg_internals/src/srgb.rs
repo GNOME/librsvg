@@ -8,7 +8,6 @@ use cairo::prelude::SurfaceExt;
 use cairo_sys;
 
 use filters::context::IRect;
-use util::clamp;
 
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
 ///
@@ -74,12 +73,23 @@ pub fn linearize_surface(
                 let input_index = (y * input_stride + x * 4) as usize;
                 let output_index = (y * output_stride + x * 4) as usize;
 
-                for c in 0..3 {
-                    let input_value = f64::from(input_data[input_index + c]) / 255f64;
-                    let output_value = linearize(input_value);
-                    output_data[output_index + c] = (output_value * 255f64).round() as u8;
+                let alpha = input_data[input_index + 3];
+
+                if alpha > 0 {
+                    let alpha = f64::from(alpha) / 255f64;
+
+                    for c in 0..3 {
+                        let input_value = f64::from(input_data[input_index + c]) / 255f64;
+                        let input_value = input_value / alpha; // Unpremultiply alpha.
+
+                        let output_value = linearize(input_value);
+                        let output_value = output_value * alpha; // Premultiply alpha again.
+
+                        output_data[output_index + c] = (output_value * 255f64).round() as u8;
+                    }
                 }
-                output_data[output_index + 3] = input_data[input_index + 3];
+
+                output_data[output_index + 3] = alpha;
             }
         }
     }
@@ -129,17 +139,21 @@ pub fn unlinearize_surface(
 
                 let alpha = input_data[input_index + 3];
 
-                for c in 0..3 {
-                    let input_value = f64::from(input_data[input_index + c]) / 255f64;
-                    let output_value = unlinearize(input_value);
-                    let output_value = (output_value * 255f64).round() as u8;
+                if alpha > 0 {
+                    let alpha = f64::from(alpha) / 255f64;
 
-                    // Remember to clamp to alpha (since we're operating premultiplied alpha).
-                    // I think that technically, if this operation produces a value above alpha, it
-                    // means that the input surface contained invalid linear sRGB colors?
-                    output_data[output_index + c] = clamp(output_value, 0u8, alpha);
+                    for c in 0..3 {
+                        let input_value = f64::from(input_data[input_index + c]) / 255f64;
+                        let input_value = input_value / alpha; // Unpremultiply alpha.
+
+                        let output_value = unlinearize(input_value);
+                        let output_value = output_value * alpha; // Premultiply alpha again.
+
+                        output_data[output_index + c] = (output_value * 255f64).round() as u8;
+                    }
                 }
-                output_data[output_index + 3] = input_data[input_index + 3];
+
+                output_data[output_index + 3] = alpha;
             }
         }
     }
