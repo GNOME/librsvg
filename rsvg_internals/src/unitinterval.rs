@@ -20,9 +20,11 @@ impl FromStr for UnitInterval {
         let mut input = cssparser::ParserInput::new(s);
         let mut parser = cssparser::Parser::new(&mut input);
 
-        let x = f64::from(parser
-            .expect_number()
-            .map_err(|_| AttributeError::Parse(ParseError::new("expected number")))?);
+        let x = f64::from(
+            parser
+                .expect_number()
+                .map_err(|_| AttributeError::Parse(ParseError::new("expected number")))?,
+        );
 
         let cx = if x < 0.0 {
             0.0

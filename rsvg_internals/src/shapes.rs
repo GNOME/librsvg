@@ -327,18 +327,22 @@ impl NodeTrait for NodeRect {
                     Some(RsvgLength::check_nonnegative),
                 )?),
 
-                Attribute::Rx => self.rx.set(parse(
-                    "rx",
-                    value,
-                    LengthDir::Horizontal,
-                    Some(RsvgLength::check_nonnegative),
-                ).map(Some)?),
-                Attribute::Ry => self.ry.set(parse(
-                    "ry",
-                    value,
-                    LengthDir::Vertical,
-                    Some(RsvgLength::check_nonnegative),
-                ).map(Some)?),
+                Attribute::Rx => self.rx.set(
+                    parse(
+                        "rx",
+                        value,
+                        LengthDir::Horizontal,
+                        Some(RsvgLength::check_nonnegative),
+                    ).map(Some)?,
+                ),
+                Attribute::Ry => self.ry.set(
+                    parse(
+                        "ry",
+                        value,
+                        LengthDir::Vertical,
+                        Some(RsvgLength::check_nonnegative),
+                    ).map(Some)?,
+                ),
 
                 _ => (),
             }
