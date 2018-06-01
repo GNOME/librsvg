@@ -157,7 +157,9 @@ filter_primitive_set_x_y_width_height_atts (RsvgFilterPrimitive *prim, RsvgPrope
 static void
 rsvg_filter_primitive_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
-    primitive->render (node, primitive, ctx);
+    if (rsvg_node_result_is_ok (node)) {
+        primitive->render (node, primitive, ctx);
+    }
 }
 
 static RsvgIRect

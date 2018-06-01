@@ -44,7 +44,7 @@ impl NodeTrait for CNode {
             );
         }
 
-        Ok(())
+        node.get_result()
     }
 
     fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {

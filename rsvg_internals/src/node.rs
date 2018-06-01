@@ -531,6 +531,16 @@ pub extern "C" fn rsvg_node_draw_children(
     node.draw_children(draw_ctx, dominate);
 }
 
+#[no_mangle]
+pub extern "C" fn rsvg_node_result_is_ok(raw_node: *const RsvgNode) -> glib_sys::gboolean {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    let is_ok = node.result.borrow().is_ok();
+
+    is_ok.to_glib()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

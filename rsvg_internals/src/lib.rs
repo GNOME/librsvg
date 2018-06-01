@@ -84,6 +84,7 @@ pub use node::{
     rsvg_node_get_type,
     rsvg_node_is_same,
     rsvg_node_ref,
+    rsvg_node_result_is_ok,
     rsvg_node_set_attribute_parse_error,
     rsvg_node_set_atts,
     rsvg_node_unref,
