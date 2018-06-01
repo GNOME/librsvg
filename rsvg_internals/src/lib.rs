@@ -64,8 +64,6 @@ pub use filters::context::{
 pub use filters::composite::rsvg_new_filter_primitive_composite;
 pub use filters::offset::rsvg_new_filter_primitive_offset;
 
-pub use filters::rsvg_filter_render;
-
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
 
 pub use length::{

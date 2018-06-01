@@ -1,11 +1,6 @@
 //! Internal FFI and marshalling things.
 
-use std::mem;
-
 use cairo;
-use cairo::prelude::SurfaceExt;
-use cairo_sys::cairo_surface_t;
-use glib::translate::{from_glib_borrow, ToGlibPtr};
 use glib_sys::*;
 use libc::c_char;
 
@@ -57,34 +52,29 @@ pub(super) fn render<T: Filter>(
 
 /// Creates a new surface applied the filter. This function will create a context for itself, set up
 /// the coordinate systems execute all its little primitives and then clean up its own mess.
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_render(
-    filter_node: *mut RsvgNode,
-    source: *mut cairo_surface_t,
+pub fn filter_render(
+    filter_node: &RsvgNode,
+    source: &cairo::ImageSurface,
     context: *mut RsvgDrawingCtx,
     channelmap: *const c_char,
-) -> *mut cairo_surface_t {
-    assert!(!filter_node.is_null());
-    assert!(!source.is_null());
+) -> cairo::ImageSurface {
     assert!(!context.is_null());
     assert!(!channelmap.is_null());
-
-    let source: cairo::Surface = from_glib_borrow(source);
-    assert_eq!(source.get_type(), cairo::SurfaceType::Image);
-    let source = cairo::ImageSurface::from(source).unwrap();
 
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);
 
     let mut channelmap_arr = [0; 4];
-    for i in 0..4 {
-        channelmap_arr[i] = i32::from(*channelmap.offset(i as isize) - '0' as i8);
+    unsafe {
+        for i in 0..4 {
+            channelmap_arr[i] = i32::from(*channelmap.offset(i as isize) - '0' as i8);
+        }
     }
 
     let mut filter_ctx = FilterContext::new(
         filter_node.get_c_impl() as *mut RsvgFilter,
         filter_node,
-        source,
+        source.clone(),
         context,
         channelmap_arr,
     );
@@ -98,27 +88,26 @@ pub unsafe extern "C" fn rsvg_filter_render(
         .filter(|c| !c.is_in_error())
         .for_each(|mut c| match c.get_type() {
             NodeType::FilterPrimitiveOffset | NodeType::FilterPrimitiveComposite => {
-                let render =
-                    *(&c.get_c_impl() as *const *const RsvgCNodeImpl as *const RenderFunctionType);
+                let render = unsafe {
+                    *(&c.get_c_impl() as *const *const RsvgCNodeImpl as *const RenderFunctionType)
+                };
                 match render(&c, &filter_ctx) {
                     Ok(result) => filter_ctx.store_result(result),
                     Err(_) => { /* Do nothing for now */ }
                 }
             }
             _ => {
-                let filter = &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive);
-                (filter.render.unwrap())(
-                    &mut c,
-                    &c.get_cascaded_values().get() as &ComputedValues as RsvgComputedValues,
-                    filter,
-                    &mut filter_ctx,
-                );
+                let filter = unsafe { &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive) };
+                unsafe {
+                    (filter.render.unwrap())(
+                        &mut c,
+                        &c.get_cascaded_values().get() as &ComputedValues as RsvgComputedValues,
+                        filter,
+                        &mut filter_ctx,
+                    );
+                }
             }
         });
 
-    // HACK because to_glib_full() is unimplemented!() on ImageSurface.
-    let output = filter_ctx.into_output();
-    let ptr = output.to_glib_none().0;
-    mem::forget(output);
-    ptr
+    filter_ctx.into_output()
 }

@@ -12,10 +12,10 @@ use pangocairo;
 use bbox::{BoundingBox, RsvgBbox};
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
-use filters::rsvg_filter_render;
+use filters::filter_render;
 use iri::IRI;
 use mask::NodeMask;
-use node::{box_node, CascadedValues, NodeType, RsvgNode};
+use node::{CascadedValues, NodeType, RsvgNode};
 use rect::RectangleExt;
 use state::{ClipPath, CompOp, ComputedValues, EnableBackground, Filter, Mask};
 use unitinterval::UnitInterval;
@@ -405,17 +405,13 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
         };
 
         if let Some(acquired) = get_acquired_node_of_type(draw_ctx, filter, NodeType::Filter) {
-            unsafe {
-                cairo::ImageSurface::from_raw_full(
-                    rsvg_filter_render(
-                        box_node(acquired.get()),
-                        output.to_glib_none().0,
-                        draw_ctx,
-                        "2103".as_ptr() as *const i8,
-                    ), /* FIXME: deal with out of memory here, too, so we don't have to
-                        * unwrap() below */
-                ).unwrap()
-            }
+            filter_render(
+                &acquired.get(),
+                &output,
+                draw_ctx,
+                "2103".as_ptr() as *const i8,
+            )
+        // FIXME: deal with out of memory here
         } else {
             cairo::ImageSurface::from(child_cr.get_target()).unwrap()
         }

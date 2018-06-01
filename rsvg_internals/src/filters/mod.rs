@@ -16,7 +16,7 @@ use self::error::FilterError;
 
 mod ffi;
 use self::ffi::*;
-pub use self::ffi::{rsvg_filter_render, RsvgFilterPrimitive};
+pub use self::ffi::{filter_render, RsvgFilterPrimitive};
 
 pub mod input;
 use self::input::Input;
