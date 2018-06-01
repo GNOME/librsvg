@@ -224,16 +224,27 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 {
     RsvgDrawingCtx *draw;
     RsvgNode *drawsub = NULL;
+    cairo_status_t status;
 
     g_return_val_if_fail (handle != NULL, FALSE);
 
     if (handle->priv->state != RSVG_HANDLE_STATE_CLOSED_OK)
         return FALSE;
 
+    status = cairo_status (cr);
+
+    if (status != CAIRO_STATUS_SUCCESS) {
+        g_warning ("cannot render on a cairo_t with a failure status (status=%d, %s)",
+                   (int) status,
+                   cairo_status_to_string (status));
+        return FALSE;
+    }
+
     if (id && *id)
         drawsub = rsvg_defs_lookup (handle->priv->defs, id);
 
     if (drawsub == NULL && id != NULL) {
+        g_warning ("element id=\"%s\" does not exist", id);
         /* todo: there's no way to signal that @id doesn't exist */
         return FALSE;
     }
