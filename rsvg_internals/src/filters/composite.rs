@@ -129,9 +129,7 @@ impl Filter for Composite {
             }
             let input_data_ptr =
                 unsafe { cairo_sys::cairo_image_surface_get_data(input_surface.to_raw_none()) };
-            if input_data_ptr.is_null() {
-                return Err(FilterError::InputSurfaceDataAccess);
-            }
+            assert!(!input_data_ptr.is_null());
             let input_data_len = input_stride as usize * height as usize;
             let input_data = unsafe { slice::from_raw_parts(input_data_ptr, input_data_len) };
 
@@ -144,9 +142,7 @@ impl Filter for Composite {
             }
             let input_2_data_ptr =
                 unsafe { cairo_sys::cairo_image_surface_get_data(input_2_surface.to_raw_none()) };
-            if input_2_data_ptr.is_null() {
-                return Err(FilterError::InputSurfaceDataAccess);
-            }
+            assert!(!input_2_data_ptr.is_null());
             let input_2_data_len = input_2_stride as usize * height as usize;
             let input_2_data = unsafe { slice::from_raw_parts(input_2_data_ptr, input_2_data_len) };
 
