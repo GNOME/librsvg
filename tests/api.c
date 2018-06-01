@@ -465,6 +465,32 @@ dimensions_and_position (void)
     g_object_unref (handle);
 }
 
+static void
+detects_cairo_context_in_error (void)
+{
+    if (g_test_subprocess ()) {
+        char *filename = get_test_filename ("example.svg");
+        GError *error = NULL;
+
+        RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+        g_assert (handle != NULL);
+        g_assert (error == NULL);
+
+        /* this is wrong; it is to simulate creating a surface and a cairo_t in error */
+        cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, -1, -1);
+        cairo_t *cr = cairo_create (surf);
+
+        /* rsvg_handle_render_cairo() should return FALSE when it gets a cr in an error state */
+        g_assert (!rsvg_handle_render_cairo (handle, cr));
+
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    g_test_trap_assert_failed ();
+    g_test_trap_assert_stderr ("*WARNING*cannot render on a cairo_t with a failure status*");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -491,6 +517,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/handle_get_pixbuf", handle_get_pixbuf);
     g_test_add_func ("/api/handle_get_pixbuf_sub", handle_get_pixbuf_sub);
     g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
+    g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
 
     return g_test_run ();
 }
