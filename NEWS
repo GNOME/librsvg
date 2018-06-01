@@ -1,4 +1,6 @@
 Version 2.42.5
+- #266 - Don't render filter primitives that have invalid attributes.
+  This was causing a crash in feColorMatrix.
 - #276 - rsvg_handle_render_cairo() will now refuse to render if the
   cairo_t passed to it is in an error state.  Fixes a panic in the
   cairo-dock program.
