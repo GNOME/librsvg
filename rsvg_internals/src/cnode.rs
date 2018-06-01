@@ -36,7 +36,7 @@ impl NodeTrait for CNode {
             );
         }
 
-        Ok(())
+        node.get_result()
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
