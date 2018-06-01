@@ -17,7 +17,7 @@ use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{get_surface, Filter, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -101,14 +101,8 @@ impl Filter for Composite {
     fn render(&self, _node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
         let bounds = self.base.get_bounds(ctx);
 
-        let input_surface = match self.base.get_input(ctx) {
-            Some(FilterOutput { surface, .. }) => surface,
-            None => return Err(FilterError::InvalidInput),
-        };
-        let input_2_surface = match ctx.get_input(self.in2.borrow().as_ref()) {
-            Some(FilterOutput { surface, .. }) => surface,
-            None => return Err(FilterError::InvalidInput),
-        };
+        let input_surface = get_surface(self.base.get_input(ctx))?;
+        let input_2_surface = get_surface(ctx.get_input(self.in2.borrow().as_ref()))?;
 
         // It's important to linearize sRGB before doing any blending, since otherwise the colors
         // will be darker than they should be.

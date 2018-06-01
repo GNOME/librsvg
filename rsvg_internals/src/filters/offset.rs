@@ -14,7 +14,7 @@ use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{get_surface, Filter, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
 struct Offset {
@@ -76,10 +76,7 @@ impl Filter for Offset {
         let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;
 
-        let input_surface = match self.base.get_input(ctx) {
-            Some(FilterOutput { surface, .. }) => surface,
-            None => return Err(FilterError::InvalidInput),
-        };
+        let input_surface = get_surface(self.base.get_input(ctx))?;
 
         let width = input_surface.get_width();
         let height = input_surface.get_height();

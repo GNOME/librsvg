@@ -1,6 +1,8 @@
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
+use cairo;
+
 use attributes::Attribute;
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
@@ -49,6 +51,14 @@ struct Primitive {
 struct PrimitiveWithInput {
     base: Primitive,
     in_: RefCell<Option<Input>>,
+}
+
+/// Extracts the surface out of a `get_input()` output with the ability to `?`.
+///
+/// A small convenience function for filter implementations.
+#[inline]
+fn get_surface(x: Option<FilterOutput>) -> Result<cairo::ImageSurface, FilterError> {
+    x.map(|x| x.surface).ok_or(FilterError::InvalidInput)
 }
 
 impl Primitive {
