@@ -137,11 +137,27 @@ of CI pipelines will fail:
    commands:
 
   * If you want code reformatted automatically, no questions asked:
-    `cargo fmt --write-mode=overwrite`
+    `cargo fmt`
+    ***Note:*** if this actually reformats your code while committing,
+    you'll have to re-stage the new changes and `git commit --amend`.  Be
+    careful if you had unstaged changes that got reformatted!
 
-  * If you want to examine error if rustfmt doesn't like your indentation,
-    but don't want it to make changes on its own:
-    `cargo fmt --write-mode=diff`
+  * If you want to examine errors if rustfmt doesn't like your
+    indentation, but don't want it to make changes on its own:  
+    `cargo fmt --all -- --check`
+
+***Installing rustfmt*** As of 2018/Jun, our continuous integration
+pipeline assumes the Rust nightly version of rustfmt.  You can install
+it with
+
+```
+cargo +nightly install --force rustfmt-nightly
+```
+
+Note that rustfmt changes frequently.  If the CI pipeline fails on the
+`Lint` stage because your code is formatted differently, try updating
+your rustfmt.  Hopefully this will stabilize once rustfmt reaches
+version 1.0.
 
 ### Test suite
 
