@@ -1,3 +1,10 @@
+Version 2.42.5
+- #276 - rsvg_handle_render_cairo() will now refuse to render if the
+  cairo_t passed to it is in an error state.  Fixes a panic in the
+  cairo-dock program.
+- #206 - The test suite now writes test artifacts to tests/output
+  instead of /tmp (Saurav Sachidanand).
+
 Version 2.42.4
 - Fix: elements with systemLanguage attributes without variants now
   work better (Paolo Borelli).
