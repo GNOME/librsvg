@@ -136,7 +136,7 @@ CARGO_RELEASE_ARGS=--release
 endif
 
 if CROSS_COMPILING
-CARGO_TARGET_ARGS=--target=$(host)
+CARGO_TARGET_ARGS=--target=$(RUST_TARGET)
 endif
 
 CARGO_VERBOSE = $(cargo_verbose_$(V))
