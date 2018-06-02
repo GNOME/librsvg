@@ -34,6 +34,10 @@
 
 G_BEGIN_DECLS 
 
+/* Implemented in rust/src/load.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, gboolean *supports_class_attribute);
+
 /* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_group_new (const char *element_name, RsvgNode *parent);
