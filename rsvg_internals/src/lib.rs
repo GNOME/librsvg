@@ -175,7 +175,7 @@ mod cond;
 mod draw;
 mod drawing_ctx;
 mod error;
-mod filters;
+pub mod filters;
 mod gradient;
 mod handle;
 mod image;
