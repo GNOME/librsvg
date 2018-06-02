@@ -281,9 +281,14 @@ else
 fi
 AM_CONDITIONAL([DEBUG_RELEASE], [test "x$debug_release" = "xyes"])
 
+AC_ARG_VAR(RUST_TARGET, [Set rust target (default=$host)])
+if test "x$RUST_TARGET" == x; then
+	RUST_TARGET=$host
+fi
+
 AM_CONDITIONAL(CROSS_COMPILING, test $cross_compiling = yes)
 if test "x$cross_compiling" = "xyes" ; then
-	RUST_TARGET_SUBDIR="$host/$RUST_TARGET_SUBDIR"
+	RUST_TARGET_SUBDIR="$RUST_TARGET/$RUST_TARGET_SUBDIR"
 fi
 AC_SUBST([RUST_TARGET_SUBDIR])
 
