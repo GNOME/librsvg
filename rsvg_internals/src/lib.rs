@@ -79,6 +79,8 @@ pub use image::rsvg_node_image_new;
 
 pub use link::rsvg_node_link_new;
 
+pub use load::rsvg_load_new_node;
+
 pub use marker::rsvg_node_marker_new;
 
 pub use mask::rsvg_node_mask_new;
@@ -182,6 +184,7 @@ mod image;
 mod iri;
 mod length;
 mod link;
+mod load;
 mod marker;
 mod mask;
 mod node;
