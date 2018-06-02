@@ -61,5 +61,5 @@ version = "0.6"
 
 [lib]
 name = "rsvg_internals"
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "lib"]
 

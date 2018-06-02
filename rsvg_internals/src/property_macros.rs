@@ -10,7 +10,7 @@ pub trait Property<T> {
 /// to have possible values `miter | round | bevel | inherit`, with a default
 /// of `miter`.  We can define the property like this:
 ///
-/// ```
+/// ```ignore
 /// make_property!(
 /// StrokeLinejoin,
 /// default: Miter,
