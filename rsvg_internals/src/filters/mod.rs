@@ -20,7 +20,7 @@ mod ffi;
 use self::ffi::*;
 pub use self::ffi::{filter_render, RsvgFilterPrimitive};
 
-pub mod input;
+mod input;
 use self::input::Input;
 
 pub mod composite;
