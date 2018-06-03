@@ -88,6 +88,11 @@ pub fn get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
     }
 }
 
+// FIXME: Usage of this function is more less a hack... The caller
+// manually saves and then restore the draw_ctx.cr.
+// It would be better to have an explicit push/pop for the cairo_t, or
+// pushing a temporary surface, or something that does not involve
+// monkeypatching the cr directly.
 pub fn set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) {
     unsafe {
         let raw_cr = cr.to_glib_none().0;
