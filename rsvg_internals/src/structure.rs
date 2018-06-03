@@ -1,4 +1,3 @@
-use glib::translate::*;
 use libc;
 
 use std::cell::Cell;
@@ -14,7 +13,7 @@ use length::*;
 use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state::Overflow;
+use state::{self, Overflow};
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -493,18 +492,6 @@ pub extern "C" fn rsvg_node_svg_get_view_box(raw_node: *const RsvgNode) -> RsvgV
     RsvgViewBox::from(vbox)
 }
 
-#[allow(improper_ctypes)]
-extern "C" {
-    fn rsvg_parse_style_attrs(
-        handle: *const RsvgHandle,
-        node: *const RsvgNode,
-        tag: *const libc::c_char,
-        class: *const libc::c_char,
-        id: *const libc::c_char,
-        pbag: *const PropertyBag,
-    );
-}
-
 #[no_mangle]
 pub extern "C" fn rsvg_node_svg_apply_atts(raw_node: *const RsvgNode, handle: *const RsvgHandle) {
     assert!(!raw_node.is_null());
@@ -527,19 +514,7 @@ pub extern "C" fn rsvg_node_svg_apply_atts(raw_node: *const RsvgNode, handle: *c
                 }
             }
 
-            let c_class = class.to_glib_none();
-            let c_id = id.to_glib_none();
-
-            unsafe {
-                rsvg_parse_style_attrs(
-                    handle,
-                    raw_node,
-                    str::to_glib_none("svg").0,
-                    c_class.0,
-                    c_id.0,
-                    pbag.ffi(),
-                );
-            }
+            state::parse_style_attrs(handle, node, "svg", class, id, &pbag);
         }
     });
 }
