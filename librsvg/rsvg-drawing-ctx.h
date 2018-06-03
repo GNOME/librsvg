@@ -38,7 +38,6 @@ struct RsvgDrawingCtx {
     cairo_t *initial_cr;
     GList *cr_stack;
     GList *surfaces_stack;
-    GError **error;
     RsvgDefs *defs;
     double dpi_x, dpi_y;
     cairo_rectangle_t rect;
