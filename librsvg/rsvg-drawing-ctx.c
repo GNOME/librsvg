@@ -47,17 +47,20 @@ void rsvg_drawing_ctx_transformed_image_bounding_box (cairo_matrix_t *affine,
                                                       double *bbx, double *bby, double *bbw, double *bbh);
 
 RsvgDrawingCtx *
-rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
+rsvg_drawing_ctx_new (cairo_t *cr,
+                      guint width,
+                      guint height,
+                      double vb_width,
+                      double vb_height,
+                      double dpi_x,
+                      double dpi_y,
+                      RsvgDefs *defs,
+                      gboolean testing)
 {
-    RsvgDimensionData data;
     RsvgDrawingCtx *draw;
     cairo_matrix_t affine;
     cairo_matrix_t scale;
     double bbx, bby, bbw, bbh;
-
-    rsvg_handle_get_dimensions (handle, &data);
-    if (data.width == 0 || data.height == 0)
-        return NULL;
 
     draw = g_new0 (RsvgDrawingCtx, 1);
 
@@ -66,8 +69,7 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     /* find bounding box of image as transformed by the current cairo context
      * The size of this bounding box determines the size of the intermediate
      * surfaces allocated during drawing. */
-    rsvg_drawing_ctx_transformed_image_bounding_box (&affine,
-                                                     data.width, data.height,
+    rsvg_drawing_ctx_transformed_image_bounding_box (&affine, width, height,
                                                      &bbx, &bby, &bbw, &bbh);
 
     draw->initial_cr = cr;
@@ -80,18 +82,18 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     draw->rect.width = bbw;
     draw->rect.height = bbh;
 
-    draw->defs = handle->priv->defs;
-    draw->dpi_x = handle->priv->dpi_x;
-    draw->dpi_y = handle->priv->dpi_y;
-    draw->vb.rect.width = data.em;
-    draw->vb.rect.height = data.ex;
+    draw->defs = defs;
+    draw->dpi_x = dpi_x;
+    draw->dpi_y = dpi_y;
+    draw->vb.rect.width = vb_width;
+    draw->vb.rect.height = vb_height;
     draw->vb_stack = NULL;
     draw->drawsub_stack = NULL;
     draw->acquired_nodes = NULL;
-    draw->is_testing = handle->priv->is_testing;
+    draw->is_testing = testing;
 
     /* scale according to size set by size_func callback */
-    cairo_matrix_init_scale (&scale, data.width / data.em, data.height / data.ex);
+    cairo_matrix_init_scale (&scale, width / vb_width, height / vb_height);
     cairo_matrix_multiply (&affine, &affine, &scale);
 
     /* adjust transform so that the corner of the bounding box above is
