@@ -560,6 +560,7 @@ surface_get_alpha (cairo_surface_t *source,
     return surface;
 }
 
+#if 0
 static cairo_surface_t *
 rsvg_compile_bg (RsvgDrawingCtx * ctx)
 {
@@ -590,6 +591,7 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
 
     return surface;
 }
+#endif
 
 /**
  * rsvg_filter_get_bg:
