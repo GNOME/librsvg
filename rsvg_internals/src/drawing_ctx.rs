@@ -12,6 +12,7 @@ use pangocairo;
 use bbox::{BoundingBox, RsvgBbox};
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
+use defs::{self, RsvgDefs};
 use filters::filter_render;
 use iri::IRI;
 use mask::NodeMask;
@@ -19,6 +20,7 @@ use node::{CascadedValues, NodeType, RsvgNode};
 use rect::RectangleExt;
 use state::{ClipPath, CompOp, ComputedValues, EnableBackground, Filter, Mask};
 use unitinterval::UnitInterval;
+use util::utf8_cstr;
 
 pub enum RsvgDrawingCtx {}
 
@@ -49,13 +51,6 @@ extern "C" {
 
     fn rsvg_drawing_ctx_pop_view_box(draw_ctx: *const RsvgDrawingCtx);
 
-    fn rsvg_drawing_ctx_acquire_node(
-        draw_ctx: *const RsvgDrawingCtx,
-        url: *const libc::c_char,
-    ) -> *mut RsvgNode;
-
-    fn rsvg_drawing_ctx_release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
-
     fn rsvg_drawing_ctx_get_offset(
         draw_ctx: *const RsvgDrawingCtx,
         out_x: *mut f64,
@@ -63,6 +58,17 @@ extern "C" {
     );
 
     fn rsvg_drawing_ctx_get_bbox(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgBbox;
+
+    fn rsvg_drawing_ctx_get_defs(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgDefs;
+
+    fn rsvg_drawing_ctx_acquired_nodes_prepend(
+        draw_ctx: *const RsvgDrawingCtx,
+        node: *const RsvgNode,
+    );
+    fn rsvg_drawing_ctx_acquired_nodes_remove(
+        draw_ctx: *const RsvgDrawingCtx,
+        node: *const RsvgNode,
+    );
 
     fn rsvg_drawing_ctx_is_testing(draw_ctx: *const RsvgDrawingCtx) -> glib_sys::gboolean;
 }
@@ -122,14 +128,43 @@ pub fn pop_view_box(draw_ctx: *const RsvgDrawingCtx) {
     }
 }
 
-pub fn get_acquired_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> Option<AcquiredNode> {
-    let raw_node = unsafe { rsvg_drawing_ctx_acquire_node(draw_ctx, str::to_glib_none(url).0) };
+pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
 
-    if raw_node.is_null() {
-        None
-    } else {
-        Some(AcquiredNode(draw_ctx, raw_node))
+impl AcquiredNode {
+    fn new(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode) -> AcquiredNode {
+        unsafe {
+            rsvg_drawing_ctx_acquired_nodes_prepend(draw_ctx, node);
+        }
+
+        AcquiredNode(draw_ctx, node)
     }
+}
+
+impl Drop for AcquiredNode {
+    fn drop(&mut self) {
+        unsafe {
+            rsvg_drawing_ctx_acquired_nodes_remove(self.0, self.1);
+        }
+    }
+}
+
+impl AcquiredNode {
+    pub fn get(&self) -> RsvgNode {
+        unsafe { (*self.1).clone() }
+    }
+}
+
+// Use this function when looking up urls to other nodes.
+// This function does proper recursion checking and thereby avoids
+// infinite loops.
+//
+// Note that if you acquire a node, you have to release it before trying to
+// acquire it again.  If you acquire a node "#foo" and don't release it before
+// trying to acquire "foo" again, you will obtain None the second time.
+pub fn get_acquired_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> Option<AcquiredNode> {
+    let defs = unsafe { rsvg_drawing_ctx_get_defs(draw_ctx) };
+
+    defs::lookup(defs, url).map(|node| AcquiredNode::new(draw_ctx, node))
 }
 
 // Use this function when looking up urls to other nodes, and when you expect
@@ -141,14 +176,14 @@ pub fn get_acquired_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> Option<A
 //
 // Note that if you acquire a node, you have to release it before trying to
 // acquire it again.  If you acquire a node "#foo" and don't release it before
-// trying to acquire "foo" again, you will obtain a None the second time.
+// trying to acquire "foo" again, you will obtain None the second time.
 pub fn get_acquired_node_of_type(
     draw_ctx: *const RsvgDrawingCtx,
     url: &str,
     node_type: NodeType,
 ) -> Option<AcquiredNode> {
     if let Some(acquired) = get_acquired_node(draw_ctx, url) {
-         if acquired.get().get_type() == node_type {
+        if acquired.get().get_type() == node_type {
             return Some(acquired);
         }
     }
@@ -533,19 +568,31 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     draw_node_from_stack(draw_ctx, &node.get_cascaded_values(), node, true, clipping);
 }
 
-pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_acquire_node(
+    draw_ctx: *mut RsvgDrawingCtx,
+    url: *const libc::c_char,
+) -> *mut RsvgNode {
+    assert!(!draw_ctx.is_null());
 
-impl Drop for AcquiredNode {
-    fn drop(&mut self) {
-        unsafe {
-            rsvg_drawing_ctx_release_node(self.0, self.1);
-        }
+    if url.is_null() {
+        return ptr::null_mut();
+    }
+
+    let url = unsafe { utf8_cstr(url) };
+    match get_acquired_node(draw_ctx, url) {
+        Some(acquired) => Box::into_raw(Box::new(acquired.get())),
+        None => ptr::null_mut(),
     }
 }
 
-impl AcquiredNode {
-    pub fn get(&self) -> RsvgNode {
-        unsafe { (*self.1).clone() }
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_release_node(
+    draw_ctx: *mut RsvgDrawingCtx,
+    node: *const RsvgNode,
+) {
+    unsafe {
+        rsvg_drawing_ctx_acquired_nodes_remove(draw_ctx, node);
     }
 }
 

@@ -41,7 +41,9 @@ pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use drawing_ctx::{
+    rsvg_drawing_ctx_acquire_node,
     rsvg_drawing_ctx_draw_node_from_stack,
+    rsvg_drawing_ctx_release_node,
     rsvg_drawing_ctx_transformed_image_bounding_box,
 };
 
@@ -172,6 +174,7 @@ mod clip_path;
 mod cnode;
 mod color;
 mod cond;
+mod defs;
 mod draw;
 mod drawing_ctx;
 mod error;

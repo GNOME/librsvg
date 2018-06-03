@@ -208,65 +208,17 @@ rsvg_drawing_ctx_pop_cr (RsvgDrawingCtx *ctx)
     ctx->cr_stack = g_list_delete_link (ctx->cr_stack, ctx->cr_stack);
 }
 
-/*
- * rsvg_drawing_ctx_acquire_node:
- * @ctx: The drawing context in use
- * @url: The IRI to lookup, or %NULL
- *
- * Use this function when looking up urls to other nodes. This
- * function does proper recursion checking and thereby avoids
- * infinite loops.
- *
- * Nodes acquired by this function must be released using
- * rsvg_drawing_ctx_release_node() in reverse acquiring order.
- *
- * Note that if you acquire a node, you have to release it before trying to
- * acquire it again.  If you acquire a node "#foo" and don't release it before
- * trying to acquire "foo" again, you will obtain a %NULL the second time.
- *
- * Returns: The node referenced by @url; or %NULL if the @url
- *          is %NULL or it does not reference a node.
- */
-RsvgNode *
-rsvg_drawing_ctx_acquire_node (RsvgDrawingCtx *ctx, const char *url)
+void
+rsvg_drawing_ctx_acquired_nodes_prepend(RsvgDrawingCtx *ctx, RsvgNode *node)
 {
-  RsvgNode *node;
-
-  if (url == NULL)
-      return NULL;
-
-  node = rsvg_defs_lookup (ctx->defs, url);
-  if (node == NULL)
-    return NULL;
-
-  if (g_slist_find (ctx->acquired_nodes, node))
-    return NULL;
-
-  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
-
-  return node;
+    if (!g_slist_find (ctx->acquired_nodes, node))
+        ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
 }
 
-/*
- * rsvg_drawing_ctx_release_node:
- * @ctx: The drawing context the node was acquired from
- * @node: Node to release
- *
- * Releases a node previously acquired via rsvg_drawing_ctx_acquire_node() or
- * rsvg_drawing_ctx_acquire_node_of_type().
- *
- * if @node is %NULL, this function does nothing.
- */
 void
-rsvg_drawing_ctx_release_node (RsvgDrawingCtx *ctx, RsvgNode *node)
+rsvg_drawing_ctx_acquired_nodes_remove(RsvgDrawingCtx *ctx, RsvgNode *node)
 {
-  if (node == NULL)
-    return;
-
-  g_return_if_fail (ctx->acquired_nodes != NULL);
-  g_return_if_fail (ctx->acquired_nodes->data == node);
-
-  ctx->acquired_nodes = g_slist_remove (ctx->acquired_nodes, node);
+    ctx->acquired_nodes = g_slist_remove (ctx->acquired_nodes, node);
 }
 
 void
@@ -400,6 +352,12 @@ rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dp
 
     if (out_dpi_y)
         *out_dpi_y = ctx->dpi_y;
+}
+
+RsvgDefs *
+rsvg_drawing_ctx_get_defs (RsvgDrawingCtx *ctx)
+{
+    return ctx->defs;
 }
 
 gboolean
