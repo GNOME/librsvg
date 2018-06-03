@@ -996,11 +996,11 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 {
     RsvgDrawingCtx		*draw;
     RsvgNode			*node;
-    RsvgDimensionData    dimension_data;
     RsvgBbox            *bbox;
     cairo_rectangle_t    ink_rect;
     cairo_surface_t		*target = NULL;
     cairo_t				*cr = NULL;
+    int                  width, height;
     gboolean			 ret = FALSE;
 
     g_return_val_if_fail (handle, FALSE);
@@ -1017,12 +1017,12 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     }
 
     memset (position_data, 0, sizeof (*position_data));
-    memset (&dimension_data, 0, sizeof (dimension_data));
 
     node = rsvg_defs_lookup (handle->priv->defs, id);
-    if (!node) {
+    if (!node)
         return FALSE;
-    } else if (rsvg_node_is_same (node, handle->priv->treebase)) {
+
+    if (rsvg_node_is_same (node, handle->priv->treebase)) {
         /* Root node. */
         position_data->x = 0;
         position_data->y = 0;
@@ -1046,14 +1046,12 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 
     position_data->x = ink_rect.x;
     position_data->y = ink_rect.y;
-    dimension_data.width = ink_rect.width;
-    dimension_data.height = ink_rect.height;
-    dimension_data.em = dimension_data.width;
-    dimension_data.ex = dimension_data.height;
+
+    width = ink_rect.width;
+    height = ink_rect.height;
 
     if (handle->priv->size_func)
-        (*handle->priv->size_func) (&dimension_data.width, &dimension_data.height,
-                                    handle->priv->user_data);
+        (*handle->priv->size_func) (&width, &height, handle->priv->user_data);
 
     ret = TRUE;
 
