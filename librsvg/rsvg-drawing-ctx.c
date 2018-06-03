@@ -133,24 +133,6 @@ rsvg_drawing_ctx_get_cairo_context (RsvgDrawingCtx *ctx)
     return ctx->cr;
 }
 
-/* FIXME: Usage of this function is more less a hack.  Some code does this:
- *
- *   save_cr = rsvg_drawing_ctx_get_cairo_context (ctx);
- *
- *   some_surface = create_surface ();
- *
- *   cr = cairo_create (some_surface);
- *
- *   rsvg_drawing_ctx_set_cairo_context (ctx, cr);
- *
- *   ... draw with ctx but to that temporary surface
- *
- *   rsvg_drawing_ctx_set_cairo_context (ctx, save_cr);
- *
- * It would be better to have an explicit push/pop for the cairo_t, or
- * pushing a temporary surface, or something that does not involve
- * monkeypatching the cr directly.
- */
 void
 rsvg_drawing_ctx_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
 {
