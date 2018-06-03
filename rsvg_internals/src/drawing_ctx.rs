@@ -54,12 +54,6 @@ extern "C" {
         url: *const libc::c_char,
     ) -> *mut RsvgNode;
 
-    fn rsvg_drawing_ctx_acquire_node_of_type(
-        draw_ctx: *const RsvgDrawingCtx,
-        url: *const libc::c_char,
-        node_type: NodeType,
-    ) -> *mut RsvgNode;
-
     fn rsvg_drawing_ctx_release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
 
     fn rsvg_drawing_ctx_get_offset(
@@ -146,20 +140,28 @@ pub fn get_acquired_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> Option<A
     }
 }
 
+// Use this function when looking up urls to other nodes, and when you expect
+// the node to be of a particular type. This function does proper recursion
+// checking and thereby avoids infinite loops.
+//
+// Malformed SVGs, for example, may reference a marker by its IRI, but
+// the object referenced by the IRI is not a marker.
+//
+// Note that if you acquire a node, you have to release it before trying to
+// acquire it again.  If you acquire a node "#foo" and don't release it before
+// trying to acquire "foo" again, you will obtain a None the second time.
 pub fn get_acquired_node_of_type(
     draw_ctx: *const RsvgDrawingCtx,
     url: &str,
     node_type: NodeType,
 ) -> Option<AcquiredNode> {
-    let raw_node = unsafe {
-        rsvg_drawing_ctx_acquire_node_of_type(draw_ctx, str::to_glib_none(url).0, node_type)
-    };
-
-    if raw_node.is_null() {
-        None
-    } else {
-        Some(AcquiredNode(draw_ctx, raw_node))
+    if let Some(acquired) = get_acquired_node(draw_ctx, url) {
+         if acquired.get().get_type() == node_type {
+            return Some(acquired);
+        }
     }
+
+    None
 }
 
 pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {
