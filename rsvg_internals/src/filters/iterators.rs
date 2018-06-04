@@ -12,10 +12,10 @@ use super::FilterError;
 // TODO: add to cairo itself?
 #[derive(Debug, Clone, Copy)]
 pub struct ImageSurfaceDataShared<'a> {
-    pub data: &'a [u8],
+    data: &'a [u8],
     pub width: usize,
     pub height: usize,
-    pub stride: usize,
+    stride: usize,
 }
 
 /// A pixel consisting of R, G, B and A values.
