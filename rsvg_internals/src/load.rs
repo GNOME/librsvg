@@ -34,6 +34,7 @@ type NodeCreateFn = unsafe extern "C" fn(*const libc::c_char, *const RsvgNode) -
 
 lazy_static! {
     // Lines in comments are elements that we don't support.
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     static ref NODE_CREATORS: HashMap<&'static str, (bool, NodeCreateFn)> = {
         let mut h = HashMap::new();
         h.insert("a",                   (true,  rsvg_node_link_new as NodeCreateFn));
