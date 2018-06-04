@@ -46,8 +46,8 @@ pub fn linearize_surface(
 
     assert!(bounds.x0 >= 0);
     assert!(bounds.y0 >= 0);
-    assert!(bounds.x1 < width);
-    assert!(bounds.y1 < height);
+    assert!(bounds.x1 <= width);
+    assert!(bounds.y1 <= height);
 
     // TODO: this currently gives "non-exclusive access" (can we make read-only borrows?)
     // let input_data = surface.get_data().unwrap();
@@ -110,8 +110,8 @@ pub fn unlinearize_surface(
 
     assert!(bounds.x0 >= 0);
     assert!(bounds.y0 >= 0);
-    assert!(bounds.x1 < width);
-    assert!(bounds.y1 < height);
+    assert!(bounds.x1 <= width);
+    assert!(bounds.y1 <= height);
 
     // TODO: this currently gives "non-exclusive access" (can we make read-only borrows?)
     // let input_data = surface.get_data().unwrap();
