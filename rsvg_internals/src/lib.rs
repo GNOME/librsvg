@@ -50,7 +50,6 @@ pub use filters::context::{
     rsvg_filter_context_get_bg_surface,
     rsvg_filter_context_get_channelmap,
     rsvg_filter_context_get_drawing_ctx,
-    rsvg_filter_context_get_filter,
     rsvg_filter_context_get_height,
     rsvg_filter_context_get_lastresult,
     rsvg_filter_context_get_paffine,
@@ -60,6 +59,8 @@ pub use filters::context::{
     rsvg_filter_primitive_get_bounds,
     rsvg_filter_store_output,
 };
+
+pub use filters::node::rsvg_new_filter;
 
 pub use filters::composite::rsvg_new_filter_primitive_composite;
 pub use filters::offset::rsvg_new_filter_primitive_offset;
@@ -177,7 +178,7 @@ mod cond;
 mod draw;
 mod drawing_ctx;
 mod error;
-mod filters;
+pub mod filters;
 mod gradient;
 mod handle;
 mod image;

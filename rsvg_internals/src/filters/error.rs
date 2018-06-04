@@ -10,8 +10,6 @@ pub enum FilterError {
     InvalidInput,
     /// The filter input surface has an unsuccessful status.
     BadInputSurfaceStatus(cairo::Status),
-    /// Couldn't access the filter input pixel data.
-    InputSurfaceDataAccess,
     /// Couldn't create the output surface.
     OutputSurfaceCreation(cairo::Status),
 }
@@ -22,7 +20,6 @@ impl Error for FilterError {
         match *self {
             FilterError::InvalidInput => "invalid value of the `in` attribute",
             FilterError::BadInputSurfaceStatus(_) => "invalid status of the input surface",
-            FilterError::InputSurfaceDataAccess => "couldn't access the input surface",
             FilterError::OutputSurfaceCreation(_) => "couldn't create the output surface",
         }
     }

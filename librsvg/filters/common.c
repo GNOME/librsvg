@@ -441,15 +441,15 @@ rsvg_art_affine_image (cairo_surface_t *img,
     return TRUE;
 }
 
-void
-rsvg_filter_free_pair (gpointer value)
-{
-    RsvgFilterPrimitiveOutput *output;
-
-    output = (RsvgFilterPrimitiveOutput *) value;
-    cairo_surface_destroy (output->surface);
-    g_free (output);
-}
+// void
+// rsvg_filter_free_pair (gpointer value)
+// {
+//     RsvgFilterPrimitiveOutput *output;
+// 
+//     output = (RsvgFilterPrimitiveOutput *) value;
+//     cairo_surface_destroy (output->surface);
+//     g_free (output);
+// }
 
 // void
 // rsvg_filter_context_free (RsvgFilterContext * ctx)
@@ -671,61 +671,61 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
     return surface;
 }
 
-void
-rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
-{
-    RsvgFilter *filter = impl;
-    RsvgPropertyBagIter *iter;
-    const char *key;
-    RsvgAttribute attr;
-    const char *value;
-
-    iter = rsvg_property_bag_iter_begin (atts);
-
-    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        switch (attr) {
-        case RSVG_ATTRIBUTE_FILTER_UNITS:
-            if (!strcmp (value, "userSpaceOnUse"))
-                filter->filterunits = userSpaceOnUse;
-            else
-                filter->filterunits = objectBoundingBox;
-            break;
-
-        case RSVG_ATTRIBUTE_PRIMITIVE_UNITS:
-            if (!strcmp (value, "objectBoundingBox"))
-                filter->primitiveunits = objectBoundingBox;
-            else
-                filter->primitiveunits = userSpaceOnUse;
-            break;
-
-        case RSVG_ATTRIBUTE_X:
-            filter->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            break;
-
-        case RSVG_ATTRIBUTE_Y:
-            filter->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            break;
-
-        case RSVG_ATTRIBUTE_WIDTH:
-            filter->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            break;
-
-        case RSVG_ATTRIBUTE_HEIGHT:
-            filter->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            break;
-
-        default:
-            break;
-        }
-    }
-
-    rsvg_property_bag_iter_end (iter);
-}
-
-void
-rsvg_filter_free (gpointer impl)
-{
-    RsvgFilter *filter = impl;
-
-    g_free (filter);
-}
+// void
+// rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
+// {
+//     RsvgFilter *filter = impl;
+//     RsvgPropertyBagIter *iter;
+//     const char *key;
+//     RsvgAttribute attr;
+//     const char *value;
+// 
+//     iter = rsvg_property_bag_iter_begin (atts);
+// 
+//     while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+//         switch (attr) {
+//         case RSVG_ATTRIBUTE_FILTER_UNITS:
+//             if (!strcmp (value, "userSpaceOnUse"))
+//                 filter->filterunits = userSpaceOnUse;
+//             else
+//                 filter->filterunits = objectBoundingBox;
+//             break;
+// 
+//         case RSVG_ATTRIBUTE_PRIMITIVE_UNITS:
+//             if (!strcmp (value, "objectBoundingBox"))
+//                 filter->primitiveunits = objectBoundingBox;
+//             else
+//                 filter->primitiveunits = userSpaceOnUse;
+//             break;
+// 
+//         case RSVG_ATTRIBUTE_X:
+//             filter->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+//             break;
+// 
+//         case RSVG_ATTRIBUTE_Y:
+//             filter->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+//             break;
+// 
+//         case RSVG_ATTRIBUTE_WIDTH:
+//             filter->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+//             break;
+// 
+//         case RSVG_ATTRIBUTE_HEIGHT:
+//             filter->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+//             break;
+// 
+//         default:
+//             break;
+//         }
+//     }
+// 
+//     rsvg_property_bag_iter_end (iter);
+// }
+// 
+// void
+// rsvg_filter_free (gpointer impl)
+// {
+//     RsvgFilter *filter = impl;
+// 
+//     g_free (filter);
+// }

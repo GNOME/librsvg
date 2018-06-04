@@ -1,6 +1,8 @@
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
+use cairo;
+
 use attributes::Attribute;
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
@@ -18,8 +20,11 @@ mod ffi;
 use self::ffi::*;
 pub use self::ffi::{filter_render, RsvgFilterPrimitive};
 
-pub mod input;
+mod input;
 use self::input::Input;
+
+pub mod iterators;
+pub mod node;
 
 pub mod composite;
 pub mod offset;
@@ -51,6 +56,14 @@ struct PrimitiveWithInput {
     in_: RefCell<Option<Input>>,
 }
 
+/// Extracts the surface out of a `get_input()` output with the ability to `?`.
+///
+/// A small convenience function for filter implementations.
+#[inline]
+fn get_surface(x: Option<FilterOutput>) -> Result<cairo::ImageSurface, FilterError> {
+    x.map(|x| x.surface).ok_or(FilterError::InvalidInput)
+}
+
 impl Primitive {
     /// Constructs a new `Primitive` with empty properties.
     #[inline]
@@ -66,6 +79,8 @@ impl Primitive {
         }
     }
 
+    /// Computes and returns the filter primitive bounds.
+    #[inline]
     fn get_bounds(&self, ctx: &FilterContext) -> IRect {
         let node = ctx.get_filter_node();
         let cascaded = node.get_cascaded_values();
@@ -125,6 +140,7 @@ impl PrimitiveWithInput {
     }
 
     /// Returns the input Cairo surface for this filter primitive.
+    #[inline]
     fn get_input(&self, ctx: &FilterContext) -> Option<FilterOutput> {
         ctx.get_input(self.in_.borrow().as_ref())
     }

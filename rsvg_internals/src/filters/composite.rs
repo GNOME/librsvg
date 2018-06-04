@@ -1,9 +1,6 @@
 use std::cell::{Cell, RefCell};
-use std::slice;
 
-use cairo::prelude::SurfaceExt;
 use cairo::{self, ImageSurface};
-use cairo_sys;
 use libc::c_char;
 
 use attributes::Attribute;
@@ -17,7 +14,8 @@ use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::iterators::{ImageSurfaceDataShared, Pixels};
+use super::{get_surface, Filter, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -101,59 +99,25 @@ impl Filter for Composite {
     fn render(&self, _node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
         let bounds = self.base.get_bounds(ctx);
 
-        let input_surface = match self.base.get_input(ctx) {
-            Some(FilterOutput { surface, .. }) => surface,
-            None => return Err(FilterError::InvalidInput),
-        };
-        let input_2_surface = match ctx.get_input(self.in2.borrow().as_ref()) {
-            Some(FilterOutput { surface, .. }) => surface,
-            None => return Err(FilterError::InvalidInput),
-        };
+        let input_surface = get_surface(self.base.get_input(ctx))?;
+        let input_2_surface = get_surface(ctx.get_input(self.in2.borrow().as_ref()))?;
 
         // It's important to linearize sRGB before doing any blending, since otherwise the colors
         // will be darker than they should be.
         let input_surface =
             linearize_surface(&input_surface, bounds).map_err(FilterError::BadInputSurfaceStatus)?;
 
-        let width = input_surface.get_width();
-        let height = input_surface.get_height();
-        let input_stride = input_surface.get_stride();
-        let input_2_stride = input_2_surface.get_stride();
-
         let output_surface = if self.operator.get() == Operator::Arithmetic {
-            // TODO: this currently gives "non-exclusive access" (can we make read-only borrows?)
-            // let input_data = input_surface.get_data().unwrap();
-            input_surface.flush();
-            if input_surface.status() != cairo::Status::Success {
-                return Err(FilterError::BadInputSurfaceStatus(input_surface.status()));
-            }
-            let input_data_ptr =
-                unsafe { cairo_sys::cairo_image_surface_get_data(input_surface.to_raw_none()) };
-            if input_data_ptr.is_null() {
-                return Err(FilterError::InputSurfaceDataAccess);
-            }
-            let input_data_len = input_stride as usize * height as usize;
-            let input_data = unsafe { slice::from_raw_parts(input_data_ptr, input_data_len) };
+            let input_data = ImageSurfaceDataShared::new(&input_surface)?;
+            let input_2_data = ImageSurfaceDataShared::new(&input_2_surface)?;
 
-            let input_2_surface = linearize_surface(&input_2_surface, bounds)
-                .map_err(FilterError::BadInputSurfaceStatus)?;
+            let mut output_surface = ImageSurface::create(
+                cairo::Format::ARgb32,
+                input_data.width as i32,
+                input_data.height as i32,
+            ).map_err(FilterError::OutputSurfaceCreation)?;
 
-            input_2_surface.flush();
-            if input_2_surface.status() != cairo::Status::Success {
-                return Err(FilterError::BadInputSurfaceStatus(input_2_surface.status()));
-            }
-            let input_2_data_ptr =
-                unsafe { cairo_sys::cairo_image_surface_get_data(input_2_surface.to_raw_none()) };
-            if input_2_data_ptr.is_null() {
-                return Err(FilterError::InputSurfaceDataAccess);
-            }
-            let input_2_data_len = input_2_stride as usize * height as usize;
-            let input_2_data = unsafe { slice::from_raw_parts(input_2_data_ptr, input_2_data_len) };
-
-            let mut output_surface = ImageSurface::create(cairo::Format::ARgb32, width, height)
-                .map_err(FilterError::OutputSurfaceCreation)?;
-
-            let output_stride = output_surface.get_stride();
+            let output_stride = output_surface.get_stride() as usize;
             {
                 let mut output_data = output_surface.get_data().unwrap();
 
@@ -162,36 +126,38 @@ impl Filter for Composite {
                 let k3 = self.k3.get();
                 let k4 = self.k4.get();
 
-                for y in bounds.y0..bounds.y1 {
-                    for x in bounds.x0..bounds.x1 {
-                        let i1a =
-                            f64::from(input_data[(y * input_stride + 4 * x + 3) as usize]) / 255f64;
-                        let i2a = f64::from(input_2_data[(y * input_2_stride + 4 * x + 3) as usize])
-                            / 255f64;
-                        let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
-                        let oa = clamp(oa, 0f64, 1f64);
+                for (x, y, pixel, pixel_2) in Pixels::new(input_data, bounds)
+                    .map(|(x, y, p)| (x, y, p, input_2_data.get_pixel(x, y)))
+                {
+                    let i1a = f64::from(pixel.a) / 255f64;
+                    let i2a = f64::from(pixel_2.a) / 255f64;
+                    let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
+                    let oa = clamp(oa, 0f64, 1f64);
 
-                        // Contents of image surfaces are transparent by default, so if the
-                        // resulting pixel is transparent there's no need
-                        // to do anything.
-                        if oa > 0f64 {
-                            output_data[(y * output_stride + 4 * x + 3) as usize] =
-                                (oa * 255f64).round() as u8;
+                    let output_base = y * output_stride + 4 * x;
 
-                            for ch in 0..3 {
-                                let i1 = f64::from(
-                                    input_data[(y * input_stride + 4 * x + ch) as usize],
-                                ) / 255f64;
-                                let i2 = f64::from(
-                                    input_2_data[(y * input_2_stride + 4 * x + ch) as usize],
-                                ) / 255f64;
+                    // Contents of image surfaces are transparent by default, so if the
+                    // resulting pixel is transparent there's no need
+                    // to do anything.
+                    if oa > 0f64 {
+                        output_data[output_base + 3] = (oa * 255f64).round() as u8;
 
-                                let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
-                                let o = clamp(o, 0f64, oa);
+                        // TODO: make this much better with mutable pixel iterators for output.
+                        for (ch, &(i1, i2)) in [
+                            (pixel.r, pixel_2.r),
+                            (pixel.g, pixel_2.g),
+                            (pixel.b, pixel_2.b),
+                        ].iter()
+                            .enumerate()
+                        {
+                            let i1 = f64::from(i1) / 255f64;
+                            let i2 = f64::from(i2) / 255f64;
 
-                                let o = (o * 255f64).round() as u8;
-                                output_data[(y * output_stride + 4 * x + ch) as usize] = o;
-                            }
+                            let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
+                            let o = clamp(o, 0f64, oa);
+
+                            let o = (o * 255f64).round() as u8;
+                            output_data[output_base + ch] = o;
                         }
                     }
                 }
