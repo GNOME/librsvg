@@ -101,6 +101,7 @@ RUST_SRC =					\
 	rsvg_internals/src/length.rs		\
 	rsvg_internals/src/lib.rs		\
 	rsvg_internals/src/link.rs		\
+	rsvg_internals/src/load.rs		\
 	rsvg_internals/src/marker.rs		\
 	rsvg_internals/src/mask.rs		\
 	rsvg_internals/src/node.rs		\

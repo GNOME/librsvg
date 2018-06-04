@@ -291,143 +291,6 @@ free_element_name_stack (RsvgLoad *load)
     load->element_name_stack = NULL;
 }
 
-typedef RsvgNode *(* CreateNodeFn) (const char *element_name, RsvgNode *parent);
-
-typedef struct {
-    const char   *element_name;
-    gboolean      supports_class_attribute; /* from https://www.w3.org/TR/SVG/attindex.html#RegularAttributes */
-    CreateNodeFn  create_fn;
-} NodeCreator;
-
-/* Keep these sorted by element_name!
- *
- * Lines in comments are elements that we don't support.
- */
-static const NodeCreator node_creators[] = {
-    { "a",                   TRUE,  rsvg_node_link_new },
-    /* "altGlyph",           TRUE,  */
-    /* "altGlyphDef",        FALSE, */
-    /* "altGlyphItem",       FALSE, */
-    /* "animate",            FALSE, */
-    /* "animateColor",       FALSE, */
-    /* "animateMotion",      FALSE, */
-    /* "animateTransform",   FALSE, */
-    { "circle",              TRUE,  rsvg_node_circle_new },
-    { "clipPath",            TRUE,  rsvg_node_clip_path_new },
-    /* "color-profile",      FALSE, */
-    { "conicalGradient",     TRUE,  rsvg_node_radial_gradient_new },
-    /* "cursor",             FALSE, */
-    { "defs",                TRUE,  rsvg_node_defs_new },
-    /* "desc",               TRUE,  */
-    { "ellipse",             TRUE,  rsvg_node_ellipse_new },
-    { "feBlend",             TRUE,  rsvg_new_filter_primitive_blend },
-    { "feColorMatrix",       TRUE,  rsvg_new_filter_primitive_color_matrix },
-    { "feComponentTransfer", TRUE,  rsvg_new_filter_primitive_component_transfer },
-    { "feComposite",         TRUE,  rsvg_new_filter_primitive_composite },
-    { "feConvolveMatrix",    TRUE,  rsvg_new_filter_primitive_convolve_matrix },
-    { "feDiffuseLighting",   TRUE,  rsvg_new_filter_primitive_diffuse_lighting },
-    { "feDisplacementMap",   TRUE,  rsvg_new_filter_primitive_displacement_map },
-    { "feDistantLight",      FALSE, rsvg_new_node_light_source },
-    { "feFlood",             TRUE,  rsvg_new_filter_primitive_flood },
-    { "feFuncA",             FALSE, rsvg_new_node_component_transfer_function },
-    { "feFuncB",             FALSE, rsvg_new_node_component_transfer_function },
-    { "feFuncG",             FALSE, rsvg_new_node_component_transfer_function },
-    { "feFuncR",             FALSE, rsvg_new_node_component_transfer_function },
-    { "feGaussianBlur",      TRUE,  rsvg_new_filter_primitive_gaussian_blur },
-    { "feImage",             TRUE,  rsvg_new_filter_primitive_image },
-    { "feMerge",             TRUE,  rsvg_new_filter_primitive_merge },
-    { "feMergeNode",         FALSE, rsvg_new_filter_primitive_merge_node },
-    { "feMorphology",        TRUE,  rsvg_new_filter_primitive_erode },
-    { "feOffset",            TRUE,  rsvg_new_filter_primitive_offset },
-    { "fePointLight",        FALSE, rsvg_new_node_light_source },
-    { "feSpecularLighting",  TRUE,  rsvg_new_filter_primitive_specular_lighting },
-    { "feSpotLight",         FALSE, rsvg_new_node_light_source },
-    { "feTile",              TRUE,  rsvg_new_filter_primitive_tile },
-    { "feTurbulence",        TRUE,  rsvg_new_filter_primitive_turbulence },
-    { "filter",              TRUE,  rsvg_new_filter },
-    /* "font",               TRUE,  */
-    /* "font-face",          FALSE, */
-    /* "font-face-format",   FALSE, */
-    /* "font-face-name",     FALSE, */
-    /* "font-face-src",      FALSE, */
-    /* "font-face-uri",      FALSE, */
-    /* "foreignObject",      TRUE,  */
-    { "g",                   TRUE,  rsvg_node_group_new },
-    /* "glyph",              TRUE,  */
-    /* "glyphRef",           TRUE,  */
-    /* "hkern",              FALSE, */
-    { "image",               TRUE,  rsvg_node_image_new },
-    { "line",                TRUE,  rsvg_node_line_new },
-    { "linearGradient",      TRUE,  rsvg_node_linear_gradient_new },
-    { "marker",              TRUE,  rsvg_node_marker_new },
-    { "mask",                TRUE,  rsvg_node_mask_new },
-    /* "metadata",           FALSE, */
-    /* "missing-glyph",      TRUE,  */
-    /* "mpath"               FALSE, */
-    { "multiImage",          FALSE, rsvg_node_switch_new }, /* hack to make multiImage sort-of work */
-    { "path",                TRUE,  rsvg_node_path_new },
-    { "pattern",             TRUE,  rsvg_node_pattern_new },
-    { "polygon",             TRUE,  rsvg_node_polygon_new },
-    { "polyline",            TRUE,  rsvg_node_polyline_new },
-    { "radialGradient",      TRUE,  rsvg_node_radial_gradient_new },
-    { "rect",                TRUE,  rsvg_node_rect_new },
-    /* "script",             FALSE, */
-    /* "set",                FALSE, */
-    { "stop",                TRUE,  rsvg_node_stop_new },
-    /* "style",              FALSE, */
-    { "subImage",            FALSE, rsvg_node_group_new },
-    { "subImageRef",         FALSE, rsvg_node_image_new },
-    { "svg",                 TRUE,  rsvg_node_svg_new },
-    { "switch",              TRUE,  rsvg_node_switch_new },
-    { "symbol",              TRUE,  rsvg_node_symbol_new },
-    { "text",                TRUE,  rsvg_node_text_new },
-    /* "textPath",           TRUE,  */
-    /* "title",              TRUE,  */
-    { "tref",                TRUE,  rsvg_node_tref_new },
-    { "tspan",               TRUE,  rsvg_node_tspan_new },
-    { "use",                 TRUE,  rsvg_node_use_new },
-    /* "view",               FALSE, */
-    /* "vkern",              FALSE, */
-};
-
-/* Whenever we encounter a node we don't understand, represent it as a defs.
- * This is like a group, but it doesn't do any rendering of children.  The
- * effect is that we will ignore all children of unknown elements.
- */
-static const NodeCreator default_node_creator = { NULL, TRUE, rsvg_node_defs_new };
-
-/* Used from bsearch() */
-static int
-compare_node_creators_fn (const void *a, const void *b)
-{
-    const NodeCreator *na = a;
-    const NodeCreator *nb = b;
-
-    return strcmp (na->element_name, nb->element_name);
-}
-
-static const NodeCreator *
-get_node_creator_for_element_name (const char *name)
-{
-    NodeCreator key;
-    const NodeCreator *result;
-
-    key.element_name = name;
-    key.supports_class_attribute = FALSE;
-    key.create_fn = NULL;
-
-    result = bsearch (&key,
-                      node_creators,
-                      G_N_ELEMENTS (node_creators),
-                      sizeof (NodeCreator),
-                      compare_node_creators_fn);
-
-    if (result == NULL)
-        result = &default_node_creator;
-
-    return result;
-}
-
 static void
 node_set_atts (RsvgNode *node,
                RsvgHandle *handle,
@@ -481,13 +344,10 @@ node_set_atts (RsvgNode *node,
 static void
 standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
 {
-    const NodeCreator *creator;
-    RsvgNode *newnode = NULL;
-
-    creator = get_node_creator_for_element_name (name);
-    g_assert (creator != NULL && creator->create_fn != NULL);
-
-    newnode = creator->create_fn (name, load->currentnode);
+    gboolean supports_class_attribute;
+    RsvgNode *newnode;
+    
+    newnode = rsvg_load_new_node(name, load->currentnode, &supports_class_attribute);
     g_assert (newnode != NULL);
 
     g_assert (rsvg_node_get_type (newnode) != RSVG_NODE_TYPE_INVALID);
@@ -505,7 +365,7 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
 
     load->currentnode = rsvg_node_ref (newnode);
 
-    node_set_atts (newnode, load->handle, name, creator->supports_class_attribute, atts);
+    node_set_atts (newnode, load->handle, name, supports_class_attribute, atts);
 
     newnode = rsvg_node_unref (newnode);
 }
