@@ -56,11 +56,11 @@ impl NodeTrait for NodeFilter {
                         .set(parse("height", value, LengthDir::Vertical, None)?)
                 }
                 Attribute::FilterUnits => {
-                    self.filterunits.set(parse("filterunits", value, (), None)?)
+                    self.filterunits.set(parse("filterUnits", value, (), None)?)
                 }
                 Attribute::PrimitiveUnits => {
                     self.primitiveunits
-                        .set(parse("primitiveunits", value, (), None)?)
+                        .set(parse("primitiveUnits", value, (), None)?)
                 }
                 _ => (),
             }
