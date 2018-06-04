@@ -1,9 +1,6 @@
 use std::cell::Cell;
-use std::slice;
 
-use cairo::prelude::SurfaceExt;
 use cairo::{self, ImageSurface};
-use cairo_sys;
 use libc::c_char;
 
 use attributes::Attribute;
@@ -12,8 +9,10 @@ use length::{LengthDir, RsvgLength};
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
+use util::clamp;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
+use super::iterators::{ImageSurfaceDataShared, Pixels};
 use super::{get_surface, Filter, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
@@ -77,47 +76,36 @@ impl Filter for Offset {
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;
 
         let input_surface = get_surface(self.base.get_input(ctx))?;
+        let input_data = ImageSurfaceDataShared::new(&input_surface)?;
 
-        let width = input_surface.get_width();
-        let height = input_surface.get_height();
-        let input_stride = input_surface.get_stride();
+        // input_bounds contains all pixels within bounds,
+        // for which (x + ox) and (y + oy) also lie within bounds.
+        let input_bounds = IRect {
+            x0: clamp(bounds.x0 - ox, bounds.x0, bounds.x1),
+            y0: clamp(bounds.y0 - oy, bounds.y0, bounds.y1),
+            x1: clamp(bounds.x1 - ox, bounds.x0, bounds.x1),
+            y1: clamp(bounds.y1 - oy, bounds.y0, bounds.y1),
+        };
 
-        // TODO: this currently gives "non-exclusive access" (can we make read-only borrows?)
-        // let input_data = input_surface.get_data().unwrap();
-        input_surface.flush();
-        if input_surface.status() != cairo::Status::Success {
-            return Err(FilterError::BadInputSurfaceStatus(input_surface.status()));
-        }
-        let input_data_ptr =
-            unsafe { cairo_sys::cairo_image_surface_get_data(input_surface.to_raw_none()) };
-        assert!(!input_data_ptr.is_null());
-        let input_data_len = input_stride as usize * height as usize;
-        let input_data = unsafe { slice::from_raw_parts(input_data_ptr, input_data_len) };
+        let mut output_surface = ImageSurface::create(
+            cairo::Format::ARgb32,
+            input_data.width as i32,
+            input_data.height as i32,
+        ).map_err(FilterError::OutputSurfaceCreation)?;
 
-        let mut output_surface = ImageSurface::create(cairo::Format::ARgb32, width, height)
-            .map_err(FilterError::OutputSurfaceCreation)?;
-
-        let output_stride = output_surface.get_stride();
+        let output_stride = output_surface.get_stride() as usize;
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for y in bounds.y0..bounds.y1 {
-                for x in bounds.x0..bounds.x1 {
-                    if x - ox < bounds.x0
-                        || x - ox >= bounds.x1
-                        || y - oy < bounds.y0
-                        || y - oy >= bounds.y1
-                    {
-                        continue;
-                    }
+            for (x, y, pixel) in Pixels::new(input_data, input_bounds) {
+                let output_x = (x as i32 + ox) as usize;
+                let output_y = (y as i32 + oy) as usize;
 
-                    for ch in 0..4 {
-                        let input_index = ((y - oy) * input_stride + (x - ox) * 4 + ch) as usize;
-                        let output_index = (y * output_stride + x * 4 + ch) as usize;
-
-                        output_data[output_index] = input_data[input_index];
-                    }
-                }
+                let output_base = output_y * output_stride + output_x * 4;
+                output_data[output_base + 0] = pixel.r;
+                output_data[output_base + 1] = pixel.g;
+                output_data[output_base + 2] = pixel.b;
+                output_data[output_base + 3] = pixel.a;
             }
         }
 
