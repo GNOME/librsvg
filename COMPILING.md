@@ -200,6 +200,17 @@ compiler's source code.
 You can check Jorge Aparicio's [guide on cross-compilation for
 Rust][rust-cross] for more details.
 
+## Overriding the Rust target name
+
+If you need `cargo --target=FOO` to obtain a different value from the
+one you specified for `--host=TRIPLE`, you can use the `RUST_TARGET`
+variable, and this will be passed to `cargo`.  For example,
+
+```sh
+RUST_TARGET=aarch64-unknown-linux-gnu ./configure --host=aarch64-buildroot-linux-gnu
+# will run "cargo --target=aarch64-unknown-linux-gnu" for the Rust part
+```
+
 ## Cross-compiling to a target not supported by Rust out of the box
 
 When building with a target that is not supported out of the box by
