@@ -402,6 +402,10 @@ impl Node {
         }
     }
 
+    pub fn get_impl<T: NodeTrait>(&self) -> Option<&T> {
+        (&self.node_impl).downcast_ref::<T>()
+    }
+
     pub fn draw_children(
         &self,
         cascaded: &CascadedValues,
