@@ -52,7 +52,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-defs.c 			\
 	librsvg/rsvg-defs.h 			\
 	librsvg/rsvg-file-util.c		\
-	librsvg/rsvg-filter.c			\
 	librsvg/rsvg-filter.h			\
 	librsvg/rsvg-handle.c			\
 	librsvg/rsvg-io.c			\
@@ -90,6 +89,7 @@ RUST_SRC =					\
 	rsvg_internals/src/filters/error.rs	\
 	rsvg_internals/src/filters/ffi.rs	\
 	rsvg_internals/src/filters/mod.rs	\
+	rsvg_internals/src/filters/node.rs	\
 	rsvg_internals/src/filters/input.rs	\
 	rsvg_internals/src/filters/iterators.rs	\
 	rsvg_internals/src/filters/offset.rs	\

@@ -24,6 +24,7 @@ mod input;
 use self::input::Input;
 
 pub mod iterators;
+pub mod node;
 
 pub mod composite;
 pub mod offset;

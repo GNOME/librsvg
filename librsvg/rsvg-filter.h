@@ -34,13 +34,13 @@ typedef struct  {
     int x0, y0, x1, y1;
 } RsvgIRect;
 
-typedef RsvgCoordUnits RsvgFilterUnits;
-
-struct _RsvgFilter {
-    RsvgLength x, y, width, height;
-    RsvgFilterUnits filterunits;
-    RsvgFilterUnits primitiveunits;
-};
+// typedef RsvgCoordUnits RsvgFilterUnits;
+// 
+// struct _RsvgFilter {
+//     RsvgLength x, y, width, height;
+//     RsvgFilterUnits filterunits;
+//     RsvgFilterUnits primitiveunits;
+// };
 
 /**
  * rsvg_filter_render:
@@ -61,8 +61,10 @@ cairo_surface_t *rsvg_filter_render (RsvgNode *filter_node,
                                      RsvgDrawingCtx *context,
                                      char *channelmap);
 
+/* Implemented in rust/src/filters/node.rs */
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter	    (const char *element_name, RsvgNode *parent);
+
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_blend                (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL

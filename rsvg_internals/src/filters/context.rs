@@ -15,6 +15,7 @@ use node::RsvgNode;
 use state::ComputedValues;
 
 use super::input::Input;
+use super::node::NodeFilter;
 use super::RsvgFilterPrimitive;
 
 // Required by the C code until all filters are ported to Rust.
@@ -28,21 +29,6 @@ pub struct IRect {
     pub x1: i32,
     pub y1: i32,
 }
-
-// Required by the C code until all filters are ported to Rust.
-// Keep this in sync with
-// ../../librsvg/librsvg/rsvg-filter.h:_RsvgFilter
-#[repr(C)]
-pub struct RsvgFilter {
-    pub x: RsvgLength,
-    pub y: RsvgLength,
-    pub width: RsvgLength,
-    pub height: RsvgLength,
-    pub filterunits: CoordUnits,
-    pub primitiveunits: CoordUnits,
-}
-
-pub type RsvgFilterContext = FilterContext;
 
 // Required by the C code until all filters are ported to Rust.
 // Keep this in sync with
@@ -73,6 +59,8 @@ pub struct FilterResult {
     pub output: FilterOutput,
 }
 
+pub type RsvgFilterContext = FilterContext;
+
 /// The filter rendering context.
 pub struct FilterContext {
     /// the <filter> node
@@ -86,7 +74,6 @@ pub struct FilterContext {
 
     affine: cairo::Matrix,
     paffine: cairo::Matrix,
-    filter: *mut RsvgFilter,
     drawing_ctx: *mut RsvgDrawingCtx,
     channelmap: [i32; 4],
 }
@@ -94,14 +81,11 @@ pub struct FilterContext {
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
-        filter: *mut RsvgFilter,
         filter_node: &RsvgNode,
         source_surface: cairo::ImageSurface,
         draw_ctx: *mut RsvgDrawingCtx,
         channelmap: [i32; 4],
     ) -> Self {
-        assert!(!filter.is_null());
-
         let cascaded = filter_node.get_cascaded_values();
         let values = cascaded.get();
 
@@ -109,7 +93,9 @@ impl FilterContext {
         let bbox = drawing_ctx::get_bbox(draw_ctx);
         let bbox_rect = bbox.rect.unwrap();
 
-        let affine = match unsafe { (*filter).filterunits } {
+        let filter = filter_node.get_impl::<NodeFilter>().unwrap();
+
+        let affine = match filter.filterunits.get() {
             CoordUnits::UserSpaceOnUse => cr_affine,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
@@ -124,7 +110,7 @@ impl FilterContext {
             }
         };
 
-        let paffine = match unsafe { (*filter).primitiveunits } {
+        let paffine = match filter.primitiveunits.get() {
             CoordUnits::UserSpaceOnUse => cr_affine,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
@@ -146,7 +132,6 @@ impl FilterContext {
             previous_results: HashMap::new(),
             affine,
             paffine,
-            filter,
             drawing_ctx: draw_ctx,
             channelmap,
         };
@@ -228,21 +213,21 @@ impl FilterContext {
         width: Option<RsvgLength>,
         height: Option<RsvgLength>,
     ) -> IRect {
-        let filter = unsafe { &*self.filter };
+        let filter = self.node.get_impl::<NodeFilter>().unwrap();
         let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
 
-        if filter.filterunits == CoordUnits::ObjectBoundingBox {
+        if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
             drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
         }
 
         let rect = cairo::Rectangle {
-            x: filter.x.normalize(values, self.drawing_ctx),
-            y: filter.y.normalize(values, self.drawing_ctx),
-            width: filter.width.normalize(values, self.drawing_ctx),
-            height: filter.height.normalize(values, self.drawing_ctx),
+            x: filter.x.get().normalize(values, self.drawing_ctx),
+            y: filter.y.get().normalize(values, self.drawing_ctx),
+            width: filter.width.get().normalize(values, self.drawing_ctx),
+            height: filter.height.get().normalize(values, self.drawing_ctx),
         };
 
-        if filter.filterunits == CoordUnits::ObjectBoundingBox {
+        if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
             drawing_ctx::pop_view_box(self.drawing_ctx);
         }
 
@@ -250,7 +235,7 @@ impl FilterContext {
         bbox.insert(&other_bbox);
 
         if x.is_some() || y.is_some() || width.is_some() || height.is_some() {
-            if filter.primitiveunits == CoordUnits::ObjectBoundingBox {
+            if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
             }
 
@@ -273,7 +258,7 @@ impl FilterContext {
                     .unwrap_or(vbox_height);
             }
 
-            if filter.primitiveunits == CoordUnits::ObjectBoundingBox {
+            if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::pop_view_box(self.drawing_ctx);
             }
 
@@ -356,15 +341,6 @@ pub unsafe extern "C" fn rsvg_filter_context_get_paffine(
     assert!(!ctx.is_null());
 
     (*ctx).paffine
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_context_get_filter(
-    ctx: *const RsvgFilterContext,
-) -> *const RsvgFilter {
-    assert!(!ctx.is_null());
-
-    (*ctx).filter
 }
 
 #[no_mangle]

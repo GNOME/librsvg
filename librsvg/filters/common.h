@@ -105,22 +105,22 @@ gboolean rsvg_art_affine_image (cairo_surface_t *img,
                                 double w,
                                 double h);
 
-G_GNUC_INTERNAL
-void rsvg_filter_draw (RsvgNode *node,
-                       gpointer impl,
-                       RsvgDrawingCtx *ctx,
-                       RsvgState *state,
-                       int dominate,
-                       gboolean clipping);
+// G_GNUC_INTERNAL
+// void rsvg_filter_draw (RsvgNode *node,
+//                        gpointer impl,
+//                        RsvgDrawingCtx *ctx,
+//                        RsvgState *state,
+//                        int dominate,
+//                        gboolean clipping);
 
 // G_GNUC_INTERNAL
 // void rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, RsvgBbox *bbox);
 
-G_GNUC_INTERNAL
-void rsvg_filter_free (gpointer impl);
+// G_GNUC_INTERNAL
+// void rsvg_filter_free (gpointer impl);
 
-G_GNUC_INTERNAL
-void rsvg_filter_free_pair (gpointer value);
+// G_GNUC_INTERNAL
+// void rsvg_filter_free_pair (gpointer value);
 
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx);
@@ -128,8 +128,8 @@ cairo_surface_t *rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx);
 G_GNUC_INTERNAL
 RsvgFilterPrimitiveOutput rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx);
 
-G_GNUC_INTERNAL
-void rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts);
+// G_GNUC_INTERNAL
+// void rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts);
 
 // G_GNUC_INTERNAL
 // void rsvg_filter_store_result (GString * name,
@@ -149,9 +149,6 @@ gint rsvg_filter_context_get_width (const RsvgFilterContext *ctx);
 
 G_GNUC_INTERNAL
 gint rsvg_filter_context_get_height (const RsvgFilterContext *ctx);
-
-G_GNUC_INTERNAL
-const RsvgFilter *rsvg_filter_context_get_filter (const RsvgFilterContext *ctx);
 
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_filter_context_get_source_surface (RsvgFilterContext *ctx);

@@ -9,7 +9,7 @@ use length::RsvgLength;
 use node::{NodeType, RsvgCNodeImpl, RsvgNode};
 use state::{ComputedValues, RsvgComputedValues};
 
-use super::context::{FilterContext, RsvgFilter, RsvgFilterContext};
+use super::context::{FilterContext, RsvgFilterContext};
 use super::{Filter, FilterError, FilterResult};
 
 // Required by the C code until all filters are ported to Rust.
@@ -71,13 +71,7 @@ pub fn filter_render(
         }
     }
 
-    let mut filter_ctx = FilterContext::new(
-        filter_node.get_c_impl() as *mut RsvgFilter,
-        filter_node,
-        source.clone(),
-        context,
-        channelmap_arr,
-    );
+    let mut filter_ctx = FilterContext::new(filter_node, source.clone(), context, channelmap_arr);
 
     filter_node
         .children()
