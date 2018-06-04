@@ -63,7 +63,7 @@ pub type RsvgFilterContext = FilterContext;
 
 /// The filter rendering context.
 pub struct FilterContext {
-    /// the <filter> node
+    /// The <filter> node.
     node: RsvgNode,
     /// The source graphic surface.
     source_surface: cairo::ImageSurface,
@@ -145,6 +145,8 @@ impl FilterContext {
         rv
     }
 
+    /// Returns the <filter> node for this context.
+    #[inline]
     pub fn get_filter_node(&self) -> RsvgNode {
         self.node.clone()
     }

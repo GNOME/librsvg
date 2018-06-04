@@ -79,6 +79,8 @@ impl Primitive {
         }
     }
 
+    /// Computes and returns the filter primitive bounds.
+    #[inline]
     fn get_bounds(&self, ctx: &FilterContext) -> IRect {
         let node = ctx.get_filter_node();
         let cascaded = node.get_cascaded_values();
@@ -138,6 +140,7 @@ impl PrimitiveWithInput {
     }
 
     /// Returns the input Cairo surface for this filter primitive.
+    #[inline]
     fn get_input(&self, ctx: &FilterContext) -> Option<FilterOutput> {
         ctx.get_input(self.in_.borrow().as_ref())
     }

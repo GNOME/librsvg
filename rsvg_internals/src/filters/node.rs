@@ -11,6 +11,7 @@ use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 
+/// The <filter> node.
 pub struct NodeFilter {
     pub x: Cell<RsvgLength>,
     pub y: Cell<RsvgLength>,
@@ -21,6 +22,8 @@ pub struct NodeFilter {
 }
 
 impl NodeFilter {
+    /// Constructs a new `NodeFilter` with default properties.
+    #[inline]
     fn new() -> Self {
         Self {
             x: Cell::new(RsvgLength::parse("-10%", LengthDir::Horizontal).unwrap()),
