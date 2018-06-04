@@ -15,6 +15,7 @@ use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
 use state::Overflow;
+use util::utf8_cstr_opt;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -417,48 +418,84 @@ impl NodeTrait for NodeSymbol {
 pub extern "C" fn rsvg_node_group_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Group, raw_parent, Box::new(NodeGroup::new()))
+    boxed_node_new(
+        NodeType::Group,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeGroup::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_defs_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Defs, raw_parent, Box::new(NodeDefs::new()))
+    boxed_node_new(
+        NodeType::Defs,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeDefs::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_switch_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Switch, raw_parent, Box::new(NodeSwitch::new()))
+    boxed_node_new(
+        NodeType::Switch,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeSwitch::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_svg_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Svg, raw_parent, Box::new(NodeSvg::new()))
+    boxed_node_new(
+        NodeType::Svg,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeSvg::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_use_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Use, raw_parent, Box::new(NodeUse::new()))
+    boxed_node_new(
+        NodeType::Use,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeUse::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_symbol_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Symbol, raw_parent, Box::new(NodeSymbol::new()))
+    boxed_node_new(
+        NodeType::Symbol,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeSymbol::new()),
+    )
 }
 
 #[no_mangle]

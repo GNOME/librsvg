@@ -10,6 +10,7 @@ use handle::RsvgHandle;
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
+use util::utf8_cstr_opt;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
@@ -89,10 +90,12 @@ impl NodeTrait for NodeClipPath {
 pub extern "C" fn rsvg_node_clip_path_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
     boxed_node_new(
         NodeType::ClipPath,
         raw_parent,
+        unsafe { utf8_cstr_opt(id) },
         Box::new(NodeClipPath::new()),
     )
 }

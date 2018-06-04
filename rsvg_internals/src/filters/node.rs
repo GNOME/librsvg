@@ -10,6 +10,7 @@ use length::{LengthDir, RsvgLength};
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
+use util::utf8_cstr_opt;
 
 /// The <filter> node.
 pub struct NodeFilter {
@@ -74,6 +75,12 @@ impl NodeTrait for NodeFilter {
 pub extern "C" fn rsvg_new_filter(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Filter, raw_parent, Box::new(NodeFilter::new()))
+    boxed_node_new(
+        NodeType::Filter,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeFilter::new()),
+    )
 }

@@ -711,10 +711,12 @@ impl NodeTrait for NodeGradient {
 pub extern "C" fn rsvg_node_linear_gradient_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
     boxed_node_new(
         NodeType::LinearGradient,
         raw_parent,
+        unsafe { utf8_cstr_opt(id) },
         Box::new(NodeGradient::new_linear()),
     )
 }
@@ -723,10 +725,12 @@ pub extern "C" fn rsvg_node_linear_gradient_new(
 pub extern "C" fn rsvg_node_radial_gradient_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
     boxed_node_new(
         NodeType::RadialGradient,
         raw_parent,
+        unsafe { utf8_cstr_opt(id) },
         Box::new(NodeGradient::new_radial()),
     )
 }

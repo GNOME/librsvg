@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface};
-use libc::c_char;
+use libc::{self, c_char};
 
 use attributes::Attribute;
 use error::{AttributeError, NodeError};
@@ -10,7 +10,7 @@ use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgN
 use parsers::{self, parse, Parse};
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
-use util::clamp;
+use util::{clamp, utf8_cstr_opt};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
@@ -233,7 +233,13 @@ impl From<Operator> for cairo::Operator {
 pub unsafe extern "C" fn rsvg_new_filter_primitive_composite(
     _element_name: *const c_char,
     parent: *mut RsvgNode,
+    id: *const libc::c_char,
 ) -> *mut RsvgNode {
     let filter = Composite::new();
-    boxed_node_new(NodeType::FilterPrimitiveComposite, parent, Box::new(filter))
+    boxed_node_new(
+        NodeType::FilterPrimitiveComposite,
+        parent,
+        utf8_cstr_opt(id),
+        Box::new(filter),
+    )
 }

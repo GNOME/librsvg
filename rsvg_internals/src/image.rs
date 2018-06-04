@@ -16,6 +16,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
+use util::utf8_cstr_opt;
 
 struct NodeImage {
     aspect: Cell<AspectRatio>,
@@ -153,6 +154,12 @@ impl NodeTrait for NodeImage {
 pub extern "C" fn rsvg_node_image_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Image, raw_parent, Box::new(NodeImage::new()))
+    boxed_node_new(
+        NodeType::Image,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeImage::new()),
+    )
 }

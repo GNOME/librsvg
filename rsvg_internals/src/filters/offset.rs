@@ -1,7 +1,7 @@
 use std::cell::Cell;
 
 use cairo::{self, ImageSurface};
-use libc::c_char;
+use libc::{self, c_char};
 
 use attributes::Attribute;
 use handle::RsvgHandle;
@@ -9,7 +9,7 @@ use length::{LengthDir, RsvgLength};
 use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
-use util::clamp;
+use util::{clamp, utf8_cstr_opt};
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::iterators::{ImageSurfaceDataShared, Pixels};
@@ -124,7 +124,13 @@ impl Filter for Offset {
 pub unsafe extern "C" fn rsvg_new_filter_primitive_offset(
     _element_name: *const c_char,
     parent: *mut RsvgNode,
+    id: *const libc::c_char,
 ) -> *mut RsvgNode {
     let filter = Offset::new();
-    boxed_node_new(NodeType::FilterPrimitiveOffset, parent, Box::new(filter))
+    boxed_node_new(
+        NodeType::FilterPrimitiveOffset,
+        parent,
+        utf8_cstr_opt(id),
+        Box::new(filter),
+    )
 }

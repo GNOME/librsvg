@@ -24,6 +24,7 @@ use state::{
     UnicodeBidi,
     WritingMode,
 };
+use util::utf8_cstr_opt;
 
 /// In SVG text elements, we use `NodeChars` to store character data.  For example,
 /// an element like `<text>Foo Bar</text>` will be a `NodeText` with a single child,
@@ -741,7 +742,12 @@ fn render_child(
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_chars_new(raw_parent: *const RsvgNode) -> *const RsvgNode {
-    boxed_node_new(NodeType::Chars, raw_parent, Box::new(NodeChars::new()))
+    boxed_node_new(
+        NodeType::Chars,
+        raw_parent,
+        None,
+        Box::new(NodeChars::new()),
+    )
 }
 
 #[no_mangle]
@@ -770,22 +776,40 @@ pub extern "C" fn rsvg_node_chars_append(
 pub extern "C" fn rsvg_node_text_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Text, raw_parent, Box::new(NodeText::new()))
+    boxed_node_new(
+        NodeType::Text,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeText::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_tref_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::TRef, raw_parent, Box::new(NodeTRef::new()))
+    boxed_node_new(
+        NodeType::TRef,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeTRef::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_tspan_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::TSpan, raw_parent, Box::new(NodeTSpan::new()))
+    boxed_node_new(
+        NodeType::TSpan,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeTSpan::new()),
+    )
 }

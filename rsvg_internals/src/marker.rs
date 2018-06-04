@@ -22,6 +22,7 @@ use parsers::{parse, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
 use state::{ComputedValues, SpecifiedValue, State};
+use util::utf8_cstr_opt;
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -258,8 +259,14 @@ impl NodeTrait for NodeMarker {
 pub extern "C" fn rsvg_node_marker_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Marker, raw_parent, Box::new(NodeMarker::new()))
+    boxed_node_new(
+        NodeType::Marker,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeMarker::new()),
+    )
 }
 
 // Machinery to figure out marker orientations

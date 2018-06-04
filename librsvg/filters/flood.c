@@ -108,7 +108,7 @@ rsvg_filter_primitive_flood_set_atts (RsvgNode *node, gpointer impl, RsvgHandle 
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_flood (const char *element_name, RsvgNode *parent)
+rsvg_new_filter_primitive_flood (const char *element_name, RsvgNode *parent, const char *id)
 {
     RsvgFilterPrimitive *filter;
 
@@ -119,6 +119,7 @@ rsvg_new_filter_primitive_flood (const char *element_name, RsvgNode *parent)
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_FLOOD,
                                 parent,
+                                id,
                                 filter,
                                 rsvg_filter_primitive_flood_set_atts,
                                 rsvg_filter_primitive_free);

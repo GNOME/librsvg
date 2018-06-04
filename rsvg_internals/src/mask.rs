@@ -14,6 +14,7 @@ use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 use state::Opacity;
+use util::utf8_cstr_opt;
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -220,6 +221,12 @@ impl NodeTrait for NodeMask {
 pub extern "C" fn rsvg_node_mask_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Mask, raw_parent, Box::new(NodeMask::new()))
+    boxed_node_new(
+        NodeType::Mask,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeMask::new()),
+    )
 }

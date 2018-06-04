@@ -278,7 +278,7 @@ rsvg_filter_primitive_component_transfer_set_atts (RsvgNode *node, gpointer impl
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_component_transfer (const char *element_name, RsvgNode *parent)
+rsvg_new_filter_primitive_component_transfer (const char *element_name, RsvgNode *parent, const char *id)
 {
     RsvgFilterPrimitiveComponentTransfer *filter;
 
@@ -289,6 +289,7 @@ rsvg_new_filter_primitive_component_transfer (const char *element_name, RsvgNode
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER,
                                 parent,
+                                id,
                                 filter,
                                 rsvg_filter_primitive_component_transfer_set_atts,
                                 rsvg_filter_primitive_free);
@@ -380,7 +381,7 @@ rsvg_node_component_transfer_function_free (gpointer impl)
 }
 
 RsvgNode *
-rsvg_new_node_component_transfer_function (const char *element_name, RsvgNode *parent)
+rsvg_new_node_component_transfer_function (const char *element_name, RsvgNode *parent, const char *id)
 {
     RsvgNodeComponentTransferFunc *filter;
 
@@ -406,6 +407,7 @@ rsvg_new_node_component_transfer_function (const char *element_name, RsvgNode *p
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION,
                                 parent,
+                                id,
                                 filter,
                                 rsvg_node_component_transfer_function_set_atts,
                                 rsvg_node_component_transfer_function_free);

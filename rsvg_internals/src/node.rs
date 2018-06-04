@@ -161,6 +161,7 @@ pub type NodeResult = Result<(), NodeError>;
 pub struct Node {
     node_type: NodeType,
     parent: Option<Weak<Node>>, // optional; weak ref to parent
+    id: Option<String>,         // id attribute from XML element
     first_child: RefCell<Option<Rc<Node>>>,
     last_child: RefCell<Option<Weak<Node>>>,
     next_sib: RefCell<Option<Rc<Node>>>, // next sibling; strong ref
@@ -240,12 +241,14 @@ impl Node {
     pub fn new(
         node_type: NodeType,
         parent: Option<Weak<Node>>,
+        id: Option<&str>,
         state: *mut RsvgState,
         node_impl: Box<NodeTrait>,
     ) -> Node {
         Node {
             node_type,
             parent,
+            id: id.map(str::to_string),
             first_child: RefCell::new(None),
             last_child: RefCell::new(None),
             next_sib: RefCell::new(None),
@@ -481,11 +484,13 @@ pub fn node_ptr_to_weak(raw_parent: *const RsvgNode) -> Option<Weak<Node>> {
 pub fn boxed_node_new(
     node_type: NodeType,
     raw_parent: *const RsvgNode,
+    id: Option<&str>,
     node_impl: Box<NodeTrait>,
 ) -> *mut RsvgNode {
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
+        id,
         rsvg_state_new(),
         node_impl,
     )))
@@ -756,6 +761,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -780,6 +786,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -799,6 +806,7 @@ mod tests {
         let node1 = Rc::new(Node::new(
             NodeType::Path,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -807,6 +815,7 @@ mod tests {
 
         let node2 = Rc::new(Node::new(
             NodeType::Path,
+            None,
             None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
@@ -825,6 +834,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -837,6 +847,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -844,6 +855,7 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -859,6 +871,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -866,6 +879,7 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -873,6 +887,7 @@ mod tests {
         let second_child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -901,6 +916,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -908,6 +924,7 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -915,6 +932,7 @@ mod tests {
         let second_child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));

@@ -16,6 +16,7 @@ use path_builder::*;
 use path_parser;
 use property_bag::PropertyBag;
 use state::ComputedValues;
+use util::utf8_cstr_opt;
 
 fn render_path_builder(
     builder: &PathBuilder,
@@ -628,18 +629,26 @@ impl NodeTrait for NodeEllipse {
 pub extern "C" fn rsvg_node_path_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Path, raw_parent, Box::new(NodePath::new()))
+    boxed_node_new(
+        NodeType::Path,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodePath::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_polygon_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
     boxed_node_new(
         NodeType::Path,
         raw_parent,
+        unsafe { utf8_cstr_opt(id) },
         Box::new(NodePoly::new(PolyKind::Closed)),
     )
 }
@@ -648,10 +657,12 @@ pub extern "C" fn rsvg_node_polygon_new(
 pub extern "C" fn rsvg_node_polyline_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
     boxed_node_new(
         NodeType::Path,
         raw_parent,
+        unsafe { utf8_cstr_opt(id) },
         Box::new(NodePoly::new(PolyKind::Open)),
     )
 }
@@ -660,30 +671,54 @@ pub extern "C" fn rsvg_node_polyline_new(
 pub extern "C" fn rsvg_node_line_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Line, raw_parent, Box::new(NodeLine::new()))
+    boxed_node_new(
+        NodeType::Line,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeLine::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_rect_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Rect, raw_parent, Box::new(NodeRect::new()))
+    boxed_node_new(
+        NodeType::Rect,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeRect::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_circle_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Circle, raw_parent, Box::new(NodeCircle::new()))
+    boxed_node_new(
+        NodeType::Circle,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeCircle::new()),
+    )
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_ellipse_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Ellipse, raw_parent, Box::new(NodeEllipse::new()))
+    boxed_node_new(
+        NodeType::Ellipse,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeEllipse::new()),
+    )
 }

@@ -11,80 +11,108 @@ extern "C" {
     fn rsvg_new_filter_primitive_blend(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_color_matrix(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_component_transfer(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_composite(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_convolve_matrix(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_diffuse_lighting(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_displacement_map(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
-    fn rsvg_new_node_light_source(_: *const libc::c_char, _: *const RsvgNode) -> *const RsvgNode;
+    fn rsvg_new_node_light_source(
+        _: *const libc::c_char,
+        _: *const RsvgNode,
+        _: *const libc::c_char,
+    ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_flood(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_node_component_transfer_function(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_gaussian_blur(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_image(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_merge(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_erode(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_merge_node(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_offset(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_specular_lighting(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_tile(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_turbulence(
         _: *const libc::c_char,
         _: *const RsvgNode,
+        _: *const libc::c_char,
     ) -> *const RsvgNode;
-    fn rsvg_new_filter(_: *const libc::c_char, _: *const RsvgNode) -> *const RsvgNode;
+    fn rsvg_new_filter(
+        _: *const libc::c_char,
+        _: *const RsvgNode,
+        _: *const libc::c_char,
+    ) -> *const RsvgNode;
 }
 
-type NodeCreateFn = unsafe extern "C" fn(*const libc::c_char, *const RsvgNode) -> *const RsvgNode;
+type NodeCreateFn =
+    unsafe extern "C" fn(*const libc::c_char, *const RsvgNode, id: *const libc::c_char)
+        -> *const RsvgNode;
 
 lazy_static! {
     // Lines in comments are elements that we don't support.
@@ -183,6 +211,7 @@ lazy_static! {
 pub extern "C" fn rsvg_load_new_node(
     _name: *const libc::c_char,
     parent: *const RsvgNode,
+    id: *const libc::c_char,
     supports_class_attribute: *mut glib_sys::gboolean,
 ) -> *const RsvgNode {
     assert!(!_name.is_null());
@@ -200,6 +229,6 @@ pub extern "C" fn rsvg_load_new_node(
 
     unsafe {
         *supports_class_attribute = creator.0.to_glib();
-        creator.1(_name, parent)
+        creator.1(_name, parent, id)
     }
 }

@@ -128,7 +128,7 @@ rsvg_filter_primitive_merge_set_atts (RsvgNode *node, gpointer impl, RsvgHandle 
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_merge (const char *element_name, RsvgNode *parent)
+rsvg_new_filter_primitive_merge (const char *element_name, RsvgNode *parent, const char *id)
 {
     RsvgFilterPrimitiveMerge *filter;
 
@@ -138,6 +138,7 @@ rsvg_new_filter_primitive_merge (const char *element_name, RsvgNode *parent)
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE,
                                 parent,
+                                id,
                                 filter,
                                 rsvg_filter_primitive_merge_set_atts,
                                 rsvg_filter_primitive_free);
@@ -176,7 +177,7 @@ rsvg_filter_primitive_merge_node_render (RsvgNode *node, RsvgComputedValues *val
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_merge_node (const char *element_name, RsvgNode *parent)
+rsvg_new_filter_primitive_merge_node (const char *element_name, RsvgNode *parent, const char *id)
 {
     RsvgFilterPrimitive *filter;
 
@@ -186,6 +187,7 @@ rsvg_new_filter_primitive_merge_node (const char *element_name, RsvgNode *parent
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE,
                                 parent,
+                                id,
                                 filter,
                                 rsvg_filter_primitive_merge_node_set_atts,
                                 rsvg_filter_primitive_free);

@@ -446,7 +446,7 @@ find_light_source_in_children (RsvgNode *node)
 }
 
 RsvgNode *
-rsvg_new_node_light_source (const char *element_name, RsvgNode *parent)
+rsvg_new_node_light_source (const char *element_name, RsvgNode *parent, const char *id)
 {
     RsvgNodeLightSource *data;
 
@@ -467,6 +467,7 @@ rsvg_new_node_light_source (const char *element_name, RsvgNode *parent)
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_LIGHT_SOURCE,
                                 parent,
+                                id,
                                 data,
                                 rsvg_node_light_source_set_atts,
                                 g_free);

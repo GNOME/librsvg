@@ -12,6 +12,7 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use node::*;
 use property_bag::PropertyBag;
+use util::utf8_cstr_opt;
 
 struct NodeLink {
     link: RefCell<Option<String>>,
@@ -139,6 +140,12 @@ impl CairoTagging for cairo::Context {
 pub extern "C" fn rsvg_node_link_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Link, raw_parent, Box::new(NodeLink::new()))
+    boxed_node_new(
+        NodeType::Link,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeLink::new()),
+    )
 }

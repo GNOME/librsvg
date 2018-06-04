@@ -292,33 +292,31 @@ free_element_name_stack (RsvgLoad *load)
 }
 
 static void
-node_set_atts (RsvgNode *node,
-               RsvgHandle *handle,
-               const char *element_name,
-               gboolean supports_class_attribute,
-               RsvgPropertyBag atts)
+get_id_and_class (RsvgPropertyBag atts,
+                  const char **out_id,
+                  const char **out_class)
 {
     RsvgPropertyBagIter *iter;
     const char *key;
     RsvgAttribute attr;
     const char *value;
+    
+    g_assert (out_id != NULL);
+    g_assert (out_class != NULL);
 
-    const char *id = NULL;
-    const char *klazz = NULL;
+    *out_id = NULL;
+    *out_class = NULL;
 
     iter = rsvg_property_bag_iter_begin (atts);
 
     while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
         switch (attr) {
         case RSVG_ATTRIBUTE_ID:
-            id = value;
-            rsvg_defs_register_node_by_id (handle->priv->defs, id, node);
+            *out_id = value;
             break;
 
         case RSVG_ATTRIBUTE_CLASS:
-            if (supports_class_attribute) {
-                klazz = value;
-            }
+            *out_class = value;
             break;
 
         default:
@@ -327,6 +325,18 @@ node_set_atts (RsvgNode *node,
     }
 
     rsvg_property_bag_iter_end (iter);
+}
+
+static void
+node_set_atts (RsvgNode *node,
+               RsvgHandle *handle,
+               const char *element_name,
+               const char *node_id,
+               const char *node_class,
+               RsvgPropertyBag atts)
+{
+    if (node_id != NULL)
+        rsvg_defs_register_node_by_id (handle->priv->defs, node_id, node);
 
     rsvg_node_set_atts (node, handle, atts);
 
@@ -335,7 +345,7 @@ node_set_atts (RsvgNode *node,
      * rsvg_node_svg_apply_atts()
      */
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
-        rsvg_parse_style_attrs (handle, node, element_name, klazz, id, atts);
+        rsvg_parse_style_attrs (handle, node, element_name, node_class, node_id, atts);
     }
 
     rsvg_node_set_overriden_properties (node);
@@ -344,10 +354,14 @@ node_set_atts (RsvgNode *node,
 static void
 standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
 {
-    gboolean supports_class_attribute;
     RsvgNode *newnode;
-    
-    newnode = rsvg_load_new_node(name, load->currentnode, &supports_class_attribute);
+    const char *node_id;
+    const char *node_class;
+    gboolean supports_class_attribute;
+
+    get_id_and_class (atts, &node_id, &node_class);
+
+    newnode = rsvg_load_new_node(name, load->currentnode, node_id, &supports_class_attribute);
     g_assert (newnode != NULL);
 
     g_assert (rsvg_node_get_type (newnode) != RSVG_NODE_TYPE_INVALID);
@@ -365,7 +379,11 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
 
     load->currentnode = rsvg_node_ref (newnode);
 
-    node_set_atts (newnode, load->handle, name, supports_class_attribute, atts);
+    if (!supports_class_attribute) {
+        node_class = NULL;
+    }
+
+    node_set_atts (newnode, load->handle, name, node_id, node_class, atts);
 
     newnode = rsvg_node_unref (newnode);
 }

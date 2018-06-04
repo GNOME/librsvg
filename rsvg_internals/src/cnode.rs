@@ -1,9 +1,12 @@
+use libc;
+
+use std::rc::*;
+
 use handle::*;
 use node::*;
 use property_bag::PropertyBag;
 use state::rsvg_state_new;
-
-use std::rc::*;
+use util::utf8_cstr_opt;
 
 type CNodeSetAtts = unsafe extern "C" fn(
     node: *const RsvgNode,
@@ -56,6 +59,7 @@ impl Drop for CNode {
 pub extern "C" fn rsvg_rust_cnode_new(
     node_type: NodeType,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
     c_node_impl: *const RsvgCNodeImpl,
     set_atts_fn: CNodeSetAtts,
     free_fn: CNodeFree,
@@ -71,6 +75,7 @@ pub extern "C" fn rsvg_rust_cnode_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
+        unsafe { utf8_cstr_opt(id) },
         rsvg_state_new(),
         Box::new(cnode),
     )))

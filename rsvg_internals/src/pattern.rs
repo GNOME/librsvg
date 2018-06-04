@@ -20,6 +20,7 @@ use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
 use state::ComputedValues;
+use util::utf8_cstr_opt;
 use viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -460,8 +461,14 @@ fn resolve_fallbacks_and_set_pattern(
 pub extern "C" fn rsvg_node_pattern_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Pattern, raw_parent, Box::new(NodePattern::new()))
+    boxed_node_new(
+        NodeType::Pattern,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodePattern::new()),
+    )
 }
 
 pub fn pattern_resolve_fallbacks_and_set_pattern(

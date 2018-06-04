@@ -9,6 +9,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
+use util::utf8_cstr_opt;
 
 pub struct NodeStop {
     offset: Cell<f64>,
@@ -74,6 +75,12 @@ impl NodeTrait for NodeStop {
 pub extern "C" fn rsvg_node_stop_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
 ) -> *const RsvgNode {
-    boxed_node_new(NodeType::Stop, raw_parent, Box::new(NodeStop::new()))
+    boxed_node_new(
+        NodeType::Stop,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeStop::new()),
+    )
 }
