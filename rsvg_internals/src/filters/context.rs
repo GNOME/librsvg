@@ -347,8 +347,9 @@ impl FilterContext {
             Input::BackgroundImage => unimplemented!(),
             Input::BackgroundAlpha => unimplemented!(),
 
-            Input::FillPaint => unimplemented!(),
-            Input::StrokePaint => unimplemented!(),
+            // TODO
+            Input::FillPaint => None,
+            Input::StrokePaint => None,
 
             Input::FilterOutput(ref name) => self.filter_output(name).cloned(),
         }
