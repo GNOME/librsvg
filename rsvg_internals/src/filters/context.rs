@@ -1,7 +1,7 @@
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::ffi::CStr;
-use std::ptr;
+use std::{mem, ptr};
 
 use cairo::prelude::SurfaceExt;
 use cairo::{self, MatrixTrait};
@@ -598,6 +598,59 @@ pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
     }
 
     ctx.compute_bounds(x, y, width, height)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_filter_get_result(
+    name: *const GString,
+    ctx: *const RsvgFilterContext,
+) -> RsvgFilterPrimitiveOutput {
+    assert!(!name.is_null());
+    assert!(!ctx.is_null());
+
+    let name: String = from_glib_none((*name).str);
+    let input = match &name[..] {
+        "" | "none" => None,
+        "SourceGraphic" => Some(Input::SourceGraphic),
+        "SourceAlpha" => Some(Input::SourceAlpha),
+        "BackgroundImage" => Some(Input::BackgroundImage),
+        "BackgroundAlpha" => Some(Input::BackgroundAlpha),
+        "FillPaint" => Some(Input::FillPaint),
+        "StrokePaint" => Some(Input::StrokePaint),
+        _ => Some(Input::FilterOutput(name)),
+    };
+
+    let ctx = &*ctx;
+
+    match ctx.get_input(input.as_ref()) {
+        None => RsvgFilterPrimitiveOutput {
+            surface: ptr::null_mut(),
+            bounds: IRect {
+                x0: 0,
+                x1: 0,
+                y0: 0,
+                y1: 0,
+            },
+        },
+        Some(FilterOutput { surface, bounds }) => {
+            // HACK because to_glib_full() is unimplemented!() on ImageSurface.
+            let ptr = surface.to_glib_none().0;
+            mem::forget(surface);
+
+            RsvgFilterPrimitiveOutput {
+                surface: ptr,
+                bounds,
+            }
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_filter_get_in(
+    name: *const GString,
+    ctx: *const RsvgFilterContext,
+) -> *mut cairo_surface_t {
+    rsvg_filter_get_result(name, ctx).surface
 }
 
 #[cfg(test)]

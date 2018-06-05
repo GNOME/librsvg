@@ -122,9 +122,21 @@ gboolean rsvg_art_affine_image (cairo_surface_t *img,
 // G_GNUC_INTERNAL
 // void rsvg_filter_free_pair (gpointer value);
 
+/* Implemented in rust/src/filters/context.rs */
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx);
 
+/**
+ * rsvg_filter_get_result:
+ * @name: The name of the surface
+ * @ctx: the context that this was called in
+ *
+ * Gets a surface for a primitive
+ *
+ * Returns: (nullable): a pointer to the result that the name refers to, a special
+ * surface if the name is a special keyword or %NULL if nothing was found
+ **/
+/* Implemented in rust/src/filters/context.rs */
 G_GNUC_INTERNAL
 RsvgFilterPrimitiveOutput rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx);
 
@@ -139,11 +151,11 @@ RsvgFilterPrimitiveOutput rsvg_filter_get_result (GString * name, RsvgFilterCont
 G_GNUC_INTERNAL
 void rsvg_filter_primitive_free (gpointer impl);
 
-/* Implemented in rust/src/filter_context.rs */
+/* Implemented in rust/src/filters/context.rs */
 G_GNUC_INTERNAL
 RsvgIRect rsvg_filter_primitive_get_bounds (const RsvgFilterPrimitive * self, const RsvgFilterContext * ctx);
 
-/* Implemented in rust/src/filter_context.rs */
+/* Implemented in rust/src/filters/context.rs */
 G_GNUC_INTERNAL
 gint rsvg_filter_context_get_width (const RsvgFilterContext *ctx);
 
