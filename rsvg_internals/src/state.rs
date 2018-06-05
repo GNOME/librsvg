@@ -1454,7 +1454,7 @@ pub extern "C" fn rsvg_parse_style_attrs(
 // Sets the node's state from the attributes in the pbag.  Also
 // applies CSS rules in our limited way based on the node's
 // tag/klazz/id.
-fn parse_style_attrs(
+pub fn parse_style_attrs(
     handle: *const RsvgHandle,
     node: &RsvgNode,
     tag: &str,

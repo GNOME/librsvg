@@ -38,7 +38,6 @@ struct RsvgDrawingCtx {
     cairo_t *initial_cr;
     GList *cr_stack;
     GList *surfaces_stack;
-    GError **error;
     RsvgDefs *defs;
     double dpi_x, dpi_y;
     cairo_rectangle_t rect;
@@ -52,7 +51,15 @@ struct RsvgDrawingCtx {
 };
 
 G_GNUC_INTERNAL
-RsvgDrawingCtx *rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle);
+RsvgDrawingCtx *rsvg_drawing_ctx_new (cairo_t *cr,
+                                      guint width,
+                                      guint height,
+                                      double vb_width,
+                                      double vb_height,
+                                      double dpi_x,
+                                      double dpi_y,
+                                      RsvgDefs *defs,
+                                      gboolean testing);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);

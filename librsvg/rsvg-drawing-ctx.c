@@ -47,17 +47,20 @@ void rsvg_drawing_ctx_transformed_image_bounding_box (cairo_matrix_t *affine,
                                                       double *bbx, double *bby, double *bbw, double *bbh);
 
 RsvgDrawingCtx *
-rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
+rsvg_drawing_ctx_new (cairo_t *cr,
+                      guint width,
+                      guint height,
+                      double vb_width,
+                      double vb_height,
+                      double dpi_x,
+                      double dpi_y,
+                      RsvgDefs *defs,
+                      gboolean testing)
 {
-    RsvgDimensionData data;
     RsvgDrawingCtx *draw;
     cairo_matrix_t affine;
     cairo_matrix_t scale;
     double bbx, bby, bbw, bbh;
-
-    rsvg_handle_get_dimensions (handle, &data);
-    if (data.width == 0 || data.height == 0)
-        return NULL;
 
     draw = g_new0 (RsvgDrawingCtx, 1);
 
@@ -66,8 +69,7 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     /* find bounding box of image as transformed by the current cairo context
      * The size of this bounding box determines the size of the intermediate
      * surfaces allocated during drawing. */
-    rsvg_drawing_ctx_transformed_image_bounding_box (&affine,
-                                                     data.width, data.height,
+    rsvg_drawing_ctx_transformed_image_bounding_box (&affine, width, height,
                                                      &bbx, &bby, &bbw, &bbh);
 
     draw->initial_cr = cr;
@@ -80,18 +82,18 @@ rsvg_drawing_ctx_new (cairo_t *cr, RsvgHandle *handle)
     draw->rect.width = bbw;
     draw->rect.height = bbh;
 
-    draw->defs = handle->priv->defs;
-    draw->dpi_x = handle->priv->dpi_x;
-    draw->dpi_y = handle->priv->dpi_y;
-    draw->vb.rect.width = data.em;
-    draw->vb.rect.height = data.ex;
+    draw->defs = defs;
+    draw->dpi_x = dpi_x;
+    draw->dpi_y = dpi_y;
+    draw->vb.rect.width = vb_width;
+    draw->vb.rect.height = vb_height;
     draw->vb_stack = NULL;
     draw->drawsub_stack = NULL;
     draw->acquired_nodes = NULL;
-    draw->is_testing = handle->priv->is_testing;
+    draw->is_testing = testing;
 
     /* scale according to size set by size_func callback */
-    cairo_matrix_init_scale (&scale, data.width / data.em, data.height / data.ex);
+    cairo_matrix_init_scale (&scale, width / vb_width, height / vb_height);
     cairo_matrix_multiply (&affine, &affine, &scale);
 
     /* adjust transform so that the corner of the bounding box above is
@@ -131,24 +133,6 @@ rsvg_drawing_ctx_get_cairo_context (RsvgDrawingCtx *ctx)
     return ctx->cr;
 }
 
-/* FIXME: Usage of this function is more less a hack.  Some code does this:
- *
- *   save_cr = rsvg_drawing_ctx_get_cairo_context (ctx);
- *
- *   some_surface = create_surface ();
- *
- *   cr = cairo_create (some_surface);
- *
- *   rsvg_drawing_ctx_set_cairo_context (ctx, cr);
- *
- *   ... draw with ctx but to that temporary surface
- *
- *   rsvg_drawing_ctx_set_cairo_context (ctx, save_cr);
- *
- * It would be better to have an explicit push/pop for the cairo_t, or
- * pushing a temporary surface, or something that does not involve
- * monkeypatching the cr directly.
- */
 void
 rsvg_drawing_ctx_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
 {
@@ -261,44 +245,6 @@ rsvg_drawing_ctx_acquire_node (RsvgDrawingCtx *ctx, const char *url)
   ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
 
   return node;
-}
-
-/**
- * rsvg_drawing_ctx_acquire_node_of_type:
- * @ctx: The drawing context in use
- * @url: The IRI to lookup
- * @type: Type which the node must have
- *
- * Use this function when looking up urls to other nodes, and when you expect
- * the node to be of a particular type. This function does proper recursion
- * checking and thereby avoids infinite loops.
- *
- * Malformed SVGs, for example, may reference a marker by its IRI, but
- * the object referenced by the IRI is not a marker.
- *
- * Nodes acquired by this function must be released using
- * rsvg_drawing_ctx_release_node() in reverse acquiring order.
- *
- * Note that if you acquire a node, you have to release it before trying to
- * acquire it again.  If you acquire a node "#foo" and don't release it before
- * trying to acquire "foo" again, you will obtain a %NULL the second time.
- *
- * Returns: The node referenced by @url or %NULL if the @url
- *          does not reference a node.  Also returns %NULL if
- *          the node referenced by @url is not of the specified @type.
- */
-RsvgNode *
-rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx *ctx, const char *url, RsvgNodeType type)
-{
-    RsvgNode *node;
-
-    node = rsvg_drawing_ctx_acquire_node (ctx, url);
-    if (node == NULL || rsvg_node_get_type (node) != type) {
-        rsvg_drawing_ctx_release_node (ctx, node);
-        return NULL;
-    }
-
-    return node;
 }
 
 /*
