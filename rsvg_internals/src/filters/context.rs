@@ -14,6 +14,7 @@ use length::RsvgLength;
 use node::RsvgNode;
 
 use super::input::Input;
+use super::iterators::{ImageSurfaceDataShared, Pixel, Pixels};
 use super::node::NodeFilter;
 use super::RsvgFilterPrimitive;
 
@@ -75,6 +76,36 @@ pub struct FilterContext {
     paffine: cairo::Matrix,
     drawing_ctx: *mut RsvgDrawingCtx,
     channelmap: [i32; 4],
+}
+
+/// Returns a surface with black background and alpha channel matching the input surface.
+fn extract_alpha(
+    surface: &cairo::ImageSurface,
+    bounds: IRect,
+) -> Result<cairo::ImageSurface, cairo::Status> {
+    let data = ImageSurfaceDataShared::new(surface).unwrap();
+
+    let mut output_surface =
+        cairo::ImageSurface::create(cairo::Format::ARgb32, data.width as i32, data.height as i32)?;
+
+    let output_stride = output_surface.get_stride() as usize;
+    {
+        let mut output_data = output_surface.get_data().unwrap();
+
+        for (x, y, Pixel { a, .. }) in Pixels::new(data, bounds) {
+            output_data[y * output_stride + x * 4 + 3] = a;
+        }
+    }
+
+    Ok(output_surface)
+}
+
+impl IRect {
+    /// Returns true if the `IRect` contains the given coordinates.
+    #[inline]
+    pub fn contains(self, x: i32, y: i32) -> bool {
+        x >= self.x0 && x < self.x1 && y >= self.y0 && y < self.y1
+    }
 }
 
 impl FilterContext {
@@ -157,6 +188,12 @@ impl FilterContext {
     #[inline]
     pub fn source_graphic(&self) -> &cairo::ImageSurface {
         &self.source_surface
+    }
+
+    /// Returns the surface containing the source graphic alpha.
+    #[inline]
+    pub fn source_alpha(&self, bounds: IRect) -> Result<cairo::ImageSurface, cairo::Status> {
+        extract_alpha(self.source_graphic(), bounds)
     }
 
     /// Returns the surface corresponding to the background image snapshot.
@@ -301,7 +338,12 @@ impl FilterContext {
                 surface: self.source_graphic().clone(),
                 bounds: self.compute_bounds(None, None, None, None),
             }),
-            Input::SourceAlpha => unimplemented!(),
+            Input::SourceAlpha => {
+                let bounds = self.compute_bounds(None, None, None, None);
+                self.source_alpha(bounds)
+                    .ok()
+                    .map(|surface| FilterOutput { surface, bounds })
+            }
             Input::BackgroundImage => unimplemented!(),
             Input::BackgroundAlpha => unimplemented!(),
 
@@ -489,4 +531,61 @@ pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
     }
 
     ctx.compute_bounds(x, y, width, height)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract_alpha() {
+        const WIDTH: usize = 32;
+        const HEIGHT: usize = 64;
+        const BOUNDS: IRect = IRect {
+            x0: 8,
+            x1: 24,
+            y0: 16,
+            y1: 48,
+        };
+        const FULL_BOUNDS: IRect = IRect {
+            x0: 0,
+            x1: WIDTH as i32,
+            y0: 0,
+            y1: HEIGHT as i32,
+        };
+
+        let mut surface =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH as i32, HEIGHT as i32)
+                .unwrap();
+
+        // Fill the surface with some data.
+        {
+            let mut data = surface.get_data().unwrap();
+
+            let mut counter = 0u16;
+            for x in data.iter_mut() {
+                *x = counter as u8;
+                counter = (counter + 1) % 256;
+            }
+        }
+
+        let alpha = extract_alpha(&surface, BOUNDS).unwrap();
+
+        let data = ImageSurfaceDataShared::new(&surface).unwrap();
+        let data_alpha = ImageSurfaceDataShared::new(&alpha).unwrap();
+
+        for (x, y, p, pa) in
+            Pixels::new(data, FULL_BOUNDS).map(|(x, y, p)| (x, y, p, data_alpha.get_pixel(x, y)))
+        {
+            assert_eq!(pa.r, 0);
+            assert_eq!(pa.g, 0);
+            assert_eq!(pa.b, 0);
+
+            if !BOUNDS.contains(x as i32, y as i32) {
+                assert_eq!(pa.a, 0);
+            } else {
+                assert_eq!(pa.a, p.a);
+            }
+        }
+    }
 }
