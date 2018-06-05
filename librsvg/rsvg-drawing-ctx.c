@@ -485,7 +485,7 @@ rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
     ctx->rect.width = width;
     ctx->rect.height = height;
 
-    rsvg_drawing_ctx_draw_node_from_stack (ctx, node, FALSE);
+    rsvg_drawing_ctx_draw_node_from_stack (ctx, node, NULL, FALSE);
 
     cairo_destroy (ctx->cr);
     ctx->cr = save_cr;

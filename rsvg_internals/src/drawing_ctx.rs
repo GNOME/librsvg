@@ -514,6 +514,7 @@ pub fn draw_node_from_stack(
 pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     draw_ctx: *mut RsvgDrawingCtx,
     raw_node: *const RsvgNode,
+    raw_cascade_from: *const RsvgNode,
     clipping: glib_sys::gboolean,
 ) {
     assert!(!draw_ctx.is_null());
@@ -521,9 +522,24 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     assert!(!raw_node.is_null());
     let node = unsafe { &*raw_node };
 
+    let cascade_from = if raw_cascade_from.is_null() {
+        None
+    } else {
+        Some (unsafe { &*raw_cascade_from })
+    };
+
     let clipping: bool = from_glib(clipping);
 
-    draw_node_from_stack(draw_ctx, &node.get_cascaded_values(), node, true, clipping);
+    let cascaded = match cascade_from {
+        None => node.get_cascaded_values(),
+        Some(n) => {
+            let c = n.get_cascaded_values();
+            let v = c.get();
+            CascadedValues::new_from_values(node, v)
+        }
+    };
+
+    draw_node_from_stack(draw_ctx, &cascaded, node, true, clipping);
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
