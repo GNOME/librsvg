@@ -68,7 +68,20 @@ extern "C" {
         out_y: *mut f64,
     );
 
+    fn rsvg_drawing_ctx_get_raw_offset(
+        draw_ctx: *const RsvgDrawingCtx,
+        out_x: *mut f64,
+        out_y: *mut f64,
+    );
+
     fn rsvg_drawing_ctx_get_bbox(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgBbox;
+
+    fn rsvg_drawing_ctx_get_cr_stack(draw_ctx: *mut RsvgDrawingCtx) -> *mut glib_sys::GList;
+
+    fn rsvg_drawing_ctx_is_cairo_context_nested(
+        draw_ctx: *const RsvgDrawingCtx,
+        cr: *mut cairo_sys::cairo_t,
+    ) -> glib_sys::gboolean;
 
     fn rsvg_drawing_ctx_is_testing(draw_ctx: *const RsvgDrawingCtx) -> glib_sys::gboolean;
 }
@@ -182,6 +195,17 @@ pub fn get_offset(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
     (w, h)
 }
 
+pub fn get_raw_offset(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
+    let mut w: f64 = 0.0;
+    let mut h: f64 = 0.0;
+
+    unsafe {
+        rsvg_drawing_ctx_get_raw_offset(draw_ctx, &mut w, &mut h);
+    }
+
+    (w, h)
+}
+
 // remove this binding once pangocairo-rs has ContextExt::set_resolution()
 fn set_resolution(context: &pango::Context, dpi: f64) {
     unsafe {
@@ -242,6 +266,27 @@ pub fn get_bbox_mut<'a>(draw_ctx: *const RsvgDrawingCtx) -> &'a mut BoundingBox 
 
 pub fn get_bbox<'a>(draw_ctx: *const RsvgDrawingCtx) -> &'a BoundingBox {
     get_bbox_mut(draw_ctx)
+}
+
+pub fn get_cr_stack(draw_ctx: *mut RsvgDrawingCtx) -> Vec<cairo::Context> {
+    let mut res = Vec::new();
+
+    unsafe {
+        let list = rsvg_drawing_ctx_get_cr_stack(draw_ctx);
+
+        let mut list = glib_sys::g_list_first(mut_override(list));
+        while !list.is_null() {
+            res.push(from_glib_none((*list).data as *mut cairo_sys::cairo_t));
+            list = (*list).next;
+        }
+    }
+
+    res
+}
+
+pub fn is_cairo_context_nested(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) -> bool {
+    let cr = cr.to_glib_none();
+    from_glib(unsafe { rsvg_drawing_ctx_is_cairo_context_nested(draw_ctx, cr.0) })
 }
 
 extern "C" {

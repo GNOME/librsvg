@@ -1,5 +1,7 @@
+use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::ffi::CStr;
+use std::ptr;
 
 use cairo::prelude::SurfaceExt;
 use cairo::{self, MatrixTrait};
@@ -71,6 +73,8 @@ pub struct FilterContext {
     last_result: Option<FilterOutput>,
     /// Surfaces of the previous filter primitives by name.
     previous_results: HashMap<String, FilterOutput>,
+    /// The background surface. Computed lazily.
+    background_surface: UnsafeCell<Option<Result<cairo::ImageSurface, cairo::Status>>>,
 
     affine: cairo::Matrix,
     paffine: cairo::Matrix,
@@ -157,6 +161,7 @@ impl FilterContext {
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
+            background_surface: UnsafeCell::new(None),
             affine,
             paffine,
             drawing_ctx: draw_ctx,
@@ -196,10 +201,60 @@ impl FilterContext {
         extract_alpha(self.source_graphic(), bounds)
     }
 
+    /// Computes and returns the background image snapshot.
+    fn compute_background_image(&self) -> Result<cairo::ImageSurface, cairo::Status> {
+        let surface = cairo::ImageSurface::create(
+            cairo::Format::ARgb32,
+            self.source_surface.get_width(),
+            self.source_surface.get_height(),
+        )?;
+
+        let (x, y) = drawing_ctx::get_raw_offset(self.drawing_ctx);
+        let stack = drawing_ctx::get_cr_stack(self.drawing_ctx);
+
+        let cr = cairo::Context::new(&surface);
+        for draw in stack.into_iter().rev() {
+            let nested = drawing_ctx::is_cairo_context_nested(self.drawing_ctx, &draw);
+            cr.set_source_surface(
+                &draw.get_target(),
+                if nested { 0f64 } else { -x },
+                if nested { 0f64 } else { -y },
+            );
+            cr.paint();
+        }
+
+        Ok(surface)
+    }
+
     /// Returns the surface corresponding to the background image snapshot.
+    pub fn background_image(&self) -> Result<&cairo::ImageSurface, cairo::Status> {
+        {
+            // At this point either no, or only immutable references to background_surface exist, so
+            // it's ok to make an immutable reference.
+            let bg = unsafe { &*self.background_surface.get() };
+
+            // If background_surface was already computed, return the immutable reference. It will
+            // get bound to the &self lifetime by the function return type.
+            if let Some(result) = bg.as_ref() {
+                return result.as_ref().map_err(|&s| s);
+            }
+        }
+
+        // If we got here, then background_surface hasn't been computed yet. This means there are
+        // no references to it and we can create a mutable reference.
+        let bg = unsafe { &mut *self.background_surface.get() };
+
+        *bg = Some(self.compute_background_image());
+
+        // Return the only existing reference as immutable.
+        bg.as_ref().unwrap().as_ref().map_err(|&s| s)
+    }
+
+    /// Returns the surface containing the background image snapshot alpha.
     #[inline]
-    pub fn background_image(&self) -> &cairo::ImageSurface {
-        unimplemented!()
+    pub fn background_alpha(&self, bounds: IRect) -> Result<cairo::ImageSurface, cairo::Status> {
+        self.background_image()
+            .and_then(|surface| extract_alpha(surface, bounds))
     }
 
     /// Returns the output of the filter primitive by its result name.
@@ -344,8 +399,16 @@ impl FilterContext {
                     .ok()
                     .map(|surface| FilterOutput { surface, bounds })
             }
-            Input::BackgroundImage => unimplemented!(),
-            Input::BackgroundAlpha => unimplemented!(),
+            Input::BackgroundImage => self.background_image().ok().map(|surface| FilterOutput {
+                surface: surface.clone(),
+                bounds: self.compute_bounds(None, None, None, None),
+            }),
+            Input::BackgroundAlpha => {
+                let bounds = self.compute_bounds(None, None, None, None);
+                self.background_alpha(bounds)
+                    .ok()
+                    .map(|surface| FilterOutput { surface, bounds })
+            }
 
             // TODO
             Input::FillPaint => None,
@@ -421,7 +484,10 @@ pub unsafe extern "C" fn rsvg_filter_context_get_bg_surface(
 ) -> *mut cairo_surface_t {
     assert!(!ctx.is_null());
 
-    (*ctx).background_image().to_glib_none().0
+    (*ctx)
+        .background_image()
+        .map(|surface| surface.to_glib_none().0)
+        .unwrap_or_else(|_| ptr::null_mut())
 }
 
 #[no_mangle]

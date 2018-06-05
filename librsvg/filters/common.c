@@ -560,36 +560,36 @@ surface_get_alpha (cairo_surface_t *source,
     return surface;
 }
 
-static cairo_surface_t *
-rsvg_compile_bg (RsvgDrawingCtx * ctx)
-{
-    cairo_surface_t *surface;
-    cairo_t *cr;
-    double x, y;
-    GList *i;
-
-    surface = _rsvg_image_surface_new (rsvg_drawing_ctx_get_width (ctx),
-                                       rsvg_drawing_ctx_get_height (ctx));
-    if (surface == NULL)
-        return NULL;
-
-    cr = cairo_create (surface);
-
-    rsvg_drawing_ctx_get_raw_offset (ctx, &x, &y);
-
-    for (i = g_list_last (ctx->cr_stack); i != NULL; i = g_list_previous (i)) {
-        cairo_t *draw = i->data;
-        gboolean nest = rsvg_drawing_ctx_is_cairo_context_nested (ctx, draw);
-        cairo_set_source_surface (cr, cairo_get_target (draw),
-                                  nest ? 0 : -x,
-                                  nest ? 0 : -y);
-        cairo_paint (cr);
-    }
-
-    cairo_destroy (cr);
-
-    return surface;
-}
+// static cairo_surface_t *
+// rsvg_compile_bg (RsvgDrawingCtx * ctx)
+// {
+//     cairo_surface_t *surface;
+//     cairo_t *cr;
+//     double x, y;
+//     GList *i;
+// 
+//     surface = _rsvg_image_surface_new (rsvg_drawing_ctx_get_width (ctx),
+//                                        rsvg_drawing_ctx_get_height (ctx));
+//     if (surface == NULL)
+//         return NULL;
+// 
+//     cr = cairo_create (surface);
+// 
+//     rsvg_drawing_ctx_get_raw_offset (ctx, &x, &y);
+// 
+//     for (i = g_list_last (ctx->cr_stack); i != NULL; i = g_list_previous (i)) {
+//         cairo_t *draw = i->data;
+//         gboolean nest = rsvg_drawing_ctx_is_cairo_context_nested (ctx, draw);
+//         cairo_set_source_surface (cr, cairo_get_target (draw),
+//                                   nest ? 0 : -x,
+//                                   nest ? 0 : -y);
+//         cairo_paint (cr);
+//     }
+// 
+//     cairo_destroy (cr);
+// 
+//     return surface;
+// }
 
 /**
  * rsvg_filter_get_bg:

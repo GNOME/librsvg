@@ -142,6 +142,9 @@ void rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
 G_GNUC_INTERNAL
 gboolean rsvg_drawing_ctx_is_testing (RsvgDrawingCtx *ctx);
 
+G_GNUC_INTERNAL
+GList *rsvg_drawing_ctx_get_cr_stack (RsvgDrawingCtx *ctx);
+
 G_END_DECLS
 
 #endif /*RSVG_DRAWING_CTX_H */
