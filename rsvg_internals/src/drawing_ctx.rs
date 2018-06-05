@@ -514,6 +514,7 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
     }
 }
 
+#[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_drawing_ctx_should_draw_node_from_stack(
         draw_ctx: *const RsvgDrawingCtx,
