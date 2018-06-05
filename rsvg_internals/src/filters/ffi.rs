@@ -81,7 +81,9 @@ pub fn filter_render(
         })
         .filter(|c| !c.is_in_error())
         .for_each(|mut c| match c.get_type() {
-            NodeType::FilterPrimitiveOffset | NodeType::FilterPrimitiveComposite => {
+            NodeType::FilterPrimitiveOffset
+            | NodeType::FilterPrimitiveComposite
+            | NodeType::FilterPrimitiveMerge => {
                 let render = unsafe {
                     *(&c.get_c_impl() as *const *const RsvgCNodeImpl as *const RenderFunctionType)
                 };

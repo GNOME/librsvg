@@ -27,6 +27,7 @@ pub mod iterators;
 pub mod node;
 
 pub mod composite;
+pub mod merge;
 pub mod offset;
 
 /// A filter primitive interface.
