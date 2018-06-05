@@ -136,6 +136,7 @@ void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *o
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
                                             RsvgNode *node,
+                                            RsvgNode *cascade_from,
                                             cairo_surface_t *surface,
                                             double width,
                                             double height);

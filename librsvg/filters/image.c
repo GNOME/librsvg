@@ -69,6 +69,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
 
     rsvg_drawing_ctx_draw_node_on_surface (ctx,
                                            drawable,
+                                           NULL,
                                            result,
                                            rsvg_filter_context_get_width (context),
                                            rsvg_filter_context_get_height (context));
