@@ -161,7 +161,7 @@ pub fn get_acquired_node_of_type(
     node_type: NodeType,
 ) -> Option<AcquiredNode> {
     if let Some(acquired) = get_acquired_node(draw_ctx, url) {
-         if acquired.get().get_type() == node_type {
+        if acquired.get().get_type() == node_type {
             return Some(acquired);
         }
     }
