@@ -292,26 +292,14 @@ impl FilterContext {
             // source graphic.
             return Some(self.last_result().cloned().unwrap_or_else(|| FilterOutput {
                 surface: self.source_graphic().clone(),
-                // TODO
-                bounds: IRect {
-                    x0: 0,
-                    y0: 0,
-                    x1: 0,
-                    y1: 0,
-                },
+                bounds: self.compute_bounds(None, None, None, None),
             }));
         }
 
         match *in_.unwrap() {
             Input::SourceGraphic => Some(FilterOutput {
                 surface: self.source_graphic().clone(),
-                // TODO
-                bounds: IRect {
-                    x0: 0,
-                    y0: 0,
-                    x1: 0,
-                    y1: 0,
-                },
+                bounds: self.compute_bounds(None, None, None, None),
             }),
             Input::SourceAlpha => unimplemented!(),
             Input::BackgroundImage => unimplemented!(),
