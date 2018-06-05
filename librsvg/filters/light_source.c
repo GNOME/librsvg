@@ -425,7 +425,7 @@ find_light_source_in_children (RsvgNode *node)
     iter = rsvg_node_children_iter_begin (node);
 
     while (rsvg_node_children_iter_next_back (iter, &child)) {
-        if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
+        if (rsvg_node_get_type (child) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
             break;
         }
 
