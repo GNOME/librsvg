@@ -120,7 +120,8 @@ impl Filter for Merge {
         let bounds = self.base.get_bounds(ctx);
 
         let mut output_surface = None;
-        for child in node.children()
+        for child in node
+            .children()
             .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
         {
             output_surface =
@@ -176,6 +177,6 @@ pub unsafe extern "C" fn rsvg_new_filter_primitive_merge_node(
         NodeType::FilterPrimitiveMergeNode,
         parent,
         utf8_cstr_opt(id),
-        Box::new(filter)
+        Box::new(filter),
     )
 }
