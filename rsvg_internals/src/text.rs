@@ -669,7 +669,7 @@ fn render_children(
         render_child(&child, cascaded, draw_ctx, x, y, textonly, clipping);
     }
 
-    drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+    drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
 }
 
 fn render_child(

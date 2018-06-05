@@ -52,6 +52,7 @@ pub use filters::context::{
     rsvg_filter_context_get_drawing_ctx,
     rsvg_filter_context_get_height,
     rsvg_filter_context_get_lastresult,
+    rsvg_filter_context_get_node_being_filtered,
     rsvg_filter_context_get_paffine,
     rsvg_filter_context_get_previous_result,
     rsvg_filter_context_get_source_surface,

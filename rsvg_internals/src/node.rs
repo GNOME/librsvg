@@ -411,6 +411,7 @@ impl Node {
 
     pub fn draw_children(
         &self,
+        node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         with_layer: bool,
@@ -433,7 +434,7 @@ impl Node {
         }
 
         if with_layer {
-            drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+            drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
         }
     }
 

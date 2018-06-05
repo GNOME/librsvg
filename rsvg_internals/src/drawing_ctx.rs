@@ -156,9 +156,14 @@ pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValue
     }
 }
 
-pub fn pop_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {
+pub fn pop_discrete_layer(
+    draw_ctx: *mut RsvgDrawingCtx,
+    node: &RsvgNode,
+    values: &ComputedValues,
+    clipping: bool,
+) {
     if !clipping {
-        pop_render_stack(draw_ctx, values);
+        pop_render_stack(draw_ctx, node, values);
         get_cairo_context(draw_ctx).restore();
     }
 }
@@ -342,7 +347,7 @@ fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
     }
 }
 
-fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
+fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, node: &RsvgNode, values: &ComputedValues) {
     let child_cr = get_cairo_context(draw_ctx);
 
     let clip_path = match values.clip_path {
@@ -407,6 +412,7 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
         if let Some(acquired) = get_acquired_node_of_type(draw_ctx, filter, NodeType::Filter) {
             filter_render(
                 &acquired.get(),
+                node,
                 &output,
                 draw_ctx,
                 "2103".as_ptr() as *const i8,
@@ -525,7 +531,7 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     let cascade_from = if raw_cascade_from.is_null() {
         None
     } else {
-        Some (unsafe { &*raw_cascade_from })
+        Some(unsafe { &*raw_cascade_from })
     };
 
     let clipping: bool = from_glib(clipping);

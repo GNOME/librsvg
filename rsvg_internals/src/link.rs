@@ -59,6 +59,7 @@ impl NodeTrait for NodeLink {
                 attributes.as_ref().map(|i| i.as_str()),
                 || {
                     node.draw_children(
+                        node,
                         &CascadedValues::new(cascaded, node),
                         draw_ctx,
                         with_layer,
@@ -68,6 +69,7 @@ impl NodeTrait for NodeLink {
             )
         } else {
             node.draw_children(
+                node,
                 &CascadedValues::new(cascaded, node),
                 draw_ctx,
                 with_layer,

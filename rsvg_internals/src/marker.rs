@@ -190,9 +190,9 @@ impl NodeMarker {
             }
         }
 
-        node.draw_children(&cascaded, draw_ctx, false, clipping);
+        node.draw_children(node, &cascaded, draw_ctx, false, clipping);
 
-        drawing_ctx::pop_discrete_layer(draw_ctx, &values, clipping);
+        drawing_ctx::pop_discrete_layer(draw_ctx, node, &values, clipping);
 
         drawing_ctx::pop_view_box(draw_ctx);
 

@@ -21,6 +21,7 @@ use util::utf8_cstr_opt;
 fn render_path_builder(
     builder: &PathBuilder,
     draw_ctx: *mut RsvgDrawingCtx,
+    node: &RsvgNode,
     values: &ComputedValues,
     render_markers: bool,
     clipping: bool,
@@ -29,7 +30,7 @@ fn render_path_builder(
 
     draw_path_builder(draw_ctx, values, builder, clipping);
 
-    drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+    drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
 
     if render_markers {
         marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping);
@@ -42,6 +43,7 @@ fn render_ellipse(
     rx: f64,
     ry: f64,
     draw_ctx: *mut RsvgDrawingCtx,
+    node: &RsvgNode,
     values: &ComputedValues,
     clipping: bool,
 ) {
@@ -96,7 +98,7 @@ fn render_ellipse(
 
     builder.close_path();
 
-    render_path_builder(&builder, draw_ctx, values, false, clipping);
+    render_path_builder(&builder, draw_ctx, node, values, false, clipping);
 }
 
 // ************ NodePath ************
@@ -132,7 +134,7 @@ impl NodeTrait for NodePath {
 
     fn draw(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _with_layer: bool,
@@ -141,7 +143,7 @@ impl NodeTrait for NodePath {
         let values = cascaded.get();
 
         if let Some(ref builder) = *self.builder.borrow() {
-            render_path_builder(builder, draw_ctx, values, true, clipping);
+            render_path_builder(builder, draw_ctx, node, values, true, clipping);
         }
     }
 }
@@ -192,7 +194,7 @@ impl NodeTrait for NodePoly {
 
     fn draw(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _with_layer: bool,
@@ -215,7 +217,7 @@ impl NodeTrait for NodePoly {
                 builder.close_path();
             }
 
-            render_path_builder(&builder, draw_ctx, values, true, clipping);
+            render_path_builder(&builder, draw_ctx, node, values, true, clipping);
         }
     }
 }
@@ -260,7 +262,7 @@ impl NodeTrait for NodeLine {
 
     fn draw(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _with_layer: bool,
@@ -278,7 +280,7 @@ impl NodeTrait for NodeLine {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        render_path_builder(&builder, draw_ctx, values, true, clipping);
+        render_path_builder(&builder, draw_ctx, node, values, true, clipping);
     }
 }
 
@@ -354,7 +356,7 @@ impl NodeTrait for NodeRect {
 
     fn draw(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _with_layer: bool,
@@ -496,7 +498,7 @@ impl NodeTrait for NodeRect {
             builder.close_path ();
         }
 
-        render_path_builder(&builder, draw_ctx, values, false, clipping);
+        render_path_builder(&builder, draw_ctx, node, values, false, clipping);
     }
 }
 
@@ -541,7 +543,7 @@ impl NodeTrait for NodeCircle {
 
     fn draw(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _with_layer: bool,
@@ -553,7 +555,7 @@ impl NodeTrait for NodeCircle {
         let cy = self.cy.get().normalize(values, draw_ctx);
         let r = self.r.get().normalize(values, draw_ctx);
 
-        render_ellipse(cx, cy, r, r, draw_ctx, values, clipping);
+        render_ellipse(cx, cy, r, r, draw_ctx, node, values, clipping);
     }
 }
 
@@ -607,7 +609,7 @@ impl NodeTrait for NodeEllipse {
 
     fn draw(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _with_layer: bool,
@@ -620,7 +622,7 @@ impl NodeTrait for NodeEllipse {
         let rx = self.rx.get().normalize(values, draw_ctx);
         let ry = self.ry.get().normalize(values, draw_ctx);
 
-        render_ellipse(cx, cy, rx, ry, draw_ctx, values, clipping);
+        render_ellipse(cx, cy, rx, ry, draw_ctx, node, values, clipping);
     }
 }
 

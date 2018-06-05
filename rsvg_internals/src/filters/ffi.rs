@@ -54,6 +54,7 @@ pub(super) fn render<T: Filter>(
 /// the coordinate systems execute all its little primitives and then clean up its own mess.
 pub fn filter_render(
     filter_node: &RsvgNode,
+    node_being_filtered: &RsvgNode,
     source: &cairo::ImageSurface,
     context: *mut RsvgDrawingCtx,
     channelmap: *const c_char,
@@ -71,7 +72,13 @@ pub fn filter_render(
         }
     }
 
-    let mut filter_ctx = FilterContext::new(filter_node, source.clone(), context, channelmap_arr);
+    let mut filter_ctx = FilterContext::new(
+        filter_node,
+        node_being_filtered,
+        source.clone(),
+        context,
+        channelmap_arr,
+    );
 
     filter_node
         .children()

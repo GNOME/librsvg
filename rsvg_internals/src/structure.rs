@@ -41,7 +41,7 @@ impl NodeTrait for NodeGroup {
         with_layer: bool,
         clipping: bool,
     ) {
-        node.draw_children(cascaded, draw_ctx, with_layer, clipping);
+        node.draw_children(node, cascaded, draw_ctx, with_layer, clipping);
     }
 }
 
@@ -96,7 +96,7 @@ impl NodeTrait for NodeSwitch {
             );
         }
 
-        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+        drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
     }
 }
 
@@ -207,12 +207,13 @@ impl NodeTrait for NodeSvg {
             do_clip,
             self.vbox.get(),
             self.preserve_aspect_ratio.get(),
+            node,
             values,
             drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
             draw_ctx,
             clipping,
             || {
-                node.draw_children(cascaded, draw_ctx, false, clipping);
+                node.draw_children(node, cascaded, draw_ctx, false, clipping);
             },
         );
     }
@@ -340,7 +341,7 @@ impl NodeTrait for NodeUse {
                 clipping,
             );
 
-            drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+            drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !values.is_overflow()
@@ -355,6 +356,7 @@ impl NodeTrait for NodeUse {
                     do_clip,
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
+                    node,
                     values,
                     drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
                     draw_ctx,
@@ -362,12 +364,13 @@ impl NodeTrait for NodeUse {
                     || {
                         drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
                         child.draw_children(
+                            &child,
                             &CascadedValues::new_from_values(&child, values),
                             draw_ctx,
                             false,
                             clipping,
                         );
-                        drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+                        drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
                     },
                 );
             });

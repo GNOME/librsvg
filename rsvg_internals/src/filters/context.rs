@@ -11,7 +11,7 @@ use bbox::BoundingBox;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use length::RsvgLength;
-use node::RsvgNode;
+use node::{box_node, RsvgNode};
 use state::ComputedValues;
 
 use super::input::Input;
@@ -65,6 +65,8 @@ pub type RsvgFilterContext = FilterContext;
 pub struct FilterContext {
     /// The <filter> node.
     node: RsvgNode,
+    /// The node which referenced this filter
+    node_being_filtered: RsvgNode,
     /// The source graphic surface.
     source_surface: cairo::ImageSurface,
     /// Output of the last filter primitive.
@@ -82,6 +84,7 @@ impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
         filter_node: &RsvgNode,
+        node_being_filtered: &RsvgNode,
         source_surface: cairo::ImageSurface,
         draw_ctx: *mut RsvgDrawingCtx,
         channelmap: [i32; 4],
@@ -127,6 +130,7 @@ impl FilterContext {
 
         let mut rv = Self {
             node: filter_node.clone(),
+            node_being_filtered: node_being_filtered.clone(),
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
@@ -149,6 +153,12 @@ impl FilterContext {
     #[inline]
     pub fn get_filter_node(&self) -> RsvgNode {
         self.node.clone()
+    }
+
+    /// Returns the node that referenced this filter.
+    #[inline]
+    pub fn get_node_being_filtered(&self) -> RsvgNode {
+        self.node_being_filtered.clone()
     }
 
     /// Returns the surface corresponding to the last filter primitive's result.
@@ -366,6 +376,15 @@ pub unsafe extern "C" fn rsvg_filter_context_get_height(ctx: *const RsvgFilterCo
     assert!(!ctx.is_null());
 
     (*ctx).source_surface.get_height()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_filter_context_get_node_being_filtered(
+    ctx: *const RsvgFilterContext,
+) -> *mut RsvgNode {
+    assert!(!ctx.is_null());
+
+    box_node((*ctx).get_node_being_filtered())
 }
 
 #[no_mangle]

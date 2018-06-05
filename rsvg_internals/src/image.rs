@@ -107,7 +107,7 @@ impl NodeTrait for NodeImage {
 
     fn draw(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         _with_layer: bool,
@@ -145,7 +145,7 @@ impl NodeTrait for NodeImage {
 
             cr.restore();
 
-            drawing_ctx::pop_discrete_layer(draw_ctx, values, clipping);
+            drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
         }
     }
 }

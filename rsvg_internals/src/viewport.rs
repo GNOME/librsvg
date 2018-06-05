@@ -5,6 +5,7 @@ use aspect_ratio::AspectRatio;
 use draw::add_clipping_rect;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
+use node::RsvgNode;
 use state::ComputedValues;
 use viewbox::*;
 
@@ -23,6 +24,7 @@ pub fn draw_in_viewport<F>(
     do_clip: bool,
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
+    node: &RsvgNode,
     values: &ComputedValues,
     affine: cairo::Matrix,
     draw_ctx: *mut RsvgDrawingCtx,
@@ -43,6 +45,7 @@ pub fn draw_in_viewport<F>(
         do_clip,
         vbox,
         preserve_aspect_ratio,
+        node,
         values,
         affine,
         clipping,
@@ -54,7 +57,7 @@ trait ViewportCtx {
     fn push_view_box(&mut self, width: f64, height: f64);
     fn pop_view_box(&mut self);
     fn push_discrete_layer(&mut self, values: &ComputedValues, clipping: bool);
-    fn pop_discrete_layer(&mut self, values: &ComputedValues, clipping: bool);
+    fn pop_discrete_layer(&mut self, node: &RsvgNode, values: &ComputedValues, clipping: bool);
     fn add_clipping_rect(&mut self, x: f64, y: f64, w: f64, h: f64);
     fn set_affine(&mut self, affine: cairo::Matrix);
 }
@@ -74,8 +77,8 @@ impl ViewportCtx for RsvgDrawingCtxWrapper {
         drawing_ctx::push_discrete_layer(self.0, values, clipping);
     }
 
-    fn pop_discrete_layer(&mut self, values: &ComputedValues, clipping: bool) {
-        drawing_ctx::pop_discrete_layer(self.0, values, clipping);
+    fn pop_discrete_layer(&mut self, node: &RsvgNode, values: &ComputedValues, clipping: bool) {
+        drawing_ctx::pop_discrete_layer(self.0, node, values, clipping);
     }
 
     fn add_clipping_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
@@ -97,6 +100,7 @@ fn in_viewport<F>(
     do_clip: bool,
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
+    node: &RsvgNode,
     values: &ComputedValues,
     mut affine: cairo::Matrix,
     clipping: bool,
@@ -158,14 +162,28 @@ fn in_viewport<F>(
     draw_fn();
 
     ctx.pop_view_box();
-    ctx.pop_discrete_layer(values, clipping);
+    ctx.pop_discrete_layer(node, values, clipping);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use parsers::Parse;
 
+    use std::ptr;
+    use std::rc::Rc;
+
+    use handle::RsvgHandle;
+    use node::{Node, NodeResult, NodeTrait, NodeType};
+    use parsers::Parse;
+    use property_bag::PropertyBag;
+
+    struct TestNodeImpl {}
+
+    impl NodeTrait for TestNodeImpl {
+        fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
+            Ok(())
+        }
+    }
     #[derive(Default, PartialEq)]
     struct Ctx {
         pub view_box_size: Option<(f64, f64)>,
@@ -186,7 +204,13 @@ mod tests {
 
         fn push_discrete_layer(&mut self, _values: &ComputedValues, _clipping: bool) {}
 
-        fn pop_discrete_layer(&mut self, _values: &ComputedValues, _clipping: bool) {}
+        fn pop_discrete_layer(
+            &mut self,
+            _node: &RsvgNode,
+            _values: &ComputedValues,
+            _clipping: bool,
+        ) {
+        }
 
         fn add_clipping_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
             self.clipping_rect = Some((x, y, w, h));
@@ -209,6 +233,14 @@ mod tests {
         affine: cairo::Matrix,
         ctx: &mut Ctx,
     ) {
+        let node = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
         in_viewport(
             ctx,
             vx,
@@ -219,6 +251,7 @@ mod tests {
             do_clip,
             vbox,
             preserve_aspect_ratio,
+            &node,
             &ComputedValues::default(),
             affine,
             false,

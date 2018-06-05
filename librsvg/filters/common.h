@@ -172,6 +172,9 @@ G_GNUC_INTERNAL
 RsvgDrawingCtx *rsvg_filter_context_get_drawing_ctx (RsvgFilterContext *ctx);
 
 G_GNUC_INTERNAL
+RsvgNode *rsvg_filter_context_get_node_being_filtered (RsvgFilterContext *ctx);
+
+G_GNUC_INTERNAL
 int rsvg_filter_context_get_previous_result (GString *name,
                                              const RsvgFilterContext *ctx,
                                              RsvgFilterPrimitiveOutput *output);
