@@ -560,36 +560,36 @@ surface_get_alpha (cairo_surface_t *source,
     return surface;
 }
 
-static cairo_surface_t *
-rsvg_compile_bg (RsvgDrawingCtx * ctx)
-{
-    cairo_surface_t *surface;
-    cairo_t *cr;
-    double x, y;
-    GList *i;
-
-    surface = _rsvg_image_surface_new (rsvg_drawing_ctx_get_width (ctx),
-                                       rsvg_drawing_ctx_get_height (ctx));
-    if (surface == NULL)
-        return NULL;
-
-    cr = cairo_create (surface);
-
-    rsvg_drawing_ctx_get_raw_offset (ctx, &x, &y);
-
-    for (i = g_list_last (ctx->cr_stack); i != NULL; i = g_list_previous (i)) {
-        cairo_t *draw = i->data;
-        gboolean nest = rsvg_drawing_ctx_is_cairo_context_nested (ctx, draw);
-        cairo_set_source_surface (cr, cairo_get_target (draw),
-                                  nest ? 0 : -x,
-                                  nest ? 0 : -y);
-        cairo_paint (cr);
-    }
-
-    cairo_destroy (cr);
-
-    return surface;
-}
+// static cairo_surface_t *
+// rsvg_compile_bg (RsvgDrawingCtx * ctx)
+// {
+//     cairo_surface_t *surface;
+//     cairo_t *cr;
+//     double x, y;
+//     GList *i;
+// 
+//     surface = _rsvg_image_surface_new (rsvg_drawing_ctx_get_width (ctx),
+//                                        rsvg_drawing_ctx_get_height (ctx));
+//     if (surface == NULL)
+//         return NULL;
+// 
+//     cr = cairo_create (surface);
+// 
+//     rsvg_drawing_ctx_get_raw_offset (ctx, &x, &y);
+// 
+//     for (i = g_list_last (ctx->cr_stack); i != NULL; i = g_list_previous (i)) {
+//         cairo_t *draw = i->data;
+//         gboolean nest = rsvg_drawing_ctx_is_cairo_context_nested (ctx, draw);
+//         cairo_set_source_surface (cr, cairo_get_target (draw),
+//                                   nest ? 0 : -x,
+//                                   nest ? 0 : -y);
+//         cairo_paint (cr);
+//     }
+// 
+//     cairo_destroy (cr);
+// 
+//     return surface;
+// }
 
 /**
  * rsvg_filter_get_bg:
@@ -605,71 +605,61 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
 //     return ctx->bg_surface;
 // }
 
-/**
- * rsvg_filter_get_result:
- * @name: The name of the surface
- * @ctx: the context that this was called in
- *
- * Gets a surface for a primitive
- *
- * Returns: (nullable): a pointer to the result that the name refers to, a special
- * surface if the name is a special keyword or %NULL if nothing was found
- **/
-RsvgFilterPrimitiveOutput
-rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
-{
-    RsvgFilterPrimitiveOutput output;
-    output.bounds.x0 = output.bounds.x1 = output.bounds.y0 = output.bounds.y1 = 0;
+// RsvgFilterPrimitiveOutput
+// rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
+// {
+//     RsvgFilterPrimitiveOutput output;
+//     output.bounds.x0 = output.bounds.x1 = output.bounds.y0 = output.bounds.y1 = 0;
+// 
+//     if (!strcmp (name->str, "SourceGraphic")) {
+//         output.surface = cairo_surface_reference (rsvg_filter_context_get_source_surface (ctx));
+//         return output;
+//     } else if (!strcmp (name->str, "BackgroundImage")) {
+//         output.surface = rsvg_filter_context_get_bg_surface (ctx);
+//         if (output.surface)
+//             cairo_surface_reference (output.surface);
+//         return output;
+//     } else if (!strcmp (name->str, "") || !strcmp (name->str, "none")) {
+//         output = rsvg_filter_context_get_lastresult (ctx);
+//         cairo_surface_reference (output.surface);
+//         return output;
+//     } else if (!strcmp (name->str, "SourceAlpha")) {
+//         output.surface = surface_get_alpha (rsvg_filter_context_get_source_surface (ctx), ctx);
+//         return output;
+//     } else if (!strcmp (name->str, "BackgroundAlpha")) {
+//         output.surface = surface_get_alpha (rsvg_filter_context_get_bg_surface (ctx), ctx);
+//         return output;
+//     }
+// 
+//     /* outputpointer = (RsvgFilterPrimitiveOutput *) (g_hash_table_lookup (ctx->results, name->str)); */
+//     /*  */
+//     /* if (outputpointer != NULL) { */
+//     /*     output = *outputpointer; */
+//     /*     cairo_surface_reference (output.surface); */
+//     /*     return output; */
+//     /* } */
+// 
+//     if (rsvg_filter_context_get_previous_result(name, ctx, &output)) {
+//         cairo_surface_reference (output.surface);
+//         return output;
+//     }
+// 
+//     output.surface = NULL;
+//     return output;
+// }
 
-    if (!strcmp (name->str, "SourceGraphic")) {
-        output.surface = cairo_surface_reference (rsvg_filter_context_get_source_surface (ctx));
-        return output;
-    } else if (!strcmp (name->str, "BackgroundImage")) {
-        output.surface = rsvg_filter_context_get_bg_surface (ctx);
-        if (output.surface)
-            cairo_surface_reference (output.surface);
-        return output;
-    } else if (!strcmp (name->str, "") || !strcmp (name->str, "none")) {
-        output = rsvg_filter_context_get_lastresult (ctx);
-        cairo_surface_reference (output.surface);
-        return output;
-    } else if (!strcmp (name->str, "SourceAlpha")) {
-        output.surface = surface_get_alpha (rsvg_filter_context_get_source_surface (ctx), ctx);
-        return output;
-    } else if (!strcmp (name->str, "BackgroundAlpha")) {
-        output.surface = surface_get_alpha (rsvg_filter_context_get_bg_surface (ctx), ctx);
-        return output;
-    }
-
-    /* outputpointer = (RsvgFilterPrimitiveOutput *) (g_hash_table_lookup (ctx->results, name->str)); */
-    /*  */
-    /* if (outputpointer != NULL) { */
-    /*     output = *outputpointer; */
-    /*     cairo_surface_reference (output.surface); */
-    /*     return output; */
-    /* } */
-
-    if (rsvg_filter_context_get_previous_result(name, ctx, &output)) {
-        cairo_surface_reference (output.surface);
-        return output;
-    }
-
-    output.surface = NULL;
-    return output;
-}
-
-cairo_surface_t *
-rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
-{
-    cairo_surface_t *surface;
-
-    surface = rsvg_filter_get_result (name, ctx).surface;
-    if (surface == NULL || cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
-        return NULL;
-    }
-
-    return surface;
-}
+// cairo_surface_t *
+// rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
+// {
+//     cairo_surface_t *surface;
+// 
+//     surface = rsvg_filter_get_result (name, ctx).surface;
+//     if (surface == NULL || cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+//         return NULL;
+//     }
+// 
+//     return surface;
+// }
 
 // void
 // rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)

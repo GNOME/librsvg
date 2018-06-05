@@ -12,7 +12,7 @@ use property_bag::PropertyBag;
 use util::{clamp, utf8_cstr_opt};
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
-use super::iterators::{ImageSurfaceDataShared, Pixels};
+use super::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixels};
 use super::{get_surface, Filter, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
@@ -100,12 +100,7 @@ impl Filter for Offset {
             for (x, y, pixel) in Pixels::new(input_data, input_bounds) {
                 let output_x = (x as i32 + ox) as usize;
                 let output_y = (y as i32 + oy) as usize;
-
-                let output_base = output_y * output_stride + output_x * 4;
-                output_data[output_base + 0] = pixel.r;
-                output_data[output_base + 1] = pixel.g;
-                output_data[output_base + 2] = pixel.b;
-                output_data[output_base + 3] = pixel.a;
+                output_data.set_pixel(output_stride, pixel, output_x, output_y);
             }
         }
 

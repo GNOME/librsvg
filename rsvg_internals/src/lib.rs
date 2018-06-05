@@ -57,6 +57,8 @@ pub use filters::context::{
     rsvg_filter_context_get_previous_result,
     rsvg_filter_context_get_source_surface,
     rsvg_filter_context_get_width,
+    rsvg_filter_get_in,
+    rsvg_filter_get_result,
     rsvg_filter_primitive_get_bounds,
     rsvg_filter_store_output,
 };
@@ -64,6 +66,7 @@ pub use filters::context::{
 pub use filters::node::rsvg_new_filter;
 
 pub use filters::composite::rsvg_new_filter_primitive_composite;
+pub use filters::merge::{rsvg_new_filter_primitive_merge, rsvg_new_filter_primitive_merge_node};
 pub use filters::offset::rsvg_new_filter_primitive_offset;
 
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};

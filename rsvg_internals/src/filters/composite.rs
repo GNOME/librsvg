@@ -14,7 +14,7 @@ use util::{clamp, utf8_cstr_opt};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
-use super::iterators::{ImageSurfaceDataShared, Pixels};
+use super::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixel, Pixels};
 use super::{get_surface, Filter, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible compositing operations.
@@ -134,31 +134,27 @@ impl Filter for Composite {
                     let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
                     let oa = clamp(oa, 0f64, 1f64);
 
-                    let output_base = y * output_stride + 4 * x;
-
                     // Contents of image surfaces are transparent by default, so if the
                     // resulting pixel is transparent there's no need
                     // to do anything.
                     if oa > 0f64 {
-                        output_data[output_base + 3] = (oa * 255f64).round() as u8;
-
-                        // TODO: make this much better with mutable pixel iterators for output.
-                        for (ch, &(i1, i2)) in [
-                            (pixel.r, pixel_2.r),
-                            (pixel.g, pixel_2.g),
-                            (pixel.b, pixel_2.b),
-                        ].iter()
-                            .enumerate()
-                        {
+                        let compute = |i1, i2| {
                             let i1 = f64::from(i1) / 255f64;
                             let i2 = f64::from(i2) / 255f64;
 
                             let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
                             let o = clamp(o, 0f64, oa);
 
-                            let o = (o * 255f64).round() as u8;
-                            output_data[output_base + ch] = o;
-                        }
+                            (o * 255f64).round() as u8
+                        };
+
+                        let output_pixel = Pixel {
+                            r: compute(pixel.r, pixel_2.r),
+                            g: compute(pixel.g, pixel_2.g),
+                            b: compute(pixel.b, pixel_2.b),
+                            a: (oa * 255f64).round() as u8,
+                        };
+                        output_data.set_pixel(output_stride, output_pixel, x, y);
                     }
                 }
             }

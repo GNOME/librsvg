@@ -1,4 +1,5 @@
 //! Pixel iterators for surfaces.
+use std::ops::DerefMut;
 use std::slice;
 
 use cairo;
@@ -34,6 +35,20 @@ pub struct Pixels<'a> {
     bounds: IRect,
     x: usize,
     y: usize,
+}
+
+/// Extension methods for `cairo::ImageSurfaceData`.
+pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
+    /// Sets the pixel at the given coordinates.
+    #[inline]
+    fn set_pixel(&mut self, stride: usize, pixel: Pixel, x: usize, y: usize) {
+        let base = y * stride + x * 4;
+
+        self[base + 0] = pixel.r;
+        self[base + 1] = pixel.g;
+        self[base + 2] = pixel.b;
+        self[base + 3] = pixel.a;
+    }
 }
 
 impl<'a> ImageSurfaceDataShared<'a> {
@@ -126,6 +141,8 @@ impl<'a> Iterator for Pixels<'a> {
         rv
     }
 }
+
+impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {}
 
 #[cfg(test)]
 mod tests {

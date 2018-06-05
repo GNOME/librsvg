@@ -27,6 +27,7 @@ pub mod iterators;
 pub mod node;
 
 pub mod composite;
+pub mod merge;
 pub mod offset;
 
 /// A filter primitive interface.
@@ -82,12 +83,7 @@ impl Primitive {
     /// Computes and returns the filter primitive bounds.
     #[inline]
     fn get_bounds(&self, ctx: &FilterContext) -> IRect {
-        let node = ctx.get_filter_node();
-        let cascaded = node.get_cascaded_values();
-        let values = cascaded.get();
-
         ctx.compute_bounds(
-            &values,
             self.x.get(),
             self.y.get(),
             self.width.get(),

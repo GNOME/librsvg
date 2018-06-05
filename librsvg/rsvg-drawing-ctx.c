@@ -456,6 +456,12 @@ rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dp
         *out_dpi_y = ctx->dpi_y;
 }
 
+GList *
+rsvg_drawing_ctx_get_cr_stack (RsvgDrawingCtx *ctx)
+{
+    return ctx->cr_stack;
+}
+
 gboolean
 rsvg_drawing_ctx_is_testing (RsvgDrawingCtx *ctx)
 {

@@ -34,7 +34,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/filters/image.c			\
 	librsvg/filters/light_source.c		\
 	librsvg/filters/light_source.h		\
-	librsvg/filters/merge.c			\
 	librsvg/filters/specular_lighting.c	\
 	librsvg/filters/tile.c			\
 	librsvg/filters/turbulence.c		\
@@ -88,6 +87,7 @@ RUST_SRC =					\
 	rsvg_internals/src/filters/context.rs	\
 	rsvg_internals/src/filters/error.rs	\
 	rsvg_internals/src/filters/ffi.rs	\
+	rsvg_internals/src/filters/merge.rs	\
 	rsvg_internals/src/filters/mod.rs	\
 	rsvg_internals/src/filters/node.rs	\
 	rsvg_internals/src/filters/input.rs	\

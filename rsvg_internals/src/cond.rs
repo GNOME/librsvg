@@ -2,7 +2,7 @@ use error::*;
 use parsers::Parse;
 use std::marker::PhantomData;
 
-#[allow(unused_imports)]
+#[allow(unused_imports, deprecated)]
 use std::ascii::AsciiExt;
 
 // No extensions at the moment.
