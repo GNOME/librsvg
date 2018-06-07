@@ -10,14 +10,14 @@ use libc;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
+use drawing_ctx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
-use super::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixels};
-use super::{get_surface, Filter, FilterError, Primitive};
+use super::{Filter, FilterError, Primitive};
 
 /// The `feImage` filter primitive.
 pub struct Image {
@@ -42,51 +42,63 @@ impl Image {
             handle: Cell::new(ptr::null()),
         }
     }
-}
 
-impl NodeTrait for Image {
-    fn set_atts(
+    /// Renders the filter if the source is an existing node.
+    fn render_node(
         &self,
-        node: &RsvgNode,
-        handle: *const RsvgHandle,
-        pbag: &PropertyBag,
-    ) -> NodeResult {
-        self.base.set_atts(node, handle, pbag)?;
+        ctx: &FilterContext,
+        bounds: IRect,
+        href: &str,
+    ) -> Result<ImageSurface, FilterError> {
+        // TODO: Port more of this to Rust.
+        // Currently this is essentially a direct port of the C function.
+        let drawable = drawing_ctx::get_acquired_node(ctx.drawing_context(), href)
+            .ok_or(FilterError::InvalidInput)?;
 
-        for (_key, attr, value) in pbag.iter() {
-            match attr {
-                Attribute::PreserveAspectRatio => {
-                    self.aspect
-                        .set(parse("preserveAspectRatio", value, (), None)?)
-                }
+        let surface = ImageSurface::create(
+            cairo::Format::ARgb32,
+            ctx.source_graphic().get_width(),
+            ctx.source_graphic().get_height(),
+        ).map_err(FilterError::OutputSurfaceCreation)?;
 
-                // "path" is used by some older Adobe Illustrator versions
-                Attribute::XlinkHref | Attribute::Path => {
-                    drop(self.href.replace(Some(value.to_string())))
-                }
-                _ => (),
-            }
-        }
+        drawing_ctx::get_cairo_context(ctx.drawing_context()).set_matrix(ctx.paffine());
+        drawing_ctx::draw_node_on_surface(
+            ctx.drawing_context(),
+            &drawable.get(),
+            &ctx.get_node_being_filtered(),
+            &surface,
+            f64::from(ctx.source_graphic().get_width()),
+            f64::from(ctx.source_graphic().get_height()),
+        );
 
-        self.handle.set(handle);
+        // Clip the output to bounds.
+        let output_surface = ImageSurface::create(
+            cairo::Format::ARgb32,
+            ctx.source_graphic().get_width(),
+            ctx.source_graphic().get_height(),
+        ).map_err(FilterError::OutputSurfaceCreation)?;
 
-        Ok(())
+        let cr = cairo::Context::new(&output_surface);
+        cr.rectangle(
+            f64::from(bounds.x0),
+            f64::from(bounds.y0),
+            f64::from(bounds.x1 - bounds.x0),
+            f64::from(bounds.y1 - bounds.y0),
+        );
+        cr.clip();
+        cr.set_source_surface(&surface, 0f64, 0f64);
+        cr.paint();
+
+        Ok(output_surface)
     }
 
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
-    }
-}
-
-impl Filter for Image {
-    fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
-        let cascaded = node.get_cascaded_values();
-        let values = cascaded.get();
-
-        let bounds = self.base.get_bounds(ctx);
-
-        // TODO: internal references.
+    /// Renders the filter if the source is an external image.
+    fn render_external_image(
+        &self,
+        ctx: &FilterContext,
+        bounds: IRect,
+        href: &str,
+    ) -> Result<ImageSurface, FilterError> {
         let surface = {
             extern "C" {
                 fn rsvg_cairo_surface_new_from_href(
@@ -101,7 +113,7 @@ impl Filter for Image {
             let raw_surface = unsafe {
                 rsvg_cairo_surface_new_from_href(
                     self.handle.get(),
-                    self.href.borrow().to_glib_none().0,
+                    href.to_glib_none().0,
                     &mut error,
                 )
             };
@@ -154,6 +166,58 @@ impl Filter for Image {
             cr.set_source(&ptn);
             cr.paint();
         }
+
+        Ok(output_surface)
+    }
+}
+
+impl NodeTrait for Image {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        handle: *const RsvgHandle,
+        pbag: &PropertyBag,
+    ) -> NodeResult {
+        self.base.set_atts(node, handle, pbag)?;
+
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::PreserveAspectRatio => {
+                    self.aspect
+                        .set(parse("preserveAspectRatio", value, (), None)?)
+                }
+
+                // "path" is used by some older Adobe Illustrator versions
+                Attribute::XlinkHref | Attribute::Path => {
+                    drop(self.href.replace(Some(value.to_string())))
+                }
+                _ => (),
+            }
+        }
+
+        self.handle.set(handle);
+
+        Ok(())
+    }
+
+    #[inline]
+    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
+        self.base.get_c_impl()
+    }
+}
+
+impl Filter for Image {
+    fn render(&self, _node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
+        let href = self.href.borrow();
+        let href = href.as_ref().ok_or(FilterError::InvalidInput)?;
+
+        let bounds = self.base.get_bounds(ctx);
+
+        let output_surface = match self.render_node(ctx, bounds, href) {
+            Err(FilterError::InvalidInput) => self.render_external_image(ctx, bounds, href)?,
+            Err(err) => return Err(err),
+            Ok(surface) => surface,
+        };
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
