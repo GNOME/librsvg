@@ -97,8 +97,11 @@ G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_displacement_map     (const char *element_name, RsvgNode *parent, const char *id);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_turbulence           (const char *element_name, RsvgNode *parent, const char *id);
+
+/* Implemented in rust/src/filters/image.rs */
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_image                (const char *element_name, RsvgNode *parent, const char *id);
+
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_diffuse_lighting	    (const char *element_name, RsvgNode *parent, const char *id);
 G_GNUC_INTERNAL

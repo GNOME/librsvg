@@ -27,6 +27,7 @@ pub mod iterators;
 pub mod node;
 
 pub mod composite;
+pub mod image;
 pub mod merge;
 pub mod offset;
 
