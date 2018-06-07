@@ -6,6 +6,7 @@ use std::ptr;
 use attributes::Attribute;
 use clip_path::NodeClipPath;
 use filters::composite::Composite;
+use filters::image::Image;
 use filters::merge::{Merge, MergeNode};
 use filters::node::NodeFilter;
 use filters::offset::Offset;
@@ -85,12 +86,6 @@ extern "C" {
         _: *const libc::c_char,
         _: *const libc::c_char,
     ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_image(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_erode(
         _: *const libc::c_char,
         _: *const RsvgNode,
@@ -142,7 +137,6 @@ lazy_static! {
         h.insert("feFuncG",             (false, rsvg_new_node_component_transfer_function as NodeCreateCFn));
         h.insert("feFuncR",             (false, rsvg_new_node_component_transfer_function as NodeCreateCFn));
         h.insert("feGaussianBlur",      (true,  rsvg_new_filter_primitive_gaussian_blur as NodeCreateCFn));
-        h.insert("feImage",             (true,  rsvg_new_filter_primitive_image as NodeCreateCFn));
         h.insert("feMorphology",        (true,  rsvg_new_filter_primitive_erode as NodeCreateCFn));
         h.insert("fePointLight",        (false, rsvg_new_node_light_source as NodeCreateCFn));
         h.insert("feSpecularLighting",  (true,  rsvg_new_filter_primitive_specular_lighting as NodeCreateCFn));
@@ -173,6 +167,7 @@ node_create_fn!(create_ellipse, Ellipse, NodeEllipse::new);
 node_create_fn!(create_filter, Filter, NodeFilter::new);
 node_create_fn!(create_group, Group, NodeGroup::new);
 node_create_fn!(create_image, Image, NodeImage::new);
+node_create_fn!(create_fe_image, FilterPrimitiveImage, Image::new);
 node_create_fn!(
     create_linear_gradient,
     LinearGradient,
@@ -228,6 +223,7 @@ lazy_static! {
         /* h.insert("desc",             (true,  as NodeCreateFn)); */
         h.insert("ellipse",             (true,  create_ellipse as NodeCreateFn));
         h.insert("feComposite",         (true,  create_composite as NodeCreateFn));
+        h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));
         h.insert("feMerge",             (true,  create_merge as NodeCreateFn));
         h.insert("feMergeNode",         (false, create_merge_node as NodeCreateFn));
         h.insert("feOffset",            (true,  create_offset as NodeCreateFn));

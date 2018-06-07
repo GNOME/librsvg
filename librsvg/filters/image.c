@@ -109,6 +109,7 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive *self, RsvgFilterCon
     img = rsvg_cairo_surface_new_from_href (image->handle,
                                             image->href->str,
                                             NULL);
+
     if (!img)
         return NULL;
 
