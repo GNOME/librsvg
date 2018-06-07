@@ -294,7 +294,7 @@ impl FilterContext {
 
     /// Returns the drawing context for this filter context.
     #[inline]
-    pub fn drawing_context(&self) -> *const RsvgDrawingCtx {
+    pub fn drawing_context(&self) -> *mut RsvgDrawingCtx {
         self.drawing_ctx
     }
 
