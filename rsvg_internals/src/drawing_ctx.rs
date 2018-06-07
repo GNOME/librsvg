@@ -78,6 +78,15 @@ extern "C" {
     ) -> glib_sys::gboolean;
 
     fn rsvg_drawing_ctx_is_testing(draw_ctx: *const RsvgDrawingCtx) -> glib_sys::gboolean;
+
+    fn rsvg_drawing_ctx_draw_node_on_surface(
+        draw_ctx: *mut RsvgDrawingCtx,
+        node: *const RsvgNode,
+        cascade_from: *const RsvgNode,
+        surface: *mut cairo_sys::cairo_surface_t,
+        width: f64,
+        height: f64,
+    );
 }
 
 pub fn get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
@@ -299,6 +308,26 @@ pub fn get_cr_stack(draw_ctx: *mut RsvgDrawingCtx) -> Vec<cairo::Context> {
 pub fn is_cairo_context_nested(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) -> bool {
     let cr = cr.to_glib_none();
     from_glib(unsafe { rsvg_drawing_ctx_is_cairo_context_nested(draw_ctx, cr.0) })
+}
+
+pub fn draw_node_on_surface(
+    draw_ctx: *mut RsvgDrawingCtx,
+    node: &RsvgNode,
+    cascade_from: &RsvgNode,
+    surface: &cairo::ImageSurface,
+    width: f64,
+    height: f64,
+) {
+    unsafe {
+        rsvg_drawing_ctx_draw_node_on_surface(
+            draw_ctx,
+            node,
+            cascade_from,
+            surface.to_glib_none().0,
+            width,
+            height,
+        );
+    }
 }
 
 extern "C" {
