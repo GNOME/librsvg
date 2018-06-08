@@ -1,0 +1,16 @@
+<svg height="48" viewBox="0 0 48 48" width="48" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <filter id="a" color-interpolation-filters="sRGB">
+    <feTurbulence baseFrequency=".037" numOctaves="3" result="result0"/>
+    <feSpecularLighting result="result1" specularConstant="1" specularExponent="24.3" surfaceScale="2">
+      <feDistantLight azimuth="225" elevation="45"/>
+    </feSpecularLighting>
+    <feDiffuseLighting diffuseConstant="1.21" in="result0" surfaceScale="3">
+      <feDistantLight azimuth="225" elevation="42"/>
+    </feDiffuseLighting>
+    <feBlend in2="SourceGraphic" mode="multiply" result="result91"/>
+    <feComposite in="result1" in2="result91" k2="1" k3="1" operator="arithmetic"/>
+    <feComposite in2="SourceAlpha" operator="in" result="result2"/>
+  </filter>
+  <path d="m4 4h40v40h-40z" fill="#f00" filter="url(#a)"/>
+</svg>
+
