@@ -4869,9 +4869,9 @@ rsvg_new_node_light_source (const char *element_name, RsvgNode *parent)
     data->specularExponent = 1;
 
     if (strcmp (element_name, "feDistantLight") == 0)
-        data->type = SPOTLIGHT;
-    else if (strcmp (element_name, "feSpotLight") == 0)
         data->type = DISTANTLIGHT;
+    else if (strcmp (element_name, "feSpotLight") == 0)
+        data->type = SPOTLIGHT;
     else if (strcmp (element_name, "fePointLight") == 0)
         data->type = POINTLIGHT;
     else
