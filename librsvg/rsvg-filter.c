@@ -3323,6 +3323,7 @@ rsvg_filter_primitive_composite_render (RsvgNode *node, RsvgFilterPrimitive *pri
     RsvgFilterPrimitiveComposite *composite = (RsvgFilterPrimitiveComposite *) primitive;
     RsvgIRect boundarys;
     cairo_surface_t *output, *in, *in2;
+    gint rowstride, height, width;
 
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
@@ -3336,27 +3337,26 @@ rsvg_filter_primitive_composite_render (RsvgNode *node, RsvgFilterPrimitive *pri
         return;
     }
 
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
+    rowstride = cairo_image_surface_get_stride (in);
+
+    output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        cairo_surface_destroy (in2);
+        return;
+    }
+
+    cairo_surface_flush (in);
+    cairo_surface_flush (in2);
+
     if (composite->mode == COMPOSITE_MODE_ARITHMETIC) {
         guchar i;
         gint x, y;
-        gint rowstride, height, width;
         guchar *in_pixels;
         guchar *in2_pixels;
         guchar *output_pixels;
-
-        height = cairo_image_surface_get_height (in);
-        width = cairo_image_surface_get_width (in);
-        rowstride = cairo_image_surface_get_stride (in);
-
-        output = _rsvg_image_surface_new (width, height);
-        if (output == NULL) {
-            cairo_surface_destroy (in);
-            cairo_surface_destroy (in2);
-            return;
-        }
-
-        cairo_surface_flush (in);
-        cairo_surface_flush (in2);
 
         in_pixels = cairo_image_surface_get_data (in);
         in2_pixels = cairo_image_surface_get_data (in2);
@@ -3397,10 +3397,10 @@ rsvg_filter_primitive_composite_render (RsvgNode *node, RsvgFilterPrimitive *pri
     } else {
         cairo_t *cr;
 
-        cairo_surface_reference (in2);
-        output = in2;
-
         cr = cairo_create (output);
+        cairo_set_source_surface (cr, in2, 0, 0);
+        cairo_paint (cr);
+
         cairo_set_source_surface (cr, in, 0, 0);
         cairo_rectangle (cr,
                          boundarys.x0,
