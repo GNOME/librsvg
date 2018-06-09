@@ -10,6 +10,7 @@ endif
 AM_CPPFLAGS =				\
 	-I$(top_srcdir) 		\
 	-I$(top_builddir) 		\
+	-I$(top_builddir)/librsvg	\
 	$(LIBRSVG_CFLAGS) 		\
 	$(GTK_CFLAGS)			\
 	$(GDK_X11_CFLAGS)		\
