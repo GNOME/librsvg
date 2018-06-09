@@ -446,17 +446,7 @@ pub extern "C" fn rsvg_node_svg_apply_atts(raw_node: *const RsvgNode, handle: *c
     node.with_impl(|svg: &NodeSvg| {
         if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
             let pbag = PropertyBag::from_owned(owned_pbag);
-
-            let mut class = None;
-
-            for (_key, attr, value) in pbag.iter() {
-                match attr {
-                    Attribute::Class => class = Some(value),
-                    _ => (),
-                }
-            }
-
-            state::parse_style_attrs(handle, node, "svg", class, &pbag);
+            state::parse_style_attrs(handle, node, "svg", &pbag);
         }
     });
 }

@@ -282,6 +282,7 @@ G_GNUC_INTERNAL
 RsvgNode *rsvg_rust_cnode_new (RsvgNodeType  node_type,
                                RsvgNode     *parent,
                                const char   *id,
+                               const char   *klass,
                                gpointer      impl,
                                CNodeSetAtts  set_atts_fn,
                                CNodeFree     free_fn) G_GNUC_WARN_UNUSED_RESULT;

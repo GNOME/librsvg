@@ -681,7 +681,7 @@ out:
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_gaussian_blur (const char *element_name, RsvgNode *parent, const char *id)
+rsvg_new_filter_primitive_gaussian_blur (const char *element_name, RsvgNode *parent, const char *id, const char *klass)
 {
     RsvgFilterPrimitiveGaussianBlur *filter;
 
@@ -695,6 +695,7 @@ rsvg_new_filter_primitive_gaussian_blur (const char *element_name, RsvgNode *par
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_GAUSSIAN_BLUR,
                                 parent,
                                 id,
+                                klass,
                                 filter,
                                 rsvg_filter_primitive_gaussian_blur_set_atts,
                                 rsvg_filter_primitive_free);

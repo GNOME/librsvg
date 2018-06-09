@@ -62,39 +62,39 @@ cairo_surface_t *rsvg_filter_render (RsvgNode *filter_node,
                                      char *channelmap);
 
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_blend                (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_blend                (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_convolve_matrix      (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_convolve_matrix      (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_gaussian_blur        (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_gaussian_blur        (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_merge                (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_merge                (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_merge_node           (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_merge_node           (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_color_matrix         (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_color_matrix         (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_component_transfer   (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_component_transfer   (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_node_component_transfer_function      (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_node_component_transfer_function      (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_erode                (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_erode                (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_flood                (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_flood                (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_displacement_map     (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_displacement_map     (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_turbulence           (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_turbulence           (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_image                (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_image                (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_diffuse_lighting	    (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_diffuse_lighting	    (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_node_light_source	                    (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_node_light_source	                    (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_specular_lighting    (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_specular_lighting    (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_tile                 (const char *element_name, RsvgNode *parent, const char *id);
+RsvgNode    *rsvg_new_filter_primitive_tile                 (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 
 G_END_DECLS
 

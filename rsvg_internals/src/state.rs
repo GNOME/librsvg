@@ -20,7 +20,7 @@ use parsers::Parse;
 use property_bag::PropertyBag;
 use property_macros::Property;
 use unitinterval::UnitInterval;
-use util::{utf8_cstr, utf8_cstr_opt};
+use util::utf8_cstr;
 
 /// Representation of a single CSS property value.
 ///
@@ -1434,19 +1434,15 @@ pub extern "C" fn rsvg_parse_style_attrs(
     handle: *const RsvgHandle,
     raw_node: *const RsvgNode,
     tag: *const libc::c_char,
-    klazz: *const libc::c_char,
     pbag: *const PropertyBag,
 ) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
     let tag = unsafe { utf8_cstr(tag) };
-
-    let klazz = unsafe { utf8_cstr_opt(klazz) };
-
     let pbag = unsafe { &*pbag };
 
-    parse_style_attrs(handle, node, tag, klazz, pbag);
+    parse_style_attrs(handle, node, tag, pbag);
 }
 
 // Sets the node's state from the attributes in the pbag.  Also
@@ -1456,7 +1452,6 @@ pub fn parse_style_attrs(
     handle: *const RsvgHandle,
     node: &RsvgNode,
     tag: &str,
-    klazz: Option<&str>,
     pbag: &PropertyBag,
 ) {
     let state = node.get_state_mut();
@@ -1501,7 +1496,7 @@ pub fn parse_style_attrs(
         // tag
         rsvg_lookup_apply_css_style(handle, tag.to_glib_none().0, to_c_mut(state));
 
-        if let Some(klazz) = klazz {
+        if let Some(klazz) = node.get_class() {
             for cls in klazz.split_whitespace() {
                 let mut found = false;
 

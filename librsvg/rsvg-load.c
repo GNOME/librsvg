@@ -44,7 +44,7 @@ typedef enum {
 
 /* Implemented in rust/src/load.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, const char *id, gboolean *supports_class_attribute);
+RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts);
 
 struct RsvgLoad {
     RsvgHandle *handle;
@@ -296,31 +296,21 @@ free_element_name_stack (RsvgLoad *load)
 }
 
 static void
-get_id_and_class (RsvgPropertyBag atts,
-                  const char **out_id,
-                  const char **out_class)
+node_register_in_defs (RsvgNode *node,
+                       RsvgHandle *handle,
+                       RsvgPropertyBag atts)
 {
     RsvgPropertyBagIter *iter;
     const char *key;
     RsvgAttribute attr;
     const char *value;
-    
-    g_assert (out_id != NULL);
-    g_assert (out_class != NULL);
-
-    *out_id = NULL;
-    *out_class = NULL;
 
     iter = rsvg_property_bag_iter_begin (atts);
 
     while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
         switch (attr) {
         case RSVG_ATTRIBUTE_ID:
-            *out_id = value;
-            break;
-
-        case RSVG_ATTRIBUTE_CLASS:
-            *out_class = value;
+            rsvg_defs_register_node_by_id (handle->priv->defs, value, node);
             break;
 
         default:
@@ -335,8 +325,6 @@ static void
 node_set_atts (RsvgNode *node,
                RsvgHandle *handle,
                const char *element_name,
-               const char *node_id,
-               const char *node_class,
                RsvgPropertyBag atts)
 {
     rsvg_node_set_atts (node, handle, atts);
@@ -346,7 +334,7 @@ node_set_atts (RsvgNode *node,
      * rsvg_node_svg_apply_atts()
      */
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
-        rsvg_parse_style_attrs (handle, node, element_name, node_class, atts);
+        rsvg_parse_style_attrs (handle, node, element_name, atts);
     }
 
     rsvg_node_set_overriden_properties (node);
@@ -356,13 +344,8 @@ static void
 standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
 {
     RsvgNode *newnode;
-    const char *node_id;
-    const char *node_class;
-    gboolean supports_class_attribute;
 
-    get_id_and_class (atts, &node_id, &node_class);
-
-    newnode = rsvg_load_new_node(name, load->currentnode, node_id, &supports_class_attribute);
+    newnode = rsvg_load_new_node(name, load->currentnode, atts);
     g_assert (newnode != NULL);
 
     g_assert (rsvg_node_get_type (newnode) != RSVG_NODE_TYPE_INVALID);
@@ -380,15 +363,8 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
 
     load->currentnode = rsvg_node_ref (newnode);
 
-    if (node_id) {
-        rsvg_defs_register_node_by_id (load->handle->priv->defs, node_id, newnode);
-    }
-
-    if (!supports_class_attribute) {
-        node_class = NULL;
-    }
-
-    node_set_atts (newnode, load->handle, name, node_id, node_class, atts);
+    node_register_in_defs (newnode, load->handle, atts);
+    node_set_atts (newnode, load->handle, name, atts);
 
     newnode = rsvg_node_unref (newnode);
 }

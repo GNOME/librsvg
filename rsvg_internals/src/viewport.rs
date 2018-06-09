@@ -237,6 +237,7 @@ mod tests {
             NodeType::Path,
             None,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));

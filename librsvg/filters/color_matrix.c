@@ -279,7 +279,7 @@ out:
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_color_matrix (const char *element_name, RsvgNode *parent, const char *id)
+rsvg_new_filter_primitive_color_matrix (const char *element_name, RsvgNode *parent, const char *id, const char *klass)
 {
     RsvgFilterPrimitiveColorMatrix *filter;
 
@@ -292,6 +292,7 @@ rsvg_new_filter_primitive_color_matrix (const char *element_name, RsvgNode *pare
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_COLOR_MATRIX,
                                 parent,
                                 id,
+                                klass,
                                 filter,
                                 rsvg_filter_primitive_color_matrix_set_atts,
                                 rsvg_filter_primitive_color_matrix_free);

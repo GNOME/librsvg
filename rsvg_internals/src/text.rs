@@ -745,6 +745,7 @@ pub extern "C" fn rsvg_node_chars_new(raw_parent: *const RsvgNode) -> *const Rsv
         NodeType::Chars,
         raw_parent,
         None,
+        None,
         Box::new(NodeChars::new()),
     )
 }
