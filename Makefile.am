@@ -173,6 +173,7 @@ $(RUST_LIB): $(RUST_SRC)
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
 	-I$(top_builddir) 			\
+	-I$(top_builddir)/librsvg 		\
 	-DG_LOG_DOMAIN=\"librsvg\" 		\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
 	-DSRCDIR=\""${abs_top_srcdir}"\"	\
@@ -215,6 +216,7 @@ rsvg_convert_SOURCES =			\
 rsvg_convert_CPPFLAGS = \
 	-I$(top_srcdir) 			\
 	-I$(top_builddir) 			\
+	-I$(top_builddir)/librsvg 		\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
 	$(AM_CPPFLAGS)
 
@@ -235,7 +237,7 @@ rsvg_view_3_SOURCES =			\
 
 rsvg_view_3_CPPFLAGS = \
 	-I$(top_srcdir) 			\
-	-I$(top_builddir) 			\
+	-I$(top_builddir)/librsvg 		\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
 	$(AM_CPPFLAGS)
 
@@ -348,7 +350,7 @@ Rsvg_@RSVG_API_VERSION_U@_gir_PACKAGES = \
 	pango \
 	libxml-2.0 \
 	$(NULL)
-Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_builddir) -DRSVG_COMPILATION
+Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_builddir) -I$(top_builddir)/librsvg -DRSVG_COMPILATION
 Rsvg_@RSVG_API_VERSION_U@_gir_LIBS = librsvg-@RSVG_API_MAJOR_VERSION@.la
 Rsvg_@RSVG_API_VERSION_U@_gir_SCANNERFLAGS = --c-include="librsvg/rsvg.h"
 
