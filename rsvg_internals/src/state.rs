@@ -1435,7 +1435,6 @@ pub extern "C" fn rsvg_parse_style_attrs(
     raw_node: *const RsvgNode,
     tag: *const libc::c_char,
     klazz: *const libc::c_char,
-    id: *const libc::c_char,
     pbag: *const PropertyBag,
 ) {
     assert!(!raw_node.is_null());
@@ -1444,11 +1443,10 @@ pub extern "C" fn rsvg_parse_style_attrs(
     let tag = unsafe { utf8_cstr(tag) };
 
     let klazz = unsafe { utf8_cstr_opt(klazz) };
-    let id = unsafe { utf8_cstr_opt(id) };
 
     let pbag = unsafe { &*pbag };
 
-    parse_style_attrs(handle, node, tag, klazz, id, pbag);
+    parse_style_attrs(handle, node, tag, klazz, pbag);
 }
 
 // Sets the node's state from the attributes in the pbag.  Also
@@ -1459,7 +1457,6 @@ pub fn parse_style_attrs(
     node: &RsvgNode,
     tag: &str,
     klazz: Option<&str>,
-    id: Option<&str>,
     pbag: &PropertyBag,
 ) {
     let state = node.get_state_mut();
@@ -1510,7 +1507,7 @@ pub fn parse_style_attrs(
 
                 if !cls.is_empty() {
                     // tag.class#id
-                    if let Some(id) = id {
+                    if let Some(id) = node.get_id() {
                         let target = format!("{}.{}#{}", tag, cls, id);
                         found = found
                             || from_glib(rsvg_lookup_apply_css_style(
@@ -1521,7 +1518,7 @@ pub fn parse_style_attrs(
                     }
 
                     // .class#id
-                    if let Some(id) = id {
+                    if let Some(id) = node.get_id() {
                         let target = format!(".{}#{}", cls, id);
                         found = found
                             || from_glib(rsvg_lookup_apply_css_style(
@@ -1553,7 +1550,7 @@ pub fn parse_style_attrs(
             }
         }
 
-        if let Some(id) = id {
+        if let Some(id) = node.get_id() {
             // id
             let target = format!("#{}", id);
             rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, to_c_mut(state));

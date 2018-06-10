@@ -45,8 +45,8 @@ void rsvg_parse_cssbuffer (RsvgHandle *handle, const char *buff, size_t buflen);
 
 /* Defined in rsvg_internals/src/state.rs */
 G_GNUC_INTERNAL
-void rsvg_parse_style_attrs (RsvgHandle *handle, RsvgNode *node, const char *tag,
-                             const char *klazz, const char *id, RsvgPropertyBag * atts);
+void rsvg_parse_style_attrs (RsvgHandle *handle, RsvgNode *node, const char *tag, const char *node_class, RsvgPropertyBag * atts);
+
 G_GNUC_INTERNAL
 gboolean rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState * state);
 

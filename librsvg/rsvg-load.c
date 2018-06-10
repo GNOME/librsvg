@@ -339,9 +339,6 @@ node_set_atts (RsvgNode *node,
                const char *node_class,
                RsvgPropertyBag atts)
 {
-    if (node_id != NULL)
-        rsvg_defs_register_node_by_id (handle->priv->defs, node_id, node);
-
     rsvg_node_set_atts (node, handle, atts);
 
     /* The "svg" node is special; it will load its id/class
@@ -349,7 +346,7 @@ node_set_atts (RsvgNode *node,
      * rsvg_node_svg_apply_atts()
      */
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
-        rsvg_parse_style_attrs (handle, node, element_name, node_class, node_id, atts);
+        rsvg_parse_style_attrs (handle, node, element_name, node_class, atts);
     }
 
     rsvg_node_set_overriden_properties (node);
@@ -382,6 +379,10 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
     }
 
     load->currentnode = rsvg_node_ref (newnode);
+
+    if (node_id) {
+        rsvg_defs_register_node_by_id (load->handle->priv->defs, node_id, newnode);
+    }
 
     if (!supports_class_attribute) {
         node_class = NULL;

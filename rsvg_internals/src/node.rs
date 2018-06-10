@@ -265,6 +265,10 @@ impl Node {
         self.node_type
     }
 
+    pub fn get_id(&self) -> Option<&str> {
+        self.id.as_ref().map(String::as_str)
+    }
+
     pub fn get_transform(&self) -> Matrix {
         self.transform.get()
     }

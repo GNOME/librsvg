@@ -448,19 +448,15 @@ pub extern "C" fn rsvg_node_svg_apply_atts(raw_node: *const RsvgNode, handle: *c
             let pbag = PropertyBag::from_owned(owned_pbag);
 
             let mut class = None;
-            let mut id = None;
 
             for (_key, attr, value) in pbag.iter() {
                 match attr {
                     Attribute::Class => class = Some(value),
-
-                    Attribute::Id => id = Some(value),
-
                     _ => (),
                 }
             }
 
-            state::parse_style_attrs(handle, node, "svg", class, id, &pbag);
+            state::parse_style_attrs(handle, node, "svg", class, &pbag);
         }
     });
 }
