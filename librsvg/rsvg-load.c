@@ -296,32 +296,6 @@ free_element_name_stack (RsvgLoad *load)
 }
 
 static void
-node_register_in_defs (RsvgNode *node,
-                       RsvgHandle *handle,
-                       RsvgPropertyBag atts)
-{
-    RsvgPropertyBagIter *iter;
-    const char *key;
-    RsvgAttribute attr;
-    const char *value;
-
-    iter = rsvg_property_bag_iter_begin (atts);
-
-    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        switch (attr) {
-        case RSVG_ATTRIBUTE_ID:
-            rsvg_defs_register_node_by_id (handle->priv->defs, value, node);
-            break;
-
-        default:
-            break;
-        }
-    }
-
-    rsvg_property_bag_iter_end (iter);
-}
-
-static void
 node_set_atts (RsvgNode *node,
                RsvgHandle *handle,
                const char *element_name,
@@ -363,7 +337,7 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
 
     load->currentnode = rsvg_node_ref (newnode);
 
-    node_register_in_defs (newnode, load->handle, atts);
+    rsvg_node_register_in_defs (newnode, load->handle->priv->defs);
     node_set_atts (newnode, load->handle, name, atts);
 
     newnode = rsvg_node_unref (newnode);

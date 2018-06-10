@@ -10,6 +10,7 @@ use std::rc::{Rc, Weak};
 use std::str::FromStr;
 
 use attributes::Attribute;
+use defs::{self, RsvgDefs};
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
@@ -274,6 +275,12 @@ impl Node {
 
     pub fn get_class(&self) -> Option<&str> {
         self.class.as_ref().map(String::as_str)
+    }
+
+    pub fn register(&self, node: &RsvgNode, defs: *mut RsvgDefs) {
+        if let Some(ref id) = self.id {
+            defs::register_node_by_id(defs, id, node);
+        }
     }
 
     pub fn get_transform(&self) -> Matrix {
@@ -639,6 +646,19 @@ pub extern "C" fn rsvg_node_add_child(raw_node: *mut RsvgNode, raw_child: *const
     let child: &RsvgNode = unsafe { &*raw_child };
 
     node.add_child(child);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_register_in_defs(
+    raw_node: *const RsvgNode,
+    defs: *mut RsvgDefs,
+) {
+    assert!(!raw_node.is_null());
+    assert!(!defs.is_null());
+
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    node.register(node, defs);
 }
 
 #[no_mangle]
