@@ -24,7 +24,6 @@ use state::{
     UnicodeBidi,
     WritingMode,
 };
-use util::utf8_cstr_opt;
 
 /// In SVG text elements, we use `NodeChars` to store character data.  For example,
 /// an element like `<text>Foo Bar</text>` will be a `NodeText` with a single child,
@@ -49,7 +48,7 @@ use util::utf8_cstr_opt;
 /// `xml:space="preserve"` attribute.  A `NodeChars` stores the characters verbatim
 /// as they come out of the XML parser, after ensuring that they are valid UTF-8.
 
-struct NodeChars {
+pub struct NodeChars {
     string: RefCell<String>,
 }
 
@@ -110,7 +109,7 @@ impl NodeTrait for NodeChars {
     }
 }
 
-struct NodeText {
+pub struct NodeText {
     x: Cell<RsvgLength>,
     y: Cell<RsvgLength>,
     dx: Cell<RsvgLength>,
@@ -118,7 +117,7 @@ struct NodeText {
 }
 
 impl NodeText {
-    fn new() -> NodeText {
+    pub fn new() -> NodeText {
         NodeText {
             x: Cell::new(RsvgLength::default()),
             y: Cell::new(RsvgLength::default()),
@@ -187,12 +186,12 @@ impl NodeTrait for NodeText {
     }
 }
 
-struct NodeTRef {
+pub struct NodeTRef {
     link: RefCell<Option<String>>,
 }
 
 impl NodeTRef {
-    fn new() -> NodeTRef {
+    pub fn new() -> NodeTRef {
         NodeTRef {
             link: RefCell::new(Default::default()),
         }
@@ -257,7 +256,7 @@ impl NodeTrait for NodeTRef {
     }
 }
 
-struct NodeTSpan {
+pub struct NodeTSpan {
     x: Cell<Option<RsvgLength>>,
     y: Cell<Option<RsvgLength>>,
     dx: Cell<RsvgLength>,
@@ -265,7 +264,7 @@ struct NodeTSpan {
 }
 
 impl NodeTSpan {
-    fn new() -> NodeTSpan {
+    pub fn new() -> NodeTSpan {
         NodeTSpan {
             x: Cell::new(Default::default()),
             y: Cell::new(Default::default()),
@@ -770,46 +769,4 @@ pub extern "C" fn rsvg_node_chars_append(
     node.with_impl(|chars: &NodeChars| {
         chars.append(utf8);
     });
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_text_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Text,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeText::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_tref_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::TRef,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeTRef::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_tspan_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::TSpan,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeTSpan::new()),
-    )
 }

@@ -1,10 +1,25 @@
-use super::*;
 use glib::translate::*;
 use glib_sys;
 use libc;
-use node::*;
 use std::collections::HashMap;
-use util;
+
+use clip_path::NodeClipPath;
+use filters::composite::Composite;
+use filters::merge::{Merge, MergeNode};
+use filters::node::NodeFilter;
+use filters::offset::Offset;
+use gradient::NodeGradient;
+use image::NodeImage;
+use link::NodeLink;
+use marker::NodeMarker;
+use mask::NodeMask;
+use pattern::NodePattern;
+use node::*;
+use shapes::{NodeCircle, NodeEllipse, NodePath, NodePoly, NodeLine, NodeRect};
+use structure::{NodeDefs, NodeGroup, NodeSymbol, NodeSwitch, NodeSvg, NodeUse};
+use stop::NodeStop;
+use text::{NodeText, NodeTRef, NodeTSpan};
+use util::{utf8_cstr, utf8_cstr_opt};
 
 #[allow(improper_ctypes)]
 extern "C" {
@@ -19,11 +34,6 @@ extern "C" {
         _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_component_transfer(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_composite(
         _: *const libc::c_char,
         _: *const RsvgNode,
         _: *const libc::c_char,
@@ -68,22 +78,7 @@ extern "C" {
         _: *const RsvgNode,
         _: *const libc::c_char,
     ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_merge(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_erode(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_merge_node(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_offset(
         _: *const libc::c_char,
         _: *const RsvgNode,
         _: *const libc::c_char,
@@ -103,11 +98,405 @@ extern "C" {
         _: *const RsvgNode,
         _: *const libc::c_char,
     ) -> *const RsvgNode;
-    fn rsvg_new_filter(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
+}
+
+extern "C" fn rsvg_node_clip_path_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::ClipPath,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeClipPath::new()),
+    )
+}
+
+extern "C" fn rsvg_node_link_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Link,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeLink::new()),
+    )
+}
+
+extern "C" fn rsvg_node_marker_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Marker,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeMarker::new()),
+    )
+}
+
+extern "C" fn rsvg_node_mask_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Mask,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeMask::new()),
+    )
+}
+
+extern "C" fn rsvg_node_pattern_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Pattern,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodePattern::new()),
+    )
+}
+
+extern "C" fn rsvg_node_path_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Path,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodePath::new()),
+    )
+}
+
+extern "C" fn rsvg_node_polygon_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Path,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodePoly::new_closed()),
+    )
+}
+
+extern "C" fn rsvg_node_polyline_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Path,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodePoly::new_open()),
+    )
+}
+
+extern "C" fn rsvg_node_line_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Line,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeLine::new()),
+    )
+}
+
+extern "C" fn rsvg_node_rect_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Rect,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeRect::new()),
+    )
+}
+
+extern "C" fn rsvg_node_circle_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Circle,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeCircle::new()),
+    )
+}
+
+extern "C" fn rsvg_node_ellipse_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Ellipse,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeEllipse::new()),
+    )
+}
+extern "C" fn rsvg_node_group_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Group,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeGroup::new()),
+    )
+}
+
+extern "C" fn rsvg_node_defs_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Defs,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeDefs::new()),
+    )
+}
+
+extern "C" fn rsvg_node_switch_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Switch,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeSwitch::new()),
+    )
+}
+
+extern "C" fn rsvg_node_svg_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Svg,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeSvg::new()),
+    )
+}
+
+extern "C" fn rsvg_node_use_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Use,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeUse::new()),
+    )
+}
+
+extern "C" fn rsvg_node_symbol_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Symbol,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeSymbol::new()),
+    )
+}
+
+extern "C" fn rsvg_node_stop_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Stop,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeStop::new()),
+    )
+}
+
+extern "C" fn rsvg_node_text_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Text,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeText::new()),
+    )
+}
+
+extern "C" fn rsvg_node_tref_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::TRef,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeTRef::new()),
+    )
+}
+
+extern "C" fn rsvg_node_tspan_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::TSpan,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeTSpan::new()),
+    )
+}
+
+// filters
+
+/// Returns a new `feComposite` node.
+extern "C" fn rsvg_new_filter_primitive_composite(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    let filter = Composite::new();
+    boxed_node_new(
+        NodeType::FilterPrimitiveComposite,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(filter),
+    )
+}
+
+/// Returns a new `feMerge` node.
+extern "C" fn rsvg_new_filter_primitive_merge(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    let filter = Merge::new();
+    boxed_node_new(
+        NodeType::FilterPrimitiveMerge,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(filter),
+    )
+}
+
+/// Returns a new `feMergeNode` node.
+extern "C" fn rsvg_new_filter_primitive_merge_node(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    let filter = MergeNode::new();
+    boxed_node_new(
+        NodeType::FilterPrimitiveMergeNode,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(filter),
+    )
+}
+
+/// Returns a new `feOffset` node.
+extern "C" fn rsvg_new_filter_primitive_offset(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    let filter = Offset::new();
+    boxed_node_new(
+        NodeType::FilterPrimitiveOffset,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(filter),
+    )
+}
+
+extern "C" fn rsvg_node_linear_gradient_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::LinearGradient,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeGradient::new_linear()),
+    )
+}
+
+extern "C" fn rsvg_node_radial_gradient_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::RadialGradient,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeGradient::new_radial()),
+    )
+}
+
+extern "C" fn rsvg_node_image_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Image,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeImage::new()),
+    )
+}
+
+extern "C" fn rsvg_new_filter(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+    id: *const libc::c_char,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Filter,
+        raw_parent,
+        unsafe { utf8_cstr_opt(id) },
+        Box::new(NodeFilter::new()),
+    )
 }
 
 type NodeCreateFn =
@@ -217,7 +606,7 @@ pub extern "C" fn rsvg_load_new_node(
     assert!(!_name.is_null());
     assert!(!supports_class_attribute.is_null());
 
-    let name = unsafe { util::utf8_cstr(_name) };
+    let name = unsafe { utf8_cstr(_name) };
     let creator = match NODE_CREATORS.get(name) {
         Some(c) => c,
         // Whenever we encounter a node we don't understand, represent it as a defs.

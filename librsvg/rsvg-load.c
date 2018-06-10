@@ -42,6 +42,10 @@ typedef enum {
     LOAD_STATE_CLOSED
 } LoadState;
 
+/* Implemented in rust/src/load.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, const char *id, gboolean *supports_class_attribute);
+
 struct RsvgLoad {
     RsvgHandle *handle;
     gboolean unlimited_size;

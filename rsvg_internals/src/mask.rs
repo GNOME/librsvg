@@ -1,7 +1,6 @@
 use cairo::{self, MatrixTrait};
 use cairo_sys;
 use glib::translate::*;
-use libc;
 use std::cell::Cell;
 
 use attributes::Attribute;
@@ -10,11 +9,10 @@ use draw;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
-use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
 use state::Opacity;
-use util::utf8_cstr_opt;
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -39,7 +37,7 @@ pub struct NodeMask {
 }
 
 impl NodeMask {
-    fn new() -> NodeMask {
+    pub fn new() -> NodeMask {
         NodeMask {
             x: Cell::new(NodeMask::get_default_pos(LengthDir::Horizontal)),
             y: Cell::new(NodeMask::get_default_pos(LengthDir::Vertical)),
@@ -215,18 +213,4 @@ impl NodeTrait for NodeMask {
 
         Ok(())
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_mask_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Mask,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeMask::new()),
-    )
 }

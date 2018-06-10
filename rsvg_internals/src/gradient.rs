@@ -1,6 +1,5 @@
 use cairo::{self, MatrixTrait};
 use cssparser;
-use libc;
 
 use std::cell::RefCell;
 
@@ -18,7 +17,7 @@ use rect::RectangleExt;
 use state::{ComputedValues, StopColor};
 use stop::*;
 use unitinterval::UnitInterval;
-use util::*;
+use util::clone_fallback_name;
 
 #[derive(Copy, Clone)]
 struct ColorStop {
@@ -612,12 +611,12 @@ fn set_pattern_on_draw_context(
     }
 }
 
-struct NodeGradient {
+pub struct NodeGradient {
     gradient: RefCell<Gradient>,
 }
 
 impl NodeGradient {
-    fn new_linear() -> NodeGradient {
+    pub fn new_linear() -> NodeGradient {
         NodeGradient {
             gradient: RefCell::new(Gradient {
                 common: GradientCommon::unresolved(),
@@ -626,7 +625,7 @@ impl NodeGradient {
         }
     }
 
-    fn new_radial() -> NodeGradient {
+    pub fn new_radial() -> NodeGradient {
         NodeGradient {
             gradient: RefCell::new(Gradient {
                 common: GradientCommon::unresolved(),
@@ -705,34 +704,6 @@ impl NodeTrait for NodeGradient {
 
         Ok(())
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_linear_gradient_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::LinearGradient,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeGradient::new_linear()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_radial_gradient_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::RadialGradient,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeGradient::new_radial()),
-    )
 }
 
 fn resolve_fallbacks_and_set_pattern(

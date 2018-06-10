@@ -61,24 +61,12 @@ cairo_surface_t *rsvg_filter_render (RsvgNode *filter_node,
                                      RsvgDrawingCtx *context,
                                      char *channelmap);
 
-/* Implemented in rust/src/filters/node.rs */
-G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter	    (const char *element_name, RsvgNode *parent);
-
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_blend                (const char *element_name, RsvgNode *parent, const char *id);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_convolve_matrix      (const char *element_name, RsvgNode *parent, const char *id);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_gaussian_blur        (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/filters/offset.rs */
-G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_offset               (const char *element_name, RsvgNode *parent, const char *id);
-/* Implemented in rust/src/filters/composite.rs */
-G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_composite            (const char *element_name, RsvgNode *parent, const char *id);
-
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_merge                (const char *element_name, RsvgNode *parent, const char *id);
 G_GNUC_INTERNAL

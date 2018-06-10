@@ -1,16 +1,13 @@
 //! The <filter> node.
 use std::cell::Cell;
 
-use libc;
-
 use attributes::Attribute;
 use coord_units::CoordUnits;
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
-use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
-use util::utf8_cstr_opt;
 
 /// The <filter> node.
 pub struct NodeFilter {
@@ -25,7 +22,7 @@ pub struct NodeFilter {
 impl NodeFilter {
     /// Constructs a new `NodeFilter` with default properties.
     #[inline]
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             x: Cell::new(RsvgLength::parse("-10%", LengthDir::Horizontal).unwrap()),
             y: Cell::new(RsvgLength::parse("-10%", LengthDir::Vertical).unwrap()),
@@ -69,18 +66,4 @@ impl NodeTrait for NodeFilter {
 
         Ok(())
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_new_filter(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Filter,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeFilter::new()),
-    )
 }

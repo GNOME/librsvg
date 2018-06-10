@@ -1,4 +1,3 @@
-use libc;
 use std::cell::Cell;
 
 use cairo::{self, MatrixTrait};
@@ -7,10 +6,9 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
-use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
-use util::utf8_cstr_opt;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
@@ -19,7 +17,7 @@ pub struct NodeClipPath {
 }
 
 impl NodeClipPath {
-    fn new() -> NodeClipPath {
+    pub fn new() -> NodeClipPath {
         NodeClipPath {
             units: Cell::new(ClipPathUnits::default()),
         }
@@ -84,18 +82,4 @@ impl NodeTrait for NodeClipPath {
 
         Ok(())
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_clip_path_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::ClipPath,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeClipPath::new()),
-    )
 }

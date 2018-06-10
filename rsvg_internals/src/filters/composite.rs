@@ -1,16 +1,15 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface};
-use libc::{self, c_char};
 
 use attributes::Attribute;
 use error::{AttributeError, NodeError};
 use handle::RsvgHandle;
-use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::{self, parse, Parse};
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
-use util::{clamp, utf8_cstr_opt};
+use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
@@ -29,7 +28,7 @@ enum Operator {
 }
 
 /// The `feComposite` filter primitive.
-struct Composite {
+pub struct Composite {
     base: PrimitiveWithInput,
     in2: RefCell<Option<Input>>,
     operator: Cell<Operator>,
@@ -42,7 +41,7 @@ struct Composite {
 impl Composite {
     /// Constructs a new `Composite` with empty properties.
     #[inline]
-    fn new() -> Composite {
+    pub fn new() -> Composite {
         Composite {
             base: PrimitiveWithInput::new::<Self>(),
             in2: RefCell::new(None),
@@ -222,20 +221,4 @@ impl From<Operator> for cairo::Operator {
             _ => panic!("can't convert Operator::Arithmetic to a cairo::Operator"),
         }
     }
-}
-
-/// Returns a new `feComposite` node.
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_new_filter_primitive_composite(
-    _element_name: *const c_char,
-    parent: *mut RsvgNode,
-    id: *const libc::c_char,
-) -> *mut RsvgNode {
-    let filter = Composite::new();
-    boxed_node_new(
-        NodeType::FilterPrimitiveComposite,
-        parent,
-        utf8_cstr_opt(id),
-        Box::new(filter),
-    )
 }
