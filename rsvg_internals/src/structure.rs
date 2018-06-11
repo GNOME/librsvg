@@ -79,7 +79,7 @@ impl NodeTrait for NodeSwitch {
 
         drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
 
-        if let Some(child) = node.children().find(|c| c.get_state().cond) {
+        if let Some(child) = node.children().find(|c| c.get_cond()) {
             drawing_ctx::draw_node_from_stack(
                 draw_ctx,
                 &CascadedValues::new(cascaded, &child),

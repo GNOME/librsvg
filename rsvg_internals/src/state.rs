@@ -1,5 +1,4 @@
 use cssparser;
-use glib;
 use glib::translate::*;
 use glib_sys;
 use libc;
@@ -9,7 +8,6 @@ use std::str::FromStr;
 
 use attributes::Attribute;
 use color::rgba_to_argb;
-use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use handle::RsvgHandle;
 use iri::IRI;
@@ -92,7 +90,6 @@ pub enum RsvgState {}
 pub struct State {
     pub values: SpecifiedValues,
     important_styles: RefCell<HashSet<Attribute>>,
-    pub cond: bool,
 }
 
 #[derive(Default, Clone)]
@@ -342,7 +339,6 @@ impl State {
         State {
             values: Default::default(),
             important_styles: Default::default(),
-            cond: true,
         }
     }
 
@@ -587,41 +583,6 @@ impl State {
     fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
         for (_key, attr, value) in pbag.iter() {
             self.parse_style_pair(attr, value, false, false)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn parse_conditional_processing_attributes(
-        &mut self,
-        pbag: &PropertyBag,
-    ) -> Result<(), NodeError> {
-        for (_key, attr, value) in pbag.iter() {
-            // FIXME: move this to "do catch" when we can bump the rustc version dependency
-            let mut parse = || {
-                match attr {
-                    Attribute::RequiredExtensions if self.cond => {
-                        self.cond = RequiredExtensions::parse(value, ())
-                            .map(|RequiredExtensions(res)| res)?;
-                    }
-
-                    Attribute::RequiredFeatures if self.cond => {
-                        self.cond =
-                            RequiredFeatures::parse(value, ()).map(|RequiredFeatures(res)| res)?;
-                    }
-
-                    Attribute::SystemLanguage if self.cond => {
-                        self.cond = SystemLanguage::parse(value, &glib::get_language_names())
-                            .map(|SystemLanguage(res, _)| res)?;
-                    }
-
-                    _ => {}
-                }
-
-                Ok(())
-            };
-
-            parse().map_err(|e| NodeError::attribute_error(attr, e))?;
         }
 
         Ok(())
@@ -1469,14 +1430,6 @@ pub fn parse_style_attrs(
          *            node.set_error(e);
          *            return;
          *        } */
-    }
-
-    match state.parse_conditional_processing_attributes(pbag) {
-        Ok(_) => (),
-        Err(e) => {
-            node.set_error(e);
-            return;
-        }
     }
 
     // Try to properly support all of the following, including inheritance:

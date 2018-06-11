@@ -1,5 +1,6 @@
 use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
+use glib;
 use glib::translate::*;
 use glib_sys;
 use libc;
@@ -10,6 +11,7 @@ use std::rc::{Rc, Weak};
 use std::str::FromStr;
 
 use attributes::Attribute;
+use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use defs::{self, RsvgDefs};
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
@@ -172,6 +174,7 @@ pub struct Node {
     result: RefCell<NodeResult>,
     transform: Cell<Matrix>,
     values: RefCell<ComputedValues>,
+    cond: Cell<bool>,
     node_impl: Box<NodeTrait>,
 }
 
@@ -261,6 +264,7 @@ impl Node {
             transform: Cell::new(Matrix::identity()),
             result: RefCell::new(Ok(())),
             values: RefCell::new(ComputedValues::default()),
+            cond: Cell::new(true),
             node_impl,
         }
     }
@@ -315,6 +319,10 @@ impl Node {
         }
     }
 
+    pub fn get_cond(&self) -> bool {
+        self.cond.get()
+    }
+
     pub fn get_parent(&self) -> Option<Rc<Node>> {
         match self.parent {
             None => None,
@@ -355,7 +363,6 @@ impl Node {
             match attr {
                 Attribute::Transform => match Matrix::parse(value, ()) {
                     Ok(affine) => self.transform.set(affine),
-
                     Err(e) => {
                         self.set_error(NodeError::attribute_error(Attribute::Transform, e));
                         return;
@@ -366,7 +373,50 @@ impl Node {
             }
         }
 
+        match self.parse_conditional_processing_attributes(pbag) {
+            Ok(_) => (),
+            Err(e) => {
+                self.set_error(e);
+                return;
+            }
+        }
+
         *self.result.borrow_mut() = self.node_impl.set_atts(node, handle, pbag);
+    }
+
+    fn parse_conditional_processing_attributes(&self, pbag: &PropertyBag) -> Result<(), NodeError> {
+        let mut cond = self.cond.get();
+
+        for (_key, attr, value) in pbag.iter() {
+            // FIXME: move this to "do catch" when we can bump the rustc version dependency
+            let mut parse = || {
+                match attr {
+                    Attribute::RequiredExtensions if cond => {
+                        cond = RequiredExtensions::parse(value, ())
+                            .map(|RequiredExtensions(res)| res)?;
+                    }
+
+                    Attribute::RequiredFeatures if cond => {
+                        cond = RequiredFeatures::parse(value, ()).map(|RequiredFeatures(res)| res)?;
+                    }
+
+                    Attribute::SystemLanguage if cond => {
+                        cond = SystemLanguage::parse(value, &glib::get_language_names())
+                            .map(|SystemLanguage(res, _)| res)?;
+                    }
+
+                    _ => {}
+                }
+
+                Ok(cond)
+            };
+
+            parse()
+                .map(|c| self.cond.set(c))
+                .map_err(|e| NodeError::attribute_error(attr, e))?;
+        }
+
+        Ok(())
     }
 
     pub fn set_overridden_properties(&self) {
