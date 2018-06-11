@@ -296,13 +296,13 @@ pub extern "C" fn rsvg_load_new_node(
     }
 
     // Legacy C creators
-    if let Some((supports_class, create_fn)) = NODE_CREATORS_C.get(name) {
+    if let Some(&(supports_class, create_fn)) = NODE_CREATORS_C.get(name) {
         let id = match id {
             Some(id) => id.to_glib_none().0,
             None => ptr::null(),
         };
         let class = match class {
-            Some(class) if *supports_class => class.to_glib_none().0,
+            Some(class) if supports_class => class.to_glib_none().0,
             _ => ptr::null(),
         };
 
@@ -311,7 +311,7 @@ pub extern "C" fn rsvg_load_new_node(
         }
     }
 
-    let (supports_class, create_fn) = match NODE_CREATORS.get(name) {
+    let &(supports_class, create_fn) = match NODE_CREATORS.get(name) {
         Some(c) => c,
         // Whenever we encounter a node we don't understand, represent it as a defs.
         // This is like a group, but it doesn't do any rendering of children.  The
