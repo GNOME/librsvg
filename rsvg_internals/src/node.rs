@@ -117,7 +117,7 @@ pub trait NodeTrait: Downcast {
 
     /// Sets any special-cased properties that the node may have, that are different
     /// from defaults in the node's `State`.
-    fn set_overriden_properties(&self, _state: &mut State) {}
+    fn set_overridden_properties(&self, _state: &mut State) {}
 
     fn draw(
         &self,
@@ -369,9 +369,9 @@ impl Node {
         *self.result.borrow_mut() = self.node_impl.set_atts(node, handle, pbag);
     }
 
-    pub fn set_overriden_properties(&self) {
+    pub fn set_overridden_properties(&self) {
         let mut state = self.get_state_mut();
-        self.node_impl.set_overriden_properties(&mut state);
+        self.node_impl.set_overridden_properties(&mut state);
     }
 
     pub fn draw(
@@ -674,12 +674,12 @@ pub extern "C" fn rsvg_node_set_atts(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_set_overriden_properties(raw_node: *mut RsvgNode) {
+pub extern "C" fn rsvg_node_set_overridden_properties(raw_node: *mut RsvgNode) {
     assert!(!raw_node.is_null());
 
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    node.set_overriden_properties();
+    node.set_overridden_properties();
 }
 
 #[no_mangle]

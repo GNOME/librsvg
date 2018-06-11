@@ -327,7 +327,7 @@ void rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag att
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
-void rsvg_node_set_overriden_properties (RsvgNode *node);
+void rsvg_node_set_overridden_properties (RsvgNode *node);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL

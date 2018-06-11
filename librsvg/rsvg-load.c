@@ -311,7 +311,7 @@ node_set_atts (RsvgNode *node,
         rsvg_parse_style_attrs (handle, node, element_name, atts);
     }
 
-    rsvg_node_set_overriden_properties (node);
+    rsvg_node_set_overridden_properties (node);
 }
 
 static void
