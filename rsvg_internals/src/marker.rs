@@ -1,5 +1,3 @@
-use libc;
-
 use std::cell::Cell;
 use std::f64::consts::*;
 
@@ -22,7 +20,6 @@ use parsers::{parse, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
 use state::{ComputedValues, SpecifiedValue, State};
-use util::utf8_cstr_opt;
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -80,8 +77,7 @@ impl Parse for MarkerOrient {
     }
 }
 
-// NodeMarker
-struct NodeMarker {
+pub struct NodeMarker {
     units: Cell<MarkerUnits>,
     ref_x: Cell<RsvgLength>,
     ref_y: Cell<RsvgLength>,
@@ -93,7 +89,7 @@ struct NodeMarker {
 }
 
 impl NodeMarker {
-    fn new() -> NodeMarker {
+    pub fn new() -> NodeMarker {
         NodeMarker {
             units: Cell::new(MarkerUnits::default()),
             ref_x: Cell::new(RsvgLength::default()),
@@ -253,20 +249,6 @@ impl NodeTrait for NodeMarker {
         // markers are always displayed, even if <marker> or its ancestors are display:none
         state.values.display = SpecifiedValue::Specified(Default::default());
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_marker_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Marker,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeMarker::new()),
-    )
 }
 
 // Machinery to figure out marker orientations

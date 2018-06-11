@@ -60,6 +60,7 @@ pub extern "C" fn rsvg_rust_cnode_new(
     node_type: NodeType,
     raw_parent: *const RsvgNode,
     id: *const libc::c_char,
+    class: *const libc::c_char,
     c_node_impl: *const RsvgCNodeImpl,
     set_atts_fn: CNodeSetAtts,
     free_fn: CNodeFree,
@@ -76,6 +77,7 @@ pub extern "C" fn rsvg_rust_cnode_new(
         node_type,
         node_ptr_to_weak(raw_parent),
         unsafe { utf8_cstr_opt(id) },
+        unsafe { utf8_cstr_opt(class) },
         rsvg_state_new(),
         Box::new(cnode),
     )))

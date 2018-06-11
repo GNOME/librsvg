@@ -34,8 +34,6 @@ pub use bbox::{
     RsvgBbox,
 };
 
-pub use clip_path::rsvg_node_clip_path_new;
-
 pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
@@ -63,14 +61,6 @@ pub use filters::context::{
     rsvg_filter_store_output,
 };
 
-pub use filters::node::rsvg_new_filter;
-
-pub use filters::composite::rsvg_new_filter_primitive_composite;
-pub use filters::merge::{rsvg_new_filter_primitive_merge, rsvg_new_filter_primitive_merge_node};
-pub use filters::offset::rsvg_new_filter_primitive_offset;
-
-pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
-
 pub use length::{
     rsvg_length_hand_normalize,
     rsvg_length_normalize,
@@ -80,15 +70,7 @@ pub use length::{
     RsvgLength,
 };
 
-pub use image::rsvg_node_image_new;
-
-pub use link::rsvg_node_link_new;
-
 pub use load::rsvg_load_new_node;
-
-pub use marker::rsvg_node_marker_new;
-
-pub use mask::rsvg_node_mask_new;
 
 pub use node::{
     rsvg_node_add_child,
@@ -100,6 +82,7 @@ pub use node::{
     rsvg_node_get_type,
     rsvg_node_is_same,
     rsvg_node_ref,
+    rsvg_node_register_in_defs,
     rsvg_node_set_attribute_parse_error,
     rsvg_node_set_atts,
     rsvg_node_set_overriden_properties,
@@ -109,24 +92,12 @@ pub use node::{
 
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
 
-pub use pattern::rsvg_node_pattern_new;
-
 pub use property_bag::{
     rsvg_property_bag_free,
     rsvg_property_bag_iter_begin,
     rsvg_property_bag_iter_end,
     rsvg_property_bag_iter_next,
     rsvg_property_bag_new,
-};
-
-pub use shapes::{
-    rsvg_node_circle_new,
-    rsvg_node_ellipse_new,
-    rsvg_node_line_new,
-    rsvg_node_path_new,
-    rsvg_node_polygon_new,
-    rsvg_node_polyline_new,
-    rsvg_node_rect_new,
 };
 
 pub use state::{
@@ -139,26 +110,15 @@ pub use state::{
     rsvg_state_parse_style_pair,
 };
 
-pub use stop::rsvg_node_stop_new;
-
 pub use structure::{
-    rsvg_node_defs_new,
-    rsvg_node_group_new,
     rsvg_node_svg_apply_atts,
     rsvg_node_svg_get_size,
     rsvg_node_svg_get_view_box,
-    rsvg_node_svg_new,
-    rsvg_node_switch_new,
-    rsvg_node_symbol_new,
-    rsvg_node_use_new,
 };
 
 pub use text::{
     rsvg_node_chars_append,
     rsvg_node_chars_new,
-    rsvg_node_text_new,
-    rsvg_node_tref_new,
-    rsvg_node_tspan_new,
 };
 
 pub use viewbox::RsvgViewBox;
@@ -179,6 +139,7 @@ mod clip_path;
 mod cnode;
 mod color;
 mod cond;
+mod defs;
 mod draw;
 mod drawing_ctx;
 mod error;

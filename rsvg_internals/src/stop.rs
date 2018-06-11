@@ -1,5 +1,3 @@
-use libc;
-
 use std::cell::Cell;
 
 use attributes::Attribute;
@@ -9,14 +7,13 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use util::utf8_cstr_opt;
 
 pub struct NodeStop {
     offset: Cell<f64>,
 }
 
 impl NodeStop {
-    fn new() -> NodeStop {
+    pub fn new() -> NodeStop {
         NodeStop {
             offset: Cell::new(0.0),
         }
@@ -71,16 +68,3 @@ impl NodeTrait for NodeStop {
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_node_stop_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Stop,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeStop::new()),
-    )
-}

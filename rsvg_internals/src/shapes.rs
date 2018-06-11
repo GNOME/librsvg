@@ -1,5 +1,3 @@
-use libc;
-
 use std::cell::Cell;
 use std::cell::RefCell;
 
@@ -16,7 +14,6 @@ use path_builder::*;
 use path_parser;
 use property_bag::PropertyBag;
 use state::ComputedValues;
-use util::utf8_cstr_opt;
 
 fn render_path_builder(
     builder: &PathBuilder,
@@ -101,13 +98,12 @@ fn render_ellipse(
     render_path_builder(&builder, draw_ctx, node, values, false, clipping);
 }
 
-// ************ NodePath ************
-struct NodePath {
+pub struct NodePath {
     builder: RefCell<Option<PathBuilder>>,
 }
 
 impl NodePath {
-    fn new() -> NodePath {
+    pub fn new() -> NodePath {
         NodePath {
             builder: RefCell::new(None),
         }
@@ -148,23 +144,29 @@ impl NodeTrait for NodePath {
     }
 }
 
-// ************ NodePoly ************
 #[derive(Debug, PartialEq)]
 enum PolyKind {
     Open,
     Closed,
 }
 
-struct NodePoly {
+pub struct NodePoly {
     points: RefCell<Option<Vec<(f64, f64)>>>,
     kind: PolyKind,
 }
 
 impl NodePoly {
-    fn new(kind: PolyKind) -> NodePoly {
+    pub fn new_open() -> NodePoly {
         NodePoly {
             points: RefCell::new(None),
-            kind,
+            kind: PolyKind::Open,
+        }
+    }
+
+    pub fn new_closed() -> NodePoly {
+        NodePoly {
+            points: RefCell::new(None),
+            kind: PolyKind::Closed,
         }
     }
 }
@@ -222,8 +224,7 @@ impl NodeTrait for NodePoly {
     }
 }
 
-// ************ NodeLine ************
-struct NodeLine {
+pub struct NodeLine {
     x1: Cell<RsvgLength>,
     y1: Cell<RsvgLength>,
     x2: Cell<RsvgLength>,
@@ -231,7 +232,7 @@ struct NodeLine {
 }
 
 impl NodeLine {
-    fn new() -> NodeLine {
+    pub fn new() -> NodeLine {
         NodeLine {
             x1: Cell::new(RsvgLength::default()),
             y1: Cell::new(RsvgLength::default()),
@@ -284,8 +285,7 @@ impl NodeTrait for NodeLine {
     }
 }
 
-// ************ NodeRect ************
-struct NodeRect {
+pub struct NodeRect {
     // x, y, width, height
     x: Cell<RsvgLength>,
     y: Cell<RsvgLength>,
@@ -298,7 +298,7 @@ struct NodeRect {
 }
 
 impl NodeRect {
-    fn new() -> NodeRect {
+    pub fn new() -> NodeRect {
         NodeRect {
             x: Cell::new(RsvgLength::default()),
             y: Cell::new(RsvgLength::default()),
@@ -502,15 +502,14 @@ impl NodeTrait for NodeRect {
     }
 }
 
-// ************ NodeCircle ************
-struct NodeCircle {
+pub struct NodeCircle {
     cx: Cell<RsvgLength>,
     cy: Cell<RsvgLength>,
     r: Cell<RsvgLength>,
 }
 
 impl NodeCircle {
-    fn new() -> NodeCircle {
+    pub fn new() -> NodeCircle {
         NodeCircle {
             cx: Cell::new(RsvgLength::default()),
             cy: Cell::new(RsvgLength::default()),
@@ -559,8 +558,7 @@ impl NodeTrait for NodeCircle {
     }
 }
 
-// ************ NodeEllipse ************
-struct NodeEllipse {
+pub struct NodeEllipse {
     cx: Cell<RsvgLength>,
     cy: Cell<RsvgLength>,
     rx: Cell<RsvgLength>,
@@ -568,7 +566,7 @@ struct NodeEllipse {
 }
 
 impl NodeEllipse {
-    fn new() -> NodeEllipse {
+    pub fn new() -> NodeEllipse {
         NodeEllipse {
             cx: Cell::new(RsvgLength::default()),
             cy: Cell::new(RsvgLength::default()),
@@ -624,103 +622,4 @@ impl NodeTrait for NodeEllipse {
 
         render_ellipse(cx, cy, rx, ry, draw_ctx, node, values, clipping);
     }
-}
-
-// ************ C Prototypes ************
-#[no_mangle]
-pub extern "C" fn rsvg_node_path_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Path,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodePath::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_polygon_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Path,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodePoly::new(PolyKind::Closed)),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_polyline_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Path,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodePoly::new(PolyKind::Open)),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_line_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Line,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeLine::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_rect_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Rect,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeRect::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_circle_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Circle,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeCircle::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_ellipse_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Ellipse,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeEllipse::new()),
-    )
 }

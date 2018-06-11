@@ -1,34 +1,32 @@
 use std::cell::RefCell;
 
 use cairo::{self, ImageSurface};
-use libc::{self, c_char};
 
 use attributes::Attribute;
 use handle::RsvgHandle;
-use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
-use util::utf8_cstr_opt;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::input::Input;
 use super::{get_surface, Filter, FilterError, Primitive};
 
 /// The `feMerge` filter primitive.
-struct Merge {
+pub struct Merge {
     base: Primitive,
 }
 
 /// The `<feMergeNode>` element.
-struct MergeNode {
+pub struct MergeNode {
     in_: RefCell<Option<Input>>,
 }
 
 impl Merge {
     /// Constructs a new `Merge` with empty properties.
     #[inline]
-    fn new() -> Merge {
+    pub fn new() -> Merge {
         Merge {
             base: Primitive::new::<Self>(),
         }
@@ -38,7 +36,7 @@ impl Merge {
 impl MergeNode {
     /// Constructs a new `MergeNode` with empty properties.
     #[inline]
-    fn new() -> MergeNode {
+    pub fn new() -> MergeNode {
         MergeNode {
             in_: RefCell::new(None),
         }
@@ -147,36 +145,4 @@ impl Filter for Merge {
             },
         })
     }
-}
-
-/// Returns a new `feMerge` node.
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_new_filter_primitive_merge(
-    _element_name: *const c_char,
-    parent: *mut RsvgNode,
-    id: *const libc::c_char,
-) -> *mut RsvgNode {
-    let filter = Merge::new();
-    boxed_node_new(
-        NodeType::FilterPrimitiveMerge,
-        parent,
-        utf8_cstr_opt(id),
-        Box::new(filter),
-    )
-}
-
-/// Returns a new `feMergeNode` node.
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_new_filter_primitive_merge_node(
-    _element_name: *const c_char,
-    parent: *mut RsvgNode,
-    id: *const libc::c_char,
-) -> *mut RsvgNode {
-    let filter = MergeNode::new();
-    boxed_node_new(
-        NodeType::FilterPrimitiveMergeNode,
-        parent,
-        utf8_cstr_opt(id),
-        Box::new(filter),
-    )
 }

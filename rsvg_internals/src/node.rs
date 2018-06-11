@@ -10,6 +10,7 @@ use std::rc::{Rc, Weak};
 use std::str::FromStr;
 
 use attributes::Attribute;
+use defs::{self, RsvgDefs};
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
@@ -162,6 +163,7 @@ pub struct Node {
     node_type: NodeType,
     parent: Option<Weak<Node>>, // optional; weak ref to parent
     id: Option<String>,         // id attribute from XML element
+    class: Option<String>,      // class attribute from XML element
     first_child: RefCell<Option<Rc<Node>>>,
     last_child: RefCell<Option<Weak<Node>>>,
     next_sib: RefCell<Option<Rc<Node>>>, // next sibling; strong ref
@@ -242,6 +244,7 @@ impl Node {
         node_type: NodeType,
         parent: Option<Weak<Node>>,
         id: Option<&str>,
+        class: Option<&str>,
         state: *mut RsvgState,
         node_impl: Box<NodeTrait>,
     ) -> Node {
@@ -249,6 +252,7 @@ impl Node {
             node_type,
             parent,
             id: id.map(str::to_string),
+            class: class.map(str::to_string),
             first_child: RefCell::new(None),
             last_child: RefCell::new(None),
             next_sib: RefCell::new(None),
@@ -263,6 +267,20 @@ impl Node {
 
     pub fn get_type(&self) -> NodeType {
         self.node_type
+    }
+
+    pub fn get_id(&self) -> Option<&str> {
+        self.id.as_ref().map(String::as_str)
+    }
+
+    pub fn get_class(&self) -> Option<&str> {
+        self.class.as_ref().map(String::as_str)
+    }
+
+    pub fn register(&self, node: &RsvgNode, defs: *mut RsvgDefs) {
+        if let Some(ref id) = self.id {
+            defs::register_node_by_id(defs, id, node);
+        }
     }
 
     pub fn get_transform(&self) -> Matrix {
@@ -486,12 +504,14 @@ pub fn boxed_node_new(
     node_type: NodeType,
     raw_parent: *const RsvgNode,
     id: Option<&str>,
+    class: Option<&str>,
     node_impl: Box<NodeTrait>,
 ) -> *mut RsvgNode {
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
         id,
+        class,
         rsvg_state_new(),
         node_impl,
     )))
@@ -629,6 +649,19 @@ pub extern "C" fn rsvg_node_add_child(raw_node: *mut RsvgNode, raw_child: *const
 }
 
 #[no_mangle]
+pub extern "C" fn rsvg_node_register_in_defs(
+    raw_node: *const RsvgNode,
+    defs: *mut RsvgDefs,
+) {
+    assert!(!raw_node.is_null());
+    assert!(!defs.is_null());
+
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    node.register(node, defs);
+}
+
+#[no_mangle]
 pub extern "C" fn rsvg_node_set_atts(
     raw_node: *mut RsvgNode,
     handle: *const RsvgHandle,
@@ -763,6 +796,7 @@ mod tests {
             NodeType::Path,
             None,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -788,6 +822,7 @@ mod tests {
             NodeType::Path,
             None,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -808,6 +843,7 @@ mod tests {
             NodeType::Path,
             None,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -816,6 +852,7 @@ mod tests {
 
         let node2 = Rc::new(Node::new(
             NodeType::Path,
+            None,
             None,
             None,
             ptr::null_mut(),
@@ -836,6 +873,7 @@ mod tests {
             NodeType::Path,
             None,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -849,6 +887,7 @@ mod tests {
             NodeType::Path,
             None,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -856,6 +895,7 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            None,
             None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
@@ -873,6 +913,7 @@ mod tests {
             NodeType::Path,
             None,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -881,6 +922,7 @@ mod tests {
             NodeType::Path,
             Some(Rc::downgrade(&node)),
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -888,6 +930,7 @@ mod tests {
         let second_child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            None,
             None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
@@ -918,6 +961,7 @@ mod tests {
             NodeType::Path,
             None,
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -926,6 +970,7 @@ mod tests {
             NodeType::Path,
             Some(Rc::downgrade(&node)),
             None,
+            None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
@@ -933,6 +978,7 @@ mod tests {
         let second_child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            None,
             None,
             ptr::null_mut(),
             Box::new(TestNodeImpl {}),

@@ -199,7 +199,7 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl,
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_specular_lighting (const char *element_name, RsvgNode *parent, const char *id)
+rsvg_new_filter_primitive_specular_lighting (const char *element_name, RsvgNode *parent, const char *id, const char *klass)
 {
     RsvgFilterPrimitiveSpecularLighting *filter;
 
@@ -214,6 +214,7 @@ rsvg_new_filter_primitive_specular_lighting (const char *element_name, RsvgNode 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING,
                                 parent,
                                 id,
+                                klass,
                                 filter,
                                 rsvg_filter_primitive_specular_lighting_set_atts,
                                 rsvg_filter_primitive_free);

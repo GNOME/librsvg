@@ -12,14 +12,13 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use node::*;
 use property_bag::PropertyBag;
-use util::utf8_cstr_opt;
 
-struct NodeLink {
+pub struct NodeLink {
     link: RefCell<Option<String>>,
 }
 
 impl NodeLink {
-    fn new() -> NodeLink {
+    pub fn new() -> NodeLink {
         NodeLink {
             link: RefCell::new(None),
         }
@@ -135,19 +134,4 @@ impl CairoTagging for cairo::Context {
             cairo_tag_end(self.to_glib_none().0, tag_name.to_glib_none().0);
         }
     }
-}
-
-// ****************** C Prototypes  ******************
-#[no_mangle]
-pub extern "C" fn rsvg_node_link_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Link,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeLink::new()),
-    )
 }

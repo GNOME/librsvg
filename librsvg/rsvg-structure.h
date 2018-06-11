@@ -34,42 +34,6 @@
 
 G_BEGIN_DECLS 
 
-/* Implemented in rust/src/load.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, const char *id, gboolean *supports_class_attribute);
-
-/* Implemented in rust/src/structure.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_group_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/link.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_link_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/structure.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_defs_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/structure.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_switch_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/structure.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_svg_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/structure.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_use_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/structure.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_symbol_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/image.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_image_new (const char *element_name, RsvgNode *parent, const char *id);
-
 /* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
 void rsvg_node_svg_get_size (RsvgNode *node, RsvgLength *out_width, RsvgLength *out_height);
@@ -81,74 +45,6 @@ RsvgViewBox rsvg_node_svg_get_view_box (RsvgNode *node);
 /* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
 void rsvg_node_svg_apply_atts (RsvgNode *node, RsvgHandle *handle);
-
-/* Implemented in rust/src/text.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_text_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/text.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_tref_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/text.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_tspan_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/marker.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_marker_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/gradient.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_linear_gradient_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/gradient.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_radial_gradient_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/pattern.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_pattern_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/stop.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_stop_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/mask.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_mask_new (const char *element_name, RsvgNode *node, const char *id);
-
-/* Implemented in rust/src/clip_path.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_clip_path_new (const char *element_name, RsvgNode *node, const char *id);
-
-/* Implemented in rust/src/shapes.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_path_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/shapes.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_polygon_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/shapes.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_polyline_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/shapes.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_line_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/shapes.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_rect_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/shapes.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_circle_new (const char *element_name, RsvgNode *parent, const char *id);
-
-/* Implemented in rust/src/shapes.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_ellipse_new (const char *element_name, RsvgNode *parent, const char *id);
 
 G_END_DECLS
 

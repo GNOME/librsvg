@@ -1,12 +1,9 @@
 use cairo;
-use libc;
-
+use cairo::MatrixTrait;
+use cairo::Pattern as CairoPattern;
 use std::cell::RefCell;
 use std::f64;
 use std::rc::*;
-
-use cairo::MatrixTrait;
-use cairo::Pattern as CairoPattern;
 
 use aspect_ratio::*;
 use attributes::Attribute;
@@ -20,7 +17,6 @@ use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
 use state::ComputedValues;
-use util::utf8_cstr_opt;
 use viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -160,12 +156,12 @@ impl Pattern {
     }
 }
 
-struct NodePattern {
+pub struct NodePattern {
     pattern: RefCell<Pattern>,
 }
 
 impl NodePattern {
-    fn new() -> NodePattern {
+    pub fn new() -> NodePattern {
         NodePattern {
             pattern: RefCell::new(Pattern::unresolved()),
         }
@@ -455,20 +451,6 @@ fn resolve_fallbacks_and_set_pattern(
     let resolved = resolve_pattern(pattern, draw_ctx);
 
     set_pattern_on_draw_context(&resolved, values, draw_ctx, bbox)
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_pattern_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Pattern,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodePattern::new()),
-    )
 }
 
 pub fn pattern_resolve_fallbacks_and_set_pattern(

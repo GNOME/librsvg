@@ -142,7 +142,7 @@ rsvg_filter_primitive_tile_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_tile (const char *element_name, RsvgNode *parent, const char *id)
+rsvg_new_filter_primitive_tile (const char *element_name, RsvgNode *parent, const char *id, const char *klass)
 {
     RsvgFilterPrimitiveTile *filter;
 
@@ -154,6 +154,7 @@ rsvg_new_filter_primitive_tile (const char *element_name, RsvgNode *parent, cons
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_TILE,
                                 parent,
                                 id,
+                                klass,
                                 filter,
                                 rsvg_filter_primitive_tile_set_atts,
                                 rsvg_filter_primitive_free);

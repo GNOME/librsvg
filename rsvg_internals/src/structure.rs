@@ -1,5 +1,3 @@
-use libc;
-
 use std::cell::Cell;
 use std::cell::RefCell;
 
@@ -14,15 +12,13 @@ use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
 use state::{self, Overflow};
-use util::utf8_cstr_opt;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
-// ************ NodeGroup ************
-struct NodeGroup();
+pub struct NodeGroup();
 
 impl NodeGroup {
-    fn new() -> NodeGroup {
+    pub fn new() -> NodeGroup {
         NodeGroup()
     }
 }
@@ -44,11 +40,10 @@ impl NodeTrait for NodeGroup {
     }
 }
 
-// ************ NodeDefs ************
-struct NodeDefs();
+pub struct NodeDefs();
 
 impl NodeDefs {
-    fn new() -> NodeDefs {
+    pub fn new() -> NodeDefs {
         NodeDefs()
     }
 }
@@ -59,11 +54,10 @@ impl NodeTrait for NodeDefs {
     }
 }
 
-// ************ NodeSwitch ************
-struct NodeSwitch();
+pub struct NodeSwitch();
 
 impl NodeSwitch {
-    fn new() -> NodeSwitch {
+    pub fn new() -> NodeSwitch {
         NodeSwitch()
     }
 }
@@ -99,8 +93,7 @@ impl NodeTrait for NodeSwitch {
     }
 }
 
-// ************ NodeSvg ************
-struct NodeSvg {
+pub struct NodeSvg {
     preserve_aspect_ratio: Cell<AspectRatio>,
     x: Cell<RsvgLength>,
     y: Cell<RsvgLength>,
@@ -111,7 +104,7 @@ struct NodeSvg {
 }
 
 impl NodeSvg {
-    fn new() -> NodeSvg {
+    pub fn new() -> NodeSvg {
         NodeSvg {
             preserve_aspect_ratio: Cell::new(AspectRatio::default()),
             x: Cell::new(RsvgLength::parse("0", LengthDir::Horizontal).unwrap()),
@@ -218,8 +211,7 @@ impl NodeTrait for NodeSvg {
     }
 }
 
-// ************ NodeUse ************
-struct NodeUse {
+pub struct NodeUse {
     link: RefCell<Option<String>>,
     x: Cell<RsvgLength>,
     y: Cell<RsvgLength>,
@@ -228,7 +220,7 @@ struct NodeUse {
 }
 
 impl NodeUse {
-    fn new() -> NodeUse {
+    pub fn new() -> NodeUse {
         NodeUse {
             link: RefCell::new(None),
             x: Cell::new(RsvgLength::default()),
@@ -377,14 +369,13 @@ impl NodeTrait for NodeUse {
     }
 }
 
-// ************ NodeSymbol ************
-struct NodeSymbol {
+pub struct NodeSymbol {
     preserve_aspect_ratio: Cell<AspectRatio>,
     vbox: Cell<Option<ViewBox>>,
 }
 
 impl NodeSymbol {
-    fn new() -> NodeSymbol {
+    pub fn new() -> NodeSymbol {
         NodeSymbol {
             preserve_aspect_ratio: Cell::new(AspectRatio::default()),
             vbox: Cell::new(None),
@@ -413,91 +404,6 @@ impl NodeTrait for NodeSymbol {
 
         Ok(())
     }
-}
-
-// ************ C Prototypes ************
-#[no_mangle]
-pub extern "C" fn rsvg_node_group_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Group,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeGroup::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_defs_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Defs,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeDefs::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_switch_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Switch,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeSwitch::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_svg_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Svg,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeSvg::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_use_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Use,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeUse::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_symbol_new(
-    _: *const libc::c_char,
-    raw_parent: *const RsvgNode,
-    id: *const libc::c_char,
-) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Symbol,
-        raw_parent,
-        unsafe { utf8_cstr_opt(id) },
-        Box::new(NodeSymbol::new()),
-    )
 }
 
 #[no_mangle]
@@ -540,21 +446,7 @@ pub extern "C" fn rsvg_node_svg_apply_atts(raw_node: *const RsvgNode, handle: *c
     node.with_impl(|svg: &NodeSvg| {
         if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
             let pbag = PropertyBag::from_owned(owned_pbag);
-
-            let mut class = None;
-            let mut id = None;
-
-            for (_key, attr, value) in pbag.iter() {
-                match attr {
-                    Attribute::Class => class = Some(value),
-
-                    Attribute::Id => id = Some(value),
-
-                    _ => (),
-                }
-            }
-
-            state::parse_style_attrs(handle, node, "svg", class, id, &pbag);
+            state::parse_style_attrs(handle, node, "svg", &pbag);
         }
     });
 }

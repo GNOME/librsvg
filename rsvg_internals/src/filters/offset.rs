@@ -1,22 +1,21 @@
 use std::cell::Cell;
 
 use cairo::{self, ImageSurface};
-use libc::{self, c_char};
 
 use attributes::Attribute;
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
-use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::{parse, Parse};
 use property_bag::PropertyBag;
-use util::{clamp, utf8_cstr_opt};
+use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixels};
 use super::{get_surface, Filter, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
-struct Offset {
+pub struct Offset {
     base: PrimitiveWithInput,
     dx: Cell<RsvgLength>,
     dy: Cell<RsvgLength>,
@@ -25,7 +24,7 @@ struct Offset {
 impl Offset {
     /// Constructs a new `Offset` with empty properties.
     #[inline]
-    fn new() -> Offset {
+    pub fn new() -> Offset {
         Offset {
             base: PrimitiveWithInput::new::<Self>(),
             dx: Cell::new(RsvgLength::parse("0", LengthDir::Horizontal).unwrap()),
@@ -112,20 +111,4 @@ impl Filter for Offset {
             },
         })
     }
-}
-
-/// Returns a new `feOffset` node.
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_new_filter_primitive_offset(
-    _element_name: *const c_char,
-    parent: *mut RsvgNode,
-    id: *const libc::c_char,
-) -> *mut RsvgNode {
-    let filter = Offset::new();
-    boxed_node_new(
-        NodeType::FilterPrimitiveOffset,
-        parent,
-        utf8_cstr_opt(id),
-        Box::new(filter),
-    )
 }
