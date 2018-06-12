@@ -2,6 +2,7 @@ use std::cell::Cell;
 use std::f64::consts::*;
 
 use cairo::MatrixTrait;
+use cssparser::{CowRcStr, Parser, ParserInput, Token};
 
 use aspect_ratio::*;
 use attributes::Attribute;
@@ -40,13 +41,26 @@ impl Parse for MarkerUnits {
     type Err = AttributeError;
 
     fn parse(s: &str, _: ()) -> Result<MarkerUnits, AttributeError> {
-        match s {
-            "userSpaceOnUse" => Ok(MarkerUnits::UserSpaceOnUse),
-            "strokeWidth" => Ok(MarkerUnits::StrokeWidth),
-            _ => Err(AttributeError::Parse(ParseError::new(
-                "expected \"userSpaceOnUse\" or \"strokeWidth\"",
-            ))),
-        }
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+        let loc = parser.current_source_location();
+
+        parser
+            .expect_ident()
+            .and_then(|cow| match cow.as_ref() {
+                "userSpaceOnUse" => Ok(MarkerUnits::UserSpaceOnUse),
+                "strokeWidth" => Ok(MarkerUnits::StrokeWidth),
+                _ => Err(
+                    loc.new_basic_unexpected_token_error(Token::Ident(CowRcStr::from(
+                        cow.as_ref().to_string(),
+                    ))),
+                ),
+            })
+            .map_err(|_| {
+                AttributeError::Parse(ParseError::new(
+                    "expected \"userSpaceOnUse\" or \"strokeWidth\"",
+                ))
+            })
     }
 }
 
