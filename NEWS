@@ -1,3 +1,66 @@
+Version 2.43.0
+- This is the start of the 2.43 development series, and you bet we are
+  doing extensive changes!
+- Many, many thanks to Jordan Petridis for keeping our Continuous
+  Infrastructure updated all the time, and for emergency fixes when
+  they were necessary.
+- As part of the Summer of Code 2018, Ivan Molodetskikh is porting the
+  filter effects to Rust.  These are done so far:  core filters
+  infrastructure, feComposite, feMerge, feOffset.  The only remaining
+  SVG elements done in C pertain to filter effects, and Ivan is taking
+  care of them.
+- The feComposite filter now operates in linear RGB space, for better
+  spec compliance.  We transform back to SRGB for the final results
+  (see issue #275 for pending work on fully supporting this
+  elsewhere).
+- Filters now compute their bounds to floating-point values, instead
+  of clipping them to integers.
+- The text, tspan, tref elements are now in Rust (Paolo Borelli).
+- Text rendering should be better.  We now perform text measurement
+  operations with the actual affine transformation that the text will
+  use in the end.  This should give Pango/Freetype a better chance of
+  doing scale-appropriate hinting.
+- The basic styling infrastructure has moved to Rust (Paolo Borelli,
+  Federico Mena).  We don't use the old and limited cascading code
+  anymore.  We also audited which CSS properties are supposed to
+  inherit automatically or not; this should be working per the SVG
+  spec now.  Special thanks to Paolo for doing the largest part of the
+  work in moving the style data to Rust; this was a painstaking,
+  months-long process of constant refactoring.
+- The internals of the drawing infrastructure and bounding-box
+  computation are now done in Rust (Paolo Borelli).
+- Element creation from the parsing stage is now in Rust (Saurav
+  Sachidanand).
+- Clipping and Masking are now done in Rust (Paolo Borelli).
+- Our tests now include the full Adwaita icon theme, so it doesn't
+  break.
+- Fix: #241 - feDistantLight and feSpotLight now work again.
+- Fix: #282 - feComposite is fixed not to overwrite the source image
+  in some cases; this fixes drop shadows generated from Inkscape (Ivan
+  Molodetskikh).
+- We have the beginnings of Windows CI, courtesy of Guillaume Gomez.
+- Changes from 2.42.4:
+- Fix: elements with systemLanguage attributes without variants now
+  work better (Paolo Borelli).
+- gitlab#227 - Fix: we now catch negative values in stroke-dasharray
+  properties instead of leaving the cairo_t in an error state.
+- gitlab#228 - Fix: empty transform attribute now correctly yields an
+  identity transform (Dmitry Kontsevoy).
+- Fix possible crash on invalid gradient references.
+- Make robust against patterns and gradients with no children.
+- Lots of code cleanups and refactorings (Jordan Petridis, Dmitry
+  Kontsevoy, Ivan Molodetskikh).
+- Code moved to Rust: low-level path and PangoLayout drawing, "switch"
+  element (Paolo Borelli).
+- New Rust dependencies: float_cmp, pangocairo crates.
+- We now require Rust 1.21 or later.
+- Changes from 2.42.5:
+- #276 - rsvg_handle_render_cairo() will now refuse to render if the
+  cairo_t passed to it is in an error state.  Fixes a panic in the
+  cairo-dock program.
+- #206 - The test suite now writes test artifacts to tests/output
+  instead of /tmp (Saurav Sachidanand).
+
 Version 2.42.3
 - gitlab#205 - The configure script now checks for Rust 1.20.0 -
   previously this minimum requirement was not well-defined.
@@ -24,9 +87,15 @@ Version 2.42.3
   functions work again.  Now we have tests for the whole public API.
 - gitlab#143 - Minor optimizations for Gaussian blurs (Timm Bäder).
 - gitlab#201 - Minor speedups in the code to parse SVG attributes.
+- gitlab#178 - Fix some tests that failed on 32-bit machines.
 - COMPILING.md now lists our build dependencies, and has command lines
-  which you can use on openSUSE/Fedora/Debian/Ubuntu to set up a
-  development environment for librsvg (Jordan Petridis).
+  which you can use on openSUSE/Fedora/Debian/Ubuntu/MacOS to set up a
+  development environment for librsvg (Jordan Petridis, Brion Vibber).
+- gitlab#211 - Running the configure script on MacOS now works and
+  doesn't try to use -Bsymbolic for linking (Brion Vibber).
+- gitlab#In addtion to --enable-debug/--disable-debug to control the Rust
+  compilation, now you can use an environment variable
+  LIBRSVG_DEBUG=yes / LIBRSVG_DEBUG=no if you wish.
 - Code moved to Rust: SVG paint servers (Dmitry Kontsevoy), SVG
   attribute parsing.
 - We now use a Cargo workspace internally, to move more things to Rust
@@ -34,6 +103,7 @@ Version 2.42.3
 - Special thanks in this release to Jordan Petridis for MAJOR
   improvements to our Continuous Integration infrastructure, the
   repository structure, and updates to the compilation documentation.
+  Also for setting up 32-bit builds for continuous integration.
 
 Version 2.42.2
 - gitlab#193 - Don't crash when feConvolveMatrix doesn't specify
