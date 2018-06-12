@@ -19,7 +19,16 @@ use error::*;
 use handle::RsvgHandle;
 use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
-use state::{self, rsvg_state_new, ComputedValues, Overflow, RsvgState, SpecifiedValue, State};
+use state::{
+    self,
+    rsvg_state_new,
+    ComputedValues,
+    Overflow,
+    RsvgState,
+    SpecifiedValue,
+    SpecifiedValues,
+    State
+};
 use util::utf8_cstr;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
@@ -84,9 +93,7 @@ impl<'a> CascadedValues<'a> {
     /// `<use>`'s own cascade, not wih the element's original cascade.
     pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
         let mut v = values.clone();
-        let state = node.get_state();
-
-        state.to_computed_values(&mut v);
+        node.get_specified_values().to_computed_values(&mut v);
 
         CascadedValues {
             inner: CascadedInner::FromValues(v),
@@ -291,16 +298,12 @@ impl Node {
         self.transform.get()
     }
 
-    pub fn get_state(&self) -> &State {
-        state::from_c(self.state)
-    }
-
     pub fn get_state_mut(&self) -> &mut State {
         state::from_c_mut(self.state)
     }
 
-    pub fn set_computed_values(&self, values: &ComputedValues) {
-        *self.values.borrow_mut() = values.clone();
+    pub fn get_specified_values(&self) -> &SpecifiedValues {
+        state::from_c(self.state).get_specified_values()
     }
 
     pub fn get_cascaded_values(&self) -> CascadedValues {
@@ -309,10 +312,8 @@ impl Node {
 
     pub fn cascade(&self, values: &ComputedValues) {
         let mut values = values.clone();
-        let state = self.get_state();
-
-        state.to_computed_values(&mut values);
-        self.set_computed_values(&values);
+        self.get_specified_values().to_computed_values(&mut values);
+        *self.values.borrow_mut() = values.clone();
 
         for child in self.children() {
             child.cascade(&values);

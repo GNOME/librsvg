@@ -283,7 +283,7 @@ macro_rules! compute_value {
 }
 
 impl SpecifiedValues {
-    fn to_computed_values(&self, computed: &mut ComputedValues) {
+    pub fn to_computed_values(&self, computed: &mut ComputedValues) {
         compute_value!(self, computed, baseline_shift);
         compute_value!(self, computed, clip_path);
         compute_value!(self, computed, clip_rule);
@@ -331,6 +331,14 @@ impl SpecifiedValues {
         compute_value!(self, computed, writing_mode);
         compute_value!(self, computed, xml_lang);
         compute_value!(self, computed, xml_space);
+    }
+
+    pub fn is_overflow(&self) -> bool {
+        match self.overflow {
+            SpecifiedValue::Specified(Overflow::Auto)
+            | SpecifiedValue::Specified(Overflow::Visible) => true,
+            _ => false,
+        }
     }
 }
 
@@ -634,16 +642,8 @@ impl State {
         Ok(())
     }
 
-    pub fn is_overflow(&self) -> bool {
-        match self.values.overflow {
-            SpecifiedValue::Specified(Overflow::Auto)
-            | SpecifiedValue::Specified(Overflow::Visible) => true,
-            _ => false,
-        }
-    }
-
-    pub fn to_computed_values(&self, values: &mut ComputedValues) {
-        self.values.to_computed_values(values);
+    pub fn get_specified_values(&self) -> &SpecifiedValues {
+        &self.values
     }
 }
 
