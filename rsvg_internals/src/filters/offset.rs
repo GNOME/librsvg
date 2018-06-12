@@ -12,7 +12,7 @@ use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixels};
-use super::{get_surface, Filter, FilterError, PrimitiveWithInput};
+use super::{make_result, Filter, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
 pub struct Offset {
@@ -66,7 +66,8 @@ impl Filter for Offset {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
-        let bounds = self.base.get_bounds(ctx);
+        let input = make_result(self.base.get_input(ctx))?;
+        let bounds = self.base.get_bounds(ctx).add_input(&input).into_irect();
 
         let dx = self.dx.get().normalize(&values, ctx.drawing_context());
         let dy = self.dy.get().normalize(&values, ctx.drawing_context());
@@ -74,8 +75,7 @@ impl Filter for Offset {
         let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;
 
-        let input_surface = get_surface(self.base.get_input(ctx))?;
-        let input_data = ImageSurfaceDataShared::new(&input_surface)?;
+        let input_data = ImageSurfaceDataShared::new(input.surface())?;
 
         // input_bounds contains all pixels within bounds,
         // for which (x + ox) and (y + oy) also lie within bounds.
