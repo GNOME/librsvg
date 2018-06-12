@@ -206,27 +206,6 @@ debian:testing_release_i386:
 # STAGE 3 RUSTC TESTS
 #######################################################################
 
-rustc:1_21:
-  image: $RUSTC_1_21
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *rustc
-  <<: *stage_3
-
-rustc:1_22:
-  image: $RUSTC_1_22
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *rustc
-  <<: *stage_3
-
-rustc:1_23:
-  image: $RUSTC_1_23
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *rustc
-  <<: *stage_3
-
 rustc:1_24:
   image: $RUSTC_1_24
   variables:
