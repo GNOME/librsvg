@@ -215,7 +215,9 @@ impl Parse for AspectRatio {
 
     fn parse(s: &str, _: ()) -> Result<AspectRatio, AttributeError> {
         let mut input = ParserInput::new(s);
-        AspectRatio::parse_input(&mut Parser::new(&mut input)).map_err(|_| {
+        let mut parser = Parser::new(&mut input);
+
+        AspectRatio::parse_input(&mut parser).map_err(|_| {
             AttributeError::Parse(ParseError::new(
                 "expected \"[defer] <align> [meet | slice]\"",
             ))
