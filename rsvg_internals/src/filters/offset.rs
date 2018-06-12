@@ -44,6 +44,8 @@ impl NodeTrait for Offset {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
+                // TODO: unit identifiers shouldn't parse in these attributes (they don't in
+                // Chromium and Firefox).
                 Attribute::Dx => self
                     .dx
                     .set(parse("dx", value, LengthDir::Horizontal, None)?),
@@ -69,6 +71,9 @@ impl Filter for Offset {
         let input = make_result(self.base.get_input(ctx))?;
         let bounds = self.base.get_bounds(ctx).add_input(&input).into_irect();
 
+        // Technically this should use ctx.with_primitive_units(), but it turns out that neither
+        // Chromium nor Firefox accept any units in dx, dy including %, and without units
+        // normalize() returns the same result regardless of the viewbox size.
         let dx = self.dx.get().normalize(&values, ctx.drawing_context());
         let dy = self.dy.get().normalize(&values, ctx.drawing_context());
         let paffine = ctx.paffine();

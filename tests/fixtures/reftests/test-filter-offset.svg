@@ -1,0 +1,14 @@
+<svg id="svg-root" width="100%" height="100%"
+  viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+
+  <filter id="objectbbox" primitiveUnits="objectBoundingBox">
+    <feOffset dx="0.5" dy="0.1"/>
+  </filter>
+
+  <g transform="translate(30 20)">
+    <rect fill="green" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#objectbbox)"/>
+    <rect fill="red" x="1" y="57" width="50" height="50"/>
+  </g>
+</svg>
