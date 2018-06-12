@@ -111,9 +111,10 @@ impl Filter for Composite {
             linearize_surface(input.surface(), bounds).map_err(FilterError::BadInputSurfaceStatus)?;
 
         let output_surface = if self.operator.get() == Operator::Arithmetic {
-            // TODO: accidentally removed input_2 linearization.
             let input_data = ImageSurfaceDataShared::new(&input_surface)?;
-            let input_2_data = ImageSurfaceDataShared::new(&input_2.surface())?;
+            let input_2_surface = linearize_surface(input_2.surface(), bounds)
+                .map_err(FilterError::BadInputSurfaceStatus)?;
+            let input_2_data = ImageSurfaceDataShared::new(&input_2_surface)?;
 
             let mut output_surface = ImageSurface::create(
                 cairo::Format::ARgb32,
