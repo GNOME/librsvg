@@ -16,6 +16,7 @@ use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 
+use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::{Filter, FilterError, Primitive};
 
@@ -96,7 +97,7 @@ impl Image {
     fn render_external_image(
         &self,
         ctx: &FilterContext,
-        bounds: IRect,
+        bounds_builder: BoundsBuilder,
         href: &str,
     ) -> Result<ImageSurface, FilterError> {
         let surface = {
@@ -132,14 +133,16 @@ impl Image {
             ctx.source_graphic().get_height(),
         ).map_err(FilterError::OutputSurfaceCreation)?;
 
+        // TODO: this goes through a f64->i32->f64 conversion.
+        let render_bounds = bounds_builder.into_irect_without_clipping();
         let aspect = self.aspect.get();
         let (x, y, w, h) = aspect.compute(
             f64::from(surface.get_width()),
             f64::from(surface.get_height()),
-            f64::from(bounds.x0),
-            f64::from(bounds.y0),
-            f64::from(bounds.x1 - bounds.x0),
-            f64::from(bounds.y1 - bounds.y0),
+            f64::from(render_bounds.x0),
+            f64::from(render_bounds.y0),
+            f64::from(render_bounds.x1 - render_bounds.x0),
+            f64::from(render_bounds.y1 - render_bounds.y0),
         );
 
         if w != 0f64 && h != 0f64 {
@@ -155,6 +158,7 @@ impl Image {
             matrix.invert();
             ptn.set_matrix(matrix);
 
+            let bounds = bounds_builder.into_irect();
             let cr = cairo::Context::new(&output_surface);
             cr.rectangle(
                 f64::from(bounds.x0),
@@ -211,10 +215,13 @@ impl Filter for Image {
         let href = self.href.borrow();
         let href = href.as_ref().ok_or(FilterError::InvalidInput)?;
 
-        let bounds = self.base.get_bounds(ctx);
+        let bounds_builder = self.base.get_bounds(ctx);
+        let bounds = bounds_builder.into_irect();
 
         let output_surface = match self.render_node(ctx, bounds, href) {
-            Err(FilterError::InvalidInput) => self.render_external_image(ctx, bounds, href)?,
+            Err(FilterError::InvalidInput) => {
+                self.render_external_image(ctx, bounds_builder, href)?
+            }
             Err(err) => return Err(err),
             Ok(surface) => surface,
         };

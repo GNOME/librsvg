@@ -11,7 +11,7 @@ use srgb::{linearize_surface, unlinearize_surface};
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::input::Input;
-use super::{get_surface, Filter, FilterError, Primitive};
+use super::{make_result, Filter, FilterError, Primitive};
 
 /// The `feMerge` filter primitive.
 pub struct Merge {
@@ -88,7 +88,8 @@ impl MergeNode {
         bounds: IRect,
         output_surface: Option<ImageSurface>,
     ) -> Result<ImageSurface, FilterError> {
-        let input_surface = get_surface(ctx.get_input(self.in_.borrow().as_ref()))?;
+        let input = make_result(ctx.get_input(self.in_.borrow().as_ref()))?;
+        let input_surface = input.surface();
         let input_surface =
             linearize_surface(&input_surface, bounds).map_err(FilterError::BadInputSurfaceStatus)?;
 
@@ -115,7 +116,16 @@ impl MergeNode {
 
 impl Filter for Merge {
     fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
-        let bounds = self.base.get_bounds(ctx);
+        let mut bounds = self.base.get_bounds(ctx);
+        for child in node
+            .children()
+            .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
+        {
+            bounds = bounds.add_input(&child.with_impl(move |c: &MergeNode| {
+                make_result(ctx.get_input(c.in_.borrow().as_ref()))
+            })?);
+        }
+        let bounds = bounds.into_irect();
 
         let mut output_surface = None;
         for child in node

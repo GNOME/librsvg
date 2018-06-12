@@ -1,8 +1,6 @@
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
-use cairo;
-
 use attributes::Attribute;
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
@@ -10,8 +8,11 @@ use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 
+mod bounds;
+use self::bounds::BoundsBuilder;
+
 pub mod context;
-use self::context::{FilterContext, FilterOutput, FilterResult, IRect};
+use self::context::{FilterContext, FilterInput, FilterResult};
 
 mod error;
 use self::error::FilterError;
@@ -58,12 +59,12 @@ struct PrimitiveWithInput {
     in_: RefCell<Option<Input>>,
 }
 
-/// Extracts the surface out of a `get_input()` output with the ability to `?`.
+/// Calls `ok_or()` on `get_input()` output.
 ///
 /// A small convenience function for filter implementations.
 #[inline]
-fn get_surface(x: Option<FilterOutput>) -> Result<cairo::ImageSurface, FilterError> {
-    x.map(|x| x.surface).ok_or(FilterError::InvalidInput)
+fn make_result(x: Option<FilterInput>) -> Result<FilterInput, FilterError> {
+    x.ok_or(FilterError::InvalidInput)
 }
 
 impl Primitive {
@@ -81,10 +82,11 @@ impl Primitive {
         }
     }
 
-    /// Computes and returns the filter primitive bounds.
+    /// Returns the `BoundsBuilder` for bounds computation.
     #[inline]
-    fn get_bounds(&self, ctx: &FilterContext) -> IRect {
-        ctx.compute_bounds(
+    fn get_bounds<'a>(&self, ctx: &'a FilterContext) -> BoundsBuilder<'a> {
+        BoundsBuilder::new(
+            ctx,
             self.x.get(),
             self.y.get(),
             self.width.get(),
@@ -138,7 +140,7 @@ impl PrimitiveWithInput {
 
     /// Returns the input Cairo surface for this filter primitive.
     #[inline]
-    fn get_input(&self, ctx: &FilterContext) -> Option<FilterOutput> {
+    fn get_input(&self, ctx: &FilterContext) -> Option<FilterInput> {
         ctx.get_input(self.in_.borrow().as_ref())
     }
 }

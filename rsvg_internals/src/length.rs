@@ -180,6 +180,26 @@ impl RsvgLength {
         }
     }
 
+    pub fn normalize_ignoring_units(
+        &self,
+        _values: &ComputedValues,
+        draw_ctx: *const RsvgDrawingCtx,
+    ) -> f64 {
+        match self.unit {
+            LengthUnit::Percent => {
+                let (width, height) = drawing_ctx::get_view_box_size(draw_ctx);
+
+                match self.dir {
+                    LengthDir::Horizontal => self.length * width,
+                    LengthDir::Vertical => self.length * height,
+                    LengthDir::Both => self.length * viewport_percentage(width, height),
+                }
+            }
+
+            _ => self.length,
+        }
+    }
+
     pub fn hand_normalize(
         &self,
         pixels_per_inch: f64,

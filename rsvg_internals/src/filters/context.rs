@@ -15,6 +15,7 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use length::RsvgLength;
 use node::{box_node, RsvgNode};
 
+use super::bounds::BoundsBuilder;
 use super::input::Input;
 use super::iterators::{ImageSurfaceDataShared, Pixel, Pixels};
 use super::node::NodeFilter;
@@ -61,6 +62,15 @@ pub struct FilterResult {
     pub output: FilterOutput,
 }
 
+/// An input to a filter primitive.
+#[derive(Debug, Clone)]
+pub enum FilterInput {
+    /// One of the standard inputs.
+    StandardInput(cairo::ImageSurface),
+    /// Output of another filter primitive.
+    PrimitiveOutput(FilterOutput),
+}
+
 pub type RsvgFilterContext = FilterContext;
 
 /// The filter rendering context.
@@ -77,10 +87,31 @@ pub struct FilterContext {
     previous_results: HashMap<String, FilterOutput>,
     /// The background surface. Computed lazily.
     background_surface: UnsafeCell<Option<Result<cairo::ImageSurface, cairo::Status>>>,
-
-    affine: cairo::Matrix,
-    paffine: cairo::Matrix,
+    /// The drawing context.
     drawing_ctx: *mut RsvgDrawingCtx,
+
+    /// The filter element affine matrix.
+    ///
+    /// If `filterUnits == userSpaceOnUse`, equal to the drawing context matrix, so, for example,
+    /// if the target node is in a group with `transform="translate(30, 20)"`, this will be equal
+    /// to a matrix that translates to 30, 20 (and does not scale). Note that the target node
+    /// bounding box isn't included in the computations in this case.
+    ///
+    /// If `filterUnits == objectBoundingBox`, equal to the target node bounding box matrix
+    /// multiplied by the drawing context matrix, so, for example, if the target node is in a group
+    /// with `transform="translate(30, 20)"` and also has `x="1", y="1", width="50", height="50"`,
+    /// this will be equal to a matrix that translates to 31, 21 and scales to 50, 50.
+    ///
+    /// This is to be used in conjunction with setting the viewbox size to account for the scaling.
+    /// For `filterUnits == userSpaceOnUse`, the viewbox will have the actual resolution size, and
+    /// for `filterUnits == objectBoundingBox`, the viewbox will have the size of 1, 1.
+    affine: cairo::Matrix,
+
+    /// The filter primitive affine matrix.
+    ///
+    /// See the comments for `affine`, they largely apply here.
+    paffine: cairo::Matrix,
+
     channelmap: [i32; 4],
 }
 
@@ -174,7 +205,7 @@ impl FilterContext {
 
         let last_result = FilterOutput {
             surface: rv.source_surface.clone(),
-            bounds: rv.compute_bounds(None, None, None, None),
+            bounds: rv.compute_effects_region().rect.unwrap().into(),
         };
 
         rv.last_result = Some(last_result);
@@ -304,29 +335,59 @@ impl FilterContext {
         self.paffine
     }
 
-    /// Computes and returns the filter primitive bounds.
-    pub fn compute_bounds(
-        &self,
-        x: Option<RsvgLength>,
-        y: Option<RsvgLength>,
-        width: Option<RsvgLength>,
-        height: Option<RsvgLength>,
-    ) -> IRect {
+    /// Computes and returns the filter effects region.
+    pub fn compute_effects_region(&self) -> BoundingBox {
+        // TODO: shouldn't the values be from the target node rather than from the filter node
+        // itself?
         let cascaded = self.node.get_cascaded_values();
         let values = cascaded.get();
 
         let filter = self.node.get_impl::<NodeFilter>().unwrap();
+
         let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
 
+        // self.affine is set up in new() in such a way that for filterunits == ObjectBoundingBox
+        // affine includes scaling to correct width, height and this is why width and height are
+        // set to 1, 1 (and for filterunits == UserSpaceOnUse affine doesn't include scaling
+        // because in this case the correct width, height already happens to be the viewbox width,
+        // height).
+        //
+        // It's done this way because with ObjectBoundingBox, non-percentage values are supposed to
+        // represent the fractions of the referenced node, and with width and height = 1, 1 this
+        // works out exactly like that.
         if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
             drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
         }
 
-        let rect = cairo::Rectangle {
-            x: filter.x.get().normalize(values, self.drawing_ctx),
-            y: filter.y.get().normalize(values, self.drawing_ctx),
-            width: filter.width.get().normalize(values, self.drawing_ctx),
-            height: filter.height.get().normalize(values, self.drawing_ctx),
+
+        // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
+        // referencing node. Units must be ignored.
+        let rect = if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
+            cairo::Rectangle {
+                x: filter
+                    .x
+                    .get()
+                    .normalize_ignoring_units(values, self.drawing_ctx),
+                y: filter
+                    .y
+                    .get()
+                    .normalize_ignoring_units(values, self.drawing_ctx),
+                width: filter
+                    .width
+                    .get()
+                    .normalize_ignoring_units(values, self.drawing_ctx),
+                height: filter
+                    .height
+                    .get()
+                    .normalize_ignoring_units(values, self.drawing_ctx),
+            }
+        } else {
+            cairo::Rectangle {
+                x: filter.x.get().normalize(values, self.drawing_ctx),
+                y: filter.y.get().normalize(values, self.drawing_ctx),
+                width: filter.width.get().normalize(values, self.drawing_ctx),
+                height: filter.height.get().normalize(values, self.drawing_ctx),
+            }
         };
 
         if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
@@ -334,40 +395,12 @@ impl FilterContext {
         }
 
         let other_bbox = BoundingBox::new(&self.affine).with_rect(Some(rect));
+
+        // At this point all of the previous viewbox and matrix business gets converted to pixel
+        // coordinates in the final surface, because bbox is created with an identity affine.
         bbox.insert(&other_bbox);
 
-        if x.is_some() || y.is_some() || width.is_some() || height.is_some() {
-            if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
-                drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
-            }
-
-            let mut rect = cairo::Rectangle {
-                x: x.map(|x| x.normalize(values, self.drawing_ctx))
-                    .unwrap_or(0f64),
-                y: y.map(|y| y.normalize(values, self.drawing_ctx))
-                    .unwrap_or(0f64),
-                ..rect
-            };
-
-            if width.is_some() || height.is_some() {
-                let (vbox_width, vbox_height) = drawing_ctx::get_view_box_size(self.drawing_ctx);
-
-                rect.width = width
-                    .map(|w| w.normalize(values, self.drawing_ctx))
-                    .unwrap_or(vbox_width);
-                rect.height = height
-                    .map(|h| h.normalize(values, self.drawing_ctx))
-                    .unwrap_or(vbox_height);
-            }
-
-            if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
-                drawing_ctx::pop_view_box(self.drawing_ctx);
-            }
-
-            let other_bbox = BoundingBox::new(&self.paffine).with_rect(Some(rect));
-            bbox.clip(&other_bbox);
-        }
-
+        // Finally, clip to the width and height of our surface.
         let rect = cairo::Rectangle {
             x: 0f64,
             y: 0f64,
@@ -377,54 +410,107 @@ impl FilterContext {
         let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(Some(rect));
         bbox.clip(&other_bbox);
 
-        let bbox_rect = bbox.rect.unwrap();
-        IRect {
-            x0: bbox_rect.x.floor() as i32,
-            y0: bbox_rect.y.floor() as i32,
-            x1: (bbox_rect.x + bbox_rect.width).ceil() as i32,
-            y1: (bbox_rect.y + bbox_rect.height).ceil() as i32,
+        bbox
+    }
+
+    /// Calls the given function with correct behavior for the value of `primitiveUnits`.
+    pub fn with_primitive_units<F, T>(&self, f: F) -> T
+    // TODO: Get rid of this Box? Can't just impl Trait because Rust cannot do higher-ranked types.
+    where
+        for<'a> F: FnOnce(Box<Fn(&RsvgLength) -> f64 + 'a>) -> T,
+    {
+        // TODO: shouldn't the values be from the target node rather than from the filter node
+        // itself?
+        let cascaded = self.node.get_cascaded_values();
+        let values = cascaded.get();
+
+        let filter = self.node.get_impl::<NodeFilter>().unwrap();
+
+        // See comments in compute_effects_region() for how this works.
+        if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
+            drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
+
+            let rv = f(Box::new(|length: &RsvgLength| {
+                length.normalize_ignoring_units(values, self.drawing_ctx)
+            }));
+
+            drawing_ctx::pop_view_box(self.drawing_ctx);
+
+            rv
+        } else {
+            f(Box::new(|length: &RsvgLength| {
+                length.normalize(values, self.drawing_ctx)
+            }))
         }
     }
 
     /// Retrieves the filter input surface according to the SVG rules.
-    pub fn get_input(&self, in_: Option<&Input>) -> Option<FilterOutput> {
+    pub fn get_input(&self, in_: Option<&Input>) -> Option<FilterInput> {
         if in_.is_none() {
             // No value => use the last result.
             // As per the SVG spec, if the filter primitive is the first in the chain, return the
             // source graphic.
-            return Some(self.last_result().cloned().unwrap_or_else(|| FilterOutput {
-                surface: self.source_graphic().clone(),
-                bounds: self.compute_bounds(None, None, None, None),
-            }));
+            if let Some(output) = self.last_result().cloned() {
+                return Some(FilterInput::PrimitiveOutput(output));
+            } else {
+                return Some(FilterInput::StandardInput(self.source_graphic().clone()));
+            }
         }
 
         match *in_.unwrap() {
-            Input::SourceGraphic => Some(FilterOutput {
-                surface: self.source_graphic().clone(),
-                bounds: self.compute_bounds(None, None, None, None),
-            }),
-            Input::SourceAlpha => {
-                let bounds = self.compute_bounds(None, None, None, None);
-                self.source_alpha(bounds)
-                    .ok()
-                    .map(|surface| FilterOutput { surface, bounds })
-            }
-            Input::BackgroundImage => self.background_image().ok().map(|surface| FilterOutput {
-                surface: surface.clone(),
-                bounds: self.compute_bounds(None, None, None, None),
-            }),
-            Input::BackgroundAlpha => {
-                let bounds = self.compute_bounds(None, None, None, None);
-                self.background_alpha(bounds)
-                    .ok()
-                    .map(|surface| FilterOutput { surface, bounds })
-            }
+            Input::SourceGraphic => Some(FilterInput::StandardInput(self.source_graphic().clone())),
+            Input::SourceAlpha => self
+                .source_alpha(self.compute_effects_region().rect.unwrap().into())
+                .ok()
+                .map(FilterInput::StandardInput),
+            Input::BackgroundImage => self
+                .background_image()
+                .ok()
+                .cloned()
+                .map(FilterInput::StandardInput),
+            Input::BackgroundAlpha => self
+                .background_alpha(self.compute_effects_region().rect.unwrap().into())
+                .ok()
+                .map(FilterInput::StandardInput),
 
             // TODO
             Input::FillPaint => None,
             Input::StrokePaint => None,
 
-            Input::FilterOutput(ref name) => self.filter_output(name).cloned(),
+            Input::FilterOutput(ref name) => self
+                .filter_output(name)
+                .cloned()
+                .map(FilterInput::PrimitiveOutput),
+        }
+    }
+}
+
+impl FilterInput {
+    /// Retrieves the surface from `FilterInput`.
+    #[inline]
+    pub fn surface(&self) -> &cairo::ImageSurface {
+        match *self {
+            FilterInput::StandardInput(ref surface) => surface,
+            FilterInput::PrimitiveOutput(FilterOutput { ref surface, .. }) => surface,
+        }
+    }
+}
+
+impl From<cairo::Rectangle> for IRect {
+    #[inline]
+    fn from(
+        cairo::Rectangle {
+            x,
+            y,
+            width,
+            height,
+        }: cairo::Rectangle,
+    ) -> Self {
+        Self {
+            x0: x.floor() as i32,
+            y0: y.floor() as i32,
+            x1: (x + width).ceil() as i32,
+            y1: (y + height).ceil() as i32,
         }
     }
 }
@@ -527,7 +613,7 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
         },
         None => RsvgFilterPrimitiveOutput {
             surface: ctx.source_surface.to_glib_none().0,
-            bounds: ctx.compute_bounds(None, None, None, None),
+            bounds: ctx.compute_effects_region().rect.unwrap().into(),
         },
     }
 }
@@ -616,7 +702,8 @@ pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
         };
     }
 
-    ctx.compute_bounds(x, y, width, height)
+    // Doesn't take referenced nodes into account, which is wrong.
+    BoundsBuilder::new(ctx, x, y, width, height).into_irect()
 }
 
 #[no_mangle]
@@ -651,15 +738,23 @@ pub unsafe extern "C" fn rsvg_filter_get_result(
                 y1: 0,
             },
         },
-        Some(FilterOutput { surface, bounds }) => {
+        Some(input) => {
             // HACK because to_glib_full() is unimplemented!() on ImageSurface.
-            let ptr = surface.to_glib_none().0;
-            mem::forget(surface);
+            let ptr = input.surface().to_glib_none().0;
 
-            RsvgFilterPrimitiveOutput {
+            let rv = RsvgFilterPrimitiveOutput {
                 surface: ptr,
-                bounds,
-            }
+                bounds: match input {
+                    FilterInput::StandardInput(_) => {
+                        ctx.compute_effects_region().rect.unwrap().into()
+                    }
+                    FilterInput::PrimitiveOutput(FilterOutput { bounds, .. }) => bounds,
+                },
+            };
+
+            mem::forget(input);
+
+            rv
         }
     }
 }

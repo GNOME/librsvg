@@ -14,7 +14,7 @@ use util::clamp;
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
 use super::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixel, Pixels};
-use super::{get_surface, Filter, FilterError, PrimitiveWithInput};
+use super::{make_result, Filter, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -96,19 +96,24 @@ impl NodeTrait for Composite {
 
 impl Filter for Composite {
     fn render(&self, _node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
-        let bounds = self.base.get_bounds(ctx);
-
-        let input_surface = get_surface(self.base.get_input(ctx))?;
-        let input_2_surface = get_surface(ctx.get_input(self.in2.borrow().as_ref()))?;
+        let input = make_result(self.base.get_input(ctx))?;
+        let input_2 = make_result(ctx.get_input(self.in2.borrow().as_ref()))?;
+        let bounds = self
+            .base
+            .get_bounds(ctx)
+            .add_input(&input)
+            .add_input(&input_2)
+            .into_irect();
 
         // It's important to linearize sRGB before doing any blending, since otherwise the colors
         // will be darker than they should be.
         let input_surface =
-            linearize_surface(&input_surface, bounds).map_err(FilterError::BadInputSurfaceStatus)?;
+            linearize_surface(input.surface(), bounds).map_err(FilterError::BadInputSurfaceStatus)?;
 
         let output_surface = if self.operator.get() == Operator::Arithmetic {
+            // TODO: accidentally removed input_2 linearization.
             let input_data = ImageSurfaceDataShared::new(&input_surface)?;
-            let input_2_data = ImageSurfaceDataShared::new(&input_2_surface)?;
+            let input_2_data = ImageSurfaceDataShared::new(&input_2.surface())?;
 
             let mut output_surface = ImageSurface::create(
                 cairo::Format::ARgb32,
@@ -160,7 +165,7 @@ impl Filter for Composite {
 
             output_surface
         } else {
-            let output_surface = linearize_surface(&input_2_surface, bounds)
+            let output_surface = linearize_surface(&input_2.surface(), bounds)
                 .map_err(FilterError::BadInputSurfaceStatus)?;
 
             let cr = cairo::Context::new(&output_surface);
