@@ -148,4 +148,3 @@ impl NodeTrait for NodeImage {
         }
     }
 }
-

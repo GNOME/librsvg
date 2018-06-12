@@ -67,4 +67,3 @@ impl NodeTrait for NodeStop {
         Ok(())
     }
 }
-

@@ -110,16 +110,9 @@ pub use state::{
     rsvg_state_parse_style_pair,
 };
 
-pub use structure::{
-    rsvg_node_svg_apply_atts,
-    rsvg_node_svg_get_size,
-    rsvg_node_svg_get_view_box,
-};
+pub use structure::{rsvg_node_svg_apply_atts, rsvg_node_svg_get_size, rsvg_node_svg_get_view_box};
 
-pub use text::{
-    rsvg_node_chars_append,
-    rsvg_node_chars_new,
-};
+pub use text::{rsvg_node_chars_append, rsvg_node_chars_new};
 
 pub use viewbox::RsvgViewBox;
 

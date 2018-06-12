@@ -649,10 +649,7 @@ pub extern "C" fn rsvg_node_add_child(raw_node: *mut RsvgNode, raw_child: *const
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_register_in_defs(
-    raw_node: *const RsvgNode,
-    defs: *mut RsvgDefs,
-) {
+pub extern "C" fn rsvg_node_register_in_defs(raw_node: *const RsvgNode, defs: *mut RsvgDefs) {
     assert!(!raw_node.is_null());
     assert!(!defs.is_null());
 

@@ -117,9 +117,12 @@ extern "C" {
     ) -> *const RsvgNode;
 }
 
-type NodeCreateCFn =
-    unsafe extern "C" fn(*const libc::c_char, *const RsvgNode, *const libc::c_char, *const libc::c_char)
-        -> *const RsvgNode;
+type NodeCreateCFn = unsafe extern "C" fn(
+    *const libc::c_char,
+    *const RsvgNode,
+    *const libc::c_char,
+    *const libc::c_char,
+) -> *const RsvgNode;
 
 lazy_static! {
     // Lines in comments are elements that we don't support.
@@ -152,7 +155,11 @@ lazy_static! {
 
 macro_rules! node_create_fn {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
-        fn $name(id: Option<&str>, class: Option<&str>, parent: *const RsvgNode) -> *const RsvgNode {
+        fn $name(
+            id: Option<&str>,
+            class: Option<&str>,
+            parent: *const RsvgNode,
+        ) -> *const RsvgNode {
             boxed_node_new(NodeType::$node_type, parent, id, class, Box::new($new_fn()))
         }
     };

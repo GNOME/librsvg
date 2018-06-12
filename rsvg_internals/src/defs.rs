@@ -14,11 +14,7 @@ extern "C" {
     );
 }
 
-pub fn register_node_by_id(
-    defs: *mut RsvgDefs,
-    id: &str,
-    node: &RsvgNode,
-) {
+pub fn register_node_by_id(defs: *mut RsvgDefs, id: &str, node: &RsvgNode) {
     unsafe {
         rsvg_defs_register_node_by_id(defs, id.to_glib_none().0, node);
     }
