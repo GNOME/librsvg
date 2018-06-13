@@ -393,16 +393,17 @@ impl Node {
             let mut parse = || {
                 match attr {
                     Attribute::RequiredExtensions if cond => {
-                        cond = RequiredExtensions::parse(value, ())
+                        cond = RequiredExtensions::from_attribute(value)
                             .map(|RequiredExtensions(res)| res)?;
                     }
 
                     Attribute::RequiredFeatures if cond => {
-                        cond = RequiredFeatures::parse(value, ()).map(|RequiredFeatures(res)| res)?;
+                        cond = RequiredFeatures::from_attribute(value)
+                            .map(|RequiredFeatures(res)| res)?;
                     }
 
                     Attribute::SystemLanguage if cond => {
-                        cond = SystemLanguage::parse(value, &glib::get_language_names())
+                        cond = SystemLanguage::from_attribute(value, &glib::get_language_names())
                             .map(|SystemLanguage(res, _)| res)?;
                     }
 

@@ -1,5 +1,4 @@
 use error::*;
-use parsers::Parse;
 use std::marker::PhantomData;
 
 #[allow(unused_imports, deprecated)]
@@ -11,13 +10,10 @@ static IMPLEMENTED_EXTENSIONS: &[&str] = &[];
 #[derive(Debug, PartialEq)]
 pub struct RequiredExtensions(pub bool);
 
-impl Parse for RequiredExtensions {
-    type Data = ();
-    type Err = AttributeError;
-
+impl RequiredExtensions {
     // Parse a requiredExtensions attribute
     // http://www.w3.org/TR/SVG/struct.html#RequiredExtensionsAttribute
-    fn parse(s: &str, _: ()) -> Result<RequiredExtensions, AttributeError> {
+    pub fn from_attribute(s: &str) -> Result<RequiredExtensions, AttributeError> {
         Ok(RequiredExtensions(
             s.split_whitespace()
                 .all(|f| IMPLEMENTED_EXTENSIONS.binary_search(&f).is_ok()),
@@ -53,13 +49,10 @@ static IMPLEMENTED_FEATURES: &[&str] = &[
 #[derive(Debug, PartialEq)]
 pub struct RequiredFeatures(pub bool);
 
-impl Parse for RequiredFeatures {
-    type Data = ();
-    type Err = AttributeError;
-
+impl RequiredFeatures {
     // Parse a requiredFeatures attribute
     // http://www.w3.org/TR/SVG/struct.html#RequiredFeaturesAttribute
-    fn parse(s: &str, _: ()) -> Result<RequiredFeatures, AttributeError> {
+    pub fn from_attribute(s: &str) -> Result<RequiredFeatures, AttributeError> {
         Ok(RequiredFeatures(
             s.split_whitespace()
                 .all(|f| IMPLEMENTED_FEATURES.binary_search(&f).is_ok()),
@@ -70,13 +63,13 @@ impl Parse for RequiredFeatures {
 #[derive(Debug, PartialEq)]
 pub struct SystemLanguage<'a>(pub bool, pub PhantomData<&'a i8>);
 
-impl<'a> Parse for SystemLanguage<'a> {
-    type Data = &'a [String];
-    type Err = AttributeError;
-
+impl<'a> SystemLanguage<'a> {
     // Parse a systemLanguage attribute
     // http://www.w3.org/TR/SVG/struct.html#SystemLanguageAttribute
-    fn parse(s: &str, system_languages: &[String]) -> Result<SystemLanguage<'a>, AttributeError> {
+    pub fn from_attribute(
+        s: &str,
+        system_languages: &[String],
+    ) -> Result<SystemLanguage<'a>, AttributeError> {
         Ok(SystemLanguage(
             s.split(',')
                 .map(|s| s.trim())
@@ -104,80 +97,78 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_required_extensions() {
+    fn required_extensions() {
         assert_eq!(
-            RequiredExtensions::parse("http://test.org/NotExisting/1.0", ()),
+            RequiredExtensions::from_attribute("http://test.org/NotExisting/1.0"),
             Ok(RequiredExtensions(false))
         );
     }
 
     #[test]
-    fn parse_required_features() {
+    fn required_features() {
         assert_eq!(
-            RequiredFeatures::parse("http://www.w3.org/TR/SVG11/feature#NotExisting", ()),
+            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#NotExisting"),
             Ok(RequiredFeatures(false))
         );
 
         assert_eq!(
-            RequiredFeatures::parse("http://www.w3.org/TR/SVG11/feature#BasicFilter", ()),
+            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#BasicFilter"),
             Ok(RequiredFeatures(true))
         );
 
         assert_eq!(
-            RequiredFeatures::parse(
+            RequiredFeatures::from_attribute(
                 "http://www.w3.org/TR/SVG11/feature#BasicFilter \
                  http://www.w3.org/TR/SVG11/feature#NotExisting",
-                ()
             ),
             Ok(RequiredFeatures(false))
         );
 
         assert_eq!(
-            RequiredFeatures::parse(
+            RequiredFeatures::from_attribute(
                 "http://www.w3.org/TR/SVG11/feature#BasicFilter \
                  http://www.w3.org/TR/SVG11/feature#BasicText",
-                ()
             ),
             Ok(RequiredFeatures(true))
         );
     }
 
     #[test]
-    fn parse_system_language() {
+    fn system_language() {
         let system_languages = vec![String::from("de"), String::from("en_US")];
 
         assert_eq!(
-            SystemLanguage::parse("", &system_languages),
+            SystemLanguage::from_attribute("", &system_languages),
             Ok(SystemLanguage(false, PhantomData))
         );
 
         assert_eq!(
-            SystemLanguage::parse("fr", &system_languages),
+            SystemLanguage::from_attribute("fr", &system_languages),
             Ok(SystemLanguage(false, PhantomData))
         );
 
         assert_eq!(
-            SystemLanguage::parse("de", &system_languages),
+            SystemLanguage::from_attribute("de", &system_languages),
             Ok(SystemLanguage(true, PhantomData))
         );
 
         assert_eq!(
-            SystemLanguage::parse("en_US", &system_languages),
+            SystemLanguage::from_attribute("en_US", &system_languages),
             Ok(SystemLanguage(true, PhantomData))
         );
 
         assert_eq!(
-            SystemLanguage::parse("DE", &system_languages),
+            SystemLanguage::from_attribute("DE", &system_languages),
             Ok(SystemLanguage(true, PhantomData))
         );
 
         assert_eq!(
-            SystemLanguage::parse("de-LU", &system_languages),
+            SystemLanguage::from_attribute("de-LU", &system_languages),
             Ok(SystemLanguage(true, PhantomData))
         );
 
         assert_eq!(
-            SystemLanguage::parse("fr, de", &system_languages),
+            SystemLanguage::from_attribute("fr, de", &system_languages),
             Ok(SystemLanguage(true, PhantomData))
         );
     }
