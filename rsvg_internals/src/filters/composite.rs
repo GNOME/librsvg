@@ -1,6 +1,7 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface};
+use cssparser::{CowRcStr, Parser, ParserInput, Token};
 
 use attributes::Attribute;
 use error::{AttributeError, NodeError};
@@ -197,15 +198,26 @@ impl Parse for Operator {
     type Err = AttributeError;
 
     fn parse(s: &str, _data: Self::Data) -> Result<Self, Self::Err> {
-        match s {
-            "over" => Ok(Operator::Over),
-            "in" => Ok(Operator::In),
-            "out" => Ok(Operator::Out),
-            "atop" => Ok(Operator::Atop),
-            "xor" => Ok(Operator::Xor),
-            "arithmetic" => Ok(Operator::Arithmetic),
-            _ => Err(AttributeError::Value("invalid operator value".to_string())),
-        }
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+        let loc = parser.current_source_location();
+
+        parser
+            .expect_ident()
+            .and_then(|cow| match cow.as_ref() {
+                "over" => Ok(Operator::Over),
+                "in" => Ok(Operator::In),
+                "out" => Ok(Operator::Out),
+                "atop" => Ok(Operator::Atop),
+                "xor" => Ok(Operator::Xor),
+                "arithmetic" => Ok(Operator::Arithmetic),
+                _ => Err(
+                    loc.new_basic_unexpected_token_error(Token::Ident(CowRcStr::from(
+                        cow.as_ref().to_string(),
+                    ))),
+                ),
+            })
+            .map_err(|_| AttributeError::Value("invalid operator value".to_string()))
     }
 }
 
