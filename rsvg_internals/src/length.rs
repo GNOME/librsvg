@@ -603,11 +603,8 @@ mod tests {
         );
     }
 
-    fn parse_dash_array_str(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
-        parse_dash_array(&mut parser)
+    fn parse_dash_array_str(s: &str) -> Result<Dasharray, AttributeError> {
+        Dasharray::parse(s, ())
     }
 
     #[test]
@@ -615,33 +612,39 @@ mod tests {
         // helper to cut down boilderplate
         let length_parse = |s| RsvgLength::parse(s, LengthDir::Both).unwrap();
 
-        let expected = vec![
+        let expected = Dasharray::Array(vec![
             length_parse("1"),
             length_parse("2in"),
             length_parse("3"),
             length_parse("4%"),
-        ];
+        ]);
 
-        let sample_1 = vec![length_parse("10"), length_parse("6")];
-        let sample_2 = vec![length_parse("5"), length_parse("5"), length_parse("20")];
+        let sample_1 = Dasharray::Array(vec![length_parse("10"), length_parse("6")]);
 
-        let sample_3 = vec![
+        let sample_2 = Dasharray::Array(vec![
+            length_parse("5"),
+            length_parse("5"),
+            length_parse("20"),
+        ]);
+
+        let sample_3 = Dasharray::Array(vec![
             length_parse("10px"),
             length_parse("20px"),
             length_parse("20px"),
-        ];
+        ]);
 
-        let sample_4 = vec![
+        let sample_4 = Dasharray::Array(vec![
             length_parse("25"),
             length_parse("5"),
             length_parse("5"),
             length_parse("5"),
-        ];
+        ]);
 
-        let sample_5 = vec![length_parse("3.1415926"), length_parse("8")];
-        let sample_6 = vec![length_parse("5"), length_parse("3.14")];
-        let sample_7 = vec![length_parse("2")];
+        let sample_5 = Dasharray::Array(vec![length_parse("3.1415926"), length_parse("8")]);
+        let sample_6 = Dasharray::Array(vec![length_parse("5"), length_parse("3.14")]);
+        let sample_7 = Dasharray::Array(vec![length_parse("2")]);
 
+        assert_eq!(parse_dash_array_str("none").unwrap(), Dasharray::None);
         assert_eq!(parse_dash_array_str("1 2in,3 4%").unwrap(), expected);
         assert_eq!(parse_dash_array_str("10,6").unwrap(), sample_1);
         assert_eq!(parse_dash_array_str("5,5,20").unwrap(), sample_2);
