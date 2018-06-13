@@ -14,7 +14,7 @@ use iri::IRI;
 use length::{Dasharray, LengthDir, LengthUnit, RsvgLength};
 use node::RsvgNode;
 use paint_server::PaintServer;
-use parsers::Parse;
+use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
 use property_macros::Property;
 use unitinterval::UnitInterval;
@@ -1258,15 +1258,90 @@ make_property!(
             type Err = AttributeError;
 
             fn parse(s: &str, _: Self::Data) -> Result<TextDecoration, AttributeError> {
+                let mut input = ParserInput::new(s);
+                let mut parser = Parser::new(&mut input);
+
+                let mut overline = false;
+                let mut underline = false;
+                let mut strike = false;
+
+                if parser.try(|p| p.expect_ident_matching("none")).is_ok() {
+                    return Ok(TextDecoration::default());
+                }
+
+                while !parser.is_exhausted() {
+                    let cow = parser.expect_ident().map_err(|_| ::error::AttributeError::Parse(
+                        ::parsers::ParseError::new("expected identifier"),
+                    ))?;
+
+                    match cow.as_ref() {
+                        "overline" => overline = true,
+                        "underline" => underline = true,
+                        "line-through" => strike = true,
+                        _ => return Err(AttributeError::Parse(ParseError::new("invalid syntax"))),
+                    }
+                }
+
                 Ok(TextDecoration {
-                    overline: s.contains("overline"),
-                    underline: s.contains("underline"),
-                    strike: s.contains("strike") || s.contains("line-through"),
+                    overline,
+                    underline,
+                    strike,
                 })
             }
         }
     }
 );
+
+#[cfg(test)]
+#[test]
+fn parses_text_decoration() {
+    assert_eq!(
+        TextDecoration::parse("none", ()).unwrap(),
+        TextDecoration {
+            overline: false,
+            underline: false,
+            strike: false,
+        }
+    );
+
+    assert_eq!(
+        TextDecoration::parse("overline", ()).unwrap(),
+        TextDecoration {
+            overline: true,
+            underline: false,
+            strike: false,
+        }
+    );
+
+    assert_eq!(
+        TextDecoration::parse("underline", ()).unwrap(),
+        TextDecoration {
+            overline: false,
+            underline: true,
+            strike: false,
+        }
+    );
+
+    assert_eq!(
+        TextDecoration::parse("line-through", ()).unwrap(),
+        TextDecoration {
+            overline: false,
+            underline: false,
+            strike: true,
+        }
+    );
+
+    assert_eq!(
+        TextDecoration::parse("underline overline", ()).unwrap(),
+        TextDecoration {
+            overline: true,
+            underline: true,
+            strike: false,
+        }
+    );
+
+    assert!(TextDecoration::parse("airline", ()).is_err())
+}
 
 // https://www.w3.org/TR/SVG/painting.html#TextRenderingProperty
 make_property!(
