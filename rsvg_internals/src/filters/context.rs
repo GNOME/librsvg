@@ -89,6 +89,8 @@ pub struct FilterContext {
     background_surface: UnsafeCell<Option<Result<cairo::ImageSurface, cairo::Status>>>,
     /// The drawing context.
     drawing_ctx: *mut RsvgDrawingCtx,
+    /// The filter effects region.
+    effects_region: BoundingBox,
 
     /// The filter element affine matrix.
     ///
@@ -135,6 +137,83 @@ fn extract_alpha(
     }
 
     Ok(output_surface)
+}
+
+/// Computes and returns the filter effects region.
+fn compute_effects_region(
+    filter_node: &RsvgNode,
+    drawing_ctx: *mut RsvgDrawingCtx,
+    affine: cairo::Matrix,
+    width: f64,
+    height: f64,
+) -> BoundingBox {
+    // TODO: shouldn't the values be from the target node rather than from the filter node
+    // itself?
+    let cascaded = filter_node.get_cascaded_values();
+    let values = cascaded.get();
+
+    let filter = filter_node.get_impl::<NodeFilter>().unwrap();
+
+    let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
+
+    // affine is set up in FilterContext::new() in such a way that for
+    // filterunits == ObjectBoundingBox affine includes scaling to correct width, height and this
+    // is why width and height are set to 1, 1 (and for filterunits == UserSpaceOnUse affine
+    // doesn't include scaling because in this case the correct width, height already happens to be
+    // the viewbox width, height).
+    //
+    // It's done this way because with ObjectBoundingBox, non-percentage values are supposed to
+    // represent the fractions of the referenced node, and with width and height = 1, 1 this
+    // works out exactly like that.
+    if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
+        drawing_ctx::push_view_box(drawing_ctx, 1f64, 1f64);
+    }
+
+    // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
+    // referencing node. Units must be ignored.
+    let rect = if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
+        cairo::Rectangle {
+            x: filter.x.get().normalize_ignoring_units(values, drawing_ctx),
+            y: filter.y.get().normalize_ignoring_units(values, drawing_ctx),
+            width: filter
+                .width
+                .get()
+                .normalize_ignoring_units(values, drawing_ctx),
+            height: filter
+                .height
+                .get()
+                .normalize_ignoring_units(values, drawing_ctx),
+        }
+    } else {
+        cairo::Rectangle {
+            x: filter.x.get().normalize(values, drawing_ctx),
+            y: filter.y.get().normalize(values, drawing_ctx),
+            width: filter.width.get().normalize(values, drawing_ctx),
+            height: filter.height.get().normalize(values, drawing_ctx),
+        }
+    };
+
+    if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
+        drawing_ctx::pop_view_box(drawing_ctx);
+    }
+
+    let other_bbox = BoundingBox::new(&affine).with_rect(Some(rect));
+
+    // At this point all of the previous viewbox and matrix business gets converted to pixel
+    // coordinates in the final surface, because bbox is created with an identity affine.
+    bbox.insert(&other_bbox);
+
+    // Finally, clip to the width and height of our surface.
+    let rect = cairo::Rectangle {
+        x: 0f64,
+        y: 0f64,
+        width,
+        height,
+    };
+    let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(Some(rect));
+    bbox.clip(&other_bbox);
+
+    bbox
 }
 
 impl IRect {
@@ -190,6 +269,9 @@ impl FilterContext {
             }
         };
 
+        let width = source_surface.get_width();
+        let height = source_surface.get_height();
+
         let mut rv = Self {
             node: filter_node.clone(),
             node_being_filtered: node_being_filtered.clone(),
@@ -197,15 +279,22 @@ impl FilterContext {
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: UnsafeCell::new(None),
+            drawing_ctx: draw_ctx,
+            effects_region: compute_effects_region(
+                filter_node,
+                draw_ctx,
+                affine,
+                f64::from(width),
+                f64::from(height),
+            ),
             affine,
             paffine,
-            drawing_ctx: draw_ctx,
             channelmap,
         };
 
         let last_result = FilterOutput {
             surface: rv.source_surface.clone(),
-            bounds: rv.compute_effects_region().rect.unwrap().into(),
+            bounds: rv.effects_region().rect.unwrap().into(),
         };
 
         rv.last_result = Some(last_result);
@@ -335,81 +424,10 @@ impl FilterContext {
         self.paffine
     }
 
-    /// Computes and returns the filter effects region.
-    pub fn compute_effects_region(&self) -> BoundingBox {
-        // TODO: shouldn't the values be from the target node rather than from the filter node
-        // itself?
-        let cascaded = self.node.get_cascaded_values();
-        let values = cascaded.get();
-
-        let filter = self.node.get_impl::<NodeFilter>().unwrap();
-
-        let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
-
-        // self.affine is set up in new() in such a way that for filterunits == ObjectBoundingBox
-        // affine includes scaling to correct width, height and this is why width and height are
-        // set to 1, 1 (and for filterunits == UserSpaceOnUse affine doesn't include scaling
-        // because in this case the correct width, height already happens to be the viewbox width,
-        // height).
-        //
-        // It's done this way because with ObjectBoundingBox, non-percentage values are supposed to
-        // represent the fractions of the referenced node, and with width and height = 1, 1 this
-        // works out exactly like that.
-        if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
-            drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
-        }
-
-        // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
-        // referencing node. Units must be ignored.
-        let rect = if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
-            cairo::Rectangle {
-                x: filter
-                    .x
-                    .get()
-                    .normalize_ignoring_units(values, self.drawing_ctx),
-                y: filter
-                    .y
-                    .get()
-                    .normalize_ignoring_units(values, self.drawing_ctx),
-                width: filter
-                    .width
-                    .get()
-                    .normalize_ignoring_units(values, self.drawing_ctx),
-                height: filter
-                    .height
-                    .get()
-                    .normalize_ignoring_units(values, self.drawing_ctx),
-            }
-        } else {
-            cairo::Rectangle {
-                x: filter.x.get().normalize(values, self.drawing_ctx),
-                y: filter.y.get().normalize(values, self.drawing_ctx),
-                width: filter.width.get().normalize(values, self.drawing_ctx),
-                height: filter.height.get().normalize(values, self.drawing_ctx),
-            }
-        };
-
-        if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
-            drawing_ctx::pop_view_box(self.drawing_ctx);
-        }
-
-        let other_bbox = BoundingBox::new(&self.affine).with_rect(Some(rect));
-
-        // At this point all of the previous viewbox and matrix business gets converted to pixel
-        // coordinates in the final surface, because bbox is created with an identity affine.
-        bbox.insert(&other_bbox);
-
-        // Finally, clip to the width and height of our surface.
-        let rect = cairo::Rectangle {
-            x: 0f64,
-            y: 0f64,
-            width: f64::from(self.source_surface.get_width()),
-            height: f64::from(self.source_surface.get_height()),
-        };
-        let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(Some(rect));
-        bbox.clip(&other_bbox);
-
-        bbox
+    /// Returns the filter effects region.
+    #[inline]
+    pub fn effects_region(&self) -> BoundingBox {
+        self.effects_region
     }
 
     /// Calls the given function with correct behavior for the value of `primitiveUnits`.
@@ -459,7 +477,7 @@ impl FilterContext {
         match *in_.unwrap() {
             Input::SourceGraphic => Some(FilterInput::StandardInput(self.source_graphic().clone())),
             Input::SourceAlpha => self
-                .source_alpha(self.compute_effects_region().rect.unwrap().into())
+                .source_alpha(self.effects_region().rect.unwrap().into())
                 .ok()
                 .map(FilterInput::StandardInput),
             Input::BackgroundImage => self
@@ -468,7 +486,7 @@ impl FilterContext {
                 .cloned()
                 .map(FilterInput::StandardInput),
             Input::BackgroundAlpha => self
-                .background_alpha(self.compute_effects_region().rect.unwrap().into())
+                .background_alpha(self.effects_region().rect.unwrap().into())
                 .ok()
                 .map(FilterInput::StandardInput),
 
@@ -612,7 +630,7 @@ pub unsafe extern "C" fn rsvg_filter_context_get_lastresult(
         },
         None => RsvgFilterPrimitiveOutput {
             surface: ctx.source_surface.to_glib_none().0,
-            bounds: ctx.compute_effects_region().rect.unwrap().into(),
+            bounds: ctx.effects_region().rect.unwrap().into(),
         },
     }
 }
@@ -744,9 +762,7 @@ pub unsafe extern "C" fn rsvg_filter_get_result(
             let rv = RsvgFilterPrimitiveOutput {
                 surface: ptr,
                 bounds: match input {
-                    FilterInput::StandardInput(_) => {
-                        ctx.compute_effects_region().rect.unwrap().into()
-                    }
+                    FilterInput::StandardInput(_) => ctx.effects_region().rect.unwrap().into(),
                     FilterInput::PrimitiveOutput(FilterOutput { bounds, .. }) => bounds,
                 },
             };

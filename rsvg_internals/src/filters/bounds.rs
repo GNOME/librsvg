@@ -86,7 +86,7 @@ impl<'a> BoundsBuilder<'a> {
         let (mut bbox, needs_clipping) = self.apply_properties();
 
         if needs_clipping {
-            let effects_region = self.ctx.compute_effects_region();
+            let effects_region = self.ctx.effects_region();
             bbox.clip(&effects_region);
         }
 
@@ -105,7 +105,7 @@ impl<'a> BoundsBuilder<'a> {
     fn apply_properties(mut self) -> (BoundingBox, bool) {
         if self.bbox.rect.is_none() || self.standard_input_was_referenced {
             // The default value is the filter effects region.
-            let effects_region = self.ctx.compute_effects_region();
+            let effects_region = self.ctx.effects_region();
 
             // println!("effects_region: {:#?}", effects_region);
 
