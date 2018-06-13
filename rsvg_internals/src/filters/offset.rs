@@ -3,10 +3,10 @@ use std::cell::Cell;
 use cairo::{self, ImageSurface};
 
 use attributes::Attribute;
+use error::NodeError;
 use handle::RsvgHandle;
-use length::{LengthDir, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
-use parsers::{parse, Parse};
+use parsers;
 use property_bag::PropertyBag;
 use util::clamp;
 
@@ -17,8 +17,8 @@ use super::{make_result, Filter, FilterError, PrimitiveWithInput};
 /// The `feOffset` filter primitive.
 pub struct Offset {
     base: PrimitiveWithInput,
-    dx: Cell<RsvgLength>,
-    dy: Cell<RsvgLength>,
+    dx: Cell<f64>,
+    dy: Cell<f64>,
 }
 
 impl Offset {
@@ -27,8 +27,8 @@ impl Offset {
     pub fn new() -> Offset {
         Offset {
             base: PrimitiveWithInput::new::<Self>(),
-            dx: Cell::new(RsvgLength::parse("0", LengthDir::Horizontal).unwrap()),
-            dy: Cell::new(RsvgLength::parse("0", LengthDir::Vertical).unwrap()),
+            dx: Cell::new(0f64),
+            dy: Cell::new(0f64),
         }
     }
 }
@@ -44,12 +44,12 @@ impl NodeTrait for Offset {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                // TODO: unit identifiers shouldn't parse in these attributes (they don't in
-                // Chromium and Firefox).
                 Attribute::Dx => self
                     .dx
-                    .set(parse("dx", value, LengthDir::Horizontal, None)?),
-                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical, None)?),
+                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
+                Attribute::Dy => self
+                    .dy
+                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
                 _ => (),
             }
         }
@@ -64,18 +64,12 @@ impl NodeTrait for Offset {
 }
 
 impl Filter for Offset {
-    fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
-        let cascaded = node.get_cascaded_values();
-        let values = cascaded.get();
-
+    fn render(&self, _node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
         let input = make_result(self.base.get_input(ctx))?;
         let bounds = self.base.get_bounds(ctx).add_input(&input).into_irect();
 
-        // Technically this should use ctx.with_primitive_units(), but it turns out that neither
-        // Chromium nor Firefox accept any units in dx, dy including %, and without units
-        // normalize() returns the same result regardless of the viewbox size.
-        let dx = self.dx.get().normalize(&values, ctx.drawing_context());
-        let dy = self.dy.get().normalize(&values, ctx.drawing_context());
+        let dx = self.dx.get();
+        let dy = self.dy.get();
         let paffine = ctx.paffine();
         let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;
