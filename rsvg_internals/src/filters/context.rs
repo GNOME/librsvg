@@ -77,7 +77,7 @@ pub type RsvgFilterContext = FilterContext;
 pub struct FilterContext {
     /// The <filter> node.
     node: RsvgNode,
-    /// The node which referenced this filter
+    /// The node which referenced this filter.
     node_being_filtered: RsvgNode,
     /// The source graphic surface.
     source_surface: cairo::ImageSurface,
