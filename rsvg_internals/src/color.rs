@@ -14,7 +14,9 @@ impl Parse for cssparser::Color {
 
     fn parse(s: &str, _: Self::Data) -> Result<cssparser::Color, AttributeError> {
         let mut input = cssparser::ParserInput::new(s);
-        cssparser::Color::parse(&mut cssparser::Parser::new(&mut input))
+        let mut parser = cssparser::Parser::new(&mut input);
+
+        cssparser::Color::parse(&mut parser)
             .map_err(|_| AttributeError::Parse(ParseError::new("invalid syntax for color")))
     }
 }
@@ -25,7 +27,9 @@ impl Parse for cssparser::RGBA {
 
     fn parse(s: &str, _: Self::Data) -> Result<cssparser::RGBA, AttributeError> {
         let mut input = cssparser::ParserInput::new(s);
-        match cssparser::Color::parse(&mut cssparser::Parser::new(&mut input)) {
+        let mut parser = cssparser::Parser::new(&mut input);
+
+        match cssparser::Color::parse(&mut parser) {
             Ok(cssparser::Color::RGBA(rgba)) => Ok(rgba),
             Ok(cssparser::Color::CurrentColor) => Err(AttributeError::Value(
                 "currentColor is not allowed here".to_string(),
