@@ -437,9 +437,8 @@ impl FilterContext {
     where
         for<'a> F: FnOnce(Box<Fn(&RsvgLength) -> f64 + 'a>) -> T,
     {
-        // TODO: shouldn't the values be from the target node rather than from the filter node
-        // itself?
-        let cascaded = self.node.get_cascaded_values();
+        // Filters use the properties of the target node.
+        let cascaded = self.node_being_filtered.get_cascaded_values();
         let values = cascaded.get();
 
         let filter = self.node.get_impl::<NodeFilter>().unwrap();

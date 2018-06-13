@@ -28,27 +28,33 @@
     <feFlood flood-color="green"/>
   </filter>
 
+  <!-- Same as above but for the primitive subregion. -->
+  <filter id="cascading-primitive" style="font-size: 30pt">
+    <feFlood x="1em" y="1em" flood-color="green"/>
+  </filter>
+
   <g transform="translate(30 20)">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#defaults)"/>
-    <rect fill="red" x="1" y="100" width="50" height="50"/>
   </g>
 
   <g transform="translate(100 20)">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions)"/>
-    <rect fill="red" x="1" y="100" width="50" height="50"/>
   </g>
 
   <g transform="translate(170 20)" style="font-size: 7pt">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#cascading)"/>
-    <rect fill="red" x="1" y="100" width="50" height="50"/>
+  </g>
+
+  <g transform="translate(170 100)" style="font-size: 7pt">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#cascading-primitive)"/>
   </g>
 
   <g transform="translate(300 20)">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#usou-defaults)"/>
-    <rect fill="red" x="1" y="100" width="50" height="50"/>
   </g>
 </svg>
