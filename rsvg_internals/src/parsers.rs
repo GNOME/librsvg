@@ -226,7 +226,7 @@ pub enum NumberListError {
     Parse(ParseError),
 }
 
-pub fn number_list(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListError> {
+pub fn number_list(parser: &mut Parser, length: ListLength) -> Result<Vec<f64>, NumberListError> {
     let n;
 
     match length {
@@ -240,9 +240,6 @@ pub fn number_list(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListEr
         }
     }
 
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
-
     let mut v = Vec::<f64>::with_capacity(n);
 
     for i in 0..n {
@@ -251,7 +248,7 @@ pub fn number_list(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListEr
         })?));
 
         if i != n - 1 {
-            optional_comma(&mut parser);
+            optional_comma(parser);
         }
 
         if parser.is_exhausted() {
@@ -266,6 +263,13 @@ pub fn number_list(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListEr
         .map_err(|_| NumberListError::IncorrectNumberOfElements)?;
 
     Ok(v)
+}
+
+fn number_list_from_str(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListError> {
+    let mut input = ParserInput::new(s);
+    let mut parser = Parser::new(&mut input);
+
+    number_list(&mut parser, length)
 }
 
 #[repr(C)]
@@ -294,7 +298,7 @@ pub extern "C" fn rsvg_css_parse_number_list(
 
     let s = unsafe { utf8_cstr(in_str) };
 
-    let result = number_list(s, length);
+    let result = number_list_from_str(s, length);
 
     match result {
         Ok(number_list) => {
@@ -390,22 +394,28 @@ mod tests {
 
     #[test]
     fn parses_number_list() {
-        assert_eq!(number_list("5", ListLength::Exact(1)), Ok(vec![5.0]));
+        assert_eq!(
+            number_list_from_str("5", ListLength::Exact(1)),
+            Ok(vec![5.0])
+        );
 
         assert_eq!(
-            number_list("1 2 3 4", ListLength::Exact(4)),
+            number_list_from_str("1 2 3 4", ListLength::Exact(4)),
             Ok(vec![1.0, 2.0, 3.0, 4.0])
         );
 
-        assert_eq!(number_list("5", ListLength::Maximum(1)), Ok(vec![5.0]));
+        assert_eq!(
+            number_list_from_str("5", ListLength::Maximum(1)),
+            Ok(vec![5.0])
+        );
 
         assert_eq!(
-            number_list("1.0, -2.5", ListLength::Maximum(2)),
+            number_list_from_str("1.0, -2.5", ListLength::Maximum(2)),
             Ok(vec![1.0, -2.5])
         );
 
         assert_eq!(
-            number_list("5 6", ListLength::Maximum(3)),
+            number_list_from_str("5 6", ListLength::Maximum(3)),
             Ok(vec![5.0, 6.0])
         );
     }
@@ -413,24 +423,24 @@ mod tests {
     #[test]
     fn errors_on_invalid_number_list() {
         // empty
-        assert!(number_list("", ListLength::Exact(1)).is_err());
+        assert!(number_list_from_str("", ListLength::Exact(1)).is_err());
 
         // garbage
-        assert!(number_list("foo", ListLength::Exact(1)).is_err());
-        assert!(number_list("1foo", ListLength::Exact(2)).is_err());
-        assert!(number_list("1 foo", ListLength::Exact(2)).is_err());
-        assert!(number_list("1 foo 2", ListLength::Exact(2)).is_err());
-        assert!(number_list("1,foo", ListLength::Exact(2)).is_err());
+        assert!(number_list_from_str("foo", ListLength::Exact(1)).is_err());
+        assert!(number_list_from_str("1foo", ListLength::Exact(2)).is_err());
+        assert!(number_list_from_str("1 foo", ListLength::Exact(2)).is_err());
+        assert!(number_list_from_str("1 foo 2", ListLength::Exact(2)).is_err());
+        assert!(number_list_from_str("1,foo", ListLength::Exact(2)).is_err());
 
         // too many
-        assert!(number_list("1 2", ListLength::Exact(1)).is_err());
-        assert!(number_list("1,2,3", ListLength::Maximum(2)).is_err());
+        assert!(number_list_from_str("1 2", ListLength::Exact(1)).is_err());
+        assert!(number_list_from_str("1,2,3", ListLength::Maximum(2)).is_err());
 
         // extra token
-        assert!(number_list("1,", ListLength::Exact(1)).is_err());
+        assert!(number_list_from_str("1,", ListLength::Exact(1)).is_err());
 
         // too few
-        assert!(number_list("1", ListLength::Exact(2)).is_err());
-        assert!(number_list("1 2", ListLength::Exact(3)).is_err());
+        assert!(number_list_from_str("1", ListLength::Exact(2)).is_err());
+        assert!(number_list_from_str("1 2", ListLength::Exact(3)).is_err());
     }
 }

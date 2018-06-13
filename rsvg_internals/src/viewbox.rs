@@ -1,4 +1,5 @@
 use cairo;
+use cssparser::{Parser, ParserInput};
 use glib;
 use glib_sys;
 
@@ -70,7 +71,10 @@ impl Parse for ViewBox {
     //
     // Where w and h must be nonnegative.
     fn parse(s: &str, _: ()) -> Result<ViewBox, AttributeError> {
-        let v = parsers::number_list(s, ListLength::Exact(4))
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
+        let v = parsers::number_list(&mut parser, ListLength::Exact(4))
             .map_err(|_| ParseError::new("string does not match 'x [,] y [,] w [,] h'"))?;
 
         let (x, y, w, h) = (v[0], v[1], v[2], v[3]);
