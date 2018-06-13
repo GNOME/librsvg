@@ -170,19 +170,13 @@ fn compute_effects_region(
     }
 
     // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
-    // referencing node. Units must be ignored.
+    // referencing node. No units are allowed (it's checked during attribute parsing).
     let rect = if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
         cairo::Rectangle {
-            x: filter.x.get().normalize_ignoring_units(values, drawing_ctx),
-            y: filter.y.get().normalize_ignoring_units(values, drawing_ctx),
-            width: filter
-                .width
-                .get()
-                .normalize_ignoring_units(values, drawing_ctx),
-            height: filter
-                .height
-                .get()
-                .normalize_ignoring_units(values, drawing_ctx),
+            x: filter.x.get().get_unitless(),
+            y: filter.y.get().get_unitless(),
+            width: filter.width.get().get_unitless(),
+            height: filter.height.get().get_unitless(),
         }
     } else {
         cairo::Rectangle {
@@ -447,9 +441,7 @@ impl FilterContext {
         if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
             drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
 
-            let rv = f(Box::new(|length: &RsvgLength| {
-                length.normalize_ignoring_units(values, self.drawing_ctx)
-            }));
+            let rv = f(Box::new(RsvgLength::get_unitless));
 
             drawing_ctx::pop_view_box(self.drawing_ctx);
 
