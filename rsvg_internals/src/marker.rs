@@ -85,11 +85,12 @@ impl Parse for MarkerOrient {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
-        match s {
-            "auto" => Ok(MarkerOrient::Auto),
-            _ => parsers::angle_degrees(&mut parser)
+        if parser.try(|p| p.expect_ident_matching("auto")).is_ok() {
+            Ok(MarkerOrient::Auto)
+        } else {
+            parsers::angle_degrees(&mut parser)
                 .map(MarkerOrient::Degrees)
-                .map_err(AttributeError::Parse),
+                .map_err(AttributeError::Parse)
         }
     }
 }
