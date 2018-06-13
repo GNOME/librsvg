@@ -48,11 +48,27 @@ macro_rules! make_property {
             type Err = ::error::AttributeError;
 
             fn parse(s: &str, _: Self::Data) -> Result<$name, ::error::AttributeError> {
-                match s.trim() {
-                    $($str_prop => Ok($name::$variant),)+
+                let mut input = ::cssparser::ParserInput::new(s);
+                let mut parser = ::cssparser::Parser::new(&mut input);
+                let loc = parser.current_source_location();
 
-                    _ => Err(::error::AttributeError::from(::parsers::ParseError::new("invalid value"))),
-                }
+                parser
+                    .expect_ident()
+                    .and_then(|cow| match cow.as_ref() {
+                        $($str_prop => Ok($name::$variant),)+
+
+                            _ => Err(
+                                loc.new_basic_unexpected_token_error(
+                                    ::cssparser::Token::Ident(::cssparser::CowRcStr::from(
+                                        cow.as_ref().to_string(),
+                                    ))),
+                            ),
+                    })
+                    .map_err(|_| {
+                        ::error::AttributeError::Parse(::parsers::ParseError::new(
+                            "unexpected value",
+                        ))
+                    })
             }
         }
     };
