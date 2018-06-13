@@ -1,4 +1,4 @@
-use cssparser;
+use cssparser::{self, Parser, ParserInput, Token};
 use glib::translate::*;
 use glib_sys;
 use libc;
@@ -698,12 +698,38 @@ make_property!(
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
             fn parse(s: &str, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
-                match s.trim() {
-                    "baseline" => Ok(BaselineShift(RsvgLength::new(0.0, LengthUnit::Percent, LengthDir::Both))),
-                    "sub" => Ok(BaselineShift(RsvgLength::new(-0.2, LengthUnit::Percent, LengthDir::Both))),
-                    "super" => Ok(BaselineShift(RsvgLength::new(0.4, LengthUnit::Percent, LengthDir::Both))),
-                    _ => Ok(BaselineShift(RsvgLength::parse(s, LengthDir::Both)?)),
+                let mut input = ParserInput::new(s);
+                let mut parser = Parser::new(&mut input);
+
+                let parser_state = parser.state();
+
+                {
+                    let token = parser.next().map_err(|_| ::error::AttributeError::Parse(
+                        ::parsers::ParseError::new("expected token"),
+                    ))?;
+
+                    if let Token::Ident(ref cow) = token {
+                        match cow.as_ref() {
+                            "baseline" => return Ok(BaselineShift(
+                                RsvgLength::new(0.0, LengthUnit::Percent, LengthDir::Both)
+                            )),
+
+                            "sub" => return Ok(BaselineShift(
+                                RsvgLength::new(-0.2, LengthUnit::Percent, LengthDir::Both)
+                            )),
+
+                            "super" => return Ok(BaselineShift(
+                                RsvgLength::new(0.4, LengthUnit::Percent, LengthDir::Both),
+                            )),
+
+                            _ => (),
+                        }
+                    }
                 }
+
+                parser.reset(&parser_state);
+
+                Ok(BaselineShift(RsvgLength::from_cssparser(&mut parser, LengthDir::Both)?))
             }
         }
     }

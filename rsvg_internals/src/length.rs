@@ -201,7 +201,10 @@ impl RsvgLength {
         }
     }
 
-    fn from_cssparser(parser: &mut Parser, dir: LengthDir) -> Result<RsvgLength, AttributeError> {
+    pub fn from_cssparser(
+        parser: &mut Parser,
+        dir: LengthDir,
+    ) -> Result<RsvgLength, AttributeError> {
         let length = {
             let token = parser.next().map_err(|_| {
                 AttributeError::Parse(ParseError::new(
