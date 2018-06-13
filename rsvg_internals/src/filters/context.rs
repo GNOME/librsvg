@@ -142,14 +142,14 @@ fn extract_alpha(
 /// Computes and returns the filter effects region.
 fn compute_effects_region(
     filter_node: &RsvgNode,
+    target_node: &RsvgNode,
     drawing_ctx: *mut RsvgDrawingCtx,
     affine: cairo::Matrix,
     width: f64,
     height: f64,
 ) -> BoundingBox {
-    // TODO: shouldn't the values be from the target node rather than from the filter node
-    // itself?
-    let cascaded = filter_node.get_cascaded_values();
+    // Filters use the properties of the target node.
+    let cascaded = target_node.get_cascaded_values();
     let values = cascaded.get();
 
     let filter = filter_node.get_impl::<NodeFilter>().unwrap();
@@ -282,6 +282,7 @@ impl FilterContext {
             drawing_ctx: draw_ctx,
             effects_region: compute_effects_region(
                 filter_node,
+                node_being_filtered,
                 draw_ctx,
                 affine,
                 f64::from(width),

@@ -20,6 +20,14 @@
     <feFlood flood-color="green"/>
   </filter>
 
+  <!-- According to the spec, the "em" here should use the coordinate system
+       of the referencing node. Firefox follows this. Chromium uses the filter node's
+       coordinate system instead. -->
+  <filter id="cascading" filterUnits="userSpaceOnUse" style="font-size: 30pt"
+    x="1em" y="1em" width="50" height="50">
+    <feFlood flood-color="green"/>
+  </filter>
+
   <g transform="translate(30 20)">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#defaults)"/>
@@ -29,6 +37,12 @@
   <g transform="translate(100 20)">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions)"/>
+    <rect fill="red" x="1" y="100" width="50" height="50"/>
+  </g>
+
+  <g transform="translate(170 20)" style="font-size: 7pt">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#cascading)"/>
     <rect fill="red" x="1" y="100" width="50" height="50"/>
   </g>
 
