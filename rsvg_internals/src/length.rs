@@ -367,23 +367,24 @@ impl Parse for Dasharray {
     type Err = AttributeError;
 
     fn parse(s: &str, _: Self::Data) -> Result<Dasharray, AttributeError> {
-        match s.trim() {
-            "none" => Ok(Dasharray::None),
-            _ => Ok(Dasharray::Array(parse_dash_array(s)?)),
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
+        if parser.try(|p| p.expect_ident_matching("none")).is_ok() {
+            Ok(Dasharray::None)
+        } else {
+            Ok(Dasharray::Array(parse_dash_array(&mut parser)?))
         }
     }
 }
 
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
-fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
-
+fn parse_dash_array(parser: &mut Parser) -> Result<Vec<RsvgLength>, AttributeError> {
     let mut dasharray = Vec::new();
 
     loop {
         dasharray.push(
-            RsvgLength::from_cssparser(&mut parser, LengthDir::Both)
+            RsvgLength::from_cssparser(parser, LengthDir::Both)
                 .and_then(RsvgLength::check_nonnegative)?,
         );
 
@@ -603,7 +604,10 @@ mod tests {
     }
 
     fn parse_dash_array_str(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
-        parse_dash_array(s)
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
+        parse_dash_array(&mut parser)
     }
 
     #[test]
