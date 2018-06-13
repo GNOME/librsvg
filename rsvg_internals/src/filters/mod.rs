@@ -153,7 +153,7 @@ impl NodeTrait for PrimitiveWithInput {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::In => drop(self.in_.replace(Some(parse("in", value, (), None)?))),
+                Attribute::In => drop(self.in_.replace(Some(Input::parse(Attribute::In, value)?))),
                 _ => (),
             }
         }

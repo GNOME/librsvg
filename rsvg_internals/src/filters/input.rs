@@ -1,5 +1,6 @@
-use error::AttributeError;
-use parsers::Parse;
+use attributes::Attribute;
+use error::NodeError;
+use parsers::ParseError;
 
 /// An enumeration of possible inputs for a filter primitive.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -13,11 +14,8 @@ pub enum Input {
     FilterOutput(String),
 }
 
-impl Parse for Input {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _data: Self::Data) -> Result<Self, Self::Err> {
+impl Input {
+    pub fn parse(attr: Attribute, s: &str) -> Result<Input, NodeError> {
         match s {
             "SourceGraphic" => Ok(Input::SourceGraphic),
             "SourceAlpha" => Ok(Input::SourceAlpha),
@@ -25,7 +23,11 @@ impl Parse for Input {
             "BackgroundAlpha" => Ok(Input::BackgroundAlpha),
             "FillPaint" => Ok(Input::FillPaint),
             "StrokePaint" => Ok(Input::StrokePaint),
-            s => Ok(Input::FilterOutput(s.to_string())),
+            s if !s.is_empty() => Ok(Input::FilterOutput(s.to_string())),
+            _ => Err(NodeError::parse_error(
+                attr,
+                ParseError::new("invalid value"),
+            )),
         }
     }
 }

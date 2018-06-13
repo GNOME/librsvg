@@ -5,7 +5,6 @@ use cairo::{self, ImageSurface};
 use attributes::Attribute;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
-use parsers::parse;
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
 
@@ -71,7 +70,7 @@ impl NodeTrait for MergeNode {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::In => {
-                    self.in_.replace(Some(parse("in", value, (), None)?));
+                    self.in_.replace(Some(Input::parse(Attribute::In, value)?));
                 }
                 _ => (),
             }
