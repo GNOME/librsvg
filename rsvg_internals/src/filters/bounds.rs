@@ -107,8 +107,6 @@ impl<'a> BoundsBuilder<'a> {
             // The default value is the filter effects region.
             let effects_region = self.ctx.effects_region();
 
-            // println!("effects_region: {:#?}", effects_region);
-
             // Clear out the rect.
             self.bbox = self.bbox.with_rect(None);
             // Convert into the paffine coordinate system.
