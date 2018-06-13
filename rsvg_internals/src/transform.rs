@@ -13,7 +13,10 @@ impl Parse for cairo::Matrix {
     type Err = AttributeError;
 
     fn parse(s: &str, _: ()) -> Result<cairo::Matrix, AttributeError> {
-        let matrix = parse_transform_list(s)?;
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
+        let matrix = parse_transform_list(&mut parser)?;
 
         matrix
             .try_invert()
@@ -26,10 +29,7 @@ impl Parse for cairo::Matrix {
 // Its operataion and grammar are described here:
 // https://www.w3.org/TR/SVG/coords.html#TransformAttribute
 
-fn parse_transform_list(s: &str) -> Result<cairo::Matrix, AttributeError> {
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
-
+fn parse_transform_list(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
     let mut matrix = cairo::Matrix::identity();
 
     loop {
@@ -37,10 +37,10 @@ fn parse_transform_list(s: &str) -> Result<cairo::Matrix, AttributeError> {
             break;
         }
 
-        let m = parse_transform_command(&mut parser)?;
+        let m = parse_transform_command(parser)?;
         matrix = cairo::Matrix::multiply(&m, &matrix);
 
-        optional_comma(&mut parser);
+        optional_comma(parser);
     }
 
     Ok(matrix)
