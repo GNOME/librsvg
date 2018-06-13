@@ -82,9 +82,12 @@ impl Parse for MarkerOrient {
     type Err = AttributeError;
 
     fn parse(s: &str, _: ()) -> Result<MarkerOrient, AttributeError> {
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
         match s {
             "auto" => Ok(MarkerOrient::Auto),
-            _ => parsers::angle_degrees(s)
+            _ => parsers::angle_degrees(&mut parser)
                 .map(MarkerOrient::Degrees)
                 .map_err(AttributeError::Parse),
         }

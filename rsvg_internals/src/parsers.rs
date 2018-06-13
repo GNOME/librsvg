@@ -73,10 +73,7 @@ where
 //
 // Returns an f64 angle in degrees
 
-pub fn angle_degrees(s: &str) -> Result<f64, ParseError> {
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
-
+pub fn angle_degrees(parser: &mut Parser) -> Result<f64, ParseError> {
     let angle = {
         let token = parser
             .next()
@@ -379,17 +376,24 @@ mod tests {
         assert!(list_of_points("1 2-3,-4").is_err());
     }
 
+    fn angle_degrees_str(s: &str) -> Result<f64, ParseError> {
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
+        angle_degrees(&mut parser)
+    }
+
     #[test]
     fn parses_angle() {
-        assert_eq!(angle_degrees("0"), Ok(0.0));
-        assert_eq!(angle_degrees("15"), Ok(15.0));
-        assert_eq!(angle_degrees("180.5deg"), Ok(180.5));
-        assert_eq!(angle_degrees("1rad"), Ok(180.0 / PI));
-        assert_eq!(angle_degrees("-400grad"), Ok(-360.0));
+        assert_eq!(angle_degrees_str("0"), Ok(0.0));
+        assert_eq!(angle_degrees_str("15"), Ok(15.0));
+        assert_eq!(angle_degrees_str("180.5deg"), Ok(180.5));
+        assert_eq!(angle_degrees_str("1rad"), Ok(180.0 / PI));
+        assert_eq!(angle_degrees_str("-400grad"), Ok(-360.0));
 
-        assert!(angle_degrees("").is_err());
-        assert!(angle_degrees("foo").is_err());
-        assert!(angle_degrees("300foo").is_err());
+        assert!(angle_degrees_str("").is_err());
+        assert!(angle_degrees_str("foo").is_err());
+        assert!(angle_degrees_str("300foo").is_err());
     }
 
     #[test]
