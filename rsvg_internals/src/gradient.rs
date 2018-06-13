@@ -1,5 +1,5 @@
 use cairo::{self, MatrixTrait};
-use cssparser;
+use cssparser::{self, CowRcStr, Parser, ParserInput, Token};
 
 use std::cell::RefCell;
 
@@ -40,14 +40,25 @@ impl Parse for SpreadMethod {
     type Err = AttributeError;
 
     fn parse(s: &str, _: ()) -> Result<SpreadMethod, AttributeError> {
-        match s {
-            "pad" => Ok(SpreadMethod::Pad),
-            "reflect" => Ok(SpreadMethod::Reflect),
-            "repeat" => Ok(SpreadMethod::Repeat),
-            _ => Err(AttributeError::Parse(ParseError::new(
-                "expected 'pad' | 'reflect' | 'repeat'",
-            ))),
-        }
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+        let loc = parser.current_source_location();
+
+        parser
+            .expect_ident()
+            .and_then(|cow| match cow.as_ref() {
+                "pad" => Ok(SpreadMethod::Pad),
+                "reflect" => Ok(SpreadMethod::Reflect),
+                "repeat" => Ok(SpreadMethod::Repeat),
+                _ => Err(
+                    loc.new_basic_unexpected_token_error(Token::Ident(CowRcStr::from(
+                        cow.as_ref().to_string(),
+                    ))),
+                ),
+            })
+            .map_err(|_| {
+                AttributeError::Parse(ParseError::new("expected 'pad' | 'reflect' | 'repeat'"))
+            })
     }
 }
 
