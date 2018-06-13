@@ -2,10 +2,12 @@ use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
 use attributes::Attribute;
+use coord_units::CoordUnits;
+use error::AttributeError;
 use handle::RsvgHandle;
-use length::{LengthDir, RsvgLength};
+use length::{LengthDir, LengthUnit, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
-use parsers::parse;
+use parsers::{parse, parse_and_validate, ParseError};
 use property_bag::PropertyBag;
 
 mod bounds;
@@ -26,6 +28,7 @@ use self::input::Input;
 
 pub mod iterators;
 pub mod node;
+use self::node::NodeFilter;
 
 pub mod composite;
 pub mod image;
@@ -96,19 +99,53 @@ impl Primitive {
 }
 
 impl NodeTrait for Primitive {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        // With ObjectBoundingBox, only fractions and percents are allowed.
+        let primitiveunits = node
+            .get_parent()
+            .unwrap()
+            .with_impl(|f: &NodeFilter| f.primitiveunits.get());
+
+        let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
+        let verify_length = |length: RsvgLength| {
+            if !no_units_allowed {
+                return Ok(length);
+            }
+
+            match length.unit {
+                LengthUnit::Default | LengthUnit::Percent => Ok(length),
+                _ => Err(AttributeError::Parse(ParseError::new(
+                    "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
+                ))),
+            }
+        };
+
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(Some(parse("x", value, LengthDir::Horizontal)?)),
-                Attribute::Y => self.y.set(Some(parse("y", value, LengthDir::Vertical)?)),
-                Attribute::Width => {
-                    self.width
-                        .set(Some(parse("width", value, LengthDir::Horizontal)?))
-                }
-                Attribute::Height => {
-                    self.height
-                        .set(Some(parse("height", value, LengthDir::Vertical)?))
-                }
+                Attribute::X => self.x.set(Some(parse_and_validate(
+                    "x",
+                    value,
+                    LengthDir::Horizontal,
+                    verify_length,
+                )?)),
+                Attribute::Y => self.y.set(Some(parse_and_validate(
+                    "y",
+                    value,
+                    LengthDir::Vertical,
+                    verify_length,
+                )?)),
+                Attribute::Width => self.width.set(Some(parse_and_validate(
+                    "width",
+                    value,
+                    LengthDir::Horizontal,
+                    verify_length,
+                )?)),
+                Attribute::Height => self.height.set(Some(parse_and_validate(
+                    "height",
+                    value,
+                    LengthDir::Vertical,
+                    verify_length,
+                )?)),
                 Attribute::Result => *self.result.borrow_mut() = Some(value.to_string()),
                 _ => (),
             }
