@@ -116,6 +116,7 @@ impl MergeNode {
 
 impl Filter for Merge {
     fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
+        // Compute the filter bounds, taking each child node's input into account.
         let mut bounds = self.base.get_bounds(ctx);
         for child in node
             .children()
@@ -127,6 +128,7 @@ impl Filter for Merge {
         }
         let bounds = bounds.into_irect();
 
+        // Now merge them all.
         let mut output_surface = None;
         for child in node
             .children()
