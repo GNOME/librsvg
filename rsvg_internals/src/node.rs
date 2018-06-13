@@ -27,7 +27,7 @@ use state::{
     RsvgState,
     SpecifiedValue,
     SpecifiedValues,
-    State
+    State,
 };
 use util::utf8_cstr;
 
