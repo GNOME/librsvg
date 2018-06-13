@@ -1,6 +1,5 @@
 use cssparser::{Parser, ParserInput, Token};
 use libc;
-use regex::Regex;
 use std::f64::consts::*;
 
 use drawing_ctx;
@@ -377,42 +376,25 @@ impl Parse for Dasharray {
 
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
 fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
-    lazy_static!{
-        // The unwrap here is fine AS LONG the regex query is valid.
-        static ref COMMAS: Regex = Regex::new(r",\s*,").unwrap();
-    };
+    let mut input = ParserInput::new(s);
+    let mut parser = Parser::new(&mut input);
 
-    let s = s.trim();
+    let mut dasharray = Vec::new();
 
-    if s.is_empty() {
-        return Err(AttributeError::Parse(ParseError::new("empty string")));
-    }
+    loop {
+        dasharray.push(
+            RsvgLength::from_cssparser(&mut parser, LengthDir::Both)
+                .and_then(RsvgLength::check_nonnegative)?,
+        );
 
-    // Read the last character, if it's a comma return an Error.
-    if let Some(c) = s.chars().last() {
-        if c == ',' {
-            return Err(AttributeError::Parse(ParseError::new("trailing comma")));
+        if parser.is_exhausted() {
+            break;
+        } else if parser.try(|p| p.expect_comma()).is_ok() {
+            continue;
         }
     }
 
-    // Commas must be followed by a value.
-    if COMMAS.is_match(s) {
-        return Err(AttributeError::Parse(ParseError::new(
-            "expected number, found comma",
-        )));
-    }
-
-    // Values can be comma or whitespace separated.
-    s.split(',') // split at comma
-        // split at whitespace
-        .flat_map(|slice| slice.split_whitespace())
-        // parse it into an RsvgLength
-        .map(|d| RsvgLength::parse(d, LengthDir::Both)
-             .and_then(|l| l.check_nonnegative()))
-        // collect into a Result<Vec<T>, E>.
-        // it will short-circuit iteslf upon the first error encountered
-        // like if you returned from a for-loop
-        .collect::<Result<Vec<_>, _>>()
+    Ok(dasharray)
 }
 
 #[no_mangle]
@@ -620,6 +602,10 @@ mod tests {
         );
     }
 
+    fn parse_dash_array_str(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
+        parse_dash_array(s)
+    }
+
     #[test]
     fn parses_dash_array() {
         // helper to cut down boilderplate
@@ -652,37 +638,31 @@ mod tests {
         let sample_6 = vec![length_parse("5"), length_parse("3.14")];
         let sample_7 = vec![length_parse("2")];
 
-        assert_eq!(parse_dash_array("1 2in,3 4%").unwrap(), expected);
-        assert_eq!(parse_dash_array("10,6").unwrap(), sample_1);
-        assert_eq!(parse_dash_array("5,5,20").unwrap(), sample_2);
-        assert_eq!(parse_dash_array("10px 20px 20px").unwrap(), sample_3);
-        assert_eq!(parse_dash_array("25  5 , 5 5").unwrap(), sample_4);
-        assert_eq!(parse_dash_array("3.1415926,8").unwrap(), sample_5);
-        assert_eq!(parse_dash_array("5, 3.14").unwrap(), sample_6);
-        assert_eq!(parse_dash_array("2").unwrap(), sample_7);
+        assert_eq!(parse_dash_array_str("1 2in,3 4%").unwrap(), expected);
+        assert_eq!(parse_dash_array_str("10,6").unwrap(), sample_1);
+        assert_eq!(parse_dash_array_str("5,5,20").unwrap(), sample_2);
+        assert_eq!(parse_dash_array_str("10px 20px 20px").unwrap(), sample_3);
+        assert_eq!(parse_dash_array_str("25  5 , 5 5").unwrap(), sample_4);
+        assert_eq!(parse_dash_array_str("3.1415926,8").unwrap(), sample_5);
+        assert_eq!(parse_dash_array_str("5, 3.14").unwrap(), sample_6);
+        assert_eq!(parse_dash_array_str("2").unwrap(), sample_7);
 
         // Negative numbers
         assert_eq!(
-            parse_dash_array("20,40,-20"),
+            parse_dash_array_str("20,40,-20"),
             Err(AttributeError::Value(String::from(
                 "value must be non-negative"
             )))
         );
 
         // Empty dash_array
-        assert_eq!(
-            parse_dash_array(""),
-            Err(AttributeError::Parse(ParseError::new("empty string")))
-        );
-        assert_eq!(
-            parse_dash_array("\t  \n     "),
-            Err(AttributeError::Parse(ParseError::new("empty string")))
-        );
-        assert!(parse_dash_array(",,,").is_err());
-        assert!(parse_dash_array("10,  \t, 20 \n").is_err());
-        // No trailling commas allowed, parse error
-        assert!(parse_dash_array("10,").is_err());
+        assert!(parse_dash_array_str("").is_err());
+        assert!(parse_dash_array_str("\t  \n     ").is_err());
+        assert!(parse_dash_array_str(",,,").is_err());
+        assert!(parse_dash_array_str("10,  \t, 20 \n").is_err());
+        // No trailing commas allowed, parse error
+        assert!(parse_dash_array_str("10,").is_err());
         // A comma should be followed by a number
-        assert!(parse_dash_array("20,,10").is_err());
+        assert!(parse_dash_array_str("20,,10").is_err());
     }
 }
