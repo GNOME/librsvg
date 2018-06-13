@@ -3,10 +3,11 @@ use std::cell::Cell;
 
 use attributes::Attribute;
 use coord_units::CoordUnits;
+use error::AttributeError;
 use handle::RsvgHandle;
-use length::{LengthDir, RsvgLength};
+use length::{LengthDir, LengthUnit, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{parse, Parse};
+use parsers::{parse, parse_and_validate, Parse, ParseError};
 use property_bag::PropertyBag;
 
 /// The <filter> node.
@@ -41,17 +42,56 @@ impl NodeTrait for NodeFilter {
         _handle: *const RsvgHandle,
         pbag: &PropertyBag,
     ) -> NodeResult {
+        // Parse filterUnits first as it affects x, y, width, height checks.
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
-                Attribute::Width => self
-                    .width
-                    .set(parse("width", value, LengthDir::Horizontal)?),
-                Attribute::Height => self
-                    .height
-                    .set(parse("height", value, LengthDir::Vertical)?),
                 Attribute::FilterUnits => self.filterunits.set(parse("filterUnits", value, ())?),
+                _ => (),
+            }
+        }
+
+        // With ObjectBoundingBox, only fractions and percents are allowed.
+        let no_units_allowed = self.filterunits.get() == CoordUnits::ObjectBoundingBox;
+        let verify_length = |length: RsvgLength| {
+            if !no_units_allowed {
+                return Ok(length);
+            }
+
+            match length.unit {
+                LengthUnit::Default | LengthUnit::Percent => Ok(length),
+                _ => Err(AttributeError::Parse(ParseError::new(
+                    "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
+                ))),
+            }
+        };
+
+        // Parse the rest of the attributes.
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::X => self.x.set(parse_and_validate(
+                    "x",
+                    value,
+                    LengthDir::Horizontal,
+                    verify_length,
+                )?),
+                Attribute::Y => self.y.set(parse_and_validate(
+                    "y",
+                    value,
+                    LengthDir::Vertical,
+                    verify_length,
+                )?),
+                Attribute::Width => self.width.set(parse_and_validate(
+                    "width",
+                    value,
+                    LengthDir::Horizontal,
+                    verify_length,
+                )?),
+                Attribute::Height => self.height.set(parse_and_validate(
+                    "height",
+                    value,
+                    LengthDir::Vertical,
+                    verify_length,
+                )?),
                 Attribute::PrimitiveUnits => {
                     self.primitiveunits.set(parse("primitiveUnits", value, ())?)
                 }

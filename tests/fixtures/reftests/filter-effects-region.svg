@@ -14,9 +14,14 @@
     <feFlood flood-color="green"/>
   </filter>
 
+  <!-- Fractions of the bounding box on the referencing element. -->
+  <filter id="fractions" x="0.25" y="0.25" width="0.5" height="0.5">
+    <feFlood flood-color="green"/>
+  </filter>
+
   <!-- Fractions of the bounding box on the referencing element.
-       Note this "em": in this case it's invalid and should be ignored. -->
-  <filter id="fractions" x="0.25em" y="0.25" width="0.5" height="0.5">
+       Note this "em": in this case it's invalid. -->
+  <filter id="fractions-invalid" x="0.25em" y="0.25" width="0.5" height="0.5">
     <feFlood flood-color="green"/>
   </filter>
 
@@ -41,6 +46,11 @@
   <g transform="translate(100 20)">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions)"/>
+  </g>
+
+  <g transform="translate(100 100)">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions-invalid)"/>
   </g>
 
   <g transform="translate(170 20)" style="font-size: 7pt">
