@@ -25,6 +25,12 @@
     <feFlood flood-color="green"/>
   </filter>
 
+  <!-- Same as above but for the primitive subregion. -->
+  <filter id="fractions-invalid-primitive" primitiveUnits="objectBoundingBox">
+    <feFlood flood-color="green"/>
+    <feOffset width="0.9em" dx="0.5" dy="0.5"/>
+  </filter>
+
   <!-- According to the spec, the "em" here should use the coordinate system
        of the referencing node. Firefox follows this. Chromium uses the filter node's
        coordinate system instead. -->
@@ -51,6 +57,11 @@
   <g transform="translate(100 100)">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions-invalid)"/>
+  </g>
+
+  <g transform="translate(100 180)">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions-invalid-primitive)"/>
   </g>
 
   <g transform="translate(170 20)" style="font-size: 7pt">
