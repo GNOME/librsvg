@@ -5,7 +5,7 @@ use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use parsers::parse;
+use parsers::parse_and_validate;
 use property_bag::PropertyBag;
 
 pub struct NodeStop {
@@ -53,7 +53,8 @@ impl NodeTrait for NodeStop {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::Offset => {
-                    let length = parse("offset", value, LengthDir::Both, Some(validate_offset))?;
+                    let length =
+                        parse_and_validate("offset", value, LengthDir::Both, validate_offset)?;
                     assert!(
                         length.unit == LengthUnit::Default || length.unit == LengthUnit::Percent
                     );

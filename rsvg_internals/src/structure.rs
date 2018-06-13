@@ -9,7 +9,7 @@ use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use parsers::{parse, Parse};
+use parsers::{parse, parse_and_validate, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
 use state::{self, Overflow};
 use viewbox::*;
@@ -131,36 +131,36 @@ impl NodeTrait for NodeSvg {
             match attr {
                 Attribute::PreserveAspectRatio => {
                     self.preserve_aspect_ratio
-                        .set(parse("preserveAspectRatio", value, (), None)?)
+                        .set(parse("preserveAspectRatio", value, ())?)
                 }
 
                 Attribute::X => {
                     if is_inner_svg {
-                        self.x.set(parse("x", value, LengthDir::Horizontal, None)?);
+                        self.x.set(parse("x", value, LengthDir::Horizontal)?);
                     }
                 }
 
                 Attribute::Y => {
                     if is_inner_svg {
-                        self.y.set(parse("y", value, LengthDir::Vertical, None)?);
+                        self.y.set(parse("y", value, LengthDir::Vertical)?);
                     }
                 }
 
-                Attribute::Width => self.w.set(parse(
+                Attribute::Width => self.w.set(parse_and_validate(
                     "width",
                     value,
                     LengthDir::Horizontal,
-                    Some(RsvgLength::check_nonnegative),
+                    RsvgLength::check_nonnegative,
                 )?),
 
-                Attribute::Height => self.h.set(parse(
+                Attribute::Height => self.h.set(parse_and_validate(
                     "height",
                     value,
                     LengthDir::Vertical,
-                    Some(RsvgLength::check_nonnegative),
+                    RsvgLength::check_nonnegative,
                 )?),
 
-                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None).map(Some)?),
+                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, ()).map(Some)?),
 
                 _ => (),
             }
@@ -237,23 +237,23 @@ impl NodeTrait for NodeUse {
             match attr {
                 Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
 
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
+                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
 
                 Attribute::Width => self.w.set(
-                    parse(
+                    parse_and_validate(
                         "width",
                         value,
                         LengthDir::Horizontal,
-                        Some(RsvgLength::check_nonnegative),
+                        RsvgLength::check_nonnegative,
                     ).map(Some)?,
                 ),
                 Attribute::Height => self.h.set(
-                    parse(
+                    parse_and_validate(
                         "height",
                         value,
                         LengthDir::Vertical,
-                        Some(RsvgLength::check_nonnegative),
+                        RsvgLength::check_nonnegative,
                     ).map(Some)?,
                 ),
 
@@ -393,10 +393,10 @@ impl NodeTrait for NodeSymbol {
             match attr {
                 Attribute::PreserveAspectRatio => {
                     self.preserve_aspect_ratio
-                        .set(parse("preserveAspectRatio", value, (), None)?)
+                        .set(parse("preserveAspectRatio", value, ())?)
                 }
 
-                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None).map(Some)?),
+                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, ()).map(Some)?),
 
                 _ => (),
             }

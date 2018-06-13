@@ -39,6 +39,21 @@ pub trait Parse: Sized {
     fn parse(s: &str, data: Self::Data) -> Result<Self, Self::Err>;
 }
 
+/// Parses a `value` string into a type `T`.
+///
+/// Some value types need some extra `data` to be parsed.  This
+/// corresponds to the `<T as Parse>::Data` associated type.  For
+/// example, an `RsvgLength` has an associated `type Data =
+/// LengthDir`, so to parse a length value, you could specify
+/// `LengthDir::Horizontal` for `data`, for example.
+pub fn parse<T>(key: &str, value: &str, data: <T as Parse>::Data) -> Result<T, NodeError>
+where
+    T: Parse<Err = AttributeError>,
+{
+    T::parse(value, data)
+        .map_err(|e| NodeError::attribute_error(Attribute::from_str(key).unwrap(), e))
+}
+
 /// Parses a `value` string into a type `T` with an optional validation function.
 ///
 /// Some value types need some extra `data` to be parsed.  This
@@ -46,23 +61,18 @@ pub trait Parse: Sized {
 /// example, an `RsvgLength` has an associated `type Data =
 /// LengthDir`, so to parse a length value, you could specify
 /// `LengthDir::Horizontal` for `data`, for example.
-pub fn parse<T>(
+pub fn parse_and_validate<T, F>(
     key: &str,
     value: &str,
     data: <T as Parse>::Data,
-    validate: Option<fn(T) -> Result<T, AttributeError>>,
+    validate: F,
 ) -> Result<T, NodeError>
 where
     T: Parse<Err = AttributeError>,
+    F: FnOnce(T) -> Result<T, AttributeError>,
 {
     T::parse(value, data)
-        .and_then(|v| {
-            if let Some(validate) = validate {
-                validate(v)
-            } else {
-                Ok(v)
-            }
-        })
+        .and_then(validate)
         .map_err(|e| NodeError::attribute_error(Attribute::from_str(key).unwrap(), e))
 }
 

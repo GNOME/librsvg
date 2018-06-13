@@ -10,7 +10,7 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
 use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{parse, Parse};
+use parsers::{parse, parse_and_validate, Parse};
 use property_bag::PropertyBag;
 use state::Opacity;
 
@@ -185,26 +185,26 @@ impl NodeTrait for NodeMask {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
-                Attribute::Width => self.width.set(parse(
+                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
+                Attribute::Width => self.width.set(parse_and_validate(
                     "width",
                     value,
                     LengthDir::Horizontal,
-                    Some(RsvgLength::check_nonnegative),
+                    RsvgLength::check_nonnegative,
                 )?),
-                Attribute::Height => self.height.set(parse(
+                Attribute::Height => self.height.set(parse_and_validate(
                     "height",
                     value,
                     LengthDir::Vertical,
-                    Some(RsvgLength::check_nonnegative),
+                    RsvgLength::check_nonnegative,
                 )?),
 
-                Attribute::MaskUnits => self.units.set(parse("maskUnits", value, (), None)?),
+                Attribute::MaskUnits => self.units.set(parse("maskUnits", value, ())?),
 
                 Attribute::MaskContentUnits => {
                     self.content_units
-                        .set(parse("maskContentUnits", value, (), None)?)
+                        .set(parse("maskContentUnits", value, ())?)
                 }
 
                 _ => (),

@@ -66,9 +66,9 @@ impl NodeTrait for Composite {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::In2 => {
-                    self.in2.replace(Some(parse("in2", value, (), None)?));
+                    self.in2.replace(Some(parse("in2", value, ())?));
                 }
-                Attribute::Operator => self.operator.set(parse("operator", value, (), None)?),
+                Attribute::Operator => self.operator.set(parse("operator", value, ())?),
                 Attribute::K1 => self
                     .k1
                     .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),

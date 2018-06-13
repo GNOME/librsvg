@@ -99,19 +99,15 @@ impl NodeTrait for Primitive {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self
-                    .x
-                    .set(Some(parse("x", value, LengthDir::Horizontal, None)?)),
-                Attribute::Y => self
-                    .y
-                    .set(Some(parse("y", value, LengthDir::Vertical, None)?)),
+                Attribute::X => self.x.set(Some(parse("x", value, LengthDir::Horizontal)?)),
+                Attribute::Y => self.y.set(Some(parse("y", value, LengthDir::Vertical)?)),
                 Attribute::Width => {
                     self.width
-                        .set(Some(parse("width", value, LengthDir::Horizontal, None)?))
+                        .set(Some(parse("width", value, LengthDir::Horizontal)?))
                 }
                 Attribute::Height => {
                     self.height
-                        .set(Some(parse("height", value, LengthDir::Vertical, None)?))
+                        .set(Some(parse("height", value, LengthDir::Vertical)?))
                 }
                 Attribute::Result => *self.result.borrow_mut() = Some(value.to_string()),
                 _ => (),
@@ -156,7 +152,7 @@ impl NodeTrait for PrimitiveWithInput {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::In => drop(self.in_.replace(Some(parse("in", value, (), None)?))),
+                Attribute::In => drop(self.in_.replace(Some(parse("in", value, ())?))),
                 _ => (),
             }
         }

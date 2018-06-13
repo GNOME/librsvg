@@ -71,7 +71,7 @@ impl NodeTrait for MergeNode {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::In => {
-                    self.in_.replace(Some(parse("in", value, (), None)?));
+                    self.in_.replace(Some(parse("in", value, ())?));
                 }
                 _ => (),
             }

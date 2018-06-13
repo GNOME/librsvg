@@ -43,22 +43,17 @@ impl NodeTrait for NodeFilter {
     ) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
-                Attribute::Width => {
-                    self.width
-                        .set(parse("width", value, LengthDir::Horizontal, None)?)
-                }
-                Attribute::Height => {
-                    self.height
-                        .set(parse("height", value, LengthDir::Vertical, None)?)
-                }
-                Attribute::FilterUnits => {
-                    self.filterunits.set(parse("filterUnits", value, (), None)?)
-                }
+                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
+                Attribute::Width => self
+                    .width
+                    .set(parse("width", value, LengthDir::Horizontal)?),
+                Attribute::Height => self
+                    .height
+                    .set(parse("height", value, LengthDir::Vertical)?),
+                Attribute::FilterUnits => self.filterunits.set(parse("filterUnits", value, ())?),
                 Attribute::PrimitiveUnits => {
-                    self.primitiveunits
-                        .set(parse("primitiveUnits", value, (), None)?)
+                    self.primitiveunits.set(parse("primitiveUnits", value, ())?)
                 }
                 _ => (),
             }

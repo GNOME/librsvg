@@ -187,8 +187,7 @@ impl NodeTrait for Image {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
-                    self.aspect
-                        .set(parse("preserveAspectRatio", value, (), None)?)
+                    self.aspect.set(parse("preserveAspectRatio", value, ())?)
                 }
 
                 // "path" is used by some older Adobe Illustrator versions
