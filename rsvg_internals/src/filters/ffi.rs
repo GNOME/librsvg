@@ -64,6 +64,7 @@ pub fn filter_render(
 
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);
+    assert!(!filter_node.is_in_error());
 
     let mut channelmap_arr = [0; 4];
     unsafe {

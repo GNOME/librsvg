@@ -495,14 +495,18 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, node: &RsvgNode, values: &Com
         // https://gitlab.gnome.org/GNOME/librsvg/issues/277
         if get_bbox(draw_ctx).rect.is_some() {
             if let Some(acquired) = get_acquired_node_of_type(draw_ctx, filter, NodeType::Filter) {
-                filter_render(
-                    &acquired.get(),
-                    node,
-                    &output,
-                    draw_ctx,
-                    "2103".as_ptr() as *const i8,
-                )
-            // FIXME: deal with out of memory here
+                if !acquired.get().is_in_error() {
+                    filter_render(
+                        &acquired.get(),
+                        node,
+                        &output,
+                        draw_ctx,
+                        "2103".as_ptr() as *const i8,
+                    )
+                // FIXME: deal with out of memory here
+                } else {
+                    cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+                }
             } else {
                 cairo::ImageSurface::from(child_cr.get_target()).unwrap()
             }
