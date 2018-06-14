@@ -11,7 +11,6 @@ use property_bag::PropertyBag;
 use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
-use super::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixels};
 use super::{make_result, Filter, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
@@ -74,36 +73,32 @@ impl Filter for Offset {
         let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;
 
-        let input_data = unsafe {
-            ImageSurfaceDataShared::new_unchecked(input.surface())
-                .map_err(FilterError::BadInputSurfaceStatus)?
+        // output_bounds contains all pixels within bounds,
+        // for which (x - ox) and (y - oy) also lie within bounds.
+        let output_bounds = IRect {
+            x0: clamp(bounds.x0 + ox, bounds.x0, bounds.x1),
+            y0: clamp(bounds.y0 + oy, bounds.y0, bounds.y1),
+            x1: clamp(bounds.x1 + ox, bounds.x0, bounds.x1),
+            y1: clamp(bounds.y1 + oy, bounds.y0, bounds.y1),
         };
 
-        // input_bounds contains all pixels within bounds,
-        // for which (x + ox) and (y + oy) also lie within bounds.
-        let input_bounds = IRect {
-            x0: clamp(bounds.x0 - ox, bounds.x0, bounds.x1),
-            y0: clamp(bounds.y0 - oy, bounds.y0, bounds.y1),
-            x1: clamp(bounds.x1 - ox, bounds.x0, bounds.x1),
-            y1: clamp(bounds.y1 - oy, bounds.y0, bounds.y1),
-        };
-
-        let mut output_surface = ImageSurface::create(
+        let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
-            input_data.width as i32,
-            input_data.height as i32,
+            ctx.source_graphic().get_width(),
+            ctx.source_graphic().get_height(),
         ).map_err(FilterError::OutputSurfaceCreation)?;
 
-        let output_stride = output_surface.get_stride() as usize;
-        {
-            let mut output_data = output_surface.get_data().unwrap();
+        let cr = cairo::Context::new(&output_surface);
+        cr.rectangle(
+            output_bounds.x0 as f64,
+            output_bounds.y0 as f64,
+            (output_bounds.x1 - output_bounds.x0) as f64,
+            (output_bounds.y1 - output_bounds.y0) as f64,
+        );
+        cr.clip();
 
-            for (x, y, pixel) in Pixels::new(input_data, input_bounds) {
-                let output_x = (x as i32 + ox) as usize;
-                let output_y = (y as i32 + oy) as usize;
-                output_data.set_pixel(output_stride, pixel, output_x, output_y);
-            }
-        }
+        cr.set_source_surface(&input.surface(), f64::from(ox), f64::from(oy));
+        cr.paint();
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
