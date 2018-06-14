@@ -42,12 +42,13 @@ pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
     /// Sets the pixel at the given coordinates.
     #[inline]
     fn set_pixel(&mut self, stride: usize, pixel: Pixel, x: usize, y: usize) {
-        let base = y * stride + x * 4;
-
-        self[base + 0] = pixel.r;
-        self[base + 1] = pixel.g;
-        self[base + 2] = pixel.b;
-        self[base + 3] = pixel.a;
+        let value = ((pixel.a as u32) << 24)
+            | ((pixel.r as u32) << 16)
+            | ((pixel.g as u32) << 8)
+            | (pixel.b as u32);
+        unsafe {
+            *(&mut self[y * stride + x * 4] as *mut u8 as *mut u32) = value;
+        }
     }
 }
 
@@ -85,13 +86,13 @@ impl<'a> ImageSurfaceDataShared<'a> {
         assert!(x < self.width);
         assert!(y < self.height);
 
-        let base = y * self.stride + x * 4;
+        let value = unsafe { *(&self.data[y * self.stride + x * 4] as *const u8 as *const u32) };
 
         Pixel {
-            r: self.data[base + 0],
-            g: self.data[base + 1],
-            b: self.data[base + 2],
-            a: self.data[base + 3],
+            r: ((value >> 16) & 0xFF) as u8,
+            g: ((value >> 8) & 0xFF) as u8,
+            b: (value & 0xFF) as u8,
+            a: ((value >> 24) & 0xFF) as u8,
         }
     }
 }
