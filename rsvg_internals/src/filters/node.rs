@@ -52,7 +52,7 @@ impl NodeTrait for NodeFilter {
 
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let no_units_allowed = self.filterunits.get() == CoordUnits::ObjectBoundingBox;
-        let verify_length = |length: RsvgLength| {
+        let check_units = |length: RsvgLength| {
             if !no_units_allowed {
                 return Ok(length);
             }
@@ -64,6 +64,8 @@ impl NodeTrait for NodeFilter {
                 ))),
             }
         };
+        let check_units_and_ensure_nonnegative =
+            |length: RsvgLength| check_units(length).and_then(RsvgLength::check_nonnegative);
 
         // Parse the rest of the attributes.
         for (_key, attr, value) in pbag.iter() {
@@ -72,25 +74,25 @@ impl NodeTrait for NodeFilter {
                     "x",
                     value,
                     LengthDir::Horizontal,
-                    verify_length,
+                    check_units,
                 )?),
                 Attribute::Y => self.y.set(parse_and_validate(
                     "y",
                     value,
                     LengthDir::Vertical,
-                    verify_length,
+                    check_units,
                 )?),
                 Attribute::Width => self.width.set(parse_and_validate(
                     "width",
                     value,
                     LengthDir::Horizontal,
-                    verify_length,
+                    check_units_and_ensure_nonnegative,
                 )?),
                 Attribute::Height => self.height.set(parse_and_validate(
                     "height",
                     value,
                     LengthDir::Vertical,
-                    verify_length,
+                    check_units_and_ensure_nonnegative,
                 )?),
                 Attribute::PrimitiveUnits => {
                     self.primitiveunits.set(parse("primitiveUnits", value, ())?)

@@ -113,7 +113,7 @@ impl NodeTrait for Primitive {
             .unwrap_or(CoordUnits::UserSpaceOnUse);
 
         let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
-        let verify_length = |length: RsvgLength| {
+        let check_units = |length: RsvgLength| {
             if !no_units_allowed {
                 return Ok(length);
             }
@@ -125,6 +125,8 @@ impl NodeTrait for Primitive {
                 ))),
             }
         };
+        let check_units_and_ensure_nonnegative =
+            |length: RsvgLength| check_units(length).and_then(RsvgLength::check_nonnegative);
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
@@ -132,25 +134,25 @@ impl NodeTrait for Primitive {
                     "x",
                     value,
                     LengthDir::Horizontal,
-                    verify_length,
+                    check_units,
                 )?)),
                 Attribute::Y => self.y.set(Some(parse_and_validate(
                     "y",
                     value,
                     LengthDir::Vertical,
-                    verify_length,
+                    check_units,
                 )?)),
                 Attribute::Width => self.width.set(Some(parse_and_validate(
                     "width",
                     value,
                     LengthDir::Horizontal,
-                    verify_length,
+                    check_units_and_ensure_nonnegative,
                 )?)),
                 Attribute::Height => self.height.set(Some(parse_and_validate(
                     "height",
                     value,
                     LengthDir::Vertical,
-                    verify_length,
+                    check_units_and_ensure_nonnegative,
                 )?)),
                 Attribute::Result => *self.result.borrow_mut() = Some(value.to_string()),
                 _ => (),
