@@ -14,6 +14,8 @@ use coord_units::CoordUnits;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use length::RsvgLength;
 use node::{box_node, RsvgNode};
+use paint_server::{self, PaintServer};
+use unitinterval::UnitInterval;
 
 use super::bounds::BoundsBuilder;
 use super::input::Input;
@@ -453,6 +455,39 @@ impl FilterContext {
         }
     }
 
+    /// Computes and returns a surface corresponding to the given paint server.
+    fn get_paint_server_surface(
+        &self,
+        paint_server: &PaintServer,
+        opacity: UnitInterval,
+    ) -> Result<cairo::ImageSurface, cairo::Status> {
+        let surface = cairo::ImageSurface::create(
+            cairo::Format::ARgb32,
+            self.source_surface.get_width(),
+            self.source_surface.get_height(),
+        )?;
+
+        let cr_save = drawing_ctx::get_cairo_context(self.drawing_ctx);
+        let cr = cairo::Context::new(&surface);
+        drawing_ctx::set_cairo_context(self.drawing_ctx, &cr);
+
+        let cascaded = self.node_being_filtered.get_cascaded_values();
+        let values = cascaded.get();
+
+        if paint_server::set_source_paint_server(
+            self.drawing_ctx,
+            paint_server,
+            &opacity,
+            drawing_ctx::get_bbox(self.drawing_ctx),
+            &values.color.0,
+        ) {
+            cr.paint();
+        }
+
+        drawing_ctx::set_cairo_context(self.drawing_ctx, &cr_save);
+        Ok(surface)
+    }
+
     /// Retrieves the filter input surface according to the SVG rules.
     pub fn get_input(&self, in_: Option<&Input>) -> Option<FilterInput> {
         if in_.is_none() {
@@ -465,6 +500,9 @@ impl FilterContext {
                 return Some(FilterInput::StandardInput(self.source_graphic().clone()));
             }
         }
+
+        let cascaded = self.node_being_filtered.get_cascaded_values();
+        let values = cascaded.get();
 
         match *in_.unwrap() {
             Input::SourceGraphic => Some(FilterInput::StandardInput(self.source_graphic().clone())),
@@ -482,9 +520,14 @@ impl FilterContext {
                 .ok()
                 .map(FilterInput::StandardInput),
 
-            // TODO
-            Input::FillPaint => None,
-            Input::StrokePaint => None,
+            Input::FillPaint => self
+                .get_paint_server_surface(&values.fill.0, values.fill_opacity.0)
+                .ok()
+                .map(FilterInput::StandardInput),
+            Input::StrokePaint => self
+                .get_paint_server_surface(&values.stroke.0, values.stroke_opacity.0)
+                .ok()
+                .map(FilterInput::StandardInput),
 
             Input::FilterOutput(ref name) => self
                 .filter_output(name)
