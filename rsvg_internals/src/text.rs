@@ -131,12 +131,10 @@ impl NodeTrait for NodeText {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
-                Attribute::Dx => self
-                    .dx
-                    .set(parse("dx", value, LengthDir::Horizontal, None)?),
-                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical, None)?),
+                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
+                Attribute::Dx => self.dx.set(parse("dx", value, LengthDir::Horizontal)?),
+                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical)?),
                 _ => (),
             }
         }
@@ -352,14 +350,12 @@ impl NodeTrait for NodeTSpan {
             match attr {
                 Attribute::X => self
                     .x
-                    .set(parse("x", value, LengthDir::Horizontal, None).map(Some)?),
+                    .set(parse("x", value, LengthDir::Horizontal).map(Some)?),
                 Attribute::Y => self
                     .y
-                    .set(parse("y", value, LengthDir::Vertical, None).map(Some)?),
-                Attribute::Dx => self
-                    .dx
-                    .set(parse("dx", value, LengthDir::Horizontal, None)?),
-                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical, None)?),
+                    .set(parse("y", value, LengthDir::Vertical).map(Some)?),
+                Attribute::Dx => self.dx.set(parse("dx", value, LengthDir::Horizontal)?),
+                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical)?),
                 _ => (),
             }
         }

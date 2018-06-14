@@ -1,17 +1,20 @@
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
-use cairo;
-
 use attributes::Attribute;
+use coord_units::CoordUnits;
+use error::AttributeError;
 use handle::RsvgHandle;
-use length::{LengthDir, RsvgLength};
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
-use parsers::parse;
+use length::{LengthDir, LengthUnit, RsvgLength};
+use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
+use parsers::{parse_and_validate, ParseError};
 use property_bag::PropertyBag;
 
+mod bounds;
+use self::bounds::BoundsBuilder;
+
 pub mod context;
-use self::context::{FilterContext, FilterOutput, FilterResult, IRect};
+use self::context::{FilterContext, FilterInput, FilterResult};
 
 mod error;
 use self::error::FilterError;
@@ -25,8 +28,10 @@ use self::input::Input;
 
 pub mod iterators;
 pub mod node;
+use self::node::NodeFilter;
 
 pub mod composite;
+pub mod image;
 pub mod merge;
 pub mod offset;
 
@@ -57,12 +62,12 @@ struct PrimitiveWithInput {
     in_: RefCell<Option<Input>>,
 }
 
-/// Extracts the surface out of a `get_input()` output with the ability to `?`.
+/// Calls `ok_or()` on `get_input()` output.
 ///
 /// A small convenience function for filter implementations.
 #[inline]
-fn get_surface(x: Option<FilterOutput>) -> Result<cairo::ImageSurface, FilterError> {
-    x.map(|x| x.surface).ok_or(FilterError::InvalidInput)
+fn make_result(x: Option<FilterInput>) -> Result<FilterInput, FilterError> {
+    x.ok_or(FilterError::InvalidInput)
 }
 
 impl Primitive {
@@ -80,10 +85,11 @@ impl Primitive {
         }
     }
 
-    /// Computes and returns the filter primitive bounds.
+    /// Returns the `BoundsBuilder` for bounds computation.
     #[inline]
-    fn get_bounds(&self, ctx: &FilterContext) -> IRect {
-        ctx.compute_bounds(
+    fn get_bounds<'a>(&self, ctx: &'a FilterContext) -> BoundsBuilder<'a> {
+        BoundsBuilder::new(
+            ctx,
             self.x.get(),
             self.y.get(),
             self.width.get(),
@@ -93,23 +99,61 @@ impl Primitive {
 }
 
 impl NodeTrait for Primitive {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        // With ObjectBoundingBox, only fractions and percents are allowed.
+        let primitiveunits = node
+            .get_parent()
+            .and_then(|parent| {
+                if parent.get_type() == NodeType::Filter {
+                    Some(parent.with_impl(|f: &NodeFilter| f.primitiveunits.get()))
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(CoordUnits::UserSpaceOnUse);
+
+        let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
+        let check_units = |length: RsvgLength| {
+            if !no_units_allowed {
+                return Ok(length);
+            }
+
+            match length.unit {
+                LengthUnit::Default | LengthUnit::Percent => Ok(length),
+                _ => Err(AttributeError::Parse(ParseError::new(
+                    "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
+                ))),
+            }
+        };
+        let check_units_and_ensure_nonnegative =
+            |length: RsvgLength| check_units(length).and_then(RsvgLength::check_nonnegative);
+
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self
-                    .x
-                    .set(Some(parse("x", value, LengthDir::Horizontal, None)?)),
-                Attribute::Y => self
-                    .y
-                    .set(Some(parse("y", value, LengthDir::Vertical, None)?)),
-                Attribute::Width => {
-                    self.width
-                        .set(Some(parse("width", value, LengthDir::Horizontal, None)?))
-                }
-                Attribute::Height => {
-                    self.height
-                        .set(Some(parse("height", value, LengthDir::Vertical, None)?))
-                }
+                Attribute::X => self.x.set(Some(parse_and_validate(
+                    "x",
+                    value,
+                    LengthDir::Horizontal,
+                    check_units,
+                )?)),
+                Attribute::Y => self.y.set(Some(parse_and_validate(
+                    "y",
+                    value,
+                    LengthDir::Vertical,
+                    check_units,
+                )?)),
+                Attribute::Width => self.width.set(Some(parse_and_validate(
+                    "width",
+                    value,
+                    LengthDir::Horizontal,
+                    check_units_and_ensure_nonnegative,
+                )?)),
+                Attribute::Height => self.height.set(Some(parse_and_validate(
+                    "height",
+                    value,
+                    LengthDir::Vertical,
+                    check_units_and_ensure_nonnegative,
+                )?)),
                 Attribute::Result => *self.result.borrow_mut() = Some(value.to_string()),
                 _ => (),
             }
@@ -137,7 +181,7 @@ impl PrimitiveWithInput {
 
     /// Returns the input Cairo surface for this filter primitive.
     #[inline]
-    fn get_input(&self, ctx: &FilterContext) -> Option<FilterOutput> {
+    fn get_input(&self, ctx: &FilterContext) -> Option<FilterInput> {
         ctx.get_input(self.in_.borrow().as_ref())
     }
 }

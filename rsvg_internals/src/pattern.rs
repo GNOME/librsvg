@@ -14,7 +14,7 @@ use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use parsers::parse;
+use parsers::{parse, parse_and_validate};
 use property_bag::PropertyBag;
 use state::ComputedValues;
 use viewbox::*;
@@ -180,43 +180,43 @@ impl NodeTrait for NodePattern {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::PatternUnits => p.units = Some(parse("patternUnits", value, (), None)?),
+                Attribute::PatternUnits => p.units = Some(parse("patternUnits", value, ())?),
 
                 Attribute::PatternContentUnits => {
-                    p.content_units = Some(parse("patternContentUnits", value, (), None)?)
+                    p.content_units = Some(parse("patternContentUnits", value, ())?)
                 }
 
-                Attribute::ViewBox => p.vbox = Some(Some(parse("viewBox", value, (), None)?)),
+                Attribute::ViewBox => p.vbox = Some(Some(parse("viewBox", value, ())?)),
 
                 Attribute::PreserveAspectRatio => {
-                    p.preserve_aspect_ratio = Some(parse("preserveAspectRatio", value, (), None)?)
+                    p.preserve_aspect_ratio = Some(parse("preserveAspectRatio", value, ())?)
                 }
 
                 Attribute::PatternTransform => {
-                    p.affine = Some(parse("patternTransform", value, (), None)?)
+                    p.affine = Some(parse("patternTransform", value, ())?)
                 }
 
                 Attribute::XlinkHref => p.fallback = Some(value.to_owned()),
 
-                Attribute::X => p.x = Some(parse("x", value, LengthDir::Horizontal, None)?),
+                Attribute::X => p.x = Some(parse("x", value, LengthDir::Horizontal)?),
 
-                Attribute::Y => p.y = Some(parse("y", value, LengthDir::Vertical, None)?),
+                Attribute::Y => p.y = Some(parse("y", value, LengthDir::Vertical)?),
 
                 Attribute::Width => {
-                    p.width = Some(parse(
+                    p.width = Some(parse_and_validate(
                         "width",
                         value,
                         LengthDir::Horizontal,
-                        Some(RsvgLength::check_nonnegative),
+                        RsvgLength::check_nonnegative,
                     )?)
                 }
 
                 Attribute::Height => {
-                    p.height = Some(parse(
+                    p.height = Some(parse_and_validate(
                         "height",
                         value,
                         LengthDir::Vertical,
-                        Some(RsvgLength::check_nonnegative),
+                        RsvgLength::check_nonnegative,
                     )?)
                 }
 

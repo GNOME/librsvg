@@ -72,9 +72,7 @@ impl NodeTrait for NodeClipPath {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::ClipPathUnits => {
-                    self.units.set(parse("clipPathUnits", value, (), None)?)
-                }
+                Attribute::ClipPathUnits => self.units.set(parse("clipPathUnits", value, ())?),
 
                 _ => (),
             }

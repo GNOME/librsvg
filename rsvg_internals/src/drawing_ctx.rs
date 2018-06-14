@@ -78,6 +78,15 @@ extern "C" {
     ) -> glib_sys::gboolean;
 
     fn rsvg_drawing_ctx_is_testing(draw_ctx: *const RsvgDrawingCtx) -> glib_sys::gboolean;
+
+    fn rsvg_drawing_ctx_draw_node_on_surface(
+        draw_ctx: *mut RsvgDrawingCtx,
+        node: *const RsvgNode,
+        cascade_from: *const RsvgNode,
+        surface: *mut cairo_sys::cairo_surface_t,
+        width: f64,
+        height: f64,
+    );
 }
 
 pub fn get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
@@ -301,6 +310,26 @@ pub fn is_cairo_context_nested(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Cont
     from_glib(unsafe { rsvg_drawing_ctx_is_cairo_context_nested(draw_ctx, cr.0) })
 }
 
+pub fn draw_node_on_surface(
+    draw_ctx: *mut RsvgDrawingCtx,
+    node: &RsvgNode,
+    cascade_from: &RsvgNode,
+    surface: &cairo::ImageSurface,
+    width: f64,
+    height: f64,
+) {
+    unsafe {
+        rsvg_drawing_ctx_draw_node_on_surface(
+            draw_ctx,
+            node,
+            cascade_from,
+            surface.to_glib_none().0,
+            width,
+            height,
+        );
+    }
+}
+
 extern "C" {
     fn rsvg_drawing_ctx_get_width(draw_ctx: *const RsvgDrawingCtx) -> f64;
     fn rsvg_drawing_ctx_get_height(draw_ctx: *const RsvgDrawingCtx) -> f64;
@@ -461,15 +490,26 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, node: &RsvgNode, values: &Com
             cairo::ImageSurface::from_raw_full(rsvg_drawing_ctx_pop_surface(draw_ctx)).unwrap()
         };
 
-        if let Some(acquired) = get_acquired_node_of_type(draw_ctx, filter, NodeType::Filter) {
-            filter_render(
-                &acquired.get(),
-                node,
-                &output,
-                draw_ctx,
-                "2103".as_ptr() as *const i8,
-            )
-        // FIXME: deal with out of memory here
+        // The bbox rect can be None, for example, if a filter is applied to an empty group.
+        // There's nothing to render in this case, so filter_render() expects a non-empty bbox.
+        // https://gitlab.gnome.org/GNOME/librsvg/issues/277
+        if get_bbox(draw_ctx).rect.is_some() {
+            if let Some(acquired) = get_acquired_node_of_type(draw_ctx, filter, NodeType::Filter) {
+                if !acquired.get().is_in_error() {
+                    filter_render(
+                        &acquired.get(),
+                        node,
+                        &output,
+                        draw_ctx,
+                        "2103".as_ptr() as *const i8,
+                    )
+                // FIXME: deal with out of memory here
+                } else {
+                    cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+                }
+            } else {
+                cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+            }
         } else {
             cairo::ImageSurface::from(child_cr.get_target()).unwrap()
         }

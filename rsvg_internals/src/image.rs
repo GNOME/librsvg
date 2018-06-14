@@ -14,7 +14,7 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use parsers::parse;
+use parsers::{parse, parse_and_validate};
 use property_bag::PropertyBag;
 
 pub struct NodeImage {
@@ -52,24 +52,23 @@ impl NodeTrait for NodeImage {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
-                Attribute::Width => self.w.set(parse(
+                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
+                Attribute::Width => self.w.set(parse_and_validate(
                     "width",
                     value,
                     LengthDir::Horizontal,
-                    Some(RsvgLength::check_nonnegative),
+                    RsvgLength::check_nonnegative,
                 )?),
-                Attribute::Height => self.h.set(parse(
+                Attribute::Height => self.h.set(parse_and_validate(
                     "height",
                     value,
                     LengthDir::Vertical,
-                    Some(RsvgLength::check_nonnegative),
+                    RsvgLength::check_nonnegative,
                 )?),
 
                 Attribute::PreserveAspectRatio => {
-                    self.aspect
-                        .set(parse("preserveAspectRatio", value, (), None)?)
+                    self.aspect.set(parse("preserveAspectRatio", value, ())?)
                 }
 
                 Attribute::XlinkHref | Attribute::Path => {

@@ -17,7 +17,7 @@ use length::{LengthDir, RsvgLength};
 use node::*;
 use parsers;
 use parsers::ParseError;
-use parsers::{parse, Parse};
+use parsers::{parse, parse_and_validate, Parse};
 use path_builder::*;
 use property_bag::PropertyBag;
 use state::{ComputedValues, SpecifiedValue, State};
@@ -217,39 +217,33 @@ impl NodeTrait for NodeMarker {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::MarkerUnits => self.units.set(parse("markerUnits", value, (), None)?),
+                Attribute::MarkerUnits => self.units.set(parse("markerUnits", value, ())?),
 
-                Attribute::RefX => {
-                    self.ref_x
-                        .set(parse("refX", value, LengthDir::Horizontal, None)?)
-                }
+                Attribute::RefX => self.ref_x.set(parse("refX", value, LengthDir::Horizontal)?),
 
-                Attribute::RefY => self
-                    .ref_y
-                    .set(parse("refY", value, LengthDir::Vertical, None)?),
+                Attribute::RefY => self.ref_y.set(parse("refY", value, LengthDir::Vertical)?),
 
-                Attribute::MarkerWidth => self.width.set(parse(
+                Attribute::MarkerWidth => self.width.set(parse_and_validate(
                     "markerWidth",
                     value,
                     LengthDir::Horizontal,
-                    Some(RsvgLength::check_nonnegative),
+                    RsvgLength::check_nonnegative,
                 )?),
 
-                Attribute::MarkerHeight => self.height.set(parse(
+                Attribute::MarkerHeight => self.height.set(parse_and_validate(
                     "markerHeight",
                     value,
                     LengthDir::Vertical,
-                    Some(RsvgLength::check_nonnegative),
+                    RsvgLength::check_nonnegative,
                 )?),
 
-                Attribute::Orient => self.orient.set(parse("orient", value, (), None)?),
+                Attribute::Orient => self.orient.set(parse("orient", value, ())?),
 
                 Attribute::PreserveAspectRatio => {
-                    self.aspect
-                        .set(parse("preserveAspectRatio", value, (), None)?)
+                    self.aspect.set(parse("preserveAspectRatio", value, ())?)
                 }
 
-                Attribute::ViewBox => self.vbox.set(Some(parse("viewBox", value, (), None)?)),
+                Attribute::ViewBox => self.vbox.set(Some(parse("viewBox", value, ())?)),
 
                 _ => (),
             }

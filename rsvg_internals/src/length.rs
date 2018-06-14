@@ -176,6 +176,13 @@ impl RsvgLength {
         }
     }
 
+    /// Returns the raw length after asserting units are either default or percent.
+    #[inline]
+    pub fn get_unitless(&self) -> f64 {
+        assert!(self.unit == LengthUnit::Default || self.unit == LengthUnit::Percent);
+        self.length
+    }
+
     pub fn hand_normalize(
         &self,
         pixels_per_inch: f64,

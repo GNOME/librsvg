@@ -6,7 +6,7 @@ use rect::RectangleExt;
 // This is only used as *const RsvgBbox or *mut RsvgBbox, as an opaque pointer for C
 pub enum RsvgBbox {}
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {
     pub affine: cairo::Matrix,
     pub rect: Option<cairo::Rectangle>,     // without stroke

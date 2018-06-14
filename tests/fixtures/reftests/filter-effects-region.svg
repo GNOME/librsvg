@@ -1,0 +1,81 @@
+<svg id="svg-root" width="100%" height="100%"
+  viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+
+  <!-- -10%, -10%, 120%, 120% from the referencing node. -->
+  <filter id="defaults">
+    <feFlood flood-color="green"/>
+  </filter>
+
+  <!-- -10%, -10%, 120%, 120% from the user coordinate system.
+       In this case full image translated to 300, 20
+       as per the group node enclosing the reference node. -->
+  <filter id="usou-defaults" filterUnits="userSpaceOnUse">
+    <feFlood flood-color="green"/>
+  </filter>
+
+  <!-- Fractions of the bounding box on the referencing element. -->
+  <filter id="fractions" x="0.25" y="0.25" width="0.5" height="0.5">
+    <feFlood flood-color="green"/>
+  </filter>
+
+  <!-- Fractions of the bounding box on the referencing element.
+       Note this "em": in this case it's invalid. -->
+  <filter id="fractions-invalid" x="0.25em" y="0.25" width="0.5" height="0.5">
+    <feFlood flood-color="green"/>
+  </filter>
+
+  <!-- Same as above but for the primitive subregion. -->
+  <filter id="fractions-invalid-primitive" primitiveUnits="objectBoundingBox">
+    <feFlood flood-color="green"/>
+    <feOffset width="0.9em" dx="0.5" dy="0.5"/>
+  </filter>
+
+  <!-- According to the spec, the "em" here should use the coordinate system
+       of the referencing node. Firefox follows this. Chromium uses the filter node's
+       coordinate system instead. -->
+  <filter id="cascading" filterUnits="userSpaceOnUse" style="font-size: 30pt"
+    x="1em" y="1em" width="50" height="50">
+    <feFlood flood-color="green"/>
+  </filter>
+
+  <!-- Same as above but for the primitive subregion. -->
+  <filter id="cascading-primitive" style="font-size: 30pt">
+    <feFlood x="1em" y="1em" flood-color="green"/>
+  </filter>
+
+  <g transform="translate(30 20)">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#defaults)"/>
+  </g>
+
+  <g transform="translate(100 20)">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions)"/>
+  </g>
+
+  <g transform="translate(100 100)">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions-invalid)"/>
+  </g>
+
+  <g transform="translate(100 180)">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions-invalid-primitive)"/>
+  </g>
+
+  <g transform="translate(170 20)" style="font-size: 7pt">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#cascading)"/>
+  </g>
+
+  <g transform="translate(170 100)" style="font-size: 7pt">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#cascading-primitive)"/>
+  </g>
+
+  <g transform="translate(300 20)">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#usou-defaults)"/>
+  </g>
+</svg>

@@ -461,13 +461,13 @@ pub fn draw_surface(
     let width = f64::from(width);
     let height = f64::from(height);
 
-    let mut bbox = BoundingBox::new(&affine);
-    bbox.rect = Some(cairo::Rectangle {
+    // This is the target bbox after drawing.
+    let bbox = BoundingBox::new(&affine).with_rect(Some(cairo::Rectangle {
         x,
         y,
-        width,
-        height,
-    });
+        width: w,
+        height: h,
+    }));
 
     set_affine_on_cr(draw_ctx, &cr);
     cr.scale(w / width, h / height);

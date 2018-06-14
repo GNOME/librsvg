@@ -64,6 +64,7 @@ pub fn filter_render(
 
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);
+    assert!(!filter_node.is_in_error());
 
     let mut channelmap_arr = [0; 4];
     unsafe {
@@ -90,6 +91,7 @@ pub fn filter_render(
         .for_each(|mut c| match c.get_type() {
             NodeType::FilterPrimitiveOffset
             | NodeType::FilterPrimitiveComposite
+            | NodeType::FilterPrimitiveImage
             | NodeType::FilterPrimitiveMerge => {
                 let render = unsafe {
                     *(&c.get_c_impl() as *const *const RsvgCNodeImpl as *const RenderFunctionType)
