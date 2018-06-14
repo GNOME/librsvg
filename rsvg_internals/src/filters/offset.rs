@@ -74,7 +74,10 @@ impl Filter for Offset {
         let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
         let oy = (paffine.yx * dx + paffine.yy * dy) as i32;
 
-        let input_data = unsafe { ImageSurfaceDataShared::new_unchecked(input.surface())? };
+        let input_data = unsafe {
+            ImageSurfaceDataShared::new_unchecked(input.surface())
+                .map_err(FilterError::BadInputSurfaceStatus)?
+        };
 
         // input_bounds contains all pixels within bounds,
         // for which (x + ox) and (y + oy) also lie within bounds.

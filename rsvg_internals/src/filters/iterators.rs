@@ -7,7 +7,6 @@ use cairo::prelude::SurfaceExt;
 use cairo_sys;
 
 use super::context::IRect;
-use super::FilterError;
 
 /// Shared (read-only) `cairo::ImageSurfaceData`.
 // TODO: add to cairo itself?
@@ -66,7 +65,7 @@ impl<'a> ImageSurfaceDataShared<'a> {
     /// # Panics
     /// Panics if the surface isn't borrowed exclusively.
     #[inline]
-    pub unsafe fn new(surface: &cairo::ImageSurface) -> Result<Self, FilterError> {
+    pub unsafe fn new(surface: &cairo::ImageSurface) -> Result<Self, cairo::Status> {
         Self::new_internal(surface, true)
     }
 
@@ -78,7 +77,7 @@ impl<'a> ImageSurfaceDataShared<'a> {
     /// data slice (in general it's `'a`, but usually it's restricted to the lifetime of the
     /// returned struct).
     #[inline]
-    pub unsafe fn new_unchecked(surface: &cairo::ImageSurface) -> Result<Self, FilterError> {
+    pub unsafe fn new_unchecked(surface: &cairo::ImageSurface) -> Result<Self, cairo::Status> {
         Self::new_internal(surface, false)
     }
 
@@ -92,7 +91,7 @@ impl<'a> ImageSurfaceDataShared<'a> {
     unsafe fn new_internal(
         surface: &cairo::ImageSurface,
         check_exclusive_access: bool,
-    ) -> Result<Self, FilterError> {
+    ) -> Result<Self, cairo::Status> {
         if check_exclusive_access {
             assert!(cairo_sys::cairo_surface_get_reference_count(surface.to_raw_none()) == 1);
         }
@@ -103,7 +102,7 @@ impl<'a> ImageSurfaceDataShared<'a> {
 
         surface.flush();
         if surface.status() != cairo::Status::Success {
-            return Err(FilterError::BadInputSurfaceStatus(surface.status()));
+            return Err(surface.status());
         }
         let data_ptr = cairo_sys::cairo_image_surface_get_data(surface.to_raw_none());
         assert!(!data_ptr.is_null());

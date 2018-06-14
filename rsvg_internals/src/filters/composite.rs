@@ -112,14 +112,20 @@ impl Filter for Composite {
             linearize_surface(input.surface(), bounds).map_err(FilterError::BadInputSurfaceStatus)?;
 
         let output_surface = if self.operator.get() == Operator::Arithmetic {
-            let input_data = unsafe { ImageSurfaceDataShared::new_unchecked(&input_surface)? };
+            let input_data = unsafe {
+                ImageSurfaceDataShared::new_unchecked(&input_surface)
+                    .map_err(FilterError::BadInputSurfaceStatus)?
+            };
 
             // Not linearizing input_2 gives a better matching result than linearizing?..
             // Maybe it's due to some issue elsewhere? Am I missing something?
             //
             // let input_2_surface = linearize_surface(input_2.surface(), bounds)
             //     .map_err(FilterError::BadInputSurfaceStatus)?;
-            let input_2_data = unsafe { ImageSurfaceDataShared::new_unchecked(&input_2.surface())? };
+            let input_2_data = unsafe {
+                ImageSurfaceDataShared::new_unchecked(&input_2.surface())
+                    .map_err(FilterError::BadInputSurfaceStatus)?
+            };
 
             let mut output_surface = ImageSurface::create(
                 cairo::Format::ARgb32,
