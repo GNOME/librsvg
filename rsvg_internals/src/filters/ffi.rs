@@ -91,6 +91,7 @@ pub fn filter_render(
         .for_each(|mut c| match c.get_type() {
             NodeType::FilterPrimitiveOffset
             | NodeType::FilterPrimitiveComposite
+            | NodeType::FilterPrimitiveFlood
             | NodeType::FilterPrimitiveImage
             | NodeType::FilterPrimitiveMerge => {
                 let render = unsafe {

@@ -31,6 +31,7 @@ pub mod node;
 use self::node::NodeFilter;
 
 pub mod composite;
+pub mod flood;
 pub mod image;
 pub mod merge;
 pub mod offset;

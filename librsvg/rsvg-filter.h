@@ -80,8 +80,6 @@ RsvgNode    *rsvg_new_node_component_transfer_function      (const char *element
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_erode                (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_flood                (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
-G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_displacement_map     (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_turbulence           (const char *element_name, RsvgNode *parent, const char *id, const char *klass);
