@@ -1,3 +1,9 @@
+Version 2.43.1
+- The feImage filter is now in Rust (Ivan Molodetskikh).
+- Fix the feOffset filter's coordinate parsing (Ivan Molodetskikh).
+- Fix linearization of SRGB data in the feComposite filter (Ivan
+  Molodetskikh).
+
 Version 2.43.0
 - This is the start of the 2.43 development series, and you bet we are
   doing extensive changes!
