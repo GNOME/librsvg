@@ -81,11 +81,13 @@ G_GNUC_INTERNAL
 gboolean rsvg_drawing_ctx_is_cairo_context_nested (RsvgDrawingCtx *ctx, cairo_t *cr);
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const char *url);
+gboolean rsvg_drawing_ctx_prepend_acquired_node (RsvgDrawingCtx *ctx, RsvgNode *node);
+
 G_GNUC_INTERNAL
-RsvgNode *rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type);
+void rsvg_drawing_ctx_remove_acquired_node (RsvgDrawingCtx *ctx, RsvgNode *node);
+
 G_GNUC_INTERNAL
-void rsvg_drawing_ctx_release_node              (RsvgDrawingCtx * ctx, RsvgNode *node);
+RsvgDefs *rsvg_drawing_ctx_get_defs (RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node);
