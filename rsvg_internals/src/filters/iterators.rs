@@ -54,7 +54,49 @@ pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
 
 impl<'a> ImageSurfaceDataShared<'a> {
     /// Creates a shared (read-only) surface data accessor for an image surface.
-    pub fn new(surface: &cairo::ImageSurface) -> Result<Self, FilterError> {
+    ///
+    /// # Safety
+    /// The surface data must not be mutably aliased or modified for the lifetime of the returned
+    /// data slice (in general it's `'a`, but usually it's restricted to the lifetime of the
+    /// returned struct).
+    ///
+    /// This is an issue for this method too, because it's possible to modify the surface pixel
+    /// data via a Cairo context, since it doesn't borrow the surface mutably.
+    ///
+    /// # Panics
+    /// Panics if the surface isn't borrowed exclusively.
+    #[inline]
+    pub unsafe fn new(surface: &cairo::ImageSurface) -> Result<Self, FilterError> {
+        Self::new_internal(surface, true)
+    }
+
+    /// Creates a shared (read-only) surface data accessor for an image surface without checking
+    /// for surface exclusiveness.
+    ///
+    /// # Safety
+    /// The surface data must not be mutably aliased or modified for the lifetime of the returned
+    /// data slice (in general it's `'a`, but usually it's restricted to the lifetime of the
+    /// returned struct).
+    #[inline]
+    pub unsafe fn new_unchecked(surface: &cairo::ImageSurface) -> Result<Self, FilterError> {
+        Self::new_internal(surface, false)
+    }
+
+    /// Creates a shared (read-only) surface data accessor for an image surface, optionally
+    /// checking for exclusive access.
+    ///
+    /// # Safety
+    /// If `check_exclusive_access` is `false`, the surface data must not be mutably aliased for
+    /// the lifetime of the returned data slice (in general it's `'a`, but usually it's restricted
+    /// to the lifetime of the returned struct).
+    unsafe fn new_internal(
+        surface: &cairo::ImageSurface,
+        check_exclusive_access: bool,
+    ) -> Result<Self, FilterError> {
+        if check_exclusive_access {
+            assert!(cairo_sys::cairo_surface_get_reference_count(surface.to_raw_none()) == 1);
+        }
+
         let width = surface.get_width() as usize;
         let height = surface.get_height() as usize;
         let stride = surface.get_stride() as usize;
@@ -63,11 +105,11 @@ impl<'a> ImageSurfaceDataShared<'a> {
         if surface.status() != cairo::Status::Success {
             return Err(FilterError::BadInputSurfaceStatus(surface.status()));
         }
-        let data_ptr = unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) };
+        let data_ptr = cairo_sys::cairo_image_surface_get_data(surface.to_raw_none());
         assert!(!data_ptr.is_null());
 
         let data_len = stride * height;
-        let data = unsafe { slice::from_raw_parts(data_ptr, data_len) };
+        let data = slice::from_raw_parts(data_ptr, data_len);
 
         Ok(Self {
             data,

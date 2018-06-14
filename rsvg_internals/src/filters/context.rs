@@ -124,7 +124,7 @@ fn extract_alpha(
     surface: &cairo::ImageSurface,
     bounds: IRect,
 ) -> Result<cairo::ImageSurface, cairo::Status> {
-    let data = ImageSurfaceDataShared::new(surface).unwrap();
+    let data = unsafe { ImageSurfaceDataShared::new_unchecked(surface).unwrap() };
 
     let mut output_surface =
         cairo::ImageSurface::create(cairo::Format::ARgb32, data.width as i32, data.height as i32)?;
@@ -855,8 +855,8 @@ mod tests {
 
         let alpha = extract_alpha(&surface, BOUNDS).unwrap();
 
-        let data = ImageSurfaceDataShared::new(&surface).unwrap();
-        let data_alpha = ImageSurfaceDataShared::new(&alpha).unwrap();
+        let data = unsafe { ImageSurfaceDataShared::new(&surface).unwrap() };
+        let data_alpha = unsafe { ImageSurfaceDataShared::new(&alpha).unwrap() };
 
         for (x, y, p, pa) in
             Pixels::new(data, FULL_BOUNDS).map(|(x, y, p)| (x, y, p, data_alpha.get_pixel(x, y)))
