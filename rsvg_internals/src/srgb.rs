@@ -1,13 +1,10 @@
 //! Utility functions for dealing with sRGB colors.
 //!
 //! The constant values in this module are taken from http://www.color.org/chardata/rgb/srgb.xalter
-use std::slice;
-
 use cairo;
-use cairo::prelude::SurfaceExt;
-use cairo_sys;
 
 use filters::context::IRect;
+use filters::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixel, Pixels};
 
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
 ///
@@ -33,63 +30,51 @@ pub fn unlinearize(c: f64) -> f64 {
     }
 }
 
-/// Converts an sRGB surface to a linear sRGB surface (undoes the gamma correction).
+/// Applies the function to each pixel component after unpremultiplying.
 ///
 /// The returned surface is transparent everywhere except the rectangle defined by `bounds`.
-pub fn linearize_surface(
+fn map_unpremultiplied_components<F>(
     surface: &cairo::ImageSurface,
     bounds: IRect,
-) -> Result<cairo::ImageSurface, cairo::Status> {
+    f: F,
+) -> Result<cairo::ImageSurface, cairo::Status>
+where
+    F: Fn(f64) -> f64,
+{
     let width = surface.get_width();
     let height = surface.get_height();
-    let input_stride = surface.get_stride();
 
     assert!(bounds.x0 >= 0);
     assert!(bounds.y0 >= 0);
     assert!(bounds.x1 <= width);
     assert!(bounds.y1 <= height);
 
-    // TODO: this currently gives "non-exclusive access" (can we make read-only borrows?)
-    // let input_data = surface.get_data().unwrap();
-    surface.flush();
-    if surface.status() != cairo::Status::Success {
-        return Err(surface.status());
-    }
-    let input_data_ptr = unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) };
-    if input_data_ptr.is_null() {
-        return Err(cairo::Status::SurfaceFinished);
-    }
-    let input_data_len = input_stride as usize * height as usize;
-    let input_data = unsafe { slice::from_raw_parts(input_data_ptr, input_data_len) };
+    let input_data = unsafe { ImageSurfaceDataShared::new_unchecked(surface)? };
 
     let mut output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
-    let output_stride = output_surface.get_stride();
-
+    let output_stride = output_surface.get_stride() as usize;
     {
         let mut output_data = output_surface.get_data().unwrap();
 
-        for y in bounds.y0..bounds.y1 {
-            for x in bounds.x0..bounds.x1 {
-                let input_index = (y * input_stride + x * 4) as usize;
-                let output_index = (y * output_stride + x * 4) as usize;
+        for (x, y, pixel) in Pixels::new(input_data, bounds) {
+            if pixel.a > 0 {
+                let alpha = f64::from(pixel.a) / 255f64;
 
-                let alpha = input_data[input_index + 3];
+                let compute = |x| {
+                    let x = f64::from(x) / 255f64;
+                    let x = x / alpha; // Unpremultiply alpha.
+                    let x = f(x);
+                    let x = x * alpha; // Premultiply alpha again.
+                    (x * 255f64).round() as u8
+                };
 
-                if alpha > 0 {
-                    let alpha = f64::from(alpha) / 255f64;
-
-                    for c in 0..3 {
-                        let input_value = f64::from(input_data[input_index + c]) / 255f64;
-                        let input_value = input_value / alpha; // Unpremultiply alpha.
-
-                        let output_value = linearize(input_value);
-                        let output_value = output_value * alpha; // Premultiply alpha again.
-
-                        output_data[output_index + c] = (output_value * 255f64).round() as u8;
-                    }
-                }
-
-                output_data[output_index + 3] = alpha;
+                let output_pixel = Pixel {
+                    r: compute(pixel.r),
+                    g: compute(pixel.g),
+                    b: compute(pixel.b),
+                    a: pixel.a,
+                };
+                output_data.set_pixel(output_stride, output_pixel, x, y);
             }
         }
     }
@@ -97,66 +82,24 @@ pub fn linearize_surface(
     Ok(output_surface)
 }
 
+/// Converts an sRGB surface to a linear sRGB surface (undoes the gamma correction).
+///
+/// The returned surface is transparent everywhere except the rectangle defined by `bounds`.
+#[inline]
+pub fn linearize_surface(
+    surface: &cairo::ImageSurface,
+    bounds: IRect,
+) -> Result<cairo::ImageSurface, cairo::Status> {
+    map_unpremultiplied_components(surface, bounds, linearize)
+}
+
 /// Converts a linear sRGB surface to a normal sRGB surface (applies the gamma correction).
 ///
 /// The returned surface is transparent everywhere except the rectangle defined by `bounds`.
+#[inline]
 pub fn unlinearize_surface(
     surface: &cairo::ImageSurface,
     bounds: IRect,
 ) -> Result<cairo::ImageSurface, cairo::Status> {
-    let width = surface.get_width();
-    let height = surface.get_height();
-    let input_stride = surface.get_stride();
-
-    assert!(bounds.x0 >= 0);
-    assert!(bounds.y0 >= 0);
-    assert!(bounds.x1 <= width);
-    assert!(bounds.y1 <= height);
-
-    // TODO: this currently gives "non-exclusive access" (can we make read-only borrows?)
-    // let input_data = surface.get_data().unwrap();
-    surface.flush();
-    if surface.status() != cairo::Status::Success {
-        return Err(surface.status());
-    }
-    let input_data_ptr = unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) };
-    if input_data_ptr.is_null() {
-        return Err(cairo::Status::SurfaceFinished);
-    }
-    let input_data_len = input_stride as usize * height as usize;
-    let input_data = unsafe { slice::from_raw_parts(input_data_ptr, input_data_len) };
-
-    let mut output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
-    let output_stride = output_surface.get_stride();
-
-    {
-        let mut output_data = output_surface.get_data().unwrap();
-
-        for y in bounds.y0..bounds.y1 {
-            for x in bounds.x0..bounds.x1 {
-                let input_index = (y * input_stride + x * 4) as usize;
-                let output_index = (y * output_stride + x * 4) as usize;
-
-                let alpha = input_data[input_index + 3];
-
-                if alpha > 0 {
-                    let alpha = f64::from(alpha) / 255f64;
-
-                    for c in 0..3 {
-                        let input_value = f64::from(input_data[input_index + c]) / 255f64;
-                        let input_value = input_value / alpha; // Unpremultiply alpha.
-
-                        let output_value = unlinearize(input_value);
-                        let output_value = output_value * alpha; // Premultiply alpha again.
-
-                        output_data[output_index + c] = (output_value * 255f64).round() as u8;
-                    }
-                }
-
-                output_data[output_index + 3] = alpha;
-            }
-        }
-    }
-
-    Ok(output_surface)
+    map_unpremultiplied_components(surface, bounds, unlinearize)
 }
