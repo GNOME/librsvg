@@ -1,4 +1,4 @@
-use cssparser::{CowRcStr, Parser, ParserInput, Token};
+use cssparser::{CowRcStr, Parser, Token};
 
 use error::AttributeError;
 use parsers::{Parse, ParseError};
@@ -19,9 +19,7 @@ impl Parse for CoordUnits {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _: ()) -> Result<CoordUnits, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
+    fn parse(parser: &mut Parser, _: ()) -> Result<CoordUnits, AttributeError> {
         let loc = parser.current_source_location();
 
         parser
@@ -73,8 +71,11 @@ macro_rules! coord_units {
             type Data = ();
             type Err = $crate::error::AttributeError;
 
-            fn parse(s: &str, _: ()) -> Result<Self, $crate::error::AttributeError> {
-                Ok($name($crate::coord_units::CoordUnits::parse(s, ())?))
+            fn parse(
+                parser: &mut ::cssparser::Parser,
+                _: (),
+            ) -> Result<Self, $crate::error::AttributeError> {
+                Ok($name($crate::coord_units::CoordUnits::parse(parser, ())?))
             }
         }
     };
@@ -88,18 +89,18 @@ mod tests {
 
     #[test]
     fn parsing_invalid_strings_yields_error() {
-        assert!(MyUnits::parse("", ()).is_err());
-        assert!(MyUnits::parse("foo", ()).is_err());
+        assert!(MyUnits::parse_str("", ()).is_err());
+        assert!(MyUnits::parse_str("foo", ()).is_err());
     }
 
     #[test]
     fn parses_paint_server_units() {
         assert_eq!(
-            MyUnits::parse("userSpaceOnUse", ()),
+            MyUnits::parse_str("userSpaceOnUse", ()),
             Ok(MyUnits(CoordUnits::UserSpaceOnUse))
         );
         assert_eq!(
-            MyUnits::parse("objectBoundingBox", ()),
+            MyUnits::parse_str("objectBoundingBox", ()),
             Ok(MyUnits(CoordUnits::ObjectBoundingBox))
         );
     }

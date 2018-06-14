@@ -27,8 +27,8 @@ impl Offset {
     pub fn new() -> Offset {
         Offset {
             base: PrimitiveWithInput::new::<Self>(),
-            dx: Cell::new(RsvgLength::parse("0", LengthDir::Horizontal).unwrap()),
-            dy: Cell::new(RsvgLength::parse("0", LengthDir::Vertical).unwrap()),
+            dx: Cell::new(RsvgLength::parse_str("0", LengthDir::Horizontal).unwrap()),
+            dy: Cell::new(RsvgLength::parse_str("0", LengthDir::Vertical).unwrap()),
         }
     }
 }

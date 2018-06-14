@@ -51,11 +51,11 @@ impl NodeMask {
     }
 
     fn get_default_pos(dir: LengthDir) -> RsvgLength {
-        RsvgLength::parse("-10%", dir).unwrap()
+        RsvgLength::parse_str("-10%", dir).unwrap()
     }
 
     fn get_default_size(dir: LengthDir) -> RsvgLength {
-        RsvgLength::parse("120%", dir).unwrap()
+        RsvgLength::parse_str("120%", dir).unwrap()
     }
 
     pub fn generate_cairo_mask(

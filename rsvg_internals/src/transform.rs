@@ -3,7 +3,7 @@ use cairo;
 use std::f64::consts::*;
 
 use cairo::MatrixTrait;
-use cssparser::{ParseError as CssParseError, Parser, ParserInput, Token};
+use cssparser::{ParseError as CssParseError, Parser, Token};
 
 use error::*;
 use parsers::{optional_comma, Parse, ParseError};
@@ -12,11 +12,8 @@ impl Parse for cairo::Matrix {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _: ()) -> Result<cairo::Matrix, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
-        let matrix = parse_transform_list(&mut parser)?;
+    fn parse(parser: &mut Parser, _: ()) -> Result<cairo::Matrix, AttributeError> {
+        let matrix = parse_transform_list(parser)?;
 
         matrix
             .try_invert()
@@ -208,7 +205,7 @@ mod tests {
     use super::*;
 
     fn parse_transform(s: &str) -> Result<cairo::Matrix, AttributeError> {
-        cairo::Matrix::parse(s, ())
+        cairo::Matrix::parse_str(s, ())
     }
 
     #[test]

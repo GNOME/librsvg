@@ -1,8 +1,7 @@
-use cssparser;
-use std::str::FromStr;
+use cssparser::Parser;
 
 use error::*;
-use parsers::ParseError;
+use parsers::{Parse, ParseError};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UnitInterval(pub f64);
@@ -13,13 +12,11 @@ impl Default for UnitInterval {
     }
 }
 
-impl FromStr for UnitInterval {
+impl Parse for UnitInterval {
+    type Data = ();
     type Err = AttributeError;
 
-    fn from_str(s: &str) -> Result<UnitInterval, AttributeError> {
-        let mut input = cssparser::ParserInput::new(s);
-        let mut parser = cssparser::Parser::new(&mut input);
-
+    fn parse(parser: &mut Parser, _: ()) -> Result<UnitInterval, AttributeError> {
         let x = f64::from(
             parser
                 .expect_number()
@@ -48,27 +45,26 @@ impl From<UnitInterval> for u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
 
     #[test]
     fn parses_number() {
-        assert_eq!("0".parse(), Ok(UnitInterval(0.0)));
-        assert_eq!("1".parse(), Ok(UnitInterval(1.0)));
-        assert_eq!("0.5".parse(), Ok(UnitInterval(0.5)));
+        assert_eq!(UnitInterval::parse_str("0", ()), Ok(UnitInterval(0.0)));
+        assert_eq!(UnitInterval::parse_str("1", ()), Ok(UnitInterval(1.0)));
+        assert_eq!(UnitInterval::parse_str("0.5", ()), Ok(UnitInterval(0.5)));
     }
 
     #[test]
     fn parses_out_of_range_number() {
-        assert_eq!("-10".parse(), Ok(UnitInterval(0.0)));
-        assert_eq!("10".parse(), Ok(UnitInterval(1.0)));
+        assert_eq!(UnitInterval::parse_str("-10", ()), Ok(UnitInterval(0.0)));
+        assert_eq!(UnitInterval::parse_str("10", ()), Ok(UnitInterval(1.0)));
     }
 
     #[test]
     fn errors_on_invalid_input() {
-        assert!(is_parse_error(&UnitInterval::from_str("")));
-        assert!(is_parse_error(&UnitInterval::from_str("foo")));
-        assert!(is_parse_error(&UnitInterval::from_str("-x")));
-        assert!(is_parse_error(&UnitInterval::from_str("0.0foo")));
+        assert!(is_parse_error(&UnitInterval::parse_str("", ())));
+        assert!(is_parse_error(&UnitInterval::parse_str("foo", ())));
+        assert!(is_parse_error(&UnitInterval::parse_str("-x", ())));
+        assert!(is_parse_error(&UnitInterval::parse_str("0.0foo", ())));
     }
 
     #[test]

@@ -1,5 +1,5 @@
 use cairo::{self, MatrixTrait};
-use cssparser::{self, CowRcStr, Parser, ParserInput, Token};
+use cssparser::{self, CowRcStr, Parser, Token};
 
 use std::cell::RefCell;
 
@@ -39,9 +39,7 @@ impl Parse for SpreadMethod {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _: ()) -> Result<SpreadMethod, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
+    fn parse(parser: &mut Parser, _: ()) -> Result<SpreadMethod, AttributeError> {
         let loc = parser.current_source_location();
 
         parser
@@ -251,10 +249,10 @@ impl GradientVariant {
         // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
 
         GradientVariant::Linear {
-            x1: Some(RsvgLength::parse("0%", LengthDir::Horizontal).unwrap()),
-            y1: Some(RsvgLength::parse("0%", LengthDir::Vertical).unwrap()),
-            x2: Some(RsvgLength::parse("100%", LengthDir::Horizontal).unwrap()),
-            y2: Some(RsvgLength::parse("0%", LengthDir::Vertical).unwrap()),
+            x1: Some(RsvgLength::parse_str("0%", LengthDir::Horizontal).unwrap()),
+            y1: Some(RsvgLength::parse_str("0%", LengthDir::Vertical).unwrap()),
+            x2: Some(RsvgLength::parse_str("100%", LengthDir::Horizontal).unwrap()),
+            y2: Some(RsvgLength::parse_str("0%", LengthDir::Vertical).unwrap()),
         }
     }
 
@@ -262,9 +260,9 @@ impl GradientVariant {
         // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
 
         GradientVariant::Radial {
-            cx: Some(RsvgLength::parse("50%", LengthDir::Horizontal).unwrap()),
-            cy: Some(RsvgLength::parse("50%", LengthDir::Vertical).unwrap()),
-            r: Some(RsvgLength::parse("50%", LengthDir::Both).unwrap()),
+            cx: Some(RsvgLength::parse_str("50%", LengthDir::Horizontal).unwrap()),
+            cy: Some(RsvgLength::parse_str("50%", LengthDir::Vertical).unwrap()),
+            r: Some(RsvgLength::parse_str("50%", LengthDir::Both).unwrap()),
 
             fx: None,
             fy: None,
@@ -764,13 +762,16 @@ mod tests {
 
     #[test]
     fn parses_spread_method() {
-        assert_eq!(SpreadMethod::parse("pad", ()), Ok(SpreadMethod::Pad));
+        assert_eq!(SpreadMethod::parse_str("pad", ()), Ok(SpreadMethod::Pad));
         assert_eq!(
-            SpreadMethod::parse("reflect", ()),
+            SpreadMethod::parse_str("reflect", ()),
             Ok(SpreadMethod::Reflect)
         );
-        assert_eq!(SpreadMethod::parse("repeat", ()), Ok(SpreadMethod::Repeat));
-        assert!(SpreadMethod::parse("foobar", ()).is_err());
+        assert_eq!(
+            SpreadMethod::parse_str("repeat", ()),
+            Ok(SpreadMethod::Repeat)
+        );
+        assert!(SpreadMethod::parse_str("foobar", ()).is_err());
     }
 
     #[test]

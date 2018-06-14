@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface};
-use cssparser::{CowRcStr, Parser, ParserInput, Token};
+use cssparser::{CowRcStr, Parser, Token};
 
 use attributes::Attribute;
 use error::{AttributeError, NodeError};
@@ -197,9 +197,7 @@ impl Parse for Operator {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _data: Self::Data) -> Result<Self, Self::Err> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
+    fn parse(parser: &mut Parser, _data: Self::Data) -> Result<Self, Self::Err> {
         let loc = parser.current_source_location();
 
         parser

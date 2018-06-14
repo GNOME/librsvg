@@ -362,7 +362,7 @@ impl Node {
     pub fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::Transform => match Matrix::parse(value, ()) {
+                Attribute::Transform => match Matrix::parse_str(value, ()) {
                     Ok(affine) => self.transform.set(affine),
                     Err(e) => {
                         self.set_error(NodeError::attribute_error(Attribute::Transform, e));

@@ -47,9 +47,7 @@ macro_rules! make_property {
             type Data = ();
             type Err = ::error::AttributeError;
 
-            fn parse(s: &str, _: Self::Data) -> Result<$name, ::error::AttributeError> {
-                let mut input = ::cssparser::ParserInput::new(s);
-                let mut parser = ::cssparser::Parser::new(&mut input);
+            fn parse(parser: &mut ::cssparser::Parser, _: Self::Data) -> Result<$name, ::error::AttributeError> {
                 let loc = parser.current_source_location();
 
                 parser
@@ -69,33 +67,6 @@ macro_rules! make_property {
                             "unexpected value",
                         ))
                     })
-            }
-        }
-    };
-
-    ($computed_values_type: ty,
-     $name: ident,
-     default: $default: expr,
-     inherits_automatically: $inherits_automatically: expr,
-     newtype_from_str: $type: ty
-    ) => {
-        #[derive(Debug, Clone, PartialEq)]
-        pub struct $name(pub $type);
-
-        impl_default!($name, $name($default));
-        impl_property!($computed_values_type, $name, $inherits_automatically);
-
-        impl ::parsers::Parse for $name {
-            type Data = ();
-            type Err = ::error::AttributeError;
-
-            fn parse(s: &str, _: Self::Data) -> Result<$name, ::error::AttributeError> {
-                s.trim()
-                    .parse()
-                    .map(|val| $name(val))
-                    .map_err(|_| ::error::AttributeError::from(
-                        ::parsers::ParseError::new("parse error")
-                    ))
             }
         }
     };
@@ -126,8 +97,8 @@ macro_rules! make_property {
             type Data = $parse_data_type;
             type Err = ::error::AttributeError;
 
-            fn parse(s: &str, d: Self::Data) -> Result<$name, ::error::AttributeError> {
-                Ok($name(<$type as ::parsers::Parse>::parse(s, d)?))
+            fn parse(parser: &mut ::cssparser::Parser, d: Self::Data) -> Result<$name, ::error::AttributeError> {
+                Ok($name(<$type as ::parsers::Parse>::parse(parser, d)?))
             }
         }
     };
@@ -150,8 +121,8 @@ macro_rules! make_property {
             type Data = $parse_data_type;
             type Err = ::error::AttributeError;
 
-            fn parse(s: &str, d: Self::Data) -> Result<$name, ::error::AttributeError> {
-                Ok($name(<$type as ::parsers::Parse>::parse(s, d)?))
+            fn parse(parser: &mut ::cssparser::Parser, d: Self::Data) -> Result<$name, ::error::AttributeError> {
+                Ok($name(<$type as ::parsers::Parse>::parse(parser, d)?))
             }
         }
     };
@@ -240,35 +211,8 @@ mod tests {
 
         assert_eq!(<Foo as Default>::default(), Foo::Def);
         assert_eq!(<Foo as Property<()>>::inherits_automatically(), true);
-        assert!(<Foo as Parse>::parse("blargh", ()).is_err());
-        assert_eq!(<Foo as Parse>::parse("bar", ()), Ok(Foo::Bar));
-
-        make_property! {
-            (),
-            Bar,
-            default: "bar".to_string(),
-            inherits_automatically: true,
-            newtype_from_str: String
-        }
-
-        assert_eq!(<Bar as Default>::default(), Bar("bar".to_string()));
-        assert_eq!(<Bar as Property<()>>::inherits_automatically(), true);
-        assert_eq!(
-            <Bar as Parse>::parse("test", ()),
-            Ok(Bar("test".to_string()))
-        );
-
-        make_property! {
-            (),
-            Baz,
-            default: 42f64,
-            inherits_automatically: true,
-            newtype_from_str: f64
-        }
-
-        assert_eq!(<Baz as Default>::default(), Baz(42f64));
-        assert_eq!(<Baz as Property<()>>::inherits_automatically(), true);
-        assert_eq!(<Baz as Parse>::parse("42", ()), Ok(Baz(42f64)));
+        assert!(<Foo as Parse>::parse_str("blargh", ()).is_err());
+        assert_eq!(<Foo as Parse>::parse_str("bar", ()), Ok(Foo::Bar));
     }
 
     #[test]
@@ -298,7 +242,7 @@ mod tests {
         }
 
         let color = RGBA::new(1, 1, 1, 1);
-        let a = <AddColor as Parse>::parse("#02030405", ()).unwrap();
+        let a = <AddColor as Parse>::parse_str("#02030405", ()).unwrap();
         let b = a.compute(&color);
 
         assert_eq!(b, AddColor(RGBA::new(3, 4, 5, 6)));

@@ -107,10 +107,10 @@ impl NodeSvg {
     pub fn new() -> NodeSvg {
         NodeSvg {
             preserve_aspect_ratio: Cell::new(AspectRatio::default()),
-            x: Cell::new(RsvgLength::parse("0", LengthDir::Horizontal).unwrap()),
-            y: Cell::new(RsvgLength::parse("0", LengthDir::Vertical).unwrap()),
-            w: Cell::new(RsvgLength::parse("100%", LengthDir::Horizontal).unwrap()),
-            h: Cell::new(RsvgLength::parse("100%", LengthDir::Vertical).unwrap()),
+            x: Cell::new(RsvgLength::parse_str("0", LengthDir::Horizontal).unwrap()),
+            y: Cell::new(RsvgLength::parse_str("0", LengthDir::Vertical).unwrap()),
+            w: Cell::new(RsvgLength::parse_str("100%", LengthDir::Horizontal).unwrap()),
+            h: Cell::new(RsvgLength::parse_str("100%", LengthDir::Vertical).unwrap()),
             vbox: Cell::new(None),
             pbag: RefCell::new(None),
         }
@@ -304,12 +304,12 @@ impl NodeTrait for NodeUse {
         let nw = self
             .w
             .get()
-            .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Horizontal).unwrap())
+            .unwrap_or_else(|| RsvgLength::parse_str("100%", LengthDir::Horizontal).unwrap())
             .normalize(values, draw_ctx);
         let nh = self
             .h
             .get()
-            .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Vertical).unwrap())
+            .unwrap_or_else(|| RsvgLength::parse_str("100%", LengthDir::Vertical).unwrap())
             .normalize(values, draw_ctx);
 
         // width or height set to 0 disables rendering of the element

@@ -24,10 +24,10 @@ impl NodeFilter {
     #[inline]
     pub fn new() -> Self {
         Self {
-            x: Cell::new(RsvgLength::parse("-10%", LengthDir::Horizontal).unwrap()),
-            y: Cell::new(RsvgLength::parse("-10%", LengthDir::Vertical).unwrap()),
-            width: Cell::new(RsvgLength::parse("120%", LengthDir::Horizontal).unwrap()),
-            height: Cell::new(RsvgLength::parse("120%", LengthDir::Vertical).unwrap()),
+            x: Cell::new(RsvgLength::parse_str("-10%", LengthDir::Horizontal).unwrap()),
+            y: Cell::new(RsvgLength::parse_str("-10%", LengthDir::Vertical).unwrap()),
+            width: Cell::new(RsvgLength::parse_str("120%", LengthDir::Horizontal).unwrap()),
+            height: Cell::new(RsvgLength::parse_str("120%", LengthDir::Vertical).unwrap()),
             filterunits: Cell::new(CoordUnits::ObjectBoundingBox),
             primitiveunits: Cell::new(CoordUnits::UserSpaceOnUse),
         }

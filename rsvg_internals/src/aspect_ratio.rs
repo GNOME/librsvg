@@ -20,7 +20,7 @@
 //! [`AspectRatio`]: struct.AspectRatio.html
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
-use cssparser::{Parser, ParserInput};
+use cssparser::Parser;
 use error::*;
 use parsers::Parse;
 use parsers::ParseError;
@@ -213,11 +213,8 @@ impl Parse for AspectRatio {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _: ()) -> Result<AspectRatio, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
-        AspectRatio::parse_input(&mut parser).map_err(|_| {
+    fn parse(parser: &mut Parser, _: ()) -> Result<AspectRatio, AttributeError> {
+        AspectRatio::parse_input(parser).map_err(|_| {
             AttributeError::Parse(ParseError::new(
                 "expected \"[defer] <align> [meet | slice]\"",
             ))
@@ -231,20 +228,20 @@ mod tests {
 
     #[test]
     fn parsing_invalid_strings_yields_error() {
-        assert!(AspectRatio::parse("", ()).is_err());
-        assert!(AspectRatio::parse("defer", ()).is_err());
-        assert!(AspectRatio::parse("defer foo", ()).is_err());
-        assert!(AspectRatio::parse("defer xmidymid", ()).is_err());
-        assert!(AspectRatio::parse("defer xMidYMid foo", ()).is_err());
-        assert!(AspectRatio::parse("xmidymid", ()).is_err());
-        assert!(AspectRatio::parse("xMidYMid foo", ()).is_err());
-        assert!(AspectRatio::parse("defer xMidYMid meet foo", ()).is_err());
+        assert!(AspectRatio::parse_str("", ()).is_err());
+        assert!(AspectRatio::parse_str("defer", ()).is_err());
+        assert!(AspectRatio::parse_str("defer foo", ()).is_err());
+        assert!(AspectRatio::parse_str("defer xmidymid", ()).is_err());
+        assert!(AspectRatio::parse_str("defer xMidYMid foo", ()).is_err());
+        assert!(AspectRatio::parse_str("xmidymid", ()).is_err());
+        assert!(AspectRatio::parse_str("xMidYMid foo", ()).is_err());
+        assert!(AspectRatio::parse_str("defer xMidYMid meet foo", ()).is_err());
     }
 
     #[test]
     fn parses_valid_strings() {
         assert_eq!(
-            AspectRatio::parse("defer none", ()),
+            AspectRatio::parse_str("defer none", ()),
             Ok(AspectRatio {
                 defer: true,
                 align: None,
@@ -252,7 +249,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse("xMidYMid", ()),
+            AspectRatio::parse_str("xMidYMid", ()),
             Ok(AspectRatio {
                 defer: false,
                 align: Some(Align {
@@ -264,7 +261,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse("defer xMidYMid", ()),
+            AspectRatio::parse_str("defer xMidYMid", ()),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -276,7 +273,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse("defer xMinYMax", ()),
+            AspectRatio::parse_str("defer xMinYMax", ()),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -288,7 +285,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse("defer xMaxYMid meet", ()),
+            AspectRatio::parse_str("defer xMaxYMid meet", ()),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -300,7 +297,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse("defer xMinYMax slice", ()),
+            AspectRatio::parse_str("defer xMinYMax slice", ()),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -314,76 +311,76 @@ mod tests {
 
     #[test]
     fn aligns() {
-        let foo = AspectRatio::parse("xMinYMin meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMin meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse("xMinYMin slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMin slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, 0.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse("xMinYMid meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMid meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse("xMinYMid slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMid slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
 
         assert_eq!(foo, (0.0, -49.5, 10.0, 100.0));
 
-        let foo = AspectRatio::parse("xMinYMax meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMax meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse("xMinYMax slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMax slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, -99.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse("xMidYMin meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMin meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (4.95, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse("xMidYMin slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMin slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, 0.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse("xMidYMid meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMid meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (4.95, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse("xMidYMid slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMid slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, -49.5, 10.0, 100.0));
 
-        let foo = AspectRatio::parse("xMidYMax meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMax meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (4.95, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse("xMidYMax slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMax slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, -99.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse("xMaxYMin meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMin meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (9.9, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse("xMaxYMin slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMin slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, 0.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse("xMaxYMid meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMid meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (9.9, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse("xMaxYMid slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMid slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, -49.5, 10.0, 100.0));
 
-        let foo = AspectRatio::parse("xMaxYMax meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMax meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (9.9, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse("xMaxYMax slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMax slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_eq!(foo, (0.0, -99.0, 10.0, 100.0));
     }

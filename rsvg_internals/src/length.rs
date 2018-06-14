@@ -1,4 +1,4 @@
-use cssparser::{Parser, ParserInput, Token};
+use cssparser::{Parser, Token};
 use libc;
 use std::f64::consts::*;
 
@@ -98,7 +98,7 @@ pub extern "C" fn rsvg_length_parse(string: *const libc::c_char, dir: LengthDir)
     let my_string = unsafe { utf8_cstr(string) };
 
     // FIXME: this ignores errors; propagate them upstream
-    RsvgLength::parse(my_string, dir).unwrap_or_else(|_| RsvgLength::default())
+    RsvgLength::parse_str(my_string, dir).unwrap_or_else(|_| RsvgLength::default())
 }
 
 // https://www.w3.org/TR/SVG/types.html#DataTypeLength
@@ -122,11 +122,8 @@ impl Parse for RsvgLength {
     type Data = LengthDir;
     type Err = AttributeError;
 
-    fn parse(string: &str, dir: LengthDir) -> Result<RsvgLength, AttributeError> {
-        let mut input = ParserInput::new(string);
-        let mut parser = Parser::new(&mut input);
-
-        let length = RsvgLength::from_cssparser(&mut parser, dir)?;
+    fn parse(parser: &mut Parser, dir: LengthDir) -> Result<RsvgLength, AttributeError> {
+        let length = RsvgLength::from_cssparser(parser, dir)?;
 
         parser.expect_exhausted().map_err(|_| make_err())?;
 
@@ -366,14 +363,11 @@ impl Parse for Dasharray {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _: Self::Data) -> Result<Dasharray, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
+    fn parse(parser: &mut Parser, _: Self::Data) -> Result<Dasharray, AttributeError> {
         if parser.try(|p| p.expect_ident_matching("none")).is_ok() {
             Ok(Dasharray::None)
         } else {
-            Ok(Dasharray::Array(parse_dash_array(&mut parser)?))
+            Ok(Dasharray::Array(parse_dash_array(parser)?))
         }
     }
 }
@@ -434,7 +428,7 @@ mod tests {
     #[test]
     fn parses_default() {
         assert_eq!(
-            RsvgLength::parse("42", LengthDir::Horizontal),
+            RsvgLength::parse_str("42", LengthDir::Horizontal),
             Ok(RsvgLength::new(
                 42.0,
                 LengthUnit::Default,
@@ -443,7 +437,7 @@ mod tests {
         );
 
         assert_eq!(
-            RsvgLength::parse("-42px", LengthDir::Horizontal),
+            RsvgLength::parse_str("-42px", LengthDir::Horizontal),
             Ok(RsvgLength::new(
                 -42.0,
                 LengthUnit::Default,
@@ -455,7 +449,7 @@ mod tests {
     #[test]
     fn parses_percent() {
         assert_eq!(
-            RsvgLength::parse("50.0%", LengthDir::Horizontal),
+            RsvgLength::parse_str("50.0%", LengthDir::Horizontal),
             Ok(RsvgLength::new(
                 0.5,
                 LengthUnit::Percent,
@@ -467,7 +461,7 @@ mod tests {
     #[test]
     fn parses_font_em() {
         assert_eq!(
-            RsvgLength::parse("22.5em", LengthDir::Vertical),
+            RsvgLength::parse_str("22.5em", LengthDir::Vertical),
             Ok(RsvgLength::new(
                 22.5,
                 LengthUnit::FontEm,
@@ -479,7 +473,7 @@ mod tests {
     #[test]
     fn parses_font_ex() {
         assert_eq!(
-            RsvgLength::parse("22.5ex", LengthDir::Vertical),
+            RsvgLength::parse_str("22.5ex", LengthDir::Vertical),
             Ok(RsvgLength::new(
                 22.5,
                 LengthUnit::FontEx,
@@ -491,27 +485,27 @@ mod tests {
     #[test]
     fn parses_physical_units() {
         assert_eq!(
-            RsvgLength::parse("72pt", LengthDir::Both),
+            RsvgLength::parse_str("72pt", LengthDir::Both),
             Ok(RsvgLength::new(1.0, LengthUnit::Inch, LengthDir::Both))
         );
 
         assert_eq!(
-            RsvgLength::parse("-22.5in", LengthDir::Both),
+            RsvgLength::parse_str("-22.5in", LengthDir::Both),
             Ok(RsvgLength::new(-22.5, LengthUnit::Inch, LengthDir::Both))
         );
 
         assert_eq!(
-            RsvgLength::parse("-254cm", LengthDir::Both),
+            RsvgLength::parse_str("-254cm", LengthDir::Both),
             Ok(RsvgLength::new(-100.0, LengthUnit::Inch, LengthDir::Both))
         );
 
         assert_eq!(
-            RsvgLength::parse("254mm", LengthDir::Both),
+            RsvgLength::parse_str("254mm", LengthDir::Both),
             Ok(RsvgLength::new(10.0, LengthUnit::Inch, LengthDir::Both))
         );
 
         assert_eq!(
-            RsvgLength::parse("60pc", LengthDir::Both),
+            RsvgLength::parse_str("60pc", LengthDir::Both),
             Ok(RsvgLength::new(10.0, LengthUnit::Inch, LengthDir::Both))
         );
     }
@@ -519,7 +513,7 @@ mod tests {
     #[test]
     fn parses_relative_larger() {
         assert_eq!(
-            RsvgLength::parse("larger", LengthDir::Vertical),
+            RsvgLength::parse_str("larger", LengthDir::Vertical),
             Ok(RsvgLength::new(
                 0.0,
                 LengthUnit::RelativeLarger,
@@ -531,7 +525,7 @@ mod tests {
     #[test]
     fn parses_relative_smaller() {
         assert_eq!(
-            RsvgLength::parse("smaller", LengthDir::Vertical),
+            RsvgLength::parse_str("smaller", LengthDir::Vertical),
             Ok(RsvgLength::new(
                 0.0,
                 LengthUnit::RelativeSmaller,
@@ -552,7 +546,7 @@ mod tests {
         // enforce a particular sequence.
 
         for name in names {
-            let length = RsvgLength::parse(name, LengthDir::Both).unwrap();
+            let length = RsvgLength::parse_str(name, LengthDir::Both).unwrap();
 
             assert_eq!(length.unit, LengthUnit::Inch);
             assert_eq!(length.dir, LengthDir::Both);
@@ -567,12 +561,12 @@ mod tests {
 
     #[test]
     fn empty_length_yields_error() {
-        assert!(is_parse_error(&RsvgLength::parse("", LengthDir::Both)));
+        assert!(is_parse_error(&RsvgLength::parse_str("", LengthDir::Both)));
     }
 
     #[test]
     fn invalid_unit_yields_error() {
-        assert!(is_parse_error(&RsvgLength::parse(
+        assert!(is_parse_error(&RsvgLength::parse_str(
             "8furlong",
             LengthDir::Both
         )));
@@ -583,7 +577,7 @@ mod tests {
         // FIXME: this is intended to test the (absence of) the "larger" et al values.
         // Since they really be in FontSize, not RsvgLength, we should remember
         // to move this test to that type later.
-        assert!(is_parse_error(&RsvgLength::parse(
+        assert!(is_parse_error(&RsvgLength::parse_str(
             "furlong",
             LengthDir::Both
         )));
@@ -592,25 +586,25 @@ mod tests {
     #[test]
     fn check_nonnegative_works() {
         assert!(
-            RsvgLength::parse("0", LengthDir::Both)
+            RsvgLength::parse_str("0", LengthDir::Both)
                 .and_then(|l| l.check_nonnegative())
                 .is_ok()
         );
         assert!(
-            RsvgLength::parse("-10", LengthDir::Both)
+            RsvgLength::parse_str("-10", LengthDir::Both)
                 .and_then(|l| l.check_nonnegative())
                 .is_err()
         );
     }
 
     fn parse_dash_array_str(s: &str) -> Result<Dasharray, AttributeError> {
-        Dasharray::parse(s, ())
+        Dasharray::parse_str(s, ())
     }
 
     #[test]
     fn parses_dash_array() {
         // helper to cut down boilderplate
-        let length_parse = |s| RsvgLength::parse(s, LengthDir::Both).unwrap();
+        let length_parse = |s| RsvgLength::parse_str(s, LengthDir::Both).unwrap();
 
         let expected = Dasharray::Array(vec![
             length_parse("1"),

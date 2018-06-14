@@ -1,5 +1,5 @@
 use cairo;
-use cssparser::{Parser, ParserInput};
+use cssparser::Parser;
 use glib;
 use glib_sys;
 
@@ -70,11 +70,8 @@ impl Parse for ViewBox {
     // x, y, w, h
     //
     // Where w and h must be nonnegative.
-    fn parse(s: &str, _: ()) -> Result<ViewBox, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
-        let v = parsers::number_list(&mut parser, ListLength::Exact(4))
+    fn parse(parser: &mut Parser, _: ()) -> Result<ViewBox, AttributeError> {
+        let v = parsers::number_list(parser, ListLength::Exact(4))
             .map_err(|_| ParseError::new("string does not match 'x [,] y [,] w [,] h'"))?;
 
         let (x, y, w, h) = (v[0], v[1], v[2], v[3]);
@@ -101,26 +98,26 @@ mod tests {
     #[test]
     fn parses_valid_viewboxes() {
         assert_eq!(
-            ViewBox::parse("  1 2 3 4", ()),
+            ViewBox::parse_str("  1 2 3 4", ()),
             Ok(ViewBox::new(1.0, 2.0, 3.0, 4.0))
         );
 
         assert_eq!(
-            ViewBox::parse(" -1.5 -2.5e1,34,56e2  ", ()),
+            ViewBox::parse_str(" -1.5 -2.5e1,34,56e2  ", ()),
             Ok(ViewBox::new(-1.5, -25.0, 34.0, 5600.0))
         );
     }
 
     #[test]
     fn parsing_invalid_viewboxes_yields_error() {
-        assert!(is_parse_error(&ViewBox::parse("", ())));
+        assert!(is_parse_error(&ViewBox::parse_str("", ())));
 
-        assert!(is_value_error(&ViewBox::parse(" 1,2,-3,-4 ", ())));
+        assert!(is_value_error(&ViewBox::parse_str(" 1,2,-3,-4 ", ())));
 
-        assert!(is_parse_error(&ViewBox::parse("qwerasdfzxcv", ())));
+        assert!(is_parse_error(&ViewBox::parse_str("qwerasdfzxcv", ())));
 
-        assert!(is_parse_error(&ViewBox::parse(" 1 2 3 4   5", ())));
+        assert!(is_parse_error(&ViewBox::parse_str(" 1 2 3 4   5", ())));
 
-        assert!(is_parse_error(&ViewBox::parse(" 1 2 foo 3 4", ())));
+        assert!(is_parse_error(&ViewBox::parse_str(" 1 2 foo 3 4", ())));
     }
 }

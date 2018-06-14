@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::f64::consts::*;
 
 use cairo::MatrixTrait;
-use cssparser::{CowRcStr, Parser, ParserInput, Token};
+use cssparser::{CowRcStr, Parser, Token};
 
 use aspect_ratio::*;
 use attributes::Attribute;
@@ -40,9 +40,7 @@ impl Parse for MarkerUnits {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _: ()) -> Result<MarkerUnits, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
+    fn parse(parser: &mut Parser, _: ()) -> Result<MarkerUnits, AttributeError> {
         let loc = parser.current_source_location();
 
         parser
@@ -81,14 +79,11 @@ impl Parse for MarkerOrient {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _: ()) -> Result<MarkerOrient, AttributeError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
+    fn parse(parser: &mut Parser, _: ()) -> Result<MarkerOrient, AttributeError> {
         if parser.try(|p| p.expect_ident_matching("auto")).is_ok() {
             Ok(MarkerOrient::Auto)
         } else {
-            parsers::angle_degrees(&mut parser)
+            parsers::angle_degrees(parser)
                 .map(MarkerOrient::Degrees)
                 .map_err(AttributeError::Parse)
         }
@@ -122,7 +117,7 @@ impl NodeMarker {
 
     fn get_default_size(dir: LengthDir) -> RsvgLength {
         // per the spec
-        RsvgLength::parse("3", dir).unwrap()
+        RsvgLength::parse_str("3", dir).unwrap()
     }
 
     fn render(
@@ -837,21 +832,21 @@ mod parser_tests {
     #[test]
     fn parsing_invalid_marker_units_yields_error() {
         assert!(is_parse_error(
-            &MarkerUnits::parse("", ()).map_err(|e| AttributeError::from(e))
+            &MarkerUnits::parse_str("", ()).map_err(|e| AttributeError::from(e))
         ));
         assert!(is_parse_error(
-            &MarkerUnits::parse("foo", ()).map_err(|e| AttributeError::from(e))
+            &MarkerUnits::parse_str("foo", ()).map_err(|e| AttributeError::from(e))
         ));
     }
 
     #[test]
     fn parses_marker_units() {
         assert_eq!(
-            MarkerUnits::parse("userSpaceOnUse", ()),
+            MarkerUnits::parse_str("userSpaceOnUse", ()),
             Ok(MarkerUnits::UserSpaceOnUse)
         );
         assert_eq!(
-            MarkerUnits::parse("strokeWidth", ()),
+            MarkerUnits::parse_str("strokeWidth", ()),
             Ok(MarkerUnits::StrokeWidth)
         );
     }
@@ -859,35 +854,38 @@ mod parser_tests {
     #[test]
     fn parsing_invalid_marker_orient_yields_error() {
         assert!(is_parse_error(
-            &MarkerOrient::parse("", ()).map_err(|e| AttributeError::from(e))
+            &MarkerOrient::parse_str("", ()).map_err(|e| AttributeError::from(e))
         ));
         assert!(is_parse_error(
-            &MarkerOrient::parse("blah", ()).map_err(|e| AttributeError::from(e))
+            &MarkerOrient::parse_str("blah", ()).map_err(|e| AttributeError::from(e))
         ));
         assert!(is_parse_error(
-            &MarkerOrient::parse("45blah", ()).map_err(|e| AttributeError::from(e))
+            &MarkerOrient::parse_str("45blah", ()).map_err(|e| AttributeError::from(e))
         ));
     }
 
     #[test]
     fn parses_marker_orient() {
-        assert_eq!(MarkerOrient::parse("auto", ()), Ok(MarkerOrient::Auto));
+        assert_eq!(MarkerOrient::parse_str("auto", ()), Ok(MarkerOrient::Auto));
 
-        assert_eq!(MarkerOrient::parse("0", ()), Ok(MarkerOrient::Degrees(0.0)));
         assert_eq!(
-            MarkerOrient::parse("180", ()),
+            MarkerOrient::parse_str("0", ()),
+            Ok(MarkerOrient::Degrees(0.0))
+        );
+        assert_eq!(
+            MarkerOrient::parse_str("180", ()),
             Ok(MarkerOrient::Degrees(180.0))
         );
         assert_eq!(
-            MarkerOrient::parse("180deg", ()),
+            MarkerOrient::parse_str("180deg", ()),
             Ok(MarkerOrient::Degrees(180.0))
         );
         assert_eq!(
-            MarkerOrient::parse("-400grad", ()),
+            MarkerOrient::parse_str("-400grad", ()),
             Ok(MarkerOrient::Degrees(-360.0))
         );
         assert_eq!(
-            MarkerOrient::parse("1rad", ()),
+            MarkerOrient::parse_str("1rad", ()),
             Ok(MarkerOrient::Degrees(180.0 / PI))
         );
     }

@@ -36,7 +36,42 @@ pub trait Parse: Sized {
     type Data;
     type Err;
 
-    fn parse(s: &str, data: Self::Data) -> Result<Self, Self::Err>;
+    fn parse(parser: &mut Parser, data: Self::Data) -> Result<Self, Self::Err>;
+
+    fn parse_str(s: &str, data: Self::Data) -> Result<Self, Self::Err> {
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
+        Self::parse(&mut parser, data).and_then(|r| {
+            // FIXME: parser.expect_exhausted()?;
+            Ok(r)
+        })
+    }
+}
+
+impl Parse for f64 {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(parser: &mut Parser, _: ()) -> Result<f64, AttributeError> {
+        Ok(f64::from(parser.expect_number().map_err(|_| {
+            AttributeError::Parse(ParseError::new("expected number"))
+        })?))
+    }
+}
+
+impl Parse for String {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(parser: &mut Parser, _: ()) -> Result<String, AttributeError> {
+        Ok(String::from(
+            parser
+                .expect_string()
+                .map_err(|_| AttributeError::Parse(ParseError::new("expected number")))?
+                .as_ref(),
+        ))
+    }
 }
 
 /// Parses a `value` string into a type `T` with an optional validation function.
@@ -55,7 +90,10 @@ pub fn parse<T>(
 where
     T: Parse<Err = AttributeError>,
 {
-    T::parse(value, data)
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+
+    T::parse(&mut parser, data)
         .and_then(|v| {
             if let Some(validate) = validate {
                 validate(v)

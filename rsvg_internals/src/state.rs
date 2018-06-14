@@ -1,4 +1,4 @@
-use cssparser::{self, Parser, ParserInput, Token};
+use cssparser::{self, Parser, Token};
 use glib::translate::*;
 use glib_sys;
 use libc;
@@ -559,14 +559,16 @@ impl State {
                     // xml:lang is not a property; it is a non-presentation attribute and as such
                     // cannot have the "inherit" value.  So, we don't call parse_property() for it,
                     // but rather call its parser directly.
-                    self.values.xml_lang = SpecifiedValue::Specified(XmlLang::parse(value, ())?);
+                    self.values.xml_lang =
+                        SpecifiedValue::Specified(XmlLang::parse_str(value, ())?);
                 }
 
                 Attribute::XmlSpace => {
                     // xml:space is not a property; it is a non-presentation attribute and as such
                     // cannot have the "inherit" value.  So, we don't call parse_property() for it,
                     // but rather call its parser directly.
-                    self.values.xml_space = SpecifiedValue::Specified(XmlSpace::parse(value, ())?);
+                    self.values.xml_space =
+                        SpecifiedValue::Specified(XmlSpace::parse_str(value, ())?);
                 }
 
                 _ => {
@@ -661,7 +663,7 @@ where
     if value.trim() == "inherit" {
         Ok(SpecifiedValue::Inherit)
     } else {
-        Parse::parse(value, data).map(SpecifiedValue::Specified)
+        Parse::parse_str(value, data).map(SpecifiedValue::Specified)
     }
 }
 
@@ -669,7 +671,7 @@ where
 make_property!(
     ComputedValues,
     BaselineShift,
-    default: RsvgLength::parse("0.0", LengthDir::Both).unwrap(),
+    default: RsvgLength::parse_str("0.0", LengthDir::Both).unwrap(),
     newtype: RsvgLength,
     property_impl: {
         impl Property<ComputedValues> for BaselineShift {
@@ -697,10 +699,7 @@ make_property!(
 
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
-            fn parse(s: &str, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
-                let mut input = ParserInput::new(s);
-                let mut parser = Parser::new(&mut input);
-
+            fn parse(parser: &mut Parser, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
                 let parser_state = parser.state();
 
                 {
@@ -729,7 +728,7 @@ make_property!(
 
                 parser.reset(&parser_state);
 
-                Ok(BaselineShift(RsvgLength::from_cssparser(&mut parser, LengthDir::Both)?))
+                Ok(BaselineShift(RsvgLength::from_cssparser(parser, LengthDir::Both)?))
             }
         }
     }
@@ -862,7 +861,7 @@ make_property!(
 make_property!(
     ComputedValues,
     Fill,
-    default: PaintServer::parse("#000", ()).unwrap(),
+    default: PaintServer::parse_str("#000", ()).unwrap(),
     inherits_automatically: true,
     newtype_parse: PaintServer,
     parse_data_type: ()
@@ -874,7 +873,8 @@ make_property!(
     FillOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
-    newtype_from_str: UnitInterval
+    newtype_parse: UnitInterval,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#FillRuleProperty
@@ -915,7 +915,8 @@ make_property!(
     FloodOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
-    newtype_from_str: UnitInterval
+    newtype_parse: UnitInterval,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
@@ -924,14 +925,15 @@ make_property!(
     FontFamily,
     default: "Times New Roman".to_string(),
     inherits_automatically: true,
-    newtype_from_str: String
+    newtype_parse: String,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontSizeProperty
 make_property!(
     ComputedValues,
     FontSize,
-    default: RsvgLength::parse("12.0", LengthDir::Both).unwrap(),
+    default: RsvgLength::parse_str("12.0", LengthDir::Both).unwrap(),
     newtype_parse: RsvgLength,
     parse_data_type: LengthDir,
     property_impl: {
@@ -1093,7 +1095,8 @@ make_property!(
     Opacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
-    newtype_from_str: UnitInterval
+    newtype_parse: UnitInterval,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/masking.html#OverflowProperty
@@ -1140,7 +1143,8 @@ make_property!(
     StopOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
-    newtype_from_str: UnitInterval
+    newtype_parse: UnitInterval,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeProperty
@@ -1205,7 +1209,8 @@ make_property!(
     StrokeMiterlimit,
     default: 4f64,
     inherits_automatically: true,
-    newtype_from_str: f64
+    newtype_parse: f64,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeOpacityProperty
@@ -1214,14 +1219,15 @@ make_property!(
     StrokeOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
-    newtype_from_str: UnitInterval
+    newtype_parse: UnitInterval,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeWidthProperty
 make_property!(
     ComputedValues,
     StrokeWidth,
-    default: RsvgLength::parse("1.0", LengthDir::Both).unwrap(),
+    default: RsvgLength::parse_str("1.0", LengthDir::Both).unwrap(),
     inherits_automatically: true,
     newtype_parse: RsvgLength,
     parse_data_type: LengthDir
@@ -1257,10 +1263,7 @@ make_property!(
             type Data = ();
             type Err = AttributeError;
 
-            fn parse(s: &str, _: Self::Data) -> Result<TextDecoration, AttributeError> {
-                let mut input = ParserInput::new(s);
-                let mut parser = Parser::new(&mut input);
-
+            fn parse(parser: &mut Parser, _: Self::Data) -> Result<TextDecoration, AttributeError> {
                 let mut overline = false;
                 let mut underline = false;
                 let mut strike = false;
@@ -1296,7 +1299,7 @@ make_property!(
 #[test]
 fn parses_text_decoration() {
     assert_eq!(
-        TextDecoration::parse("none", ()).unwrap(),
+        TextDecoration::parse_str("none", ()).unwrap(),
         TextDecoration {
             overline: false,
             underline: false,
@@ -1305,7 +1308,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse("overline", ()).unwrap(),
+        TextDecoration::parse_str("overline", ()).unwrap(),
         TextDecoration {
             overline: true,
             underline: false,
@@ -1314,7 +1317,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse("underline", ()).unwrap(),
+        TextDecoration::parse_str("underline", ()).unwrap(),
         TextDecoration {
             overline: false,
             underline: true,
@@ -1323,7 +1326,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse("line-through", ()).unwrap(),
+        TextDecoration::parse_str("line-through", ()).unwrap(),
         TextDecoration {
             overline: false,
             underline: false,
@@ -1332,7 +1335,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse("underline overline", ()).unwrap(),
+        TextDecoration::parse_str("underline overline", ()).unwrap(),
         TextDecoration {
             overline: true,
             underline: true,
@@ -1340,7 +1343,7 @@ fn parses_text_decoration() {
         }
     );
 
-    assert!(TextDecoration::parse("airline", ()).is_err())
+    assert!(TextDecoration::parse_str("airline", ()).is_err())
 }
 
 // https://www.w3.org/TR/SVG/painting.html#TextRenderingProperty
@@ -1404,7 +1407,8 @@ make_property!(
     XmlLang,
     default: "".to_string(), // see create_pango_layout()
     inherits_automatically: true,
-    newtype_from_str: String
+    newtype_parse: String,
+    parse_data_type: ()
 );
 
 make_property!(

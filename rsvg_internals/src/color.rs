@@ -1,4 +1,4 @@
-use cssparser;
+use cssparser::{self, Parser};
 use libc;
 
 use error::*;
@@ -12,11 +12,8 @@ impl Parse for cssparser::Color {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _: Self::Data) -> Result<cssparser::Color, AttributeError> {
-        let mut input = cssparser::ParserInput::new(s);
-        let mut parser = cssparser::Parser::new(&mut input);
-
-        cssparser::Color::parse(&mut parser)
+    fn parse(parser: &mut Parser, _: Self::Data) -> Result<cssparser::Color, AttributeError> {
+        cssparser::Color::parse(parser)
             .map_err(|_| AttributeError::Parse(ParseError::new("invalid syntax for color")))
     }
 }
@@ -25,11 +22,8 @@ impl Parse for cssparser::RGBA {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(s: &str, _: Self::Data) -> Result<cssparser::RGBA, AttributeError> {
-        let mut input = cssparser::ParserInput::new(s);
-        let mut parser = cssparser::Parser::new(&mut input);
-
-        match cssparser::Color::parse(&mut parser) {
+    fn parse(parser: &mut Parser, _: Self::Data) -> Result<cssparser::RGBA, AttributeError> {
+        match cssparser::Color::parse(parser) {
             Ok(cssparser::Color::RGBA(rgba)) => Ok(rgba),
             Ok(cssparser::Color::CurrentColor) => Err(AttributeError::Value(
                 "currentColor is not allowed here".to_string(),
@@ -115,7 +109,7 @@ pub extern "C" fn rsvg_css_parse_color(string: *const libc::c_char) -> ColorSpec
             argb: 0,
         }
     } else {
-        ColorSpec::from(<Color as Parse>::parse(s, ()).map(|v| Some(v)))
+        ColorSpec::from(<Color as Parse>::parse_str(s, ()).map(|v| Some(v)))
     }
 }
 

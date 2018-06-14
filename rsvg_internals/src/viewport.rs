@@ -292,7 +292,7 @@ mod tests {
                 width: 40.0,
                 height: 40.0,
             })),
-            AspectRatio::parse("xMidYMid meet", ()).unwrap(),
+            AspectRatio::parse_str("xMidYMid meet", ()).unwrap(),
             cairo::Matrix::identity(),
             &mut ctx,
         );
@@ -327,7 +327,7 @@ mod tests {
                 width: 50.0,
                 height: 50.0,
             })),
-            AspectRatio::parse("xMidYMid meet", ()).unwrap(),
+            AspectRatio::parse_str("xMidYMid meet", ()).unwrap(),
             cairo::Matrix::identity(),
             &mut ctx,
         );
