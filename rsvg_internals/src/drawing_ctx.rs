@@ -12,6 +12,7 @@ use pangocairo;
 use bbox::{BoundingBox, RsvgBbox};
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
+use defs::{self, RsvgDefs};
 use filters::filter_render;
 use iri::IRI;
 use mask::NodeMask;
@@ -49,12 +50,14 @@ extern "C" {
 
     fn rsvg_drawing_ctx_pop_view_box(draw_ctx: *const RsvgDrawingCtx);
 
-    fn rsvg_drawing_ctx_acquire_node(
+    fn rsvg_drawing_ctx_prepend_acquired_node(
         draw_ctx: *const RsvgDrawingCtx,
-        url: *const libc::c_char,
-    ) -> *mut RsvgNode;
+        node: *mut RsvgNode,
+    ) -> glib_sys::gboolean;
 
-    fn rsvg_drawing_ctx_release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
+    fn rsvg_drawing_ctx_remove_acquired_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
+
+    fn rsvg_drawing_ctx_get_defs(draw_ctx: *const RsvgDrawingCtx) -> *const RsvgDefs;
 
     fn rsvg_drawing_ctx_get_offset(
         draw_ctx: *const RsvgDrawingCtx,
@@ -144,14 +147,30 @@ pub fn pop_view_box(draw_ctx: *const RsvgDrawingCtx) {
     }
 }
 
+// Use this function when looking up urls to other nodes. This function
+// does proper recursion checking and thereby avoids infinite loops.
+//
+// Nodes acquired by this function must be released in reverse
+// acquiring order.
+//
+// Note that if you acquire a node, you have to release it before trying to
+// acquire it again.  If you acquire a node "#foo" and don't release it before
+// trying to acquire "foo" again, you will obtain a %NULL the second time.
 pub fn get_acquired_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> Option<AcquiredNode> {
-    let raw_node = unsafe { rsvg_drawing_ctx_acquire_node(draw_ctx, str::to_glib_none(url).0) };
+    let defs = unsafe {
+        let d = rsvg_drawing_ctx_get_defs(draw_ctx);
+        &*d
+    };
 
-    if raw_node.is_null() {
-        None
-    } else {
-        Some(AcquiredNode(draw_ctx, raw_node))
+    if let Some(node) = defs::lookup(defs, url) {
+        unsafe {
+            if from_glib(rsvg_drawing_ctx_prepend_acquired_node(draw_ctx, node)) {
+                return Some(AcquiredNode(draw_ctx, node));
+            }
+        }
     }
+
+    None
 }
 
 // Use this function when looking up urls to other nodes, and when you expect
@@ -646,7 +665,7 @@ pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
         unsafe {
-            rsvg_drawing_ctx_release_node(self.0, self.1);
+            rsvg_drawing_ctx_remove_acquired_node(self.0, self.1);
         }
     }
 }
