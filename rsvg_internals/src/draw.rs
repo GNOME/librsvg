@@ -1,5 +1,5 @@
 use cairo;
-use cairo::MatrixTrait;
+use cairo::{MatrixTrait, Pattern};
 use cairo_sys;
 use glib::translate::*;
 use pango::{self, ContextExt, LayoutExt};
@@ -476,7 +476,23 @@ pub fn draw_surface(
 
     cr.set_operator(cairo::Operator::from(values.comp_op));
 
-    cr.set_source_surface(&surface, x, y);
+    // We need to set extend appropriately, so can't use cr.set_source_surface().
+    //
+    // If extend is left at its default value (None), then bilinear scaling uses transparency
+    // outside of the image producing incorrect results. For example, in
+    // svg1.1/filters-blend-01-b.svg there's a completely opaque 100×1 image of a gradient scaled
+    // to 100×98 which ends up transparent almost everywhere without this fix (which it shouldn't).
+    let ptn = cairo::SurfacePattern::create(&surface);
+    let mut matrix = cairo::Matrix::identity();
+    matrix.translate(-x, -y);
+    ptn.set_matrix(matrix);
+    ptn.set_extend(cairo::Extend::Pad);
+    cr.set_source(&ptn);
+
+    // Clip is needed due to extend being set to pad.
+    cr.rectangle(x, y, width, height);
+    cr.clip();
+
     cr.paint();
 
     cr.restore();
