@@ -5,6 +5,7 @@ use std::ptr;
 
 use attributes::Attribute;
 use clip_path::NodeClipPath;
+use filters::blend::Blend;
 use filters::composite::Composite;
 use filters::flood::Flood;
 use filters::image::Image;
@@ -27,12 +28,6 @@ use util::utf8_cstr;
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn rsvg_new_filter_primitive_blend(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_color_matrix(
         _: *const libc::c_char,
         _: *const RsvgNode,
@@ -119,7 +114,6 @@ lazy_static! {
     #[cfg_attr(rustfmt, rustfmt_skip)]
     static ref NODE_CREATORS_C: HashMap<&'static str, (bool, NodeCreateCFn)> = {
         let mut h = HashMap::new();
-        h.insert("feBlend",             (true,  rsvg_new_filter_primitive_blend as NodeCreateCFn));
         h.insert("feColorMatrix",       (true,  rsvg_new_filter_primitive_color_matrix as NodeCreateCFn));
         h.insert("feComponentTransfer", (true,  rsvg_new_filter_primitive_component_transfer as NodeCreateCFn));
         h.insert("feConvolveMatrix",    (true,  rsvg_new_filter_primitive_convolve_matrix as NodeCreateCFn));
@@ -155,6 +149,7 @@ macro_rules! node_create_fn {
 
 node_create_fn!(create_circle, Circle, NodeCircle::new);
 node_create_fn!(create_clip_path, ClipPath, NodeClipPath::new);
+node_create_fn!(create_blend, FilterPrimitiveBlend, Blend::new);
 node_create_fn!(create_composite, FilterPrimitiveComposite, Composite::new);
 node_create_fn!(create_defs, Defs, NodeDefs::new);
 node_create_fn!(create_ellipse, Ellipse, NodeEllipse::new);
@@ -217,6 +212,7 @@ lazy_static! {
         h.insert("defs",                (true,  create_defs as NodeCreateFn));
         /* h.insert("desc",             (true,  as NodeCreateFn)); */
         h.insert("ellipse",             (true,  create_ellipse as NodeCreateFn));
+        h.insert("feBlend",             (true,  create_blend as NodeCreateFn));
         h.insert("feComposite",         (true,  create_composite as NodeCreateFn));
         h.insert("feFlood",             (true,  create_flood as NodeCreateFn));
         h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));

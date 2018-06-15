@@ -30,6 +30,7 @@ pub mod iterators;
 pub mod node;
 use self::node::NodeFilter;
 
+pub mod blend;
 pub mod composite;
 pub mod flood;
 pub mod image;
