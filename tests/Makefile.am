@@ -70,6 +70,7 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/reftests/bugs/*.png)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/*.svg)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/*.png)		\
+	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/images/*)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/resources/*)	\
 	$(wildcard $(srcdir)/fixtures/render-crash/*.svg)		\
 	fixtures/dimensions/bug564527.svg				\
