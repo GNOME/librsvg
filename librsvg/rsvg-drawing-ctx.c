@@ -162,6 +162,8 @@ void
 rsvg_drawing_ctx_pop_bounding_box (RsvgDrawingCtx *ctx)
 {
     rsvg_bbox_insert ((RsvgBbox *) ctx->bb_stack->data, ctx->bbox);
+    rsvg_bbox_free (ctx->bbox);
+
     ctx->bbox = (RsvgBbox *) ctx->bb_stack->data;
     ctx->bb_stack = g_list_delete_link (ctx->bb_stack, ctx->bb_stack);
 }
