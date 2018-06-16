@@ -183,18 +183,21 @@ pub fn get_acquired_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> Option<A
 // Note that if you acquire a node, you have to release it before trying to
 // acquire it again.  If you acquire a node "#foo" and don't release it before
 // trying to acquire "foo" again, you will obtain a None the second time.
+//
+// For convenience, this function will return None if url is None.
 pub fn get_acquired_node_of_type(
     draw_ctx: *const RsvgDrawingCtx,
-    url: &str,
+    url: Option<&str>,
     node_type: NodeType,
 ) -> Option<AcquiredNode> {
-    if let Some(acquired) = get_acquired_node(draw_ctx, url) {
-        if acquired.get().get_type() == node_type {
-            return Some(acquired);
-        }
-    }
-
-    None
+    url.and_then(|url| get_acquired_node(draw_ctx, url))
+        .and_then(|acquired| {
+            if acquired.get().get_type() == node_type {
+                Some(acquired)
+            } else {
+                None
+            }
+        })
 }
 
 pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {
@@ -392,20 +395,20 @@ fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
 
     let current_affine = get_cairo_context(draw_ctx).get_matrix();
 
-    if let Some(clip_path) = clip_path {
-        if let Some(acquired) = get_acquired_node_of_type(draw_ctx, clip_path, NodeType::ClipPath) {
-            let node = acquired.get();
+    if let Some(acquired) =
+        get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
+    {
+        let node = acquired.get();
 
-            node.with_impl(|clip_path: &NodeClipPath| match clip_path.get_units() {
-                ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
-                    clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
-                }
+        node.with_impl(|clip_path: &NodeClipPath| match clip_path.get_units() {
+            ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
+                clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
+            }
 
-                ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
-                    late_clip = true;
-                }
-            });
-        }
+            ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
+                late_clip = true;
+            }
+        });
     }
 
     if opacity == 1.0
@@ -471,22 +474,22 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, node: &RsvgNode, values: &Com
 
     let mut late_clip = false;
 
-    if let Some(clip_path) = clip_path {
-        if let Some(acquired) = get_acquired_node_of_type(draw_ctx, clip_path, NodeType::ClipPath) {
-            let mut clip_path_units = ClipPathUnits::default();
+    if let Some(acquired) =
+        get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
+    {
+        let mut clip_path_units = ClipPathUnits::default();
 
-            acquired.get().with_impl(|clip_path: &NodeClipPath| {
-                clip_path_units = clip_path.get_units();
-            });
+        acquired.get().with_impl(|clip_path: &NodeClipPath| {
+            clip_path_units = clip_path.get_units();
+        });
 
-            match clip_path_units {
-                ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
-                    late_clip = false;
-                }
+        match clip_path_units {
+            ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
+                late_clip = false;
+            }
 
-                ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
-                    late_clip = true;
-                }
+            ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
+                late_clip = true;
             }
         }
     }
@@ -513,7 +516,9 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, node: &RsvgNode, values: &Com
         // There's nothing to render in this case, so filter_render() expects a non-empty bbox.
         // https://gitlab.gnome.org/GNOME/librsvg/issues/277
         if get_bbox(draw_ctx).rect.is_some() {
-            if let Some(acquired) = get_acquired_node_of_type(draw_ctx, filter, NodeType::Filter) {
+            if let Some(acquired) =
+                get_acquired_node_of_type(draw_ctx, Some(filter), NodeType::Filter)
+            {
                 if !acquired.get().is_in_error() {
                     filter_render(
                         &acquired.get(),
@@ -550,23 +555,21 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, node: &RsvgNode, values: &Com
     cr.set_source_surface(&surface, xofs, yofs);
 
     if late_clip {
-        if let Some(clip_path) = clip_path {
-            if let Some(acquired) =
-                get_acquired_node_of_type(draw_ctx, clip_path, NodeType::ClipPath)
-            {
-                let node = acquired.get();
+        if let Some(acquired) =
+            get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
+        {
+            let node = acquired.get();
 
-                node.with_impl(|clip_path: &NodeClipPath| {
-                    clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
-                });
-            }
+            node.with_impl(|clip_path: &NodeClipPath| {
+                clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
+            });
         }
     }
 
     cr.set_operator(cairo::Operator::from(comp_op));
 
     if let Some(mask) = mask {
-        if let Some(acquired) = get_acquired_node_of_type(draw_ctx, mask, NodeType::Mask) {
+        if let Some(acquired) = get_acquired_node_of_type(draw_ctx, Some(mask), NodeType::Mask) {
             let node = acquired.get();
 
             node.with_impl(|mask: &NodeMask| {

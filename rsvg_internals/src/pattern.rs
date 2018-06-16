@@ -232,22 +232,17 @@ fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern 
     let mut result = pattern.clone();
 
     while !result.is_resolved() {
-        result
-            .fallback
-            .as_ref()
-            .and_then(|fallback_name| {
-                drawing_ctx::get_acquired_node_of_type(draw_ctx, &fallback_name, NodeType::Pattern)
-            })
-            .and_then(|acquired| {
-                acquired.get().with_impl(|i: &NodePattern| {
-                    result.resolve_from_fallback(&*i.pattern.borrow())
-                });
-                Some(())
-            })
-            .or_else(|| {
-                result.resolve_from_defaults();
-                Some(())
-            });
+        if let Some(acquired) = drawing_ctx::get_acquired_node_of_type(
+            draw_ctx,
+            result.fallback.as_ref().map(String::as_ref),
+            NodeType::Pattern,
+        ) {
+            acquired
+                .get()
+                .with_impl(|i: &NodePattern| result.resolve_from_fallback(&*i.pattern.borrow()));
+        } else {
+            result.resolve_from_defaults();
+        }
     }
 
     result

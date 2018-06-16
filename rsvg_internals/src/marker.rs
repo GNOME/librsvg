@@ -599,7 +599,8 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) {
-    if let Some(acquired) = drawing_ctx::get_acquired_node_of_type(draw_ctx, name, NodeType::Marker)
+    if let Some(acquired) =
+        drawing_ctx::get_acquired_node_of_type(draw_ctx, Some(name), NodeType::Marker)
     {
         let node = acquired.get();
 
