@@ -498,7 +498,6 @@ impl Node {
                 draw_ctx,
                 &CascadedValues::new(cascaded, &child),
                 &child,
-                true,
                 clipping,
             );
         }

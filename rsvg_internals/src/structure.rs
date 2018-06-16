@@ -84,7 +84,6 @@ impl NodeTrait for NodeSwitch {
                 draw_ctx,
                 &CascadedValues::new(cascaded, &child),
                 &child,
-                true,
                 clipping,
             );
         }
@@ -328,7 +327,6 @@ impl NodeTrait for NodeUse {
                 draw_ctx,
                 &CascadedValues::new_from_values(&child, values),
                 &child,
-                true,
                 clipping,
             );
 
