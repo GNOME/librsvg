@@ -6,6 +6,7 @@ use std::ptr;
 use attributes::Attribute;
 use clip_path::NodeClipPath;
 use filters::blend::Blend;
+use filters::component_transfer::{ComponentTransfer, FuncX};
 use filters::composite::Composite;
 use filters::flood::Flood;
 use filters::image::Image;
@@ -34,12 +35,6 @@ extern "C" {
         _: *const libc::c_char,
         _: *const libc::c_char,
     ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_component_transfer(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_convolve_matrix(
         _: *const libc::c_char,
         _: *const RsvgNode,
@@ -59,12 +54,6 @@ extern "C" {
         _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_node_light_source(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_node_component_transfer_function(
         _: *const libc::c_char,
         _: *const RsvgNode,
         _: *const libc::c_char,
@@ -115,15 +104,10 @@ lazy_static! {
     static ref NODE_CREATORS_C: HashMap<&'static str, (bool, NodeCreateCFn)> = {
         let mut h = HashMap::new();
         h.insert("feColorMatrix",       (true,  rsvg_new_filter_primitive_color_matrix as NodeCreateCFn));
-        h.insert("feComponentTransfer", (true,  rsvg_new_filter_primitive_component_transfer as NodeCreateCFn));
         h.insert("feConvolveMatrix",    (true,  rsvg_new_filter_primitive_convolve_matrix as NodeCreateCFn));
         h.insert("feDiffuseLighting",   (true,  rsvg_new_filter_primitive_diffuse_lighting as NodeCreateCFn));
         h.insert("feDisplacementMap",   (true,  rsvg_new_filter_primitive_displacement_map as NodeCreateCFn));
         h.insert("feDistantLight",      (false, rsvg_new_node_light_source as NodeCreateCFn));
-        h.insert("feFuncA",             (false, rsvg_new_node_component_transfer_function as NodeCreateCFn));
-        h.insert("feFuncB",             (false, rsvg_new_node_component_transfer_function as NodeCreateCFn));
-        h.insert("feFuncG",             (false, rsvg_new_node_component_transfer_function as NodeCreateCFn));
-        h.insert("feFuncR",             (false, rsvg_new_node_component_transfer_function as NodeCreateCFn));
         h.insert("feGaussianBlur",      (true,  rsvg_new_filter_primitive_gaussian_blur as NodeCreateCFn));
         h.insert("feMorphology",        (true,  rsvg_new_filter_primitive_erode as NodeCreateCFn));
         h.insert("fePointLight",        (false, rsvg_new_node_light_source as NodeCreateCFn));
@@ -150,6 +134,31 @@ macro_rules! node_create_fn {
 node_create_fn!(create_circle, Circle, NodeCircle::new);
 node_create_fn!(create_clip_path, ClipPath, NodeClipPath::new);
 node_create_fn!(create_blend, FilterPrimitiveBlend, Blend::new);
+node_create_fn!(
+    create_component_transfer,
+    FilterPrimitiveComponentTransfer,
+    ComponentTransfer::new
+);
+node_create_fn!(
+    create_component_transfer_func_r,
+    ComponentTransferFunction,
+    FuncX::new_r
+);
+node_create_fn!(
+    create_component_transfer_func_g,
+    ComponentTransferFunction,
+    FuncX::new_g
+);
+node_create_fn!(
+    create_component_transfer_func_b,
+    ComponentTransferFunction,
+    FuncX::new_b
+);
+node_create_fn!(
+    create_component_transfer_func_a,
+    ComponentTransferFunction,
+    FuncX::new_a
+);
 node_create_fn!(create_composite, FilterPrimitiveComposite, Composite::new);
 node_create_fn!(create_defs, Defs, NodeDefs::new);
 node_create_fn!(create_ellipse, Ellipse, NodeEllipse::new);
@@ -213,7 +222,12 @@ lazy_static! {
         /* h.insert("desc",             (true,  as NodeCreateFn)); */
         h.insert("ellipse",             (true,  create_ellipse as NodeCreateFn));
         h.insert("feBlend",             (true,  create_blend as NodeCreateFn));
+        h.insert("feComponentTransfer", (true,  create_component_transfer as NodeCreateFn));
         h.insert("feComposite",         (true,  create_composite as NodeCreateFn));
+        h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
+        h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
+        h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
+        h.insert("feFuncA",             (false, create_component_transfer_func_a as NodeCreateFn));
         h.insert("feFlood",             (true,  create_flood as NodeCreateFn));
         h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));
         h.insert("feMerge",             (true,  create_merge as NodeCreateFn));

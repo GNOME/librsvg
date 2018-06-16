@@ -90,6 +90,7 @@ pub fn filter_render(
         .filter(|c| !c.is_in_error())
         .for_each(|mut c| match c.get_type() {
             NodeType::FilterPrimitiveBlend
+            | NodeType::FilterPrimitiveComponentTransfer
             | NodeType::FilterPrimitiveComposite
             | NodeType::FilterPrimitiveFlood
             | NodeType::FilterPrimitiveImage
