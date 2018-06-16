@@ -50,6 +50,8 @@ extern "C" {
 
     fn rsvg_drawing_ctx_pop_view_box(draw_ctx: *const RsvgDrawingCtx);
 
+    fn rsvg_drawing_ctx_add_node_to_stack(draw_ctx: *const RsvgDrawingCtx, node: *const RsvgNode);
+
     fn rsvg_drawing_ctx_prepend_acquired_node(
         draw_ctx: *const RsvgDrawingCtx,
         node: *mut RsvgNode,
@@ -660,6 +662,29 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     };
 
     draw_node_from_stack(draw_ctx, &cascaded, node, clipping);
+}
+
+fn add_node_and_ancestors_to_stack(draw_ctx: *const RsvgDrawingCtx, node: &RsvgNode) {
+    unsafe {
+        rsvg_drawing_ctx_add_node_to_stack(draw_ctx, node);
+    }
+
+    if let Some(ref parent) = node.get_parent() {
+        add_node_and_ancestors_to_stack(draw_ctx, parent);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
+    draw_ctx: *const RsvgDrawingCtx,
+    raw_node: *const RsvgNode,
+) {
+    assert!(!draw_ctx.is_null());
+
+    assert!(!raw_node.is_null());
+    let node = unsafe { &*raw_node };
+
+    add_node_and_ancestors_to_stack(draw_ctx, node);
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);

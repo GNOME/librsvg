@@ -39,6 +39,7 @@ pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use drawing_ctx::{
+    rsvg_drawing_ctx_add_node_and_ancestors_to_stack,
     rsvg_drawing_ctx_draw_node_from_stack,
     rsvg_drawing_ctx_transformed_image_bounding_box,
 };
