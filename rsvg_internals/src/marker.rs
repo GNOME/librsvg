@@ -172,12 +172,8 @@ impl NodeMarker {
 
             affine.scale(w / vbox.0.width, h / vbox.0.height);
 
-            cr.set_matrix(affine);
-
             drawing_ctx::push_view_box(draw_ctx, vbox.0.width, vbox.0.height);
         } else {
-            cr.set_matrix(affine);
-
             drawing_ctx::push_view_box(draw_ctx, marker_width, marker_height);
         }
 
@@ -186,8 +182,7 @@ impl NodeMarker {
             -self.ref_y.get().normalize(&values, draw_ctx),
         );
 
-        let cr2 = drawing_ctx::get_cairo_context(draw_ctx);
-        cr2.set_matrix(affine);
+        cr.set_matrix(affine);
 
         if !values.is_overflow() {
             if let Some(vbox) = self.vbox.get() {
