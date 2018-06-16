@@ -46,6 +46,10 @@ typedef enum {
 G_GNUC_INTERNAL
 RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts);
 
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+void rsvg_node_register_in_defs(RsvgNode *node, RsvgDefs *defs);
+
 struct RsvgLoad {
     RsvgHandle *handle;
     gboolean unlimited_size;
