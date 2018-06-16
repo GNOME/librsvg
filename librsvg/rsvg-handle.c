@@ -771,6 +771,20 @@ rsvg_handle_cascade (RsvgHandle *handle)
     }
 }
 
+static RsvgDrawingCtx *
+rsvg_handle_create_drawing_ctx(RsvgHandle *handle,
+                               cairo_t *cr,
+                               RsvgDimensionData *dimensions)
+{
+    return rsvg_drawing_ctx_new (cr,
+                                 dimensions->width, dimensions->height,
+                                 dimensions->em, dimensions->ex,
+                                 handle->priv->dpi_x, handle->priv->dpi_y,
+                                 handle->priv->defs,
+                                 handle->priv->is_testing);
+
+}
+
 /**
  * rsvg_handle_render_cairo_sub:
  * @handle: A #RsvgHandle
@@ -820,12 +834,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     if (dimensions.width == 0 || dimensions.height == 0)
         return FALSE;
 
-    draw = rsvg_drawing_ctx_new (cr,
-                                 dimensions.width, dimensions.height,
-                                 dimensions.em, dimensions.ex,
-                                 handle->priv->dpi_x, handle->priv->dpi_y,
-                                 handle->priv->defs,
-                                 handle->priv->is_testing);
+    draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
 
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, drawsub);
 
@@ -948,16 +957,10 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         if (dimensions.width == 0 || dimensions.height == 0)
             return FALSE;
 
-        target = cairo_image_surface_create (CAIRO_FORMAT_RGB24,
-                                             1, 1);
-        cr = cairo_create  (target);
+        target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
+        cr = cairo_create (target);
 
-        draw = rsvg_drawing_ctx_new (cr,
-                                     dimensions.width, dimensions.height,
-                                     dimensions.em, dimensions.ex,
-                                     handle->priv->dpi_x, handle->priv->dpi_y,
-                                     handle->priv->defs,
-                                     handle->priv->is_testing);
+        draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
 
         g_assert (sself != NULL);
         rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, sself);
@@ -1045,14 +1048,9 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
         return FALSE;
 
     target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
-    cr = cairo_create  (target);
+    cr = cairo_create (target);
 
-    draw = rsvg_drawing_ctx_new (cr,
-                                 dimensions.width, dimensions.height,
-                                 dimensions.em, dimensions.ex,
-                                 handle->priv->dpi_x, handle->priv->dpi_y,
-                                 handle->priv->defs,
-                                 handle->priv->is_testing);
+    draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
 
     g_assert (node != NULL);
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
