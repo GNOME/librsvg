@@ -263,9 +263,11 @@ pub fn list_of_points(string: &str) -> Result<Vec<(f64, f64)>, ParseError> {
 
 // Lists of number values
 
+#[derive(Eq, PartialEq)]
 pub enum ListLength {
     Exact(usize),
     Maximum(usize),
+    Unbounded,
 }
 
 #[derive(Debug, PartialEq)]
@@ -280,28 +282,47 @@ pub fn number_list(parser: &mut Parser, length: ListLength) -> Result<Vec<f64>, 
     match length {
         ListLength::Exact(l) => {
             assert!(l > 0);
-            n = l;
+            n = Some(l);
         }
         ListLength::Maximum(l) => {
             assert!(l > 0);
-            n = l;
+            n = Some(l);
+        }
+        ListLength::Unbounded => {
+            n = None;
         }
     }
 
-    let mut v = Vec::<f64>::with_capacity(n);
+    let mut v = Vec::<f64>::with_capacity(n.unwrap_or(0));
 
-    for i in 0..n {
+    if parser.is_exhausted() && length == ListLength::Unbounded {
+        return Ok(v);
+    }
+
+    for i in 0.. {
+        if i != 0 {
+            optional_comma(parser);
+        }
+
         v.push(f64::from(parser.expect_number().map_err(|_| {
             NumberListError::Parse(ParseError::new("expected number"))
         })?));
 
-        if i != n - 1 {
-            optional_comma(parser);
+        match length {
+            ListLength::Exact(l) | ListLength::Maximum(l) => if i + 1 == l {
+                break;
+            },
+            _ => (),
         }
 
         if parser.is_exhausted() {
-            if let ListLength::Maximum(_) = length {
-                break;
+            match length {
+                ListLength::Exact(l) => {
+                    if i + 1 == l {
+                        break;
+                    }
+                }
+                _ => break,
             }
         }
     }
@@ -313,7 +334,7 @@ pub fn number_list(parser: &mut Parser, length: ListLength) -> Result<Vec<f64>, 
     Ok(v)
 }
 
-fn number_list_from_str(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListError> {
+pub fn number_list_from_str(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListError> {
     let mut input = ParserInput::new(s);
     let mut parser = Parser::new(&mut input);
 
@@ -473,6 +494,12 @@ mod tests {
             number_list_from_str("5 6", ListLength::Maximum(3)),
             Ok(vec![5.0, 6.0])
         );
+
+        assert_eq!(number_list_from_str("", ListLength::Unbounded), Ok(vec![]));
+        assert_eq!(
+            number_list_from_str("1, 2, 3.0, 4, 5", ListLength::Unbounded),
+            Ok(vec![1.0, 2.0, 3.0, 4.0, 5.0])
+        );
     }
 
     #[test]
@@ -493,6 +520,9 @@ mod tests {
 
         // extra token
         assert!(number_list_from_str("1,", ListLength::Exact(1)).is_err());
+        assert!(number_list_from_str("1,", ListLength::Exact(1)).is_err());
+        assert!(number_list_from_str("1,", ListLength::Maximum(1)).is_err());
+        assert!(number_list_from_str("1,", ListLength::Unbounded).is_err());
 
         // too few
         assert!(number_list_from_str("1", ListLength::Exact(2)).is_err());
