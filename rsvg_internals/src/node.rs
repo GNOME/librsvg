@@ -186,6 +186,7 @@ pub struct Node {
 }
 
 // An iterator over the Node's children
+#[derive(Clone)]
 pub struct Children {
     next: Option<Rc<Node>>,
     next_back: Option<Rc<Node>>,
