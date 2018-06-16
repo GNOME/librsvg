@@ -352,7 +352,6 @@ impl NodeTrait for NodeUse {
                     draw_ctx,
                     clipping,
                     || {
-                        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
                         child.draw_children(
                             &child,
                             &CascadedValues::new_from_values(&child, values),
@@ -360,7 +359,6 @@ impl NodeTrait for NodeUse {
                             false,
                             clipping,
                         );
-                        drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
                     },
                 );
             });
