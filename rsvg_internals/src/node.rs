@@ -479,7 +479,6 @@ impl Node {
 
     pub fn draw_children(
         &self,
-        node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
         clipping: bool,

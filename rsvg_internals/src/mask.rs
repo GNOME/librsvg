@@ -129,7 +129,7 @@ impl NodeMask {
             }
 
             drawing_ctx::push_discrete_layer(draw_ctx, values, false);
-            node.draw_children(node, &cascaded, draw_ctx, false);
+            node.draw_children(&cascaded, draw_ctx, false);
             drawing_ctx::pop_discrete_layer(draw_ctx, node, values, false);
 
             if content_units == CoordUnits::ObjectBoundingBox {

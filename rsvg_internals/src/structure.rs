@@ -38,7 +38,7 @@ impl NodeTrait for NodeGroup {
         let values = cascaded.get();
 
         drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-        node.draw_children(node, cascaded, draw_ctx, clipping);
+        node.draw_children(cascaded, draw_ctx, clipping);
         drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
     }
 }
@@ -206,7 +206,7 @@ impl NodeTrait for NodeSvg {
             clipping,
             || {
                 // we don't push a layer because draw_in_viewport() already does it
-                node.draw_children(node, cascaded, draw_ctx, clipping);
+                node.draw_children(cascaded, draw_ctx, clipping);
             },
         );
     }
@@ -355,7 +355,6 @@ impl NodeTrait for NodeUse {
                     || {
                         // We don't push a layer because draw_in_viewport() already does it
                         child.draw_children(
-                            &child,
                             &CascadedValues::new_from_values(&child, values),
                             draw_ctx,
                             clipping,

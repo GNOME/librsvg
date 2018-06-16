@@ -61,11 +61,11 @@ impl NodeTrait for NodeLink {
                 CAIRO_TAG_LINK,
                 attributes.as_ref().map(|i| i.as_str()),
                 || {
-                    node.draw_children(node, &cascaded, draw_ctx, clipping);
+                    node.draw_children(&cascaded, draw_ctx, clipping);
                 },
             )
         } else {
-            node.draw_children(node, &cascaded, draw_ctx, clipping)
+            node.draw_children(&cascaded, draw_ctx, clipping)
         }
 
         drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);

@@ -54,7 +54,7 @@ impl NodeClipPath {
         cr.set_matrix(child_matrix);
 
         // here we don't push a layer because we are clipping
-        node.draw_children(node, &cascaded, draw_ctx, true);
+        node.draw_children(&cascaded, draw_ctx, true);
 
         cr.set_matrix(save_affine);
 
