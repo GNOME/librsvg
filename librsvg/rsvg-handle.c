@@ -836,7 +836,9 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
 
-    rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, drawsub);
+    if (drawsub != NULL) {
+        rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, drawsub);
+    }
 
     cairo_save (cr);
 

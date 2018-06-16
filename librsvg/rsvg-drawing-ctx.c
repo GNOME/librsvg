@@ -235,16 +235,9 @@ rsvg_drawing_ctx_get_defs (RsvgDrawingCtx *ctx)
 }
 
 void
-rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node)
+rsvg_drawing_ctx_add_node_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node)
 {
-    if (node) {
-        node = rsvg_node_ref (node);
-
-        while (node != NULL) {
-            draw_ctx->drawsub_stack = g_slist_prepend (draw_ctx->drawsub_stack, node);
-            node = rsvg_node_get_parent (node);
-        }
-    }
+    draw_ctx->drawsub_stack = g_slist_prepend (draw_ctx->drawsub_stack, rsvg_node_ref (node));
 }
 
 gboolean
