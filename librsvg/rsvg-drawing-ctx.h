@@ -90,7 +90,12 @@ G_GNUC_INTERNAL
 RsvgDefs *rsvg_drawing_ctx_get_defs (RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
-void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node);
+void rsvg_drawing_ctx_add_node_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node);
+
+/* Defined in rsvg_internals/src/drawing_ctx.rs */
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
+                                                       RsvgNode        *node);
 
 G_GNUC_INTERNAL
 gboolean rsvg_drawing_ctx_should_draw_node_from_stack (RsvgDrawingCtx *ctx,
