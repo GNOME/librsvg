@@ -10,9 +10,8 @@ use libc;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
-use drawing_ctx;
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{CascadedValues, NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 
@@ -53,8 +52,11 @@ impl Image {
     ) -> Result<ImageSurface, FilterError> {
         // TODO: Port more of this to Rust.
         // Currently this is essentially a direct port of the C function.
-        let drawable = drawing_ctx::get_acquired_node(ctx.drawing_context(), href)
+        let draw_ctx = ctx.draw_context();
+        let acquired_drawable = draw_ctx
+            .get_acquired_node(href)
             .ok_or(FilterError::InvalidInput)?;
+        let drawable = acquired_drawable.get();
 
         let surface = ImageSurface::create(
             cairo::Format::ARgb32,
@@ -62,11 +64,16 @@ impl Image {
             ctx.source_graphic().get_height(),
         ).map_err(FilterError::OutputSurfaceCreation)?;
 
-        drawing_ctx::get_cairo_context(ctx.drawing_context()).set_matrix(ctx.paffine());
-        drawing_ctx::draw_node_on_surface(
-            ctx.drawing_context(),
-            &drawable.get(),
-            &ctx.get_node_being_filtered(),
+        draw_ctx.get_cairo_context().set_matrix(ctx.paffine());
+
+        let cascaded = CascadedValues::new_from_values(
+            &drawable,
+            ctx.get_node_being_filtered().get_cascaded_values().get(),
+        );
+
+        draw_ctx.draw_node_on_surface(
+            &drawable,
+            &cascaded,
             &surface,
             f64::from(ctx.source_graphic().get_width()),
             f64::from(ctx.source_graphic().get_height()),

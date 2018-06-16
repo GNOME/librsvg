@@ -9,7 +9,7 @@ use aspect_ratio::*;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use drawing_ctx::{self, RsvgDrawingCtx};
+use drawing_ctx::DrawingCtx;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
@@ -228,12 +228,11 @@ impl NodeTrait for NodePattern {
     }
 }
 
-fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern {
+fn resolve_pattern(pattern: &Pattern, draw_ctx: &mut DrawingCtx) -> Pattern {
     let mut result = pattern.clone();
 
     while !result.is_resolved() {
-        if let Some(acquired) = drawing_ctx::get_acquired_node_of_type(
-            draw_ctx,
+        if let Some(acquired) = draw_ctx.get_acquired_node_of_type(
             result.fallback.as_ref().map(String::as_ref),
             NodeType::Pattern,
         ) {
@@ -251,7 +250,7 @@ fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern 
 fn set_pattern_on_draw_context(
     pattern: &Pattern,
     values: &ComputedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     bbox: &BoundingBox,
 ) -> bool {
     assert!(pattern.is_resolved());
@@ -269,7 +268,7 @@ fn set_pattern_on_draw_context(
     let preserve_aspect_ratio = pattern.preserve_aspect_ratio.unwrap();
 
     if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
-        drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
+        draw_ctx.push_view_box(1.0, 1.0);
     }
 
     let pattern_x = pattern.x.unwrap().normalize(values, draw_ctx);
@@ -278,7 +277,7 @@ fn set_pattern_on_draw_context(
     let pattern_height = pattern.height.unwrap().normalize(values, draw_ctx);
 
     if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
-        drawing_ctx::pop_view_box(draw_ctx);
+        draw_ctx.pop_view_box();
     }
 
     // Work out the size of the rectangle so it takes into account the object bounding box
@@ -299,7 +298,7 @@ fn set_pattern_on_draw_context(
         }
     }
 
-    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let cr = draw_ctx.get_cairo_context();
     let affine = cr.get_matrix();
     let taffine = cairo::Matrix::multiply(&pattern_affine, &affine);
 
@@ -360,7 +359,7 @@ fn set_pattern_on_draw_context(
 
         caffine = cairo::Matrix::new(w / vbox.0.width, 0.0, 0.0, h / vbox.0.height, x, y);
 
-        drawing_ctx::push_view_box(draw_ctx, vbox.0.width, vbox.0.height);
+        draw_ctx.push_view_box(vbox.0.width, vbox.0.height);
         pushed_view_box = true;
     } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
         // If coords are in terms of the bounding box, use them
@@ -369,7 +368,7 @@ fn set_pattern_on_draw_context(
         caffine = cairo::Matrix::identity();
         caffine.scale(bbrect.width, bbrect.height);
 
-        drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
+        draw_ctx.push_view_box(1.0, 1.0);
         pushed_view_box = true;
     } else {
         caffine = cairo::Matrix::identity();
@@ -389,7 +388,7 @@ fn set_pattern_on_draw_context(
 
     // Draw to another surface
 
-    let cr_save = drawing_ctx::get_cairo_context(draw_ctx);
+    let cr_save = draw_ctx.get_cairo_context();
 
     let surface = cr_save
         .get_target()
@@ -397,7 +396,7 @@ fn set_pattern_on_draw_context(
 
     let cr_pattern = cairo::Context::new(&surface);
 
-    drawing_ctx::set_cairo_context(draw_ctx, &cr_pattern);
+    draw_ctx.set_cairo_context(&cr_pattern);
 
     // Set up transformations to be determined by the contents units
 
@@ -408,16 +407,16 @@ fn set_pattern_on_draw_context(
 
     cr_pattern.set_matrix(caffine);
 
-    drawing_ctx::with_discrete_layer(draw_ctx, &pattern_node, pattern_values, false, &mut |_cr| {
+    draw_ctx.with_discrete_layer(&pattern_node, pattern_values, false, &mut |_cr| {
         pattern_node.draw_children(&pattern_cascaded, draw_ctx, false);
     });
 
     // Return to the original coordinate system and rendering context
 
-    drawing_ctx::set_cairo_context(draw_ctx, &cr_save);
+    draw_ctx.set_cairo_context(&cr_save);
 
     if pushed_view_box {
-        drawing_ctx::pop_view_box(draw_ctx);
+        draw_ctx.pop_view_box();
     }
 
     // Set the final surface as a Cairo pattern into the Cairo context
@@ -439,7 +438,7 @@ fn set_pattern_on_draw_context(
 fn resolve_fallbacks_and_set_pattern(
     pattern: &Pattern,
     values: &ComputedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     bbox: &BoundingBox,
 ) -> bool {
     let resolved = resolve_pattern(pattern, draw_ctx);
@@ -449,7 +448,7 @@ fn resolve_fallbacks_and_set_pattern(
 
 pub fn pattern_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     bbox: &BoundingBox,
 ) -> bool {
     assert!(node.get_type() == NodeType::Pattern);

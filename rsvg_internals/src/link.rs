@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 
 use attributes::Attribute;
-use drawing_ctx::{self, RsvgDrawingCtx};
+use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use node::*;
 use property_bag::PropertyBag;
@@ -42,7 +42,7 @@ impl NodeTrait for NodeLink {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let link = self.link.borrow();
@@ -50,13 +50,13 @@ impl NodeTrait for NodeLink {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
             if link.is_some() && link.as_ref().unwrap() != "" {
                 const CAIRO_TAG_LINK: &str = "Link";
 
                 let attributes = link.as_ref().map(|i| format!("uri='{}'", escape_value(i)));
 
-                drawing_ctx::get_cairo_context(draw_ctx).with_tag(
+                draw_ctx.get_cairo_context().with_tag(
                     CAIRO_TAG_LINK,
                     attributes.as_ref().map(|i| i.as_str()),
                     || {

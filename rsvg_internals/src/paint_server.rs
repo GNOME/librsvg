@@ -1,7 +1,7 @@
 use cssparser::{self, Parser};
 
 use bbox::BoundingBox;
-use drawing_ctx;
+use drawing_ctx::DrawingCtx;
 use error::*;
 use gradient;
 use node::NodeType;
@@ -50,7 +50,7 @@ impl Parse for PaintServer {
 }
 
 fn set_color(
-    ctx: *mut drawing_ctx::RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     color: &cssparser::Color,
     opacity: &UnitInterval,
     current_color: &cssparser::RGBA,
@@ -61,7 +61,7 @@ fn set_color(
     };
 
     let &UnitInterval(o) = opacity;
-    drawing_ctx::get_cairo_context(ctx).set_source_rgba(
+    draw_ctx.get_cairo_context().set_source_rgba(
         f64::from(rgba.red_f32()),
         f64::from(rgba.green_f32()),
         f64::from(rgba.blue_f32()),
@@ -70,7 +70,7 @@ fn set_color(
 }
 
 pub fn set_source_paint_server(
-    c_ctx: *mut drawing_ctx::RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     ps: &PaintServer,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
@@ -85,29 +85,34 @@ pub fn set_source_paint_server(
         } => {
             had_paint_server = false;
 
-            if let Some(acquired) = drawing_ctx::get_acquired_node(c_ctx, iri.as_str()) {
+            if let Some(acquired) = draw_ctx.get_acquired_node(iri.as_str()) {
                 let node = acquired.get();
 
                 if node.get_type() == NodeType::LinearGradient
                     || node.get_type() == NodeType::RadialGradient
                 {
                     had_paint_server = gradient::gradient_resolve_fallbacks_and_set_pattern(
-                        &node, c_ctx, opacity, bbox,
+                        &node, draw_ctx, opacity, bbox,
                     );
                 } else if node.get_type() == NodeType::Pattern {
                     had_paint_server =
-                        pattern::pattern_resolve_fallbacks_and_set_pattern(&node, c_ctx, bbox);
+                        pattern::pattern_resolve_fallbacks_and_set_pattern(&node, draw_ctx, bbox);
                 }
             }
 
             if !had_paint_server && alternate.is_some() {
-                set_color(c_ctx, alternate.as_ref().unwrap(), opacity, current_color);
+                set_color(
+                    draw_ctx,
+                    alternate.as_ref().unwrap(),
+                    opacity,
+                    current_color,
+                );
                 had_paint_server = true;
             }
         }
 
         PaintServer::SolidColor(color) => {
-            set_color(c_ctx, &color, opacity, current_color);
+            set_color(draw_ctx, &color, opacity, current_color);
             had_paint_server = true;
         }
 

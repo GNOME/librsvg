@@ -28,7 +28,6 @@
 #include "../rsvg-private.h"
 #include "../rsvg-styles.h"
 #include "../rsvg-css.h"
-#include "../rsvg-drawing-ctx.h"
 #include "common.h"
 
 /* Produces results in the range [1, 2**31 - 2].

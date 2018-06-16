@@ -10,7 +10,7 @@ use super::context::{FilterContext, FilterInput, FilterOutput, IRect};
 #[derive(Clone, Copy)]
 pub struct BoundsBuilder<'a> {
     /// The filter context.
-    ctx: &'a FilterContext,
+    ctx: &'a FilterContext<'a>,
 
     /// The current bounding box.
     bbox: BoundingBox,

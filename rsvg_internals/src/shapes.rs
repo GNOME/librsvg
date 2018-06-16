@@ -3,7 +3,7 @@ use std::cell::RefCell;
 
 use attributes::Attribute;
 use draw::draw_path_builder;
-use drawing_ctx::{self, RsvgDrawingCtx};
+use drawing_ctx::DrawingCtx;
 use error::*;
 use handle::RsvgHandle;
 use length::*;
@@ -17,13 +17,13 @@ use state::ComputedValues;
 
 fn render_path_builder(
     builder: &PathBuilder,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     node: &RsvgNode,
     values: &ComputedValues,
     render_markers: bool,
     clipping: bool,
 ) {
-    drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
+    draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
         draw_path_builder(draw_ctx, values, builder, clipping);
     });
 
@@ -37,7 +37,7 @@ fn render_ellipse(
     cy: f64,
     rx: f64,
     ry: f64,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     node: &RsvgNode,
     values: &ComputedValues,
     clipping: bool,
@@ -130,7 +130,7 @@ impl NodeTrait for NodePath {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -195,7 +195,7 @@ impl NodeTrait for NodePoly {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -257,7 +257,7 @@ impl NodeTrait for NodeLine {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -349,7 +349,7 @@ impl NodeTrait for NodeRect {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -532,7 +532,7 @@ impl NodeTrait for NodeCircle {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -594,7 +594,7 @@ impl NodeTrait for NodeEllipse {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();

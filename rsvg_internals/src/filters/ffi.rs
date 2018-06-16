@@ -4,7 +4,7 @@ use cairo;
 use glib_sys::*;
 use libc::c_char;
 
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::DrawingCtx;
 use length::RsvgLength;
 use node::{NodeType, RsvgCNodeImpl, RsvgNode};
 use state::{ComputedValues, RsvgComputedValues};
@@ -56,10 +56,9 @@ pub fn filter_render(
     filter_node: &RsvgNode,
     node_being_filtered: &RsvgNode,
     source: &cairo::ImageSurface,
-    context: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     channelmap: *const c_char,
 ) -> cairo::ImageSurface {
-    assert!(!context.is_null());
     assert!(!channelmap.is_null());
 
     let filter_node = &*filter_node;
@@ -77,7 +76,7 @@ pub fn filter_render(
         filter_node,
         node_being_filtered,
         source.clone(),
-        context,
+        draw_ctx,
         channelmap_arr,
     );
 

@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use drawing_ctx::{self, AcquiredNode, RsvgDrawingCtx};
+use drawing_ctx::{AcquiredNode, DrawingCtx};
 use error::*;
 use handle::RsvgHandle;
 use length::*;
@@ -406,8 +406,8 @@ impl Gradient {
     }
 }
 
-fn acquire_gradient(draw_ctx: *mut RsvgDrawingCtx, name: &str) -> Option<AcquiredNode> {
-    drawing_ctx::get_acquired_node(draw_ctx, name).and_then(|acquired| {
+fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx, name: &str) -> Option<AcquiredNode<'a>> {
+    draw_ctx.get_acquired_node(name).and_then(|acquired| {
         // FIXME: replace with .filter() once Option.filter() becomes stable
         let node = acquired.get();
         if node.get_type() == NodeType::LinearGradient
@@ -420,7 +420,7 @@ fn acquire_gradient(draw_ctx: *mut RsvgDrawingCtx, name: &str) -> Option<Acquire
     })
 }
 
-fn resolve_gradient(gradient: &Gradient, draw_ctx: *mut RsvgDrawingCtx) -> Gradient {
+fn resolve_gradient(gradient: &Gradient, draw_ctx: &mut DrawingCtx) -> Gradient {
     let mut result = gradient.clone();
 
     while !result.is_resolved() {
@@ -449,12 +449,12 @@ fn resolve_gradient(gradient: &Gradient, draw_ctx: *mut RsvgDrawingCtx) -> Gradi
 
 fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
     gradient: &Gradient,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     pattern: &mut P,
     bbox: &BoundingBox,
     opacity: &UnitInterval,
 ) {
-    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let cr = draw_ctx.get_cairo_context();
 
     let mut affine = gradient.common.affine.unwrap();
 
@@ -487,7 +487,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
 fn set_linear_gradient_on_pattern(
     gradient: &Gradient,
     values: &ComputedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     bbox: &BoundingBox,
     opacity: &UnitInterval,
 ) -> bool {
@@ -495,7 +495,7 @@ fn set_linear_gradient_on_pattern(
         let units = gradient.common.units.unwrap();
 
         if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
+            draw_ctx.push_view_box(1.0, 1.0);
         }
 
         let mut pattern = cairo::LinearGradient::new(
@@ -506,7 +506,7 @@ fn set_linear_gradient_on_pattern(
         );
 
         if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            drawing_ctx::pop_view_box(draw_ctx);
+            draw_ctx.pop_view_box();
         }
 
         set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
@@ -567,7 +567,7 @@ fn fix_focus_point(mut fx: f64, mut fy: f64, cx: f64, cy: f64, radius: f64) -> (
 fn set_radial_gradient_on_pattern(
     gradient: &Gradient,
     values: &ComputedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     bbox: &BoundingBox,
     opacity: &UnitInterval,
 ) -> bool {
@@ -575,7 +575,7 @@ fn set_radial_gradient_on_pattern(
         let units = gradient.common.units.unwrap();
 
         if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
+            draw_ctx.push_view_box(1.0, 1.0);
         }
 
         let n_cx = cx.as_ref().unwrap().normalize(values, draw_ctx);
@@ -589,7 +589,7 @@ fn set_radial_gradient_on_pattern(
         let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
 
         if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            drawing_ctx::pop_view_box(draw_ctx);
+            draw_ctx.pop_view_box();
         }
 
         set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
@@ -603,7 +603,7 @@ fn set_radial_gradient_on_pattern(
 fn set_pattern_on_draw_context(
     gradient: &Gradient,
     values: &ComputedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
 ) -> bool {
@@ -718,7 +718,7 @@ impl NodeTrait for NodeGradient {
 fn resolve_fallbacks_and_set_pattern(
     gradient: &Gradient,
     values: &ComputedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
 ) -> bool {
@@ -734,7 +734,7 @@ fn resolve_fallbacks_and_set_pattern(
 
 pub fn gradient_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
 ) -> bool {

@@ -72,8 +72,6 @@ IGNORE_HFILES =			\
 	config.h		\
 	rsvg-attributes.h	\
 	rsvg-cairo-clip.h	\
-	rsvg-drawing-ctx.h	\
-	rsvg-cairo-render.h	\
 	rsvg-compat.h		\
 	rsvg-css.h		\
 	rsvg-defs.h		\

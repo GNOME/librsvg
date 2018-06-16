@@ -6,7 +6,7 @@ use std::str;
 
 use attributes::Attribute;
 use draw::draw_pango_layout;
-use drawing_ctx::{self, RsvgDrawingCtx};
+use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use length::*;
 use node::{boxed_node_new, CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
@@ -67,7 +67,7 @@ impl NodeChars {
         &self,
         _node: &RsvgNode,
         values: &ComputedValues,
-        draw_ctx: *const RsvgDrawingCtx,
+        draw_ctx: &DrawingCtx,
         length: &mut f64,
     ) {
         let s = self.string.borrow();
@@ -81,7 +81,7 @@ impl NodeChars {
         &self,
         _node: &RsvgNode,
         values: &ComputedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
@@ -146,7 +146,7 @@ impl NodeTrait for NodeText {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -198,7 +198,7 @@ impl NodeTRef {
         &self,
         _node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         length: &mut f64,
     ) -> bool {
         let l = self.link.borrow();
@@ -207,13 +207,12 @@ impl NodeTRef {
             return false;
         }
 
-        let done =
-            if let Some(acquired) = drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap()) {
-                let c = acquired.get();
-                measure_children(&c, cascaded, draw_ctx, length, true)
-            } else {
-                false
-            };
+        let done = if let Some(acquired) = draw_ctx.get_acquired_node(l.as_ref().unwrap()) {
+            let c = acquired.get();
+            measure_children(&c, cascaded, draw_ctx, length, true)
+        } else {
+            false
+        };
 
         done
     }
@@ -222,7 +221,7 @@ impl NodeTRef {
         &self,
         _node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
@@ -233,7 +232,7 @@ impl NodeTRef {
             return;
         }
 
-        if let Some(acquired) = drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap()) {
+        if let Some(acquired) = draw_ctx.get_acquired_node(l.as_ref().unwrap()) {
             let c = acquired.get();
             render_children(&c, cascaded, draw_ctx, x, y, true, clipping)
         }
@@ -274,7 +273,7 @@ impl NodeTSpan {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         length: &mut f64,
         usetextonly: bool,
     ) -> bool {
@@ -297,7 +296,7 @@ impl NodeTSpan {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         x: &mut f64,
         y: &mut f64,
         usetextonly: bool,
@@ -465,11 +464,11 @@ impl From<WritingMode> for pango::Gravity {
 }
 
 fn create_pango_layout(
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: &DrawingCtx,
     values: &ComputedValues,
     text: &str,
 ) -> pango::Layout {
-    let pango_context = drawing_ctx::get_pango_context(draw_ctx);
+    let pango_context = draw_ctx.get_pango_context();
 
     // See the construction of the XmlLang property
     // We use "" there as the default value; this means that the language is not set.
@@ -507,7 +506,7 @@ fn create_pango_layout(
 
     font_desc.set_stretch(pango::Stretch::from(values.font_stretch));
 
-    let (_, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
+    let (_, dpi_y) = draw_ctx.get_dpi();
     font_desc.set_size(to_pango_units(
         values.font_size.0.normalize(values, draw_ctx) / dpi_y * 72.0,
     ));
@@ -544,7 +543,7 @@ fn create_pango_layout(
 fn anchor_offset(
     node: &RsvgNode,
     cascaded: &CascadedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     anchor: TextAnchor,
     textonly: bool,
 ) -> f64 {
@@ -567,7 +566,7 @@ fn anchor_offset(
 fn measure_children(
     node: &RsvgNode,
     cascaded: &CascadedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
@@ -592,7 +591,7 @@ fn measure_children(
 fn measure_child(
     node: &RsvgNode,
     cascaded: &CascadedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
@@ -600,7 +599,7 @@ fn measure_child(
 
     let mut done = false;
 
-    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let cr = draw_ctx.get_cairo_context();
     cr.save();
 
     cr.transform(node.get_transform());
@@ -649,7 +648,7 @@ fn measure_child(
 fn render_children(
     node: &RsvgNode,
     cascaded: &CascadedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,
@@ -657,7 +656,7 @@ fn render_children(
 ) {
     let values = cascaded.get();
 
-    drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
+    draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
         for child in node.children() {
             render_child(&child, cascaded, draw_ctx, x, y, textonly, clipping);
         }
@@ -667,7 +666,7 @@ fn render_children(
 fn render_child(
     node: &RsvgNode,
     cascaded: &CascadedValues,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,
@@ -675,7 +674,7 @@ fn render_child(
 ) {
     let values = cascaded.get();
 
-    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let cr = draw_ctx.get_cairo_context();
     cr.save();
 
     cr.transform(node.get_transform());

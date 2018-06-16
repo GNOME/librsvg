@@ -3,8 +3,7 @@ use std::cell::RefCell;
 
 use aspect_ratio::*;
 use attributes::Attribute;
-use drawing_ctx;
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::DrawingCtx;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
@@ -32,12 +31,12 @@ impl NodeTrait for NodeGroup {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
 
-        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
             node.draw_children(cascaded, draw_ctx, clipping);
         });
     }
@@ -74,15 +73,14 @@ impl NodeTrait for NodeSwitch {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
 
-        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
             if let Some(child) = node.children().find(|c| c.get_cond()) {
-                drawing_ctx::draw_node_from_stack(
-                    draw_ctx,
+                draw_ctx.draw_node_from_stack(
                     &CascadedValues::new(cascaded, &child),
                     &child,
                     clipping,
@@ -176,7 +174,7 @@ impl NodeTrait for NodeSvg {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -199,7 +197,7 @@ impl NodeTrait for NodeSvg {
             self.preserve_aspect_ratio.get(),
             node,
             values,
-            drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
+            draw_ctx.get_cairo_context().get_matrix(),
             draw_ctx,
             clipping,
             &mut |_cr| {
@@ -267,7 +265,7 @@ impl NodeTrait for NodeUse {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -278,9 +276,7 @@ impl NodeTrait for NodeUse {
             return;
         }
 
-        let child = if let Some(acquired) =
-            drawing_ctx::get_acquired_node(draw_ctx, link.as_ref().unwrap())
-        {
+        let child = if let Some(acquired) = draw_ctx.get_acquired_node(link.as_ref().unwrap()) {
             acquired.get()
         } else {
             return;
@@ -317,12 +313,11 @@ impl NodeTrait for NodeUse {
         }
 
         if child.get_type() != NodeType::Symbol {
-            let cr = drawing_ctx::get_cairo_context(draw_ctx);
+            let cr = draw_ctx.get_cairo_context();
             cr.translate(nx, ny);
 
-            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
-                drawing_ctx::draw_node_from_stack(
-                    draw_ctx,
+            draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
+                draw_ctx.draw_node_from_stack(
                     &CascadedValues::new_from_values(&child, values),
                     &child,
                     clipping,
@@ -345,7 +340,7 @@ impl NodeTrait for NodeUse {
                     symbol.preserve_aspect_ratio.get(),
                     node,
                     values,
-                    drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
+                    draw_ctx.get_cairo_context().get_matrix(),
                     draw_ctx,
                     clipping,
                     &mut |_cr| {

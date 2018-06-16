@@ -11,7 +11,7 @@ use glib_sys::*;
 
 use bbox::BoundingBox;
 use coord_units::CoordUnits;
-use drawing_ctx::{self, RsvgDrawingCtx};
+use drawing_ctx::{DrawingCtx, RsvgDrawingCtx};
 use length::RsvgLength;
 use node::{box_node, RsvgNode};
 use paint_server::{self, PaintServer};
@@ -73,10 +73,10 @@ pub enum FilterInput {
     PrimitiveOutput(FilterOutput),
 }
 
-pub type RsvgFilterContext = FilterContext;
+pub type RsvgFilterContext<'a> = FilterContext<'a>;
 
 /// The filter rendering context.
-pub struct FilterContext {
+pub struct FilterContext<'a> {
     /// The <filter> node.
     node: RsvgNode,
     /// The node which referenced this filter.
@@ -90,7 +90,7 @@ pub struct FilterContext {
     /// The background surface. Computed lazily.
     background_surface: UnsafeCell<Option<Result<cairo::ImageSurface, cairo::Status>>>,
     /// The drawing context.
-    drawing_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &'a mut DrawingCtx,
     /// The filter effects region.
     effects_region: BoundingBox,
 
@@ -145,7 +145,7 @@ fn extract_alpha(
 fn compute_effects_region(
     filter_node: &RsvgNode,
     target_node: &RsvgNode,
-    drawing_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     affine: cairo::Matrix,
     width: f64,
     height: f64,
@@ -168,7 +168,7 @@ fn compute_effects_region(
     // represent the fractions of the referenced node, and with width and height = 1, 1 this
     // works out exactly like that.
     if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
-        drawing_ctx::push_view_box(drawing_ctx, 1f64, 1f64);
+        draw_ctx.push_view_box(1.0, 1.0);
     }
 
     // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
@@ -182,15 +182,15 @@ fn compute_effects_region(
         }
     } else {
         cairo::Rectangle {
-            x: filter.x.get().normalize(values, drawing_ctx),
-            y: filter.y.get().normalize(values, drawing_ctx),
-            width: filter.width.get().normalize(values, drawing_ctx),
-            height: filter.height.get().normalize(values, drawing_ctx),
+            x: filter.x.get().normalize(values, draw_ctx),
+            y: filter.y.get().normalize(values, draw_ctx),
+            width: filter.width.get().normalize(values, draw_ctx),
+            height: filter.height.get().normalize(values, draw_ctx),
         }
     };
 
     if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
-        drawing_ctx::pop_view_box(drawing_ctx);
+        draw_ctx.pop_view_box();
     }
 
     let other_bbox = BoundingBox::new(&affine).with_rect(Some(rect));
@@ -220,17 +220,17 @@ impl IRect {
     }
 }
 
-impl FilterContext {
+impl<'a> FilterContext<'a> {
     /// Creates a new `FilterContext`.
     pub fn new(
         filter_node: &RsvgNode,
         node_being_filtered: &RsvgNode,
         source_surface: cairo::ImageSurface,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &'a mut DrawingCtx,
         channelmap: [i32; 4],
     ) -> Self {
-        let cr_affine = drawing_ctx::get_cairo_context(draw_ctx).get_matrix();
-        let bbox = drawing_ctx::get_bbox(draw_ctx);
+        let cr_affine = draw_ctx.get_cairo_context().get_matrix();
+        let bbox = draw_ctx.get_bbox();
         let bbox_rect = bbox.rect.unwrap();
 
         let filter = filter_node.get_impl::<NodeFilter>().unwrap();
@@ -275,7 +275,7 @@ impl FilterContext {
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: UnsafeCell::new(None),
-            drawing_ctx: draw_ctx,
+            draw_ctx,
             effects_region: compute_effects_region(
                 filter_node,
                 node_being_filtered,
@@ -336,12 +336,12 @@ impl FilterContext {
             self.source_surface.get_height(),
         )?;
 
-        let (x, y) = drawing_ctx::get_raw_offset(self.drawing_ctx);
-        let stack = drawing_ctx::get_cr_stack(self.drawing_ctx);
+        let (x, y) = self.draw_ctx.get_raw_offset();
+        let stack = self.draw_ctx.get_cr_stack();
 
         let cr = cairo::Context::new(&surface);
         for draw in stack.into_iter().rev() {
-            let nested = drawing_ctx::is_cairo_context_nested(self.drawing_ctx, &draw);
+            let nested = self.draw_ctx.is_cairo_context_nested(&draw);
             cr.set_source_surface(
                 &draw.get_target(),
                 if nested { 0f64 } else { -x },
@@ -411,8 +411,8 @@ impl FilterContext {
 
     /// Returns the drawing context for this filter context.
     #[inline]
-    pub fn drawing_context(&self) -> *mut RsvgDrawingCtx {
-        self.drawing_ctx
+    pub fn draw_context(&self) -> &mut DrawingCtx {
+        self.draw_ctx
     }
 
     /// Returns the paffine matrix.
@@ -431,7 +431,7 @@ impl FilterContext {
     pub fn with_primitive_units<F, T>(&self, f: F) -> T
     // TODO: Get rid of this Box? Can't just impl Trait because Rust cannot do higher-ranked types.
     where
-        for<'a> F: FnOnce(Box<Fn(&RsvgLength) -> f64 + 'a>) -> T,
+        for<'b> F: FnOnce(Box<Fn(&RsvgLength) -> f64 + 'b>) -> T,
     {
         // Filters use the properties of the target node.
         let cascaded = self.node_being_filtered.get_cascaded_values();
@@ -441,16 +441,14 @@ impl FilterContext {
 
         // See comments in compute_effects_region() for how this works.
         if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
-            drawing_ctx::push_view_box(self.drawing_ctx, 1f64, 1f64);
-
+            self.draw_ctx.push_view_box(1.0, 1.0);
             let rv = f(Box::new(RsvgLength::get_unitless));
-
-            drawing_ctx::pop_view_box(self.drawing_ctx);
+            self.draw_ctx.pop_view_box();
 
             rv
         } else {
             f(Box::new(|length: &RsvgLength| {
-                length.normalize(values, self.drawing_ctx)
+                length.normalize(values, self.draw_ctx)
             }))
         }
     }
@@ -467,24 +465,24 @@ impl FilterContext {
             self.source_surface.get_height(),
         )?;
 
-        let cr_save = drawing_ctx::get_cairo_context(self.drawing_ctx);
+        let cr_save = self.draw_ctx.get_cairo_context();
         let cr = cairo::Context::new(&surface);
-        drawing_ctx::set_cairo_context(self.drawing_ctx, &cr);
+        self.draw_ctx.set_cairo_context(&cr);
 
         let cascaded = self.node_being_filtered.get_cascaded_values();
         let values = cascaded.get();
 
         if paint_server::set_source_paint_server(
-            self.drawing_ctx,
+            self.draw_ctx,
             paint_server,
             &opacity,
-            drawing_ctx::get_bbox(self.drawing_ctx),
+            self.draw_ctx.get_bbox(),
             &values.color.0,
         ) {
             cr.paint();
         }
 
-        drawing_ctx::set_cairo_context(self.drawing_ctx, &cr_save);
+        self.draw_ctx.set_cairo_context(&cr_save);
         Ok(surface)
     }
 
@@ -591,7 +589,7 @@ pub unsafe extern "C" fn rsvg_filter_context_get_drawing_ctx(
 ) -> *mut RsvgDrawingCtx {
     assert!(!ctx.is_null());
 
-    (*ctx).drawing_ctx
+    (*ctx).draw_ctx as *const _ as *mut RsvgDrawingCtx
 }
 
 #[no_mangle]

@@ -13,8 +13,7 @@ use std::str::FromStr;
 use attributes::Attribute;
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use defs::{self, RsvgDefs};
-use drawing_ctx;
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::DrawingCtx;
 use error::*;
 use handle::RsvgHandle;
 use parsers::{Parse, ParseError};
@@ -132,7 +131,7 @@ pub trait NodeTrait: Downcast {
         &self,
         _node: &RsvgNode,
         _cascaded: &CascadedValues,
-        _draw_ctx: *mut RsvgDrawingCtx,
+        _draw_ctx: &mut DrawingCtx,
         _clipping: bool,
     ) {
         // by default nodes don't draw themselves
@@ -430,11 +429,11 @@ impl Node {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         if self.result.borrow().is_ok() {
-            let cr = drawing_ctx::get_cairo_context(draw_ctx);
+            let cr = draw_ctx.get_cairo_context();
             let save_affine = cr.get_matrix();
 
             cr.transform(self.get_transform());
@@ -480,16 +479,11 @@ impl Node {
     pub fn draw_children(
         &self,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         for child in self.children() {
-            drawing_ctx::draw_node_from_stack(
-                draw_ctx,
-                &CascadedValues::new(cascaded, &child),
-                &child,
-                clipping,
-            );
+            draw_ctx.draw_node_from_stack(&CascadedValues::new(cascaded, &child), &child, clipping);
         }
     }
 
@@ -650,7 +644,7 @@ pub extern "C" fn rsvg_node_unref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
 // See https://github.com/rust-lang/rust/issues/36497 - this is what
 // added Rc::ptr_eq(), but we don't want to depend on unstable Rust
 // just yet.
-fn rc_node_ptr_eq<T: ?Sized>(this: &Rc<T>, other: &Rc<T>) -> bool {
+pub fn rc_node_ptr_eq<T: ?Sized>(this: &Rc<T>, other: &Rc<T>) -> bool {
     let this_ptr: *const T = &**this;
     let other_ptr: *const T = &**other;
     this_ptr == other_ptr

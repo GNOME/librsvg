@@ -7,7 +7,7 @@ use pango_sys;
 use pangocairo;
 
 use bbox::BoundingBox;
-use drawing_ctx::{self, RsvgDrawingCtx};
+use drawing_ctx::DrawingCtx;
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
 use paint_server;
@@ -25,8 +25,8 @@ use state::{
     TextRendering,
 };
 
-fn set_affine_on_cr(draw_ctx: *mut RsvgDrawingCtx, cr: &cairo::Context) {
-    let (x0, y0) = drawing_ctx::get_offset(draw_ctx);
+fn set_affine_on_cr(draw_ctx: &DrawingCtx, cr: &cairo::Context) {
+    let (x0, y0) = draw_ctx.get_offset();
 
     let affine = cr.get_matrix();
 
@@ -42,12 +42,12 @@ fn set_affine_on_cr(draw_ctx: *mut RsvgDrawingCtx, cr: &cairo::Context) {
 }
 
 pub fn draw_path_builder(
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     values: &ComputedValues,
     builder: &PathBuilder,
     clipping: bool,
 ) {
-    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let cr = draw_ctx.get_cairo_context();
 
     set_affine_on_cr(draw_ctx, &cr);
 
@@ -62,7 +62,7 @@ pub fn draw_path_builder(
     }
 }
 
-fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
+fn stroke_and_fill(cr: &cairo::Context, draw_ctx: &mut DrawingCtx, values: &ComputedValues) {
     cr.set_antialias(cairo::Antialias::from(values.shape_rendering));
 
     setup_cr_for_stroke(cr, draw_ctx, values);
@@ -72,7 +72,7 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, values: &
     // rendering context to have an updated bbox; for example, for the
     // coordinate system in patterns.
     let bbox = compute_stroke_and_fill_box(cr, values);
-    drawing_ctx::insert_bbox(draw_ctx, &bbox);
+    draw_ctx.insert_bbox(&bbox);
 
     let current_color = &values.color.0;
 
@@ -198,11 +198,7 @@ impl From<TextRendering> for cairo::Antialias {
     }
 }
 
-fn setup_cr_for_stroke(
-    cr: &cairo::Context,
-    draw_ctx: *const RsvgDrawingCtx,
-    values: &ComputedValues,
-) {
+fn setup_cr_for_stroke(cr: &cairo::Context, draw_ctx: &DrawingCtx, values: &ComputedValues) {
     cr.set_line_width(values.stroke_width.0.normalize(values, draw_ctx));
     cr.set_miter_limit(values.stroke_miterlimit.0);
     cr.set_line_cap(cairo::LineCap::from(values.stroke_line_cap));
@@ -280,7 +276,7 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
 }
 
 pub fn draw_pango_layout(
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     values: &ComputedValues,
     layout: &pango::Layout,
     x: f64,
@@ -295,7 +291,7 @@ pub fn draw_pango_layout(
         return;
     }
 
-    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let cr = draw_ctx.get_cairo_context();
     cr.save();
 
     set_affine_on_cr(draw_ctx, &cr);
@@ -305,7 +301,7 @@ pub fn draw_pango_layout(
     let bbox = compute_text_bbox(&ink, x, y, &affine, gravity);
 
     if !clipping {
-        drawing_ctx::insert_bbox(draw_ctx, &bbox);
+        draw_ctx.insert_bbox(&bbox);
     }
 
     cr.set_antialias(cairo::Antialias::from(values.text_rendering));
@@ -359,7 +355,7 @@ pub fn draw_pango_layout(
         if !clipping {
             let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
             cr.stroke();
-            drawing_ctx::insert_bbox(draw_ctx, &ib);
+            draw_ctx.insert_bbox(&ib);
         }
     }
 
@@ -410,7 +406,7 @@ fn compute_text_bbox(
 }
 
 pub fn draw_surface(
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     values: &ComputedValues,
     surface: &cairo::ImageSurface,
     x: f64,
@@ -423,7 +419,7 @@ pub fn draw_surface(
         return;
     }
 
-    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let cr = draw_ctx.get_cairo_context();
 
     let affine = cr.get_matrix();
 
@@ -475,12 +471,12 @@ pub fn draw_surface(
 
     cr.restore();
 
-    drawing_ctx::insert_bbox(draw_ctx, &bbox);
+    draw_ctx.insert_bbox(&bbox);
 }
 
 /// Adds a clipping rectangle to the curent Cairo context
-pub fn add_clipping_rect(draw_ctx: *mut RsvgDrawingCtx, x: f64, y: f64, w: f64, h: f64) {
-    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+pub fn add_clipping_rect(draw_ctx: &mut DrawingCtx, x: f64, y: f64, w: f64, h: f64) {
+    let cr = draw_ctx.get_cairo_context();
 
     let save_affine = cr.get_matrix();
 

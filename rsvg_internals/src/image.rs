@@ -10,7 +10,7 @@ use std::ptr;
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use draw::{add_clipping_rect, draw_surface};
-use drawing_ctx::{self, RsvgDrawingCtx};
+use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
@@ -107,7 +107,7 @@ impl NodeTrait for NodeImage {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -118,7 +118,7 @@ impl NodeTrait for NodeImage {
             let w = self.w.get().normalize(values, draw_ctx);
             let h = self.h.get().normalize(values, draw_ctx);
 
-            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
+            draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
                 let aspect = self.aspect.get();
 
                 if !values.is_overflow() && aspect.is_slice() {

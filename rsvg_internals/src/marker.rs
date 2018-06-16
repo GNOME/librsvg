@@ -7,8 +7,7 @@ use cssparser::{CowRcStr, Parser, Token};
 use aspect_ratio::*;
 use attributes::Attribute;
 use draw::add_clipping_rect;
-use drawing_ctx;
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::DrawingCtx;
 use error::*;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
@@ -123,7 +122,7 @@ impl NodeMarker {
     fn render(
         &self,
         node: &RsvgNode,
-        draw_ctx: *mut RsvgDrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         xpos: f64,
         ypos: f64,
         computed_angle: f64,
@@ -142,7 +141,7 @@ impl NodeMarker {
             return;
         }
 
-        let cr = drawing_ctx::get_cairo_context(draw_ctx);
+        let cr = draw_ctx.get_cairo_context();
         cr.save();
 
         let mut affine = cr.get_matrix();
@@ -172,9 +171,9 @@ impl NodeMarker {
 
             affine.scale(w / vbox.0.width, h / vbox.0.height);
 
-            drawing_ctx::push_view_box(draw_ctx, vbox.0.width, vbox.0.height);
+            draw_ctx.push_view_box(vbox.0.width, vbox.0.height);
         } else {
-            drawing_ctx::push_view_box(draw_ctx, marker_width, marker_height);
+            draw_ctx.push_view_box(marker_width, marker_height);
         }
 
         affine.translate(
@@ -192,11 +191,11 @@ impl NodeMarker {
             }
         }
 
-        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
             node.draw_children(&cascaded, draw_ctx, clipping);
         });
 
-        drawing_ctx::pop_view_box(draw_ctx);
+        draw_ctx.pop_view_box();
 
         cr.restore();
     }
@@ -584,7 +583,7 @@ enum MarkerType {
 }
 
 fn emit_marker_by_name(
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     name: &str,
     xpos: f64,
     ypos: f64,
@@ -592,9 +591,7 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) {
-    if let Some(acquired) =
-        drawing_ctx::get_acquired_node_of_type(draw_ctx, Some(name), NodeType::Marker)
-    {
+    if let Some(acquired) = draw_ctx.get_acquired_node_of_type(Some(name), NodeType::Marker) {
         let node = acquired.get();
 
         node.with_impl(|marker: &NodeMarker| {
@@ -640,7 +637,7 @@ fn emit_marker<E>(
 
 pub fn render_markers_for_path_builder(
     builder: &PathBuilder,
-    draw_ctx: *mut RsvgDrawingCtx,
+    draw_ctx: &mut DrawingCtx,
     values: &ComputedValues,
     clipping: bool,
 ) {

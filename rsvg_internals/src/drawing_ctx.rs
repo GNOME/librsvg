@@ -1,6 +1,5 @@
-use std::ptr;
-
 use cairo;
+use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
 use glib_sys;
@@ -9,404 +8,461 @@ use pango::{self, FontMapExt};
 use pango_cairo_sys;
 use pangocairo;
 
-use bbox::{BoundingBox, RsvgBbox};
+use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
 use defs::{self, RsvgDefs};
 use filters::filter_render;
 use mask::NodeMask;
-use node::{CascadedValues, NodeType, RsvgNode};
+use node::{rc_node_ptr_eq, CascadedValues, NodeType, RsvgNode};
 use rect::RectangleExt;
 use state::{CompOp, ComputedValues, EnableBackground};
 use unitinterval::UnitInterval;
+use viewbox::ViewBox;
 
 pub enum RsvgDrawingCtx {}
 
-#[allow(improper_ctypes)]
-extern "C" {
-    fn rsvg_drawing_ctx_get_cairo_context(
-        draw_ctx: *const RsvgDrawingCtx,
-    ) -> *mut cairo_sys::cairo_t;
+pub struct DrawingCtx {
+    rect: cairo::Rectangle,
+    dpi_x: f64,
+    dpi_y: f64,
 
-    fn rsvg_drawing_ctx_set_cairo_context(
-        draw_ctx: *const RsvgDrawingCtx,
-        cr: *const cairo_sys::cairo_t,
-    );
+    cr_stack: Vec<cairo::Context>,
+    cr: cairo::Context,
+    initial_cr: cairo::Context,
 
-    fn rsvg_drawing_ctx_get_dpi(
-        draw_ctx: *const RsvgDrawingCtx,
-        out_dpi_x: *mut f64,
-        out_dpi_y: *mut f64,
-    );
+    surfaces_stack: Vec<cairo::ImageSurface>,
 
-    fn rsvg_drawing_ctx_get_view_box_size(
-        draw_ctx: *const RsvgDrawingCtx,
-        out_x: *mut f64,
-        out_y: *mut f64,
-    );
+    vb: ViewBox,
+    vb_stack: Vec<ViewBox>,
 
-    fn rsvg_drawing_ctx_push_view_box(draw_ctx: *const RsvgDrawingCtx, width: f64, height: f64);
+    bbox: BoundingBox,
+    bbox_stack: Vec<BoundingBox>,
 
-    fn rsvg_drawing_ctx_pop_view_box(draw_ctx: *const RsvgDrawingCtx);
+    drawsub_stack: Vec<RsvgNode>,
 
-    fn rsvg_drawing_ctx_add_node_to_stack(draw_ctx: *const RsvgDrawingCtx, node: *const RsvgNode);
+    defs: *const RsvgDefs,
+    acquired_nodes: Vec<*mut RsvgNode>,
 
-    fn rsvg_drawing_ctx_prepend_acquired_node(
-        draw_ctx: *const RsvgDrawingCtx,
-        node: *mut RsvgNode,
-    ) -> glib_sys::gboolean;
+    is_testing: bool,
+}
 
-    fn rsvg_drawing_ctx_remove_acquired_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
-
-    fn rsvg_drawing_ctx_get_defs(draw_ctx: *const RsvgDrawingCtx) -> *const RsvgDefs;
-
-    fn rsvg_drawing_ctx_get_offset(
-        draw_ctx: *const RsvgDrawingCtx,
-        out_x: *mut f64,
-        out_y: *mut f64,
-    );
-
-    fn rsvg_drawing_ctx_get_raw_offset(
-        draw_ctx: *const RsvgDrawingCtx,
-        out_x: *mut f64,
-        out_y: *mut f64,
-    );
-
-    fn rsvg_drawing_ctx_get_bbox(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgBbox;
-
-    fn rsvg_drawing_ctx_get_cr_stack(draw_ctx: *mut RsvgDrawingCtx) -> *mut glib_sys::GList;
-
-    fn rsvg_drawing_ctx_is_cairo_context_nested(
-        draw_ctx: *const RsvgDrawingCtx,
-        cr: *mut cairo_sys::cairo_t,
-    ) -> glib_sys::gboolean;
-
-    fn rsvg_drawing_ctx_is_testing(draw_ctx: *const RsvgDrawingCtx) -> glib_sys::gboolean;
-
-    fn rsvg_drawing_ctx_draw_node_on_surface(
-        draw_ctx: *mut RsvgDrawingCtx,
-        node: *const RsvgNode,
-        cascade_from: *const RsvgNode,
-        surface: *mut cairo_sys::cairo_surface_t,
+impl<'a> DrawingCtx {
+    pub fn new(
+        cr: cairo::Context,
         width: f64,
         height: f64,
-    );
-}
+        vb_width: f64,
+        vb_height: f64,
+        dpi_x: f64,
+        dpi_y: f64,
+        defs: *const RsvgDefs,
+        is_testing: bool,
+    ) -> DrawingCtx {
+        let mut affine = cr.get_matrix();
+        let rect = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width,
+            height,
+        }.transform(&affine)
+            .outer();
 
-pub fn get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
-    unsafe {
-        let raw_cr = rsvg_drawing_ctx_get_cairo_context(draw_ctx);
+        // scale according to size set by size_func callback
+        let mut scale = cairo::Matrix::identity();
+        scale.scale(width / vb_width, height / vb_height);
+        affine = cairo::Matrix::multiply(&affine, &scale);
 
-        cairo::Context::from_glib_none(raw_cr)
-    }
-}
+        // adjust transform so that the corner of the
+        // bounding box above is at (0,0)
+        affine.x0 -= rect.x;
+        affine.y0 -= rect.y;
+        cr.set_matrix(affine);
 
-// FIXME: Usage of this function is more less a hack... The caller
-// manually saves and then restore the draw_ctx.cr.
-// It would be better to have an explicit push/pop for the cairo_t, or
-// pushing a temporary surface, or something that does not involve
-// monkeypatching the cr directly.
-pub fn set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) {
-    unsafe {
-        let raw_cr = cr.to_glib_none().0;
+        let mut cr_stack = Vec::new();
+        cr_stack.push(cr.clone());
 
-        rsvg_drawing_ctx_set_cairo_context(draw_ctx, raw_cr);
-    }
-}
-
-pub fn get_dpi(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
-    let mut dpi_x: f64 = 0.0;
-    let mut dpi_y: f64 = 0.0;
-
-    unsafe {
-        rsvg_drawing_ctx_get_dpi(draw_ctx, &mut dpi_x, &mut dpi_y);
-    }
-
-    (dpi_x, dpi_y)
-}
-
-pub fn get_view_box_size(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
-    let mut w: f64 = 0.0;
-    let mut h: f64 = 0.0;
-
-    unsafe {
-        rsvg_drawing_ctx_get_view_box_size(draw_ctx, &mut w, &mut h);
-    }
-
-    (w, h)
-}
-
-pub fn push_view_box(draw_ctx: *const RsvgDrawingCtx, width: f64, height: f64) {
-    unsafe {
-        rsvg_drawing_ctx_push_view_box(draw_ctx, width, height);
-    }
-}
-
-pub fn pop_view_box(draw_ctx: *const RsvgDrawingCtx) {
-    unsafe {
-        rsvg_drawing_ctx_pop_view_box(draw_ctx);
-    }
-}
-
-// Use this function when looking up urls to other nodes. This function
-// does proper recursion checking and thereby avoids infinite loops.
-//
-// Nodes acquired by this function must be released in reverse
-// acquiring order.
-//
-// Note that if you acquire a node, you have to release it before trying to
-// acquire it again.  If you acquire a node "#foo" and don't release it before
-// trying to acquire "foo" again, you will obtain a %NULL the second time.
-pub fn get_acquired_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> Option<AcquiredNode> {
-    let defs = unsafe {
-        let d = rsvg_drawing_ctx_get_defs(draw_ctx);
-        &*d
-    };
-
-    if let Some(node) = defs::lookup(defs, url) {
-        unsafe {
-            if from_glib(rsvg_drawing_ctx_prepend_acquired_node(draw_ctx, node)) {
-                return Some(AcquiredNode(draw_ctx, node));
-            }
+        DrawingCtx {
+            rect,
+            dpi_x,
+            dpi_y,
+            cr_stack,
+            cr: cr.clone(),
+            initial_cr: cr.clone(),
+            surfaces_stack: Vec::new(),
+            vb: ViewBox::new(0.0, 0.0, vb_width, vb_height),
+            vb_stack: Vec::new(),
+            bbox: BoundingBox::new(&affine),
+            bbox_stack: Vec::new(),
+            drawsub_stack: Vec::new(),
+            defs,
+            acquired_nodes: Vec::new(),
+            is_testing,
         }
     }
 
-    None
-}
+    pub fn get_cairo_context(&self) -> cairo::Context {
+        self.cr.clone()
+    }
 
-// Use this function when looking up urls to other nodes, and when you expect
-// the node to be of a particular type. This function does proper recursion
-// checking and thereby avoids infinite loops.
-//
-// Malformed SVGs, for example, may reference a marker by its IRI, but
-// the object referenced by the IRI is not a marker.
-//
-// Note that if you acquire a node, you have to release it before trying to
-// acquire it again.  If you acquire a node "#foo" and don't release it before
-// trying to acquire "foo" again, you will obtain a None the second time.
-//
-// For convenience, this function will return None if url is None.
-pub fn get_acquired_node_of_type(
-    draw_ctx: *const RsvgDrawingCtx,
-    url: Option<&str>,
-    node_type: NodeType,
-) -> Option<AcquiredNode> {
-    url.and_then(|url| get_acquired_node(draw_ctx, url))
-        .and_then(|acquired| {
-            if acquired.get().get_type() == node_type {
-                Some(acquired)
-            } else {
-                None
-            }
-        })
-}
+    // FIXME: Usage of this function is more less a hack... The caller
+    // manually saves and then restore the draw_ctx.cr.
+    // It would be better to have an explicit push/pop for the cairo_t, or
+    // pushing a temporary surface, or something that does not involve
+    // monkeypatching the cr directly.
+    pub fn set_cairo_context(&mut self, cr: &cairo::Context) {
+        self.cr = cr.clone();
+    }
 
-pub fn with_discrete_layer(
-    draw_ctx: *mut RsvgDrawingCtx,
-    node: &RsvgNode,
-    values: &ComputedValues,
-    clipping: bool,
-    draw_fn: &mut FnMut(&cairo::Context),
-) {
-    if clipping {
-        draw_fn(&get_cairo_context(draw_ctx));
-    } else {
-        let original_cr = get_cairo_context(draw_ctx);
-        original_cr.save();
+    pub fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
+        cr.to_raw_none() == self.initial_cr.to_raw_none()
+    }
 
-        let clip_uri = values.clip_path.0.get();
-        let filter = values.filter.0.get();
-        let mask = values.mask.0.get();
+    pub fn get_cr_stack(&mut self) -> &Vec<cairo::Context> {
+        &self.cr_stack
+    }
 
-        let UnitInterval(opacity) = values.opacity.0;
-        let comp_op = values.comp_op;
-        let enable_background = values.enable_background;
+    pub fn get_width(&self) -> f64 {
+        self.rect.width
+    }
 
-        let current_affine = original_cr.get_matrix();
+    pub fn get_height(&self) -> f64 {
+        self.rect.height
+    }
 
-        let (clip_node, clip_units) = {
-            let clip_node = get_acquired_node_of_type(draw_ctx, clip_uri, NodeType::ClipPath)
-                .and_then(|acquired| Some(acquired.get()));
+    pub fn get_raw_offset(&self) -> (f64, f64) {
+        (self.rect.x, self.rect.y)
+    }
 
-            let mut clip_units = Default::default();
+    pub fn get_offset(&self) -> (f64, f64) {
+        if self.is_cairo_context_nested(&self.get_cairo_context()) {
+            (0.0, 0.0)
+        } else {
+            (self.rect.x, self.rect.y)
+        }
+    }
 
-            if let Some(ref clip_node) = clip_node {
-                clip_node.with_impl(|clip_path: &NodeClipPath| {
-                    let ClipPathUnits(u) = clip_path.get_units();
-                    clip_units = Some(u);
-                });
-            }
+    pub fn get_dpi(&self) -> (f64, f64) {
+        (self.dpi_x, self.dpi_y)
+    }
 
-            (clip_node, clip_units)
-        };
+    pub fn get_view_box_size(&self) -> (f64, f64) {
+        (self.vb.0.width, self.vb.0.height)
+    }
 
-        if clip_units == Some(CoordUnits::UserSpaceOnUse) {
-            if let Some(ref clip_node) = clip_node {
-                clip_node.with_impl(|clip_path: &NodeClipPath| {
-                    clip_path.to_cairo_context(clip_node, &current_affine, draw_ctx);
-                });
+    pub fn push_view_box(&mut self, width: f64, height: f64) {
+        self.vb_stack.push(self.vb);
+        self.vb = ViewBox::new(0.0, 0.0, width, height);
+    }
+
+    pub fn pop_view_box(&mut self) {
+        self.vb = self.vb_stack.pop().unwrap();
+    }
+
+    pub fn insert_bbox(&mut self, bbox: &BoundingBox) {
+        self.bbox.insert(bbox);
+    }
+
+    pub fn set_bbox(&mut self, bbox: &BoundingBox) {
+        self.bbox = *bbox;
+    }
+
+    pub fn get_bbox(&self) -> &BoundingBox {
+        &self.bbox
+    }
+
+    // Use this function when looking up urls to other nodes. This function
+    // does proper recursion checking and thereby avoids infinite loops.
+    //
+    // Nodes acquired by this function must be released in reverse
+    // acquiring order.
+    //
+    // Note that if you acquire a node, you have to release it before trying to
+    // acquire it again.  If you acquire a node "#foo" and don't release it before
+    // trying to acquire "foo" again, you will obtain a %NULL the second time.
+    pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
+        if let Some(node) = defs::lookup(self.defs, url) {
+            let n = node as *mut RsvgNode;
+            if !self.acquired_nodes.contains(&n) {
+                self.acquired_nodes.push(n);
+                return Some(AcquiredNode(&mut self.acquired_nodes, n));
             }
         }
 
-        let needs_temporary_surface = !(opacity == 1.0
-            && filter.is_none()
-            && mask.is_none()
-            && (clip_units == None || clip_units == Some(CoordUnits::UserSpaceOnUse))
-            && comp_op == CompOp::SrcOver
-            && enable_background == EnableBackground::Accumulate);
+        None
+    }
 
-        let (child_surface, child_cr) = {
-            if needs_temporary_surface {
-                // FIXME: in the following, we unwrap() the result of
-                // ImageSurface::create().  We have to decide how to handle
-                // out-of-memory here.
-                let surface = unsafe {
-                    cairo::ImageSurface::create(
+    // Use this function when looking up urls to other nodes, and when you expect
+    // the node to be of a particular type. This function does proper recursion
+    // checking and thereby avoids infinite loops.
+    //
+    // Malformed SVGs, for example, may reference a marker by its IRI, but
+    // the object referenced by the IRI is not a marker.
+    //
+    // Note that if you acquire a node, you have to release it before trying to
+    // acquire it again.  If you acquire a node "#foo" and don't release it before
+    // trying to acquire "foo" again, you will obtain a None the second time.
+    //
+    // For convenience, this function will return None if url is None.
+    pub fn get_acquired_node_of_type(
+        &mut self,
+        url: Option<&str>,
+        node_type: NodeType,
+    ) -> Option<AcquiredNode> {
+        url.and_then(move |url| self.get_acquired_node(url))
+            .and_then(|acquired| {
+                if acquired.get().get_type() == node_type {
+                    Some(acquired)
+                } else {
+                    None
+                }
+            })
+    }
+
+    pub fn with_discrete_layer(
+        &mut self,
+        node: &RsvgNode,
+        values: &ComputedValues,
+        clipping: bool,
+        draw_fn: &mut FnMut(&cairo::Context),
+    ) {
+        if clipping {
+            draw_fn(&self.cr);
+        } else {
+            let original_cr = self.cr.clone();
+            original_cr.save();
+
+            let clip_uri = values.clip_path.0.get();
+            let filter = values.filter.0.get();
+            let mask = values.mask.0.get();
+
+            let UnitInterval(opacity) = values.opacity.0;
+            let comp_op = values.comp_op;
+            let enable_background = values.enable_background;
+
+            let affine = original_cr.get_matrix();
+
+            let (clip_node, clip_units) = {
+                let clip_node = self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
+                    .and_then(|acquired| Some(acquired.get()));
+
+                let mut clip_units = Default::default();
+
+                if let Some(ref clip_node) = clip_node {
+                    clip_node.with_impl(|clip_path: &NodeClipPath| {
+                        let ClipPathUnits(u) = clip_path.get_units();
+                        clip_units = Some(u);
+                    });
+                }
+
+                (clip_node, clip_units)
+            };
+
+            if clip_units == Some(CoordUnits::UserSpaceOnUse) {
+                if let Some(ref clip_node) = clip_node {
+                    clip_node.with_impl(|clip_path: &NodeClipPath| {
+                        clip_path.to_cairo_context(clip_node, &affine, self);
+                    });
+                }
+            }
+
+            let needs_temporary_surface = !(opacity == 1.0 && filter.is_none() && mask.is_none()
+                && (clip_units == None || clip_units == Some(CoordUnits::UserSpaceOnUse))
+                && comp_op == CompOp::SrcOver
+                && enable_background == EnableBackground::Accumulate);
+
+            let (child_surface, child_cr) = {
+                if needs_temporary_surface {
+                    // FIXME: in the following, we unwrap() the result of
+                    // ImageSurface::create().  We have to decide how to handle
+                    // out-of-memory here.
+                    let surface = cairo::ImageSurface::create(
                         cairo::Format::ARgb32,
-                        rsvg_drawing_ctx_get_width(draw_ctx) as i32,
-                        rsvg_drawing_ctx_get_height(draw_ctx) as i32,
-                    ).unwrap()
-                };
+                        self.rect.width as i32,
+                        self.rect.height as i32,
+                    ).unwrap();
 
-                if filter.is_some() {
-                    unsafe {
-                        rsvg_drawing_ctx_push_surface(draw_ctx, surface.to_glib_none().0);
+                    if filter.is_some() {
+                        self.surfaces_stack.push(surface.clone());
+                    }
+
+                    let cr = cairo::Context::new(&surface);
+                    cr.set_matrix(affine);
+
+                    self.cr_stack.push(cr.clone());
+                    self.cr = cr.clone();
+
+                    self.bbox_stack.push(self.bbox);
+                    self.bbox = BoundingBox::new(&affine);
+
+                    (surface, cr)
+                } else {
+                    (
+                        cairo::ImageSurface::from(original_cr.get_target()).unwrap(),
+                        original_cr.clone(),
+                    )
+                }
+            };
+
+            draw_fn(&child_cr);
+
+            if needs_temporary_surface {
+                let filter_result_surface = filter
+                    .and_then(|_| {
+                        // About the following unwrap(), see the FIXME above.  We should be pushing
+                        // only surfaces that are not in an error state, but currently we don't
+                        // actually ensure that.
+                        let output = self.surfaces_stack.pop().unwrap();
+
+                        // The bbox rect can be None, for example, if a filter is applied to an
+                        // empty group. There is nothing to filter in this case.
+                        self.bbox.rect.and_then(|_| {
+                            self.get_acquired_node_of_type(filter, NodeType::Filter)
+                                .and_then(|acquired| {
+                                    let filter_node = acquired.get();
+
+                                    if !filter_node.is_in_error() {
+                                        // FIXME: deal with out of memory here
+                                        Some(filter_render(
+                                            &filter_node,
+                                            node,
+                                            &output,
+                                            self,
+                                            "2103".as_ptr() as *const i8,
+                                        ))
+                                    } else {
+                                        None
+                                    }
+                                })
+                        })
+                    })
+                    .or(Some(child_surface))
+                    .unwrap();
+
+                self.cr_stack.pop();
+                self.cr = self.cr_stack.last().unwrap().clone();
+
+                let (xofs, yofs) = self.get_offset();
+
+                original_cr.identity_matrix();
+                original_cr.set_source_surface(&filter_result_surface, xofs, yofs);
+
+                if clip_units == Some(CoordUnits::ObjectBoundingBox) {
+                    if let Some(ref clip_node) = clip_node {
+                        clip_node.with_impl(|clip_path: &NodeClipPath| {
+                            clip_path.to_cairo_context(clip_node, &affine, self);
+                        });
                     }
                 }
 
-                let child_cr = cairo::Context::new(&surface);
-                child_cr.set_matrix(original_cr.get_matrix());
+                original_cr.set_operator(cairo::Operator::from(comp_op));
 
-                unsafe {
-                    rsvg_drawing_ctx_push_cr(draw_ctx, child_cr.to_raw_none());
+                if let Some(mask) = mask {
+                    if let Some(acquired) =
+                        self.get_acquired_node_of_type(Some(mask), NodeType::Mask)
+                    {
+                        let node = acquired.get();
+
+                        node.with_impl(|mask: &NodeMask| {
+                            mask.generate_cairo_mask(&node, &affine, self);
+                        });
+                    }
+                } else if opacity < 1.0 {
+                    original_cr.paint_with_alpha(opacity);
+                } else {
+                    original_cr.paint();
                 }
 
-                unsafe {
-                    rsvg_drawing_ctx_push_bounding_box(draw_ctx);
-                }
+                let bbox = self.bbox;
+                self.bbox = self.bbox_stack.pop().unwrap();
+                self.bbox.insert(&bbox);
+            }
 
-                (surface, child_cr)
-            } else {
-                (
-                    cairo::ImageSurface::from(original_cr.get_target()).unwrap(),
-                    original_cr.clone(),
-                )
+            original_cr.restore();
+        }
+    }
+
+    pub fn get_pango_context(&self) -> pango::Context {
+        let font_map = pangocairo::FontMap::get_default().unwrap();
+        let context = font_map.create_context().unwrap();
+        let cr = self.get_cairo_context();
+        pangocairo::functions::update_context(&cr, &context);
+
+        set_resolution(&context, self.dpi_x);
+
+        if self.is_testing {
+            let mut options = cairo::FontOptions::new();
+
+            options.set_antialias(cairo::Antialias::Gray);
+            options.set_hint_style(cairo::enums::HintStyle::Full);
+            options.set_hint_metrics(cairo::enums::HintMetrics::On);
+
+            set_font_options(&context, &options);
+        }
+
+        context
+    }
+
+    pub fn draw_node_on_surface(
+        &mut self,
+        node: &RsvgNode,
+        cascaded: &CascadedValues,
+        surface: &cairo::ImageSurface,
+        width: f64,
+        height: f64,
+    ) {
+        let save_cr = self.cr.clone();
+        let save_initial_cr = self.initial_cr.clone();
+        let save_rect = self.rect;
+        let save_affine = self.get_cairo_context().get_matrix();
+
+        let cr = cairo::Context::new(surface);
+        cr.set_matrix(save_affine);
+
+        self.cr = cr;
+        self.initial_cr = self.cr.clone();
+        self.rect.x = 0.0;
+        self.rect.y = 0.0;
+        self.rect.width = width;
+        self.rect.height = height;
+
+        self.draw_node_from_stack(cascaded, node, false);
+
+        self.cr = save_cr;
+        self.initial_cr = save_initial_cr;
+        self.rect = save_rect;
+    }
+
+    pub fn draw_node_from_stack(
+        &mut self,
+        cascaded: &CascadedValues,
+        node: &RsvgNode,
+        clipping: bool,
+    ) {
+        let draw = || {
+            let values = cascaded.get();
+            if values.is_visible() {
+                node.draw(node, cascaded, self, clipping);
             }
         };
 
-        draw_fn(&child_cr);
-
-        if needs_temporary_surface {
-            let filter_result_surface = filter
-                .and_then(|_| {
-                    // About the following unwrap(), see the FIXME above.  We should be pushing
-                    // only surfaces that are not in an error state, but currently we don't
-                    // actually ensure that.
-                    let output = unsafe {
-                        cairo::ImageSurface::from_raw_full(rsvg_drawing_ctx_pop_surface(draw_ctx))
-                            .unwrap()
-                    };
-
-                    // The bbox rect can be None, for example, if a filter is applied to an empty
-                    // group. There's nothing to filter in this case.
-                    get_bbox(draw_ctx).rect.and_then(|_| {
-                        get_acquired_node_of_type(draw_ctx, filter, NodeType::Filter).and_then(
-                            |acquired| {
-                                let filter_node = acquired.get();
-
-                                if !filter_node.is_in_error() {
-                                    // FIXME: deal with out of memory here
-                                    Some(filter_render(
-                                        &filter_node,
-                                        node,
-                                        &output,
-                                        draw_ctx,
-                                        "2103".as_ptr() as *const i8,
-                                    ))
-                                } else {
-                                    None
-                                }
-                            },
-                        )
-                    })
-                })
-                .or(Some(child_surface))
-                .unwrap();
-
-            unsafe {
-                rsvg_drawing_ctx_pop_cr(draw_ctx);
+        if let Some(top) = self.drawsub_stack.pop() {
+            if rc_node_ptr_eq(&top, node) {
+                draw();
             }
 
-            let current_affine = original_cr.get_matrix();
-
-            let (xofs, yofs) = get_offset(draw_ctx);
-
-            original_cr.identity_matrix();
-            original_cr.set_source_surface(&filter_result_surface, xofs, yofs);
-
-            if clip_units == Some(CoordUnits::ObjectBoundingBox) {
-                if let Some(ref clip_node) = clip_node {
-                    clip_node.with_impl(|clip_path: &NodeClipPath| {
-                        clip_path.to_cairo_context(clip_node, &current_affine, draw_ctx);
-                    });
-                }
-            }
-
-            original_cr.set_operator(cairo::Operator::from(comp_op));
-
-            if let Some(mask) = mask {
-                if let Some(acquired) =
-                    get_acquired_node_of_type(draw_ctx, Some(mask), NodeType::Mask)
-                {
-                    let node = acquired.get();
-
-                    node.with_impl(|mask: &NodeMask| {
-                        mask.generate_cairo_mask(&node, &current_affine, draw_ctx);
-                    });
-                }
-            } else if opacity < 1.0 {
-                original_cr.paint_with_alpha(opacity);
-            } else {
-                original_cr.paint();
-            }
-
-            unsafe {
-                rsvg_drawing_ctx_pop_bounding_box(draw_ctx);
-            }
+            self.drawsub_stack.push(top);
+        } else {
+            draw();
         }
-
-        original_cr.restore();
-    }
-}
-
-pub fn get_width(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    unsafe { rsvg_drawing_ctx_get_width(draw_ctx) }
-}
-
-pub fn get_height(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    unsafe { rsvg_drawing_ctx_get_height(draw_ctx) }
-}
-
-pub fn get_offset(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
-    let mut w: f64 = 0.0;
-    let mut h: f64 = 0.0;
-
-    unsafe {
-        rsvg_drawing_ctx_get_offset(draw_ctx, &mut w, &mut h);
     }
 
-    (w, h)
-}
-
-pub fn get_raw_offset(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
-    let mut w: f64 = 0.0;
-    let mut h: f64 = 0.0;
-
-    unsafe {
-        rsvg_drawing_ctx_get_raw_offset(draw_ctx, &mut w, &mut h);
+    pub fn add_node_and_ancestors_to_stack(&self, node: &RsvgNode) {
+        self.drawsub_stack.push(node.clone());
+        if let Some(ref parent) = node.get_parent() {
+            self.add_node_and_ancestors_to_stack(parent);
+        }
     }
-
-    (w, h)
 }
 
 // remove this binding once pangocairo-rs has ContextExt::set_resolution()
@@ -426,160 +482,15 @@ fn set_font_options(context: &pango::Context, options: &cairo::FontOptions) {
     }
 }
 
-pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
-    let font_map = pangocairo::FontMap::get_default().unwrap();
-    let context = font_map.create_context().unwrap();
-    let cr = get_cairo_context(draw_ctx);
-    pangocairo::functions::update_context(&cr, &context);
-
-    set_resolution(&context, get_dpi(draw_ctx).1);
-
-    let testing = unsafe { from_glib(rsvg_drawing_ctx_is_testing(draw_ctx)) };
-    if testing {
-        let mut options = cairo::FontOptions::new();
-
-        options.set_antialias(cairo::Antialias::Gray);
-        options.set_hint_style(cairo::enums::HintStyle::Full);
-        options.set_hint_metrics(cairo::enums::HintMetrics::On);
-
-        set_font_options(&context, &options);
-    }
-
-    context
-}
-
-pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &BoundingBox) {
-    let draw_ctx_bbox = get_bbox_mut(draw_ctx);
-
-    draw_ctx_bbox.insert(bbox);
-}
-
-pub fn set_bbox(draw_ctx: *mut RsvgDrawingCtx, bbox: &BoundingBox) {
-    let draw_ctx_bbox = get_bbox_mut(draw_ctx);
-
-    *draw_ctx_bbox = *bbox;
-}
-
-pub fn get_bbox_mut<'a>(draw_ctx: *const RsvgDrawingCtx) -> &'a mut BoundingBox {
-    unsafe {
-        let bb = rsvg_drawing_ctx_get_bbox(draw_ctx);
-        &mut *(bb as *mut BoundingBox)
-    }
-}
-
-pub fn get_bbox<'a>(draw_ctx: *const RsvgDrawingCtx) -> &'a BoundingBox {
-    get_bbox_mut(draw_ctx)
-}
-
-pub fn get_cr_stack(draw_ctx: *mut RsvgDrawingCtx) -> Vec<cairo::Context> {
-    let mut res = Vec::new();
-
-    unsafe {
-        let list = rsvg_drawing_ctx_get_cr_stack(draw_ctx);
-
-        let mut list = glib_sys::g_list_first(mut_override(list));
-        while !list.is_null() {
-            res.push(from_glib_none((*list).data as *mut cairo_sys::cairo_t));
-            list = (*list).next;
-        }
-    }
-
-    res
-}
-
-pub fn is_cairo_context_nested(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) -> bool {
-    let cr = cr.to_glib_none();
-    from_glib(unsafe { rsvg_drawing_ctx_is_cairo_context_nested(draw_ctx, cr.0) })
-}
-
-pub fn draw_node_on_surface(
-    draw_ctx: *mut RsvgDrawingCtx,
-    node: &RsvgNode,
-    cascade_from: &RsvgNode,
-    surface: &cairo::ImageSurface,
-    width: f64,
-    height: f64,
-) {
-    unsafe {
-        rsvg_drawing_ctx_draw_node_on_surface(
-            draw_ctx,
-            node,
-            cascade_from,
-            surface.to_glib_none().0,
-            width,
-            height,
-        );
-    }
-}
-
-extern "C" {
-    fn rsvg_drawing_ctx_get_width(draw_ctx: *const RsvgDrawingCtx) -> f64;
-    fn rsvg_drawing_ctx_get_height(draw_ctx: *const RsvgDrawingCtx) -> f64;
-
-    fn rsvg_drawing_ctx_push_surface(
-        draw_ctx: *mut RsvgDrawingCtx,
-        surface: *const cairo_sys::cairo_surface_t,
-    );
-    fn rsvg_drawing_ctx_pop_surface(
-        draw_ctx: *mut RsvgDrawingCtx,
-    ) -> *mut cairo_sys::cairo_surface_t;
-
-    fn rsvg_drawing_ctx_push_cr(draw_ctx: *mut RsvgDrawingCtx, cr: *mut cairo_sys::cairo_t);
-    fn rsvg_drawing_ctx_pop_cr(draw_ctx: *mut RsvgDrawingCtx);
-
-    fn rsvg_drawing_ctx_push_bounding_box(draw_ctx: *mut RsvgDrawingCtx);
-    fn rsvg_drawing_ctx_pop_bounding_box(draw_ctx: *mut RsvgDrawingCtx);
-}
-
-#[allow(improper_ctypes)]
-extern "C" {
-    fn rsvg_drawing_ctx_should_draw_node_from_stack(
-        draw_ctx: *const RsvgDrawingCtx,
-        raw_node: *const RsvgNode,
-        out_stacksave: *mut *const libc::c_void,
-    ) -> glib_sys::gboolean;
-
-    fn rsvg_drawing_ctx_restore_stack(
-        draw_ctx: *const RsvgDrawingCtx,
-        stacksave: *const libc::c_void,
-    );
-
-}
-
-pub fn draw_node_from_stack(
-    draw_ctx: *mut RsvgDrawingCtx,
-    cascaded: &CascadedValues,
-    node: &RsvgNode,
-    clipping: bool,
-) {
-    let mut stacksave = ptr::null();
-
-    unsafe {
-        let should_draw = from_glib(rsvg_drawing_ctx_should_draw_node_from_stack(
-            draw_ctx,
-            node as *const RsvgNode,
-            &mut stacksave,
-        ));
-
-        if should_draw {
-            let values = cascaded.get();
-            if values.is_visible() {
-                node.draw(node, cascaded, draw_ctx, clipping);
-            }
-        }
-
-        rsvg_drawing_ctx_restore_stack(draw_ctx, stacksave);
-    }
-}
-
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
-    draw_ctx: *mut RsvgDrawingCtx,
+    raw_draw_ctx: *mut RsvgDrawingCtx,
     raw_node: *const RsvgNode,
     raw_cascade_from: *const RsvgNode,
     clipping: glib_sys::gboolean,
 ) {
-    assert!(!draw_ctx.is_null());
+    assert!(!raw_draw_ctx.is_null());
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
     assert!(!raw_node.is_null());
     let node = unsafe { &*raw_node };
@@ -601,41 +512,34 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
         }
     };
 
-    draw_node_from_stack(draw_ctx, &cascaded, node, clipping);
-}
-
-fn add_node_and_ancestors_to_stack(draw_ctx: *const RsvgDrawingCtx, node: &RsvgNode) {
-    unsafe {
-        rsvg_drawing_ctx_add_node_to_stack(draw_ctx, node);
-    }
-
-    if let Some(ref parent) = node.get_parent() {
-        add_node_and_ancestors_to_stack(draw_ctx, parent);
-    }
+    draw_ctx.draw_node_from_stack(&cascaded, node, clipping);
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
-    draw_ctx: *const RsvgDrawingCtx,
+    raw_draw_ctx: *const RsvgDrawingCtx,
     raw_node: *const RsvgNode,
 ) {
-    assert!(!draw_ctx.is_null());
+    assert!(!raw_draw_ctx.is_null());
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
     assert!(!raw_node.is_null());
     let node = unsafe { &*raw_node };
 
-    add_node_and_ancestors_to_stack(draw_ctx, node);
+    draw_ctx.add_node_and_ancestors_to_stack(node);
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
-    draw_ctx: *const RsvgDrawingCtx,
+    raw_draw_ctx: *const RsvgDrawingCtx,
     ink_rect: *mut cairo_sys::cairo_rectangle_t,
 ) {
-    assert!(!draw_ctx.is_null());
+    assert!(!raw_draw_ctx.is_null());
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
+
     assert!(!ink_rect.is_null());
 
-    let r = get_bbox(draw_ctx).ink_rect.unwrap();
+    let r = draw_ctx.get_bbox().ink_rect.unwrap();
     unsafe {
         (*ink_rect).x = r.x;
         (*ink_rect).y = r.y;
@@ -644,45 +548,52 @@ pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
     }
 }
 
-pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
+pub struct AcquiredNode<'a>(&'a mut Vec<*mut RsvgNode>, *mut RsvgNode);
 
-impl Drop for AcquiredNode {
+impl<'a> Drop for AcquiredNode<'a> {
     fn drop(&mut self) {
-        unsafe {
-            rsvg_drawing_ctx_remove_acquired_node(self.0, self.1);
-        }
+        assert!(*self.0.last().unwrap() == self.1);
+        self.0.pop();
     }
 }
 
-impl AcquiredNode {
+impl<'a> AcquiredNode<'a> {
     pub fn get(&self) -> RsvgNode {
         unsafe { (*self.1).clone() }
     }
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_transformed_image_bounding_box(
-    affine: *const cairo::Matrix,
-    w: f64,
-    h: f64,
-    bbx: *mut libc::c_double,
-    bby: *mut libc::c_double,
-    bbw: *mut libc::c_double,
-    bbh: *mut libc::c_double,
-) {
-    let affine = unsafe { &*affine };
-    let r = cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: w,
-        height: h,
-    }.transform(affine)
-        .outer();
+pub extern "C" fn rsvg_drawing_ctx_new(
+    cr: cairo::Context,
+    width: u32,
+    height: u32,
+    vb_width: libc::c_double,
+    vb_height: libc::c_double,
+    dpi_x: libc::c_double,
+    dpi_y: libc::c_double,
+    defs: *const RsvgDefs,
+    is_testing: glib_sys::gboolean,
+) -> *mut RsvgDrawingCtx {
+    Box::into_raw(Box::new(DrawingCtx::new(
+        cr,
+        f64::from(width),
+        f64::from(height),
+        vb_width,
+        vb_height,
+        dpi_x,
+        dpi_y,
+        defs,
+        from_glib(is_testing),
+    ))) as *mut RsvgDrawingCtx
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_free(raw_draw_ctx: *mut RsvgDrawingCtx) {
+    assert!(!raw_draw_ctx.is_null());
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
     unsafe {
-        *bbx = r.x;
-        *bby = r.y;
-        *bbw = r.width;
-        *bbh = r.height;
+        Box::from_raw(draw_ctx);
     }
 }

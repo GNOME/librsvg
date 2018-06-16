@@ -2,8 +2,7 @@ use cssparser::{Parser, Token};
 use libc;
 use std::f64::consts::*;
 
-use drawing_ctx;
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::{DrawingCtx, RsvgDrawingCtx};
 use error::*;
 use parsers::Parse;
 use parsers::ParseError;
@@ -150,12 +149,12 @@ impl RsvgLength {
         }
     }
 
-    pub fn normalize(&self, values: &ComputedValues, draw_ctx: *const RsvgDrawingCtx) -> f64 {
+    pub fn normalize(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
         match self.unit {
             LengthUnit::Default => self.length,
 
             LengthUnit::Percent => {
-                let (width, height) = drawing_ctx::get_view_box_size(draw_ctx);
+                let (width, height) = draw_ctx.get_view_box_size();
 
                 match self.dir {
                     LengthDir::Horizontal => self.length * width,
@@ -318,8 +317,8 @@ impl RsvgLength {
     }
 }
 
-fn font_size_from_inch(length: f64, dir: LengthDir, draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    let (dpi_x, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
+fn font_size_from_inch(length: f64, dir: LengthDir, draw_ctx: &DrawingCtx) -> f64 {
+    let (dpi_x, dpi_y) = draw_ctx.get_dpi();
 
     match dir {
         LengthDir::Horizontal => length * dpi_x,
@@ -328,7 +327,7 @@ fn font_size_from_inch(length: f64, dir: LengthDir, draw_ctx: *const RsvgDrawing
     }
 }
 
-fn font_size_from_values(values: &ComputedValues, draw_ctx: *const RsvgDrawingCtx) -> f64 {
+fn font_size_from_values(values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
     let v = &values.font_size.0;
 
     match v.unit {
@@ -410,6 +409,9 @@ pub extern "C" fn rsvg_length_normalize(
 
     assert!(!values.is_null());
     let values = unsafe { &*values };
+
+    assert!(!draw_ctx.is_null());
+    let draw_ctx = unsafe { &*(draw_ctx as *const DrawingCtx) };
 
     length.normalize(values, draw_ctx)
 }
