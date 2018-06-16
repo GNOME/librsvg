@@ -404,14 +404,9 @@ fn set_pattern_on_draw_context(
     // Draw everything
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();
     let pattern_cascaded = pattern_node.get_cascaded_values();
-    let pattern_values = pattern_cascaded.get();
-
-    drawing_ctx::push_discrete_layer(draw_ctx, pattern_values, false);
 
     cr_pattern.set_matrix(caffine);
-    pattern_node.draw_children(&pattern_node, &pattern_cascaded, draw_ctx, false, false);
-
-    drawing_ctx::pop_discrete_layer(draw_ctx, &pattern_node, pattern_values, false);
+    pattern_node.draw_children(&pattern_node, &pattern_cascaded, draw_ctx, true, false);
 
     // Return to the original coordinate system and rendering context
 
