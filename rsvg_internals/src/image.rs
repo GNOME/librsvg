@@ -108,7 +108,6 @@ impl NodeTrait for NodeImage {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _with_layer: bool,
         clipping: bool,
     ) {
         let values = cascaded.get();

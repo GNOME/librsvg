@@ -624,7 +624,7 @@ pub fn draw_node_from_stack(
         if should_draw {
             let values = cascaded.get();
             if values.is_visible() {
-                node.draw(node, cascaded, draw_ctx, true, clipping);
+                node.draw(node, cascaded, draw_ctx, clipping);
             }
         }
 

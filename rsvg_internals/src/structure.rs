@@ -33,10 +33,13 @@ impl NodeTrait for NodeGroup {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        with_layer: bool,
         clipping: bool,
     ) {
-        node.draw_children(node, cascaded, draw_ctx, with_layer, clipping);
+        let values = cascaded.get();
+
+        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
+        node.draw_children(node, cascaded, draw_ctx, clipping);
+        drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
     }
 }
 
@@ -72,7 +75,6 @@ impl NodeTrait for NodeSwitch {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _with_layer: bool,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -177,7 +179,6 @@ impl NodeTrait for NodeSvg {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _with_layer: bool,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -204,7 +205,8 @@ impl NodeTrait for NodeSvg {
             draw_ctx,
             clipping,
             || {
-                node.draw_children(node, cascaded, draw_ctx, false, clipping);
+                // we don't push a layer because draw_in_viewport() already does it
+                node.draw_children(node, cascaded, draw_ctx, clipping);
             },
         );
     }
@@ -268,7 +270,6 @@ impl NodeTrait for NodeUse {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        _with_layer: bool,
         clipping: bool,
     ) {
         let values = cascaded.get();
@@ -352,11 +353,11 @@ impl NodeTrait for NodeUse {
                     draw_ctx,
                     clipping,
                     || {
+                        // We don't push a layer because draw_in_viewport() already does it
                         child.draw_children(
                             &child,
                             &CascadedValues::new_from_values(&child, values),
                             draw_ctx,
-                            false,
                             clipping,
                         );
                     },

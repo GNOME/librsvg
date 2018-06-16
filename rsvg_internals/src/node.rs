@@ -133,7 +133,6 @@ pub trait NodeTrait: Downcast {
         _node: &RsvgNode,
         _cascaded: &CascadedValues,
         _draw_ctx: *mut RsvgDrawingCtx,
-        _with_layer: bool,
         _clipping: bool,
     ) {
         // by default nodes don't draw themselves
@@ -432,7 +431,6 @@ impl Node {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        with_layer: bool,
         clipping: bool,
     ) {
         if self.result.borrow().is_ok() {
@@ -441,8 +439,7 @@ impl Node {
 
             cr.transform(self.get_transform());
 
-            self.node_impl
-                .draw(node, cascaded, draw_ctx, with_layer, clipping);
+            self.node_impl.draw(node, cascaded, draw_ctx, clipping);
 
             cr.set_matrix(save_affine);
         }
@@ -485,15 +482,8 @@ impl Node {
         node: &RsvgNode,
         cascaded: &CascadedValues,
         draw_ctx: *mut RsvgDrawingCtx,
-        with_layer: bool,
         clipping: bool,
     ) {
-        let values = cascaded.get();
-
-        if with_layer {
-            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-        }
-
         for child in self.children() {
             drawing_ctx::draw_node_from_stack(
                 draw_ctx,
@@ -501,10 +491,6 @@ impl Node {
                 &child,
                 clipping,
             );
-        }
-
-        if with_layer {
-            drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
         }
     }
 
