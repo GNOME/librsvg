@@ -181,8 +181,6 @@ impl NodeMarker {
             drawing_ctx::push_view_box(draw_ctx, marker_width, marker_height);
         }
 
-        drawing_ctx::push_discrete_layer(draw_ctx, &values, clipping);
-
         affine.translate(
             -self.ref_x.get().normalize(&values, draw_ctx),
             -self.ref_y.get().normalize(&values, draw_ctx),
@@ -199,9 +197,7 @@ impl NodeMarker {
             }
         }
 
-        node.draw_children(node, &cascaded, draw_ctx, false, clipping);
-
-        drawing_ctx::pop_discrete_layer(draw_ctx, node, &values, clipping);
+        node.draw_children(node, &cascaded, draw_ctx, true, clipping);
 
         drawing_ctx::pop_view_box(draw_ctx);
 
