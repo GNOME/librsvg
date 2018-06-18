@@ -147,6 +147,10 @@ cairo_surface_t *rsvg_drawing_ctx_pop_surface (RsvgDrawingCtx *draw_ctx);
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
 
+/* Defined in rsvg_internals/src/drawing_ctx.rs */
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_get_ink_rect (RsvgDrawingCtx *ctx, cairo_rectangle_t *ink_rect);
+
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_draw_node_on_surface (RsvgDrawingCtx *ctx,
                                             RsvgNode *node,
