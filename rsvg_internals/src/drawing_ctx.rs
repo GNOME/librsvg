@@ -202,6 +202,22 @@ pub fn get_acquired_node_of_type(
         })
 }
 
+pub fn with_discrete_layer<F>(
+    draw_ctx: *mut RsvgDrawingCtx,
+    node: &RsvgNode,
+    values: &ComputedValues,
+    clipping: bool,
+    draw_fn: F,
+) where
+    F: Fn(&cairo::Context),
+{
+    push_discrete_layer(draw_ctx, values, clipping);
+
+    draw_fn(&get_cairo_context(draw_ctx));
+
+    pop_discrete_layer(draw_ctx, node, values, clipping);
+}
+
 pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {
     if !clipping {
         get_cairo_context(draw_ctx).save();

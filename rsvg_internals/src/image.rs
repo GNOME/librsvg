@@ -118,31 +118,28 @@ impl NodeTrait for NodeImage {
             let w = self.w.get().normalize(values, draw_ctx);
             let h = self.h.get().normalize(values, draw_ctx);
 
-            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
+            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |cr| {
+                cr.save();
 
-            let cr = drawing_ctx::get_cairo_context(draw_ctx);
-            cr.save();
+                let aspect = self.aspect.get();
 
-            let aspect = self.aspect.get();
+                if !values.is_overflow() && aspect.is_slice() {
+                    add_clipping_rect(draw_ctx, x, y, w, h);
+                }
 
-            if !values.is_overflow() && aspect.is_slice() {
-                add_clipping_rect(draw_ctx, x, y, w, h);
-            }
+                let (x, y, w, h) = aspect.compute(
+                    f64::from(surface.get_width()),
+                    f64::from(surface.get_height()),
+                    x,
+                    y,
+                    w,
+                    h,
+                );
 
-            let (x, y, w, h) = aspect.compute(
-                f64::from(surface.get_width()),
-                f64::from(surface.get_height()),
-                x,
-                y,
-                w,
-                h,
-            );
+                draw_surface(draw_ctx, values, surface, x, y, w, h, clipping);
 
-            draw_surface(draw_ctx, values, surface, x, y, w, h, clipping);
-
-            cr.restore();
-
-            drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
+                cr.restore();
+            });
         }
     }
 }
