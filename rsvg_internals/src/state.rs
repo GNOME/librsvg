@@ -1621,25 +1621,6 @@ pub fn parse_style_attrs(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_computed_values_get_flood_color_argb(values: RsvgComputedValues) -> u32 {
-    assert!(!values.is_null());
-    let values = unsafe { &*values };
-
-    match values.flood_color {
-        FloodColor(cssparser::Color::CurrentColor) => rgba_to_argb(values.color.0),
-        FloodColor(cssparser::Color::RGBA(ref rgba)) => rgba_to_argb(*rgba),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_computed_values_get_flood_opacity(values: RsvgComputedValues) -> u8 {
-    assert!(!values.is_null());
-    let values = unsafe { &*values };
-
-    u8::from(values.flood_opacity.0)
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_computed_values_get_lighting_color_argb(values: RsvgComputedValues) -> u32 {
     assert!(!values.is_null());
     let values = unsafe { &*values };

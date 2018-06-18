@@ -101,8 +101,6 @@ pub use property_bag::{
 };
 
 pub use state::{
-    rsvg_computed_values_get_flood_color_argb,
-    rsvg_computed_values_get_flood_opacity,
     rsvg_computed_values_get_lighting_color_argb,
     rsvg_parse_style_attrs,
     rsvg_state_free,
