@@ -238,28 +238,6 @@ fn path_extents(cr: &cairo::Context) -> (f64, f64, f64, f64) {
     (x1, y1, x2, y2)
 }
 
-fn bbox_from_extents(
-    affine: &cairo::Matrix,
-    (x1, y1, x2, y2): (f64, f64, f64, f64),
-    ink: bool,
-) -> BoundingBox {
-    let mut bb = BoundingBox::new(affine);
-    let rect = cairo::Rectangle {
-        x: x1,
-        y: y1,
-        width: x2 - x1,
-        height: y2 - y1,
-    };
-
-    if ink {
-        bb.ink_rect = Some(rect);
-    } else {
-        bb.rect = Some(rect);
-    }
-
-    bb
-}
-
 fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> BoundingBox {
     let affine = cr.get_matrix();
 
@@ -279,19 +257,19 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     // paths for the icon's shape.  We need to be able to compute the bounding
     // rectangle's extents, even when it has no fill nor stroke.
 
-    let fb = bbox_from_extents(&affine, cr.fill_extents(), true);
+    let fb = BoundingBox::new(&affine).with_ink_extents(cr.fill_extents());
     bbox.insert(&fb);
 
     // Bounding box for stroke
 
     if values.stroke.0 != PaintServer::None {
-        let sb = bbox_from_extents(&affine, cr.stroke_extents(), true);
+        let sb = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
         bbox.insert(&sb);
     }
 
     // objectBoundingBox
 
-    let ob = bbox_from_extents(&affine, path_extents(cr), false);
+    let ob = BoundingBox::new(&affine).with_extents(path_extents(cr));
     bbox.insert(&ob);
 
     // restore tolerance
@@ -379,7 +357,7 @@ pub fn draw_pango_layout(
         pangocairo::functions::layout_path(&cr, layout);
 
         if !clipping {
-            let ib = bbox_from_extents(&affine, cr.stroke_extents(), true);
+            let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
             cr.stroke();
             drawing_ctx::insert_bbox(draw_ctx, &ib);
         }
