@@ -23,11 +23,9 @@ fn render_path_builder(
     render_markers: bool,
     clipping: bool,
 ) {
-    drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-
-    draw_path_builder(draw_ctx, values, builder, clipping);
-
-    drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
+    drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+        draw_path_builder(draw_ctx, values, builder, clipping);
+    });
 
     if render_markers {
         marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping);
