@@ -128,9 +128,9 @@ impl NodeMask {
                 drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
             }
 
-            drawing_ctx::push_discrete_layer(draw_ctx, values, false);
-            node.draw_children(&cascaded, draw_ctx, false);
-            drawing_ctx::pop_discrete_layer(draw_ctx, node, values, false);
+            drawing_ctx::with_discrete_layer(draw_ctx, node, values, false, |_cr| {
+                node.draw_children(&cascaded, draw_ctx, false);
+            });
 
             if content_units == CoordUnits::ObjectBoundingBox {
                 drawing_ctx::pop_view_box(draw_ctx);
