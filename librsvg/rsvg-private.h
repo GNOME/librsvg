@@ -181,9 +181,6 @@ typedef struct {
     gboolean active;
 } RsvgViewBox;
 
-/* Opaque; defined in rsvg_internals/src/bbox.rs */
-typedef struct RsvgBbox RsvgBbox;
-
 /* Keep this in sync with rust/src/length.rs:LengthUnit */
 typedef enum {
     LENGTH_UNIT_DEFAULT,
@@ -417,28 +414,6 @@ GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const char *href, GError ** error);
-
-/* Implemented in rust/src/bbox.rs */
-G_GNUC_INTERNAL
-RsvgBbox *rsvg_bbox_new (cairo_matrix_t *matrix, cairo_rectangle_t *rect, cairo_rectangle_t *ink_rect);
-
-/* Implemented in rust/src/bbox.rs */
-void rsvg_bbox_free (RsvgBbox *bbox);
-
-/* Implemented in rust/src/bbox.rs */
-RsvgBbox *rsvg_bbox_clone (RsvgBbox *bbox);
-
-/* Implemented in rust/src/bbox.rs */
-G_GNUC_INTERNAL
-void rsvg_bbox_insert (RsvgBbox *dst, RsvgBbox *src);
-
-/* Implemented in rust/src/bbox.rs */
-G_GNUC_INTERNAL
-void rsvg_bbox_clip (RsvgBbox *dst, RsvgBbox *src);
-
-/* Implemented in rust/src/bbox.rs */
-G_GNUC_INTERNAL
-void rsvg_bbox_get_rect (RsvgBbox *bbox, cairo_rectangle_t *rect, cairo_rectangle_t *ink_rect);
 
 /* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
