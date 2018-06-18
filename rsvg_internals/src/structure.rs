@@ -37,9 +37,9 @@ impl NodeTrait for NodeGroup {
     ) {
         let values = cascaded.get();
 
-        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-        node.draw_children(cascaded, draw_ctx, clipping);
-        drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
+        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+            node.draw_children(cascaded, draw_ctx, clipping);
+        });
     }
 }
 
@@ -79,18 +79,16 @@ impl NodeTrait for NodeSwitch {
     ) {
         let values = cascaded.get();
 
-        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-
-        if let Some(child) = node.children().find(|c| c.get_cond()) {
-            drawing_ctx::draw_node_from_stack(
-                draw_ctx,
-                &CascadedValues::new(cascaded, &child),
-                &child,
-                clipping,
-            );
-        }
-
-        drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
+        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+            if let Some(child) = node.children().find(|c| c.get_cond()) {
+                drawing_ctx::draw_node_from_stack(
+                    draw_ctx,
+                    &CascadedValues::new(cascaded, &child),
+                    &child,
+                    clipping,
+                );
+            }
+        });
     }
 }
 
@@ -322,16 +320,14 @@ impl NodeTrait for NodeUse {
             let cr = drawing_ctx::get_cairo_context(draw_ctx);
             cr.translate(nx, ny);
 
-            drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-
-            drawing_ctx::draw_node_from_stack(
-                draw_ctx,
-                &CascadedValues::new_from_values(&child, values),
-                &child,
-                clipping,
-            );
-
-            drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
+            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+                drawing_ctx::draw_node_from_stack(
+                    draw_ctx,
+                    &CascadedValues::new_from_values(&child, values),
+                    &child,
+                    clipping,
+                );
+            });
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !values.is_overflow()
