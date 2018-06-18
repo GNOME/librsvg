@@ -207,9 +207,9 @@ pub fn with_discrete_layer<F>(
     node: &RsvgNode,
     values: &ComputedValues,
     clipping: bool,
-    draw_fn: F,
+    mut draw_fn: F,
 ) where
-    F: Fn(&cairo::Context),
+    F: FnMut(&cairo::Context),
 {
     push_discrete_layer(draw_ctx, values, clipping);
 

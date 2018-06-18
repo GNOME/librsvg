@@ -657,13 +657,11 @@ fn render_children(
 ) {
     let values = cascaded.get();
 
-    drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-
-    for child in node.children() {
-        render_child(&child, cascaded, draw_ctx, x, y, textonly, clipping);
-    }
-
-    drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
+    drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+        for child in node.children() {
+            render_child(&child, cascaded, draw_ctx, x, y, textonly, clipping);
+        }
+    });
 }
 
 fn render_child(
