@@ -70,16 +70,16 @@ impl Filter for Offset {
         let dx = self.dx.get();
         let dy = self.dy.get();
         let paffine = ctx.paffine();
-        let ox = (paffine.xx * dx + paffine.xy * dy) as i32;
-        let oy = (paffine.yx * dx + paffine.yy * dy) as i32;
+        let ox = paffine.xx * dx + paffine.xy * dy;
+        let oy = paffine.yx * dx + paffine.yy * dy;
 
         // output_bounds contains all pixels within bounds,
         // for which (x - ox) and (y - oy) also lie within bounds.
         let output_bounds = IRect {
-            x0: clamp(bounds.x0 + ox, bounds.x0, bounds.x1),
-            y0: clamp(bounds.y0 + oy, bounds.y0, bounds.y1),
-            x1: clamp(bounds.x1 + ox, bounds.x0, bounds.x1),
-            y1: clamp(bounds.y1 + oy, bounds.y0, bounds.y1),
+            x0: clamp(bounds.x0 + ox as i32, bounds.x0, bounds.x1),
+            y0: clamp(bounds.y0 + oy as i32, bounds.y0, bounds.y1),
+            x1: clamp(bounds.x1 + ox as i32, bounds.x0, bounds.x1),
+            y1: clamp(bounds.y1 + oy as i32, bounds.y0, bounds.y1),
         };
 
         let output_surface = ImageSurface::create(
@@ -97,7 +97,7 @@ impl Filter for Offset {
         );
         cr.clip();
 
-        cr.set_source_surface(&input.surface(), f64::from(ox), f64::from(oy));
+        cr.set_source_surface(&input.surface(), ox, oy);
         cr.paint();
 
         Ok(FilterResult {
