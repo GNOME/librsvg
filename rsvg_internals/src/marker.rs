@@ -192,9 +192,9 @@ impl NodeMarker {
             }
         }
 
-        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-        node.draw_children(&cascaded, draw_ctx, clipping);
-        drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
+        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+            node.draw_children(&cascaded, draw_ctx, clipping);
+        });
 
         drawing_ctx::pop_view_box(draw_ctx);
 
