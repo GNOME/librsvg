@@ -687,6 +687,23 @@ pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
     add_node_and_ancestors_to_stack(draw_ctx, node);
 }
 
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
+    draw_ctx: *const RsvgDrawingCtx,
+    ink_rect: *mut cairo_sys::cairo_rectangle_t,
+) {
+    assert!(!draw_ctx.is_null());
+    assert!(!ink_rect.is_null());
+
+    let r = get_bbox(draw_ctx).ink_rect.unwrap();
+    unsafe {
+        (*ink_rect).x = r.x;
+        (*ink_rect).y = r.y;
+        (*ink_rect).width = r.width;
+        (*ink_rect).height = r.height;
+    }
+}
+
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
 
 impl Drop for AcquiredNode {
