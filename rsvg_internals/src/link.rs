@@ -50,25 +50,23 @@ impl NodeTrait for NodeLink {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
+        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+            if link.is_some() && link.as_ref().unwrap() != "" {
+                const CAIRO_TAG_LINK: &str = "Link";
 
-        if link.is_some() && link.as_ref().unwrap() != "" {
-            const CAIRO_TAG_LINK: &str = "Link";
+                let attributes = link.as_ref().map(|i| format!("uri='{}'", escape_value(i)));
 
-            let attributes = link.as_ref().map(|i| format!("uri='{}'", escape_value(i)));
-
-            drawing_ctx::get_cairo_context(draw_ctx).with_tag(
-                CAIRO_TAG_LINK,
-                attributes.as_ref().map(|i| i.as_str()),
-                || {
-                    node.draw_children(&cascaded, draw_ctx, clipping);
-                },
-            )
-        } else {
-            node.draw_children(&cascaded, draw_ctx, clipping)
-        }
-
-        drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
+                drawing_ctx::get_cairo_context(draw_ctx).with_tag(
+                    CAIRO_TAG_LINK,
+                    attributes.as_ref().map(|i| i.as_str()),
+                    || {
+                        node.draw_children(&cascaded, draw_ctx, clipping);
+                    },
+                )
+            } else {
+                node.draw_children(&cascaded, draw_ctx, clipping)
+            }
+        });
     }
 }
 
