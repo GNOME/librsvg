@@ -270,44 +270,48 @@ pub fn with_discrete_layer(
             && comp_op == CompOp::SrcOver
             && enable_background == EnableBackground::Accumulate);
 
-        if needs_temporary_surface {
-            // FIXME: in the following, we unwrap() the result of
-            // ImageSurface::create().  We have to decide how to handle
-            // out-of-memory here.
-            let surface = unsafe {
-                cairo::ImageSurface::create(
-                    cairo::Format::ARgb32,
-                    rsvg_drawing_ctx_get_width(draw_ctx) as i32,
-                    rsvg_drawing_ctx_get_height(draw_ctx) as i32,
-                ).unwrap()
-            };
+        let (child_surface, child_cr) = {
+            if needs_temporary_surface {
+                // FIXME: in the following, we unwrap() the result of
+                // ImageSurface::create().  We have to decide how to handle
+                // out-of-memory here.
+                let surface = unsafe {
+                    cairo::ImageSurface::create(
+                        cairo::Format::ARgb32,
+                        rsvg_drawing_ctx_get_width(draw_ctx) as i32,
+                        rsvg_drawing_ctx_get_height(draw_ctx) as i32,
+                    ).unwrap()
+                };
 
-            if filter.is_some() {
-                unsafe {
-                    rsvg_drawing_ctx_push_surface(draw_ctx, surface.to_glib_none().0);
+                if filter.is_some() {
+                    unsafe {
+                        rsvg_drawing_ctx_push_surface(draw_ctx, surface.to_glib_none().0);
+                    }
                 }
+
+                let child_cr = cairo::Context::new(&surface);
+                child_cr.set_matrix(original_cr.get_matrix());
+
+                unsafe {
+                    rsvg_drawing_ctx_push_cr(draw_ctx, child_cr.to_raw_none());
+                }
+
+                unsafe {
+                    rsvg_drawing_ctx_push_bounding_box(draw_ctx);
+                }
+
+                (surface, child_cr)
+            } else {
+                (cairo::ImageSurface::from(original_cr.get_target()).unwrap(), original_cr.clone())
             }
+        };
 
-            let child_cr = cairo::Context::new(&surface);
-            child_cr.set_matrix(original_cr.get_matrix());
-
-            unsafe {
-                rsvg_drawing_ctx_push_cr(draw_ctx, child_cr.to_raw_none());
-            }
-
-            unsafe {
-                rsvg_drawing_ctx_push_bounding_box(draw_ctx);
-            }
-        }
-
-        draw_fn(&get_cairo_context(draw_ctx));
+        draw_fn(&child_cr);
 
         if needs_temporary_surface {
-            let child_cr = get_cairo_context(draw_ctx);
-
-            let surface = if let Some(filter) = filter {
-                // About the following unwrap(), see the FIXME in push_render_stack().  We should
-                // be pushing only surfaces that are not in an error state, but currently we don't
+            let filter_result_surface = if let Some(filter) = filter {
+                // About the following unwrap(), see the FIXME above.  We should be pushing
+                // only surfaces that are not in an error state, but currently we don't
                 // actually ensure that.
                 let output = unsafe {
                     cairo::ImageSurface::from_raw_full(rsvg_drawing_ctx_pop_surface(draw_ctx))
@@ -331,16 +335,16 @@ pub fn with_discrete_layer(
                             )
                         // FIXME: deal with out of memory here
                         } else {
-                            cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+                            child_surface
                         }
                     } else {
-                        cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+                        child_surface
                     }
                 } else {
-                    cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+                    child_surface
                 }
             } else {
-                cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+                child_surface
             };
 
             unsafe {
@@ -354,7 +358,7 @@ pub fn with_discrete_layer(
             let (xofs, yofs) = get_offset(draw_ctx);
 
             cr.identity_matrix();
-            cr.set_source_surface(&surface, xofs, yofs);
+            cr.set_source_surface(&filter_result_surface, xofs, yofs);
 
             if clip_units == Some(CoordUnits::ObjectBoundingBox) {
                 if let Some(ref clip_node) = clip_node {
