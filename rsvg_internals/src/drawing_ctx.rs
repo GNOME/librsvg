@@ -211,13 +211,226 @@ pub fn with_discrete_layer(
 ) {
     if !clipping {
         get_cairo_context(draw_ctx).save();
-        push_render_stack(draw_ctx, values);
+
+        let clip_path = match values.clip_path {
+            ClipPath(IRI::Resource(ref p)) => Some(p),
+            _ => None,
+        };
+
+        let filter = match values.filter {
+            Filter(IRI::Resource(ref f)) => Some(f),
+            _ => None,
+        };
+
+        let mask = match values.mask {
+            Mask(IRI::Resource(ref m)) => Some(m),
+            _ => None,
+        };
+
+        let UnitInterval(opacity) = values.opacity.0;
+        let comp_op = values.comp_op;
+        let enable_background = values.enable_background;
+
+        let mut late_clip = false;
+
+        let current_affine = get_cairo_context(draw_ctx).get_matrix();
+
+        if let Some(acquired) =
+            get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
+        {
+            let node = acquired.get();
+
+            node.with_impl(|clip_path: &NodeClipPath| match clip_path.get_units() {
+                ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
+                    clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
+                }
+
+                ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
+                    late_clip = true;
+                }
+            });
+        }
+
+        if !(opacity == 1.0
+            && filter.is_none()
+            && mask.is_none()
+            && !late_clip
+            && comp_op == CompOp::SrcOver
+            && enable_background == EnableBackground::Accumulate)
+        {
+            // FIXME: in the following, we unwrap() the result of
+            // ImageSurface::create().  We have to decide how to handle
+            // out-of-memory here.
+            let surface = unsafe {
+                cairo::ImageSurface::create(
+                    cairo::Format::ARgb32,
+                    rsvg_drawing_ctx_get_width(draw_ctx) as i32,
+                    rsvg_drawing_ctx_get_height(draw_ctx) as i32,
+                ).unwrap()
+            };
+
+            if filter.is_some() {
+                unsafe {
+                    rsvg_drawing_ctx_push_surface(draw_ctx, surface.to_glib_none().0);
+                }
+            }
+
+            let child_cr = cairo::Context::new(&surface);
+            child_cr.set_matrix(get_cairo_context(draw_ctx).get_matrix());
+
+            unsafe {
+                rsvg_drawing_ctx_push_cr(draw_ctx, child_cr.to_raw_none());
+            }
+
+            unsafe {
+                rsvg_drawing_ctx_push_bounding_box(draw_ctx);
+            }
+        }
     }
 
     draw_fn(&get_cairo_context(draw_ctx));
 
     if !clipping {
-        pop_render_stack(draw_ctx, node, values);
+        let clip_path = match values.clip_path {
+            ClipPath(IRI::Resource(ref p)) => Some(p),
+            _ => None,
+        };
+
+        let filter = match values.filter {
+            Filter(IRI::Resource(ref f)) => Some(f),
+            _ => None,
+        };
+
+        let mask = match values.mask {
+            Mask(IRI::Resource(ref m)) => Some(m),
+            _ => None,
+        };
+
+        let UnitInterval(opacity) = values.opacity.0;
+        let comp_op = values.comp_op;
+        let enable_background = values.enable_background;
+
+        let mut late_clip = false;
+
+        if let Some(acquired) =
+            get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
+        {
+            let mut clip_path_units = ClipPathUnits::default();
+
+            acquired.get().with_impl(|clip_path: &NodeClipPath| {
+                clip_path_units = clip_path.get_units();
+            });
+
+            match clip_path_units {
+                ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
+                    late_clip = false;
+                }
+
+                ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
+                    late_clip = true;
+                }
+            }
+        }
+
+        if !(opacity == 1.0
+            && filter.is_none()
+            && mask.is_none()
+            && !late_clip
+            && comp_op == CompOp::SrcOver
+            && enable_background == EnableBackground::Accumulate)
+        {
+            let child_cr = get_cairo_context(draw_ctx);
+
+            let surface = if let Some(filter) = filter {
+                // About the following unwrap(), see the FIXME in push_render_stack().  We should
+                // be pushing only surfaces that are not in an error state, but currently we don't
+                // actually ensure that.
+                let output = unsafe {
+                    cairo::ImageSurface::from_raw_full(rsvg_drawing_ctx_pop_surface(draw_ctx))
+                        .unwrap()
+                };
+
+                // The bbox rect can be None, for example, if a filter is applied to an empty group.
+                // There's nothing to render in this case, so filter_render() expects a non-empty
+                // bbox. https://gitlab.gnome.org/GNOME/librsvg/issues/277
+                if get_bbox(draw_ctx).rect.is_some() {
+                    if let Some(acquired) =
+                        get_acquired_node_of_type(draw_ctx, Some(filter), NodeType::Filter)
+                    {
+                        if !acquired.get().is_in_error() {
+                            filter_render(
+                                &acquired.get(),
+                                node,
+                                &output,
+                                draw_ctx,
+                                "2103".as_ptr() as *const i8,
+                            )
+                        // FIXME: deal with out of memory here
+                        } else {
+                            cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+                        }
+                    } else {
+                        cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+                    }
+                } else {
+                    cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+                }
+            } else {
+                cairo::ImageSurface::from(child_cr.get_target()).unwrap()
+            };
+
+            unsafe {
+                rsvg_drawing_ctx_pop_cr(draw_ctx);
+            }
+
+            let cr = get_cairo_context(draw_ctx);
+
+            let current_affine = cr.get_matrix();
+
+            let (xofs, yofs) = get_offset(draw_ctx);
+
+            cr.identity_matrix();
+            cr.set_source_surface(&surface, xofs, yofs);
+
+            if late_clip {
+                if let Some(acquired) = get_acquired_node_of_type(
+                    draw_ctx,
+                    clip_path.map(String::as_ref),
+                    NodeType::ClipPath,
+                ) {
+                    let node = acquired.get();
+
+                    node.with_impl(|clip_path: &NodeClipPath| {
+                        clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
+                    });
+                }
+            }
+
+            cr.set_operator(cairo::Operator::from(comp_op));
+
+            if let Some(mask) = mask {
+                if let Some(acquired) =
+                    get_acquired_node_of_type(draw_ctx, Some(mask), NodeType::Mask)
+                {
+                    let node = acquired.get();
+
+                    node.with_impl(|mask: &NodeMask| {
+                        mask.generate_cairo_mask(&node, &current_affine, draw_ctx);
+                    });
+                }
+            } else if opacity < 1.0 {
+                cr.paint_with_alpha(opacity);
+            } else {
+                cr.paint();
+            }
+
+            cr.set_matrix(current_affine);
+
+            unsafe {
+                rsvg_drawing_ctx_pop_bounding_box(draw_ctx);
+            }
+        }
+
         get_cairo_context(draw_ctx).restore();
     }
 }
@@ -372,224 +585,6 @@ extern "C" {
 
     fn rsvg_drawing_ctx_push_bounding_box(draw_ctx: *mut RsvgDrawingCtx);
     fn rsvg_drawing_ctx_pop_bounding_box(draw_ctx: *mut RsvgDrawingCtx);
-}
-
-fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
-    let clip_path = match values.clip_path {
-        ClipPath(IRI::Resource(ref p)) => Some(p),
-        _ => None,
-    };
-
-    let filter = match values.filter {
-        Filter(IRI::Resource(ref f)) => Some(f),
-        _ => None,
-    };
-
-    let mask = match values.mask {
-        Mask(IRI::Resource(ref m)) => Some(m),
-        _ => None,
-    };
-
-    let UnitInterval(opacity) = values.opacity.0;
-    let comp_op = values.comp_op;
-    let enable_background = values.enable_background;
-
-    let mut late_clip = false;
-
-    let current_affine = get_cairo_context(draw_ctx).get_matrix();
-
-    if let Some(acquired) =
-        get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
-    {
-        let node = acquired.get();
-
-        node.with_impl(|clip_path: &NodeClipPath| match clip_path.get_units() {
-            ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
-                clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
-            }
-
-            ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
-                late_clip = true;
-            }
-        });
-    }
-
-    if opacity == 1.0
-        && filter.is_none()
-        && mask.is_none()
-        && !late_clip
-        && comp_op == CompOp::SrcOver
-        && enable_background == EnableBackground::Accumulate
-    {
-        return;
-    }
-
-    // FIXME: in the following, we unwrap() the result of
-    // ImageSurface::create().  We have to decide how to handle
-    // out-of-memory here.
-    let surface = unsafe {
-        cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            rsvg_drawing_ctx_get_width(draw_ctx) as i32,
-            rsvg_drawing_ctx_get_height(draw_ctx) as i32,
-        ).unwrap()
-    };
-
-    if filter.is_some() {
-        unsafe {
-            rsvg_drawing_ctx_push_surface(draw_ctx, surface.to_glib_none().0);
-        }
-    }
-
-    let child_cr = cairo::Context::new(&surface);
-    child_cr.set_matrix(get_cairo_context(draw_ctx).get_matrix());
-
-    unsafe {
-        rsvg_drawing_ctx_push_cr(draw_ctx, child_cr.to_raw_none());
-    }
-
-    unsafe {
-        rsvg_drawing_ctx_push_bounding_box(draw_ctx);
-    }
-}
-
-fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, node: &RsvgNode, values: &ComputedValues) {
-    let clip_path = match values.clip_path {
-        ClipPath(IRI::Resource(ref p)) => Some(p),
-        _ => None,
-    };
-
-    let filter = match values.filter {
-        Filter(IRI::Resource(ref f)) => Some(f),
-        _ => None,
-    };
-
-    let mask = match values.mask {
-        Mask(IRI::Resource(ref m)) => Some(m),
-        _ => None,
-    };
-
-    let UnitInterval(opacity) = values.opacity.0;
-    let comp_op = values.comp_op;
-    let enable_background = values.enable_background;
-
-    let mut late_clip = false;
-
-    if let Some(acquired) =
-        get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
-    {
-        let mut clip_path_units = ClipPathUnits::default();
-
-        acquired.get().with_impl(|clip_path: &NodeClipPath| {
-            clip_path_units = clip_path.get_units();
-        });
-
-        match clip_path_units {
-            ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
-                late_clip = false;
-            }
-
-            ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
-                late_clip = true;
-            }
-        }
-    }
-
-    if opacity == 1.0
-        && filter.is_none()
-        && mask.is_none()
-        && !late_clip
-        && comp_op == CompOp::SrcOver
-        && enable_background == EnableBackground::Accumulate
-    {
-        return;
-    }
-
-    let child_cr = get_cairo_context(draw_ctx);
-
-    let surface = if let Some(filter) = filter {
-        // About the following unwrap(), see the FIXME in push_render_stack().  We should
-        // be pushing only surfaces that are not in an error state, but currently we don't
-        // actually ensure that.
-        let output = unsafe {
-            cairo::ImageSurface::from_raw_full(rsvg_drawing_ctx_pop_surface(draw_ctx)).unwrap()
-        };
-
-        // The bbox rect can be None, for example, if a filter is applied to an empty group.
-        // There's nothing to render in this case, so filter_render() expects a non-empty bbox.
-        // https://gitlab.gnome.org/GNOME/librsvg/issues/277
-        if get_bbox(draw_ctx).rect.is_some() {
-            if let Some(acquired) =
-                get_acquired_node_of_type(draw_ctx, Some(filter), NodeType::Filter)
-            {
-                if !acquired.get().is_in_error() {
-                    filter_render(
-                        &acquired.get(),
-                        node,
-                        &output,
-                        draw_ctx,
-                        "2103".as_ptr() as *const i8,
-                    )
-                // FIXME: deal with out of memory here
-                } else {
-                    cairo::ImageSurface::from(child_cr.get_target()).unwrap()
-                }
-            } else {
-                cairo::ImageSurface::from(child_cr.get_target()).unwrap()
-            }
-        } else {
-            cairo::ImageSurface::from(child_cr.get_target()).unwrap()
-        }
-    } else {
-        cairo::ImageSurface::from(child_cr.get_target()).unwrap()
-    };
-
-    unsafe {
-        rsvg_drawing_ctx_pop_cr(draw_ctx);
-    }
-
-    let cr = get_cairo_context(draw_ctx);
-
-    let current_affine = cr.get_matrix();
-
-    let (xofs, yofs) = get_offset(draw_ctx);
-
-    cr.identity_matrix();
-    cr.set_source_surface(&surface, xofs, yofs);
-
-    if late_clip {
-        if let Some(acquired) =
-            get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
-        {
-            let node = acquired.get();
-
-            node.with_impl(|clip_path: &NodeClipPath| {
-                clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
-            });
-        }
-    }
-
-    cr.set_operator(cairo::Operator::from(comp_op));
-
-    if let Some(mask) = mask {
-        if let Some(acquired) = get_acquired_node_of_type(draw_ctx, Some(mask), NodeType::Mask) {
-            let node = acquired.get();
-
-            node.with_impl(|mask: &NodeMask| {
-                mask.generate_cairo_mask(&node, &current_affine, draw_ctx);
-            });
-        }
-    } else if opacity < 1.0 {
-        cr.paint_with_alpha(opacity);
-    } else {
-        cr.paint();
-    }
-
-    cr.set_matrix(current_affine);
-
-    unsafe {
-        rsvg_drawing_ctx_pop_bounding_box(draw_ctx);
-    }
 }
 
 #[allow(improper_ctypes)]
