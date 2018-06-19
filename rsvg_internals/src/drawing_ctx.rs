@@ -209,7 +209,9 @@ pub fn with_discrete_layer(
     clipping: bool,
     draw_fn: &mut FnMut(&cairo::Context),
 ) {
-    if !clipping {
+    if clipping {
+        draw_fn(&get_cairo_context(draw_ctx));
+    } else {
         get_cairo_context(draw_ctx).save();
 
         let clip_path = match values.clip_path {
@@ -286,11 +288,9 @@ pub fn with_discrete_layer(
                 rsvg_drawing_ctx_push_bounding_box(draw_ctx);
             }
         }
-    }
 
-    draw_fn(&get_cairo_context(draw_ctx));
+        draw_fn(&get_cairo_context(draw_ctx));
 
-    if !clipping {
         let clip_path = match values.clip_path {
             ClipPath(IRI::Resource(ref p)) => Some(p),
             _ => None,
