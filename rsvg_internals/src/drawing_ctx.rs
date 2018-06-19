@@ -354,14 +354,12 @@ pub fn with_discrete_layer(
                 rsvg_drawing_ctx_pop_cr(draw_ctx);
             }
 
-            let cr = get_cairo_context(draw_ctx);
-
-            let current_affine = cr.get_matrix();
+            let current_affine = original_cr.get_matrix();
 
             let (xofs, yofs) = get_offset(draw_ctx);
 
-            cr.identity_matrix();
-            cr.set_source_surface(&filter_result_surface, xofs, yofs);
+            original_cr.identity_matrix();
+            original_cr.set_source_surface(&filter_result_surface, xofs, yofs);
 
             if clip_units == Some(CoordUnits::ObjectBoundingBox) {
                 if let Some(ref clip_node) = clip_node {
@@ -371,7 +369,7 @@ pub fn with_discrete_layer(
                 }
             }
 
-            cr.set_operator(cairo::Operator::from(comp_op));
+            original_cr.set_operator(cairo::Operator::from(comp_op));
 
             if let Some(mask) = mask {
                 if let Some(acquired) =
@@ -384,12 +382,12 @@ pub fn with_discrete_layer(
                     });
                 }
             } else if opacity < 1.0 {
-                cr.paint_with_alpha(opacity);
+                original_cr.paint_with_alpha(opacity);
             } else {
-                cr.paint();
+                original_cr.paint();
             }
 
-            cr.set_matrix(current_affine);
+            original_cr.set_matrix(current_affine);
 
             unsafe {
                 rsvg_drawing_ctx_pop_bounding_box(draw_ctx);
