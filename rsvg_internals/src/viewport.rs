@@ -118,9 +118,12 @@ fn in_viewport<F>(
         return;
     }
 
-    let old_affine = affine;
-
     ctx.push_discrete_layer(values, clipping);
+
+    if do_clip && clip_mode == ClipMode::ClipToViewport {
+        ctx.set_affine(affine);
+        ctx.add_clipping_rect(vx, vy, vw, vh);
+    }
 
     if let Some(vbox) = vbox {
         // the preserveAspectRatio attribute is only used if viewBox is specified
@@ -150,12 +153,6 @@ fn in_viewport<F>(
         ctx.push_view_box(vw, vh);
 
         affine.translate(vx, vy);
-        ctx.set_affine(affine);
-    }
-
-    if do_clip && clip_mode == ClipMode::ClipToViewport {
-        ctx.set_affine(old_affine);
-        ctx.add_clipping_rect(vx, vy, vw, vh);
         ctx.set_affine(affine);
     }
 
