@@ -29,7 +29,7 @@ pub fn draw_in_viewport(
     mut affine: cairo::Matrix,
     draw_ctx: *mut RsvgDrawingCtx,
     clipping: bool,
-    draw_fn: &mut FnMut(),
+    draw_fn: &mut FnMut(&cairo::Context),
 ) {
     // width or height set to 0 disables rendering of the element
     // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
@@ -41,46 +41,45 @@ pub fn draw_in_viewport(
         return;
     }
 
-    drawing_ctx::push_discrete_layer(draw_ctx, values, clipping);
-
-    if do_clip && clip_mode == ClipMode::ClipToViewport {
-        drawing_ctx::get_cairo_context(draw_ctx).set_matrix(affine);
-        add_clipping_rect(draw_ctx, vx, vy, vw, vh);
-    }
-
-    if let Some(vbox) = vbox {
-        // the preserveAspectRatio attribute is only used if viewBox is specified
-        // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
-
-        if vbox.0.width.approx_eq_cairo(&0.0) || vbox.0.height.approx_eq_cairo(&0.0) {
-            // Width or height of 0 for the viewBox disables rendering of the element
-            // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
-            return;
+    drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |cr| {
+        if do_clip && clip_mode == ClipMode::ClipToViewport {
+            drawing_ctx::get_cairo_context(draw_ctx).set_matrix(affine);
+            add_clipping_rect(draw_ctx, vx, vy, vw, vh);
         }
 
-        drawing_ctx::push_view_box(draw_ctx, vbox.0.width, vbox.0.height);
+        if let Some(vbox) = vbox {
+            // the preserveAspectRatio attribute is only used if viewBox is specified
+            // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
-        let (x, y, w, h) =
-            preserve_aspect_ratio.compute(vbox.0.width, vbox.0.height, vx, vy, vw, vh);
+            if vbox.0.width.approx_eq_cairo(&0.0) || vbox.0.height.approx_eq_cairo(&0.0) {
+                // Width or height of 0 for the viewBox disables rendering of the element
+                // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
+                return;
+            }
 
-        affine.translate(x, y);
-        affine.scale(w / vbox.0.width, h / vbox.0.height);
-        affine.translate(-vbox.0.x, -vbox.0.y);
+            drawing_ctx::push_view_box(draw_ctx, vbox.0.width, vbox.0.height);
 
-        drawing_ctx::get_cairo_context(draw_ctx).set_matrix(affine);
+            let (x, y, w, h) =
+                preserve_aspect_ratio.compute(vbox.0.width, vbox.0.height, vx, vy, vw, vh);
 
-        if do_clip && clip_mode == ClipMode::ClipToVbox {
-            add_clipping_rect(draw_ctx, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
+            affine.translate(x, y);
+            affine.scale(w / vbox.0.width, h / vbox.0.height);
+            affine.translate(-vbox.0.x, -vbox.0.y);
+
+            drawing_ctx::get_cairo_context(draw_ctx).set_matrix(affine);
+
+            if do_clip && clip_mode == ClipMode::ClipToVbox {
+                add_clipping_rect(draw_ctx, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
+            }
+        } else {
+            drawing_ctx::push_view_box(draw_ctx, vw, vh);
+
+            affine.translate(vx, vy);
+            drawing_ctx::get_cairo_context(draw_ctx).set_matrix(affine);
         }
-    } else {
-        drawing_ctx::push_view_box(draw_ctx, vw, vh);
 
-        affine.translate(vx, vy);
-        drawing_ctx::get_cairo_context(draw_ctx).set_matrix(affine);
-    }
+        draw_fn(cr);
 
-    draw_fn();
-
-    drawing_ctx::pop_view_box(draw_ctx);
-    drawing_ctx::pop_discrete_layer(draw_ctx, node, values, clipping);
+        drawing_ctx::pop_view_box(draw_ctx);
+    });
 }

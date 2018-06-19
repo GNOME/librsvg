@@ -202,7 +202,7 @@ impl NodeTrait for NodeSvg {
             drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
             draw_ctx,
             clipping,
-            &mut || {
+            &mut |_cr| {
                 // we don't push a layer because draw_in_viewport() already does it
                 node.draw_children(cascaded, draw_ctx, clipping);
             },
@@ -348,7 +348,7 @@ impl NodeTrait for NodeUse {
                     drawing_ctx::get_cairo_context(draw_ctx).get_matrix(),
                     draw_ctx,
                     clipping,
-                    &mut || {
+                    &mut |_cr| {
                         // We don't push a layer because draw_in_viewport() already does it
                         child.draw_children(
                             &CascadedValues::new_from_values(&child, values),
