@@ -454,8 +454,6 @@ fn push_render_stack(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues) {
 }
 
 fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, node: &RsvgNode, values: &ComputedValues) {
-    let child_cr = get_cairo_context(draw_ctx);
-
     let clip_path = match values.clip_path {
         ClipPath(IRI::Resource(ref p)) => Some(p),
         _ => None,
@@ -506,6 +504,8 @@ fn pop_render_stack(draw_ctx: *mut RsvgDrawingCtx, node: &RsvgNode, values: &Com
     {
         return;
     }
+
+    let child_cr = get_cairo_context(draw_ctx);
 
     let surface = if let Some(filter) = filter {
         // About the following unwrap(), see the FIXME in push_render_stack().  We should
