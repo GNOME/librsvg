@@ -387,8 +387,6 @@ pub fn with_discrete_layer(
                 original_cr.paint();
             }
 
-            original_cr.set_matrix(current_affine);
-
             unsafe {
                 rsvg_drawing_ctx_pop_bounding_box(draw_ctx);
             }
