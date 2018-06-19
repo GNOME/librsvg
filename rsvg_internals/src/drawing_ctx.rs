@@ -302,50 +302,53 @@ pub fn with_discrete_layer(
 
                 (surface, child_cr)
             } else {
-                (cairo::ImageSurface::from(original_cr.get_target()).unwrap(), original_cr.clone())
+                (
+                    cairo::ImageSurface::from(original_cr.get_target()).unwrap(),
+                    original_cr.clone(),
+                )
             }
         };
 
         draw_fn(&child_cr);
 
         if needs_temporary_surface {
-            let filter_result_surface = if let Some(filter) = filter {
-                // About the following unwrap(), see the FIXME above.  We should be pushing
-                // only surfaces that are not in an error state, but currently we don't
-                // actually ensure that.
-                let output = unsafe {
-                    cairo::ImageSurface::from_raw_full(rsvg_drawing_ctx_pop_surface(draw_ctx))
-                        .unwrap()
-                };
+            let filter_result_surface = filter
+                .and_then(|_| {
+                    // About the following unwrap(), see the FIXME above.  We should be pushing
+                    // only surfaces that are not in an error state, but currently we don't
+                    // actually ensure that.
+                    let output = unsafe {
+                        cairo::ImageSurface::from_raw_full(rsvg_drawing_ctx_pop_surface(draw_ctx))
+                            .unwrap()
+                    };
 
-                // The bbox rect can be None, for example, if a filter is applied to an empty group.
-                // There's nothing to render in this case, so filter_render() expects a non-empty
-                // bbox. https://gitlab.gnome.org/GNOME/librsvg/issues/277
-                if get_bbox(draw_ctx).rect.is_some() {
-                    if let Some(acquired) =
-                        get_acquired_node_of_type(draw_ctx, Some(filter), NodeType::Filter)
-                    {
-                        if !acquired.get().is_in_error() {
-                            filter_render(
-                                &acquired.get(),
-                                node,
-                                &output,
-                                draw_ctx,
-                                "2103".as_ptr() as *const i8,
-                            )
-                        // FIXME: deal with out of memory here
-                        } else {
-                            child_surface
-                        }
-                    } else {
-                        child_surface
-                    }
-                } else {
-                    child_surface
-                }
-            } else {
-                child_surface
-            };
+                    // The bbox rect can be None, for example, if a filter is applied to an empty
+                    // group. There's nothing to filter in this case.
+                    get_bbox(draw_ctx).rect.and_then(|_| {
+                        get_acquired_node_of_type(
+                            draw_ctx,
+                            filter.map(String::as_ref),
+                            NodeType::Filter,
+                        ).and_then(|acquired| {
+                            let filter_node = acquired.get();
+
+                            if !filter_node.is_in_error() {
+                                // FIXME: deal with out of memory here
+                                Some(filter_render(
+                                    &filter_node,
+                                    node,
+                                    &output,
+                                    draw_ctx,
+                                    "2103".as_ptr() as *const i8,
+                                ))
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                })
+                .or(Some(child_surface))
+                .unwrap();
 
             unsafe {
                 rsvg_drawing_ctx_pop_cr(draw_ctx);
