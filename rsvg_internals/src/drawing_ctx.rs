@@ -215,7 +215,7 @@ pub fn with_discrete_layer(
         let original_cr = get_cairo_context(draw_ctx);
         original_cr.save();
 
-        let clip_path = match values.clip_path {
+        let clip_uri = match values.clip_path {
             ClipPath(IRI::Resource(ref p)) => Some(p),
             _ => None,
         };
@@ -239,7 +239,7 @@ pub fn with_discrete_layer(
         let current_affine = original_cr.get_matrix();
 
         if let Some(acquired) =
-            get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
+            get_acquired_node_of_type(draw_ctx, clip_uri.map(String::as_ref), NodeType::ClipPath)
         {
             let node = acquired.get();
 
@@ -293,7 +293,7 @@ pub fn with_discrete_layer(
         draw_fn(&get_cairo_context(draw_ctx));
 
         if let Some(acquired) =
-            get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
+            get_acquired_node_of_type(draw_ctx, clip_uri.map(String::as_ref), NodeType::ClipPath)
         {
             let mut clip_path_units = ClipPathUnits::default();
 
@@ -375,7 +375,7 @@ pub fn with_discrete_layer(
             if late_clip {
                 if let Some(acquired) = get_acquired_node_of_type(
                     draw_ctx,
-                    clip_path.map(String::as_ref),
+                    clip_uri.map(String::as_ref),
                     NodeType::ClipPath,
                 ) {
                     let node = acquired.get();
