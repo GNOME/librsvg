@@ -15,7 +15,7 @@ pub enum ClipMode {
     ClipToVbox,
 }
 
-pub fn draw_in_viewport<F>(
+pub fn draw_in_viewport(
     vx: f64,
     vy: f64,
     vw: f64,
@@ -29,10 +29,8 @@ pub fn draw_in_viewport<F>(
     mut affine: cairo::Matrix,
     draw_ctx: *mut RsvgDrawingCtx,
     clipping: bool,
-    draw_fn: F,
-) where
-    F: FnOnce(),
-{
+    draw_fn: &mut FnMut(),
+) {
     // width or height set to 0 disables rendering of the element
     // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
     // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
