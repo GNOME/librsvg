@@ -292,27 +292,6 @@ pub fn with_discrete_layer(
 
         draw_fn(&get_cairo_context(draw_ctx));
 
-        let clip_path = match values.clip_path {
-            ClipPath(IRI::Resource(ref p)) => Some(p),
-            _ => None,
-        };
-
-        let filter = match values.filter {
-            Filter(IRI::Resource(ref f)) => Some(f),
-            _ => None,
-        };
-
-        let mask = match values.mask {
-            Mask(IRI::Resource(ref m)) => Some(m),
-            _ => None,
-        };
-
-        let UnitInterval(opacity) = values.opacity.0;
-        let comp_op = values.comp_op;
-        let enable_background = values.enable_background;
-
-        let mut late_clip = false;
-
         if let Some(acquired) =
             get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
         {
