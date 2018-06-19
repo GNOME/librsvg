@@ -212,7 +212,8 @@ pub fn with_discrete_layer(
     if clipping {
         draw_fn(&get_cairo_context(draw_ctx));
     } else {
-        get_cairo_context(draw_ctx).save();
+        let original_cr = get_cairo_context(draw_ctx);
+        original_cr.save();
 
         let clip_path = match values.clip_path {
             ClipPath(IRI::Resource(ref p)) => Some(p),
@@ -235,7 +236,7 @@ pub fn with_discrete_layer(
 
         let mut late_clip = false;
 
-        let current_affine = get_cairo_context(draw_ctx).get_matrix();
+        let current_affine = original_cr.get_matrix();
 
         if let Some(acquired) =
             get_acquired_node_of_type(draw_ctx, clip_path.map(String::as_ref), NodeType::ClipPath)
@@ -278,7 +279,7 @@ pub fn with_discrete_layer(
             }
 
             let child_cr = cairo::Context::new(&surface);
-            child_cr.set_matrix(get_cairo_context(draw_ctx).get_matrix());
+            child_cr.set_matrix(original_cr.get_matrix());
 
             unsafe {
                 rsvg_drawing_ctx_push_cr(draw_ctx, child_cr.to_raw_none());
@@ -431,7 +432,7 @@ pub fn with_discrete_layer(
             }
         }
 
-        get_cairo_context(draw_ctx).restore();
+        original_cr.restore();
     }
 }
 
