@@ -238,20 +238,28 @@ pub fn with_discrete_layer(
 
         let current_affine = original_cr.get_matrix();
 
-        if let Some(acquired) =
+        let clip_node =
             get_acquired_node_of_type(draw_ctx, clip_uri.map(String::as_ref), NodeType::ClipPath)
-        {
-            let node = acquired.get();
+                .and_then(|acquired| Some(acquired.get()));
 
-            node.with_impl(|clip_path: &NodeClipPath| match clip_path.get_units() {
+        if let Some(ref clip_node) = clip_node {
+            clip_node.with_impl(|clip_path: &NodeClipPath| match clip_path.get_units() {
                 ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
-                    clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
+                    late_clip = false;
                 }
 
                 ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
                     late_clip = true;
                 }
             });
+        }
+
+        if !late_clip {
+            if let Some(ref clip_node) = clip_node {
+                clip_node.with_impl(|clip_path: &NodeClipPath| {
+                    clip_path.to_cairo_context(clip_node, &current_affine, draw_ctx);
+                });
+            }
         }
 
         if !(opacity == 1.0
@@ -291,26 +299,6 @@ pub fn with_discrete_layer(
         }
 
         draw_fn(&get_cairo_context(draw_ctx));
-
-        if let Some(acquired) =
-            get_acquired_node_of_type(draw_ctx, clip_uri.map(String::as_ref), NodeType::ClipPath)
-        {
-            let mut clip_path_units = ClipPathUnits::default();
-
-            acquired.get().with_impl(|clip_path: &NodeClipPath| {
-                clip_path_units = clip_path.get_units();
-            });
-
-            match clip_path_units {
-                ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
-                    late_clip = false;
-                }
-
-                ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
-                    late_clip = true;
-                }
-            }
-        }
 
         if !(opacity == 1.0
             && filter.is_none()
@@ -373,15 +361,9 @@ pub fn with_discrete_layer(
             cr.set_source_surface(&surface, xofs, yofs);
 
             if late_clip {
-                if let Some(acquired) = get_acquired_node_of_type(
-                    draw_ctx,
-                    clip_uri.map(String::as_ref),
-                    NodeType::ClipPath,
-                ) {
-                    let node = acquired.get();
-
-                    node.with_impl(|clip_path: &NodeClipPath| {
-                        clip_path.to_cairo_context(&node, &current_affine, draw_ctx);
+                if let Some(ref clip_node) = clip_node {
+                    clip_node.with_impl(|clip_path: &NodeClipPath| {
+                        clip_path.to_cairo_context(clip_node, &current_affine, draw_ctx);
                     });
                 }
             }
