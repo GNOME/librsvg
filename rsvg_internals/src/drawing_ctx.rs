@@ -234,27 +234,28 @@ pub fn with_discrete_layer(
         let comp_op = values.comp_op;
         let enable_background = values.enable_background;
 
-        let mut late_clip = false;
-
         let current_affine = original_cr.get_matrix();
 
-        let clip_node =
-            get_acquired_node_of_type(draw_ctx, clip_uri.map(String::as_ref), NodeType::ClipPath)
-                .and_then(|acquired| Some(acquired.get()));
+        let (clip_node, clip_units) = {
+            let clip_node = get_acquired_node_of_type(
+                draw_ctx,
+                clip_uri.map(String::as_ref),
+                NodeType::ClipPath,
+            ).and_then(|acquired| Some(acquired.get()));
 
-        if let Some(ref clip_node) = clip_node {
-            clip_node.with_impl(|clip_path: &NodeClipPath| match clip_path.get_units() {
-                ClipPathUnits(CoordUnits::UserSpaceOnUse) => {
-                    late_clip = false;
-                }
+            let mut clip_units = Default::default();
 
-                ClipPathUnits(CoordUnits::ObjectBoundingBox) => {
-                    late_clip = true;
-                }
-            });
-        }
+            if let Some(ref clip_node) = clip_node {
+                clip_node.with_impl(|clip_path: &NodeClipPath| {
+                    let ClipPathUnits(u) = clip_path.get_units();
+                    clip_units = Some(u);
+                });
+            }
 
-        if !late_clip {
+            (clip_node, clip_units)
+        };
+
+        if clip_units == Some(CoordUnits::UserSpaceOnUse) {
             if let Some(ref clip_node) = clip_node {
                 clip_node.with_impl(|clip_path: &NodeClipPath| {
                     clip_path.to_cairo_context(clip_node, &current_affine, draw_ctx);
@@ -265,7 +266,7 @@ pub fn with_discrete_layer(
         if !(opacity == 1.0
             && filter.is_none()
             && mask.is_none()
-            && !late_clip
+            && (clip_units == None || clip_units == Some(CoordUnits::UserSpaceOnUse))
             && comp_op == CompOp::SrcOver
             && enable_background == EnableBackground::Accumulate)
         {
@@ -303,7 +304,7 @@ pub fn with_discrete_layer(
         if !(opacity == 1.0
             && filter.is_none()
             && mask.is_none()
-            && !late_clip
+            && (clip_units == None || clip_units == Some(CoordUnits::UserSpaceOnUse))
             && comp_op == CompOp::SrcOver
             && enable_background == EnableBackground::Accumulate)
         {
@@ -360,7 +361,7 @@ pub fn with_discrete_layer(
             cr.identity_matrix();
             cr.set_source_surface(&surface, xofs, yofs);
 
-            if late_clip {
+            if clip_units == Some(CoordUnits::ObjectBoundingBox) {
                 if let Some(ref clip_node) = clip_node {
                     clip_node.with_impl(|clip_path: &NodeClipPath| {
                         clip_path.to_cairo_context(clip_node, &current_affine, draw_ctx);
