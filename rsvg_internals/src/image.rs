@@ -118,7 +118,7 @@ impl NodeTrait for NodeImage {
             let w = self.w.get().normalize(values, draw_ctx);
             let h = self.h.get().normalize(values, draw_ctx);
 
-            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |cr| {
+            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |cr| {
                 cr.save();
 
                 let aspect = self.aspect.get();

@@ -192,7 +192,7 @@ impl NodeMarker {
             }
         }
 
-        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
             node.draw_children(&cascaded, draw_ctx, clipping);
         });
 

@@ -37,7 +37,7 @@ impl NodeTrait for NodeGroup {
     ) {
         let values = cascaded.get();
 
-        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
             node.draw_children(cascaded, draw_ctx, clipping);
         });
     }
@@ -79,7 +79,7 @@ impl NodeTrait for NodeSwitch {
     ) {
         let values = cascaded.get();
 
-        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
             if let Some(child) = node.children().find(|c| c.get_cond()) {
                 drawing_ctx::draw_node_from_stack(
                     draw_ctx,
@@ -320,7 +320,7 @@ impl NodeTrait for NodeUse {
             let cr = drawing_ctx::get_cairo_context(draw_ctx);
             cr.translate(nx, ny);
 
-            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
                 drawing_ctx::draw_node_from_stack(
                     draw_ctx,
                     &CascadedValues::new_from_values(&child, values),

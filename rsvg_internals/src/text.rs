@@ -657,7 +657,7 @@ fn render_children(
 ) {
     let values = cascaded.get();
 
-    drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+    drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
         for child in node.children() {
             render_child(&child, cascaded, draw_ctx, x, y, textonly, clipping);
         }

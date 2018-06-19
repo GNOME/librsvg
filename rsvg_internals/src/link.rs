@@ -50,7 +50,7 @@ impl NodeTrait for NodeLink {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+        drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
             if link.is_some() && link.as_ref().unwrap() != "" {
                 const CAIRO_TAG_LINK: &str = "Link";
 

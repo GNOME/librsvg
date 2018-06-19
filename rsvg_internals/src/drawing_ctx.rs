@@ -202,15 +202,13 @@ pub fn get_acquired_node_of_type(
         })
 }
 
-pub fn with_discrete_layer<F>(
+pub fn with_discrete_layer(
     draw_ctx: *mut RsvgDrawingCtx,
     node: &RsvgNode,
     values: &ComputedValues,
     clipping: bool,
-    mut draw_fn: F,
-) where
-    F: FnMut(&cairo::Context),
-{
+    draw_fn: &mut FnMut(&cairo::Context),
+) {
     push_discrete_layer(draw_ctx, values, clipping);
 
     draw_fn(&get_cairo_context(draw_ctx));

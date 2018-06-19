@@ -23,7 +23,7 @@ fn render_path_builder(
     render_markers: bool,
     clipping: bool,
 ) {
-    drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, |_cr| {
+    drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
         draw_path_builder(draw_ctx, values, builder, clipping);
     });
 

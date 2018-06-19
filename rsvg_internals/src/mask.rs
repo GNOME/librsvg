@@ -128,7 +128,7 @@ impl NodeMask {
                 drawing_ctx::push_view_box(draw_ctx, 1.0, 1.0);
             }
 
-            drawing_ctx::with_discrete_layer(draw_ctx, node, values, false, |_cr| {
+            drawing_ctx::with_discrete_layer(draw_ctx, node, values, false, &mut |_cr| {
                 node.draw_children(&cascaded, draw_ctx, false);
             });
 
