@@ -263,13 +263,14 @@ pub fn with_discrete_layer(
             }
         }
 
-        if !(opacity == 1.0
+        let needs_temporary_surface = !(opacity == 1.0
             && filter.is_none()
             && mask.is_none()
             && (clip_units == None || clip_units == Some(CoordUnits::UserSpaceOnUse))
             && comp_op == CompOp::SrcOver
-            && enable_background == EnableBackground::Accumulate)
-        {
+            && enable_background == EnableBackground::Accumulate);
+
+        if needs_temporary_surface {
             // FIXME: in the following, we unwrap() the result of
             // ImageSurface::create().  We have to decide how to handle
             // out-of-memory here.
@@ -301,13 +302,7 @@ pub fn with_discrete_layer(
 
         draw_fn(&get_cairo_context(draw_ctx));
 
-        if !(opacity == 1.0
-            && filter.is_none()
-            && mask.is_none()
-            && (clip_units == None || clip_units == Some(CoordUnits::UserSpaceOnUse))
-            && comp_op == CompOp::SrcOver
-            && enable_background == EnableBackground::Accumulate)
-        {
+        if needs_temporary_surface {
             let child_cr = get_cairo_context(draw_ctx);
 
             let surface = if let Some(filter) = filter {
