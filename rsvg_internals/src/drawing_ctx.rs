@@ -209,26 +209,13 @@ pub fn with_discrete_layer(
     clipping: bool,
     draw_fn: &mut FnMut(&cairo::Context),
 ) {
-    push_discrete_layer(draw_ctx, values, clipping);
-
-    draw_fn(&get_cairo_context(draw_ctx));
-
-    pop_discrete_layer(draw_ctx, node, values, clipping);
-}
-
-pub fn push_discrete_layer(draw_ctx: *mut RsvgDrawingCtx, values: &ComputedValues, clipping: bool) {
     if !clipping {
         get_cairo_context(draw_ctx).save();
         push_render_stack(draw_ctx, values);
     }
-}
 
-pub fn pop_discrete_layer(
-    draw_ctx: *mut RsvgDrawingCtx,
-    node: &RsvgNode,
-    values: &ComputedValues,
-    clipping: bool,
-) {
+    draw_fn(&get_cairo_context(draw_ctx));
+
     if !clipping {
         pop_render_stack(draw_ctx, node, values);
         get_cairo_context(draw_ctx).restore();
