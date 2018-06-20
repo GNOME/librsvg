@@ -15,6 +15,16 @@ impl Default for IRI {
     }
 }
 
+impl IRI {
+    /// Returns the contents of an `IRI::Resource`, or `None`
+    pub fn get(&self) -> Option<&str> {
+        match *self {
+            IRI::None => None,
+            IRI::Resource(ref s) => Some(s.as_ref()),
+        }
+    }
+}
+
 impl Parse for IRI {
     type Data = ();
     type Err = ParseError;
@@ -65,5 +75,11 @@ mod tests {
         assert!(IRI::parse_str("", ()).is_err());
         assert!(IRI::parse_str("foo", ()).is_err());
         assert!(IRI::parse_str("url(foo)bar", ()).is_err());
+    }
+
+    #[test]
+    fn get() {
+        assert_eq!(IRI::None.get(), None);
+        assert_eq!(IRI::Resource(String::from("foo")).get(), Some("foo"));
     }
 }
