@@ -1,4 +1,5 @@
 Version 2.43.1
+- Fix: #259 - Test fonts should now work with --enable-installed-tests
 - Fix: #277 - Don't panic when trying to filter an empty group
   (Ivan Molodetskikh).
 - Fix the feOffset filter's coordinate parsing.  (Ivan Molodetskikh).
