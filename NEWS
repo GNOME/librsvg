@@ -1,8 +1,16 @@
 Version 2.43.1
-- The feImage filter is now in Rust (Ivan Molodetskikh).
-- Fix the feOffset filter's coordinate parsing (Ivan Molodetskikh).
+- Fix: #277 - Don't panic when trying to filter an empty group
+  (Ivan Molodetskikh).
+- Fix the feOffset filter's coordinate parsing.  (Ivan Molodetskikh).
 - Fix linearization of SRGB data in the feComposite filter (Ivan
   Molodetskikh).
+- Fix CSS cascading in filters (Ivan Molodetskikh).
+- Fix, don't render filters if they are in error (Ivan Molodetskikh).
+- Filters now support FillPaint and StrokePaint for input (Ivan Molodetskikh).
+- The feImage, feBlend, feComponentTransfer filters are now in Rust
+  (Ivan Molodetskikh).
+- The feOffset filter now supports fractional offsets (Ivan Molodetskikh).
+- All the style property parsers have been moved to rust-cssparser.
 
 Version 2.43.0
 - This is the start of the 2.43 development series, and you bet we are
