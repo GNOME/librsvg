@@ -419,10 +419,10 @@ static void
 create_font_config_for_testing (RsvgHandle *handle)
 {
     const char *font_paths[] = {
-        SRCDIR "/tests/resources/Roboto-Regular.ttf",
-        SRCDIR "/tests/resources/Roboto-Italic.ttf",
-        SRCDIR "/tests/resources/Roboto-Bold.ttf",
-        SRCDIR "/tests/resources/Roboto-BoldItalic.ttf",
+        "resources/Roboto-Regular.ttf",
+        "resources/Roboto-Italic.ttf",
+        "resources/Roboto-Bold.ttf",
+        "resources/Roboto-BoldItalic.ttf",
     };
 
     int i;
@@ -433,9 +433,13 @@ create_font_config_for_testing (RsvgHandle *handle)
     handle->priv->font_config_for_testing = FcConfigCreate ();
 
     for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
-        if (!FcConfigAppFontAddFile (handle->priv->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
-            g_error ("Could not load font file \"%s\" for tests; aborting", font_paths[i]);
+        char *font_path = g_test_build_filename (G_TEST_DIST, font_paths[i], NULL);
+
+        if (!FcConfigAppFontAddFile (handle->priv->font_config_for_testing, (const FcChar8 *) font_path)) {
+            g_error ("Could not load font file \"%s\" for tests; aborting", font_path);
         }
+
+        g_free (font_path);
     }
 }
 
