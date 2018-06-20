@@ -118,9 +118,7 @@ impl NodeTrait for NodeImage {
             let w = self.w.get().normalize(values, draw_ctx);
             let h = self.h.get().normalize(values, draw_ctx);
 
-            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |cr| {
-                cr.save();
-
+            drawing_ctx::with_discrete_layer(draw_ctx, node, values, clipping, &mut |_cr| {
                 let aspect = self.aspect.get();
 
                 if !values.is_overflow() && aspect.is_slice() {
@@ -137,8 +135,6 @@ impl NodeTrait for NodeImage {
                 );
 
                 draw_surface(draw_ctx, values, surface, x, y, w, h, clipping);
-
-                cr.restore();
             });
         }
     }
