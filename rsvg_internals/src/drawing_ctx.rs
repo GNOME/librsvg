@@ -14,11 +14,10 @@ use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
 use defs::{self, RsvgDefs};
 use filters::filter_render;
-use iri::IRI;
 use mask::NodeMask;
 use node::{CascadedValues, NodeType, RsvgNode};
 use rect::RectangleExt;
-use state::{ClipPath, CompOp, ComputedValues, EnableBackground, Filter, Mask};
+use state::{CompOp, ComputedValues, EnableBackground};
 use unitinterval::UnitInterval;
 
 pub enum RsvgDrawingCtx {}
@@ -215,20 +214,9 @@ pub fn with_discrete_layer(
         let original_cr = get_cairo_context(draw_ctx);
         original_cr.save();
 
-        let clip_uri = match values.clip_path {
-            ClipPath(IRI::Resource(ref p)) => Some(p),
-            _ => None,
-        };
-
-        let filter = match values.filter {
-            Filter(IRI::Resource(ref f)) => Some(f),
-            _ => None,
-        };
-
-        let mask = match values.mask {
-            Mask(IRI::Resource(ref m)) => Some(m),
-            _ => None,
-        };
+        let clip_uri = values.clip_path.0.get();
+        let filter = values.filter.0.get();
+        let mask = values.mask.0.get();
 
         let UnitInterval(opacity) = values.opacity.0;
         let comp_op = values.comp_op;
@@ -237,11 +225,8 @@ pub fn with_discrete_layer(
         let current_affine = original_cr.get_matrix();
 
         let (clip_node, clip_units) = {
-            let clip_node = get_acquired_node_of_type(
-                draw_ctx,
-                clip_uri.map(String::as_ref),
-                NodeType::ClipPath,
-            ).and_then(|acquired| Some(acquired.get()));
+            let clip_node = get_acquired_node_of_type(draw_ctx, clip_uri, NodeType::ClipPath)
+                .and_then(|acquired| Some(acquired.get()));
 
             let mut clip_units = Default::default();
 
@@ -325,26 +310,24 @@ pub fn with_discrete_layer(
                     // The bbox rect can be None, for example, if a filter is applied to an empty
                     // group. There's nothing to filter in this case.
                     get_bbox(draw_ctx).rect.and_then(|_| {
-                        get_acquired_node_of_type(
-                            draw_ctx,
-                            filter.map(String::as_ref),
-                            NodeType::Filter,
-                        ).and_then(|acquired| {
-                            let filter_node = acquired.get();
+                        get_acquired_node_of_type(draw_ctx, filter, NodeType::Filter).and_then(
+                            |acquired| {
+                                let filter_node = acquired.get();
 
-                            if !filter_node.is_in_error() {
-                                // FIXME: deal with out of memory here
-                                Some(filter_render(
-                                    &filter_node,
-                                    node,
-                                    &output,
-                                    draw_ctx,
-                                    "2103".as_ptr() as *const i8,
-                                ))
-                            } else {
-                                None
-                            }
-                        })
+                                if !filter_node.is_in_error() {
+                                    // FIXME: deal with out of memory here
+                                    Some(filter_render(
+                                        &filter_node,
+                                        node,
+                                        &output,
+                                        draw_ctx,
+                                        "2103".as_ptr() as *const i8,
+                                    ))
+                                } else {
+                                    None
+                                }
+                            },
+                        )
                     })
                 })
                 .or(Some(child_surface))
