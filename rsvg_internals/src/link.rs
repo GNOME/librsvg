@@ -50,21 +50,21 @@ impl NodeTrait for NodeLink {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
             if link.is_some() && link.as_ref().unwrap() != "" {
                 const CAIRO_TAG_LINK: &str = "Link";
 
                 let attributes = link.as_ref().map(|i| format!("uri='{}'", escape_value(i)));
 
-                draw_ctx.get_cairo_context().with_tag(
+                dc.get_cairo_context().with_tag(
                     CAIRO_TAG_LINK,
                     attributes.as_ref().map(|i| i.as_str()),
                     || {
-                        node.draw_children(&cascaded, draw_ctx, clipping);
+                        node.draw_children(&cascaded, dc, clipping);
                     },
                 )
             } else {
-                node.draw_children(&cascaded, draw_ctx, clipping)
+                node.draw_children(&cascaded, dc, clipping)
             }
         });
     }

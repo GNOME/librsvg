@@ -224,10 +224,10 @@ impl<'a> DrawingCtx {
         node: &RsvgNode,
         values: &ComputedValues,
         clipping: bool,
-        draw_fn: &mut FnMut(&cairo::Context),
+        draw_fn: &mut FnMut(&mut DrawingCtx),
     ) {
         if clipping {
-            draw_fn(&self.cr);
+            draw_fn(self);
         } else {
             let original_cr = self.cr.clone();
             original_cr.save();
@@ -271,7 +271,7 @@ impl<'a> DrawingCtx {
                 && comp_op == CompOp::SrcOver
                 && enable_background == EnableBackground::Accumulate);
 
-            let (child_surface, child_cr) = {
+            let child_surface = {
                 if needs_temporary_surface {
                     // FIXME: in the following, we unwrap() the result of
                     // ImageSurface::create().  We have to decide how to handle
@@ -295,16 +295,13 @@ impl<'a> DrawingCtx {
                     self.bbox_stack.push(self.bbox);
                     self.bbox = BoundingBox::new(&affine);
 
-                    (surface, cr)
+                    surface
                 } else {
-                    (
-                        cairo::ImageSurface::from(original_cr.get_target()).unwrap(),
-                        original_cr.clone(),
-                    )
+                    cairo::ImageSurface::from(original_cr.get_target()).unwrap()
                 }
             };
 
-            draw_fn(&child_cr);
+            draw_fn(self);
 
             if needs_temporary_surface {
                 let filter_result_surface = filter

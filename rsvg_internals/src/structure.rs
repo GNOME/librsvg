@@ -36,8 +36,8 @@ impl NodeTrait for NodeGroup {
     ) {
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
-            node.draw_children(cascaded, draw_ctx, clipping);
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            node.draw_children(cascaded, dc, clipping);
         });
     }
 }
@@ -78,9 +78,9 @@ impl NodeTrait for NodeSwitch {
     ) {
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
             if let Some(child) = node.children().find(|c| c.get_cond()) {
-                draw_ctx.draw_node_from_stack(
+                dc.draw_node_from_stack(
                     &CascadedValues::new(cascaded, &child),
                     &child,
                     clipping,
@@ -200,9 +200,9 @@ impl NodeTrait for NodeSvg {
             draw_ctx.get_cairo_context().get_matrix(),
             draw_ctx,
             clipping,
-            &mut |_cr| {
+            &mut |dc| {
                 // we don't push a layer because draw_in_viewport() already does it
-                node.draw_children(cascaded, draw_ctx, clipping);
+                node.draw_children(cascaded, dc, clipping);
             },
         );
     }
@@ -316,8 +316,8 @@ impl NodeTrait for NodeUse {
             let cr = draw_ctx.get_cairo_context();
             cr.translate(nx, ny);
 
-            draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
-                draw_ctx.draw_node_from_stack(
+            draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+                dc.draw_node_from_stack(
                     &CascadedValues::new_from_values(&child, values),
                     &child,
                     clipping,
@@ -343,11 +343,11 @@ impl NodeTrait for NodeUse {
                     draw_ctx.get_cairo_context().get_matrix(),
                     draw_ctx,
                     clipping,
-                    &mut |_cr| {
+                    &mut |dc| {
                         // We don't push a layer because draw_in_viewport() already does it
                         child.draw_children(
                             &CascadedValues::new_from_values(&child, values),
-                            draw_ctx,
+                            dc,
                             clipping,
                         );
                     },

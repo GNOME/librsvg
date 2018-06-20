@@ -656,9 +656,9 @@ fn render_children(
 ) {
     let values = cascaded.get();
 
-    draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
+    draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
         for child in node.children() {
-            render_child(&child, cascaded, draw_ctx, x, y, textonly, clipping);
+            render_child(&child, cascaded, dc, x, y, textonly, clipping);
         }
     });
 }

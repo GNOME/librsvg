@@ -23,8 +23,8 @@ fn render_path_builder(
     render_markers: bool,
     clipping: bool,
 ) {
-    draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
-        draw_path_builder(draw_ctx, values, builder, clipping);
+    draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+        draw_path_builder(dc, values, builder, clipping);
     });
 
     if render_markers {

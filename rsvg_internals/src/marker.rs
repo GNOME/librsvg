@@ -191,8 +191,8 @@ impl NodeMarker {
             }
         }
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |_cr| {
-            node.draw_children(&cascaded, draw_ctx, clipping);
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            node.draw_children(&cascaded, dc, clipping);
         });
 
         draw_ctx.pop_view_box();

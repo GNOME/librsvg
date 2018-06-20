@@ -407,8 +407,8 @@ fn set_pattern_on_draw_context(
 
     cr_pattern.set_matrix(caffine);
 
-    draw_ctx.with_discrete_layer(&pattern_node, pattern_values, false, &mut |_cr| {
-        pattern_node.draw_children(&pattern_cascaded, draw_ctx, false);
+    draw_ctx.with_discrete_layer(&pattern_node, pattern_values, false, &mut |dc| {
+        pattern_node.draw_children(&pattern_cascaded, dc, false);
     });
 
     // Return to the original coordinate system and rendering context
