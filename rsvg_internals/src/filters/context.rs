@@ -268,6 +268,15 @@ impl<'a> FilterContext<'a> {
         let width = source_surface.get_width();
         let height = source_surface.get_height();
 
+        let effects_region = compute_effects_region(
+            filter_node,
+            node_being_filtered,
+            draw_ctx,
+            affine,
+            f64::from(width),
+            f64::from(height),
+        );
+
         let mut rv = Self {
             node: filter_node.clone(),
             node_being_filtered: node_being_filtered.clone(),
@@ -276,14 +285,7 @@ impl<'a> FilterContext<'a> {
             previous_results: HashMap::new(),
             background_surface: UnsafeCell::new(None),
             draw_ctx,
-            effects_region: compute_effects_region(
-                filter_node,
-                node_being_filtered,
-                draw_ctx,
-                affine,
-                f64::from(width),
-                f64::from(height),
-            ),
+            effects_region,
             affine,
             paffine,
             channelmap,
