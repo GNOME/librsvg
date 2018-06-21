@@ -230,7 +230,7 @@ impl<'a> FilterContext<'a> {
         channelmap: [i32; 4],
     ) -> Self {
         let cr_affine = draw_ctx.get_cairo_context().get_matrix();
-        let bbox = draw_ctx.get_bbox();
+        let bbox = draw_ctx.get_bbox().clone();
         let bbox_rect = bbox.rect.unwrap();
 
         let filter = filter_node.get_impl::<NodeFilter>().unwrap();
