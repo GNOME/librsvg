@@ -40,6 +40,12 @@ impl NodeClipPath {
         let orig_bbox = drawing_ctx::get_bbox(draw_ctx).clone();
 
         let child_matrix = if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+            if orig_bbox.rect.is_none() {
+                // The node being clipped is empty / doesn't have a
+                // bounding box, so there's nothing to clip!
+                return;
+            }
+
             let rect = orig_bbox.rect.unwrap();
 
             let mut bbtransform =
