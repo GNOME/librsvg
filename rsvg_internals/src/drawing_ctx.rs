@@ -119,7 +119,7 @@ impl<'a> DrawingCtx {
         cr.to_raw_none() == self.initial_cr.to_raw_none()
     }
 
-    pub fn get_cr_stack(&mut self) -> &Vec<cairo::Context> {
+    pub fn get_cr_stack(&self) -> &Vec<cairo::Context> {
         &self.cr_stack
     }
 
