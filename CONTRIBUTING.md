@@ -213,6 +213,34 @@ mirror in Github.  [Please contact the maintainer][maintainer] directly if you
 have a pull request there or a branch that you would like to
 contribute.
 
+### Formatting commit messages
+
+If a commit fixes a bug, please format its commit message like this:
+
+```
+(#123): Don't crash when foo is bar
+
+Explanation for why the crash happened, or anything that is not
+obvious from looking at the diff.
+
+https://gitlab.gnome.org/GNOME/librsvg/issues/123
+```
+
+Note the `(#123)` in the first line.  This is the line that shows up
+in single-line git logs, and having the bug number there makes it
+easier to write the release notes later — one does not have to read
+all the commit messages to find the ids of fixed bugs.
+
+Also, please paste the complete URL to the bug report somewhere in the
+commit message, so that it's easier to visit when reading the commit
+logs.
+
+Generally, commit messages should summarize *what* you did, and *why*.
+Think of someone doing `git blame` in the future when trying to figure
+out how some code works:  they will want to see *why* a certain line
+of source code is there.  The commit where that line was introduced
+should explain it.
+
 ### Testing performance-related changes
 
 You can use the [rsvg-bench] tool to benchmark librsvg.  It lets you
