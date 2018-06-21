@@ -99,10 +99,7 @@ impl SharedImageSurface {
     }
 
     /// Retrieves the pixel value at the given coordinates.
-    // Making this just #[inline] AND making Pixels::next() #[inline] prevents this from being
-    // inlined in the benchmarks leading to significantly worse benchmark results. Making this
-    // #[inline(always)] and making Pixels::new() #[inline] leads to good benchmark results.
-    #[inline(always)]
+    #[inline]
     pub fn get_pixel(&self, x: u32, y: u32) -> Pixel {
         assert!(x < self.width as u32);
         assert!(y < self.height as u32);
