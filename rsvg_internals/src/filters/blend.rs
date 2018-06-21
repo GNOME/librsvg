@@ -9,6 +9,7 @@ use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::ParseError;
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
+use surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
@@ -90,26 +91,29 @@ impl Filter for Blend {
         let output_surface = linearize_surface(&input_2.surface(), bounds)
             .map_err(FilterError::BadInputSurfaceStatus)?;
 
-        let cr = cairo::Context::new(&output_surface);
-        cr.rectangle(
-            bounds.x0 as f64,
-            bounds.y0 as f64,
-            (bounds.x1 - bounds.x0) as f64,
-            (bounds.y1 - bounds.y0) as f64,
-        );
-        cr.clip();
+        {
+            let cr = cairo::Context::new(&output_surface);
+            cr.rectangle(
+                bounds.x0 as f64,
+                bounds.y0 as f64,
+                (bounds.x1 - bounds.x0) as f64,
+                (bounds.y1 - bounds.y0) as f64,
+            );
+            cr.clip();
 
-        cr.set_source_surface(&input_surface, 0f64, 0f64);
-        cr.set_operator(self.mode.get().into());
-        cr.paint();
+            cr.set_source_surface(&input_surface, 0f64, 0f64);
+            cr.set_operator(self.mode.get().into());
+            cr.paint();
+        }
 
+        let output_surface = SharedImageSurface::new(output_surface).unwrap();
         let output_surface = unlinearize_surface(&output_surface, bounds)
             .map_err(FilterError::OutputSurfaceCreation)?;
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: output_surface,
+                surface: SharedImageSurface::new(output_surface).unwrap(),
                 bounds,
             },
         })

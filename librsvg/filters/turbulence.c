@@ -348,7 +348,6 @@ rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgComputedValues *val
     /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
-    cairo_surface_destroy (output);
 }
 
 static void

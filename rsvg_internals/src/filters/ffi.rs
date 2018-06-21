@@ -8,6 +8,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use length::RsvgLength;
 use node::{NodeType, RsvgCNodeImpl, RsvgNode};
 use state::{ComputedValues, RsvgComputedValues};
+use surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, RsvgFilterContext};
 use super::{Filter, FilterError, FilterResult};
@@ -73,10 +74,24 @@ pub fn filter_render(
         }
     }
 
+    // The source surface has multiple references. We need to copy it to a new surface to have a
+    // unique reference to be able to safely access the pixel data.
+    let source_surface = cairo::ImageSurface::create(
+        cairo::Format::ARgb32,
+        source.get_width(),
+        source.get_height(),
+    ).unwrap();
+    {
+        let cr = cairo::Context::new(&source_surface);
+        cr.set_source_surface(source, 0f64, 0f64);
+        cr.paint();
+    }
+    let source_surface = SharedImageSurface::new(source_surface).unwrap();
+
     let mut filter_ctx = FilterContext::new(
         filter_node,
         node_being_filtered,
-        source.clone(),
+        source_surface,
         context,
         channelmap_arr,
     );
@@ -117,5 +132,5 @@ pub fn filter_render(
             }
         });
 
-    filter_ctx.into_output()
+    filter_ctx.into_output().into_image_surface()
 }

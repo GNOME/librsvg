@@ -10,10 +10,15 @@ use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{self, ListLength, NumberListError, ParseError};
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
+use surface_utils::{
+    iterators::Pixels,
+    shared_surface::SharedImageSurface,
+    ImageSurfaceDataExt,
+    Pixel,
+};
 use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixel, Pixels};
 use super::{make_result, Filter, FilterError, PrimitiveWithInput};
 
 /// The `feComponentTransfer` filter primitive.
@@ -282,8 +287,8 @@ impl Filter for ComponentTransfer {
         // Create the output surface.
         let mut output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
-            ctx.source_graphic().get_width(),
-            ctx.source_graphic().get_height(),
+            ctx.source_graphic().width(),
+            ctx.source_graphic().height(),
         ).map_err(FilterError::OutputSurfaceCreation)?;
 
         // Enumerate all child <feFuncX> nodes.
@@ -344,15 +349,12 @@ impl Filter for ComponentTransfer {
         let compute_a = |alpha| compute_a(&params_a, alpha);
 
         // Do the actual processing.
-        let input_data = unsafe {
-            ImageSurfaceDataShared::new_unchecked(&input_surface)
-                .map_err(FilterError::BadInputSurfaceStatus)?
-        };
+        let input_surface = SharedImageSurface::new(input_surface).unwrap();
         let output_stride = output_surface.get_stride() as usize;
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, pixel) in Pixels::new(input_data, bounds) {
+            for (x, y, pixel) in Pixels::new(&input_surface, bounds) {
                 let alpha = f64::from(pixel.a) / 255f64;
                 let new_alpha = compute_a(alpha);
 
@@ -367,13 +369,14 @@ impl Filter for ComponentTransfer {
             }
         }
 
+        let output_surface = SharedImageSurface::new(output_surface).unwrap();
         let output_surface = unlinearize_surface(&output_surface, bounds)
             .map_err(FilterError::OutputSurfaceCreation)?;
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: output_surface,
+                surface: SharedImageSurface::new(output_surface).unwrap(),
                 bounds,
             },
         })

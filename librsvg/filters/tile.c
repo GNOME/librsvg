@@ -107,7 +107,6 @@ rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgComputedValues *values, R
     /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
-    cairo_surface_destroy (output);
 }
 
 static void

@@ -7,6 +7,7 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
+use surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::input::Input;
@@ -138,12 +139,13 @@ impl Filter for Merge {
         }
 
         let output_surface = output_surface
+            .map(|surface| SharedImageSurface::new(surface).unwrap())
             .map(|surface| unlinearize_surface(&surface, bounds))
             .unwrap_or_else(|| {
                 ImageSurface::create(
                     cairo::Format::ARgb32,
-                    ctx.source_graphic().get_width(),
-                    ctx.source_graphic().get_height(),
+                    ctx.source_graphic().width(),
+                    ctx.source_graphic().height(),
                 )
             })
             .map_err(FilterError::OutputSurfaceCreation)?;
@@ -151,7 +153,7 @@ impl Filter for Merge {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: output_surface,
+                surface: SharedImageSurface::new(output_surface).unwrap(),
                 bounds,
             },
         })

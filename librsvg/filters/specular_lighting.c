@@ -152,7 +152,6 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgComputedValu
     /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
-    cairo_surface_destroy (output);
 }
 
 static void

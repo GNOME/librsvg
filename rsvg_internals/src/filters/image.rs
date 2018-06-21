@@ -15,6 +15,7 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
+use surface_utils::shared_surface::SharedImageSurface;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
@@ -58,8 +59,8 @@ impl Image {
 
         let surface = ImageSurface::create(
             cairo::Format::ARgb32,
-            ctx.source_graphic().get_width(),
-            ctx.source_graphic().get_height(),
+            ctx.source_graphic().width(),
+            ctx.source_graphic().height(),
         ).map_err(FilterError::OutputSurfaceCreation)?;
 
         drawing_ctx::get_cairo_context(ctx.drawing_context()).set_matrix(ctx.paffine());
@@ -68,15 +69,15 @@ impl Image {
             &drawable.get(),
             &ctx.get_node_being_filtered(),
             &surface,
-            f64::from(ctx.source_graphic().get_width()),
-            f64::from(ctx.source_graphic().get_height()),
+            f64::from(ctx.source_graphic().width()),
+            f64::from(ctx.source_graphic().height()),
         );
 
         // Clip the output to bounds.
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
-            ctx.source_graphic().get_width(),
-            ctx.source_graphic().get_height(),
+            ctx.source_graphic().width(),
+            ctx.source_graphic().height(),
         ).map_err(FilterError::OutputSurfaceCreation)?;
 
         let cr = cairo::Context::new(&output_surface);
@@ -129,8 +130,8 @@ impl Image {
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
-            ctx.source_graphic().get_width(),
-            ctx.source_graphic().get_height(),
+            ctx.source_graphic().width(),
+            ctx.source_graphic().height(),
         ).map_err(FilterError::OutputSurfaceCreation)?;
 
         // TODO: this goes through a f64->i32->f64 conversion.
@@ -228,7 +229,7 @@ impl Filter for Image {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: output_surface,
+                surface: SharedImageSurface::new(output_surface).unwrap(),
                 bounds,
             },
         })

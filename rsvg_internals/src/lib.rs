@@ -160,6 +160,7 @@ mod srgb;
 mod state;
 mod stop;
 mod structure;
+pub mod surface_utils;
 mod text;
 mod transform;
 mod unitinterval;
