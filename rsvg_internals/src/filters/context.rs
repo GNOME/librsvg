@@ -116,6 +116,7 @@ pub struct FilterContext {
     /// See the comments for `affine`, they largely apply here.
     paffine: cairo::Matrix,
 
+    /// Obsolete; remove when all filters are ported to Rust.
     channelmap: [i32; 4],
 }
 
