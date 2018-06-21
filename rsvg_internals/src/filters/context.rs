@@ -457,7 +457,7 @@ impl<'a> FilterContext<'a> {
 
     /// Computes and returns a surface corresponding to the given paint server.
     fn get_paint_server_surface(
-        &self,
+        &mut self,
         paint_server: &PaintServer,
         opacity: UnitInterval,
     ) -> Result<cairo::ImageSurface, cairo::Status> {
@@ -474,11 +474,13 @@ impl<'a> FilterContext<'a> {
         let cascaded = self.node_being_filtered.get_cascaded_values();
         let values = cascaded.get();
 
+        let bbox = self.draw_ctx.get_bbox().clone();
+
         if paint_server::set_source_paint_server(
             self.draw_ctx,
             paint_server,
             &opacity,
-            self.draw_ctx.get_bbox(),
+            &bbox,
             &values.color.0,
         ) {
             cr.paint();
