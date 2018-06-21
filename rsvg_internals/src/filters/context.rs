@@ -413,7 +413,7 @@ impl<'a> FilterContext<'a> {
 
     /// Returns the drawing context for this filter context.
     #[inline]
-    pub fn draw_context(&self) -> &mut DrawingCtx {
+    pub fn draw_context(&mut self) -> &mut DrawingCtx {
         self.draw_ctx
     }
 
