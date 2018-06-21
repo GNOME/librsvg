@@ -7,6 +7,7 @@ use libc;
 use pango::{self, FontMapExt};
 use pango_cairo_sys;
 use pangocairo;
+use std::cell::RefCell;
 
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
@@ -42,7 +43,7 @@ pub struct DrawingCtx {
     drawsub_stack: Vec<RsvgNode>,
 
     defs: *const RsvgDefs,
-    acquired_nodes: Vec<RsvgNode>,
+    acquired_nodes: RefCell<Vec<RsvgNode>>,
 
     is_testing: bool,
 }
@@ -96,7 +97,7 @@ impl<'a> DrawingCtx {
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
             defs,
-            acquired_nodes: Vec::new(),
+            acquired_nodes: RefCell::new(Vec::new()),
             is_testing,
         }
     }
@@ -183,8 +184,8 @@ impl<'a> DrawingCtx {
     pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
         if let Some(node) = defs::lookup(self.defs, url) {
             if !self.acquired_nodes_contains(node) {
-                self.acquired_nodes.push(node.clone());
-                return Some(AcquiredNode(&mut self.acquired_nodes, node.clone()));
+                self.acquired_nodes.borrow_mut().push(node.clone());
+                return Some(AcquiredNode(&self.acquired_nodes as *const _, node.clone()));
             }
         }
 
@@ -192,7 +193,7 @@ impl<'a> DrawingCtx {
     }
 
     fn acquired_nodes_contains(&self, node: &RsvgNode) -> bool {
-        self.acquired_nodes.iter().find(|n| rc_node_ptr_eq(n, node)).is_some()
+        self.acquired_nodes.borrow().iter().find(|n| rc_node_ptr_eq(n, node)).is_some()
     }
 
     // Use this function when looking up urls to other nodes, and when you expect
@@ -548,16 +549,19 @@ pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
     }
 }
 
-pub struct AcquiredNode<'a>(&'a mut Vec<RsvgNode>, RsvgNode);
+pub struct AcquiredNode(*const RefCell<Vec<RsvgNode>>, RsvgNode);
 
-impl<'a> Drop for AcquiredNode<'a> {
+impl Drop for AcquiredNode {
     fn drop(&mut self) {
-        assert!(rc_node_ptr_eq(self.0.last().unwrap(), &self.1));
-        self.0.pop();
+        unsafe {
+            let v = (*self.0).borrow_mut();
+            assert!(rc_node_ptr_eq(v.last().unwrap(), &self.1));
+            v.pop();
+        }
     }
 }
 
-impl<'a> AcquiredNode<'a> {
+impl AcquiredNode {
     pub fn get(&self) -> RsvgNode {
         self.1.clone()
     }

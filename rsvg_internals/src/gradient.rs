@@ -406,7 +406,7 @@ impl Gradient {
     }
 }
 
-fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx, name: &str) -> Option<AcquiredNode<'a>> {
+fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx, name: &str) -> Option<AcquiredNode> {
     draw_ctx.get_acquired_node(name).and_then(|acquired| {
         // FIXME: replace with .filter() once Option.filter() becomes stable
         let node = acquired.get();
