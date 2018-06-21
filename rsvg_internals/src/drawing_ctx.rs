@@ -42,7 +42,7 @@ pub struct DrawingCtx {
     drawsub_stack: Vec<RsvgNode>,
 
     defs: *const RsvgDefs,
-    acquired_nodes: Vec<*mut RsvgNode>,
+    acquired_nodes: Vec<RsvgNode>,
 
     is_testing: bool,
 }
@@ -182,14 +182,17 @@ impl<'a> DrawingCtx {
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
         if let Some(node) = defs::lookup(self.defs, url) {
-            let n = node as *mut RsvgNode;
-            if !self.acquired_nodes.contains(&n) {
-                self.acquired_nodes.push(n);
-                return Some(AcquiredNode(&mut self.acquired_nodes, n));
+            if !self.acquired_nodes_contains(node) {
+                self.acquired_nodes.push(node.clone());
+                return Some(AcquiredNode(&mut self.acquired_nodes, node.clone()));
             }
         }
 
         None
+    }
+
+    fn acquired_nodes_contains(&self, node: &RsvgNode) -> bool {
+        self.acquired_nodes.iter().find(|n| rc_node_ptr_eq(n, node)).is_some()
     }
 
     // Use this function when looking up urls to other nodes, and when you expect
@@ -545,18 +548,18 @@ pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
     }
 }
 
-pub struct AcquiredNode<'a>(&'a mut Vec<*mut RsvgNode>, *mut RsvgNode);
+pub struct AcquiredNode<'a>(&'a mut Vec<RsvgNode>, RsvgNode);
 
 impl<'a> Drop for AcquiredNode<'a> {
     fn drop(&mut self) {
-        assert!(*self.0.last().unwrap() == self.1);
+        assert!(rc_node_ptr_eq(self.0.last().unwrap(), &self.1));
         self.0.pop();
     }
 }
 
 impl<'a> AcquiredNode<'a> {
     pub fn get(&self) -> RsvgNode {
-        unsafe { (*self.1).clone() }
+        self.1.clone()
     }
 }
 
