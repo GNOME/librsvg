@@ -1,6 +1,6 @@
 use std::cell::{Cell, RefCell};
 
-use cairo;
+use cairo::{self, ImageSurface};
 
 use attributes::Attribute;
 use error::NodeError;
@@ -9,6 +9,7 @@ use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::ParseError;
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
+use state::ColorInterpolationFilters;
 use surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -73,7 +74,7 @@ impl NodeTrait for Blend {
 }
 
 impl Filter for Blend {
-    fn render(&self, _node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
+    fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
         let input = make_result(self.base.get_input(ctx))?;
         let input_2 = make_result(ctx.get_input(self.in2.borrow().as_ref()))?;
         let bounds = self
@@ -83,13 +84,34 @@ impl Filter for Blend {
             .add_input(&input_2)
             .into_irect();
 
-        // It's important to linearize sRGB before doing any blending, since otherwise the colors
-        // will be darker than they should be.
-        let input_surface =
-            linearize_surface(input.surface(), bounds).map_err(FilterError::BadInputSurfaceStatus)?;
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
 
-        let output_surface = linearize_surface(&input_2.surface(), bounds)
-            .map_err(FilterError::BadInputSurfaceStatus)?;
+        let input_surface =
+            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
+                SharedImageSurface::new(
+                    linearize_surface(input.surface(), bounds)
+                        .map_err(FilterError::BadInputSurfaceStatus)?,
+                ).unwrap()
+            } else {
+                input.surface().clone()
+            };
+
+        let input_2_surface =
+            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
+                SharedImageSurface::new(
+                    linearize_surface(input_2.surface(), bounds)
+                        .map_err(FilterError::BadInputSurfaceStatus)?,
+                ).unwrap()
+            } else {
+                input_2.surface().clone()
+            };
+
+        let output_surface = ImageSurface::create(
+            cairo::Format::ARgb32,
+            ctx.source_graphic().width(),
+            ctx.source_graphic().height(),
+        ).map_err(FilterError::OutputSurfaceCreation)?;
 
         {
             let cr = cairo::Context::new(&output_surface);
@@ -101,14 +123,21 @@ impl Filter for Blend {
             );
             cr.clip();
 
-            cr.set_source_surface(&input_surface, 0f64, 0f64);
+            input_2_surface.set_as_source_surface(&cr, 0f64, 0f64);
+            cr.paint();
+
+            input_surface.set_as_source_surface(&cr, 0f64, 0f64);
             cr.set_operator(self.mode.get().into());
             cr.paint();
         }
 
-        let output_surface = SharedImageSurface::new(output_surface).unwrap();
-        let output_surface = unlinearize_surface(&output_surface, bounds)
-            .map_err(FilterError::OutputSurfaceCreation)?;
+        let output_surface =
+            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
+                unlinearize_surface(&SharedImageSurface::new(output_surface).unwrap(), bounds)
+                    .map_err(FilterError::OutputSurfaceCreation)?
+            } else {
+                output_surface
+            };
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),

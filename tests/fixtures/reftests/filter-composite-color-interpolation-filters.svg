@@ -1,0 +1,65 @@
+<svg version="1.1" baseProfile="basic" id="svg-root"
+  width="100%" height="100%" viewBox="0 0 480 360"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <path id="Blue100" d="M 0 0 L 150 0 L 150 150 z" fill="#008888"/>
+    <path id="Red100" d="M 0 0 L 0 150 L 150 0 z" fill="#880088"/>
+    <path id="Blue50" d="M 0 0 L 150 0 L 150 150 z" fill="#008888" fill-opacity="0.5"/>
+    <path id="Red50" d="M 0 0 L 0 150 L 150 0 z" fill="#880088" fill-opacity="0.5"/>
+
+    <filter id="atop-50" x="0" y="0" width="1" height="1">
+      <feImage xlink:href="#Blue50" result="blue"/>
+      <feImage xlink:href="#Red50" result="red"/>
+      <feComposite in2="blue" in="red" operator="atop"/>
+    </filter>
+
+    <filter id="atop-50-sRGB" x="0" y="0" width="1" height="1">
+      <feImage xlink:href="#Blue50" result="blue"/>
+      <feImage xlink:href="#Red50" result="red"/>
+      <feComposite in2="blue" in="red" operator="atop" color-interpolation-filters="sRGB"/>
+    </filter>
+
+    <filter id="arithmetic-sRGB-inherited" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+      <feImage xlink:href="#Blue100" result="blue"/>
+      <feImage xlink:href="#Red100" result="red"/>
+      <feComposite in2="blue" in="red" operator="arithmetic" k1=".5" k2=".5" k3=".5" k4=".5"/>
+    </filter>
+
+    <filter id="arithmetic" x="0" y="0" width="1" height="1">
+      <feImage xlink:href="#Blue100" result="blue"/>
+      <feImage xlink:href="#Red100" result="red"/>
+      <feComposite in2="blue" in="red" operator="arithmetic" k1=".5" k2=".5" k3=".5" k4=".5"/>
+    </filter>
+
+    <filter id="arithmetic-sRGB" x="0" y="0" width="1" height="1">
+      <feImage xlink:href="#Blue100" result="blue"/>
+      <feImage xlink:href="#Red100" result="red"/>
+      <feComposite in2="blue" in="red" operator="arithmetic" k1=".5" k2=".5" k3=".5" k4=".5" color-interpolation-filters="sRGB"/>
+    </filter>
+  </defs>
+  <g font-family="Verdana" font-size="60" shape-rendering="crispEdges" transform="translate(5,70) scale(.4)">
+    <rect fill="none" stroke="blue" x="1" y="1" width="1098" height="723"/>
+    <text x="100" y="75">First row: linearRGB</text>
+    <text x="100" y="180">Second row: sRGB</text>
+
+    <g transform="translate(555,230)">
+      <rect x="0" y="0" width="150" height="150" filter="url(#atop-50)"/>
+    </g>
+    <g transform="translate(555,430)">
+      <rect x="0" y="0" width="150" height="150" filter="url(#atop-50-sRGB)"/>
+    </g>
+    <g transform="translate(735,230)">
+      <!-- The property should not apply here (it's applied to filter primitives). -->
+      <rect x="0" y="0" width="150" height="150" filter="url(#arithmetic)" color-interpolation-filters="sRGB"/>
+    </g>
+    <g transform="translate(735,430)">
+      <rect x="0" y="0" width="150" height="150" filter="url(#arithmetic-sRGB-inherited)"/>
+    </g>
+    <g transform="translate(915,230)">
+      <rect x="0" y="0" width="150" height="150" filter="url(#arithmetic)"/>
+    </g>
+    <g transform="translate(915,430)">
+      <rect x="0" y="0" width="150" height="150" filter="url(#arithmetic-sRGB)"/>
+    </g>
+  </g>
+</svg>

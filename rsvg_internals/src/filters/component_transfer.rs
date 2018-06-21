@@ -10,6 +10,7 @@ use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{self, ListLength, NumberListError, ParseError};
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
+use state::ColorInterpolationFilters;
 use surface_utils::{
     iterators::Pixels,
     shared_surface::SharedImageSurface,
@@ -281,8 +282,18 @@ impl Filter for ComponentTransfer {
         let input = make_result(self.base.get_input(ctx))?;
         let bounds = self.base.get_bounds(ctx).add_input(&input).into_irect();
 
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
+
         let input_surface =
-            linearize_surface(input.surface(), bounds).map_err(FilterError::BadInputSurfaceStatus)?;
+            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
+                SharedImageSurface::new(
+                    linearize_surface(input.surface(), bounds)
+                        .map_err(FilterError::BadInputSurfaceStatus)?,
+                ).unwrap()
+            } else {
+                input.surface().clone()
+            };
 
         // Create the output surface.
         let mut output_surface = ImageSurface::create(
@@ -349,7 +360,6 @@ impl Filter for ComponentTransfer {
         let compute_a = |alpha| compute_a(&params_a, alpha);
 
         // Do the actual processing.
-        let input_surface = SharedImageSurface::new(input_surface).unwrap();
         let output_stride = output_surface.get_stride() as usize;
         {
             let mut output_data = output_surface.get_data().unwrap();
@@ -369,9 +379,13 @@ impl Filter for ComponentTransfer {
             }
         }
 
-        let output_surface = SharedImageSurface::new(output_surface).unwrap();
-        let output_surface = unlinearize_surface(&output_surface, bounds)
-            .map_err(FilterError::OutputSurfaceCreation)?;
+        let output_surface =
+            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
+                unlinearize_surface(&SharedImageSurface::new(output_surface).unwrap(), bounds)
+                    .map_err(FilterError::OutputSurfaceCreation)?
+            } else {
+                output_surface
+            };
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),

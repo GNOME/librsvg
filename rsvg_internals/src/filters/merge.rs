@@ -7,6 +7,8 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use property_bag::PropertyBag;
 use srgb::{linearize_surface, unlinearize_surface};
+use state::ColorInterpolationFilters;
+use state::ComputedValues;
 use surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
@@ -85,16 +87,24 @@ impl MergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
+        values: &ComputedValues,
         bounds: IRect,
         output_surface: Option<ImageSurface>,
     ) -> Result<ImageSurface, FilterError> {
         let input = make_result(ctx.get_input(self.in_.borrow().as_ref()))?;
-        let input_surface = input.surface();
+
         let input_surface =
-            linearize_surface(&input_surface, bounds).map_err(FilterError::BadInputSurfaceStatus)?;
+            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
+                SharedImageSurface::new(
+                    linearize_surface(input.surface(), bounds)
+                        .map_err(FilterError::BadInputSurfaceStatus)?,
+                ).unwrap()
+            } else {
+                input.surface().clone()
+            };
 
         if output_surface.is_none() {
-            return Ok(input_surface);
+            return Ok(input_surface.into_image_surface());
         }
         let output_surface = output_surface.unwrap();
 
@@ -106,7 +116,8 @@ impl MergeNode {
             (bounds.y1 - bounds.y0) as f64,
         );
         cr.clip();
-        cr.set_source_surface(&input_surface, 0f64, 0f64);
+
+        input_surface.set_as_source_surface(&cr, 0f64, 0f64);
         cr.set_operator(cairo::Operator::Over);
         cr.paint();
 
@@ -128,19 +139,29 @@ impl Filter for Merge {
         }
         let bounds = bounds.into_irect();
 
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
+
         // Now merge them all.
         let mut output_surface = None;
         for child in node
             .children()
             .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
         {
-            output_surface =
-                Some(child.with_impl(move |c: &MergeNode| c.render(ctx, bounds, output_surface))?);
+            output_surface = Some(
+                child
+                    .with_impl(move |c: &MergeNode| c.render(ctx, values, bounds, output_surface))?,
+            );
         }
 
         let output_surface = output_surface
-            .map(|surface| SharedImageSurface::new(surface).unwrap())
-            .map(|surface| unlinearize_surface(&surface, bounds))
+            .map(|surface| {
+                if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
+                    unlinearize_surface(&SharedImageSurface::new(surface).unwrap(), bounds)
+                } else {
+                    Ok(surface)
+                }
+            })
             .unwrap_or_else(|| {
                 ImageSurface::create(
                     cairo::Format::ARgb32,
