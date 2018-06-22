@@ -447,21 +447,22 @@ impl<'a> DrawingCtx {
         node: &RsvgNode,
         clipping: bool,
     ) {
-        let draw = || {
-            let values = cascaded.get();
-            if values.is_visible() {
-                node.draw(node, cascaded, self, clipping);
-            }
-        };
-
+        let mut draw = false;
         if let Some(top) = self.drawsub_stack.pop() {
             if rc_node_ptr_eq(&top, node) {
-                draw();
+                draw = true;
             }
 
             self.drawsub_stack.push(top);
         } else {
-            draw();
+            draw = true;
+        }
+
+        if draw {
+            let values = cascaded.get();
+            if values.is_visible() {
+                node.draw(node, cascaded, self, clipping);
+            }
         }
     }
 
