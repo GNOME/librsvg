@@ -144,8 +144,10 @@ compare_surfaces (cairo_surface_t	*surface_a,
 static char *
 get_output_dir (void) {
     if (_output_dir == NULL) {
-        _output_dir = g_strconcat (g_get_current_dir (), G_DIR_SEPARATOR_S, "output", NULL);
+	char *cwd = g_get_current_dir ();
+        _output_dir = g_strconcat (cwd, G_DIR_SEPARATOR_S, "output", NULL);
         g_mkdir (_output_dir, 0777);
+	g_free (cwd);
     }
     return _output_dir;
 }
