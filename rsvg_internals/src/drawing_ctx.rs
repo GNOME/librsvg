@@ -465,7 +465,7 @@ impl<'a> DrawingCtx {
         }
     }
 
-    pub fn add_node_and_ancestors_to_stack(&self, node: &RsvgNode) {
+    pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {
         self.drawsub_stack.push(node.clone());
         if let Some(ref parent) = node.get_parent() {
             self.add_node_and_ancestors_to_stack(parent);
