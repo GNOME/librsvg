@@ -443,15 +443,14 @@ impl<'a> DrawingCtx {
         node: &RsvgNode,
         clipping: bool,
     ) {
-        let mut draw = false;
-        if let Some(top) = self.drawsub_stack.pop() {
-            if rc_node_ptr_eq(&top, node) {
-                draw = true;
-            }
+        let mut draw = true;
 
-            self.drawsub_stack.push(top);
-        } else {
-            draw = true;
+        let stack_top = self.drawsub_stack.pop();
+
+        if let Some(ref top) = stack_top {
+            if !rc_node_ptr_eq(&top, node) {
+                draw = false;
+            }
         }
 
         if draw {
@@ -459,6 +458,10 @@ impl<'a> DrawingCtx {
             if values.is_visible() {
                 node.draw(node, cascaded, self, clipping);
             }
+        }
+
+        if let Some(top) = stack_top {
+            self.drawsub_stack.push(top);
         }
     }
 
