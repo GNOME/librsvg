@@ -561,7 +561,7 @@ pub struct AcquiredNode(*const RefCell<Vec<RsvgNode>>, RsvgNode);
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
         unsafe {
-            let v = (*self.0).borrow_mut();
+            let mut v = (*self.0).borrow_mut();
             assert!(rc_node_ptr_eq(v.last().unwrap(), &self.1));
             v.pop();
         }
