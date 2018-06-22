@@ -99,6 +99,7 @@ pub struct SpecifiedValues {
     pub clip_rule: SpecifiedValue<ClipRule>,
     pub comp_op: SpecifiedValue<CompOp>,
     pub color: SpecifiedValue<Color>,
+    pub color_interpolation_filters: SpecifiedValue<ColorInterpolationFilters>,
     pub direction: SpecifiedValue<Direction>,
     pub display: SpecifiedValue<Display>,
     pub enable_background: SpecifiedValue<EnableBackground>,
@@ -153,6 +154,7 @@ pub struct ComputedValues {
     pub clip_rule: ClipRule,
     pub comp_op: CompOp,
     pub color: Color,
+    pub color_interpolation_filters: ColorInterpolationFilters,
     pub direction: Direction,
     pub display: Display,
     pub enable_background: EnableBackground,
@@ -229,6 +231,7 @@ impl Default for ComputedValues {
             clip_path: Default::default(),
             clip_rule: Default::default(),
             color: Default::default(),
+            color_interpolation_filters: Default::default(),
             comp_op: Default::default(),
             direction: Default::default(),
             display: Default::default(),
@@ -289,6 +292,7 @@ impl SpecifiedValues {
         compute_value!(self, computed, clip_rule);
         compute_value!(self, computed, comp_op);
         compute_value!(self, computed, color);
+        compute_value!(self, computed, color_interpolation_filters);
         compute_value!(self, computed, direction);
         compute_value!(self, computed, display);
         compute_value!(self, computed, enable_background);
@@ -383,6 +387,10 @@ impl State {
 
                 Attribute::Color => {
                     self.values.color = parse_property(value, ())?;
+                }
+
+                Attribute::ColorInterpolationFilters => {
+                    self.values.color_interpolation_filters = parse_property(value, ())?;
                 }
 
                 Attribute::CompOp => {
@@ -770,6 +778,19 @@ make_property!(
     inherits_automatically: true,
     newtype_parse: cssparser::RGBA,
     parse_data_type: ()
+);
+
+// https://www.w3.org/TR/SVG11/painting.html#ColorInterpolationProperty
+make_property!(
+    ComputedValues,
+    ColorInterpolationFilters,
+    default: LinearRgb,
+    inherits_automatically: true,
+
+    identifiers:
+    "auto" => Auto,
+    "linearRGB" => LinearRgb,
+    "sRGB" => Srgb,
 );
 
 // https://gitlab.gnome.org/GNOME/librsvg/issues/268 - can we remove this property?

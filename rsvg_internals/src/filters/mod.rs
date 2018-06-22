@@ -27,7 +27,6 @@ pub use self::ffi::{filter_render, RsvgFilterPrimitive};
 mod input;
 use self::input::Input;
 
-pub mod iterators;
 pub mod node;
 use self::node::NodeFilter;
 
@@ -51,12 +50,19 @@ trait Filter: NodeTrait {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError>;
+
+    /// Returns `true` if this filter primitive is affected by the `color-interpolation-filters`
+    /// property.
+    ///
+    /// Primitives that do color blending (like `feComposite` or `feBlend`) should return `true`
+    /// here, whereas primitives that don't (like `feOffset`) should return `false`.
+    fn is_affected_by_color_interpolation_filters() -> bool;
 }
 
 /// The base filter primitive node containing common properties.
 struct Primitive {
-    // The purpose of this field is to pass this filter's render function to the C code.
-    render_function: RenderFunctionType,
+    // The purpose of this field is to pass this filter's function pointers to the C code.
+    filter_function_pointers: FilterFunctionPointers,
 
     x: Cell<Option<RsvgLength>>,
     y: Cell<Option<RsvgLength>>,
@@ -84,7 +90,7 @@ impl Primitive {
     #[inline]
     fn new<T: Filter>() -> Primitive {
         Primitive {
-            render_function: render::<T>,
+            filter_function_pointers: FilterFunctionPointers::new::<T>(),
 
             x: Cell::new(None),
             y: Cell::new(None),
@@ -174,7 +180,7 @@ impl NodeTrait for Primitive {
     #[inline]
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
         // The code that deals with the return value is in ffi.rs.
-        self.render_function as *const RenderFunctionType as *const RsvgCNodeImpl
+        &self.filter_function_pointers as *const FilterFunctionPointers as *const RsvgCNodeImpl
     }
 }
 

@@ -10,12 +10,16 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::{self, parse, Parse};
 use property_bag::PropertyBag;
-use srgb::{linearize_surface, unlinearize_surface};
+use surface_utils::{
+    iterators::Pixels,
+    shared_surface::SharedImageSurface,
+    ImageSurfaceDataExt,
+    Pixel,
+};
 use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
-use super::iterators::{ImageSurfaceDataExt, ImageSurfaceDataShared, Pixel, Pixels};
 use super::{make_result, Filter, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible compositing operations.
@@ -112,31 +116,11 @@ impl Filter for Composite {
             .add_input(&input_2)
             .into_irect(draw_ctx);
 
-        // It's important to linearize sRGB before doing any blending, since otherwise the colors
-        // will be darker than they should be.
-        let input_surface =
-            linearize_surface(input.surface(), bounds).map_err(FilterError::BadInputSurfaceStatus)?;
-
         let output_surface = if self.operator.get() == Operator::Arithmetic {
-            let input_data = unsafe {
-                ImageSurfaceDataShared::new_unchecked(&input_surface)
-                    .map_err(FilterError::BadInputSurfaceStatus)?
-            };
-
-            // Not linearizing input_2 gives a better matching result than linearizing?..
-            // Maybe it's due to some issue elsewhere? Am I missing something?
-            //
-            // let input_2_surface = linearize_surface(input_2.surface(), bounds)
-            //     .map_err(FilterError::BadInputSurfaceStatus)?;
-            let input_2_data = unsafe {
-                ImageSurfaceDataShared::new_unchecked(&input_2.surface())
-                    .map_err(FilterError::BadInputSurfaceStatus)?
-            };
-
             let mut output_surface = ImageSurface::create(
                 cairo::Format::ARgb32,
-                input_data.width as i32,
-                input_data.height as i32,
+                input.surface().width(),
+                input.surface().height(),
             ).map_err(FilterError::OutputSurfaceCreation)?;
 
             let output_stride = output_surface.get_stride() as usize;
@@ -148,8 +132,8 @@ impl Filter for Composite {
                 let k3 = self.k3.get();
                 let k4 = self.k4.get();
 
-                for (x, y, pixel, pixel_2) in Pixels::new(input_data, bounds)
-                    .map(|(x, y, p)| (x, y, p, input_2_data.get_pixel(x, y)))
+                for (x, y, pixel, pixel_2) in Pixels::new(input.surface(), bounds)
+                    .map(|(x, y, p)| (x, y, p, input_2.surface().get_pixel(x, y)))
                 {
                     let i1a = f64::from(pixel.a) / 255f64;
                     let i2a = f64::from(pixel_2.a) / 255f64;
@@ -183,8 +167,10 @@ impl Filter for Composite {
 
             output_surface
         } else {
-            let output_surface = linearize_surface(&input_2.surface(), bounds)
-                .map_err(FilterError::BadInputSurfaceStatus)?;
+            let output_surface = input_2
+                .surface()
+                .copy_surface(bounds)
+                .map_err(FilterError::OutputSurfaceCreation)?;
 
             let cr = cairo::Context::new(&output_surface);
             cr.rectangle(
@@ -195,23 +181,25 @@ impl Filter for Composite {
             );
             cr.clip();
 
-            cr.set_source_surface(&input_surface, 0f64, 0f64);
+            input.surface().set_as_source_surface(&cr, 0f64, 0f64);
             cr.set_operator(self.operator.get().into());
             cr.paint();
 
             output_surface
         };
 
-        let output_surface = unlinearize_surface(&output_surface, bounds)
-            .map_err(FilterError::OutputSurfaceCreation)?;
-
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: output_surface,
+                surface: SharedImageSurface::new(output_surface).unwrap(),
                 bounds,
             },
         })
+    }
+
+    #[inline]
+    fn is_affected_by_color_interpolation_filters() -> bool {
+        true
     }
 }
 

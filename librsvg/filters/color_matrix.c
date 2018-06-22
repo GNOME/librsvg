@@ -137,7 +137,6 @@ rsvg_filter_primitive_color_matrix_render (RsvgNode *node, RsvgComputedValues *v
     /* rsvg_filter_store_result (primitive->result, output, ctx); */
 
     cairo_surface_destroy (in);
-    cairo_surface_destroy (output);
 }
 
 static void

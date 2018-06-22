@@ -5,6 +5,7 @@ use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use property_bag::PropertyBag;
+use surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, Primitive};
@@ -52,8 +53,8 @@ impl Filter for Flood {
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
-            ctx.source_graphic().get_width(),
-            ctx.source_graphic().get_height(),
+            ctx.source_graphic().width(),
+            ctx.source_graphic().height(),
         ).map_err(FilterError::OutputSurfaceCreation)?;
 
         let cascaded = node.get_cascaded_values();
@@ -87,9 +88,14 @@ impl Filter for Flood {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: output_surface,
+                surface: SharedImageSurface::new(output_surface).unwrap(),
                 bounds,
             },
         })
+    }
+
+    #[inline]
+    fn is_affected_by_color_interpolation_filters() -> bool {
+        false
     }
 }

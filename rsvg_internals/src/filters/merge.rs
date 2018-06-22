@@ -7,7 +7,7 @@ use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use property_bag::PropertyBag;
-use srgb::{linearize_surface, unlinearize_surface};
+use surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::input::Input;
@@ -90,12 +90,12 @@ impl MergeNode {
         output_surface: Option<ImageSurface>,
     ) -> Result<ImageSurface, FilterError> {
         let input = make_result(ctx.get_input(draw_ctx, self.in_.borrow().as_ref()))?;
-        let input_surface = input.surface();
-        let input_surface =
-            linearize_surface(&input_surface, bounds).map_err(FilterError::BadInputSurfaceStatus)?;
 
         if output_surface.is_none() {
-            return Ok(input_surface);
+            return input
+                .surface()
+                .copy_surface(bounds)
+                .map_err(FilterError::OutputSurfaceCreation);
         }
         let output_surface = output_surface.unwrap();
 
@@ -107,7 +107,8 @@ impl MergeNode {
             (bounds.y1 - bounds.y0) as f64,
         );
         cr.clip();
-        cr.set_source_surface(&input_surface, 0f64, 0f64);
+
+        input.surface().set_as_source_surface(&cr, 0f64, 0f64);
         cr.set_operator(cairo::Operator::Over);
         cr.paint();
 
@@ -145,23 +146,26 @@ impl Filter for Merge {
             );
         }
 
-        let output_surface = output_surface
-            .map(|surface| unlinearize_surface(&surface, bounds))
-            .unwrap_or_else(|| {
-                ImageSurface::create(
-                    cairo::Format::ARgb32,
-                    ctx.source_graphic().get_width(),
-                    ctx.source_graphic().get_height(),
-                )
-            })
-            .map_err(FilterError::OutputSurfaceCreation)?;
+        let output_surface = match output_surface {
+            Some(surface) => surface,
+            None => ImageSurface::create(
+                cairo::Format::ARgb32,
+                ctx.source_graphic().width(),
+                ctx.source_graphic().height(),
+            ).map_err(FilterError::OutputSurfaceCreation)?,
+        };
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: output_surface,
+                surface: SharedImageSurface::new(output_surface).unwrap(),
                 bounds,
             },
         })
+    }
+
+    #[inline]
+    fn is_affected_by_color_interpolation_filters() -> bool {
+        true
     }
 }

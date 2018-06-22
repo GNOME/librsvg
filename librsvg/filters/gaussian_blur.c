@@ -641,7 +641,6 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node,
     rsvg_filter_store_output (primitive->result, op, ctx);
 
     cairo_surface_destroy (in);
-    cairo_surface_destroy (output);
 }
 
 static void

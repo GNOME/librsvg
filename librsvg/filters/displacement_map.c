@@ -165,7 +165,6 @@ rsvg_filter_primitive_displacement_map_render (RsvgNode *node,
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (in2);
-    cairo_surface_destroy (output);
 }
 
 static void

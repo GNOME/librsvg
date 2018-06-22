@@ -84,12 +84,10 @@ impl<'a> BoundsBuilder<'a> {
     /// Returns the final pixel bounds.
     #[inline]
     pub fn into_irect(self, draw_ctx: &mut DrawingCtx) -> IRect {
-        let (mut bbox, needs_clipping) = self.apply_properties(draw_ctx);
+        let mut bbox = self.apply_properties(draw_ctx);
 
-        if needs_clipping {
-            let effects_region = self.ctx.effects_region();
-            bbox.clip(&effects_region);
-        }
+        let effects_region = self.ctx.effects_region();
+        bbox.clip(&effects_region);
 
         bbox.rect.unwrap().into()
     }
@@ -99,11 +97,11 @@ impl<'a> BoundsBuilder<'a> {
     /// Used by feImage.
     #[inline]
     pub fn into_irect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> IRect {
-        self.apply_properties(draw_ctx).0.rect.unwrap().into()
+        self.apply_properties(draw_ctx).rect.unwrap().into()
     }
 
     /// Applies the filter primitive properties.
-    fn apply_properties(mut self, draw_ctx: &mut DrawingCtx) -> (BoundingBox, bool) {
+    fn apply_properties(mut self, draw_ctx: &mut DrawingCtx) -> BoundingBox {
         if self.bbox.rect.is_none() || self.standard_input_was_referenced {
             // The default value is the filter effects region.
             let effects_region = self.ctx.effects_region();
@@ -113,8 +111,6 @@ impl<'a> BoundsBuilder<'a> {
             // Convert into the paffine coordinate system.
             self.bbox.insert(&effects_region);
         }
-
-        let mut needs_clipping = false;
 
         // If any of the properties were specified, we need to respect them.
         if self.x.is_some() || self.y.is_some() || self.width.is_some() || self.height.is_some() {
@@ -136,15 +132,11 @@ impl<'a> BoundsBuilder<'a> {
                     rect.height = normalize(&height);
                 }
             });
-
-            // x, y, width, height, on the other hand, can exceed the filter effects region, so a
-            // clip is needed.
-            needs_clipping = true;
         }
 
         // Convert into the surface coordinate system.
         let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
         bbox.insert(&self.bbox);
-        (bbox, needs_clipping)
+        bbox
     }
 }
