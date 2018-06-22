@@ -577,7 +577,7 @@ impl AcquiredNode {
 
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_new(
-    cr: cairo::Context,
+    cr: *mut cairo_sys::cairo_t,
     width: u32,
     height: u32,
     vb_width: libc::c_double,
@@ -588,7 +588,7 @@ pub extern "C" fn rsvg_drawing_ctx_new(
     is_testing: glib_sys::gboolean,
 ) -> *mut RsvgDrawingCtx {
     Box::into_raw(Box::new(DrawingCtx::new(
-        cr,
+        unsafe { from_glib_none(cr) },
         f64::from(width),
         f64::from(height),
         vb_width,
