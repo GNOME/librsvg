@@ -56,13 +56,11 @@ impl NodeTrait for NodeLink {
 
                 let attributes = link.as_ref().map(|i| format!("uri='{}'", escape_value(i)));
 
-                dc.get_cairo_context().with_tag(
-                    CAIRO_TAG_LINK,
-                    attributes.as_ref().map(|i| i.as_str()),
-                    || {
-                        node.draw_children(&cascaded, dc, clipping);
-                    },
-                )
+                let cr = dc.get_cairo_context();
+
+                cr.tag_begin(CAIRO_TAG_LINK, attributes.as_ref().map(|i| i.as_str()));
+                node.draw_children(&cascaded, dc, clipping);
+                cr.tag_end(CAIRO_TAG_LINK);
             } else {
                 node.draw_children(&cascaded, dc, clipping)
             }
@@ -98,16 +96,6 @@ extern "C" {
 trait CairoTagging {
     fn tag_begin(&self, tag_name: &str, attributes: Option<&str>);
     fn tag_end(&self, tag_name: &str);
-    fn with_tag<U, T>(&self, tag_name: &str, attributes: Option<&str>, f: U) -> T
-    where
-        U: Fn() -> T,
-    {
-        self.tag_begin(tag_name, attributes);
-        let result = f();
-        self.tag_end(tag_name);
-
-        result
-    }
 }
 
 impl CairoTagging for cairo::Context {
