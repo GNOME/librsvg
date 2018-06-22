@@ -113,7 +113,7 @@ impl<'a> DrawingCtx {
     }
 
     pub fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
-        cr.to_raw_none() == self.initial_cr.to_raw_none()
+        cr.to_raw_none() != self.initial_cr.to_raw_none()
     }
 
     pub fn get_cr_stack(&self) -> &Vec<cairo::Context> {
