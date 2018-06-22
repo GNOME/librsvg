@@ -947,6 +947,8 @@ sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xm
                 }
             }
 
+            rsvg_property_bag_iter_end (iter);
+
             if ((!alternate || strcmp (alternate, "no") != 0)
                 && type && strcmp (type, "text/css") == 0
                 && href) {
