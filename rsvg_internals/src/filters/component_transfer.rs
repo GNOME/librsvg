@@ -9,8 +9,6 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::{self, ListLength, NumberListError, ParseError};
 use property_bag::PropertyBag;
-use srgb::{linearize_surface, unlinearize_surface};
-use state::ColorInterpolationFilters;
 use surface_utils::{
     iterators::Pixels,
     shared_surface::SharedImageSurface,
@@ -282,19 +280,6 @@ impl Filter for ComponentTransfer {
         let input = make_result(self.base.get_input(ctx))?;
         let bounds = self.base.get_bounds(ctx).add_input(&input).into_irect();
 
-        let cascaded = node.get_cascaded_values();
-        let values = cascaded.get();
-
-        let input_surface =
-            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
-                SharedImageSurface::new(
-                    linearize_surface(input.surface(), bounds)
-                        .map_err(FilterError::BadInputSurfaceStatus)?,
-                ).unwrap()
-            } else {
-                input.surface().clone()
-            };
-
         // Create the output surface.
         let mut output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
@@ -364,7 +349,7 @@ impl Filter for ComponentTransfer {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, pixel) in Pixels::new(&input_surface, bounds) {
+            for (x, y, pixel) in Pixels::new(input.surface(), bounds) {
                 let alpha = f64::from(pixel.a) / 255f64;
                 let new_alpha = compute_a(alpha);
 
@@ -379,14 +364,6 @@ impl Filter for ComponentTransfer {
             }
         }
 
-        let output_surface =
-            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
-                unlinearize_surface(&SharedImageSurface::new(output_surface).unwrap(), bounds)
-                    .map_err(FilterError::OutputSurfaceCreation)?
-            } else {
-                output_surface
-            };
-
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
@@ -394,6 +371,10 @@ impl Filter for ComponentTransfer {
                 bounds,
             },
         })
+    }
+
+    fn is_affected_by_color_interpolation_filters() -> bool {
+        true
     }
 }
 

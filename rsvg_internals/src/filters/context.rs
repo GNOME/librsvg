@@ -15,6 +15,7 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use length::RsvgLength;
 use node::{box_node, RsvgNode};
 use paint_server::{self, PaintServer};
+use srgb::{linearize_surface, unlinearize_surface};
 use surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface, Pixel};
 use unitinterval::UnitInterval;
 
@@ -93,6 +94,11 @@ pub struct FilterContext {
     drawing_ctx: *mut RsvgDrawingCtx,
     /// The filter effects region.
     effects_region: BoundingBox,
+    /// Whether the currently rendered filter primitive uses linear RGB for color operations.
+    ///
+    /// This affects `get_input()` and `store_result()` which should perform linearization and
+    /// unlinearization respectively when this is set to `true`.
+    processing_linear_rgb: bool,
 
     /// The filter element affine matrix.
     ///
@@ -283,6 +289,7 @@ impl FilterContext {
                 f64::from(width),
                 f64::from(height),
             ),
+            processing_linear_rgb: false,
             affine,
             paffine,
             channelmap,
@@ -403,7 +410,15 @@ impl FilterContext {
 
     /// Stores a filter primitive result into the context.
     #[inline]
-    pub fn store_result(&mut self, result: FilterResult) {
+    pub fn store_result(&mut self, mut result: FilterResult) {
+        // Unlinearize the surface if needed.
+        if self.processing_linear_rgb {
+            // TODO: unwrap() on unlinearize_surface() can panic if we run out of memory for Cairo.
+            result.output.surface = SharedImageSurface::new(
+                unlinearize_surface(&result.output.surface, result.output.bounds).unwrap(),
+            ).unwrap();
+        }
+
         if let Some(name) = result.name {
             self.previous_results.insert(name, result.output.clone());
         }
@@ -491,7 +506,10 @@ impl FilterContext {
     }
 
     /// Retrieves the filter input surface according to the SVG rules.
-    pub fn get_input(&self, in_: Option<&Input>) -> Option<FilterInput> {
+    ///
+    /// Does not take `processing_linear_rgb` into account.
+    // TODO: pass the errors through.
+    fn get_input_raw(&self, in_: Option<&Input>) -> Option<FilterInput> {
         if in_.is_none() {
             // No value => use the last result.
             // As per the SVG spec, if the filter primitive is the first in the chain, return the
@@ -540,6 +558,45 @@ impl FilterContext {
                 .cloned()
                 .map(FilterInput::PrimitiveOutput),
         }
+    }
+
+    /// Retrieves the filter input surface according to the SVG rules.
+    pub fn get_input(&self, in_: Option<&Input>) -> Option<FilterInput> {
+        let raw = self.get_input_raw(in_);
+
+        // Linearize the returned surface if needed.
+        if raw.is_some() && self.processing_linear_rgb {
+            let (surface, bounds) = match raw.as_ref().unwrap() {
+                FilterInput::StandardInput(ref surface) => {
+                    (surface, self.effects_region().rect.unwrap().into())
+                }
+                FilterInput::PrimitiveOutput(FilterOutput {
+                    ref surface,
+                    ref bounds,
+                }) => (surface, *bounds),
+            };
+
+            linearize_surface(surface, bounds)
+                .ok()
+                .map(|surface| SharedImageSurface::new(surface).unwrap())
+                .map(|surface| match raw.as_ref().unwrap() {
+                    FilterInput::StandardInput(_) => FilterInput::StandardInput(surface),
+                    FilterInput::PrimitiveOutput(output) => {
+                        FilterInput::PrimitiveOutput(FilterOutput { surface, ..*output })
+                    }
+                })
+        } else {
+            raw
+        }
+    }
+
+    /// Calls the given closure with linear RGB processing enabled.
+    #[inline]
+    pub fn with_linear_rgb<T, F: FnOnce(&mut FilterContext) -> T>(&mut self, f: F) -> T {
+        self.processing_linear_rgb = true;
+        let rv = f(self);
+        self.processing_linear_rgb = false;
+        rv
     }
 }
 

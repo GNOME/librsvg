@@ -6,6 +6,8 @@ use cairo::{self, ImageSurface};
 use cairo_sys;
 use glib::translate::{Stash, ToGlibPtr};
 
+use filters::context::IRect;
+
 use super::Pixel;
 
 /// Wrapper for a Cairo image surface that allows shared access.
@@ -123,6 +125,26 @@ impl SharedImageSurface {
     #[inline]
     pub fn set_as_source_surface(&self, cr: &cairo::Context, x: f64, y: f64) {
         cr.set_source_surface(&self.surface, x, y);
+    }
+
+    /// Returns a new `ImageSurface` with the same contents as the one stored in this
+    /// `SharedImageSurface` within the given bounds.
+    pub fn copy_surface(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {
+        let output_surface = ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        let cr = cairo::Context::new(&output_surface);
+        cr.rectangle(
+            bounds.x0 as f64,
+            bounds.y0 as f64,
+            (bounds.x1 - bounds.x0) as f64,
+            (bounds.y1 - bounds.y0) as f64,
+        );
+        cr.clip();
+
+        cr.set_source_surface(&self.surface, 0f64, 0f64);
+        cr.paint();
+
+        Ok(output_surface)
     }
 
     /// Returns a raw pointer to the underlying surface.

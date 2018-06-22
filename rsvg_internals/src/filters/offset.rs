@@ -111,4 +111,9 @@ impl Filter for Offset {
             },
         })
     }
+
+    #[inline]
+    fn is_affected_by_color_interpolation_filters() -> bool {
+        false
+    }
 }
