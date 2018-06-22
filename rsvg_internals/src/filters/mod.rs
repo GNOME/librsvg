@@ -3,6 +3,7 @@ use std::ops::Deref;
 
 use attributes::Attribute;
 use coord_units::CoordUnits;
+use drawing_ctx::DrawingCtx;
 use error::AttributeError;
 use handle::RsvgHandle;
 use length::{LengthDir, LengthUnit, RsvgLength};
@@ -44,7 +45,12 @@ trait Filter: NodeTrait {
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
     /// property hasn't been provided), an error is returned.
-    fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError>;
+    fn render(
+        &self,
+        node: &RsvgNode,
+        ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterResult, FilterError>;
 }
 
 /// The base filter primitive node containing common properties.
@@ -184,8 +190,8 @@ impl PrimitiveWithInput {
 
     /// Returns the input Cairo surface for this filter primitive.
     #[inline]
-    fn get_input(&self, ctx: &FilterContext) -> Option<FilterInput> {
-        ctx.get_input(self.in_.borrow().as_ref())
+    fn get_input(&self, ctx: &FilterContext, draw_ctx: &mut DrawingCtx) -> Option<FilterInput> {
+        ctx.get_input(draw_ctx, self.in_.borrow().as_ref())
     }
 }
 

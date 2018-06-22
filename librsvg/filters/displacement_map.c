@@ -41,7 +41,11 @@ struct _RsvgFilterPrimitiveDisplacementMap {
 };
 
 static void
-rsvg_filter_primitive_displacement_map_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_displacement_map_render (RsvgNode *node,
+                                               RsvgComputedValues *values,
+                                               RsvgFilterPrimitive *primitive,
+                                               RsvgFilterContext *ctx,
+                                               RsvgDrawingCtx *draw_ctx)
 {
     RsvgFilterPrimitiveDisplacementMap *displacement_map = (RsvgFilterPrimitiveDisplacementMap *) primitive;
     guchar ch, xch, ych;
@@ -57,15 +61,15 @@ rsvg_filter_primitive_displacement_map_render (RsvgNode *node, RsvgComputedValue
 
     double ox, oy;
 
-    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx, draw_ctx);
 
-    in = rsvg_filter_get_in (primitive->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx, draw_ctx);
     if (in == NULL)
         return;
 
     cairo_surface_flush (in);
 
-    in2 = rsvg_filter_get_in (displacement_map->in2, ctx);
+    in2 = rsvg_filter_get_in (displacement_map->in2, ctx, draw_ctx);
     if (in2 == NULL) {
         cairo_surface_destroy (in);
         return;

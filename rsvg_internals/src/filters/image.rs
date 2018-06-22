@@ -10,6 +10,7 @@ use libc;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
+use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
@@ -47,12 +48,12 @@ impl Image {
     fn render_node(
         &self,
         ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
         bounds: IRect,
         href: &str,
     ) -> Result<ImageSurface, FilterError> {
         // TODO: Port more of this to Rust.
         // Currently this is essentially a direct port of the C function.
-        let draw_ctx = ctx.draw_context();
         let acquired_drawable = draw_ctx
             .get_acquired_node(href)
             .ok_or(FilterError::InvalidInput)?;
@@ -66,10 +67,11 @@ impl Image {
 
         draw_ctx.get_cairo_context().set_matrix(ctx.paffine());
 
-        let cascaded = CascadedValues::new_from_values(
-            &drawable,
-            ctx.get_node_being_filtered().get_cascaded_values().get(),
-        );
+        let node_being_filtered = ctx.get_node_being_filtered();
+        let node_being_filtered_cascaded = node_being_filtered.get_cascaded_values();
+        let node_being_filtered_values = node_being_filtered_cascaded.get();
+
+        let cascaded = CascadedValues::new_from_values(&drawable, node_being_filtered_values);
 
         draw_ctx.draw_node_on_surface(
             &drawable,
@@ -104,6 +106,7 @@ impl Image {
     fn render_external_image(
         &self,
         ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
         bounds_builder: BoundsBuilder,
         href: &str,
     ) -> Result<ImageSurface, FilterError> {
@@ -141,7 +144,7 @@ impl Image {
         ).map_err(FilterError::OutputSurfaceCreation)?;
 
         // TODO: this goes through a f64->i32->f64 conversion.
-        let render_bounds = bounds_builder.into_irect_without_clipping();
+        let render_bounds = bounds_builder.into_irect_without_clipping(draw_ctx);
         let aspect = self.aspect.get();
         let (x, y, w, h) = aspect.compute(
             f64::from(surface.get_width()),
@@ -165,7 +168,7 @@ impl Image {
             matrix.invert();
             ptn.set_matrix(matrix);
 
-            let bounds = bounds_builder.into_irect();
+            let bounds = bounds_builder.into_irect(draw_ctx);
             let cr = cairo::Context::new(&output_surface);
             cr.rectangle(
                 f64::from(bounds.x0),
@@ -217,16 +220,21 @@ impl NodeTrait for Image {
 }
 
 impl Filter for Image {
-    fn render(&self, _node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
+    fn render(
+        &self,
+        _node: &RsvgNode,
+        ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterResult, FilterError> {
         let href = self.href.borrow();
         let href = href.as_ref().ok_or(FilterError::InvalidInput)?;
 
         let bounds_builder = self.base.get_bounds(ctx);
-        let bounds = bounds_builder.into_irect();
+        let bounds = bounds_builder.into_irect(draw_ctx);
 
-        let output_surface = match self.render_node(ctx, bounds, href) {
+        let output_surface = match self.render_node(ctx, draw_ctx, bounds, href) {
             Err(FilterError::InvalidInput) => {
-                self.render_external_image(ctx, bounds_builder, href)?
+                self.render_external_image(ctx, draw_ctx, bounds_builder, href)?
             }
             Err(err) => return Err(err),
             Ok(surface) => surface,

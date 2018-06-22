@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use cairo::{self, ImageSurface};
 
 use attributes::Attribute;
+use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use property_bag::PropertyBag;
@@ -84,10 +85,11 @@ impl MergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
         bounds: IRect,
         output_surface: Option<ImageSurface>,
     ) -> Result<ImageSurface, FilterError> {
-        let input = make_result(ctx.get_input(self.in_.borrow().as_ref()))?;
+        let input = make_result(ctx.get_input(draw_ctx, self.in_.borrow().as_ref()))?;
         let input_surface = input.surface();
         let input_surface =
             linearize_surface(&input_surface, bounds).map_err(FilterError::BadInputSurfaceStatus)?;
@@ -114,18 +116,23 @@ impl MergeNode {
 }
 
 impl Filter for Merge {
-    fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
+    fn render(
+        &self,
+        node: &RsvgNode,
+        ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each child node's input into account.
         let mut bounds = self.base.get_bounds(ctx);
         for child in node
             .children()
             .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
         {
-            bounds = bounds.add_input(&child.with_impl(move |c: &MergeNode| {
-                make_result(ctx.get_input(c.in_.borrow().as_ref()))
+            bounds = bounds.add_input(&child.with_impl(|c: &MergeNode| {
+                make_result(ctx.get_input(draw_ctx, c.in_.borrow().as_ref()))
             })?);
         }
-        let bounds = bounds.into_irect();
+        let bounds = bounds.into_irect(draw_ctx);
 
         // Now merge them all.
         let mut output_surface = None;
@@ -133,8 +140,9 @@ impl Filter for Merge {
             .children()
             .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
         {
-            output_surface =
-                Some(child.with_impl(move |c: &MergeNode| c.render(ctx, bounds, output_surface))?);
+            output_surface = Some(
+                child.with_impl(|c: &MergeNode| c.render(ctx, draw_ctx, bounds, output_surface))?,
+            );
         }
 
         let output_surface = output_surface

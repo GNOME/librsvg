@@ -40,7 +40,11 @@ struct _RsvgFilterPrimitiveErode {
 };
 
 static void
-rsvg_filter_primitive_erode_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_erode_render (RsvgNode *node,
+                                    RsvgComputedValues *values,
+                                    RsvgFilterPrimitive *primitive,
+                                    RsvgFilterContext *ctx,
+                                    RsvgDrawingCtx *draw_ctx)
 {
     RsvgFilterPrimitiveErode *erode = (RsvgFilterPrimitiveErode *) primitive;
 
@@ -58,9 +62,9 @@ rsvg_filter_primitive_erode_render (RsvgNode *node, RsvgComputedValues *values, 
     gint kx, ky;
     guchar val;
 
-    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx, draw_ctx);
 
-    in = rsvg_filter_get_in (primitive->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx, draw_ctx);
     if (in == NULL)
         return;
 

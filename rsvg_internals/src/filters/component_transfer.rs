@@ -4,6 +4,7 @@ use std::cmp::min;
 use cairo::{self, ImageSurface};
 
 use attributes::Attribute;
+use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
@@ -272,9 +273,18 @@ impl NodeTrait for FuncX {
 }
 
 impl Filter for ComponentTransfer {
-    fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
-        let input = make_result(self.base.get_input(ctx))?;
-        let bounds = self.base.get_bounds(ctx).add_input(&input).into_irect();
+    fn render(
+        &self,
+        node: &RsvgNode,
+        ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterResult, FilterError> {
+        let input = make_result(self.base.get_input(ctx, draw_ctx))?;
+        let bounds = self
+            .base
+            .get_bounds(ctx)
+            .add_input(&input)
+            .into_irect(draw_ctx);
 
         let input_surface =
             linearize_surface(input.surface(), bounds).map_err(FilterError::BadInputSurfaceStatus)?;

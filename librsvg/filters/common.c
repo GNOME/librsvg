@@ -86,12 +86,6 @@ filter_primitive_set_x_y_width_height_atts (RsvgFilterPrimitive *prim, RsvgPrope
     rsvg_property_bag_iter_end (iter);
 }
 
-static void
-rsvg_filter_primitive_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
-{
-    primitive->render (node, values, primitive, ctx);
-}
-
 // RsvgIRect
 // rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 // {
@@ -462,25 +456,6 @@ rsvg_art_affine_image (cairo_surface_t *img,
 //     g_free (ctx);
 // }
 
-static gboolean
-node_is_filter_primitive (RsvgNode *node)
-{
-    RsvgNodeType type = rsvg_node_get_type (node);
-
-    return type > RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST && type < RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST;
-}
-
-void
-render_child_if_filter_primitive (RsvgNode *node, RsvgComputedValues *values, RsvgFilterContext *filter_ctx)
-{
-    if (node_is_filter_primitive (node)) {
-        RsvgFilterPrimitive *primitive;
-
-        primitive = rsvg_rust_cnode_get_impl (node);
-        rsvg_filter_primitive_render (node, values, primitive, filter_ctx);
-    }
-}
-
 /**
  * rsvg_filter_store_result:
  * @name: The name of the result
@@ -523,41 +498,6 @@ render_child_if_filter_primitive (RsvgNode *node, RsvgComputedValues *values, Rs
 // 
 //     rsvg_filter_store_output (name, output, ctx);
 // }
-
-static cairo_surface_t *
-surface_get_alpha (cairo_surface_t *source,
-                   RsvgFilterContext * ctx)
-{
-    guchar *data;
-    guchar *pbdata;
-    gsize i, pbsize;
-    cairo_surface_t *surface;
-
-    if (source == NULL)
-        return NULL;
-
-    cairo_surface_flush (source);
-
-    pbsize = cairo_image_surface_get_width (source) *
-             cairo_image_surface_get_height (source);
-
-    surface = _rsvg_image_surface_new (cairo_image_surface_get_width (source),
-                                       cairo_image_surface_get_height (source));
-    if (surface == NULL)
-        return NULL;
-
-    data = cairo_image_surface_get_data (surface);
-    pbdata = cairo_image_surface_get_data (source);
-
-    const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
-
-    /* FIXMEchpe: rewrite this into nested width, height loops */
-    for (i = 0; i < pbsize; i++)
-        data[i * 4 + ctx_channelmap[3]] = pbdata[i * 4 + ctx_channelmap[3]];
-
-    cairo_surface_mark_dirty (surface);
-    return surface;
-}
 
 // static cairo_surface_t *
 // rsvg_compile_bg (RsvgDrawingCtx * ctx)

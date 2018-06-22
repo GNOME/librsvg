@@ -3,6 +3,7 @@ use std::cell::{Cell, RefCell};
 use cairo;
 
 use attributes::Attribute;
+use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
@@ -72,15 +73,20 @@ impl NodeTrait for Blend {
 }
 
 impl Filter for Blend {
-    fn render(&self, _node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
-        let input = make_result(self.base.get_input(ctx))?;
-        let input_2 = make_result(ctx.get_input(self.in2.borrow().as_ref()))?;
+    fn render(
+        &self,
+        _node: &RsvgNode,
+        ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterResult, FilterError> {
+        let input = make_result(self.base.get_input(ctx, draw_ctx))?;
+        let input_2 = make_result(ctx.get_input(draw_ctx, self.in2.borrow().as_ref()))?;
         let bounds = self
             .base
             .get_bounds(ctx)
             .add_input(&input)
             .add_input(&input_2)
-            .into_irect();
+            .into_irect(draw_ctx);
 
         // It's important to linearize sRGB before doing any blending, since otherwise the colors
         // will be darker than they should be.

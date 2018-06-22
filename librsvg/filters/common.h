@@ -72,7 +72,11 @@ struct _RsvgFilterPrimitive {
     GString *in;
     GString *result;
 
-    void (*render) (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx);
+    void (*render) (RsvgNode *node,
+                    RsvgComputedValues *values,
+                    RsvgFilterPrimitive *primitive,
+                    RsvgFilterContext *ctx,
+                    RsvgDrawingCtx *draw_ctx);
 };
 
 G_GNUC_INTERNAL
@@ -84,9 +88,6 @@ void filter_primitive_set_x_y_width_height_atts (RsvgFilterPrimitive *prim, Rsvg
 G_GNUC_INTERNAL
 guchar get_interp_pixel (guchar * src, gdouble ox, gdouble oy, guchar ch, RsvgIRect boundarys,
                          guint rowstride);
-
-G_GNUC_INTERNAL
-void render_child_if_filter_primitive (RsvgNode *node, RsvgComputedValues *values, RsvgFilterContext *filter_ctx);
 
 G_GNUC_INTERNAL
 void rsvg_alpha_blt (cairo_surface_t *src,
@@ -124,7 +125,7 @@ gboolean rsvg_art_affine_image (cairo_surface_t *img,
 
 /* Implemented in rust/src/filters/context.rs */
 G_GNUC_INTERNAL
-cairo_surface_t *rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx);
+cairo_surface_t *rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx, RsvgDrawingCtx *draw_ctx);
 
 /**
  * rsvg_filter_get_result:
@@ -138,7 +139,9 @@ cairo_surface_t *rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx);
  **/
 /* Implemented in rust/src/filters/context.rs */
 G_GNUC_INTERNAL
-RsvgFilterPrimitiveOutput rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx);
+RsvgFilterPrimitiveOutput rsvg_filter_get_result (GString *name,
+                                                  RsvgFilterContext *ctx,
+                                                  RsvgDrawingCtx *draw_ctx);
 
 // G_GNUC_INTERNAL
 // void rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts);
@@ -153,7 +156,9 @@ void rsvg_filter_primitive_free (gpointer impl);
 
 /* Implemented in rust/src/filters/context.rs */
 G_GNUC_INTERNAL
-RsvgIRect rsvg_filter_primitive_get_bounds (const RsvgFilterPrimitive * self, const RsvgFilterContext * ctx);
+RsvgIRect rsvg_filter_primitive_get_bounds (const RsvgFilterPrimitive * self,
+                                            const RsvgFilterContext * ctx,
+                                            RsvgDrawingCtx *draw_ctx);
 
 /* Implemented in rust/src/filters/context.rs */
 G_GNUC_INTERNAL
@@ -163,33 +168,10 @@ G_GNUC_INTERNAL
 gint rsvg_filter_context_get_height (const RsvgFilterContext *ctx);
 
 G_GNUC_INTERNAL
-cairo_surface_t *rsvg_filter_context_get_source_surface (RsvgFilterContext *ctx);
-
-G_GNUC_INTERNAL
-cairo_surface_t *rsvg_filter_context_get_bg_surface (RsvgFilterContext *ctx);
-
-G_GNUC_INTERNAL
-RsvgFilterPrimitiveOutput rsvg_filter_context_get_lastresult (RsvgFilterContext *ctx);
-
-G_GNUC_INTERNAL
-cairo_matrix_t rsvg_filter_context_get_affine (const RsvgFilterContext *ctx);
-
-G_GNUC_INTERNAL
 cairo_matrix_t rsvg_filter_context_get_paffine (const RsvgFilterContext *ctx);
 
 G_GNUC_INTERNAL
 const int *rsvg_filter_context_get_channelmap (const RsvgFilterContext *ctx);
-
-G_GNUC_INTERNAL
-RsvgDrawingCtx *rsvg_filter_context_get_drawing_ctx (RsvgFilterContext *ctx);
-
-G_GNUC_INTERNAL
-RsvgNode *rsvg_filter_context_get_node_being_filtered (RsvgFilterContext *ctx);
-
-G_GNUC_INTERNAL
-int rsvg_filter_context_get_previous_result (GString *name,
-                                             const RsvgFilterContext *ctx,
-                                             RsvgFilterPrimitiveOutput *output);
 
 G_GNUC_INTERNAL
 void rsvg_filter_store_output (GString * name, RsvgFilterPrimitiveOutput result, RsvgFilterContext * ctx);

@@ -193,7 +193,11 @@ impl<'a> DrawingCtx {
     }
 
     fn acquired_nodes_contains(&self, node: &RsvgNode) -> bool {
-        self.acquired_nodes.borrow().iter().find(|n| rc_node_ptr_eq(n, node)).is_some()
+        self.acquired_nodes
+            .borrow()
+            .iter()
+            .find(|n| rc_node_ptr_eq(n, node))
+            .is_some()
     }
 
     // Use this function when looking up urls to other nodes, and when you expect
@@ -247,7 +251,8 @@ impl<'a> DrawingCtx {
             let affine = original_cr.get_matrix();
 
             let (clip_node, clip_units) = {
-                let clip_node = self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
+                let clip_node = self
+                    .get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
                     .and_then(|acquired| Some(acquired.get()));
 
                 let mut clip_units = Default::default();
@@ -270,7 +275,9 @@ impl<'a> DrawingCtx {
                 }
             }
 
-            let needs_temporary_surface = !(opacity == 1.0 && filter.is_none() && mask.is_none()
+            let needs_temporary_surface = !(opacity == 1.0
+                && filter.is_none()
+                && mask.is_none()
                 && (clip_units == None || clip_units == Some(CoordUnits::UserSpaceOnUse))
                 && comp_op == CompOp::SrcOver
                 && enable_background == EnableBackground::Accumulate);

@@ -37,15 +37,9 @@ pub use drawing_ctx::{
 };
 
 pub use filters::context::{
-    rsvg_filter_context_get_affine,
-    rsvg_filter_context_get_bg_surface,
     rsvg_filter_context_get_channelmap,
-    rsvg_filter_context_get_drawing_ctx,
     rsvg_filter_context_get_height,
-    rsvg_filter_context_get_lastresult,
-    rsvg_filter_context_get_node_being_filtered,
     rsvg_filter_context_get_paffine,
-    rsvg_filter_context_get_previous_result,
     rsvg_filter_context_get_source_surface,
     rsvg_filter_context_get_width,
     rsvg_filter_get_in,

@@ -3,6 +3,7 @@ use std::cell::Cell;
 use cairo::{self, ImageSurface};
 
 use attributes::Attribute;
+use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
@@ -63,9 +64,18 @@ impl NodeTrait for Offset {
 }
 
 impl Filter for Offset {
-    fn render(&self, _node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
-        let input = make_result(self.base.get_input(ctx))?;
-        let bounds = self.base.get_bounds(ctx).add_input(&input).into_irect();
+    fn render(
+        &self,
+        _node: &RsvgNode,
+        ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterResult, FilterError> {
+        let input = make_result(self.base.get_input(ctx, draw_ctx))?;
+        let bounds = self
+            .base
+            .get_bounds(ctx)
+            .add_input(&input)
+            .into_irect(draw_ctx);
 
         let dx = self.dx.get();
         let dy = self.dy.get();

@@ -41,7 +41,11 @@ struct _RsvgFilterPrimitiveDiffuseLighting {
 };
 
 static void
-rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node,
+                                               RsvgComputedValues *values,
+                                               RsvgFilterPrimitive *primitive,
+                                               RsvgFilterContext *ctx,
+                                               RsvgDrawingCtx *draw_ctx)
 {
     RsvgFilterPrimitiveDiffuseLighting *diffuse_lighting = (RsvgFilterPrimitiveDiffuseLighting *) primitive;
 
@@ -71,9 +75,9 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgComputedValue
     if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
       return;
 
-    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx, draw_ctx);
 
-    in = rsvg_filter_get_in (primitive->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx, draw_ctx);
     if (in == NULL)
         return;
 
@@ -118,16 +122,15 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgComputedValue
     }
 
     const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
-    RsvgDrawingCtx *drawing_ctx = rsvg_filter_context_get_drawing_ctx(ctx);
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             z = surfaceScale * (double) in_pixels[y * rowstride + x * 4 + ctx_channelmap[3]];
-            L = get_light_direction (values, source, x, y, z, &iaffine, drawing_ctx);
+            L = get_light_direction (values, source, x, y, z, &iaffine, draw_ctx);
             N = get_surface_normal (in_pixels, boundarys, x, y,
                                     dx, dy, rawdx, rawdy, diffuse_lighting->surfaceScale,
                                     rowstride, ctx_channelmap[3]);
-            lightcolor = get_light_color (values, source, color, x, y, z, &iaffine, drawing_ctx);
+            lightcolor = get_light_color (values, source, color, x, y, z, &iaffine, draw_ctx);
             factor = dotproduct (N, L);
 
             output_pixels[y * rowstride + x * 4 + ctx_channelmap[0]] =

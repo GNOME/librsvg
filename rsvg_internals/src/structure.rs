@@ -80,11 +80,7 @@ impl NodeTrait for NodeSwitch {
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
             if let Some(child) = node.children().find(|c| c.get_cond()) {
-                dc.draw_node_from_stack(
-                    &CascadedValues::new(cascaded, &child),
-                    &child,
-                    clipping,
-                );
+                dc.draw_node_from_stack(&CascadedValues::new(cascaded, &child), &child, clipping);
             }
         });
     }

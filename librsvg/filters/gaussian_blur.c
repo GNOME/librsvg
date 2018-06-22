@@ -581,7 +581,11 @@ gaussian_blur_surface (cairo_surface_t *in,
 }
 
 static void
-rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node,
+                                            RsvgComputedValues *values,
+                                            RsvgFilterPrimitive *primitive,
+                                            RsvgFilterContext *ctx,
+                                            RsvgDrawingCtx *draw_ctx)
 {
     RsvgFilterPrimitiveGaussianBlur *gaussian = (RsvgFilterPrimitiveGaussianBlur *) primitive;
 
@@ -592,9 +596,9 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgComputedValues *
     RsvgFilterPrimitiveOutput op;
     cairo_t *cr;
 
-    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx, draw_ctx);
 
-    in = rsvg_filter_get_in (primitive->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx, draw_ctx);
     if (in == NULL) {
         return;
     }

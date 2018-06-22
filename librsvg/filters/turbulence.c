@@ -266,7 +266,11 @@ feTurbulence_turbulence (RsvgFilterPrimitiveTurbulence * filter,
 }
 
 static void
-rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_turbulence_render (RsvgNode *node,
+                                         RsvgComputedValues *values,
+                                         RsvgFilterPrimitive *primitive,
+                                         RsvgFilterContext *ctx,
+                                         RsvgDrawingCtx *draw_ctx)
 {
     RsvgFilterPrimitiveTurbulence *turbulence = (RsvgFilterPrimitiveTurbulence *) primitive;
 
@@ -281,7 +285,7 @@ rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgComputedValues *val
     if (cairo_matrix_invert (&affine) != CAIRO_STATUS_SUCCESS)
       return;
 
-    in = rsvg_filter_get_in (primitive->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx, draw_ctx);
     if (in == NULL)
         return;
 
@@ -291,7 +295,7 @@ rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgComputedValues *val
     width = cairo_image_surface_get_width (in);
     rowstride = cairo_image_surface_get_stride (in);
 
-    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx, draw_ctx);
 
     tileWidth = (boundarys.x1 - boundarys.x0);
     tileHeight = (boundarys.y1 - boundarys.y0);

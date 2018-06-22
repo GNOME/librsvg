@@ -41,7 +41,11 @@ struct _RsvgFilterPrimitiveSpecularLighting {
 };
 
 static void
-rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_specular_lighting_render (RsvgNode *node,
+                                                RsvgComputedValues *values,
+                                                RsvgFilterPrimitive *primitive,
+                                                RsvgFilterContext *ctx,
+                                                RsvgDrawingCtx *draw_ctx)
 {
     RsvgFilterPrimitiveSpecularLighting *specular_lighting = (RsvgFilterPrimitiveSpecularLighting *) primitive;
 
@@ -71,9 +75,9 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgComputedValu
     if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
       return;
 
-    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx, draw_ctx);
 
-    in = rsvg_filter_get_in (primitive->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx, draw_ctx);
     if (in == NULL)
         return;
 
@@ -104,16 +108,15 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgComputedValu
     surfaceScale = specular_lighting->surfaceScale / 255.0;
 
     const int *ctx_channelmap = rsvg_filter_context_get_channelmap(ctx);
-    RsvgDrawingCtx *drawing_ctx = rsvg_filter_context_get_drawing_ctx(ctx);
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
-            L = get_light_direction (values, source, x, y, z, &iaffine, drawing_ctx);
+            L = get_light_direction (values, source, x, y, z, &iaffine, draw_ctx);
             L.z += 1;
             L = normalise (L);
 
-            lightcolor = get_light_color (values, source, color, x, y, z, &iaffine, drawing_ctx);
+            lightcolor = get_light_color (values, source, color, x, y, z, &iaffine, draw_ctx);
             base = dotproduct (get_surface_normal (in_pixels, boundarys, x, y,
                                                    1, 1, 1.0 / ctx_paffine.xx,
                                                    1.0 / ctx_paffine.yy, specular_lighting->surfaceScale,

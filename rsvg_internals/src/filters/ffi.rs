@@ -40,14 +40,15 @@ pub struct RsvgFilterPrimitive {
 
 /// The type of the render function below.
 pub(super) type RenderFunctionType =
-    fn(&RsvgNode, &FilterContext) -> Result<FilterResult, FilterError>;
+    fn(&RsvgNode, &FilterContext, &mut DrawingCtx) -> Result<FilterResult, FilterError>;
 
 /// Downcasts the given `node` to the type `T` and calls `Filter::render()` on it.
 pub(super) fn render<T: Filter>(
     node: &RsvgNode,
     ctx: &FilterContext,
+    draw_ctx: &mut DrawingCtx,
 ) -> Result<FilterResult, FilterError> {
-    node.with_impl(|filter: &T| filter.render(node, ctx))
+    node.with_impl(|filter: &T| filter.render(node, ctx, draw_ctx))
 }
 
 /// Creates a new surface applied the filter. This function will create a context for itself, set up
@@ -98,7 +99,7 @@ pub fn filter_render(
                 let render = unsafe {
                     *(&c.get_c_impl() as *const *const RsvgCNodeImpl as *const RenderFunctionType)
                 };
-                match render(&c, &filter_ctx) {
+                match render(&c, &filter_ctx, draw_ctx) {
                     Ok(result) => filter_ctx.store_result(result),
                     Err(_) => { /* Do nothing for now */ }
                 }

@@ -1,6 +1,7 @@
 use cairo::{self, ImageSurface};
 use cssparser;
 
+use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
 use property_bag::PropertyBag;
@@ -41,8 +42,13 @@ impl NodeTrait for Flood {
 }
 
 impl Filter for Flood {
-    fn render(&self, node: &RsvgNode, ctx: &FilterContext) -> Result<FilterResult, FilterError> {
-        let bounds = self.base.get_bounds(ctx).into_irect();
+    fn render(
+        &self,
+        node: &RsvgNode,
+        ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterResult, FilterError> {
+        let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,

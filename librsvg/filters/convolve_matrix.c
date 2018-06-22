@@ -51,7 +51,10 @@ struct _RsvgFilterPrimitiveConvolveMatrix {
 };
 
 static void
-rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgComputedValues *values,
+                                              RsvgFilterPrimitive *primitive,
+                                              RsvgFilterContext *ctx,
+                                              RsvgDrawingCtx *draw_ctx)
 {
     RsvgFilterPrimitiveConvolveMatrix *convolve = (RsvgFilterPrimitiveConvolveMatrix *) primitive;
 
@@ -73,9 +76,9 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgComputedValues
 
     gint tempresult;
 
-    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx, draw_ctx);
 
-    in = rsvg_filter_get_in (primitive->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx, draw_ctx);
     if (in == NULL)
         return;
 

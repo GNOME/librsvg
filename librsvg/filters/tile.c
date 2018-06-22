@@ -45,7 +45,11 @@ mod (int a, int b)
 }
 
 static void
-rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgComputedValues *values, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+rsvg_filter_primitive_tile_render (RsvgNode *node,
+                                   RsvgComputedValues *values,
+                                   RsvgFilterPrimitive *primitive,
+                                   RsvgFilterContext *ctx,
+                                   RsvgDrawingCtx *draw_ctx)
 {
     guchar i;
     gint x, y, rowstride;
@@ -58,9 +62,9 @@ rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgComputedValues *values, R
 
     cairo_surface_t *output, *in;
 
-    oboundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
+    oboundarys = rsvg_filter_primitive_get_bounds (primitive, ctx, draw_ctx);
 
-    input = rsvg_filter_get_result (primitive->in, ctx);
+    input = rsvg_filter_get_result (primitive->in, ctx, draw_ctx);
     in = input.surface;
     if (in == NULL) {
         return;
