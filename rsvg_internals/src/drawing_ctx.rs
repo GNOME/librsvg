@@ -80,14 +80,11 @@ impl<'a> DrawingCtx {
         affine.y0 -= rect.y;
         cr.set_matrix(affine);
 
-        let mut cr_stack = Vec::new();
-        cr_stack.push(cr.clone());
-
         DrawingCtx {
             rect,
             dpi_x,
             dpi_y,
-            cr_stack,
+            cr_stack: Vec::new(),
             cr: cr.clone(),
             initial_cr: cr.clone(),
             surfaces_stack: Vec::new(),
@@ -300,7 +297,7 @@ impl<'a> DrawingCtx {
                     let cr = cairo::Context::new(&surface);
                     cr.set_matrix(affine);
 
-                    self.cr_stack.push(cr.clone());
+                    self.cr_stack.push(self.cr.clone());
                     self.cr = cr.clone();
 
                     self.bbox_stack.push(self.bbox);
@@ -347,8 +344,7 @@ impl<'a> DrawingCtx {
                     .or(Some(child_surface))
                     .unwrap();
 
-                self.cr_stack.pop();
-                self.cr = self.cr_stack.last().unwrap().clone();
+                self.cr = self.cr_stack.pop().unwrap();
 
                 let (xofs, yofs) = self.get_offset();
 
