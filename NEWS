@@ -2,15 +2,21 @@ Version 2.43.1
 - Fix: #259 - Test fonts should now work with --enable-installed-tests
 - Fix: #277 - Don't panic when trying to filter an empty group
   (Ivan Molodetskikh).
+- Fix: #292 - Don't panic if we try to clip an empty group.
 - Fix the feOffset filter's coordinate parsing.  (Ivan Molodetskikh).
 - Fix linearization of SRGB data in the feComposite filter (Ivan
   Molodetskikh).
 - Fix CSS cascading in filters (Ivan Molodetskikh).
 - Fix, don't render filters if they are in error (Ivan Molodetskikh).
+- Fixed a couple of memory leaks in the test suite.
 - Filters now support FillPaint and StrokePaint for input (Ivan Molodetskikh).
+- Filters now support the color-interpolation-filters property
+  (Ivan Molodetskikh).
 - The feImage, feBlend, feComponentTransfer filters are now in Rust
   (Ivan Molodetskikh).
 - The feOffset filter now supports fractional offsets (Ivan Molodetskikh).
+- The drawing context code is now in Rust.  This is a tremendous
+  amount of work! (Paolo Borelli)
 - All the style property parsers have been moved to rust-cssparser.
 
 Version 2.43.0
