@@ -2,7 +2,6 @@ use cairo;
 use cairo::MatrixTrait;
 
 use aspect_ratio::AspectRatio;
-use draw::add_clipping_rect;
 use drawing_ctx::DrawingCtx;
 use float_eq_cairo::ApproxEqCairo;
 use node::RsvgNode;
@@ -44,7 +43,7 @@ pub fn draw_in_viewport(
     draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
         if do_clip && clip_mode == ClipMode::ClipToViewport {
             dc.get_cairo_context().set_matrix(affine);
-            add_clipping_rect(dc, vx, vy, vw, vh);
+            dc.clip(vx, vy, vw, vh);
         }
 
         if let Some(vbox) = vbox {
@@ -69,7 +68,7 @@ pub fn draw_in_viewport(
             dc.get_cairo_context().set_matrix(affine);
 
             if do_clip && clip_mode == ClipMode::ClipToVbox {
-                add_clipping_rect(dc, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
+                dc.clip(vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
             }
         } else {
             dc.push_view_box(vw, vh);

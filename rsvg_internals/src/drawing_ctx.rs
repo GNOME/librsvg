@@ -407,6 +407,31 @@ impl<'a> DrawingCtx {
         context
     }
 
+    pub fn set_affine_on_cr(&self, cr: &cairo::Context) {
+        let (x0, y0) = self.get_offset();
+        let affine = cr.get_matrix();
+        let matrix = cairo::Matrix::new(
+            affine.xx,
+            affine.yx,
+            affine.xy,
+            affine.yy,
+            affine.x0 + x0,
+            affine.y0 + y0,
+        );
+        cr.set_matrix(matrix);
+    }
+
+    pub fn clip(&mut self, x: f64, y: f64, w: f64, h: f64) {
+        let cr = self.get_cairo_context();
+        let save_affine = cr.get_matrix();
+
+        self.set_affine_on_cr(&cr);
+
+        cr.rectangle(x, y, w, h);
+        cr.clip();
+        cr.set_matrix(save_affine);
+    }
+
     pub fn draw_node_on_surface(
         &mut self,
         node: &RsvgNode,

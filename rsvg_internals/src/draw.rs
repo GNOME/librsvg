@@ -25,22 +25,6 @@ use state::{
     TextRendering,
 };
 
-fn set_affine_on_cr(draw_ctx: &DrawingCtx, cr: &cairo::Context) {
-    let (x0, y0) = draw_ctx.get_offset();
-
-    let affine = cr.get_matrix();
-
-    let matrix = cairo::Matrix::new(
-        affine.xx,
-        affine.yx,
-        affine.xy,
-        affine.yy,
-        affine.x0 + x0,
-        affine.y0 + y0,
-    );
-    cr.set_matrix(matrix);
-}
-
 pub fn draw_path_builder(
     draw_ctx: &mut DrawingCtx,
     values: &ComputedValues,
@@ -49,8 +33,7 @@ pub fn draw_path_builder(
 ) {
     let cr = draw_ctx.get_cairo_context();
 
-    set_affine_on_cr(draw_ctx, &cr);
-
+    draw_ctx.set_affine_on_cr(&cr);
     builder.to_cairo(&cr);
 
     if clipping {
@@ -294,7 +277,7 @@ pub fn draw_pango_layout(
     let cr = draw_ctx.get_cairo_context();
     cr.save();
 
-    set_affine_on_cr(draw_ctx, &cr);
+    draw_ctx.set_affine_on_cr(&cr);
 
     let affine = cr.get_matrix();
 
@@ -443,7 +426,7 @@ pub fn draw_surface(
         height: h,
     }));
 
-    set_affine_on_cr(draw_ctx, &cr);
+    draw_ctx.set_affine_on_cr(&cr);
     cr.scale(w / width, h / height);
     let x = x * width / w;
     let y = y * height / h;
@@ -472,18 +455,4 @@ pub fn draw_surface(
     cr.restore();
 
     draw_ctx.insert_bbox(&bbox);
-}
-
-/// Adds a clipping rectangle to the curent Cairo context
-pub fn add_clipping_rect(draw_ctx: &mut DrawingCtx, x: f64, y: f64, w: f64, h: f64) {
-    let cr = draw_ctx.get_cairo_context();
-
-    let save_affine = cr.get_matrix();
-
-    set_affine_on_cr(draw_ctx, &cr);
-
-    cr.rectangle(x, y, w, h);
-    cr.clip();
-
-    cr.set_matrix(save_affine);
 }
