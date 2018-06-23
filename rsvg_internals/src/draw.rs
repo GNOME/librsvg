@@ -1,5 +1,4 @@
 use cairo;
-use cairo::{MatrixTrait, Pattern};
 use cairo_sys;
 use glib::translate::*;
 use pango::{self, ContextExt, LayoutExt};
@@ -386,73 +385,4 @@ fn compute_text_bbox(
     }
 
     bbox
-}
-
-pub fn draw_surface(
-    draw_ctx: &mut DrawingCtx,
-    values: &ComputedValues,
-    surface: &cairo::ImageSurface,
-    x: f64,
-    y: f64,
-    w: f64,
-    h: f64,
-    clipping: bool,
-) {
-    if clipping {
-        return;
-    }
-
-    let cr = draw_ctx.get_cairo_context();
-
-    let affine = cr.get_matrix();
-
-    let width = surface.get_width();
-    let height = surface.get_height();
-
-    if width == 0 || height == 0 {
-        return;
-    }
-
-    cr.save();
-
-    let width = f64::from(width);
-    let height = f64::from(height);
-
-    // This is the target bbox after drawing.
-    let bbox = BoundingBox::new(&affine).with_rect(Some(cairo::Rectangle {
-        x,
-        y,
-        width: w,
-        height: h,
-    }));
-
-    draw_ctx.set_affine_on_cr(&cr);
-    cr.scale(w / width, h / height);
-    let x = x * width / w;
-    let y = y * height / h;
-
-    cr.set_operator(cairo::Operator::from(values.comp_op));
-
-    // We need to set extend appropriately, so can't use cr.set_source_surface().
-    //
-    // If extend is left at its default value (None), then bilinear scaling uses transparency
-    // outside of the image producing incorrect results. For example, in
-    // svg1.1/filters-blend-01-b.svg there's a completely opaque 100×1 image of a gradient scaled
-    // to 100×98 which ends up transparent almost everywhere without this fix (which it shouldn't).
-    let ptn = cairo::SurfacePattern::create(&surface);
-    let mut matrix = cairo::Matrix::identity();
-    matrix.translate(-x, -y);
-    ptn.set_matrix(matrix);
-    ptn.set_extend(cairo::Extend::Pad);
-    cr.set_source(&ptn);
-
-    // Clip is needed due to extend being set to pad.
-    cr.rectangle(x, y, width, height);
-    cr.clip();
-
-    cr.paint();
-
-    cr.restore();
-
-    draw_ctx.insert_bbox(&bbox);
 }
