@@ -1,6 +1,11 @@
 use std::cell::Cell;
 use std::cell::RefCell;
 
+use cairo;
+use cairo_sys;
+use glib::translate::*;
+use glib_sys;
+
 use aspect_ratio::*;
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -409,8 +414,13 @@ pub extern "C" fn rsvg_node_svg_get_size(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_svg_get_view_box(raw_node: *const RsvgNode) -> RsvgViewBox {
+pub extern "C" fn rsvg_node_svg_get_view_box(
+    raw_node: *const RsvgNode,
+    out_vbox: *mut cairo_sys::cairo_rectangle_t,
+) -> glib_sys::gboolean {
     assert!(!raw_node.is_null());
+    assert!(!out_vbox.is_null());
+
     let node: &RsvgNode = unsafe { &*raw_node };
 
     let mut vbox: Option<ViewBox> = None;
@@ -419,7 +429,23 @@ pub extern "C" fn rsvg_node_svg_get_view_box(raw_node: *const RsvgNode) -> RsvgV
         vbox = svg.vbox.get();
     });
 
-    RsvgViewBox::from(vbox)
+    if let Some(vb) = vbox {
+        unsafe {
+            *out_vbox = vb.0;
+        }
+        true.to_glib()
+    } else {
+        unsafe {
+            *out_vbox = cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+            };
+        }
+
+        false.to_glib()
+    }
 }
 
 #[no_mangle]

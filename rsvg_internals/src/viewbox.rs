@@ -1,22 +1,10 @@
 use cairo;
 use cssparser::Parser;
-use glib;
-use glib_sys;
 
 use error::*;
 use parsers;
 use parsers::Parse;
 use parsers::{ListLength, ParseError};
-
-use self::glib::translate::*;
-
-// Keep this in sync with rsvg-private.h:RsvgViewBox
-#[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct RsvgViewBox {
-    pub rect: cairo::Rectangle,
-    active: glib_sys::gboolean,
-}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ViewBox(pub cairo::Rectangle);
@@ -34,27 +22,6 @@ impl ViewBox {
             width: w,
             height: h,
         })
-    }
-}
-
-impl From<Option<ViewBox>> for RsvgViewBox {
-    fn from(v: Option<ViewBox>) -> RsvgViewBox {
-        if let Some(vb) = v {
-            RsvgViewBox {
-                rect: vb.0,
-                active: true.to_glib(),
-            }
-        } else {
-            RsvgViewBox {
-                rect: cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 0.0,
-                    height: 0.0,
-                },
-                active: false.to_glib(),
-            }
-        }
     }
 }
 

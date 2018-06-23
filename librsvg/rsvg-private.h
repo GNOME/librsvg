@@ -175,12 +175,6 @@ struct RsvgHandlePrivate {
 #endif
 };
 
-/* Keep this in sync with rust/src/viewbox.rs::RsvgViewBox */
-typedef struct {
-    cairo_rectangle_t rect;
-    gboolean active;
-} RsvgViewBox;
-
 /* Keep this in sync with rust/src/length.rs:LengthUnit */
 typedef enum {
     LENGTH_UNIT_DEFAULT,

@@ -34,15 +34,15 @@
 
 G_BEGIN_DECLS 
 
-/* Implemented in rust/src/structure.rs */
+/* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
 void rsvg_node_svg_get_size (RsvgNode *node, RsvgLength *out_width, RsvgLength *out_height);
 
-/* Implemented in rust/src/structure.rs */
+/* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
-RsvgViewBox rsvg_node_svg_get_view_box (RsvgNode *node);
+gboolean rsvg_node_svg_get_view_box (RsvgNode *node, cairo_rectangle_t *out_vbox);
 
-/* Implemented in rust/src/structure.rs */
+/* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
 void rsvg_node_svg_apply_atts (RsvgNode *node, RsvgHandle *handle);
 

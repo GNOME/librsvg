@@ -99,8 +99,6 @@ pub use structure::{rsvg_node_svg_apply_atts, rsvg_node_svg_get_size, rsvg_node_
 
 pub use text::{rsvg_node_chars_append, rsvg_node_chars_new};
 
-pub use viewbox::RsvgViewBox;
-
 #[macro_use]
 mod coord_units;
 
