@@ -22,6 +22,9 @@ extern crate lazy_static;
 #[macro_use]
 extern crate downcast_rs;
 
+#[macro_use]
+extern crate rulinalg;
+
 pub use attributes::rsvg_attribute_from_name;
 
 pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
