@@ -31,6 +31,7 @@ pub mod node;
 use self::node::NodeFilter;
 
 pub mod blend;
+pub mod color_matrix;
 pub mod component_transfer;
 pub mod composite;
 pub mod flood;

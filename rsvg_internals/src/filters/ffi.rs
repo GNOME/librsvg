@@ -136,6 +136,7 @@ pub fn filter_render(
         })
         .for_each(|(mut c, linear_rgb)| match c.get_type() {
             NodeType::FilterPrimitiveBlend
+            | NodeType::FilterPrimitiveColorMatrix
             | NodeType::FilterPrimitiveComponentTransfer
             | NodeType::FilterPrimitiveComposite
             | NodeType::FilterPrimitiveFlood
