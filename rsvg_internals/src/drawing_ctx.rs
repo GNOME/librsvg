@@ -4,8 +4,9 @@ use cairo_sys;
 use glib::translate::*;
 use glib_sys;
 use libc;
-use pango::{self, FontMapExt};
+use pango::{self, ContextExt, FontMapExt, LayoutExt};
 use pango_cairo_sys;
+use pango_sys;
 use pangocairo;
 use std::cell::RefCell;
 
@@ -14,10 +15,18 @@ use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
 use defs::{self, RsvgDefs};
 use filters::filter_render;
+use float_eq_cairo::ApproxEqCairo;
+use length::Dasharray;
 use mask::NodeMask;
 use node::{rc_node_ptr_eq, CascadedValues, NodeType, RsvgNode};
+use paint_server;
 use rect::RectangleExt;
-use state::{CompOp, ComputedValues, EnableBackground};
+use state::{
+    CompOp,
+    ComputedValues,
+    EnableBackground,
+    StrokeDasharray,
+};
 use unitinterval::UnitInterval;
 use viewbox::ViewBox;
 
@@ -407,6 +416,113 @@ impl<'a> DrawingCtx {
         context
     }
 
+    pub fn draw_pango_layout(
+        &mut self,
+        layout: &pango::Layout,
+        values: &ComputedValues,
+        x: f64,
+        y: f64,
+        clipping: bool,
+    ) {
+        let (ink, _) = layout.get_extents();
+
+        if ink.width == 0 || ink.height == 0 {
+            return;
+        }
+
+        let cr = self.get_cairo_context();
+        cr.save();
+
+        self.set_affine_on_cr(&cr);
+
+        let affine = cr.get_matrix();
+
+        let gravity = layout.get_context().unwrap().get_gravity();
+        let bbox = compute_text_bbox(&ink, x, y, &affine, gravity);
+
+        if !clipping {
+            self.insert_bbox(&bbox);
+        }
+
+        cr.set_antialias(cairo::Antialias::from(values.text_rendering));
+
+        self.setup_cr_for_stroke(&cr, values);
+
+        let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
+
+        cr.move_to(x, y);
+        if !rotation.approx_eq_cairo(&0.0) {
+            cr.rotate(-rotation);
+        }
+
+        let current_color = &values.color.0;
+
+        let fill_opacity = &values.fill_opacity.0;
+
+        if !clipping {
+            if paint_server::set_source_paint_server(
+                self,
+                &values.fill.0,
+                fill_opacity,
+                &bbox,
+                current_color,
+            ) {
+                pangocairo::functions::update_layout(&cr, layout);
+                pangocairo::functions::show_layout(&cr, layout);
+            }
+        }
+
+        let stroke_opacity = &values.stroke_opacity.0;
+
+        let mut need_layout_path = clipping;
+
+        if !clipping {
+            if paint_server::set_source_paint_server(
+                self,
+                &values.stroke.0,
+                stroke_opacity,
+                &bbox,
+                &current_color,
+            ) {
+                need_layout_path = true;
+            }
+        }
+
+        if need_layout_path {
+            pangocairo::functions::update_layout(&cr, layout);
+            pangocairo::functions::layout_path(&cr, layout);
+
+            if !clipping {
+                let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
+                cr.stroke();
+                self.insert_bbox(&ib);
+            }
+        }
+
+        cr.restore();
+    }
+
+    pub fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
+        cr.set_line_width(values.stroke_width.0.normalize(values, self));
+        cr.set_miter_limit(values.stroke_miterlimit.0);
+        cr.set_line_cap(cairo::LineCap::from(values.stroke_line_cap));
+        cr.set_line_join(cairo::LineJoin::from(values.stroke_line_join));
+
+        if let StrokeDasharray(Dasharray::Array(ref dashes)) = values.stroke_dasharray {
+            let normalized_dashes: Vec<f64> =
+                dashes.iter().map(|l| l.normalize(values, self)).collect();
+
+            let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
+
+            if total_length > 0.0 {
+                let offset = values.stroke_dashoffset.0.normalize(values, self);
+                cr.set_dash(&normalized_dashes, offset);
+            } else {
+                cr.set_dash(&[], 0.0);
+            }
+        }
+    }
+
     pub fn set_affine_on_cr(&self, cr: &cairo::Context) {
         let (x0, y0) = self.get_offset();
         let affine = cr.get_matrix();
@@ -513,6 +629,49 @@ fn set_font_options(context: &pango::Context, options: &cairo::FontOptions) {
             options.to_glib_none().0,
         );
     }
+}
+
+// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
+fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
+    match gravity {
+        pango::Gravity::East | pango::Gravity::West => true,
+        _ => false,
+    }
+}
+
+fn compute_text_bbox(
+    ink: &pango::Rectangle,
+    x: f64,
+    y: f64,
+    affine: &cairo::Matrix,
+    gravity: pango::Gravity,
+) -> BoundingBox {
+    let pango_scale = f64::from(pango::SCALE);
+
+    let mut bbox = BoundingBox::new(affine);
+
+    let ink_x = f64::from(ink.x);
+    let ink_y = f64::from(ink.y);
+    let ink_width = f64::from(ink.width);
+    let ink_height = f64::from(ink.height);
+
+    if gravity_is_vertical(gravity) {
+        bbox.rect = Some(cairo::Rectangle {
+            x: x + (ink_x - ink_height) / pango_scale,
+            y: y + ink_y / pango_scale,
+            width: ink_height / pango_scale,
+            height: ink_width / pango_scale,
+        });
+    } else {
+        bbox.rect = Some(cairo::Rectangle {
+            x: x + ink_x / pango_scale,
+            y: y + ink_y / pango_scale,
+            width: ink_width / pango_scale,
+            height: ink_height / pango_scale,
+        });
+    }
+
+    bbox
 }
 
 #[no_mangle]

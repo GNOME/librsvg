@@ -5,7 +5,6 @@ use std::cell::{Cell, RefCell};
 use std::str;
 
 use attributes::Attribute;
-use draw::draw_pango_layout;
 use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use length::*;
@@ -94,10 +93,10 @@ impl NodeChars {
         let offset = baseline + values.baseline_shift.0.normalize(values, draw_ctx);
 
         if values.text_gravity_is_vertical() {
-            draw_pango_layout(draw_ctx, values, &layout, *x + offset, *y, clipping);
+            draw_ctx.draw_pango_layout(&layout, values, *x + offset, *y, clipping);
             *y += f64::from(width) / f64::from(pango::SCALE);
         } else {
-            draw_pango_layout(draw_ctx, values, &layout, *x, *y - offset, clipping);
+            draw_ctx.draw_pango_layout(&layout, values, *x, *y - offset, clipping);
             *x += f64::from(width) / f64::from(pango::SCALE);
         }
     }
