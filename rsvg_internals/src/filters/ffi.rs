@@ -91,7 +91,7 @@ pub fn filter_render(
     let mut channelmap_arr = [0; 4];
     unsafe {
         for i in 0..4 {
-            channelmap_arr[i] = i32::from(*channelmap.offset(i as isize) - '0' as i8);
+            channelmap_arr[i] = i32::from(*channelmap.offset(i as isize) - '0' as c_char);
         }
     }
 

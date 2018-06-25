@@ -333,7 +333,7 @@ impl<'a> DrawingCtx {
                                             node,
                                             &output,
                                             self,
-                                            "2103".as_ptr() as *const i8,
+                                            "2103".as_ptr() as *const libc::c_char,
                                         ))
                                     } else {
                                         None
