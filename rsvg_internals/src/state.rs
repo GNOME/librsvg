@@ -11,7 +11,7 @@ use color::rgba_to_argb;
 use error::*;
 use handle::RsvgHandle;
 use iri::IRI;
-use length::{Dasharray, LengthDir, LengthUnit, RsvgLength};
+use length::{Dasharray, FontSizeSpec, LengthDir, LengthUnit, RsvgLength};
 use node::RsvgNode;
 use paint_server::PaintServer;
 use parsers::{Parse, ParseError};
@@ -438,7 +438,7 @@ impl State {
                 }
 
                 Attribute::FontSize => {
-                    self.values.font_size = parse_property(value, LengthDir::Both)?;
+                    self.values.font_size = parse_property(value, ())?;
                 }
 
                 Attribute::FontStretch => {
@@ -688,15 +688,17 @@ make_property!(
             }
 
             fn compute(&self, v: &ComputedValues) -> Self {
+                let font_size = v.font_size.0.value();
+
                 // FIXME: this implementation has limitations:
                 // 1) we only handle 'percent' shifts, but it could also be an absolute offset
                 // 2) we should be able to normalize the lengths and add even if they have
                 //    different units, but at the moment that requires access to the draw_ctx
-                if self.0.unit != LengthUnit::Percent || v.baseline_shift.0.unit != v.font_size.0.unit {
+                if self.0.unit != LengthUnit::Percent || v.baseline_shift.0.unit != font_size.unit {
                     return BaselineShift(RsvgLength::new(v.baseline_shift.0.length, v.baseline_shift.0.unit, LengthDir::Both));
                 }
 
-                BaselineShift(RsvgLength::new(self.0.length * v.font_size.0.length + v.baseline_shift.0.length, v.font_size.0.unit, LengthDir::Both))
+                BaselineShift(RsvgLength::new(self.0.length * font_size.length + v.baseline_shift.0.length, font_size.unit, LengthDir::Both))
             }
         }
     },
@@ -954,9 +956,9 @@ make_property!(
 make_property!(
     ComputedValues,
     FontSize,
-    default: RsvgLength::parse_str("12.0", LengthDir::Both).unwrap(),
-    newtype_parse: RsvgLength,
-    parse_data_type: LengthDir,
+    default: FontSizeSpec::Value(RsvgLength::parse_str("12.0", LengthDir::Both).unwrap()),
+    newtype_parse: FontSizeSpec,
+    parse_data_type: (),
     property_impl: {
         impl Property<ComputedValues> for FontSize {
             fn inherits_automatically() -> bool {
@@ -964,18 +966,7 @@ make_property!(
             }
 
             fn compute(&self, v: &ComputedValues) -> Self {
-                match self.0.unit {
-                    LengthUnit::Percent =>
-                        FontSize(RsvgLength::new(self.0.length * v.font_size.0.length, v.font_size.0.unit, LengthDir::Both)),
-
-                    LengthUnit::RelativeLarger =>
-                        FontSize(RsvgLength::new(v.font_size.0.length * 1.2, v.font_size.0.unit, LengthDir::Both)),
-
-                    LengthUnit::RelativeSmaller =>
-                        FontSize(RsvgLength::new(v.font_size.0.length / 1.2, v.font_size.0.unit, LengthDir::Both)),
-
-                    _ => self.clone(),
-                }
+                FontSize(self.0.compute(v))
             }
         }
     }
