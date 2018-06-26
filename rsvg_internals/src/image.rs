@@ -1,4 +1,5 @@
 use cairo;
+use cairo::{MatrixTrait, Pattern};
 use cairo_sys;
 use glib;
 use glib::translate::*;
@@ -9,7 +10,7 @@ use std::ptr;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
-use draw::{add_clipping_rect, draw_surface};
+use bbox::BoundingBox;
 use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use length::*;
@@ -122,19 +123,63 @@ impl NodeTrait for NodeImage {
                 let aspect = self.aspect.get();
 
                 if !values.is_overflow() && aspect.is_slice() {
-                    add_clipping_rect(dc, x, y, w, h);
+                    dc.clip(x, y, w, h);
                 }
 
-                let (x, y, w, h) = aspect.compute(
-                    f64::from(surface.get_width()),
-                    f64::from(surface.get_height()),
+                let width = surface.get_width();
+                let height = surface.get_height();
+                if clipping || width == 0 || height == 0 {
+                    return;
+                }
+
+                let width = f64::from(width);
+                let height = f64::from(height);
+
+                let (x, y, w, h) = aspect.compute(width, height, x, y, w, h);
+
+                let cr = dc.get_cairo_context();
+                let affine = cr.get_matrix();
+
+                // This is the target bbox after drawing.
+                let bbox = BoundingBox::new(&affine).with_rect(Some(cairo::Rectangle {
                     x,
                     y,
-                    w,
-                    h,
-                );
+                    width: w,
+                    height: h,
+                }));
 
-                draw_surface(dc, values, surface, x, y, w, h, clipping);
+                cr.save();
+
+                dc.set_affine_on_cr(&cr);
+                cr.scale(w / width, h / height);
+                let x = x * width / w;
+                let y = y * height / h;
+
+                cr.set_operator(cairo::Operator::from(values.comp_op));
+
+                // We need to set extend appropriately, so can't use cr.set_source_surface().
+                //
+                // If extend is left at its default value (None), then bilinear scaling uses
+                // transparency outside of the image producing incorrect results.
+                // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
+                // opaque 100×1 image of a gradient scaled to 100×98 which ends up
+                // transparent almost everywhere without this fix (which it shouldn't).
+                let ptn = cairo::SurfacePattern::create(&surface);
+                let mut matrix = cairo::Matrix::identity();
+                matrix.translate(-x, -y);
+                ptn.set_matrix(matrix);
+                ptn.set_extend(cairo::Extend::Pad);
+                cr.set_source(&ptn);
+
+                // Clip is needed due to extend being set to pad.
+                cr.rectangle(x, y, width, height);
+                cr.clip();
+
+                cr.paint();
+
+                cr.restore();
+
+                dc.insert_bbox(&bbox);
             });
         }
     }

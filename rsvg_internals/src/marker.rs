@@ -6,7 +6,6 @@ use cssparser::{CowRcStr, Parser, Token};
 
 use aspect_ratio::*;
 use attributes::Attribute;
-use draw::add_clipping_rect;
 use drawing_ctx::DrawingCtx;
 use error::*;
 use float_eq_cairo::ApproxEqCairo;
@@ -185,9 +184,9 @@ impl NodeMarker {
 
         if !values.is_overflow() {
             if let Some(vbox) = self.vbox.get() {
-                add_clipping_rect(draw_ctx, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
+                draw_ctx.clip(vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
             } else {
-                add_clipping_rect(draw_ctx, 0.0, 0.0, marker_width, marker_height);
+                draw_ctx.clip(0.0, 0.0, marker_width, marker_height);
             }
         }
 

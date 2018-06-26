@@ -116,7 +116,6 @@ mod cnode;
 mod color;
 mod cond;
 mod defs;
-mod draw;
 mod drawing_ctx;
 mod error;
 pub mod filters;

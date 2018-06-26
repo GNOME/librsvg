@@ -1,8 +1,8 @@
+use cairo;
 use std::cell::Cell;
 use std::cell::RefCell;
 
 use attributes::Attribute;
-use draw::draw_path_builder;
 use drawing_ctx::DrawingCtx;
 use error::*;
 use handle::RsvgHandle;
@@ -24,7 +24,17 @@ fn render_path_builder(
     clipping: bool,
 ) {
     draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-        draw_path_builder(dc, values, builder, clipping);
+        let cr = dc.get_cairo_context();
+
+        dc.set_affine_on_cr(&cr);
+        builder.to_cairo(&cr);
+
+        if clipping {
+            cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
+        } else {
+            cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
+            dc.stroke_and_fill(&cr, values);
+        }
     });
 
     if render_markers {

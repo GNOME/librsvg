@@ -5,7 +5,6 @@ use std::cell::Cell;
 
 use attributes::Attribute;
 use coord_units::CoordUnits;
-use draw;
 use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use length::{LengthDir, RsvgLength};
@@ -108,15 +107,14 @@ impl NodeMask {
                     bbox.rect.unwrap()
                 };
 
-                draw::add_clipping_rect(
-                    draw_ctx,
+                draw_ctx.clip(
                     x * rect.width + rect.x,
                     y * rect.height + rect.y,
                     w * rect.width,
                     h * rect.height,
                 );
             } else {
-                draw::add_clipping_rect(draw_ctx, x, y, w, h);
+                draw_ctx.clip(x, y, w, h);
             }
 
             if content_units == CoordUnits::ObjectBoundingBox {
