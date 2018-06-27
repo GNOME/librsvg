@@ -31,7 +31,7 @@ minimum version is listed here; you may use a newer version instead.
 **Compilers:**
 
 * a C compiler and `make` tool; we recommend GNU `make`.
-* rust 1.24 or later
+* rust 1.26 or later
 * cargo
 
 **Mandatory dependencies:**
