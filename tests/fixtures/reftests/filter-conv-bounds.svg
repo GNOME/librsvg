@@ -1,0 +1,36 @@
+<svg id="svg-root" width="100%" height="100%"
+  viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+
+  <!-- The test checks if edgeMode wrapping wraps around the input surface bounds,
+       or the input surface bounds clipped to the primitive subregion.
+       The spec doesn't specify anything, Chromium uses the latter, and Firefox uses the former.
+
+       Since both are wrapping the input surface clipped to the filter effects region,
+       wrapping while obeying clipping to the primitive subregion seems like the better behavior,
+       so that's what librsvg does. -->
+  <filter id="primitive-bounds-narrower">
+    <feConvolveMatrix kernelUnitLength="1" x="0" y="0" width="25" height="25" edgeMode="wrap" order="5" targetX="0" targetY="0" kernelMatrix="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+  </filter>
+
+  <!-- Same as above, but the primitive subregion is now larger than the input surface.
+       Both Chromium and Firefox don't tile the input surface in this case. -->
+  <filter id="primitive-bounds-larger">
+    <feFlood x="0" y="0" width="30" height="30" flood-color="red" result="f1"/>
+    <feFlood x="5" y="5" width="20" height="20" flood-color="green" result="f2"/>
+    <feMerge>
+      <feMergeNode in="f1"/>
+      <feMergeNode in="f2"/>
+    </feMerge>
+    <feConvolveMatrix kernelUnitLength="1" x="0" y="0" width="50" height="50" edgeMode="wrap" order="5" targetX="0" targetY="0" kernelMatrix="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+  </filter>
+
+  <g transform="translate(30 20)" filter="url(#primitive-bounds-narrower)">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="green" x="6" y="6" width="40" height="40"/>
+  </g>
+
+  <g transform="translate(90 20)" filter="url(#primitive-bounds-larger)">
+    <rect x="1" y="1" width="50" height="50"/>
+  </g>
+</svg>
