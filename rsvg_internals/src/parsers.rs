@@ -565,4 +565,42 @@ mod tests {
         assert!(number_list_from_str("1", ListLength::Exact(2)).is_err());
         assert!(number_list_from_str("1 2", ListLength::Exact(3)).is_err());
     }
+
+    #[test]
+    fn parses_integer() {
+        assert_eq!(integer("1"), Ok(1));
+        assert_eq!(integer("-1"), Ok(-1));
+    }
+
+    #[test]
+    fn invalid_integer() {
+        assert!(integer("").is_err());
+        assert!(integer("1x").is_err());
+        assert!(integer("1.5").is_err());
+    }
+
+    #[test]
+    fn parses_integer_optional_integer() {
+        assert_eq!(integer_optional_integer("1, 2"), Ok((1, 2)));
+        assert_eq!(integer_optional_integer("1 2"), Ok((1, 2)));
+        assert_eq!(integer_optional_integer("1"), Ok((1, 1)));
+
+        assert_eq!(integer_optional_integer("-1, -2"), Ok((-1, -2)));
+        assert_eq!(integer_optional_integer("-1 -2"), Ok((-1, -2)));
+        assert_eq!(integer_optional_integer("-1"), Ok((-1, -1)));
+    }
+
+    #[test]
+    fn invalid_integer_optional_integer() {
+        assert!(integer_optional_integer("").is_err());
+        assert!(integer_optional_integer("1x").is_err());
+        assert!(integer_optional_integer("x1").is_err());
+        assert!(integer_optional_integer("1 x").is_err());
+        assert!(integer_optional_integer("1 , x").is_err());
+        assert!(integer_optional_integer("1 , 2x").is_err());
+        assert!(integer_optional_integer("1 2 x").is_err());
+        assert!(integer_optional_integer("1.5").is_err());
+        assert!(integer_optional_integer("1 2.5").is_err());
+        assert!(integer_optional_integer("1, 2.5").is_err());
+    }
 }
