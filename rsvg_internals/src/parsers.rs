@@ -199,6 +199,43 @@ pub fn number_optional_number(s: &str) -> Result<(f64, f64), ParseError> {
     }
 }
 
+// integer
+//
+// https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
+pub fn integer(s: &str) -> Result<i32, ParseError> {
+    let mut input = ParserInput::new(s);
+    let mut parser = Parser::new(&mut input);
+
+    Ok(parser.expect_integer()?)
+}
+
+// integer-optional-integer
+//
+// Like number-optional-number but with integers.
+pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ParseError> {
+    let mut input = ParserInput::new(s);
+    let mut parser = Parser::new(&mut input);
+
+    let x = parser.expect_integer()?;
+
+    if !parser.is_exhausted() {
+        let state = parser.state();
+
+        match *parser.next()? {
+            Token::Comma => {}
+            _ => parser.reset(&state),
+        };
+
+        let y = parser.expect_integer()?;
+
+        parser.expect_exhausted()?;
+
+        Ok((x, y))
+    } else {
+        Ok((x, x))
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn rsvg_css_parse_number_optional_number(
     s: *const libc::c_char,
