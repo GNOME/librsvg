@@ -15,6 +15,19 @@ pub struct Pixel {
     pub a: u8,
 }
 
+/// Modes which specify how the values of out of bounds pixels are computed.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum EdgeMode {
+    /// The nearest inbounds pixel value is returned.
+    Duplicate,
+    /// The image is extended by taking the color values from the opposite of the image.
+    ///
+    /// Imagine the image being tiled infinitely, with the original image at the origin.
+    Wrap,
+    /// Zero RGBA values are returned.
+    None,
+}
+
 /// Extension methods for `cairo::ImageSurfaceData`.
 pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
     /// Sets the pixel at the given coordinates.
