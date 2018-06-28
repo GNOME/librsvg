@@ -584,10 +584,7 @@ mod tests {
 
     #[test]
     fn invalid_font_size_yields_error() {
-        assert!(is_parse_error(&FontSizeSpec::parse_str(
-            "furlong",
-            ()
-        )));
+        assert!(is_parse_error(&FontSizeSpec::parse_str("furlong", ())));
     }
 
     fn parse_dash_array_str(s: &str) -> Result<Dasharray, AttributeError> {
