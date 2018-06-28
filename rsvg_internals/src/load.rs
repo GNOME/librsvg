@@ -9,6 +9,7 @@ use filters::blend::Blend;
 use filters::color_matrix::ColorMatrix;
 use filters::component_transfer::{ComponentTransfer, FuncX};
 use filters::composite::Composite;
+use filters::convolve_matrix::ConvolveMatrix;
 use filters::flood::Flood;
 use filters::image::Image;
 use filters::merge::{Merge, MergeNode};
@@ -30,12 +31,6 @@ use util::utf8_cstr;
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn rsvg_new_filter_primitive_convolve_matrix(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_diffuse_lighting(
         _: *const libc::c_char,
         _: *const RsvgNode,
@@ -98,7 +93,6 @@ lazy_static! {
     #[cfg_attr(rustfmt, rustfmt_skip)]
     static ref NODE_CREATORS_C: HashMap<&'static str, (bool, NodeCreateCFn)> = {
         let mut h = HashMap::new();
-        h.insert("feConvolveMatrix",    (true,  rsvg_new_filter_primitive_convolve_matrix as NodeCreateCFn));
         h.insert("feDiffuseLighting",   (true,  rsvg_new_filter_primitive_diffuse_lighting as NodeCreateCFn));
         h.insert("feDisplacementMap",   (true,  rsvg_new_filter_primitive_displacement_map as NodeCreateCFn));
         h.insert("feDistantLight",      (false, rsvg_new_node_light_source as NodeCreateCFn));
@@ -159,6 +153,11 @@ node_create_fn!(
     FuncX::new_a
 );
 node_create_fn!(create_composite, FilterPrimitiveComposite, Composite::new);
+node_create_fn!(
+    create_convolve_matrix,
+    FilterPrimitiveConvolveMatrix,
+    ConvolveMatrix::new
+);
 node_create_fn!(create_defs, Defs, NodeDefs::new);
 node_create_fn!(create_ellipse, Ellipse, NodeEllipse::new);
 node_create_fn!(create_filter, Filter, NodeFilter::new);
@@ -224,6 +223,7 @@ lazy_static! {
         h.insert("feColorMatrix",       (true,  create_color_matrix as NodeCreateFn));
         h.insert("feComponentTransfer", (true,  create_component_transfer as NodeCreateFn));
         h.insert("feComposite",         (true,  create_composite as NodeCreateFn));
+        h.insert("feConvolveMatrix",    (true,  create_convolve_matrix as NodeCreateFn));
         h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
         h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
         h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
