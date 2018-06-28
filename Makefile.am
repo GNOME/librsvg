@@ -22,7 +22,6 @@ BUILT_SOURCES += $(enum_sources)
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/filters/common.c		\
 	librsvg/filters/common.h		\
-	librsvg/filters/convolve_matrix.c	\
 	librsvg/filters/diffuse_lighting.c	\
 	librsvg/filters/displacement_map.c	\
 	librsvg/filters/erode.c			\
@@ -82,6 +81,7 @@ RUST_SRC =							\
 	rsvg_internals/src/filters/color_matrix.rs		\
 	rsvg_internals/src/filters/component_transfer.rs	\
 	rsvg_internals/src/filters/composite.rs			\
+	rsvg_internals/src/filters/convolve_matrix.rs		\
 	rsvg_internals/src/filters/context.rs			\
 	rsvg_internals/src/filters/error.rs			\
 	rsvg_internals/src/filters/ffi.rs			\
