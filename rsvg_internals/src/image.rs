@@ -9,6 +9,7 @@ use std::ptr;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
+use bbox::BoundingBox;
 use draw::{add_clipping_rect, draw_surface};
 use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
@@ -125,6 +126,17 @@ impl NodeTrait for NodeImage {
                     add_clipping_rect(dc, x, y, w, h);
                 }
 
+                // The bounding box for <image> is decided by the values of x, y, w, h and not by
+                // the final computed image bounds.
+                let bbox = BoundingBox::new(&dc.get_cairo_context().get_matrix()).with_rect(Some(
+                    cairo::Rectangle {
+                        x,
+                        y,
+                        width: w,
+                        height: h,
+                    },
+                ));
+
                 let (x, y, w, h) = aspect.compute(
                     f64::from(surface.get_width()),
                     f64::from(surface.get_height()),
@@ -135,6 +147,8 @@ impl NodeTrait for NodeImage {
                 );
 
                 draw_surface(dc, values, surface, x, y, w, h, clipping);
+
+                dc.insert_bbox(&bbox);
             });
         }
     }

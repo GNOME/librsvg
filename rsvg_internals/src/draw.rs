@@ -421,8 +421,6 @@ pub fn draw_surface(
 
     let cr = draw_ctx.get_cairo_context();
 
-    let affine = cr.get_matrix();
-
     let width = surface.get_width();
     let height = surface.get_height();
 
@@ -434,14 +432,6 @@ pub fn draw_surface(
 
     let width = f64::from(width);
     let height = f64::from(height);
-
-    // This is the target bbox after drawing.
-    let bbox = BoundingBox::new(&affine).with_rect(Some(cairo::Rectangle {
-        x,
-        y,
-        width: w,
-        height: h,
-    }));
 
     set_affine_on_cr(draw_ctx, &cr);
     cr.scale(w / width, h / height);
@@ -470,8 +460,6 @@ pub fn draw_surface(
     cr.paint();
 
     cr.restore();
-
-    draw_ctx.insert_bbox(&bbox);
 }
 
 /// Adds a clipping rectangle to the curent Cairo context
