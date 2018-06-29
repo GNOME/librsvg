@@ -334,7 +334,7 @@ impl Node {
         let mut desc = Some(descendant.clone());
 
         while let Some(ref d) = desc.clone() {
-            if rc_node_ptr_eq(&ancestor, d) {
+            if Rc::ptr_eq(&ancestor, d) {
                 return true;
             }
 
@@ -641,15 +641,6 @@ pub extern "C" fn rsvg_node_unref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
     ptr::null_mut()
 }
 
-// See https://github.com/rust-lang/rust/issues/36497 - this is what
-// added Rc::ptr_eq(), but we don't want to depend on unstable Rust
-// just yet.
-pub fn rc_node_ptr_eq<T: ?Sized>(this: &Rc<T>, other: &Rc<T>) -> bool {
-    let this_ptr: *const T = &**this;
-    let other_ptr: *const T = &**other;
-    this_ptr == other_ptr
-}
-
 #[no_mangle]
 pub extern "C" fn rsvg_node_is_same(
     raw_node1: *const RsvgNode,
@@ -661,7 +652,7 @@ pub extern "C" fn rsvg_node_is_same(
         let node1: &RsvgNode = unsafe { &*raw_node1 };
         let node2: &RsvgNode = unsafe { &*raw_node2 };
 
-        rc_node_ptr_eq(node1, node2)
+        Rc::ptr_eq(node1, node2)
     } else {
         false
     };
@@ -972,12 +963,12 @@ mod tests {
         let c = children.next();
         assert!(c.is_some());
         let c = c.unwrap();
-        assert!(rc_node_ptr_eq(&c, &child));
+        assert!(Rc::ptr_eq(&c, &child));
 
         let c = children.next_back();
         assert!(c.is_some());
         let c = c.unwrap();
-        assert!(rc_node_ptr_eq(&c, &second_child));
+        assert!(Rc::ptr_eq(&c, &second_child));
 
         assert!(children.next().is_none());
         assert!(children.next_back().is_none());
@@ -1020,12 +1011,12 @@ mod tests {
 
         let result: bool = from_glib(rsvg_node_children_iter_next(iter, &mut c));
         assert_eq!(result, true);
-        assert!(rc_node_ptr_eq(unsafe { &*c }, &child));
+        assert!(Rc::ptr_eq(unsafe { &*c }, &child));
         rsvg_node_unref(c);
 
         let result: bool = from_glib(rsvg_node_children_iter_next_back(iter, &mut c));
         assert_eq!(result, true);
-        assert!(rc_node_ptr_eq(unsafe { &*c }, &second_child));
+        assert!(Rc::ptr_eq(unsafe { &*c }, &second_child));
         rsvg_node_unref(c);
 
         let result: bool = from_glib(rsvg_node_children_iter_next(iter, &mut c));

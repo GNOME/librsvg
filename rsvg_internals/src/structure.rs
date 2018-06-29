@@ -277,7 +277,9 @@ impl NodeTrait for NodeUse {
             return;
         }
 
-        let child = if let Some(acquired) = draw_ctx.get_acquired_node(link.as_ref().unwrap()) {
+        let acquired = draw_ctx.get_acquired_node(link.as_ref().unwrap());
+
+        let child = if let Some(acquired) = acquired {
             acquired.get()
         } else {
             return;

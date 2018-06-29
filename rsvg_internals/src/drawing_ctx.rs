@@ -9,6 +9,7 @@ use pango_cairo_sys;
 use pango_sys;
 use pangocairo;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
@@ -18,7 +19,7 @@ use filters::filter_render;
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
 use mask::NodeMask;
-use node::{rc_node_ptr_eq, CascadedValues, NodeType, RsvgNode};
+use node::{CascadedValues, NodeType, RsvgNode};
 use paint_server::{self, PaintServer};
 use rect::RectangleExt;
 use state::{
@@ -208,7 +209,7 @@ impl<'a> DrawingCtx {
         self.acquired_nodes
             .borrow()
             .iter()
-            .find(|n| rc_node_ptr_eq(n, node))
+            .find(|n| Rc::ptr_eq(n, node))
             .is_some()
     }
 
@@ -642,7 +643,7 @@ impl<'a> DrawingCtx {
         let stack_top = self.drawsub_stack.pop();
 
         if let Some(ref top) = stack_top {
-            if !rc_node_ptr_eq(&top, node) {
+            if !Rc::ptr_eq(top, node) {
                 draw = false;
             }
         }
@@ -942,7 +943,7 @@ impl Drop for AcquiredNode {
     fn drop(&mut self) {
         unsafe {
             let mut v = (*self.0).borrow_mut();
-            assert!(rc_node_ptr_eq(v.last().unwrap(), &self.1));
+            assert!(Rc::ptr_eq(v.last().unwrap(), &self.1));
             v.pop();
         }
     }
