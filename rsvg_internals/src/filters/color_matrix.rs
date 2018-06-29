@@ -207,13 +207,17 @@ impl Filter for ColorMatrix {
             for (x, y, pixel) in Pixels::new(input.surface(), bounds) {
                 let alpha = f64::from(pixel.a) / 255f64;
 
-                let pixel_vec = [
-                    f64::from(pixel.r) / 255f64 / alpha,
-                    f64::from(pixel.g) / 255f64 / alpha,
-                    f64::from(pixel.b) / 255f64 / alpha,
-                    alpha,
-                    1.0,
-                ];
+                let pixel_vec = if alpha == 0.0 {
+                    [0.0, 0.0, 0.0, 0.0, 1.0]
+                } else {
+                    [
+                        f64::from(pixel.r) / 255f64 / alpha,
+                        f64::from(pixel.g) / 255f64 / alpha,
+                        f64::from(pixel.b) / 255f64 / alpha,
+                        alpha,
+                        1.0,
+                    ]
+                };
                 let mut new_pixel_vec = [0.0; 5];
                 mul_into(&mut new_pixel_vec, &matrix, &pixel_vec);
 
