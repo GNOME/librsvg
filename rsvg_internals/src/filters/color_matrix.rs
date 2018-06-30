@@ -186,8 +186,8 @@ impl Filter for ColorMatrix {
         /// Multiplies a matrix by a vector and puts the result into a slice.
         #[inline]
         fn mul_into(out: &mut [f64], m: &Matrix<f64>, v: &[f64]) {
-            assert!(v.len() == m.cols());
-            assert!(v.len() == out.len());
+            assert_eq!(v.len(), m.cols());
+            assert_eq!(v.len(), out.len());
 
             for (i, row) in m.row_iter().enumerate() {
                 out[i] = rulinalg::utils::dot(row.raw_slice(), v);
