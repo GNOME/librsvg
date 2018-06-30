@@ -112,11 +112,11 @@ pub struct FilterContext {
     /// This is to be used in conjunction with setting the viewbox size to account for the scaling.
     /// For `filterUnits == userSpaceOnUse`, the viewbox will have the actual resolution size, and
     /// for `filterUnits == objectBoundingBox`, the viewbox will have the size of 1, 1.
-    affine: cairo::Matrix,
+    _affine: cairo::Matrix,
 
     /// The filter primitive affine matrix.
     ///
-    /// See the comments for `affine`, they largely apply here.
+    /// See the comments for `_affine`, they largely apply here.
     paffine: cairo::Matrix,
 
     /// Obsolete; remove when all filters are ported to Rust.
@@ -299,7 +299,7 @@ impl FilterContext {
                 f64::from(height),
             ),
             processing_linear_rgb: false,
-            affine,
+            _affine: affine,
             paffine,
             channelmap,
         };
