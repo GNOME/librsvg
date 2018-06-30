@@ -149,7 +149,6 @@ impl NodeTrait for NodeImage {
                 let (x, y, w, h) = aspect.compute(width, height, x, y, w, h);
 
                 let cr = dc.get_cairo_context();
-                let affine = cr.get_matrix();
 
                 cr.save();
 
