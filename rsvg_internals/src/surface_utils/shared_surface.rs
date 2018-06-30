@@ -147,6 +147,54 @@ impl SharedImageSurface {
         Ok(output_surface)
     }
 
+    /// Scales the given surface by `x` and `y` into a surface `width`×`height` in size, clipped by
+    /// `bounds`.
+    pub fn scale_to(
+        &self,
+        width: i32,
+        height: i32,
+        bounds: IRect,
+        x: f64,
+        y: f64,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let output_surface = ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+
+        {
+            let cr = cairo::Context::new(&output_surface);
+            cr.rectangle(
+                bounds.x0 as f64,
+                bounds.y0 as f64,
+                (bounds.x1 - bounds.x0) as f64,
+                (bounds.y1 - bounds.y0) as f64,
+            );
+            cr.clip();
+
+            cr.scale(x, y);
+            self.set_as_source_surface(&cr, 0.0, 0.0);
+            cr.paint();
+        }
+
+        Ok(SharedImageSurface::new(output_surface)?)
+    }
+
+    /// Returns a scaled version of a surface and bounds.
+    #[inline]
+    pub fn scale(
+        &self,
+        bounds: IRect,
+        x: f64,
+        y: f64,
+    ) -> Result<(SharedImageSurface, IRect), cairo::Status> {
+        let new_width = (f64::from(self.width) * x).ceil() as i32;
+        let new_height = (f64::from(self.height) * x).ceil() as i32;
+        let new_bounds = bounds.scale(x, y);
+
+        Ok((
+            self.scale_to(new_width, new_height, new_bounds, x, y)?,
+            new_bounds,
+        ))
+    }
+
     /// Returns a raw pointer to the underlying surface.
     ///
     /// # Safety
