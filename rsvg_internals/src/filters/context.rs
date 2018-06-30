@@ -220,6 +220,19 @@ impl IRect {
     pub fn contains(self, x: i32, y: i32) -> bool {
         x >= self.x0 && x < self.x1 && y >= self.y0 && y < self.y1
     }
+
+    /// Returns an `IRect` scaled by the given amounts.
+    ///
+    /// The returned `IRect` encompasses all, even partially covered, pixels after the scaling.
+    #[inline]
+    pub fn scale(self, x: f64, y: f64) -> IRect {
+        IRect {
+            x0: (f64::from(self.x0) * x).floor() as i32,
+            y0: (f64::from(self.y0) * y).floor() as i32,
+            x1: (f64::from(self.x1) * x).ceil() as i32,
+            y1: (f64::from(self.y1) * y).ceil() as i32,
+        }
+    }
 }
 
 impl FilterContext {
