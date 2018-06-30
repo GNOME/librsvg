@@ -269,44 +269,22 @@ impl Filter for ConvolveMatrix {
             input.surface().clone()
         };
 
-        if let Some((dx, dy)) = self.kernel_unit_length.get() {
-            // Scale the input surface to match kernel_unit_length.
+        let scale = self.kernel_unit_length.get().map(|(dx, dy)| {
             let paffine = ctx.paffine();
             let ox = paffine.xx * dx + paffine.xy * dy;
             let oy = paffine.yx * dx + paffine.yy * dy;
 
-            let ox = 1.0 / ox;
-            let oy = 1.0 / oy;
+            (ox, oy)
+        });
 
-            bounds = IRect {
-                x0: (f64::from(bounds.x0) * ox).floor() as i32,
-                y0: (f64::from(bounds.y0) * oy).floor() as i32,
-                x1: (f64::from(bounds.x1) * ox).ceil() as i32,
-                y1: (f64::from(bounds.y1) * oy).ceil() as i32,
-            };
+        if let Some((ox, oy)) = scale {
+            // Scale the input surface to match kernel_unit_length.
+            let (new_surface, new_bounds) = input_surface
+                .scale(bounds, 1.0 / ox, 1.0 / oy)
+                .map_err(FilterError::OutputSurfaceCreation)?;
 
-            let surface = ImageSurface::create(
-                cairo::Format::ARgb32,
-                (f64::from(input_surface.width()) * ox).ceil() as i32,
-                (f64::from(input_surface.height()) * oy).ceil() as i32,
-            ).map_err(FilterError::OutputSurfaceCreation)?;
-
-            {
-                let cr = cairo::Context::new(&surface);
-                cr.rectangle(
-                    bounds.x0 as f64,
-                    bounds.y0 as f64,
-                    (bounds.x1 - bounds.x0) as f64,
-                    (bounds.y1 - bounds.y0) as f64,
-                );
-                cr.clip();
-
-                cr.scale(ox, oy);
-                input_surface.set_as_source_surface(&cr, 0.0, 0.0);
-                cr.paint();
-            }
-
-            input_surface = SharedImageSurface::new(surface).unwrap();
+            input_surface = new_surface;
+            bounds = new_bounds;
         }
 
         let matrix = self.kernel_matrix.borrow();
@@ -385,42 +363,26 @@ impl Filter for ConvolveMatrix {
             }
         }
 
-        if let Some((dx, dy)) = self.kernel_unit_length.get() {
+        let mut output_surface =
+            SharedImageSurface::new(output_surface).map_err(FilterError::OutputSurfaceCreation)?;
+
+        if let Some((ox, oy)) = scale {
             // Scale the output surface back.
-            let paffine = ctx.paffine();
-            let ox = paffine.xx * dx + paffine.xy * dy;
-            let oy = paffine.yx * dx + paffine.yy * dy;
-
-            bounds = original_bounds;
-
-            let surface = ImageSurface::create(
-                cairo::Format::ARgb32,
-                ctx.source_graphic().width(),
-                ctx.source_graphic().height(),
-            ).map_err(FilterError::OutputSurfaceCreation)?;
-
-            {
-                let cr = cairo::Context::new(&surface);
-                cr.rectangle(
-                    bounds.x0 as f64,
-                    bounds.y0 as f64,
-                    (bounds.x1 - bounds.x0) as f64,
-                    (bounds.y1 - bounds.y0) as f64,
-                );
-                cr.clip();
-
-                cr.scale(ox, oy);
-                cr.set_source_surface(&output_surface, 0.0, 0.0);
-                cr.paint();
-            }
-
-            output_surface = surface;
+            output_surface = output_surface
+                .scale_to(
+                    ctx.source_graphic().width(),
+                    ctx.source_graphic().height(),
+                    original_bounds,
+                    ox,
+                    oy,
+                )
+                .map_err(FilterError::OutputSurfaceCreation)?;
         }
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface).unwrap(),
+                surface: output_surface,
                 bounds,
             },
         })
