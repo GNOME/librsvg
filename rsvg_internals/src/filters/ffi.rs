@@ -147,9 +147,10 @@ pub fn filter_render(
                 let pointers = unsafe { *(c.get_c_impl() as *const FilterFunctionPointers) };
 
                 let mut render = |filter_ctx: &mut FilterContext| {
-                    match (pointers.render)(&c, filter_ctx, draw_ctx) {
-                        Ok(result) => filter_ctx.store_result(result),
-                        Err(_) => { /* Do nothing for now */ }
+                    if let Err(_) = (pointers.render)(&c, filter_ctx, draw_ctx)
+                        .and_then(|result| filter_ctx.store_result(result))
+                    {
+                        // Do nothing for now.
                     }
                 };
 

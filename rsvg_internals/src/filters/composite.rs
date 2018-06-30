@@ -20,7 +20,7 @@ use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
-use super::{make_result, Filter, FilterError, PrimitiveWithInput};
+use super::{Filter, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -107,8 +107,8 @@ impl Filter for Composite {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = make_result(self.base.get_input(ctx, draw_ctx))?;
-        let input_2 = make_result(ctx.get_input(draw_ctx, self.in2.borrow().as_ref()))?;
+        let input = self.base.get_input(ctx, draw_ctx)?;
+        let input_2 = ctx.get_input(draw_ctx, self.in2.borrow().as_ref())?;
         let bounds = self
             .base
             .get_bounds(ctx)
@@ -121,7 +121,7 @@ impl Filter for Composite {
                 cairo::Format::ARgb32,
                 input.surface().width(),
                 input.surface().height(),
-            ).map_err(FilterError::OutputSurfaceCreation)?;
+            ).map_err(FilterError::IntermediateSurfaceCreation)?;
 
             let output_stride = output_surface.get_stride() as usize;
             {
@@ -170,7 +170,7 @@ impl Filter for Composite {
             let output_surface = input_2
                 .surface()
                 .copy_surface(bounds)
-                .map_err(FilterError::OutputSurfaceCreation)?;
+                .map_err(FilterError::IntermediateSurfaceCreation)?;
 
             let cr = cairo::Context::new(&output_surface);
             cr.rectangle(
@@ -191,7 +191,8 @@ impl Filter for Composite {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface).unwrap(),
+                surface: SharedImageSurface::new(output_surface)
+                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
                 bounds,
             },
         })

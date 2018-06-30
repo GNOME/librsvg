@@ -8,7 +8,7 @@ use glib::translate::{Stash, ToGlibPtr};
 
 use filters::context::IRect;
 
-use super::Pixel;
+use super::{iterators::Pixels, ImageSurfaceDataExt, Pixel};
 
 /// Wrapper for a Cairo image surface that allows shared access.
 ///
@@ -193,6 +193,29 @@ impl SharedImageSurface {
             self.scale_to(new_width, new_height, new_bounds, x, y)?,
             new_bounds,
         ))
+    }
+
+    /// Returns a surface with black background and alpha channel matching this surface.
+    pub fn extract_alpha(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {
+        let mut output_surface =
+            ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        let output_stride = output_surface.get_stride() as usize;
+        {
+            let mut output_data = output_surface.get_data().unwrap();
+
+            for (x, y, Pixel { a, .. }) in Pixels::new(self, bounds) {
+                let output_pixel = Pixel {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    a,
+                };
+                output_data.set_pixel(output_stride, output_pixel, x, y);
+            }
+        }
+
+        Ok(output_surface)
     }
 
     /// Returns a raw pointer to the underlying surface.

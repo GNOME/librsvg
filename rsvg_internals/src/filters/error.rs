@@ -4,14 +4,16 @@ use std::fmt;
 use cairo;
 
 /// An enumeration of errors that can occur during filter primitive rendering.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum FilterError {
     /// The filter was passed invalid input (the `in` attribute).
     InvalidInput,
     /// The filter input surface has an unsuccessful status.
     BadInputSurfaceStatus(cairo::Status),
-    /// Couldn't create the output surface.
-    OutputSurfaceCreation(cairo::Status),
+    /// Couldn't create an intermediate surface.
+    IntermediateSurfaceCreation(cairo::Status),
+    /// An intermediate surface has an unsuccessful status.
+    BadIntermediateSurfaceStatus(cairo::Status),
 }
 
 impl Error for FilterError {
@@ -20,7 +22,12 @@ impl Error for FilterError {
         match *self {
             FilterError::InvalidInput => "invalid value of the `in` attribute",
             FilterError::BadInputSurfaceStatus(_) => "invalid status of the input surface",
-            FilterError::OutputSurfaceCreation(_) => "couldn't create the output surface",
+            FilterError::IntermediateSurfaceCreation(_) => {
+                "couldn't create an intermediate surface"
+            }
+            FilterError::BadIntermediateSurfaceStatus(_) => {
+                "invalid status of an intermediate surface"
+            }
         }
     }
 
@@ -33,10 +40,9 @@ impl Error for FilterError {
 impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            FilterError::BadInputSurfaceStatus(ref status) => {
-                write!(f, "{}: {:?}", self.description(), status)
-            }
-            FilterError::OutputSurfaceCreation(ref status) => {
+            FilterError::BadInputSurfaceStatus(ref status)
+            | FilterError::IntermediateSurfaceCreation(ref status)
+            | FilterError::BadIntermediateSurfaceStatus(ref status) => {
                 write!(f, "{}: {:?}", self.description(), status)
             }
             _ => write!(f, "{}", self.description()),

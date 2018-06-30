@@ -13,7 +13,7 @@ use surface_utils::shared_surface::SharedImageSurface;
 use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
-use super::{make_result, Filter, FilterError, PrimitiveWithInput};
+use super::{Filter, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
 pub struct Offset {
@@ -71,7 +71,7 @@ impl Filter for Offset {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = make_result(self.base.get_input(ctx, draw_ctx))?;
+        let input = self.base.get_input(ctx, draw_ctx)?;
         let bounds = self
             .base
             .get_bounds(ctx)
@@ -97,7 +97,7 @@ impl Filter for Offset {
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-        ).map_err(FilterError::OutputSurfaceCreation)?;
+        ).map_err(FilterError::IntermediateSurfaceCreation)?;
 
         {
             let cr = cairo::Context::new(&output_surface);
@@ -116,7 +116,8 @@ impl Filter for Offset {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface).unwrap(),
+                surface: SharedImageSurface::new(output_surface)
+                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
                 bounds,
             },
         })

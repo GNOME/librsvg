@@ -22,7 +22,7 @@ use surface_utils::{
 use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{make_result, Filter, FilterError, PrimitiveWithInput};
+use super::{Filter, FilterError, PrimitiveWithInput};
 
 /// Color matrix operation types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -174,7 +174,7 @@ impl Filter for ColorMatrix {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = make_result(self.base.get_input(ctx, draw_ctx))?;
+        let input = self.base.get_input(ctx, draw_ctx)?;
         let bounds = self
             .base
             .get_bounds(ctx)
@@ -198,7 +198,7 @@ impl Filter for ColorMatrix {
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-        ).map_err(FilterError::OutputSurfaceCreation)?;
+        ).map_err(FilterError::IntermediateSurfaceCreation)?;
 
         let output_stride = output_surface.get_stride() as usize;
         {
@@ -239,7 +239,8 @@ impl Filter for ColorMatrix {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface).unwrap(),
+                surface: SharedImageSurface::new(output_surface)
+                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
                 bounds,
             },
         })

@@ -20,7 +20,7 @@ use surface_utils::{
 use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
-use super::{make_result, Filter, FilterError, PrimitiveWithInput};
+use super::{Filter, FilterError, PrimitiveWithInput};
 
 /// The `feConvolveMatrix` filter primitive.
 pub struct ConvolveMatrix {
@@ -222,7 +222,7 @@ impl Filter for ConvolveMatrix {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = make_result(self.base.get_input(ctx, draw_ctx))?;
+        let input = self.base.get_input(ctx, draw_ctx)?;
         let mut bounds = self
             .base
             .get_bounds(ctx)
@@ -239,7 +239,7 @@ impl Filter for ConvolveMatrix {
                 cairo::Format::ARgb32,
                 input.surface().width(),
                 input.surface().height(),
-            ).map_err(FilterError::OutputSurfaceCreation)?;
+            ).map_err(FilterError::IntermediateSurfaceCreation)?;
 
             let stride = unpremultiplied_surface.get_stride() as usize;
             {
@@ -264,7 +264,8 @@ impl Filter for ConvolveMatrix {
                 }
             }
 
-            SharedImageSurface::new(unpremultiplied_surface).unwrap()
+            SharedImageSurface::new(unpremultiplied_surface)
+                .map_err(FilterError::BadIntermediateSurfaceStatus)?
         } else {
             input.surface().clone()
         };
@@ -281,7 +282,7 @@ impl Filter for ConvolveMatrix {
             // Scale the input surface to match kernel_unit_length.
             let (new_surface, new_bounds) = input_surface
                 .scale(bounds, 1.0 / ox, 1.0 / oy)
-                .map_err(FilterError::OutputSurfaceCreation)?;
+                .map_err(FilterError::IntermediateSurfaceCreation)?;
 
             input_surface = new_surface;
             bounds = new_bounds;
@@ -294,7 +295,7 @@ impl Filter for ConvolveMatrix {
             cairo::Format::ARgb32,
             input_surface.width(),
             input_surface.height(),
-        ).map_err(FilterError::OutputSurfaceCreation)?;
+        ).map_err(FilterError::IntermediateSurfaceCreation)?;
 
         let output_stride = output_surface.get_stride() as usize;
         {
@@ -363,8 +364,8 @@ impl Filter for ConvolveMatrix {
             }
         }
 
-        let mut output_surface =
-            SharedImageSurface::new(output_surface).map_err(FilterError::OutputSurfaceCreation)?;
+        let mut output_surface = SharedImageSurface::new(output_surface)
+            .map_err(FilterError::BadIntermediateSurfaceStatus)?;
 
         if let Some((ox, oy)) = scale {
             // Scale the output surface back.
@@ -376,7 +377,7 @@ impl Filter for ConvolveMatrix {
                     ox,
                     oy,
                 )
-                .map_err(FilterError::OutputSurfaceCreation)?;
+                .map_err(FilterError::IntermediateSurfaceCreation)?;
         }
 
         Ok(FilterResult {

@@ -11,7 +11,7 @@ use surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::input::Input;
-use super::{make_result, Filter, FilterError, Primitive};
+use super::{Filter, FilterError, Primitive};
 
 /// The `feMerge` filter primitive.
 pub struct Merge {
@@ -89,13 +89,13 @@ impl MergeNode {
         bounds: IRect,
         output_surface: Option<ImageSurface>,
     ) -> Result<ImageSurface, FilterError> {
-        let input = make_result(ctx.get_input(draw_ctx, self.in_.borrow().as_ref()))?;
+        let input = ctx.get_input(draw_ctx, self.in_.borrow().as_ref())?;
 
         if output_surface.is_none() {
             return input
                 .surface()
                 .copy_surface(bounds)
-                .map_err(FilterError::OutputSurfaceCreation);
+                .map_err(FilterError::IntermediateSurfaceCreation);
         }
         let output_surface = output_surface.unwrap();
 
@@ -129,9 +129,9 @@ impl Filter for Merge {
             .children()
             .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
         {
-            bounds = bounds.add_input(&child.with_impl(|c: &MergeNode| {
-                make_result(ctx.get_input(draw_ctx, c.in_.borrow().as_ref()))
-            })?);
+            bounds = bounds.add_input(
+                &child.with_impl(|c: &MergeNode| ctx.get_input(draw_ctx, c.in_.borrow().as_ref()))?,
+            );
         }
         let bounds = bounds.into_irect(draw_ctx);
 
@@ -152,13 +152,14 @@ impl Filter for Merge {
                 cairo::Format::ARgb32,
                 ctx.source_graphic().width(),
                 ctx.source_graphic().height(),
-            ).map_err(FilterError::OutputSurfaceCreation)?,
+            ).map_err(FilterError::IntermediateSurfaceCreation)?,
         };
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface).unwrap(),
+                surface: SharedImageSurface::new(output_surface)
+                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
                 bounds,
             },
         })

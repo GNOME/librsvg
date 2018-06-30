@@ -79,14 +79,6 @@ struct PrimitiveWithInput {
     in_: RefCell<Option<Input>>,
 }
 
-/// Calls `ok_or()` on `get_input()` output.
-///
-/// A small convenience function for filter implementations.
-#[inline]
-fn make_result(x: Option<FilterInput>) -> Result<FilterInput, FilterError> {
-    x.ok_or(FilterError::InvalidInput)
-}
-
 impl Primitive {
     /// Constructs a new `Primitive` with empty properties.
     #[inline]
@@ -198,7 +190,11 @@ impl PrimitiveWithInput {
 
     /// Returns the input Cairo surface for this filter primitive.
     #[inline]
-    fn get_input(&self, ctx: &FilterContext, draw_ctx: &mut DrawingCtx) -> Option<FilterInput> {
+    fn get_input(
+        &self,
+        ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterInput, FilterError> {
         ctx.get_input(draw_ctx, self.in_.borrow().as_ref())
     }
 }
