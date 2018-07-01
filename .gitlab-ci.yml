@@ -165,20 +165,8 @@ debian:testing:
   <<: *distro_test
   <<: *stage_2
 
-ubuntu:18.04:
-  image: $AMD64_UBUNTU_BIONIC
-  <<: *distro_test
-  <<: *stage_2
-
 debian_i386:testing:
   image: $I386_DEBIAN_TESTING
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
-  <<: *stage_2
-
-ubuntu_i386:18.04:
-  image: $I386_UBUNTU_BIONIC
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
