@@ -31,8 +31,10 @@ pub mod node;
 use self::node::NodeFilter;
 
 pub mod blend;
+pub mod color_matrix;
 pub mod component_transfer;
 pub mod composite;
+pub mod convolve_matrix;
 pub mod flood;
 pub mod image;
 pub mod merge;
@@ -75,14 +77,6 @@ struct Primitive {
 struct PrimitiveWithInput {
     base: Primitive,
     in_: RefCell<Option<Input>>,
-}
-
-/// Calls `ok_or()` on `get_input()` output.
-///
-/// A small convenience function for filter implementations.
-#[inline]
-fn make_result(x: Option<FilterInput>) -> Result<FilterInput, FilterError> {
-    x.ok_or(FilterError::InvalidInput)
 }
 
 impl Primitive {
@@ -196,7 +190,11 @@ impl PrimitiveWithInput {
 
     /// Returns the input Cairo surface for this filter primitive.
     #[inline]
-    fn get_input(&self, ctx: &FilterContext, draw_ctx: &mut DrawingCtx) -> Option<FilterInput> {
+    fn get_input(
+        &self,
+        ctx: &FilterContext,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterInput, FilterError> {
         ctx.get_input(draw_ctx, self.in_.borrow().as_ref())
     }
 }

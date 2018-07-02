@@ -199,6 +199,43 @@ pub fn number_optional_number(s: &str) -> Result<(f64, f64), ParseError> {
     }
 }
 
+// integer
+//
+// https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
+pub fn integer(s: &str) -> Result<i32, ParseError> {
+    let mut input = ParserInput::new(s);
+    let mut parser = Parser::new(&mut input);
+
+    Ok(parser.expect_integer()?)
+}
+
+// integer-optional-integer
+//
+// Like number-optional-number but with integers.
+pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ParseError> {
+    let mut input = ParserInput::new(s);
+    let mut parser = Parser::new(&mut input);
+
+    let x = parser.expect_integer()?;
+
+    if !parser.is_exhausted() {
+        let state = parser.state();
+
+        match *parser.next()? {
+            Token::Comma => {}
+            _ => parser.reset(&state),
+        };
+
+        let y = parser.expect_integer()?;
+
+        parser.expect_exhausted()?;
+
+        Ok((x, y))
+    } else {
+        Ok((x, x))
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn rsvg_css_parse_number_optional_number(
     s: *const libc::c_char,
@@ -527,5 +564,43 @@ mod tests {
         // too few
         assert!(number_list_from_str("1", ListLength::Exact(2)).is_err());
         assert!(number_list_from_str("1 2", ListLength::Exact(3)).is_err());
+    }
+
+    #[test]
+    fn parses_integer() {
+        assert_eq!(integer("1"), Ok(1));
+        assert_eq!(integer("-1"), Ok(-1));
+    }
+
+    #[test]
+    fn invalid_integer() {
+        assert!(integer("").is_err());
+        assert!(integer("1x").is_err());
+        assert!(integer("1.5").is_err());
+    }
+
+    #[test]
+    fn parses_integer_optional_integer() {
+        assert_eq!(integer_optional_integer("1, 2"), Ok((1, 2)));
+        assert_eq!(integer_optional_integer("1 2"), Ok((1, 2)));
+        assert_eq!(integer_optional_integer("1"), Ok((1, 1)));
+
+        assert_eq!(integer_optional_integer("-1, -2"), Ok((-1, -2)));
+        assert_eq!(integer_optional_integer("-1 -2"), Ok((-1, -2)));
+        assert_eq!(integer_optional_integer("-1"), Ok((-1, -1)));
+    }
+
+    #[test]
+    fn invalid_integer_optional_integer() {
+        assert!(integer_optional_integer("").is_err());
+        assert!(integer_optional_integer("1x").is_err());
+        assert!(integer_optional_integer("x1").is_err());
+        assert!(integer_optional_integer("1 x").is_err());
+        assert!(integer_optional_integer("1 , x").is_err());
+        assert!(integer_optional_integer("1 , 2x").is_err());
+        assert!(integer_optional_integer("1 2 x").is_err());
+        assert!(integer_optional_integer("1.5").is_err());
+        assert!(integer_optional_integer("1 2.5").is_err());
+        assert!(integer_optional_integer("1, 2.5").is_err());
     }
 }
