@@ -143,6 +143,7 @@ pub fn filter_render(
             | NodeType::FilterPrimitiveFlood
             | NodeType::FilterPrimitiveImage
             | NodeType::FilterPrimitiveMerge
+            | NodeType::FilterPrimitiveMorphology
             | NodeType::FilterPrimitiveOffset => {
                 let pointers = unsafe { *(c.get_c_impl() as *const FilterFunctionPointers) };
 

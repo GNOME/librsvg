@@ -13,6 +13,7 @@ use filters::convolve_matrix::ConvolveMatrix;
 use filters::flood::Flood;
 use filters::image::Image;
 use filters::merge::{Merge, MergeNode};
+use filters::morphology::Morphology;
 use filters::node::NodeFilter;
 use filters::offset::Offset;
 use gradient::NodeGradient;
@@ -55,12 +56,6 @@ extern "C" {
         _: *const libc::c_char,
         _: *const libc::c_char,
     ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_erode(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_specular_lighting(
         _: *const libc::c_char,
         _: *const RsvgNode,
@@ -97,7 +92,6 @@ lazy_static! {
         h.insert("feDisplacementMap",   (true,  rsvg_new_filter_primitive_displacement_map as NodeCreateCFn));
         h.insert("feDistantLight",      (false, rsvg_new_node_light_source as NodeCreateCFn));
         h.insert("feGaussianBlur",      (true,  rsvg_new_filter_primitive_gaussian_blur as NodeCreateCFn));
-        h.insert("feMorphology",        (true,  rsvg_new_filter_primitive_erode as NodeCreateCFn));
         h.insert("fePointLight",        (false, rsvg_new_node_light_source as NodeCreateCFn));
         h.insert("feSpecularLighting",  (true,  rsvg_new_filter_primitive_specular_lighting as NodeCreateCFn));
         h.insert("feSpotLight",         (false, rsvg_new_node_light_source as NodeCreateCFn));
@@ -176,6 +170,11 @@ node_create_fn!(create_marker, Marker, NodeMarker::new);
 node_create_fn!(create_mask, Mask, NodeMask::new);
 node_create_fn!(create_merge, FilterPrimitiveMerge, Merge::new);
 node_create_fn!(create_merge_node, FilterPrimitiveMergeNode, MergeNode::new);
+node_create_fn!(
+    create_morphology,
+    FilterPrimitiveMorphology,
+    Morphology::new
+);
 node_create_fn!(create_offset, FilterPrimitiveOffset, Offset::new);
 node_create_fn!(create_path, Path, NodePath::new);
 node_create_fn!(create_pattern, Pattern, NodePattern::new);
@@ -232,6 +231,7 @@ lazy_static! {
         h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));
         h.insert("feMerge",             (true,  create_merge as NodeCreateFn));
         h.insert("feMergeNode",         (false, create_merge_node as NodeCreateFn));
+        h.insert("feMorphology",        (true,  create_morphology as NodeCreateFn));
         h.insert("feOffset",            (true,  create_offset as NodeCreateFn));
         h.insert("filter",              (true,  create_filter as NodeCreateFn));
         /* h.insert("font",             (true,  as NodeCreateFn)); */

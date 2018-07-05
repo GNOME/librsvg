@@ -38,6 +38,7 @@ pub mod convolve_matrix;
 pub mod flood;
 pub mod image;
 pub mod merge;
+pub mod morphology;
 pub mod offset;
 
 /// A filter primitive interface.
