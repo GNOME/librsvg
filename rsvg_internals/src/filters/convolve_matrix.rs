@@ -232,38 +232,10 @@ impl Filter for ConvolveMatrix {
 
         let mut input_surface = if self.preserve_alpha.get() {
             // preserve_alpha means we need to premultiply and unpremultiply the values.
-            //
-            // HACK: this is storing unpremultiplied pixels in an ARGB32 image surface (which is
-            // supposed to be premultiplied pixels).
-            let mut unpremultiplied_surface = ImageSurface::create(
-                cairo::Format::ARgb32,
-                input.surface().width(),
-                input.surface().height(),
-            ).map_err(FilterError::IntermediateSurfaceCreation)?;
-
-            let stride = unpremultiplied_surface.get_stride() as usize;
-            {
-                let mut data = unpremultiplied_surface.get_data().unwrap();
-
-                for (x, y, pixel) in Pixels::new(input.surface(), bounds) {
-                    let new_pixel = if pixel.a == 0 {
-                        pixel
-                    } else {
-                        let alpha = f64::from(pixel.a) / 255.0;
-                        let unpremultiply = |x| (f64::from(x) / alpha).round() as u8;
-
-                        Pixel {
-                            r: unpremultiply(pixel.r),
-                            g: unpremultiply(pixel.g),
-                            b: unpremultiply(pixel.b),
-                            a: pixel.a,
-                        }
-                    };
-
-                    data.set_pixel(stride, new_pixel, x, y);
-                }
-            }
-
+            let unpremultiplied_surface = input
+                .surface()
+                .unpremultiply(bounds)
+                .map_err(FilterError::IntermediateSurfaceCreation)?;
             SharedImageSurface::new(unpremultiplied_surface)
                 .map_err(FilterError::BadIntermediateSurfaceStatus)?
         } else {
