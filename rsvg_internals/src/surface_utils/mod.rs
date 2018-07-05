@@ -43,4 +43,38 @@ pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
     }
 }
 
+impl Pixel {
+    /// Returns an unpremultiplied value of this pixel.
+    #[inline]
+    pub fn unpremultiply(self) -> Self {
+        if self.a == 0 {
+            self
+        } else {
+            let alpha = f64::from(self.a) / 255.0;
+            let unpremultiply = |x| (f64::from(x) / alpha).round() as u8;
+
+            Self {
+                r: unpremultiply(self.r),
+                g: unpremultiply(self.g),
+                b: unpremultiply(self.b),
+                a: self.a,
+            }
+        }
+    }
+
+    /// Returns a premultiplied value of this pixel.
+    #[inline]
+    pub fn premultiply(self) -> Self {
+        let alpha = f64::from(self.a) / 255.0;
+        let premultiply = |x| (f64::from(x) * alpha).round() as u8;
+
+        Self {
+            r: premultiply(self.r),
+            g: premultiply(self.g),
+            b: premultiply(self.b),
+            a: self.a,
+        }
+    }
+}
+
 impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {}
