@@ -218,6 +218,26 @@ impl SharedImageSurface {
         Ok(output_surface)
     }
 
+    /// Returns a surface with pre-multiplication of color values undone.
+    ///
+    /// HACK: this is storing unpremultiplied pixels in an ARGB32 image surface (which is supposed
+    /// to be premultiplied pixels).
+    pub fn unpremultiply(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {
+        let mut output_surface =
+            ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        let stride = output_surface.get_stride() as usize;
+        {
+            let mut data = output_surface.get_data().unwrap();
+
+            for (x, y, pixel) in Pixels::new(self, bounds) {
+                data.set_pixel(stride, pixel.unpremultiply(), x, y);
+            }
+        }
+
+        Ok(output_surface)
+    }
+
     /// Returns a raw pointer to the underlying surface.
     ///
     /// # Safety
