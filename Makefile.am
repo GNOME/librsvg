@@ -23,7 +23,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/filters/common.c		\
 	librsvg/filters/common.h		\
 	librsvg/filters/diffuse_lighting.c	\
-	librsvg/filters/displacement_map.c	\
 	librsvg/filters/gaussian_blur.c		\
 	librsvg/filters/light_source.c		\
 	librsvg/filters/light_source.h		\
@@ -81,6 +80,7 @@ RUST_SRC =							\
 	rsvg_internals/src/filters/composite.rs			\
 	rsvg_internals/src/filters/convolve_matrix.rs		\
 	rsvg_internals/src/filters/context.rs			\
+	rsvg_internals/src/filters/displacement_map.rs		\
 	rsvg_internals/src/filters/error.rs			\
 	rsvg_internals/src/filters/ffi.rs			\
 	rsvg_internals/src/filters/flood.rs			\

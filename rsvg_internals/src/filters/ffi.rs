@@ -140,6 +140,7 @@ pub fn filter_render(
             | NodeType::FilterPrimitiveComponentTransfer
             | NodeType::FilterPrimitiveComposite
             | NodeType::FilterPrimitiveConvolveMatrix
+            | NodeType::FilterPrimitiveDisplacementMap
             | NodeType::FilterPrimitiveFlood
             | NodeType::FilterPrimitiveImage
             | NodeType::FilterPrimitiveMerge

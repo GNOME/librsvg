@@ -35,6 +35,7 @@ pub mod color_matrix;
 pub mod component_transfer;
 pub mod composite;
 pub mod convolve_matrix;
+pub mod displacement_map;
 pub mod flood;
 pub mod image;
 pub mod merge;
