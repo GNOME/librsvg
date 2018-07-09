@@ -12,6 +12,7 @@ use filters::composite::Composite;
 use filters::convolve_matrix::ConvolveMatrix;
 use filters::displacement_map::DisplacementMap;
 use filters::flood::Flood;
+use filters::gaussian_blur::GaussianBlur;
 use filters::image::Image;
 use filters::merge::{Merge, MergeNode};
 use filters::morphology::Morphology;
@@ -40,12 +41,6 @@ extern "C" {
         _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_node_light_source(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_gaussian_blur(
         _: *const libc::c_char,
         _: *const RsvgNode,
         _: *const libc::c_char,
@@ -85,7 +80,6 @@ lazy_static! {
         let mut h = HashMap::new();
         h.insert("feDiffuseLighting",   (true,  rsvg_new_filter_primitive_diffuse_lighting as NodeCreateCFn));
         h.insert("feDistantLight",      (false, rsvg_new_node_light_source as NodeCreateCFn));
-        h.insert("feGaussianBlur",      (true,  rsvg_new_filter_primitive_gaussian_blur as NodeCreateCFn));
         h.insert("fePointLight",        (false, rsvg_new_node_light_source as NodeCreateCFn));
         h.insert("feSpecularLighting",  (true,  rsvg_new_filter_primitive_specular_lighting as NodeCreateCFn));
         h.insert("feSpotLight",         (false, rsvg_new_node_light_source as NodeCreateCFn));
@@ -155,6 +149,11 @@ node_create_fn!(
 node_create_fn!(create_ellipse, Ellipse, NodeEllipse::new);
 node_create_fn!(create_filter, Filter, NodeFilter::new);
 node_create_fn!(create_flood, FilterPrimitiveFlood, Flood::new);
+node_create_fn!(
+    create_gaussian_blur,
+    FilterPrimitiveGaussianBlur,
+    GaussianBlur::new
+);
 node_create_fn!(create_group, Group, NodeGroup::new);
 node_create_fn!(create_image, Image, NodeImage::new);
 node_create_fn!(create_fe_image, FilterPrimitiveImage, Image::new);
@@ -228,6 +227,7 @@ lazy_static! {
         h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
         h.insert("feFuncA",             (false, create_component_transfer_func_a as NodeCreateFn));
         h.insert("feFlood",             (true,  create_flood as NodeCreateFn));
+        h.insert("feGaussianBlur",      (true,  create_gaussian_blur as NodeCreateFn));
         h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));
         h.insert("feMerge",             (true,  create_merge as NodeCreateFn));
         h.insert("feMergeNode",         (false, create_merge_node as NodeCreateFn));

@@ -142,6 +142,7 @@ pub fn filter_render(
             | NodeType::FilterPrimitiveConvolveMatrix
             | NodeType::FilterPrimitiveDisplacementMap
             | NodeType::FilterPrimitiveFlood
+            | NodeType::FilterPrimitiveGaussianBlur
             | NodeType::FilterPrimitiveImage
             | NodeType::FilterPrimitiveMerge
             | NodeType::FilterPrimitiveMorphology
