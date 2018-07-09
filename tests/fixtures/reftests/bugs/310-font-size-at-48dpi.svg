@@ -1,0 +1,62 @@
+<svg
+  version="1.1"
+  xmlns="http://www.w3.org/2000/svg"
+  width="512"
+  height="512"
+  >
+  <g>
+    <rect
+      x="0"
+      y="0"
+      width="256"
+      height="128"
+      fill="orange"
+      ></rect>
+    <rect
+      x="191"
+      y="108"
+      width="130"
+      height="40"
+      rx="20"
+      ry="20"
+      stroke="rgb(209, 237, 255)"
+      stroke-width="4"
+      fill="rgb(0, 154, 255)"
+      ></rect>
+    <text
+      font-size="20"
+      x="255"
+      y="135"
+      text-anchor="middle"
+      fill="white"
+      >I Love Lamp</text>
+  </g>
+
+  <g transform="translate(0 160)">
+    <rect
+      x="0pt"
+      y="0pt"
+      width="256pt"
+      height="128pt"
+      fill="orange"
+      ></rect>
+    <rect
+      x="191pt"
+      y="108pt"
+      width="130pt"
+      height="40pt"
+      rx="20pt"
+      ry="20pt"
+      stroke="rgb(209, 237, 255)"
+      stroke-width="4pt"
+      fill="rgb(0, 154, 255)"
+      ></rect>
+    <text
+      font-size="20pt"
+      x="255pt"
+      y="135pt"
+      text-anchor="middle"
+      fill="white"
+      >I Love Lamp</text>
+  </g>
+</svg>
