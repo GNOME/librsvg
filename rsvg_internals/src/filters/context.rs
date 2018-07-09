@@ -264,7 +264,7 @@ impl FilterContext {
         let width = source_surface.width();
         let height = source_surface.height();
 
-        let mut rv = Self {
+        Self {
             node: filter_node.clone(),
             node_being_filtered: node_being_filtered.clone(),
             source_surface,
@@ -283,15 +283,7 @@ impl FilterContext {
             _affine: affine,
             paffine,
             channelmap,
-        };
-
-        let last_result = FilterOutput {
-            surface: rv.source_surface.clone(),
-            bounds: rv.effects_region().rect.unwrap().into(),
-        };
-
-        rv.last_result = Some(last_result);
-        rv
+        }
     }
 
     /// Returns the <filter> node for this context.
@@ -409,10 +401,20 @@ impl FilterContext {
     /// Converts this `FilterContext` into the surface corresponding to the output of the filter
     /// chain.
     #[inline]
-    pub fn into_output(self) -> SharedImageSurface {
-        self.last_result
-            .map(|FilterOutput { surface, .. }| surface)
-            .unwrap_or(self.source_surface)
+    pub fn into_output(self) -> Result<SharedImageSurface, FilterError> {
+        match self.last_result.map(|FilterOutput { surface, .. }| surface) {
+            Some(surface) => Ok(surface),
+            None => {
+                let empty_surface = cairo::ImageSurface::create(
+                    cairo::Format::ARgb32,
+                    self.source_surface.width(),
+                    self.source_surface.height(),
+                ).map_err(FilterError::IntermediateSurfaceCreation)?;
+
+                SharedImageSurface::new(empty_surface)
+                    .map_err(FilterError::BadIntermediateSurfaceStatus)
+            }
+        }
     }
 
     /// Stores a filter primitive result into the context.

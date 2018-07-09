@@ -338,8 +338,8 @@ impl<'a> DrawingCtx {
                         // The bbox rect can be None, for example, if a filter is applied to an
                         // empty group. There is nothing to filter in this case.
                         self.bbox.rect.and_then(|_| {
-                            self.get_acquired_node_of_type(filter, NodeType::Filter)
-                                .and_then(|acquired| {
+                            match self.get_acquired_node_of_type(filter, NodeType::Filter) {
+                                Some(acquired) => {
                                     let filter_node = acquired.get();
 
                                     if !filter_node.is_in_error() {
@@ -354,7 +354,20 @@ impl<'a> DrawingCtx {
                                     } else {
                                         None
                                     }
-                                })
+                                }
+                                None => {
+                                    // Non-existing filters must act as null filters (that is, an
+                                    // empty surface is returned).
+                                    // TODO: handle the error properly and not via expect().
+                                    Some(
+                                        cairo::ImageSurface::create(
+                                            cairo::Format::ARgb32,
+                                            child_surface.get_width(),
+                                            child_surface.get_height(),
+                                        ).expect("couldn't create an empty surface"),
+                                    )
+                                }
+                            }
                         })
                     })
                     .or(Some(child_surface))
