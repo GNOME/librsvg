@@ -183,5 +183,13 @@ pub fn filter_render(
             }
         });
 
-    filter_ctx.into_output().into_image_surface()
+    match filter_ctx.into_output() {
+        Ok(surface) => surface.into_image_surface(),
+        Err(err) => {
+            panic!(
+                "Could not create an empty surface to return from a filter: {}",
+                err
+            );
+        }
+    }
 }
