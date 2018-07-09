@@ -254,8 +254,14 @@ impl<'a> DrawingCtx {
             original_cr.save();
 
             let clip_uri = values.clip_path.0.get();
-            let filter = values.filter.0.get();
             let mask = values.mask.0.get();
+
+            // The `filter` property does not apply to masks.
+            let filter = if node.get_type() == NodeType::Mask {
+                None
+            } else {
+                values.filter.0.get()
+            };
 
             let UnitInterval(opacity) = values.opacity.0;
             let comp_op = values.comp_op;
