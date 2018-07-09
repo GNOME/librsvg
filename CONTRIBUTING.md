@@ -69,7 +69,7 @@ with a sample SVG file.
 
 ### Working on the source
 
-Librvg uses an autotools setup, which is described in detail [in this
+Librsvg uses an autotools setup, which is described in detail [in this
 blog post][blog].
 
 If you need to **add a new source file**, you need to do it in the
