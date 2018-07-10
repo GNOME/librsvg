@@ -42,6 +42,7 @@ pub mod image;
 pub mod merge;
 pub mod morphology;
 pub mod offset;
+pub mod turbulence;
 
 /// A filter primitive interface.
 trait Filter: NodeTrait {

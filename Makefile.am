@@ -27,7 +27,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/filters/light_source.h		\
 	librsvg/filters/specular_lighting.c	\
 	librsvg/filters/tile.c			\
-	librsvg/filters/turbulence.c		\
 	librsvg/librsvg-enum-types.c		\
 	librsvg/librsvg-enum-types.h		\
 	librsvg/librsvg-features.c 		\
@@ -91,6 +90,7 @@ RUST_SRC =							\
 	rsvg_internals/src/filters/node.rs			\
 	rsvg_internals/src/filters/input.rs			\
 	rsvg_internals/src/filters/offset.rs			\
+	rsvg_internals/src/filters/turbulence.rs		\
 	rsvg_internals/src/error.rs				\
 	rsvg_internals/src/float_eq_cairo.rs			\
 	rsvg_internals/src/gradient.rs				\
