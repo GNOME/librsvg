@@ -146,7 +146,8 @@ pub fn filter_render(
             | NodeType::FilterPrimitiveImage
             | NodeType::FilterPrimitiveMerge
             | NodeType::FilterPrimitiveMorphology
-            | NodeType::FilterPrimitiveOffset => {
+            | NodeType::FilterPrimitiveOffset
+            | NodeType::FilterPrimitiveTurbulence => {
                 let pointers = unsafe { *(c.get_c_impl() as *const FilterFunctionPointers) };
 
                 let mut render = |filter_ctx: &mut FilterContext| {

@@ -18,6 +18,7 @@ use filters::merge::{Merge, MergeNode};
 use filters::morphology::Morphology;
 use filters::node::NodeFilter;
 use filters::offset::Offset;
+use filters::turbulence::Turbulence;
 use gradient::NodeGradient;
 use image::NodeImage;
 use link::NodeLink;
@@ -58,12 +59,6 @@ extern "C" {
         _: *const libc::c_char,
         _: *const libc::c_char,
     ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_turbulence(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
 }
 
 type NodeCreateCFn = unsafe extern "C" fn(
@@ -84,7 +79,6 @@ lazy_static! {
         h.insert("feSpecularLighting",  (true,  rsvg_new_filter_primitive_specular_lighting as NodeCreateCFn));
         h.insert("feSpotLight",         (false, rsvg_new_node_light_source as NodeCreateCFn));
         h.insert("feTile",              (true,  rsvg_new_filter_primitive_tile as NodeCreateCFn));
-        h.insert("feTurbulence",        (true,  rsvg_new_filter_primitive_turbulence as NodeCreateCFn));
         h
     };
 }
@@ -191,6 +185,11 @@ node_create_fn!(create_symbol, Symbol, NodeSymbol::new);
 node_create_fn!(create_text, Text, NodeText::new);
 node_create_fn!(create_tref, TRef, NodeTRef::new);
 node_create_fn!(create_tspan, TSpan, NodeTSpan::new);
+node_create_fn!(
+    create_turbulence,
+    FilterPrimitiveTurbulence,
+    Turbulence::new
+);
 node_create_fn!(create_use, Use, NodeUse::new);
 
 type NodeCreateFn = fn(Option<&str>, Option<&str>, *const RsvgNode) -> *const RsvgNode;
@@ -233,6 +232,7 @@ lazy_static! {
         h.insert("feMergeNode",         (false, create_merge_node as NodeCreateFn));
         h.insert("feMorphology",        (true,  create_morphology as NodeCreateFn));
         h.insert("feOffset",            (true,  create_offset as NodeCreateFn));
+        h.insert("feTurbulence",        (true,  create_turbulence as NodeCreateFn));
         h.insert("filter",              (true,  create_filter as NodeCreateFn));
         /* h.insert("font",             (true,  as NodeCreateFn)); */
         /* h.insert("font-face",        (false, as NodeCreateFn)); */
