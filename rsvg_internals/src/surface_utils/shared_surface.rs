@@ -5,10 +5,17 @@ use cairo::prelude::SurfaceExt;
 use cairo::{self, ImageSurface};
 use cairo_sys;
 use glib::translate::{Stash, ToGlibPtr};
+use rulinalg::matrix::{BaseMatrix, Matrix};
 
 use filters::context::IRect;
+use util::clamp;
 
-use super::{iterators::Pixels, ImageSurfaceDataExt, Pixel};
+use super::{
+    iterators::{PixelRectangle, Pixels},
+    EdgeMode,
+    ImageSurfaceDataExt,
+    Pixel,
+};
 
 /// Wrapper for a Cairo image surface that allows shared access.
 ///
@@ -211,6 +218,95 @@ impl SharedImageSurface {
                     b: 0,
                     a,
                 };
+                output_data.set_pixel(output_stride, output_pixel, x, y);
+            }
+        }
+
+        Ok(output_surface)
+    }
+
+    /// Returns a surface with pre-multiplication of color values undone.
+    ///
+    /// HACK: this is storing unpremultiplied pixels in an ARGB32 image surface (which is supposed
+    /// to be premultiplied pixels).
+    pub fn unpremultiply(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {
+        let mut output_surface =
+            ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        let stride = output_surface.get_stride() as usize;
+        {
+            let mut data = output_surface.get_data().unwrap();
+
+            for (x, y, pixel) in Pixels::new(self, bounds) {
+                data.set_pixel(stride, pixel.unpremultiply(), x, y);
+            }
+        }
+
+        Ok(output_surface)
+    }
+
+    /// Performs a convolution.
+    ///
+    /// Note that `kernel` is rotated 180 degrees.
+    ///
+    /// The `target` parameter determines the position of the kernel relative to each pixel of the
+    /// image. The value of `(0, 0)` indicates that the top left pixel of the (180-degrees-rotated)
+    /// kernel corresponds to the current pixel, and the rest of the kernel is to the right and
+    /// bottom of the pixel. The value of `(cols / 2, rows / 2)` centers a kernel with an odd
+    /// number of rows and columns.
+    ///
+    /// # Panics
+    /// Panics if `kernel` has zero rows or columns.
+    pub fn convolve(
+        &self,
+        bounds: IRect,
+        target: (i32, i32),
+        kernel: &Matrix<f64>,
+        edge_mode: EdgeMode,
+    ) -> Result<ImageSurface, cairo::Status> {
+        assert!(kernel.rows() >= 1);
+        assert!(kernel.cols() >= 1);
+
+        let mut output_surface =
+            ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        let output_stride = output_surface.get_stride() as usize;
+        {
+            let mut output_data = output_surface.get_data().unwrap();
+
+            for (x, y, _pixel) in Pixels::new(self, bounds) {
+                let kernel_bounds = IRect {
+                    x0: x as i32 - target.0,
+                    y0: y as i32 - target.1,
+                    x1: x as i32 - target.0 + kernel.cols() as i32,
+                    y1: y as i32 - target.1 + kernel.rows() as i32,
+                };
+
+                let mut r = 0.0;
+                let mut g = 0.0;
+                let mut b = 0.0;
+                let mut a = 0.0;
+
+                for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode) {
+                    let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
+                    let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
+                    let factor = kernel[[kernel_y, kernel_x]];
+
+                    r += f64::from(pixel.r) * factor;
+                    g += f64::from(pixel.g) * factor;
+                    b += f64::from(pixel.b) * factor;
+                    a += f64::from(pixel.a) * factor;
+                }
+
+                let convert = |x: f64| clamp(x, 0.0, 255.0).round() as u8;
+
+                let output_pixel = Pixel {
+                    r: convert(r),
+                    g: convert(g),
+                    b: convert(b),
+                    a: convert(a),
+                };
+
                 output_data.set_pixel(output_stride, output_pixel, x, y);
             }
         }

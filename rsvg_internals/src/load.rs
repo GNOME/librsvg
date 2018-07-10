@@ -10,11 +10,15 @@ use filters::color_matrix::ColorMatrix;
 use filters::component_transfer::{ComponentTransfer, FuncX};
 use filters::composite::Composite;
 use filters::convolve_matrix::ConvolveMatrix;
+use filters::displacement_map::DisplacementMap;
 use filters::flood::Flood;
+use filters::gaussian_blur::GaussianBlur;
 use filters::image::Image;
 use filters::merge::{Merge, MergeNode};
+use filters::morphology::Morphology;
 use filters::node::NodeFilter;
 use filters::offset::Offset;
+use filters::turbulence::Turbulence;
 use gradient::NodeGradient;
 use image::NodeImage;
 use link::NodeLink;
@@ -37,25 +41,7 @@ extern "C" {
         _: *const libc::c_char,
         _: *const libc::c_char,
     ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_displacement_map(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
     fn rsvg_new_node_light_source(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_gaussian_blur(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_erode(
         _: *const libc::c_char,
         _: *const RsvgNode,
         _: *const libc::c_char,
@@ -68,12 +54,6 @@ extern "C" {
         _: *const libc::c_char,
     ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_tile(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_turbulence(
         _: *const libc::c_char,
         _: *const RsvgNode,
         _: *const libc::c_char,
@@ -94,15 +74,11 @@ lazy_static! {
     static ref NODE_CREATORS_C: HashMap<&'static str, (bool, NodeCreateCFn)> = {
         let mut h = HashMap::new();
         h.insert("feDiffuseLighting",   (true,  rsvg_new_filter_primitive_diffuse_lighting as NodeCreateCFn));
-        h.insert("feDisplacementMap",   (true,  rsvg_new_filter_primitive_displacement_map as NodeCreateCFn));
         h.insert("feDistantLight",      (false, rsvg_new_node_light_source as NodeCreateCFn));
-        h.insert("feGaussianBlur",      (true,  rsvg_new_filter_primitive_gaussian_blur as NodeCreateCFn));
-        h.insert("feMorphology",        (true,  rsvg_new_filter_primitive_erode as NodeCreateCFn));
         h.insert("fePointLight",        (false, rsvg_new_node_light_source as NodeCreateCFn));
         h.insert("feSpecularLighting",  (true,  rsvg_new_filter_primitive_specular_lighting as NodeCreateCFn));
         h.insert("feSpotLight",         (false, rsvg_new_node_light_source as NodeCreateCFn));
         h.insert("feTile",              (true,  rsvg_new_filter_primitive_tile as NodeCreateCFn));
-        h.insert("feTurbulence",        (true,  rsvg_new_filter_primitive_turbulence as NodeCreateCFn));
         h
     };
 }
@@ -159,9 +135,19 @@ node_create_fn!(
     ConvolveMatrix::new
 );
 node_create_fn!(create_defs, Defs, NodeDefs::new);
+node_create_fn!(
+    create_displacement_map,
+    FilterPrimitiveDisplacementMap,
+    DisplacementMap::new
+);
 node_create_fn!(create_ellipse, Ellipse, NodeEllipse::new);
 node_create_fn!(create_filter, Filter, NodeFilter::new);
 node_create_fn!(create_flood, FilterPrimitiveFlood, Flood::new);
+node_create_fn!(
+    create_gaussian_blur,
+    FilterPrimitiveGaussianBlur,
+    GaussianBlur::new
+);
 node_create_fn!(create_group, Group, NodeGroup::new);
 node_create_fn!(create_image, Image, NodeImage::new);
 node_create_fn!(create_fe_image, FilterPrimitiveImage, Image::new);
@@ -176,6 +162,11 @@ node_create_fn!(create_marker, Marker, NodeMarker::new);
 node_create_fn!(create_mask, Mask, NodeMask::new);
 node_create_fn!(create_merge, FilterPrimitiveMerge, Merge::new);
 node_create_fn!(create_merge_node, FilterPrimitiveMergeNode, MergeNode::new);
+node_create_fn!(
+    create_morphology,
+    FilterPrimitiveMorphology,
+    Morphology::new
+);
 node_create_fn!(create_offset, FilterPrimitiveOffset, Offset::new);
 node_create_fn!(create_path, Path, NodePath::new);
 node_create_fn!(create_pattern, Pattern, NodePattern::new);
@@ -194,6 +185,11 @@ node_create_fn!(create_symbol, Symbol, NodeSymbol::new);
 node_create_fn!(create_text, Text, NodeText::new);
 node_create_fn!(create_tref, TRef, NodeTRef::new);
 node_create_fn!(create_tspan, TSpan, NodeTSpan::new);
+node_create_fn!(
+    create_turbulence,
+    FilterPrimitiveTurbulence,
+    Turbulence::new
+);
 node_create_fn!(create_use, Use, NodeUse::new);
 
 type NodeCreateFn = fn(Option<&str>, Option<&str>, *const RsvgNode) -> *const RsvgNode;
@@ -224,15 +220,19 @@ lazy_static! {
         h.insert("feComponentTransfer", (true,  create_component_transfer as NodeCreateFn));
         h.insert("feComposite",         (true,  create_composite as NodeCreateFn));
         h.insert("feConvolveMatrix",    (true,  create_convolve_matrix as NodeCreateFn));
+        h.insert("feDisplacementMap",   (true,  create_displacement_map as NodeCreateFn));
         h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
         h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
         h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
         h.insert("feFuncA",             (false, create_component_transfer_func_a as NodeCreateFn));
         h.insert("feFlood",             (true,  create_flood as NodeCreateFn));
+        h.insert("feGaussianBlur",      (true,  create_gaussian_blur as NodeCreateFn));
         h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));
         h.insert("feMerge",             (true,  create_merge as NodeCreateFn));
         h.insert("feMergeNode",         (false, create_merge_node as NodeCreateFn));
+        h.insert("feMorphology",        (true,  create_morphology as NodeCreateFn));
         h.insert("feOffset",            (true,  create_offset as NodeCreateFn));
+        h.insert("feTurbulence",        (true,  create_turbulence as NodeCreateFn));
         h.insert("filter",              (true,  create_filter as NodeCreateFn));
         /* h.insert("font",             (true,  as NodeCreateFn)); */
         /* h.insert("font-face",        (false, as NodeCreateFn)); */

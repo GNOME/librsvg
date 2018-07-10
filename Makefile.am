@@ -23,14 +23,10 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/filters/common.c		\
 	librsvg/filters/common.h		\
 	librsvg/filters/diffuse_lighting.c	\
-	librsvg/filters/displacement_map.c	\
-	librsvg/filters/erode.c			\
-	librsvg/filters/gaussian_blur.c		\
 	librsvg/filters/light_source.c		\
 	librsvg/filters/light_source.h		\
 	librsvg/filters/specular_lighting.c	\
 	librsvg/filters/tile.c			\
-	librsvg/filters/turbulence.c		\
 	librsvg/librsvg-enum-types.c		\
 	librsvg/librsvg-enum-types.h		\
 	librsvg/librsvg-features.c 		\
@@ -82,15 +78,19 @@ RUST_SRC =							\
 	rsvg_internals/src/filters/composite.rs			\
 	rsvg_internals/src/filters/convolve_matrix.rs		\
 	rsvg_internals/src/filters/context.rs			\
+	rsvg_internals/src/filters/displacement_map.rs		\
 	rsvg_internals/src/filters/error.rs			\
 	rsvg_internals/src/filters/ffi.rs			\
 	rsvg_internals/src/filters/flood.rs			\
+	rsvg_internals/src/filters/gaussian_blur.rs		\
 	rsvg_internals/src/filters/image.rs			\
 	rsvg_internals/src/filters/merge.rs			\
+	rsvg_internals/src/filters/morphology.rs		\
 	rsvg_internals/src/filters/mod.rs			\
 	rsvg_internals/src/filters/node.rs			\
 	rsvg_internals/src/filters/input.rs			\
 	rsvg_internals/src/filters/offset.rs			\
+	rsvg_internals/src/filters/turbulence.rs		\
 	rsvg_internals/src/error.rs				\
 	rsvg_internals/src/float_eq_cairo.rs			\
 	rsvg_internals/src/gradient.rs				\

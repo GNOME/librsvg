@@ -35,10 +35,14 @@ pub mod color_matrix;
 pub mod component_transfer;
 pub mod composite;
 pub mod convolve_matrix;
+pub mod displacement_map;
 pub mod flood;
+pub mod gaussian_blur;
 pub mod image;
 pub mod merge;
+pub mod morphology;
 pub mod offset;
+pub mod turbulence;
 
 /// A filter primitive interface.
 trait Filter: NodeTrait {

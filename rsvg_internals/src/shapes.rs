@@ -67,36 +67,36 @@ fn render_ellipse(
 
     builder.curve_to(
         cx + rx,
-        cy - arc_magic * ry,
+        cy + arc_magic * ry,
         cx + arc_magic * rx,
-        cy - ry,
+        cy + ry,
         cx,
-        cy - ry,
+        cy + ry,
     );
 
     builder.curve_to(
         cx - arc_magic * rx,
-        cy - ry,
+        cy + ry,
         cx - rx,
-        cy - arc_magic * ry,
+        cy + arc_magic * ry,
         cx - rx,
         cy,
     );
 
     builder.curve_to(
         cx - rx,
-        cy + arc_magic * ry,
+        cy - arc_magic * ry,
         cx - arc_magic * rx,
-        cy + ry,
+        cy - ry,
         cx,
-        cy + ry,
+        cy - ry,
     );
 
     builder.curve_to(
         cx + arc_magic * rx,
-        cy + ry,
+        cy - ry,
         cx + rx,
-        cy + arc_magic * ry,
+        cy - arc_magic * ry,
         cx + rx,
         cy,
     );
