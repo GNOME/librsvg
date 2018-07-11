@@ -1,7 +1,5 @@
-use glib::translate::*;
 use libc;
 use std::collections::HashMap;
-use std::ptr;
 
 use attributes::Attribute;
 use clip_path::NodeClipPath;
@@ -24,6 +22,7 @@ use filters::{
     morphology::Morphology,
     node::NodeFilter,
     offset::Offset,
+    tile::Tile,
     turbulence::Turbulence,
 };
 use gradient::NodeGradient;
@@ -39,33 +38,6 @@ use stop::NodeStop;
 use structure::{NodeDefs, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
 use text::{NodeTRef, NodeTSpan, NodeText};
 use util::utf8_cstr;
-
-#[allow(improper_ctypes)]
-extern "C" {
-    fn rsvg_new_filter_primitive_tile(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-}
-
-type NodeCreateCFn = unsafe extern "C" fn(
-    *const libc::c_char,
-    *const RsvgNode,
-    *const libc::c_char,
-    *const libc::c_char,
-) -> *const RsvgNode;
-
-lazy_static! {
-    // Lines in comments are elements that we don't support.
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    static ref NODE_CREATORS_C: HashMap<&'static str, (bool, NodeCreateCFn)> = {
-        let mut h = HashMap::new();
-        h.insert("feTile",              (true,  rsvg_new_filter_primitive_tile as NodeCreateCFn));
-        h
-    };
-}
 
 macro_rules! node_create_fn {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
@@ -190,6 +162,7 @@ node_create_fn!(create_symbol, Symbol, NodeSymbol::new);
 node_create_fn!(create_text, Text, NodeText::new);
 node_create_fn!(create_tref, TRef, NodeTRef::new);
 node_create_fn!(create_tspan, TSpan, NodeTSpan::new);
+node_create_fn!(create_tile, FilterPrimitiveTile, Tile::new);
 node_create_fn!(
     create_turbulence,
     FilterPrimitiveTurbulence,
@@ -242,6 +215,7 @@ lazy_static! {
         h.insert("fePointLight",        (false, create_point_light as NodeCreateFn));
         h.insert("feSpecularLighting",  (true,  create_specular_lighting as NodeCreateFn));
         h.insert("feSpotLight",         (false, create_spot_light as NodeCreateFn));
+        h.insert("feTile",              (true,  create_tile as NodeCreateFn));
         h.insert("feTurbulence",        (true,  create_turbulence as NodeCreateFn));
         h.insert("filter",              (true,  create_filter as NodeCreateFn));
         /* h.insert("font",             (true,  as NodeCreateFn)); */
@@ -311,22 +285,6 @@ pub extern "C" fn rsvg_load_new_node(
             Attribute::Id => id = Some(value),
             Attribute::Class => class = Some(value),
             _ => (),
-        }
-    }
-
-    // Legacy C creators
-    if let Some(&(supports_class, create_fn)) = NODE_CREATORS_C.get(name) {
-        let id = match id {
-            Some(id) => id.to_glib_none().0,
-            None => ptr::null(),
-        };
-        let class = match class {
-            Some(class) if supports_class => class.to_glib_none().0,
-            _ => ptr::null(),
-        };
-
-        unsafe {
-            return create_fn(raw_name, parent, id, class);
         }
     }
 

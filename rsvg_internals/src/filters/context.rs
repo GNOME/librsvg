@@ -228,7 +228,15 @@ impl FilterContext {
     ) -> Self {
         let cr_affine = draw_ctx.get_cairo_context().get_matrix();
         let bbox = draw_ctx.get_bbox().clone();
-        let bbox_rect = bbox.rect.unwrap();
+
+        // The rect can be empty (for example, if the filter is applied to an empty group).
+        // However, with userSpaceOnUse it's still possible to create images with a filter.
+        let bbox_rect = bbox.rect.unwrap_or(cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 0.0,
+            height: 0.0,
+        });
 
         let filter = filter_node.get_impl::<NodeFilter>().unwrap();
 

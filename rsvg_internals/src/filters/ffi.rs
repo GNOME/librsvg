@@ -7,7 +7,7 @@ use libc::c_char;
 use drawing_ctx::DrawingCtx;
 use length::RsvgLength;
 use node::{NodeType, RsvgNode};
-use state::{ColorInterpolationFilters, ComputedValues, RsvgComputedValues};
+use state::{ColorInterpolationFilters, RsvgComputedValues};
 use surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, RsvgFilterContext};
@@ -134,55 +134,21 @@ pub fn filter_render(
 
             (c, linear_rgb)
         })
-        .for_each(|(mut c, linear_rgb)| match c.get_type() {
-            NodeType::FilterPrimitiveBlend
-            | NodeType::FilterPrimitiveColorMatrix
-            | NodeType::FilterPrimitiveComponentTransfer
-            | NodeType::FilterPrimitiveComposite
-            | NodeType::FilterPrimitiveConvolveMatrix
-            | NodeType::FilterPrimitiveDiffuseLighting
-            | NodeType::FilterPrimitiveDisplacementMap
-            | NodeType::FilterPrimitiveFlood
-            | NodeType::FilterPrimitiveGaussianBlur
-            | NodeType::FilterPrimitiveImage
-            | NodeType::FilterPrimitiveMerge
-            | NodeType::FilterPrimitiveMorphology
-            | NodeType::FilterPrimitiveOffset
-            | NodeType::FilterPrimitiveSpecularLighting
-            | NodeType::FilterPrimitiveTurbulence => {
-                let pointers = unsafe { *(c.get_c_impl() as *const FilterFunctionPointers) };
+        .for_each(|(c, linear_rgb)| {
+            let pointers = unsafe { *(c.get_c_impl() as *const FilterFunctionPointers) };
 
-                let mut render = |filter_ctx: &mut FilterContext| {
-                    if let Err(_) = (pointers.render)(&c, filter_ctx, draw_ctx)
-                        .and_then(|result| filter_ctx.store_result(result))
-                    {
-                        // Do nothing for now.
-                    }
-                };
-
-                if (pointers.is_affected_by_color_interpolation_filters)() && linear_rgb {
-                    filter_ctx.with_linear_rgb(render);
-                } else {
-                    render(&mut filter_ctx);
+            let mut render = |filter_ctx: &mut FilterContext| {
+                if let Err(_) = (pointers.render)(&c, filter_ctx, draw_ctx)
+                    .and_then(|result| filter_ctx.store_result(result))
+                {
+                    // Do nothing for now.
                 }
-            }
-            _ => {
-                let filter = unsafe { &mut *(c.get_c_impl() as *mut RsvgFilterPrimitive) };
+            };
 
-                let mut render = |filter_ctx: &mut FilterContext| unsafe {
-                    (filter.render.unwrap())(
-                        &mut c,
-                        &c.get_cascaded_values().get() as &ComputedValues as RsvgComputedValues,
-                        filter,
-                        filter_ctx,
-                    );
-                };
-
-                if linear_rgb {
-                    filter_ctx.with_linear_rgb(render);
-                } else {
-                    render(&mut filter_ctx);
-                }
+            if (pointers.is_affected_by_color_interpolation_filters)() && linear_rgb {
+                filter_ctx.with_linear_rgb(render);
+            } else {
+                render(&mut filter_ctx);
             }
         });
 

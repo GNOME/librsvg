@@ -43,6 +43,7 @@ pub mod light;
 pub mod merge;
 pub mod morphology;
 pub mod offset;
+pub mod tile;
 pub mod turbulence;
 
 /// A filter primitive interface.
