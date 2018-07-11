@@ -46,6 +46,10 @@ typedef enum {
 G_GNUC_INTERNAL
 RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts);
 
+/* Implemented in rust/src/load.rs */
+G_GNUC_INTERNAL
+void rsvg_load_set_node_atts (RsvgHandle *handle, RsvgNode *node, const char *element_name, RsvgPropertyBag atts);
+
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_register_in_defs(RsvgNode *node, RsvgDefs *defs);
@@ -300,25 +304,6 @@ free_element_name_stack (RsvgLoad *load)
 }
 
 static void
-node_set_atts (RsvgNode *node,
-               RsvgHandle *handle,
-               const char *element_name,
-               RsvgPropertyBag atts)
-{
-    rsvg_node_set_atts (node, handle, atts);
-
-    /* The "svg" node is special; it will load its id/class
-     * attributes until the end, when sax_end_element_cb() calls
-     * rsvg_node_svg_apply_atts()
-     */
-    if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
-        rsvg_parse_style_attrs (handle, node, element_name, atts);
-    }
-
-    rsvg_node_set_overridden_properties (node);
-}
-
-static void
 standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
 {
     RsvgNode *newnode;
@@ -342,7 +327,8 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
     load->currentnode = rsvg_node_ref (newnode);
 
     rsvg_node_register_in_defs (newnode, load->handle->priv->defs);
-    node_set_atts (newnode, load->handle, name, atts);
+
+    rsvg_load_set_node_atts (load->handle, newnode, name, atts);
 
     newnode = rsvg_node_unref (newnode);
 }

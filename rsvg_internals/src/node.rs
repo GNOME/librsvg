@@ -681,30 +681,6 @@ pub extern "C" fn rsvg_node_register_in_defs(raw_node: *const RsvgNode, defs: *m
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_set_atts(
-    raw_node: *mut RsvgNode,
-    handle: *const RsvgHandle,
-    pbag: *const PropertyBag,
-) {
-    assert!(!raw_node.is_null());
-    assert!(!pbag.is_null());
-
-    let node: &RsvgNode = unsafe { &*raw_node };
-    let pbag = unsafe { &*pbag };
-
-    node.set_atts(node, handle, pbag);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_set_overridden_properties(raw_node: *mut RsvgNode) {
-    assert!(!raw_node.is_null());
-
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    node.set_overridden_properties();
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_set_attribute_parse_error(
     raw_node: *const RsvgNode,
     attr_name: *const libc::c_char,
