@@ -220,7 +220,7 @@ impl NoiseGenerator {
         rv
     }
 
-    fn noise2(self, color_channel: usize, vec: [f64; 2], stitch_info: Option<StitchInfo>) -> f64 {
+    fn noise2(&self, color_channel: usize, vec: [f64; 2], stitch_info: Option<StitchInfo>) -> f64 {
         const BM: usize = 0xff;
 
         let s_curve = |t| t * t * (3. - 2. * t);
@@ -277,7 +277,7 @@ impl NoiseGenerator {
         lerp(sy, a, b)
     }
 
-    fn turbulence(self, color_channel: usize, point: [f64; 2], tile_x: f64, tile_y: f64) -> f64 {
+    fn turbulence(&self, color_channel: usize, point: [f64; 2], tile_x: f64, tile_y: f64) -> f64 {
         let mut stitch_info = None;
         let mut base_frequency = self.base_frequency;
 
