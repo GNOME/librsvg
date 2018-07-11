@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use cairo::{self, ImageSurface};
+use cairo::{self, ImageSurface, MatrixTrait};
 use cssparser;
 
 use attributes::Attribute;
@@ -116,13 +116,10 @@ impl Filter for DiffuseLighting {
             .into_irect(draw_ctx);
         let original_bounds = bounds;
 
-        let scale = self.kernel_unit_length.get().map(|(dx, dy)| {
-            let paffine = ctx.paffine();
-            let ox = paffine.xx * dx + paffine.xy * dy;
-            let oy = paffine.yx * dx + paffine.yy * dy;
-
-            (ox, oy)
-        });
+        let scale = self
+            .kernel_unit_length
+            .get()
+            .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
         let surface_scale = self.surface_scale.get();
         let diffuse_constant = self.diffuse_constant.get();

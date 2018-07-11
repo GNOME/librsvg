@@ -1,7 +1,7 @@
 use std::cell::Cell;
 use std::cmp::{max, min};
 
-use cairo::{self, ImageSurface};
+use cairo::{self, ImageSurface, MatrixTrait};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -98,9 +98,7 @@ impl Filter for Morphology {
             .into_irect(draw_ctx);
 
         let (rx, ry) = self.radius.get();
-        let paffine = ctx.paffine();
-        let rx = paffine.xx * rx + paffine.xy * ry;
-        let ry = paffine.yx * rx + paffine.yy * ry;
+        let (rx, ry) = ctx.paffine().transform_distance(rx, ry);
 
         let operator = self.operator.get();
 

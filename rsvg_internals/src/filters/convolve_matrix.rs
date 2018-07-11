@@ -1,6 +1,6 @@
 use std::cell::{Cell, RefCell};
 
-use cairo::{self, ImageSurface};
+use cairo::{self, ImageSurface, MatrixTrait};
 use rulinalg::matrix::{BaseMatrix, Matrix};
 
 use attributes::Attribute;
@@ -242,13 +242,10 @@ impl Filter for ConvolveMatrix {
             input.surface().clone()
         };
 
-        let scale = self.kernel_unit_length.get().map(|(dx, dy)| {
-            let paffine = ctx.paffine();
-            let ox = paffine.xx * dx + paffine.xy * dy;
-            let oy = paffine.yx * dx + paffine.yy * dy;
-
-            (ox, oy)
-        });
+        let scale = self
+            .kernel_unit_length
+            .get()
+            .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
         if let Some((ox, oy)) = scale {
             // Scale the input surface to match kernel_unit_length.

@@ -1,6 +1,6 @@
 use std::cell::{Cell, RefCell};
 
-use cairo::{self, ImageSurface};
+use cairo::{self, ImageSurface, MatrixTrait};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -107,9 +107,7 @@ impl Filter for DisplacementMap {
             .map_err(FilterError::BadIntermediateSurfaceStatus)?;
 
         let scale = self.scale.get();
-        let paffine = ctx.paffine();
-        let sx = paffine.xx * scale + paffine.xy * scale;
-        let sy = paffine.yx * scale + paffine.yy * scale;
+        let (sx, sy) = ctx.paffine().transform_distance(scale, scale);
 
         let x_channel = self.x_channel_selector.get();
         let y_channel = self.y_channel_selector.get();
