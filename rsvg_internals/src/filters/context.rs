@@ -1,17 +1,12 @@
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::f64;
-use std::{mem, ptr};
 
-use cairo::prelude::SurfaceExt;
 use cairo::{self, MatrixTrait};
-use cairo_sys::cairo_surface_t;
-use glib::translate::{from_glib_full, from_glib_none};
-use glib_sys::*;
 
 use bbox::BoundingBox;
 use coord_units::CoordUnits;
-use drawing_ctx::{DrawingCtx, RsvgDrawingCtx};
+use drawing_ctx::DrawingCtx;
 use length::RsvgLength;
 use node::RsvgNode;
 use paint_server::{self, PaintServer};
@@ -19,31 +14,16 @@ use srgb::{linearize_surface, unlinearize_surface};
 use surface_utils::shared_surface::SharedImageSurface;
 use unitinterval::UnitInterval;
 
-use super::bounds::BoundsBuilder;
 use super::error::FilterError;
 use super::input::Input;
 use super::node::NodeFilter;
-use super::RsvgFilterPrimitive;
 
-// Required by the C code until all filters are ported to Rust.
-// Keep this in sync with
-// ../../librsvg/librsvg/rsvg-filter.h:RsvgIRect
-#[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IRect {
     pub x0: i32,
     pub y0: i32,
     pub x1: i32,
     pub y1: i32,
-}
-
-// Required by the C code until all filters are ported to Rust.
-// Keep this in sync with
-// ../../librsvg/librsvg/filters/common.h:_RsvgFilterPrimitiveOutput
-#[repr(C)]
-pub struct RsvgFilterPrimitiveOutput {
-    surface: *mut cairo_surface_t,
-    bounds: IRect,
 }
 
 /// A filter primitive output.
@@ -74,8 +54,6 @@ pub enum FilterInput {
     /// Output of another filter primitive.
     PrimitiveOutput(FilterOutput),
 }
-
-pub type RsvgFilterContext = FilterContext;
 
 /// The filter rendering context.
 pub struct FilterContext {
@@ -120,9 +98,6 @@ pub struct FilterContext {
     ///
     /// See the comments for `_affine`, they largely apply here.
     paffine: cairo::Matrix,
-
-    /// Obsolete; remove when all filters are ported to Rust.
-    channelmap: [i32; 4],
 }
 
 /// Computes and returns the filter effects region.
@@ -224,7 +199,6 @@ impl FilterContext {
         node_being_filtered: &RsvgNode,
         source_surface: SharedImageSurface,
         draw_ctx: &mut DrawingCtx,
-        channelmap: [i32; 4],
     ) -> Self {
         let cr_affine = draw_ctx.get_cairo_context().get_matrix();
         let bbox = draw_ctx.get_bbox().clone();
@@ -291,7 +265,6 @@ impl FilterContext {
             processing_linear_rgb: false,
             _affine: affine,
             paffine,
-            channelmap,
         }
     }
 
@@ -671,178 +644,6 @@ impl From<cairo::Rectangle> for IRect {
             y1: (y + height).ceil() as i32,
         }
     }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_context_get_paffine(
-    ctx: *const RsvgFilterContext,
-) -> cairo::Matrix {
-    assert!(!ctx.is_null());
-
-    (*ctx).paffine
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_context_get_width(ctx: *const RsvgFilterContext) -> i32 {
-    assert!(!ctx.is_null());
-
-    (*ctx).source_surface.width()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_context_get_height(ctx: *const RsvgFilterContext) -> i32 {
-    assert!(!ctx.is_null());
-
-    (*ctx).source_surface.height()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_context_get_channelmap(
-    ctx: *const RsvgFilterContext,
-) -> *const i32 {
-    assert!(!ctx.is_null());
-
-    (*ctx).channelmap.as_ptr()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_context_get_source_surface(
-    ctx: *mut RsvgFilterContext,
-) -> *mut cairo_surface_t {
-    assert!(!ctx.is_null());
-
-    (*ctx).source_surface.to_glib_none().0
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_store_output(
-    name: *mut GString,
-    result: RsvgFilterPrimitiveOutput,
-    ctx: *mut RsvgFilterContext,
-) {
-    assert!(!name.is_null());
-    assert!(!result.surface.is_null());
-    assert!(!ctx.is_null());
-
-    let name = from_glib_none((*name).str);
-
-    let surface: cairo::Surface = from_glib_full(result.surface);
-    assert_eq!(surface.get_type(), cairo::SurfaceType::Image);
-    let surface = cairo::ImageSurface::from(surface).unwrap();
-    let surface = SharedImageSurface::new(surface).unwrap();
-
-    let result = FilterResult {
-        name: Some(name),
-        output: FilterOutput {
-            surface,
-            bounds: result.bounds,
-        },
-    };
-
-    (*ctx).store_result(result).unwrap();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_primitive_get_bounds(
-    primitive: *const RsvgFilterPrimitive,
-    ctx: *const RsvgFilterContext,
-    raw_draw_ctx: *mut RsvgDrawingCtx,
-) -> IRect {
-    assert!(!ctx.is_null());
-    assert!(!raw_draw_ctx.is_null());
-
-    let ctx = &*ctx;
-    let draw_ctx = &mut *(raw_draw_ctx as *mut DrawingCtx);
-
-    let mut x = None;
-    let mut y = None;
-    let mut width = None;
-    let mut height = None;
-
-    if !primitive.is_null() {
-        if (*primitive).x_specified != 0 {
-            x = Some((*primitive).x)
-        };
-
-        if (*primitive).y_specified != 0 {
-            y = Some((*primitive).y)
-        };
-
-        if (*primitive).width_specified != 0 {
-            width = Some((*primitive).width)
-        };
-
-        if (*primitive).height_specified != 0 {
-            height = Some((*primitive).height)
-        };
-    }
-
-    // Doesn't take referenced nodes into account, which is wrong.
-    BoundsBuilder::new(ctx, x, y, width, height).into_irect(draw_ctx)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_get_result(
-    name: *const GString,
-    ctx: *const RsvgFilterContext,
-    raw_draw_ctx: *const RsvgDrawingCtx,
-) -> RsvgFilterPrimitiveOutput {
-    assert!(!name.is_null());
-    assert!(!ctx.is_null());
-    assert!(!raw_draw_ctx.is_null());
-
-    let draw_ctx = &mut *(raw_draw_ctx as *mut DrawingCtx);
-
-    let name: String = from_glib_none((*name).str);
-    let input = match &name[..] {
-        "" | "none" => None,
-        "SourceGraphic" => Some(Input::SourceGraphic),
-        "SourceAlpha" => Some(Input::SourceAlpha),
-        "BackgroundImage" => Some(Input::BackgroundImage),
-        "BackgroundAlpha" => Some(Input::BackgroundAlpha),
-        "FillPaint" => Some(Input::FillPaint),
-        "StrokePaint" => Some(Input::StrokePaint),
-        _ => Some(Input::FilterOutput(name)),
-    };
-
-    let ctx = &*ctx;
-
-    match ctx.get_input(draw_ctx, input.as_ref()) {
-        Err(_) => RsvgFilterPrimitiveOutput {
-            surface: ptr::null_mut(),
-            bounds: IRect {
-                x0: 0,
-                x1: 0,
-                y0: 0,
-                y1: 0,
-            },
-        },
-        Ok(input) => {
-            // HACK because to_glib_full() is unimplemented!() on ImageSurface.
-            let ptr = input.surface().to_glib_none().0;
-
-            let rv = RsvgFilterPrimitiveOutput {
-                surface: ptr,
-                bounds: match input {
-                    FilterInput::StandardInput(_) => ctx.effects_region().rect.unwrap().into(),
-                    FilterInput::PrimitiveOutput(FilterOutput { bounds, .. }) => bounds,
-                },
-            };
-
-            mem::forget(input);
-
-            rv
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_filter_get_in(
-    name: *const GString,
-    ctx: *const RsvgFilterContext,
-    raw_draw_ctx: *mut RsvgDrawingCtx,
-) -> *mut cairo_surface_t {
-    rsvg_filter_get_result(name, ctx, raw_draw_ctx).surface
 }
 
 #[cfg(test)]

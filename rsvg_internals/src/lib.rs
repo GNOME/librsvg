@@ -39,18 +39,6 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_new,
 };
 
-pub use filters::context::{
-    rsvg_filter_context_get_channelmap,
-    rsvg_filter_context_get_height,
-    rsvg_filter_context_get_paffine,
-    rsvg_filter_context_get_source_surface,
-    rsvg_filter_context_get_width,
-    rsvg_filter_get_in,
-    rsvg_filter_get_result,
-    rsvg_filter_primitive_get_bounds,
-    rsvg_filter_store_output,
-};
-
 pub use length::{
     rsvg_length_hand_normalize,
     rsvg_length_normalize,

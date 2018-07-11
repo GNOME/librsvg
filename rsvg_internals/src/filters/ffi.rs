@@ -1,43 +1,14 @@
 //! Internal FFI and marshalling things.
 
 use cairo;
-use glib_sys::*;
-use libc::c_char;
 
 use drawing_ctx::DrawingCtx;
-use length::RsvgLength;
 use node::{NodeType, RsvgNode};
-use state::{ColorInterpolationFilters, RsvgComputedValues};
+use state::ColorInterpolationFilters;
 use surface_utils::shared_surface::SharedImageSurface;
 
-use super::context::{FilterContext, RsvgFilterContext};
+use super::context::FilterContext;
 use super::{Filter, FilterError, FilterResult};
-
-// Required by the C code until all filters are ported to Rust.
-// Keep this in sync with
-// ../../librsvg/librsvg/filters/common.h:_RsvgFilterPrimitive
-#[repr(C)]
-pub struct RsvgFilterPrimitive {
-    pub x: RsvgLength,
-    pub y: RsvgLength,
-    pub width: RsvgLength,
-    pub height: RsvgLength,
-    pub x_specified: gboolean,
-    pub y_specified: gboolean,
-    pub width_specified: gboolean,
-    pub height_specified: gboolean,
-    in_: *mut GString,
-    result: *mut GString,
-
-    render: Option<
-        unsafe extern "C" fn(
-            *mut RsvgNode,
-            RsvgComputedValues,
-            *mut RsvgFilterPrimitive,
-            *mut RsvgFilterContext,
-        ),
-    >,
-}
 
 /// The type of the render function below.
 pub(super) type RenderFunctionType =
@@ -80,20 +51,10 @@ pub fn filter_render(
     node_being_filtered: &RsvgNode,
     source: &cairo::ImageSurface,
     draw_ctx: &mut DrawingCtx,
-    channelmap: *const c_char,
 ) -> cairo::ImageSurface {
-    assert!(!channelmap.is_null());
-
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);
     assert!(!filter_node.is_in_error());
-
-    let mut channelmap_arr = [0; 4];
-    unsafe {
-        for i in 0..4 {
-            channelmap_arr[i] = i32::from(*channelmap.offset(i as isize) - '0' as c_char);
-        }
-    }
 
     // The source surface has multiple references. We need to copy it to a new surface to have a
     // unique reference to be able to safely access the pixel data.
@@ -109,13 +70,8 @@ pub fn filter_render(
     }
     let source_surface = SharedImageSurface::new(source_surface).unwrap();
 
-    let mut filter_ctx = FilterContext::new(
-        filter_node,
-        node_being_filtered,
-        source_surface,
-        draw_ctx,
-        channelmap_arr,
-    );
+    let mut filter_ctx =
+        FilterContext::new(filter_node, node_being_filtered, source_surface, draw_ctx);
 
     filter_node
         .children()

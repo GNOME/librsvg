@@ -347,13 +347,7 @@ impl<'a> DrawingCtx {
 
                                 if !filter_node.is_in_error() {
                                     // FIXME: deal with out of memory here
-                                    Some(filter_render(
-                                        &filter_node,
-                                        node,
-                                        &output,
-                                        self,
-                                        "2103".as_ptr() as *const libc::c_char,
-                                    ))
+                                    Some(filter_render(&filter_node, node, &output, self))
                                 } else {
                                     None
                                 }

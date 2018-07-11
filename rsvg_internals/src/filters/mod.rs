@@ -21,8 +21,8 @@ mod error;
 use self::error::FilterError;
 
 mod ffi;
+pub use self::ffi::filter_render;
 use self::ffi::*;
-pub use self::ffi::{filter_render, RsvgFilterPrimitive};
 
 mod input;
 use self::input::Input;
