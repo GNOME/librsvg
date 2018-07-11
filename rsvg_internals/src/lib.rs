@@ -78,7 +78,7 @@ pub use node::{
     rsvg_root_node_cascade,
 };
 
-pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
+pub use parsers::rsvg_css_parse_number_optional_number;
 
 pub use property_bag::{
     rsvg_property_bag_free,
