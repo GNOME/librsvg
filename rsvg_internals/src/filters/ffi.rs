@@ -140,6 +140,7 @@ pub fn filter_render(
             | NodeType::FilterPrimitiveComponentTransfer
             | NodeType::FilterPrimitiveComposite
             | NodeType::FilterPrimitiveConvolveMatrix
+            | NodeType::FilterPrimitiveDiffuseLighting
             | NodeType::FilterPrimitiveDisplacementMap
             | NodeType::FilterPrimitiveFlood
             | NodeType::FilterPrimitiveGaussianBlur
@@ -147,6 +148,7 @@ pub fn filter_render(
             | NodeType::FilterPrimitiveMerge
             | NodeType::FilterPrimitiveMorphology
             | NodeType::FilterPrimitiveOffset
+            | NodeType::FilterPrimitiveSpecularLighting
             | NodeType::FilterPrimitiveTurbulence => {
                 let pointers = unsafe { *(c.get_c_impl() as *const FilterFunctionPointers) };
 

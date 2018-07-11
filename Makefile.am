@@ -22,10 +22,6 @@ BUILT_SOURCES += $(enum_sources)
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/filters/common.c		\
 	librsvg/filters/common.h		\
-	librsvg/filters/diffuse_lighting.c	\
-	librsvg/filters/light_source.c		\
-	librsvg/filters/light_source.h		\
-	librsvg/filters/specular_lighting.c	\
 	librsvg/filters/tile.c			\
 	librsvg/librsvg-enum-types.c		\
 	librsvg/librsvg-enum-types.h		\
@@ -84,6 +80,10 @@ RUST_SRC =							\
 	rsvg_internals/src/filters/flood.rs			\
 	rsvg_internals/src/filters/gaussian_blur.rs		\
 	rsvg_internals/src/filters/image.rs			\
+	rsvg_internals/src/filters/light/diffuse_lighting.rs	\
+	rsvg_internals/src/filters/light/light_source.rs	\
+	rsvg_internals/src/filters/light/specular_lighting.rs	\
+	rsvg_internals/src/filters/light/mod.rs			\
 	rsvg_internals/src/filters/merge.rs			\
 	rsvg_internals/src/filters/morphology.rs		\
 	rsvg_internals/src/filters/mod.rs			\

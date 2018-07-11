@@ -1,5 +1,6 @@
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
+use std::f64;
 use std::{mem, ptr};
 
 use cairo::prelude::SurfaceExt;
@@ -625,6 +626,12 @@ impl FilterContext {
         let rv = f(self);
         self.processing_linear_rgb = false;
         rv
+    }
+
+    /// Applies the `primitiveUnits` coordinate transformation to a non-x or y distance.
+    #[inline]
+    pub fn transform_dist(&self, d: f64) -> f64 {
+        d * (self.paffine.xx.powi(2) + self.paffine.yy.powi(2)).sqrt() / f64::consts::SQRT_2
     }
 }
 

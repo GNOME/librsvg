@@ -5,20 +5,27 @@ use std::ptr;
 
 use attributes::Attribute;
 use clip_path::NodeClipPath;
-use filters::blend::Blend;
-use filters::color_matrix::ColorMatrix;
-use filters::component_transfer::{ComponentTransfer, FuncX};
-use filters::composite::Composite;
-use filters::convolve_matrix::ConvolveMatrix;
-use filters::displacement_map::DisplacementMap;
-use filters::flood::Flood;
-use filters::gaussian_blur::GaussianBlur;
-use filters::image::Image;
-use filters::merge::{Merge, MergeNode};
-use filters::morphology::Morphology;
-use filters::node::NodeFilter;
-use filters::offset::Offset;
-use filters::turbulence::Turbulence;
+use filters::{
+    blend::Blend,
+    color_matrix::ColorMatrix,
+    component_transfer::{ComponentTransfer, FuncX},
+    composite::Composite,
+    convolve_matrix::ConvolveMatrix,
+    displacement_map::DisplacementMap,
+    flood::Flood,
+    gaussian_blur::GaussianBlur,
+    image::Image,
+    light::{
+        diffuse_lighting::DiffuseLighting,
+        light_source::LightSource,
+        specular_lighting::SpecularLighting,
+    },
+    merge::{Merge, MergeNode},
+    morphology::Morphology,
+    node::NodeFilter,
+    offset::Offset,
+    turbulence::Turbulence,
+};
 use gradient::NodeGradient;
 use image::NodeImage;
 use link::NodeLink;
@@ -35,24 +42,6 @@ use util::utf8_cstr;
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn rsvg_new_filter_primitive_diffuse_lighting(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_node_light_source(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
-    fn rsvg_new_filter_primitive_specular_lighting(
-        _: *const libc::c_char,
-        _: *const RsvgNode,
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-    ) -> *const RsvgNode;
     fn rsvg_new_filter_primitive_tile(
         _: *const libc::c_char,
         _: *const RsvgNode,
@@ -73,11 +62,6 @@ lazy_static! {
     #[cfg_attr(rustfmt, rustfmt_skip)]
     static ref NODE_CREATORS_C: HashMap<&'static str, (bool, NodeCreateCFn)> = {
         let mut h = HashMap::new();
-        h.insert("feDiffuseLighting",   (true,  rsvg_new_filter_primitive_diffuse_lighting as NodeCreateCFn));
-        h.insert("feDistantLight",      (false, rsvg_new_node_light_source as NodeCreateCFn));
-        h.insert("fePointLight",        (false, rsvg_new_node_light_source as NodeCreateCFn));
-        h.insert("feSpecularLighting",  (true,  rsvg_new_filter_primitive_specular_lighting as NodeCreateCFn));
-        h.insert("feSpotLight",         (false, rsvg_new_node_light_source as NodeCreateCFn));
         h.insert("feTile",              (true,  rsvg_new_filter_primitive_tile as NodeCreateCFn));
         h
     };
@@ -136,6 +120,16 @@ node_create_fn!(
 );
 node_create_fn!(create_defs, Defs, NodeDefs::new);
 node_create_fn!(
+    create_diffuse_lighting,
+    FilterPrimitiveDiffuseLighting,
+    DiffuseLighting::new
+);
+node_create_fn!(
+    create_distant_light,
+    LightSource,
+    LightSource::new_distant_light
+);
+node_create_fn!(
     create_displacement_map,
     FilterPrimitiveDisplacementMap,
     DisplacementMap::new
@@ -170,6 +164,11 @@ node_create_fn!(
 node_create_fn!(create_offset, FilterPrimitiveOffset, Offset::new);
 node_create_fn!(create_path, Path, NodePath::new);
 node_create_fn!(create_pattern, Pattern, NodePattern::new);
+node_create_fn!(
+    create_point_light,
+    LightSource,
+    LightSource::new_point_light
+);
 node_create_fn!(create_polygon, Polygon, NodePoly::new_closed);
 node_create_fn!(create_polyline, Polyline, NodePoly::new_open);
 node_create_fn!(
@@ -178,6 +177,12 @@ node_create_fn!(
     NodeGradient::new_radial
 );
 node_create_fn!(create_rect, Rect, NodeRect::new);
+node_create_fn!(
+    create_specular_lighting,
+    FilterPrimitiveSpecularLighting,
+    SpecularLighting::new
+);
+node_create_fn!(create_spot_light, LightSource, LightSource::new_spot_light);
 node_create_fn!(create_stop, Stop, NodeStop::new);
 node_create_fn!(create_svg, Svg, NodeSvg::new);
 node_create_fn!(create_switch, Switch, NodeSwitch::new);
@@ -220,7 +225,9 @@ lazy_static! {
         h.insert("feComponentTransfer", (true,  create_component_transfer as NodeCreateFn));
         h.insert("feComposite",         (true,  create_composite as NodeCreateFn));
         h.insert("feConvolveMatrix",    (true,  create_convolve_matrix as NodeCreateFn));
+        h.insert("feDiffuseLighting",   (true,  create_diffuse_lighting as NodeCreateFn));
         h.insert("feDisplacementMap",   (true,  create_displacement_map as NodeCreateFn));
+        h.insert("feDistantLight",      (false, create_distant_light as NodeCreateFn));
         h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
         h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
         h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
@@ -232,6 +239,9 @@ lazy_static! {
         h.insert("feMergeNode",         (false, create_merge_node as NodeCreateFn));
         h.insert("feMorphology",        (true,  create_morphology as NodeCreateFn));
         h.insert("feOffset",            (true,  create_offset as NodeCreateFn));
+        h.insert("fePointLight",        (false, create_point_light as NodeCreateFn));
+        h.insert("feSpecularLighting",  (true,  create_specular_lighting as NodeCreateFn));
+        h.insert("feSpotLight",         (false, create_spot_light as NodeCreateFn));
         h.insert("feTurbulence",        (true,  create_turbulence as NodeCreateFn));
         h.insert("filter",              (true,  create_filter as NodeCreateFn));
         /* h.insert("font",             (true,  as NodeCreateFn)); */
