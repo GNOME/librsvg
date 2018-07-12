@@ -253,6 +253,9 @@ impl Filter for ConvolveMatrix {
                 .scale(bounds, 1.0 / ox, 1.0 / oy)
                 .map_err(FilterError::IntermediateSurfaceCreation)?;
 
+            let new_surface = SharedImageSurface::new(new_surface)
+                .map_err(FilterError::BadIntermediateSurfaceStatus)?;
+
             input_surface = new_surface;
             bounds = new_bounds;
         }
@@ -338,15 +341,19 @@ impl Filter for ConvolveMatrix {
 
         if let Some((ox, oy)) = scale {
             // Scale the output surface back.
-            output_surface = output_surface
-                .scale_to(
-                    ctx.source_graphic().width(),
-                    ctx.source_graphic().height(),
-                    original_bounds,
-                    ox,
-                    oy,
-                )
-                .map_err(FilterError::IntermediateSurfaceCreation)?;
+            output_surface = SharedImageSurface::new(
+                output_surface
+                    .scale_to(
+                        ctx.source_graphic().width(),
+                        ctx.source_graphic().height(),
+                        original_bounds,
+                        ox,
+                        oy,
+                    )
+                    .map_err(FilterError::IntermediateSurfaceCreation)?,
+            ).map_err(FilterError::BadIntermediateSurfaceStatus)?;
+
+            bounds = original_bounds;
         }
 
         Ok(FilterResult {

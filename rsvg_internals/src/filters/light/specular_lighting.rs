@@ -169,9 +169,14 @@ impl Filter for SpecularLighting {
                 .scale(bounds, 1.0 / ox, 1.0 / oy)
                 .map_err(FilterError::IntermediateSurfaceCreation)?;
 
+            let new_surface = SharedImageSurface::new(new_surface)
+                .map_err(FilterError::BadIntermediateSurfaceStatus)?;
+
             input_surface = new_surface;
             bounds = new_bounds;
         }
+
+        let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
         let mut output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
@@ -183,9 +188,14 @@ impl Filter for SpecularLighting {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, _pixel) in Pixels::new(&input_surface, bounds) {
+            for (x, y, pixel) in Pixels::new(&input_surface, bounds) {
                 let normal = normal(&input_surface, bounds, x, y, surface_scale);
-                let light_vector = light_source.vector(&input_surface, x, y, surface_scale, ctx);
+
+                let scaled_x = f64::from(x) / ox;
+                let scaled_y = f64::from(y) / oy;
+                let z = f64::from(pixel.a) / 255.0 * surface_scale;
+                let light_vector = light_source.vector(scaled_x, scaled_y, z, ctx);
+
                 let light_color = light_source.color(lighting_color, &light_vector, ctx);
 
                 let mut h = light_vector + vector![0.0, 0.0, 1.0];
@@ -211,15 +221,19 @@ impl Filter for SpecularLighting {
 
         if let Some((ox, oy)) = scale {
             // Scale the output surface back.
-            output_surface = output_surface
-                .scale_to(
-                    ctx.source_graphic().width(),
-                    ctx.source_graphic().height(),
-                    original_bounds,
-                    ox,
-                    oy,
-                )
-                .map_err(FilterError::IntermediateSurfaceCreation)?;
+            output_surface = SharedImageSurface::new(
+                output_surface
+                    .scale_to(
+                        ctx.source_graphic().width(),
+                        ctx.source_graphic().height(),
+                        original_bounds,
+                        ox,
+                        oy,
+                    )
+                    .map_err(FilterError::IntermediateSurfaceCreation)?,
+            ).map_err(FilterError::BadIntermediateSurfaceStatus)?;
+
+            bounds = original_bounds;
         }
 
         Ok(FilterResult {

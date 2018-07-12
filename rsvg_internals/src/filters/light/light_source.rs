@@ -11,7 +11,6 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
-use surface_utils::shared_surface::SharedImageSurface;
 use util::clamp;
 
 /// A light source node (`feDistantLight`, `fePointLight` or `feSpotLight`).
@@ -74,14 +73,7 @@ impl LightSource {
 
     /// Returns the unit (or null) vector from the image sample to the light.
     #[inline]
-    pub fn vector(
-        &self,
-        surface: &SharedImageSurface,
-        x: u32,
-        y: u32,
-        surface_scale: f64,
-        ctx: &FilterContext,
-    ) -> Vector<f64> {
+    pub fn vector(&self, x: f64, y: f64, z: f64, ctx: &FilterContext) -> Vector<f64> {
         match self {
             LightSource::Distant { azimuth, elevation } => {
                 let azimuth = azimuth.get().to_radians();
@@ -103,17 +95,11 @@ impl LightSource {
                 z: light_z,
                 ..
             } => {
-                let (light_x_, light_y_) =
+                let (light_x, light_y) =
                     ctx.paffine().transform_point(light_x.get(), light_y.get());
-                let light_z_ = ctx.transform_dist(light_z.get());
+                let light_z = ctx.transform_dist(light_z.get());
 
-                let z = f64::from(surface.get_pixel(x, y).a) / 255.0;
-
-                let mut v = vector![
-                    light_x_ - f64::from(x),
-                    light_y_ - f64::from(y),
-                    light_z_ - z * surface_scale
-                ];
+                let mut v = vector![light_x - x, light_y - y, light_z - z];
                 let _ = normalize(&mut v);
                 v
             }

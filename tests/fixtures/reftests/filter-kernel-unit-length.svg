@@ -1,0 +1,30 @@
+<svg id="svg-root" width="100%" height="100%"
+  viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+
+  <!-- The test checks that kernelUnitLength is handled properly by filters which support it. -->
+  <filter id="convolve-matrix">
+    <feConvolveMatrix kernelUnitLength="2 1" x="0" y="0" width="25" height="25" edgeMode="wrap" order="5" targetX="0" targetY="0" kernelMatrix="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+  </filter>
+
+  <filter id="pointLightA" filterUnits="objectBoundingBox" x="0" y="0" width="1" height="1">
+    <feDiffuseLighting kernelUnitLength="2" in="SourceGraphic" diffuseConstant="1" surfaceScale="10" lighting-color="white">
+      <fePointLight x="0" y="0" z="10"/>
+    </feDiffuseLighting>
+  </filter>
+  <filter id="spotLightD" filterUnits="objectBoundingBox" x="0" y="0" width="1" height="1">
+    <feDiffuseLighting kernelUnitLength="0.25" in="SourceGraphic" diffuseConstant="1" surfaceScale="10" lighting-color="white">
+      <feSpotLight x="25" y="0" z="35" pointsAtX="25" pointsAtY="30" pointsAtZ="0" specularExponent="0" limitingConeAngle="30"/>
+    </feDiffuseLighting>
+  </filter>
+
+  <g transform="translate(30 20)" filter="url(#convolve-matrix)">
+    <rect fill="red" x="1" y="1" width="50" height="50"/>
+    <rect fill="green" x="6" y="6" width="40" height="40"/>
+  </g>
+
+  <g transform="translate(30 60)">
+    <image xlink:href="svg1.1/images/bumpMap2.png" width="50" height="30" filter="url(#pointLightA)"/>
+    <rect transform="translate(70, 0)" width="50" height="30" filter="url(#spotLightD)"/>
+  </g>
+</svg>
