@@ -73,7 +73,6 @@ RUST_SRC =							\
 	rsvg_internals/src/filters/context.rs			\
 	rsvg_internals/src/filters/displacement_map.rs		\
 	rsvg_internals/src/filters/error.rs			\
-	rsvg_internals/src/filters/ffi.rs			\
 	rsvg_internals/src/filters/flood.rs			\
 	rsvg_internals/src/filters/gaussian_blur.rs		\
 	rsvg_internals/src/filters/image.rs			\
