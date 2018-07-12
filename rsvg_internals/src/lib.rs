@@ -10,6 +10,7 @@ extern crate glib;
 extern crate glib_sys;
 extern crate itertools;
 extern crate libc;
+extern crate owning_ref;
 extern crate pango;
 extern crate pango_cairo_sys;
 extern crate pango_sys;

@@ -6,7 +6,7 @@ use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, ParseError};
 use property_bag::PropertyBag;
 use surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
@@ -74,11 +74,6 @@ impl NodeTrait for DisplacementMap {
         }
 
         Ok(())
-    }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
     }
 }
 
@@ -161,7 +156,7 @@ impl Filter for DisplacementMap {
     }
 
     #[inline]
-    fn is_affected_by_color_interpolation_filters() -> bool {
+    fn is_affected_by_color_interpolation_filters(&self) -> bool {
         // Performance TODO: this converts in back and forth to linear RGB while technically it's
         // only needed for in2.
         true
