@@ -268,21 +268,6 @@ typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle
 typedef void (* CNodeFree) (gpointer impl);
 
 /* Implemented in rust/src/node.rs */
-/* Call node = rsvg_node_unref (node) when you are done with the node */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_rust_cnode_new (RsvgNodeType  node_type,
-                               RsvgNode     *parent,
-                               const char   *id,
-                               const char   *klass,
-                               gpointer      impl,
-                               CNodeSetAtts  set_atts_fn,
-                               CNodeFree     free_fn) G_GNUC_WARN_UNUSED_RESULT;
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-gpointer rsvg_rust_cnode_get_impl (RsvgNode *node);
-
-/* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 RsvgNodeType rsvg_node_get_type (RsvgNode *node);
 

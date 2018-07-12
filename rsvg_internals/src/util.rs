@@ -26,14 +26,6 @@ pub unsafe fn utf8_cstr<'a>(s: *const libc::c_char) -> &'a str {
     str::from_utf8_unchecked(CStr::from_ptr(s).to_bytes())
 }
 
-pub unsafe fn utf8_cstr_opt<'a>(s: *const libc::c_char) -> Option<&'a str> {
-    if s.is_null() {
-        None
-    } else {
-        Some(utf8_cstr(s))
-    }
-}
-
 pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {
     if val < low {
         low

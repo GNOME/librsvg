@@ -28,8 +28,6 @@ extern crate rulinalg;
 
 pub use attributes::rsvg_attribute_from_name;
 
-pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
-
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use drawing_ctx::{
@@ -104,7 +102,6 @@ mod aspect_ratio;
 mod attributes;
 mod bbox;
 mod clip_path;
-mod cnode;
 mod color;
 mod cond;
 mod defs;
