@@ -15,7 +15,7 @@ use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
 use defs::{self, RsvgDefs};
-use filters::filter_render;
+use filters;
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
 use mask::NodeMask;
@@ -347,7 +347,7 @@ impl<'a> DrawingCtx {
 
                                 if !filter_node.is_in_error() {
                                     // FIXME: deal with out of memory here
-                                    Some(filter_render(&filter_node, node, &output, self))
+                                    Some(filters::render(&filter_node, node, &output, self))
                                 } else {
                                     None
                                 }

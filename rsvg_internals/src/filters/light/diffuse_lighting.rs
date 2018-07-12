@@ -14,7 +14,7 @@ use filters::{
     PrimitiveWithInput,
 };
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
 use surface_utils::{
@@ -93,11 +93,6 @@ impl NodeTrait for DiffuseLighting {
         }
 
         Ok(())
-    }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
     }
 }
 
@@ -224,7 +219,7 @@ impl Filter for DiffuseLighting {
     }
 
     #[inline]
-    fn is_affected_by_color_interpolation_filters() -> bool {
+    fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
     }
 }

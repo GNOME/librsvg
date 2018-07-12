@@ -6,7 +6,7 @@ use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::ParseError;
 use property_bag::PropertyBag;
 use surface_utils::shared_surface::SharedImageSurface;
@@ -65,11 +65,6 @@ impl NodeTrait for Blend {
 
         Ok(())
     }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
-    }
 }
 
 impl Filter for Blend {
@@ -118,7 +113,7 @@ impl Filter for Blend {
     }
 
     #[inline]
-    fn is_affected_by_color_interpolation_filters() -> bool {
+    fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
     }
 }
