@@ -314,8 +314,11 @@ impl FilterContext {
         let (x, y) = draw_ctx.get_raw_offset();
         let stack = draw_ctx.get_cr_stack();
 
+        // TODO: as far as I can tell this should not render elements past the last (topmost) one
+        // with enable-background: new (because technically we shouldn't have been caching them).
+        // Right now there are no enable-background checks whatsoever.
         let cr = cairo::Context::new(&surface);
-        for draw in stack.into_iter().rev() {
+        for draw in stack.into_iter() {
             let nested = draw_ctx.is_cairo_context_nested(&draw);
             cr.set_source_surface(
                 &draw.get_target(),
