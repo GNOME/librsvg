@@ -32,7 +32,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-defs.c 			\
 	librsvg/rsvg-defs.h 			\
 	librsvg/rsvg-file-util.c		\
-	librsvg/rsvg-filter.h			\
 	librsvg/rsvg-handle.c			\
 	librsvg/rsvg-io.c			\
 	librsvg/rsvg-io.h			\
