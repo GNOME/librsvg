@@ -338,7 +338,7 @@ pub fn number_list(parser: &mut Parser, length: ListLength) -> Result<Vec<f64>, 
         })?));
 
         if let ListLength::Exact(l) = length {
-             if i + 1 == l {
+            if i + 1 == l {
                 break;
             }
         }
