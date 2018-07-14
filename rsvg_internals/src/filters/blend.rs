@@ -83,10 +83,7 @@ impl Filter for Blend {
             .add_input(&input_2)
             .into_irect(draw_ctx);
 
-        let output_surface = input_2
-            .surface()
-            .copy_surface(bounds)
-            .map_err(FilterError::IntermediateSurfaceCreation)?;
+        let output_surface = input_2.surface().copy_surface(bounds)?;
         {
             let cr = cairo::Context::new(&output_surface);
             cr.rectangle(
@@ -105,8 +102,7 @@ impl Filter for Blend {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
+                surface: SharedImageSurface::new(output_surface)?,
                 bounds,
             },
         })

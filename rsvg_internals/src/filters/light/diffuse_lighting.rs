@@ -142,12 +142,9 @@ impl Filter for DiffuseLighting {
 
         if let Some((ox, oy)) = scale {
             // Scale the input surface to match kernel_unit_length.
-            let (new_surface, new_bounds) = input_surface
-                .scale(bounds, 1.0 / ox, 1.0 / oy)
-                .map_err(FilterError::IntermediateSurfaceCreation)?;
+            let (new_surface, new_bounds) = input_surface.scale(bounds, 1.0 / ox, 1.0 / oy)?;
 
-            let new_surface = SharedImageSurface::new(new_surface)
-                .map_err(FilterError::BadIntermediateSurfaceStatus)?;
+            let new_surface = SharedImageSurface::new(new_surface)?;
 
             input_surface = new_surface;
             bounds = new_bounds;
@@ -159,7 +156,7 @@ impl Filter for DiffuseLighting {
             cairo::Format::ARgb32,
             input_surface.width(),
             input_surface.height(),
-        ).map_err(FilterError::IntermediateSurfaceCreation)?;
+        )?;
 
         let output_stride = output_surface.get_stride() as usize;
         {
@@ -189,22 +186,17 @@ impl Filter for DiffuseLighting {
             }
         }
 
-        let mut output_surface = SharedImageSurface::new(output_surface)
-            .map_err(FilterError::BadIntermediateSurfaceStatus)?;
+        let mut output_surface = SharedImageSurface::new(output_surface)?;
 
         if let Some((ox, oy)) = scale {
             // Scale the output surface back.
-            output_surface = SharedImageSurface::new(
-                output_surface
-                    .scale_to(
-                        ctx.source_graphic().width(),
-                        ctx.source_graphic().height(),
-                        original_bounds,
-                        ox,
-                        oy,
-                    )
-                    .map_err(FilterError::IntermediateSurfaceCreation)?,
-            ).map_err(FilterError::BadIntermediateSurfaceStatus)?;
+            output_surface = SharedImageSurface::new(output_surface.scale_to(
+                ctx.source_graphic().width(),
+                ctx.source_graphic().height(),
+                original_bounds,
+                ox,
+                oy,
+            )?)?;
 
             bounds = original_bounds;
         }

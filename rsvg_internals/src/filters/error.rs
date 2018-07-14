@@ -10,10 +10,11 @@ pub enum FilterError {
     InvalidInput,
     /// The filter input surface has an unsuccessful status.
     BadInputSurfaceStatus(cairo::Status),
-    /// Couldn't create an intermediate surface.
-    IntermediateSurfaceCreation(cairo::Status),
-    /// An intermediate surface has an unsuccessful status.
-    BadIntermediateSurfaceStatus(cairo::Status),
+    /// A Cairo error.
+    ///
+    /// This means that either a failed intermediate surface creation or bad intermediate surface
+    /// status.
+    CairoError(cairo::Status),
     /// A lighting filter has none or multiple light sources.
     InvalidLightSourceCount,
 }
@@ -24,12 +25,7 @@ impl Error for FilterError {
         match *self {
             FilterError::InvalidInput => "invalid value of the `in` attribute",
             FilterError::BadInputSurfaceStatus(_) => "invalid status of the input surface",
-            FilterError::IntermediateSurfaceCreation(_) => {
-                "couldn't create an intermediate surface"
-            }
-            FilterError::BadIntermediateSurfaceStatus(_) => {
-                "invalid status of an intermediate surface"
-            }
+            FilterError::CairoError(_) => "Cairo error",
             FilterError::InvalidLightSourceCount => "invalid light source count",
         }
     }
@@ -44,11 +40,17 @@ impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             FilterError::BadInputSurfaceStatus(ref status)
-            | FilterError::IntermediateSurfaceCreation(ref status)
-            | FilterError::BadIntermediateSurfaceStatus(ref status) => {
+            | FilterError::CairoError(ref status) => {
                 write!(f, "{}: {:?}", self.description(), status)
             }
             _ => write!(f, "{}", self.description()),
         }
+    }
+}
+
+impl From<cairo::Status> for FilterError {
+    #[inline]
+    fn from(x: cairo::Status) -> Self {
+        FilterError::CairoError(x)
     }
 }
