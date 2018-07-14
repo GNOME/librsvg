@@ -62,20 +62,6 @@ RsvgCssColorSpec rsvg_css_parse_color (const char *str);
 G_GNUC_INTERNAL
 gboolean rsvg_css_parse_number_optional_number (const char *str, double *out_x, double *out_y);
 
-/* Keep in sync with rust/src/parsers.rs:NumberListLength */
-typedef enum {
-    NUMBER_LIST_LENGTH_EXACT,
-    NUMBER_LIST_LENGTH_MAXIMUM
-} NumberListLength;
-
-/* Implemented in rust/src/parsers.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_css_parse_number_list (const char      *in_str,
-                                     NumberListLength nlength,
-                                     gsize            size,
-                                     gdouble        **out_list,
-                                     gsize           *out_list_len);
-
 #endif /* RSVG_COMPILATION */
 
 G_END_DECLS

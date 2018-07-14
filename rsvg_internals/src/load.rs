@@ -26,6 +26,7 @@ use filters::{
     turbulence::Turbulence,
 };
 use gradient::NodeGradient;
+use handle::RsvgHandle;
 use image::NodeImage;
 use link::NodeLink;
 use marker::NodeMarker;
@@ -34,6 +35,7 @@ use node::*;
 use pattern::NodePattern;
 use property_bag::PropertyBag;
 use shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
+use state::parse_style_attrs;
 use stop::NodeStop;
 use structure::{NodeDefs, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
 use text::{NodeTRef, NodeTSpan, NodeText};
@@ -302,4 +304,30 @@ pub extern "C" fn rsvg_load_new_node(
     };
 
     create_fn(id, class, parent)
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_load_set_node_atts(
+    handle: *const RsvgHandle,
+    raw_node: *mut RsvgNode,
+    tag: *const libc::c_char,
+    pbag: *const PropertyBag,
+) {
+    assert!(!raw_node.is_null());
+    assert!(!pbag.is_null());
+
+    let node: &RsvgNode = unsafe { &*raw_node };
+    let tag = unsafe { utf8_cstr(tag) };
+    let pbag = unsafe { &*pbag };
+
+    node.set_atts(node, handle, pbag);
+
+    // The "svg" node is special; it will load its id/class
+    // attributes until the end, when sax_end_element_cb() calls
+    // rsvg_node_svg_apply_atts()
+    if node.get_type() != NodeType::Svg {
+        parse_style_attrs(handle, node, tag, pbag);
+    }
+
+    node.set_overridden_properties();
 }

@@ -299,10 +299,6 @@ void rsvg_node_add_child (RsvgNode *node, RsvgNode *child);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
-void rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag atts);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
 void rsvg_node_set_overridden_properties (RsvgNode *node);
 
 /* Implemented in rust/src/node.rs */

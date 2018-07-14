@@ -47,7 +47,7 @@ pub use length::{
     RsvgLength,
 };
 
-pub use load::rsvg_load_new_node;
+pub use load::{rsvg_load_new_node, rsvg_load_set_node_atts};
 
 pub use node::{
     rsvg_node_add_child,
@@ -61,13 +61,11 @@ pub use node::{
     rsvg_node_ref,
     rsvg_node_register_in_defs,
     rsvg_node_set_attribute_parse_error,
-    rsvg_node_set_atts,
-    rsvg_node_set_overridden_properties,
     rsvg_node_unref,
     rsvg_root_node_cascade,
 };
 
-pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
+pub use parsers::rsvg_css_parse_number_optional_number;
 
 pub use property_bag::{
     rsvg_property_bag_free,
@@ -79,7 +77,6 @@ pub use property_bag::{
 
 pub use state::{
     rsvg_computed_values_get_lighting_color_argb,
-    rsvg_parse_style_attrs,
     rsvg_state_free,
     rsvg_state_new,
     rsvg_state_parse_style_pair,

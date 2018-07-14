@@ -1499,22 +1499,6 @@ extern "C" {
     ) -> glib_sys::gboolean;
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_parse_style_attrs(
-    handle: *const RsvgHandle,
-    raw_node: *const RsvgNode,
-    tag: *const libc::c_char,
-    pbag: *const PropertyBag,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let tag = unsafe { utf8_cstr(tag) };
-    let pbag = unsafe { &*pbag };
-
-    parse_style_attrs(handle, node, tag, pbag);
-}
-
 // Sets the node's state from the attributes in the pbag.  Also
 // applies CSS rules in our limited way based on the node's
 // tag/klazz/id.
