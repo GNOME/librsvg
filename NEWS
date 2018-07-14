@@ -1,3 +1,19 @@
+Version 2.43.2
+- All the filter effects have been ported to Rust as part of Ivan
+  Molodetskikh's Summer of Code project!!!!!
+- We now require Rust 1.26.
+- We now include Rust debug information even in release builds, to make it
+  easier to obtain stack traces.
+- Fix #310 - Respect DPI in the font-size property (Mike Marcacci).
+- Fix: draw the circle/ellipse elements with the same orientation as
+  the SVG 1.1 test suite; this is relevant for stroke-dasharray (Ivan
+  Molodetskikh).
+- Refactoring of the drawing code and font sizes (Paolo Borelli).
+- New filters in Rust: feConvolveMatrix, feColorMatrix, feMorphology,
+  feDisplacementMap, feGaussianBlur, feDistantLight, feSpotLight,
+  fePointLight, feTile.
+- Updated Rust dependencies (Igor Gnatenko).
+
 Version 2.43.1
 - Fix: #259 - Test fonts should now work with --enable-installed-tests
 - Fix: #277 - Don't panic when trying to filter an empty group
