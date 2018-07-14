@@ -64,7 +64,7 @@ impl Image {
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-        ).map_err(FilterError::IntermediateSurfaceCreation)?;
+        )?;
 
         draw_ctx.get_cairo_context().set_matrix(ctx.paffine());
 
@@ -87,7 +87,7 @@ impl Image {
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-        ).map_err(FilterError::IntermediateSurfaceCreation)?;
+        )?;
 
         let cr = cairo::Context::new(&output_surface);
         cr.rectangle(
@@ -142,7 +142,7 @@ impl Image {
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-        ).map_err(FilterError::IntermediateSurfaceCreation)?;
+        )?;
 
         // TODO: this goes through a f64->i32->f64 conversion.
         let render_bounds = bounds_builder.into_irect_without_clipping(draw_ctx);
@@ -239,8 +239,7 @@ impl Filter for Image {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
+                surface: SharedImageSurface::new(output_surface)?,
                 bounds,
             },
         })

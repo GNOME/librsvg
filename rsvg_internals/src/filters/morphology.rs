@@ -101,7 +101,7 @@ impl Filter for Morphology {
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-        ).map_err(FilterError::IntermediateSurfaceCreation)?;
+        )?;
 
         let output_stride = output_surface.get_stride() as usize;
         {
@@ -150,8 +150,7 @@ impl Filter for Morphology {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
+                surface: SharedImageSurface::new(output_surface)?,
                 bounds,
             },
         })

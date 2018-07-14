@@ -116,7 +116,7 @@ impl Filter for Composite {
                 cairo::Format::ARgb32,
                 input.surface().width(),
                 input.surface().height(),
-            ).map_err(FilterError::IntermediateSurfaceCreation)?;
+            )?;
 
             let output_stride = output_surface.get_stride() as usize;
             {
@@ -162,10 +162,7 @@ impl Filter for Composite {
 
             output_surface
         } else {
-            let output_surface = input_2
-                .surface()
-                .copy_surface(bounds)
-                .map_err(FilterError::IntermediateSurfaceCreation)?;
+            let output_surface = input_2.surface().copy_surface(bounds)?;
 
             let cr = cairo::Context::new(&output_surface);
             cr.rectangle(
@@ -186,8 +183,7 @@ impl Filter for Composite {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
+                surface: SharedImageSurface::new(output_surface)?,
                 bounds,
             },
         })

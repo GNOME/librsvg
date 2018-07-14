@@ -87,10 +87,7 @@ impl MergeNode {
         let input = ctx.get_input(draw_ctx, self.in_.borrow().as_ref())?;
 
         if output_surface.is_none() {
-            return input
-                .surface()
-                .copy_surface(bounds)
-                .map_err(FilterError::IntermediateSurfaceCreation);
+            return Ok(input.surface().copy_surface(bounds)?);
         }
         let output_surface = output_surface.unwrap();
 
@@ -147,14 +144,13 @@ impl Filter for Merge {
                 cairo::Format::ARgb32,
                 ctx.source_graphic().width(),
                 ctx.source_graphic().height(),
-            ).map_err(FilterError::IntermediateSurfaceCreation)?,
+            )?,
         };
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
+                surface: SharedImageSurface::new(output_surface)?,
                 bounds,
             },
         })

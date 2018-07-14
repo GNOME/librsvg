@@ -58,7 +58,7 @@ impl Filter for Tile {
                     cairo::Format::ARgb32,
                     input_bounds.x1 - input_bounds.x0,
                     input_bounds.y1 - input_bounds.y0,
-                ).map_err(FilterError::IntermediateSurfaceCreation)?;
+                )?;
 
                 {
                     let cr = cairo::Context::new(&bounded_input_surface);
@@ -81,7 +81,7 @@ impl Filter for Tile {
                     cairo::Format::ARgb32,
                     ctx.source_graphic().width(),
                     ctx.source_graphic().height(),
-                ).map_err(FilterError::IntermediateSurfaceCreation)?;
+                )?;
 
                 {
                     let cr = cairo::Context::new(&output_surface);
@@ -97,8 +97,7 @@ impl Filter for Tile {
                     cr.paint();
                 }
 
-                SharedImageSurface::new(output_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)?
+                SharedImageSurface::new(output_surface)?
             }
         };
 
