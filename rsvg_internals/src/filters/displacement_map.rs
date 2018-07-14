@@ -1,12 +1,12 @@
 use std::cell::{Cell, RefCell};
 
-use cairo::{self, ImageSurface};
+use cairo::{self, ImageSurface, MatrixTrait};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, ParseError};
 use property_bag::PropertyBag;
 use surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
@@ -75,11 +75,6 @@ impl NodeTrait for DisplacementMap {
 
         Ok(())
     }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
-    }
 }
 
 impl Filter for DisplacementMap {
@@ -107,9 +102,7 @@ impl Filter for DisplacementMap {
             .map_err(FilterError::BadIntermediateSurfaceStatus)?;
 
         let scale = self.scale.get();
-        let paffine = ctx.paffine();
-        let sx = paffine.xx * scale + paffine.xy * scale;
-        let sy = paffine.yx * scale + paffine.yy * scale;
+        let (sx, sy) = ctx.paffine().transform_distance(scale, scale);
 
         let x_channel = self.x_channel_selector.get();
         let y_channel = self.y_channel_selector.get();
@@ -163,7 +156,7 @@ impl Filter for DisplacementMap {
     }
 
     #[inline]
-    fn is_affected_by_color_interpolation_filters() -> bool {
+    fn is_affected_by_color_interpolation_filters(&self) -> bool {
         // Performance TODO: this converts in back and forth to linear RGB while technically it's
         // only needed for in2.
         true

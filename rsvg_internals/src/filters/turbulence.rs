@@ -6,7 +6,7 @@ use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, ParseError};
 use property_bag::PropertyBag;
 use surface_utils::{shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel};
@@ -99,11 +99,6 @@ impl NodeTrait for Turbulence {
         }
 
         Ok(())
-    }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
     }
 }
 
@@ -220,7 +215,7 @@ impl NoiseGenerator {
         rv
     }
 
-    fn noise2(self, color_channel: usize, vec: [f64; 2], stitch_info: Option<StitchInfo>) -> f64 {
+    fn noise2(&self, color_channel: usize, vec: [f64; 2], stitch_info: Option<StitchInfo>) -> f64 {
         const BM: usize = 0xff;
 
         let s_curve = |t| t * t * (3. - 2. * t);
@@ -277,7 +272,7 @@ impl NoiseGenerator {
         lerp(sy, a, b)
     }
 
-    fn turbulence(self, color_channel: usize, point: [f64; 2], tile_x: f64, tile_y: f64) -> f64 {
+    fn turbulence(&self, color_channel: usize, point: [f64; 2], tile_x: f64, tile_y: f64) -> f64 {
         let mut stitch_info = None;
         let mut base_frequency = self.base_frequency;
 
@@ -417,7 +412,7 @@ impl Filter for Turbulence {
     }
 
     #[inline]
-    fn is_affected_by_color_interpolation_filters() -> bool {
+    fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
     }
 }

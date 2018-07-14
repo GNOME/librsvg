@@ -35,10 +35,6 @@ use util::utf8_cstr;
 // of nodes.
 pub type RsvgNode = Rc<Node>;
 
-// A *const RsvgCNodeImpl is just an opaque pointer to the C code's
-// struct for a particular node type.
-pub enum RsvgCNodeImpl {}
-
 /// Can obtain computed values from a node
 ///
 /// In our tree of SVG elements (Node in our parlance), each node stores a `ComputedValues` that
@@ -135,10 +131,6 @@ pub trait NodeTrait: Downcast {
         _clipping: bool,
     ) {
         // by default nodes don't draw themselves
-    }
-
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        unreachable!(); // no Rust nodes should have this method called for them
     }
 }
 
@@ -454,10 +446,6 @@ impl Node {
 
     pub fn get_result(&self) -> NodeResult {
         self.result.borrow().clone()
-    }
-
-    pub fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.node_impl.get_c_impl()
     }
 
     pub fn with_impl<T, F, U>(&self, f: F) -> U

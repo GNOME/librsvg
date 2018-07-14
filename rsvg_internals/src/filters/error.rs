@@ -14,6 +14,8 @@ pub enum FilterError {
     IntermediateSurfaceCreation(cairo::Status),
     /// An intermediate surface has an unsuccessful status.
     BadIntermediateSurfaceStatus(cairo::Status),
+    /// A lighting filter has none or multiple light sources.
+    InvalidLightSourceCount,
 }
 
 impl Error for FilterError {
@@ -28,6 +30,7 @@ impl Error for FilterError {
             FilterError::BadIntermediateSurfaceStatus(_) => {
                 "invalid status of an intermediate surface"
             }
+            FilterError::InvalidLightSourceCount => "invalid light source count",
         }
     }
 

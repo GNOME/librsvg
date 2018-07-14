@@ -10,6 +10,7 @@ extern crate glib;
 extern crate glib_sys;
 extern crate itertools;
 extern crate libc;
+extern crate owning_ref;
 extern crate pango;
 extern crate pango_cairo_sys;
 extern crate pango_sys;
@@ -27,8 +28,6 @@ extern crate rulinalg;
 
 pub use attributes::rsvg_attribute_from_name;
 
-pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
-
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use drawing_ctx::{
@@ -37,18 +36,6 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_free,
     rsvg_drawing_ctx_get_ink_rect,
     rsvg_drawing_ctx_new,
-};
-
-pub use filters::context::{
-    rsvg_filter_context_get_channelmap,
-    rsvg_filter_context_get_height,
-    rsvg_filter_context_get_paffine,
-    rsvg_filter_context_get_source_surface,
-    rsvg_filter_context_get_width,
-    rsvg_filter_get_in,
-    rsvg_filter_get_result,
-    rsvg_filter_primitive_get_bounds,
-    rsvg_filter_store_output,
 };
 
 pub use length::{
@@ -115,7 +102,6 @@ mod aspect_ratio;
 mod attributes;
 mod bbox;
 mod clip_path;
-mod cnode;
 mod color;
 mod cond;
 mod defs;

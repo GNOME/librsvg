@@ -1,13 +1,13 @@
 use std::cell::{Cell, RefCell};
 
-use cairo::{self, ImageSurface};
+use cairo::{self, ImageSurface, MatrixTrait};
 use rulinalg::matrix::{BaseMatrix, Matrix};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, ListLength, NumberListError, ParseError};
 use property_bag::PropertyBag;
 use surface_utils::{
@@ -208,11 +208,6 @@ impl NodeTrait for ConvolveMatrix {
 
         Ok(())
     }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
-    }
 }
 
 impl Filter for ConvolveMatrix {
@@ -242,19 +237,19 @@ impl Filter for ConvolveMatrix {
             input.surface().clone()
         };
 
-        let scale = self.kernel_unit_length.get().map(|(dx, dy)| {
-            let paffine = ctx.paffine();
-            let ox = paffine.xx * dx + paffine.xy * dy;
-            let oy = paffine.yx * dx + paffine.yy * dy;
-
-            (ox, oy)
-        });
+        let scale = self
+            .kernel_unit_length
+            .get()
+            .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
         if let Some((ox, oy)) = scale {
             // Scale the input surface to match kernel_unit_length.
             let (new_surface, new_bounds) = input_surface
                 .scale(bounds, 1.0 / ox, 1.0 / oy)
                 .map_err(FilterError::IntermediateSurfaceCreation)?;
+
+            let new_surface = SharedImageSurface::new(new_surface)
+                .map_err(FilterError::BadIntermediateSurfaceStatus)?;
 
             input_surface = new_surface;
             bounds = new_bounds;
@@ -341,15 +336,19 @@ impl Filter for ConvolveMatrix {
 
         if let Some((ox, oy)) = scale {
             // Scale the output surface back.
-            output_surface = output_surface
-                .scale_to(
-                    ctx.source_graphic().width(),
-                    ctx.source_graphic().height(),
-                    original_bounds,
-                    ox,
-                    oy,
-                )
-                .map_err(FilterError::IntermediateSurfaceCreation)?;
+            output_surface = SharedImageSurface::new(
+                output_surface
+                    .scale_to(
+                        ctx.source_graphic().width(),
+                        ctx.source_graphic().height(),
+                        original_bounds,
+                        ox,
+                        oy,
+                    )
+                    .map_err(FilterError::IntermediateSurfaceCreation)?,
+            ).map_err(FilterError::BadIntermediateSurfaceStatus)?;
+
+            bounds = original_bounds;
         }
 
         Ok(FilterResult {
@@ -362,7 +361,7 @@ impl Filter for ConvolveMatrix {
     }
 
     #[inline]
-    fn is_affected_by_color_interpolation_filters() -> bool {
+    fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
     }
 }

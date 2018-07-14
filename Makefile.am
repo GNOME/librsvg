@@ -20,13 +20,6 @@ enum_sources = 				\
 BUILT_SOURCES += $(enum_sources)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
-	librsvg/filters/common.c		\
-	librsvg/filters/common.h		\
-	librsvg/filters/diffuse_lighting.c	\
-	librsvg/filters/light_source.c		\
-	librsvg/filters/light_source.h		\
-	librsvg/filters/specular_lighting.c	\
-	librsvg/filters/tile.c			\
 	librsvg/librsvg-enum-types.c		\
 	librsvg/librsvg-enum-types.h		\
 	librsvg/librsvg-features.c 		\
@@ -65,7 +58,6 @@ RUST_SRC =							\
 	rsvg_internals/src/attributes.rs			\
 	rsvg_internals/src/bbox.rs				\
 	rsvg_internals/src/clip_path.rs				\
-	rsvg_internals/src/cnode.rs				\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
 	rsvg_internals/src/coord_units.rs			\
@@ -80,16 +72,20 @@ RUST_SRC =							\
 	rsvg_internals/src/filters/context.rs			\
 	rsvg_internals/src/filters/displacement_map.rs		\
 	rsvg_internals/src/filters/error.rs			\
-	rsvg_internals/src/filters/ffi.rs			\
 	rsvg_internals/src/filters/flood.rs			\
 	rsvg_internals/src/filters/gaussian_blur.rs		\
 	rsvg_internals/src/filters/image.rs			\
+	rsvg_internals/src/filters/light/diffuse_lighting.rs	\
+	rsvg_internals/src/filters/light/light_source.rs	\
+	rsvg_internals/src/filters/light/specular_lighting.rs	\
+	rsvg_internals/src/filters/light/mod.rs			\
 	rsvg_internals/src/filters/merge.rs			\
 	rsvg_internals/src/filters/morphology.rs		\
 	rsvg_internals/src/filters/mod.rs			\
 	rsvg_internals/src/filters/node.rs			\
 	rsvg_internals/src/filters/input.rs			\
 	rsvg_internals/src/filters/offset.rs			\
+	rsvg_internals/src/filters/tile.rs			\
 	rsvg_internals/src/filters/turbulence.rs		\
 	rsvg_internals/src/error.rs				\
 	rsvg_internals/src/float_eq_cairo.rs			\

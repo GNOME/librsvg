@@ -1,15 +1,20 @@
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 
+use cairo;
+use owning_ref::RcRef;
+
 use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use error::AttributeError;
 use handle::RsvgHandle;
 use length::{LengthDir, LengthUnit, RsvgLength};
-use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{parse_and_validate, ParseError};
 use property_bag::PropertyBag;
+use state::ColorInterpolationFilters;
+use surface_utils::shared_surface::SharedImageSurface;
 
 mod bounds;
 use self::bounds::BoundsBuilder;
@@ -19,10 +24,6 @@ use self::context::{FilterContext, FilterInput, FilterResult};
 
 mod error;
 use self::error::FilterError;
-
-mod ffi;
-use self::ffi::*;
-pub use self::ffi::{filter_render, RsvgFilterPrimitive};
 
 mod input;
 use self::input::Input;
@@ -39,9 +40,11 @@ pub mod displacement_map;
 pub mod flood;
 pub mod gaussian_blur;
 pub mod image;
+pub mod light;
 pub mod merge;
 pub mod morphology;
 pub mod offset;
+pub mod tile;
 pub mod turbulence;
 
 /// A filter primitive interface.
@@ -62,14 +65,11 @@ trait Filter: NodeTrait {
     ///
     /// Primitives that do color blending (like `feComposite` or `feBlend`) should return `true`
     /// here, whereas primitives that don't (like `feOffset`) should return `false`.
-    fn is_affected_by_color_interpolation_filters() -> bool;
+    fn is_affected_by_color_interpolation_filters(&self) -> bool;
 }
 
 /// The base filter primitive node containing common properties.
 struct Primitive {
-    // The purpose of this field is to pass this filter's function pointers to the C code.
-    filter_function_pointers: FilterFunctionPointers,
-
     x: Cell<Option<RsvgLength>>,
     y: Cell<Option<RsvgLength>>,
     width: Cell<Option<RsvgLength>>,
@@ -88,8 +88,6 @@ impl Primitive {
     #[inline]
     fn new<T: Filter>() -> Primitive {
         Primitive {
-            filter_function_pointers: FilterFunctionPointers::new::<T>(),
-
             x: Cell::new(None),
             y: Cell::new(None),
             width: Cell::new(None),
@@ -174,12 +172,6 @@ impl NodeTrait for Primitive {
 
         Ok(())
     }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        // The code that deals with the return value is in ffi.rs.
-        &self.filter_function_pointers as *const FilterFunctionPointers as *const RsvgCNodeImpl
-    }
 }
 
 impl PrimitiveWithInput {
@@ -221,11 +213,6 @@ impl NodeTrait for PrimitiveWithInput {
 
         Ok(())
     }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
-    }
 }
 
 impl Deref for PrimitiveWithInput {
@@ -234,5 +221,121 @@ impl Deref for PrimitiveWithInput {
     #[inline]
     fn deref(&self) -> &Self::Target {
         &self.base
+    }
+}
+
+/// Applies a filter and returns the resulting surface.
+pub fn render(
+    filter_node: &RsvgNode,
+    node_being_filtered: &RsvgNode,
+    source: &cairo::ImageSurface,
+    draw_ctx: &mut DrawingCtx,
+) -> cairo::ImageSurface {
+    let filter_node = &*filter_node;
+    assert_eq!(filter_node.get_type(), NodeType::Filter);
+    assert!(!filter_node.is_in_error());
+
+    // The source surface has multiple references. We need to copy it to a new surface to have a
+    // unique reference to be able to safely access the pixel data.
+    let source_surface = cairo::ImageSurface::create(
+        cairo::Format::ARgb32,
+        source.get_width(),
+        source.get_height(),
+    ).unwrap();
+    {
+        let cr = cairo::Context::new(&source_surface);
+        cr.set_source_surface(source, 0f64, 0f64);
+        cr.paint();
+    }
+    let source_surface = SharedImageSurface::new(source_surface).unwrap();
+
+    let mut filter_ctx =
+        FilterContext::new(filter_node, node_being_filtered, source_surface, draw_ctx);
+
+    filter_node
+        .children()
+        // Skip nodes in error.
+        .filter(|c| !c.is_in_error())
+        // Check if the node wants linear RGB.
+        .map(|c| {
+            let linear_rgb = {
+                let cascaded = c.get_cascaded_values();
+                let values = cascaded.get();
+
+                values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb
+            };
+
+            (c, linear_rgb)
+        })
+        .filter_map(|(c, linear_rgb)| {
+            let rr = RcRef::new(c).try_map(|c| {
+                // Go through the filter primitives and see if the node is one of them.
+                #[inline]
+                fn as_filter<T: Filter>(x: &T) -> &Filter {
+                    x
+                }
+
+                // Unfortunately it's not possible to downcast to a trait object. If we could
+                // attach arbitrary data to nodes it would really help here. Previously that
+                // arbitrary data was in form of RsvgCNodeImpl, but that was heavily tuned for
+                // storing C pointers with all subsequent downsides.
+                macro_rules! try_downcasting_to_filter {
+                    ($c:expr; $($t:ty),+$(,)*) => ({
+                        let mut filter = None;
+                        $(
+                            filter = filter.or_else(|| $c.get_impl::<$t>().map(as_filter));
+                        )+
+                        filter
+                    })
+                }
+
+                let filter = try_downcasting_to_filter!(
+                    c;
+                    blend::Blend,
+                    color_matrix::ColorMatrix,
+                    component_transfer::ComponentTransfer,
+                    composite::Composite,
+                    convolve_matrix::ConvolveMatrix,
+                    displacement_map::DisplacementMap,
+                    flood::Flood,
+                    gaussian_blur::GaussianBlur,
+                    image::Image,
+                    light::diffuse_lighting::DiffuseLighting,
+                    light::specular_lighting::SpecularLighting,
+                    merge::Merge,
+                    morphology::Morphology,
+                    offset::Offset,
+                    tile::Tile,
+                    turbulence::Turbulence,
+                );
+                filter.ok_or(())
+            }).ok();
+
+            rr.map(|rr| (rr, linear_rgb))
+        })
+        .for_each(|(rr, linear_rgb)| {
+            let mut render = |filter_ctx: &mut FilterContext| {
+                if let Err(_) = rr.render(rr.owner(), filter_ctx, draw_ctx)
+                    .and_then(|result| filter_ctx.store_result(result))
+                {
+                    // Filter::render() returned an error. Do nothing for now.
+                }
+            };
+
+            if rr.is_affected_by_color_interpolation_filters() && linear_rgb {
+                filter_ctx.with_linear_rgb(render);
+            } else {
+                render(&mut filter_ctx);
+            }
+        });
+
+    match filter_ctx.into_output() {
+        Ok(surface) => surface.into_image_surface(),
+        Err(err) => {
+            panic!(
+                "Could not create an empty surface to return from a filter: {}",
+                err
+            );
+        }
     }
 }

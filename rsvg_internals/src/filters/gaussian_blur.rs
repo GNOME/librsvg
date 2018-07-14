@@ -2,13 +2,14 @@ use std::cell::Cell;
 use std::cmp::{max, min};
 use std::f64;
 
+use cairo::MatrixTrait;
 use rulinalg::matrix::Matrix;
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
 use surface_utils::{shared_surface::SharedImageSurface, EdgeMode};
@@ -65,11 +66,6 @@ impl NodeTrait for GaussianBlur {
         }
 
         Ok(())
-    }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
     }
 }
 
@@ -261,9 +257,7 @@ impl Filter for GaussianBlur {
             .into_irect(draw_ctx);
 
         let (std_x, std_y) = self.std_deviation.get();
-        let paffine = ctx.paffine();
-        let std_x = paffine.xx * std_x + paffine.xy * std_y;
-        let std_y = paffine.yx * std_x + paffine.yy * std_y;
+        let (std_x, std_y) = ctx.paffine().transform_distance(std_x, std_y);
 
         // The deviation can become negative here due to the transform.
         let std_x = std_x.abs();
@@ -307,7 +301,7 @@ impl Filter for GaussianBlur {
     }
 
     #[inline]
-    fn is_affected_by_color_interpolation_filters() -> bool {
+    fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
     }
 }

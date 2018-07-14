@@ -1,13 +1,13 @@
 use std::cell::Cell;
 use std::cmp::{max, min};
 
-use cairo::{self, ImageSurface};
+use cairo::{self, ImageSurface, MatrixTrait};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, ParseError};
 use property_bag::PropertyBag;
 use surface_utils::{
@@ -76,11 +76,6 @@ impl NodeTrait for Morphology {
 
         Ok(())
     }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
-    }
 }
 
 impl Filter for Morphology {
@@ -98,9 +93,7 @@ impl Filter for Morphology {
             .into_irect(draw_ctx);
 
         let (rx, ry) = self.radius.get();
-        let paffine = ctx.paffine();
-        let rx = paffine.xx * rx + paffine.xy * ry;
-        let ry = paffine.yx * rx + paffine.yy * ry;
+        let (rx, ry) = ctx.paffine().transform_distance(rx, ry);
 
         let operator = self.operator.get();
 
@@ -165,7 +158,7 @@ impl Filter for Morphology {
     }
 
     #[inline]
-    fn is_affected_by_color_interpolation_filters() -> bool {
+    fn is_affected_by_color_interpolation_filters(&self) -> bool {
         false
     }
 }

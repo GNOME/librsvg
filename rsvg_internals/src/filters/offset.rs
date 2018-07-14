@@ -1,12 +1,12 @@
 use std::cell::Cell;
 
-use cairo::{self, ImageSurface};
+use cairo::{self, ImageSurface, MatrixTrait};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use handle::RsvgHandle;
-use node::{NodeResult, NodeTrait, RsvgCNodeImpl, RsvgNode};
+use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
 use surface_utils::shared_surface::SharedImageSurface;
@@ -57,11 +57,6 @@ impl NodeTrait for Offset {
 
         Ok(())
     }
-
-    #[inline]
-    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
-        self.base.get_c_impl()
-    }
 }
 
 impl Filter for Offset {
@@ -80,9 +75,7 @@ impl Filter for Offset {
 
         let dx = self.dx.get();
         let dy = self.dy.get();
-        let paffine = ctx.paffine();
-        let ox = paffine.xx * dx + paffine.xy * dy;
-        let oy = paffine.yx * dx + paffine.yy * dy;
+        let (ox, oy) = ctx.paffine().transform_distance(dx, dy);
 
         // output_bounds contains all pixels within bounds,
         // for which (x - ox) and (y - oy) also lie within bounds.
@@ -124,7 +117,7 @@ impl Filter for Offset {
     }
 
     #[inline]
-    fn is_affected_by_color_interpolation_filters() -> bool {
+    fn is_affected_by_color_interpolation_filters(&self) -> bool {
         false
     }
 }

@@ -15,7 +15,7 @@ use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
 use defs::{self, RsvgDefs};
-use filters::filter_render;
+use filters;
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
 use mask::NodeMask;
@@ -341,40 +341,30 @@ impl<'a> DrawingCtx {
                         // actually ensure that.
                         let output = self.surfaces_stack.pop().unwrap();
 
-                        // The bbox rect can be None, for example, if a filter is applied to an
-                        // empty group. There is nothing to filter in this case.
-                        self.bbox.rect.and_then(|_| {
-                            match self.get_acquired_node_of_type(filter, NodeType::Filter) {
-                                Some(acquired) => {
-                                    let filter_node = acquired.get();
+                        match self.get_acquired_node_of_type(filter, NodeType::Filter) {
+                            Some(acquired) => {
+                                let filter_node = acquired.get();
 
-                                    if !filter_node.is_in_error() {
-                                        // FIXME: deal with out of memory here
-                                        Some(filter_render(
-                                            &filter_node,
-                                            node,
-                                            &output,
-                                            self,
-                                            "2103".as_ptr() as *const libc::c_char,
-                                        ))
-                                    } else {
-                                        None
-                                    }
-                                }
-                                None => {
-                                    // Non-existing filters must act as null filters (that is, an
-                                    // empty surface is returned).
-                                    // TODO: handle the error properly and not via expect().
-                                    Some(
-                                        cairo::ImageSurface::create(
-                                            cairo::Format::ARgb32,
-                                            child_surface.get_width(),
-                                            child_surface.get_height(),
-                                        ).expect("couldn't create an empty surface"),
-                                    )
+                                if !filter_node.is_in_error() {
+                                    // FIXME: deal with out of memory here
+                                    Some(filters::render(&filter_node, node, &output, self))
+                                } else {
+                                    None
                                 }
                             }
-                        })
+                            None => {
+                                // Non-existing filters must act as null filters (that is, an
+                                // empty surface is returned).
+                                // TODO: handle the error properly and not via expect().
+                                Some(
+                                    cairo::ImageSurface::create(
+                                        cairo::Format::ARgb32,
+                                        child_surface.get_width(),
+                                        child_surface.get_height(),
+                                    ).expect("couldn't create an empty surface"),
+                                )
+                            }
+                        }
                     })
                     .or(Some(child_surface))
                     .unwrap();
