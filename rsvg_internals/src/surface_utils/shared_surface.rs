@@ -106,17 +106,24 @@ impl SharedImageSurface {
     }
 
     /// Converts this `SharedImageSurface` back into a Cairo image surface.
-    ///
-    /// # Panics
-    /// Panics if the underlying Cairo image surface is not unique, that is, there are other
-    /// instances of `SharedImageSurface` pointing at the same Cairo image surface.
     #[inline]
-    pub fn into_image_surface(self) -> ImageSurface {
+    pub fn into_image_surface(self) -> Result<ImageSurface, cairo::Status> {
         let reference_count =
             unsafe { cairo_sys::cairo_surface_get_reference_count(self.surface.to_raw_none()) };
-        assert_eq!(reference_count, 1);
 
-        self.surface
+        if reference_count == 1 {
+            Ok(self.surface)
+        } else {
+            // If there are any other references, copy the underlying surface.
+            let bounds = IRect {
+                x0: 0,
+                y0: 0,
+                x1: self.width,
+                y1: self.height,
+            };
+
+            self.copy_surface(bounds)
+        }
     }
 
     /// Returns the surface width.
