@@ -36,16 +36,19 @@ pub fn unlinearize(c: f64) -> f64 {
 }
 
 /// Applies the function to each pixel component after unpremultiplying.
-///
-/// The returned surface is transparent everywhere except the rectangle defined by `bounds`.
 fn map_unpremultiplied_components<F>(
     surface: &SharedImageSurface,
     bounds: IRect,
     f: F,
-) -> Result<cairo::ImageSurface, cairo::Status>
+) -> Result<SharedImageSurface, cairo::Status>
 where
     F: Fn(f64) -> f64,
 {
+    // This function doesn't affect the alpha channel.
+    if surface.is_alpha_only() {
+        return Ok(surface.clone());
+    }
+
     let width = surface.width();
     let height = surface.height();
 
@@ -77,27 +80,23 @@ where
         }
     }
 
-    Ok(output_surface)
+    SharedImageSurface::new(output_surface)
 }
 
 /// Converts an sRGB surface to a linear sRGB surface (undoes the gamma correction).
-///
-/// The returned surface is transparent everywhere except the rectangle defined by `bounds`.
 #[inline]
 pub fn linearize_surface(
     surface: &SharedImageSurface,
     bounds: IRect,
-) -> Result<cairo::ImageSurface, cairo::Status> {
+) -> Result<SharedImageSurface, cairo::Status> {
     map_unpremultiplied_components(surface, bounds, linearize)
 }
 
 /// Converts a linear sRGB surface to a normal sRGB surface (applies the gamma correction).
-///
-/// The returned surface is transparent everywhere except the rectangle defined by `bounds`.
 #[inline]
 pub fn unlinearize_surface(
     surface: &SharedImageSurface,
     bounds: IRect,
-) -> Result<cairo::ImageSurface, cairo::Status> {
+) -> Result<SharedImageSurface, cairo::Status> {
     map_unpremultiplied_components(surface, bounds, unlinearize)
 }

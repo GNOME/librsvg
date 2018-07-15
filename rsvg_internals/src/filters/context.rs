@@ -407,10 +407,7 @@ impl FilterContext {
         if self.processing_linear_rgb {
             result.output.surface =
                 unlinearize_surface(&result.output.surface, result.output.bounds)
-                    .map_err(FilterError::CairoError)
-                    .and_then(|surface| {
-                        SharedImageSurface::new(surface).map_err(FilterError::CairoError)
-                    })?;
+                    .map_err(FilterError::CairoError)?;
         }
 
         if let Some(name) = result.name {
@@ -575,9 +572,6 @@ impl FilterContext {
 
             linearize_surface(surface, bounds)
                 .map_err(FilterError::CairoError)
-                .and_then(|surface| {
-                    SharedImageSurface::new(surface).map_err(FilterError::CairoError)
-                })
                 .map(|surface| match raw {
                     FilterInput::StandardInput(_) => FilterInput::StandardInput(surface),
                     FilterInput::PrimitiveOutput(ref output) => {
