@@ -167,7 +167,7 @@ impl SharedImageSurface {
         bounds: IRect,
         x: f64,
         y: f64,
-    ) -> Result<ImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Status> {
         let output_surface = ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         {
@@ -185,7 +185,7 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        Ok(output_surface)
+        SharedImageSurface::new(output_surface)
     }
 
     /// Returns a scaled version of a surface and bounds.
@@ -195,7 +195,7 @@ impl SharedImageSurface {
         bounds: IRect,
         x: f64,
         y: f64,
-    ) -> Result<(ImageSurface, IRect), cairo::Status> {
+    ) -> Result<(SharedImageSurface, IRect), cairo::Status> {
         let new_width = (f64::from(self.width) * x).ceil() as i32;
         let new_height = (f64::from(self.height) * y).ceil() as i32;
         let new_bounds = bounds.scale(x, y);
