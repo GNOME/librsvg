@@ -158,40 +158,40 @@ fn three_box_blurs(
         let mut surface = input_surface.clone();
 
         for _ in 0..3 {
-            surface = SharedImageSurface::new(surface.convolve(
+            surface = surface.convolve(
                 bounds,
                 ((cols / 2) as i32, (rows / 2) as i32),
                 &kernel,
                 EdgeMode::None,
-            )?)?;
+            )?;
         }
 
         surface
     } else {
         // Even kernel sizes have a more interesting scheme.
-        let surface = SharedImageSurface::new(input_surface.convolve(
+        let surface = input_surface.convolve(
             bounds,
             ((cols / 2) as i32, (rows / 2) as i32),
             &kernel,
             EdgeMode::None,
-        )?)?;
+        )?;
 
-        let surface = SharedImageSurface::new(surface.convolve(
+        let surface = surface.convolve(
             bounds,
             (max((cols / 2) as i32 - 1, 0), max((rows / 2) as i32 - 1, 0)),
             &kernel,
             EdgeMode::None,
-        )?)?;
+        )?;
 
         let d = d + 1;
         let (rows, cols) = if vertical { (d, 1) } else { (1, d) };
         let kernel = Matrix::new(rows, cols, box_blur_kernel(d));
-        SharedImageSurface::new(surface.convolve(
+        surface.convolve(
             bounds,
             ((cols / 2) as i32, (rows / 2) as i32),
             &kernel,
             EdgeMode::None,
-        )?)?
+        )?
     };
 
     Ok(surface)
@@ -214,12 +214,12 @@ fn gaussian_blur(
     };
     let kernel = Matrix::new(rows, cols, kernel);
 
-    Ok(SharedImageSurface::new(input_surface.convolve(
+    Ok(input_surface.convolve(
         bounds,
         ((cols / 2) as i32, (rows / 2) as i32),
         &kernel,
         EdgeMode::None,
-    )?)?)
+    )?)
 }
 
 impl Filter for GaussianBlur {

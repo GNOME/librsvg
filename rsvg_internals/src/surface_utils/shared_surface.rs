@@ -267,7 +267,7 @@ impl SharedImageSurface {
         target: (i32, i32),
         kernel: &Matrix<f64>,
         edge_mode: EdgeMode,
-    ) -> Result<ImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Status> {
         assert!(kernel.rows() >= 1);
         assert!(kernel.cols() >= 1);
 
@@ -315,7 +315,7 @@ impl SharedImageSurface {
             }
         }
 
-        Ok(output_surface)
+        SharedImageSurface::new(output_surface)
     }
 
     /// Returns a raw pointer to the underlying surface.
