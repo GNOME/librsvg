@@ -233,7 +233,7 @@ impl SharedImageSurface {
     ///
     /// HACK: this is storing unpremultiplied pixels in an ARGB32 image surface (which is supposed
     /// to be premultiplied pixels).
-    pub fn unpremultiply(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {
+    pub fn unpremultiply(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
         let mut output_surface =
             ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -246,7 +246,7 @@ impl SharedImageSurface {
             }
         }
 
-        Ok(output_surface)
+        SharedImageSurface::new(output_surface)
     }
 
     /// Performs a convolution.

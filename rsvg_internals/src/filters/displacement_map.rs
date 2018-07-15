@@ -95,7 +95,6 @@ impl Filter for DisplacementMap {
 
         // Displacement map's values need to be non-premultiplied.
         let displacement_surface = displacement_input.surface().unpremultiply(bounds)?;
-        let displacement_surface = SharedImageSurface::new(displacement_surface)?;
 
         let scale = self.scale.get();
         let (sx, sy) = ctx.paffine().transform_distance(scale, scale);
