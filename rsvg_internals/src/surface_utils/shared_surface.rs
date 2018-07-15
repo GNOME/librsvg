@@ -46,6 +46,12 @@ pub struct SharedImageSurface {
     width: i32,
     height: i32,
     stride: isize,
+
+    /// Whether this surface contains meaningful data only in the alpha channel.
+    ///
+    /// This is used for optimizations, particularly in `convolve()` to skip processing other
+    /// channels.
+    alpha_only: bool,
 }
 
 impl SharedImageSurface {
@@ -82,7 +88,21 @@ impl SharedImageSurface {
             width,
             height,
             stride,
+            alpha_only: false,
         })
+    }
+
+    /// Creates a `SharedImageSurface` from a unique `ImageSurface` with meaningful data only in
+    /// the alpha channel.
+    ///
+    /// # Panics
+    /// Panics if the surface format isn't `ARgb32` and if the surface is not unique, that is, its
+    /// reference count isn't 1.
+    #[inline]
+    pub fn new_alpha_only(surface: ImageSurface) -> Result<Self, cairo::Status> {
+        let mut rv = Self::new(surface)?;
+        rv.alpha_only = true;
+        Ok(rv)
     }
 
     /// Converts this `SharedImageSurface` back into a Cairo image surface.
@@ -109,6 +129,12 @@ impl SharedImageSurface {
     #[inline]
     pub fn height(&self) -> i32 {
         self.height
+    }
+
+    /// Returns `true` if the surface contains meaningful data only in the alpha channel.
+    #[inline]
+    pub fn is_alpha_only(&self) -> bool {
+        self.alpha_only
     }
 
     /// Retrieves the pixel value at the given coordinates.
@@ -226,7 +252,7 @@ impl SharedImageSurface {
             }
         }
 
-        SharedImageSurface::new(output_surface)
+        SharedImageSurface::new_alpha_only(output_surface)
     }
 
     /// Returns a surface with pre-multiplication of color values undone.
