@@ -52,9 +52,13 @@ impl SharedImageSurface {
     /// Creates a `SharedImageSurface` from a unique `ImageSurface`.
     ///
     /// # Panics
-    /// Panics if the `ImageSurface` is not unique, that is, its reference count isn't 1.
+    /// Panics if the surface format isn't `ARgb32` and if the surface is not unique, that is, its
+    /// reference count isn't 1.
     #[inline]
     pub fn new(surface: ImageSurface) -> Result<Self, cairo::Status> {
+        // get_pixel() assumes ARgb32.
+        assert_eq!(surface.get_format(), cairo::Format::ARgb32);
+
         let reference_count =
             unsafe { cairo_sys::cairo_surface_get_reference_count(surface.to_raw_none()) };
         assert_eq!(reference_count, 1);
