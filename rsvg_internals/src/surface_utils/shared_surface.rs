@@ -218,7 +218,11 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        SharedImageSurface::new(output_surface)
+        if self.alpha_only {
+            SharedImageSurface::new_alpha_only(output_surface)
+        } else {
+            SharedImageSurface::new(output_surface)
+        }
     }
 
     /// Returns a scaled version of a surface and bounds.
