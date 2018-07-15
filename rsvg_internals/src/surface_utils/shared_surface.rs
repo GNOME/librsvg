@@ -46,15 +46,25 @@ pub struct SharedImageSurface {
     width: i32,
     height: i32,
     stride: isize,
+
+    /// Whether this surface contains meaningful data only in the alpha channel.
+    ///
+    /// This is used for optimizations, particularly in `convolve()` to skip processing other
+    /// channels.
+    alpha_only: bool,
 }
 
 impl SharedImageSurface {
     /// Creates a `SharedImageSurface` from a unique `ImageSurface`.
     ///
     /// # Panics
-    /// Panics if the `ImageSurface` is not unique, that is, its reference count isn't 1.
+    /// Panics if the surface format isn't `ARgb32` and if the surface is not unique, that is, its
+    /// reference count isn't 1.
     #[inline]
     pub fn new(surface: ImageSurface) -> Result<Self, cairo::Status> {
+        // get_pixel() assumes ARgb32.
+        assert_eq!(surface.get_format(), cairo::Format::ARgb32);
+
         let reference_count =
             unsafe { cairo_sys::cairo_surface_get_reference_count(surface.to_raw_none()) };
         assert_eq!(reference_count, 1);
@@ -78,21 +88,42 @@ impl SharedImageSurface {
             width,
             height,
             stride,
+            alpha_only: false,
         })
     }
 
-    /// Converts this `SharedImageSurface` back into a Cairo image surface.
+    /// Creates a `SharedImageSurface` from a unique `ImageSurface` with meaningful data only in
+    /// the alpha channel.
     ///
     /// # Panics
-    /// Panics if the underlying Cairo image surface is not unique, that is, there are other
-    /// instances of `SharedImageSurface` pointing at the same Cairo image surface.
+    /// Panics if the surface format isn't `ARgb32` and if the surface is not unique, that is, its
+    /// reference count isn't 1.
     #[inline]
-    pub fn into_image_surface(self) -> ImageSurface {
+    pub fn new_alpha_only(surface: ImageSurface) -> Result<Self, cairo::Status> {
+        let mut rv = Self::new(surface)?;
+        rv.alpha_only = true;
+        Ok(rv)
+    }
+
+    /// Converts this `SharedImageSurface` back into a Cairo image surface.
+    #[inline]
+    pub fn into_image_surface(self) -> Result<ImageSurface, cairo::Status> {
         let reference_count =
             unsafe { cairo_sys::cairo_surface_get_reference_count(self.surface.to_raw_none()) };
-        assert_eq!(reference_count, 1);
 
-        self.surface
+        if reference_count == 1 {
+            Ok(self.surface)
+        } else {
+            // If there are any other references, copy the underlying surface.
+            let bounds = IRect {
+                x0: 0,
+                y0: 0,
+                x1: self.width,
+                y1: self.height,
+            };
+
+            self.copy_surface(bounds)
+        }
     }
 
     /// Returns the surface width.
@@ -105,6 +136,12 @@ impl SharedImageSurface {
     #[inline]
     pub fn height(&self) -> i32 {
         self.height
+    }
+
+    /// Returns `true` if the surface contains meaningful data only in the alpha channel.
+    #[inline]
+    pub fn is_alpha_only(&self) -> bool {
+        self.alpha_only
     }
 
     /// Retrieves the pixel value at the given coordinates.
@@ -163,7 +200,7 @@ impl SharedImageSurface {
         bounds: IRect,
         x: f64,
         y: f64,
-    ) -> Result<ImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Status> {
         let output_surface = ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         {
@@ -181,7 +218,11 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        Ok(output_surface)
+        if self.alpha_only {
+            SharedImageSurface::new_alpha_only(output_surface)
+        } else {
+            SharedImageSurface::new(output_surface)
+        }
     }
 
     /// Returns a scaled version of a surface and bounds.
@@ -191,7 +232,7 @@ impl SharedImageSurface {
         bounds: IRect,
         x: f64,
         y: f64,
-    ) -> Result<(ImageSurface, IRect), cairo::Status> {
+    ) -> Result<(SharedImageSurface, IRect), cairo::Status> {
         let new_width = (f64::from(self.width) * x).ceil() as i32;
         let new_height = (f64::from(self.height) * y).ceil() as i32;
         let new_bounds = bounds.scale(x, y);
@@ -203,7 +244,7 @@ impl SharedImageSurface {
     }
 
     /// Returns a surface with black background and alpha channel matching this surface.
-    pub fn extract_alpha(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {
+    pub fn extract_alpha(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
         let mut output_surface =
             ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -222,14 +263,19 @@ impl SharedImageSurface {
             }
         }
 
-        Ok(output_surface)
+        SharedImageSurface::new_alpha_only(output_surface)
     }
 
     /// Returns a surface with pre-multiplication of color values undone.
     ///
     /// HACK: this is storing unpremultiplied pixels in an ARGB32 image surface (which is supposed
     /// to be premultiplied pixels).
-    pub fn unpremultiply(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {
+    pub fn unpremultiply(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+        // Unpremultiplication doesn't affect the alpha channel.
+        if self.alpha_only {
+            return Ok(self.clone());
+        }
+
         let mut output_surface =
             ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -242,7 +288,7 @@ impl SharedImageSurface {
             }
         }
 
-        Ok(output_surface)
+        SharedImageSurface::new(output_surface)
     }
 
     /// Performs a convolution.
@@ -263,7 +309,7 @@ impl SharedImageSurface {
         target: (i32, i32),
         kernel: &Matrix<f64>,
         edge_mode: EdgeMode,
-    ) -> Result<ImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Status> {
         assert!(kernel.rows() >= 1);
         assert!(kernel.cols() >= 1);
 
@@ -274,44 +320,82 @@ impl SharedImageSurface {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, _pixel) in Pixels::new(self, bounds) {
-                let kernel_bounds = IRect {
-                    x0: x as i32 - target.0,
-                    y0: y as i32 - target.1,
-                    x1: x as i32 - target.0 + kernel.cols() as i32,
-                    y1: y as i32 - target.1 + kernel.rows() as i32,
-                };
+            if self.alpha_only {
+                for (x, y, _pixel) in Pixels::new(self, bounds) {
+                    let kernel_bounds = IRect {
+                        x0: x as i32 - target.0,
+                        y0: y as i32 - target.1,
+                        x1: x as i32 - target.0 + kernel.cols() as i32,
+                        y1: y as i32 - target.1 + kernel.rows() as i32,
+                    };
 
-                let mut r = 0.0;
-                let mut g = 0.0;
-                let mut b = 0.0;
-                let mut a = 0.0;
+                    let mut a = 0.0;
 
-                for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode) {
-                    let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
-                    let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
-                    let factor = kernel[[kernel_y, kernel_x]];
+                    for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode)
+                    {
+                        let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
+                        let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
+                        let factor = kernel[[kernel_y, kernel_x]];
 
-                    r += f64::from(pixel.r) * factor;
-                    g += f64::from(pixel.g) * factor;
-                    b += f64::from(pixel.b) * factor;
-                    a += f64::from(pixel.a) * factor;
+                        a += f64::from(pixel.a) * factor;
+                    }
+
+                    let convert = |x: f64| clamp(x, 0.0, 255.0).round() as u8;
+
+                    let output_pixel = Pixel {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: convert(a),
+                    };
+
+                    output_data.set_pixel(output_stride, output_pixel, x, y);
                 }
+            } else {
+                for (x, y, _pixel) in Pixels::new(self, bounds) {
+                    let kernel_bounds = IRect {
+                        x0: x as i32 - target.0,
+                        y0: y as i32 - target.1,
+                        x1: x as i32 - target.0 + kernel.cols() as i32,
+                        y1: y as i32 - target.1 + kernel.rows() as i32,
+                    };
 
-                let convert = |x: f64| clamp(x, 0.0, 255.0).round() as u8;
+                    let mut r = 0.0;
+                    let mut g = 0.0;
+                    let mut b = 0.0;
+                    let mut a = 0.0;
 
-                let output_pixel = Pixel {
-                    r: convert(r),
-                    g: convert(g),
-                    b: convert(b),
-                    a: convert(a),
-                };
+                    for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode)
+                    {
+                        let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
+                        let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
+                        let factor = kernel[[kernel_y, kernel_x]];
 
-                output_data.set_pixel(output_stride, output_pixel, x, y);
+                        r += f64::from(pixel.r) * factor;
+                        g += f64::from(pixel.g) * factor;
+                        b += f64::from(pixel.b) * factor;
+                        a += f64::from(pixel.a) * factor;
+                    }
+
+                    let convert = |x: f64| clamp(x, 0.0, 255.0).round() as u8;
+
+                    let output_pixel = Pixel {
+                        r: convert(r),
+                        g: convert(g),
+                        b: convert(b),
+                        a: convert(a),
+                    };
+
+                    output_data.set_pixel(output_stride, output_pixel, x, y);
+                }
             }
         }
 
-        Ok(output_surface)
+        if self.alpha_only {
+            SharedImageSurface::new_alpha_only(output_surface)
+        } else {
+            SharedImageSurface::new(output_surface)
+        }
     }
 
     /// Returns a raw pointer to the underlying surface.

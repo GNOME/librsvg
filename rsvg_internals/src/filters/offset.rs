@@ -90,7 +90,7 @@ impl Filter for Offset {
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-        ).map_err(FilterError::IntermediateSurfaceCreation)?;
+        )?;
 
         {
             let cr = cairo::Context::new(&output_surface);
@@ -109,8 +109,7 @@ impl Filter for Offset {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
+                surface: SharedImageSurface::new(output_surface)?,
                 bounds,
             },
         })

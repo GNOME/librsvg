@@ -329,13 +329,9 @@ pub fn render(
             }
         });
 
-    match filter_ctx.into_output() {
-        Ok(surface) => surface.into_image_surface(),
-        Err(err) => {
-            panic!(
-                "Could not create an empty surface to return from a filter: {}",
-                err
-            );
-        }
-    }
+    filter_ctx
+        .into_output()
+        .expect("could not create an empty surface to return from a filter")
+        .into_image_surface()
+        .expect("could not convert filter output into an ImageSurface")
 }

@@ -50,7 +50,7 @@ impl Filter for Flood {
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-        ).map_err(FilterError::IntermediateSurfaceCreation)?;
+        )?;
 
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
@@ -83,8 +83,7 @@ impl Filter for Flood {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
+                surface: SharedImageSurface::new(output_surface)?,
                 bounds,
             },
         })

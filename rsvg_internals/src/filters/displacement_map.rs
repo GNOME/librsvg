@@ -94,12 +94,7 @@ impl Filter for DisplacementMap {
             .into_irect(draw_ctx);
 
         // Displacement map's values need to be non-premultiplied.
-        let displacement_surface = displacement_input
-            .surface()
-            .unpremultiply(bounds)
-            .map_err(FilterError::IntermediateSurfaceCreation)?;
-        let displacement_surface = SharedImageSurface::new(displacement_surface)
-            .map_err(FilterError::BadIntermediateSurfaceStatus)?;
+        let displacement_surface = displacement_input.surface().unpremultiply(bounds)?;
 
         let scale = self.scale.get();
         let (sx, sy) = ctx.paffine().transform_distance(scale, scale);
@@ -111,7 +106,7 @@ impl Filter for DisplacementMap {
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-        ).map_err(FilterError::IntermediateSurfaceCreation)?;
+        )?;
 
         {
             let cr = cairo::Context::new(&output_surface);
@@ -148,8 +143,7 @@ impl Filter for DisplacementMap {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)?,
+                surface: SharedImageSurface::new(output_surface)?,
                 bounds,
             },
         })

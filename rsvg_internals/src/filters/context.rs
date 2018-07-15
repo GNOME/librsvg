@@ -294,10 +294,10 @@ impl FilterContext {
 
     /// Returns the surface containing the source graphic alpha.
     #[inline]
-    pub fn source_alpha(&self, bounds: IRect) -> Result<cairo::ImageSurface, FilterError> {
+    pub fn source_alpha(&self, bounds: IRect) -> Result<SharedImageSurface, FilterError> {
         self.source_surface
             .extract_alpha(bounds)
-            .map_err(FilterError::IntermediateSurfaceCreation)
+            .map_err(FilterError::CairoError)
     }
 
     /// Computes and returns the background image snapshot.
@@ -354,10 +354,9 @@ impl FilterContext {
 
         *bg = Some(
             self.compute_background_image(draw_ctx)
-                .map_err(FilterError::IntermediateSurfaceCreation)
+                .map_err(FilterError::CairoError)
                 .and_then(|surface| {
-                    SharedImageSurface::new(surface)
-                        .map_err(FilterError::BadIntermediateSurfaceStatus)
+                    SharedImageSurface::new(surface).map_err(FilterError::CairoError)
                 }),
         );
 
@@ -371,10 +370,10 @@ impl FilterContext {
         &self,
         draw_ctx: &DrawingCtx,
         bounds: IRect,
-    ) -> Result<cairo::ImageSurface, FilterError> {
+    ) -> Result<SharedImageSurface, FilterError> {
         self.background_image(draw_ctx)?
             .extract_alpha(bounds)
-            .map_err(FilterError::IntermediateSurfaceCreation)
+            .map_err(FilterError::CairoError)
     }
 
     /// Returns the output of the filter primitive by its result name.
@@ -394,10 +393,9 @@ impl FilterContext {
                     cairo::Format::ARgb32,
                     self.source_surface.width(),
                     self.source_surface.height(),
-                ).map_err(FilterError::IntermediateSurfaceCreation)?;
+                ).map_err(FilterError::CairoError)?;
 
-                SharedImageSurface::new(empty_surface)
-                    .map_err(FilterError::BadIntermediateSurfaceStatus)
+                SharedImageSurface::new(empty_surface).map_err(FilterError::CairoError)
             }
         }
     }
@@ -409,11 +407,7 @@ impl FilterContext {
         if self.processing_linear_rgb {
             result.output.surface =
                 unlinearize_surface(&result.output.surface, result.output.bounds)
-                    .map_err(FilterError::IntermediateSurfaceCreation)
-                    .and_then(|surface| {
-                        SharedImageSurface::new(surface)
-                            .map_err(FilterError::BadIntermediateSurfaceStatus)
-                    })?;
+                    .map_err(FilterError::CairoError)?;
         }
 
         if let Some(name) = result.name {
@@ -524,10 +518,6 @@ impl FilterContext {
             Input::SourceGraphic => Ok(FilterInput::StandardInput(self.source_graphic().clone())),
             Input::SourceAlpha => self
                 .source_alpha(self.effects_region().rect.unwrap().into())
-                .and_then(|surface| {
-                    SharedImageSurface::new(surface)
-                        .map_err(FilterError::BadIntermediateSurfaceStatus)
-                })
                 .map(FilterInput::StandardInput),
             Input::BackgroundImage => self
                 .background_image(draw_ctx)
@@ -535,26 +525,20 @@ impl FilterContext {
                 .map(FilterInput::StandardInput),
             Input::BackgroundAlpha => self
                 .background_alpha(draw_ctx, self.effects_region().rect.unwrap().into())
-                .and_then(|surface| {
-                    SharedImageSurface::new(surface)
-                        .map_err(FilterError::BadIntermediateSurfaceStatus)
-                })
                 .map(FilterInput::StandardInput),
 
             Input::FillPaint => self
                 .get_paint_server_surface(draw_ctx, &values.fill.0, values.fill_opacity.0)
-                .map_err(FilterError::IntermediateSurfaceCreation)
+                .map_err(FilterError::CairoError)
                 .and_then(|surface| {
-                    SharedImageSurface::new(surface)
-                        .map_err(FilterError::BadIntermediateSurfaceStatus)
+                    SharedImageSurface::new(surface).map_err(FilterError::CairoError)
                 })
                 .map(FilterInput::StandardInput),
             Input::StrokePaint => self
                 .get_paint_server_surface(draw_ctx, &values.stroke.0, values.stroke_opacity.0)
-                .map_err(FilterError::IntermediateSurfaceCreation)
+                .map_err(FilterError::CairoError)
                 .and_then(|surface| {
-                    SharedImageSurface::new(surface)
-                        .map_err(FilterError::BadIntermediateSurfaceStatus)
+                    SharedImageSurface::new(surface).map_err(FilterError::CairoError)
                 })
                 .map(FilterInput::StandardInput),
 
@@ -587,11 +571,7 @@ impl FilterContext {
             };
 
             linearize_surface(surface, bounds)
-                .map_err(FilterError::IntermediateSurfaceCreation)
-                .and_then(|surface| {
-                    SharedImageSurface::new(surface)
-                        .map_err(FilterError::BadIntermediateSurfaceStatus)
-                })
+                .map_err(FilterError::CairoError)
                 .map(|surface| match raw {
                     FilterInput::StandardInput(_) => FilterInput::StandardInput(surface),
                     FilterInput::PrimitiveOutput(ref output) => {
@@ -686,7 +666,7 @@ mod tests {
         }
 
         let surface = SharedImageSurface::new(surface).unwrap();
-        let alpha = SharedImageSurface::new(surface.extract_alpha(BOUNDS).unwrap()).unwrap();
+        let alpha = surface.extract_alpha(BOUNDS).unwrap();
 
         for (x, y, p, pa) in
             Pixels::new(&surface, FULL_BOUNDS).map(|(x, y, p)| (x, y, p, alpha.get_pixel(x, y)))

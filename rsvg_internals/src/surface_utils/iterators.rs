@@ -107,7 +107,7 @@ impl<'a> Iterator for Pixels<'a> {
 impl<'a> Iterator for PixelRectangle<'a> {
     type Item = (i32, i32, Pixel);
 
-    #[inline]
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         // This means we hit the end on the last iteration.
         if self.x == self.rectangle.x1 || self.y == self.rectangle.y1 {
