@@ -267,6 +267,11 @@ impl SharedImageSurface {
     /// HACK: this is storing unpremultiplied pixels in an ARGB32 image surface (which is supposed
     /// to be premultiplied pixels).
     pub fn unpremultiply(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+        // Unpremultiplication doesn't affect the alpha channel.
+        if self.alpha_only {
+            return Ok(self.clone());
+        }
+
         let mut output_surface =
             ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
