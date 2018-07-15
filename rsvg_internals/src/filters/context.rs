@@ -294,7 +294,7 @@ impl FilterContext {
 
     /// Returns the surface containing the source graphic alpha.
     #[inline]
-    pub fn source_alpha(&self, bounds: IRect) -> Result<cairo::ImageSurface, FilterError> {
+    pub fn source_alpha(&self, bounds: IRect) -> Result<SharedImageSurface, FilterError> {
         self.source_surface
             .extract_alpha(bounds)
             .map_err(FilterError::CairoError)
@@ -370,7 +370,7 @@ impl FilterContext {
         &self,
         draw_ctx: &DrawingCtx,
         bounds: IRect,
-    ) -> Result<cairo::ImageSurface, FilterError> {
+    ) -> Result<SharedImageSurface, FilterError> {
         self.background_image(draw_ctx)?
             .extract_alpha(bounds)
             .map_err(FilterError::CairoError)
@@ -521,9 +521,6 @@ impl FilterContext {
             Input::SourceGraphic => Ok(FilterInput::StandardInput(self.source_graphic().clone())),
             Input::SourceAlpha => self
                 .source_alpha(self.effects_region().rect.unwrap().into())
-                .and_then(|surface| {
-                    SharedImageSurface::new(surface).map_err(FilterError::CairoError)
-                })
                 .map(FilterInput::StandardInput),
             Input::BackgroundImage => self
                 .background_image(draw_ctx)
@@ -531,9 +528,6 @@ impl FilterContext {
                 .map(FilterInput::StandardInput),
             Input::BackgroundAlpha => self
                 .background_alpha(draw_ctx, self.effects_region().rect.unwrap().into())
-                .and_then(|surface| {
-                    SharedImageSurface::new(surface).map_err(FilterError::CairoError)
-                })
                 .map(FilterInput::StandardInput),
 
             Input::FillPaint => self
@@ -678,7 +672,7 @@ mod tests {
         }
 
         let surface = SharedImageSurface::new(surface).unwrap();
-        let alpha = SharedImageSurface::new(surface.extract_alpha(BOUNDS).unwrap()).unwrap();
+        let alpha = surface.extract_alpha(BOUNDS).unwrap();
 
         for (x, y, p, pa) in
             Pixels::new(&surface, FULL_BOUNDS).map(|(x, y, p)| (x, y, p, alpha.get_pixel(x, y)))

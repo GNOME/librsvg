@@ -207,7 +207,7 @@ impl SharedImageSurface {
     }
 
     /// Returns a surface with black background and alpha channel matching this surface.
-    pub fn extract_alpha(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {
+    pub fn extract_alpha(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
         let mut output_surface =
             ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -226,7 +226,7 @@ impl SharedImageSurface {
             }
         }
 
-        Ok(output_surface)
+        SharedImageSurface::new(output_surface)
     }
 
     /// Returns a surface with pre-multiplication of color values undone.
