@@ -227,8 +227,7 @@ impl Filter for ConvolveMatrix {
 
         let mut input_surface = if self.preserve_alpha.get() {
             // preserve_alpha means we need to premultiply and unpremultiply the values.
-            let unpremultiplied_surface = input.surface().unpremultiply(bounds)?;
-            SharedImageSurface::new(unpremultiplied_surface)?
+            input.surface().unpremultiply(bounds)?
         } else {
             input.surface().clone()
         };
