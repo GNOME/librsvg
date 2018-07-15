@@ -320,44 +320,82 @@ impl SharedImageSurface {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, _pixel) in Pixels::new(self, bounds) {
-                let kernel_bounds = IRect {
-                    x0: x as i32 - target.0,
-                    y0: y as i32 - target.1,
-                    x1: x as i32 - target.0 + kernel.cols() as i32,
-                    y1: y as i32 - target.1 + kernel.rows() as i32,
-                };
+            if self.alpha_only {
+                for (x, y, _pixel) in Pixels::new(self, bounds) {
+                    let kernel_bounds = IRect {
+                        x0: x as i32 - target.0,
+                        y0: y as i32 - target.1,
+                        x1: x as i32 - target.0 + kernel.cols() as i32,
+                        y1: y as i32 - target.1 + kernel.rows() as i32,
+                    };
 
-                let mut r = 0.0;
-                let mut g = 0.0;
-                let mut b = 0.0;
-                let mut a = 0.0;
+                    let mut a = 0.0;
 
-                for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode) {
-                    let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
-                    let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
-                    let factor = kernel[[kernel_y, kernel_x]];
+                    for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode)
+                    {
+                        let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
+                        let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
+                        let factor = kernel[[kernel_y, kernel_x]];
 
-                    r += f64::from(pixel.r) * factor;
-                    g += f64::from(pixel.g) * factor;
-                    b += f64::from(pixel.b) * factor;
-                    a += f64::from(pixel.a) * factor;
+                        a += f64::from(pixel.a) * factor;
+                    }
+
+                    let convert = |x: f64| clamp(x, 0.0, 255.0).round() as u8;
+
+                    let output_pixel = Pixel {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: convert(a),
+                    };
+
+                    output_data.set_pixel(output_stride, output_pixel, x, y);
                 }
+            } else {
+                for (x, y, _pixel) in Pixels::new(self, bounds) {
+                    let kernel_bounds = IRect {
+                        x0: x as i32 - target.0,
+                        y0: y as i32 - target.1,
+                        x1: x as i32 - target.0 + kernel.cols() as i32,
+                        y1: y as i32 - target.1 + kernel.rows() as i32,
+                    };
 
-                let convert = |x: f64| clamp(x, 0.0, 255.0).round() as u8;
+                    let mut r = 0.0;
+                    let mut g = 0.0;
+                    let mut b = 0.0;
+                    let mut a = 0.0;
 
-                let output_pixel = Pixel {
-                    r: convert(r),
-                    g: convert(g),
-                    b: convert(b),
-                    a: convert(a),
-                };
+                    for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode)
+                    {
+                        let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
+                        let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
+                        let factor = kernel[[kernel_y, kernel_x]];
 
-                output_data.set_pixel(output_stride, output_pixel, x, y);
+                        r += f64::from(pixel.r) * factor;
+                        g += f64::from(pixel.g) * factor;
+                        b += f64::from(pixel.b) * factor;
+                        a += f64::from(pixel.a) * factor;
+                    }
+
+                    let convert = |x: f64| clamp(x, 0.0, 255.0).round() as u8;
+
+                    let output_pixel = Pixel {
+                        r: convert(r),
+                        g: convert(g),
+                        b: convert(b),
+                        a: convert(a),
+                    };
+
+                    output_data.set_pixel(output_stride, output_pixel, x, y);
+                }
             }
         }
 
-        SharedImageSurface::new(output_surface)
+        if self.alpha_only {
+            SharedImageSurface::new_alpha_only(output_surface)
+        } else {
+            SharedImageSurface::new(output_surface)
+        }
     }
 
     /// Returns a raw pointer to the underlying surface.
