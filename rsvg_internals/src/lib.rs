@@ -54,7 +54,7 @@ pub use node::{
     rsvg_node_children_iter_begin,
     rsvg_node_children_iter_end,
     rsvg_node_children_iter_next,
-    rsvg_node_children_iter_next_back,
+    rsvg_node_find_last_chars_child,
     rsvg_node_get_parent,
     rsvg_node_get_type,
     rsvg_node_is_same,

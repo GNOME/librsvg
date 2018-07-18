@@ -123,6 +123,10 @@ pub trait NodeTrait: Downcast {
     /// from defaults in the node's `State`.
     fn set_overridden_properties(&self, _state: &mut State) {}
 
+    fn accept_chars(&self) -> bool {
+        false
+    }
+
     fn draw(
         &self,
         _node: &RsvgNode,
@@ -492,6 +496,30 @@ impl Node {
         let state = self.get_state_mut();
         state.values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
+
+    pub fn accept_chars(&self) -> bool {
+        self.node_impl.accept_chars()
+    }
+
+    // find the last Chars node so that we can coalesce
+    // the text and avoid screwing up the Pango layouts
+    pub fn find_last_chars_child(&self) -> Option<Rc<Node>> {
+        for child in self.children().rev() {
+            match child.get_type() {
+                NodeType::Chars => return Some(child),
+
+                // If a node that accepts chars is encountered before
+                // any chars node (which means for instance that there
+                // is a tspan node after any chars nodes, because this
+                // is backwards iteration), return None.
+                _ if child.accept_chars() => return None,
+
+                _ => {}
+            }
+        }
+
+        None
+    }
 }
 
 // Sigh, rsvg_state_free() is only available if we are being linked into
@@ -692,6 +720,30 @@ pub extern "C" fn rsvg_node_set_attribute_parse_error(
 }
 
 #[no_mangle]
+pub extern "C" fn rsvg_node_find_last_chars_child(
+    raw_node: *const RsvgNode,
+    out_accept_chars: *mut glib_sys::gboolean,
+) -> *mut RsvgNode {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    let accept_chars = node.accept_chars();
+
+    assert!(!out_accept_chars.is_null());
+    unsafe {
+        *out_accept_chars = accept_chars.to_glib();
+    }
+
+    if accept_chars {
+        if let Some(chars) = node.find_last_chars_child() {
+            return box_node(chars);
+        }
+    }
+
+    ptr::null_mut()
+}
+
+#[no_mangle]
 pub extern "C" fn rsvg_node_children_iter_begin(raw_node: *const RsvgNode) -> *mut Children {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
@@ -715,27 +767,6 @@ pub extern "C" fn rsvg_node_children_iter_next(
 
     let iter = unsafe { &mut *iter };
     if let Some(child) = iter.next() {
-        unsafe {
-            *out_child = box_node(child);
-        }
-        true.to_glib()
-    } else {
-        unsafe {
-            *out_child = ptr::null_mut();
-        }
-        false.to_glib()
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_children_iter_next_back(
-    iter: *mut Children,
-    out_child: *mut *mut RsvgNode,
-) -> glib_sys::gboolean {
-    assert!(!iter.is_null());
-
-    let iter = unsafe { &mut *iter };
-    if let Some(child) = iter.next_back() {
         unsafe {
             *out_child = box_node(child);
         }
@@ -977,15 +1008,5 @@ mod tests {
         assert_eq!(result, true);
         assert!(Rc::ptr_eq(unsafe { &*c }, &child));
         rsvg_node_unref(c);
-
-        let result: bool = from_glib(rsvg_node_children_iter_next_back(iter, &mut c));
-        assert_eq!(result, true);
-        assert!(Rc::ptr_eq(unsafe { &*c }, &second_child));
-        rsvg_node_unref(c);
-
-        let result: bool = from_glib(rsvg_node_children_iter_next(iter, &mut c));
-        assert_eq!(result, false);
-        let result: bool = from_glib(rsvg_node_children_iter_next_back(iter, &mut c));
-        assert_eq!(result, false);
     }
 }
