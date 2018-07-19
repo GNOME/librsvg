@@ -414,6 +414,169 @@ impl SharedImageSurface {
         }
     }
 
+    /// Performs a horizontal or vertical box blur.
+    ///
+    /// The `target` parameter determines the position of the kernel relative to each pixel of the
+    /// image. The value of `0` indicates that the first pixel of the kernel corresponds to the
+    /// current pixel, and the rest of the kernel is to the right or bottom of the pixel. The value
+    /// of `kernel_size / 2` centers a kernel with an odd size.
+    ///
+    /// # Panics
+    /// Panics if `kernel_size` is `0` or if `target >= kernel_size`.
+    // This is public (and not inlined into box_blur()) for the purpose of accessing it from the
+    // benchmarks.
+    pub fn box_blur_loop(
+        &self,
+        output_surface: &mut cairo::ImageSurface,
+        bounds: IRect,
+        kernel_size: usize,
+        target: usize,
+        vertical: bool,
+    ) {
+        assert_ne!(kernel_size, 0);
+        assert!(target < kernel_size);
+
+        let output_stride = output_surface.get_stride() as usize;
+        {
+            let mut output_data = output_surface.get_data().unwrap();
+
+            // Shift is target into the opposite direction.
+            let shift = (kernel_size - target) as i32;
+            let target = target as i32;
+
+            // Convert to f64 once since we divide by it.
+            let kernel_size_f64 = kernel_size as f64;
+            let compute = |x: u32| (f64::from(x) / kernel_size_f64 + 0.5) as u8;
+
+            // Depending on `vertical`, we're blurring either horizontally line-by-line, or
+            // vertically column-by-column. In the code below, the main axis is the
+            // axis along which the blurring happens (so if `vertical` is false, the
+            // main axis is the horizontal axis). The other axis is the outer loop
+            // axis. The code uses `i` and `j` for the other axis and main axis
+            // coordinates, respectively.
+            let (main_axis_min, main_axis_max, other_axis_min, other_axis_max) = if vertical {
+                (bounds.y0, bounds.y1, bounds.x0, bounds.x1)
+            } else {
+                (bounds.x0, bounds.x1, bounds.y0, bounds.y1)
+            };
+
+            // Helper functions for getting and setting the pixels.
+            let pixel = |i, j| {
+                let (x, y) = if vertical { (i, j) } else { (j, i) };
+
+                self.get_pixel_or_transparent(bounds, x, y)
+            };
+
+            let mut set_pixel = |i, j, pixel| {
+                let (x, y) = if vertical { (i, j) } else { (j, i) };
+
+                output_data.set_pixel(output_stride, pixel, x, y);
+            };
+
+            for i in other_axis_min..other_axis_max {
+                // The idea is that since all weights of the box blur kernel are equal, for each
+                // step along the main axis, instead of recomputing the full sum,
+                // we can take the previous sum, subtract the "oldest" pixel value
+                // and add the "newest" pixel value.
+                //
+                // The sum is u32 so that it can fit MAXIMUM_KERNEL_SIZE * 255.
+                let mut sum_r = 0;
+                let mut sum_g = 0;
+                let mut sum_b = 0;
+                let mut sum_a = 0;
+
+                // The whole sum needs to be computed for the first pixel. However, we know that
+                // values outside of bounds are transparent, so the loop starts on
+                // the first pixel in bounds.
+                for j in main_axis_min..main_axis_min + shift {
+                    let Pixel { r, g, b, a } = pixel(i, j);
+
+                    if !self.alpha_only {
+                        sum_r += u32::from(r);
+                        sum_g += u32::from(g);
+                        sum_b += u32::from(b);
+                    }
+
+                    sum_a += u32::from(a);
+                }
+
+                set_pixel(
+                    i as u32,
+                    main_axis_min as u32,
+                    Pixel {
+                        r: compute(sum_r),
+                        g: compute(sum_g),
+                        b: compute(sum_b),
+                        a: compute(sum_a),
+                    },
+                );
+
+                // Now, go through all the other pixels.
+                for j in main_axis_min + 1..main_axis_max {
+                    let old_pixel = pixel(i, j - target - 1);
+
+                    if !self.alpha_only {
+                        sum_r -= u32::from(old_pixel.r);
+                        sum_g -= u32::from(old_pixel.g);
+                        sum_b -= u32::from(old_pixel.b);
+                    }
+
+                    sum_a -= u32::from(old_pixel.a);
+
+                    let new_pixel = pixel(i, j + shift - 1);
+
+                    if !self.alpha_only {
+                        sum_r += u32::from(new_pixel.r);
+                        sum_g += u32::from(new_pixel.g);
+                        sum_b += u32::from(new_pixel.b);
+                    }
+
+                    sum_a += u32::from(new_pixel.a);
+
+                    set_pixel(
+                        i as u32,
+                        j as u32,
+                        Pixel {
+                            r: compute(sum_r),
+                            g: compute(sum_g),
+                            b: compute(sum_b),
+                            a: compute(sum_a),
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    /// Performs a horizontal or vertical box blur.
+    ///
+    /// The `target` parameter determines the position of the kernel relative to each pixel of the
+    /// image. The value of `0` indicates that the first pixel of the kernel corresponds to the
+    /// current pixel, and the rest of the kernel is to the right or bottom of the pixel. The value
+    /// of `kernel_size / 2` centers a kernel with an odd size.
+    ///
+    /// # Panics
+    /// Panics if `kernel_size` is `0` or if `target >= kernel_size`.
+    #[inline]
+    pub fn box_blur(
+        &self,
+        bounds: IRect,
+        kernel_size: usize,
+        target: usize,
+        vertical: bool,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let mut output_surface =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        self.box_blur_loop(&mut output_surface, bounds, kernel_size, target, vertical);
+
+        if self.alpha_only {
+            SharedImageSurface::new_alpha_only(output_surface)
+        } else {
+            SharedImageSurface::new(output_surface)
+        }
+    }
+
     /// Returns a raw pointer to the underlying surface.
     ///
     /// # Safety
