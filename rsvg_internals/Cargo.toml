@@ -69,5 +69,9 @@ name = "rsvg_internals"
 crate-type = ["staticlib", "lib"]
 
 [[bench]]
+name = "box_blur"
+harness = false
+
+[[bench]]
 name = "pixel_iterators"
 harness = false
