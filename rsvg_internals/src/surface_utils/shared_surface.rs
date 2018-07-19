@@ -165,6 +165,22 @@ impl SharedImageSurface {
         }
     }
 
+    /// Retrieves the pixel value if it is within `bounds`, otherwise returns a transparent black
+    /// pixel.
+    #[inline]
+    pub fn get_pixel_or_transparent(&self, bounds: IRect, x: i32, y: i32) -> Pixel {
+        if bounds.contains(x, y) {
+            self.get_pixel(x as u32, y as u32)
+        } else {
+            Pixel {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            }
+        }
+    }
+
     /// Calls `set_source_surface()` on the given Cairo context.
     #[inline]
     pub fn set_as_source_surface(&self, cr: &cairo::Context, x: f64, y: f64) {
