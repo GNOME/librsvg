@@ -1,27 +1,24 @@
-#![feature(test)]
+#[macro_use]
+extern crate criterion;
+use criterion::Criterion;
 
 extern crate cairo;
 extern crate cairo_sys;
 extern crate rsvg_internals;
-extern crate test;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rsvg_internals::filters::context::IRect;
-    use rsvg_internals::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
-    use test::Bencher;
+use rsvg_internals::filters::context::IRect;
+use rsvg_internals::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
 
-    const SURFACE_SIDE: i32 = 512;
-    const BOUNDS: IRect = IRect {
-        x0: 64,
-        y0: 32,
-        x1: 448,
-        y1: 480,
-    };
+const SURFACE_SIDE: i32 = 512;
+const BOUNDS: IRect = IRect {
+    x0: 64,
+    y0: 32,
+    x1: 448,
+    y1: 480,
+};
 
-    #[bench]
-    fn bench_straightforward(b: &mut Bencher) {
+fn bench_pixel_iterators(c: &mut Criterion) {
+    c.bench_function("pixel_iterators straightforward", |b| {
         let mut surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
         let stride = surface.get_stride();
@@ -46,10 +43,9 @@ mod tests {
 
             (r, g, b, a)
         })
-    }
+    });
 
-    #[bench]
-    fn bench_straightforward_getpixel(b: &mut Bencher) {
+    c.bench_function("pixel_iterators get_pixel", |b| {
         let surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
         let surface = SharedImageSurface::new(surface).unwrap();
@@ -73,10 +69,9 @@ mod tests {
 
             (r, g, b, a)
         })
-    }
+    });
 
-    #[bench]
-    fn bench_pixels(b: &mut Bencher) {
+    c.bench_function("pixel_iterators pixels", |b| {
         let surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
         let data = SharedImageSurface::new(surface).unwrap();
@@ -96,5 +91,8 @@ mod tests {
 
             (r, g, b, a)
         })
-    }
+    });
 }
+
+criterion_group!(benches, bench_pixel_iterators);
+criterion_main!(benches);
