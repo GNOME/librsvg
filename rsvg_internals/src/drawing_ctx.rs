@@ -301,39 +301,35 @@ impl<'a> DrawingCtx<'a> {
                 && comp_op == CompOp::SrcOver
                 && enable_background == EnableBackground::Accumulate);
 
-            let child_surface = {
-                if needs_temporary_surface {
-                    // FIXME: in the following, we unwrap() the result of
-                    // ImageSurface::create().  We have to decide how to handle
-                    // out-of-memory here.
-                    let surface = cairo::ImageSurface::create(
-                        cairo::Format::ARgb32,
-                        self.rect.width as i32,
-                        self.rect.height as i32,
-                    ).unwrap();
+            if needs_temporary_surface {
+                // FIXME: in the following, we unwrap() the result of
+                // ImageSurface::create().  We have to decide how to handle
+                // out-of-memory here.
+                let surface = cairo::ImageSurface::create(
+                    cairo::Format::ARgb32,
+                    self.rect.width as i32,
+                    self.rect.height as i32,
+                ).unwrap();
 
-                    if filter.is_some() {
-                        self.surfaces_stack.push(surface.clone());
-                    }
-
-                    let cr = cairo::Context::new(&surface);
-                    cr.set_matrix(affine);
-
-                    self.cr_stack.push(self.cr.clone());
-                    self.cr = cr.clone();
-
-                    self.bbox_stack.push(self.bbox);
-                    self.bbox = BoundingBox::new(&affine);
-
-                    surface
-                } else {
-                    cairo::ImageSurface::from(original_cr.get_target()).unwrap()
+                if filter.is_some() {
+                    self.surfaces_stack.push(surface.clone());
                 }
-            };
+
+                let cr = cairo::Context::new(&surface);
+                cr.set_matrix(affine);
+
+                self.cr_stack.push(self.cr.clone());
+                self.cr = cr.clone();
+
+                self.bbox_stack.push(self.bbox);
+                self.bbox = BoundingBox::new(&affine);
+            }
 
             draw_fn(self);
 
             if needs_temporary_surface {
+                let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
+
                 let filter_result_surface = filter
                     .and_then(|_| {
                         // About the following unwrap(), see the FIXME above.  We should be pushing

@@ -491,6 +491,38 @@ detects_cairo_context_in_error (void)
     g_test_trap_assert_stderr ("*WARNING*cannot render on a cairo_t with a failure status*");
 }
 
+static void
+can_draw_to_non_image_surface (void)
+{
+    cairo_rectangle_t rect;
+    cairo_surface_t *surface;
+    cairo_t *cr;
+
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    rect.x = 0.0;
+    rect.y = 0.0;
+    rect.width = 100.0;
+    rect.height = 100.0;
+
+    /* We create a surface that is not a Cairo image surface,
+     * so we can test that in fact we can render to non-image surfaces.
+     */
+    surface = cairo_recording_surface_create (CAIRO_CONTENT_COLOR_ALPHA, &rect);
+    cr = cairo_create (surface);
+
+    g_assert (rsvg_handle_render_cairo (handle, cr));
+
+    g_object_unref (handle);
+
+    cairo_destroy (cr);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -518,6 +550,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/handle_get_pixbuf_sub", handle_get_pixbuf_sub);
     g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
     g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
+    g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
 
     return g_test_run ();
 }
