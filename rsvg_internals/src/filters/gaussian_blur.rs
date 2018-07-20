@@ -1,5 +1,5 @@
 use std::cell::Cell;
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::f64;
 
 use cairo::MatrixTrait;
@@ -135,63 +135,36 @@ fn box_blur_kernel_size(std_deviation: f64) -> usize {
     d as usize
 }
 
-/// Returns a box blur kernel with the given size.
-fn box_blur_kernel(size: usize) -> Vec<f64> {
-    vec![1.0 / size as f64; size]
-}
-
 /// Applies three box blurs to approximate the gaussian blur.
 ///
 /// This is intended to be used in two steps, horizontal and vertical.
 fn three_box_blurs(
-    input_surface: &SharedImageSurface,
+    surface: &SharedImageSurface,
     bounds: IRect,
     std_deviation: f64,
     vertical: bool,
 ) -> Result<SharedImageSurface, FilterError> {
     let d = box_blur_kernel_size(std_deviation);
-    let (rows, cols) = if vertical { (d, 1) } else { (1, d) };
-    let kernel = Matrix::new(rows, cols, box_blur_kernel(d));
+    if d == 0 {
+        return Ok(surface.clone());
+    }
 
     let surface = if d % 2 == 1 {
         // Odd kernel sizes just get three successive box blurs.
-        let mut surface = input_surface.clone();
+        let mut surface = surface.clone();
 
         for _ in 0..3 {
-            surface = surface.convolve(
-                bounds,
-                ((cols / 2) as i32, (rows / 2) as i32),
-                &kernel,
-                EdgeMode::None,
-            )?;
+            surface = surface.box_blur(bounds, d, d / 2, vertical)?;
         }
 
         surface
     } else {
         // Even kernel sizes have a more interesting scheme.
-        let surface = input_surface.convolve(
-            bounds,
-            ((cols / 2) as i32, (rows / 2) as i32),
-            &kernel,
-            EdgeMode::None,
-        )?;
-
-        let surface = surface.convolve(
-            bounds,
-            (max((cols / 2) as i32 - 1, 0), max((rows / 2) as i32 - 1, 0)),
-            &kernel,
-            EdgeMode::None,
-        )?;
+        let surface = surface.box_blur(bounds, d, d / 2, vertical)?;
+        let surface = surface.box_blur(bounds, d, d / 2 - 1, vertical)?;
 
         let d = d + 1;
-        let (rows, cols) = if vertical { (d, 1) } else { (1, d) };
-        let kernel = Matrix::new(rows, cols, box_blur_kernel(d));
-        surface.convolve(
-            bounds,
-            ((cols / 2) as i32, (rows / 2) as i32),
-            &kernel,
-            EdgeMode::None,
-        )?
+        surface.box_blur(bounds, d, d / 2, vertical)?
     };
 
     Ok(surface)
