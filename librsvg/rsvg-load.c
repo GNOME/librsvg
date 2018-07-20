@@ -625,97 +625,34 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
     }
 }
 
+/* Implemented in rust/src/node.rs */
+extern RsvgNode *rsvg_node_find_last_chars_child(RsvgNode *node, gboolean *accept_chars);
+
 /* Implemented in rust/src/text.rs */
 extern RsvgNode *rsvg_node_chars_new(RsvgNode *parent);
 
 /* Implemented in rust/src/text.rs */
 extern void rsvg_node_chars_append (RsvgNode *node, const char *text, gssize len);
 
-static gboolean
-node_is_text_or_tspan (RsvgNode *node)
-{
-    RsvgNodeType type;
-
-    if (!node) {
-        return FALSE;
-    }
-
-    type = rsvg_node_get_type (node);
-    return type == RSVG_NODE_TYPE_TEXT || type == RSVG_NODE_TYPE_TSPAN;
-}
-
-/* Finds the last chars child inside a given @node to which new characters can
- * be appended.  @node can be null; in this case we'll return NULL as we didn't
- * find any children.
- */
-static RsvgNode *
-find_last_chars_child (RsvgNode *node)
-{
-    RsvgNode *child = NULL;
-
-    RsvgNode *temp;
-    RsvgNodeChildrenIter *iter;
-
-    if (node_is_text_or_tspan (node)) {
-        /* find the last CHARS node in the text or tspan node, so that we can
-         * coalesce the text, and thus avoid screwing up the Pango layouts.
-         */
-        iter = rsvg_node_children_iter_begin (node);
-
-        while (rsvg_node_children_iter_next_back (iter, &temp)) {
-            /* If a tspan node is encountered before any chars node
-             * (which means there's a tspan node after any chars nodes,
-             * because this is backwards iteration), return NULL.
-             */
-            if (rsvg_node_get_type (temp) == RSVG_NODE_TYPE_TSPAN) {
-                temp = rsvg_node_unref (temp);
-                break;
-            } else if (rsvg_node_get_type (temp) == RSVG_NODE_TYPE_CHARS) {
-                child = temp;
-                break;
-            } else {
-                temp = rsvg_node_unref (temp);
-            }
-        }
-
-        rsvg_node_children_iter_end (iter);
-    }
-
-    return child;
-}
-
-static RsvgNode *
-add_new_chars_child_to_current_node (RsvgLoad *load)
-{
-    RsvgNode *node;
-
-    node = rsvg_node_chars_new (load->currentnode);
-    rsvg_add_node_to_handle (load->handle, node);
-
-    if (load->currentnode) {
-        rsvg_node_add_child (load->currentnode, node);
-    }
-
-    return node;
-}
-
 static void
 characters_impl (RsvgLoad *load, const char *ch, gssize len)
 {
-    RsvgNode *node = NULL;
+    RsvgNode *node;
+    gboolean accept_chars = FALSE;
 
-    if (!ch || !len) {
+    if (!ch || !len || !load->currentnode) {
         return;
     }
 
-    if (!node_is_text_or_tspan (load->currentnode)) {
+    node = rsvg_node_find_last_chars_child (load->currentnode, &accept_chars);
+    if (!accept_chars) {
         return;
     }
-
-    node = find_last_chars_child (load->currentnode);
 
     if (!node) {
-        node = add_new_chars_child_to_current_node (load);
+        node = rsvg_node_chars_new (load->currentnode);
+        rsvg_add_node_to_handle (load->handle, node);
+        rsvg_node_add_child (load->currentnode, node);
     }
 
     g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
