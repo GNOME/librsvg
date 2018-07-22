@@ -11,28 +11,19 @@ use surface_utils::{
     Pixel,
 };
 
+// Include the linearization and unlinearization tables.
+include!(concat!(env!("OUT_DIR"), "/srgb-codegen.rs"));
+
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
-///
-/// The input and the output are supposed to be in the [0, 1] range.
 #[inline]
-pub fn linearize(c: f64) -> f64 {
-    if c <= (12.92 * 0.0031308) {
-        c / 12.92
-    } else {
-        ((c + 0.055) / 1.055).powf(2.4)
-    }
+pub fn linearize(c: u8) -> u8 {
+    LINEARIZE[usize::from(c)]
 }
 
 /// Converts a linear sRGB color value to a normal sRGB color value (applies the gamma correction).
-///
-/// The input and the output are supposed to be in the [0, 1] range.
 #[inline]
-pub fn unlinearize(c: f64) -> f64 {
-    if c <= 0.0031308 {
-        12.92 * c
-    } else {
-        1.055 * c.powf(1f64 / 2.4) - 0.055
-    }
+pub fn unlinearize(c: u8) -> u8 {
+    UNLINEARIZE[usize::from(c)]
 }
 
 /// Applies the function to each pixel component after unpremultiplying.
@@ -42,7 +33,7 @@ fn map_unpremultiplied_components<F>(
     f: F,
 ) -> Result<SharedImageSurface, cairo::Status>
 where
-    F: Fn(f64) -> f64,
+    F: Fn(u8) -> u8,
 {
     // This function doesn't affect the alpha channel.
     if surface.is_alpha_only() {
@@ -62,11 +53,11 @@ where
                 let alpha = f64::from(pixel.a) / 255f64;
 
                 let compute = |x| {
-                    let x = f64::from(x) / 255f64;
-                    let x = x / alpha; // Unpremultiply alpha.
+                    let x = f64::from(x) / alpha; // Unpremultiply alpha.
+                    let x = x.round() as u8; // Round to nearest u8.
                     let x = f(x);
-                    let x = x * alpha; // Premultiply alpha again.
-                    (x * 255f64).round() as u8
+                    let x = f64::from(x) * alpha; // Premultiply alpha again.
+                    x.round() as u8
                 };
 
                 let output_pixel = Pixel {

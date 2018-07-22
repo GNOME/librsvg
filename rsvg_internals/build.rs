@@ -195,4 +195,63 @@ fn generate_phf_of_svg_attributes() {
 
     map.build(&mut file).unwrap();
     writeln!(&mut file, ";").unwrap();
+
+    output_srgb_tables();
+}
+
+/// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
+///
+/// The input and the output are supposed to be in the [0, 1] range.
+#[inline]
+fn linearize(c: f64) -> f64 {
+    if c <= (12.92 * 0.0031308) {
+        c / 12.92
+    } else {
+        ((c + 0.055) / 1.055).powf(2.4)
+    }
+}
+
+/// Converts a linear sRGB color value to a normal sRGB color value (applies the gamma correction).
+///
+/// The input and the output are supposed to be in the [0, 1] range.
+#[inline]
+fn unlinearize(c: f64) -> f64 {
+    if c <= 0.0031308 {
+        12.92 * c
+    } else {
+        1.055 * c.powf(1f64 / 2.4) - 0.055
+    }
+}
+
+fn compute_table<F: Fn(f64) -> f64>(f: F) -> [u8; 256] {
+    let mut table = [0; 256];
+
+    for i in 0..=255 {
+        let c = i as f64 / 255.0;
+        let x = f(c);
+        table[i] = (x * 255.0).round() as u8;
+    }
+
+    table
+}
+
+fn print_table<W: Write>(w: &mut W, name: &str, table: &[u8]) {
+    writeln!(w, "const {}: [u8; {}] = [", name, table.len()).unwrap();
+
+    for x in table {
+        writeln!(w, "    {},", x).unwrap();
+    }
+
+    writeln!(w, "];").unwrap();
+}
+
+fn output_srgb_tables() {
+    let linearize_table = compute_table(linearize);
+    let unlinearize_table = compute_table(unlinearize);
+
+    let path = Path::new(&env::var("OUT_DIR").unwrap()).join("srgb-codegen.rs");
+    let mut file = BufWriter::new(File::create(&path).unwrap());
+
+    print_table(&mut file, "LINEARIZE", &linearize_table);
+    print_table(&mut file, "UNLINEARIZE", &unlinearize_table);
 }
