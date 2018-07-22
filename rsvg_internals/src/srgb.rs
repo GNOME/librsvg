@@ -6,7 +6,7 @@ use cairo;
 use filters::context::IRect;
 use surface_utils::{
     iterators::Pixels,
-    shared_surface::SharedImageSurface,
+    shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
     Pixel,
 };
@@ -31,6 +31,7 @@ fn map_unpremultiplied_components<F>(
     surface: &SharedImageSurface,
     bounds: IRect,
     f: F,
+    new_type: SurfaceType,
 ) -> Result<SharedImageSurface, cairo::Status>
 where
     F: Fn(u8) -> u8,
@@ -71,7 +72,7 @@ where
         }
     }
 
-    SharedImageSurface::new(output_surface)
+    SharedImageSurface::new(output_surface, new_type)
 }
 
 /// Converts an sRGB surface to a linear sRGB surface (undoes the gamma correction).
@@ -80,7 +81,9 @@ pub fn linearize_surface(
     surface: &SharedImageSurface,
     bounds: IRect,
 ) -> Result<SharedImageSurface, cairo::Status> {
-    map_unpremultiplied_components(surface, bounds, linearize)
+    assert_ne!(surface.surface_type(), SurfaceType::LinearRgb);
+
+    map_unpremultiplied_components(surface, bounds, linearize, SurfaceType::LinearRgb)
 }
 
 /// Converts a linear sRGB surface to a normal sRGB surface (applies the gamma correction).
@@ -89,5 +92,7 @@ pub fn unlinearize_surface(
     surface: &SharedImageSurface,
     bounds: IRect,
 ) -> Result<SharedImageSurface, cairo::Status> {
-    map_unpremultiplied_components(surface, bounds, unlinearize)
+    assert_ne!(surface.surface_type(), SurfaceType::SRgb);
+
+    map_unpremultiplied_components(surface, bounds, unlinearize, SurfaceType::SRgb)
 }

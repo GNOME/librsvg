@@ -14,7 +14,7 @@ use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{parse_and_validate, ParseError};
 use property_bag::PropertyBag;
 use state::ColorInterpolationFilters;
-use surface_utils::shared_surface::SharedImageSurface;
+use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 mod bounds;
 use self::bounds::BoundsBuilder;
@@ -247,7 +247,7 @@ pub fn render(
         cr.set_source_surface(source, 0f64, 0f64);
         cr.paint();
     }
-    let source_surface = SharedImageSurface::new(source_surface).unwrap();
+    let source_surface = SharedImageSurface::new(source_surface, SurfaceType::SRgb).unwrap();
 
     let mut filter_ctx =
         FilterContext::new(filter_node, node_being_filtered, source_surface, draw_ctx);

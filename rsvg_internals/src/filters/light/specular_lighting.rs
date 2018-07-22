@@ -18,9 +18,10 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
+use state::ColorInterpolationFilters;
 use surface_utils::{
     iterators::Pixels,
-    shared_surface::SharedImageSurface,
+    shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
     Pixel,
 };
@@ -206,7 +207,17 @@ impl Filter for SpecularLighting {
             }
         }
 
-        let mut output_surface = SharedImageSurface::new(output_surface)?;
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
+        // The generated color values are in the color space determined by
+        // color-interpolation-filters.
+        let surface_type =
+            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
+                SurfaceType::LinearRgb
+            } else {
+                SurfaceType::SRgb
+            };
+        let mut output_surface = SharedImageSurface::new(output_surface, surface_type)?;
 
         if let Some((ox, oy)) = scale {
             // Scale the output surface back.
