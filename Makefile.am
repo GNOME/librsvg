@@ -125,7 +125,9 @@ RUST_SRC =							\
 
 RUST_EXTRA = 					\
 	Cargo.lock				\
-	cargo-vendor-config
+	cargo-vendor-config			\
+	rsvg_internals/benches/box_blur.rs	\
+	rsvg_internals/benches/pixel_iterators.rs
 
 if DEBUG_RELEASE
 CARGO_RELEASE_ARGS=
