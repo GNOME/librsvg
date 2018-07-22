@@ -5,7 +5,7 @@ use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use property_bag::PropertyBag;
-use surface_utils::shared_surface::SharedImageSurface;
+use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, Primitive};
@@ -83,7 +83,7 @@ impl Filter for Flood {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)?,
+                surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
                 bounds,
             },
         })

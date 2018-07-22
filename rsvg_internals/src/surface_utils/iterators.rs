@@ -171,6 +171,7 @@ impl<'a> Iterator for PixelRectangle<'a> {
 mod tests {
     use super::*;
     use cairo::{self, ImageSurface};
+    use surface_utils::shared_surface::SurfaceType;
 
     #[test]
     fn pixels_count() {
@@ -179,6 +180,7 @@ mod tests {
 
         let surface = SharedImageSurface::new(
             ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap(),
+            SurfaceType::SRgb,
         ).unwrap();
 
         // Full image.
@@ -255,6 +257,7 @@ mod tests {
 
         let surface = SharedImageSurface::new(
             ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap(),
+            SurfaceType::SRgb,
         ).unwrap();
 
         let bounds = IRect {

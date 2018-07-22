@@ -7,7 +7,7 @@ extern crate cairo_sys;
 extern crate rsvg_internals;
 
 use rsvg_internals::filters::context::IRect;
-use rsvg_internals::surface_utils::shared_surface::SharedImageSurface;
+use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 const SURFACE_SIDE: i32 = 512;
 const BOUNDS: IRect = IRect {
@@ -24,11 +24,12 @@ fn bench_box_blur(c: &mut Criterion) {
             let input_surface =
                 cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE)
                     .unwrap();
-            let input_surface = if alpha_only {
-                SharedImageSurface::new_alpha_only(input_surface).unwrap()
+            let surface_type = if alpha_only {
+                SurfaceType::AlphaOnly
             } else {
-                SharedImageSurface::new(input_surface).unwrap()
+                SurfaceType::SRgb
             };
+            let input_surface = SharedImageSurface::new(input_surface, surface_type).unwrap();
 
             let mut output_surface =
                 cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE)

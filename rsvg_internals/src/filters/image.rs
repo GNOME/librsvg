@@ -15,7 +15,7 @@ use handle::RsvgHandle;
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
-use surface_utils::shared_surface::SharedImageSurface;
+use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
@@ -239,7 +239,7 @@ impl Filter for Image {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)?,
+                surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
                 bounds,
             },
         })

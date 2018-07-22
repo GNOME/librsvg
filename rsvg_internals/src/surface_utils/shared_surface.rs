@@ -8,6 +8,7 @@ use glib::translate::{Stash, ToGlibPtr};
 use rulinalg::matrix::{BaseMatrix, Matrix};
 
 use filters::context::IRect;
+use srgb;
 use util::clamp;
 
 use super::{
@@ -16,6 +17,20 @@ use super::{
     ImageSurfaceDataExt,
     Pixel,
 };
+
+/// Types of pixel data in a `SharedImageSurface`.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum SurfaceType {
+    /// The pixel data is in the sRGB color space.
+    SRgb,
+    /// The pixel data is in the linear sRGB color space.
+    LinearRgb,
+    /// The pixel data is alpha-only (contains meaningful data only in the alpha channel).
+    ///
+    /// A number of methods are optimized for alpha-only surfaces. For example, linearization and
+    /// unlinearization have no effect for alpha-only surfaces.
+    AlphaOnly,
+}
 
 /// Wrapper for a Cairo image surface that allows shared access.
 ///
@@ -47,11 +62,7 @@ pub struct SharedImageSurface {
     height: i32,
     stride: isize,
 
-    /// Whether this surface contains meaningful data only in the alpha channel.
-    ///
-    /// This is used for optimizations, particularly in `convolve()` to skip processing other
-    /// channels.
-    alpha_only: bool,
+    surface_type: SurfaceType,
 }
 
 impl SharedImageSurface {
@@ -61,7 +72,7 @@ impl SharedImageSurface {
     /// Panics if the surface format isn't `ARgb32` and if the surface is not unique, that is, its
     /// reference count isn't 1.
     #[inline]
-    pub fn new(surface: ImageSurface) -> Result<Self, cairo::Status> {
+    pub fn new(surface: ImageSurface, surface_type: SurfaceType) -> Result<Self, cairo::Status> {
         // get_pixel() assumes ARgb32.
         assert_eq!(surface.get_format(), cairo::Format::ARgb32);
 
@@ -88,21 +99,8 @@ impl SharedImageSurface {
             width,
             height,
             stride,
-            alpha_only: false,
+            surface_type,
         })
-    }
-
-    /// Creates a `SharedImageSurface` from a unique `ImageSurface` with meaningful data only in
-    /// the alpha channel.
-    ///
-    /// # Panics
-    /// Panics if the surface format isn't `ARgb32` and if the surface is not unique, that is, its
-    /// reference count isn't 1.
-    #[inline]
-    pub fn new_alpha_only(surface: ImageSurface) -> Result<Self, cairo::Status> {
-        let mut rv = Self::new(surface)?;
-        rv.alpha_only = true;
-        Ok(rv)
     }
 
     /// Converts this `SharedImageSurface` back into a Cairo image surface.
@@ -141,7 +139,13 @@ impl SharedImageSurface {
     /// Returns `true` if the surface contains meaningful data only in the alpha channel.
     #[inline]
     pub fn is_alpha_only(&self) -> bool {
-        self.alpha_only
+        self.surface_type == SurfaceType::AlphaOnly
+    }
+
+    /// Returns the type of this surface.
+    #[inline]
+    pub fn surface_type(&self) -> SurfaceType {
+        self.surface_type
     }
 
     /// Retrieves the pixel value at the given coordinates.
@@ -234,11 +238,7 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        if self.alpha_only {
-            SharedImageSurface::new_alpha_only(output_surface)
-        } else {
-            SharedImageSurface::new(output_surface)
-        }
+        SharedImageSurface::new(output_surface, self.surface_type)
     }
 
     /// Returns a scaled version of a surface and bounds.
@@ -279,7 +279,7 @@ impl SharedImageSurface {
             }
         }
 
-        SharedImageSurface::new_alpha_only(output_surface)
+        SharedImageSurface::new(output_surface, SurfaceType::AlphaOnly)
     }
 
     /// Returns a surface with pre-multiplication of color values undone.
@@ -288,7 +288,7 @@ impl SharedImageSurface {
     /// to be premultiplied pixels).
     pub fn unpremultiply(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
         // Unpremultiplication doesn't affect the alpha channel.
-        if self.alpha_only {
+        if self.is_alpha_only() {
             return Ok(self.clone());
         }
 
@@ -304,7 +304,27 @@ impl SharedImageSurface {
             }
         }
 
-        SharedImageSurface::new(output_surface)
+        SharedImageSurface::new(output_surface, self.surface_type)
+    }
+
+    /// Converts the surface to the linear sRGB color space.
+    #[inline]
+    pub fn to_linear_rgb(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+        if self.surface_type == SurfaceType::LinearRgb {
+            Ok(self.clone())
+        } else {
+            srgb::linearize_surface(self, bounds)
+        }
+    }
+
+    /// Converts the surface to the sRGB color space.
+    #[inline]
+    pub fn to_srgb(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+        if self.surface_type == SurfaceType::SRgb {
+            Ok(self.clone())
+        } else {
+            srgb::unlinearize_surface(self, bounds)
+        }
     }
 
     /// Performs a convolution.
@@ -336,7 +356,7 @@ impl SharedImageSurface {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            if self.alpha_only {
+            if self.is_alpha_only() {
                 for (x, y, _pixel) in Pixels::new(self, bounds) {
                     let kernel_bounds = IRect {
                         x0: x as i32 - target.0,
@@ -407,11 +427,7 @@ impl SharedImageSurface {
             }
         }
 
-        if self.alpha_only {
-            SharedImageSurface::new_alpha_only(output_surface)
-        } else {
-            SharedImageSurface::new(output_surface)
-        }
+        SharedImageSurface::new(output_surface, self.surface_type)
     }
 
     /// Performs a horizontal or vertical box blur.
@@ -491,7 +507,7 @@ impl SharedImageSurface {
                 for j in main_axis_min..main_axis_min + shift {
                     let Pixel { r, g, b, a } = pixel(i, j);
 
-                    if !self.alpha_only {
+                    if !self.is_alpha_only() {
                         sum_r += u32::from(r);
                         sum_g += u32::from(g);
                         sum_b += u32::from(b);
@@ -515,7 +531,7 @@ impl SharedImageSurface {
                 for j in main_axis_min + 1..main_axis_max {
                     let old_pixel = pixel(i, j - target - 1);
 
-                    if !self.alpha_only {
+                    if !self.is_alpha_only() {
                         sum_r -= u32::from(old_pixel.r);
                         sum_g -= u32::from(old_pixel.g);
                         sum_b -= u32::from(old_pixel.b);
@@ -525,7 +541,7 @@ impl SharedImageSurface {
 
                     let new_pixel = pixel(i, j + shift - 1);
 
-                    if !self.alpha_only {
+                    if !self.is_alpha_only() {
                         sum_r += u32::from(new_pixel.r);
                         sum_g += u32::from(new_pixel.g);
                         sum_b += u32::from(new_pixel.b);
@@ -570,11 +586,7 @@ impl SharedImageSurface {
 
         self.box_blur_loop(&mut output_surface, bounds, kernel_size, target, vertical);
 
-        if self.alpha_only {
-            SharedImageSurface::new_alpha_only(output_surface)
-        } else {
-            SharedImageSurface::new(output_surface)
-        }
+        SharedImageSurface::new(output_surface, self.surface_type)
     }
 
     /// Returns a raw pointer to the underlying surface.

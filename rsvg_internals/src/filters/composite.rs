@@ -111,6 +111,23 @@ impl Filter for Composite {
             .add_input(&input_2)
             .into_irect(draw_ctx);
 
+        // If we're combining two alpha-only surfaces, the result is alpha-only. Otherwise the
+        // result is whatever the non-alpha-only type we're working on (which can be either sRGB or
+        // linear sRGB depending on color-interpolation-filters).
+        let surface_type = if input.surface().is_alpha_only() {
+            input_2.surface().surface_type()
+        } else {
+            if !input_2.surface().is_alpha_only() {
+                // All surface types should match (this is enforced by get_input()).
+                assert_eq!(
+                    input_2.surface().surface_type(),
+                    input.surface().surface_type()
+                );
+            }
+
+            input.surface().surface_type()
+        };
+
         let output_surface = if self.operator.get() == Operator::Arithmetic {
             let mut output_surface = ImageSurface::create(
                 cairo::Format::ARgb32,
@@ -183,7 +200,7 @@ impl Filter for Composite {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)?,
+                surface: SharedImageSurface::new(output_surface, surface_type)?,
                 bounds,
             },
         })
