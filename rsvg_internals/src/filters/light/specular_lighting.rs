@@ -3,13 +3,14 @@ use std::cmp::max;
 
 use cairo::{self, ImageSurface, MatrixTrait};
 use cssparser;
+use nalgebra::Vector3;
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    light::{light_source::LightSource, normal, normalize},
+    light::{light_source::LightSource, normal},
     Filter,
     FilterError,
     PrimitiveWithInput,
@@ -187,10 +188,10 @@ impl Filter for SpecularLighting {
                 let z = f64::from(pixel.a) / 255.0 * surface_scale;
                 let light_vector = light_source.vector(scaled_x, scaled_y, z, ctx);
 
-                let light_color = light_source.color(lighting_color, &light_vector, ctx);
+                let light_color = light_source.color(lighting_color, light_vector, ctx);
 
-                let mut h = light_vector + vector![0.0, 0.0, 1.0];
-                let _ = normalize(&mut h);
+                let mut h = light_vector + Vector3::new(0.0, 0.0, 1.0);
+                let _ = h.try_normalize_mut(0.0);
 
                 let n_dot_h = normal.dot(&h);
                 let factor = specular_constant * n_dot_h.powf(specular_exponent);

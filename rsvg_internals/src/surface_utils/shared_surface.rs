@@ -5,7 +5,7 @@ use cairo::prelude::SurfaceExt;
 use cairo::{self, ImageSurface};
 use cairo_sys;
 use glib::translate::{Stash, ToGlibPtr};
-use rulinalg::matrix::{BaseMatrix, Matrix};
+use nalgebra::{storage::Storage, Dim, Matrix};
 
 use filters::context::IRect;
 use srgb;
@@ -339,15 +339,15 @@ impl SharedImageSurface {
     ///
     /// # Panics
     /// Panics if `kernel` has zero rows or columns.
-    pub fn convolve(
+    pub fn convolve<R: Dim, C: Dim, S: Storage<f64, R, C>>(
         &self,
         bounds: IRect,
         target: (i32, i32),
-        kernel: &Matrix<f64>,
+        kernel: &Matrix<f64, R, C, S>,
         edge_mode: EdgeMode,
     ) -> Result<SharedImageSurface, cairo::Status> {
-        assert!(kernel.rows() >= 1);
-        assert!(kernel.cols() >= 1);
+        assert!(kernel.nrows() >= 1);
+        assert!(kernel.ncols() >= 1);
 
         let mut output_surface =
             ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
@@ -361,8 +361,8 @@ impl SharedImageSurface {
                     let kernel_bounds = IRect {
                         x0: x as i32 - target.0,
                         y0: y as i32 - target.1,
-                        x1: x as i32 - target.0 + kernel.cols() as i32,
-                        y1: y as i32 - target.1 + kernel.rows() as i32,
+                        x1: x as i32 - target.0 + kernel.ncols() as i32,
+                        y1: y as i32 - target.1 + kernel.nrows() as i32,
                     };
 
                     let mut a = 0.0;
@@ -371,7 +371,7 @@ impl SharedImageSurface {
                     {
                         let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
                         let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
-                        let factor = kernel[[kernel_y, kernel_x]];
+                        let factor = kernel[(kernel_y, kernel_x)];
 
                         a += f64::from(pixel.a) * factor;
                     }
@@ -392,8 +392,8 @@ impl SharedImageSurface {
                     let kernel_bounds = IRect {
                         x0: x as i32 - target.0,
                         y0: y as i32 - target.1,
-                        x1: x as i32 - target.0 + kernel.cols() as i32,
-                        y1: y as i32 - target.1 + kernel.rows() as i32,
+                        x1: x as i32 - target.0 + kernel.ncols() as i32,
+                        y1: y as i32 - target.1 + kernel.nrows() as i32,
                     };
 
                     let mut r = 0.0;
@@ -405,7 +405,7 @@ impl SharedImageSurface {
                     {
                         let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
                         let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
-                        let factor = kernel[[kernel_y, kernel_x]];
+                        let factor = kernel[(kernel_y, kernel_x)];
 
                         r += f64::from(pixel.r) * factor;
                         g += f64::from(pixel.g) * factor;

@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface, MatrixTrait};
-use rulinalg::matrix::{BaseMatrix, Matrix};
+use nalgebra::{DMatrix, Dynamic, MatrixVec};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -26,7 +26,7 @@ use super::{Filter, FilterError, PrimitiveWithInput};
 pub struct ConvolveMatrix {
     base: PrimitiveWithInput,
     order: Cell<(u32, u32)>,
-    kernel_matrix: RefCell<Option<Matrix<f64>>>,
+    kernel_matrix: RefCell<Option<DMatrix<f64>>>,
     divisor: Cell<Option<f64>>,
     bias: Cell<f64>,
     target_x: Cell<Option<u32>>,
@@ -174,9 +174,9 @@ impl NodeTrait for ConvolveMatrix {
             self.kernel_matrix.replace(Some({
                 let number_of_elements = self.order.get().0 as usize * self.order.get().1 as usize;
 
-                Matrix::new(
-                    self.order.get().1 as usize,
-                    self.order.get().0 as usize,
+                DMatrix::from_data(MatrixVec::new(
+                    Dynamic::new(self.order.get().1 as usize),
+                    Dynamic::new(self.order.get().0 as usize),
                     parsers::number_list_from_str(value, ListLength::Exact(number_of_elements))
                         .map_err(|err| {
                             NodeError::parse_error(
@@ -192,14 +192,15 @@ impl NodeTrait for ConvolveMatrix {
                                 },
                             )
                         })?,
-                )
+                ))
             }));
         }
 
         // Default value for the divisor.
         if self.divisor.get().is_none() {
-            self.divisor
-                .set(Some(self.kernel_matrix.borrow().as_ref().unwrap().sum()));
+            self.divisor.set(Some(
+                self.kernel_matrix.borrow().as_ref().unwrap().iter().sum(),
+            ));
 
             if self.divisor.get().unwrap() == 0.0 {
                 self.divisor.set(Some(1.0));
@@ -279,12 +280,12 @@ impl Filter for ConvolveMatrix {
                     let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
                     let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
 
-                    r += f64::from(pixel.r) / 255.0 * matrix[[kernel_y, kernel_x]];
-                    g += f64::from(pixel.g) / 255.0 * matrix[[kernel_y, kernel_x]];
-                    b += f64::from(pixel.b) / 255.0 * matrix[[kernel_y, kernel_x]];
+                    r += f64::from(pixel.r) / 255.0 * matrix[(kernel_y, kernel_x)];
+                    g += f64::from(pixel.g) / 255.0 * matrix[(kernel_y, kernel_x)];
+                    b += f64::from(pixel.b) / 255.0 * matrix[(kernel_y, kernel_x)];
 
                     if !self.preserve_alpha.get() {
-                        a += f64::from(pixel.a) / 255.0 * matrix[[kernel_y, kernel_x]];
+                        a += f64::from(pixel.a) / 255.0 * matrix[(kernel_y, kernel_x)];
                     }
                 }
 

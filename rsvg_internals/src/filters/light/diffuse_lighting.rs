@@ -169,7 +169,7 @@ impl Filter for DiffuseLighting {
                 let z = f64::from(pixel.a) / 255.0 * surface_scale;
                 let light_vector = light_source.vector(scaled_x, scaled_y, z, ctx);
 
-                let light_color = light_source.color(lighting_color, &light_vector, ctx);
+                let light_color = light_source.color(lighting_color, light_vector, ctx);
 
                 let n_dot_l = normal.dot(&light_vector);
                 let compute =
