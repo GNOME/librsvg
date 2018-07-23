@@ -7,7 +7,7 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
-use length::{LengthDir, RsvgLength};
+use length::{Length, LengthDir};
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{parse, parse_and_validate, Parse};
 use property_bag::PropertyBag;
@@ -26,10 +26,10 @@ fn cairo_mask_surface(cr: &cairo::Context, surface: &cairo::Surface, x: f64, y: 
 }
 
 pub struct NodeMask {
-    x: Cell<RsvgLength>,
-    y: Cell<RsvgLength>,
-    width: Cell<RsvgLength>,
-    height: Cell<RsvgLength>,
+    x: Cell<Length>,
+    y: Cell<Length>,
+    width: Cell<Length>,
+    height: Cell<Length>,
 
     units: Cell<MaskUnits>,
     content_units: Cell<MaskContentUnits>,
@@ -49,12 +49,12 @@ impl NodeMask {
         }
     }
 
-    fn get_default_pos(dir: LengthDir) -> RsvgLength {
-        RsvgLength::parse_str("-10%", dir).unwrap()
+    fn get_default_pos(dir: LengthDir) -> Length {
+        Length::parse_str("-10%", dir).unwrap()
     }
 
-    fn get_default_size(dir: LengthDir) -> RsvgLength {
-        RsvgLength::parse_str("120%", dir).unwrap()
+    fn get_default_size(dir: LengthDir) -> Length {
+        Length::parse_str("120%", dir).unwrap()
     }
 
     pub fn generate_cairo_mask(
@@ -195,13 +195,13 @@ impl NodeTrait for NodeMask {
                     "width",
                     value,
                     LengthDir::Horizontal,
-                    RsvgLength::check_nonnegative,
+                    Length::check_nonnegative,
                 )?),
                 Attribute::Height => self.height.set(parse_and_validate(
                     "height",
                     value,
                     LengthDir::Vertical,
-                    RsvgLength::check_nonnegative,
+                    Length::check_nonnegative,
                 )?),
 
                 Attribute::MaskUnits => self.units.set(parse("maskUnits", value, ())?),

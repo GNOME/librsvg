@@ -11,7 +11,7 @@ use color::rgba_to_argb;
 use error::*;
 use handle::RsvgHandle;
 use iri::IRI;
-use length::{Dasharray, FontSizeSpec, LengthDir, LengthUnit, RsvgLength};
+use length::{Dasharray, FontSizeSpec, Length, LengthDir, LengthUnit};
 use node::RsvgNode;
 use paint_server::PaintServer;
 use parsers::{Parse, ParseError};
@@ -679,8 +679,8 @@ where
 make_property!(
     ComputedValues,
     BaselineShift,
-    default: RsvgLength::parse_str("0.0", LengthDir::Both).unwrap(),
-    newtype: RsvgLength,
+    default: Length::parse_str("0.0", LengthDir::Both).unwrap(),
+    newtype: Length,
     property_impl: {
         impl Property<ComputedValues> for BaselineShift {
             fn inherits_automatically() -> bool {
@@ -695,10 +695,10 @@ make_property!(
                 // 2) we should be able to normalize the lengths and add even if they have
                 //    different units, but at the moment that requires access to the draw_ctx
                 if self.0.unit != LengthUnit::Percent || v.baseline_shift.0.unit != font_size.unit {
-                    return BaselineShift(RsvgLength::new(v.baseline_shift.0.length, v.baseline_shift.0.unit, LengthDir::Both));
+                    return BaselineShift(Length::new(v.baseline_shift.0.length, v.baseline_shift.0.unit, LengthDir::Both));
                 }
 
-                BaselineShift(RsvgLength::new(self.0.length * font_size.length + v.baseline_shift.0.length, font_size.unit, LengthDir::Both))
+                BaselineShift(Length::new(self.0.length * font_size.length + v.baseline_shift.0.length, font_size.unit, LengthDir::Both))
             }
         }
     },
@@ -720,15 +720,15 @@ make_property!(
                     if let Token::Ident(ref cow) = token {
                         match cow.as_ref() {
                             "baseline" => return Ok(BaselineShift(
-                                RsvgLength::new(0.0, LengthUnit::Percent, LengthDir::Both)
+                                Length::new(0.0, LengthUnit::Percent, LengthDir::Both)
                             )),
 
                             "sub" => return Ok(BaselineShift(
-                                RsvgLength::new(-0.2, LengthUnit::Percent, LengthDir::Both)
+                                Length::new(-0.2, LengthUnit::Percent, LengthDir::Both)
                             )),
 
                             "super" => return Ok(BaselineShift(
-                                RsvgLength::new(0.4, LengthUnit::Percent, LengthDir::Both),
+                                Length::new(0.4, LengthUnit::Percent, LengthDir::Both),
                             )),
 
                             _ => (),
@@ -738,7 +738,7 @@ make_property!(
 
                 parser.reset(&parser_state);
 
-                Ok(BaselineShift(RsvgLength::from_cssparser(parser, LengthDir::Both)?))
+                Ok(BaselineShift(Length::from_cssparser(parser, LengthDir::Both)?))
             }
         }
     }
@@ -956,7 +956,7 @@ make_property!(
 make_property!(
     ComputedValues,
     FontSize,
-    default: FontSizeSpec::Value(RsvgLength::parse_str("12.0", LengthDir::Both).unwrap()),
+    default: FontSizeSpec::Value(Length::parse_str("12.0", LengthDir::Both).unwrap()),
     newtype_parse: FontSizeSpec,
     parse_data_type: (),
     property_impl: {
@@ -1045,9 +1045,9 @@ make_property!(
 make_property!(
     ComputedValues,
     LetterSpacing,
-    default: RsvgLength::default(),
+    default: Length::default(),
     inherits_automatically: true,
-    newtype_parse: RsvgLength,
+    newtype_parse: Length,
     parse_data_type: LengthDir
 );
 
@@ -1183,9 +1183,9 @@ make_property!(
 make_property!(
     ComputedValues,
     StrokeDashoffset,
-    default: RsvgLength::default(),
+    default: Length::default(),
     inherits_automatically: true,
-    newtype_parse: RsvgLength,
+    newtype_parse: Length,
     parse_data_type: LengthDir
 );
 
@@ -1239,9 +1239,9 @@ make_property!(
 make_property!(
     ComputedValues,
     StrokeWidth,
-    default: RsvgLength::parse_str("1.0", LengthDir::Both).unwrap(),
+    default: Length::parse_str("1.0", LengthDir::Both).unwrap(),
     inherits_automatically: true,
-    newtype_parse: RsvgLength,
+    newtype_parse: Length,
     parse_data_type: LengthDir
 );
 

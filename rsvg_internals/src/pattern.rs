@@ -34,10 +34,10 @@ struct Pattern {
     pub preserve_aspect_ratio: Option<AspectRatio>,
     pub affine: Option<cairo::Matrix>,
     pub fallback: Option<String>,
-    pub x: Option<RsvgLength>,
-    pub y: Option<RsvgLength>,
-    pub width: Option<RsvgLength>,
-    pub height: Option<RsvgLength>,
+    pub x: Option<Length>,
+    pub y: Option<Length>,
+    pub width: Option<Length>,
+    pub height: Option<Length>,
 
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
@@ -56,10 +56,10 @@ impl Default for Pattern {
             preserve_aspect_ratio: Some(AspectRatio::default()),
             affine: Some(cairo::Matrix::identity()),
             fallback: None,
-            x: Some(RsvgLength::default()),
-            y: Some(RsvgLength::default()),
-            width: Some(RsvgLength::default()),
-            height: Some(RsvgLength::default()),
+            x: Some(Length::default()),
+            y: Some(Length::default()),
+            width: Some(Length::default()),
+            height: Some(Length::default()),
             node: None,
         }
     }
@@ -207,7 +207,7 @@ impl NodeTrait for NodePattern {
                         "width",
                         value,
                         LengthDir::Horizontal,
-                        RsvgLength::check_nonnegative,
+                        Length::check_nonnegative,
                     )?)
                 }
 
@@ -216,7 +216,7 @@ impl NodeTrait for NodePattern {
                         "height",
                         value,
                         LengthDir::Vertical,
-                        RsvgLength::check_nonnegative,
+                        Length::check_nonnegative,
                     )?)
                 }
 

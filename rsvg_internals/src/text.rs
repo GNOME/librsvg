@@ -109,19 +109,19 @@ impl NodeTrait for NodeChars {
 }
 
 pub struct NodeText {
-    x: Cell<RsvgLength>,
-    y: Cell<RsvgLength>,
-    dx: Cell<RsvgLength>,
-    dy: Cell<RsvgLength>,
+    x: Cell<Length>,
+    y: Cell<Length>,
+    dx: Cell<Length>,
+    dy: Cell<Length>,
 }
 
 impl NodeText {
     pub fn new() -> NodeText {
         NodeText {
-            x: Cell::new(RsvgLength::default()),
-            y: Cell::new(RsvgLength::default()),
-            dx: Cell::new(RsvgLength::default()),
-            dy: Cell::new(RsvgLength::default()),
+            x: Cell::new(Length::default()),
+            y: Cell::new(Length::default()),
+            dx: Cell::new(Length::default()),
+            dy: Cell::new(Length::default()),
         }
     }
 }
@@ -256,10 +256,10 @@ impl NodeTrait for NodeTRef {
 }
 
 pub struct NodeTSpan {
-    x: Cell<Option<RsvgLength>>,
-    y: Cell<Option<RsvgLength>>,
-    dx: Cell<RsvgLength>,
-    dy: Cell<RsvgLength>,
+    x: Cell<Option<Length>>,
+    y: Cell<Option<Length>>,
+    dx: Cell<Length>,
+    dy: Cell<Length>,
 }
 
 impl NodeTSpan {
@@ -267,8 +267,8 @@ impl NodeTSpan {
         NodeTSpan {
             x: Cell::new(Default::default()),
             y: Cell::new(Default::default()),
-            dx: Cell::new(RsvgLength::default()),
-            dy: Cell::new(RsvgLength::default()),
+            dx: Cell::new(Length::default()),
+            dy: Cell::new(Length::default()),
         }
     }
 
