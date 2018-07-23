@@ -1,8 +1,6 @@
 use std::cell::Cell;
 use std::cell::RefCell;
 
-use cairo;
-use cairo_sys;
 use glib::translate::*;
 use glib_sys;
 
@@ -12,6 +10,7 @@ use drawing_ctx::DrawingCtx;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
+use libc;
 use node::*;
 use parsers::{parse, parse_and_validate, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
@@ -400,54 +399,40 @@ impl NodeTrait for NodeSymbol {
 #[no_mangle]
 pub extern "C" fn rsvg_node_svg_get_size(
     raw_node: *const RsvgNode,
-    out_width: *mut RsvgLength,
-    out_height: *mut RsvgLength,
-) {
+    dpi_x: libc::c_double,
+    dpi_y: libc::c_double,
+    out_width: *mut i32,
+    out_height: *mut i32,
+) -> glib_sys::gboolean {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
     assert!(!out_width.is_null());
     assert!(!out_height.is_null());
 
-    node.with_impl(|svg: &NodeSvg| unsafe {
-        *out_width = svg.w.get();
-        *out_height = svg.h.get();
-    });
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_svg_get_view_box(
-    raw_node: *const RsvgNode,
-    out_vbox: *mut cairo_sys::cairo_rectangle_t,
-) -> glib_sys::gboolean {
-    assert!(!raw_node.is_null());
-    assert!(!out_vbox.is_null());
-
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let mut vbox: Option<ViewBox> = None;
-
     node.with_impl(|svg: &NodeSvg| {
-        vbox = svg.vbox.get();
-    });
+        let width = svg.w.get();
+        let height = svg.h.get();
+        let vbox = svg.vbox.get();
 
-    if let Some(vb) = vbox {
-        unsafe {
-            *out_vbox = vb.0;
+        match (width, height, vbox) {
+            (_, _, Some(vb)) => {
+                unsafe {
+                    *out_width = width.hand_normalize(dpi_x, vb.0.width, 12.0).round() as i32;
+                    *out_height = height.hand_normalize(dpi_y, vb.0.height, 12.0).round() as i32;
+                }
+                true.to_glib()
+            },
+            (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
+                unsafe {
+                    *out_width = width.hand_normalize(dpi_x, 0.0, 12.0).round() as i32;
+                    *out_height = height.hand_normalize(dpi_y, 0.0, 12.0).round() as i32;
+                }
+                true.to_glib()
+            }
+            (_, _, _) => false.to_glib()
         }
-        true.to_glib()
-    } else {
-        unsafe {
-            *out_vbox = cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 0.0,
-                height: 0.0,
-            };
-        }
-
-        false.to_glib()
-    }
+    })
 }
 
 #[no_mangle]

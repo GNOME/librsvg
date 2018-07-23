@@ -36,11 +36,7 @@ G_BEGIN_DECLS
 
 /* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
-void rsvg_node_svg_get_size (RsvgNode *node, RsvgLength *out_width, RsvgLength *out_height);
-
-/* Implemented in rsvg_internals/src/structure.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_node_svg_get_view_box (RsvgNode *node, cairo_rectangle_t *out_vbox);
+gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int *out_width, int *out_height);
 
 /* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
