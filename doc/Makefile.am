@@ -84,7 +84,6 @@ IGNORE_HFILES =			\
 	rsvg-private.h		\
 	rsvg-shapes.h		\
 	rsvg-size-callback.h	\
-	rsvg-structure.h	\
 	rsvg-styles.h		\
 	rsvg-text.h		\
 	rsvg-xml.h
