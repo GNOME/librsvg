@@ -300,6 +300,10 @@ gboolean rsvg_node_children_iter_next_back (RsvgNodeChildrenIter *iter,
 G_GNUC_INTERNAL
 void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
 
+/* Implemented in rsvg_internals/src/structure.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int *out_width, int *out_height);
+
 /* Implemented in rust/src/state.rs */
 G_GNUC_INTERNAL
 guint32 rsvg_computed_values_get_flood_color_argb (RsvgComputedValues *values);
