@@ -5,7 +5,6 @@
 #include "librsvg/rsvg-private.h"
 #include "librsvg/rsvg-defs.h"
 #include "librsvg/rsvg-styles.h"
-#include "librsvg/rsvg-paint-server.h"
 #include "test-utils.h"
 
 union Expected {

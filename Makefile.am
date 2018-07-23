@@ -37,7 +37,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-io.h			\
 	librsvg/rsvg-load.c			\
 	librsvg/rsvg-load.h			\
-	librsvg/rsvg-paint-server.h 		\
 	librsvg/rsvg-private.h 			\
 	librsvg/rsvg-size-callback.c		\
 	librsvg/rsvg-size-callback.h		\
