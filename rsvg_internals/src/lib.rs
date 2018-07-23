@@ -38,15 +38,6 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_new,
 };
 
-pub use length::{
-    rsvg_length_hand_normalize,
-    rsvg_length_normalize,
-    rsvg_length_parse,
-    LengthDir,
-    LengthUnit,
-    RsvgLength,
-};
-
 pub use load::{rsvg_load_new_node, rsvg_load_set_node_atts};
 
 pub use node::{
