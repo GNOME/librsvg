@@ -79,8 +79,6 @@ IGNORE_HFILES =			\
 	rsvg-io.h		\
 	rsvg-marker.h		\
 	rsvg-mask.h		\
-	rsvg-paint-server.h	\
-	rsvg-path-builder.h	\
 	rsvg-private.h		\
 	rsvg-shapes.h		\
 	rsvg-size-callback.h	\
