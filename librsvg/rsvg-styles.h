@@ -30,7 +30,6 @@
 #include <cairo.h>
 #include "rsvg.h"
 #include "rsvg-css.h"
-#include "rsvg-paint-server.h"
 
 #include <libxml/SAX.h>
 

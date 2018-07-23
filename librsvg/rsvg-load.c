@@ -499,8 +499,8 @@ create_xml_stream_parser (RsvgLoad      *load,
     context->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
     context->error = error;
 
-    parser = xmlCreateIOParserCtxt (sax,
-                                    sax_user_data,
+    parser = xmlCreateIOParserCtxt (&rsvgSAXHandlerStruct,
+                                    load,
                                     context_read,
                                     context_close,
                                     context,
