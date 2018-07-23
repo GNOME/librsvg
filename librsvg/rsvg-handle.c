@@ -920,6 +920,11 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
 
+    if (!handle->priv->treebase)
+        return FALSE;
+
+    g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
+
     if (id && *id) {
         sself = rsvg_defs_lookup (handle->priv->defs, id);
 
@@ -931,11 +936,6 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
     if (!sself && id)
         return FALSE;
-
-    if (!handle->priv->treebase)
-        return FALSE;
-
-    g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
 
     has_size = rsvg_node_svg_get_size (handle->priv->treebase,
                                        handle->priv->dpi_x, handle->priv->dpi_y,
