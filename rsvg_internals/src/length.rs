@@ -24,15 +24,15 @@ pub enum LengthDir {
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub struct RsvgLength {
+pub struct Length {
     pub length: f64,
     pub unit: LengthUnit,
     dir: LengthDir,
 }
 
-impl Default for RsvgLength {
-    fn default() -> RsvgLength {
-        RsvgLength {
+impl Default for Length {
+    fn default() -> Length {
+        Length {
             length: 0.0,
             unit: LengthUnit::Default,
             dir: LengthDir::Both,
@@ -52,7 +52,7 @@ const PICA_PER_INCH: f64 = 6.0;
 // need to know if they are horizontal/vertical/both.  For example,
 // a some_object.width="50%" is 50% with respect to the current
 // viewport's width.  In this case, the @dir argument is used
-// inside RsvgLength::normalize(), when it needs to know to what the
+// inside Length::normalize(), when it needs to know to what the
 // length refers.
 
 fn make_err() -> AttributeError {
@@ -62,12 +62,12 @@ fn make_err() -> AttributeError {
     ))
 }
 
-impl Parse for RsvgLength {
+impl Parse for Length {
     type Data = LengthDir;
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, dir: LengthDir) -> Result<RsvgLength, AttributeError> {
-        let length = RsvgLength::from_cssparser(parser, dir)?;
+    fn parse(parser: &mut Parser, dir: LengthDir) -> Result<Length, AttributeError> {
+        let length = Length::from_cssparser(parser, dir)?;
 
         parser.expect_exhausted().map_err(|_| make_err())?;
 
@@ -75,16 +75,16 @@ impl Parse for RsvgLength {
     }
 }
 
-impl RsvgLength {
-    pub fn new(l: f64, unit: LengthUnit, dir: LengthDir) -> RsvgLength {
-        RsvgLength {
+impl Length {
+    pub fn new(l: f64, unit: LengthUnit, dir: LengthDir) -> Length {
+        Length {
             length: l,
             unit,
             dir,
         }
     }
 
-    pub fn check_nonnegative(self) -> Result<RsvgLength, AttributeError> {
+    pub fn check_nonnegative(self) -> Result<Length, AttributeError> {
         if self.length >= 0.0 {
             Ok(self)
         } else {
@@ -145,7 +145,7 @@ impl RsvgLength {
     pub fn from_cssparser(
         parser: &mut Parser,
         dir: LengthDir,
-    ) -> Result<RsvgLength, AttributeError> {
+    ) -> Result<Length, AttributeError> {
         let length = {
             let token = parser.next().map_err(|_| {
                 AttributeError::Parse(ParseError::new(
@@ -154,13 +154,13 @@ impl RsvgLength {
             })?;
 
             match *token {
-                Token::Number { value, .. } => RsvgLength {
+                Token::Number { value, .. } => Length {
                     length: f64::from(value),
                     unit: LengthUnit::Default,
                     dir,
                 },
 
-                Token::Percentage { unit_value, .. } => RsvgLength {
+                Token::Percentage { unit_value, .. } => Length {
                     length: f64::from(unit_value),
                     unit: LengthUnit::Percent,
                     dir,
@@ -172,49 +172,49 @@ impl RsvgLength {
                     let value = f64::from(value);
 
                     match unit.as_ref() {
-                        "em" => RsvgLength {
+                        "em" => Length {
                             length: value,
                             unit: LengthUnit::FontEm,
                             dir,
                         },
 
-                        "ex" => RsvgLength {
+                        "ex" => Length {
                             length: value,
                             unit: LengthUnit::FontEx,
                             dir,
                         },
 
-                        "pt" => RsvgLength {
+                        "pt" => Length {
                             length: value / POINTS_PER_INCH,
                             unit: LengthUnit::Inch,
                             dir,
                         },
 
-                        "in" => RsvgLength {
+                        "in" => Length {
                             length: value,
                             unit: LengthUnit::Inch,
                             dir,
                         },
 
-                        "cm" => RsvgLength {
+                        "cm" => Length {
                             length: value / CM_PER_INCH,
                             unit: LengthUnit::Inch,
                             dir,
                         },
 
-                        "mm" => RsvgLength {
+                        "mm" => Length {
                             length: value / MM_PER_INCH,
                             unit: LengthUnit::Inch,
                             dir,
                         },
 
-                        "pc" => RsvgLength {
+                        "pc" => Length {
                             length: value / PICA_PER_INCH,
                             unit: LengthUnit::Inch,
                             dir,
                         },
 
-                        "px" => RsvgLength {
+                        "px" => Length {
                             length: value,
                             unit: LengthUnit::Default,
                             dir,
@@ -275,11 +275,11 @@ pub enum FontSizeSpec {
     Large,
     XLarge,
     XXLarge,
-    Value(RsvgLength),
+    Value(Length),
 }
 
 impl FontSizeSpec {
-    pub fn value(&self) -> RsvgLength {
+    pub fn value(&self) -> Length {
         match self {
             FontSizeSpec::Value(s) => s.clone(),
             _ => unreachable!(),
@@ -292,31 +292,31 @@ impl FontSizeSpec {
         let size = v.font_size.0.value();
 
         let new_size = match self {
-            FontSizeSpec::Smaller => RsvgLength::new(size.length / 1.2, size.unit, LengthDir::Both),
-            FontSizeSpec::Larger => RsvgLength::new(size.length * 1.2, size.unit, LengthDir::Both),
+            FontSizeSpec::Smaller => Length::new(size.length / 1.2, size.unit, LengthDir::Both),
+            FontSizeSpec::Larger => Length::new(size.length * 1.2, size.unit, LengthDir::Both),
             FontSizeSpec::XXSmall => {
-                RsvgLength::new(compute_points(-3.0), LengthUnit::Inch, LengthDir::Both)
+                Length::new(compute_points(-3.0), LengthUnit::Inch, LengthDir::Both)
             }
             FontSizeSpec::XSmall => {
-                RsvgLength::new(compute_points(-2.0), LengthUnit::Inch, LengthDir::Both)
+                Length::new(compute_points(-2.0), LengthUnit::Inch, LengthDir::Both)
             }
             FontSizeSpec::Small => {
-                RsvgLength::new(compute_points(-1.0), LengthUnit::Inch, LengthDir::Both)
+                Length::new(compute_points(-1.0), LengthUnit::Inch, LengthDir::Both)
             }
             FontSizeSpec::Medium => {
-                RsvgLength::new(compute_points(0.0), LengthUnit::Inch, LengthDir::Both)
+                Length::new(compute_points(0.0), LengthUnit::Inch, LengthDir::Both)
             }
             FontSizeSpec::Large => {
-                RsvgLength::new(compute_points(1.0), LengthUnit::Inch, LengthDir::Both)
+                Length::new(compute_points(1.0), LengthUnit::Inch, LengthDir::Both)
             }
             FontSizeSpec::XLarge => {
-                RsvgLength::new(compute_points(2.0), LengthUnit::Inch, LengthDir::Both)
+                Length::new(compute_points(2.0), LengthUnit::Inch, LengthDir::Both)
             }
             FontSizeSpec::XXLarge => {
-                RsvgLength::new(compute_points(3.0), LengthUnit::Inch, LengthDir::Both)
+                Length::new(compute_points(3.0), LengthUnit::Inch, LengthDir::Both)
             }
             FontSizeSpec::Value(s) if s.unit == LengthUnit::Percent => {
-                RsvgLength::new(size.length * s.length, size.unit, LengthDir::Both)
+                Length::new(size.length * s.length, size.unit, LengthDir::Both)
             }
             FontSizeSpec::Value(s) => s.clone(),
         };
@@ -336,7 +336,7 @@ impl Parse for FontSizeSpec {
     fn parse(parser: &mut Parser, _: Self::Data) -> Result<FontSizeSpec, ::error::AttributeError> {
         let parser_state = parser.state();
 
-        RsvgLength::parse(parser, LengthDir::Both)
+        Length::parse(parser, LengthDir::Both)
             .and_then(|s| Ok(FontSizeSpec::Value(s)))
             .or_else(|e| {
                 parser.reset(&parser_state);
@@ -372,7 +372,7 @@ impl Parse for FontSizeSpec {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Dasharray {
     None,
-    Array(Vec<RsvgLength>),
+    Array(Vec<Length>),
 }
 
 impl Default for Dasharray {
@@ -395,13 +395,13 @@ impl Parse for Dasharray {
 }
 
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
-fn parse_dash_array(parser: &mut Parser) -> Result<Vec<RsvgLength>, AttributeError> {
+fn parse_dash_array(parser: &mut Parser) -> Result<Vec<Length>, AttributeError> {
     let mut dasharray = Vec::new();
 
     loop {
         dasharray.push(
-            RsvgLength::from_cssparser(parser, LengthDir::Both)
-                .and_then(RsvgLength::check_nonnegative)?,
+            Length::from_cssparser(parser, LengthDir::Both)
+                .and_then(Length::check_nonnegative)?,
         );
 
         if parser.is_exhausted() {
@@ -421,8 +421,8 @@ mod tests {
     #[test]
     fn parses_default() {
         assert_eq!(
-            RsvgLength::parse_str("42", LengthDir::Horizontal),
-            Ok(RsvgLength::new(
+            Length::parse_str("42", LengthDir::Horizontal),
+            Ok(Length::new(
                 42.0,
                 LengthUnit::Default,
                 LengthDir::Horizontal
@@ -430,8 +430,8 @@ mod tests {
         );
 
         assert_eq!(
-            RsvgLength::parse_str("-42px", LengthDir::Horizontal),
-            Ok(RsvgLength::new(
+            Length::parse_str("-42px", LengthDir::Horizontal),
+            Ok(Length::new(
                 -42.0,
                 LengthUnit::Default,
                 LengthDir::Horizontal
@@ -442,8 +442,8 @@ mod tests {
     #[test]
     fn parses_percent() {
         assert_eq!(
-            RsvgLength::parse_str("50.0%", LengthDir::Horizontal),
-            Ok(RsvgLength::new(
+            Length::parse_str("50.0%", LengthDir::Horizontal),
+            Ok(Length::new(
                 0.5,
                 LengthUnit::Percent,
                 LengthDir::Horizontal
@@ -454,8 +454,8 @@ mod tests {
     #[test]
     fn parses_font_em() {
         assert_eq!(
-            RsvgLength::parse_str("22.5em", LengthDir::Vertical),
-            Ok(RsvgLength::new(
+            Length::parse_str("22.5em", LengthDir::Vertical),
+            Ok(Length::new(
                 22.5,
                 LengthUnit::FontEm,
                 LengthDir::Vertical
@@ -466,8 +466,8 @@ mod tests {
     #[test]
     fn parses_font_ex() {
         assert_eq!(
-            RsvgLength::parse_str("22.5ex", LengthDir::Vertical),
-            Ok(RsvgLength::new(
+            Length::parse_str("22.5ex", LengthDir::Vertical),
+            Ok(Length::new(
                 22.5,
                 LengthUnit::FontEx,
                 LengthDir::Vertical
@@ -478,39 +478,39 @@ mod tests {
     #[test]
     fn parses_physical_units() {
         assert_eq!(
-            RsvgLength::parse_str("72pt", LengthDir::Both),
-            Ok(RsvgLength::new(1.0, LengthUnit::Inch, LengthDir::Both))
+            Length::parse_str("72pt", LengthDir::Both),
+            Ok(Length::new(1.0, LengthUnit::Inch, LengthDir::Both))
         );
 
         assert_eq!(
-            RsvgLength::parse_str("-22.5in", LengthDir::Both),
-            Ok(RsvgLength::new(-22.5, LengthUnit::Inch, LengthDir::Both))
+            Length::parse_str("-22.5in", LengthDir::Both),
+            Ok(Length::new(-22.5, LengthUnit::Inch, LengthDir::Both))
         );
 
         assert_eq!(
-            RsvgLength::parse_str("-254cm", LengthDir::Both),
-            Ok(RsvgLength::new(-100.0, LengthUnit::Inch, LengthDir::Both))
+            Length::parse_str("-254cm", LengthDir::Both),
+            Ok(Length::new(-100.0, LengthUnit::Inch, LengthDir::Both))
         );
 
         assert_eq!(
-            RsvgLength::parse_str("254mm", LengthDir::Both),
-            Ok(RsvgLength::new(10.0, LengthUnit::Inch, LengthDir::Both))
+            Length::parse_str("254mm", LengthDir::Both),
+            Ok(Length::new(10.0, LengthUnit::Inch, LengthDir::Both))
         );
 
         assert_eq!(
-            RsvgLength::parse_str("60pc", LengthDir::Both),
-            Ok(RsvgLength::new(10.0, LengthUnit::Inch, LengthDir::Both))
+            Length::parse_str("60pc", LengthDir::Both),
+            Ok(Length::new(10.0, LengthUnit::Inch, LengthDir::Both))
         );
     }
 
     #[test]
     fn empty_length_yields_error() {
-        assert!(is_parse_error(&RsvgLength::parse_str("", LengthDir::Both)));
+        assert!(is_parse_error(&Length::parse_str("", LengthDir::Both)));
     }
 
     #[test]
     fn invalid_unit_yields_error() {
-        assert!(is_parse_error(&RsvgLength::parse_str(
+        assert!(is_parse_error(&Length::parse_str(
             "8furlong",
             LengthDir::Both
         )));
@@ -519,12 +519,12 @@ mod tests {
     #[test]
     fn check_nonnegative_works() {
         assert!(
-            RsvgLength::parse_str("0", LengthDir::Both)
+            Length::parse_str("0", LengthDir::Both)
                 .and_then(|l| l.check_nonnegative())
                 .is_ok()
         );
         assert!(
-            RsvgLength::parse_str("-10", LengthDir::Both)
+            Length::parse_str("-10", LengthDir::Both)
                 .and_then(|l| l.check_nonnegative())
                 .is_err()
         );
@@ -542,7 +542,7 @@ mod tests {
     #[test]
     fn parses_dash_array() {
         // helper to cut down boilderplate
-        let length_parse = |s| RsvgLength::parse_str(s, LengthDir::Both).unwrap();
+        let length_parse = |s| Length::parse_str(s, LengthDir::Both).unwrap();
 
         let expected = Dasharray::Array(vec![
             length_parse("1"),

@@ -3,7 +3,7 @@ use cairo::{self, MatrixTrait};
 
 use bbox::BoundingBox;
 use drawing_ctx::DrawingCtx;
-use length::RsvgLength;
+use length::Length;
 
 use super::context::{FilterContext, FilterInput, FilterOutput, IRect};
 
@@ -20,10 +20,10 @@ pub struct BoundsBuilder<'a> {
     standard_input_was_referenced: bool,
 
     /// Filter primitive properties.
-    x: Option<RsvgLength>,
-    y: Option<RsvgLength>,
-    width: Option<RsvgLength>,
-    height: Option<RsvgLength>,
+    x: Option<Length>,
+    y: Option<Length>,
+    width: Option<Length>,
+    height: Option<Length>,
 }
 
 impl<'a> BoundsBuilder<'a> {
@@ -31,10 +31,10 @@ impl<'a> BoundsBuilder<'a> {
     #[inline]
     pub fn new(
         ctx: &'a FilterContext,
-        x: Option<RsvgLength>,
-        y: Option<RsvgLength>,
-        width: Option<RsvgLength>,
-        height: Option<RsvgLength>,
+        x: Option<Length>,
+        y: Option<Length>,
+        width: Option<Length>,
+        height: Option<Length>,
     ) -> Self {
         Self {
             ctx,

@@ -92,10 +92,10 @@ impl NodeTrait for NodeSwitch {
 
 pub struct NodeSvg {
     preserve_aspect_ratio: Cell<AspectRatio>,
-    x: Cell<RsvgLength>,
-    y: Cell<RsvgLength>,
-    w: Cell<RsvgLength>,
-    h: Cell<RsvgLength>,
+    x: Cell<Length>,
+    y: Cell<Length>,
+    w: Cell<Length>,
+    h: Cell<Length>,
     vbox: Cell<Option<ViewBox>>,
     pbag: RefCell<Option<OwnedPropertyBag>>,
 }
@@ -104,10 +104,10 @@ impl NodeSvg {
     pub fn new() -> NodeSvg {
         NodeSvg {
             preserve_aspect_ratio: Cell::new(AspectRatio::default()),
-            x: Cell::new(RsvgLength::parse_str("0", LengthDir::Horizontal).unwrap()),
-            y: Cell::new(RsvgLength::parse_str("0", LengthDir::Vertical).unwrap()),
-            w: Cell::new(RsvgLength::parse_str("100%", LengthDir::Horizontal).unwrap()),
-            h: Cell::new(RsvgLength::parse_str("100%", LengthDir::Vertical).unwrap()),
+            x: Cell::new(Length::parse_str("0", LengthDir::Horizontal).unwrap()),
+            y: Cell::new(Length::parse_str("0", LengthDir::Vertical).unwrap()),
+            w: Cell::new(Length::parse_str("100%", LengthDir::Horizontal).unwrap()),
+            h: Cell::new(Length::parse_str("100%", LengthDir::Vertical).unwrap()),
             vbox: Cell::new(None),
             pbag: RefCell::new(None),
         }
@@ -147,14 +147,14 @@ impl NodeTrait for NodeSvg {
                     "width",
                     value,
                     LengthDir::Horizontal,
-                    RsvgLength::check_nonnegative,
+                    Length::check_nonnegative,
                 )?),
 
                 Attribute::Height => self.h.set(parse_and_validate(
                     "height",
                     value,
                     LengthDir::Vertical,
-                    RsvgLength::check_nonnegative,
+                    Length::check_nonnegative,
                 )?),
 
                 Attribute::ViewBox => self.vbox.set(parse("viewBox", value, ()).map(Some)?),
@@ -210,18 +210,18 @@ impl NodeTrait for NodeSvg {
 
 pub struct NodeUse {
     link: RefCell<Option<String>>,
-    x: Cell<RsvgLength>,
-    y: Cell<RsvgLength>,
-    w: Cell<Option<RsvgLength>>,
-    h: Cell<Option<RsvgLength>>,
+    x: Cell<Length>,
+    y: Cell<Length>,
+    w: Cell<Option<Length>>,
+    h: Cell<Option<Length>>,
 }
 
 impl NodeUse {
     pub fn new() -> NodeUse {
         NodeUse {
             link: RefCell::new(None),
-            x: Cell::new(RsvgLength::default()),
-            y: Cell::new(RsvgLength::default()),
+            x: Cell::new(Length::default()),
+            y: Cell::new(Length::default()),
             w: Cell::new(None),
             h: Cell::new(None),
         }
@@ -242,7 +242,7 @@ impl NodeTrait for NodeUse {
                         "width",
                         value,
                         LengthDir::Horizontal,
-                        RsvgLength::check_nonnegative,
+                        Length::check_nonnegative,
                     ).map(Some)?,
                 ),
                 Attribute::Height => self.h.set(
@@ -250,7 +250,7 @@ impl NodeTrait for NodeUse {
                         "height",
                         value,
                         LengthDir::Vertical,
-                        RsvgLength::check_nonnegative,
+                        Length::check_nonnegative,
                     ).map(Some)?,
                 ),
 
@@ -300,12 +300,12 @@ impl NodeTrait for NodeUse {
         let nw = self
             .w
             .get()
-            .unwrap_or_else(|| RsvgLength::parse_str("100%", LengthDir::Horizontal).unwrap())
+            .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Horizontal).unwrap())
             .normalize(values, draw_ctx);
         let nh = self
             .h
             .get()
-            .unwrap_or_else(|| RsvgLength::parse_str("100%", LengthDir::Vertical).unwrap())
+            .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Vertical).unwrap())
             .normalize(values, draw_ctx);
 
         // width or height set to 0 disables rendering of the element
