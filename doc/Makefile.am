@@ -84,9 +84,7 @@ IGNORE_HFILES =			\
 	rsvg-private.h		\
 	rsvg-shapes.h		\
 	rsvg-size-callback.h	\
-	rsvg-styles.h		\
-	rsvg-text.h		\
-	rsvg-xml.h
+	rsvg-styles.h
 
 # Images to copy into HTML directory.
 # e.g. HTML_IMAGES=$(top_srcdir)/gtk/stock-icons/stock_about_24.png
