@@ -11,7 +11,7 @@ use error::*;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use iri::IRI;
-use length::{LengthDir, RsvgLength};
+use length::{LengthDir, Length};
 use node::*;
 use parsers;
 use parsers::ParseError;
@@ -90,10 +90,10 @@ impl Parse for MarkerOrient {
 
 pub struct NodeMarker {
     units: Cell<MarkerUnits>,
-    ref_x: Cell<RsvgLength>,
-    ref_y: Cell<RsvgLength>,
-    width: Cell<RsvgLength>,
-    height: Cell<RsvgLength>,
+    ref_x: Cell<Length>,
+    ref_y: Cell<Length>,
+    width: Cell<Length>,
+    height: Cell<Length>,
     orient: Cell<MarkerOrient>,
     aspect: Cell<AspectRatio>,
     vbox: Cell<Option<ViewBox>>,
@@ -103,8 +103,8 @@ impl NodeMarker {
     pub fn new() -> NodeMarker {
         NodeMarker {
             units: Cell::new(MarkerUnits::default()),
-            ref_x: Cell::new(RsvgLength::default()),
-            ref_y: Cell::new(RsvgLength::default()),
+            ref_x: Cell::new(Length::default()),
+            ref_y: Cell::new(Length::default()),
             width: Cell::new(NodeMarker::get_default_size(LengthDir::Horizontal)),
             height: Cell::new(NodeMarker::get_default_size(LengthDir::Vertical)),
             orient: Cell::new(MarkerOrient::default()),
@@ -113,9 +113,9 @@ impl NodeMarker {
         }
     }
 
-    fn get_default_size(dir: LengthDir) -> RsvgLength {
+    fn get_default_size(dir: LengthDir) -> Length {
         // per the spec
-        RsvgLength::parse_str("3", dir).unwrap()
+        Length::parse_str("3", dir).unwrap()
     }
 
     fn render(
@@ -218,14 +218,14 @@ impl NodeTrait for NodeMarker {
                     "markerWidth",
                     value,
                     LengthDir::Horizontal,
-                    RsvgLength::check_nonnegative,
+                    Length::check_nonnegative,
                 )?),
 
                 Attribute::MarkerHeight => self.height.set(parse_and_validate(
                     "markerHeight",
                     value,
                     LengthDir::Vertical,
-                    RsvgLength::check_nonnegative,
+                    Length::check_nonnegative,
                 )?),
 
                 Attribute::Orient => self.orient.set(parse("orient", value, ())?),

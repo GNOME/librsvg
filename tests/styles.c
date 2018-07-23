@@ -10,7 +10,7 @@
 
 union Expected {
     guint color;
-    RsvgLength length;
+    Length length;
 };
 
 typedef struct _FixtureData
@@ -30,7 +30,7 @@ assert_equal_color (guint expected, guint actual)
 }
 
 static void
-assert_equal_length (RsvgLength *expected, RsvgLength *actual)
+assert_equal_length (Length *expected, Length *actual)
 {
     g_assert_cmpfloat (expected->length, ==, actual->length);
     g_assert_cmpint (expected->unit, ==, actual->unit);

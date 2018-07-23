@@ -75,7 +75,7 @@ impl Parse for String {
 ///
 /// Some value types need some extra `data` to be parsed.  This
 /// corresponds to the `<T as Parse>::Data` associated type.  For
-/// example, an `RsvgLength` has an associated `type Data =
+/// example, an `Length` has an associated `type Data =
 /// LengthDir`, so to parse a length value, you could specify
 /// `LengthDir::Horizontal` for `data`, for example.
 pub fn parse<T>(key: &str, value: &str, data: <T as Parse>::Data) -> Result<T, NodeError>
@@ -93,7 +93,7 @@ where
 ///
 /// Some value types need some extra `data` to be parsed.  This
 /// corresponds to the `<T as Parse>::Data` associated type.  For
-/// example, an `RsvgLength` has an associated `type Data =
+/// example, an `Length` has an associated `type Data =
 /// LengthDir`, so to parse a length value, you could specify
 /// `LengthDir::Horizontal` for `data`, for example.
 pub fn parse_and_validate<T, F>(
