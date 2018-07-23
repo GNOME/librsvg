@@ -29,7 +29,6 @@
 #include "rsvg-attributes.h"
 #include "rsvg-defs.h"
 #include "rsvg-load.h"
-#include "rsvg-structure.h"
 #include "rsvg-styles.h"
 #include "rsvg-xml.h"
 
@@ -41,17 +40,21 @@ typedef enum {
     LOAD_STATE_CLOSED
 } LoadState;
 
-/* Implemented in rust/src/load.rs */
+/* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts);
 
-/* Implemented in rust/src/load.rs */
+/* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
 void rsvg_load_set_node_atts (RsvgHandle *handle, RsvgNode *node, const char *element_name, RsvgPropertyBag atts);
 
-/* Implemented in rust/src/node.rs */
+/* Implemented in rsvg_internals/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_register_in_defs(RsvgNode *node, RsvgDefs *defs);
+
+/* Implemented in rsvg_internals/src/structure.rs */
+G_GNUC_INTERNAL
+void rsvg_node_svg_apply_atts (RsvgNode *node, RsvgHandle *handle);
 
 struct RsvgLoad {
     RsvgHandle *handle;
