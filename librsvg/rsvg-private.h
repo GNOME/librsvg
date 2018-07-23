@@ -175,31 +175,6 @@ struct RsvgHandlePrivate {
 #endif
 };
 
-/* Keep this in sync with rust/src/length.rs:LengthUnit */
-typedef enum {
-    LENGTH_UNIT_DEFAULT,
-    LENGTH_UNIT_PERCENT,
-    LENGTH_UNIT_FONT_EM,
-    LENGTH_UNIT_FONT_EX,
-    LENGTH_UNIT_INCH,
-    LENGTH_UNIT_RELATIVE_LARGER,
-    LENGTH_UNIT_RELATIVE_SMALLER
-} LengthUnit;
-
-/* Keep this in sync with rust/src/length.rs:LengthDir */
-typedef enum {
-    LENGTH_DIR_HORIZONTAL,
-    LENGTH_DIR_VERTICAL,
-    LENGTH_DIR_BOTH
-} LengthDir;
-
-/* Keep this in sync with rust/src/length.rs:RsvgLength */
-typedef struct {
-    double length;
-    LengthUnit unit;
-    LengthDir dir;
-} RsvgLength;
-
 typedef enum {
     userSpaceOnUse,
     objectBoundingBox
@@ -389,21 +364,6 @@ GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const char *href, GError ** error);
-
-/* This is implemented in rust/src/length.rs */
-G_GNUC_INTERNAL
-double rsvg_length_normalize (const RsvgLength *length, RsvgComputedValues *values, RsvgDrawingCtx * ctx);
-
-/* This is implemented in rust/src/length.rs */
-G_GNUC_INTERNAL
-double rsvg_length_hand_normalize (const RsvgLength *length,
-                                   double pixels_per_inch,
-                                   double width_or_height,
-                                   double font_size);
-
-/* Implemented in rust/src/length.rs */
-G_GNUC_INTERNAL
-RsvgLength rsvg_length_parse (const char *str, LengthDir dir);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL

@@ -1,16 +1,12 @@
 use cssparser::{Parser, Token};
-use libc;
 use std::f64::consts::*;
 
-use drawing_ctx::{DrawingCtx, RsvgDrawingCtx};
+use drawing_ctx::DrawingCtx;
 use error::*;
 use parsers::Parse;
 use parsers::ParseError;
-use state::{ComputedValues, RsvgComputedValues};
-use util::utf8_cstr;
+use state::ComputedValues;
 
-// Keep this in sync with ../../rsvg-private.h:LengthUnit
-#[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
     Default,
@@ -20,8 +16,6 @@ pub enum LengthUnit {
     Inch,
 }
 
-// Keep this in sync with ../../rsvg-private.h:LengthDir
-#[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthDir {
     Horizontal,
@@ -29,12 +23,6 @@ pub enum LengthDir {
     Both,
 }
 
-// This is *not* an opaque struct; it is actually visible to the C code.  It is so
-// that the remaining C code can create RsvgLength values as part of existing
-// structures or objects, without allocations on the heap.
-//
-// Keep this in sync with ../../rsvg-private.h:RsvgLength
-#[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct RsvgLength {
     pub length: f64,
@@ -56,14 +44,6 @@ const POINTS_PER_INCH: f64 = 72.0;
 const CM_PER_INCH: f64 = 2.54;
 const MM_PER_INCH: f64 = 25.4;
 const PICA_PER_INCH: f64 = 6.0;
-
-#[no_mangle]
-pub extern "C" fn rsvg_length_parse(string: *const libc::c_char, dir: LengthDir) -> RsvgLength {
-    let my_string = unsafe { utf8_cstr(string) };
-
-    // FIXME: this ignores errors; propagate them upstream
-    RsvgLength::parse_str(my_string, dir).unwrap_or_else(|_| RsvgLength::default())
-}
 
 // https://www.w3.org/TR/SVG/types.html#DataTypeLength
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/syndata.html#length-units
@@ -432,38 +412,6 @@ fn parse_dash_array(parser: &mut Parser) -> Result<Vec<RsvgLength>, AttributeErr
     }
 
     Ok(dasharray)
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_length_normalize(
-    raw_length: *const RsvgLength,
-    values: RsvgComputedValues,
-    draw_ctx: *const RsvgDrawingCtx,
-) -> f64 {
-    assert!(!raw_length.is_null());
-    let length: &RsvgLength = unsafe { &*raw_length };
-
-    assert!(!values.is_null());
-    let values = unsafe { &*values };
-
-    assert!(!draw_ctx.is_null());
-    let draw_ctx = unsafe { &*(draw_ctx as *const DrawingCtx) };
-
-    length.normalize(values, draw_ctx)
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_length_hand_normalize(
-    raw_length: *const RsvgLength,
-    pixels_per_inch: f64,
-    width_or_height: f64,
-    font_size: f64,
-) -> f64 {
-    assert!(!raw_length.is_null());
-
-    let length: &RsvgLength = unsafe { &*raw_length };
-
-    length.hand_normalize(pixels_per_inch, width_or_height, font_size)
 }
 
 #[cfg(test)]
