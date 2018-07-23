@@ -9,7 +9,7 @@ use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use error::AttributeError;
 use handle::RsvgHandle;
-use length::{LengthDir, LengthUnit, RsvgLength};
+use length::{LengthDir, LengthUnit, Length};
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{parse_and_validate, ParseError};
 use property_bag::PropertyBag;
@@ -70,10 +70,10 @@ trait Filter: NodeTrait {
 
 /// The base filter primitive node containing common properties.
 struct Primitive {
-    x: Cell<Option<RsvgLength>>,
-    y: Cell<Option<RsvgLength>>,
-    width: Cell<Option<RsvgLength>>,
-    height: Cell<Option<RsvgLength>>,
+    x: Cell<Option<Length>>,
+    y: Cell<Option<Length>>,
+    width: Cell<Option<Length>>,
+    height: Cell<Option<Length>>,
     result: RefCell<Option<String>>,
 }
 
@@ -124,7 +124,7 @@ impl NodeTrait for Primitive {
             .unwrap_or(CoordUnits::UserSpaceOnUse);
 
         let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
-        let check_units = |length: RsvgLength| {
+        let check_units = |length: Length| {
             if !no_units_allowed {
                 return Ok(length);
             }
@@ -137,7 +137,7 @@ impl NodeTrait for Primitive {
             }
         };
         let check_units_and_ensure_nonnegative =
-            |length: RsvgLength| check_units(length).and_then(RsvgLength::check_nonnegative);
+            |length: Length| check_units(length).and_then(Length::check_nonnegative);
 
         for (_key, attr, value) in pbag.iter() {
             match attr {

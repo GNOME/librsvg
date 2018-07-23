@@ -5,17 +5,17 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use error::AttributeError;
 use handle::RsvgHandle;
-use length::{LengthDir, LengthUnit, RsvgLength};
+use length::{LengthDir, LengthUnit, Length};
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{parse, parse_and_validate, Parse, ParseError};
 use property_bag::PropertyBag;
 
 /// The <filter> node.
 pub struct NodeFilter {
-    pub x: Cell<RsvgLength>,
-    pub y: Cell<RsvgLength>,
-    pub width: Cell<RsvgLength>,
-    pub height: Cell<RsvgLength>,
+    pub x: Cell<Length>,
+    pub y: Cell<Length>,
+    pub width: Cell<Length>,
+    pub height: Cell<Length>,
     pub filterunits: Cell<CoordUnits>,
     pub primitiveunits: Cell<CoordUnits>,
 }
@@ -25,10 +25,10 @@ impl NodeFilter {
     #[inline]
     pub fn new() -> Self {
         Self {
-            x: Cell::new(RsvgLength::parse_str("-10%", LengthDir::Horizontal).unwrap()),
-            y: Cell::new(RsvgLength::parse_str("-10%", LengthDir::Vertical).unwrap()),
-            width: Cell::new(RsvgLength::parse_str("120%", LengthDir::Horizontal).unwrap()),
-            height: Cell::new(RsvgLength::parse_str("120%", LengthDir::Vertical).unwrap()),
+            x: Cell::new(Length::parse_str("-10%", LengthDir::Horizontal).unwrap()),
+            y: Cell::new(Length::parse_str("-10%", LengthDir::Vertical).unwrap()),
+            width: Cell::new(Length::parse_str("120%", LengthDir::Horizontal).unwrap()),
+            height: Cell::new(Length::parse_str("120%", LengthDir::Vertical).unwrap()),
             filterunits: Cell::new(CoordUnits::ObjectBoundingBox),
             primitiveunits: Cell::new(CoordUnits::UserSpaceOnUse),
         }
@@ -52,7 +52,7 @@ impl NodeTrait for NodeFilter {
 
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let no_units_allowed = self.filterunits.get() == CoordUnits::ObjectBoundingBox;
-        let check_units = |length: RsvgLength| {
+        let check_units = |length: Length| {
             if !no_units_allowed {
                 return Ok(length);
             }
@@ -65,7 +65,7 @@ impl NodeTrait for NodeFilter {
             }
         };
         let check_units_and_ensure_nonnegative =
-            |length: RsvgLength| check_units(length).and_then(RsvgLength::check_nonnegative);
+            |length: Length| check_units(length).and_then(Length::check_nonnegative);
 
         // Parse the rest of the attributes.
         for (_key, attr, value) in pbag.iter() {

@@ -20,10 +20,10 @@ use property_bag::PropertyBag;
 
 pub struct NodeImage {
     aspect: Cell<AspectRatio>,
-    x: Cell<RsvgLength>,
-    y: Cell<RsvgLength>,
-    w: Cell<RsvgLength>,
-    h: Cell<RsvgLength>,
+    x: Cell<Length>,
+    y: Cell<Length>,
+    w: Cell<Length>,
+    h: Cell<Length>,
     surface: RefCell<Option<cairo::ImageSurface>>,
 }
 
@@ -31,10 +31,10 @@ impl NodeImage {
     pub fn new() -> NodeImage {
         NodeImage {
             aspect: Cell::new(AspectRatio::default()),
-            x: Cell::new(RsvgLength::default()),
-            y: Cell::new(RsvgLength::default()),
-            w: Cell::new(RsvgLength::default()),
-            h: Cell::new(RsvgLength::default()),
+            x: Cell::new(Length::default()),
+            y: Cell::new(Length::default()),
+            w: Cell::new(Length::default()),
+            h: Cell::new(Length::default()),
             surface: RefCell::new(None),
         }
     }
@@ -59,13 +59,13 @@ impl NodeTrait for NodeImage {
                     "width",
                     value,
                     LengthDir::Horizontal,
-                    RsvgLength::check_nonnegative,
+                    Length::check_nonnegative,
                 )?),
                 Attribute::Height => self.h.set(parse_and_validate(
                     "height",
                     value,
                     LengthDir::Vertical,
-                    RsvgLength::check_nonnegative,
+                    Length::check_nonnegative,
                 )?),
 
                 Attribute::PreserveAspectRatio => {

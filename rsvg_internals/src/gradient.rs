@@ -91,18 +91,18 @@ struct GradientCommon {
 #[derive(Copy, Clone)]
 enum GradientVariant {
     Linear {
-        x1: Option<RsvgLength>,
-        y1: Option<RsvgLength>,
-        x2: Option<RsvgLength>,
-        y2: Option<RsvgLength>,
+        x1: Option<Length>,
+        y1: Option<Length>,
+        x2: Option<Length>,
+        y2: Option<Length>,
     },
 
     Radial {
-        cx: Option<RsvgLength>,
-        cy: Option<RsvgLength>,
-        r: Option<RsvgLength>,
-        fx: Option<RsvgLength>,
-        fy: Option<RsvgLength>,
+        cx: Option<Length>,
+        cy: Option<Length>,
+        r: Option<Length>,
+        fx: Option<Length>,
+        fy: Option<Length>,
     },
 }
 
@@ -249,10 +249,10 @@ impl GradientVariant {
         // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
 
         GradientVariant::Linear {
-            x1: Some(RsvgLength::parse_str("0%", LengthDir::Horizontal).unwrap()),
-            y1: Some(RsvgLength::parse_str("0%", LengthDir::Vertical).unwrap()),
-            x2: Some(RsvgLength::parse_str("100%", LengthDir::Horizontal).unwrap()),
-            y2: Some(RsvgLength::parse_str("0%", LengthDir::Vertical).unwrap()),
+            x1: Some(Length::parse_str("0%", LengthDir::Horizontal).unwrap()),
+            y1: Some(Length::parse_str("0%", LengthDir::Vertical).unwrap()),
+            x2: Some(Length::parse_str("100%", LengthDir::Horizontal).unwrap()),
+            y2: Some(Length::parse_str("0%", LengthDir::Vertical).unwrap()),
         }
     }
 
@@ -260,9 +260,9 @@ impl GradientVariant {
         // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
 
         GradientVariant::Radial {
-            cx: Some(RsvgLength::parse_str("50%", LengthDir::Horizontal).unwrap()),
-            cy: Some(RsvgLength::parse_str("50%", LengthDir::Vertical).unwrap()),
-            r: Some(RsvgLength::parse_str("50%", LengthDir::Both).unwrap()),
+            cx: Some(Length::parse_str("50%", LengthDir::Horizontal).unwrap()),
+            cy: Some(Length::parse_str("50%", LengthDir::Vertical).unwrap()),
+            r: Some(Length::parse_str("50%", LengthDir::Both).unwrap()),
 
             fx: None,
             fy: None,
