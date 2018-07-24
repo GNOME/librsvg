@@ -1550,30 +1550,33 @@ pub fn parse_style_attrs(
                     // tag.class#id
                     if let Some(id) = node.get_id() {
                         let target = format!("{}.{}#{}", tag, cls, id);
-                        found = found || from_glib(rsvg_lookup_apply_css_style(
-                            handle,
-                            target.to_glib_none().0,
-                            to_c_mut(state),
-                        ));
+                        found = found
+                            || from_glib(rsvg_lookup_apply_css_style(
+                                handle,
+                                target.to_glib_none().0,
+                                to_c_mut(state),
+                            ));
                     }
 
                     // .class#id
                     if let Some(id) = node.get_id() {
                         let target = format!(".{}#{}", cls, id);
-                        found = found || from_glib(rsvg_lookup_apply_css_style(
-                            handle,
-                            target.to_glib_none().0,
-                            to_c_mut(state),
-                        ));
+                        found = found
+                            || from_glib(rsvg_lookup_apply_css_style(
+                                handle,
+                                target.to_glib_none().0,
+                                to_c_mut(state),
+                            ));
                     }
 
                     // tag.class
                     let target = format!("{}.{}", tag, cls);
-                    found = found || from_glib(rsvg_lookup_apply_css_style(
-                        handle,
-                        target.to_glib_none().0,
-                        to_c_mut(state),
-                    ));
+                    found = found
+                        || from_glib(rsvg_lookup_apply_css_style(
+                            handle,
+                            target.to_glib_none().0,
+                            to_c_mut(state),
+                        ));
 
                     if !found {
                         // didn't find anything more specific, just apply the class style
