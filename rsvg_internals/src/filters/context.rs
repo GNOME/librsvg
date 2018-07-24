@@ -7,7 +7,7 @@ use cairo::{self, MatrixTrait};
 use bbox::BoundingBox;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
-use length::RsvgLength;
+use length::Length;
 use node::RsvgNode;
 use paint_server::{self, PaintServer};
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -433,7 +433,7 @@ impl FilterContext {
     pub fn with_primitive_units<F, T>(&self, draw_ctx: &mut DrawingCtx, f: F) -> T
     // TODO: Get rid of this Box? Can't just impl Trait because Rust cannot do higher-ranked types.
     where
-        for<'b> F: FnOnce(Box<Fn(&RsvgLength) -> f64 + 'b>) -> T,
+        for<'b> F: FnOnce(Box<Fn(&Length) -> f64 + 'b>) -> T,
     {
         // Filters use the properties of the target node.
         let cascaded = self.node_being_filtered.get_cascaded_values();
@@ -444,12 +444,12 @@ impl FilterContext {
         // See comments in compute_effects_region() for how this works.
         if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
             draw_ctx.push_view_box(1.0, 1.0);
-            let rv = f(Box::new(RsvgLength::get_unitless));
+            let rv = f(Box::new(Length::get_unitless));
             draw_ctx.pop_view_box();
 
             rv
         } else {
-            f(Box::new(|length: &RsvgLength| {
+            f(Box::new(|length: &Length| {
                 length.normalize(values, draw_ctx)
             }))
         }

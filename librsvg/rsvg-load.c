@@ -29,9 +29,7 @@
 #include "rsvg-attributes.h"
 #include "rsvg-defs.h"
 #include "rsvg-load.h"
-#include "rsvg-structure.h"
 #include "rsvg-styles.h"
-#include "rsvg-xml.h"
 
 typedef enum {
     LOAD_STATE_START,
@@ -41,17 +39,21 @@ typedef enum {
     LOAD_STATE_CLOSED
 } LoadState;
 
-/* Implemented in rust/src/load.rs */
+/* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts);
 
-/* Implemented in rust/src/load.rs */
+/* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
 void rsvg_load_set_node_atts (RsvgHandle *handle, RsvgNode *node, const char *element_name, RsvgPropertyBag atts);
 
-/* Implemented in rust/src/node.rs */
+/* Implemented in rsvg_internals/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_register_in_defs(RsvgNode *node, RsvgDefs *defs);
+
+/* Implemented in rsvg_internals/src/structure.rs */
+G_GNUC_INTERNAL
+void rsvg_node_svg_apply_atts (RsvgNode *node, RsvgHandle *handle);
 
 struct RsvgLoad {
     RsvgHandle *handle;
@@ -432,21 +434,83 @@ create_xml_push_parser (RsvgLoad *load,
     return parser;
 }
 
+typedef struct {
+    GInputStream *stream;
+    GCancellable *cancellable;
+    GError      **error;
+} RsvgXmlInputStreamContext;
+
+/* this should use gsize, but libxml2 is borked */
+static int
+context_read (void *data,
+              char *buffer,
+              int   len)
+{
+    RsvgXmlInputStreamContext *context = data;
+    gssize n_read;
+
+    if (*(context->error))
+        return -1;
+
+    n_read = g_input_stream_read (context->stream, buffer, (gsize) len,
+                                  context->cancellable,
+                                  context->error);
+    if (n_read < 0)
+        return -1;
+
+    return (int) n_read;
+}
+
+static int
+context_close (void *data)
+{
+    RsvgXmlInputStreamContext *context = data;
+    gboolean ret;
+
+    /* Don't overwrite a previous error */
+    ret = g_input_stream_close (context->stream, context->cancellable,
+                                *(context->error) == NULL ? context->error : NULL);
+
+    g_object_unref (context->stream);
+    if (context->cancellable)
+        g_object_unref (context->cancellable);
+    g_slice_free (RsvgXmlInputStreamContext, context);
+
+    return ret ? 0 : -1;
+}
+
 static xmlParserCtxtPtr
 create_xml_stream_parser (RsvgLoad      *load,
                           GInputStream  *stream,
                           GCancellable  *cancellable,
                           GError       **error)
 {
+    RsvgXmlInputStreamContext *context;
     xmlParserCtxtPtr parser;
 
+    g_return_val_if_fail (G_IS_INPUT_STREAM (stream), NULL);
+    g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
+    g_return_val_if_fail (error != NULL, NULL);
+
     init_sax_handler_struct ();
-    parser = rsvg_create_xml_parser_from_stream (&rsvgSAXHandlerStruct,
-                                                 load,
-                                                 stream,
-                                                 cancellable,
-                                                 error);
-    if (parser) {
+
+    context = g_slice_new (RsvgXmlInputStreamContext);
+    context->stream = g_object_ref (stream);
+    context->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
+    context->error = error;
+
+    parser = xmlCreateIOParserCtxt (&rsvgSAXHandlerStruct,
+                                    load,
+                                    context_read,
+                                    context_close,
+                                    context,
+                                    XML_CHAR_ENCODING_NONE);
+
+    if (!parser) {
+        g_set_error (error, rsvg_error_quark (), 0, _("Error creating XML parser"));
+
+        /* on error, xmlCreateIOParserCtxt() frees our context via the context_close function */
+    } else {
         set_xml_parse_options (parser, load->unlimited_size);
     }
 

@@ -36,15 +36,6 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_new,
 };
 
-pub use length::{
-    rsvg_length_hand_normalize,
-    rsvg_length_normalize,
-    rsvg_length_parse,
-    LengthDir,
-    LengthUnit,
-    RsvgLength,
-};
-
 pub use load::{rsvg_load_new_node, rsvg_load_set_node_atts};
 
 pub use node::{
@@ -80,7 +71,7 @@ pub use state::{
     rsvg_state_parse_style_pair,
 };
 
-pub use structure::{rsvg_node_svg_apply_atts, rsvg_node_svg_get_size, rsvg_node_svg_get_view_box};
+pub use structure::{rsvg_node_svg_apply_atts, rsvg_node_svg_get_size};
 
 pub use text::{rsvg_node_chars_append, rsvg_node_chars_new};
 

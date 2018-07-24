@@ -24,7 +24,7 @@ impl NodeStop {
     }
 }
 
-fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
+fn validate_offset(length: Length) -> Result<Length, AttributeError> {
     match length.unit {
         LengthUnit::Default | LengthUnit::Percent => {
             let mut offset = length.length;
@@ -35,11 +35,7 @@ fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
                 offset = 1.0;
             }
 
-            Ok(RsvgLength::new(
-                offset,
-                LengthUnit::Default,
-                LengthDir::Both,
-            ))
+            Ok(Length::new(offset, LengthUnit::Default, LengthDir::Both))
         }
 
         _ => Err(AttributeError::Value(

@@ -122,7 +122,6 @@
 
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
-#include "rsvg-structure.h"
 
 enum {
     PROP_0,
@@ -152,7 +151,7 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->hstate = RSVG_HANDLE_STATE_START;
-    self->priv->all_nodes = g_ptr_array_new ();
+    self->priv->all_nodes = g_ptr_array_new_with_free_func ((GDestroyNotify) rsvg_node_unref);
     self->priv->defs = rsvg_defs_new (self);
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
@@ -166,7 +165,6 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->cancellable = NULL;
 
-    self->priv->is_disposed = FALSE;
     self->priv->in_loop = FALSE;
 
     self->priv->is_testing = FALSE;
@@ -178,52 +176,22 @@ rsvg_handle_init (RsvgHandle * self)
 }
 
 static void
-free_nodes (RsvgHandle *self)
-{
-    int i;
-
-    g_assert (self->priv->all_nodes != NULL);
-
-    for (i = 0; i < self->priv->all_nodes->len; i++) {
-        RsvgNode *node;
-
-        node = g_ptr_array_index (self->priv->all_nodes, i);
-        node = rsvg_node_unref (node);
-    }
-
-    g_ptr_array_free (self->priv->all_nodes, TRUE);
-    self->priv->all_nodes = NULL;
-}
-
-static void
 rsvg_handle_dispose (GObject *instance)
 {
     RsvgHandle *self = (RsvgHandle *) instance;
 
-    if (self->priv->is_disposed)
-      goto chain;
-
-    self->priv->is_disposed = TRUE;
-
-    free_nodes (self);
-
-    rsvg_defs_free (self->priv->defs);
-    self->priv->defs = NULL;
-
-    g_hash_table_destroy (self->priv->css_props);
-
-    self->priv->treebase = rsvg_node_unref (self->priv->treebase);
-
-    if (self->priv->user_data_destroy)
+    if (self->priv->user_data_destroy) {
         (*self->priv->user_data_destroy) (self->priv->user_data);
-
-    if (self->priv->base_uri)
-        g_free (self->priv->base_uri);
-
-    if (self->priv->base_gfile) {
-        g_object_unref (self->priv->base_gfile);
-        self->priv->base_gfile = NULL;
+        self->priv->user_data_destroy = NULL;
     }
+
+    g_clear_pointer (&self->priv->all_nodes, g_ptr_array_unref);
+    g_clear_pointer (&self->priv->defs, rsvg_defs_free);
+    g_clear_pointer (&self->priv->css_props, g_hash_table_destroy);
+    g_clear_pointer (&self->priv->treebase, rsvg_node_unref);
+    g_clear_pointer (&self->priv->base_uri, g_free);
+    g_clear_object (&self->priv->base_gfile);
+
     if (self->priv->load) {
         RsvgNode *treebase = rsvg_load_destroy (self->priv->load);
         treebase = rsvg_node_unref (treebase);
@@ -231,20 +199,12 @@ rsvg_handle_dispose (GObject *instance)
     }
 
 #ifdef HAVE_PANGOFT2
-    if (self->priv->font_config_for_testing) {
-        FcConfigDestroy (self->priv->font_config_for_testing);
-        self->priv->font_config_for_testing = NULL;
-    }
-
-    if (self->priv->font_map_for_testing) {
-        g_object_unref (self->priv->font_map_for_testing);
-        self->priv->font_map_for_testing = NULL;
-    }
+    g_clear_pointer (&self->priv->font_config_for_testing, FcConfigDestroy);
+    g_clear_object (&self->priv->font_map_for_testing);
 #endif
 
     g_clear_object (&self->priv->cancellable);
 
-  chain:
     G_OBJECT_CLASS (rsvg_handle_parent_class)->dispose (instance);
 }
 
@@ -912,16 +872,18 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     cairo_surface_t *target;
     RsvgDrawingCtx *draw;
     RsvgNode *sself = NULL;
-    RsvgLength root_width, root_height;
-    gboolean has_root_vbox;
-    cairo_rectangle_t root_vbox;
-
-    gboolean handle_subelement = TRUE;
+    gboolean has_size;
+    int root_width, root_height;
 
     g_return_val_if_fail (handle, FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
 
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
+
+    if (!handle->priv->treebase)
+        return FALSE;
+
+    g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
 
     if (id && *id) {
         sself = rsvg_defs_lookup (handle->priv->defs, id);
@@ -935,22 +897,11 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     if (!sself && id)
         return FALSE;
 
-    if (!handle->priv->treebase)
-        return FALSE;
+    has_size = rsvg_node_svg_get_size (handle->priv->treebase,
+                                       handle->priv->dpi_x, handle->priv->dpi_y,
+                                       &root_width, &root_height);
 
-    g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
-
-    rsvg_node_svg_get_size (handle->priv->treebase, &root_width, &root_height);
-    has_root_vbox = rsvg_node_svg_get_view_box (handle->priv->treebase, &root_vbox);
-
-    if (!id) {
-        if ((root_width.unit == LENGTH_UNIT_PERCENT || root_height.unit == LENGTH_UNIT_PERCENT) && !has_root_vbox)
-            handle_subelement = TRUE;
-        else
-            handle_subelement = FALSE;
-    }
-
-    if (handle_subelement == TRUE) {
+    if (id || !has_size) {
         RsvgDimensionData dimensions;
         cairo_rectangle_t ink_rect;
 
@@ -977,20 +928,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         cairo_destroy (cr);
         cairo_surface_destroy (target);
     } else {
-        double vbox_width, vbox_height;
-
-        if (has_root_vbox) {
-            vbox_width = root_vbox.width;
-            vbox_height = root_vbox.height;
-        } else {
-            vbox_width = 0.0;
-            vbox_height = 0.0;
-        }
-
-        dimension_data->width = (int) (rsvg_length_hand_normalize (&root_width, handle->priv->dpi_x,
-                                                                   vbox_width, 12) + 0.5);
-        dimension_data->height = (int) (rsvg_length_hand_normalize (&root_height, handle->priv->dpi_y,
-                                                                    vbox_height, 12) + 0.5);
+        dimension_data->width = root_width;
+        dimension_data->height = root_height;
     }
 
     dimension_data->em = dimension_data->width;
