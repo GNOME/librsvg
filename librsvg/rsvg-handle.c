@@ -165,7 +165,6 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->cancellable = NULL;
 
-    self->priv->is_disposed = FALSE;
     self->priv->in_loop = FALSE;
 
     self->priv->is_testing = FALSE;
@@ -181,33 +180,18 @@ rsvg_handle_dispose (GObject *instance)
 {
     RsvgHandle *self = (RsvgHandle *) instance;
 
-    if (self->priv->is_disposed)
-      goto chain;
-
-    self->priv->is_disposed = TRUE;
-
-    if (self->priv->all_nodes) {
-        g_ptr_array_unref (self->priv->all_nodes);
-        self->priv->all_nodes = NULL;
-    }
-
-    rsvg_defs_free (self->priv->defs);
-    self->priv->defs = NULL;
-
-    g_hash_table_destroy (self->priv->css_props);
-
-    self->priv->treebase = rsvg_node_unref (self->priv->treebase);
-
-    if (self->priv->user_data_destroy)
+    if (self->priv->user_data_destroy) {
         (*self->priv->user_data_destroy) (self->priv->user_data);
-
-    if (self->priv->base_uri)
-        g_free (self->priv->base_uri);
-
-    if (self->priv->base_gfile) {
-        g_object_unref (self->priv->base_gfile);
-        self->priv->base_gfile = NULL;
+        self->priv->user_data_destroy = NULL;
     }
+
+    g_clear_pointer (&self->priv->all_nodes, g_ptr_array_unref);
+    g_clear_pointer (&self->priv->defs, rsvg_defs_free);
+    g_clear_pointer (&self->priv->css_props, g_hash_table_destroy);
+    g_clear_pointer (&self->priv->treebase, rsvg_node_unref);
+    g_clear_pointer (&self->priv->base_uri, g_free);
+    g_clear_object (&self->priv->base_gfile);
+
     if (self->priv->load) {
         RsvgNode *treebase = rsvg_load_destroy (self->priv->load);
         treebase = rsvg_node_unref (treebase);
@@ -215,20 +199,12 @@ rsvg_handle_dispose (GObject *instance)
     }
 
 #ifdef HAVE_PANGOFT2
-    if (self->priv->font_config_for_testing) {
-        FcConfigDestroy (self->priv->font_config_for_testing);
-        self->priv->font_config_for_testing = NULL;
-    }
-
-    if (self->priv->font_map_for_testing) {
-        g_object_unref (self->priv->font_map_for_testing);
-        self->priv->font_map_for_testing = NULL;
-    }
+    g_clear_pointer (&self->priv->font_config_for_testing, FcConfigDestroy);
+    g_clear_object (&self->priv->font_map_for_testing);
 #endif
 
     g_clear_object (&self->priv->cancellable);
 
-  chain:
     G_OBJECT_CLASS (rsvg_handle_parent_class)->dispose (instance);
 }
 

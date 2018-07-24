@@ -140,8 +140,6 @@ struct RsvgHandlePrivate {
 
     RsvgLoad *load;
 
-    gboolean is_disposed;
-
     RsvgSizeFunc size_func;
     gpointer user_data;
     GDestroyNotify user_data_destroy;
