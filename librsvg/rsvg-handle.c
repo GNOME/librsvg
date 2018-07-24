@@ -151,7 +151,7 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->hstate = RSVG_HANDLE_STATE_START;
-    self->priv->all_nodes = g_ptr_array_new ();
+    self->priv->all_nodes = g_ptr_array_new_with_free_func ((GDestroyNotify) rsvg_node_unref);
     self->priv->defs = rsvg_defs_new (self);
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
@@ -177,24 +177,6 @@ rsvg_handle_init (RsvgHandle * self)
 }
 
 static void
-free_nodes (RsvgHandle *self)
-{
-    int i;
-
-    g_assert (self->priv->all_nodes != NULL);
-
-    for (i = 0; i < self->priv->all_nodes->len; i++) {
-        RsvgNode *node;
-
-        node = g_ptr_array_index (self->priv->all_nodes, i);
-        node = rsvg_node_unref (node);
-    }
-
-    g_ptr_array_free (self->priv->all_nodes, TRUE);
-    self->priv->all_nodes = NULL;
-}
-
-static void
 rsvg_handle_dispose (GObject *instance)
 {
     RsvgHandle *self = (RsvgHandle *) instance;
@@ -204,7 +186,10 @@ rsvg_handle_dispose (GObject *instance)
 
     self->priv->is_disposed = TRUE;
 
-    free_nodes (self);
+    if (self->priv->all_nodes) {
+        g_ptr_array_unref (self->priv->all_nodes);
+        self->priv->all_nodes = NULL;
+    }
 
     rsvg_defs_free (self->priv->defs);
     self->priv->defs = NULL;
