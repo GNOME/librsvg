@@ -10,6 +10,7 @@ extern crate glib;
 extern crate glib_sys;
 extern crate itertools;
 extern crate libc;
+extern crate nalgebra;
 extern crate owning_ref;
 extern crate pango;
 extern crate pango_cairo_sys;
@@ -22,9 +23,6 @@ extern crate lazy_static;
 
 #[macro_use]
 extern crate downcast_rs;
-
-#[macro_use]
-extern crate rulinalg;
 
 pub use attributes::rsvg_attribute_from_name;
 

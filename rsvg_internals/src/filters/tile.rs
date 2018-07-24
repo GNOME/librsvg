@@ -97,7 +97,7 @@ impl Filter for Tile {
                     cr.paint();
                 }
 
-                SharedImageSurface::new(output_surface)?
+                SharedImageSurface::new(output_surface, surface.surface_type())?
             }
         };
 

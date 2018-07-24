@@ -7,7 +7,7 @@ use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use property_bag::PropertyBag;
-use surface_utils::shared_surface::SharedImageSurface;
+use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::input::Input;
@@ -82,29 +82,50 @@ impl MergeNode {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
         bounds: IRect,
-        output_surface: Option<ImageSurface>,
-    ) -> Result<ImageSurface, FilterError> {
+        output_surface: Option<SharedImageSurface>,
+    ) -> Result<SharedImageSurface, FilterError> {
         let input = ctx.get_input(draw_ctx, self.in_.borrow().as_ref())?;
 
         if output_surface.is_none() {
-            return Ok(input.surface().copy_surface(bounds)?);
+            return Ok(input.surface().clone());
         }
         let output_surface = output_surface.unwrap();
 
-        let cr = cairo::Context::new(&output_surface);
-        cr.rectangle(
-            bounds.x0 as f64,
-            bounds.y0 as f64,
-            (bounds.x1 - bounds.x0) as f64,
-            (bounds.y1 - bounds.y0) as f64,
-        );
-        cr.clip();
+        // If we're combining two alpha-only surfaces, the result is alpha-only. Otherwise the
+        // result is whatever the non-alpha-only type we're working on (which can be either sRGB or
+        // linear sRGB depending on color-interpolation-filters).
+        let surface_type = if input.surface().is_alpha_only() {
+            output_surface.surface_type()
+        } else {
+            if !output_surface.is_alpha_only() {
+                // All surface types should match (this is enforced by get_input()).
+                assert_eq!(
+                    output_surface.surface_type(),
+                    input.surface().surface_type()
+                );
+            }
 
-        input.surface().set_as_source_surface(&cr, 0f64, 0f64);
-        cr.set_operator(cairo::Operator::Over);
-        cr.paint();
+            input.surface().surface_type()
+        };
 
-        Ok(output_surface)
+        let output_surface = output_surface.into_image_surface()?;
+
+        {
+            let cr = cairo::Context::new(&output_surface);
+            cr.rectangle(
+                bounds.x0 as f64,
+                bounds.y0 as f64,
+                (bounds.x1 - bounds.x0) as f64,
+                (bounds.y1 - bounds.y0) as f64,
+            );
+            cr.clip();
+
+            input.surface().set_as_source_surface(&cr, 0f64, 0f64);
+            cr.set_operator(cairo::Operator::Over);
+            cr.paint();
+        }
+
+        Ok(SharedImageSurface::new(output_surface, surface_type)?)
     }
 }
 
@@ -140,17 +161,20 @@ impl Filter for Merge {
 
         let output_surface = match output_surface {
             Some(surface) => surface,
-            None => ImageSurface::create(
-                cairo::Format::ARgb32,
-                ctx.source_graphic().width(),
-                ctx.source_graphic().height(),
+            None => SharedImageSurface::new(
+                ImageSurface::create(
+                    cairo::Format::ARgb32,
+                    ctx.source_graphic().width(),
+                    ctx.source_graphic().height(),
+                )?,
+                SurfaceType::AlphaOnly,
             )?,
         };
 
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)?,
+                surface: output_surface,
                 bounds,
             },
         })

@@ -2,11 +2,11 @@ use std::cell::Cell;
 
 use cairo::MatrixTrait;
 use cssparser;
-use rulinalg::vector::Vector;
+use nalgebra::Vector3;
 
 use attributes::Attribute;
 use error::NodeError;
-use filters::{context::FilterContext, light::normalize};
+use filters::context::FilterContext;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers;
@@ -73,16 +73,16 @@ impl LightSource {
 
     /// Returns the unit (or null) vector from the image sample to the light.
     #[inline]
-    pub fn vector(&self, x: f64, y: f64, z: f64, ctx: &FilterContext) -> Vector<f64> {
+    pub fn vector(&self, x: f64, y: f64, z: f64, ctx: &FilterContext) -> Vector3<f64> {
         match self {
             LightSource::Distant { azimuth, elevation } => {
                 let azimuth = azimuth.get().to_radians();
                 let elevation = elevation.get().to_radians();
-                vector![
+                Vector3::new(
                     azimuth.cos() * elevation.cos(),
                     azimuth.sin() * elevation.cos(),
-                    elevation.sin()
-                ]
+                    elevation.sin(),
+                )
             }
             LightSource::Point {
                 x: light_x,
@@ -99,8 +99,8 @@ impl LightSource {
                     ctx.paffine().transform_point(light_x.get(), light_y.get());
                 let light_z = ctx.transform_dist(light_z.get());
 
-                let mut v = vector![light_x - x, light_y - y, light_z - z];
-                let _ = normalize(&mut v);
+                let mut v = Vector3::new(light_x - x, light_y - y, light_z - z);
+                let _ = v.try_normalize_mut(0.0);
                 v
             }
         }
@@ -111,7 +111,7 @@ impl LightSource {
     pub fn color(
         &self,
         lighting_color: cssparser::RGBA,
-        light_vector: &Vector<f64>,
+        light_vector: Vector3<f64>,
         ctx: &FilterContext,
     ) -> cssparser::RGBA {
         match self {
@@ -134,12 +134,12 @@ impl LightSource {
                     .transform_point(points_at_x.get(), points_at_y.get());
                 let points_at_z = ctx.transform_dist(points_at_z.get());
 
-                let mut s = vector![
+                let mut s = Vector3::new(
                     points_at_x - light_x,
                     points_at_y - light_y,
-                    points_at_z - light_z
-                ];
-                if normalize(&mut s).is_err() {
+                    points_at_z - light_z,
+                );
+                if s.try_normalize_mut(0.0).is_none() {
                     return cssparser::RGBA::transparent();
                 }
 

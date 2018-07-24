@@ -10,8 +10,7 @@ use drawing_ctx::DrawingCtx;
 use length::RsvgLength;
 use node::RsvgNode;
 use paint_server::{self, PaintServer};
-use srgb::{linearize_surface, unlinearize_surface};
-use surface_utils::shared_surface::SharedImageSurface;
+use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use unitinterval::UnitInterval;
 
 use super::error::FilterError;
@@ -356,7 +355,8 @@ impl FilterContext {
             self.compute_background_image(draw_ctx)
                 .map_err(FilterError::CairoError)
                 .and_then(|surface| {
-                    SharedImageSurface::new(surface).map_err(FilterError::CairoError)
+                    SharedImageSurface::new(surface, SurfaceType::SRgb)
+                        .map_err(FilterError::CairoError)
                 }),
         );
 
@@ -384,10 +384,15 @@ impl FilterContext {
 
     /// Converts this `FilterContext` into the surface corresponding to the output of the filter
     /// chain.
+    ///
+    /// The returned surface is in the sRGB color space.
+    // TODO: sRGB conversion should probably be done by the caller.
     #[inline]
     pub fn into_output(self) -> Result<SharedImageSurface, FilterError> {
-        match self.last_result.map(|FilterOutput { surface, .. }| surface) {
-            Some(surface) => Ok(surface),
+        match self.last_result {
+            Some(FilterOutput { surface, bounds }) => {
+                surface.to_srgb(bounds).map_err(FilterError::CairoError)
+            }
             None => {
                 let empty_surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
@@ -395,21 +400,15 @@ impl FilterContext {
                     self.source_surface.height(),
                 ).map_err(FilterError::CairoError)?;
 
-                SharedImageSurface::new(empty_surface).map_err(FilterError::CairoError)
+                SharedImageSurface::new(empty_surface, SurfaceType::AlphaOnly)
+                    .map_err(FilterError::CairoError)
             }
         }
     }
 
     /// Stores a filter primitive result into the context.
     #[inline]
-    pub fn store_result(&mut self, mut result: FilterResult) -> Result<(), FilterError> {
-        // Unlinearize the surface if needed.
-        if self.processing_linear_rgb {
-            result.output.surface =
-                unlinearize_surface(&result.output.surface, result.output.bounds)
-                    .map_err(FilterError::CairoError)?;
-        }
-
+    pub fn store_result(&mut self, result: FilterResult) -> Result<(), FilterError> {
         if let Some(name) = result.name {
             self.previous_results.insert(name, result.output.clone());
         }
@@ -531,14 +530,16 @@ impl FilterContext {
                 .get_paint_server_surface(draw_ctx, &values.fill.0, values.fill_opacity.0)
                 .map_err(FilterError::CairoError)
                 .and_then(|surface| {
-                    SharedImageSurface::new(surface).map_err(FilterError::CairoError)
+                    SharedImageSurface::new(surface, SurfaceType::SRgb)
+                        .map_err(FilterError::CairoError)
                 })
                 .map(FilterInput::StandardInput),
             Input::StrokePaint => self
                 .get_paint_server_surface(draw_ctx, &values.stroke.0, values.stroke_opacity.0)
                 .map_err(FilterError::CairoError)
                 .and_then(|surface| {
-                    SharedImageSurface::new(surface).map_err(FilterError::CairoError)
+                    SharedImageSurface::new(surface, SurfaceType::SRgb)
+                        .map_err(FilterError::CairoError)
                 })
                 .map(FilterInput::StandardInput),
 
@@ -570,7 +571,8 @@ impl FilterContext {
                 }) => (surface, *bounds),
             };
 
-            linearize_surface(surface, bounds)
+            surface
+                .to_linear_rgb(bounds)
                 .map_err(FilterError::CairoError)
                 .map(|surface| match raw {
                     FilterInput::StandardInput(_) => FilterInput::StandardInput(surface),
@@ -665,7 +667,7 @@ mod tests {
             }
         }
 
-        let surface = SharedImageSurface::new(surface).unwrap();
+        let surface = SharedImageSurface::new(surface, SurfaceType::SRgb).unwrap();
         let alpha = surface.extract_alpha(BOUNDS).unwrap();
 
         for (x, y, p, pa) in

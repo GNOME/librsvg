@@ -109,7 +109,7 @@ impl Filter for Offset {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)?,
+                surface: SharedImageSurface::new(output_surface, input.surface().surface_type())?,
                 bounds,
             },
         })

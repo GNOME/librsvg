@@ -3,7 +3,7 @@ use std::cmp::min;
 use std::f64;
 
 use cairo::MatrixTrait;
-use rulinalg::matrix::Matrix;
+use nalgebra::{DMatrix, Dynamic, MatrixVec};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -185,7 +185,11 @@ fn gaussian_blur(
     } else {
         (1, kernel.len())
     };
-    let kernel = Matrix::new(rows, cols, kernel);
+    let kernel = DMatrix::from_data(MatrixVec::new(
+        Dynamic::new(rows),
+        Dynamic::new(cols),
+        kernel,
+    ));
 
     Ok(input_surface.convolve(
         bounds,

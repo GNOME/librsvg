@@ -1,10 +1,7 @@
 use std::cell::RefCell;
 
 use cairo::{self, ImageSurface};
-use rulinalg::{
-    self,
-    matrix::{BaseMatrix, BaseMatrixMut, Matrix},
-};
+use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -36,7 +33,7 @@ enum OperationType {
 /// The `feColorMatrix` filter primitive.
 pub struct ColorMatrix {
     base: PrimitiveWithInput,
-    matrix: RefCell<Matrix<f64>>,
+    matrix: RefCell<Matrix5<f64>>,
 }
 
 impl ColorMatrix {
@@ -45,7 +42,7 @@ impl ColorMatrix {
     pub fn new() -> ColorMatrix {
         ColorMatrix {
             base: PrimitiveWithInput::new::<Self>(),
-            matrix: RefCell::new(Matrix::identity(5)),
+            matrix: RefCell::new(Matrix5::identity()),
         }
     }
 }
@@ -68,13 +65,16 @@ impl NodeTrait for ColorMatrix {
         // Now read the matrix correspondingly.
         // LuminanceToAlpha doesn't accept any matrix.
         if operation_type == OperationType::LuminanceToAlpha {
-            self.matrix.replace(matrix![
-                                0.0,    0.0,    0.0,    0.0, 0.0;
-                                0.0,    0.0,    0.0,    0.0, 0.0;
-                                0.0,    0.0,    0.0,    0.0, 0.0;
-                                0.2125, 0.7154, 0.0721, 0.0, 0.0;
-                                0.0,    0.0,    0.0,    0.0, 1.0
-            ]);
+            #[cfg_attr(rustfmt, rustfmt_skip)]
+            self.matrix.replace(
+                Matrix5::new(
+                    0.0,    0.0,    0.0,    0.0, 0.0,
+                    0.0,    0.0,    0.0,    0.0, 0.0,
+                    0.0,    0.0,    0.0,    0.0, 0.0,
+                    0.2125, 0.7154, 0.0721, 0.0, 0.0,
+                    0.0,    0.0,    0.0,    0.0, 1.0,
+                ),
+            );
         } else {
             for (_, attr, value) in pbag
                 .iter()
@@ -83,10 +83,8 @@ impl NodeTrait for ColorMatrix {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
-                        let top = Matrix::new(
-                            4,
-                            5,
-                            parsers::number_list_from_str(value, ListLength::Exact(20)).map_err(
+                        let matrix = Matrix4x5::from_row_slice(
+                            &parsers::number_list_from_str(value, ListLength::Exact(20)).map_err(
                                 |err| {
                                     NodeError::parse_error(
                                         attr,
@@ -103,8 +101,8 @@ impl NodeTrait for ColorMatrix {
                             )?,
                         );
 
-                        let mut matrix = Matrix::identity(5);
-                        matrix.sub_slice_mut([0, 0], 4, 5).set_to(top);
+                        let mut matrix = matrix.fixed_resize(0.0);
+                        matrix[(4, 4)] = 1.0;
                         matrix
                     }
                     OperationType::Saturate => {
@@ -114,13 +112,14 @@ impl NodeTrait for ColorMatrix {
                             return Err(NodeError::value_error(attr, "expected value from 0 to 1"));
                         }
 
-                        matrix![
-                            0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0.0, 0.0;
-                            0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s, 0.0, 0.0;
-                            0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s, 0.0, 0.0;
-                            0.0,               0.0,               0.0,               1.0, 0.0;
-                            0.0,               0.0,               0.0,               0.0, 1.0
-                        ]
+                        #[cfg_attr(rustfmt, rustfmt_skip)]
+                        Matrix5::new(
+                            0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0.0, 0.0,
+                            0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s, 0.0, 0.0,
+                            0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s, 0.0, 0.0,
+                            0.0,               0.0,               0.0,               1.0, 0.0,
+                            0.0,               0.0,               0.0,               0.0, 1.0,
+                        )
                     }
                     OperationType::HueRotate => {
                         let degrees = parsers::number(value)
@@ -128,28 +127,32 @@ impl NodeTrait for ColorMatrix {
 
                         let (sin, cos) = degrees.to_radians().sin_cos();
 
-                        let a = matrix![
-                            0.213, 0.715, 0.072;
-                            0.213, 0.715, 0.072;
-                            0.213, 0.715, 0.072
-                        ];
+                        #[cfg_attr(rustfmt, rustfmt_skip)]
+                        let a = Matrix3::new(
+                            0.213, 0.715, 0.072,
+                            0.213, 0.715, 0.072,
+                            0.213, 0.715, 0.072,
+                        );
 
-                        let b = matrix![
-                             0.787, -0.715, -0.072;
-                            -0.213,  0.285, -0.072;
-                            -0.213, -0.715,  0.928
-                        ];
+                        #[cfg_attr(rustfmt, rustfmt_skip)]
+                        let b = Matrix3::new(
+                             0.787, -0.715, -0.072,
+                            -0.213,  0.285, -0.072,
+                            -0.213, -0.715,  0.928,
+                        );
 
-                        let c = matrix![
-                            -0.213, -0.715,  0.928;
-                             0.143,  0.140, -0.283;
-                            -0.787,  0.715,  0.072
-                        ];
+                        #[cfg_attr(rustfmt, rustfmt_skip)]
+                        let c = Matrix3::new(
+                            -0.213, -0.715,  0.928,
+                             0.143,  0.140, -0.283,
+                            -0.787,  0.715,  0.072,
+                        );
 
                         let top_left = a + b * cos + c * sin;
 
-                        let mut matrix = Matrix::identity(5);
-                        matrix.sub_slice_mut([0, 0], 3, 3).set_to(top_left);
+                        let mut matrix = top_left.fixed_resize(0.0);
+                        matrix[(3, 3)] = 1.0;
+                        matrix[(4, 4)] = 1.0;
                         matrix
                     }
                 };
@@ -178,17 +181,6 @@ impl Filter for ColorMatrix {
 
         let matrix = &*self.matrix.borrow();
 
-        /// Multiplies a matrix by a vector and puts the result into a slice.
-        #[inline]
-        fn mul_into(out: &mut [f64], m: &Matrix<f64>, v: &[f64]) {
-            assert_eq!(v.len(), m.cols());
-            assert_eq!(v.len(), out.len());
-
-            for (i, row) in m.row_iter().enumerate() {
-                out[i] = rulinalg::utils::dot(row.raw_slice(), v);
-            }
-        }
-
         let mut output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
@@ -203,18 +195,18 @@ impl Filter for ColorMatrix {
                 let alpha = f64::from(pixel.a) / 255f64;
 
                 let pixel_vec = if alpha == 0.0 {
-                    [0.0, 0.0, 0.0, 0.0, 1.0]
+                    Vector5::new(0.0, 0.0, 0.0, 0.0, 1.0)
                 } else {
-                    [
+                    Vector5::new(
                         f64::from(pixel.r) / 255f64 / alpha,
                         f64::from(pixel.g) / 255f64 / alpha,
                         f64::from(pixel.b) / 255f64 / alpha,
                         alpha,
                         1.0,
-                    ]
+                    )
                 };
-                let mut new_pixel_vec = [0.0; 5];
-                mul_into(&mut new_pixel_vec, &matrix, &pixel_vec);
+                let mut new_pixel_vec = Vector5::zeros();
+                matrix.mul_to(&pixel_vec, &mut new_pixel_vec);
 
                 let new_alpha = clamp(new_pixel_vec[3], 0.0, 1.0);
 
@@ -234,7 +226,7 @@ impl Filter for ColorMatrix {
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)?,
+                surface: SharedImageSurface::new(output_surface, input.surface().surface_type())?,
                 bounds,
             },
         })

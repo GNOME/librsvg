@@ -9,7 +9,12 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, ParseError};
 use property_bag::PropertyBag;
-use surface_utils::{shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel};
+use state::ColorInterpolationFilters;
+use surface_utils::{
+    shared_surface::{SharedImageSurface, SurfaceType},
+    ImageSurfaceDataExt,
+    Pixel,
+};
 use util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -338,7 +343,7 @@ impl NoiseGenerator {
 impl Filter for Turbulence {
     fn render(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
@@ -401,10 +406,21 @@ impl Filter for Turbulence {
             }
         }
 
+        let cascaded = node.get_cascaded_values();
+        let values = cascaded.get();
+        // The generated color values are in the color space determined by
+        // color-interpolation-filters.
+        let surface_type =
+            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
+                SurfaceType::LinearRgb
+            } else {
+                SurfaceType::SRgb
+            };
+
         Ok(FilterResult {
             name: self.base.result.borrow().clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface)?,
+                surface: SharedImageSurface::new(output_surface, surface_type)?,
                 bounds,
             },
         })

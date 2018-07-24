@@ -7,7 +7,10 @@ extern crate cairo_sys;
 extern crate rsvg_internals;
 
 use rsvg_internals::filters::context::IRect;
-use rsvg_internals::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
+use rsvg_internals::surface_utils::{
+    iterators::Pixels,
+    shared_surface::{SharedImageSurface, SurfaceType},
+};
 
 const SURFACE_SIDE: i32 = 512;
 const BOUNDS: IRect = IRect {
@@ -48,7 +51,7 @@ fn bench_pixel_iterators(c: &mut Criterion) {
     c.bench_function("pixel_iterators get_pixel", |b| {
         let surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
-        let surface = SharedImageSurface::new(surface).unwrap();
+        let surface = SharedImageSurface::new(surface, SurfaceType::SRgb).unwrap();
 
         b.iter(|| {
             let mut r = 0usize;
@@ -74,7 +77,7 @@ fn bench_pixel_iterators(c: &mut Criterion) {
     c.bench_function("pixel_iterators pixels", |b| {
         let surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
-        let data = SharedImageSurface::new(surface).unwrap();
+        let data = SharedImageSurface::new(surface, SurfaceType::SRgb).unwrap();
 
         b.iter(|| {
             let mut r = 0usize;
