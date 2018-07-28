@@ -65,7 +65,6 @@ pub use property_bag::{
 };
 
 pub use state::{
-    rsvg_computed_values_get_lighting_color_argb,
     rsvg_state_free,
     rsvg_state_new,
     rsvg_state_parse_style_pair,

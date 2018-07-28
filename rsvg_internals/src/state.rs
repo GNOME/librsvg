@@ -7,7 +7,6 @@ use std::collections::HashSet;
 use std::str::FromStr;
 
 use attributes::Attribute;
-use color::rgba_to_argb;
 use error::*;
 use handle::RsvgHandle;
 use iri::IRI;
@@ -143,9 +142,6 @@ pub struct SpecifiedValues {
     pub xml_lang: SpecifiedValue<XmlLang>, // not a property, but a non-presentation attribute
     pub xml_space: SpecifiedValue<XmlSpace>, // not a property, but a non-presentation attribute
 }
-
-// Used to transfer pointers to a ComputedValues to the C code
-pub type RsvgComputedValues = *const ComputedValues;
 
 #[derive(Debug, Clone)]
 pub struct ComputedValues {
@@ -1610,16 +1606,5 @@ pub fn parse_style_attrs(
                 _ => (),
             }
         }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_computed_values_get_lighting_color_argb(values: RsvgComputedValues) -> u32 {
-    assert!(!values.is_null());
-    let values = unsafe { &*values };
-
-    match values.lighting_color {
-        LightingColor(cssparser::Color::CurrentColor) => rgba_to_argb(values.color.0),
-        LightingColor(cssparser::Color::RGBA(ref rgba)) => rgba_to_argb(*rgba),
     }
 }

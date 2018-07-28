@@ -234,9 +234,6 @@ typedef enum {
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST                /* just a marker; not a valid type */
 } RsvgNodeType;
 
-/* Defined in rsvg_internals/src/state.rs */
-typedef struct _RsvgComputedValues *RsvgComputedValues;
-
 typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
 typedef void (* CNodeFree) (gpointer impl);
 
@@ -301,18 +298,6 @@ void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
 /* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
 gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int *out_width, int *out_height);
-
-/* Implemented in rust/src/state.rs */
-G_GNUC_INTERNAL
-guint32 rsvg_computed_values_get_flood_color_argb (RsvgComputedValues *values);
-
-/* Implemented in rust/src/state.rs */
-G_GNUC_INTERNAL
-guint8 rsvg_computed_values_get_flood_opacity (RsvgComputedValues *values);
-
-/* Implemented in rust/src/state.rs */
-G_GNUC_INTERNAL
-guint32 rsvg_computed_values_get_lighting_color_argb (RsvgComputedValues *values);
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
