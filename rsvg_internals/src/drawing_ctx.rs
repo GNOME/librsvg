@@ -39,7 +39,7 @@ use viewbox::ViewBox;
 
 pub enum RsvgDrawingCtx {}
 
-pub struct DrawingCtx {
+pub struct DrawingCtx<'a> {
     rect: cairo::Rectangle,
     dpi_x: f64,
     dpi_y: f64,
@@ -58,13 +58,13 @@ pub struct DrawingCtx {
 
     drawsub_stack: Vec<RsvgNode>,
 
-    defs: *const RsvgDefs,
+    defs: RefCell<&'a mut Defs>,
     acquired_nodes: RefCell<Vec<RsvgNode>>,
 
     is_testing: bool,
 }
 
-impl<'a> DrawingCtx {
+impl<'a> DrawingCtx<'a> {
     pub fn new(
         cr: cairo::Context,
         width: f64,
@@ -73,7 +73,7 @@ impl<'a> DrawingCtx {
         vb_height: f64,
         dpi_x: f64,
         dpi_y: f64,
-        defs: *const RsvgDefs,
+        defs: &mut Defs,
         is_testing: bool,
     ) -> DrawingCtx {
         let mut affine = cr.get_matrix();
@@ -109,7 +109,7 @@ impl<'a> DrawingCtx {
             bbox: BoundingBox::new(&affine),
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
-            defs,
+            defs: RefCell::new(defs),
             acquired_nodes: RefCell::new(Vec::new()),
             is_testing,
         }
@@ -195,9 +195,7 @@ impl<'a> DrawingCtx {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
-        let defs = unsafe { &mut *(self.defs as *mut Defs) };
-
-        if let Some(node) = defs.lookup(url) {
+        if let Some(node) = self.defs.borrow_mut().lookup(url) {
             if !self.acquired_nodes_contains(node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 return Some(AcquiredNode(&self.acquired_nodes as *const _, node.clone()));
@@ -975,10 +973,11 @@ pub extern "C" fn rsvg_drawing_ctx_new(
     vb_height: libc::c_double,
     dpi_x: libc::c_double,
     dpi_y: libc::c_double,
-    defs: *const RsvgDefs,
+    defs: *mut RsvgDefs,
     is_testing: glib_sys::gboolean,
 ) -> *mut RsvgDrawingCtx {
     assert!(!defs.is_null());
+    let defs = unsafe { &mut *(defs as *mut Defs) };
 
     Box::into_raw(Box::new(DrawingCtx::new(
         unsafe { from_glib_none(cr) },
