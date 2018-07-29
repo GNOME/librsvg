@@ -50,34 +50,6 @@ rsvg_defs_new (RsvgHandle *handle)
     return result;
 }
 
-static RsvgHandle *
-rsvg_defs_load_extern (const RsvgDefs * defs, const char *uri)
-{
-    RsvgHandle *handle = NULL;
-    char *data;
-    gsize data_len;
-
-    data = _rsvg_handle_acquire_data (defs->handle, uri, NULL, &data_len, NULL);
-
-    if (data) {
-        handle = rsvg_handle_new ();
-        rsvg_handle_set_base_uri (handle, uri);
-
-        if (rsvg_handle_write (handle, (guchar *) data, data_len, NULL)
-            && rsvg_handle_close (handle, NULL)) {
-            rsvg_handle_cascade (handle);
-            g_hash_table_insert (defs->externs, g_strdup (uri), handle);
-        } else {
-            g_object_unref (handle);
-            handle = NULL;
-        }
-
-        g_free (data);
-    }
-
-    return handle;
-}
-
 static RsvgNode *
 rsvg_defs_extern_lookup (const RsvgDefs * defs, const char *possibly_relative_uri, const char *name)
 {
@@ -90,7 +62,10 @@ rsvg_defs_extern_lookup (const RsvgDefs * defs, const char *possibly_relative_ur
 
     handle = (RsvgHandle *) g_hash_table_lookup (defs->externs, uri);
     if (handle == NULL) {
-        handle = rsvg_defs_load_extern (defs, uri);
+        handle = rsvg_handle_load_extern (defs->handle, uri);
+        if (handle != NULL) {
+            g_hash_table_insert (defs->externs, g_strdup (uri), handle);
+        }
     }
 
     if (handle != NULL) {

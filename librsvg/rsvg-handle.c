@@ -724,7 +724,7 @@ rsvg_handle_get_defs (RsvgHandle *handle)
     return handle->priv->defs;
 }
 
-void
+static void
 rsvg_handle_cascade (RsvgHandle *handle)
 {
     if (!handle->priv->already_cascaded) {
@@ -732,6 +732,33 @@ rsvg_handle_cascade (RsvgHandle *handle)
 
         rsvg_root_node_cascade(handle->priv->treebase);
     }
+}
+
+RsvgHandle *
+rsvg_handle_load_extern (RsvgHandle *handle, const char *uri)
+{
+    RsvgHandle *res = NULL;
+    char *data;
+    gsize data_len;
+
+    data = _rsvg_handle_acquire_data (handle, uri, NULL, &data_len, NULL);
+
+    if (data) {
+        res = rsvg_handle_new ();
+        rsvg_handle_set_base_uri (res, uri);
+
+        if (rsvg_handle_write (res, (guchar *) data, data_len, NULL)
+            && rsvg_handle_close (res, NULL)) {
+            rsvg_handle_cascade (res);
+        } else {
+            g_object_unref (res);
+            res = NULL;
+        }
+
+        g_free (data);
+    }
+
+    return res;
 }
 
 static RsvgDrawingCtx *
