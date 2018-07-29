@@ -400,9 +400,6 @@ G_GNUC_INTERNAL
 void rsvg_handle_cascade (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
-void rsvg_handle_update_font_map_for_testing (RsvgHandle *handle);
-
-G_GNUC_INTERNAL
 gboolean rsvg_allow_load (GFile       *base_gfile,
                           const char  *uri,
                           GError     **error);
