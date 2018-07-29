@@ -64,11 +64,7 @@ pub use property_bag::{
     rsvg_property_bag_new,
 };
 
-pub use state::{
-    rsvg_state_free,
-    rsvg_state_new,
-    rsvg_state_parse_style_pair,
-};
+pub use state::{rsvg_state_free, rsvg_state_new, rsvg_state_parse_style_pair};
 
 pub use structure::{rsvg_node_svg_apply_atts, rsvg_node_svg_get_size};
 
