@@ -120,6 +120,7 @@
 #include "config.h"
 #include <string.h>
 
+#include "rsvg-io.h"
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
 
@@ -428,6 +429,107 @@ rsvg_handle_new (void)
     return RSVG_HANDLE (g_object_new (RSVG_TYPE_HANDLE, NULL));
 }
 
+static gboolean
+rsvg_handle_fill_with_data (RsvgHandle *handle,
+                            const char *data,
+                            gsize data_len,
+                            GError ** error)
+{
+    gboolean rv;
+
+    rsvg_return_val_if_fail (data != NULL, FALSE, error);
+    rsvg_return_val_if_fail (data_len != 0, FALSE, error);
+
+    rv = rsvg_handle_write (handle, (guchar *) data, data_len, error);
+
+    return rsvg_handle_close (handle, rv ? error : NULL) && rv;
+}
+
+/**
+ * rsvg_handle_new_from_data:
+ * @data: (array length=data_len): The SVG data
+ * @data_len: The length of @data, in bytes
+ * @error: return location for errors
+ *
+ * Loads the SVG specified by @data.
+ *
+ * Returns: A #RsvgHandle or %NULL if an error occurs.
+ * Since: 2.14
+ */
+RsvgHandle *
+rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
+{
+    RsvgHandle *handle;
+
+    handle = rsvg_handle_new ();
+
+    if (handle) {
+        if (!rsvg_handle_fill_with_data (handle, (char *) data, data_len, error)) {
+            g_object_unref (handle);
+            handle = NULL;
+        }
+    }
+
+    return handle;
+}
+
+/**
+ * rsvg_handle_new_from_file:
+ * @file_name: The file name to load. If built with gnome-vfs, can be a URI.
+ * @error: return location for errors
+ *
+ * Loads the SVG specified by @file_name.
+ *
+ * Returns: A #RsvgHandle or %NULL if an error occurs.
+ * Since: 2.14
+ */
+RsvgHandle *
+rsvg_handle_new_from_file (const gchar *file_name, GError **error)
+{
+    gchar *base_uri;
+    char *data;
+    gsize data_len;
+    RsvgHandle *handle = NULL;
+    GFile *file;
+    char *scheme;
+
+    rsvg_return_val_if_fail (file_name != NULL, NULL, error);
+
+    scheme = g_uri_parse_scheme (file_name);
+    if (scheme) {
+        file = g_file_new_for_uri (file_name);
+        g_free (scheme);
+    } else {
+        file = g_file_new_for_path (file_name);
+    }
+
+    base_uri = g_file_get_uri (file);
+    if (!base_uri) {
+        g_set_error (error,
+                     G_IO_ERROR,
+                     G_IO_ERROR_FAILED,
+                     _("Cannot obtain URI from '%s'"), file_name);
+        g_object_unref (file);
+        return NULL;
+    }
+
+    data = _rsvg_io_acquire_data (base_uri, base_uri, NULL, &data_len, NULL, error);
+
+    if (data) {
+        handle = rsvg_handle_new ();
+        rsvg_handle_set_base_uri (handle, base_uri);
+        if (!rsvg_handle_fill_with_data (handle, data, data_len, error)) {
+            g_object_unref (handle);
+            handle = NULL;
+        }
+        g_free (data);
+    }
+
+    g_free (base_uri);
+    g_object_unref (file);
+
+    return handle;
+}
 
 /**
  * rsvg_handle_new_with_flags:
