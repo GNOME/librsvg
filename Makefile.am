@@ -30,12 +30,12 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-css.h 			\
 	librsvg/rsvg-defs.c 			\
 	librsvg/rsvg-defs.h 			\
-	librsvg/rsvg-file-util.c		\
 	librsvg/rsvg-handle.c			\
 	librsvg/rsvg-io.c			\
 	librsvg/rsvg-io.h			\
 	librsvg/rsvg-load.c			\
 	librsvg/rsvg-load.h			\
+	librsvg/rsvg-pixbuf.c		\
 	librsvg/rsvg-private.h 			\
 	librsvg/rsvg-size-callback.c		\
 	librsvg/rsvg-size-callback.h		\
