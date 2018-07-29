@@ -326,12 +326,6 @@ gboolean rsvg_property_bag_iter_next (RsvgPropertyBagIter *iter,
 G_GNUC_INTERNAL
 void rsvg_property_bag_iter_end (RsvgPropertyBagIter *iter);
 
-/* for some reason this one's public... */
-GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
-                                                 size_t len,
-                                                 gpointer data,
-                                                 const char *base_uri, GError ** error);
-
 /* Implemented in rust/src/cond.rs */
 G_GNUC_INTERNAL
 gboolean rsvg_cond_check_required_features (const char *value);

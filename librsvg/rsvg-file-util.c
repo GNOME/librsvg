@@ -42,43 +42,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* private */
-GdkPixbuf *
-rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
-                                      size_t len,
-                                      /* RsvgSizeCallbackData */ gpointer data,
-                                      const char *base_uri, GError ** error)
-{
-    RsvgHandle *handle;
-    GdkPixbuf *retval;
-
-    handle = rsvg_handle_new ();
-
-    if (!handle) {
-        g_set_error (error, rsvg_error_quark (), 0, _("Error creating SVG reader"));
-        return NULL;
-    }
-
-    rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
-    rsvg_handle_set_base_uri (handle, base_uri);
-
-    if (!rsvg_handle_write (handle, buff, len, error)) {
-        (void) rsvg_handle_close (handle, NULL);
-        g_object_unref (handle);
-        return NULL;
-    }
-
-    if (!rsvg_handle_close (handle, error)) {
-        g_object_unref (handle);
-        return NULL;
-    }
-
-    retval = rsvg_handle_get_pixbuf (handle);
-    g_object_unref (handle);
-
-    return retval;
-}
-
 static GdkPixbuf *
 rsvg_pixbuf_from_stdio_file_with_size_data (const char *data,
                                             gsize data_len,
