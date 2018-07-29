@@ -718,6 +718,12 @@ rsvg_handle_get_desc (RsvgHandle * handle)
     return NULL;
 }
 
+RsvgDefs *
+rsvg_handle_get_defs (RsvgHandle *handle)
+{
+    return handle->priv->defs;
+}
+
 void
 rsvg_handle_cascade (RsvgHandle *handle)
 {

@@ -93,10 +93,12 @@ rsvg_defs_extern_lookup (const RsvgDefs * defs, const char *possibly_relative_ur
         handle = rsvg_defs_load_extern (defs, uri);
     }
 
-    if (handle != NULL)
-        return g_hash_table_lookup (handle->priv->defs->hash, name);
-    else
-        return NULL;
+    if (handle != NULL) {
+        RsvgDefs *ext_defs = rsvg_handle_get_defs (handle);
+        return g_hash_table_lookup (ext_defs->hash, name);
+    }
+
+    return NULL;
 }
 
 RsvgNode *
