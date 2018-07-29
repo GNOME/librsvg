@@ -316,8 +316,6 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
 
     push_element_name (load, name);
 
-    rsvg_add_node_to_handle (load->handle, newnode);
-
     if (load->currentnode) {
         rsvg_node_add_child (load->currentnode, newnode);
         load->currentnode = rsvg_node_unref (load->currentnode);
@@ -715,7 +713,6 @@ characters_impl (RsvgLoad *load, const char *ch, gssize len)
 
     if (!node) {
         node = rsvg_node_chars_new (load->currentnode);
-        rsvg_add_node_to_handle (load->handle, node);
         rsvg_node_add_child (load->currentnode, node);
     }
 

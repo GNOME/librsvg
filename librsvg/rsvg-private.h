@@ -144,12 +144,11 @@ struct RsvgHandlePrivate {
     gpointer user_data;
     GDestroyNotify user_data_destroy;
 
-    GPtrArray *all_nodes;
-
-    RsvgDefs *defs; /* lookup table for nodes that have an id="foo" attribute */
     /* this is the root level of the displayable tree, essentially what the
        file is converted into at the end */
     RsvgNode *treebase;
+
+    RsvgDefs *defs; /* lookup table for nodes that have an id="foo" attribute */
 
     GHashTable *css_props;
 
@@ -394,9 +393,6 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
 
 G_GNUC_INTERNAL
 RsvgNode *rsvg_load_destroy (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
-
-G_GNUC_INTERNAL
-void rsvg_add_node_to_handle (RsvgHandle *handle, RsvgNode *node);
 
 G_GNUC_INTERNAL
 char *rsvg_handle_resolve_uri (RsvgHandle *handle,

@@ -151,7 +151,6 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->hstate = RSVG_HANDLE_STATE_START;
-    self->priv->all_nodes = g_ptr_array_new_with_free_func ((GDestroyNotify) rsvg_node_unref);
     self->priv->defs = rsvg_defs_new (self);
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
@@ -185,7 +184,6 @@ rsvg_handle_dispose (GObject *instance)
         self->priv->user_data_destroy = NULL;
     }
 
-    g_clear_pointer (&self->priv->all_nodes, g_ptr_array_unref);
     g_clear_pointer (&self->priv->defs, rsvg_defs_free);
     g_clear_pointer (&self->priv->css_props, g_hash_table_destroy);
     g_clear_pointer (&self->priv->treebase, rsvg_node_unref);

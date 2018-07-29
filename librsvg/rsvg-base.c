@@ -82,15 +82,6 @@ double rsvg_internal_dpi_x = RSVG_DEFAULT_DPI_X;
 G_GNUC_INTERNAL
 double rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
-void
-rsvg_add_node_to_handle (RsvgHandle *handle, RsvgNode *node)
-{
-    g_assert (handle != NULL);
-    g_assert (node != NULL);
-
-    g_ptr_array_add (handle->priv->all_nodes, rsvg_node_ref (node));
-}
-
 /**
  * rsvg_error_quark:
  *
