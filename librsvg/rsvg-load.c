@@ -40,7 +40,7 @@ typedef enum {
 
 /* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts);
+RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts, RsvgDefs *defs);
 
 /* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
@@ -306,9 +306,12 @@ free_element_name_stack (RsvgLoad *load)
 static void
 standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
 {
+    RsvgDefs *defs;
     RsvgNode *newnode;
 
-    newnode = rsvg_load_new_node(name, load->currentnode, atts);
+    defs = rsvg_handle_get_defs(load->handle);
+
+    newnode = rsvg_load_new_node(name, load->currentnode, atts, defs);
     g_assert (newnode != NULL);
 
     g_assert (rsvg_node_get_type (newnode) != RSVG_NODE_TYPE_INVALID);
@@ -323,8 +326,6 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
     }
 
     load->currentnode = rsvg_node_ref (newnode);
-
-    rsvg_node_register_in_defs (newnode, load->handle->priv->defs);
 
     rsvg_load_set_node_atts (load->handle, newnode, name, atts);
 
