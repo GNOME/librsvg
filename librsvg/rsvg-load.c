@@ -27,7 +27,6 @@
 #include <string.h>
 
 #include "rsvg-attributes.h"
-#include "rsvg-defs.h"
 #include "rsvg-load.h"
 #include "rsvg-styles.h"
 

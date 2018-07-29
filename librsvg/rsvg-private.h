@@ -394,6 +394,18 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
 G_GNUC_INTERNAL
 RsvgNode *rsvg_load_destroy (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
+/* Defined in rsvg_internals/src/defs.rs */
+G_GNUC_INTERNAL
+RsvgDefs *rsvg_defs_new (RsvgHandle *handle);
+
+/* Defined in rsvg_internals/src/defs.rs */
+G_GNUC_INTERNAL
+void rsvg_defs_free (RsvgDefs *defs);
+
+/* Defined in rsvg_internals/src/defs.rs */
+/* for some reason this one's public... */
+RsvgNode *rsvg_defs_lookup (const RsvgDefs * defs, const char *name);
+
 G_GNUC_INTERNAL
 RsvgDefs *rsvg_handle_get_defs (RsvgHandle *handle);
 

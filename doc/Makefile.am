@@ -74,7 +74,6 @@ IGNORE_HFILES =			\
 	rsvg-cairo-clip.h	\
 	rsvg-compat.h		\
 	rsvg-css.h		\
-	rsvg-defs.h		\
 	rsvg-filter.h		\
 	rsvg-io.h		\
 	rsvg-marker.h		\

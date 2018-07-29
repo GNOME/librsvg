@@ -28,6 +28,8 @@ pub use attributes::rsvg_attribute_from_name;
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
+pub use defs::{rsvg_defs_free, rsvg_defs_lookup, rsvg_defs_new};
+
 pub use drawing_ctx::{
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack,
     rsvg_drawing_ctx_draw_node_from_stack,

@@ -121,7 +121,6 @@
 #include <string.h>
 
 #include "rsvg-private.h"
-#include "rsvg-defs.h"
 
 enum {
     PROP_0,

@@ -12,7 +12,7 @@ use std::str::FromStr;
 
 use attributes::Attribute;
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
-use defs::{self, RsvgDefs};
+use defs::{Defs, RsvgDefs};
 use drawing_ctx::DrawingCtx;
 use error::*;
 use handle::RsvgHandle;
@@ -283,9 +283,9 @@ impl Node {
         self.class.as_ref().map(String::as_str)
     }
 
-    pub fn register(&self, node: &RsvgNode, defs: *mut RsvgDefs) {
+    pub fn register(&self, node: &RsvgNode, defs: &mut Defs) {
         if let Some(ref id) = self.id {
-            defs::register_node_by_id(defs, id, node);
+            defs.insert(id, node);
         }
     }
 
@@ -692,6 +692,7 @@ pub extern "C" fn rsvg_node_register_in_defs(raw_node: *const RsvgNode, defs: *m
     assert!(!defs.is_null());
 
     let node: &RsvgNode = unsafe { &*raw_node };
+    let defs = unsafe { &mut *(defs as *mut Defs) };
 
     node.register(node, defs);
 }

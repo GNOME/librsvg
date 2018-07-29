@@ -14,7 +14,7 @@ use std::rc::Rc;
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
-use defs::{self, RsvgDefs};
+use defs::{Defs, RsvgDefs};
 use filters;
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
@@ -195,7 +195,9 @@ impl<'a> DrawingCtx {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
-        if let Some(node) = defs::lookup(self.defs, url) {
+        let defs = unsafe { &mut *(self.defs as *mut Defs) };
+
+        if let Some(node) = defs.lookup(url) {
             if !self.acquired_nodes_contains(node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 return Some(AcquiredNode(&self.acquired_nodes as *const _, node.clone()));
@@ -976,6 +978,8 @@ pub extern "C" fn rsvg_drawing_ctx_new(
     defs: *const RsvgDefs,
     is_testing: glib_sys::gboolean,
 ) -> *mut RsvgDrawingCtx {
+    assert!(!defs.is_null());
+
     Box::into_raw(Box::new(DrawingCtx::new(
         unsafe { from_glib_none(cr) },
         f64::from(width),
