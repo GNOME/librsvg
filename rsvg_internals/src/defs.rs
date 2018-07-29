@@ -1,33 +1,93 @@
-use glib::translate::*;
 use libc;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
+use std::ptr;
+use std::rc::Rc;
 
-use node::RsvgNode;
+use handle::{self, RsvgHandle};
+use node::{Node, RsvgNode};
+use util::utf8_cstr;
 
 pub enum RsvgDefs {}
 
-#[allow(improper_ctypes)]
-extern "C" {
-    fn rsvg_defs_register_node_by_id(
-        defs: *mut RsvgDefs,
-        id: *const libc::c_char,
-        node: *const RsvgNode,
-    );
-    fn rsvg_defs_lookup(defs: *const RsvgDefs, name: *const libc::c_char) -> *mut RsvgNode;
+pub struct Defs {
+    handle: *const RsvgHandle,
+    nodes: HashMap<String, Rc<Node>>,
+    externs: HashMap<String, *const RsvgHandle>,
 }
 
-pub fn register_node_by_id(defs: *mut RsvgDefs, id: &str, node: &RsvgNode) {
-    unsafe {
-        rsvg_defs_register_node_by_id(defs, id.to_glib_none().0, node);
+impl Defs {
+    fn new(handle: *const RsvgHandle) -> Defs {
+        Defs {
+            handle,
+            nodes: Default::default(),
+            externs: Default::default(),
+        }
+    }
+
+    pub fn insert(&mut self, id: &str, node: &Rc<Node>) {
+        self.nodes.entry(id.to_string()).or_insert(node.clone());
+    }
+
+    pub fn lookup(&mut self, name: &str) -> Option<&Rc<Node>> {
+        match name.rfind('#') {
+            None => None,
+            Some(p) if p == 0 => self.nodes.get(&name[1..]),
+            Some(p) => {
+                let handle = self.get_extern_handle(&name[..p]);
+                if handle.is_null() {
+                    None
+                } else {
+                    handle::get_defs(handle).nodes.get(&name[(p + 1)..])
+                }
+            }
+        }
+    }
+
+    fn get_extern_handle(&mut self, possibly_relative_uri: &str) -> *const RsvgHandle {
+        handle::resolve_uri(self.handle, possibly_relative_uri).map_or(ptr::null(), |uri| {
+            match self.externs.entry(uri) {
+                Entry::Occupied(e) => *(e.get()),
+                Entry::Vacant(e) => {
+                    let h = handle::load_extern(self.handle, e.key());
+                    if !h.is_null() {
+                        e.insert(h);
+                    }
+                    h
+                }
+            }
+        })
     }
 }
 
-pub fn lookup(defs: *const RsvgDefs, name: &str) -> Option<&mut RsvgNode> {
+#[no_mangle]
+pub extern "C" fn rsvg_defs_new(handle: *const RsvgHandle) -> *mut RsvgDefs {
+    Box::into_raw(Box::new(Defs::new(handle))) as *mut RsvgDefs
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_defs_free(defs: *mut RsvgDefs) {
+    assert!(!defs.is_null());
+
     unsafe {
-        let node = rsvg_defs_lookup(defs, name.to_glib_none().0);
-        if node.is_null() {
-            None
-        } else {
-            Some(&mut *node)
-        }
+        let defs = { &mut *(defs as *mut Defs) };
+        Box::from_raw(defs);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_defs_lookup(
+    defs: *mut RsvgDefs,
+    name: *const libc::c_char,
+) -> *const RsvgNode {
+    assert!(!defs.is_null());
+    assert!(!name.is_null());
+
+    let defs = unsafe { &mut *(defs as *mut Defs) };
+    let name = unsafe { utf8_cstr(name) };
+
+    match defs.lookup(name) {
+        Some(n) => n as *const RsvgNode,
+        None => ptr::null(),
     }
 }

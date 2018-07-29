@@ -29,7 +29,6 @@
 
 #include "rsvg-private.h"
 #include "rsvg-css.h"
-#include "rsvg-defs.h"
 #include "rsvg-styles.h"
 #include "rsvg-io.h"
 #include "rsvg-load.h"
