@@ -73,5 +73,9 @@ name = "box_blur"
 harness = false
 
 [[bench]]
+name = "lighting"
+harness = false
+
+[[bench]]
 name = "pixel_iterators"
 harness = false

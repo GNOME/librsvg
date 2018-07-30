@@ -17,6 +17,8 @@ pub enum FilterError {
     CairoError(cairo::Status),
     /// A lighting filter has none or multiple light sources.
     InvalidLightSourceCount,
+    /// A lighting filter input surface is too small.
+    LightingInputTooSmall,
 }
 
 impl Error for FilterError {
@@ -27,6 +29,9 @@ impl Error for FilterError {
             FilterError::BadInputSurfaceStatus(_) => "invalid status of the input surface",
             FilterError::CairoError(_) => "Cairo error",
             FilterError::InvalidLightSourceCount => "invalid light source count",
+            FilterError::LightingInputTooSmall => {
+                "lighting filter input surface is too small (less than 2×2 pixels)"
+            }
         }
     }
 

@@ -10,7 +10,18 @@ use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    light::{light_source::LightSource, normal},
+    light::{
+        bottom_left_normal,
+        bottom_right_normal,
+        bottom_row_normal,
+        interior_normal,
+        left_column_normal,
+        light_source::LightSource,
+        right_column_normal,
+        top_left_normal,
+        top_right_normal,
+        top_row_normal,
+    },
     Filter,
     FilterError,
     PrimitiveWithInput,
@@ -21,7 +32,6 @@ use parsers;
 use property_bag::PropertyBag;
 use state::ColorInterpolationFilters;
 use surface_utils::{
-    iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
     Pixel,
@@ -223,6 +233,12 @@ impl Filter for Lighting {
             bounds = new_bounds;
         }
 
+        // Check if the surface is too small for normal computation. This case is unspecified;
+        // WebKit doesn't render anything in this case.
+        if bounds.x1 < bounds.x0 + 2 || bounds.y1 < bounds.y0 + 2 {
+            return Err(FilterError::LightingInputTooSmall);
+        }
+
         let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
         let mut output_surface = ImageSurface::create(
@@ -235,8 +251,8 @@ impl Filter for Lighting {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, pixel) in Pixels::new(&input_surface, bounds) {
-                let normal = normal(&input_surface, bounds, x, y, surface_scale);
+            let mut compute_output_pixel = |x, y, normal: Vector3<f64>| {
+                let pixel = input_surface.get_pixel(x, y);
 
                 let scaled_x = f64::from(x) * ox;
                 let scaled_y = f64::from(y) * oy;
@@ -285,6 +301,87 @@ impl Filter for Lighting {
                 };
 
                 output_data.set_pixel(output_stride, output_pixel, x, y);
+            };
+
+            // Top left.
+            compute_output_pixel(
+                bounds.x0 as u32,
+                bounds.y0 as u32,
+                top_left_normal(&input_surface, bounds, surface_scale),
+            );
+
+            // Top right.
+            compute_output_pixel(
+                bounds.x1 as u32 - 1,
+                bounds.y0 as u32,
+                top_right_normal(&input_surface, bounds, surface_scale),
+            );
+
+            // Bottom left.
+            compute_output_pixel(
+                bounds.x0 as u32,
+                bounds.y1 as u32 - 1,
+                bottom_left_normal(&input_surface, bounds, surface_scale),
+            );
+
+            // Bottom right.
+            compute_output_pixel(
+                bounds.x1 as u32 - 1,
+                bounds.y1 as u32 - 1,
+                bottom_right_normal(&input_surface, bounds, surface_scale),
+            );
+
+            if bounds.x1 - bounds.x0 >= 3 {
+                // Top row.
+                for x in bounds.x0 as u32 + 1..bounds.x1 as u32 - 1 {
+                    compute_output_pixel(
+                        x,
+                        bounds.y0 as u32,
+                        top_row_normal(&input_surface, bounds, x, surface_scale),
+                    );
+                }
+
+                // Bottom row.
+                for x in bounds.x0 as u32 + 1..bounds.x1 as u32 - 1 {
+                    compute_output_pixel(
+                        x,
+                        bounds.y1 as u32 - 1,
+                        bottom_row_normal(&input_surface, bounds, x, surface_scale),
+                    );
+                }
+            }
+
+            if bounds.y1 - bounds.y0 >= 3 {
+                // Left column.
+                for y in bounds.y0 as u32 + 1..bounds.y1 as u32 - 1 {
+                    compute_output_pixel(
+                        bounds.x0 as u32,
+                        y,
+                        left_column_normal(&input_surface, bounds, y, surface_scale),
+                    );
+                }
+
+                // Right column.
+                for y in bounds.y0 as u32 + 1..bounds.y1 as u32 - 1 {
+                    compute_output_pixel(
+                        bounds.x1 as u32 - 1,
+                        y,
+                        right_column_normal(&input_surface, bounds, y, surface_scale),
+                    );
+                }
+            }
+
+            if bounds.x1 - bounds.x0 >= 3 && bounds.y1 - bounds.y0 >= 3 {
+                // Interior pixels.
+                for y in bounds.y0 as u32 + 1..bounds.y1 as u32 - 1 {
+                    for x in bounds.x0 as u32 + 1..bounds.x1 as u32 - 1 {
+                        compute_output_pixel(
+                            x,
+                            y,
+                            interior_normal(&input_surface, bounds, x, y, surface_scale),
+                        );
+                    }
+                }
             }
         }
 

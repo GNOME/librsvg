@@ -119,6 +119,7 @@ RUST_EXTRA = 					\
 	Cargo.lock				\
 	cargo-vendor-config			\
 	rsvg_internals/benches/box_blur.rs	\
+	rsvg_internals/benches/lighting.rs	\
 	rsvg_internals/benches/pixel_iterators.rs
 
 if DEBUG_RELEASE
