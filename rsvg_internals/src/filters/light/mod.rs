@@ -4,9 +4,8 @@ use nalgebra::{Matrix3, Vector3};
 use filters::context::IRect;
 use surface_utils::{iterators::PixelRectangle, shared_surface::SharedImageSurface, EdgeMode};
 
-pub mod diffuse_lighting;
 pub mod light_source;
-pub mod specular_lighting;
+pub mod lighting;
 
 /// Computes and returns the normal vector for the light filters.
 fn normal(

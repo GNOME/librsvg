@@ -14,11 +14,7 @@ use filters::{
     flood::Flood,
     gaussian_blur::GaussianBlur,
     image::Image,
-    light::{
-        diffuse_lighting::DiffuseLighting,
-        light_source::LightSource,
-        specular_lighting::SpecularLighting,
-    },
+    light::{light_source::LightSource, lighting::Lighting},
     merge::{Merge, MergeNode},
     morphology::Morphology,
     node::NodeFilter,
@@ -97,7 +93,7 @@ node_create_fn!(create_defs, Defs, NodeDefs::new);
 node_create_fn!(
     create_diffuse_lighting,
     FilterPrimitiveDiffuseLighting,
-    DiffuseLighting::new
+    Lighting::new_diffuse
 );
 node_create_fn!(
     create_distant_light,
@@ -155,7 +151,7 @@ node_create_fn!(create_rect, Rect, NodeRect::new);
 node_create_fn!(
     create_specular_lighting,
     FilterPrimitiveSpecularLighting,
-    SpecularLighting::new
+    Lighting::new_specular
 );
 node_create_fn!(create_spot_light, LightSource, LightSource::new_spot_light);
 node_create_fn!(create_stop, Stop, NodeStop::new);
