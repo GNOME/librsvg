@@ -1,3 +1,9 @@
+Version 2.43.3
+- Tentative fix: #309 - Don't panic if rendering to a non-image Cairo surface.
+- Optimizations for Gaussian blur and other filters (Ivan Molodetskikh).
+- Optimizations in SRGB <-> linear RGB conversions (Ivan Molodetskikh).
+- More C to Rust conversion in the loading code (Paolo Borelli).
+
 Version 2.43.2
 - All the filter effects have been ported to Rust as part of Ivan
   Molodetskikh's Summer of Code project!!!!!
