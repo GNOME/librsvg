@@ -25,16 +25,15 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/librsvg-features.c 		\
 	librsvg/librsvg-features.h 		\
 	librsvg/rsvg-attributes.h		\
-	librsvg/rsvg-base-file-util.c 		\
 	librsvg/rsvg-base.c			\
 	librsvg/rsvg-cairo.h			\
 	librsvg/rsvg-css.h 			\
-	librsvg/rsvg-file-util.c		\
 	librsvg/rsvg-handle.c			\
 	librsvg/rsvg-io.c			\
 	librsvg/rsvg-io.h			\
 	librsvg/rsvg-load.c			\
 	librsvg/rsvg-load.h			\
+	librsvg/rsvg-pixbuf.c			\
 	librsvg/rsvg-private.h 			\
 	librsvg/rsvg-size-callback.c		\
 	librsvg/rsvg-size-callback.h		\
