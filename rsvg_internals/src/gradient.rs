@@ -53,8 +53,7 @@ impl Parse for SpreadMethod {
                         cow.as_ref().to_string(),
                     ))),
                 ),
-            })
-            .map_err(|_| {
+            }).map_err(|_| {
                 AttributeError::Parse(ParseError::new("expected 'pad' | 'reflect' | 'repeat'"))
             })
     }
@@ -437,8 +436,7 @@ fn resolve_gradient(gradient: &Gradient, draw_ctx: &mut DrawingCtx) -> Gradient 
                     result.resolve_from_fallback(&fallback_grad)
                 });
                 Some(())
-            })
-            .or_else(|| {
+            }).or_else(|| {
                 result.resolve_from_defaults();
                 Some(())
             });

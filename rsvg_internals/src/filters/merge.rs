@@ -143,7 +143,8 @@ impl Filter for Merge {
             .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
         {
             bounds = bounds.add_input(
-                &child.with_impl(|c: &MergeNode| ctx.get_input(draw_ctx, c.in_.borrow().as_ref()))?,
+                &child
+                    .with_impl(|c: &MergeNode| ctx.get_input(draw_ctx, c.in_.borrow().as_ref()))?,
             );
         }
         let bounds = bounds.into_irect(draw_ctx);

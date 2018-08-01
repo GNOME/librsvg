@@ -85,9 +85,9 @@ impl SharedImageSurface {
             return Err(surface.status());
         }
 
-        let data_ptr = NonNull::new(unsafe {
-            cairo_sys::cairo_image_surface_get_data(surface.to_raw_none())
-        }).unwrap();
+        let data_ptr =
+            NonNull::new(unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) })
+                .unwrap();
 
         let width = surface.get_width();
         let height = surface.get_height();

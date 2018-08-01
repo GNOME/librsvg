@@ -532,16 +532,14 @@ impl FilterContext {
                 .and_then(|surface| {
                     SharedImageSurface::new(surface, SurfaceType::SRgb)
                         .map_err(FilterError::CairoError)
-                })
-                .map(FilterInput::StandardInput),
+                }).map(FilterInput::StandardInput),
             Input::StrokePaint => self
                 .get_paint_server_surface(draw_ctx, &values.stroke.0, values.stroke_opacity.0)
                 .map_err(FilterError::CairoError)
                 .and_then(|surface| {
                     SharedImageSurface::new(surface, SurfaceType::SRgb)
                         .map_err(FilterError::CairoError)
-                })
-                .map(FilterInput::StandardInput),
+                }).map(FilterInput::StandardInput),
 
             Input::FilterOutput(ref name) => self
                 .filter_output(name)

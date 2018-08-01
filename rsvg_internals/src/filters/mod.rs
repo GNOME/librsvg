@@ -120,8 +120,7 @@ impl NodeTrait for Primitive {
                 } else {
                     None
                 }
-            })
-            .unwrap_or(CoordUnits::UserSpaceOnUse);
+            }).unwrap_or(CoordUnits::UserSpaceOnUse);
 
         let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
         let check_units = |length: Length| {

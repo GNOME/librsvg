@@ -233,8 +233,7 @@ impl Parse for Operator {
                         cow.as_ref().to_string(),
                     ))),
                 ),
-            })
-            .map_err(|_| AttributeError::Value("invalid operator value".to_string()))
+            }).map_err(|_| AttributeError::Value("invalid operator value".to_string()))
     }
 }
 

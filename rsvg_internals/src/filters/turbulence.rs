@@ -94,8 +94,7 @@ impl NodeTrait for Turbulence {
                                 f64::from(i32::min_value()),
                                 f64::from(i32::max_value()),
                             ) as i32
-                        })
-                        .map_err(|err| NodeError::parse_error(attr, err))?,
+                        }).map_err(|err| NodeError::parse_error(attr, err))?,
                 ),
                 Attribute::StitchTiles => self.stitch_tiles.set(StitchTiles::parse(attr, value)?),
                 Attribute::Type => self.type_.set(NoiseType::parse(attr, value)?),

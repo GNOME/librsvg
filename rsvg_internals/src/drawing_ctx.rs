@@ -83,7 +83,7 @@ impl<'a> DrawingCtx<'a> {
             width,
             height,
         }.transform(&affine)
-            .outer();
+        .outer();
 
         // scale according to size set by size_func callback
         let mut scale = cairo::Matrix::identity();
@@ -361,8 +361,7 @@ impl<'a> DrawingCtx<'a> {
                                 )
                             }
                         }
-                    })
-                    .or(Some(child_surface))
+                    }).or(Some(child_surface))
                     .unwrap();
 
                 self.cr = self.cr_stack.pop().unwrap();
