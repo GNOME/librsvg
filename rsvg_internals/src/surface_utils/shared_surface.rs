@@ -65,6 +65,9 @@ pub struct SharedImageSurface {
     surface_type: SurfaceType,
 }
 
+// The access is read-only, the ref-counting on an `ImageSurface` is atomic.
+unsafe impl Sync for SharedImageSurface {}
+
 impl SharedImageSurface {
     /// Creates a `SharedImageSurface` from a unique `ImageSurface`.
     ///
