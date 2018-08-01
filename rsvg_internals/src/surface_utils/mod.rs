@@ -78,3 +78,4 @@ impl Pixel {
 }
 
 impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {}
+impl<'a> ImageSurfaceDataExt for &'a mut [u8] {}
