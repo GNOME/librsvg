@@ -260,22 +260,12 @@ impl Filter for Lighting {
                 let light_vector = light_source.vector(scaled_x, scaled_y, z, ctx);
                 let light_color = light_source.color(lighting_color, light_vector, ctx);
 
-                let output_pixel = match self.data {
+                let factor = match self.data {
                     Data::Diffuse {
                         ref diffuse_constant,
                     } => {
                         let n_dot_l = normal.dot(&light_vector);
-                        let compute = |x| {
-                            clamp(diffuse_constant.get() * n_dot_l * f64::from(x), 0.0, 255.0)
-                                .round() as u8
-                        };
-
-                        Pixel {
-                            r: compute(light_color.red),
-                            g: compute(light_color.green),
-                            b: compute(light_color.blue),
-                            a: 255,
-                        }.premultiply()
+                        diffuse_constant.get() * n_dot_l
                     }
                     Data::Specular {
                         ref specular_constant,
@@ -285,20 +275,22 @@ impl Filter for Lighting {
                         let _ = h.try_normalize_mut(0.0);
 
                         let n_dot_h = normal.dot(&h);
-                        let factor =
-                            specular_constant.get() * n_dot_h.powf(specular_exponent.get());
-                        let compute = |x| clamp(factor * f64::from(x), 0.0, 255.0).round() as u8;
-
-                        let mut output_pixel = Pixel {
-                            r: compute(light_color.red),
-                            g: compute(light_color.green),
-                            b: compute(light_color.blue),
-                            a: 0,
-                        };
-                        output_pixel.a = max(max(output_pixel.r, output_pixel.g), output_pixel.b);
-                        output_pixel
+                        specular_constant.get() * n_dot_h.powf(specular_exponent.get())
                     }
                 };
+
+                let compute = |x| clamp(factor * f64::from(x), 0.0, 255.0).round() as u8;
+
+                let mut output_pixel = Pixel {
+                    r: compute(light_color.red),
+                    g: compute(light_color.green),
+                    b: compute(light_color.blue),
+                    a: 255,
+                };
+
+                if let Data::Specular { .. } = self.data {
+                    output_pixel.a = max(max(output_pixel.r, output_pixel.g), output_pixel.b);
+                }
 
                 output_data.set_pixel(output_stride, output_pixel, x, y);
             };
