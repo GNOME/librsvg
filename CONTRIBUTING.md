@@ -255,6 +255,16 @@ shipped outside of librsvg.  This requires you to first install
 librsvg, and then compile rsvg-bench.  We aim to make this easier in
 the future.  Of course all help is appreciated!
 
+### Included benchmarks
+
+The [`rsvg_internals/benches`][benches] directory has a
+couple of benchmarks for functions related to SVG filter effects.  You
+can run them with `cargo bench`.
+
+These benchmarks use the [Criterion] crate, which supports some
+interesting options to generate plots and such.  You can see the
+[Criterion command line options][criterion-options].
+
 [coc]: code-of-conduct.md
 [gitlab]: https://gitlab.gnome.org/GNOME/librsvg
 [bugs-browse]: https://gitlab.gnome.org/GNOME/librsvg/issues
@@ -266,3 +276,6 @@ the future.  Of course all help is appreciated!
 [rsvg-bench]: https://gitlab.gnome.org/federico/rsvg-bench
 [rsvg-rs]: https://github.com/selaux/rsvg-rs
 [arch]: ARCHITECTURE.md
+[benches]: rsvg-internals/benches
+[Criterion]: https://crates.io/crates/criterion
+[criterion-options]: https://japaric.github.io/criterion.rs/book/user_guide/command_line_options.html
