@@ -35,6 +35,7 @@ float-cmp = "0.4.0"
 nalgebra = "0.16"
 num-traits = "0.2"
 owning_ref = "0.3"
+rayon = "1"
 
 [dependencies.cairo-sys-rs]
 version = "0.6"

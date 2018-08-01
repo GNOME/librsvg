@@ -5,6 +5,7 @@ use cairo::{self, ImageSurface, MatrixTrait};
 use cssparser;
 use nalgebra::Vector3;
 use num_traits::identities::Zero;
+use rayon::prelude::*;
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -48,6 +49,18 @@ enum Data {
     Specular {
         specular_constant: Cell<f64>,
         specular_exponent: Cell<f64>,
+    },
+}
+
+/// `Data` but without `Cell`s, needed for sharing between threads.
+#[derive(Clone, Copy)]
+enum RawData {
+    Diffuse {
+        diffuse_constant: f64,
+    },
+    Specular {
+        specular_constant: f64,
+        specular_exponent: f64,
     },
 }
 
@@ -253,87 +266,91 @@ impl Filter for Lighting {
         let output_stride = output_surface.get_stride() as usize;
         {
             let mut output_data = output_surface.get_data().unwrap();
+            let output_slice = &mut *output_data;
+            let data = self.data.to_raw();
 
-            let mut compute_output_pixel = |x, y, normal: Normal| {
-                let pixel = input_surface.get_pixel(x, y);
+            let compute_output_pixel =
+                |mut output_slice: &mut [u8], base_y, x, y, normal: Normal| {
+                    let pixel = input_surface.get_pixel(x, y);
 
-                let scaled_x = f64::from(x) * ox;
-                let scaled_y = f64::from(y) * oy;
-                let z = f64::from(pixel.a) / 255.0 * surface_scale;
-                let light_vector = light_source.vector(scaled_x, scaled_y, z);
-                let light_color = light_source.color(lighting_color, light_vector);
+                    let scaled_x = f64::from(x) * ox;
+                    let scaled_y = f64::from(y) * oy;
+                    let z = f64::from(pixel.a) / 255.0 * surface_scale;
+                    let light_vector = light_source.vector(scaled_x, scaled_y, z);
+                    let light_color = light_source.color(lighting_color, light_vector);
 
-                let factor = match self.data {
-                    Data::Diffuse {
-                        ref diffuse_constant,
-                    } => {
-                        let k = if normal.normal.is_zero() {
-                            // Common case of (0, 0, 1) normal.
-                            light_vector.z
-                        } else {
-                            let mut n = normal.normal.map(|x| f64::from(x) * surface_scale / 255.);
-                            n.component_mul_assign(&normal.factor);
-                            let normal = Vector3::new(n.x, n.y, 1.0);
-
-                            normal.dot(&light_vector) / normal.norm()
-                        };
-
-                        diffuse_constant.get() * k
-                    }
-                    Data::Specular {
-                        ref specular_constant,
-                        ref specular_exponent,
-                    } => {
-                        let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
-                        let h_norm = h.norm();
-                        if h_norm == 0.0 {
-                            0.0
-                        } else {
+                    let factor = match data {
+                        RawData::Diffuse { diffuse_constant } => {
                             let k = if normal.normal.is_zero() {
                                 // Common case of (0, 0, 1) normal.
-                                let n_dot_h = h.z / h_norm;
-                                if specular_exponent.get() == 1.0 {
-                                    n_dot_h
-                                } else {
-                                    n_dot_h.powf(specular_exponent.get())
-                                }
+                                light_vector.z
                             } else {
                                 let mut n =
                                     normal.normal.map(|x| f64::from(x) * surface_scale / 255.);
                                 n.component_mul_assign(&normal.factor);
                                 let normal = Vector3::new(n.x, n.y, 1.0);
 
-                                let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
-                                if specular_exponent.get() == 1.0 {
-                                    n_dot_h
-                                } else {
-                                    n_dot_h.powf(specular_exponent.get())
-                                }
+                                normal.dot(&light_vector) / normal.norm()
                             };
 
-                            specular_constant.get() * k
+                            diffuse_constant * k
                         }
+                        RawData::Specular {
+                            specular_constant,
+                            specular_exponent,
+                        } => {
+                            let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
+                            let h_norm = h.norm();
+                            if h_norm == 0.0 {
+                                0.0
+                            } else {
+                                let k = if normal.normal.is_zero() {
+                                    // Common case of (0, 0, 1) normal.
+                                    let n_dot_h = h.z / h_norm;
+                                    if specular_exponent == 1.0 {
+                                        n_dot_h
+                                    } else {
+                                        n_dot_h.powf(specular_exponent)
+                                    }
+                                } else {
+                                    let mut n =
+                                        normal.normal.map(|x| f64::from(x) * surface_scale / 255.);
+                                    n.component_mul_assign(&normal.factor);
+                                    let normal = Vector3::new(n.x, n.y, 1.0);
+
+                                    let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
+                                    if specular_exponent == 1.0 {
+                                        n_dot_h
+                                    } else {
+                                        n_dot_h.powf(specular_exponent)
+                                    }
+                                };
+
+                                specular_constant * k
+                            }
+                        }
+                    };
+
+                    let compute = |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
+
+                    let mut output_pixel = Pixel {
+                        r: compute(light_color.red),
+                        g: compute(light_color.green),
+                        b: compute(light_color.blue),
+                        a: 255,
+                    };
+
+                    if let RawData::Specular { .. } = data {
+                        output_pixel.a = max(max(output_pixel.r, output_pixel.g), output_pixel.b);
                     }
+
+                    output_slice.set_pixel(output_stride, output_pixel, x, y - base_y);
                 };
-
-                let compute = |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
-
-                let mut output_pixel = Pixel {
-                    r: compute(light_color.red),
-                    g: compute(light_color.green),
-                    b: compute(light_color.blue),
-                    a: 255,
-                };
-
-                if let Data::Specular { .. } = self.data {
-                    output_pixel.a = max(max(output_pixel.r, output_pixel.g), output_pixel.b);
-                }
-
-                output_data.set_pixel(output_stride, output_pixel, x, y);
-            };
 
             // Top left.
             compute_output_pixel(
+                output_slice,
+                0,
                 bounds.x0 as u32,
                 bounds.y0 as u32,
                 top_left_normal(&input_surface, bounds),
@@ -341,6 +358,8 @@ impl Filter for Lighting {
 
             // Top right.
             compute_output_pixel(
+                output_slice,
+                0,
                 bounds.x1 as u32 - 1,
                 bounds.y0 as u32,
                 top_right_normal(&input_surface, bounds),
@@ -348,6 +367,8 @@ impl Filter for Lighting {
 
             // Bottom left.
             compute_output_pixel(
+                output_slice,
+                0,
                 bounds.x0 as u32,
                 bounds.y1 as u32 - 1,
                 bottom_left_normal(&input_surface, bounds),
@@ -355,6 +376,8 @@ impl Filter for Lighting {
 
             // Bottom right.
             compute_output_pixel(
+                output_slice,
+                0,
                 bounds.x1 as u32 - 1,
                 bounds.y1 as u32 - 1,
                 bottom_right_normal(&input_surface, bounds),
@@ -364,6 +387,8 @@ impl Filter for Lighting {
                 // Top row.
                 for x in bounds.x0 as u32 + 1..bounds.x1 as u32 - 1 {
                     compute_output_pixel(
+                        output_slice,
+                        0,
                         x,
                         bounds.y0 as u32,
                         top_row_normal(&input_surface, bounds, x),
@@ -373,6 +398,8 @@ impl Filter for Lighting {
                 // Bottom row.
                 for x in bounds.x0 as u32 + 1..bounds.x1 as u32 - 1 {
                     compute_output_pixel(
+                        output_slice,
+                        0,
                         x,
                         bounds.y1 as u32 - 1,
                         bottom_row_normal(&input_surface, bounds, x),
@@ -384,6 +411,8 @@ impl Filter for Lighting {
                 // Left column.
                 for y in bounds.y0 as u32 + 1..bounds.y1 as u32 - 1 {
                     compute_output_pixel(
+                        output_slice,
+                        0,
                         bounds.x0 as u32,
                         y,
                         left_column_normal(&input_surface, bounds, y),
@@ -393,6 +422,8 @@ impl Filter for Lighting {
                 // Right column.
                 for y in bounds.y0 as u32 + 1..bounds.y1 as u32 - 1 {
                     compute_output_pixel(
+                        output_slice,
+                        0,
                         bounds.x1 as u32 - 1,
                         y,
                         right_column_normal(&input_surface, bounds, y),
@@ -402,11 +433,25 @@ impl Filter for Lighting {
 
             if bounds.x1 - bounds.x0 >= 3 && bounds.y1 - bounds.y0 >= 3 {
                 // Interior pixels.
-                for y in bounds.y0 as u32 + 1..bounds.y1 as u32 - 1 {
-                    for x in bounds.x0 as u32 + 1..bounds.x1 as u32 - 1 {
-                        compute_output_pixel(x, y, interior_normal(&input_surface, bounds, x, y));
-                    }
-                }
+                let first_row = bounds.y0 as u32 + 1;
+                let one_past_last_row = bounds.y1 as u32 - 1;
+                let first_pixel = (first_row as usize) * output_stride;
+                let one_past_last_pixel = (one_past_last_row as usize) * output_stride;
+
+                output_slice[first_pixel..one_past_last_pixel]
+                    .par_chunks_mut(output_stride)
+                    .zip(first_row..one_past_last_row)
+                    .for_each(|(slice, y)| {
+                        for x in bounds.x0 as u32 + 1..bounds.x1 as u32 - 1 {
+                            compute_output_pixel(
+                                slice,
+                                y,
+                                x,
+                                y,
+                                interior_normal(&input_surface, bounds, x, y),
+                            );
+                        }
+                    });
             }
         }
 
@@ -447,6 +492,24 @@ impl Filter for Lighting {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
+    }
+}
+
+impl Data {
+    #[inline]
+    fn to_raw(&self) -> RawData {
+        match self {
+            Data::Diffuse { diffuse_constant } => RawData::Diffuse {
+                diffuse_constant: diffuse_constant.get(),
+            },
+            Data::Specular {
+                specular_constant,
+                specular_exponent,
+            } => RawData::Specular {
+                specular_constant: specular_constant.get(),
+                specular_exponent: specular_exponent.get(),
+            },
+        }
     }
 }
 
