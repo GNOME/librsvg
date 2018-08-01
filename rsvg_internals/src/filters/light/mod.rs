@@ -1,5 +1,5 @@
 //! Light filters and nodes.
-use nalgebra::Vector3;
+use nalgebra::Vector2;
 
 use filters::context::IRect;
 use surface_utils::shared_surface::SharedImageSurface;
@@ -9,31 +9,29 @@ pub mod lighting;
 
 // Functions here are pub for the purpose of accessing them from benchmarks.
 
+/// 2D normal and factor stored separately.
+///
+/// The normal needs to be multiplied by `surface_scale * factor / 255` and normalized with 1 as
+/// the z component.
+#[derive(Debug, Clone, Copy)]
+pub struct Normal {
+    pub factor: Vector2<f64>,
+    pub normal: Vector2<i16>,
+}
+
 /// Inner utility function.
 #[inline]
-fn return_normal(
-    factor_x: f64,
-    nx: i16,
-    factor_y: f64,
-    ny: i16,
-    surface_scale: f64,
-) -> Vector3<f64> {
-    let nx = f64::from(nx) / 255. * factor_x * surface_scale;
-    let ny = f64::from(ny) / 255. * factor_y * surface_scale;
-
+fn return_normal(factor_x: f64, nx: i16, factor_y: f64, ny: i16) -> Normal {
     // Negative nx and ny to account for the different coordinate system.
-    let mut n = Vector3::new(-nx, -ny, 1.);
-    n.normalize_mut();
-    n
+    Normal {
+        factor: Vector2::new(factor_x, factor_y),
+        normal: Vector2::new(-nx, -ny),
+    }
 }
 
 /// Computes and returns the normal vector for the top left pixel for light filters.
 #[inline]
-pub fn top_left_normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    surface_scale: f64,
-) -> Vector3<f64> {
+pub fn top_left_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
     // Surface needs to be at least 2×2.
     assert!(bounds.x1 >= bounds.x0 + 2);
     assert!(bounds.y1 >= bounds.y0 + 2);
@@ -52,18 +50,12 @@ pub fn top_left_normal(
         -2 * center + 2 * right - bottom + bottom_right,
         2. / 3.,
         -2 * center - right + 2 * bottom + bottom_right,
-        surface_scale,
     )
 }
 
 /// Computes and returns the normal vector for the top row pixels for light filters.
 #[inline]
-pub fn top_row_normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    x: u32,
-    surface_scale: f64,
-) -> Vector3<f64> {
+pub fn top_row_normal(surface: &SharedImageSurface, bounds: IRect, x: u32) -> Normal {
     assert!(x as i32 > bounds.x0);
     assert!((x as i32) + 1 < bounds.x1);
     assert!(bounds.y1 >= bounds.y0 + 2);
@@ -83,17 +75,12 @@ pub fn top_row_normal(
         -2 * left + 2 * right - bottom_left + bottom_right,
         1. / 2.,
         -left - 2 * center - right + bottom_left + 2 * bottom + bottom_right,
-        surface_scale,
     )
 }
 
 /// Computes and returns the normal vector for the top right pixel for light filters.
 #[inline]
-pub fn top_right_normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    surface_scale: f64,
-) -> Vector3<f64> {
+pub fn top_right_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
     // Surface needs to be at least 2×2.
     assert!(bounds.x1 >= bounds.x0 + 2);
     assert!(bounds.y1 >= bounds.y0 + 2);
@@ -112,18 +99,12 @@ pub fn top_right_normal(
         -2 * left + 2 * center - bottom_left + bottom,
         2. / 3.,
         -left - 2 * center + bottom_left + 2 * bottom,
-        surface_scale,
     )
 }
 
 /// Computes and returns the normal vector for the left column pixels for light filters.
 #[inline]
-pub fn left_column_normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    y: u32,
-    surface_scale: f64,
-) -> Vector3<f64> {
+pub fn left_column_normal(surface: &SharedImageSurface, bounds: IRect, y: u32) -> Normal {
     assert!(y as i32 > bounds.y0);
     assert!((y as i32) + 1 < bounds.y1);
     assert!(bounds.x1 >= bounds.x0 + 2);
@@ -143,19 +124,12 @@ pub fn left_column_normal(
         -top + top_right - 2 * center + 2 * right - bottom + bottom_right,
         1. / 3.,
         -2 * top - top_right + 2 * bottom + bottom_right,
-        surface_scale,
     )
 }
 
 /// Computes and returns the normal vector for the interior pixels for light filters.
 #[inline]
-pub fn interior_normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    x: u32,
-    y: u32,
-    surface_scale: f64,
-) -> Vector3<f64> {
+pub fn interior_normal(surface: &SharedImageSurface, bounds: IRect, x: u32, y: u32) -> Normal {
     assert!(x as i32 > bounds.x0);
     assert!((x as i32) + 1 < bounds.x1);
     assert!(y as i32 > bounds.y0);
@@ -177,18 +151,12 @@ pub fn interior_normal(
         -top_left + top_right - 2 * left + 2 * right - bottom_left + bottom_right,
         1. / 4.,
         -top_left - 2 * top - top_right + bottom_left + 2 * bottom + bottom_right,
-        surface_scale,
     )
 }
 
 /// Computes and returns the normal vector for the right column pixels for light filters.
 #[inline]
-pub fn right_column_normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    y: u32,
-    surface_scale: f64,
-) -> Vector3<f64> {
+pub fn right_column_normal(surface: &SharedImageSurface, bounds: IRect, y: u32) -> Normal {
     assert!(y as i32 > bounds.y0);
     assert!((y as i32) + 1 < bounds.y1);
     assert!(bounds.x1 >= bounds.x0 + 2);
@@ -208,17 +176,12 @@ pub fn right_column_normal(
         -top_left + top - 2 * left + 2 * center - bottom_left + bottom,
         1. / 3.,
         -top_left - 2 * top + bottom_left + 2 * bottom,
-        surface_scale,
     )
 }
 
 /// Computes and returns the normal vector for the bottom left pixel for light filters.
 #[inline]
-pub fn bottom_left_normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    surface_scale: f64,
-) -> Vector3<f64> {
+pub fn bottom_left_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
     // Surface needs to be at least 2×2.
     assert!(bounds.x1 >= bounds.x0 + 2);
     assert!(bounds.y1 >= bounds.y0 + 2);
@@ -237,18 +200,12 @@ pub fn bottom_left_normal(
         -top + top_right - 2 * center + 2 * right,
         2. / 3.,
         -2 * top - top_right + 2 * center + right,
-        surface_scale,
     )
 }
 
 /// Computes and returns the normal vector for the bottom row pixels for light filters.
 #[inline]
-pub fn bottom_row_normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    x: u32,
-    surface_scale: f64,
-) -> Vector3<f64> {
+pub fn bottom_row_normal(surface: &SharedImageSurface, bounds: IRect, x: u32) -> Normal {
     assert!(x as i32 > bounds.x0);
     assert!((x as i32) + 1 < bounds.x1);
     assert!(bounds.y1 >= bounds.y0 + 2);
@@ -268,17 +225,12 @@ pub fn bottom_row_normal(
         -top_left + top_right - 2 * left + 2 * right,
         1. / 2.,
         -top_left - 2 * top - top_right + left + 2 * center + right,
-        surface_scale,
     )
 }
 
 /// Computes and returns the normal vector for the bottom right pixel for light filters.
 #[inline]
-pub fn bottom_right_normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    surface_scale: f64,
-) -> Vector3<f64> {
+pub fn bottom_right_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
     // Surface needs to be at least 2×2.
     assert!(bounds.x1 >= bounds.x0 + 2);
     assert!(bounds.y1 >= bounds.y0 + 2);
@@ -297,6 +249,5 @@ pub fn bottom_right_normal(
         -top_left + top - 2 * left + 2 * center,
         2. / 3.,
         -top_left - 2 * top + left + 2 * center,
-        surface_scale,
     )
 }

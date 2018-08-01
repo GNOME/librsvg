@@ -7,7 +7,7 @@ extern crate cairo_sys;
 extern crate nalgebra;
 extern crate rsvg_internals;
 
-use nalgebra::{Matrix3, Vector3};
+use nalgebra::{Matrix3, Vector2};
 
 use rsvg_internals::filters::{
     context::IRect,
@@ -21,6 +21,7 @@ use rsvg_internals::filters::{
         top_left_normal,
         top_right_normal,
         top_row_normal,
+        Normal,
     },
 };
 use rsvg_internals::surface_utils::{
@@ -30,13 +31,7 @@ use rsvg_internals::surface_utils::{
 };
 
 /// Computes and returns the normal vector for the light filters.
-fn normal(
-    surface: &SharedImageSurface,
-    bounds: IRect,
-    x: u32,
-    y: u32,
-    surface_scale: f64,
-) -> Vector3<f64> {
+fn normal(surface: &SharedImageSurface, bounds: IRect, x: u32, y: u32) -> Normal {
     assert!(x as i32 >= bounds.x0);
     assert!(y as i32 >= bounds.y0);
     assert!((x as i32) < bounds.x1);
@@ -191,13 +186,11 @@ fn normal(
         ny += i16::from(pixel.a) * ky[(kernel_y, kernel_x)];
     }
 
-    let nx = f64::from(nx) / 255. * factor_x * surface_scale;
-    let ny = f64::from(ny) / 255. * factor_y * surface_scale;
-
     // Negative nx and ny to account for the different coordinate system.
-    let mut n = Vector3::new(-nx, -ny, 1.0);
-    n.normalize_mut();
-    n
+    Normal {
+        factor: Vector2::new(factor_x, factor_y),
+        normal: Vector2::new(-nx, -ny),
+    }
 }
 
 const SURFACE_SIDE: i32 = 512;
@@ -215,10 +208,10 @@ fn bench_normal(c: &mut Criterion) {
         let input_surface = SharedImageSurface::new(input_surface, SurfaceType::SRgb).unwrap();
 
         b.iter(|| {
-            let mut z = 0.0;
+            let mut z = 0;
             for (x, y, _pixel) in Pixels::new(&input_surface, BOUNDS) {
-                let n = normal(&input_surface, BOUNDS, x, y, 0.5);
-                z += n.z;
+                let n = normal(&input_surface, BOUNDS, x, y);
+                z += n.normal.x;
             }
             z
         })
@@ -230,61 +223,61 @@ fn bench_normal(c: &mut Criterion) {
         let input_surface = SharedImageSurface::new(input_surface, SurfaceType::SRgb).unwrap();
 
         b.iter(|| {
-            let mut z = 0.0;
+            let mut z = 0;
 
             // Top left.
             {
-                let n = top_left_normal(&input_surface, BOUNDS, 0.5);
-                z += n.z;
+                let n = top_left_normal(&input_surface, BOUNDS);
+                z += n.normal.x;
             }
 
             // Top right.
             {
-                let n = top_right_normal(&input_surface, BOUNDS, 0.5);
-                z += n.z;
+                let n = top_right_normal(&input_surface, BOUNDS);
+                z += n.normal.x;
             }
 
             // Bottom left.
             {
-                let n = bottom_left_normal(&input_surface, BOUNDS, 0.5);
-                z += n.z;
+                let n = bottom_left_normal(&input_surface, BOUNDS);
+                z += n.normal.x;
             }
 
             // Bottom right.
             {
-                let n = bottom_right_normal(&input_surface, BOUNDS, 0.5);
-                z += n.z;
+                let n = bottom_right_normal(&input_surface, BOUNDS);
+                z += n.normal.x;
             }
 
             // Top row.
             for x in BOUNDS.x0 as u32 + 1..BOUNDS.x1 as u32 - 1 {
-                let n = top_row_normal(&input_surface, BOUNDS, x, 0.5);
-                z += n.z;
+                let n = top_row_normal(&input_surface, BOUNDS, x);
+                z += n.normal.x;
             }
 
             // Bottom row.
             for x in BOUNDS.x0 as u32 + 1..BOUNDS.x1 as u32 - 1 {
-                let n = bottom_row_normal(&input_surface, BOUNDS, x, 0.5);
-                z += n.z;
+                let n = bottom_row_normal(&input_surface, BOUNDS, x);
+                z += n.normal.x;
             }
 
             // Left column.
             for y in BOUNDS.y0 as u32 + 1..BOUNDS.y1 as u32 - 1 {
-                let n = left_column_normal(&input_surface, BOUNDS, y, 0.5);
-                z += n.z;
+                let n = left_column_normal(&input_surface, BOUNDS, y);
+                z += n.normal.x;
             }
 
             // Right column.
             for y in BOUNDS.y0 as u32 + 1..BOUNDS.y1 as u32 - 1 {
-                let n = right_column_normal(&input_surface, BOUNDS, y, 0.5);
-                z += n.z;
+                let n = right_column_normal(&input_surface, BOUNDS, y);
+                z += n.normal.x;
             }
 
             // Interior pixels.
             for y in BOUNDS.y0 as u32 + 1..BOUNDS.y1 as u32 - 1 {
                 for x in BOUNDS.x0 as u32 + 1..BOUNDS.x1 as u32 - 1 {
-                    let n = interior_normal(&input_surface, BOUNDS, x, y, 0.5);
-                    z += n.z;
+                    let n = interior_normal(&input_surface, BOUNDS, x, y);
+                    z += n.normal.x;
                 }
             }
 

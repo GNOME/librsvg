@@ -4,6 +4,7 @@ use std::cmp::max;
 use cairo::{self, ImageSurface, MatrixTrait};
 use cssparser;
 use nalgebra::Vector3;
+use num_traits::identities::Zero;
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -21,6 +22,7 @@ use filters::{
         top_left_normal,
         top_right_normal,
         top_row_normal,
+        Normal,
     },
     Filter,
     FilterError,
@@ -251,7 +253,7 @@ impl Filter for Lighting {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            let mut compute_output_pixel = |x, y, normal: Vector3<f64>| {
+            let mut compute_output_pixel = |x, y, normal: Normal| {
                 let pixel = input_surface.get_pixel(x, y);
 
                 let scaled_x = f64::from(x) * ox;
@@ -264,18 +266,52 @@ impl Filter for Lighting {
                     Data::Diffuse {
                         ref diffuse_constant,
                     } => {
-                        let n_dot_l = normal.dot(&light_vector);
-                        diffuse_constant.get() * n_dot_l
+                        let k = if normal.normal.is_zero() {
+                            // Common case of (0, 0, 1) normal.
+                            light_vector.z
+                        } else {
+                            let mut n = normal.normal.map(|x| f64::from(x) * surface_scale / 255.);
+                            n.component_mul_assign(&normal.factor);
+                            let normal = Vector3::new(n.x, n.y, 1.0);
+
+                            normal.dot(&light_vector) / normal.norm()
+                        };
+
+                        diffuse_constant.get() * k
                     }
                     Data::Specular {
                         ref specular_constant,
                         ref specular_exponent,
                     } => {
-                        let mut h = light_vector + Vector3::new(0.0, 0.0, 1.0);
-                        let _ = h.try_normalize_mut(0.0);
+                        let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
+                        let h_norm = h.norm();
+                        if h_norm == 0.0 {
+                            0.0
+                        } else {
+                            let k = if normal.normal.is_zero() {
+                                // Common case of (0, 0, 1) normal.
+                                let n_dot_h = h.z / h_norm;
+                                if specular_exponent.get() == 1.0 {
+                                    n_dot_h
+                                } else {
+                                    n_dot_h.powf(specular_exponent.get())
+                                }
+                            } else {
+                                let mut n =
+                                    normal.normal.map(|x| f64::from(x) * surface_scale / 255.);
+                                n.component_mul_assign(&normal.factor);
+                                let normal = Vector3::new(n.x, n.y, 1.0);
 
-                        let n_dot_h = normal.dot(&h);
-                        specular_constant.get() * n_dot_h.powf(specular_exponent.get())
+                                let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
+                                if specular_exponent.get() == 1.0 {
+                                    n_dot_h
+                                } else {
+                                    n_dot_h.powf(specular_exponent.get())
+                                }
+                            };
+
+                            specular_constant.get() * k
+                        }
                     }
                 };
 
@@ -299,28 +335,28 @@ impl Filter for Lighting {
             compute_output_pixel(
                 bounds.x0 as u32,
                 bounds.y0 as u32,
-                top_left_normal(&input_surface, bounds, surface_scale),
+                top_left_normal(&input_surface, bounds),
             );
 
             // Top right.
             compute_output_pixel(
                 bounds.x1 as u32 - 1,
                 bounds.y0 as u32,
-                top_right_normal(&input_surface, bounds, surface_scale),
+                top_right_normal(&input_surface, bounds),
             );
 
             // Bottom left.
             compute_output_pixel(
                 bounds.x0 as u32,
                 bounds.y1 as u32 - 1,
-                bottom_left_normal(&input_surface, bounds, surface_scale),
+                bottom_left_normal(&input_surface, bounds),
             );
 
             // Bottom right.
             compute_output_pixel(
                 bounds.x1 as u32 - 1,
                 bounds.y1 as u32 - 1,
-                bottom_right_normal(&input_surface, bounds, surface_scale),
+                bottom_right_normal(&input_surface, bounds),
             );
 
             if bounds.x1 - bounds.x0 >= 3 {
@@ -329,7 +365,7 @@ impl Filter for Lighting {
                     compute_output_pixel(
                         x,
                         bounds.y0 as u32,
-                        top_row_normal(&input_surface, bounds, x, surface_scale),
+                        top_row_normal(&input_surface, bounds, x),
                     );
                 }
 
@@ -338,7 +374,7 @@ impl Filter for Lighting {
                     compute_output_pixel(
                         x,
                         bounds.y1 as u32 - 1,
-                        bottom_row_normal(&input_surface, bounds, x, surface_scale),
+                        bottom_row_normal(&input_surface, bounds, x),
                     );
                 }
             }
@@ -349,7 +385,7 @@ impl Filter for Lighting {
                     compute_output_pixel(
                         bounds.x0 as u32,
                         y,
-                        left_column_normal(&input_surface, bounds, y, surface_scale),
+                        left_column_normal(&input_surface, bounds, y),
                     );
                 }
 
@@ -358,7 +394,7 @@ impl Filter for Lighting {
                     compute_output_pixel(
                         bounds.x1 as u32 - 1,
                         y,
-                        right_column_normal(&input_surface, bounds, y, surface_scale),
+                        right_column_normal(&input_surface, bounds, y),
                     );
                 }
             }
@@ -367,11 +403,7 @@ impl Filter for Lighting {
                 // Interior pixels.
                 for y in bounds.y0 as u32 + 1..bounds.y1 as u32 - 1 {
                     for x in bounds.x0 as u32 + 1..bounds.x1 as u32 - 1 {
-                        compute_output_pixel(
-                            x,
-                            y,
-                            interior_normal(&input_surface, bounds, x, y, surface_scale),
-                        );
+                        compute_output_pixel(x, y, interior_normal(&input_surface, bounds, x, y));
                     }
                 }
             }

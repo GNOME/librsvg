@@ -11,6 +11,7 @@ extern crate glib_sys;
 extern crate itertools;
 extern crate libc;
 extern crate nalgebra;
+extern crate num_traits;
 extern crate owning_ref;
 extern crate pango;
 extern crate pango_cairo_sys;
