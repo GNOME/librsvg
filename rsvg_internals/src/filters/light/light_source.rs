@@ -44,17 +44,11 @@ pub enum TransformedLightSource {
         elevation: f64,
     },
     Point {
-        x: f64,
-        y: f64,
-        z: f64,
+        origin: Vector3<f64>,
     },
     Spot {
-        x: f64,
-        y: f64,
-        z: f64,
-        points_at_x: f64,
-        points_at_y: f64,
-        points_at_z: f64,
+        origin: Vector3<f64>,
+        direction: Vector3<f64>,
         specular_exponent: f64,
         limiting_cone_angle: Option<f64>,
     },
@@ -107,7 +101,9 @@ impl LightSource {
                 let (x, y) = ctx.paffine().transform_point(x.get(), y.get());
                 let z = ctx.transform_dist(z.get());
 
-                TransformedLightSource::Point { x, y, z }
+                TransformedLightSource::Point {
+                    origin: Vector3::new(x, y, z),
+                }
             }
             LightSource::Spot {
                 x,
@@ -126,13 +122,13 @@ impl LightSource {
                     .transform_point(points_at_x.get(), points_at_y.get());
                 let points_at_z = ctx.transform_dist(points_at_z.get());
 
+                let origin = Vector3::new(x, y, z);
+                let mut direction = Vector3::new(points_at_x, points_at_y, points_at_z) - origin;
+                let _ = direction.try_normalize_mut(0.0);
+
                 TransformedLightSource::Spot {
-                    x,
-                    y,
-                    z,
-                    points_at_x,
-                    points_at_y,
-                    points_at_z,
+                    origin,
+                    direction,
                     specular_exponent: specular_exponent.get(),
                     limiting_cone_angle: limiting_cone_angle.get(),
                 }
@@ -155,18 +151,9 @@ impl TransformedLightSource {
                     elevation.sin(),
                 )
             }
-            TransformedLightSource::Point {
-                x: light_x,
-                y: light_y,
-                z: light_z,
-            }
-            | TransformedLightSource::Spot {
-                x: light_x,
-                y: light_y,
-                z: light_z,
-                ..
-            } => {
-                let mut v = Vector3::new(light_x - x, light_y - y, light_z - z);
+            TransformedLightSource::Point { origin }
+            | TransformedLightSource::Spot { origin, .. } => {
+                let mut v = origin - Vector3::new(x, y, z);
                 let _ = v.try_normalize_mut(0.0);
                 v
             }
@@ -182,26 +169,12 @@ impl TransformedLightSource {
     ) -> cssparser::RGBA {
         match self {
             TransformedLightSource::Spot {
-                x: light_x,
-                y: light_y,
-                z: light_z,
-                points_at_x,
-                points_at_y,
-                points_at_z,
+                direction,
                 specular_exponent,
                 limiting_cone_angle,
                 ..
             } => {
-                let mut s = Vector3::new(
-                    points_at_x - light_x,
-                    points_at_y - light_y,
-                    points_at_z - light_z,
-                );
-                if s.try_normalize_mut(0.0).is_none() {
-                    return cssparser::RGBA::transparent();
-                }
-
-                let minus_l_dot_s = -light_vector.dot(&s);
+                let minus_l_dot_s = -light_vector.dot(&direction);
                 if minus_l_dot_s <= 0.0 {
                     return cssparser::RGBA::transparent();
                 }
@@ -213,7 +186,7 @@ impl TransformedLightSource {
                 }
 
                 let factor = minus_l_dot_s.powf(*specular_exponent);
-                let compute = |x| clamp(f64::from(x) * factor, 0.0, 255.0).round() as u8;
+                let compute = |x| (clamp(f64::from(x) * factor, 0.0, 255.0) + 0.5) as u8;
 
                 cssparser::RGBA {
                     red: compute(lighting_color.red),
