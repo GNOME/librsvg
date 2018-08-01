@@ -316,7 +316,7 @@ impl Filter for Lighting {
                     }
                 };
 
-                let compute = |x| clamp(factor * f64::from(x), 0.0, 255.0).round() as u8;
+                let compute = |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
 
                 let mut output_pixel = Pixel {
                     r: compute(light_color.red),
