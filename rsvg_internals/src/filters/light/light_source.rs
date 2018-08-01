@@ -14,6 +14,7 @@ use property_bag::PropertyBag;
 use util::clamp;
 
 /// A light source node (`feDistantLight`, `fePointLight` or `feSpotLight`).
+#[derive(Clone)]
 pub enum LightSource {
     Distant {
         azimuth: Cell<f64>,
@@ -33,6 +34,29 @@ pub enum LightSource {
         points_at_z: Cell<f64>,
         specular_exponent: Cell<f64>,
         limiting_cone_angle: Cell<Option<f64>>,
+    },
+}
+
+/// A light source node with affine transformations applied.
+pub enum TransformedLightSource {
+    Distant {
+        azimuth: f64,
+        elevation: f64,
+    },
+    Point {
+        x: f64,
+        y: f64,
+        z: f64,
+    },
+    Spot {
+        x: f64,
+        y: f64,
+        z: f64,
+        points_at_x: f64,
+        points_at_y: f64,
+        points_at_z: f64,
+        specular_exponent: f64,
+        limiting_cone_angle: Option<f64>,
     },
 }
 
@@ -71,34 +95,77 @@ impl LightSource {
         }
     }
 
+    /// Returns a `TransformedLightSource` according to the given `FilterContext`.
+    #[inline]
+    pub fn transform(&self, ctx: &FilterContext) -> TransformedLightSource {
+        match self {
+            LightSource::Distant { azimuth, elevation } => TransformedLightSource::Distant {
+                azimuth: azimuth.get(),
+                elevation: elevation.get(),
+            },
+            LightSource::Point { x, y, z } => {
+                let (x, y) = ctx.paffine().transform_point(x.get(), y.get());
+                let z = ctx.transform_dist(z.get());
+
+                TransformedLightSource::Point { x, y, z }
+            }
+            LightSource::Spot {
+                x,
+                y,
+                z,
+                points_at_x,
+                points_at_y,
+                points_at_z,
+                specular_exponent,
+                limiting_cone_angle,
+            } => {
+                let (x, y) = ctx.paffine().transform_point(x.get(), y.get());
+                let z = ctx.transform_dist(z.get());
+                let (points_at_x, points_at_y) = ctx
+                    .paffine()
+                    .transform_point(points_at_x.get(), points_at_y.get());
+                let points_at_z = ctx.transform_dist(points_at_z.get());
+
+                TransformedLightSource::Spot {
+                    x,
+                    y,
+                    z,
+                    points_at_x,
+                    points_at_y,
+                    points_at_z,
+                    specular_exponent: specular_exponent.get(),
+                    limiting_cone_angle: limiting_cone_angle.get(),
+                }
+            }
+        }
+    }
+}
+
+impl TransformedLightSource {
     /// Returns the unit (or null) vector from the image sample to the light.
     #[inline]
-    pub fn vector(&self, x: f64, y: f64, z: f64, ctx: &FilterContext) -> Vector3<f64> {
+    pub fn vector(&self, x: f64, y: f64, z: f64) -> Vector3<f64> {
         match self {
-            LightSource::Distant { azimuth, elevation } => {
-                let azimuth = azimuth.get().to_radians();
-                let elevation = elevation.get().to_radians();
+            TransformedLightSource::Distant { azimuth, elevation } => {
+                let azimuth = azimuth.to_radians();
+                let elevation = elevation.to_radians();
                 Vector3::new(
                     azimuth.cos() * elevation.cos(),
                     azimuth.sin() * elevation.cos(),
                     elevation.sin(),
                 )
             }
-            LightSource::Point {
+            TransformedLightSource::Point {
                 x: light_x,
                 y: light_y,
                 z: light_z,
             }
-            | LightSource::Spot {
+            | TransformedLightSource::Spot {
                 x: light_x,
                 y: light_y,
                 z: light_z,
                 ..
             } => {
-                let (light_x, light_y) =
-                    ctx.paffine().transform_point(light_x.get(), light_y.get());
-                let light_z = ctx.transform_dist(light_z.get());
-
                 let mut v = Vector3::new(light_x - x, light_y - y, light_z - z);
                 let _ = v.try_normalize_mut(0.0);
                 v
@@ -112,10 +179,9 @@ impl LightSource {
         &self,
         lighting_color: cssparser::RGBA,
         light_vector: Vector3<f64>,
-        ctx: &FilterContext,
     ) -> cssparser::RGBA {
         match self {
-            LightSource::Spot {
+            TransformedLightSource::Spot {
                 x: light_x,
                 y: light_y,
                 z: light_z,
@@ -126,14 +192,6 @@ impl LightSource {
                 limiting_cone_angle,
                 ..
             } => {
-                let (light_x, light_y) =
-                    ctx.paffine().transform_point(light_x.get(), light_y.get());
-                let light_z = ctx.transform_dist(light_z.get());
-                let (points_at_x, points_at_y) = ctx
-                    .paffine()
-                    .transform_point(points_at_x.get(), points_at_y.get());
-                let points_at_z = ctx.transform_dist(points_at_z.get());
-
                 let mut s = Vector3::new(
                     points_at_x - light_x,
                     points_at_y - light_y,
@@ -148,13 +206,13 @@ impl LightSource {
                     return cssparser::RGBA::transparent();
                 }
 
-                if let Some(limiting_cone_angle) = limiting_cone_angle.get() {
+                if let Some(limiting_cone_angle) = limiting_cone_angle {
                     if minus_l_dot_s < limiting_cone_angle.to_radians().cos() {
                         return cssparser::RGBA::transparent();
                     }
                 }
 
-                let factor = minus_l_dot_s.powf(specular_exponent.get());
+                let factor = minus_l_dot_s.powf(*specular_exponent);
                 let compute = |x| clamp(f64::from(x) * factor, 0.0, 255.0).round() as u8;
 
                 cssparser::RGBA {

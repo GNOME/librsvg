@@ -224,6 +224,7 @@ impl Filter for Lighting {
 
         let light_source = light_source.unwrap();
         let light_source = light_source.get_impl::<LightSource>().unwrap();
+        let light_source = light_source.transform(ctx);
 
         let mut input_surface = input.surface().clone();
 
@@ -259,8 +260,8 @@ impl Filter for Lighting {
                 let scaled_x = f64::from(x) * ox;
                 let scaled_y = f64::from(y) * oy;
                 let z = f64::from(pixel.a) / 255.0 * surface_scale;
-                let light_vector = light_source.vector(scaled_x, scaled_y, z, ctx);
-                let light_color = light_source.color(lighting_color, light_vector, ctx);
+                let light_vector = light_source.vector(scaled_x, scaled_y, z);
+                let light_color = light_source.color(lighting_color, light_vector);
 
                 let factor = match self.data {
                     Data::Diffuse {
