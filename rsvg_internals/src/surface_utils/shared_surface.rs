@@ -164,12 +164,7 @@ impl SharedImageSurface {
                 .offset(y as isize * self.stride + x as isize * 4) as *const u32)
         };
 
-        Pixel {
-            r: ((value >> 16) & 0xFF) as u8,
-            g: ((value >> 8) & 0xFF) as u8,
-            b: (value & 0xFF) as u8,
-            a: ((value >> 24) & 0xFF) as u8,
-        }
+        Pixel::from_u32(value)
     }
 
     /// Retrieves the pixel value if it is within `bounds`, otherwise returns a transparent black
