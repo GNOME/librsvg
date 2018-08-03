@@ -3,19 +3,17 @@ use downcast_rs::*;
 use glib;
 use glib::translate::*;
 use glib_sys;
-use libc;
 
 use std::cell::{Cell, Ref, RefCell};
 use std::ptr;
 use std::rc::{Rc, Weak};
-use std::str::FromStr;
 
 use attributes::Attribute;
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use drawing_ctx::DrawingCtx;
 use error::*;
 use handle::RsvgHandle;
-use parsers::{Parse, ParseError};
+use parsers::Parse;
 use property_bag::PropertyBag;
 use state::{
     self,
@@ -27,7 +25,6 @@ use state::{
     SpecifiedValues,
     State,
 };
-use util::utf8_cstr;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
 // points to an  Rc<Node>, which is our refcounted Rust representation
@@ -677,29 +674,6 @@ pub extern "C" fn rsvg_node_add_child(raw_node: *mut RsvgNode, raw_child: *const
     let child: &RsvgNode = unsafe { &*raw_child };
 
     node.add_child(child);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_set_attribute_parse_error(
-    raw_node: *const RsvgNode,
-    attr_name: *const libc::c_char,
-    description: *const libc::c_char,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    assert!(!attr_name.is_null());
-    assert!(!description.is_null());
-
-    unsafe {
-        let attr_name = utf8_cstr(attr_name);
-        let attr = Attribute::from_str(attr_name).unwrap();
-
-        node.set_error(NodeError::parse_error(
-            attr,
-            ParseError::new(&String::from_glib_none(description)),
-        ));
-    }
 }
 
 #[no_mangle]
