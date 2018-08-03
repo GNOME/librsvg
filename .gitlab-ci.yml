@@ -13,6 +13,8 @@ variables:
   I386_UBUNTU_BIONIC:        "registry.gitlab.gnome.org/gnome/librsvg-oci-images/i386/ubuntu:18.04"
 
   RUSTC_1_26:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.26"
+  RUSTC_1_27:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.27"
+  RUSTC_1_28:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.28"
 
   RUSTFMT_NIGHTLY:           "registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly"
   CLIPPY_NIGHTLY:            "registry.gitlab.gnome.org/gnome/librsvg-oci-images/clippy:nightly"
@@ -98,7 +100,7 @@ stages:
 # STAGE 1 TESTS
 ########################################################################
 
-fedora:test:
+fedora test:
   image: $AMD64_FEDORA_LATEST
   stage: test
   variables:
@@ -132,7 +134,7 @@ clippy:
 
 tarball:
   image: $AMD64_FEDORA_LATEST
-  stage: distcheck
+  stage: lint
   variables:
     LIBRSVG_DEBUG: "yes"
   script:
@@ -193,8 +195,22 @@ debian:testing_release_i386:
 # STAGE 3 RUSTC TESTS
 #######################################################################
 
-rustc:1_26:
+rustc 1.26 1:
   image: $RUSTC_1_26
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *rustc
+  <<: *stage_3
+
+  rustc 1.27 2:
+  image: $RUSTC_1_27
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *rustc
+  <<: *stage_3
+
+  rustc 1.28 3:
+  image: $RUSTC_1_28
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *rustc
