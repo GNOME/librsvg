@@ -1515,17 +1515,19 @@ pub fn parse_style_attrs(
 
     match state.parse_presentation_attributes(pbag) {
         Ok(_) => (),
-        Err(_) => (),
-        /* FIXME: we'll ignore errors here for now.  If we return, we expose
-         * buggy handling of the enable-background property; we are not parsing it correctly.
-         * This causes tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
-         * because it has enable-background="new 0 0 1179.75118 687.74173" in the toplevel svg
-         * element.
-         *        Err(e) => (),
-         *        {
-         *            node.set_error(e);
-         *            return;
-         *        } */
+        Err(e) => {
+            // FIXME: we'll ignore errors here for now.  If we return, we expose
+            // buggy handling of the enable-background property; we are not parsing it correctly.
+            // This causes tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
+            // because it has enable-background="new 0 0 1179.75118 687.74173" in the toplevel svg
+            // element.
+            //        {
+            //            node.set_error(e);
+            //            return;
+            //        }
+
+            println!("(attribute error: {})", e);
+        }
     }
 
     // Try to properly support all of the following, including inheritance:
