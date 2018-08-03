@@ -1,4 +1,5 @@
 //! Shared access to Cairo image surfaces.
+use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use cairo::prelude::SurfaceExt;
@@ -6,6 +7,7 @@ use cairo::{self, ImageSurface};
 use cairo_sys;
 use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
+use rayon;
 
 use filters::context::IRect;
 use srgb;
@@ -450,9 +452,128 @@ impl SharedImageSurface {
         assert_ne!(kernel_size, 0);
         assert!(target < kernel_size);
 
-        let output_stride = output_surface.get_stride() as usize;
         {
-            let mut output_data = output_surface.get_data().unwrap();
+            // The following code is needed for a parallel implementation of the blur loop. The
+            // blurring is done either for each row or for each column of pixels, depending on the
+            // value of `vertical`, independently of the others. Naturally, we want to run the
+            // outer loop on a thread pool.
+            //
+            // The case of `vertical == false` is simple since the input image slice can be
+            // partitioned into chunks for each row of pixels and processed in parallel with rayon.
+            // The case of `vertical == true`, however, is more involved because we can't just make
+            // mutable slices for all pixel columns (they would be overlapping which is forbidden
+            // by the aliasing rules).
+            //
+            // This is where the following struct comes into play: it stores a sub-slice of the
+            // pixel data and can be split at any row or column into two parts (similar to
+            // slice::split_at_mut()).
+            struct UnsafeSendPixelData<'a> {
+                width: u32,
+                height: u32,
+                stride: isize,
+                ptr: NonNull<u8>,
+                _marker: PhantomData<&'a mut ()>,
+            }
+
+            unsafe impl<'a> Send for UnsafeSendPixelData<'a> {}
+
+            impl<'a> UnsafeSendPixelData<'a> {
+                /// Creates a new `UnsafeSendPixelData`.
+                ///
+                /// # Safety
+                /// You must call cairo_surface_mark_dirty() on the surface once all instances of
+                /// `UnsafeSendPixelData` are dropped to make sure the pixel changes are comitted
+                /// to Cairo.
+                #[inline]
+                unsafe fn new(surface: &mut cairo::ImageSurface) -> Self {
+                    assert_eq!(surface.get_format(), cairo::Format::ARgb32);
+                    let ptr = surface.get_data().unwrap().as_mut_ptr();
+
+                    Self {
+                        width: surface.get_width() as u32,
+                        height: surface.get_height() as u32,
+                        stride: surface.get_stride() as isize,
+                        ptr: NonNull::new(ptr).unwrap(),
+                        _marker: PhantomData,
+                    }
+                }
+
+                /// Sets a pixel value at the given coordinates.
+                #[inline]
+                fn set_pixel(&mut self, pixel: Pixel, x: u32, y: u32) {
+                    assert!(x < self.width);
+                    assert!(y < self.height);
+
+                    let value = pixel.to_u32();
+
+                    unsafe {
+                        let ptr = self
+                            .ptr
+                            .as_ptr()
+                            .offset(y as isize * self.stride + x as isize * 4)
+                            as *mut u32;
+                        *ptr = value;
+                    }
+                }
+
+                /// Splits this `UnsafeSendPixelData` into two at the given row.
+                ///
+                /// The first one contains rows `0..index` (index not included) and the second one
+                /// contains rows `index..height`.
+                #[inline]
+                fn split_at_row(self, index: u32) -> (Self, Self) {
+                    assert!(index <= self.height);
+
+                    (
+                        UnsafeSendPixelData {
+                            width: self.width,
+                            height: index,
+                            stride: self.stride,
+                            ptr: self.ptr,
+                            _marker: PhantomData,
+                        },
+                        UnsafeSendPixelData {
+                            width: self.width,
+                            height: self.height - index,
+                            stride: self.stride,
+                            ptr: NonNull::new(unsafe {
+                                self.ptr.as_ptr().offset(index as isize * self.stride)
+                            }).unwrap(),
+                            _marker: PhantomData,
+                        },
+                    )
+                }
+
+                /// Splits this `UnsafeSendPixelData` into two at the given column.
+                ///
+                /// The first one contains columns `0..index` (index not included) and the second
+                /// one contains columns `index..width`.
+                #[inline]
+                fn split_at_column(self, index: u32) -> (Self, Self) {
+                    assert!(index <= self.width);
+
+                    (
+                        UnsafeSendPixelData {
+                            width: index,
+                            height: self.height,
+                            stride: self.stride,
+                            ptr: self.ptr,
+                            _marker: PhantomData,
+                        },
+                        UnsafeSendPixelData {
+                            width: self.width - index,
+                            height: self.height,
+                            stride: self.stride,
+                            ptr: NonNull::new(unsafe {
+                                self.ptr.as_ptr().offset(index as isize * 4)
+                            }).unwrap(),
+                            _marker: PhantomData,
+                        },
+                    )
+                }
+            }
+
+            let output_data = unsafe { UnsafeSendPixelData::new(output_surface) };
 
             // Shift is target into the opposite direction.
             let shift = (kernel_size - target) as i32;
@@ -463,103 +584,129 @@ impl SharedImageSurface {
             let compute = |x: u32| (f64::from(x) / kernel_size_f64 + 0.5) as u8;
 
             // Depending on `vertical`, we're blurring either horizontally line-by-line, or
-            // vertically column-by-column. In the code below, the main axis is the
-            // axis along which the blurring happens (so if `vertical` is false, the
-            // main axis is the horizontal axis). The other axis is the outer loop
-            // axis. The code uses `i` and `j` for the other axis and main axis
-            // coordinates, respectively.
+            // vertically column-by-column. In the code below, the main axis is the axis along
+            // which the blurring happens (so if `vertical` is false, the main axis is the
+            // horizontal axis). The other axis is the outer loop axis. The code uses `i` and `j`
+            // for the other axis and main axis coordinates, respectively.
             let (main_axis_min, main_axis_max, other_axis_min, other_axis_max) = if vertical {
                 (bounds.y0, bounds.y1, bounds.x0, bounds.x1)
             } else {
                 (bounds.x0, bounds.x1, bounds.y0, bounds.y1)
             };
 
-            // Helper functions for getting and setting the pixels.
+            // Helper function for getting the pixels.
             let pixel = |i, j| {
                 let (x, y) = if vertical { (i, j) } else { (j, i) };
 
                 self.get_pixel_or_transparent(bounds, x, y)
             };
 
-            let mut set_pixel = |i, j, pixel| {
-                let (x, y) = if vertical { (i, j) } else { (j, i) };
-
-                output_data.set_pixel(output_stride, pixel, x, y);
+            // The following loop assumes the first row or column of `output_data` is the first row
+            // or column inside `bounds`.
+            let mut output_data = if vertical {
+                output_data.split_at_column(bounds.x0 as u32).1
+            } else {
+                output_data.split_at_row(bounds.y0 as u32).1
             };
 
-            for i in other_axis_min..other_axis_max {
-                // The idea is that since all weights of the box blur kernel are equal, for each
-                // step along the main axis, instead of recomputing the full sum,
-                // we can take the previous sum, subtract the "oldest" pixel value
-                // and add the "newest" pixel value.
-                //
-                // The sum is u32 so that it can fit MAXIMUM_KERNEL_SIZE * 255.
-                let mut sum_r = 0;
-                let mut sum_g = 0;
-                let mut sum_b = 0;
-                let mut sum_a = 0;
+            rayon::scope(|s| {
+                for i in other_axis_min..other_axis_max {
+                    // Split off one row or column and launch its processing on another thread.
+                    // Thanks to the initial split before the loop, there's no special case for the
+                    // very first split.
+                    let (mut current, remaining) = if vertical {
+                        output_data.split_at_column(1)
+                    } else {
+                        output_data.split_at_row(1)
+                    };
 
-                // The whole sum needs to be computed for the first pixel. However, we know that
-                // values outside of bounds are transparent, so the loop starts on
-                // the first pixel in bounds.
-                for j in main_axis_min..main_axis_min + shift {
-                    let Pixel { r, g, b, a } = pixel(i, j);
+                    output_data = remaining;
 
-                    if !self.is_alpha_only() {
-                        sum_r += u32::from(r);
-                        sum_g += u32::from(g);
-                        sum_b += u32::from(b);
-                    }
+                    s.spawn(move |_| {
+                        // Helper function for setting the pixels.
+                        let mut set_pixel = |j, pixel| {
+                            // We're processing rows or columns one-by-one, so the other coordinate
+                            // is always 0.
+                            let (x, y) = if vertical { (0, j) } else { (j, 0) };
+                            current.set_pixel(pixel, x, y);
+                        };
 
-                    sum_a += u32::from(a);
+                        // The idea is that since all weights of the box blur kernel are equal, for
+                        // each step along the main axis, instead of recomputing the full sum, we
+                        // can take the previous sum, subtract the "oldest" pixel value and add the
+                        // "newest" pixel value.
+                        //
+                        // The sum is u32 so that it can fit MAXIMUM_KERNEL_SIZE * 255.
+                        let mut sum_r = 0;
+                        let mut sum_g = 0;
+                        let mut sum_b = 0;
+                        let mut sum_a = 0;
+
+                        // The whole sum needs to be computed for the first pixel. However, we know
+                        // that values outside of bounds are transparent, so the loop starts on the
+                        // first pixel in bounds.
+                        for j in main_axis_min..main_axis_min + shift {
+                            let Pixel { r, g, b, a } = pixel(i, j);
+
+                            if !self.is_alpha_only() {
+                                sum_r += u32::from(r);
+                                sum_g += u32::from(g);
+                                sum_b += u32::from(b);
+                            }
+
+                            sum_a += u32::from(a);
+                        }
+
+                        set_pixel(
+                            main_axis_min as u32,
+                            Pixel {
+                                r: compute(sum_r),
+                                g: compute(sum_g),
+                                b: compute(sum_b),
+                                a: compute(sum_a),
+                            },
+                        );
+
+                        // Now, go through all the other pixels.
+                        for j in main_axis_min + 1..main_axis_max {
+                            let old_pixel = pixel(i, j - target - 1);
+
+                            if !self.is_alpha_only() {
+                                sum_r -= u32::from(old_pixel.r);
+                                sum_g -= u32::from(old_pixel.g);
+                                sum_b -= u32::from(old_pixel.b);
+                            }
+
+                            sum_a -= u32::from(old_pixel.a);
+
+                            let new_pixel = pixel(i, j + shift - 1);
+
+                            if !self.is_alpha_only() {
+                                sum_r += u32::from(new_pixel.r);
+                                sum_g += u32::from(new_pixel.g);
+                                sum_b += u32::from(new_pixel.b);
+                            }
+
+                            sum_a += u32::from(new_pixel.a);
+
+                            set_pixel(
+                                j as u32,
+                                Pixel {
+                                    r: compute(sum_r),
+                                    g: compute(sum_g),
+                                    b: compute(sum_b),
+                                    a: compute(sum_a),
+                                },
+                            );
+                        }
+                    });
                 }
-
-                set_pixel(
-                    i as u32,
-                    main_axis_min as u32,
-                    Pixel {
-                        r: compute(sum_r),
-                        g: compute(sum_g),
-                        b: compute(sum_b),
-                        a: compute(sum_a),
-                    },
-                );
-
-                // Now, go through all the other pixels.
-                for j in main_axis_min + 1..main_axis_max {
-                    let old_pixel = pixel(i, j - target - 1);
-
-                    if !self.is_alpha_only() {
-                        sum_r -= u32::from(old_pixel.r);
-                        sum_g -= u32::from(old_pixel.g);
-                        sum_b -= u32::from(old_pixel.b);
-                    }
-
-                    sum_a -= u32::from(old_pixel.a);
-
-                    let new_pixel = pixel(i, j + shift - 1);
-
-                    if !self.is_alpha_only() {
-                        sum_r += u32::from(new_pixel.r);
-                        sum_g += u32::from(new_pixel.g);
-                        sum_b += u32::from(new_pixel.b);
-                    }
-
-                    sum_a += u32::from(new_pixel.a);
-
-                    set_pixel(
-                        i as u32,
-                        j as u32,
-                        Pixel {
-                            r: compute(sum_r),
-                            g: compute(sum_g),
-                            b: compute(sum_b),
-                            a: compute(sum_a),
-                        },
-                    );
-                }
-            }
+            });
         }
+
+        // Don't forget to manually mark the surface as dirty (due to usage of
+        // `UnsafeSendPixelData`).
+        unsafe { cairo_sys::cairo_surface_mark_dirty(output_surface.to_raw_none()) }
     }
 
     /// Performs a horizontal or vertical box blur.
