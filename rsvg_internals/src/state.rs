@@ -590,10 +590,17 @@ impl State {
         // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
         // Ignore unsupported / illegal values; don't set the whole
         // node to be in error in that case.
+
+        if let Err(e) = parse().map_err(|e| NodeError::attribute_error(attr, e)) {
+            println!(
+                "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    property \
+                 will be ignored)",
+                attr, value, e
+            );
+        }
+
+        // If we didn't ignore property errors, we could just return this:
         // parse().map_err(|e| NodeError::attribute_error(attr, e))
-
-        let _ = parse();
-
         Ok(())
     }
 
