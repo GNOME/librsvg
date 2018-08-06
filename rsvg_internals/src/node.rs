@@ -367,7 +367,13 @@ impl Node {
             }
         }
 
-        *self.result.borrow_mut() = self.node_impl.set_atts(node, handle, pbag);
+        match self.node_impl.set_atts(node, handle, pbag) {
+            Ok(_) => (),
+            Err(e) => {
+                self.set_error(e);
+                return;
+            }
+        }
     }
 
     fn parse_conditional_processing_attributes(&self, pbag: &PropertyBag) -> Result<(), NodeError> {
