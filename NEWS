@@ -1,3 +1,14 @@
+Version 2.42.6
+- #282 - Fix drop-shadows generated from Inkscape; we were overwriting
+  a surface inadvertently.
+- #241 - Fix confusion between feSpotLight and feDistantLight (Ivan
+  Molodetskikh).
+- #292 - Don't panic if we try to clip with an empty region.
+- Fix out-of-tree builds and tests (Jehan).
+- Compilation can now use a RUST_TARGET variable to override the host
+  triplet when cross-compiling.  See COMPILING.md for details (Fabrice
+  Fontaine).
+
 Version 2.42.5
 - #266 - Don't render filter primitives that have invalid attributes.
   This was causing a crash in feColorMatrix.
