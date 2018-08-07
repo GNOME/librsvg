@@ -61,8 +61,7 @@ where
             } else {
                 Ok(v)
             }
-        })
-        .map_err(|e| NodeError::attribute_error(key, e))
+        }).map_err(|e| NodeError::attribute_error(key, e))
 }
 
 // angle:

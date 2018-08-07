@@ -232,14 +232,13 @@ pub fn draw_pango_layout(
     if clipping {
         need_layout_path = true;
     } else {
-        need_layout_path = stroke.is_some()
-            && paint_server::_set_source_rsvg_paint_server(
-                draw_ctx,
-                stroke.unwrap(),
-                state::get_stroke_opacity(state),
-                &bbox,
-                state::get_current_color(state),
-            );
+        need_layout_path = stroke.is_some() && paint_server::_set_source_rsvg_paint_server(
+            draw_ctx,
+            stroke.unwrap(),
+            state::get_stroke_opacity(state),
+            &bbox,
+            state::get_current_color(state),
+        );
     }
 
     if need_layout_path {

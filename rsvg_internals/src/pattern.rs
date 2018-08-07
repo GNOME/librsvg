@@ -243,14 +243,12 @@ fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern 
             .as_ref()
             .and_then(|fallback_name| {
                 drawing_ctx::get_acquired_node_of_type(draw_ctx, &fallback_name, NodeType::Pattern)
-            })
-            .and_then(|acquired| {
+            }).and_then(|acquired| {
                 acquired.get().with_impl(|i: &NodePattern| {
                     result.resolve_from_fallback(&*i.pattern.borrow())
                 });
                 Some(())
-            })
-            .or_else(|| {
+            }).or_else(|| {
                 result.resolve_from_defaults();
                 Some(())
             });

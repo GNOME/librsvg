@@ -37,12 +37,10 @@ fn normalize_default(s: &str) -> String {
         .map(|ch| match ch {
             '\t' => ' ',
             c => c,
-        })
-        .coalesce(|current, next| match (current, next) {
+        }).coalesce(|current, next| match (current, next) {
             (' ', ' ') => Ok(' '),
             (_, _) => Err((current, next)),
-        })
-        .collect::<String>()
+        }).collect::<String>()
 }
 
 // From https://www.w3.org/TR/SVG/text.html#WhiteSpace
@@ -61,8 +59,7 @@ fn normalize_preserve(s: &str) -> String {
             '\n' | '\t' => ' ',
 
             c => c,
-        })
-        .collect()
+        }).collect()
 }
 
 #[no_mangle]

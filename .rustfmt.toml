@@ -6,7 +6,6 @@ wrap_comments = true
 tab_spaces = 4
 hard_tabs = false
 newline_style = "Unix"
-write_mode = "Overwrite"
 condense_wildcard_suffixes = false
 format_strings = true
 normalize_comments = true

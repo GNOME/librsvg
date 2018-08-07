@@ -374,8 +374,7 @@ fn resolve_gradient(gradient: &Gradient, draw_ctx: *mut RsvgDrawingCtx) -> Gradi
                     result.resolve_from_fallback(&fallback_grad)
                 });
                 Some(())
-            })
-            .or_else(|| {
+            }).or_else(|| {
                 result.resolve_from_defaults();
                 Some(())
             });

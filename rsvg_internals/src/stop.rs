@@ -105,8 +105,8 @@ impl NodeTrait for NodeStop {
 
         let mut color_rgba: cssparser::RGBA;
 
-        let stop_color =
-            state::get_stop_color(state).map_err(|e| NodeError::attribute_error("stop-color", e))?;
+        let stop_color = state::get_stop_color(state)
+            .map_err(|e| NodeError::attribute_error("stop-color", e))?;
 
         match stop_color {
             None => color_rgba = cssparser::RGBA::transparent(),
