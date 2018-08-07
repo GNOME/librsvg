@@ -1,3 +1,8 @@
+Version 2.43.4
+- This is an early release to test the effects of threading in librsvg.
+- The lighting and Gaussian blur filters are now parallelized with
+  Rayon; they will use all available cores (Ivan Molodetskikh).
+
 Version 2.43.3
 - Tentative fix: #309 - Don't panic if rendering to a non-image Cairo surface.
 - Optimizations for Gaussian blur and other filters (Ivan Molodetskikh).
