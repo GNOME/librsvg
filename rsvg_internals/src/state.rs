@@ -8,9 +8,10 @@ use std::str::FromStr;
 
 use attributes::Attribute;
 use error::*;
+use font_props::FontSizeSpec;
 use handle::RsvgHandle;
 use iri::IRI;
-use length::{Dasharray, FontSizeSpec, Length, LengthDir, LengthUnit};
+use length::{Dasharray, Length, LengthDir, LengthUnit};
 use node::RsvgNode;
 use paint_server::PaintServer;
 use parsers::{Parse, ParseError};

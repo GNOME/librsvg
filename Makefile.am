@@ -80,6 +80,7 @@ RUST_SRC =							\
 	rsvg_internals/src/filters/turbulence.rs		\
 	rsvg_internals/src/error.rs				\
 	rsvg_internals/src/float_eq_cairo.rs			\
+	rsvg_internals/src/font_props.rs			\
 	rsvg_internals/src/gradient.rs				\
 	rsvg_internals/src/handle.rs				\
 	rsvg_internals/src/image.rs				\

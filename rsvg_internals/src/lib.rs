@@ -91,6 +91,7 @@ mod defs;
 mod drawing_ctx;
 mod error;
 pub mod filters;
+mod font_props;
 mod gradient;
 mod handle;
 mod image;
