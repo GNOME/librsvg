@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 use attributes::Attribute;
 use error::*;
-use font_props::FontSizeSpec;
+use font_props::{FontSizeSpec, FontWeightSpec};
 use handle::RsvgHandle;
 use iri::IRI;
 use length::{Dasharray, Length, LengthDir, LengthUnit};
@@ -1015,27 +1015,14 @@ make_property!(
     "small-caps" => SmallCaps,
 );
 
-// https://www.w3.org/TR/SVG/text.html#FontWeightProperty
+// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-weight
 make_property!(
     ComputedValues,
     FontWeight,
-    default: Normal,
+    default: FontWeightSpec::Normal,
     inherits_automatically: true,
-
-    identifiers:
-    "normal" => Normal,
-    "bold" => Bold,
-    "bolder" => Bolder,
-    "lighter" => Lighter,
-    "100" => W100, // FIXME: we should use Weight(100),
-    "200" => W200, // but we need a smarter macro for that
-    "300" => W300,
-    "400" => W400,
-    "500" => W500,
-    "600" => W600,
-    "700" => W700,
-    "800" => W800,
-    "900" => W900,
+    newtype_parse: FontWeightSpec,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty

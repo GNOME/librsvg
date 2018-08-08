@@ -6,6 +6,7 @@ use std::str;
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
+use font_props::FontWeightSpec;
 use handle::RsvgHandle;
 use length::*;
 use node::{boxed_node_new, CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
@@ -18,7 +19,6 @@ use state::{
     FontStretch,
     FontStyle,
     FontVariant,
-    FontWeight,
     TextAnchor,
     UnicodeBidi,
     WritingMode,
@@ -410,22 +410,22 @@ impl From<FontStretch> for pango::Stretch {
     }
 }
 
-impl From<FontWeight> for pango::Weight {
-    fn from(w: FontWeight) -> pango::Weight {
+impl From<FontWeightSpec> for pango::Weight {
+    fn from(w: FontWeightSpec) -> pango::Weight {
         match w {
-            FontWeight::Normal => pango::Weight::Normal,
-            FontWeight::Bold => pango::Weight::Bold,
-            FontWeight::Bolder => pango::Weight::Ultrabold,
-            FontWeight::Lighter => pango::Weight::Light,
-            FontWeight::W100 => pango::Weight::Thin,
-            FontWeight::W200 => pango::Weight::Ultralight,
-            FontWeight::W300 => pango::Weight::Semilight,
-            FontWeight::W400 => pango::Weight::Normal,
-            FontWeight::W500 => pango::Weight::Medium,
-            FontWeight::W600 => pango::Weight::Semibold,
-            FontWeight::W700 => pango::Weight::Bold,
-            FontWeight::W800 => pango::Weight::Ultrabold,
-            FontWeight::W900 => pango::Weight::Heavy,
+            FontWeightSpec::Normal => pango::Weight::Normal,
+            FontWeightSpec::Bold => pango::Weight::Bold,
+            FontWeightSpec::Bolder => pango::Weight::Ultrabold,
+            FontWeightSpec::Lighter => pango::Weight::Light,
+            FontWeightSpec::W100 => pango::Weight::Thin,
+            FontWeightSpec::W200 => pango::Weight::Ultralight,
+            FontWeightSpec::W300 => pango::Weight::Semilight,
+            FontWeightSpec::W400 => pango::Weight::Normal,
+            FontWeightSpec::W500 => pango::Weight::Medium,
+            FontWeightSpec::W600 => pango::Weight::Semibold,
+            FontWeightSpec::W700 => pango::Weight::Bold,
+            FontWeightSpec::W800 => pango::Weight::Ultrabold,
+            FontWeightSpec::W900 => pango::Weight::Heavy,
         }
     }
 }
@@ -509,7 +509,7 @@ fn create_pango_layout(
 
     font_desc.set_variant(pango::Variant::from(values.font_variant));
 
-    font_desc.set_weight(pango::Weight::from(values.font_weight));
+    font_desc.set_weight(pango::Weight::from(values.font_weight.0));
 
     font_desc.set_stretch(pango::Stretch::from(values.font_stretch));
 
