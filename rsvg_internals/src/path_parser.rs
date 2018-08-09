@@ -981,7 +981,11 @@ mod tests {
     }
 
     fn curveto(x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> PathCommand {
-        PathCommand::CurveTo((x2, y2), (x3, y3), (x4, y4))
+        PathCommand::CurveTo(CubicBezierCurve {
+            pt1: (x2, y2),
+            pt2: (x3, y3),
+            to: (x4, y4),
+        })
     }
 
     fn closepath() -> PathCommand {

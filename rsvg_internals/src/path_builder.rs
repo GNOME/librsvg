@@ -15,13 +15,269 @@ pub enum Sweep {
     Positive,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct CubicBezierCurve {
+    /// The (x, y) coordinates of the first control point.
+    pub pt1: (f64, f64),
+    /// The (x, y) coordinates of the second control point.
+    pub pt2: (f64, f64),
+    /// The (x, y) coordinates of the end point of this path segment.
+    pub to: (f64, f64),
+}
+
+impl CubicBezierCurve {
+    fn to_cairo(self, cr: &cairo::Context) {
+        let Self { pt1, pt2, to } = self;
+        cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
+    }
+}
+
+/// When attempting to compute the center parameterization of the arc,
+/// out of range parameters may see an arc omited or treated as a line.
+pub enum ArcParameterization {
+    /// Center parameterization of the arc.
+    CenterParameters {
+        /// Center of the ellipse.
+        center: (f64, f64),
+        /// Radii of the ellipse (corrected).
+        radii: (f64, f64),
+        /// Angle of the start point.
+        theta1: f64,
+        /// Delta angle to the end point.
+        delta_theta: f64,
+    },
+    /// Treat the arc as a line to the end point.
+    LineTo,
+    /// Omit the arc.
+    Omit,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct EllipticalArc {
+    /// The (x-axis, y-axis) radii for the ellipse.
+    pub r: (f64, f64),
+    /// The rotation angle in degrees for the ellipse's x-axis
+    /// relative to the x-axis of the user coordinate system.
+    pub x_axis_rotation: f64,
+    /// Flag indicating whether the arc sweep should be
+    /// greater than or equal to 180 degrees, or smaller than 180 degrees.
+    pub large_arc: LargeArc,
+    /// Flag indicating the angular direction in which the arc is drawn.
+    pub sweep: Sweep,
+    /// The (x, y) coordinates for the start point of this path segment.
+    pub from: (f64, f64),
+    /// The (x, y) coordinates for the end point of this path segment.
+    pub to: (f64, f64),
+}
+
+impl EllipticalArc {
+    /// Calculates a center parameterization from the endpoint parameterization.
+    ///
+    /// Radii may be adjusted if there is no solution.
+    ///
+    /// See Appendix F.6 Elliptical arc implementation notes.
+    /// http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
+    pub(crate) fn center_parameterization(self) -> ArcParameterization {
+        let Self {
+            r: (mut rx, mut ry),
+            x_axis_rotation,
+            large_arc,
+            sweep,
+            from: (x1, y1),
+            to: (x2, y2),
+        } = self;
+
+        // If the end points are identical, omit the arc segment entirely.
+        if x1.approx_eq_cairo(&x2) && y1.approx_eq_cairo(&y2) {
+            return ArcParameterization::Omit;
+        }
+
+        // Ensure radii are non-zero.
+        // Otherwise this arc is treated as a line segment joining the end points.
+        //
+        // A bit further down we divide by the square of the radii.
+        // Check that we won't divide by zero.
+        // See http://bugs.debian.org/508443
+        if rx * rx < f64::EPSILON || ry * ry < f64::EPSILON {
+            return ArcParameterization::LineTo;
+        }
+
+        let is_large_arc = large_arc.0;
+        let is_positive_sweep = sweep == Sweep::Positive;
+
+        let f = x_axis_rotation * PI / 180.0;
+        let sinf = f.sin();
+        let cosf = f.cos();
+
+        // Ensure radii are positive.
+        rx = rx.abs();
+        ry = ry.abs();
+
+        // The equations simplify after a translation which places
+        // the origin at the midpoint of the line joining (x1, y1) to (x2, y2),
+        // followed by a rotation to line up the coordinate axes
+        // with the axes of the ellipse.
+        // All transformed coordinates will be written with primes.
+        //
+        // Compute (x1', y1').
+        let mid_x = (x1 - x2) / 2.0;
+        let mid_y = (y1 - y2) / 2.0;
+        let x1_ = cosf * mid_x + sinf * mid_y;
+        let y1_ = -sinf * mid_x + cosf * mid_y;
+
+        // Ensure radii are large enough.
+        let lambda = (x1_ / rx).powi(2) + (y1_ / ry).powi(2);
+        if lambda > 1.0 {
+            // If not, scale up the ellipse uniformly
+            // until there is exactly one solution.
+            rx *= lambda.sqrt();
+            ry *= lambda.sqrt();
+        }
+
+        // Compute the transformed center (cx', cy').
+        let d = (rx * y1_).powi(2) + (ry * x1_).powi(2);
+        if d.approx_eq_cairo(&0.0) {
+            return ArcParameterization::Omit;
+        }
+        let k = {
+            let mut k = ((rx * ry).powi(2) / d - 1.0).abs().sqrt();
+            if is_positive_sweep == is_large_arc {
+                k = -k;
+            }
+            k
+        };
+        let cx_ = k * rx * y1_ / ry;
+        let cy_ = -k * ry * x1_ / rx;
+
+        // Compute the center (cx, cy).
+        let cx = cosf * cx_ - sinf * cy_ + (x1 + x2) / 2.0;
+        let cy = sinf * cx_ + cosf * cy_ + (y1 + y2) / 2.0;
+
+        // Compute the start angle θ1.
+        let ux = (x1_ - cx_) / rx;
+        let uy = (y1_ - cy_) / ry;
+        let u_len = (ux * ux + uy * uy).abs().sqrt();
+        if u_len.approx_eq_cairo(&0.0) {
+            return ArcParameterization::Omit;
+        }
+        let cos_theta1 = clamp(ux / u_len, -1.0, 1.0);
+        let theta1 = {
+            let mut theta1 = cos_theta1.acos();
+            if uy < 0.0 {
+                theta1 = -theta1;
+            }
+            theta1
+        };
+
+        // Compute the total delta angle Δθ.
+        let vx = (-x1_ - cx_) / rx;
+        let vy = (-y1_ - cy_) / ry;
+        let v_len = (vx * vx + vy * vy).abs().sqrt();
+        if v_len.approx_eq_cairo(&0.0) {
+            return ArcParameterization::Omit;
+        }
+        let dp_uv = ux * vx + uy * vy;
+        let cos_delta_theta = clamp(dp_uv / (u_len * v_len), -1.0, 1.0);
+        let delta_theta = {
+            let mut delta_theta = cos_delta_theta.acos();
+            if ux * vy - uy * vx < 0.0 {
+                delta_theta = -delta_theta;
+            }
+            if is_positive_sweep && delta_theta < 0.0 {
+                delta_theta += PI * 2.0;
+            } else if !is_positive_sweep && delta_theta > 0.0 {
+                delta_theta -= PI * 2.0;
+            }
+            delta_theta
+        };
+
+        ArcParameterization::CenterParameters {
+            center: (cx, cy),
+            radii: (rx, ry),
+            theta1,
+            delta_theta,
+        }
+    }
+
+    fn to_cairo(self, cr: &cairo::Context) {
+        match self.center_parameterization() {
+            ArcParameterization::CenterParameters {
+                center,
+                radii,
+                theta1,
+                delta_theta,
+            } => {
+                let n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as u32;
+                let d_theta = delta_theta / f64::from(n_segs);
+
+                let mut theta = theta1;
+                for _ in 0..n_segs {
+                    arc_segment(center, radii, self.x_axis_rotation, theta, theta + d_theta)
+                        .to_cairo(cr);
+                    theta += d_theta;
+                }
+            }
+            ArcParameterization::LineTo => {
+                let (x2, y2) = self.to;
+                cr.line_to(x2, y2);
+            }
+            ArcParameterization::Omit => {}
+        }
+    }
+}
+
+/// Turns an arc segment into a cubic bezier curve.
+///
+/// Takes the center, the radii and the x-axis rotation of the ellipse,
+/// the angles of the start and end points,
+/// and returns cubic bezier curve parameters.
+pub(crate) fn arc_segment(
+    c: (f64, f64),
+    r: (f64, f64),
+    x_axis_rotation: f64,
+    th0: f64,
+    th1: f64,
+) -> CubicBezierCurve {
+    let (cx, cy) = c;
+    let (rx, ry) = r;
+    let f = x_axis_rotation * PI / 180.0;
+    let (sinf, cosf) = (f.sin(), f.cos());
+
+    let th_half = 0.5 * (th1 - th0);
+    let t = (8.0 / 3.0) * (th_half * 0.5).sin().powi(2) / th_half.sin();
+    let x1 = rx * (th0.cos() - t * th0.sin());
+    let y1 = ry * (th0.sin() + t * th0.cos());
+    let x3 = rx * th1.cos();
+    let y3 = ry * th1.sin();
+    let x2 = x3 + rx * (t * th1.sin());
+    let y2 = y3 + ry * (-t * th1.cos());
+
+    CubicBezierCurve {
+        pt1: (cx + cosf * x1 - sinf * y1, cy + sinf * x1 + cosf * y1),
+        pt2: (cx + cosf * x2 - sinf * y2, cy + sinf * x2 + cosf * y2),
+        to: (cx + cosf * x3 - sinf * y3, cy + sinf * x3 + cosf * y3),
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum PathCommand {
     MoveTo(f64, f64),
     LineTo(f64, f64),
-    CurveTo((f64, f64), (f64, f64), (f64, f64)), /* (x2, y2), (x3, y3), (x4, y4) <- this is
-                                                  * the destination point */
+    CurveTo(CubicBezierCurve),
+    Arc(EllipticalArc),
     ClosePath,
+}
+
+impl PathCommand {
+    fn to_cairo(&self, cr: &cairo::Context) {
+        match *self {
+            PathCommand::MoveTo(x, y) => cr.move_to(x, y),
+            PathCommand::LineTo(x, y) => cr.line_to(x, y),
+            PathCommand::CurveTo(curve) => curve.to_cairo(cr),
+            PathCommand::Arc(arc) => arc.to_cairo(cr),
+            PathCommand::ClosePath => cr.close_path(),
+        }
+    }
 }
 
 pub struct PathBuilder {
@@ -32,28 +288,6 @@ impl Default for PathBuilder {
     fn default() -> PathBuilder {
         PathBuilder {
             path_commands: Vec::new(),
-        }
-    }
-}
-
-impl PathCommand {
-    fn to_cairo(&self, cr: &cairo::Context) {
-        match *self {
-            PathCommand::MoveTo(x, y) => {
-                cr.move_to(x, y);
-            }
-
-            PathCommand::LineTo(x, y) => {
-                cr.line_to(x, y);
-            }
-
-            PathCommand::CurveTo((x2, y2), (x3, y3), (x4, y4)) => {
-                cr.curve_to(x2, y2, x3, y3, x4, y4);
-            }
-
-            PathCommand::ClosePath => {
-                cr.close_path();
-            }
         }
     }
 }
@@ -72,8 +306,35 @@ impl PathBuilder {
     }
 
     pub fn curve_to(&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
-        self.path_commands
-            .push(PathCommand::CurveTo((x2, y2), (x3, y3), (x4, y4)));
+        let curve = CubicBezierCurve {
+            pt1: (x2, y2),
+            pt2: (x3, y3),
+            to: (x4, y4),
+        };
+        self.path_commands.push(PathCommand::CurveTo(curve));
+    }
+
+    pub fn arc(
+        &mut self,
+        x1: f64,
+        y1: f64,
+        rx: f64,
+        ry: f64,
+        x_axis_rotation: f64,
+        large_arc: LargeArc,
+        sweep: Sweep,
+        x2: f64,
+        y2: f64,
+    ) {
+        let arc = EllipticalArc {
+            r: (rx, ry),
+            x_axis_rotation,
+            large_arc,
+            sweep,
+            from: (x1, y1),
+            to: (x2, y2),
+        };
+        self.path_commands.push(PathCommand::Arc(arc));
     }
 
     pub fn close_path(&mut self) {
@@ -82,198 +343,6 @@ impl PathBuilder {
 
     pub fn get_path_commands(&self) -> &[PathCommand] {
         &self.path_commands
-    }
-
-    /// * * * * * * * * * * *
-    // x1/y1: starting coordinates
-    // rx/ry: radiuses before rotation
-    // x_axis_rotation: Rotation angle for axes, in degrees
-    // large_arc: false for arc length <= 180, true for arc >= 180
-    // sweep: negative or positive angle
-    // x2/y2: ending coordinates
-    pub fn arc(
-        &mut self,
-        x1: f64,
-        y1: f64,
-        mut rx: f64,
-        mut ry: f64,
-        x_axis_rotation: f64,
-        large_arc: LargeArc,
-        sweep: Sweep,
-        x2: f64,
-        y2: f64,
-    ) {
-        // See Appendix F.6 Elliptical arc implementation notes
-        // http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
-        let f: f64;
-        let sinf: f64;
-        let cosf: f64;
-        let x1_: f64;
-        let y1_: f64;
-        let cx_: f64;
-        let cy_: f64;
-        let cx: f64;
-        let cy: f64;
-        let gamma: f64;
-        let mut theta1: f64;
-        let mut delta_theta: f64;
-        let mut k1: f64;
-        let mut k2: f64;
-        let k3: f64;
-        let k4: f64;
-        let mut k5: f64;
-        let n_segs: i32;
-
-        if x1.approx_eq_cairo(&x2) && y1.approx_eq_cairo(&y2) {
-            return;
-        }
-
-        let is_positive_sweep = sweep == Sweep::Positive;
-
-        let is_large_arc = large_arc.0;
-
-        // X-axis
-        f = x_axis_rotation * PI / 180.0;
-        sinf = f.sin();
-        cosf = f.cos();
-
-        rx = rx.abs();
-        ry = ry.abs();
-
-        // A bit further down we divide by the square of the radii.  Check
-        // that we won't divide by zero.
-        // See http://bugs.debian.org/508443
-        if ((rx * rx) < f64::EPSILON) || ((ry * ry) < f64::EPSILON) {
-            self.line_to(x2, y2);
-            return;
-        }
-
-        k1 = (x1 - x2) / 2.0;
-        k2 = (y1 - y2) / 2.0;
-
-        x1_ = cosf * k1 + sinf * k2;
-        y1_ = -sinf * k1 + cosf * k2;
-
-        gamma = (x1_ * x1_) / (rx * rx) + (y1_ * y1_) / (ry * ry);
-        if gamma > 1.0 {
-            rx *= gamma.sqrt();
-            ry *= gamma.sqrt();
-        }
-
-        // Compute the center
-        k1 = rx * rx * y1_ * y1_ + ry * ry * x1_ * x1_;
-        if k1.approx_eq_cairo(&0.0) {
-            return;
-        }
-
-        k1 = ((rx * rx * ry * ry) / k1 - 1.0).abs().sqrt();
-        if is_positive_sweep == is_large_arc {
-            k1 = -k1;
-        }
-
-        cx_ = k1 * rx * y1_ / ry;
-        cy_ = -k1 * ry * x1_ / rx;
-
-        cx = cosf * cx_ - sinf * cy_ + (x1 + x2) / 2.0;
-        cy = sinf * cx_ + cosf * cy_ + (y1 + y2) / 2.0;
-
-        // Compute start angle
-        k1 = (x1_ - cx_) / rx;
-        k2 = (y1_ - cy_) / ry;
-        k3 = (-x1_ - cx_) / rx;
-        k4 = (-y1_ - cy_) / ry;
-
-        k5 = (k1 * k1 + k2 * k2).abs().sqrt();
-        if k5.approx_eq_cairo(&0.0) {
-            return;
-        }
-
-        k5 = k1 / k5;
-        k5 = clamp(k5, -1.0, 1.0);
-        theta1 = k5.acos();
-        if k2 < 0.0 {
-            theta1 = -theta1;
-        }
-
-        // Compute delta_theta
-        k5 = ((k1 * k1 + k2 * k2) * (k3 * k3 + k4 * k4)).abs().sqrt();
-        if k5.approx_eq_cairo(&0.0) {
-            return;
-        }
-
-        k5 = (k1 * k3 + k2 * k4) / k5;
-        k5 = clamp(k5, -1.0, 1.0);
-        delta_theta = k5.acos();
-        if k1 * k4 - k3 * k2 < 0.0 {
-            delta_theta = -delta_theta;
-        }
-
-        if is_positive_sweep && delta_theta < 0.0 {
-            delta_theta += PI * 2.0;
-        } else if !is_positive_sweep && delta_theta > 0.0 {
-            delta_theta -= PI * 2.0;
-        }
-
-        // Now draw the arc
-        n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as i32;
-        let n_segs_dbl = f64::from(n_segs);
-
-        for i in 0..n_segs {
-            self.arc_segment(
-                cx,
-                cy,
-                theta1 + f64::from(i) * delta_theta / n_segs_dbl,
-                theta1 + f64::from(i + 1) * delta_theta / n_segs_dbl,
-                rx,
-                ry,
-                x_axis_rotation,
-            );
-        }
-    }
-
-    fn arc_segment(
-        &mut self,
-        xc: f64,
-        yc: f64,
-        th0: f64,
-        th1: f64,
-        rx: f64,
-        ry: f64,
-        x_axis_rotation: f64,
-    ) {
-        let x1: f64;
-        let y1: f64;
-        let x2: f64;
-        let y2: f64;
-        let x3: f64;
-        let y3: f64;
-        let t: f64;
-        let th_half: f64;
-        let f: f64;
-        let sinf: f64;
-        let cosf: f64;
-
-        f = x_axis_rotation * PI / 180.0;
-        sinf = f.sin();
-        cosf = f.cos();
-
-        th_half = 0.5 * (th1 - th0);
-        t = (8.0 / 3.0) * (th_half * 0.5).sin() * (th_half * 0.5).sin() / th_half.sin();
-        x1 = rx * (th0.cos() - t * th0.sin());
-        y1 = ry * (th0.sin() + t * th0.cos());
-        x3 = rx * th1.cos();
-        y3 = ry * th1.sin();
-        x2 = x3 + rx * (t * th1.sin());
-        y2 = y3 + ry * (-t * th1.cos());
-
-        self.curve_to(
-            xc + cosf * x1 - sinf * y1,
-            yc + sinf * x1 + cosf * y1,
-            xc + cosf * x2 - sinf * y2,
-            yc + sinf * x2 + cosf * y2,
-            xc + cosf * x3 - sinf * y3,
-            yc + sinf * x3 + cosf * y3,
-        );
     }
 
     pub fn to_cairo(&self, cr: &cairo::Context) {
@@ -291,10 +360,11 @@ mod tests {
     fn survives_degenerate_arcs() {
         let mut builder = PathBuilder::new();
         builder.move_to(0.0, 0.0);
+        // Deliberately close to 0 to try to trigger division by 0.
         builder.arc(
             0.0,
             0.0,
-            f64::EPSILON, // deliberately close to 0 to try to trigger division by 0
+            f64::EPSILON,
             f64::EPSILON,
             0.0,
             LargeArc(true),

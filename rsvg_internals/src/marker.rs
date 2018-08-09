@@ -381,13 +381,52 @@ pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
                 state = SegmentState::InSubpath;
             }
 
-            PathCommand::CurveTo((x2, y2), (x3, y3), (x4, y4)) => {
-                cur_x = x4;
-                cur_y = y4;
+            PathCommand::CurveTo(curve) => {
+                let CubicBezierCurve {
+                    pt1: (x2, y2),
+                    pt2: (x3, y3),
+                    to,
+                } = curve;
+                cur_x = to.0;
+                cur_y = to.1;
 
                 segments.push(make_curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
 
                 state = SegmentState::InSubpath;
+            }
+
+            PathCommand::Arc(arc) => {
+                cur_x = arc.to.0;
+                cur_y = arc.to.1;
+
+                match arc.center_parameterization() {
+                    ArcParameterization::CenterParameters {
+                        center,
+                        radii,
+                        theta1,
+                        delta_theta,
+                    } => {
+                        let rot = arc.x_axis_rotation;
+                        let theta2 = theta1 + delta_theta;
+                        let n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as u32;
+                        let d_theta = delta_theta / f64::from(n_segs);
+
+                        let segment1 = arc_segment(center, radii, rot, theta1, theta1 + d_theta);
+                        let segment2 = arc_segment(center, radii, rot, theta2 - d_theta, theta2);
+
+                        let (x2, y2) = segment1.pt1;
+                        let (x3, y3) = segment2.pt2;
+                        segments.push(make_curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
+
+                        state = SegmentState::InSubpath;
+                    }
+                    ArcParameterization::LineTo => {
+                        segments.push(make_line(last_x, last_y, cur_x, cur_y));
+
+                        state = SegmentState::InSubpath;
+                    }
+                    ArcParameterization::Omit => {}
+                }
             }
 
             PathCommand::ClosePath => {
