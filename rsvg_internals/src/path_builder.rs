@@ -105,9 +105,8 @@ impl EllipticalArc {
         let is_large_arc = large_arc.0;
         let is_positive_sweep = sweep == Sweep::Positive;
 
-        let f = x_axis_rotation * PI / 180.0;
-        let sinf = f.sin();
-        let cosf = f.cos();
+        let phi = x_axis_rotation * PI / 180.0;
+        let (sin_phi, cos_phi) = phi.sin_cos();
 
         // Ensure radii are positive.
         rx = rx.abs();
@@ -122,8 +121,8 @@ impl EllipticalArc {
         // Compute (x1', y1').
         let mid_x = (x1 - x2) / 2.0;
         let mid_y = (y1 - y2) / 2.0;
-        let x1_ = cosf * mid_x + sinf * mid_y;
-        let y1_ = -sinf * mid_x + cosf * mid_y;
+        let x1_ = cos_phi * mid_x + sin_phi * mid_y;
+        let y1_ = -sin_phi * mid_x + cos_phi * mid_y;
 
         // Ensure radii are large enough.
         let lambda = (x1_ / rx).powi(2) + (y1_ / ry).powi(2);
@@ -150,8 +149,8 @@ impl EllipticalArc {
         let cy_ = -k * ry * x1_ / rx;
 
         // Compute the center (cx, cy).
-        let cx = cosf * cx_ - sinf * cy_ + (x1 + x2) / 2.0;
-        let cy = sinf * cx_ + cosf * cy_ + (y1 + y2) / 2.0;
+        let cx = cos_phi * cx_ - sin_phi * cy_ + (x1 + x2) / 2.0;
+        let cy = sin_phi * cx_ + cos_phi * cy_ + (y1 + y2) / 2.0;
 
         // Compute the start angle θ1.
         let ux = (x1_ - cx_) / rx;
@@ -240,22 +239,33 @@ pub(crate) fn arc_segment(
 ) -> CubicBezierCurve {
     let (cx, cy) = c;
     let (rx, ry) = r;
-    let f = x_axis_rotation * PI / 180.0;
-    let (sinf, cosf) = (f.sin(), f.cos());
+    let phi = x_axis_rotation * PI / 180.0;
+    let (sin_phi, cos_phi) = phi.sin_cos();
+    let (sin_th0, cos_th0) = th0.sin_cos();
+    let (sin_th1, cos_th1) = th1.sin_cos();
 
     let th_half = 0.5 * (th1 - th0);
     let t = (8.0 / 3.0) * (th_half * 0.5).sin().powi(2) / th_half.sin();
-    let x1 = rx * (th0.cos() - t * th0.sin());
-    let y1 = ry * (th0.sin() + t * th0.cos());
-    let x3 = rx * th1.cos();
-    let y3 = ry * th1.sin();
-    let x2 = x3 + rx * (t * th1.sin());
-    let y2 = y3 + ry * (-t * th1.cos());
+    let x1 = rx * (cos_th0 - t * sin_th0);
+    let y1 = ry * (sin_th0 + t * cos_th0);
+    let x3 = rx * cos_th1;
+    let y3 = ry * sin_th1;
+    let x2 = x3 + rx * (t * sin_th1);
+    let y2 = y3 + ry * (-t * cos_th1);
 
     CubicBezierCurve {
-        pt1: (cx + cosf * x1 - sinf * y1, cy + sinf * x1 + cosf * y1),
-        pt2: (cx + cosf * x2 - sinf * y2, cy + sinf * x2 + cosf * y2),
-        to: (cx + cosf * x3 - sinf * y3, cy + sinf * x3 + cosf * y3),
+        pt1: (
+            cx + cos_phi * x1 - sin_phi * y1,
+            cy + sin_phi * x1 + cos_phi * y1,
+        ),
+        pt2: (
+            cx + cos_phi * x2 - sin_phi * y2,
+            cy + sin_phi * x2 + cos_phi * y2,
+        ),
+        to: (
+            cx + cos_phi * x3 - sin_phi * y3,
+            cy + sin_phi * x3 + cos_phi * y3,
+        ),
     }
 }
 
