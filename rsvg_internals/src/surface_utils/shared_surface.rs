@@ -481,8 +481,8 @@ impl SharedImageSurface {
                 /// Creates a new `UnsafeSendPixelData`.
                 ///
                 /// # Safety
-                /// You must call cairo_surface_mark_dirty() on the surface once all instances of
-                /// `UnsafeSendPixelData` are dropped to make sure the pixel changes are comitted
+                /// You must call `cairo_surface_mark_dirty()` on the surface once all instances of
+                /// `UnsafeSendPixelData` are dropped to make sure the pixel changes are committed
                 /// to Cairo.
                 #[inline]
                 unsafe fn new(surface: &mut cairo::ImageSurface) -> Self {
@@ -518,7 +518,7 @@ impl SharedImageSurface {
 
                 /// Splits this `UnsafeSendPixelData` into two at the given row.
                 ///
-                /// The first one contains rows `0..index` (index not included) and the second one
+                /// The first one contains rows `0..index` (`index` not included) and the second one
                 /// contains rows `index..height`.
                 #[inline]
                 fn split_at_row(self, index: u32) -> (Self, Self) {
@@ -546,7 +546,7 @@ impl SharedImageSurface {
 
                 /// Splits this `UnsafeSendPixelData` into two at the given column.
                 ///
-                /// The first one contains columns `0..index` (index not included) and the second
+                /// The first one contains columns `0..index` (`index` not included) and the second
                 /// one contains columns `index..width`.
                 #[inline]
                 fn split_at_column(self, index: u32) -> (Self, Self) {
