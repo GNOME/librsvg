@@ -1,4 +1,5 @@
 //! Shared access to Cairo image surfaces.
+use std::cmp::min;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
@@ -203,22 +204,6 @@ impl SharedImageSurface {
         };
 
         Pixel::from_u32(value)
-    }
-
-    /// Retrieves the pixel value if it is within `bounds`, otherwise returns a transparent black
-    /// pixel.
-    #[inline]
-    pub fn get_pixel_or_transparent(&self, bounds: IRect, x: i32, y: i32) -> Pixel {
-        if bounds.contains(x, y) {
-            self.get_pixel(x as u32, y as u32)
-        } else {
-            Pixel {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            }
-        }
     }
 
     /// Calls `set_source_surface()` on the given Cairo context.
@@ -634,7 +619,7 @@ impl SharedImageSurface {
             let pixel = |i, j| {
                 let (x, y) = if B::IS_VERTICAL { (i, j) } else { (j, i) };
 
-                self.get_pixel_or_transparent(bounds, x, y)
+                self.get_pixel(x as u32, y as u32)
             };
 
             // The following loop assumes the first row or column of `output_data` is the first row
@@ -681,7 +666,7 @@ impl SharedImageSurface {
                         // The whole sum needs to be computed for the first pixel. However, we know
                         // that values outside of bounds are transparent, so the loop starts on the
                         // first pixel in bounds.
-                        for j in main_axis_min..main_axis_min + shift {
+                        for j in main_axis_min..min(main_axis_max, main_axis_min + shift) {
                             let Pixel { r, g, b, a } = pixel(i, j);
 
                             if !A::IS_ALPHA_ONLY {
@@ -704,26 +689,39 @@ impl SharedImageSurface {
                         );
 
                         // Now, go through all the other pixels.
+                        //
+                        // j - target - 1 >= main_axis_min
+                        // j >= main_axis_min + target + 1
+                        let start_subtracting_at = main_axis_min + target + 1;
+
+                        // j + shift - 1 < main_axis_max
+                        // j < main_axis_max - shift + 1
+                        let stop_adding_at = main_axis_max - shift + 1;
+
                         for j in main_axis_min + 1..main_axis_max {
-                            let old_pixel = pixel(i, j - target - 1);
+                            if j >= start_subtracting_at {
+                                let old_pixel = pixel(i, j - target - 1);
 
-                            if !A::IS_ALPHA_ONLY {
-                                sum_r -= u32::from(old_pixel.r);
-                                sum_g -= u32::from(old_pixel.g);
-                                sum_b -= u32::from(old_pixel.b);
+                                if !A::IS_ALPHA_ONLY {
+                                    sum_r -= u32::from(old_pixel.r);
+                                    sum_g -= u32::from(old_pixel.g);
+                                    sum_b -= u32::from(old_pixel.b);
+                                }
+
+                                sum_a -= u32::from(old_pixel.a);
                             }
 
-                            sum_a -= u32::from(old_pixel.a);
+                            if j < stop_adding_at {
+                                let new_pixel = pixel(i, j + shift - 1);
 
-                            let new_pixel = pixel(i, j + shift - 1);
+                                if !A::IS_ALPHA_ONLY {
+                                    sum_r += u32::from(new_pixel.r);
+                                    sum_g += u32::from(new_pixel.g);
+                                    sum_b += u32::from(new_pixel.b);
+                                }
 
-                            if !A::IS_ALPHA_ONLY {
-                                sum_r += u32::from(new_pixel.r);
-                                sum_g += u32::from(new_pixel.g);
-                                sum_b += u32::from(new_pixel.b);
+                                sum_a += u32::from(new_pixel.a);
                             }
-
-                            sum_a += u32::from(new_pixel.a);
 
                             set_pixel(
                                 j as u32,
