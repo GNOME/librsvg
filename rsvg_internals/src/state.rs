@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 use attributes::Attribute;
 use error::*;
-use font_props::{FontSizeSpec, FontWeightSpec};
+use font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec};
 use handle::RsvgHandle;
 use iri::IRI;
 use length::{Dasharray, Length, LengthDir, LengthUnit};
@@ -455,7 +455,7 @@ impl State {
                 }
 
                 Attribute::LetterSpacing => {
-                    self.values.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
+                    self.values.letter_spacing = parse_property(value, ())?;
                 }
 
                 Attribute::LightingColor => {
@@ -1029,10 +1029,20 @@ make_property!(
 make_property!(
     ComputedValues,
     LetterSpacing,
-    default: Length::default(),
-    inherits_automatically: true,
-    newtype_parse: Length,
-    parse_data_type: LengthDir
+    default: LetterSpacingSpec::Value(Length::parse_str("0.0", LengthDir::Horizontal).unwrap()),
+    newtype_parse: LetterSpacingSpec,
+    parse_data_type: (),
+    property_impl: {
+        impl Property<ComputedValues> for LetterSpacing {
+            fn inherits_automatically() -> bool {
+                true
+            }
+
+            fn compute(&self, _v: &ComputedValues) -> Self {
+                LetterSpacing(self.0.compute())
+            }
+        }
+    }
 );
 
 // https://www.w3.org/TR/SVG/filters.html#LightingColorProperty

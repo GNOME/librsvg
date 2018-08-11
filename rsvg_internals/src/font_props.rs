@@ -176,6 +176,72 @@ impl Parse for FontWeightSpec {
     }
 }
 
+// https://www.w3.org/TR/css-text-3/#letter-spacing-property
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum LetterSpacingSpec {
+    Normal,
+    Value(Length),
+}
+
+impl LetterSpacingSpec {
+    pub fn value(&self) -> Length {
+        match self {
+            LetterSpacingSpec::Value(s) => s.clone(),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn compute(&self) -> Self {
+        let spacing = match self {
+            LetterSpacingSpec::Normal => {
+                Length::new(0.0, LengthUnit::Default, LengthDir::Horizontal)
+            }
+            LetterSpacingSpec::Value(s) => s.clone(),
+        };
+
+        LetterSpacingSpec::Value(spacing)
+    }
+
+    pub fn normalize(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
+        self.value().normalize(values, draw_ctx)
+    }
+}
+
+impl Parse for LetterSpacingSpec {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(
+        parser: &mut Parser,
+        _: Self::Data,
+    ) -> Result<LetterSpacingSpec, ::error::AttributeError> {
+        let parser_state = parser.state();
+
+        Length::parse(parser, LengthDir::Horizontal)
+            .and_then(|s| Ok(LetterSpacingSpec::Value(s)))
+            .or_else(|e| {
+                parser.reset(&parser_state);
+
+                {
+                    let token = parser.next().map_err(|_| {
+                        ::error::AttributeError::Parse(::parsers::ParseError::new("expected token"))
+                    })?;
+
+                    if let Token::Ident(ref cow) = token {
+                        match cow.as_ref() {
+                            "normal" => return Ok(LetterSpacingSpec::Normal),
+                            _ => (),
+                        };
+                    }
+                }
+
+                parser.reset(&parser_state);
+
+                Err(e)
+            })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -207,5 +273,46 @@ mod tests {
         assert!(<FontWeightSpec as Parse>::parse_str("strange", ()).is_err());
         assert!(<FontWeightSpec as Parse>::parse_str("314", ()).is_err());
         assert!(<FontWeightSpec as Parse>::parse_str("3.14", ()).is_err());
+    }
+
+    #[test]
+    fn parses_letter_spacing() {
+        assert_eq!(
+            <LetterSpacingSpec as Parse>::parse_str("normal", ()),
+            Ok(LetterSpacingSpec::Normal)
+        );
+        assert_eq!(
+            <LetterSpacingSpec as Parse>::parse_str("10em", ()),
+            Ok(LetterSpacingSpec::Value(Length::new(
+                10.0,
+                LengthUnit::FontEm,
+                LengthDir::Horizontal
+            )))
+        );
+    }
+
+    #[test]
+    fn computes_letter_spacing() {
+        assert_eq!(
+            <LetterSpacingSpec as Parse>::parse_str("normal", ()).map(|s| s.compute()),
+            Ok(LetterSpacingSpec::Value(Length::new(
+                0.0,
+                LengthUnit::Default,
+                LengthDir::Horizontal
+            )))
+        );
+        assert_eq!(
+            <LetterSpacingSpec as Parse>::parse_str("10em", ()).map(|s| s.compute()),
+            Ok(LetterSpacingSpec::Value(Length::new(
+                10.0,
+                LengthUnit::FontEm,
+                LengthDir::Horizontal
+            )))
+        );
+    }
+
+    #[test]
+    fn detects_invalid_invalid_letter_spacing() {
+        assert!(is_parse_error(&LetterSpacingSpec::parse_str("furlong", ())));
     }
 }
