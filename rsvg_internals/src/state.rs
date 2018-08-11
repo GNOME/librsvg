@@ -1031,7 +1031,7 @@ make_property!(
 make_property!(
     ComputedValues,
     LetterSpacing,
-    default: LetterSpacingSpec::Value(Length::parse_str("0.0", LengthDir::Horizontal).unwrap()),
+    default: LetterSpacingSpec::Normal,
     newtype_parse: LetterSpacingSpec,
     parse_data_type: (),
     property_impl: {
