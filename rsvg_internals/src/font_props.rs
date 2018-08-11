@@ -181,7 +181,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn invalid_font_size_yields_error() {
+    fn detects_invalid_invalid_font_size() {
         assert!(is_parse_error(&FontSizeSpec::parse_str("furlong", ())));
     }
 
