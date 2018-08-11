@@ -6,6 +6,7 @@ use length::{Length, LengthDir, LengthUnit, POINTS_PER_INCH};
 use parsers::{Parse, ParseError};
 use state::ComputedValues;
 
+// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FontSizeSpec {
     Smaller,
@@ -118,8 +119,8 @@ pub enum FontWeightSpec {
     Bold,
     Bolder,
     Lighter,
-    W100, // FIXME: we should use Weight(100),
-    W200, // but we need a smarter macro for that
+    W100,
+    W200,
     W300,
     W400,
     W500,
