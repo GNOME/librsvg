@@ -45,7 +45,7 @@ where
     T: Property<ComputedValues> + Clone + Default,
 {
     pub fn compute(&self, src: &T, src_values: &ComputedValues) -> T {
-        match *self {
+        let value: T = match *self {
             SpecifiedValue::Unspecified => {
                 if <T as Property<ComputedValues>>::inherits_automatically() {
                     src.clone()
@@ -56,8 +56,10 @@ where
 
             SpecifiedValue::Inherit => src.clone(),
 
-            SpecifiedValue::Specified(ref v) => v.compute(src_values),
-        }
+            SpecifiedValue::Specified(ref v) => v.clone(),
+        };
+
+        value.compute(src_values)
     }
 }
 
