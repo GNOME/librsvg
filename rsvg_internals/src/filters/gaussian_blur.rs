@@ -12,7 +12,10 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
-use surface_utils::{shared_surface::SharedImageSurface, EdgeMode};
+use surface_utils::{
+    shared_surface::{BlurDirection, Horizontal, SharedImageSurface, Vertical},
+    EdgeMode,
+};
 
 use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
 use super::{Filter, FilterError, PrimitiveWithInput};
@@ -138,11 +141,10 @@ fn box_blur_kernel_size(std_deviation: f64) -> usize {
 /// Applies three box blurs to approximate the gaussian blur.
 ///
 /// This is intended to be used in two steps, horizontal and vertical.
-fn three_box_blurs(
+fn three_box_blurs<B: BlurDirection>(
     surface: &SharedImageSurface,
     bounds: IRect,
     std_deviation: f64,
-    vertical: bool,
 ) -> Result<SharedImageSurface, FilterError> {
     let d = box_blur_kernel_size(std_deviation);
     if d == 0 {
@@ -154,17 +156,17 @@ fn three_box_blurs(
         let mut surface = surface.clone();
 
         for _ in 0..3 {
-            surface = surface.box_blur(bounds, d, d / 2, vertical)?;
+            surface = surface.box_blur::<B>(bounds, d, d / 2)?;
         }
 
         surface
     } else {
         // Even kernel sizes have a more interesting scheme.
-        let surface = surface.box_blur(bounds, d, d / 2, vertical)?;
-        let surface = surface.box_blur(bounds, d, d / 2 - 1, vertical)?;
+        let surface = surface.box_blur::<B>(bounds, d, d / 2)?;
+        let surface = surface.box_blur::<B>(bounds, d, d / 2 - 1)?;
 
         let d = d + 1;
-        surface.box_blur(bounds, d, d / 2, vertical)?
+        surface.box_blur::<B>(bounds, d, d / 2)?
     };
 
     Ok(surface)
@@ -228,7 +230,7 @@ impl Filter for GaussianBlur {
         let horiz_result_surface = if std_x != 0.0 {
             // The spec says for deviation >= 2.0 three box blurs can be used as an optimization.
             if std_x >= 2.0 {
-                three_box_blurs(input.surface(), bounds, std_x, false)?
+                three_box_blurs::<Horizontal>(input.surface(), bounds, std_x)?
             } else {
                 gaussian_blur(input.surface(), bounds, std_x, false)?
             }
@@ -240,7 +242,7 @@ impl Filter for GaussianBlur {
         let output_surface = if std_y != 0.0 {
             // The spec says for deviation >= 2.0 three box blurs can be used as an optimization.
             if std_y >= 2.0 {
-                three_box_blurs(&horiz_result_surface, bounds, std_y, true)?
+                three_box_blurs::<Vertical>(&horiz_result_surface, bounds, std_y)?
             } else {
                 gaussian_blur(&horiz_result_surface, bounds, std_y, true)?
             }

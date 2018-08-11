@@ -7,7 +7,14 @@ extern crate cairo_sys;
 extern crate rsvg_internals;
 
 use rsvg_internals::filters::context::IRect;
-use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg_internals::surface_utils::shared_surface::{
+    AlphaOnly,
+    Horizontal,
+    NotAlphaOnly,
+    SharedImageSurface,
+    SurfaceType,
+    Vertical,
+};
 
 const SURFACE_SIDE: i32 = 512;
 const BOUNDS: IRect = IRect {
@@ -36,13 +43,20 @@ fn bench_box_blur(c: &mut Criterion) {
                     .unwrap();
             const KERNEL_SIZE: usize = 9;
 
+            let f = match (vertical, alpha_only) {
+                (true, true) => SharedImageSurface::box_blur_loop::<Vertical, AlphaOnly>,
+                (true, false) => SharedImageSurface::box_blur_loop::<Vertical, NotAlphaOnly>,
+                (false, true) => SharedImageSurface::box_blur_loop::<Horizontal, AlphaOnly>,
+                (false, false) => SharedImageSurface::box_blur_loop::<Horizontal, NotAlphaOnly>,
+            };
+
             b.iter(|| {
-                input_surface.box_blur_loop(
+                f(
+                    &input_surface,
                     &mut output_surface,
                     BOUNDS,
                     KERNEL_SIZE,
                     KERNEL_SIZE / 2,
-                    vertical,
                 )
             })
         },

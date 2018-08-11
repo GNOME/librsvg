@@ -70,6 +70,42 @@ pub struct SharedImageSurface {
 // The access is read-only, the ref-counting on an `ImageSurface` is atomic.
 unsafe impl Sync for SharedImageSurface {}
 
+/// A compile-time blur direction variable.
+pub trait BlurDirection {
+    const IS_VERTICAL: bool;
+}
+
+/// Vertical blur direction.
+pub enum Vertical {}
+/// Horizontal blur direction.
+pub enum Horizontal {}
+
+impl BlurDirection for Vertical {
+    const IS_VERTICAL: bool = true;
+}
+
+impl BlurDirection for Horizontal {
+    const IS_VERTICAL: bool = false;
+}
+
+/// A compile-time alpha-only marker variable.
+pub trait IsAlphaOnly {
+    const IS_ALPHA_ONLY: bool;
+}
+
+/// Alpha-only.
+pub enum AlphaOnly {}
+/// Not alpha-only.
+pub enum NotAlphaOnly {}
+
+impl IsAlphaOnly for AlphaOnly {
+    const IS_ALPHA_ONLY: bool = true;
+}
+
+impl IsAlphaOnly for NotAlphaOnly {
+    const IS_ALPHA_ONLY: bool = false;
+}
+
 impl SharedImageSurface {
     /// Creates a `SharedImageSurface` from a unique `ImageSurface`.
     ///
@@ -441,16 +477,16 @@ impl SharedImageSurface {
     /// Panics if `kernel_size` is `0` or if `target >= kernel_size`.
     // This is public (and not inlined into box_blur()) for the purpose of accessing it from the
     // benchmarks.
-    pub fn box_blur_loop(
+    pub fn box_blur_loop<B: BlurDirection, A: IsAlphaOnly>(
         &self,
         output_surface: &mut cairo::ImageSurface,
         bounds: IRect,
         kernel_size: usize,
         target: usize,
-        vertical: bool,
     ) {
         assert_ne!(kernel_size, 0);
         assert!(target < kernel_size);
+        assert_eq!(self.is_alpha_only(), A::IS_ALPHA_ONLY);
 
         {
             // The following code is needed for a parallel implementation of the blur loop. The
@@ -588,7 +624,7 @@ impl SharedImageSurface {
             // which the blurring happens (so if `vertical` is false, the main axis is the
             // horizontal axis). The other axis is the outer loop axis. The code uses `i` and `j`
             // for the other axis and main axis coordinates, respectively.
-            let (main_axis_min, main_axis_max, other_axis_min, other_axis_max) = if vertical {
+            let (main_axis_min, main_axis_max, other_axis_min, other_axis_max) = if B::IS_VERTICAL {
                 (bounds.y0, bounds.y1, bounds.x0, bounds.x1)
             } else {
                 (bounds.x0, bounds.x1, bounds.y0, bounds.y1)
@@ -596,14 +632,14 @@ impl SharedImageSurface {
 
             // Helper function for getting the pixels.
             let pixel = |i, j| {
-                let (x, y) = if vertical { (i, j) } else { (j, i) };
+                let (x, y) = if B::IS_VERTICAL { (i, j) } else { (j, i) };
 
                 self.get_pixel_or_transparent(bounds, x, y)
             };
 
             // The following loop assumes the first row or column of `output_data` is the first row
             // or column inside `bounds`.
-            let mut output_data = if vertical {
+            let mut output_data = if B::IS_VERTICAL {
                 output_data.split_at_column(bounds.x0 as u32).1
             } else {
                 output_data.split_at_row(bounds.y0 as u32).1
@@ -614,7 +650,7 @@ impl SharedImageSurface {
                     // Split off one row or column and launch its processing on another thread.
                     // Thanks to the initial split before the loop, there's no special case for the
                     // very first split.
-                    let (mut current, remaining) = if vertical {
+                    let (mut current, remaining) = if B::IS_VERTICAL {
                         output_data.split_at_column(1)
                     } else {
                         output_data.split_at_row(1)
@@ -627,7 +663,7 @@ impl SharedImageSurface {
                         let mut set_pixel = |j, pixel| {
                             // We're processing rows or columns one-by-one, so the other coordinate
                             // is always 0.
-                            let (x, y) = if vertical { (0, j) } else { (j, 0) };
+                            let (x, y) = if B::IS_VERTICAL { (0, j) } else { (j, 0) };
                             current.set_pixel(pixel, x, y);
                         };
 
@@ -648,7 +684,7 @@ impl SharedImageSurface {
                         for j in main_axis_min..main_axis_min + shift {
                             let Pixel { r, g, b, a } = pixel(i, j);
 
-                            if !self.is_alpha_only() {
+                            if !A::IS_ALPHA_ONLY {
                                 sum_r += u32::from(r);
                                 sum_g += u32::from(g);
                                 sum_b += u32::from(b);
@@ -671,7 +707,7 @@ impl SharedImageSurface {
                         for j in main_axis_min + 1..main_axis_max {
                             let old_pixel = pixel(i, j - target - 1);
 
-                            if !self.is_alpha_only() {
+                            if !A::IS_ALPHA_ONLY {
                                 sum_r -= u32::from(old_pixel.r);
                                 sum_g -= u32::from(old_pixel.g);
                                 sum_b -= u32::from(old_pixel.b);
@@ -681,7 +717,7 @@ impl SharedImageSurface {
 
                             let new_pixel = pixel(i, j + shift - 1);
 
-                            if !self.is_alpha_only() {
+                            if !A::IS_ALPHA_ONLY {
                                 sum_r += u32::from(new_pixel.r);
                                 sum_g += u32::from(new_pixel.g);
                                 sum_b += u32::from(new_pixel.b);
@@ -719,17 +755,20 @@ impl SharedImageSurface {
     /// # Panics
     /// Panics if `kernel_size` is `0` or if `target >= kernel_size`.
     #[inline]
-    pub fn box_blur(
+    pub fn box_blur<B: BlurDirection>(
         &self,
         bounds: IRect,
         kernel_size: usize,
         target: usize,
-        vertical: bool,
     ) -> Result<SharedImageSurface, cairo::Status> {
         let mut output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        self.box_blur_loop(&mut output_surface, bounds, kernel_size, target, vertical);
+        if self.is_alpha_only() {
+            self.box_blur_loop::<B, AlphaOnly>(&mut output_surface, bounds, kernel_size, target);
+        } else {
+            self.box_blur_loop::<B, NotAlphaOnly>(&mut output_surface, bounds, kernel_size, target);
+        }
 
         SharedImageSurface::new(output_surface, self.surface_type)
     }
