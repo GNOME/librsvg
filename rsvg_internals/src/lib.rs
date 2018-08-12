@@ -49,10 +49,16 @@ pub use node::{
     rsvg_node_children_iter_next,
     rsvg_node_find_last_chars_child,
     rsvg_node_get_parent,
-    rsvg_node_is_same,
     rsvg_node_ref,
     rsvg_node_unref,
-    rsvg_root_node_cascade,
+};
+
+pub use tree::{
+    rsvg_tree_cascade,
+    rsvg_tree_free,
+    rsvg_tree_get_root,
+    rsvg_tree_is_root,
+    rsvg_tree_new,
 };
 
 pub use parsers::rsvg_css_parse_number_optional_number;
@@ -120,6 +126,7 @@ mod structure;
 pub mod surface_utils;
 mod text;
 mod transform;
+mod tree;
 mod unitinterval;
 mod util;
 mod viewbox;

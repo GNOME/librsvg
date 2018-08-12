@@ -81,6 +81,8 @@ typedef enum {
 
 typedef struct RsvgLoad RsvgLoad;
 
+typedef struct RsvgTree RsvgTree;
+
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;
 
@@ -92,9 +94,7 @@ struct RsvgHandlePrivate {
     gpointer user_data;
     GDestroyNotify user_data_destroy;
 
-    /* this is the root level of the displayable tree, essentially what the
-       file is converted into at the end */
-    RsvgNode *treebase;
+    RsvgTree *tree;
 
     RsvgDefs *defs; /* lookup table for nodes that have an id="foo" attribute */
 
@@ -112,8 +112,6 @@ struct RsvgHandlePrivate {
 
     gboolean is_testing; /* Are we being run from the test suite? */
 
-    gboolean already_cascaded;
-
 #ifdef HAVE_PANGOFT2
     FcConfig *font_config_for_testing;
     PangoFontMap *font_map_for_testing;
@@ -127,10 +125,6 @@ typedef enum {
 
 typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
 typedef void (* CNodeFree) (gpointer impl);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_node_is_same (RsvgNode *node1, RsvgNode *node2);
 
 /* Implemented in rust/src/node.rs */
 /* Call this as newref = rsvg_node_ref (node);  You don't own the node anymore, just the newref! */
@@ -177,6 +171,26 @@ gboolean rsvg_node_children_iter_next_back (RsvgNodeChildrenIter *iter,
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+RsvgTree *rsvg_tree_new (RsvgNode *root);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+void rsvg_tree_free (RsvgTree *tree);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_tree_get_root (RsvgTree *tree);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_tree_is_root (RsvgTree *tree, RsvgNode *node);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+void rsvg_tree_cascade (RsvgTree *tree);
 
 /* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
@@ -252,7 +266,7 @@ void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
-void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgNode *node);
+void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgTree *tree);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL

@@ -80,8 +80,8 @@ struct RsvgLoad {
      */
     GSList *element_name_stack;
 
+    RsvgTree *tree;
     RsvgNode *currentnode;
-    RsvgNode *treebase;
 };
 
 struct RsvgSaxHandler {
@@ -130,8 +130,8 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->ctxt = NULL;
     load->compressed_input_stream = NULL;
     load->element_name_stack = NULL;
+    load->tree = NULL;
     load->currentnode = NULL;
-    load->treebase = NULL;
 
     return load;
 }
@@ -168,14 +168,14 @@ rsvg_load_free (RsvgLoad *load)
 
     g_clear_object (&load->compressed_input_stream);
     g_clear_pointer (&load->currentnode, rsvg_node_unref);
-    g_clear_pointer (&load->treebase, rsvg_node_unref);
+    g_clear_pointer (&load->tree, rsvg_tree_free);
     g_free (load);
 }
 
-RsvgNode *
-rsvg_load_get_treebase (RsvgLoad *load)
+RsvgTree *
+rsvg_load_steal_tree (RsvgLoad *load)
 {
-    return load->treebase;
+    return g_steal_pointer (&load->tree);
 }
 
 static void
@@ -310,7 +310,7 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
         rsvg_node_add_child (load->currentnode, newnode);
         load->currentnode = rsvg_node_unref (load->currentnode);
     } else if (is_svg) {
-        load->treebase = rsvg_node_ref (newnode);
+        load->tree = rsvg_tree_new (newnode);
     }
 
     load->currentnode = rsvg_node_ref (newnode);
@@ -1201,7 +1201,7 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     }
 
     if (!res) {
-        g_clear_pointer (&load->treebase, rsvg_node_unref);
+        g_clear_pointer (&load->tree, rsvg_tree_free);
     }
 
     load->state = LOAD_STATE_CLOSED;

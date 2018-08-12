@@ -165,7 +165,7 @@ rsvg_handle_init (RsvgHandle * self)
                                                    g_free,
                                                    (GDestroyNotify) g_hash_table_destroy);
 
-    self->priv->treebase = NULL;
+    self->priv->tree = NULL;
 
     self->priv->cancellable = NULL;
 
@@ -192,7 +192,7 @@ rsvg_handle_dispose (GObject *instance)
     g_clear_pointer (&self->priv->load, rsvg_load_free);
     g_clear_pointer (&self->priv->defs, rsvg_defs_free);
     g_clear_pointer (&self->priv->css_props, g_hash_table_destroy);
-    g_clear_pointer (&self->priv->treebase, rsvg_node_unref);
+    g_clear_pointer (&self->priv->tree, rsvg_tree_free);
     g_clear_pointer (&self->priv->base_uri, g_free);
     g_clear_object (&self->priv->base_gfile);
 
@@ -676,17 +676,11 @@ static gboolean
 finish_load (RsvgHandle *handle, gboolean was_successful)
 {
     g_assert (handle->priv->load != NULL);
-    g_assert (handle->priv->treebase == NULL);
+    g_assert (handle->priv->tree == NULL);
 
     if (was_successful) {
-        RsvgNode *treebase;
-
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
-
-        treebase = rsvg_load_get_treebase (handle->priv->load);
-        if (treebase) {
-            handle->priv->treebase = rsvg_node_ref (treebase);
-        }
+        handle->priv->tree = rsvg_load_steal_tree (handle->priv->load);
     } else {
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
     }
@@ -968,16 +962,6 @@ rsvg_handle_get_defs (RsvgHandle *handle)
     return handle->priv->defs;
 }
 
-static void
-rsvg_handle_cascade (RsvgHandle *handle)
-{
-    if (!handle->priv->already_cascaded) {
-        handle->priv->already_cascaded = TRUE;
-
-        rsvg_root_node_cascade(handle->priv->treebase);
-    }
-}
-
 RsvgHandle *
 rsvg_handle_load_extern (RsvgHandle *handle, const char *uri)
 {
@@ -993,7 +977,7 @@ rsvg_handle_load_extern (RsvgHandle *handle, const char *uri)
 
         if (rsvg_handle_write (res, (guchar *) data, data_len, NULL)
             && rsvg_handle_close (res, NULL)) {
-            rsvg_handle_cascade (res);
+            rsvg_tree_cascade (res->priv->tree);
         } else {
             g_object_unref (res);
             res = NULL;
@@ -1075,8 +1059,8 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     cairo_save (cr);
 
-    rsvg_handle_cascade (handle);
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase);
+    rsvg_tree_cascade (handle->priv->tree);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
 
     cairo_restore (cr);
 
@@ -1147,8 +1131,8 @@ get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
     draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
-    rsvg_handle_cascade (handle);
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase);
+    rsvg_tree_cascade (handle->priv->tree);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
     rsvg_drawing_ctx_get_ink_rect (draw, ink_rect);
 
     rsvg_drawing_ctx_free (draw);
@@ -1182,22 +1166,22 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
 
-    if (!handle->priv->treebase)
+    if (handle->priv->tree == NULL)
         return FALSE;
 
     if (id && *id) {
         node = rsvg_defs_lookup (handle->priv->defs, id);
 
-        if (rsvg_node_is_same (node, handle->priv->treebase))
+        if (rsvg_tree_is_root (handle->priv->tree, node))
             id = NULL;
     } else {
-        node = handle->priv->treebase;
+        node = rsvg_tree_get_root (handle->priv->tree);
     }
 
     if (!node && id)
         return FALSE;
 
-    has_size = rsvg_node_svg_get_size (handle->priv->treebase,
+    has_size = rsvg_node_svg_get_size (rsvg_tree_get_root (handle->priv->tree),
                                        handle->priv->dpi_x, handle->priv->dpi_y,
                                        &root_width, &root_height);
 
@@ -1248,7 +1232,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 
     memset (position_data, 0, sizeof (*position_data));
 
-    if (!handle->priv->treebase)
+    if (handle->priv->tree == NULL)
         return FALSE;
 
     /* Short-cut when no id is given. */
@@ -1259,8 +1243,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     if (!node)
         return FALSE;
 
-    /* Root node. */
-    if (rsvg_node_is_same (node, handle->priv->treebase))
+    if (rsvg_tree_is_root (handle->priv->tree, node))
         return TRUE;
 
     if (!get_node_ink_rect (handle, node, &ink_rect))

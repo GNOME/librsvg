@@ -32,7 +32,7 @@ G_GNUC_INTERNAL
 void rsvg_load_free (RsvgLoad *load);
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_load_get_treebase (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
+RsvgTree *rsvg_load_steal_tree (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
 gboolean rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count, GError **error) G_GNUC_WARN_UNUSED_RESULT;

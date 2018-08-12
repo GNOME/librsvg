@@ -34,6 +34,7 @@ use state::{
     StrokeLinejoin,
     TextRendering,
 };
+use tree::{RsvgTree, Tree};
 use unitinterval::UnitInterval;
 use viewbox::ViewBox;
 
@@ -882,15 +883,15 @@ impl From<TextRendering> for cairo::Antialias {
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     raw_draw_ctx: *mut RsvgDrawingCtx,
-    raw_node: *const RsvgNode,
+    raw_tree: *const RsvgTree,
 ) {
     assert!(!raw_draw_ctx.is_null());
     let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
-    assert!(!raw_node.is_null());
-    let node = unsafe { &*raw_node };
+    assert!(!raw_tree.is_null());
+    let tree = unsafe { &*(raw_tree as *const Tree) };
 
-    draw_ctx.draw_node_from_stack(&node.get_cascaded_values(), node, false);
+    draw_ctx.draw_node_from_stack(&tree.root.get_cascaded_values(), &tree.root, false);
 }
 
 #[no_mangle]
