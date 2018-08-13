@@ -254,7 +254,18 @@ pub fn render(
     filter_node
         .children()
         // Skip nodes in error.
-        .filter(|c| !c.is_in_error())
+        .filter(|c| {
+            let in_error = c.is_in_error();
+
+            if in_error {
+                rsvg_log!(
+                    "(ignoring filter primitive {} because it is in error)",
+                    c.get_human_readable_name()
+                );
+            }
+
+            !in_error
+        })
         // Check if the node wants linear RGB.
         .map(|c| {
             let linear_rgb = {

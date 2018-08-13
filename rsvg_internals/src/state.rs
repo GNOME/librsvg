@@ -595,7 +595,9 @@ impl State {
             rsvg_log!(
                 "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    property \
                  will be ignored)",
-                attr, value, e
+                attr,
+                value,
+                e
             );
         }
 

@@ -345,6 +345,10 @@ impl<'a> DrawingCtx<'a> {
                                     // FIXME: deal with out of memory here
                                     Some(filters::render(&filter_node, node, &output, self))
                                 } else {
+                                    rsvg_log!(
+                                        "(ignoring filter element {} because it is in error)",
+                                        filter_node.get_human_readable_name()
+                                    );
                                     None
                                 }
                             }

@@ -279,6 +279,14 @@ impl Node {
         self.class.as_ref().map(String::as_str)
     }
 
+    pub fn get_human_readable_name(&self) -> String {
+        format!(
+            "{:?} id={}",
+            self.node_type,
+            self.get_id().unwrap_or("None")
+        )
+    }
+
     pub fn get_transform(&self) -> Matrix {
         self.transform.get()
     }
@@ -424,7 +432,7 @@ impl Node {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) {
-        if self.result.borrow().is_ok() {
+        if !self.is_in_error() {
             let cr = draw_ctx.get_cairo_context();
             let save_affine = cr.get_matrix();
 
@@ -433,14 +441,18 @@ impl Node {
             self.node_impl.draw(node, cascaded, draw_ctx, clipping);
 
             cr.set_matrix(save_affine);
+        } else {
+            rsvg_log!(
+                "(not rendering element {} because it is in error)",
+                self.get_human_readable_name()
+            );
         }
     }
 
     pub fn set_error(&self, error: NodeError) {
-            "(attribute error for {:?} id={}:\n  {}\n  element will not be rendered!)",
-            self.node_type,
-            self.get_id().unwrap_or("None"),
         rsvg_log!(
+            "(attribute error for {}:\n  {})",
+            self.get_human_readable_name(),
             error
         );
 
@@ -449,10 +461,6 @@ impl Node {
 
     pub fn is_in_error(&self) -> bool {
         self.result.borrow().is_err()
-    }
-
-    pub fn get_result(&self) -> NodeResult {
-        self.result.borrow().clone()
     }
 
     pub fn with_impl<T, F, U>(&self, f: F) -> U

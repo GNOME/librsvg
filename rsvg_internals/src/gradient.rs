@@ -368,7 +368,18 @@ impl Gradient {
             // just ignore this child; we are only interested in gradient stops
             .filter(|child| child.get_type() == NodeType::Stop)
             // don't add any more stops, Eq to break in for-loop
-            .take_while(|child| child.get_result().is_ok())
+            .take_while(|child| {
+                let in_error = child.is_in_error();
+
+                if in_error {
+                    rsvg_log!(
+                        "(not using gradient stop {} because it is in error)",
+                        child.get_human_readable_name()
+                    );
+                }
+
+                !in_error
+            })
             .for_each(|child| {
                 child.with_impl(|stop: &NodeStop| {
                     let cascaded = child.get_cascaded_values();
