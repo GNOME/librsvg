@@ -73,6 +73,9 @@ pub use structure::{rsvg_node_svg_apply_atts, rsvg_node_svg_get_size};
 pub use text::{rsvg_node_chars_append, rsvg_node_chars_new};
 
 #[macro_use]
+mod log;
+
+#[macro_use]
 mod coord_units;
 
 #[macro_use]

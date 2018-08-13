@@ -592,7 +592,7 @@ impl State {
         // node to be in error in that case.
 
         if let Err(e) = parse().map_err(|e| NodeError::attribute_error(attr, e)) {
-            println!(
+            rsvg_log!(
                 "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    property \
                  will be ignored)",
                 attr, value, e
@@ -1526,7 +1526,7 @@ pub fn parse_style_attrs(
             //            return;
             //        }
 
-            println!("(attribute error: {})", e);
+            rsvg_log!("(attribute error: {})", e);
         }
     }
 

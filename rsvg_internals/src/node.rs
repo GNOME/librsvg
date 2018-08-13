@@ -437,10 +437,10 @@ impl Node {
     }
 
     pub fn set_error(&self, error: NodeError) {
-        println!(
             "(attribute error for {:?} id={}:\n  {}\n  element will not be rendered!)",
             self.node_type,
             self.get_id().unwrap_or("None"),
+        rsvg_log!(
             error
         );
 
