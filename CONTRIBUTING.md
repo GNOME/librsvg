@@ -51,6 +51,21 @@ resource and attachments are visible to everyone.
 
 You can also [browse the existing bugs][bugs-browse].
 
+### Obtaining debug logs
+
+Librsvg can be asked to output debug logs.  Set the `RSVG_LOG`
+environment variable, and then librsvg will print some 
+information to stdout:
+
+```
+$ RSVG_LOG=1 some-program-that-uses-librsvg
+... debug output goes here ...
+```
+
+As of librsvg 2.43.5, there are no options you can set in the
+`RSVG_LOG` variable; the library just checks whether that environment
+variable is present or not.
+
 ## Feature requests
 
 Librsvg aims to be a small and relatively simple SVG rendering
