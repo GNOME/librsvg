@@ -107,13 +107,6 @@ typedef struct _RsvgSaxHandlerStyle {
     gboolean is_text_css;
 } RsvgSaxHandlerStyle;
 
-typedef struct {
-    RsvgSaxHandler super;
-    RsvgLoad *load;
-    const char *name;
-    GString *string;
-} RsvgSaxHandlerExtra;
-
 static void init_sax_handler_struct (void);
 
 RsvgLoad *
