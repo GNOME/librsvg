@@ -276,58 +276,61 @@ pub fn render(
             };
 
             (c, linear_rgb)
-        })
-        .filter_map(|(c, linear_rgb)| {
-            let rr = RcRef::new(c).try_map(|c| {
-                // Go through the filter primitives and see if the node is one of them.
-                #[inline]
-                fn as_filter<T: Filter>(x: &T) -> &Filter {
-                    x
-                }
+        }).filter_map(|(c, linear_rgb)| {
+            let rr = RcRef::new(c)
+                .try_map(|c| {
+                    // Go through the filter primitives and see if the node is one of them.
+                    #[inline]
+                    fn as_filter<T: Filter>(x: &T) -> &Filter {
+                        x
+                    }
 
-                // Unfortunately it's not possible to downcast to a trait object. If we could
-                // attach arbitrary data to nodes it would really help here. Previously that
-                // arbitrary data was in form of RsvgCNodeImpl, but that was heavily tuned for
-                // storing C pointers with all subsequent downsides.
-                macro_rules! try_downcasting_to_filter {
-                    ($c:expr; $($t:ty),+$(,)*) => ({
-                        let mut filter = None;
-                        $(
-                            filter = filter.or_else(|| $c.get_impl::<$t>().map(as_filter));
-                        )+
-                        filter
-                    })
-                }
+                    // Unfortunately it's not possible to downcast to a trait object. If we could
+                    // attach arbitrary data to nodes it would really help here. Previously that
+                    // arbitrary data was in form of RsvgCNodeImpl, but that was heavily tuned for
+                    // storing C pointers with all subsequent downsides.
+                    macro_rules! try_downcasting_to_filter {
+                        ($c:expr; $($t:ty),+$(,)*) => ({
+                            let mut filter = None;
+                            $(
+                                filter = filter.or_else(|| $c.get_impl::<$t>().map(as_filter));
+                            )+
+                            filter
+                        })
+                    }
 
-                let filter = try_downcasting_to_filter!(
-                    c;
-                    blend::Blend,
-                    color_matrix::ColorMatrix,
-                    component_transfer::ComponentTransfer,
-                    composite::Composite,
-                    convolve_matrix::ConvolveMatrix,
-                    displacement_map::DisplacementMap,
-                    flood::Flood,
-                    gaussian_blur::GaussianBlur,
-                    image::Image,
-                    light::lighting::Lighting,
-                    merge::Merge,
-                    morphology::Morphology,
-                    offset::Offset,
-                    tile::Tile,
-                    turbulence::Turbulence,
-                );
-                filter.ok_or(())
-            }).ok();
+                    let filter = try_downcasting_to_filter!(c;
+                        blend::Blend,
+                        color_matrix::ColorMatrix,
+                        component_transfer::ComponentTransfer,
+                        composite::Composite,
+                        convolve_matrix::ConvolveMatrix,
+                        displacement_map::DisplacementMap,
+                        flood::Flood,
+                        gaussian_blur::GaussianBlur,
+                        image::Image,
+                        light::lighting::Lighting,
+                        merge::Merge,
+                        morphology::Morphology,
+                        offset::Offset,
+                        tile::Tile,
+                        turbulence::Turbulence,
+                    );
+                    filter.ok_or(())
+                }).ok();
 
             rr.map(|rr| (rr, linear_rgb))
-        })
-        .for_each(|(rr, linear_rgb)| {
+        }).for_each(|(rr, linear_rgb)| {
             let mut render = |filter_ctx: &mut FilterContext| {
-                if let Err(_) = rr.render(rr.owner(), filter_ctx, draw_ctx)
+                if let Err(err) = rr
+                    .render(rr.owner(), filter_ctx, draw_ctx)
                     .and_then(|result| filter_ctx.store_result(result))
                 {
-                    // Filter::render() returned an error. Do nothing for now.
+                    rsvg_log!(
+                        "(filter primitive {} returned an error: {})",
+                        rr.owner().get_human_readable_name(),
+                        err
+                    );
                 }
             };
 
