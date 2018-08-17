@@ -184,7 +184,7 @@ pub struct Children {
 
 // Keep this in sync with rsvg-private.h:RsvgNodeType
 #[repr(C)]
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum NodeType {
     Invalid = 0,
 
