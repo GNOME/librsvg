@@ -1,5 +1,6 @@
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
+use std::time::Instant;
 
 use cairo;
 use owning_ref::RcRef;
@@ -334,11 +335,20 @@ pub fn render(
                 }
             };
 
+            let start = Instant::now();
+
             if rr.is_affected_by_color_interpolation_filters() && linear_rgb {
                 filter_ctx.with_linear_rgb(render);
             } else {
                 render(&mut filter_ctx);
             }
+
+            let elapsed = start.elapsed();
+            rsvg_log!(
+                "(rendered filter primitive {} in\n    {} seconds)",
+                rr.owner().get_human_readable_name(),
+                elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
+            );
         });
 
     filter_ctx
