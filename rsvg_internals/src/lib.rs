@@ -114,7 +114,7 @@ mod property_bag;
 mod rect;
 mod shapes;
 mod space;
-mod srgb;
+pub mod srgb;
 mod state;
 mod stop;
 mod structure;
