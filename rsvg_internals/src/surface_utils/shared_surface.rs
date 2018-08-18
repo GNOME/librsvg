@@ -178,6 +178,12 @@ impl SharedImageSurface {
         self.height
     }
 
+    /// Returns the surface stride.
+    #[inline]
+    pub fn stride(&self) -> isize {
+        self.stride
+    }
+
     /// Returns `true` if the surface contains meaningful data only in the alpha channel.
     #[inline]
     pub fn is_alpha_only(&self) -> bool {
@@ -203,6 +209,15 @@ impl SharedImageSurface {
                 .offset(y as isize * self.stride + x as isize * 4) as *const u32)
         };
 
+        Pixel::from_u32(value)
+    }
+
+    /// Retrieves the pixel value by offset into the pixel data array.
+    #[inline]
+    pub fn get_pixel_by_offset(&self, offset: isize) -> Pixel {
+        assert!(offset < self.stride as isize * self.height as isize);
+
+        let value = unsafe { *(self.data_ptr.as_ptr().offset(offset) as *const u32) };
         Pixel::from_u32(value)
     }
 

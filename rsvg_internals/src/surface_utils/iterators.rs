@@ -12,6 +12,7 @@ pub struct Pixels<'a> {
     bounds: IRect,
     x: u32,
     y: u32,
+    offset: isize,
 }
 
 /// Iterator over a (potentially out of bounds) rectangle of pixels of a `SharedImageSurface`.
@@ -44,6 +45,7 @@ impl<'a> Pixels<'a> {
             bounds,
             x: bounds.x0 as u32,
             y: bounds.y0 as u32,
+            offset: bounds.y0 as isize * surface.stride() as isize + bounds.x0 as isize * 4,
         }
     }
 }
@@ -91,13 +93,20 @@ impl<'a> Iterator for Pixels<'a> {
             return None;
         }
 
-        let rv = Some((self.x, self.y, self.surface.get_pixel(self.x, self.y)));
+        let rv = Some((
+            self.x,
+            self.y,
+            self.surface.get_pixel_by_offset(self.offset),
+        ));
 
         if self.x + 1 == self.bounds.x1 as u32 {
             self.x = self.bounds.x0 as u32;
             self.y += 1;
+            self.offset +=
+                self.surface.stride() - (self.bounds.x1 - self.bounds.x0 - 1) as isize * 4;
         } else {
             self.x += 1;
+            self.offset += 4;
         }
 
         rv
