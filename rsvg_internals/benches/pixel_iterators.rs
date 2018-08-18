@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate criterion;
-use criterion::Criterion;
+use criterion::{black_box, Criterion};
 
 extern crate cairo;
 extern crate cairo_sys;
@@ -27,14 +27,16 @@ fn bench_pixel_iterators(c: &mut Criterion) {
         let stride = surface.get_stride();
         let data = surface.get_data().unwrap();
 
+        let bounds = black_box(BOUNDS);
+
         b.iter(|| {
             let mut r = 0usize;
             let mut g = 0usize;
             let mut b = 0usize;
             let mut a = 0usize;
 
-            for y in BOUNDS.y0..BOUNDS.y1 {
-                for x in BOUNDS.x0..BOUNDS.x1 {
+            for y in bounds.y0..bounds.y1 {
+                for x in bounds.x0..bounds.x1 {
                     let base = (y * stride + x * 4) as usize;
 
                     r += data[base + 0] as usize;
@@ -53,14 +55,16 @@ fn bench_pixel_iterators(c: &mut Criterion) {
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
         let surface = SharedImageSurface::new(surface, SurfaceType::SRgb).unwrap();
 
+        let bounds = black_box(BOUNDS);
+
         b.iter(|| {
             let mut r = 0usize;
             let mut g = 0usize;
             let mut b = 0usize;
             let mut a = 0usize;
 
-            for y in BOUNDS.y0..BOUNDS.y1 {
-                for x in BOUNDS.x0..BOUNDS.x1 {
+            for y in bounds.y0..bounds.y1 {
+                for x in bounds.x0..bounds.x1 {
                     let pixel = surface.get_pixel(x as u32, y as u32);
 
                     r += pixel.r as usize;
@@ -79,13 +83,15 @@ fn bench_pixel_iterators(c: &mut Criterion) {
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
         let data = SharedImageSurface::new(surface, SurfaceType::SRgb).unwrap();
 
+        let bounds = black_box(BOUNDS);
+
         b.iter(|| {
             let mut r = 0usize;
             let mut g = 0usize;
             let mut b = 0usize;
             let mut a = 0usize;
 
-            for (_x, _y, pixel) in Pixels::new(&data, BOUNDS) {
+            for (_x, _y, pixel) in Pixels::new(&data, bounds) {
                 r += pixel.r as usize;
                 g += pixel.g as usize;
                 b += pixel.b as usize;
