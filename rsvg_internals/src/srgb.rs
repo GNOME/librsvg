@@ -26,25 +26,14 @@ pub fn unlinearize(c: u8) -> u8 {
     UNLINEARIZE[usize::from(c)]
 }
 
-/// Applies the function to each pixel component after unpremultiplying.
-fn map_unpremultiplied_components<F>(
+/// Processing loop of `map_unpremultiplied_components`. Extracted (and public) for benchmarking.
+#[inline]
+pub fn map_unpremultiplied_components_loop<F: Fn(u8) -> u8>(
     surface: &SharedImageSurface,
+    output_surface: &mut cairo::ImageSurface,
     bounds: IRect,
     f: F,
-    new_type: SurfaceType,
-) -> Result<SharedImageSurface, cairo::Status>
-where
-    F: Fn(u8) -> u8,
-{
-    // This function doesn't affect the alpha channel.
-    if surface.is_alpha_only() {
-        return Ok(surface.clone());
-    }
-
-    let width = surface.width();
-    let height = surface.height();
-
-    let mut output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+) {
     let output_stride = output_surface.get_stride() as usize;
     {
         let mut output_data = output_surface.get_data().unwrap();
@@ -71,6 +60,25 @@ where
             }
         }
     }
+}
+
+/// Applies the function to each pixel component after unpremultiplying.
+fn map_unpremultiplied_components<F: Fn(u8) -> u8>(
+    surface: &SharedImageSurface,
+    bounds: IRect,
+    f: F,
+    new_type: SurfaceType,
+) -> Result<SharedImageSurface, cairo::Status> {
+    // This function doesn't affect the alpha channel.
+    if surface.is_alpha_only() {
+        return Ok(surface.clone());
+    }
+
+    let width = surface.width();
+    let height = surface.height();
+
+    let mut output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+    map_unpremultiplied_components_loop(surface, &mut output_surface, bounds, f);
 
     SharedImageSurface::new(output_surface, new_type)
 }

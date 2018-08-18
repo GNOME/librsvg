@@ -81,3 +81,7 @@ harness = false
 [[bench]]
 name = "pixel_iterators"
 harness = false
+
+[[bench]]
+name = "srgb"
+harness = false
