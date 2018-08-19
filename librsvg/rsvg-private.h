@@ -364,10 +364,7 @@ void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
-void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
-                                            RsvgNode *node,
-                                            RsvgNode *cascade_from_node,
-                                            gboolean clipping);
+void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgNode *node);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL

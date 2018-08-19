@@ -1070,7 +1070,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     cairo_save (cr);
 
     rsvg_handle_cascade (handle);
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, NULL, FALSE);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase);
 
     cairo_restore (cr);
 
@@ -1142,7 +1142,7 @@ get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
     rsvg_handle_cascade (handle);
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, NULL, FALSE);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase);
     rsvg_drawing_ctx_get_ink_rect (draw, ink_rect);
 
     rsvg_drawing_ctx_free (draw);
