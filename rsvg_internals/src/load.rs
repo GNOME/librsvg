@@ -356,3 +356,20 @@ pub extern "C" fn rsvg_load_set_node_atts(
 
     node.set_overridden_properties();
 }
+
+#[no_mangle]
+pub extern "C" fn rsvg_load_set_svg_node_atts(
+    handle: *const RsvgHandle,
+    raw_node: *const RsvgNode,
+) {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    if node.get_type() != NodeType::Svg {
+        return;
+    }
+
+    node.with_impl(|svg: &NodeSvg| {
+        svg.with_pbag(|pbag| parse_style_attrs(handle, node, "svg", pbag));
+    });
+}

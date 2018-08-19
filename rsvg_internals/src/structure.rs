@@ -14,7 +14,7 @@ use libc;
 use node::*;
 use parsers::{parse, parse_and_validate, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state::{self, Overflow};
+use state::Overflow;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -111,6 +111,16 @@ impl NodeSvg {
             vbox: Cell::new(None),
             pbag: RefCell::new(None),
         }
+    }
+
+    pub fn with_pbag<F>(&self, f: F)
+    where
+        F: FnOnce(&PropertyBag),
+    {
+        self.pbag
+            .borrow()
+            .as_ref()
+            .map(|p| f(&PropertyBag::from_owned(p)));
     }
 }
 
@@ -429,17 +439,4 @@ pub extern "C" fn rsvg_node_svg_get_size(
             (_, _, _) => false.to_glib(),
         },
     )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_svg_apply_atts(raw_node: *const RsvgNode, handle: *const RsvgHandle) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    node.with_impl(|svg: &NodeSvg| {
-        if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
-            let pbag = PropertyBag::from_owned(owned_pbag);
-            state::parse_style_attrs(handle, node, "svg", &pbag);
-        }
-    });
 }
