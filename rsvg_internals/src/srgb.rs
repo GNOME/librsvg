@@ -44,10 +44,10 @@ pub fn map_unpremultiplied_components_loop<F: Fn(u8) -> u8>(
 
                 let compute = |x| {
                     let x = f64::from(x) / alpha; // Unpremultiply alpha.
-                    let x = x.round() as u8; // Round to nearest u8.
+                    let x = (x + 0.5) as u8; // Round to nearest u8.
                     let x = f(x);
                     let x = f64::from(x) * alpha; // Premultiply alpha again.
-                    x.round() as u8
+                    (x + 0.5) as u8
                 };
 
                 let output_pixel = Pixel {
