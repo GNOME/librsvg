@@ -1121,6 +1121,37 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
     }
 }
 
+static gboolean
+get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rect)
+{
+    RsvgDimensionData dimensions;
+    cairo_surface_t *target;
+    cairo_t *cr;
+    RsvgDrawingCtx *draw;
+
+    g_assert (node != NULL);
+
+    rsvg_handle_get_dimensions (handle, &dimensions);
+    if (dimensions.width == 0 || dimensions.height == 0)
+        return FALSE;
+
+    target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
+    cr = cairo_create (target);
+
+    draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
+    rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
+
+    rsvg_handle_cascade (handle);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, NULL, FALSE);
+    rsvg_drawing_ctx_get_ink_rect (draw, ink_rect);
+
+    rsvg_drawing_ctx_free (draw);
+    cairo_destroy (cr);
+    cairo_surface_destroy (target);
+
+    return TRUE;
+}
+
 /**
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
@@ -1136,10 +1167,7 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
 gboolean
 rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id)
 {
-    cairo_t *cr;
-    cairo_surface_t *target;
-    RsvgDrawingCtx *draw;
-    RsvgNode *sself = NULL;
+    RsvgNode *node;
     gboolean has_size;
     int root_width, root_height;
 
@@ -1151,18 +1179,16 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     if (!handle->priv->treebase)
         return FALSE;
 
-    g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
-
     if (id && *id) {
-        sself = rsvg_defs_lookup (handle->priv->defs, id);
+        node = rsvg_defs_lookup (handle->priv->defs, id);
 
-        if (rsvg_node_is_same (sself, handle->priv->treebase))
+        if (rsvg_node_is_same (node, handle->priv->treebase))
             id = NULL;
     } else {
-        sself = handle->priv->treebase;
+        node = handle->priv->treebase;
     }
 
-    if (!sself && id)
+    if (!node && id)
         return FALSE;
 
     has_size = rsvg_node_svg_get_size (handle->priv->treebase,
@@ -1170,31 +1196,13 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
                                        &root_width, &root_height);
 
     if (id || !has_size) {
-        RsvgDimensionData dimensions;
         cairo_rectangle_t ink_rect;
 
-        rsvg_handle_get_dimensions (handle, &dimensions);
-        if (dimensions.width == 0 || dimensions.height == 0)
+        if (!get_node_ink_rect (handle, node, &ink_rect))
             return FALSE;
 
-        target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
-        cr = cairo_create (target);
-
-        draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
-
-        g_assert (sself != NULL);
-        rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, sself);
-
-        rsvg_handle_cascade (handle);
-        rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, NULL, FALSE);
-
-        rsvg_drawing_ctx_get_ink_rect (draw, &ink_rect);
         dimension_data->width = ink_rect.width;
         dimension_data->height = ink_rect.height;
-
-        rsvg_drawing_ctx_free (draw);
-        cairo_destroy (cr);
-        cairo_surface_destroy (target);
     } else {
         dimension_data->width = root_width;
         dimension_data->height = root_height;
@@ -1225,56 +1233,32 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 gboolean
 rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
 {
-    RsvgDrawingCtx		*draw;
-    RsvgNode			*node;
-    RsvgDimensionData    dimensions;
-    cairo_rectangle_t    ink_rect;
-    cairo_surface_t		*target = NULL;
-    cairo_t				*cr = NULL;
-    int                  width, height;
+    RsvgNode *node;
+    cairo_rectangle_t ink_rect;
+    int width, height;
 
     g_return_val_if_fail (handle, FALSE);
     g_return_val_if_fail (position_data, FALSE);
+
+    memset (position_data, 0, sizeof (*position_data));
 
     if (!handle->priv->treebase)
         return FALSE;
 
     /* Short-cut when no id is given. */
-    if (NULL == id || '\0' == *id) {
-        position_data->x = 0;
-        position_data->y = 0;
+    if (NULL == id || '\0' == *id)
         return TRUE;
-    }
-
-    memset (position_data, 0, sizeof (*position_data));
 
     node = rsvg_defs_lookup (handle->priv->defs, id);
     if (!node)
         return FALSE;
 
-    if (rsvg_node_is_same (node, handle->priv->treebase)) {
-        /* Root node. */
-        position_data->x = 0;
-        position_data->y = 0;
+    /* Root node. */
+    if (rsvg_node_is_same (node, handle->priv->treebase))
         return TRUE;
-    }
 
-    rsvg_handle_get_dimensions (handle, &dimensions);
-    if (dimensions.width == 0 || dimensions.height == 0)
+    if (!get_node_ink_rect (handle, node, &ink_rect))
         return FALSE;
-
-    target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
-    cr = cairo_create (target);
-
-    draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
-
-    g_assert (node != NULL);
-    rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
-
-    rsvg_handle_cascade (handle);
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, NULL, FALSE);
-    rsvg_drawing_ctx_get_ink_rect (draw, &ink_rect);
-    rsvg_drawing_ctx_free (draw);
 
     position_data->x = ink_rect.x;
     position_data->y = ink_rect.y;
@@ -1284,9 +1268,6 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 
     if (handle->priv->size_func)
         (*handle->priv->size_func) (&width, &height, handle->priv->user_data);
-
-    cairo_destroy (cr);
-    cairo_surface_destroy (target);
 
     return TRUE;
 }
