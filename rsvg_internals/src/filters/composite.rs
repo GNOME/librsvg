@@ -129,14 +129,14 @@ pub fn composite_arithmetic(
                     let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
                     let o = clamp(o, 0f64, oa);
 
-                    (o * 255f64).round() as u8
+                    ((o * 255f64) + 0.5) as u8
                 };
 
                 let output_pixel = Pixel {
                     r: compute(pixel.r, pixel_2.r),
                     g: compute(pixel.g, pixel_2.g),
                     b: compute(pixel.b, pixel_2.b),
-                    a: (oa * 255f64).round() as u8,
+                    a: ((oa * 255f64) + 0.5) as u8,
                 };
                 output_data.set_pixel(output_stride, output_pixel, x, y);
             }
