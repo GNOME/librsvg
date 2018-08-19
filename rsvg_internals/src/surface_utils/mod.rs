@@ -48,7 +48,7 @@ impl Pixel {
             self
         } else {
             let alpha = f64::from(self.a) / 255.0;
-            let unpremultiply = |x| (f64::from(x) / alpha).round() as u8;
+            let unpremultiply = |x| ((f64::from(x) / alpha) + 0.5) as u8;
 
             Self {
                 r: unpremultiply(self.r),
@@ -63,7 +63,7 @@ impl Pixel {
     #[inline]
     pub fn premultiply(self) -> Self {
         let alpha = f64::from(self.a) / 255.0;
-        let premultiply = |x| (f64::from(x) * alpha).round() as u8;
+        let premultiply = |x| ((f64::from(x) * alpha) + 0.5) as u8;
 
         Self {
             r: premultiply(self.r),

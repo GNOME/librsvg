@@ -412,7 +412,7 @@ impl SharedImageSurface {
                         a += f64::from(pixel.a) * factor;
                     }
 
-                    let convert = |x: f64| clamp(x, 0.0, 255.0).round() as u8;
+                    let convert = |x: f64| (clamp(x, 0.0, 255.0) + 0.5) as u8;
 
                     let output_pixel = Pixel {
                         r: 0,
@@ -449,7 +449,7 @@ impl SharedImageSurface {
                         a += f64::from(pixel.a) * factor;
                     }
 
-                    let convert = |x: f64| clamp(x, 0.0, 255.0).round() as u8;
+                    let convert = |x: f64| (clamp(x, 0.0, 255.0) + 0.5) as u8;
 
                     let output_pixel = Pixel {
                         r: convert(r),

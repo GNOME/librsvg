@@ -308,14 +308,14 @@ impl Filter for ConvolveMatrix {
                         clamp(x, 0.0, clamped_a)
                     };
 
-                    (x * 255.0).round() as u8
+                    ((x * 255.0) + 0.5) as u8
                 };
 
                 let output_pixel = Pixel {
                     r: compute(r),
                     g: compute(g),
                     b: compute(b),
-                    a: (clamped_a * 255.0).round() as u8,
+                    a: ((clamped_a * 255.0) + 0.5) as u8,
                 };
 
                 output_data.set_pixel(output_stride, output_pixel, x, y);

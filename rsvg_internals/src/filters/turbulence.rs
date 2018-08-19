@@ -390,7 +390,7 @@ impl Filter for Turbulence {
                             NoiseType::Turbulence => v * 255.0,
                         };
 
-                        clamp(v, 0.0, 255.0).round() as u8
+                        (clamp(v, 0.0, 255.0) + 0.5) as u8
                     };
 
                     let pixel = Pixel {

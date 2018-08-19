@@ -335,7 +335,7 @@ impl Filter for ComponentTransfer {
                 let new_value = compute(&params, unpremultiplied);
                 let new_value = clamp(new_value, 0f64, 1f64);
 
-                (new_value * new_alpha * 255f64).round() as u8
+                ((new_value * new_alpha * 255f64) + 0.5) as u8
             }
         }
 
@@ -362,7 +362,7 @@ impl Filter for ComponentTransfer {
                     r: compute_r(pixel.r, alpha, new_alpha),
                     g: compute_g(pixel.g, alpha, new_alpha),
                     b: compute_b(pixel.b, alpha, new_alpha),
-                    a: (new_alpha * 255f64).round() as u8,
+                    a: ((new_alpha * 255f64) + 0.5) as u8,
                 };
 
                 output_data.set_pixel(output_stride, output_pixel, x, y);
