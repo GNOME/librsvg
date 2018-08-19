@@ -46,13 +46,13 @@ RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPr
 G_GNUC_INTERNAL
 void rsvg_load_set_node_atts (RsvgHandle *handle, RsvgNode *node, const char *element_name, RsvgPropertyBag atts);
 
+/* Implemented in rsvg_internals/src/load.rs */
+G_GNUC_INTERNAL
+void rsvg_load_set_svg_node_atts (RsvgHandle *handle, RsvgNode *node);
+
 /* Implemented in rsvg_internals/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_register_in_defs(RsvgNode *node, RsvgDefs *defs);
-
-/* Implemented in rsvg_internals/src/structure.rs */
-G_GNUC_INTERNAL
-void rsvg_node_svg_apply_atts (RsvgNode *node, RsvgHandle *handle);
 
 struct RsvgLoad {
     RsvgHandle *handle;
@@ -663,8 +663,8 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
             load->handler = NULL;
         }
 
-        if (load->currentnode && rsvg_node_get_type (load->currentnode) == RSVG_NODE_TYPE_SVG) {
-            rsvg_node_svg_apply_atts (load->currentnode, load->handle);
+        if (load->currentnode) {
+            rsvg_load_set_svg_node_atts (load->handle, load->currentnode);
         }
 
         if (load->currentnode && topmost_element_name_is (load, name)) {

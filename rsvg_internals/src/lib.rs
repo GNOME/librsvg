@@ -40,7 +40,7 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_new,
 };
 
-pub use load::{rsvg_load_new_node, rsvg_load_set_node_atts};
+pub use load::{rsvg_load_new_node, rsvg_load_set_node_atts, rsvg_load_set_svg_node_atts};
 
 pub use node::{
     rsvg_node_add_child,
@@ -68,7 +68,7 @@ pub use property_bag::{
 
 pub use state::{rsvg_state_free, rsvg_state_new, rsvg_state_parse_style_pair};
 
-pub use structure::{rsvg_node_svg_apply_atts, rsvg_node_svg_get_size};
+pub use structure::rsvg_node_svg_get_size;
 
 pub use text::{rsvg_node_chars_append, rsvg_node_chars_new};
 
