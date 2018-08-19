@@ -182,8 +182,6 @@ pub struct Children {
     next_back: Option<Rc<Node>>,
 }
 
-// Keep this in sync with rsvg-private.h:RsvgNodeType
-#[repr(C)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum NodeType {
     Invalid = 0,
@@ -624,14 +622,6 @@ impl DoubleEndedIterator for Children {
             Some(next_back)
         })
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_get_type(raw_node: *const RsvgNode) -> NodeType {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    node.get_type()
 }
 
 pub fn box_node(node: RsvgNode) -> *mut RsvgNode {

@@ -757,6 +757,7 @@ pub extern "C" fn rsvg_node_chars_append(
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
+    assert!(node.get_type() == NodeType::Chars);
     assert!(!text.is_null());
     assert!(len >= 0);
 

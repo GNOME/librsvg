@@ -707,7 +707,6 @@ characters_impl (RsvgLoad *load, const char *ch, gssize len)
         rsvg_node_add_child (load->currentnode, node);
     }
 
-    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
     rsvg_node_chars_append (node, ch, len);
 
     node = rsvg_node_unref (node);
