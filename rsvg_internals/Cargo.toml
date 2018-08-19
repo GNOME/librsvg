@@ -75,6 +75,10 @@ name = "box_blur"
 harness = false
 
 [[bench]]
+name = "composite"
+harness = false
+
+[[bench]]
 name = "lighting"
 harness = false
 
