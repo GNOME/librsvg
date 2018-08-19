@@ -118,7 +118,11 @@
  */
 
 #include "config.h"
+#define _GNU_SOURCE 1
+
 #include <string.h>
+#include <limits.h>
+#include <stdlib.h>
 
 #include "rsvg-io.h"
 #include "rsvg-load.h"
@@ -1504,6 +1508,115 @@ rsvg_handle_resolve_uri (RsvgHandle *handle,
     return resolved_uri;
 }
 
+#ifdef G_OS_WIN32
+static char *
+rsvg_realpath_utf8 (const char *filename, const char *unused)
+{
+    wchar_t *wfilename;
+    wchar_t *wfull;
+    char *full;
+
+    wfilename = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
+    if (!wfilename)
+        return NULL;
+
+    wfull = _wfullpath (NULL, wfilename, 0);
+    g_free (wfilename);
+    if (!wfull)
+        return NULL;
+
+    full = g_utf16_to_utf8 (wfull, -1, NULL, NULL, NULL);
+    free (wfull);
+
+    if (!full)
+        return NULL;
+
+    return full;
+}
+
+#define realpath(a,b) rsvg_realpath_utf8 (a, b)
+#endif
+
+static gboolean
+allow_load (GFile *base_gfile, const char *uri, GError **error)
+{
+    GFile *base;
+    char *path, *dir;
+    char *scheme = NULL, *cpath = NULL, *cdir = NULL;
+
+    g_assert (error == NULL || *error == NULL);
+
+    scheme = g_uri_parse_scheme (uri);
+
+    /* Not a valid URI */
+    if (scheme == NULL)
+        goto deny;
+
+    /* Allow loads of data: from any location */
+    if (g_str_equal (scheme, "data"))
+        goto allow;
+
+    /* No base to compare to? */
+    if (base_gfile == NULL)
+        goto deny;
+
+    /* Deny loads from differing URI schemes */
+    if (!g_file_has_uri_scheme (base_gfile, scheme))
+        goto deny;
+
+    /* resource: is allowed to load anything from other resources */
+    if (g_str_equal (scheme, "resource"))
+        goto allow;
+
+    /* Non-file: isn't allowed to load anything */
+    if (!g_str_equal (scheme, "file"))
+        goto deny;
+
+    base = g_file_get_parent (base_gfile);
+    if (base == NULL)
+        goto deny;
+
+    dir = g_file_get_path (base);
+    g_object_unref (base);
+
+    cdir = realpath (dir, NULL);
+    g_free (dir);
+    if (cdir == NULL)
+        goto deny;
+
+    path = g_filename_from_uri (uri, NULL, NULL);
+    if (path == NULL)
+        goto deny;
+
+    cpath = realpath (path, NULL);
+    g_free (path);
+
+    if (cpath == NULL)
+        goto deny;
+
+    /* Now check that @cpath is below @cdir */
+    if (!g_str_has_prefix (cpath, cdir) ||
+        cpath[strlen (cdir)] != G_DIR_SEPARATOR)
+        goto deny;
+
+    /* Allow load! */
+
+ allow:
+    g_free (scheme);
+    free (cpath);
+    free (cdir);
+    return TRUE;
+
+ deny:
+    g_free (scheme);
+    free (cpath);
+    free (cdir);
+
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED,
+                 "File may not link to URI \"%s\"", uri);
+    return FALSE;
+}
+
 char *
 _rsvg_handle_acquire_data (RsvgHandle *handle,
                            const char *url,
@@ -1517,7 +1630,7 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
 
     uri = rsvg_handle_resolve_uri (handle, url);
 
-    if (rsvg_allow_load (priv->base_gfile, uri, error)) {
+    if (allow_load (priv->base_gfile, uri, error)) {
         data = _rsvg_io_acquire_data (uri,
                                       rsvg_handle_get_base_uri (handle),
                                       content_type,
@@ -1544,7 +1657,7 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
 
     uri = rsvg_handle_resolve_uri (handle, url);
 
-    if (rsvg_allow_load (priv->base_gfile, uri, error)) {
+    if (allow_load (priv->base_gfile, uri, error)) {
         stream = _rsvg_io_acquire_stream (uri,
                                           rsvg_handle_get_base_uri (handle),
                                           content_type,
