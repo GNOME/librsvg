@@ -80,7 +80,7 @@ fn gaussian_kernel(std_deviation: f64) -> Vec<f64> {
     let maximal_deviation = (MAXIMUM_KERNEL_SIZE / 2) as f64 / 3.0;
 
     // Values further away than std_deviation * 3 are too small to contribute anything meaningful.
-    let radius = (std_deviation.min(maximal_deviation) * 3.0).round() as usize;
+    let radius = ((std_deviation.min(maximal_deviation) * 3.0) + 0.5) as usize;
     // Clamp the radius rather than diameter because `MAXIMUM_KERNEL_SIZE` might be even and we
     // want an odd-sized kernel.
     let radius = min(radius, (MAXIMUM_KERNEL_SIZE - 1) / 2);
