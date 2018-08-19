@@ -1,3 +1,5 @@
+use glib::translate::*;
+use glib_sys;
 use libc;
 use std::collections::HashMap;
 
@@ -270,6 +272,7 @@ pub extern "C" fn rsvg_load_new_node(
     parent: *const RsvgNode,
     pbag: *const PropertyBag,
     defs: *mut RsvgDefs,
+    out_is_svg: *mut glib_sys::gboolean,
 ) -> *const RsvgNode {
     assert!(!raw_name.is_null());
     assert!(!pbag.is_null());
@@ -306,9 +309,23 @@ pub extern "C" fn rsvg_load_new_node(
     let node = create_fn(id, class, parent);
     assert!(!node.is_null());
 
+    let is_svg = {
+        let n: &RsvgNode = unsafe { &*node };
+        match n.get_type() {
+            NodeType::Invalid => unreachable!(),
+            NodeType::Svg => true,
+            _ => false,
+        }
+    };
+
     if id.is_some() {
         let n = unsafe { &*node };
         defs.insert(id.unwrap(), n);
+    }
+
+    assert!(!out_is_svg.is_null());
+    unsafe {
+        *out_is_svg = is_svg.to_glib();
     }
 
     node
