@@ -189,17 +189,12 @@ rsvg_handle_dispose (GObject *instance)
         self->priv->user_data_destroy = NULL;
     }
 
+    g_clear_pointer (&self->priv->load, rsvg_load_free);
     g_clear_pointer (&self->priv->defs, rsvg_defs_free);
     g_clear_pointer (&self->priv->css_props, g_hash_table_destroy);
     g_clear_pointer (&self->priv->treebase, rsvg_node_unref);
     g_clear_pointer (&self->priv->base_uri, g_free);
     g_clear_object (&self->priv->base_gfile);
-
-    if (self->priv->load) {
-        RsvgNode *treebase = rsvg_load_destroy (self->priv->load);
-        treebase = rsvg_node_unref (treebase);
-        self->priv->load = NULL;
-    }
 
 #ifdef HAVE_PANGOFT2
     g_clear_pointer (&self->priv->font_config_for_testing, FcConfigDestroy);
@@ -680,16 +675,23 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 static gboolean
 finish_load (RsvgHandle *handle, gboolean was_successful)
 {
-    RsvgNode *treebase = rsvg_load_destroy (handle->priv->load);
-    handle->priv->load = NULL;
+    g_assert (handle->priv->load != NULL);
+    g_assert (handle->priv->treebase == NULL);
 
     if (was_successful) {
+        RsvgNode *treebase;
+
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
-        handle->priv->treebase = treebase;
+
+        treebase = rsvg_load_get_treebase (handle->priv->load);
+        if (treebase) {
+            handle->priv->treebase = rsvg_node_ref (treebase);
+        }
     } else {
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
-        treebase = rsvg_node_unref (treebase);
     }
+
+    g_clear_pointer (&handle->priv->load, rsvg_load_free);
 
     return was_successful;
 }
