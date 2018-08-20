@@ -29,7 +29,10 @@ G_GNUC_INTERNAL
 RsvgLoad *rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_load_destroy (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
+void rsvg_load_free (RsvgLoad *load);
+
+G_GNUC_INTERNAL
+RsvgTree *rsvg_load_steal_tree (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
 gboolean rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count, GError **error) G_GNUC_WARN_UNUSED_RESULT;
@@ -38,9 +41,6 @@ G_GNUC_INTERNAL
 gboolean rsvg_load_close (RsvgLoad *load, GError **error) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
-gboolean rsvg_load_read_stream_sync (RsvgLoad     *load,
-				     GInputStream *stream,
-				     GCancellable *cancellable,
-				     GError      **error) G_GNUC_WARN_UNUSED_RESULT;
+gboolean rsvg_load_read_stream_sync (RsvgLoad *load, GInputStream *stream, GCancellable *cancellable, GError **error) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

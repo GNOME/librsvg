@@ -118,7 +118,11 @@
  */
 
 #include "config.h"
+#define _GNU_SOURCE 1
+
 #include <string.h>
+#include <limits.h>
+#include <stdlib.h>
 
 #include "rsvg-io.h"
 #include "rsvg-load.h"
@@ -161,7 +165,7 @@ rsvg_handle_init (RsvgHandle * self)
                                                    g_free,
                                                    (GDestroyNotify) g_hash_table_destroy);
 
-    self->priv->treebase = NULL;
+    self->priv->tree = NULL;
 
     self->priv->cancellable = NULL;
 
@@ -185,17 +189,12 @@ rsvg_handle_dispose (GObject *instance)
         self->priv->user_data_destroy = NULL;
     }
 
+    g_clear_pointer (&self->priv->load, rsvg_load_free);
     g_clear_pointer (&self->priv->defs, rsvg_defs_free);
     g_clear_pointer (&self->priv->css_props, g_hash_table_destroy);
-    g_clear_pointer (&self->priv->treebase, rsvg_node_unref);
+    g_clear_pointer (&self->priv->tree, rsvg_tree_free);
     g_clear_pointer (&self->priv->base_uri, g_free);
     g_clear_object (&self->priv->base_gfile);
-
-    if (self->priv->load) {
-        RsvgNode *treebase = rsvg_load_destroy (self->priv->load);
-        treebase = rsvg_node_unref (treebase);
-        self->priv->load = NULL;
-    }
 
 #ifdef HAVE_PANGOFT2
     g_clear_pointer (&self->priv->font_config_for_testing, FcConfigDestroy);
@@ -676,16 +675,17 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 static gboolean
 finish_load (RsvgHandle *handle, gboolean was_successful)
 {
-    RsvgNode *treebase = rsvg_load_destroy (handle->priv->load);
-    handle->priv->load = NULL;
+    g_assert (handle->priv->load != NULL);
+    g_assert (handle->priv->tree == NULL);
 
     if (was_successful) {
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
-        handle->priv->treebase = treebase;
+        handle->priv->tree = rsvg_load_steal_tree (handle->priv->load);
     } else {
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
-        treebase = rsvg_node_unref (treebase);
     }
+
+    g_clear_pointer (&handle->priv->load, rsvg_load_free);
 
     return was_successful;
 }
@@ -962,16 +962,6 @@ rsvg_handle_get_defs (RsvgHandle *handle)
     return handle->priv->defs;
 }
 
-static void
-rsvg_handle_cascade (RsvgHandle *handle)
-{
-    if (!handle->priv->already_cascaded) {
-        handle->priv->already_cascaded = TRUE;
-
-        rsvg_root_node_cascade(handle->priv->treebase);
-    }
-}
-
 RsvgHandle *
 rsvg_handle_load_extern (RsvgHandle *handle, const char *uri)
 {
@@ -987,7 +977,7 @@ rsvg_handle_load_extern (RsvgHandle *handle, const char *uri)
 
         if (rsvg_handle_write (res, (guchar *) data, data_len, NULL)
             && rsvg_handle_close (res, NULL)) {
-            rsvg_handle_cascade (res);
+            rsvg_tree_cascade (res->priv->tree);
         } else {
             g_object_unref (res);
             res = NULL;
@@ -1069,8 +1059,8 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     cairo_save (cr);
 
-    rsvg_handle_cascade (handle);
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, NULL, FALSE);
+    rsvg_tree_cascade (handle->priv->tree);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
 
     cairo_restore (cr);
 
@@ -1121,6 +1111,37 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
     }
 }
 
+static gboolean
+get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rect)
+{
+    RsvgDimensionData dimensions;
+    cairo_surface_t *target;
+    cairo_t *cr;
+    RsvgDrawingCtx *draw;
+
+    g_assert (node != NULL);
+
+    rsvg_handle_get_dimensions (handle, &dimensions);
+    if (dimensions.width == 0 || dimensions.height == 0)
+        return FALSE;
+
+    target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
+    cr = cairo_create (target);
+
+    draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
+    rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
+
+    rsvg_tree_cascade (handle->priv->tree);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
+    rsvg_drawing_ctx_get_ink_rect (draw, ink_rect);
+
+    rsvg_drawing_ctx_free (draw);
+    cairo_destroy (cr);
+    cairo_surface_destroy (target);
+
+    return TRUE;
+}
+
 /**
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
@@ -1136,10 +1157,7 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
 gboolean
 rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id)
 {
-    cairo_t *cr;
-    cairo_surface_t *target;
-    RsvgDrawingCtx *draw;
-    RsvgNode *sself = NULL;
+    RsvgNode *node;
     gboolean has_size;
     int root_width, root_height;
 
@@ -1148,53 +1166,33 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
 
-    if (!handle->priv->treebase)
+    if (handle->priv->tree == NULL)
         return FALSE;
-
-    g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
 
     if (id && *id) {
-        sself = rsvg_defs_lookup (handle->priv->defs, id);
+        node = rsvg_defs_lookup (handle->priv->defs, id);
 
-        if (rsvg_node_is_same (sself, handle->priv->treebase))
+        if (rsvg_tree_is_root (handle->priv->tree, node))
             id = NULL;
     } else {
-        sself = handle->priv->treebase;
+        node = rsvg_tree_get_root (handle->priv->tree);
     }
 
-    if (!sself && id)
+    if (!node && id)
         return FALSE;
 
-    has_size = rsvg_node_svg_get_size (handle->priv->treebase,
+    has_size = rsvg_node_svg_get_size (rsvg_tree_get_root (handle->priv->tree),
                                        handle->priv->dpi_x, handle->priv->dpi_y,
                                        &root_width, &root_height);
 
     if (id || !has_size) {
-        RsvgDimensionData dimensions;
         cairo_rectangle_t ink_rect;
 
-        rsvg_handle_get_dimensions (handle, &dimensions);
-        if (dimensions.width == 0 || dimensions.height == 0)
+        if (!get_node_ink_rect (handle, node, &ink_rect))
             return FALSE;
 
-        target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
-        cr = cairo_create (target);
-
-        draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
-
-        g_assert (sself != NULL);
-        rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, sself);
-
-        rsvg_handle_cascade (handle);
-        rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, NULL, FALSE);
-
-        rsvg_drawing_ctx_get_ink_rect (draw, &ink_rect);
         dimension_data->width = ink_rect.width;
         dimension_data->height = ink_rect.height;
-
-        rsvg_drawing_ctx_free (draw);
-        cairo_destroy (cr);
-        cairo_surface_destroy (target);
     } else {
         dimension_data->width = root_width;
         dimension_data->height = root_height;
@@ -1225,56 +1223,31 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 gboolean
 rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
 {
-    RsvgDrawingCtx		*draw;
-    RsvgNode			*node;
-    RsvgDimensionData    dimensions;
-    cairo_rectangle_t    ink_rect;
-    cairo_surface_t		*target = NULL;
-    cairo_t				*cr = NULL;
-    int                  width, height;
+    RsvgNode *node;
+    cairo_rectangle_t ink_rect;
+    int width, height;
 
     g_return_val_if_fail (handle, FALSE);
     g_return_val_if_fail (position_data, FALSE);
 
-    if (!handle->priv->treebase)
+    memset (position_data, 0, sizeof (*position_data));
+
+    if (handle->priv->tree == NULL)
         return FALSE;
 
     /* Short-cut when no id is given. */
-    if (NULL == id || '\0' == *id) {
-        position_data->x = 0;
-        position_data->y = 0;
+    if (NULL == id || '\0' == *id)
         return TRUE;
-    }
-
-    memset (position_data, 0, sizeof (*position_data));
 
     node = rsvg_defs_lookup (handle->priv->defs, id);
     if (!node)
         return FALSE;
 
-    if (rsvg_node_is_same (node, handle->priv->treebase)) {
-        /* Root node. */
-        position_data->x = 0;
-        position_data->y = 0;
+    if (rsvg_tree_is_root (handle->priv->tree, node))
         return TRUE;
-    }
 
-    rsvg_handle_get_dimensions (handle, &dimensions);
-    if (dimensions.width == 0 || dimensions.height == 0)
+    if (!get_node_ink_rect (handle, node, &ink_rect))
         return FALSE;
-
-    target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
-    cr = cairo_create (target);
-
-    draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
-
-    g_assert (node != NULL);
-    rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
-
-    rsvg_handle_cascade (handle);
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, NULL, FALSE);
-    rsvg_drawing_ctx_get_ink_rect (draw, &ink_rect);
-    rsvg_drawing_ctx_free (draw);
 
     position_data->x = ink_rect.x;
     position_data->y = ink_rect.y;
@@ -1284,9 +1257,6 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 
     if (handle->priv->size_func)
         (*handle->priv->size_func) (&width, &height, handle->priv->user_data);
-
-    cairo_destroy (cr);
-    cairo_surface_destroy (target);
 
     return TRUE;
 }
@@ -1523,6 +1493,115 @@ rsvg_handle_resolve_uri (RsvgHandle *handle,
     return resolved_uri;
 }
 
+#ifdef G_OS_WIN32
+static char *
+rsvg_realpath_utf8 (const char *filename, const char *unused)
+{
+    wchar_t *wfilename;
+    wchar_t *wfull;
+    char *full;
+
+    wfilename = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
+    if (!wfilename)
+        return NULL;
+
+    wfull = _wfullpath (NULL, wfilename, 0);
+    g_free (wfilename);
+    if (!wfull)
+        return NULL;
+
+    full = g_utf16_to_utf8 (wfull, -1, NULL, NULL, NULL);
+    free (wfull);
+
+    if (!full)
+        return NULL;
+
+    return full;
+}
+
+#define realpath(a,b) rsvg_realpath_utf8 (a, b)
+#endif
+
+static gboolean
+allow_load (GFile *base_gfile, const char *uri, GError **error)
+{
+    GFile *base;
+    char *path, *dir;
+    char *scheme = NULL, *cpath = NULL, *cdir = NULL;
+
+    g_assert (error == NULL || *error == NULL);
+
+    scheme = g_uri_parse_scheme (uri);
+
+    /* Not a valid URI */
+    if (scheme == NULL)
+        goto deny;
+
+    /* Allow loads of data: from any location */
+    if (g_str_equal (scheme, "data"))
+        goto allow;
+
+    /* No base to compare to? */
+    if (base_gfile == NULL)
+        goto deny;
+
+    /* Deny loads from differing URI schemes */
+    if (!g_file_has_uri_scheme (base_gfile, scheme))
+        goto deny;
+
+    /* resource: is allowed to load anything from other resources */
+    if (g_str_equal (scheme, "resource"))
+        goto allow;
+
+    /* Non-file: isn't allowed to load anything */
+    if (!g_str_equal (scheme, "file"))
+        goto deny;
+
+    base = g_file_get_parent (base_gfile);
+    if (base == NULL)
+        goto deny;
+
+    dir = g_file_get_path (base);
+    g_object_unref (base);
+
+    cdir = realpath (dir, NULL);
+    g_free (dir);
+    if (cdir == NULL)
+        goto deny;
+
+    path = g_filename_from_uri (uri, NULL, NULL);
+    if (path == NULL)
+        goto deny;
+
+    cpath = realpath (path, NULL);
+    g_free (path);
+
+    if (cpath == NULL)
+        goto deny;
+
+    /* Now check that @cpath is below @cdir */
+    if (!g_str_has_prefix (cpath, cdir) ||
+        cpath[strlen (cdir)] != G_DIR_SEPARATOR)
+        goto deny;
+
+    /* Allow load! */
+
+ allow:
+    g_free (scheme);
+    free (cpath);
+    free (cdir);
+    return TRUE;
+
+ deny:
+    g_free (scheme);
+    free (cpath);
+    free (cdir);
+
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED,
+                 "File may not link to URI \"%s\"", uri);
+    return FALSE;
+}
+
 char *
 _rsvg_handle_acquire_data (RsvgHandle *handle,
                            const char *url,
@@ -1536,7 +1615,7 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
 
     uri = rsvg_handle_resolve_uri (handle, url);
 
-    if (rsvg_allow_load (priv->base_gfile, uri, error)) {
+    if (allow_load (priv->base_gfile, uri, error)) {
         data = _rsvg_io_acquire_data (uri,
                                       rsvg_handle_get_base_uri (handle),
                                       content_type,
@@ -1563,7 +1642,7 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
 
     uri = rsvg_handle_resolve_uri (handle, url);
 
-    if (rsvg_allow_load (priv->base_gfile, uri, error)) {
+    if (allow_load (priv->base_gfile, uri, error)) {
         stream = _rsvg_io_acquire_stream (uri,
                                           rsvg_handle_get_base_uri (handle),
                                           content_type,

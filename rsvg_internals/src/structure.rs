@@ -112,6 +112,13 @@ impl NodeSvg {
             pbag: RefCell::new(None),
         }
     }
+
+    pub fn parse_style_attrs(&self, node: &RsvgNode, handle: *const RsvgHandle) {
+        if let Some(owned_pbag) = self.pbag.borrow().as_ref() {
+            let pbag = PropertyBag::from_owned(owned_pbag);
+            state::parse_style_attrs(handle, node, "svg", &pbag);
+        }
+    }
 }
 
 impl NodeTrait for NodeSvg {
@@ -429,17 +436,4 @@ pub extern "C" fn rsvg_node_svg_get_size(
             (_, _, _) => false.to_glib(),
         },
     )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_svg_apply_atts(raw_node: *const RsvgNode, handle: *const RsvgHandle) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    node.with_impl(|svg: &NodeSvg| {
-        if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
-            let pbag = PropertyBag::from_owned(owned_pbag);
-            state::parse_style_attrs(handle, node, "svg", &pbag);
-        }
-    });
 }

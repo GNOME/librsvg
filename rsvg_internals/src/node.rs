@@ -182,9 +182,7 @@ pub struct Children {
     next_back: Option<Rc<Node>>,
 }
 
-// Keep this in sync with rsvg-private.h:RsvgNodeType
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum NodeType {
     Invalid = 0,
 
@@ -626,14 +624,6 @@ impl DoubleEndedIterator for Children {
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_node_get_type(raw_node: *const RsvgNode) -> NodeType {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    node.get_type()
-}
-
 pub fn box_node(node: RsvgNode) -> *mut RsvgNode {
     Box::into_raw(Box::new(node))
 }
@@ -666,25 +656,6 @@ pub extern "C" fn rsvg_node_unref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
 
     // so the caller can do "node = rsvg_node_unref (node);" and lose access to the node
     ptr::null_mut()
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_is_same(
-    raw_node1: *const RsvgNode,
-    raw_node2: *const RsvgNode,
-) -> glib_sys::gboolean {
-    let is_same = if raw_node1.is_null() && raw_node2.is_null() {
-        true
-    } else if !raw_node1.is_null() && !raw_node2.is_null() {
-        let node1: &RsvgNode = unsafe { &*raw_node1 };
-        let node2: &RsvgNode = unsafe { &*raw_node2 };
-
-        Rc::ptr_eq(node1, node2)
-    } else {
-        false
-    };
-
-    is_same.to_glib()
 }
 
 #[no_mangle]
@@ -757,16 +728,6 @@ pub extern "C" fn rsvg_node_children_iter_next(
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_root_node_cascade(raw_node: *const RsvgNode) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let values = ComputedValues::default();
-
-    node.cascade(&values)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -820,40 +781,12 @@ mod tests {
         ));
 
         let ref1 = box_node(node);
+        let node1: &RsvgNode = unsafe { &*ref1 };
 
         let ref2 = rsvg_node_ref(ref1);
+        let node2: &RsvgNode = unsafe { &*ref2 };
 
-        assert!(rsvg_node_is_same(ref1, ref2) == true.to_glib());
-
-        rsvg_node_unref(ref1);
-        rsvg_node_unref(ref2);
-    }
-
-    #[test]
-    fn different_nodes_have_different_pointers() {
-        let node1 = Rc::new(Node::new(
-            NodeType::Path,
-            None,
-            None,
-            None,
-            ptr::null_mut(),
-            Box::new(TestNodeImpl {}),
-        ));
-
-        let ref1 = box_node(node1);
-
-        let node2 = Rc::new(Node::new(
-            NodeType::Path,
-            None,
-            None,
-            None,
-            ptr::null_mut(),
-            Box::new(TestNodeImpl {}),
-        ));
-
-        let ref2 = box_node(node2);
-
-        assert!(rsvg_node_is_same(ref1, ref2) == false.to_glib());
+        assert!(Rc::ptr_eq(node1, node2));
 
         rsvg_node_unref(ref1);
         rsvg_node_unref(ref2);

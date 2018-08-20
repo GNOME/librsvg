@@ -34,6 +34,7 @@ use state::{
     StrokeLinejoin,
     TextRendering,
 };
+use tree::{RsvgTree, Tree};
 use unitinterval::UnitInterval;
 use viewbox::ViewBox;
 
@@ -882,34 +883,15 @@ impl From<TextRendering> for cairo::Antialias {
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     raw_draw_ctx: *mut RsvgDrawingCtx,
-    raw_node: *const RsvgNode,
-    raw_cascade_from: *const RsvgNode,
-    clipping: glib_sys::gboolean,
+    raw_tree: *const RsvgTree,
 ) {
     assert!(!raw_draw_ctx.is_null());
     let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
-    assert!(!raw_node.is_null());
-    let node = unsafe { &*raw_node };
+    assert!(!raw_tree.is_null());
+    let tree = unsafe { &*(raw_tree as *const Tree) };
 
-    let cascade_from = if raw_cascade_from.is_null() {
-        None
-    } else {
-        Some(unsafe { &*raw_cascade_from })
-    };
-
-    let clipping: bool = from_glib(clipping);
-
-    let cascaded = match cascade_from {
-        None => node.get_cascaded_values(),
-        Some(n) => {
-            let c = n.get_cascaded_values();
-            let v = c.get();
-            CascadedValues::new_from_values(node, v)
-        }
-    };
-
-    draw_ctx.draw_node_from_stack(&cascaded, node, clipping);
+    draw_ctx.draw_node_from_stack(&tree.root.get_cascaded_values(), &tree.root, false);
 }
 
 #[no_mangle]

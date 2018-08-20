@@ -71,58 +71,6 @@ typedef struct _RsvgFilter RsvgFilter;
 #define N_(X) X
 #endif
 
-#ifndef M_PI
-#  ifdef G_PI
-#    define M_PI G_PI
-#  else
-#    define M_PI 3.14159265358979323846
-#  endif                        /* G_PI */
-#endif                          /*  M_PI  */
-
-#ifndef DBL_EPSILON
-/* 1e-7 is a conservative value.  it's less than 2^(1-24) which is
- * the epsilon value for a 32-bit float.  The regular value for this
- * with 64-bit doubles is 2^(1-53) or approximately 1e-16.
- */
-# define DBL_EPSILON 1e-7
-#endif
-
-/* RSVG_ONE_MINUS_EPSILON:
- *
- * DBL_EPSILON is the difference between 1 and the least value greater
- * than 1 that is representable in the given floating-point type.  Then
- * 1.0+DBL_EPSILON looks like:
- *
- *         1.00000000000...0000000001 * 2**0
- *
- * while 1.0-DBL_EPSILON looks like:
- *
- *         0.11111111111...1111111111 * 2**0
- *
- * and so represented as:
- *
- *         1.1111111111...11111111110 * 2**-1
- *
- * so, in fact, 1.0-(DBL_EPSILON*.5) works too, but I don't think it
- * really matters.  So, I'll go with the simple 1.0-DBL_EPSILON here.
- *
- * The following python session shows these observations:
- *
- *         >>> 1.0 + 2**(1-53)
- *         1.0000000000000002
- *         >>> 1.0 + 2**(1-54)
- *         1.0
- *         >>> 1.0 - 2**(1-53)
- *         0.99999999999999978
- *         >>> 1.0 - 2**(1-54)
- *         0.99999999999999989
- *         >>> 1.0 - 2**(1-53)*.5
- *         0.99999999999999989
- *         >>> 1.0 - 2**(1-55)
- *         1.0
- */
-#define RSVG_ONE_MINUS_EPSILON (1.0 - DBL_EPSILON)
-
 /* Reading state for an RsvgHandle */
 typedef enum {
     RSVG_HANDLE_STATE_START,
@@ -132,6 +80,8 @@ typedef enum {
 } RsvgHandleState;
 
 typedef struct RsvgLoad RsvgLoad;
+
+typedef struct RsvgTree RsvgTree;
 
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;
@@ -144,9 +94,7 @@ struct RsvgHandlePrivate {
     gpointer user_data;
     GDestroyNotify user_data_destroy;
 
-    /* this is the root level of the displayable tree, essentially what the
-       file is converted into at the end */
-    RsvgNode *treebase;
+    RsvgTree *tree;
 
     RsvgDefs *defs; /* lookup table for nodes that have an id="foo" attribute */
 
@@ -164,8 +112,6 @@ struct RsvgHandlePrivate {
 
     gboolean is_testing; /* Are we being run from the test suite? */
 
-    gboolean already_cascaded;
-
 #ifdef HAVE_PANGOFT2
     FcConfig *font_config_for_testing;
     PangoFontMap *font_map_for_testing;
@@ -177,72 +123,8 @@ typedef enum {
     objectBoundingBox
 } RsvgCoordUnits;
 
-/* Keep this in sync with rust/src/node.rs:NodeType */
-typedef enum {
-    RSVG_NODE_TYPE_INVALID = 0,
-
-    RSVG_NODE_TYPE_CHARS,
-    RSVG_NODE_TYPE_CIRCLE,
-    RSVG_NODE_TYPE_CLIP_PATH,
-    RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION,
-    RSVG_NODE_TYPE_DEFS,
-    RSVG_NODE_TYPE_ELLIPSE,
-    RSVG_NODE_TYPE_FILTER,
-    RSVG_NODE_TYPE_GROUP,
-    RSVG_NODE_TYPE_IMAGE,
-    RSVG_NODE_TYPE_LIGHT_SOURCE,
-    RSVG_NODE_TYPE_LINE,
-    RSVG_NODE_TYPE_LINEAR_GRADIENT,
-    RSVG_NODE_TYPE_LINK,
-    RSVG_NODE_TYPE_MARKER,
-    RSVG_NODE_TYPE_MASK,
-    RSVG_NODE_TYPE_PATH,
-    RSVG_NODE_TYPE_PATTERN,
-    RSVG_NODE_TYPE_POLYGON,
-    RSVG_NODE_TYPE_POLYLINE,
-    RSVG_NODE_TYPE_RADIAL_GRADIENT,
-    RSVG_NODE_TYPE_RECT,
-    RSVG_NODE_TYPE_STOP,
-    RSVG_NODE_TYPE_SVG,
-    RSVG_NODE_TYPE_SWITCH,
-    RSVG_NODE_TYPE_SYMBOL,
-    RSVG_NODE_TYPE_TEXT,
-    RSVG_NODE_TYPE_TREF,
-    RSVG_NODE_TYPE_TSPAN,
-    RSVG_NODE_TYPE_USE,
-
-    /* Filter primitives */
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST,              /* just a marker; not a valid type */
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_BLEND,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_COLOR_MATRIX,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPOSITE,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_CONVOLVE_MATRIX,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_DIFFUSE_LIGHTING,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_DISPLACEMENT_MAP,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_FLOOD,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_GAUSSIAN_BLUR,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_IMAGE,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_MORPHOLOGY,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_OFFSET,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_TILE,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_TURBULENCE,
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST                /* just a marker; not a valid type */
-} RsvgNodeType;
-
 typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
 typedef void (* CNodeFree) (gpointer impl);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-RsvgNodeType rsvg_node_get_type (RsvgNode *node);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_node_is_same (RsvgNode *node1, RsvgNode *node2);
 
 /* Implemented in rust/src/node.rs */
 /* Call this as newref = rsvg_node_ref (node);  You don't own the node anymore, just the newref! */
@@ -289,6 +171,26 @@ gboolean rsvg_node_children_iter_next_back (RsvgNodeChildrenIter *iter,
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+RsvgTree *rsvg_tree_new (RsvgNode *root);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+void rsvg_tree_free (RsvgTree *tree);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_tree_get_root (RsvgTree *tree);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_tree_is_root (RsvgTree *tree, RsvgNode *node);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
+void rsvg_tree_cascade (RsvgTree *tree);
 
 /* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
@@ -364,10 +266,7 @@ void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
-void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
-                                            RsvgNode *node,
-                                            RsvgNode *cascade_from_node,
-                                            gboolean clipping);
+void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgTree *tree);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
@@ -406,11 +305,6 @@ char *rsvg_handle_resolve_uri (RsvgHandle *handle,
 G_GNUC_INTERNAL
 RsvgHandle *rsvg_handle_load_extern (RsvgHandle *handle,
                                      const char *uri);
-
-G_GNUC_INTERNAL
-gboolean rsvg_allow_load (GFile       *base_gfile,
-                          const char  *uri,
-                          GError     **error);
 
 G_GNUC_INTERNAL
 char *_rsvg_handle_acquire_data (RsvgHandle *handle,
