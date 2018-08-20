@@ -118,14 +118,6 @@ struct RsvgHandlePrivate {
 #endif
 };
 
-typedef enum {
-    userSpaceOnUse,
-    objectBoundingBox
-} RsvgCoordUnits;
-
-typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
-typedef void (* CNodeFree) (gpointer impl);
-
 /* Implemented in rust/src/node.rs */
 /* Call this as newref = rsvg_node_ref (node);  You don't own the node anymore, just the newref! */
 G_GNUC_INTERNAL
