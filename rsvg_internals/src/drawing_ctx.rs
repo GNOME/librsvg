@@ -45,6 +45,18 @@ pub struct DrawingCtx<'a> {
     dpi_x: f64,
     dpi_y: f64,
 
+    /// This is a mitigation for the security-related bug
+    /// https://gitlab.gnome.org/GNOME/librsvg/issues/323 - imagine
+    /// the XML [billion laughs attack], but done by creating deeply
+    /// nested groups of `<use>` elements.  The first one references
+    /// the second one ten times, the second one references the third
+    /// one ten times, and so on.  In the file given, this causes
+    /// 10^17 objects to be rendered.  While this does not exhaust
+    /// memory, it would take a really long time.
+    ///
+    /// [billion laughs attack]: https://bitbucket.org/tiran/defusedxml
+    num_elements_rendered_through_use: usize,
+
     cr_stack: Vec<cairo::Context>,
     cr: cairo::Context,
     initial_cr: cairo::Context,
@@ -101,6 +113,7 @@ impl<'a> DrawingCtx<'a> {
             rect,
             dpi_x,
             dpi_y,
+            num_elements_rendered_through_use: 0,
             cr_stack: Vec::new(),
             cr: cr.clone(),
             initial_cr: cr.clone(),
@@ -674,6 +687,10 @@ impl<'a> DrawingCtx<'a> {
         if let Some(ref parent) = node.get_parent() {
             self.add_node_and_ancestors_to_stack(parent);
         }
+    }
+
+    pub fn increase_num_elements_rendered_through_use(&mut self, n: usize) {
+        self.num_elements_rendered_through_use += n;
     }
 }
 

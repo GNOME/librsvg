@@ -296,6 +296,8 @@ impl NodeTrait for NodeUse {
             return;
         }
 
+        draw_ctx.increase_num_elements_rendered_through_use(1);
+
         let nx = self.x.get().normalize(values, draw_ctx);
         let ny = self.y.get().normalize(values, draw_ctx);
 
