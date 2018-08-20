@@ -14,7 +14,7 @@ use libc;
 use node::*;
 use parsers::{parse, parse_and_validate, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state::Overflow;
+use state::{self, Overflow};
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -113,14 +113,11 @@ impl NodeSvg {
         }
     }
 
-    pub fn with_pbag<F>(&self, f: F)
-    where
-        F: FnOnce(&PropertyBag),
-    {
-        self.pbag
-            .borrow()
-            .as_ref()
-            .map(|p| f(&PropertyBag::from_owned(p)));
+    pub fn parse_style_attrs(&self, node: &RsvgNode, handle: *const RsvgHandle) {
+        if let Some(owned_pbag) = self.pbag.borrow().as_ref() {
+            let pbag = PropertyBag::from_owned(owned_pbag);
+            state::parse_style_attrs(handle, node, "svg", &pbag);
+        }
     }
 }
 

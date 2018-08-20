@@ -370,6 +370,6 @@ pub extern "C" fn rsvg_load_set_svg_node_atts(
     }
 
     node.with_impl(|svg: &NodeSvg| {
-        svg.with_pbag(|pbag| parse_style_attrs(handle, node, "svg", pbag));
+        svg.parse_style_attrs(node, handle);
     });
 }
