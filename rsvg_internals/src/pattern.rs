@@ -10,6 +10,7 @@ use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
+use error::RenderingError;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
@@ -252,13 +253,13 @@ fn set_pattern_on_draw_context(
     values: &ComputedValues,
     draw_ctx: &mut DrawingCtx,
     bbox: &BoundingBox,
-) -> bool {
+) -> Result<bool, RenderingError> {
     assert!(pattern.is_resolved());
 
     if pattern.node.is_none() {
         // This means we didn't find any children among the fallbacks,
         // so there is nothing to render.
-        return false;
+        return Ok(false);
     }
 
     let units = pattern.units.unwrap();
@@ -312,7 +313,7 @@ fn set_pattern_on_draw_context(
     let scaled_height = pattern_height * bbhscale;
 
     if scaled_width.abs() < f64::EPSILON || scaled_height.abs() < f64::EPSILON || pw < 1 || ph < 1 {
-        return false;
+        return Ok(false);
     }
 
     scwscale = f64::from(pw) / scaled_width;
@@ -407,8 +408,8 @@ fn set_pattern_on_draw_context(
 
     cr_pattern.set_matrix(caffine);
 
-    draw_ctx.with_discrete_layer(&pattern_node, pattern_values, false, &mut |dc| {
-        pattern_node.draw_children(&pattern_cascaded, dc, false);
+    let res = draw_ctx.with_discrete_layer(&pattern_node, pattern_values, false, &mut |dc| {
+        pattern_node.draw_children(&pattern_cascaded, dc, false)
     });
 
     // Return to the original coordinate system and rendering context
@@ -432,7 +433,7 @@ fn set_pattern_on_draw_context(
 
     cr_save.set_source(&surface_pattern);
 
-    true
+    res.and_then(|_| Ok(true))
 }
 
 fn resolve_fallbacks_and_set_pattern(
@@ -440,7 +441,7 @@ fn resolve_fallbacks_and_set_pattern(
     values: &ComputedValues,
     draw_ctx: &mut DrawingCtx,
     bbox: &BoundingBox,
-) -> bool {
+) -> Result<bool, RenderingError> {
     let resolved = resolve_pattern(pattern, draw_ctx);
 
     set_pattern_on_draw_context(&resolved, values, draw_ctx, bbox)
@@ -450,20 +451,16 @@ pub fn pattern_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
     draw_ctx: &mut DrawingCtx,
     bbox: &BoundingBox,
-) -> bool {
+) -> Result<bool, RenderingError> {
     assert!(node.get_type() == NodeType::Pattern);
-
-    let mut did_set_pattern = false;
 
     node.with_impl(|node_pattern: &NodePattern| {
         let pattern = &*node_pattern.pattern.borrow();
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
-        did_set_pattern = resolve_fallbacks_and_set_pattern(pattern, values, draw_ctx, bbox);
-    });
-
-    did_set_pattern
+        resolve_fallbacks_and_set_pattern(pattern, values, draw_ctx, bbox)
+    })
 }
 
 #[cfg(test)]

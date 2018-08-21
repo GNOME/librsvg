@@ -75,7 +75,7 @@ pub fn set_source_paint_server(
     opacity: &UnitInterval,
     bbox: &BoundingBox,
     current_color: &cssparser::RGBA,
-) -> bool {
+) -> Result<bool, RenderingError> {
     let mut had_paint_server;
 
     match *ps {
@@ -96,7 +96,7 @@ pub fn set_source_paint_server(
                     );
                 } else if node.get_type() == NodeType::Pattern {
                     had_paint_server =
-                        pattern::pattern_resolve_fallbacks_and_set_pattern(&node, draw_ctx, bbox);
+                        pattern::pattern_resolve_fallbacks_and_set_pattern(&node, draw_ctx, bbox)?;
                 }
             }
 
@@ -121,7 +121,7 @@ pub fn set_source_paint_server(
         }
     };
 
-    had_paint_server
+    Ok(had_paint_server)
 }
 
 #[cfg(test)]

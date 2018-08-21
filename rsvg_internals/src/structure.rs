@@ -7,6 +7,7 @@ use glib_sys;
 use aspect_ratio::*;
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
+use error::RenderingError;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
@@ -37,12 +38,12 @@ impl NodeTrait for NodeGroup {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-            node.draw_children(cascaded, dc, clipping);
-        });
+            node.draw_children(cascaded, dc, clipping)
+        })
     }
 }
 
@@ -79,14 +80,16 @@ impl NodeTrait for NodeSwitch {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
             if let Some(child) = node.children().find(|c| c.get_cond()) {
-                dc.draw_node_from_stack(&CascadedValues::new(cascaded, &child), &child, clipping);
+                dc.draw_node_from_stack(&CascadedValues::new(cascaded, &child), &child, clipping)
+            } else {
+                Ok(())
             }
-        });
+        })
     }
 }
 
@@ -183,7 +186,7 @@ impl NodeTrait for NodeSvg {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         let nx = self.x.get().normalize(values, draw_ctx);
@@ -209,9 +212,9 @@ impl NodeTrait for NodeSvg {
             clipping,
             &mut |dc| {
                 // we don't push a layer because draw_in_viewport() already does it
-                node.draw_children(cascaded, dc, clipping);
+                node.draw_children(cascaded, dc, clipping)
             },
-        );
+        )
     }
 }
 
@@ -274,13 +277,13 @@ impl NodeTrait for NodeUse {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         let link = self.link.borrow();
 
         if link.is_none() {
-            return;
+            return Ok(());
         }
 
         let acquired = draw_ctx.get_acquired_node(link.as_ref().unwrap());
@@ -288,13 +291,15 @@ impl NodeTrait for NodeUse {
         let child = if let Some(acquired) = acquired {
             acquired.get()
         } else {
-            return;
+            return Ok(());
         };
 
         if Node::is_ancestor(node.clone(), child.clone()) {
             // or, if we're <use>'ing ourselves
-            return;
+            return Err(RenderingError::CircularReference);
         }
+
+        draw_ctx.increase_num_elements_rendered_through_use(1);
 
         let nx = self.x.get().normalize(values, draw_ctx);
         let ny = self.y.get().normalize(values, draw_ctx);
@@ -318,7 +323,7 @@ impl NodeTrait for NodeUse {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
         if nw.approx_eq_cairo(&0.0) || nh.approx_eq_cairo(&0.0) {
-            return;
+            return Ok(());
         }
 
         if child.get_type() != NodeType::Symbol {
@@ -330,8 +335,8 @@ impl NodeTrait for NodeUse {
                     &CascadedValues::new_from_values(&child, values),
                     &child,
                     clipping,
-                );
-            });
+                )
+            })
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !values.is_overflow()
@@ -358,10 +363,10 @@ impl NodeTrait for NodeUse {
                             &CascadedValues::new_from_values(&child, values),
                             dc,
                             clipping,
-                        );
+                        )
                     },
-                );
-            });
+                )
+            })
         }
     }
 }

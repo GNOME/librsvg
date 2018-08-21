@@ -1,6 +1,7 @@
 use std::error;
 use std::fmt;
 
+use cairo;
 use cssparser::BasicParseError;
 
 use attributes::Attribute;
@@ -79,6 +80,21 @@ impl From<ParseError> for AttributeError {
 impl<'a> From<BasicParseError<'a>> for AttributeError {
     fn from(e: BasicParseError) -> AttributeError {
         AttributeError::from(ParseError::from(e))
+    }
+}
+
+#[derive(Clone)]
+pub enum RenderingError {
+    Cairo(cairo::Status),
+    CircularReference,
+    InstancingLimit,
+}
+
+impl From<cairo::Status> for RenderingError {
+    fn from(e: cairo::Status) -> RenderingError {
+        assert!(e != cairo::Status::Success);
+
+        RenderingError::Cairo(e)
     }
 }
 

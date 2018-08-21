@@ -3,13 +3,15 @@ include $(top_srcdir)/glib-tap.mk
 EXTRA_DIST +=		\
 	README.md
 
+# Keep "errors" at the end; they are the slowest to run
 test_programs =		\
 	api		\
 	loading		\
 	rsvg-test	\
 	crash		\
 	render-crash	\
-	dimensions
+	dimensions	\
+	errors
 
 # Removed "styles" from the above; it is broken right now
 
@@ -19,6 +21,10 @@ test_utils_common_sources = \
 
 api_SOURCES = 		\
 	api.c		\
+	$(test_utils_common_sources)
+
+errors_SOURCES = 	\
+	errors.c	\
 	$(test_utils_common_sources)
 
 rsvg_test_SOURCES = \
@@ -63,6 +69,7 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/api/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
+	$(wildcard $(srcdir)/fixtures/errors/*)				\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.png)			\

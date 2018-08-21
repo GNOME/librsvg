@@ -129,8 +129,9 @@ pub trait NodeTrait: Downcast {
         _cascaded: &CascadedValues,
         _draw_ctx: &mut DrawingCtx,
         _clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         // by default nodes don't draw themselves
+        Ok(())
     }
 }
 
@@ -429,21 +430,25 @@ impl Node {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         if !self.is_in_error() {
             let cr = draw_ctx.get_cairo_context();
             let save_affine = cr.get_matrix();
 
             cr.transform(self.get_transform());
 
-            self.node_impl.draw(node, cascaded, draw_ctx, clipping);
+            let res = self.node_impl.draw(node, cascaded, draw_ctx, clipping);
 
             cr.set_matrix(save_affine);
+
+            res
         } else {
             rsvg_log!(
                 "(not rendering element {} because it is in error)",
                 self.get_human_readable_name()
             );
+
+            Ok(()) // maybe we should actually return a RenderingError::NodeIsInError here?
         }
     }
 
@@ -482,10 +487,16 @@ impl Node {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         for child in self.children() {
-            draw_ctx.draw_node_from_stack(&CascadedValues::new(cascaded, &child), &child, clipping);
+            draw_ctx.draw_node_from_stack(
+                &CascadedValues::new(cascaded, &child),
+                &child,
+                clipping,
+            )?;
         }
+
+        Ok(())
     }
 
     pub fn children(&self) -> Children {

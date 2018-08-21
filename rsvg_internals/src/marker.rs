@@ -126,7 +126,7 @@ impl NodeMarker {
         computed_angle: f64,
         line_width: f64,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
@@ -136,7 +136,7 @@ impl NodeMarker {
         if marker_width.approx_eq_cairo(&0.0) || marker_height.approx_eq_cairo(&0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
             // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
-            return;
+            return Ok(());
         }
 
         let cr = draw_ctx.get_cairo_context();
@@ -189,13 +189,15 @@ impl NodeMarker {
             }
         }
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-            node.draw_children(&cascaded, dc, clipping);
+        let res = draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            node.draw_children(&cascaded, dc, clipping)
         });
 
         draw_ctx.pop_view_box();
 
         cr.restore();
+
+        res
     }
 }
 
@@ -627,7 +629,7 @@ fn emit_marker_by_name(
     computed_angle: f64,
     line_width: f64,
     clipping: bool,
-) {
+) -> Result<(), RenderingError> {
     if let Some(acquired) = draw_ctx.get_acquired_node_of_type(Some(name), NodeType::Marker) {
         let node = acquired.get();
 
@@ -641,7 +643,9 @@ fn emit_marker_by_name(
                 line_width,
                 clipping,
             )
-        });
+        })
+    } else {
+        Ok(())
     }
 }
 
@@ -657,8 +661,9 @@ fn emit_marker<E>(
     marker_type: MarkerType,
     orient: f64,
     emit_fn: &mut E,
-) where
-    E: FnMut(MarkerType, f64, f64, f64),
+) -> Result<(), RenderingError>
+where
+    E: FnMut(MarkerType, f64, f64, f64) -> Result<(), RenderingError>,
 {
     let (x, y) = match *segment {
         Segment::Degenerate { x, y } => (x, y),
@@ -669,7 +674,7 @@ fn emit_marker<E>(
         },
     };
 
-    emit_fn(marker_type, x, y, orient);
+    emit_fn(marker_type, x, y, orient)
 }
 
 pub fn render_markers_for_path_builder(
@@ -677,11 +682,11 @@ pub fn render_markers_for_path_builder(
     draw_ctx: &mut DrawingCtx,
     values: &ComputedValues,
     clipping: bool,
-) {
+) -> Result<(), RenderingError> {
     let line_width = values.stroke_width.0.normalize(values, draw_ctx);
 
     if line_width.approx_eq_cairo(&0.0) {
-        return;
+        return Ok(());
     }
 
     let marker_start = &values.marker_start.0;
@@ -689,7 +694,7 @@ pub fn render_markers_for_path_builder(
     let marker_end = &values.marker_end.0;
 
     match (marker_start, marker_mid, marker_end) {
-        (&IRI::None, &IRI::None, &IRI::None) => return,
+        (&IRI::None, &IRI::None, &IRI::None) => return Ok(()),
         _ => (),
     }
 
@@ -709,15 +714,20 @@ pub fn render_markers_for_path_builder(
                     computed_angle,
                     line_width,
                     clipping,
-                );
+                )
+            } else {
+                Ok(())
             }
         },
-    );
+    )
 }
 
-fn emit_markers_for_path_builder<E>(builder: &PathBuilder, emit_fn: &mut E)
+fn emit_markers_for_path_builder<E>(
+    builder: &PathBuilder,
+    emit_fn: &mut E,
+) -> Result<(), RenderingError>
 where
-    E: FnMut(MarkerType, f64, f64, f64),
+    E: FnMut(MarkerType, f64, f64, f64) -> Result<(), RenderingError>,
 {
     enum SubpathState {
         NoSubpath,
@@ -744,7 +754,7 @@ where
                         MarkerType::End,
                         angle_from_vector(incoming_vx, incoming_vy),
                         emit_fn,
-                    );
+                    )?;
                 }
 
                 // Render marker for the lone point; no directionality
@@ -754,7 +764,7 @@ where
                     MarkerType::Middle,
                     0.0,
                     emit_fn,
-                );
+                )?;
 
                 subpath_state = SubpathState::NoSubpath;
             }
@@ -771,7 +781,7 @@ where
                             MarkerType::Start,
                             angle_from_vector(outgoing_vx, outgoing_vy),
                             emit_fn,
-                        );
+                        )?;
 
                         subpath_state = SubpathState::InSubpath;
                     }
@@ -808,7 +818,7 @@ where
                             MarkerType::Middle,
                             angle,
                             emit_fn,
-                        );
+                        )?;
                     }
                 }
             }
@@ -841,9 +851,11 @@ where
                 MarkerType::End,
                 angle,
                 emit_fn,
-            );
+            )?;
         }
     }
+
+    Ok(())
 }
 
 // ************************************  Tests ************************************
@@ -1257,11 +1269,18 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        emit_markers_for_path_builder(
-            &builder,
-            &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
-                v.push((marker_type, x, y, computed_angle));
-            },
+        assert!(
+            emit_markers_for_path_builder(
+                &builder,
+                &mut |marker_type: MarkerType,
+                      x: f64,
+                      y: f64,
+                      computed_angle: f64|
+                 -> Result<(), RenderingError> {
+                    v.push((marker_type, x, y, computed_angle));
+                    Ok(())
+                }
+            ).is_ok()
         );
 
         assert_eq!(
@@ -1286,11 +1305,18 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        emit_markers_for_path_builder(
-            &builder,
-            &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
-                v.push((marker_type, x, y, computed_angle));
-            },
+        assert!(
+            emit_markers_for_path_builder(
+                &builder,
+                &mut |marker_type: MarkerType,
+                      x: f64,
+                      y: f64,
+                      computed_angle: f64|
+                 -> Result<(), RenderingError> {
+                    v.push((marker_type, x, y, computed_angle));
+                    Ok(())
+                }
+            ).is_ok()
         );
 
         assert_eq!(
