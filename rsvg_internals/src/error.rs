@@ -87,6 +87,7 @@ impl<'a> From<BasicParseError<'a>> for AttributeError {
 pub enum RenderingError {
     Cairo(cairo::Status),
     CircularReference,
+    InstancingLimit,
 }
 
 impl From<cairo::Status> for RenderingError {

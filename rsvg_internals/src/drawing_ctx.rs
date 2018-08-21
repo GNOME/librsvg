@@ -734,6 +734,10 @@ impl<'a> DrawingCtx<'a> {
             self.drawsub_stack.push(top);
         }
 
+        if res.is_ok() {
+            res = self.check_limits();
+        }
+
         res
     }
 
@@ -746,6 +750,14 @@ impl<'a> DrawingCtx<'a> {
 
     pub fn increase_num_elements_rendered_through_use(&mut self, n: usize) {
         self.num_elements_rendered_through_use += n;
+    }
+
+    fn check_limits(&self) -> Result<(), RenderingError> {
+        if self.num_elements_rendered_through_use > 500_000 {
+            Err(RenderingError::InstancingLimit)
+        } else {
+            Ok(())
+        }
     }
 }
 
