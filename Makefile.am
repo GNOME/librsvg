@@ -118,12 +118,14 @@ RUST_SRC =							\
 	rsvg_internals/src/viewbox.rs				\
 	rsvg_internals/src/viewport.rs
 
-RUST_EXTRA = 					\
-	Cargo.lock				\
-	cargo-vendor-config			\
-	rsvg_internals/benches/box_blur.rs	\
-	rsvg_internals/benches/lighting.rs	\
-	rsvg_internals/benches/pixel_iterators.rs
+RUST_EXTRA = 						\
+	Cargo.lock					\
+	cargo-vendor-config				\
+	rsvg_internals/benches/box_blur.rs		\
+	rsvg_internals/benches/composite.rs		\
+	rsvg_internals/benches/lighting.rs		\
+	rsvg_internals/benches/pixel_iterators.rs	\
+	rsvg_internals/benches/srgb.rs
 
 if DEBUG_RELEASE
 CARGO_RELEASE_ARGS=
