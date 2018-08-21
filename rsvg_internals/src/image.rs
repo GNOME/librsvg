@@ -12,6 +12,7 @@ use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use bbox::BoundingBox;
 use drawing_ctx::DrawingCtx;
+use error::RenderingError;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
@@ -110,7 +111,7 @@ impl NodeTrait for NodeImage {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         if let Some(ref surface) = *self.surface.borrow() {
@@ -140,7 +141,7 @@ impl NodeTrait for NodeImage {
                 let width = surface.get_width();
                 let height = surface.get_height();
                 if clipping || width == 0 || height == 0 {
-                    return;
+                    return Ok(());
                 }
 
                 let width = f64::from(width);
@@ -182,7 +183,10 @@ impl NodeTrait for NodeImage {
                 cr.restore();
 
                 dc.insert_bbox(&bbox);
-            });
+                Ok(())
+            })
+        } else {
+            Ok(())
         }
     }
 }

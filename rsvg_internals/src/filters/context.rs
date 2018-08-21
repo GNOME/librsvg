@@ -477,15 +477,19 @@ impl FilterContext {
 
         let bbox = draw_ctx.get_bbox().clone();
 
-        if paint_server::set_source_paint_server(
+        // FIXME: we are ignoring the following error; propagate it upstream
+        let _ = paint_server::set_source_paint_server(
             draw_ctx,
             paint_server,
             &opacity,
             &bbox,
             &values.color.0,
-        ) {
-            cr.paint();
-        }
+        ).and_then(|had_paint_server| {
+            if had_paint_server {
+                cr.paint();
+            }
+            Ok(())
+        });
 
         draw_ctx.set_cairo_context(&cr_save);
         Ok(surface)

@@ -1023,6 +1023,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     RsvgDrawingCtx *draw;
     RsvgNode *drawsub = NULL;
     cairo_status_t status;
+    gboolean res;
 
     g_return_val_if_fail (handle != NULL, FALSE);
 
@@ -1060,13 +1061,13 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     cairo_save (cr);
 
     rsvg_tree_cascade (handle->priv->tree);
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
+    res = rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
 
     cairo_restore (cr);
 
     rsvg_drawing_ctx_free (draw);
 
-    return TRUE;
+    return res;
 }
 
 /**
@@ -1118,6 +1119,7 @@ get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
     cairo_surface_t *target;
     cairo_t *cr;
     RsvgDrawingCtx *draw;
+    gboolean res;
 
     g_assert (node != NULL);
 
@@ -1132,14 +1134,14 @@ get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
     rsvg_tree_cascade (handle->priv->tree);
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
+    res = rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
     rsvg_drawing_ctx_get_ink_rect (draw, ink_rect);
 
     rsvg_drawing_ctx_free (draw);
     cairo_destroy (cr);
     cairo_surface_destroy (target);
 
-    return TRUE;
+    return res;
 }
 
 /**

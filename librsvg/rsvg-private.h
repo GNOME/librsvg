@@ -258,7 +258,7 @@ void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
-void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgTree *tree);
+gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgTree *tree) G_GNUC_WARN_UNUSED_RESULT;;
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL

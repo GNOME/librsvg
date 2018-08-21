@@ -9,6 +9,7 @@ use std::cell::RefCell;
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
+use error::RenderingError;
 use handle::RsvgHandle;
 use node::*;
 use property_bag::PropertyBag;
@@ -44,7 +45,7 @@ impl NodeTrait for NodeLink {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let link = self.link.borrow();
 
         let cascaded = CascadedValues::new(cascaded, node);
@@ -59,12 +60,16 @@ impl NodeTrait for NodeLink {
                 let cr = dc.get_cairo_context();
 
                 cr.tag_begin(CAIRO_TAG_LINK, attributes.as_ref().map(|i| i.as_str()));
-                node.draw_children(&cascaded, dc, clipping);
+
+                let res = node.draw_children(&cascaded, dc, clipping);
+
                 cr.tag_end(CAIRO_TAG_LINK);
+
+                res
             } else {
                 node.draw_children(&cascaded, dc, clipping)
             }
-        });
+        })
     }
 }
 

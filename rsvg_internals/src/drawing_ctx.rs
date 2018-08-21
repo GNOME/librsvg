@@ -15,6 +15,7 @@ use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
 use defs::{Defs, RsvgDefs};
+use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
@@ -239,6 +240,8 @@ impl<'a> DrawingCtx<'a> {
     // trying to acquire "foo" again, you will obtain a None the second time.
     //
     // For convenience, this function will return None if url is None.
+
+    // FIXME: return a Result<AcquiredNode, RenderingError::InvalidReference>
     pub fn get_acquired_node_of_type(
         &mut self,
         url: Option<&str>,
@@ -259,10 +262,10 @@ impl<'a> DrawingCtx<'a> {
         node: &RsvgNode,
         values: &ComputedValues,
         clipping: bool,
-        draw_fn: &mut FnMut(&mut DrawingCtx),
-    ) {
+        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+    ) -> Result<(), RenderingError> {
         if clipping {
-            draw_fn(self);
+            draw_fn(self)
         } else {
             let original_cr = self.cr.clone();
             original_cr.save();
@@ -301,10 +304,17 @@ impl<'a> DrawingCtx<'a> {
             };
 
             if clip_units == Some(CoordUnits::UserSpaceOnUse) {
-                if let Some(ref clip_node) = clip_node {
+                let res = if let Some(ref clip_node) = clip_node {
                     clip_node.with_impl(|clip_path: &NodeClipPath| {
-                        clip_path.to_cairo_context(clip_node, &affine, self);
-                    });
+                        clip_path.to_cairo_context(clip_node, &affine, self)
+                    })
+                } else {
+                    Ok(())
+                };
+
+                if let Err(e) = res {
+                    original_cr.restore();
+                    return Err(e);
                 }
             }
 
@@ -339,7 +349,7 @@ impl<'a> DrawingCtx<'a> {
                 self.bbox = BoundingBox::new(&affine);
             }
 
-            draw_fn(self);
+            let mut res = draw_fn(self);
 
             if needs_temporary_surface {
                 let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
@@ -390,10 +400,17 @@ impl<'a> DrawingCtx<'a> {
                 original_cr.set_source_surface(&filter_result_surface, xofs, yofs);
 
                 if clip_units == Some(CoordUnits::ObjectBoundingBox) {
-                    if let Some(ref clip_node) = clip_node {
+                    let res = if let Some(ref clip_node) = clip_node {
                         clip_node.with_impl(|clip_path: &NodeClipPath| {
-                            clip_path.to_cairo_context(clip_node, &affine, self);
-                        });
+                            clip_path.to_cairo_context(clip_node, &affine, self)
+                        })
+                    } else {
+                        Ok(())
+                    };
+
+                    if let Err(e) = res {
+                        original_cr.restore();
+                        return Err(e);
                     }
                 }
 
@@ -405,8 +422,10 @@ impl<'a> DrawingCtx<'a> {
                     {
                         let node = acquired.get();
 
-                        node.with_impl(|mask: &NodeMask| {
-                            mask.generate_cairo_mask(&node, &affine, self);
+                        res = res.and_then(|_| {
+                            node.with_impl(|mask: &NodeMask| {
+                                mask.generate_cairo_mask(&node, &affine, self)
+                            })
                         });
                     }
                 } else if opacity < 1.0 {
@@ -421,6 +440,8 @@ impl<'a> DrawingCtx<'a> {
             }
 
             original_cr.restore();
+
+            res
         }
     }
 
@@ -452,11 +473,11 @@ impl<'a> DrawingCtx<'a> {
         x: f64,
         y: f64,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let (ink, _) = layout.get_extents();
 
         if ink.width == 0 || ink.height == 0 {
-            return;
+            return Ok(());
         }
 
         let cr = self.get_cairo_context();
@@ -488,47 +509,63 @@ impl<'a> DrawingCtx<'a> {
 
         let fill_opacity = &values.fill_opacity.0;
 
-        if !clipping {
-            if paint_server::set_source_paint_server(
+        let res = if !clipping {
+            paint_server::set_source_paint_server(
                 self,
                 &values.fill.0,
                 fill_opacity,
                 &bbox,
                 current_color,
-            ) {
-                pangocairo::functions::update_layout(&cr, layout);
-                pangocairo::functions::show_layout(&cr, layout);
-            }
-        }
+            ).and_then(|had_paint_server| {
+                if had_paint_server {
+                    pangocairo::functions::update_layout(&cr, layout);
+                    pangocairo::functions::show_layout(&cr, layout);
+                };
+                Ok(())
+            })
+        } else {
+            Ok(())
+        };
 
-        let stroke_opacity = &values.stroke_opacity.0;
+        if res.is_ok() {
+            let stroke_opacity = &values.stroke_opacity.0;
 
-        let mut need_layout_path = clipping;
+            let mut need_layout_path = clipping;
 
-        if !clipping {
-            if paint_server::set_source_paint_server(
-                self,
-                &values.stroke.0,
-                stroke_opacity,
-                &bbox,
-                &current_color,
-            ) {
-                need_layout_path = true;
-            }
-        }
+            let res = if !clipping {
+                paint_server::set_source_paint_server(
+                    self,
+                    &values.stroke.0,
+                    stroke_opacity,
+                    &bbox,
+                    &current_color,
+                ).and_then(|had_paint_server| {
+                    if had_paint_server {
+                        need_layout_path = true;
+                    }
+                    Ok(())
+                })
+            } else {
+                Ok(())
+            };
 
-        if need_layout_path {
-            pangocairo::functions::update_layout(&cr, layout);
-            pangocairo::functions::layout_path(&cr, layout);
+            if res.is_ok() {
+                if need_layout_path {
+                    pangocairo::functions::update_layout(&cr, layout);
+                    pangocairo::functions::layout_path(&cr, layout);
 
-            if !clipping {
-                let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
-                cr.stroke();
-                self.insert_bbox(&ib);
+                    if !clipping {
+                        let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
+                        cr.stroke();
+                        self.insert_bbox(&ib);
+                    }
+                }
             }
         }
 
         cr.restore();
+
+        res
     }
 
     fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
@@ -552,7 +589,11 @@ impl<'a> DrawingCtx<'a> {
         }
     }
 
-    pub fn stroke_and_fill(&mut self, cr: &cairo::Context, values: &ComputedValues) {
+    pub fn stroke_and_fill(
+        &mut self,
+        cr: &cairo::Context,
+        values: &ComputedValues,
+    ) -> Result<(), RenderingError> {
         cr.set_antialias(cairo::Antialias::from(values.shape_rendering));
 
         self.setup_cr_for_stroke(cr, values);
@@ -568,35 +609,44 @@ impl<'a> DrawingCtx<'a> {
 
         let fill_opacity = &values.fill_opacity.0;
 
-        if paint_server::set_source_paint_server(
+        let res = paint_server::set_source_paint_server(
             self,
             &values.fill.0,
             fill_opacity,
             &bbox,
             current_color,
-        ) {
-            if values.stroke.0 == PaintServer::None {
-                cr.fill();
-            } else {
-                cr.fill_preserve();
+        ).and_then(|had_paint_server| {
+            if had_paint_server {
+                if values.stroke.0 == PaintServer::None {
+                    cr.fill();
+                } else {
+                    cr.fill_preserve();
+                }
             }
-        }
 
-        let stroke_opacity = values.stroke_opacity.0;
+            Ok(())
+        }).and_then(|_| {
+            let stroke_opacity = values.stroke_opacity.0;
 
-        if paint_server::set_source_paint_server(
-            self,
-            &values.stroke.0,
-            &stroke_opacity,
-            &bbox,
-            &current_color,
-        ) {
-            cr.stroke();
-        }
+            paint_server::set_source_paint_server(
+                self,
+                &values.stroke.0,
+                &stroke_opacity,
+                &bbox,
+                &current_color,
+            ).and_then(|had_paint_server| {
+                if had_paint_server {
+                    cr.stroke();
+                }
+                Ok(())
+            })
+        });
 
         // clear the path in case stroke == fill == None; otherwise
         // we leave it around from computing the bounding box
         cr.new_path();
+
+        res
     }
 
     pub fn set_affine_on_cr(&self, cr: &cairo::Context) {
@@ -631,7 +681,7 @@ impl<'a> DrawingCtx<'a> {
         surface: &cairo::ImageSurface,
         width: f64,
         height: f64,
-    ) {
+    ) -> Result<(), RenderingError> {
         let save_cr = self.cr.clone();
         let save_initial_cr = self.initial_cr.clone();
         let save_rect = self.rect;
@@ -647,11 +697,13 @@ impl<'a> DrawingCtx<'a> {
         self.rect.width = width;
         self.rect.height = height;
 
-        self.draw_node_from_stack(cascaded, node, false);
+        let res = self.draw_node_from_stack(cascaded, node, false);
 
         self.cr = save_cr;
         self.initial_cr = save_initial_cr;
         self.rect = save_rect;
+
+        res
     }
 
     pub fn draw_node_from_stack(
@@ -659,8 +711,9 @@ impl<'a> DrawingCtx<'a> {
         cascaded: &CascadedValues,
         node: &RsvgNode,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let mut draw = true;
+        let mut res = Ok(());
 
         let stack_top = self.drawsub_stack.pop();
 
@@ -673,13 +726,15 @@ impl<'a> DrawingCtx<'a> {
         if draw {
             let values = cascaded.get();
             if values.is_visible() {
-                node.draw(node, cascaded, self, clipping);
+                res = node.draw(node, cascaded, self, clipping);
             }
         }
 
         if let Some(top) = stack_top {
             self.drawsub_stack.push(top);
         }
+
+        res
     }
 
     pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {
@@ -901,14 +956,24 @@ impl From<TextRendering> for cairo::Antialias {
 pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     raw_draw_ctx: *mut RsvgDrawingCtx,
     raw_tree: *const RsvgTree,
-) {
+) -> glib_sys::gboolean {
     assert!(!raw_draw_ctx.is_null());
     let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
     assert!(!raw_tree.is_null());
     let tree = unsafe { &*(raw_tree as *const Tree) };
 
-    draw_ctx.draw_node_from_stack(&tree.root.get_cascaded_values(), &tree.root, false);
+    // FIXME: The public API doesn't let us return a GError from the rendering
+    // functions, just a boolean.  Add a proper API to return proper errors from
+    // the rendering path.
+    if draw_ctx
+        .draw_node_from_stack(&tree.root.get_cascaded_values(), &tree.root, false)
+        .is_ok()
+    {
+        true.to_glib()
+    } else {
+        false.to_glib()
+    }
 }
 
 #[no_mangle]

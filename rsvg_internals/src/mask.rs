@@ -6,6 +6,7 @@ use std::cell::Cell;
 use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
+use error::RenderingError;
 use handle::RsvgHandle;
 use length::{Length, LengthDir};
 use node::{NodeResult, NodeTrait, RsvgNode};
@@ -62,17 +63,14 @@ impl NodeMask {
         node: &RsvgNode,
         affine_before_mask: &cairo::Matrix,
         draw_ctx: &mut DrawingCtx,
-    ) {
+    ) -> Result<(), RenderingError> {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
         let width = draw_ctx.get_width() as i32;
         let height = draw_ctx.get_height() as i32;
 
-        let mut surface = match cairo::ImageSurface::create(cairo::Format::ARgb32, width, height) {
-            Ok(surface) => surface,
-            Err(_) => return,
-        };
+        let mut surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         let mask_units = CoordUnits::from(self.units.get());
         let content_units = CoordUnits::from(self.content_units.get());
@@ -130,8 +128,8 @@ impl NodeMask {
                 draw_ctx.push_view_box(1.0, 1.0);
             }
 
-            draw_ctx.with_discrete_layer(node, values, false, &mut |dc| {
-                node.draw_children(&cascaded, dc, false);
+            let res = draw_ctx.with_discrete_layer(node, values, false, &mut |dc| {
+                node.draw_children(&cascaded, dc, false)
             });
 
             if content_units == CoordUnits::ObjectBoundingBox {
@@ -139,7 +137,9 @@ impl NodeMask {
             }
 
             draw_ctx.set_cairo_context(&save_cr);
-        }
+
+            res
+        }?;
 
         {
             let rowstride = surface.get_stride() as usize;
@@ -182,6 +182,8 @@ impl NodeMask {
 
         let (xofs, yofs) = draw_ctx.get_offset();
         cairo_mask_surface(&cr, &surface, xofs, yofs);
+
+        Ok(())
     }
 }
 

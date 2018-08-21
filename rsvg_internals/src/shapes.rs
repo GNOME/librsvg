@@ -22,7 +22,7 @@ fn render_path_builder(
     values: &ComputedValues,
     render_markers: bool,
     clipping: bool,
-) {
+) -> Result<(), RenderingError> {
     draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
         let cr = dc.get_cairo_context();
 
@@ -33,13 +33,17 @@ fn render_path_builder(
             cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
         } else {
             cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
-            dc.stroke_and_fill(&cr, values);
+            dc.stroke_and_fill(&cr, values)?;
         }
-    });
+
+        Ok(())
+    })?;
 
     if render_markers {
-        marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping);
+        marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping)?;
     }
+
+    Ok(())
 }
 
 fn render_ellipse(
@@ -51,10 +55,10 @@ fn render_ellipse(
     node: &RsvgNode,
     values: &ComputedValues,
     clipping: bool,
-) {
+) -> Result<(), RenderingError> {
     // Per the spec, rx and ry must be nonnegative
     if rx <= 0.0 || ry <= 0.0 {
-        return;
+        return Ok(());
     }
 
     // 4/3 * (1-cos 45°)/sin 45° = 4/3 * sqrt(2) - 1
@@ -103,7 +107,7 @@ fn render_ellipse(
 
     builder.close_path();
 
-    render_path_builder(&builder, draw_ctx, node, values, false, clipping);
+    render_path_builder(&builder, draw_ctx, node, values, false, clipping)
 }
 
 pub struct NodePath {
@@ -142,12 +146,14 @@ impl NodeTrait for NodePath {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         if let Some(ref builder) = *self.builder.borrow() {
-            render_path_builder(builder, draw_ctx, node, values, true, clipping);
+            render_path_builder(builder, draw_ctx, node, values, true, clipping)?;
         }
+
+        Ok(())
     }
 }
 
@@ -207,7 +213,7 @@ impl NodeTrait for NodePoly {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         if let Some(ref points) = *self.points.borrow() {
@@ -225,8 +231,10 @@ impl NodeTrait for NodePoly {
                 builder.close_path();
             }
 
-            render_path_builder(&builder, draw_ctx, node, values, true, clipping);
+            render_path_builder(&builder, draw_ctx, node, values, true, clipping)?;
         }
+
+        Ok(())
     }
 }
 
@@ -269,7 +277,7 @@ impl NodeTrait for NodeLine {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         let mut builder = PathBuilder::new();
@@ -282,7 +290,7 @@ impl NodeTrait for NodeLine {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        render_path_builder(&builder, draw_ctx, node, values, true, clipping);
+        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
     }
 }
 
@@ -357,7 +365,7 @@ impl NodeTrait for NodeRect {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         let x = self.x.get().normalize(values, draw_ctx);
@@ -393,12 +401,12 @@ impl NodeTrait for NodeRect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return;
+            return Ok(());
         }
 
         // ... and rx,ry must be nonnegative
         if rx < 0.0 || ry < 0.0 {
-            return;
+            return Ok(());
         }
 
         let half_w = w / 2.0;
@@ -494,7 +502,7 @@ impl NodeTrait for NodeRect {
             builder.close_path ();
         }
 
-        render_path_builder(&builder, draw_ctx, node, values, false, clipping);
+        render_path_builder(&builder, draw_ctx, node, values, false, clipping)
     }
 }
 
@@ -540,14 +548,14 @@ impl NodeTrait for NodeCircle {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         let cx = self.cx.get().normalize(values, draw_ctx);
         let cy = self.cy.get().normalize(values, draw_ctx);
         let r = self.r.get().normalize(values, draw_ctx);
 
-        render_ellipse(cx, cy, r, r, draw_ctx, node, values, clipping);
+        render_ellipse(cx, cy, r, r, draw_ctx, node, values, clipping)
     }
 }
 
@@ -602,7 +610,7 @@ impl NodeTrait for NodeEllipse {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         let cx = self.cx.get().normalize(values, draw_ctx);
@@ -610,6 +618,6 @@ impl NodeTrait for NodeEllipse {
         let rx = self.rx.get().normalize(values, draw_ctx);
         let ry = self.ry.get().normalize(values, draw_ctx);
 
-        render_ellipse(cx, cy, rx, ry, draw_ctx, node, values, clipping);
+        render_ellipse(cx, cy, rx, ry, draw_ctx, node, values, clipping)
     }
 }

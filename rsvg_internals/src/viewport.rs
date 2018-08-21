@@ -3,6 +3,7 @@ use cairo::MatrixTrait;
 
 use aspect_ratio::AspectRatio;
 use drawing_ctx::DrawingCtx;
+use error::RenderingError;
 use float_eq_cairo::ApproxEqCairo;
 use node::RsvgNode;
 use state::ComputedValues;
@@ -28,8 +29,8 @@ pub fn draw_in_viewport(
     mut affine: cairo::Matrix,
     draw_ctx: &mut DrawingCtx,
     clipping: bool,
-    draw_fn: &mut FnMut(&mut DrawingCtx),
-) {
+    draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+) -> Result<(), RenderingError> {
     // width or height set to 0 disables rendering of the element
     // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
     // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
@@ -37,7 +38,7 @@ pub fn draw_in_viewport(
     // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
 
     if vw.approx_eq_cairo(&0.0) || vh.approx_eq_cairo(&0.0) {
-        return;
+        return Ok(());
     }
 
     draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
@@ -53,7 +54,7 @@ pub fn draw_in_viewport(
             if vbox.0.width.approx_eq_cairo(&0.0) || vbox.0.height.approx_eq_cairo(&0.0) {
                 // Width or height of 0 for the viewBox disables rendering of the element
                 // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
-                return;
+                return Ok(());
             }
 
             dc.push_view_box(vbox.0.width, vbox.0.height);
@@ -76,8 +77,10 @@ pub fn draw_in_viewport(
             dc.get_cairo_context().set_matrix(affine);
         }
 
-        draw_fn(dc);
+        let res = draw_fn(dc);
 
         dc.pop_view_box();
-    });
+
+        res
+    })
 }

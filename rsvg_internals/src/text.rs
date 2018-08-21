@@ -6,6 +6,7 @@ use std::str;
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
+use error::RenderingError;
 use font_props::FontWeightSpec;
 use handle::RsvgHandle;
 use length::*;
@@ -84,7 +85,7 @@ impl NodeChars {
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let s = self.string.borrow();
         let layout = create_pango_layout(draw_ctx, values, &s);
         let (width, _) = layout.get_size();
@@ -93,12 +94,14 @@ impl NodeChars {
         let offset = baseline + values.baseline_shift.0.normalize(values, draw_ctx);
 
         if values.text_gravity_is_vertical() {
-            draw_ctx.draw_pango_layout(&layout, values, *x + offset, *y, clipping);
+            draw_ctx.draw_pango_layout(&layout, values, *x + offset, *y, clipping)?;
             *y += f64::from(width) / f64::from(pango::SCALE);
         } else {
-            draw_ctx.draw_pango_layout(&layout, values, *x, *y - offset, clipping);
+            draw_ctx.draw_pango_layout(&layout, values, *x, *y - offset, clipping)?;
             *x += f64::from(width) / f64::from(pango::SCALE);
         }
+
+        Ok(())
     }
 }
 
@@ -151,7 +154,7 @@ impl NodeTrait for NodeText {
         cascaded: &CascadedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         let mut x = self.x.get().normalize(values, draw_ctx);
@@ -182,7 +185,7 @@ impl NodeTrait for NodeText {
         x += dx;
         y += dy;
 
-        render_children(node, cascaded, draw_ctx, &mut x, &mut y, false, clipping);
+        render_children(node, cascaded, draw_ctx, &mut x, &mut y, false, clipping)
     }
 }
 
@@ -228,17 +231,19 @@ impl NodeTRef {
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let l = self.link.borrow();
 
         if l.is_none() {
-            return;
+            return Ok(());
         }
 
         if let Some(acquired) = draw_ctx.get_acquired_node(l.as_ref().unwrap()) {
             let c = acquired.get();
-            render_children(&c, cascaded, draw_ctx, x, y, true, clipping)
+            render_children(&c, cascaded, draw_ctx, x, y, true, clipping)?;
         }
+
+        Ok(())
     }
 }
 
@@ -304,7 +309,7 @@ impl NodeTSpan {
         y: &mut f64,
         usetextonly: bool,
         clipping: bool,
-    ) {
+    ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
         let mut dx = self.dx.get().normalize(values, draw_ctx);
@@ -341,7 +346,7 @@ impl NodeTSpan {
         }
         *y += dy;
 
-        render_children(node, cascaded, draw_ctx, x, y, usetextonly, clipping);
+        render_children(node, cascaded, draw_ctx, x, y, usetextonly, clipping)
     }
 }
 
@@ -659,14 +664,16 @@ fn render_children(
     y: &mut f64,
     textonly: bool,
     clipping: bool,
-) {
+) -> Result<(), RenderingError> {
     let values = cascaded.get();
 
     draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
         for child in node.children() {
-            render_child(&child, cascaded, dc, x, y, textonly, clipping);
+            render_child(&child, cascaded, dc, x, y, textonly, clipping)?;
         }
-    });
+
+        Ok(())
+    })
 }
 
 fn render_child(
@@ -677,7 +684,7 @@ fn render_child(
     y: &mut f64,
     textonly: bool,
     clipping: bool,
-) {
+) -> Result<(), RenderingError> {
     let values = cascaded.get();
 
     let cr = draw_ctx.get_cairo_context();
@@ -685,7 +692,7 @@ fn render_child(
 
     cr.transform(node.get_transform());
 
-    match (node.get_type(), textonly) {
+    let res = match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
             node.with_impl(|chars: &NodeChars| {
                 // here we use the values from the current element,
@@ -693,10 +700,19 @@ fn render_child(
                 // represent a real SVG element - it is just our container
                 // for character data.
                 chars.render(node, values, draw_ctx, x, y, clipping)
-            });
+            })
         }
-        (_, true) => {
-            render_children(
+        (_, true) => render_children(
+            node,
+            &CascadedValues::new(cascaded, node),
+            draw_ctx,
+            x,
+            y,
+            textonly,
+            clipping,
+        ),
+        (NodeType::TSpan, _) => node.with_impl(|tspan: &NodeTSpan| {
+            tspan.render(
                 node,
                 &CascadedValues::new(cascaded, node),
                 draw_ctx,
@@ -704,37 +720,24 @@ fn render_child(
                 y,
                 textonly,
                 clipping,
-            );
-        }
-        (NodeType::TSpan, _) => {
-            node.with_impl(|tspan: &NodeTSpan| {
-                tspan.render(
-                    node,
-                    &CascadedValues::new(cascaded, node),
-                    draw_ctx,
-                    x,
-                    y,
-                    textonly,
-                    clipping,
-                );
-            });
-        }
-        (NodeType::TRef, _) => {
-            node.with_impl(|tref: &NodeTRef| {
-                tref.render(
-                    node,
-                    &CascadedValues::new(cascaded, node),
-                    draw_ctx,
-                    x,
-                    y,
-                    clipping,
-                );
-            });
-        }
-        (_, _) => {}
-    }
+            )
+        }),
+        (NodeType::TRef, _) => node.with_impl(|tref: &NodeTRef| {
+            tref.render(
+                node,
+                &CascadedValues::new(cascaded, node),
+                draw_ctx,
+                x,
+                y,
+                clipping,
+            )
+        }),
+        (_, _) => Ok(()),
+    };
 
     cr.restore();
+
+    res
 }
 
 #[no_mangle]
