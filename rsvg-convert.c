@@ -316,8 +316,10 @@ main (int argc, char **argv)
         if (i == 0) {
             struct RsvgSizeCallbackData size_data;
 
-            if (!rsvg_handle_get_dimensions_sub (rsvg, &dimensions, export_lookup_id))
+            if (!rsvg_handle_get_dimensions_sub (rsvg, &dimensions, export_lookup_id)) {
                 g_printerr ("Could not get dimensions for file %s\n", args[i]);
+                exit (1);
+            }
 
             unscaled_width = dimensions.width;
             unscaled_height = dimensions.height;
@@ -465,7 +467,10 @@ main (int argc, char **argv)
         cairo_scale (cr,
                      scaled_width / unscaled_width,
                      scaled_height / unscaled_height);
-        rsvg_handle_render_cairo_sub (rsvg, cr, export_lookup_id);
+        if (!rsvg_handle_render_cairo_sub (rsvg, cr, export_lookup_id)) {
+            g_printerr ("Could not render file %s\n", args[i]);
+            exit (1);
+        }
 
         g_free (export_lookup_id);
 
