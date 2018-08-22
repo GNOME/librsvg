@@ -1,3 +1,9 @@
+Version 2.42.7
+- #323 - Fix a denial-of-service condition from exponential explosion
+  of rendered elements, through nested use of SVG "use" elements in
+  malicious SVGs.  This is similar to the XML "billion laughs attack"
+  but for SVG instancing.
+
 Version 2.42.6
 - #282 - Fix drop-shadows generated from Inkscape; we were overwriting
   a surface inadvertently.
