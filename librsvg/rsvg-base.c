@@ -1741,6 +1741,12 @@ rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
 }
 
 void
+rsvg_drawing_ctx_increase_num_elements_rendered_through_use (RsvgDrawingCtx *draw_ctx)
+{
+    draw_ctx->num_elements_rendered_through_use++;
+}
+
+void
 rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node)
 {
     if (node) {
