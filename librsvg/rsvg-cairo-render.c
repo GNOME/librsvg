@@ -225,6 +225,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     RsvgDrawingCtx *draw;
     RsvgNode *drawsub = NULL;
     cairo_status_t status;
+    gboolean res;
 
     g_return_val_if_fail (handle != NULL, FALSE);
 
@@ -257,13 +258,13 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     cairo_save (cr);
 
-    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0);
+    res = rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0);
 
     cairo_restore (cr);
 
     rsvg_drawing_ctx_free (draw);
 
-    return TRUE;
+    return res;
 }
 
 /**

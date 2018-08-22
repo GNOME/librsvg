@@ -1759,18 +1759,28 @@ rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, Rsvg
     }
 }
 
-void
+static gboolean
+limits_exceeded (RsvgDrawingCtx *draw_ctx)
+{
+    return draw_ctx->num_elements_rendered_through_use > 500000;
+}
+
+gboolean
 rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgNode *node, int dominate)
 {
     RsvgState *state;
     GSList *stacksave;
+
+    if (limits_exceeded (ctx)) {
+        return FALSE;
+    }
 
     stacksave = ctx->drawsub_stack;
     if (stacksave) {
         RsvgNode *stack_node = stacksave->data;
 
         if (!rsvg_node_is_same (stack_node, node))
-            return;
+            return TRUE;
 
         ctx->drawsub_stack = stacksave->next;
     }
@@ -1786,6 +1796,21 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgNode *node, int 
     }
 
     ctx->drawsub_stack = stacksave;
+
+    /* We check the limits this both at the beginning of this function and at
+     * the end:
+     *
+     * - At the beginning, to avoid drawing further child nodes when we already
+     *   reached the limits.
+     *
+     * - At the end, to return a meaningful error from the *toplevel* call to
+     *   rsvg_drawing_ctx_draw_node_from_stack(), since in librsvg-2.42 we don't
+     *   have error propagation in the rendering code:  in the 2.43/2.44
+     *   branches, we are able to catch this condition deep down in the call
+     *   stack, and propagate the error upstream quickly.  In 2.42, however, we
+     *   have no such luxury and instead do a catch-all test here.
+     */
+    return !limits_exceeded (ctx);
 }
 
 cairo_matrix_t
