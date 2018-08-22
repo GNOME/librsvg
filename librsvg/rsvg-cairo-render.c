@@ -213,9 +213,12 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
  *   the whole SVG. For example, if you have a layer called "layer1"
  *   that you wish to render, pass "##layer1" as the id.
  *
- * Draws a subset of a SVG to a Cairo surface
- *
- * Returns: %TRUE if drawing succeeded.
+ * Draws a subset of a loaded SVG handle to a Cairo context.  Drawing will occur with
+ * respect to the @cr's current transformation:  for example, if the @cr has a
+ * rotated current transformation matrix, the whole SVG will be rotated in the
+ * rendered version.
+  *
+ * Returns: %TRUE if drawing succeeded; %FALSE otherwise.
  *
  * Since: 2.14
  */
@@ -272,9 +275,12 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
  * @handle: A #RsvgHandle
  * @cr: A Cairo renderer
  *
- * Draws a SVG to a Cairo surface
+ * Draws a loaded SVG handle to a Cairo context.  Drawing will occur with
+ * respect to the @cr's current transformation:  for example, if the @cr has a
+ * rotated current transformation matrix, the whole SVG will be rotated in the
+ * rendered version.
  *
- * Returns: %TRUE if drawing succeeded.
+ * Returns: %TRUE if drawing succeeded; %FALSE otherwise. 
  * Since: 2.14
  */
 gboolean
