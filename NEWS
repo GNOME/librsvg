@@ -1,3 +1,19 @@
+Version 2.44.0
+- Librsvg now has minimal logging for debugging by setting the
+  RSVG_LOG environment variable.  See CONTRIBUTING.md for details.
+- Speed improvements for Gaussian blur, SRGB conversions, and various
+  filters (Ivan Molodetskikh).
+- Fix #264 - the letter-spacing property now supports "normal" in
+  addition to lengths (Paolo Borelli).
+- Fix #318 - the font-weight property was being parsed incorrectly.
+- Fix #323 - don't use 100% "forever" with malicious SVGs that cause
+  an exponential number of elements to be instanced through the
+  <use> element.  We limit the number of <use> instances now.
+- Fix #293 - Don't panic when masking an empty group.
+- Fix #319 - Parse single font-family correctly.
+- Cleanups for the internal representation of elliptical arcs in paths
+  (letheed).
+
 Version 2.43.4
 - This is an early release to test the effects of threading in librsvg.
 - The lighting and Gaussian blur filters are now parallelized with
