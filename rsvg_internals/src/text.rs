@@ -508,7 +508,7 @@ fn create_pango_layout(
 
     let mut font_desc = pango_context.get_font_description().unwrap();
 
-    font_desc.set_family(&values.font_family.0);
+    font_desc.set_family(&(values.font_family.0).0);
 
     font_desc.set_style(pango::Style::from(values.font_style));
 

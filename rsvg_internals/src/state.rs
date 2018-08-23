@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 use attributes::Attribute;
 use error::*;
-use font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec};
+use font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
 use handle::RsvgHandle;
 use iri::IRI;
 use length::{Dasharray, Length, LengthDir, LengthUnit};
@@ -954,9 +954,9 @@ make_property!(
 make_property!(
     ComputedValues,
     FontFamily,
-    default: "Times New Roman".to_string(),
+    default: SingleFontFamily("Times New Roman".to_string()),
     inherits_automatically: true,
-    newtype_parse: String,
+    newtype_parse: SingleFontFamily,
     parse_data_type: ()
 );
 

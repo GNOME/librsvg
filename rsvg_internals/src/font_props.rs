@@ -1,4 +1,4 @@
-use cssparser::{Parser, Token};
+use cssparser::{BasicParseError, Parser, Token};
 
 use drawing_ctx::DrawingCtx;
 use error::*;
@@ -242,6 +242,39 @@ impl Parse for LetterSpacingSpec {
     }
 }
 
+/// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family
+#[derive(Debug, Clone, PartialEq)]
+pub struct SingleFontFamily(pub String);
+
+impl Parse for SingleFontFamily {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(parser: &mut Parser, _: Self::Data) -> Result<SingleFontFamily, AttributeError> {
+        parse_single_font_family(parser)
+            .map_err(|_| AttributeError::from(ParseError::new("expected font family")))
+    }
+}
+
+fn parse_single_font_family<'i>(
+    parser: &'i mut Parser,
+) -> Result<SingleFontFamily, BasicParseError<'i>> {
+    if let Ok(cow) = parser.try(|p| p.expect_string_cloned()) {
+        return Ok(SingleFontFamily((*cow).to_owned()));
+    }
+
+    let first_ident = parser.expect_ident()?.clone();
+
+    let mut value = first_ident.as_ref().to_owned();
+
+    while let Ok(cow) = parser.try(|p| p.expect_ident_cloned()) {
+        value.push(' ');
+        value.push_str(&cow);
+    }
+
+    Ok(SingleFontFamily(value))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -314,5 +347,37 @@ mod tests {
     #[test]
     fn detects_invalid_invalid_letter_spacing() {
         assert!(is_parse_error(&LetterSpacingSpec::parse_str("furlong", ())));
+    }
+
+    #[test]
+    fn parses_font_family() {
+        assert_eq!(
+            <SingleFontFamily as Parse>::parse_str("'Hello world'", ()),
+            Ok(SingleFontFamily("Hello world".to_owned()))
+        );
+
+        assert_eq!(
+            <SingleFontFamily as Parse>::parse_str("\"Hello world\"", ()),
+            Ok(SingleFontFamily("Hello world".to_owned()))
+        );
+
+        assert_eq!(
+            <SingleFontFamily as Parse>::parse_str("  Hello  world  ", ()),
+            Ok(SingleFontFamily("Hello world".to_owned()))
+        );
+
+        assert_eq!(
+            <SingleFontFamily as Parse>::parse_str("Plonk", ()),
+            Ok(SingleFontFamily("Plonk".to_owned()))
+        );
+    }
+
+    #[test]
+    fn detects_invalid_font_family() {
+        assert!(<SingleFontFamily as Parse>::parse_str("", ()).is_err());
+
+        // assert!(<SingleFontFamily as Parse>::parse_str("''", ()).is_err());
+
+        assert!(<SingleFontFamily as Parse>::parse_str("42", ()).is_err());
     }
 }
