@@ -630,11 +630,6 @@ impl State {
                 let value = value[1..].trim();
 
                 if !prop_name.is_empty() && !value.is_empty() {
-                    // Just remove single quotes in a trivial way.  No handling for any
-                    // special character inside the quotes is done.  This relates
-                    // especially to font-family names.
-                    let value = value.replace('\'', "");
-
                     let mut important = false;
 
                     let value = if let Some(bang_pos) = value.find('!') {
