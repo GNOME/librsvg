@@ -91,6 +91,16 @@ impl NodeMask {
         // Use a scope because mask_cr needs to release the
         // reference to the surface before we access the pixels
         {
+            let bbox_rect = {
+                if let Some(ref rect) = draw_ctx.get_bbox().rect {
+                    *rect
+                } else {
+                    // The node being masked is empty / doesn't have a
+                    // bounding box, so there's nothing to mask!
+                    return Ok(());
+                }
+            };
+
             let save_cr = draw_ctx.get_cairo_context();
 
             let mask_cr = cairo::Context::new(&surface);
@@ -100,28 +110,25 @@ impl NodeMask {
             draw_ctx.set_cairo_context(&mask_cr);
 
             if mask_units == CoordUnits::ObjectBoundingBox {
-                let rect = {
-                    let bbox = draw_ctx.get_bbox();
-                    bbox.rect.unwrap()
-                };
-
                 draw_ctx.clip(
-                    x * rect.width + rect.x,
-                    y * rect.height + rect.y,
-                    w * rect.width,
-                    h * rect.height,
+                    x * bbox_rect.width + bbox_rect.x,
+                    y * bbox_rect.height + bbox_rect.y,
+                    w * bbox_rect.width,
+                    h * bbox_rect.height,
                 );
             } else {
                 draw_ctx.clip(x, y, w, h);
             }
 
             if content_units == CoordUnits::ObjectBoundingBox {
-                let rect = {
-                    let bbox = draw_ctx.get_bbox();
-                    bbox.rect.unwrap()
-                };
-                let bbtransform =
-                    cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
+                let bbtransform = cairo::Matrix::new(
+                    bbox_rect.width,
+                    0.0,
+                    0.0,
+                    bbox_rect.height,
+                    bbox_rect.x,
+                    bbox_rect.y,
+                );
 
                 mask_cr.transform(bbtransform);
 
