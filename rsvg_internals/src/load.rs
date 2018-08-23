@@ -298,7 +298,6 @@ pub extern "C" fn rsvg_load_new_node(
         // Whenever we encounter a node we don't understand, represent it as a defs.
         // This is like a group, but it doesn't do any rendering of children.  The
         // effect is that we will ignore all children of unknown elements.
-        //
         None => &(true, create_defs as NodeCreateFn),
     };
 

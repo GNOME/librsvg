@@ -379,8 +379,7 @@ impl Gradient {
                 }
 
                 !in_error
-            })
-            .for_each(|child| {
+            }).for_each(|child| {
                 child.with_impl(|stop: &NodeStop| {
                     let cascaded = child.get_cascaded_values();
                     let values = cascaded.get();
