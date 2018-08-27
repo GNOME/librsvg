@@ -97,7 +97,7 @@ impl<'a> DrawingCtx<'a> {
             width,
             height,
         }.transform(&affine)
-        .outer();
+            .outer();
 
         // scale according to size set by size_func callback
         let mut scale = cairo::Matrix::identity();
@@ -389,7 +389,8 @@ impl<'a> DrawingCtx<'a> {
                                 )
                             }
                         }
-                    }).or(Some(child_surface))
+                    })
+                    .or(Some(child_surface))
                     .unwrap();
 
                 self.cr = self.cr_stack.pop().unwrap();
@@ -625,22 +626,23 @@ impl<'a> DrawingCtx<'a> {
             }
 
             Ok(())
-        }).and_then(|_| {
-            let stroke_opacity = values.stroke_opacity.0;
+        })
+            .and_then(|_| {
+                let stroke_opacity = values.stroke_opacity.0;
 
-            paint_server::set_source_paint_server(
-                self,
-                &values.stroke.0,
-                &stroke_opacity,
-                &bbox,
-                &current_color,
-            ).and_then(|had_paint_server| {
-                if had_paint_server {
-                    cr.stroke();
-                }
-                Ok(())
-            })
-        });
+                paint_server::set_source_paint_server(
+                    self,
+                    &values.stroke.0,
+                    &stroke_opacity,
+                    &bbox,
+                    &current_color,
+                ).and_then(|had_paint_server| {
+                    if had_paint_server {
+                        cr.stroke();
+                    }
+                    Ok(())
+                })
+            });
 
         // clear the path in case stroke == fill == None; otherwise
         // we leave it around from computing the bounding box
@@ -1011,7 +1013,7 @@ pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
     let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
     assert!(!ink_rect.is_null());
-    
+
     // This function can return None in some cases
     // We need to handle None case explicitly to prevent crashing
     if let Some(r) = draw_ctx.get_bbox().ink_rect {
