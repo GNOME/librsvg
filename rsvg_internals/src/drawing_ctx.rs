@@ -1011,13 +1011,18 @@ pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
     let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
     assert!(!ink_rect.is_null());
-
-    let r = draw_ctx.get_bbox().ink_rect.unwrap();
-    unsafe {
-        (*ink_rect).x = r.x;
-        (*ink_rect).y = r.y;
-        (*ink_rect).width = r.width;
-        (*ink_rect).height = r.height;
+    
+    // This function can return None in some cases
+    // We need to handle None case explicitly to prevent crashing
+    if let Some(r) = draw_ctx.get_bbox().ink_rect {
+        unsafe {
+            (*ink_rect).x = r.x;
+            (*ink_rect).y = r.y;
+            (*ink_rect).width = r.width;
+            (*ink_rect).height = r.height;
+        }
+    } else {
+        return;
     }
 }
 
