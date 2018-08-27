@@ -18,16 +18,27 @@ test_render_crash (gconstpointer data)
     g_assert_no_error (error);
     g_assert (handle != NULL);
 
-    rsvg_handle_get_dimensions (handle, &dimensions);
-    g_assert (dimensions.width > 0);
-    g_assert (dimensions.height > 0);
-    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-					  dimensions.width, dimensions.height);
-    cr = cairo_create (surface);
-    g_assert (rsvg_handle_render_cairo (handle, cr));
+    /* rsvg_handle_get_dimensions_sub has a return value we can check */
+    if (rsvg_handle_get_dimensions_sub (handle, &dimensions, NULL)) {
+        RsvgDimensionData dimensions2;
 
-    cairo_surface_destroy (surface);
-    cairo_destroy (cr);
+        g_assert_cmpint (dimensions.width, >, 0);
+        g_assert_cmpint (dimensions.height, >, 0);
+
+        rsvg_handle_get_dimensions (handle, &dimensions2);
+        g_assert_cmpint (dimensions2.width, ==, dimensions.width);
+        g_assert_cmpint (dimensions2.height, ==, dimensions.height);
+
+        surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, dimensions.width, dimensions.height);
+        cr = cairo_create (surface);
+        g_assert (rsvg_handle_render_cairo (handle, cr));
+
+        cairo_surface_destroy (surface);
+        cairo_destroy (cr);
+    } else {
+        g_assert_cmpint (dimensions.width, ==, 0);
+        g_assert_cmpint (dimensions.height, ==, 0);
+    }
 
     g_object_unref (handle);
 }
