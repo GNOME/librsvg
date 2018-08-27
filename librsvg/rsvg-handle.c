@@ -1118,12 +1118,13 @@ get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
     cairo_surface_t *target;
     cairo_t *cr;
     RsvgDrawingCtx *draw;
+    gboolean ret = FALSE;
 
     g_assert (node != NULL);
 
     rsvg_handle_get_dimensions (handle, &dimensions);
     if (dimensions.width == 0 || dimensions.height == 0)
-        return FALSE;
+        return ret;
 
     target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
     cr = cairo_create (target);
@@ -1133,13 +1134,13 @@ get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
 
     rsvg_tree_cascade (handle->priv->tree);
     rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
-    rsvg_drawing_ctx_get_ink_rect (draw, ink_rect);
+    ret = rsvg_drawing_ctx_get_ink_rect (draw, ink_rect);
 
     rsvg_drawing_ctx_free (draw);
     cairo_destroy (cr);
     cairo_surface_destroy (target);
 
-    return TRUE;
+    return ret;
 }
 
 /**
