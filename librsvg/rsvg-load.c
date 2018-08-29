@@ -93,14 +93,9 @@ struct RsvgSaxHandler {
 static xmlSAXHandler rsvgSAXHandlerStruct;
 static gboolean rsvgSAXHandlerStructInited = FALSE;
 
-typedef struct _RsvgSaxHandlerDefs {
-    RsvgSaxHandler super;
-    RsvgHandle *handle;
-} RsvgSaxHandlerDefs;
-
 typedef struct _RsvgSaxHandlerStyle {
     RsvgSaxHandler super;
-    RsvgSaxHandlerDefs *parent;
+    RsvgSaxHandler *parent;
     RsvgLoad *load;
     GString *style;
     gboolean is_text_css;
@@ -205,7 +200,7 @@ static void
 style_handler_end (RsvgSaxHandler * self, const char *name)
 {
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
-    RsvgSaxHandler *prev = &z->parent->super;
+    RsvgSaxHandler *prev = z->parent;
 
     if (!strcmp (name, "style")) {
         if (z->load->handler != NULL) {
@@ -232,7 +227,7 @@ start_style (RsvgLoad *load, RsvgPropertyBag *atts)
 
     handler->style = g_string_new (NULL);
 
-    handler->parent = (RsvgSaxHandlerDefs *) load->handler;
+    handler->parent = load->handler;
     load->handler = &handler->super;
 
     /* FIXME: See these:
