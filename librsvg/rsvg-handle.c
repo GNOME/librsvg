@@ -1166,9 +1166,11 @@ get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
 gboolean
 rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id)
 {
+    RsvgNode *root = NULL;
     RsvgNode *node;
     gboolean has_size;
     int root_width, root_height;
+    gboolean res = FALSE;
 
     g_return_val_if_fail (handle, FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
@@ -1178,27 +1180,31 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     if (handle->priv->tree == NULL)
         return FALSE;
 
+    root = rsvg_tree_get_root (handle->priv->tree);
+
     if (id && *id) {
         node = rsvg_defs_lookup (handle->priv->defs, id);
 
         if (rsvg_tree_is_root (handle->priv->tree, node))
             id = NULL;
     } else {
-        node = rsvg_tree_get_root (handle->priv->tree);
+        node = root;
     }
 
-    if (!node && id)
-        return FALSE;
+    if (!node && id) {
+        goto out;
+    }
 
-    has_size = rsvg_node_svg_get_size (rsvg_tree_get_root (handle->priv->tree),
+    has_size = rsvg_node_svg_get_size (root,
                                        handle->priv->dpi_x, handle->priv->dpi_y,
                                        &root_width, &root_height);
 
     if (id || !has_size) {
         cairo_rectangle_t ink_rect;
 
-        if (!get_node_ink_rect (handle, node, &ink_rect))
-            return FALSE;
+        if (!get_node_ink_rect (handle, node, &ink_rect)) {
+            goto out;
+        }
 
         dimension_data->width = ink_rect.width;
         dimension_data->height = ink_rect.height;
@@ -1214,7 +1220,13 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         (*handle->priv->size_func) (&dimension_data->width, &dimension_data->height,
                                     handle->priv->user_data);
 
-    return TRUE;
+    res = TRUE;
+
+out:
+
+    g_clear_pointer (&root, rsvg_node_unref);
+
+    return res;
 }
 
 /**
