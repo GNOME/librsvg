@@ -200,12 +200,13 @@ static void
 style_handler_end (RsvgSaxHandler * self, const char *name)
 {
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
-    RsvgSaxHandler *prev = z->parent;
+    RsvgSaxHandler *previous = z->parent;
+    RsvgLoad *load = z->load;
 
     if (!strcmp (name, "style")) {
-        if (z->load->handler != NULL) {
-            z->load->handler->free (z->load->handler);
-            z->load->handler = prev;
+        if (load->handler != NULL) {
+            load->handler->free (load->handler);
+            load->handler = previous;
         }
     }
 }
