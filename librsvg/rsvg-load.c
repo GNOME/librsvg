@@ -365,14 +365,13 @@ static void
 xinclude_handler_end (RsvgSaxHandler * self, const char *name)
 {
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
+    RsvgSaxHandler *previous = z->prev_handler;
+    RsvgLoad *load = z->load;
 
     if (!strcmp (name, "include") || !strcmp (name, "xi:include")) {
-        if (z->load->handler != NULL) {
-            RsvgSaxHandler *previous_handler;
-
-            previous_handler = z->prev_handler;
-            z->load->handler->free (z->load->handler);
-            z->load->handler = previous_handler;
+        if (load->handler != NULL) {
+            load->handler->free (load->handler);
+            load->handler = previous;
         }
     } else if (z->in_fallback) {
         if (!strcmp (name, "xi:fallback"))
