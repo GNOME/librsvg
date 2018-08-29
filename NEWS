@@ -1,3 +1,7 @@
+Version 2.44.2
+- A *double brown paper bag* release!  Super strong, this one!
+- Fix #325 - Don't leak all the elements at the toplevel.
+
 Version 2.44.1
 - This is a brown paper bag release!  Apologies for the bugs:
 - Fix #324 - Don't panic if trying to render a non-empty SVG with no
