@@ -42,6 +42,7 @@ pub extern "C" fn rsvg_tree_new(root: *const RsvgNode) -> *mut RsvgTree {
 #[no_mangle]
 pub extern "C" fn rsvg_tree_free(tree: *mut RsvgTree) {
     if !tree.is_null() {
+        let tree = unsafe { &mut *(tree as *mut Tree) };
         let _ = unsafe { Box::from_raw(tree) };
     }
 }
