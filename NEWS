@@ -1,3 +1,9 @@
+Version 2.44.1
+- This is a brown paper bag release!  Apologies for the big bug:
+- Fix #325 - All the elements were being leaked at the toplevel.
+- Fix #326 - Fix COMPILING.md - librsvg 2.44 does not build on Ubuntu
+  18.04 because it has a rust version that is too old.
+
 Version 2.44.0
 - Librsvg now has minimal logging for debugging by setting the
   RSVG_LOG environment variable.  See CONTRIBUTING.md for details.
