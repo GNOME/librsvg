@@ -1,5 +1,7 @@
 Version 2.44.1
-- This is a brown paper bag release!  Apologies for the big bug:
+- This is a brown paper bag release!  Apologies for the bugs:
+- Fix #324 - Don't panic if trying to render a non-empty SVG with no
+  elements (Paolo Borelli).
 - Fix #325 - All the elements were being leaked at the toplevel.
 - Fix #326 - Fix COMPILING.md - librsvg 2.44 does not build on Ubuntu
   18.04 because it has a rust version that is too old.
