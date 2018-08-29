@@ -55,9 +55,9 @@ several systems.
 ### Debian based systems
 
 As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
-`ubuntu 16.04`, as they have packages that are too old.
+`ubuntu 18.04`, as they have packages that are too old.
 
-**Build dependencies on Debian Testing or Ubuntu 18.04+:**
+**Build dependencies on Debian Testing or Ubuntu 18.10:**
 
 ```sh
 apt-get install -y gcc make rustc cargo \
