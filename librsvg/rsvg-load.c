@@ -613,8 +613,7 @@ sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
 
     if (load->handler) {
         load->handler_nest++;
-        if (load->handler->start_element != NULL)
-            load->handler->start_element (load->handler, (const char *) name, bag);
+        load->handler->start_element (load->handler, (const char *) name, bag);
     } else {
         const char *tempname;
         for (tempname = (const char *) name; *tempname != '\0'; tempname++)
@@ -639,8 +638,7 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
     const char *name = (const char *) xmlname;
 
     if (load->handler_nest > 0 && load->handler != NULL) {
-        if (load->handler->end_element != NULL)
-            load->handler->end_element (load->handler, name);
+        load->handler->end_element (load->handler, name);
         load->handler_nest--;
     } else {
         const char *tempname;
@@ -707,7 +705,7 @@ sax_characters_cb (void *data, const xmlChar * ch, int len)
 {
     RsvgLoad *load = data;
 
-    if (load->handler && load->handler->characters != NULL) {
+    if (load->handler) {
         load->handler->characters (load->handler, (const char *) ch, len);
         return;
     }
