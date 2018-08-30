@@ -153,6 +153,13 @@ clean-local:
 	cd $(top_srcdir) && \
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) cargo clean
 
+distcheck-hook:
+	if test -z "${DESTDIR}";						\
+	then									\
+		echo "Please specify DESTDIR=/tmp/foo so distcheck will work";	\
+		exit 1;								\
+	fi
+
 dist-hook:
 	(cd $(distdir) && \
 	cargo vendor -q && \
