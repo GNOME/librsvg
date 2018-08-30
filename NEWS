@@ -1,6 +1,9 @@
 Version 2.44.2
 - A *double brown paper bag* release!  Super strong, this one!
 - Fix #325 - Don't leak all the elements at the toplevel.
+- Fix #328 - Make masking work on big-endian.  Thanks to
+  Simon McVittie for quick testing of this on s390x.
+- Fix library ordering so -Wl,--as-needed works (Simon McVittie).
 
 Version 2.44.1
 - This is a brown paper bag release!  Apologies for the bugs:
