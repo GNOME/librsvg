@@ -153,7 +153,7 @@ impl NodeMask {
             u8::from(o)
         };
 
-        let mask_surface = compute_luminance_to_alpha(surface, opacity);
+        let mask_surface = compute_luminance_to_alpha(surface, opacity)?;
 
         let cr = draw_ctx.get_cairo_context();
 
@@ -171,7 +171,7 @@ impl NodeMask {
 fn compute_luminance_to_alpha(
     mut surface: cairo::ImageSurface,
     opacity: u8,
-) -> cairo::ImageSurface {
+) -> Result<cairo::ImageSurface, cairo::Status> {
     let width = surface.get_width();
     let rowstride = surface.get_stride() as usize;
 
@@ -205,7 +205,7 @@ fn compute_luminance_to_alpha(
         }
     }
 
-    surface
+    Ok(surface)
 }
 
 impl NodeTrait for NodeMask {
