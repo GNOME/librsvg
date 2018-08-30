@@ -7,12 +7,20 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
+use filters::context::IRect;
 use handle::RsvgHandle;
 use length::{Length, LengthDir};
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{parse, parse_and_validate, Parse};
 use property_bag::PropertyBag;
 use state::Opacity;
+use surface_utils::{
+    iterators::Pixels,
+    shared_surface::SharedImageSurface,
+    shared_surface::SurfaceType,
+    ImageSurfaceDataExt,
+    Pixel,
+};
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -70,7 +78,7 @@ impl NodeMask {
         let width = draw_ctx.get_width() as i32;
         let height = draw_ctx.get_height() as i32;
 
-        let mut surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         let mask_units = CoordUnits::from(self.units.get());
         let content_units = CoordUnits::from(self.content_units.get());
@@ -148,50 +156,90 @@ impl NodeMask {
             res
         }?;
 
-        {
-            let rowstride = surface.get_stride() as usize;
-            let mut pixels = surface.get_data().unwrap();
-            let opacity = {
-                let Opacity(o) = values.opacity;
-                u8::from(o)
-            };
+        let opacity = {
+            let Opacity(o) = values.opacity;
+            u8::from(o)
+        };
 
-            for row in pixels.chunks_mut(rowstride) {
-                for p in row[..4 * width as usize].chunks_mut(4) {
-                    //  Assuming, the pixel is linear RGB (not sRGB)
-                    //  y = luminance
-                    //  Y = 0.2126 R + 0.7152 G + 0.0722 B
-                    //  1.0 opacity = 255
-                    //
-                    //  When Y = 1.0, pixel for mask should be 0xFFFFFFFF
-                    //    (you get 1.0 luminance from 255 from R, G and B)
-                    //
-                    // r_mult = 0xFFFFFFFF / (255.0 * 255.0) * .2126 = 14042.45  ~= 14042
-                    // g_mult = 0xFFFFFFFF / (255.0 * 255.0) * .7152 = 47239.69  ~= 47240
-                    // b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
-                    //
-                    // This allows for the following expected behaviour:
-                    //    (we only care about the most sig byte)
-                    // if pixel = 0x00FFFFFF, pixel' = 0xFF......
-                    // if pixel = 0x00020202, pixel' = 0x02......
-                    // if pixel = 0x00000000, pixel' = 0x00......
-                    //
-                    // NOTE: the following assumes little-endian
-                    let (r, g, b, o) = (p[2] as u32, p[1] as u32, p[0] as u32, opacity as u32);
-                    p[3] = (((r * 14042 + g * 47240 + b * 4769) * o) >> 24) as u8;
-                }
-            }
-        }
+        let mask_surface = compute_luminance_to_alpha(surface, opacity)?;
 
         let cr = draw_ctx.get_cairo_context();
 
         cr.identity_matrix();
 
         let (xofs, yofs) = draw_ctx.get_offset();
-        cairo_mask_surface(&cr, &surface, xofs, yofs);
+        cairo_mask_surface(&cr, &mask_surface, xofs, yofs);
 
         Ok(())
     }
+}
+
+// Returns a surface whose alpha channel for each pixel is equal to the
+// luminance of that pixel's unpremultiplied RGB values.  The resulting
+// surface's RGB values are not meanignful; only the alpha channel has
+// useful luminance data.
+//
+// This is to get a mask suitable for use with cairo_mask_surface().
+fn compute_luminance_to_alpha(
+    surface: cairo::ImageSurface,
+    opacity: u8,
+) -> Result<cairo::ImageSurface, cairo::Status> {
+    let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
+
+    let width = surface.width();
+    let height = surface.height();
+
+    let bounds = IRect {
+        x0: 0,
+        y0: 0,
+        x1: width,
+        y1: height,
+    };
+
+    let opacity = opacity as u32;
+
+    let mut output = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+
+    let output_stride = output.get_stride() as usize;
+
+    {
+        let mut output_data = output.get_data().unwrap();
+
+        for (x, y, pixel) in Pixels::new(&surface, bounds) {
+            //  Assuming, the pixel is linear RGB (not sRGB)
+            //  y = luminance
+            //  Y = 0.2126 R + 0.7152 G + 0.0722 B
+            //  1.0 opacity = 255
+            //
+            //  When Y = 1.0, pixel for mask should be 0xFFFFFFFF
+            //    (you get 1.0 luminance from 255 from R, G and B)
+            //
+            // r_mult = 0xFFFFFFFF / (255.0 * 255.0) * .2126 = 14042.45  ~= 14042
+            // g_mult = 0xFFFFFFFF / (255.0 * 255.0) * .7152 = 47239.69  ~= 47240
+            // b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
+            //
+            // This allows for the following expected behaviour:
+            //    (we only care about the most sig byte)
+            // if pixel = 0x00FFFFFF, pixel' = 0xFF......
+            // if pixel = 0x00020202, pixel' = 0x02......
+            // if pixel = 0x00000000, pixel' = 0x00......
+
+            let r = pixel.r as u32;
+            let g = pixel.g as u32;
+            let b = pixel.b as u32;
+
+            let output_pixel = Pixel {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: (((r * 14042 + g * 47240 + b * 4769) * opacity) >> 24) as u8,
+            };
+
+            output_data.set_pixel(output_stride, output_pixel, x, y);
+        }
+    }
+
+    Ok(output)
 }
 
 impl NodeTrait for NodeMask {
