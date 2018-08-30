@@ -70,7 +70,7 @@ impl NodeMask {
         let width = draw_ctx.get_width() as i32;
         let height = draw_ctx.get_height() as i32;
 
-        let mut surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         let mask_units = CoordUnits::from(self.units.get());
         let content_units = CoordUnits::from(self.content_units.get());
@@ -148,50 +148,64 @@ impl NodeMask {
             res
         }?;
 
-        {
-            let rowstride = surface.get_stride() as usize;
-            let mut pixels = surface.get_data().unwrap();
-            let opacity = {
-                let Opacity(o) = values.opacity;
-                u8::from(o)
-            };
+        let opacity = {
+            let Opacity(o) = values.opacity;
+            u8::from(o)
+        };
 
-            for row in pixels.chunks_mut(rowstride) {
-                for p in row[..4 * width as usize].chunks_mut(4) {
-                    //  Assuming, the pixel is linear RGB (not sRGB)
-                    //  y = luminance
-                    //  Y = 0.2126 R + 0.7152 G + 0.0722 B
-                    //  1.0 opacity = 255
-                    //
-                    //  When Y = 1.0, pixel for mask should be 0xFFFFFFFF
-                    //    (you get 1.0 luminance from 255 from R, G and B)
-                    //
-                    // r_mult = 0xFFFFFFFF / (255.0 * 255.0) * .2126 = 14042.45  ~= 14042
-                    // g_mult = 0xFFFFFFFF / (255.0 * 255.0) * .7152 = 47239.69  ~= 47240
-                    // b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
-                    //
-                    // This allows for the following expected behaviour:
-                    //    (we only care about the most sig byte)
-                    // if pixel = 0x00FFFFFF, pixel' = 0xFF......
-                    // if pixel = 0x00020202, pixel' = 0x02......
-                    // if pixel = 0x00000000, pixel' = 0x00......
-                    //
-                    // NOTE: the following assumes little-endian
-                    let (r, g, b, o) = (p[2] as u32, p[1] as u32, p[0] as u32, opacity as u32);
-                    p[3] = (((r * 14042 + g * 47240 + b * 4769) * o) >> 24) as u8;
-                }
-            }
-        }
+        let mask_surface = compute_luminance_to_alpha(surface, opacity);
 
         let cr = draw_ctx.get_cairo_context();
 
         cr.identity_matrix();
 
         let (xofs, yofs) = draw_ctx.get_offset();
-        cairo_mask_surface(&cr, &surface, xofs, yofs);
+        cairo_mask_surface(&cr, &mask_surface, xofs, yofs);
 
         Ok(())
     }
+}
+
+// Takes a surface and overwrites the alpha channel of each pixel
+// with the luminance of that pixel's RGB values.
+fn compute_luminance_to_alpha(
+    mut surface: cairo::ImageSurface,
+    opacity: u8,
+) -> cairo::ImageSurface {
+    let width = surface.get_width();
+    let rowstride = surface.get_stride() as usize;
+
+    {
+        let mut pixels = surface.get_data().unwrap();
+
+        for row in pixels.chunks_mut(rowstride) {
+            for p in row[..4 * width as usize].chunks_mut(4) {
+                //  Assuming, the pixel is linear RGB (not sRGB)
+                //  y = luminance
+                //  Y = 0.2126 R + 0.7152 G + 0.0722 B
+                //  1.0 opacity = 255
+                //
+                //  When Y = 1.0, pixel for mask should be 0xFFFFFFFF
+                //    (you get 1.0 luminance from 255 from R, G and B)
+                //
+                // r_mult = 0xFFFFFFFF / (255.0 * 255.0) * .2126 = 14042.45  ~= 14042
+                // g_mult = 0xFFFFFFFF / (255.0 * 255.0) * .7152 = 47239.69  ~= 47240
+                // b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
+                //
+                // This allows for the following expected behaviour:
+                //    (we only care about the most sig byte)
+                // if pixel = 0x00FFFFFF, pixel' = 0xFF......
+                // if pixel = 0x00020202, pixel' = 0x02......
+                // if pixel = 0x00000000, pixel' = 0x00......
+                //
+                // NOTE: the following assumes little-endian
+                let (r, g, b, o) = (p[2] as u32, p[1] as u32, p[0] as u32, opacity as u32);
+                p[3] = (((r * 14042 + g * 47240 + b * 4769) * o) >> 24) as u8;
+            }
+        }
+    }
+
+    surface
 }
 
 impl NodeTrait for NodeMask {
