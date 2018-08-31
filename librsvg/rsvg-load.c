@@ -53,14 +53,8 @@ void rsvg_load_set_svg_node_atts (RsvgHandle *handle, RsvgNode *node);
 G_GNUC_INTERNAL
 void rsvg_node_register_in_defs(RsvgNode *node, RsvgDefs *defs);
 
-struct RsvgLoad {
-    RsvgHandle *handle;
-    gboolean unlimited_size;
-
-    LoadState state;
-
-    GCancellable *cancellable;
-
+/* Holds the XML parsing state */
+typedef struct {
     /* not a handler stack. each nested handler keeps
      * track of its parent
      */
@@ -69,10 +63,7 @@ struct RsvgLoad {
 
     GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
 
-    GError **error;
     xmlParserCtxtPtr ctxt;
-
-    GInputStream *compressed_input_stream; /* for rsvg_handle_write of svgz data */
 
     /* Stack of element names while parsing; used to know when to stop parsing
      * the current element.
@@ -81,6 +72,22 @@ struct RsvgLoad {
 
     RsvgTree *tree;
     RsvgNode *currentnode;
+} XmlState;
+
+/* Holds the GIO and loading state for compressed data */
+struct RsvgLoad {
+    RsvgHandle *handle;
+    gboolean unlimited_size;
+
+    LoadState state;
+
+    GCancellable *cancellable;
+
+    GError **error;
+
+    GInputStream *compressed_input_stream; /* for rsvg_handle_write of svgz data */
+
+    XmlState xml;
 };
 
 struct RsvgSaxHandler {
@@ -109,20 +116,19 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->unlimited_size = unlimited_size;
     load->state = LOAD_STATE_START;
     load->cancellable = NULL;
-    load->handler = NULL;
-    load->handler_nest = 0;
-
-    load->entities = g_hash_table_new_full (g_str_hash,
-                                            g_str_equal,
-                                            g_free,
-                                            (GDestroyNotify) xmlFreeNode);
-
     load->error = NULL;
-    load->ctxt = NULL;
     load->compressed_input_stream = NULL;
-    load->element_name_stack = NULL;
-    load->tree = NULL;
-    load->currentnode = NULL;
+
+    load->xml.handler = NULL;
+    load->xml.handler_nest = 0;
+    load->xml.entities = g_hash_table_new_full (g_str_hash,
+                                                g_str_equal,
+                                                g_free,
+                                                (GDestroyNotify) xmlFreeNode);
+    load->xml.ctxt = NULL;
+    load->xml.element_name_stack = NULL;
+    load->xml.tree = NULL;
+    load->xml.currentnode = NULL;
 
     return load;
 }
@@ -153,20 +159,20 @@ free_xml_parser_and_doc (xmlParserCtxtPtr ctxt)
 void
 rsvg_load_free (RsvgLoad *load)
 {
-    g_hash_table_destroy (load->entities);
+    g_hash_table_destroy (load->xml.entities);
 
-    load->ctxt = free_xml_parser_and_doc (load->ctxt);
+    load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
 
     g_clear_object (&load->compressed_input_stream);
-    g_clear_pointer (&load->currentnode, rsvg_node_unref);
-    g_clear_pointer (&load->tree, rsvg_tree_free);
+    g_clear_pointer (&load->xml.currentnode, rsvg_node_unref);
+    g_clear_pointer (&load->xml.tree, rsvg_tree_free);
     g_free (load);
 }
 
 RsvgTree *
 rsvg_load_steal_tree (RsvgLoad *load)
 {
-    return g_steal_pointer (&load->tree);
+    return g_steal_pointer (&load->xml.tree);
 }
 
 static void
@@ -201,9 +207,9 @@ style_handler_end (RsvgSaxHandler * self, const char *name)
     RsvgLoad *load = z->load;
 
     if (!strcmp (name, "style")) {
-        if (load->handler != NULL) {
-            load->handler->free (load->handler);
-            load->handler = previous;
+        if (load->xml.handler != NULL) {
+            load->xml.handler->free (load->xml.handler);
+            load->xml.handler = previous;
         }
     }
 }
@@ -225,8 +231,8 @@ start_style (RsvgLoad *load, RsvgPropertyBag *atts)
 
     handler->style = g_string_new (NULL);
 
-    handler->parent = load->handler;
-    load->handler = &handler->super;
+    handler->parent = load->xml.handler;
+    load->xml.handler = &handler->super;
 
     /* FIXME: See these:
      *
@@ -257,14 +263,14 @@ static void
 push_element_name (RsvgLoad *load, const char *name)
 {
     /* libxml holds on to the name while parsing; we won't dup the name here */
-    load->element_name_stack = g_slist_prepend (load->element_name_stack, (void *) name);
+    load->xml.element_name_stack = g_slist_prepend (load->xml.element_name_stack, (void *) name);
 }
 
 static gboolean
 topmost_element_name_is (RsvgLoad *load, const char *name)
 {
-    if (load->element_name_stack) {
-        const char *name_in_stack = load->element_name_stack->data;
+    if (load->xml.element_name_stack) {
+        const char *name_in_stack = load->xml.element_name_stack->data;
 
         return strcmp (name, name_in_stack) == 0;
     } else
@@ -274,15 +280,15 @@ topmost_element_name_is (RsvgLoad *load, const char *name)
 static void
 pop_element_name (RsvgLoad *load)
 {
-    load->element_name_stack = g_slist_delete_link (load->element_name_stack,
-                                                    load->element_name_stack);
+    load->xml.element_name_stack = g_slist_delete_link (load->xml.element_name_stack,
+                                                        load->xml.element_name_stack);
 }
 
 static void
 free_element_name_stack (RsvgLoad *load)
 {
-    g_slist_free (load->element_name_stack);
-    load->element_name_stack = NULL;
+    g_slist_free (load->xml.element_name_stack);
+    load->xml.element_name_stack = NULL;
 }
 
 static void
@@ -293,18 +299,18 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
 
     defs = rsvg_handle_get_defs(load->handle);
 
-    newnode = rsvg_load_new_node(name, load->currentnode, atts, defs);
+    newnode = rsvg_load_new_node(name, load->xml.currentnode, atts, defs);
 
     push_element_name (load, name);
 
-    if (load->currentnode) {
-        rsvg_node_add_child (load->currentnode, newnode);
-        load->currentnode = rsvg_node_unref (load->currentnode);
-    } else {
-        load->tree = rsvg_tree_new (newnode);
+    if (load->xml.currentnode) {
+        rsvg_node_add_child (load->xml.currentnode, newnode);
+        load->xml.currentnode = rsvg_node_unref (load->xml.currentnode);
+    } else if (is_svg) {
+        load->xml.tree = rsvg_tree_new (newnode);
     }
 
-    load->currentnode = rsvg_node_ref (newnode);
+    load->xml.currentnode = rsvg_node_ref (newnode);
 
     rsvg_load_set_node_atts (load->handle, newnode, atts);
 
@@ -366,9 +372,9 @@ xinclude_handler_end (RsvgSaxHandler * self, const char *name)
     RsvgLoad *load = z->load;
 
     if (!strcmp (name, "include") || !strcmp (name, "xi:include")) {
-        if (load->handler != NULL) {
-            load->handler->free (load->handler);
-            load->handler = previous;
+        if (load->xml.handler != NULL) {
+            load->xml.handler->free (load->xml.handler);
+            load->xml.handler = previous;
         }
     } else if (z->in_fallback) {
         if (!strcmp (name, "xi:fallback"))
@@ -590,11 +596,11 @@ start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
     handler->super.characters = xinclude_handler_characters;
     handler->super.start_element = xinclude_handler_start;
     handler->super.end_element = xinclude_handler_end;
-    handler->prev_handler = load->handler;
+    handler->prev_handler = load->xml.handler;
     handler->load = load;
     handler->success = success;
 
-    load->handler = &handler->super;
+    load->xml.handler = &handler->super;
 }
 
 /* end xinclude */
@@ -607,9 +613,9 @@ sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
 
     bag = rsvg_property_bag_new ((const char **) atts);
 
-    if (load->handler) {
-        load->handler_nest++;
-        load->handler->start_element (load->handler, (const char *) name, bag);
+    if (load->xml.handler) {
+        load->xml.handler_nest++;
+        load->xml.handler->start_element (load->xml.handler, (const char *) name, bag);
     } else {
         const char *tempname;
         for (tempname = (const char *) name; *tempname != '\0'; tempname++)
@@ -633,30 +639,30 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
     RsvgLoad *load =  data;
     const char *name = (const char *) xmlname;
 
-    if (load->handler_nest > 0 && load->handler != NULL) {
-        load->handler->end_element (load->handler, name);
-        load->handler_nest--;
+    if (load->xml.handler_nest > 0 && load->xml.handler != NULL) {
+        load->xml.handler->end_element (load->xml.handler, name);
+        load->xml.handler_nest--;
     } else {
         const char *tempname;
         for (tempname = name; *tempname != '\0'; tempname++)
             if (*tempname == ':')
                 name = tempname + 1;
 
-        if (load->handler != NULL) {
-            load->handler->free (load->handler);
-            load->handler = NULL;
+        if (load->xml.handler != NULL) {
+            load->xml.handler->free (load->xml.handler);
+            load->xml.handler = NULL;
         }
 
-        if (load->currentnode) {
-            rsvg_load_set_svg_node_atts (load->handle, load->currentnode);
+        if (load->xml.currentnode) {
+            rsvg_load_set_svg_node_atts (load->handle, load->xml.currentnode);
         }
 
-        if (load->currentnode && topmost_element_name_is (load, name)) {
+        if (load->xml.currentnode && topmost_element_name_is (load, name)) {
             RsvgNode *parent;
 
-            parent = rsvg_node_get_parent (load->currentnode);
-            load->currentnode = rsvg_node_unref (load->currentnode);
-            load->currentnode = parent;
+            parent = rsvg_node_get_parent (load->xml.currentnode);
+            load->xml.currentnode = rsvg_node_unref (load->xml.currentnode);
+            load->xml.currentnode = parent;
             pop_element_name (load);
         }
     }
@@ -677,18 +683,18 @@ characters_impl (RsvgLoad *load, const char *ch, gssize len)
     RsvgNode *node;
     gboolean accept_chars = FALSE;
 
-    if (!ch || !len || !load->currentnode) {
+    if (!ch || !len || !load->xml.currentnode) {
         return;
     }
 
-    node = rsvg_node_find_last_chars_child (load->currentnode, &accept_chars);
+    node = rsvg_node_find_last_chars_child (load->xml.currentnode, &accept_chars);
     if (!accept_chars) {
         return;
     }
 
     if (!node) {
-        node = rsvg_node_chars_new (load->currentnode);
-        rsvg_node_add_child (load->currentnode, node);
+        node = rsvg_node_chars_new (load->xml.currentnode);
+        rsvg_node_add_child (load->xml.currentnode, node);
     }
 
     rsvg_node_chars_append (node, ch, len);
@@ -701,8 +707,8 @@ sax_characters_cb (void *data, const xmlChar * ch, int len)
 {
     RsvgLoad *load = data;
 
-    if (load->handler) {
-        load->handler->characters (load->handler, (const char *) ch, len);
+    if (load->xml.handler) {
+        load->xml.handler->characters (load->xml.handler, (const char *) ch, len);
         return;
     }
 
@@ -715,7 +721,7 @@ sax_get_entity_cb (void *data, const xmlChar * name)
     RsvgLoad *load = data;
     xmlEntityPtr entity;
 
-    entity = g_hash_table_lookup (load->entities, name);
+    entity = g_hash_table_lookup (load->xml.entities, name);
 
     return entity;
 }
@@ -763,7 +769,7 @@ sax_entity_decl_cb (void *data, const xmlChar * name, int type,
     xmlFree(resolvedPublicId);
     xmlFree(resolvedSystemId);
 
-    g_hash_table_insert (load->entities, g_strdup ((const char*) name), entity);
+    g_hash_table_insert (load->xml.entities, g_strdup ((const char*) name), entity);
 }
 
 static void
@@ -781,7 +787,7 @@ sax_get_parameter_entity_cb (void *data, const xmlChar * name)
     RsvgLoad *load = data;
     xmlEntityPtr entity;
 
-    entity = g_hash_table_lookup (load->entities, name);
+    entity = g_hash_table_lookup (load->xml.entities, name);
 
     return entity;
 }
@@ -960,13 +966,13 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
 
     load->error = &real_error;
 
-    if (load->ctxt == NULL) {
-        load->ctxt = create_xml_push_parser (load, rsvg_handle_get_base_uri (load->handle));
+    if (load->xml.ctxt == NULL) {
+        load->xml.ctxt = create_xml_push_parser (load, rsvg_handle_get_base_uri (load->handle));
     }
 
-    result = xmlParseChunk (load->ctxt, (char *) buf, count, 0);
+    result = xmlParseChunk (load->xml.ctxt, (char *) buf, count, 0);
     if (result != 0) {
-        set_error_from_xml (error, load->ctxt);
+        set_error_from_xml (error, load->xml.ctxt);
         return FALSE;
     }
 
@@ -987,17 +993,17 @@ close_impl (RsvgLoad *load, GError ** error)
 
     load->error = &real_error;
 
-    if (load->ctxt != NULL) {
+    if (load->xml.ctxt != NULL) {
         int result;
 
-        result = xmlParseChunk (load->ctxt, "", 0, TRUE);
+        result = xmlParseChunk (load->xml.ctxt, "", 0, TRUE);
         if (result != 0) {
-            set_error_from_xml (error, load->ctxt);
-            load->ctxt = free_xml_parser_and_doc (load->ctxt);
+            set_error_from_xml (error, load->xml.ctxt);
+            load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
             return FALSE;
         }
 
-        load->ctxt = free_xml_parser_and_doc (load->ctxt);
+        load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
     }
 
     free_element_name_stack (load);
@@ -1058,24 +1064,24 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     load->error = &err;
     load->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
 
-    g_assert (load->ctxt == NULL);
-    load->ctxt = create_xml_stream_parser (load,
-                                           stream,
-                                           cancellable,
-                                           &err);
+    g_assert (load->xml.ctxt == NULL);
+    load->xml.ctxt = create_xml_stream_parser (load,
+                                               stream,
+                                               cancellable,
+                                               &err);
 
-    if (!load->ctxt) {
+    if (!load->xml.ctxt) {
         g_assert (err != NULL);
         g_propagate_error (error, err);
 
         goto out;
     }
 
-    if (xmlParseDocument (load->ctxt) != 0) {
+    if (xmlParseDocument (load->xml.ctxt) != 0) {
         if (err) {
             g_propagate_error (error, err);
         } else {
-            set_error_from_xml (error, load->ctxt);
+            set_error_from_xml (error, load->xml.ctxt);
         }
 
         goto out;
@@ -1090,7 +1096,7 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
 
   out:
 
-    load->ctxt = free_xml_parser_and_doc (load->ctxt);
+    load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
 
     g_object_unref (stream);
 
@@ -1188,7 +1194,7 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     }
 
     if (!res) {
-        g_clear_pointer (&load->tree, rsvg_tree_free);
+        g_clear_pointer (&load->xml.tree, rsvg_tree_free);
     }
 
     load->state = LOAD_STATE_CLOSED;
