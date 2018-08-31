@@ -90,9 +90,6 @@ struct RsvgSaxHandler {
     void (*characters) (RsvgSaxHandler * self, const char *ch, gssize len);
 };
 
-static xmlSAXHandler rsvgSAXHandlerStruct;
-static gboolean rsvgSAXHandlerStructInited = FALSE;
-
 typedef struct _RsvgSaxHandlerStyle {
     RsvgSaxHandler super;
     RsvgSaxHandler *parent;
@@ -101,7 +98,7 @@ typedef struct _RsvgSaxHandlerStyle {
     gboolean is_text_css;
 } RsvgSaxHandlerStyle;
 
-static void init_sax_handler_struct (void);
+static xmlSAXHandler get_xml2_sax_handler (void);
 
 RsvgLoad *
 rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
@@ -405,9 +402,9 @@ create_xml_push_parser (RsvgLoad *load,
                         const char *base_uri)
 {
     xmlParserCtxtPtr parser;
+    xmlSAXHandler sax_handler = get_xml2_sax_handler ();
 
-    init_sax_handler_struct ();
-    parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, load, NULL, 0, base_uri);
+    parser = xmlCreatePushParserCtxt (&sax_handler, load, NULL, 0, base_uri);
     set_xml_parse_options (parser, load->unlimited_size);
 
     return parser;
@@ -466,19 +463,18 @@ create_xml_stream_parser (RsvgLoad      *load,
 {
     RsvgXmlInputStreamContext *context;
     xmlParserCtxtPtr parser;
+    xmlSAXHandler sax_handler = get_xml2_sax_handler ();
 
     g_return_val_if_fail (G_IS_INPUT_STREAM (stream), NULL);
     g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
     g_return_val_if_fail (error != NULL, NULL);
-
-    init_sax_handler_struct ();
 
     context = g_slice_new (RsvgXmlInputStreamContext);
     context->stream = g_object_ref (stream);
     context->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
     context->error = error;
 
-    parser = xmlCreateIOParserCtxt (&rsvgSAXHandlerStruct,
+    parser = xmlCreateIOParserCtxt (&sax_handler,
                                     load,
                                     context_read,
                                     context_close,
@@ -1200,23 +1196,23 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     return res;
 }
 
-static void
-init_sax_handler_struct (void)
+static xmlSAXHandler
+get_xml2_sax_handler (void)
 {
-    if (!rsvgSAXHandlerStructInited) {
-        rsvgSAXHandlerStructInited = TRUE;
+    xmlSAXHandler sax_handler;
 
-        memset (&rsvgSAXHandlerStruct, 0, sizeof (rsvgSAXHandlerStruct));
+    memset (&sax_handler, 0, sizeof (sax_handler));
 
-        rsvgSAXHandlerStruct.getEntity = sax_get_entity_cb;
-        rsvgSAXHandlerStruct.entityDecl = sax_entity_decl_cb;
-        rsvgSAXHandlerStruct.unparsedEntityDecl = sax_unparsed_entity_decl_cb;
-        rsvgSAXHandlerStruct.getParameterEntity = sax_get_parameter_entity_cb;
-        rsvgSAXHandlerStruct.characters = sax_characters_cb;
-        rsvgSAXHandlerStruct.error = sax_error_cb;
-        rsvgSAXHandlerStruct.cdataBlock = sax_characters_cb;
-        rsvgSAXHandlerStruct.startElement = sax_start_element_cb;
-        rsvgSAXHandlerStruct.endElement = sax_end_element_cb;
-        rsvgSAXHandlerStruct.processingInstruction = sax_processing_instruction_cb;
-    }
+    sax_handler.getEntity = sax_get_entity_cb;
+    sax_handler.entityDecl = sax_entity_decl_cb;
+    sax_handler.unparsedEntityDecl = sax_unparsed_entity_decl_cb;
+    sax_handler.getParameterEntity = sax_get_parameter_entity_cb;
+    sax_handler.characters = sax_characters_cb;
+    sax_handler.error = sax_error_cb;
+    sax_handler.cdataBlock = sax_characters_cb;
+    sax_handler.startElement = sax_start_element_cb;
+    sax_handler.endElement = sax_end_element_cb;
+    sax_handler.processingInstruction = sax_processing_instruction_cb;
+
+    return sax_handler;
 }
