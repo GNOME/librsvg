@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 13.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 14948)  -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   id="Ebene_1"
+   x="0px"
+   y="0px"
+   width="256px"
+   height="18px"
+   viewBox="0 0 256 18"
+   enable-background="new 0 0 256 18"
+   xml:space="preserve"
+   sodipodi:version="0.32"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="Button_Single_Normal.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   inkscape:export-filename="C:\Users\Markus\Desktop\OMAN SOL\ownThemes\vThemes\Button\Single\Button_Single_Normal.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90"><sodipodi:namedview
+   inkscape:window-height="667"
+   inkscape:window-width="640"
+   inkscape:pageshadow="2"
+   inkscape:pageopacity="0.0"
+   guidetolerance="10.0"
+   gridtolerance="10.0"
+   objecttolerance="10.0"
+   borderopacity="1.0"
+   bordercolor="#666666"
+   pagecolor="#ffffff"
+   id="base"
+   showgrid="false"
+   inkscape:zoom="2.125"
+   inkscape:cx="128"
+   inkscape:cy="9"
+   inkscape:window-x="58"
+   inkscape:window-y="58"
+   inkscape:current-layer="Ebene_1"
+   inkscape:window-maximized="0" /><metadata
+   id="metadata29"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+   id="defs27"><inkscape:perspective
+     sodipodi:type="inkscape:persp3d"
+     inkscape:vp_x="0 : 9 : 1"
+     inkscape:vp_y="0 : 1000 : 0"
+     inkscape:vp_z="256 : 9 : 1"
+     inkscape:persp3d-origin="128 : 6 : 1"
+     id="perspective7327" /></defs>
+<g
+   id="g3">
+	<rect
+   width="256"
+   height="18"
+   id="rect5" />
+	<g
+   id="g7">
+		<linearGradient
+   id="SVGID_1_"
+   gradientUnits="userSpaceOnUse"
+   x1="60.0854"
+   y1="-58.9146"
+   x2="191.20831"
+   y2="71.267044">
+			<stop
+   offset="0"
+   style="stop-color:#0000d4;stop-opacity:1"
+   id="stop10" />
+			<stop
+   offset="0.1459"
+   style="stop-color:#0000d4;stop-opacity:1"
+   id="stop12" />
+			<stop
+   offset="0.5197"
+   style="stop-color:#000080;stop-opacity:1"
+   id="stop14" />
+			<stop
+   offset="0.8174"
+   style="stop-color:#000055;stop-opacity:1"
+   id="stop16" />
+			<stop
+   offset="1"
+   style="stop-color:#00002b;stop-opacity:1"
+   id="stop18" />
+		</linearGradient>
+		<path
+   fill="url(#SVGID_1_-839-88)"
+   d="M256,2c0-1.105-0.896-2-2-2H2C0.895,0,0,0.895,0,2v14c0,1.104,0.895,2,2,2h252c1.104,0,2-0.896,2-2    V2z"
+   id="path20"
+   style="fill:url(#SVGID_1_-510-219)" />
+		<g
+   opacity="0.4"
+   id="g22">
+			<path
+   fill="#ffffff"
+   d="M254,0H2C0.895,0,0,0.895,0,2v2.707C38.479,7.436,82.145,9,128,9c45.791,0,89.176-1.541,128-4.293V2     C256,0.895,255.104,0,254,0z"
+   id="path24" />
+		</g>
+	<linearGradient
+   id="SVGID_1_-839"
+   gradientUnits="userSpaceOnUse"
+   x1="60.0854"
+   y1="-58.9146"
+   x2="191.20831"
+   y2="71.267044">
+			<stop
+   offset="0"
+   style="stop-color:#00d400;stop-opacity:1"
+   id="stop7347" />
+			<stop
+   offset="0.1459"
+   style="stop-color:#00d400;stop-opacity:1"
+   id="stop7349" />
+			<stop
+   offset="0.5197"
+   style="stop-color:#008000;stop-opacity:1"
+   id="stop7351" />
+			<stop
+   offset="0.8174"
+   style="stop-color:#005500;stop-opacity:1"
+   id="stop7353" />
+			<stop
+   offset="1"
+   style="stop-color:#002b00;stop-opacity:1"
+   id="stop7355" />
+		</linearGradient>
+		<linearGradient
+   id="SVGID_1_-510"
+   gradientUnits="userSpaceOnUse"
+   x1="60.0854"
+   y1="-58.9146"
+   x2="191.20831"
+   y2="71.267044">
+			<stop
+   offset="0"
+   style="stop-color:#00d400;stop-opacity:1"
+   id="stop7358" />
+			<stop
+   offset="0.1459"
+   style="stop-color:#00d400;stop-opacity:1"
+   id="stop7360" />
+			<stop
+   offset="0.5197"
+   style="stop-color:#008000;stop-opacity:1"
+   id="stop7362" />
+			<stop
+   offset="0.8174"
+   style="stop-color:#005500;stop-opacity:1"
+   id="stop7364" />
+			<stop
+   offset="1"
+   style="stop-color:#002b00;stop-opacity:1"
+   id="stop7366" />
+		</linearGradient>
+		<linearGradient
+   id="SVGID_1_-839-88"
+   gradientUnits="userSpaceOnUse"
+   x1="60.0854"
+   y1="-58.9146"
+   x2="191.20831"
+   y2="71.267044">
+			<stop
+   offset="0"
+   style="stop-color:#0000d4;stop-opacity:1"
+   id="stop7425" />
+			<stop
+   offset="0.1459"
+   style="stop-color:#0000d4;stop-opacity:1"
+   id="stop7427" />
+			<stop
+   offset="0.5197"
+   style="stop-color:#000080;stop-opacity:1"
+   id="stop7429" />
+			<stop
+   offset="0.8174"
+   style="stop-color:#000055;stop-opacity:1"
+   id="stop7431" />
+			<stop
+   offset="1"
+   style="stop-color:#00002b;stop-opacity:1"
+   id="stop7433" />
+		</linearGradient>
+		<linearGradient
+   id="SVGID_1_-510-219"
+   gradientUnits="userSpaceOnUse"
+   x1="60.0854"
+   y1="-58.9146"
+   x2="191.20831"
+   y2="71.267044">
+			<stop
+   offset="0"
+   style="stop-color:#0000d4;stop-opacity:1"
+   id="stop7436" />
+			<stop
+   offset="0.1459"
+   style="stop-color:#0000d4;stop-opacity:1"
+   id="stop7438" />
+			<stop
+   offset="0.5197"
+   style="stop-color:#000080;stop-opacity:1"
+   id="stop7440" />
+			<stop
+   offset="0.8174"
+   style="stop-color:#000055;stop-opacity:1"
+   id="stop7442" />
+			<stop
+   offset="1"
+   style="stop-color:#00002b;stop-opacity:1"
+   id="stop7444" />
+		</linearGradient>
+		</g>
+</g>
+</svg>
