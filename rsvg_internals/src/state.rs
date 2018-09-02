@@ -9,10 +9,8 @@ use std::str::FromStr;
 use attributes::Attribute;
 use error::*;
 use font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
-use handle::RsvgHandle;
 use iri::IRI;
 use length::{Dasharray, Length, LengthDir, LengthUnit};
-use node::RsvgNode;
 use paint_server::PaintServer;
 use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
@@ -346,7 +344,7 @@ impl SpecifiedValues {
 }
 
 impl State {
-    fn new() -> State {
+    pub fn new() -> State {
         State {
             values: Default::default(),
             important_styles: Default::default(),
@@ -606,7 +604,7 @@ impl State {
         Ok(())
     }
 
-    fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
+    pub fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
         for (_key, attr, value) in pbag.iter() {
             self.parse_style_pair(attr, value, false, false)?;
         }
@@ -614,7 +612,7 @@ impl State {
         Ok(())
     }
 
-    fn parse_style_declarations(&mut self, declarations: &str) -> Result<(), NodeError> {
+    pub fn parse_style_declarations(&mut self, declarations: &str) -> Result<(), NodeError> {
         // Split an attribute value like style="foo: bar; baz: beep;" into
         // individual CSS declarations ("foo: bar" and "baz: beep") and
         // set them onto the state struct.
@@ -1434,38 +1432,6 @@ make_property!(
     "preserve" => Preserve,
 );
 
-pub fn from_c<'a>(state: *const RsvgState) -> &'a State {
-    assert!(!state.is_null());
-
-    unsafe { &*(state as *const State) }
-}
-
-pub fn from_c_mut<'a>(state: *mut RsvgState) -> &'a mut State {
-    assert!(!state.is_null());
-
-    unsafe { &mut *(state as *mut State) }
-}
-
-pub fn to_c_mut(state: &mut State) -> *mut RsvgState {
-    state as *mut State as *mut RsvgState
-}
-
-// Rust State API for consumption from C ----------------------------------------
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_new() -> *mut RsvgState {
-    Box::into_raw(Box::new(State::new())) as *mut RsvgState
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_free(state: *mut RsvgState) {
-    let state = from_c_mut(state);
-
-    unsafe {
-        Box::from_raw(state);
-    }
-}
-
 #[no_mangle]
 pub extern "C" fn rsvg_state_parse_style_pair(
     state: *mut RsvgState,
@@ -1474,10 +1440,10 @@ pub extern "C" fn rsvg_state_parse_style_pair(
     important: glib_sys::gboolean,
     accept_shorthands: glib_sys::gboolean,
 ) -> glib_sys::gboolean {
-    let state = from_c_mut(state);
+    assert!(!state.is_null());
+    let state = unsafe { &mut *(state as *mut State) };
 
     assert!(!value.is_null());
-
     let value = unsafe { utf8_cstr(value) };
 
     match state.parse_style_pair(
@@ -1488,129 +1454,5 @@ pub extern "C" fn rsvg_state_parse_style_pair(
     ) {
         Ok(_) => true.to_glib(),
         Err(_) => false.to_glib(),
-    }
-}
-
-extern "C" {
-    fn rsvg_lookup_apply_css_style(
-        handle: *const RsvgHandle,
-        target: *const libc::c_char,
-        state: *mut RsvgState,
-    ) -> glib_sys::gboolean;
-}
-
-// Sets the node's state from the attributes in the pbag.  Also
-// applies CSS rules in our limited way based on the node's
-// tag/klazz/id.
-pub fn parse_style_attrs(
-    handle: *const RsvgHandle,
-    node: &RsvgNode,
-    tag: &str,
-    pbag: &PropertyBag,
-) {
-    let state = node.get_state_mut();
-
-    match state.parse_presentation_attributes(pbag) {
-        Ok(_) => (),
-        Err(e) => {
-            // FIXME: we'll ignore errors here for now.  If we return, we expose
-            // buggy handling of the enable-background property; we are not parsing it correctly.
-            // This causes tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
-            // because it has enable-background="new 0 0 1179.75118 687.74173" in the toplevel svg
-            // element.
-            //        {
-            //            node.set_error(e);
-            //            return;
-            //        }
-
-            rsvg_log!("(attribute error: {})", e);
-        }
-    }
-
-    // Try to properly support all of the following, including inheritance:
-    // *
-    // #id
-    // tag
-    // tag#id
-    // tag.class
-    // tag.class#id
-    //
-    // This is basically a semi-compliant CSS2 selection engine
-
-    unsafe {
-        // *
-        rsvg_lookup_apply_css_style(handle, "*".to_glib_none().0, to_c_mut(state));
-
-        // tag
-        rsvg_lookup_apply_css_style(handle, tag.to_glib_none().0, to_c_mut(state));
-
-        if let Some(klazz) = node.get_class() {
-            for cls in klazz.split_whitespace() {
-                let mut found = false;
-
-                if !cls.is_empty() {
-                    // tag.class#id
-                    if let Some(id) = node.get_id() {
-                        let target = format!("{}.{}#{}", tag, cls, id);
-                        found = found || from_glib(rsvg_lookup_apply_css_style(
-                            handle,
-                            target.to_glib_none().0,
-                            to_c_mut(state),
-                        ));
-                    }
-
-                    // .class#id
-                    if let Some(id) = node.get_id() {
-                        let target = format!(".{}#{}", cls, id);
-                        found = found || from_glib(rsvg_lookup_apply_css_style(
-                            handle,
-                            target.to_glib_none().0,
-                            to_c_mut(state),
-                        ));
-                    }
-
-                    // tag.class
-                    let target = format!("{}.{}", tag, cls);
-                    found = found || from_glib(rsvg_lookup_apply_css_style(
-                        handle,
-                        target.to_glib_none().0,
-                        to_c_mut(state),
-                    ));
-
-                    if !found {
-                        // didn't find anything more specific, just apply the class style
-                        let target = format!(".{}", cls);
-                        rsvg_lookup_apply_css_style(
-                            handle,
-                            target.to_glib_none().0,
-                            to_c_mut(state),
-                        );
-                    }
-                }
-            }
-        }
-
-        if let Some(id) = node.get_id() {
-            // id
-            let target = format!("#{}", id);
-            rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, to_c_mut(state));
-
-            // tag#id
-            let target = format!("{}#{}", tag, id);
-            rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, to_c_mut(state));
-        }
-
-        for (_key, attr, value) in pbag.iter() {
-            match attr {
-                Attribute::Style => {
-                    if let Err(e) = state.parse_style_declarations(value) {
-                        node.set_error(e);
-                        break;
-                    }
-                }
-
-                _ => (),
-            }
-        }
     }
 }
