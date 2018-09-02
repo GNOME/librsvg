@@ -34,7 +34,6 @@ use node::*;
 use pattern::NodePattern;
 use property_bag::PropertyBag;
 use shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
-use state::parse_style_attrs;
 use stop::NodeStop;
 use structure::{NodeDefs, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
 use text::{NodeTRef, NodeTSpan, NodeText};
@@ -350,7 +349,7 @@ pub extern "C" fn rsvg_load_set_node_atts(
     // attributes until the end, when sax_end_element_cb() calls
     // rsvg_node_svg_apply_atts()
     if node.get_type() != NodeType::Svg {
-        parse_style_attrs(handle, node, tag, pbag);
+        node.parse_style_attributes(handle, tag, pbag);
     }
 
     node.set_overridden_properties();
@@ -369,6 +368,6 @@ pub extern "C" fn rsvg_load_set_svg_node_atts(
     }
 
     node.with_impl(|svg: &NodeSvg| {
-        svg.parse_style_attrs(node, handle);
+        svg.parse_style_attributes(node, handle);
     });
 }

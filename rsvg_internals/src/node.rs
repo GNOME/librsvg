@@ -3,7 +3,7 @@ use downcast_rs::*;
 use glib;
 use glib::translate::*;
 use glib_sys;
-
+use libc;
 use std::cell::{Cell, Ref, RefCell};
 use std::ptr;
 use std::rc::{Rc, Weak};
@@ -16,15 +16,20 @@ use handle::RsvgHandle;
 use parsers::Parse;
 use property_bag::PropertyBag;
 use state::{
-    self,
-    rsvg_state_new,
     ComputedValues,
     Overflow,
     RsvgState,
     SpecifiedValue,
-    SpecifiedValues,
     State,
 };
+
+extern "C" {
+    fn rsvg_lookup_apply_css_style(
+        handle: *const RsvgHandle,
+        target: *const libc::c_char,
+        state: *mut RsvgState,
+    ) -> glib_sys::gboolean;
+}
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
 // points to an  Rc<Node>, which is our refcounted Rust representation
@@ -83,8 +88,9 @@ impl<'a> CascadedValues<'a> {
     /// This is for the `<use>` element, which draws the element which it references with the
     /// `<use>`'s own cascade, not wih the element's original cascade.
     pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
+        let state = node.state.borrow();
         let mut v = values.clone();
-        node.get_specified_values().to_computed_values(&mut v);
+        state.get_specified_values().to_computed_values(&mut v);
 
         CascadedValues {
             inner: CascadedInner::FromValues(v),
@@ -168,7 +174,7 @@ pub struct Node {
     last_child: RefCell<Option<Weak<Node>>>,
     next_sib: RefCell<Option<Rc<Node>>>, // next sibling; strong ref
     prev_sib: RefCell<Option<Weak<Node>>>, // previous sibling; weak ref
-    state: *mut RsvgState,
+    state: RefCell<State>,
     result: RefCell<NodeResult>,
     transform: Cell<Matrix>,
     values: RefCell<ComputedValues>,
@@ -245,7 +251,6 @@ impl Node {
         parent: Option<Weak<Node>>,
         id: Option<&str>,
         class: Option<&str>,
-        state: *mut RsvgState,
         node_impl: Box<NodeTrait>,
     ) -> Node {
         Node {
@@ -257,7 +262,7 @@ impl Node {
             last_child: RefCell::new(None),
             next_sib: RefCell::new(None),
             prev_sib: RefCell::new(None),
-            state,
+            state: RefCell::new(State::new()),
             transform: Cell::new(Matrix::identity()),
             result: RefCell::new(Ok(())),
             values: RefCell::new(ComputedValues::default()),
@@ -290,21 +295,14 @@ impl Node {
         self.transform.get()
     }
 
-    pub fn get_state_mut(&self) -> &mut State {
-        state::from_c_mut(self.state)
-    }
-
-    pub fn get_specified_values(&self) -> &SpecifiedValues {
-        state::from_c(self.state).get_specified_values()
-    }
-
     pub fn get_cascaded_values(&self) -> CascadedValues {
         CascadedValues::new_from_node(self)
     }
 
     pub fn cascade(&self, values: &ComputedValues) {
+        let state = self.state.borrow();
         let mut values = values.clone();
-        self.get_specified_values().to_computed_values(&mut values);
+        state.get_specified_values().to_computed_values(&mut values);
         *self.values.borrow_mut() = values.clone();
 
         for child in self.children() {
@@ -419,8 +417,119 @@ impl Node {
         Ok(())
     }
 
+    // Sets the node's state from the attributes in the pbag.  Also
+    // applies CSS rules in our limited way based on the node's
+    // tag/klazz/id.
+    pub fn parse_style_attributes(&self, handle: *const RsvgHandle, tag: &str, pbag: &PropertyBag) {
+        {
+            let mut state = self.state.borrow_mut();
+            match state.parse_presentation_attributes(pbag) {
+                Ok(_) => (),
+                Err(e) => {
+                    // FIXME: we'll ignore errors here for now.  If we return, we expose
+                    // buggy handling of the enable-background property; we are not parsing it correctly.
+                    // This causes tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
+                    // because it has enable-background="new 0 0 1179.75118 687.74173" in the toplevel svg
+                    // element.
+                    //        {
+                    //            self.set_error(e);
+                    //            return;
+                    //        }
+
+                    rsvg_log!("(attribute error: {})", e);
+                }
+            }
+        }
+
+        // Try to properly support all of the following, including inheritance:
+        // *
+        // #id
+        // tag
+        // tag#id
+        // tag.class
+        // tag.class#id
+        //
+        // This is basically a semi-compliant CSS2 selection engine
+
+        unsafe {
+            let state_ptr = self.state.as_ptr() as *mut RsvgState;
+
+            // *
+            rsvg_lookup_apply_css_style(handle, "*".to_glib_none().0, state_ptr);
+
+            // tag
+            rsvg_lookup_apply_css_style(handle, tag.to_glib_none().0, state_ptr);
+
+            if let Some(klazz) = self.get_class() {
+                for cls in klazz.split_whitespace() {
+                    let mut found = false;
+
+                    if !cls.is_empty() {
+                        // tag.class#id
+                        if let Some(id) = self.get_id() {
+                            let target = format!("{}.{}#{}", tag, cls, id);
+                            found = found || from_glib(rsvg_lookup_apply_css_style(
+                                handle,
+                                target.to_glib_none().0,
+                                state_ptr,
+                            ));
+                        }
+
+                        // .class#id
+                        if let Some(id) = self.get_id() {
+                            let target = format!(".{}#{}", cls, id);
+                            found = found || from_glib(rsvg_lookup_apply_css_style(
+                                handle,
+                                target.to_glib_none().0,
+                                state_ptr,
+                            ));
+                        }
+
+                        // tag.class
+                        let target = format!("{}.{}", tag, cls);
+                        found = found || from_glib(rsvg_lookup_apply_css_style(
+                            handle,
+                            target.to_glib_none().0,
+                            state_ptr,
+                        ));
+
+                        if !found {
+                            // didn't find anything more specific, just apply the class style
+                            let target = format!(".{}", cls);
+                            rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
+                        }
+                    }
+                }
+            }
+
+            if let Some(id) = self.get_id() {
+                // id
+                let target = format!("#{}", id);
+                rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
+
+                // tag#id
+                let target = format!("{}#{}", tag, id);
+                rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
+            }
+
+            for (_key, attr, value) in pbag.iter() {
+                match attr {
+                    Attribute::Style => {
+                        let mut state = self.state.borrow_mut();
+                        if let Err(e) = state.parse_style_declarations(value) {
+                            self.set_error(e);
+                            break;
+                        }
+                    }
+
+                    _ => (),
+                }
+            }
+        }
+    }
+
     pub fn set_overridden_properties(&self) {
-        let mut state = self.get_state_mut();
+        let mut state = self.state.borrow_mut();
         self.node_impl.set_overridden_properties(&mut state);
     }
 
@@ -512,8 +621,13 @@ impl Node {
         self.first_child.borrow().is_some()
     }
 
+    pub fn is_overflow(&self) -> bool {
+        let state = self.state.borrow();
+        state.get_specified_values().is_overflow()
+    }
+
     pub fn set_overflow_hidden(&self) {
-        let state = self.get_state_mut();
+        let mut state = self.state.borrow_mut();
         state.values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
 
@@ -542,22 +656,6 @@ impl Node {
     }
 }
 
-// Sigh, rsvg_state_free() is only available if we are being linked into
-// librsvg.so.  In testing mode, we run standalone, so we omit this.
-// Fortunately, in testing mode we don't create "real" nodes with
-// states; we only create stub nodes with ptr::null() for state.
-#[cfg(not(test))]
-impl Drop for Node {
-    fn drop(&mut self) {
-        extern "C" {
-            fn rsvg_state_free(state: *mut RsvgState);
-        }
-        unsafe {
-            rsvg_state_free(self.state);
-        }
-    }
-}
-
 pub fn node_ptr_to_weak(raw_parent: *const RsvgNode) -> Option<Weak<Node>> {
     if raw_parent.is_null() {
         None
@@ -579,7 +677,6 @@ pub fn boxed_node_new(
         node_ptr_to_weak(raw_parent),
         id,
         class,
-        rsvg_state_new(),
         node_impl,
     )))
 }
@@ -743,8 +840,8 @@ pub extern "C" fn rsvg_node_children_iter_next(
 mod tests {
     use super::*;
     use handle::RsvgHandle;
+    use std::mem;
     use std::rc::Rc;
-    use std::{mem, ptr};
 
     struct TestNodeImpl {}
 
@@ -761,7 +858,6 @@ mod tests {
             None,
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -787,7 +883,6 @@ mod tests {
             None,
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -810,7 +905,6 @@ mod tests {
             None,
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -824,7 +918,6 @@ mod tests {
             None,
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -833,7 +926,6 @@ mod tests {
             Some(Rc::downgrade(&node)),
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -850,7 +942,6 @@ mod tests {
             None,
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -859,7 +950,6 @@ mod tests {
             Some(Rc::downgrade(&node)),
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -868,7 +958,6 @@ mod tests {
             Some(Rc::downgrade(&node)),
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -898,7 +987,6 @@ mod tests {
             None,
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -907,7 +995,6 @@ mod tests {
             Some(Rc::downgrade(&node)),
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 
@@ -916,7 +1003,6 @@ mod tests {
             Some(Rc::downgrade(&node)),
             None,
             None,
-            ptr::null_mut(),
             Box::new(TestNodeImpl {}),
         ));
 

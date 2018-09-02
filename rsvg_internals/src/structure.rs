@@ -15,7 +15,7 @@ use libc;
 use node::*;
 use parsers::{parse, parse_and_validate, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state::{self, Overflow};
+use state::Overflow;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -116,10 +116,10 @@ impl NodeSvg {
         }
     }
 
-    pub fn parse_style_attrs(&self, node: &RsvgNode, handle: *const RsvgHandle) {
+    pub fn parse_style_attributes(&self, node: &RsvgNode, handle: *const RsvgHandle) {
         if let Some(owned_pbag) = self.pbag.borrow().as_ref() {
             let pbag = PropertyBag::from_owned(owned_pbag);
-            state::parse_style_attrs(handle, node, "svg", &pbag);
+            node.parse_style_attributes(handle, "svg", &pbag);
         }
     }
 }
@@ -341,7 +341,7 @@ impl NodeTrait for NodeUse {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !values.is_overflow()
                     || (values.overflow == Overflow::Visible
-                        && child.get_specified_values().is_overflow());
+                        && child.is_overflow());
 
                 draw_in_viewport(
                     nx,
