@@ -39,6 +39,14 @@ use tree::{RsvgTree, Tree};
 use unitinterval::UnitInterval;
 use viewbox::ViewBox;
 
+/// Holds values that are required to normalize `Length` values to a current viewport.
+pub struct ViewParams {
+    pub dpi_x: f64,
+    pub dpi_y: f64,
+    pub view_box_width: f64,
+    pub view_box_height: f64,
+}
+
 pub enum RsvgDrawingCtx {}
 
 pub struct DrawingCtx<'a> {
@@ -168,6 +176,15 @@ impl<'a> DrawingCtx<'a> {
             (0.0, 0.0)
         } else {
             (self.rect.x, self.rect.y)
+        }
+    }
+
+    pub fn get_view_params(&self) -> ViewParams {
+        ViewParams {
+            dpi_x: self.dpi_x,
+            dpi_y: self.dpi_y,
+            view_box_width: self.vb.0.width,
+            view_box_height: self.vb.0.height,
         }
     }
 
