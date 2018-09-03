@@ -463,6 +463,31 @@ mod tests {
         );
     }
 
+    #[test]
+    fn normalize_font_em_ex_works() {
+        let params = ViewParams {
+            dpi_x: 40.0,
+            dpi_y: 40.0,
+            view_box_width: 100.0,
+            view_box_height: 200.0,
+        };
+
+        let values = ComputedValues::default();
+
+        // These correspond to the default size for the font-size
+        // property and the way we compute FontEx from that.
+
+        assert_approx_eq_cairo!(
+            Length::new(1.0, LengthUnit::FontEm, LengthDir::Vertical).normalize(&values, &params),
+            12.0
+        );
+
+        assert_approx_eq_cairo!(
+            Length::new(1.0, LengthUnit::FontEx, LengthDir::Vertical).normalize(&values, &params),
+            6.0
+        );
+    }
+
     fn parse_dash_array_str(s: &str) -> Result<Dasharray, AttributeError> {
         Dasharray::parse_str(s, ())
     }
