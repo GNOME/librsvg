@@ -527,8 +527,10 @@ fn create_pango_layout(
 
     font_desc.set_stretch(pango::Stretch::from(values.font_stretch));
 
+    let params = draw_ctx.get_view_params();
+
     font_desc.set_size(to_pango_units(
-        values.font_size.0.normalize(values, draw_ctx),
+        values.font_size.0.normalize(values, &params),
     ));
 
     let layout = pango::Layout::new(&pango_context);
@@ -538,7 +540,7 @@ fn create_pango_layout(
 
     attr_list.insert(
         pango::Attribute::new_letter_spacing(to_pango_units(
-            values.letter_spacing.0.normalize(values, draw_ctx),
+            values.letter_spacing.0.normalize(values, &params),
         )).unwrap(),
     );
 

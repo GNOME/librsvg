@@ -1,6 +1,6 @@
 use cssparser::{BasicParseError, Parser, Token};
 
-use drawing_ctx::DrawingCtx;
+use drawing_ctx::ViewParams;
 use error::*;
 use length::{Length, LengthDir, LengthUnit, POINTS_PER_INCH};
 use parsers::{Parse, ParseError};
@@ -67,8 +67,8 @@ impl FontSizeSpec {
         FontSizeSpec::Value(new_size)
     }
 
-    pub fn normalize(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
-        self.value().normalize(values, &draw_ctx.get_view_params())
+    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
+        self.value().normalize(values, params)
     }
 }
 
@@ -202,8 +202,8 @@ impl LetterSpacingSpec {
         LetterSpacingSpec::Value(spacing)
     }
 
-    pub fn normalize(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
-        self.value().normalize(values, &draw_ctx.get_view_params())
+    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
+        self.value().normalize(values, params)
     }
 }
 
