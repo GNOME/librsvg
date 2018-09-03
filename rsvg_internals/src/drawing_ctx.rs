@@ -179,6 +179,9 @@ impl<'a> DrawingCtx<'a> {
         }
     }
 
+    // FIXME: the result of this is only valid within a
+    // push_view_box() / pop_view_box() pair.  How do we make this
+    // safe?
     pub fn get_view_params(&self) -> ViewParams {
         ViewParams {
             dpi_x: self.dpi_x,
@@ -586,19 +589,23 @@ impl<'a> DrawingCtx<'a> {
     }
 
     fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
-        cr.set_line_width(values.stroke_width.0.normalize(values, self));
+        let params = self.get_view_params();
+
+        cr.set_line_width(values.stroke_width.0.normalize(values, &params));
         cr.set_miter_limit(values.stroke_miterlimit.0);
         cr.set_line_cap(cairo::LineCap::from(values.stroke_line_cap));
         cr.set_line_join(cairo::LineJoin::from(values.stroke_line_join));
 
         if let StrokeDasharray(Dasharray::Array(ref dashes)) = values.stroke_dasharray {
-            let normalized_dashes: Vec<f64> =
-                dashes.iter().map(|l| l.normalize(values, self)).collect();
+            let normalized_dashes: Vec<f64> = dashes
+                .iter()
+                .map(|l| l.normalize(values, &params))
+                .collect();
 
             let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
 
             if total_length > 0.0 {
-                let offset = values.stroke_dashoffset.0.normalize(values, self);
+                let offset = values.stroke_dashoffset.0.normalize(values, &params);
                 cr.set_dash(&normalized_dashes, offset);
             } else {
                 cr.set_dash(&[], 0.0);

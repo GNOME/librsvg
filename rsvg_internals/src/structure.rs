@@ -189,10 +189,12 @@ impl NodeTrait for NodeSvg {
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
-        let nx = self.x.get().normalize(values, draw_ctx);
-        let ny = self.y.get().normalize(values, draw_ctx);
-        let nw = self.w.get().normalize(values, draw_ctx);
-        let nh = self.h.get().normalize(values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let nx = self.x.get().normalize(values, &params);
+        let ny = self.y.get().normalize(values, &params);
+        let nw = self.w.get().normalize(values, &params);
+        let nh = self.h.get().normalize(values, &params);
 
         let do_clip = !values.is_overflow() && node.get_parent().is_some();
 
@@ -301,8 +303,10 @@ impl NodeTrait for NodeUse {
 
         draw_ctx.increase_num_elements_rendered_through_use(1);
 
-        let nx = self.x.get().normalize(values, draw_ctx);
-        let ny = self.y.get().normalize(values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let nx = self.x.get().normalize(values, &params);
+        let ny = self.y.get().normalize(values, &params);
 
         // If attributes ‘width’ and/or ‘height’ are not specified,
         // [...] use values of '100%' for these attributes.
@@ -313,12 +317,12 @@ impl NodeTrait for NodeUse {
             .w
             .get()
             .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Horizontal).unwrap())
-            .normalize(values, draw_ctx);
+            .normalize(values, &params);
         let nh = self
             .h
             .get()
             .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Vertical).unwrap())
-            .normalize(values, draw_ctx);
+            .normalize(values, &params);
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute

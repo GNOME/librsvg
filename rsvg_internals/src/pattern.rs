@@ -272,10 +272,12 @@ fn set_pattern_on_draw_context(
         draw_ctx.push_view_box(1.0, 1.0);
     }
 
-    let pattern_x = pattern.x.unwrap().normalize(values, draw_ctx);
-    let pattern_y = pattern.y.unwrap().normalize(values, draw_ctx);
-    let pattern_width = pattern.width.unwrap().normalize(values, draw_ctx);
-    let pattern_height = pattern.height.unwrap().normalize(values, draw_ctx);
+    let params = draw_ctx.get_view_params();
+
+    let pattern_x = pattern.x.unwrap().normalize(values, &params);
+    let pattern_y = pattern.y.unwrap().normalize(values, &params);
+    let pattern_width = pattern.width.unwrap().normalize(values, &params);
+    let pattern_height = pattern.height.unwrap().normalize(values, &params);
 
     if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
         draw_ctx.pop_view_box();

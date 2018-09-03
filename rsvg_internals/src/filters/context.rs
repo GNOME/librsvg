@@ -139,11 +139,13 @@ fn compute_effects_region(
             height: filter.height.get().get_unitless(),
         }
     } else {
+        let params = draw_ctx.get_view_params();
+
         cairo::Rectangle {
-            x: filter.x.get().normalize(values, draw_ctx),
-            y: filter.y.get().normalize(values, draw_ctx),
-            width: filter.width.get().normalize(values, draw_ctx),
-            height: filter.height.get().normalize(values, draw_ctx),
+            x: filter.x.get().normalize(values, &params),
+            y: filter.y.get().normalize(values, &params),
+            width: filter.width.get().normalize(values, &params),
+            height: filter.height.get().normalize(values, &params),
         }
     };
 
@@ -450,7 +452,7 @@ impl FilterContext {
             rv
         } else {
             f(Box::new(|length: &Length| {
-                length.normalize(values, draw_ctx)
+                length.normalize(values, &draw_ctx.get_view_params())
             }))
         }
     }

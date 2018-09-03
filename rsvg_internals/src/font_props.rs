@@ -68,7 +68,7 @@ impl FontSizeSpec {
     }
 
     pub fn normalize(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
-        self.value().normalize(values, draw_ctx)
+        self.value().normalize(values, &draw_ctx.get_view_params())
     }
 }
 
@@ -203,7 +203,7 @@ impl LetterSpacingSpec {
     }
 
     pub fn normalize(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
-        self.value().normalize(values, draw_ctx)
+        self.value().normalize(values, &draw_ctx.get_view_params())
     }
 }
 

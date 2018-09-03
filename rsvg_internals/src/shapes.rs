@@ -282,10 +282,12 @@ impl NodeTrait for NodeLine {
 
         let mut builder = PathBuilder::new();
 
-        let x1 = self.x1.get().normalize(values, draw_ctx);
-        let y1 = self.y1.get().normalize(values, draw_ctx);
-        let x2 = self.x2.get().normalize(values, draw_ctx);
-        let y2 = self.y2.get().normalize(values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let x1 = self.x1.get().normalize(values, &params);
+        let y1 = self.y1.get().normalize(values, &params);
+        let x2 = self.x2.get().normalize(values, &params);
+        let y2 = self.y2.get().normalize(values, &params);
 
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
@@ -368,11 +370,12 @@ impl NodeTrait for NodeRect {
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
-        let x = self.x.get().normalize(values, draw_ctx);
-        let y = self.y.get().normalize(values, draw_ctx);
+        let params = draw_ctx.get_view_params();
 
-        let w = self.w.get().normalize(values, draw_ctx);
-        let h = self.h.get().normalize(values, draw_ctx);
+        let x = self.x.get().normalize(values, &params);
+        let y = self.y.get().normalize(values, &params);
+        let w = self.w.get().normalize(values, &params);
+        let h = self.h.get().normalize(values, &params);
 
         let mut rx;
         let mut ry;
@@ -384,18 +387,18 @@ impl NodeTrait for NodeRect {
             }
 
             (Some(_rx), None) => {
-                rx = _rx.normalize(values, draw_ctx);
-                ry = _rx.normalize(values, draw_ctx);
+                rx = _rx.normalize(values, &params);
+                ry = _rx.normalize(values, &params);
             }
 
             (None, Some(_ry)) => {
-                rx = _ry.normalize(values, draw_ctx);
-                ry = _ry.normalize(values, draw_ctx);
+                rx = _ry.normalize(values, &params);
+                ry = _ry.normalize(values, &params);
             }
 
             (Some(_rx), Some(_ry)) => {
-                rx = _rx.normalize(values, draw_ctx);
-                ry = _ry.normalize(values, draw_ctx);
+                rx = _rx.normalize(values, &params);
+                ry = _ry.normalize(values, &params);
             }
         }
 
@@ -551,9 +554,11 @@ impl NodeTrait for NodeCircle {
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
-        let cx = self.cx.get().normalize(values, draw_ctx);
-        let cy = self.cy.get().normalize(values, draw_ctx);
-        let r = self.r.get().normalize(values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let cx = self.cx.get().normalize(values, &params);
+        let cy = self.cy.get().normalize(values, &params);
+        let r = self.r.get().normalize(values, &params);
 
         render_ellipse(cx, cy, r, r, draw_ctx, node, values, clipping)
     }
@@ -613,10 +618,12 @@ impl NodeTrait for NodeEllipse {
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
-        let cx = self.cx.get().normalize(values, draw_ctx);
-        let cy = self.cy.get().normalize(values, draw_ctx);
-        let rx = self.rx.get().normalize(values, draw_ctx);
-        let ry = self.ry.get().normalize(values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let cx = self.cx.get().normalize(values, &params);
+        let cy = self.cy.get().normalize(values, &params);
+        let rx = self.rx.get().normalize(values, &params);
+        let ry = self.ry.get().normalize(values, &params);
 
         render_ellipse(cx, cy, rx, ry, draw_ctx, node, values, clipping)
     }

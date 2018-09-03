@@ -87,10 +87,12 @@ impl NodeMask {
             draw_ctx.push_view_box(1.0, 1.0);
         }
 
-        let x = self.x.get().normalize(&values, draw_ctx);
-        let y = self.y.get().normalize(&values, draw_ctx);
-        let w = self.width.get().normalize(&values, draw_ctx);
-        let h = self.height.get().normalize(&values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let x = self.x.get().normalize(&values, &params);
+        let y = self.y.get().normalize(&values, &params);
+        let w = self.width.get().normalize(&values, &params);
+        let h = self.height.get().normalize(&values, &params);
 
         if mask_units == CoordUnits::ObjectBoundingBox {
             draw_ctx.pop_view_box();

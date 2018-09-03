@@ -506,11 +506,13 @@ fn set_linear_gradient_on_pattern(
             draw_ctx.push_view_box(1.0, 1.0);
         }
 
+        let params = draw_ctx.get_view_params();
+
         let mut pattern = cairo::LinearGradient::new(
-            x1.as_ref().unwrap().normalize(values, draw_ctx),
-            y1.as_ref().unwrap().normalize(values, draw_ctx),
-            x2.as_ref().unwrap().normalize(values, draw_ctx),
-            y2.as_ref().unwrap().normalize(values, draw_ctx),
+            x1.as_ref().unwrap().normalize(values, &params),
+            y1.as_ref().unwrap().normalize(values, &params),
+            x2.as_ref().unwrap().normalize(values, &params),
+            y2.as_ref().unwrap().normalize(values, &params),
         );
 
         if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
@@ -586,11 +588,13 @@ fn set_radial_gradient_on_pattern(
             draw_ctx.push_view_box(1.0, 1.0);
         }
 
-        let n_cx = cx.as_ref().unwrap().normalize(values, draw_ctx);
-        let n_cy = cy.as_ref().unwrap().normalize(values, draw_ctx);
-        let n_r = r.as_ref().unwrap().normalize(values, draw_ctx);
-        let n_fx = fx.as_ref().unwrap().normalize(values, draw_ctx);
-        let n_fy = fy.as_ref().unwrap().normalize(values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let n_cx = cx.as_ref().unwrap().normalize(values, &params);
+        let n_cy = cy.as_ref().unwrap().normalize(values, &params);
+        let n_r = r.as_ref().unwrap().normalize(values, &params);
+        let n_fx = fx.as_ref().unwrap().normalize(values, &params);
+        let n_fy = fy.as_ref().unwrap().normalize(values, &params);
 
         let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
 

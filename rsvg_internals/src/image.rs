@@ -115,10 +115,12 @@ impl NodeTrait for NodeImage {
         let values = cascaded.get();
 
         if let Some(ref surface) = *self.surface.borrow() {
-            let x = self.x.get().normalize(values, draw_ctx);
-            let y = self.y.get().normalize(values, draw_ctx);
-            let w = self.w.get().normalize(values, draw_ctx);
-            let h = self.h.get().normalize(values, draw_ctx);
+            let params = draw_ctx.get_view_params();
+
+            let x = self.x.get().normalize(values, &params);
+            let y = self.y.get().normalize(values, &params);
+            let w = self.w.get().normalize(values, &params);
+            let h = self.h.get().normalize(values, &params);
 
             draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
                 let aspect = self.aspect.get();

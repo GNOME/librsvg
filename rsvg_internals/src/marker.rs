@@ -130,8 +130,10 @@ impl NodeMarker {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
-        let marker_width = self.width.get().normalize(&values, draw_ctx);
-        let marker_height = self.height.get().normalize(&values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let marker_width = self.width.get().normalize(&values, &params);
+        let marker_height = self.height.get().normalize(&values, &params);
 
         if marker_width.approx_eq_cairo(&0.0) || marker_height.approx_eq_cairo(&0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
@@ -174,9 +176,11 @@ impl NodeMarker {
             draw_ctx.push_view_box(marker_width, marker_height);
         }
 
+        let params = draw_ctx.get_view_params();
+
         affine.translate(
-            -self.ref_x.get().normalize(&values, draw_ctx),
-            -self.ref_y.get().normalize(&values, draw_ctx),
+            -self.ref_x.get().normalize(&values, &params),
+            -self.ref_y.get().normalize(&values, &params),
         );
 
         cr.set_matrix(affine);
@@ -683,7 +687,10 @@ pub fn render_markers_for_path_builder(
     values: &ComputedValues,
     clipping: bool,
 ) -> Result<(), RenderingError> {
-    let line_width = values.stroke_width.0.normalize(values, draw_ctx);
+    let line_width = values
+        .stroke_width
+        .0
+        .normalize(values, &draw_ctx.get_view_params());
 
     if line_width.approx_eq_cairo(&0.0) {
         return Ok(());

@@ -1,7 +1,7 @@
 use cssparser::{Parser, Token};
 use std::f64::consts::*;
 
-use drawing_ctx::DrawingCtx;
+use drawing_ctx::ViewParams;
 use error::*;
 use parsers::Parse;
 use parsers::ParseError;
@@ -94,25 +94,23 @@ impl Length {
         }
     }
 
-    pub fn normalize(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
+    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
         match self.unit {
             LengthUnit::Default => self.length,
 
-            LengthUnit::Percent => {
-                let (width, height) = draw_ctx.get_view_box_size();
-
-                match self.dir {
-                    LengthDir::Horizontal => self.length * width,
-                    LengthDir::Vertical => self.length * height,
-                    LengthDir::Both => self.length * viewport_percentage(width, height),
+            LengthUnit::Percent => match self.dir {
+                LengthDir::Horizontal => self.length * params.view_box_width,
+                LengthDir::Vertical => self.length * params.view_box_height,
+                LengthDir::Both => {
+                    self.length * viewport_percentage(params.view_box_width, params.view_box_height)
                 }
-            }
+            },
 
-            LengthUnit::FontEm => self.length * font_size_from_values(values, draw_ctx),
+            LengthUnit::FontEm => self.length * font_size_from_values(values, params),
 
-            LengthUnit::FontEx => self.length * font_size_from_values(values, draw_ctx) / 2.0,
+            LengthUnit::FontEx => self.length * font_size_from_values(values, params) / 2.0,
 
-            LengthUnit::Inch => font_size_from_inch(self.length, self.dir, draw_ctx),
+            LengthUnit::Inch => font_size_from_inch(self.length, self.dir, params),
         }
     }
 
@@ -225,23 +223,21 @@ impl Length {
     }
 }
 
-fn font_size_from_inch(length: f64, dir: LengthDir, draw_ctx: &DrawingCtx) -> f64 {
-    let (dpi_x, dpi_y) = draw_ctx.get_dpi();
-
+fn font_size_from_inch(length: f64, dir: LengthDir, params: &ViewParams) -> f64 {
     match dir {
-        LengthDir::Horizontal => length * dpi_x,
-        LengthDir::Vertical => length * dpi_y,
-        LengthDir::Both => length * viewport_percentage(dpi_x, dpi_y),
+        LengthDir::Horizontal => length * params.dpi_x,
+        LengthDir::Vertical => length * params.dpi_y,
+        LengthDir::Both => length * viewport_percentage(params.dpi_x, params.dpi_y),
     }
 }
 
-fn font_size_from_values(values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
+fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
     let v = &values.font_size.0.value();
 
     match v.unit {
         LengthUnit::Default => v.length,
 
-        LengthUnit::Inch => font_size_from_inch(v.length, v.dir, draw_ctx),
+        LengthUnit::Inch => font_size_from_inch(v.length, v.dir, params),
 
         LengthUnit::Percent | LengthUnit::FontEm | LengthUnit::FontEx => {
             unreachable!("ComputedValues can't have a relative font size")
