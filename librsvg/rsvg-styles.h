@@ -27,32 +27,17 @@
 #ifndef RSVG_STYLES_H
 #define RSVG_STYLES_H
 
-#include <cairo.h>
-#include "rsvg.h"
-#include "rsvg-css.h"
-
-#include <libxml/SAX.h>
+#include <glib.h>
+#include "rsvg-private.h"
 
 G_BEGIN_DECLS 
-
-/* Defined in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-void rsvg_state_free (RsvgState *state);
 
 G_GNUC_INTERNAL
 void rsvg_parse_cssbuffer (RsvgHandle *handle, const char *buff, size_t buflen);
 
-/* Defined in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-void rsvg_parse_style_attrs (RsvgHandle *handle, RsvgNode *node, const char *tag, RsvgPropertyBag * atts);
-
 G_GNUC_INTERNAL
 gboolean rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState * state);
 
-/* Defined in rsvg_internals/src/state.rs */
-G_GNUC_INTERNAL
-RsvgState *rsvg_state_parent (RsvgState *state);
-
 G_END_DECLS
 
-#endif                          /* RSVG_STYLES_H */
+#endif /* RSVG_STYLES_H */
