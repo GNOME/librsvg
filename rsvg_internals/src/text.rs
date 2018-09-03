@@ -91,7 +91,10 @@ impl NodeChars {
         let (width, _) = layout.get_size();
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let offset = baseline + values.baseline_shift.0.normalize(values, draw_ctx);
+        let offset = baseline + values
+            .baseline_shift
+            .0
+            .normalize(values, &draw_ctx.get_view_params());
 
         if values.text_gravity_is_vertical() {
             draw_ctx.draw_pango_layout(&layout, values, *x + offset, *y, clipping)?;
@@ -157,10 +160,12 @@ impl NodeTrait for NodeText {
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
-        let mut x = self.x.get().normalize(values, draw_ctx);
-        let mut y = self.y.get().normalize(values, draw_ctx);
-        let mut dx = self.dx.get().normalize(values, draw_ctx);
-        let mut dy = self.dy.get().normalize(values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let mut x = self.x.get().normalize(values, &params);
+        let mut y = self.y.get().normalize(values, &params);
+        let mut dx = self.dx.get().normalize(values, &params);
+        let mut dy = self.dy.get().normalize(values, &params);
 
         let anchor = values.text_anchor;
 
@@ -291,10 +296,12 @@ impl NodeTSpan {
             return true;
         }
 
+        let params = draw_ctx.get_view_params();
+
         if values.text_gravity_is_vertical() {
-            *length += self.dy.get().normalize(values, draw_ctx);
+            *length += self.dy.get().normalize(values, &params);
         } else {
-            *length += self.dx.get().normalize(values, draw_ctx);
+            *length += self.dx.get().normalize(values, &params);
         }
 
         measure_children(node, cascaded, draw_ctx, length, usetextonly)
@@ -312,8 +319,10 @@ impl NodeTSpan {
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
-        let mut dx = self.dx.get().normalize(values, draw_ctx);
-        let mut dy = self.dy.get().normalize(values, draw_ctx);
+        let params = draw_ctx.get_view_params();
+
+        let mut dx = self.dx.get().normalize(values, &params);
+        let mut dy = self.dy.get().normalize(values, &params);
 
         let vertical = values.text_gravity_is_vertical();
         let anchor = values.text_anchor;
@@ -321,7 +330,7 @@ impl NodeTSpan {
         let offset = anchor_offset(node, cascaded, draw_ctx, anchor, usetextonly);
 
         if let Some(self_x) = self.x.get() {
-            *x = self_x.normalize(values, draw_ctx);
+            *x = self_x.normalize(values, &params);
             if !vertical {
                 *x -= offset;
                 dx = match anchor {
@@ -334,7 +343,7 @@ impl NodeTSpan {
         *x += dx;
 
         if let Some(self_y) = self.y.get() {
-            *y = self_y.normalize(values, draw_ctx);
+            *y = self_y.normalize(values, &params);
             if vertical {
                 *y -= offset;
                 dy = match anchor {
