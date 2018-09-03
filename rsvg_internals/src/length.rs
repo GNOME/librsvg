@@ -301,6 +301,8 @@ fn parse_dash_array(parser: &mut Parser) -> Result<Vec<Length>, AttributeError> 
 mod tests {
     use super::*;
 
+    use float_eq_cairo::ApproxEqCairo;
+
     #[test]
     fn parses_default() {
         assert_eq!(
@@ -398,6 +400,66 @@ mod tests {
             Length::parse_str("-10", LengthDir::Both)
                 .and_then(|l| l.check_nonnegative())
                 .is_err()
+        );
+    }
+
+    #[test]
+    fn normalize_default_works() {
+        let params = ViewParams {
+            dpi_x: 40.0,
+            dpi_y: 40.0,
+            view_box_width: 100.0,
+            view_box_height: 100.0,
+        };
+
+        let values = ComputedValues::default();
+
+        assert_approx_eq_cairo!(
+            Length::new(10.0, LengthUnit::Default, LengthDir::Both).normalize(&values, &params),
+            10.0
+        );
+    }
+
+    #[test]
+    fn normalize_absolute_units_works() {
+        let params = ViewParams {
+            dpi_x: 40.0,
+            dpi_y: 50.0,
+            view_box_width: 100.0,
+            view_box_height: 100.0,
+        };
+
+        let values = ComputedValues::default();
+
+        assert_approx_eq_cairo!(
+            Length::new(10.0, LengthUnit::Inch, LengthDir::Horizontal).normalize(&values, &params),
+            400.0
+        );
+        assert_approx_eq_cairo!(
+            Length::new(10.0, LengthUnit::Inch, LengthDir::Vertical).normalize(&values, &params),
+            500.0
+        );
+    }
+
+    #[test]
+    fn normalize_percent_works() {
+        let params = ViewParams {
+            dpi_x: 40.0,
+            dpi_y: 40.0,
+            view_box_width: 100.0,
+            view_box_height: 200.0,
+        };
+
+        let values = ComputedValues::default();
+
+        assert_approx_eq_cairo!(
+            Length::new(0.05, LengthUnit::Percent, LengthDir::Horizontal)
+                .normalize(&values, &params),
+            5.0
+        );
+        assert_approx_eq_cairo!(
+            Length::new(0.05, LengthUnit::Percent, LengthDir::Vertical).normalize(&values, &params),
+            10.0
         );
     }
 
