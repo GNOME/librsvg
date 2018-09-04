@@ -99,10 +99,11 @@ impl Length {
             LengthUnit::Default => self.length,
 
             LengthUnit::Percent => match self.dir {
-                LengthDir::Horizontal => self.length * params.view_box_width,
-                LengthDir::Vertical => self.length * params.view_box_height,
+                LengthDir::Horizontal => self.length * params.view_box_width(),
+                LengthDir::Vertical => self.length * params.view_box_height(),
                 LengthDir::Both => {
-                    self.length * viewport_percentage(params.view_box_width, params.view_box_height)
+                    self.length
+                        * viewport_percentage(params.view_box_width(), params.view_box_height())
                 }
             },
 
@@ -225,9 +226,9 @@ impl Length {
 
 fn font_size_from_inch(length: f64, dir: LengthDir, params: &ViewParams) -> f64 {
     match dir {
-        LengthDir::Horizontal => length * params.dpi_x,
-        LengthDir::Vertical => length * params.dpi_y,
-        LengthDir::Both => length * viewport_percentage(params.dpi_x, params.dpi_y),
+        LengthDir::Horizontal => length * params.dpi_x(),
+        LengthDir::Vertical => length * params.dpi_y(),
+        LengthDir::Both => length * viewport_percentage(params.dpi_x(), params.dpi_y()),
     }
 }
 
@@ -405,12 +406,7 @@ mod tests {
 
     #[test]
     fn normalize_default_works() {
-        let params = ViewParams {
-            dpi_x: 40.0,
-            dpi_y: 40.0,
-            view_box_width: 100.0,
-            view_box_height: 100.0,
-        };
+        let params = ViewParams::new(40.0, 40.0, 100.0, 100.0);
 
         let values = ComputedValues::default();
 
@@ -422,12 +418,7 @@ mod tests {
 
     #[test]
     fn normalize_absolute_units_works() {
-        let params = ViewParams {
-            dpi_x: 40.0,
-            dpi_y: 50.0,
-            view_box_width: 100.0,
-            view_box_height: 100.0,
-        };
+        let params = ViewParams::new(40.0, 50.0, 100.0, 100.0);
 
         let values = ComputedValues::default();
 
@@ -443,12 +434,7 @@ mod tests {
 
     #[test]
     fn normalize_percent_works() {
-        let params = ViewParams {
-            dpi_x: 40.0,
-            dpi_y: 40.0,
-            view_box_width: 100.0,
-            view_box_height: 200.0,
-        };
+        let params = ViewParams::new(40.0, 40.0, 100.0, 200.0);
 
         let values = ComputedValues::default();
 
@@ -465,12 +451,7 @@ mod tests {
 
     #[test]
     fn normalize_font_em_ex_works() {
-        let params = ViewParams {
-            dpi_x: 40.0,
-            dpi_y: 40.0,
-            view_box_width: 100.0,
-            view_box_height: 200.0,
-        };
+        let params = ViewParams::new(40.0, 40.0, 100.0, 200.0);
 
         let values = ComputedValues::default();
 
