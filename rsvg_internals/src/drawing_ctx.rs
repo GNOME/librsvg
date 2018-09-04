@@ -191,14 +191,6 @@ impl<'a> DrawingCtx<'a> {
         }
     }
 
-    pub fn get_dpi(&self) -> (f64, f64) {
-        (self.dpi_x, self.dpi_y)
-    }
-
-    pub fn get_view_box_size(&self) -> (f64, f64) {
-        (self.vb.0.width, self.vb.0.height)
-    }
-
     pub fn push_view_box(&mut self, width: f64, height: f64) {
         self.vb_stack.push(self.vb);
         self.vb = ViewBox::new(0.0, 0.0, width, height);
