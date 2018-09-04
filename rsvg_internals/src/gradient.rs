@@ -502,24 +502,26 @@ fn set_linear_gradient_on_pattern(
     if let GradientVariant::Linear { x1, y1, x2, y2 } = gradient.variant {
         let units = gradient.common.units.unwrap();
 
-        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            draw_ctx.push_view_box(1.0, 1.0);
+        {
+            let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+                draw_ctx.push_view_box(1.0, 1.0)
+            } else {
+                draw_ctx.get_view_params()
+            };
+
+            let mut pattern = cairo::LinearGradient::new(
+                x1.as_ref().unwrap().normalize(values, &params),
+                y1.as_ref().unwrap().normalize(values, &params),
+                x2.as_ref().unwrap().normalize(values, &params),
+                y2.as_ref().unwrap().normalize(values, &params),
+            );
+
+            if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+                draw_ctx.pop_view_box();
+            }
+
+            set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
         }
-
-        let params = draw_ctx.get_view_params();
-
-        let mut pattern = cairo::LinearGradient::new(
-            x1.as_ref().unwrap().normalize(values, &params),
-            y1.as_ref().unwrap().normalize(values, &params),
-            x2.as_ref().unwrap().normalize(values, &params),
-            y2.as_ref().unwrap().normalize(values, &params),
-        );
-
-        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            draw_ctx.pop_view_box();
-        }
-
-        set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
     } else {
         unreachable!();
     }
@@ -584,27 +586,29 @@ fn set_radial_gradient_on_pattern(
     if let GradientVariant::Radial { cx, cy, r, fx, fy } = gradient.variant {
         let units = gradient.common.units.unwrap();
 
-        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            draw_ctx.push_view_box(1.0, 1.0);
+        {
+            let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+                draw_ctx.push_view_box(1.0, 1.0)
+            } else {
+                draw_ctx.get_view_params()
+            };
+
+            let n_cx = cx.as_ref().unwrap().normalize(values, &params);
+            let n_cy = cy.as_ref().unwrap().normalize(values, &params);
+            let n_r = r.as_ref().unwrap().normalize(values, &params);
+            let n_fx = fx.as_ref().unwrap().normalize(values, &params);
+            let n_fy = fy.as_ref().unwrap().normalize(values, &params);
+
+            let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
+
+            let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
+
+            if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+                draw_ctx.pop_view_box();
+            }
+
+            set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
         }
-
-        let params = draw_ctx.get_view_params();
-
-        let n_cx = cx.as_ref().unwrap().normalize(values, &params);
-        let n_cy = cy.as_ref().unwrap().normalize(values, &params);
-        let n_r = r.as_ref().unwrap().normalize(values, &params);
-        let n_fx = fx.as_ref().unwrap().normalize(values, &params);
-        let n_fy = fy.as_ref().unwrap().normalize(values, &params);
-
-        let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
-
-        let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
-
-        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            draw_ctx.pop_view_box();
-        }
-
-        set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
     } else {
         unreachable!();
     }

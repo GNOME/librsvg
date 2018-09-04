@@ -159,7 +159,7 @@ impl NodeMarker {
             affine.scale(line_width, line_width);
         }
 
-        if let Some(vbox) = self.vbox.get() {
+        let params = if let Some(vbox) = self.vbox.get() {
             let (_, _, w, h) = self.aspect.get().compute(
                 vbox.0.width,
                 vbox.0.height,
@@ -171,12 +171,10 @@ impl NodeMarker {
 
             affine.scale(w / vbox.0.width, h / vbox.0.height);
 
-            draw_ctx.push_view_box(vbox.0.width, vbox.0.height);
+            draw_ctx.push_view_box(vbox.0.width, vbox.0.height)
         } else {
-            draw_ctx.push_view_box(marker_width, marker_height);
-        }
-
-        let params = draw_ctx.get_view_params();
+            draw_ctx.push_view_box(marker_width, marker_height)
+        };
 
         affine.translate(
             -self.ref_x.get().normalize(&values, &params),

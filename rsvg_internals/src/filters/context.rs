@@ -125,9 +125,11 @@ fn compute_effects_region(
     // It's done this way because with ObjectBoundingBox, non-percentage values are supposed to
     // represent the fractions of the referenced node, and with width and height = 1, 1 this
     // works out exactly like that.
-    if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
-        draw_ctx.push_view_box(1.0, 1.0);
-    }
+    let params = if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
+        draw_ctx.push_view_box(1.0, 1.0)
+    } else {
+        draw_ctx.get_view_params()
+    };
 
     // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
     // referencing node. No units are allowed (it's checked during attribute parsing).
@@ -139,8 +141,6 @@ fn compute_effects_region(
             height: filter.height.get().get_unitless(),
         }
     } else {
-        let params = draw_ctx.get_view_params();
-
         cairo::Rectangle {
             x: filter.x.get().normalize(values, &params),
             y: filter.y.get().normalize(values, &params),
@@ -445,7 +445,7 @@ impl FilterContext {
 
         // See comments in compute_effects_region() for how this works.
         if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
-            draw_ctx.push_view_box(1.0, 1.0);
+            let _params = draw_ctx.push_view_box(1.0, 1.0);
             let rv = f(Box::new(Length::get_unitless));
             draw_ctx.pop_view_box();
 

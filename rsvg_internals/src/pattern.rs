@@ -268,20 +268,24 @@ fn set_pattern_on_draw_context(
     let vbox = pattern.vbox.unwrap();
     let preserve_aspect_ratio = pattern.preserve_aspect_ratio.unwrap();
 
-    if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
-        draw_ctx.push_view_box(1.0, 1.0);
-    }
+    let (pattern_x, pattern_y, pattern_width, pattern_height) = {
+        let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
+            draw_ctx.push_view_box(1.0, 1.0)
+        } else {
+            draw_ctx.get_view_params()
+        };
 
-    let params = draw_ctx.get_view_params();
+        let pattern_x = pattern.x.unwrap().normalize(values, &params);
+        let pattern_y = pattern.y.unwrap().normalize(values, &params);
+        let pattern_width = pattern.width.unwrap().normalize(values, &params);
+        let pattern_height = pattern.height.unwrap().normalize(values, &params);
 
-    let pattern_x = pattern.x.unwrap().normalize(values, &params);
-    let pattern_y = pattern.y.unwrap().normalize(values, &params);
-    let pattern_width = pattern.width.unwrap().normalize(values, &params);
-    let pattern_height = pattern.height.unwrap().normalize(values, &params);
+        if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
+            draw_ctx.pop_view_box();
+        }
 
-    if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
-        draw_ctx.pop_view_box();
-    }
+        (pattern_x, pattern_y, pattern_width, pattern_height)
+    };
 
     // Work out the size of the rectangle so it takes into account the object bounding box
 
@@ -346,7 +350,7 @@ fn set_pattern_on_draw_context(
     let pushed_view_box: bool;
 
     // Create the pattern contents coordinate system
-    if let Some(vbox) = vbox {
+    let _params = if let Some(vbox) = vbox {
         // If there is a vbox, use that
         let (mut x, mut y, w, h) = preserve_aspect_ratio.compute(
             vbox.0.width,
@@ -362,8 +366,9 @@ fn set_pattern_on_draw_context(
 
         caffine = cairo::Matrix::new(w / vbox.0.width, 0.0, 0.0, h / vbox.0.height, x, y);
 
-        draw_ctx.push_view_box(vbox.0.width, vbox.0.height);
+        let params = draw_ctx.push_view_box(vbox.0.width, vbox.0.height);
         pushed_view_box = true;
+        params
     } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
         // If coords are in terms of the bounding box, use them
         let bbrect = bbox.rect.unwrap();
@@ -371,12 +376,14 @@ fn set_pattern_on_draw_context(
         caffine = cairo::Matrix::identity();
         caffine.scale(bbrect.width, bbrect.height);
 
-        draw_ctx.push_view_box(1.0, 1.0);
+        let params = draw_ctx.push_view_box(1.0, 1.0);
         pushed_view_box = true;
+        params
     } else {
         caffine = cairo::Matrix::identity();
         pushed_view_box = false;
-    }
+        draw_ctx.get_view_params()
+    };
 
     if !scwscale.approx_eq_cairo(&1.0) || !schscale.approx_eq_cairo(&1.0) {
         let mut scalematrix = cairo::Matrix::identity();

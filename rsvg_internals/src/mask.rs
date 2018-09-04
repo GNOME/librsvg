@@ -83,20 +83,24 @@ impl NodeMask {
         let mask_units = CoordUnits::from(self.units.get());
         let content_units = CoordUnits::from(self.content_units.get());
 
-        if mask_units == CoordUnits::ObjectBoundingBox {
-            draw_ctx.push_view_box(1.0, 1.0);
-        }
+        let (x, y, w, h) = {
+            let params = if mask_units == CoordUnits::ObjectBoundingBox {
+                draw_ctx.push_view_box(1.0, 1.0)
+            } else {
+                draw_ctx.get_view_params()
+            };
 
-        let params = draw_ctx.get_view_params();
+            let x = self.x.get().normalize(&values, &params);
+            let y = self.y.get().normalize(&values, &params);
+            let w = self.width.get().normalize(&values, &params);
+            let h = self.height.get().normalize(&values, &params);
 
-        let x = self.x.get().normalize(&values, &params);
-        let y = self.y.get().normalize(&values, &params);
-        let w = self.width.get().normalize(&values, &params);
-        let h = self.height.get().normalize(&values, &params);
+            if mask_units == CoordUnits::ObjectBoundingBox {
+                draw_ctx.pop_view_box();
+            }
 
-        if mask_units == CoordUnits::ObjectBoundingBox {
-            draw_ctx.pop_view_box();
-        }
+            (x, y, w, h)
+        };
 
         // Use a scope because mask_cr needs to release the
         // reference to the surface before we access the pixels
@@ -130,32 +134,36 @@ impl NodeMask {
                 draw_ctx.clip(x, y, w, h);
             }
 
-            if content_units == CoordUnits::ObjectBoundingBox {
-                let bbtransform = cairo::Matrix::new(
-                    bbox_rect.width,
-                    0.0,
-                    0.0,
-                    bbox_rect.height,
-                    bbox_rect.x,
-                    bbox_rect.y,
-                );
+            {
+                let _params = if content_units == CoordUnits::ObjectBoundingBox {
+                    let bbtransform = cairo::Matrix::new(
+                        bbox_rect.width,
+                        0.0,
+                        0.0,
+                        bbox_rect.height,
+                        bbox_rect.x,
+                        bbox_rect.y,
+                    );
 
-                mask_cr.transform(bbtransform);
+                    mask_cr.transform(bbtransform);
 
-                draw_ctx.push_view_box(1.0, 1.0);
+                    draw_ctx.push_view_box(1.0, 1.0)
+                } else {
+                    draw_ctx.get_view_params()
+                };
+
+                let res = draw_ctx.with_discrete_layer(node, values, false, &mut |dc| {
+                    node.draw_children(&cascaded, dc, false)
+                });
+
+                if content_units == CoordUnits::ObjectBoundingBox {
+                    draw_ctx.pop_view_box();
+                }
+
+                draw_ctx.set_cairo_context(&save_cr);
+
+                res
             }
-
-            let res = draw_ctx.with_discrete_layer(node, values, false, &mut |dc| {
-                node.draw_children(&cascaded, dc, false)
-            });
-
-            if content_units == CoordUnits::ObjectBoundingBox {
-                draw_ctx.pop_view_box();
-            }
-
-            draw_ctx.set_cairo_context(&save_cr);
-
-            res
         }?;
 
         let opacity = {

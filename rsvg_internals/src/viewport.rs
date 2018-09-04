@@ -47,7 +47,7 @@ pub fn draw_in_viewport(
             dc.clip(vx, vy, vw, vh);
         }
 
-        if let Some(vbox) = vbox {
+        let _params = if let Some(vbox) = vbox {
             // the preserveAspectRatio attribute is only used if viewBox is specified
             // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
@@ -57,7 +57,7 @@ pub fn draw_in_viewport(
                 return Ok(());
             }
 
-            dc.push_view_box(vbox.0.width, vbox.0.height);
+            let params = dc.push_view_box(vbox.0.width, vbox.0.height);
 
             let (x, y, w, h) =
                 preserve_aspect_ratio.compute(vbox.0.width, vbox.0.height, vx, vy, vw, vh);
@@ -71,11 +71,14 @@ pub fn draw_in_viewport(
             if do_clip && clip_mode == ClipMode::ClipToVbox {
                 dc.clip(vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
             }
+
+            params
         } else {
-            dc.push_view_box(vw, vh);
+            let params = dc.push_view_box(vw, vh);
             affine.translate(vx, vy);
             dc.get_cairo_context().set_matrix(affine);
-        }
+            params
+        };
 
         let res = draw_fn(dc);
 
