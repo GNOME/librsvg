@@ -104,7 +104,7 @@ pub struct DrawingCtx<'a> {
     surfaces_stack: Vec<cairo::ImageSurface>,
 
     vb: ViewBox,
-    vb_stack: Vec<ViewBox>,
+    view_box_stack: Vec<ViewBox>,
 
     bbox: BoundingBox,
     bbox_stack: Vec<BoundingBox>,
@@ -159,7 +159,7 @@ impl<'a> DrawingCtx<'a> {
             initial_cr: cr.clone(),
             surfaces_stack: Vec::new(),
             vb: ViewBox::new(0.0, 0.0, vb_width, vb_height),
-            vb_stack: Vec::new(),
+            view_box_stack: Vec::new(),
             bbox: BoundingBox::new(&affine),
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
@@ -223,14 +223,14 @@ impl<'a> DrawingCtx<'a> {
     }
 
     pub fn push_view_box(&mut self, width: f64, height: f64) -> ViewParams {
-        self.vb_stack.push(self.vb);
+        self.view_box_stack.push(self.vb);
         self.vb = ViewBox::new(0.0, 0.0, width, height);
 
         self.get_view_params()
     }
 
     pub fn pop_view_box(&mut self) {
-        self.vb = self.vb_stack.pop().unwrap();
+        self.vb = self.view_box_stack.pop().unwrap();
     }
 
     pub fn insert_bbox(&mut self, bbox: &BoundingBox) {
