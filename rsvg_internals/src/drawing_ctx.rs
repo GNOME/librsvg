@@ -191,9 +191,11 @@ impl<'a> DrawingCtx<'a> {
         }
     }
 
-    pub fn push_view_box(&mut self, width: f64, height: f64) {
+    pub fn push_view_box(&mut self, width: f64, height: f64) -> ViewParams {
         self.vb_stack.push(self.vb);
         self.vb = ViewBox::new(0.0, 0.0, width, height);
+
+        self.get_view_params()
     }
 
     pub fn pop_view_box(&mut self) {
