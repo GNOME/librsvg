@@ -103,7 +103,7 @@ pub struct DrawingCtx<'a> {
 
     surfaces_stack: Vec<cairo::ImageSurface>,
 
-    view_box_stack: Vec<ViewBox>,
+    view_box_stack: RefCell<Vec<ViewBox>>,
 
     bbox: BoundingBox,
     bbox_stack: Vec<BoundingBox>,
@@ -160,7 +160,7 @@ impl<'a> DrawingCtx<'a> {
             cr: cr.clone(),
             initial_cr: cr.clone(),
             surfaces_stack: Vec::new(),
-            view_box_stack,
+            view_box_stack: RefCell::new(view_box_stack),
             bbox: BoundingBox::new(&affine),
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
@@ -215,25 +215,29 @@ impl<'a> DrawingCtx<'a> {
     // push_view_box() / pop_view_box() pair.  How do we make this
     // safe?
     pub fn get_view_params(&self) -> ViewParams {
-        let last = self.view_box_stack.len() - 1;
+        let view_box_stack = self.view_box_stack.borrow();
+        let last = view_box_stack.len() - 1;
 
         ViewParams {
             dpi_x: self.dpi_x,
             dpi_y: self.dpi_y,
-            view_box_width: self.view_box_stack[last].0.width,
-            view_box_height: self.view_box_stack[last].0.height,
+            view_box_width: view_box_stack[last].0.width,
+            view_box_height: view_box_stack[last].0.height,
         }
     }
 
-    pub fn push_view_box(&mut self, width: f64, height: f64) -> ViewParams {
-        self.view_box_stack
-            .push(ViewBox::new(0.0, 0.0, width, height));
+    pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
+        {
+            let mut view_box_stack = self.view_box_stack.borrow_mut();
+
+            view_box_stack.push(ViewBox::new(0.0, 0.0, width, height));
+        }
 
         self.get_view_params()
     }
 
-    pub fn pop_view_box(&mut self) {
-        self.view_box_stack.pop();
+    pub fn pop_view_box(&self) {
+        self.view_box_stack.borrow_mut().pop();
     }
 
     pub fn insert_bbox(&mut self, bbox: &BoundingBox) {
