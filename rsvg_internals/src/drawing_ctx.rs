@@ -40,11 +40,42 @@ use unitinterval::UnitInterval;
 use viewbox::ViewBox;
 
 /// Holds values that are required to normalize `Length` values to a current viewport.
+///
+/// This struct is created by calling `DrawingCtx::push_view_box()` or
+/// `DrawingCtx::get_view_params()`.
 pub struct ViewParams {
-    pub dpi_x: f64,
-    pub dpi_y: f64,
-    pub view_box_width: f64,
-    pub view_box_height: f64,
+    dpi_x: f64,
+    dpi_y: f64,
+    view_box_width: f64,
+    view_box_height: f64,
+}
+
+impl ViewParams {
+    #[cfg(test)]
+    pub fn new(dpi_x: f64, dpi_y: f64, view_box_width: f64, view_box_height: f64) -> ViewParams {
+        ViewParams {
+            dpi_x,
+            dpi_y,
+            view_box_width,
+            view_box_height,
+        }
+    }
+
+    pub fn dpi_x(&self) -> f64 {
+        self.dpi_x
+    }
+
+    pub fn dpi_y(&self) -> f64 {
+        self.dpi_y
+    }
+
+    pub fn view_box_width(&self) -> f64 {
+        self.view_box_width
+    }
+
+    pub fn view_box_height(&self) -> f64 {
+        self.view_box_height
+    }
 }
 
 pub enum RsvgDrawingCtx {}
