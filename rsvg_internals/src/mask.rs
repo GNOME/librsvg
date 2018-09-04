@@ -95,10 +95,6 @@ impl NodeMask {
             let w = self.width.get().normalize(&values, &params);
             let h = self.height.get().normalize(&values, &params);
 
-            if mask_units == CoordUnits::ObjectBoundingBox {
-                draw_ctx.pop_view_box();
-            }
-
             (x, y, w, h)
         };
 
@@ -155,10 +151,6 @@ impl NodeMask {
                 let res = draw_ctx.with_discrete_layer(node, values, false, &mut |dc| {
                     node.draw_children(&cascaded, dc, false)
                 });
-
-                if content_units == CoordUnits::ObjectBoundingBox {
-                    draw_ctx.pop_view_box();
-                }
 
                 draw_ctx.set_cairo_context(&save_cr);
 

@@ -48,6 +48,7 @@ pub struct ViewParams {
     dpi_y: f64,
     view_box_width: f64,
     view_box_height: f64,
+    view_box_stack: Option<Rc<RefCell<Vec<ViewBox>>>>,
 }
 
 impl ViewParams {
@@ -58,6 +59,7 @@ impl ViewParams {
             dpi_y,
             view_box_width,
             view_box_height,
+            view_box_stack: None,
         }
     }
 
@@ -75,6 +77,14 @@ impl ViewParams {
 
     pub fn view_box_height(&self) -> f64 {
         self.view_box_height
+    }
+}
+
+impl Drop for ViewParams {
+    fn drop(&mut self) {
+        if let Some(ref stack) = self.view_box_stack {
+            stack.borrow_mut().pop();
+        }
     }
 }
 
@@ -103,7 +113,7 @@ pub struct DrawingCtx<'a> {
 
     surfaces_stack: Vec<cairo::ImageSurface>,
 
-    view_box_stack: RefCell<Vec<ViewBox>>,
+    view_box_stack: Rc<RefCell<Vec<ViewBox>>>,
 
     bbox: BoundingBox,
     bbox_stack: Vec<BoundingBox>,
@@ -160,7 +170,7 @@ impl<'a> DrawingCtx<'a> {
             cr: cr.clone(),
             initial_cr: cr.clone(),
             surfaces_stack: Vec::new(),
-            view_box_stack: RefCell::new(view_box_stack),
+            view_box_stack: Rc::new(RefCell::new(view_box_stack)),
             bbox: BoundingBox::new(&affine),
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
@@ -211,33 +221,32 @@ impl<'a> DrawingCtx<'a> {
         }
     }
 
-    // FIXME: the result of this is only valid within a
-    // push_view_box() / pop_view_box() pair.  How do we make this
-    // safe?
     pub fn get_view_params(&self) -> ViewParams {
         let view_box_stack = self.view_box_stack.borrow();
         let last = view_box_stack.len() - 1;
+        let stack_top = &view_box_stack[last];
 
         ViewParams {
             dpi_x: self.dpi_x,
             dpi_y: self.dpi_y,
-            view_box_width: view_box_stack[last].0.width,
-            view_box_height: view_box_stack[last].0.height,
+            view_box_width: stack_top.0.width,
+            view_box_height: stack_top.0.height,
+            view_box_stack: None,
         }
     }
 
     pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
-        {
-            let mut view_box_stack = self.view_box_stack.borrow_mut();
+        self.view_box_stack
+            .borrow_mut()
+            .push(ViewBox::new(0.0, 0.0, width, height));
 
-            view_box_stack.push(ViewBox::new(0.0, 0.0, width, height));
+        ViewParams {
+            dpi_x: self.dpi_x,
+            dpi_y: self.dpi_y,
+            view_box_width: width,
+            view_box_height: height,
+            view_box_stack: Some(self.view_box_stack.clone()),
         }
-
-        self.get_view_params()
-    }
-
-    pub fn pop_view_box(&self) {
-        self.view_box_stack.borrow_mut().pop();
     }
 
     pub fn insert_bbox(&mut self, bbox: &BoundingBox) {
