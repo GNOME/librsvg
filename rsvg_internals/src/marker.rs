@@ -195,8 +195,6 @@ impl NodeMarker {
             node.draw_children(&cascaded, dc, clipping)
         });
 
-        draw_ctx.pop_view_box();
-
         cr.restore();
 
         res

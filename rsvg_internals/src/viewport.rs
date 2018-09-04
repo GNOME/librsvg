@@ -82,8 +82,6 @@ pub fn draw_in_viewport(
 
         let res = draw_fn(dc);
 
-        dc.pop_view_box();
-
         res
     })
 }

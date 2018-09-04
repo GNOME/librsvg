@@ -149,10 +149,6 @@ fn compute_effects_region(
         }
     };
 
-    if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
-        draw_ctx.pop_view_box();
-    }
-
     let other_bbox = BoundingBox::new(&affine).with_rect(Some(rect));
 
     // At this point all of the previous viewbox and matrix business gets converted to pixel
@@ -447,7 +443,6 @@ impl FilterContext {
         if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
             let _params = draw_ctx.push_view_box(1.0, 1.0);
             let rv = f(Box::new(Length::get_unitless));
-            draw_ctx.pop_view_box();
 
             rv
         } else {

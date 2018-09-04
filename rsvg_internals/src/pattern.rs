@@ -280,10 +280,6 @@ fn set_pattern_on_draw_context(
         let pattern_width = pattern.width.unwrap().normalize(values, &params);
         let pattern_height = pattern.height.unwrap().normalize(values, &params);
 
-        if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
-            draw_ctx.pop_view_box();
-        }
-
         (pattern_x, pattern_y, pattern_width, pattern_height)
     };
 
@@ -366,9 +362,7 @@ fn set_pattern_on_draw_context(
 
         caffine = cairo::Matrix::new(w / vbox.0.width, 0.0, 0.0, h / vbox.0.height, x, y);
 
-        let params = draw_ctx.push_view_box(vbox.0.width, vbox.0.height);
-        pushed_view_box = true;
-        params
+        draw_ctx.push_view_box(vbox.0.width, vbox.0.height)
     } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
         // If coords are in terms of the bounding box, use them
         let bbrect = bbox.rect.unwrap();
@@ -376,12 +370,9 @@ fn set_pattern_on_draw_context(
         caffine = cairo::Matrix::identity();
         caffine.scale(bbrect.width, bbrect.height);
 
-        let params = draw_ctx.push_view_box(1.0, 1.0);
-        pushed_view_box = true;
-        params
+        draw_ctx.push_view_box(1.0, 1.0)
     } else {
         caffine = cairo::Matrix::identity();
-        pushed_view_box = false;
         draw_ctx.get_view_params()
     };
 
@@ -424,10 +415,6 @@ fn set_pattern_on_draw_context(
     // Return to the original coordinate system and rendering context
 
     draw_ctx.set_cairo_context(&cr_save);
-
-    if pushed_view_box {
-        draw_ctx.pop_view_box();
-    }
 
     // Set the final surface as a Cairo pattern into the Cairo context
 

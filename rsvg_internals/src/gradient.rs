@@ -516,10 +516,6 @@ fn set_linear_gradient_on_pattern(
                 y2.as_ref().unwrap().normalize(values, &params),
             );
 
-            if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-                draw_ctx.pop_view_box();
-            }
-
             set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
         }
     } else {
@@ -602,10 +598,6 @@ fn set_radial_gradient_on_pattern(
             let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
 
             let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
-
-            if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-                draw_ctx.pop_view_box();
-            }
 
             set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
         }
