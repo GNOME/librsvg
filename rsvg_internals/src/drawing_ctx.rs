@@ -43,6 +43,11 @@ use viewbox::ViewBox;
 ///
 /// This struct is created by calling `DrawingCtx::push_view_box()` or
 /// `DrawingCtx::get_view_params()`.
+///
+/// This struct holds the size of the current viewport in the user's coordinate system.  A
+/// viewport pushed with `DrawingCtx::push_view_box()` will remain in place until the
+/// returned `ViewParams` is dropped; at that point, the `DrawingCtx` will resume using its
+/// previous viewport.
 pub struct ViewParams {
     dpi_x: f64,
     dpi_y: f64,
@@ -221,6 +226,7 @@ impl<'a> DrawingCtx<'a> {
         }
     }
 
+    /// Gets the viewport that was last pushed with `push_view_box()`.
     pub fn get_view_params(&self) -> ViewParams {
         let view_box_stack = self.view_box_stack.borrow();
         let last = view_box_stack.len() - 1;
@@ -235,6 +241,13 @@ impl<'a> DrawingCtx<'a> {
         }
     }
 
+    /// Pushes a viewport size for normalizing `Length` values.
+    ///
+    /// You should pass the returned `ViewParams` to all subsequent `Length.normalize()`
+    /// calls that correspond to this viewport.
+    ///
+    /// The viewport will stay in place, and will be the one returned by
+    /// `get_view_params()`, until the returned `ViewParams` is dropped.
     pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
         self.view_box_stack
             .borrow_mut()
