@@ -343,8 +343,6 @@ fn set_pattern_on_draw_context(
 
     let mut caffine: cairo::Matrix;
 
-    let pushed_view_box: bool;
-
     // Create the pattern contents coordinate system
     let _params = if let Some(vbox) = vbox {
         // If there is a vbox, use that
