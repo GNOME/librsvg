@@ -9,7 +9,7 @@ use pango_cairo_sys;
 use pango_sys;
 use pangocairo;
 use std::cell::RefCell;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
@@ -53,7 +53,7 @@ pub struct ViewParams {
     dpi_y: f64,
     view_box_width: f64,
     view_box_height: f64,
-    view_box_stack: Option<Rc<RefCell<Vec<ViewBox>>>>,
+    view_box_stack: Option<Weak<RefCell<Vec<ViewBox>>>>,
 }
 
 impl ViewParams {
@@ -87,7 +87,10 @@ impl ViewParams {
 
 impl Drop for ViewParams {
     fn drop(&mut self) {
-        if let Some(ref stack) = self.view_box_stack {
+        if let Some(ref weak_stack) = self.view_box_stack {
+            let stack = weak_stack
+                .upgrade()
+                .expect("A ViewParams was dropped after its DrawingCtx!?");
             stack.borrow_mut().pop();
         }
     }
@@ -258,7 +261,7 @@ impl<'a> DrawingCtx<'a> {
             dpi_y: self.dpi_y,
             view_box_width: width,
             view_box_height: height,
-            view_box_stack: Some(self.view_box_stack.clone()),
+            view_box_stack: Some(Rc::downgrade(&self.view_box_stack)),
         }
     }
 
