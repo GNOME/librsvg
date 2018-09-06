@@ -53,6 +53,15 @@ void rsvg_load_set_svg_node_atts (RsvgHandle *handle, RsvgNode *node);
 G_GNUC_INTERNAL
 void rsvg_node_register_in_defs(RsvgNode *node, RsvgDefs *defs);
 
+/* Implemented in rsvg_internals/src/xml.rs */
+typedef struct RsvgXmlState RsvgXmlState;
+
+/* Implemented in rsvg_internals/src/xml.rs */
+extern RsvgXmlState *rsvg_xml_state_new ();
+extern void rsvg_xml_state_free (RsvgXmlState *xml);
+extern void rsvg_xml_state_set_root (RsvgXmlState *xml, RsvgNode *root);
+extern RsvgTree *rsvg_xml_state_steal_tree(RsvgXmlState *xml);
+
 /* Holds the XML parsing state */
 typedef struct {
     /* not a handler stack. each nested handler keeps
@@ -70,8 +79,9 @@ typedef struct {
      */
     GSList *element_name_stack;
 
-    RsvgTree *tree;
     RsvgNode *currentnode;
+
+    RsvgXmlState *rust_state;
 } XmlState;
 
 /* Holds the GIO and loading state for compressed data */
@@ -127,8 +137,8 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
                                                 (GDestroyNotify) xmlFreeNode);
     load->xml.ctxt = NULL;
     load->xml.element_name_stack = NULL;
-    load->xml.tree = NULL;
     load->xml.currentnode = NULL;
+    load->xml.rust_state = rsvg_xml_state_new ();
 
     return load;
 }
@@ -165,14 +175,14 @@ rsvg_load_free (RsvgLoad *load)
 
     g_clear_object (&load->compressed_input_stream);
     g_clear_pointer (&load->xml.currentnode, rsvg_node_unref);
-    g_clear_pointer (&load->xml.tree, rsvg_tree_free);
+    g_clear_pointer (&load->xml.rust_state, rsvg_xml_state_free);
     g_free (load);
 }
 
 RsvgTree *
 rsvg_load_steal_tree (RsvgLoad *load)
 {
-    return g_steal_pointer (&load->xml.tree);
+    return rsvg_xml_state_steal_tree (load->xml.rust_state);
 }
 
 static void
@@ -307,7 +317,7 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
         rsvg_node_add_child (load->xml.currentnode, newnode);
         load->xml.currentnode = rsvg_node_unref (load->xml.currentnode);
     } else if (is_svg) {
-        load->xml.tree = rsvg_tree_new (newnode);
+        rsvg_xml_state_set_root (load->xml.rust_state, newnode);
     }
 
     load->xml.currentnode = rsvg_node_ref (newnode);
@@ -1194,7 +1204,7 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     }
 
     if (!res) {
-        g_clear_pointer (&load->xml.tree, rsvg_tree_free);
+        g_clear_pointer (&load->xml.rust_state, rsvg_xml_state_free);
     }
 
     load->state = LOAD_STATE_CLOSED;

@@ -168,10 +168,6 @@ void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
 
 /* Implemented in rsvg_internals/src/tree.rs */
 G_GNUC_INTERNAL
-RsvgTree *rsvg_tree_new (RsvgNode *root);
-
-/* Implemented in rsvg_internals/src/tree.rs */
-G_GNUC_INTERNAL
 void rsvg_tree_free (RsvgTree *tree);
 
 /* Implemented in rsvg_internals/src/tree.rs */

@@ -62,7 +62,6 @@ pub use tree::{
     rsvg_tree_free,
     rsvg_tree_get_root,
     rsvg_tree_is_root,
-    rsvg_tree_new,
     rsvg_tree_root_is_svg,
 };
 
@@ -77,6 +76,13 @@ pub use property_bag::{
 pub use structure::rsvg_node_svg_get_size;
 
 pub use text::{rsvg_node_chars_append, rsvg_node_chars_new};
+
+pub use xml::{
+    rsvg_xml_state_free,
+    rsvg_xml_state_new,
+    rsvg_xml_state_set_root,
+    rsvg_xml_state_steal_tree,
+};
 
 #[macro_use]
 mod log;
@@ -134,3 +140,4 @@ mod unitinterval;
 mod util;
 mod viewbox;
 mod viewport;
+mod xml;
