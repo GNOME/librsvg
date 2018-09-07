@@ -109,6 +109,10 @@ impl XmlHandler for NodeCreationContext {
 }
 
 impl NodeCreationContext {
+    fn empty() -> NodeCreationContext {
+        NodeCreationContext { node: None }
+    }
+
     fn create_node(
         &self,
         parent: Option<&Rc<Node>>,
@@ -190,7 +194,7 @@ impl XmlState {
             top.handler
                 .start_element(Some(&top.handler.get_node()), handle, name, pbag)
         } else {
-            let default_context = NodeCreationContext { node: None };
+            let default_context = NodeCreationContext::empty();
 
             default_context.start_element(None, handle, name, pbag)
         };
