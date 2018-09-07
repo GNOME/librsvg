@@ -6,8 +6,8 @@ use glib::translate::*;
 use glib_sys;
 
 use handle::{self, RsvgHandle};
-use load::{rsvg_load_new_node, rsvg_load_set_node_atts};
-use node::{box_node, Node, RsvgNode};
+use load::rsvg_load_new_node;
+use node::{box_node, Node, NodeType, RsvgNode};
 use property_bag::PropertyBag;
 use tree::{RsvgTree, Tree};
 use util::utf8_cstr;
@@ -102,7 +102,16 @@ impl XmlState {
 
         self.set_current_node(Some(new_node.clone()));
 
-        rsvg_load_set_node_atts(handle, &new_node, name, pbag);
+        new_node.set_atts(&new_node, handle, pbag);
+
+        // The "svg" node is special; it will load its id/class
+        // attributes until the end, when sax_end_element_cb() calls
+        // rsvg_node_svg_apply_atts()
+        if new_node.get_type() != NodeType::Svg {
+            new_node.parse_style_attributes(handle, name, pbag);
+        }
+
+        new_node.set_overridden_properties();
     }
 }
 
