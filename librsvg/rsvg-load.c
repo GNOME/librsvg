@@ -63,6 +63,10 @@ extern void rsvg_xml_state_set_root (RsvgXmlState *xml, RsvgNode *root);
 extern RsvgTree *rsvg_xml_state_steal_tree(RsvgXmlState *xml);
 extern RsvgNode *rsvg_xml_state_get_current_node(RsvgXmlState *xml);
 extern void rsvg_xml_state_set_current_node(RsvgXmlState *xml, RsvgNode *node);
+extern void rsvg_xml_state_push_element_name(RsvgXmlState *xml, const char *name);
+extern void rsvg_xml_state_pop_element_name(RsvgXmlState *xml);
+extern gboolean rsvg_xml_state_topmost_element_name_is(RsvgXmlState *xml, const char *name);
+extern void rsvg_xml_state_free_element_name_stack(RsvgXmlState *xml);
 
 /* Holds the XML parsing state */
 typedef struct {
@@ -75,11 +79,6 @@ typedef struct {
     GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
 
     xmlParserCtxtPtr ctxt;
-
-    /* Stack of element names while parsing; used to know when to stop parsing
-     * the current element.
-     */
-    GSList *element_name_stack;
 
     RsvgXmlState *rust_state;
 } XmlState;
@@ -136,7 +135,6 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
                                                 g_free,
                                                 (GDestroyNotify) xmlFreeNode);
     load->xml.ctxt = NULL;
-    load->xml.element_name_stack = NULL;
     load->xml.rust_state = rsvg_xml_state_new ();
 
     return load;
@@ -268,38 +266,6 @@ start_style (RsvgLoad *load, RsvgPropertyBag *atts)
 }
 
 static void
-push_element_name (RsvgLoad *load, const char *name)
-{
-    /* libxml holds on to the name while parsing; we won't dup the name here */
-    load->xml.element_name_stack = g_slist_prepend (load->xml.element_name_stack, (void *) name);
-}
-
-static gboolean
-topmost_element_name_is (RsvgLoad *load, const char *name)
-{
-    if (load->xml.element_name_stack) {
-        const char *name_in_stack = load->xml.element_name_stack->data;
-
-        return strcmp (name, name_in_stack) == 0;
-    } else
-        return FALSE;
-}
-
-static void
-pop_element_name (RsvgLoad *load)
-{
-    load->xml.element_name_stack = g_slist_delete_link (load->xml.element_name_stack,
-                                                        load->xml.element_name_stack);
-}
-
-static void
-free_element_name_stack (RsvgLoad *load)
-{
-    g_slist_free (load->xml.element_name_stack);
-    load->xml.element_name_stack = NULL;
-}
-
-static void
 standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
 {
     RsvgDefs *defs;
@@ -312,7 +278,7 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
 
     newnode = rsvg_load_new_node (name, current_node, atts, defs);
 
-    push_element_name (load, name);
+    rsvg_xml_state_push_element_name (load->xml.rust_state, name);
 
     if (current_node) {
         rsvg_node_add_child (current_node, newnode);
@@ -672,14 +638,14 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
             rsvg_load_set_svg_node_atts (load->handle, current_node);
         }
 
-        if (current_node && topmost_element_name_is (load, name)) {
+        if (current_node && rsvg_xml_state_topmost_element_name_is (load->xml.rust_state, name)) {
             RsvgNode *parent;
 
             parent = rsvg_node_get_parent (current_node);
             rsvg_xml_state_set_current_node (load->xml.rust_state, parent);
             parent = rsvg_node_unref (parent);
 
-            pop_element_name (load);
+            rsvg_xml_state_pop_element_name (load->xml.rust_state);
         }
 
         current_node = rsvg_node_unref (current_node);
@@ -1030,7 +996,7 @@ close_impl (RsvgLoad *load, GError ** error)
         load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
     }
 
-    free_element_name_stack (load);
+    rsvg_xml_state_free_element_name_stack (load->xml.rust_state);
 
     load->error = NULL;
 

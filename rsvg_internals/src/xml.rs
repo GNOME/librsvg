@@ -1,8 +1,13 @@
+use libc;
 use std::ptr;
 use std::rc::Rc;
 
+use glib::translate::*;
+use glib_sys;
+
 use node::{box_node, Node, RsvgNode};
 use tree::{RsvgTree, Tree};
+use util::utf8_cstr;
 
 // A *const RsvgXmlState is just the type that we export to C
 pub enum RsvgXmlState {}
@@ -10,6 +15,10 @@ pub enum RsvgXmlState {}
 struct XmlState {
     tree: Option<Box<Tree>>,
     current_node: Option<Rc<Node>>,
+
+    // Stack of element names while parsing; used to know when to stop
+    // parsing the current element.
+    element_name_stack: Vec<String>,
 }
 
 impl XmlState {
@@ -17,6 +26,7 @@ impl XmlState {
         XmlState {
             tree: None,
             current_node: None,
+            element_name_stack: Vec::new(),
         }
     }
 
@@ -38,6 +48,28 @@ impl XmlState {
 
     pub fn set_current_node(&mut self, node: Option<Rc<Node>>) {
         self.current_node = node;
+    }
+
+    pub fn push_element_name(&mut self, name: &str) {
+        self.element_name_stack.push(name.to_string());
+    }
+
+    pub fn pop_element_name(&mut self) {
+        self.element_name_stack.pop();
+    }
+
+    pub fn topmost_element_name_is(&mut self, name: &str) -> bool {
+        let len = self.element_name_stack.len();
+
+        if len > 0 {
+            self.element_name_stack[len - 1] == name
+        } else {
+            false
+        }
+    }
+
+    pub fn free_element_name_stack(&mut self) {
+        self.element_name_stack.clear();
     }
 }
 
@@ -106,4 +138,48 @@ pub extern "C" fn rsvg_xml_state_set_current_node(
     };
 
     xml.set_current_node(node);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_xml_state_push_element_name(
+    xml: *mut RsvgXmlState,
+    name: *const libc::c_char,
+) {
+    assert!(!xml.is_null());
+    let xml = unsafe { &mut *(xml as *mut XmlState) };
+
+    assert!(!name.is_null());
+
+    let name = unsafe { utf8_cstr(name) };
+    xml.push_element_name(name);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_xml_state_pop_element_name(xml: *mut RsvgXmlState) {
+    assert!(!xml.is_null());
+    let xml = unsafe { &mut *(xml as *mut XmlState) };
+
+    xml.pop_element_name();
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_xml_state_topmost_element_name_is(
+    xml: *mut RsvgXmlState,
+    name: *const libc::c_char,
+) -> glib_sys::gboolean {
+    assert!(!xml.is_null());
+    let xml = unsafe { &mut *(xml as *mut XmlState) };
+
+    assert!(!name.is_null());
+
+    let name = unsafe { utf8_cstr(name) };
+    xml.topmost_element_name_is(name).to_glib()
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_xml_state_free_element_name_stack(xml: *mut RsvgXmlState) {
+    assert!(!xml.is_null());
+    let xml = unsafe { &mut *(xml as *mut XmlState) };
+
+    xml.free_element_name_stack();
 }
