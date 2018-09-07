@@ -9,6 +9,7 @@ use handle::{self, RsvgHandle};
 use load::rsvg_load_new_node;
 use node::{box_node, Node, NodeType, RsvgNode};
 use property_bag::PropertyBag;
+use structure::NodeSvg;
 use tree::{RsvgTree, Tree};
 use util::utf8_cstr;
 
@@ -104,14 +105,33 @@ impl XmlState {
 
         new_node.set_atts(&new_node, handle, pbag);
 
-        // The "svg" node is special; it will load its id/class
-        // attributes until the end, when sax_end_element_cb() calls
-        // rsvg_node_svg_apply_atts()
+        // The "svg" node is special; it will parse its style attributes
+        // until the end, in standard_element_end().
         if new_node.get_type() != NodeType::Svg {
             new_node.parse_style_attributes(handle, name, pbag);
         }
 
         new_node.set_overridden_properties();
+    }
+
+    pub fn standard_element_end(&mut self, handle: *const RsvgHandle, name: &str) {
+        if let Some(ref current_node) = self.current_node.clone() {
+            // The "svg" node is special; it parses its style attributes
+            // here, not during element creation.
+            if current_node.get_type() == NodeType::Svg {
+                current_node.with_impl(|svg: &NodeSvg| {
+                    svg.parse_style_attributes(current_node, handle);
+                });
+            }
+
+            if self.topmost_element_name_is(name) {
+                let parent = current_node.get_parent();
+
+                self.set_current_node(parent);
+
+                self.pop_element_name();
+            }
+        }
     }
 }
 
@@ -243,4 +263,19 @@ pub extern "C" fn rsvg_xml_state_standard_element_start(
     let pbag = unsafe { &*pbag };
 
     xml.standard_element_start(handle, name, pbag);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_xml_state_standard_element_end(
+    xml: *mut RsvgXmlState,
+    handle: *const RsvgHandle,
+    name: *const libc::c_char,
+) {
+    assert!(!xml.is_null());
+    let xml = unsafe { &mut *(xml as *mut XmlState) };
+
+    assert!(!name.is_null());
+    let name = unsafe { utf8_cstr(name) };
+
+    xml.standard_element_end(handle, name);
 }

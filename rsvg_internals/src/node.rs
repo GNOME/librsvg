@@ -690,7 +690,6 @@ pub fn node_new(
         element_name,
         id,
         class,
-        rsvg_state_new(),
         node_impl,
     ))
 }

@@ -60,6 +60,7 @@ extern void rsvg_xml_state_pop_element_name(RsvgXmlState *xml);
 extern gboolean rsvg_xml_state_topmost_element_name_is(RsvgXmlState *xml, const char *name);
 extern void rsvg_xml_state_free_element_name_stack(RsvgXmlState *xml);
 extern void rsvg_xml_state_standard_element_start(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
+extern void rsvg_xml_state_standard_element_end(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
 
 /* Holds the XML parsing state */
 typedef struct {
@@ -583,30 +584,6 @@ sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
 }
 
 static void
-standard_element_end (RsvgLoad *load, const char *name)
-{
-    RsvgNode *current_node;
-
-    current_node = rsvg_xml_state_get_current_node (load->xml.rust_state);
-
-    if (current_node) {
-        rsvg_load_set_svg_node_atts (load->handle, current_node);
-    }
-
-    if (current_node && rsvg_xml_state_topmost_element_name_is (load->xml.rust_state, name)) {
-        RsvgNode *parent;
-
-        parent = rsvg_node_get_parent (current_node);
-        rsvg_xml_state_set_current_node (load->xml.rust_state, parent);
-        parent = rsvg_node_unref (parent);
-
-        rsvg_xml_state_pop_element_name (load->xml.rust_state);
-    }
-
-    current_node = rsvg_node_unref (current_node);
-}
-
-static void
 sax_end_element_cb (void *data, const xmlChar * xmlname)
 {
     RsvgLoad *load =  data;
@@ -627,7 +604,7 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
             load->xml.handler = NULL;
         }
 
-        standard_element_end (load, name);
+        rsvg_xml_state_standard_element_end (load->xml.rust_state, load->handle, name);
     }
 }
 

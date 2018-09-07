@@ -22,7 +22,6 @@ use filters::{
     turbulence::Turbulence,
 };
 use gradient::NodeGradient;
-use handle::RsvgHandle;
 use image::NodeImage;
 use link::NodeLink;
 use marker::NodeMarker;
@@ -306,39 +305,4 @@ pub fn rsvg_load_new_node(
     }
 
     node
-}
-
-pub fn rsvg_load_set_node_atts(
-    handle: *const RsvgHandle,
-    node: &RsvgNode,
-    tag: &str,
-    pbag: &PropertyBag,
-) {
-    node.set_atts(node, handle, pbag);
-
-    // The "svg" node is special; it will load its id/class
-    // attributes until the end, when sax_end_element_cb() calls
-    // rsvg_node_svg_apply_atts()
-    if node.get_type() != NodeType::Svg {
-        node.set_style(handle, pbag);
-    }
-
-    node.set_overridden_properties();
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_load_set_svg_node_atts(
-    handle: *const RsvgHandle,
-    raw_node: *const RsvgNode,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    if node.get_type() != NodeType::Svg {
-        return;
-    }
-
-    node.with_impl(|svg: &NodeSvg| {
-        svg.set_delayed_style(node, handle);
-    });
 }
