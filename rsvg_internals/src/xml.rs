@@ -52,28 +52,9 @@ impl XmlHandler for NodeCreationContext {
         name: &str,
         pbag: &PropertyBag,
     ) -> Box<XmlHandler> {
-        let mut defs = handle::get_defs(handle);
-        let mut is_svg = false;
+        let node = self.create_node(parent, handle, name, pbag);
 
-        let new_node = rsvg_load_new_node(name, parent, pbag, &mut defs, &mut is_svg);
-
-        if let Some(parent) = parent {
-            parent.add_child(&new_node);
-        }
-
-        new_node.set_atts(&new_node, handle, pbag);
-
-        // The "svg" node is special; it will parse its style attributes
-        // until the end, in standard_element_end().
-        if new_node.get_type() != NodeType::Svg {
-            new_node.parse_style_attributes(handle, name, pbag);
-        }
-
-        new_node.set_overridden_properties();
-
-        Box::new(NodeCreationContext {
-            node: Some(new_node),
-        })
+        Box::new(NodeCreationContext { node: Some(node) })
     }
 
     fn end_element(&self, handle: *mut RsvgHandle, _name: &str) -> Rc<Node> {
@@ -120,6 +101,36 @@ impl XmlHandler for NodeCreationContext {
 
     fn get_node(&self) -> Rc<Node> {
         self.node.as_ref().unwrap().clone()
+    }
+}
+
+impl NodeCreationContext {
+    fn create_node(
+        &self,
+        parent: Option<&Rc<Node>>,
+        handle: *const RsvgHandle,
+        name: &str,
+        pbag: &PropertyBag,
+    ) -> Rc<Node> {
+        let mut defs = handle::get_defs(handle);
+
+        let new_node = rsvg_load_new_node(name, parent, pbag, &mut defs);
+
+        if let Some(parent) = parent {
+            parent.add_child(&new_node);
+        }
+
+        new_node.set_atts(&new_node, handle, pbag);
+
+        // The "svg" node is special; it will parse its style attributes
+        // until the end, in standard_element_end().
+        if new_node.get_type() != NodeType::Svg {
+            new_node.parse_style_attributes(handle, name, pbag);
+        }
+
+        new_node.set_overridden_properties();
+
+        new_node
     }
 }
 
