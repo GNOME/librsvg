@@ -52,9 +52,13 @@ impl XmlHandler for NodeCreationContext {
         name: &str,
         pbag: &PropertyBag,
     ) -> Box<XmlHandler> {
-        let node = self.create_node(parent, handle, name, pbag);
+        if name == "style" {
+            unimplemented!();
+        } else {
+            let node = self.create_node(parent, handle, name, pbag);
 
-        Box::new(NodeCreationContext { node: Some(node) })
+            Box::new(NodeCreationContext { node: Some(node) })
+        }
     }
 
     fn end_element(&self, handle: *mut RsvgHandle, _name: &str) -> Rc<Node> {
