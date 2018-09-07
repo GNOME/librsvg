@@ -44,7 +44,7 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_new,
 };
 
-pub use load::{rsvg_load_new_node, rsvg_load_set_node_atts, rsvg_load_set_svg_node_atts};
+pub use load::rsvg_load_set_svg_node_atts;
 
 pub use node::{
     rsvg_node_add_child,
@@ -86,6 +86,7 @@ pub use xml::{
     rsvg_xml_state_push_element_name,
     rsvg_xml_state_set_current_node,
     rsvg_xml_state_set_root,
+    rsvg_xml_state_standard_element_start,
     rsvg_xml_state_steal_tree,
     rsvg_xml_state_topmost_element_name_is,
 };

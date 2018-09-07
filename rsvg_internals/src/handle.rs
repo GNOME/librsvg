@@ -35,10 +35,10 @@ extern "C" {
     ) -> *mut u8;
 }
 
-pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a Defs {
+pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a mut Defs {
     unsafe {
         let d = rsvg_handle_get_defs(handle);
-        &*(d as *const Defs)
+        &mut *(d as *mut Defs)
     }
 }
 

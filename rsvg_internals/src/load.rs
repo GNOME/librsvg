@@ -1,9 +1,8 @@
-use libc;
 use std::collections::HashMap;
 
 use attributes::Attribute;
 use clip_path::NodeClipPath;
-use defs::{Defs, RsvgDefs};
+use defs::Defs;
 use filters::{
     blend::Blend,
     color_matrix::ColorMatrix,
@@ -35,7 +34,6 @@ use shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
 use stop::NodeStop;
 use structure::{NodeDefs, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
 use text::{NodeTRef, NodeTSpan, NodeText};
-use util::utf8_cstr;
 
 macro_rules! node_create_fn {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
@@ -43,9 +41,9 @@ macro_rules! node_create_fn {
             element_name: &str,
             id: Option<&str>,
             class: Option<&str>,
-            parent: *const RsvgNode,
-        ) -> *const RsvgNode {
-            boxed_node_new(
+            parent: Option<&RsvgNode>,
+        ) -> RsvgNode {
+            node_new(
                 NodeType::$node_type,
                 parent,
                 element_name,
@@ -176,7 +174,8 @@ node_create_fn!(
 );
 node_create_fn!(create_use, Use, NodeUse::new);
 
-type NodeCreateFn = fn(&str, Option<&str>, Option<&str>, *const RsvgNode) -> *const RsvgNode;
+type NodeCreateFn =
+    fn(name: &str, id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode;
 
 lazy_static! {
     // Lines in comments are elements that we don't support.
@@ -271,21 +270,12 @@ lazy_static! {
     };
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_load_new_node(
-    raw_name: *const libc::c_char,
-    parent: *const RsvgNode,
-    pbag: *const PropertyBag<'_>,
-    defs: *mut RsvgDefs,
-) -> *const RsvgNode {
-    assert!(!raw_name.is_null());
-    assert!(!pbag.is_null());
-    assert!(!defs.is_null());
-
-    let name = unsafe { utf8_cstr(raw_name) };
-    let pbag = unsafe { &*pbag };
-    let defs = unsafe { &mut *(defs as *mut Defs) };
-
+pub fn rsvg_load_new_node(
+    name: &str,
+    parent: Option<&RsvgNode>,
+    pbag: &PropertyBag,
+    defs: &mut Defs,
+) -> RsvgNode {
     let mut id = None;
     let mut class = None;
 
@@ -310,28 +300,20 @@ pub extern "C" fn rsvg_load_new_node(
     };
 
     let node = create_fn(name, id, class, parent);
-    assert!(!node.is_null());
 
     if id.is_some() {
-        let n = unsafe { &*node };
-        defs.insert(id.unwrap(), n);
+        defs.insert(id.unwrap(), &node);
     }
 
     node
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_load_set_node_atts(
+pub fn rsvg_load_set_node_atts(
     handle: *const RsvgHandle,
-    raw_node: *mut RsvgNode,
-    pbag: *const PropertyBag<'_>,
+    node: &RsvgNode,
+    tag: &str,
+    pbag: &PropertyBag,
 ) {
-    assert!(!raw_node.is_null());
-    assert!(!pbag.is_null());
-
-    let node: &RsvgNode = unsafe { &*raw_node };
-    let pbag = unsafe { &*pbag };
-
     node.set_atts(node, handle, pbag);
 
     // The "svg" node is special; it will load its id/class

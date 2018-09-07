@@ -39,14 +39,6 @@ typedef enum {
 
 /* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts, RsvgDefs *defs);
-
-/* Implemented in rsvg_internals/src/load.rs */
-G_GNUC_INTERNAL
-void rsvg_load_set_node_atts (RsvgHandle *handle, RsvgNode *node, RsvgPropertyBag atts);
-
-/* Implemented in rsvg_internals/src/load.rs */
-G_GNUC_INTERNAL
 void rsvg_load_set_svg_node_atts (RsvgHandle *handle, RsvgNode *node);
 
 /* Implemented in rsvg_internals/src/node.rs */
@@ -67,6 +59,7 @@ extern void rsvg_xml_state_push_element_name(RsvgXmlState *xml, const char *name
 extern void rsvg_xml_state_pop_element_name(RsvgXmlState *xml);
 extern gboolean rsvg_xml_state_topmost_element_name_is(RsvgXmlState *xml, const char *name);
 extern void rsvg_xml_state_free_element_name_stack(RsvgXmlState *xml);
+extern void rsvg_xml_state_standard_element_start(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
 
 /* Holds the XML parsing state */
 typedef struct {
@@ -265,35 +258,6 @@ start_style (RsvgLoad *load, RsvgPropertyBag *atts)
     rsvg_property_bag_iter_end (iter);
 }
 
-static void
-standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
-{
-    RsvgDefs *defs;
-    RsvgNode *current_node;
-    RsvgNode *newnode;
-
-    defs = rsvg_handle_get_defs(load->handle);
-
-    current_node = rsvg_xml_state_get_current_node (load->xml.rust_state);
-
-    newnode = rsvg_load_new_node (name, current_node, atts, defs);
-
-    rsvg_xml_state_push_element_name (load->xml.rust_state, name);
-
-    if (current_node) {
-        rsvg_node_add_child (current_node, newnode);
-    } else if (is_svg) {
-        rsvg_xml_state_set_root (load->xml.rust_state, newnode);
-    }
-
-    rsvg_xml_state_set_current_node (load->xml.rust_state, newnode);
-    current_node = rsvg_node_unref (current_node);
-
-    rsvg_load_set_node_atts (load->handle, newnode, atts);
-
-    newnode = rsvg_node_unref (newnode);
-}
-
 /* start xinclude */
 
 typedef struct _RsvgSaxHandlerXinclude {
@@ -333,8 +297,12 @@ xinclude_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag
         if (z->in_fallback) {
             if (!strcmp (name, "xi:include"))
                 start_xinclude (z->load, atts);
-            else
-                standard_element_start (z->load, (const char *) name, atts);
+            else {
+                rsvg_xml_state_standard_element_start (z->load->xml.rust_state,
+                                                       z->load->handle,
+                                                       (const char *) name,
+                                                       atts);
+            }
         } else if (!strcmp (name, "xi:fallback")) {
             z->in_fallback = TRUE;
         }
@@ -603,8 +571,12 @@ sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
             start_style (load, bag);
         else if (!strcmp ((const char *) name, "include"))      /* xi:include */
             start_xinclude (load, bag);
-        else
-            standard_element_start (load, (const char *) name, bag);
+        else {
+            rsvg_xml_state_standard_element_start (load->xml.rust_state,
+                                                   load->handle,
+                                                   (const char *) name,
+                                                   bag);
+        }
     }
 
     rsvg_property_bag_free (bag);

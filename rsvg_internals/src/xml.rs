@@ -5,7 +5,10 @@ use std::rc::Rc;
 use glib::translate::*;
 use glib_sys;
 
+use handle::{self, RsvgHandle};
+use load::{rsvg_load_new_node, rsvg_load_set_node_atts};
 use node::{box_node, Node, RsvgNode};
+use property_bag::PropertyBag;
 use tree::{RsvgTree, Tree};
 use util::utf8_cstr;
 
@@ -70,6 +73,36 @@ impl XmlState {
 
     pub fn free_element_name_stack(&mut self) {
         self.element_name_stack.clear();
+    }
+
+    pub fn standard_element_start(
+        &mut self,
+        handle: *const RsvgHandle,
+        name: &str,
+        pbag: &PropertyBag,
+    ) {
+        let mut defs = handle::get_defs(handle);
+        let mut is_svg = false;
+
+        let new_node = rsvg_load_new_node(
+            name,
+            self.current_node.as_ref(),
+            pbag,
+            &mut defs,
+            &mut is_svg,
+        );
+
+        self.push_element_name(name);
+
+        if let Some(ref current_node) = self.current_node {
+            current_node.add_child(&new_node);
+        } else if is_svg {
+            self.set_root(&new_node);
+        }
+
+        self.set_current_node(Some(new_node.clone()));
+
+        rsvg_load_set_node_atts(handle, &new_node, name, pbag);
     }
 }
 
@@ -182,4 +215,23 @@ pub extern "C" fn rsvg_xml_state_free_element_name_stack(xml: *mut RsvgXmlState)
     let xml = unsafe { &mut *(xml as *mut XmlState) };
 
     xml.free_element_name_stack();
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_xml_state_standard_element_start(
+    xml: *mut RsvgXmlState,
+    handle: *const RsvgHandle,
+    name: *const libc::c_char,
+    pbag: *const PropertyBag,
+) {
+    assert!(!xml.is_null());
+    let xml = unsafe { &mut *(xml as *mut XmlState) };
+
+    assert!(!name.is_null());
+    let name = unsafe { utf8_cstr(name) };
+
+    assert!(!pbag.is_null());
+    let pbag = unsafe { &*pbag };
+
+    xml.standard_element_start(handle, name, pbag);
 }

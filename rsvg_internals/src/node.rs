@@ -672,6 +672,29 @@ pub fn boxed_node_new(
     )))
 }
 
+pub fn node_new(
+    node_type: NodeType,
+    parent: Option<&RsvgNode>,
+    element_name: &str,
+    id: Option<&str>,
+    class: Option<&str>,
+    node_impl: Box<NodeTrait>,
+) -> RsvgNode {
+    Rc::new(Node::new(
+        node_type,
+        if let Some(parent) = parent {
+            Some(Rc::downgrade(parent))
+        } else {
+            None
+        },
+        element_name,
+        id,
+        class,
+        rsvg_state_new(),
+        node_impl,
+    ))
+}
+
 impl Children {
     fn new(next: Option<Rc<Node>>, next_back: Option<Rc<Node>>) -> Self {
         Self { next, next_back }
