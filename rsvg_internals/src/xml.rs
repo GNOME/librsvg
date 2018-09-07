@@ -76,6 +76,9 @@ impl XmlState {
         self.element_name_stack.clear();
     }
 
+    /// Starts a node for an SVG element of type `name` and hooks it to the tree.
+    ///
+    /// `pbag` is the set of key/value pairs from the element's XML attributes.
     pub fn standard_element_start(
         &mut self,
         handle: *const RsvgHandle,
@@ -114,6 +117,7 @@ impl XmlState {
         new_node.set_overridden_properties();
     }
 
+    /// Ends an SVG element for which we create a node.
     pub fn standard_element_end(&mut self, handle: *const RsvgHandle, name: &str) {
         if let Some(ref current_node) = self.current_node.clone() {
             // The "svg" node is special; it parses its style attributes
