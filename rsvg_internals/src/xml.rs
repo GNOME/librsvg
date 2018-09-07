@@ -13,6 +13,29 @@ use text::NodeChars;
 use tree::{RsvgTree, Tree};
 use util::utf8_cstr;
 
+/// A trait for processing a certain kind of XML subtree
+///
+/// In the "normal" state of processing, an `XmlContext` may create an RsvgNode
+/// for each SVG element it finds, and create NodeChars inside those nodes when it
+/// encounters character data.
+///
+/// There may be other, special contexts for different subtrees, for example,
+/// for the `<style>` element.
+trait XmlContext {
+    /// Called when the XML parser sees the beginning of an element
+    fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag);
+
+    /// Called when the XML parser sees the end of an element
+    fn end_element(&mut self, handle: *mut RsvgHandle, name: &str);
+
+    /// Called when the XML parser sees character data or CDATA
+    fn characters(&mut self, text: &str);
+
+    /// Called when the context terminates, i.e. when the parent element
+    /// that created this context is closed.
+    fn finish(&mut self);
+}
+
 // A *const RsvgXmlState is just the type that we export to C
 pub enum RsvgXmlState {}
 
@@ -77,7 +100,7 @@ impl XmlState {
     /// `pbag` is the set of key/value pairs from the element's XML attributes.
     pub fn standard_element_start(
         &mut self,
-        handle: *const RsvgHandle,
+        handle: *mut RsvgHandle,
         name: &str,
         pbag: &PropertyBag,
     ) {
@@ -114,7 +137,7 @@ impl XmlState {
     }
 
     /// Ends an SVG element for which we create a node.
-    pub fn standard_element_end(&mut self, handle: *const RsvgHandle, name: &str) {
+    pub fn standard_element_end(&mut self, handle: *mut RsvgHandle, name: &str) {
         if let Some(ref current_node) = self.current_node.clone() {
             // The "svg" node is special; it parses its style attributes
             // here, not during element creation.
@@ -200,7 +223,7 @@ pub extern "C" fn rsvg_xml_state_free_element_name_stack(xml: *mut RsvgXmlState)
 #[no_mangle]
 pub extern "C" fn rsvg_xml_state_standard_element_start(
     xml: *mut RsvgXmlState,
-    handle: *const RsvgHandle,
+    handle: *mut RsvgHandle,
     name: *const libc::c_char,
     pbag: *const PropertyBag,
 ) {
@@ -219,7 +242,7 @@ pub extern "C" fn rsvg_xml_state_standard_element_start(
 #[no_mangle]
 pub extern "C" fn rsvg_xml_state_standard_element_end(
     xml: *mut RsvgXmlState,
-    handle: *const RsvgHandle,
+    handle: *mut RsvgHandle,
     name: *const libc::c_char,
 ) {
     assert!(!xml.is_null());
