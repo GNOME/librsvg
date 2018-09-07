@@ -32,12 +32,14 @@ trait XmlHandler {
     ) -> Box<XmlHandler>;
 
     /// Called when the XML parser sees the end of an element.
-    fn end_element(&self, handle: *mut RsvgHandle, name: &str) -> Rc<Node>;
+    fn end_element(&self, handle: *mut RsvgHandle, name: &str) -> Option<Rc<Node>>;
 
     /// Called when the XML parser sees character data or CDATA
     fn characters(&self, text: &str);
 
-    fn get_node(&self) -> Rc<Node>;
+    fn get_node(&self) -> Option<Rc<Node>> {
+        None
+    }
 }
 
 struct NodeCreationContext {
@@ -61,7 +63,7 @@ impl XmlHandler for NodeCreationContext {
         }
     }
 
-    fn end_element(&self, handle: *mut RsvgHandle, _name: &str) -> Rc<Node> {
+    fn end_element(&self, handle: *mut RsvgHandle, _name: &str) -> Option<Rc<Node>> {
         let node = self.node.as_ref().unwrap().clone();
 
         // The "svg" node is special; it parses its style attributes
@@ -72,7 +74,7 @@ impl XmlHandler for NodeCreationContext {
             });
         }
 
-        node
+        Some(node)
     }
 
     fn characters(&self, text: &str) {
@@ -103,8 +105,8 @@ impl XmlHandler for NodeCreationContext {
         }
     }
 
-    fn get_node(&self) -> Rc<Node> {
-        self.node.as_ref().unwrap().clone()
+    fn get_node(&self) -> Option<Rc<Node>> {
+        Some(self.node.as_ref().unwrap().clone())
     }
 }
 
@@ -116,7 +118,7 @@ impl NodeCreationContext {
     fn create_node(
         &self,
         parent: Option<&Rc<Node>>,
-        handle: *const RsvgHandle,
+        handle: *mut RsvgHandle,
         name: &str,
         pbag: &PropertyBag,
     ) -> Rc<Node> {
@@ -139,6 +141,29 @@ impl NodeCreationContext {
         new_node.set_overridden_properties();
 
         new_node
+    }
+}
+
+/// Handles the `<style>` element by parsing its character contents as CSS
+struct StyleContext {}
+
+impl XmlHandler for StyleContext {
+    fn start_element(
+        &self,
+        parent: Option<&Rc<Node>>,
+        handle: *mut RsvgHandle,
+        name: &str,
+        pbag: &PropertyBag,
+    ) -> Box<XmlHandler> {
+        Box::new(StyleContext {})
+    }
+
+    fn end_element(&self, handle: *mut RsvgHandle, _name: &str) -> Option<Rc<Node>> {
+        unimplemented!();
+    }
+
+    fn characters(&self, text: &str) {
+        unimplemented!();
     }
 }
 
@@ -192,7 +217,7 @@ impl XmlState {
     pub fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag) {
         let next_context = if let Some(top) = self.context_stack.last() {
             top.handler
-                .start_element(Some(&top.handler.get_node()), handle, name, pbag)
+                .start_element(top.handler.get_node().as_ref(), handle, name, pbag)
         } else {
             let default_context = NodeCreationContext::empty();
 
@@ -211,10 +236,10 @@ impl XmlState {
         if let Some(top) = self.context_stack.pop() {
             assert!(name == top.element_name);
 
-            let node = top.handler.end_element(handle, name);
-
-            if self.context_stack.is_empty() {
-                self.set_root(&node);
+            if let Some(node) = top.handler.end_element(handle, name) {
+                if self.context_stack.is_empty() {
+                    self.set_root(&node);
+                }
             }
         } else {
             panic!("end_element: XML handler stack is empty!?");
