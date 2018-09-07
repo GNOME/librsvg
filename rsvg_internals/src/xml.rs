@@ -1,9 +1,12 @@
 use libc;
 use std;
+use std::cell::RefCell;
 use std::ptr;
 use std::rc::Rc;
 use std::str;
 
+use attributes::Attribute;
+use css;
 use handle::{self, RsvgHandle};
 use load::rsvg_load_new_node;
 use node::{node_new, Node, NodeType};
@@ -55,7 +58,8 @@ impl XmlHandler for NodeCreationContext {
         pbag: &PropertyBag,
     ) -> Box<XmlHandler> {
         if name == "style" {
-            unimplemented!();
+            let ctx = StyleContext::empty();
+            StyleContext::start_element(&ctx, parent, handle, name, pbag)
         } else {
             let node = self.create_node(parent, handle, name, pbag);
 
@@ -145,25 +149,65 @@ impl NodeCreationContext {
 }
 
 /// Handles the `<style>` element by parsing its character contents as CSS
-struct StyleContext {}
+struct StyleContext {
+    is_text_css: bool,
+    text: RefCell<String>,
+}
 
 impl XmlHandler for StyleContext {
     fn start_element(
         &self,
-        parent: Option<&Rc<Node>>,
-        handle: *mut RsvgHandle,
-        name: &str,
+        _parent: Option<&Rc<Node>>,
+        _handle: *mut RsvgHandle,
+        _name: &str,
         pbag: &PropertyBag,
     ) -> Box<XmlHandler> {
-        Box::new(StyleContext {})
+        // FIXME: See these:
+        //
+        // https://www.w3.org/TR/SVG/styling.html#StyleElementTypeAttribute
+        // https://www.w3.org/TR/SVG/styling.html#ContentStyleTypeAttribute
+        //
+        // If the "type" attribute is not present, we should fallback to the
+        // "contentStyleType" attribute of the svg element, which in turn
+        // defaults to "text/css".
+        //
+        // See where is_text_css is used to see where we parse the contents
+        // of the style element.
+
+        let mut is_text_css = true;
+
+        for (_key, attr, value) in pbag.iter() {
+            if attr == Attribute::Type {
+                is_text_css = value == "text/css";
+            }
+        }
+
+        Box::new(StyleContext {
+            is_text_css,
+            text: RefCell::new(String::new()),
+        })
     }
 
     fn end_element(&self, handle: *mut RsvgHandle, _name: &str) -> Option<Rc<Node>> {
-        unimplemented!();
+        if self.is_text_css {
+            let text = self.text.borrow();
+            css::parse_into_handle(handle, &text);
+        }
+
+        None
     }
 
     fn characters(&self, text: &str) {
-        unimplemented!();
+        self.text.borrow_mut().push_str(text);
+    }
+}
+
+impl StyleContext {
+    fn empty() -> StyleContext {
+        StyleContext {
+            is_text_css: false,
+            text: RefCell::new(String::new()),
+        }
     }
 }
 

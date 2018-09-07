@@ -95,14 +95,6 @@ struct RsvgSaxHandler {
     void (*characters) (RsvgSaxHandler * self, const char *ch, gsize len);
 };
 
-typedef struct _RsvgSaxHandlerStyle {
-    RsvgSaxHandler super;
-    RsvgSaxHandler *parent;
-    RsvgLoad *load;
-    GString *style;
-    gboolean is_text_css;
-} RsvgSaxHandlerStyle;
-
 static xmlSAXHandler get_xml2_sax_handler (void);
 
 RsvgLoad *
@@ -168,90 +160,6 @@ RsvgTree *
 rsvg_load_steal_tree (RsvgLoad *load)
 {
     return rsvg_xml_state_steal_tree (load->xml.rust_state);
-}
-
-static void
-style_handler_free (RsvgSaxHandler * self)
-{
-    RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
-
-    if (z->is_text_css)
-        rsvg_css_parse_into_handle (z->load->handle, z->style->str, z->style->len);
-
-    g_string_free (z->style, TRUE);
-    g_free (z);
-}
-
-static void
-style_handler_characters (RsvgSaxHandler * self, const char *ch, gsize len)
-{
-    RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
-    g_string_append_len (z->style, ch, len);
-}
-
-static void
-style_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
-{
-}
-
-static void
-style_handler_end (RsvgSaxHandler * self, const char *name)
-{
-    RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
-    RsvgSaxHandler *previous = z->parent;
-    RsvgLoad *load = z->load;
-
-    if (!strcmp (name, "style")) {
-        if (load->xml.handler != NULL) {
-            load->xml.handler->free (load->xml.handler);
-            load->xml.handler = previous;
-        }
-    }
-}
-
-static void
-start_style (RsvgLoad *load, RsvgPropertyBag *atts)
-{
-    RsvgSaxHandlerStyle *handler = g_new0 (RsvgSaxHandlerStyle, 1);
-    RsvgPropertyBagIter *iter;
-    const char *key;
-    RsvgAttribute attr;
-    const char *value;
-
-    handler->super.free = style_handler_free;
-    handler->super.characters = style_handler_characters;
-    handler->super.start_element = style_handler_start;
-    handler->super.end_element = style_handler_end;
-    handler->load = load;
-
-    handler->style = g_string_new (NULL);
-
-    handler->parent = load->xml.handler;
-    load->xml.handler = &handler->super;
-
-    /* FIXME: See these:
-     *
-     * https://www.w3.org/TR/SVG/styling.html#StyleElementTypeAttribute
-     * https://www.w3.org/TR/SVG/styling.html#ContentStyleTypeAttribute
-     *
-     * If the "type" attribute is not present, we should fallback to the
-     * "contentStyleType" attribute of the svg element, which in turn
-     * defaults to "text/css".
-     *
-     * See where is_text_css is used to see where we parse the contents
-     * of the style element.
-     */
-    handler->is_text_css = TRUE;
-
-    iter = rsvg_property_bag_iter_begin (atts);
-
-    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        if (attr == RSVG_ATTRIBUTE_TYPE) {
-            handler->is_text_css = (g_ascii_strcasecmp (value, "text/css") == 0);
-        }
-    }
-
-    rsvg_property_bag_iter_end (iter);
 }
 
 /* start xinclude */
