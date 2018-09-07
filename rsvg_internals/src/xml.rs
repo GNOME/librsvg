@@ -132,6 +132,18 @@ struct Context {
 // A *const RsvgXmlState is just the type that we export to C
 pub enum RsvgXmlState {}
 
+/// Holds the state used for XML processing
+///
+/// These methods are called when an XML event is parsed out of the XML stream: `start_element`,
+/// `end_element`, `characters`.
+///
+/// When an element starts, we push a corresponding `Context` into the `context_stack`.  Within
+/// that context, all XML events will be forwarded to it, and processed in one of the `XmlHandler`
+/// trait objects. Normally the context refers to a `NodeCreationContext` implementation which is
+/// what creates normal graphical elements.
+///
+/// When we get to a `<style>` element, we push a `StyleContext`, which processes its contents
+/// specially.
 struct XmlState {
     tree: Option<Box<Tree>>,
 
