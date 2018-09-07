@@ -73,9 +73,8 @@ pub use property_bag::{
 
 pub use structure::rsvg_node_svg_get_size;
 
-pub use text::{rsvg_node_chars_append, rsvg_node_chars_new};
-
 pub use xml::{
+    rsvg_xml_state_add_characters,
     rsvg_xml_state_free,
     rsvg_xml_state_free_element_name_stack,
     rsvg_xml_state_get_current_node,

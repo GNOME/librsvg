@@ -1,15 +1,18 @@
 use libc;
+use std;
 use std::ptr;
 use std::rc::Rc;
+use std::str;
 
 use glib::translate::*;
 use glib_sys;
 
 use handle::{self, RsvgHandle};
 use load::rsvg_load_new_node;
-use node::{box_node, Node, NodeType, RsvgNode};
+use node::{box_node, node_new, Node, NodeType, RsvgNode};
 use property_bag::PropertyBag;
 use structure::NodeSvg;
+use text::NodeChars;
 use tree::{RsvgTree, Tree};
 use util::utf8_cstr;
 
@@ -134,6 +137,34 @@ impl XmlState {
                 self.set_current_node(parent);
 
                 self.pop_element_name();
+            }
+        }
+    }
+
+    pub fn add_characters(&mut self, text: &str) {
+        if text.len() == 0 {
+            return;
+        }
+
+        if let Some(ref current_node) = self.current_node {
+            if current_node.accept_chars() {
+                let chars_node = if let Some(child) = current_node.find_last_chars_child() {
+                    child
+                } else {
+                    let child = node_new(
+                        NodeType::Chars,
+                        self.current_node.as_ref(),
+                        None,
+                        None,
+                        Box::new(NodeChars::new()),
+                    );
+                    current_node.add_child(&child);
+                    child
+                };
+
+                chars_node.with_impl(|chars: &NodeChars| {
+                    chars.append(text);
+                });
             }
         }
     }
@@ -282,4 +313,23 @@ pub extern "C" fn rsvg_xml_state_standard_element_end(
     let name = unsafe { utf8_cstr(name) };
 
     xml.standard_element_end(handle, name);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_xml_state_add_characters(
+    xml: *mut RsvgXmlState,
+    unterminated_text: *const libc::c_char,
+    len: usize,
+) {
+    assert!(!xml.is_null());
+    let xml = unsafe { &mut *(xml as *mut XmlState) };
+
+    assert!(!unterminated_text.is_null());
+
+    // libxml2 already validated the incoming string as UTF-8.  Note that
+    // it is *not* nul-terminated; this is why we create a byte slice first.
+    let bytes = unsafe { std::slice::from_raw_parts(unterminated_text as *const u8, len) };
+    let utf8 = unsafe { str::from_utf8_unchecked(bytes) };
+
+    xml.add_characters(utf8);
 }

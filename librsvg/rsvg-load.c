@@ -61,6 +61,8 @@ extern gboolean rsvg_xml_state_topmost_element_name_is(RsvgXmlState *xml, const 
 extern void rsvg_xml_state_free_element_name_stack(RsvgXmlState *xml);
 extern void rsvg_xml_state_standard_element_start(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
 extern void rsvg_xml_state_standard_element_end(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
+extern void rsvg_xml_state_add_characters(RsvgXmlState *xml, const char *characters, gsize len);
+
 
 /* Holds the XML parsing state */
 typedef struct {
@@ -97,7 +99,7 @@ struct RsvgSaxHandler {
     void (*free) (RsvgSaxHandler * self);
     void (*start_element) (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts);
     void (*end_element) (RsvgSaxHandler * self, const char *name);
-    void (*characters) (RsvgSaxHandler * self, const char *ch, gssize len);
+    void (*characters) (RsvgSaxHandler * self, const char *ch, gsize len);
 };
 
 typedef struct _RsvgSaxHandlerStyle {
@@ -188,7 +190,7 @@ style_handler_free (RsvgSaxHandler * self)
 }
 
 static void
-style_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
+style_handler_characters (RsvgSaxHandler * self, const char *ch, gsize len)
 {
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
     g_string_append_len (z->style, ch, len);
@@ -271,7 +273,6 @@ typedef struct _RsvgSaxHandlerXinclude {
 } RsvgSaxHandlerXinclude;
 
 static void start_xinclude (RsvgLoad *load, RsvgPropertyBag *atts);
-static void characters_impl (RsvgLoad *load, const char *ch, gssize len);
 
 static void
 xinclude_handler_free (RsvgSaxHandler * self)
@@ -280,12 +281,12 @@ xinclude_handler_free (RsvgSaxHandler * self)
 }
 
 static void
-xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
+xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, gsize len)
 {
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
 
     if (z->in_fallback) {
-        characters_impl (z->load, ch, len);
+        rsvg_xml_state_add_characters (z->load->xml.rust_state, ch, len);
     }
 }
 
@@ -501,7 +502,7 @@ start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
                     data_len = text_data_len;
                 }
 
-                characters_impl (load, data, data_len);
+                rsvg_xml_state_add_characters (load->xml.rust_state, data, data_len);
 
                 g_free (data);
 
@@ -608,57 +609,17 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
     }
 }
 
-/* Implemented in rust/src/node.rs */
-extern RsvgNode *rsvg_node_find_last_chars_child(RsvgNode *node, gboolean *accept_chars);
-
-/* Implemented in rust/src/text.rs */
-extern RsvgNode *rsvg_node_chars_new(RsvgNode *parent);
-
-/* Implemented in rust/src/text.rs */
-extern void rsvg_node_chars_append (RsvgNode *node, const char *text, gssize len);
-
-static void
-characters_impl (RsvgLoad *load, const char *ch, gssize len)
-{
-    RsvgNode *current_node;
-    RsvgNode *node;
-    gboolean accept_chars = FALSE;
-
-    current_node = rsvg_xml_state_get_current_node (load->xml.rust_state);
-
-    if (!ch || !len || !current_node) {
-        goto out;
-    }
-
-    node = rsvg_node_find_last_chars_child (current_node, &accept_chars);
-    if (!accept_chars) {
-        goto out;
-    }
-
-    if (!node) {
-        node = rsvg_node_chars_new (current_node);
-        rsvg_node_add_child (current_node, node);
-    }
-
-    rsvg_node_chars_append (node, ch, len);
-
-    node = rsvg_node_unref (node);
-
-out:
-    current_node = rsvg_node_unref (current_node);
-}
-
 static void
 sax_characters_cb (void *data, const xmlChar * ch, int len)
 {
     RsvgLoad *load = data;
 
     if (load->xml.handler) {
-        load->xml.handler->characters (load->xml.handler, (const char *) ch, len);
+        load->xml.handler->characters (load->xml.handler, (const char *) ch, (gsize) len);
         return;
     }
 
-    characters_impl (load, (const char *) ch, len);
+    rsvg_xml_state_add_characters (load->xml.rust_state, (const char *) ch, (gsize) len);
 }
 
 static xmlEntityPtr
