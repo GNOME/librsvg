@@ -52,10 +52,9 @@ typedef struct RsvgXmlState RsvgXmlState;
 extern RsvgXmlState *rsvg_xml_state_new ();
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern RsvgTree *rsvg_xml_state_steal_tree(RsvgXmlState *xml);
-extern void rsvg_xml_state_free_element_name_stack(RsvgXmlState *xml);
-extern void rsvg_xml_state_standard_element_start(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
-extern void rsvg_xml_state_standard_element_end(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
-extern void rsvg_xml_state_add_characters(RsvgXmlState *xml, const char *characters, gsize len);
+extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
+extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
+extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
 
 
 /* Holds the XML parsing state */
@@ -280,7 +279,7 @@ xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, gsize len)
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
 
     if (z->in_fallback) {
-        rsvg_xml_state_add_characters (z->load->xml.rust_state, ch, len);
+        rsvg_xml_state_characters (z->load->xml.rust_state, ch, len);
     }
 }
 
@@ -294,10 +293,10 @@ xinclude_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag
             if (!strcmp (name, "xi:include"))
                 start_xinclude (z->load, atts);
             else {
-                rsvg_xml_state_standard_element_start (z->load->xml.rust_state,
-                                                       z->load->handle,
-                                                       (const char *) name,
-                                                       atts);
+                rsvg_xml_state_start_element (z->load->xml.rust_state,
+                                              z->load->handle,
+                                              (const char *) name,
+                                              atts);
             }
         } else if (!strcmp (name, "xi:fallback")) {
             z->in_fallback = TRUE;
@@ -496,7 +495,7 @@ start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
                     data_len = text_data_len;
                 }
 
-                rsvg_xml_state_add_characters (load->xml.rust_state, data, data_len);
+                rsvg_xml_state_characters (load->xml.rust_state, data, data_len);
 
                 g_free (data);
 
@@ -553,27 +552,31 @@ sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
     RsvgLoad *load = data;
 
     bag = rsvg_property_bag_new ((const char **) atts);
-
+#if 0
     if (load->xml.handler) {
         load->xml.handler_nest++;
         load->xml.handler->start_element (load->xml.handler, (const char *) name, bag);
     } else {
+#endif
         const char *tempname;
         for (tempname = (const char *) name; *tempname != '\0'; tempname++)
             if (*tempname == ':')
                 name = (const xmlChar *) (tempname + 1);
-
+#if 0
         if (!strcmp ((const char *) name, "style"))
             start_style (load, bag);
         else if (!strcmp ((const char *) name, "include"))      /* xi:include */
             start_xinclude (load, bag);
         else {
-            rsvg_xml_state_standard_element_start (load->xml.rust_state,
-                                                   load->handle,
-                                                   (const char *) name,
-                                                   bag);
+#endif
+            rsvg_xml_state_start_element (load->xml.rust_state,
+                                          load->handle,
+                                          (const char *) name,
+                                          bag);
+#if 0
         }
     }
+#endif
 
     rsvg_property_bag_free (bag);
 }
@@ -584,23 +587,27 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
     RsvgLoad *load =  data;
     const char *name = (const char *) xmlname;
 
+#if 0
     if (load->xml.handler_nest > 0 && load->xml.handler != NULL) {
         load->xml.handler->end_element (load->xml.handler, name);
         load->xml.handler_nest--;
     } else {
+#endif
         const char *tempname;
 
         for (tempname = name; *tempname != '\0'; tempname++)
             if (*tempname == ':')
                 name = tempname + 1;
-
+#if 0
         if (load->xml.handler != NULL) {
             load->xml.handler->free (load->xml.handler);
             load->xml.handler = NULL;
         }
-
-        rsvg_xml_state_standard_element_end (load->xml.rust_state, load->handle, name);
+#endif
+        rsvg_xml_state_end_element (load->xml.rust_state, load->handle, name);
+#if 0
     }
+#endif
 }
 
 static void
@@ -608,12 +615,13 @@ sax_characters_cb (void *data, const xmlChar * ch, int len)
 {
     RsvgLoad *load = data;
 
+#if 0
     if (load->xml.handler) {
         load->xml.handler->characters (load->xml.handler, (const char *) ch, (gsize) len);
         return;
     }
-
-    rsvg_xml_state_add_characters (load->xml.rust_state, (const char *) ch, (gsize) len);
+#endif
+    rsvg_xml_state_characters (load->xml.rust_state, (const char *) ch, (gsize) len);
 }
 
 static xmlEntityPtr
@@ -906,8 +914,6 @@ close_impl (RsvgLoad *load, GError ** error)
 
         load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
     }
-
-    rsvg_xml_state_free_element_name_stack (load->xml.rust_state);
 
     load->error = NULL;
 

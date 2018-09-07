@@ -15,25 +15,118 @@ use util::utf8_cstr;
 
 /// A trait for processing a certain kind of XML subtree
 ///
-/// In the "normal" state of processing, an `XmlContext` may create an RsvgNode
+/// In the "normal" state of processing, an `XmlHandler` may create an RsvgNode
 /// for each SVG element it finds, and create NodeChars inside those nodes when it
 /// encounters character data.
 ///
 /// There may be other, special contexts for different subtrees, for example,
 /// for the `<style>` element.
-trait XmlContext {
+trait XmlHandler {
     /// Called when the XML parser sees the beginning of an element
-    fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag);
+    fn start_element(
+        &self,
+        parent: Option<&Rc<Node>>,
+        handle: *mut RsvgHandle,
+        name: &str,
+        pbag: &PropertyBag,
+    ) -> Box<XmlHandler>;
 
-    /// Called when the XML parser sees the end of an element
-    fn end_element(&mut self, handle: *mut RsvgHandle, name: &str);
+    /// Called when the XML parser sees the end of an element.
+    fn end_element(&self, handle: *mut RsvgHandle, name: &str) -> Rc<Node>;
 
     /// Called when the XML parser sees character data or CDATA
-    fn characters(&mut self, text: &str);
+    fn characters(&self, text: &str);
 
-    /// Called when the context terminates, i.e. when the parent element
-    /// that created this context is closed.
-    fn finish(&mut self);
+    fn get_node(&self) -> Rc<Node>;
+}
+
+struct NodeCreationContext {
+    node: Option<Rc<Node>>,
+}
+
+impl XmlHandler for NodeCreationContext {
+    fn start_element(
+        &self,
+        parent: Option<&Rc<Node>>,
+        handle: *mut RsvgHandle,
+        name: &str,
+        pbag: &PropertyBag,
+    ) -> Box<XmlHandler> {
+        let mut defs = handle::get_defs(handle);
+        let mut is_svg = false;
+
+        let new_node = rsvg_load_new_node(name, parent, pbag, &mut defs, &mut is_svg);
+
+        if let Some(parent) = parent {
+            parent.add_child(&new_node);
+        }
+
+        new_node.set_atts(&new_node, handle, pbag);
+
+        // The "svg" node is special; it will parse its style attributes
+        // until the end, in standard_element_end().
+        if new_node.get_type() != NodeType::Svg {
+            new_node.parse_style_attributes(handle, name, pbag);
+        }
+
+        new_node.set_overridden_properties();
+
+        Box::new(NodeCreationContext {
+            node: Some(new_node),
+        })
+    }
+
+    fn end_element(&self, handle: *mut RsvgHandle, _name: &str) -> Rc<Node> {
+        let node = self.node.as_ref().unwrap().clone();
+
+        // The "svg" node is special; it parses its style attributes
+        // here, not during element creation.
+        if node.get_type() == NodeType::Svg {
+            node.with_impl(|svg: &NodeSvg| {
+                svg.parse_style_attributes(&node, handle);
+            });
+        }
+
+        node
+    }
+
+    fn characters(&self, text: &str) {
+        let node = self.node.as_ref().unwrap();
+
+        if text.len() == 0 {
+            return;
+        }
+
+        if node.accept_chars() {
+            let chars_node = if let Some(child) = node.find_last_chars_child() {
+                child
+            } else {
+                let child = node_new(
+                    NodeType::Chars,
+                    Some(&node),
+                    None,
+                    None,
+                    Box::new(NodeChars::new()),
+                );
+                node.add_child(&child);
+                child
+            };
+
+            chars_node.with_impl(|chars: &NodeChars| {
+                chars.append(text);
+            });
+        }
+    }
+
+    fn get_node(&self) -> Rc<Node> {
+        self.node.as_ref().unwrap().clone()
+    }
+}
+
+/// A concrete parsing context for a surrounding `element_name` and its XML event handlers
+struct Context {
+    element_name: String,
+    handler: Box<XmlHandler>,
 }
 
 // A *const RsvgXmlState is just the type that we export to C
@@ -41,19 +134,15 @@ pub enum RsvgXmlState {}
 
 struct XmlState {
     tree: Option<Box<Tree>>,
-    current_node: Option<Rc<Node>>,
 
-    // Stack of element names while parsing; used to know when to stop
-    // parsing the current element.
-    element_name_stack: Vec<String>,
+    context_stack: Vec<Context>,
 }
 
 impl XmlState {
     fn new() -> XmlState {
         XmlState {
             tree: None,
-            current_node: None,
-            element_name_stack: Vec::new(),
+            context_stack: Vec::new(),
         }
     }
 
@@ -69,119 +158,43 @@ impl XmlState {
         self.tree.take()
     }
 
-    pub fn set_current_node(&mut self, node: Option<Rc<Node>>) {
-        self.current_node = node;
-    }
-
-    pub fn push_element_name(&mut self, name: &str) {
-        self.element_name_stack.push(name.to_string());
-    }
-
-    pub fn pop_element_name(&mut self) {
-        self.element_name_stack.pop();
-    }
-
-    pub fn topmost_element_name_is(&mut self, name: &str) -> bool {
-        let len = self.element_name_stack.len();
-
-        if len > 0 {
-            self.element_name_stack[len - 1] == name
+    pub fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag) {
+        let next_context = if let Some(top) = self.context_stack.last() {
+            top.handler
+                .start_element(Some(&top.handler.get_node()), handle, name, pbag)
         } else {
-            false
-        }
+            let default_context = NodeCreationContext { node: None };
+
+            default_context.start_element(None, handle, name, pbag)
+        };
+
+        let context = Context {
+            element_name: name.to_string(),
+            handler: next_context,
+        };
+
+        self.context_stack.push(context);
     }
 
-    pub fn free_element_name_stack(&mut self) {
-        self.element_name_stack.clear();
-    }
+    pub fn end_element(&mut self, handle: *mut RsvgHandle, name: &str) {
+        if let Some(top) = self.context_stack.pop() {
+            assert!(name == top.element_name);
 
-    /// Starts a node for an SVG element of type `name` and hooks it to the tree.
-    ///
-    /// `pbag` is the set of key/value pairs from the element's XML attributes.
-    pub fn standard_element_start(
-        &mut self,
-        handle: *mut RsvgHandle,
-        name: &str,
-        pbag: &PropertyBag,
-    ) {
-        let mut defs = handle::get_defs(handle);
-        let mut is_svg = false;
+            let node = top.handler.end_element(handle, name);
 
-        let new_node = rsvg_load_new_node(
-            name,
-            self.current_node.as_ref(),
-            pbag,
-            &mut defs,
-            &mut is_svg,
-        );
-
-        self.push_element_name(name);
-
-        if let Some(ref current_node) = self.current_node {
-            current_node.add_child(&new_node);
-        } else if is_svg {
-            self.set_root(&new_node);
-        }
-
-        self.set_current_node(Some(new_node.clone()));
-
-        new_node.set_atts(&new_node, handle, pbag);
-
-        // The "svg" node is special; it will parse its style attributes
-        // until the end, in standard_element_end().
-        if new_node.get_type() != NodeType::Svg {
-            new_node.parse_style_attributes(handle, name, pbag);
-        }
-
-        new_node.set_overridden_properties();
-    }
-
-    /// Ends an SVG element for which we create a node.
-    pub fn standard_element_end(&mut self, handle: *mut RsvgHandle, name: &str) {
-        if let Some(ref current_node) = self.current_node.clone() {
-            // The "svg" node is special; it parses its style attributes
-            // here, not during element creation.
-            if current_node.get_type() == NodeType::Svg {
-                current_node.with_impl(|svg: &NodeSvg| {
-                    svg.parse_style_attributes(current_node, handle);
-                });
+            if self.context_stack.is_empty() {
+                self.set_root(&node);
             }
-
-            if self.topmost_element_name_is(name) {
-                let parent = current_node.get_parent();
-
-                self.set_current_node(parent);
-
-                self.pop_element_name();
-            }
+        } else {
+            panic!("end_element: XML handler stack is empty!?");
         }
     }
 
-    pub fn add_characters(&mut self, text: &str) {
-        if text.len() == 0 {
-            return;
-        }
-
-        if let Some(ref current_node) = self.current_node {
-            if current_node.accept_chars() {
-                let chars_node = if let Some(child) = current_node.find_last_chars_child() {
-                    child
-                } else {
-                    let child = node_new(
-                        NodeType::Chars,
-                        self.current_node.as_ref(),
-                        None,
-                        None,
-                        Box::new(NodeChars::new()),
-                    );
-                    current_node.add_child(&child);
-                    child
-                };
-
-                chars_node.with_impl(|chars: &NodeChars| {
-                    chars.append(text);
-                });
-            }
+    pub fn characters(&mut self, text: &str) {
+        if let Some(top) = self.context_stack.last() {
+            top.handler.characters(text);
+        } else {
+            panic!("characters: XML handler stack is empty!?");
         }
     }
 }
@@ -213,15 +226,7 @@ pub extern "C" fn rsvg_xml_state_steal_tree(xml: *mut RsvgXmlState) -> *mut Rsvg
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_free_element_name_stack(xml: *mut RsvgXmlState) {
-    assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-
-    xml.free_element_name_stack();
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_xml_state_standard_element_start(
+pub extern "C" fn rsvg_xml_state_start_element(
     xml: *mut RsvgXmlState,
     handle: *mut RsvgHandle,
     name: *const libc::c_char,
@@ -236,11 +241,11 @@ pub extern "C" fn rsvg_xml_state_standard_element_start(
     assert!(!pbag.is_null());
     let pbag = unsafe { &*pbag };
 
-    xml.standard_element_start(handle, name, pbag);
+    xml.start_element(handle, name, pbag);
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_standard_element_end(
+pub extern "C" fn rsvg_xml_state_end_element(
     xml: *mut RsvgXmlState,
     handle: *mut RsvgHandle,
     name: *const libc::c_char,
@@ -251,11 +256,11 @@ pub extern "C" fn rsvg_xml_state_standard_element_end(
     assert!(!name.is_null());
     let name = unsafe { utf8_cstr(name) };
 
-    xml.standard_element_end(handle, name);
+    xml.end_element(handle, name);
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_add_characters(
+pub extern "C" fn rsvg_xml_state_characters(
     xml: *mut RsvgXmlState,
     unterminated_text: *const libc::c_char,
     len: usize,
@@ -270,5 +275,5 @@ pub extern "C" fn rsvg_xml_state_add_characters(
     let bytes = unsafe { std::slice::from_raw_parts(unterminated_text as *const u8, len) };
     let utf8 = unsafe { str::from_utf8_unchecked(bytes) };
 
-    xml.add_characters(utf8);
+    xml.characters(utf8);
 }

@@ -65,12 +65,11 @@ pub use property_bag::{
 pub use structure::rsvg_node_svg_get_size;
 
 pub use xml::{
-    rsvg_xml_state_add_characters,
+    rsvg_xml_state_characters,
+    rsvg_xml_state_end_element,
     rsvg_xml_state_free,
-    rsvg_xml_state_free_element_name_stack,
     rsvg_xml_state_new,
-    rsvg_xml_state_standard_element_end,
-    rsvg_xml_state_standard_element_start,
+    rsvg_xml_state_start_element,
     rsvg_xml_state_steal_tree,
 };
 
