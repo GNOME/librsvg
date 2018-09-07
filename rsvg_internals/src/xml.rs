@@ -1,7 +1,7 @@
 use std::ptr;
 use std::rc::Rc;
 
-use node::{Node, RsvgNode};
+use node::{box_node, Node, RsvgNode};
 use tree::{RsvgTree, Tree};
 
 // A *const RsvgXmlState is just the type that we export to C
@@ -9,11 +9,15 @@ pub enum RsvgXmlState {}
 
 struct XmlState {
     tree: Option<Box<Tree>>,
+    current_node: Option<Rc<Node>>,
 }
 
 impl XmlState {
     fn new() -> XmlState {
-        XmlState { tree: None }
+        XmlState {
+            tree: None,
+            current_node: None,
+        }
     }
 
     pub fn set_root(&mut self, root: &Rc<Node>) {
@@ -26,6 +30,14 @@ impl XmlState {
 
     pub fn steal_tree(&mut self) -> Option<Box<Tree>> {
         self.tree.take()
+    }
+
+    pub fn get_current_node(&self) -> Option<Rc<Node>> {
+        self.current_node.clone()
+    }
+
+    pub fn set_current_node(&mut self, node: Option<Rc<Node>>) {
+        self.current_node = node;
     }
 }
 
@@ -64,4 +76,34 @@ pub extern "C" fn rsvg_xml_state_steal_tree(xml: *mut RsvgXmlState) -> *mut Rsvg
     } else {
         ptr::null_mut()
     }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_xml_state_get_current_node(xml: *const RsvgXmlState) -> *mut RsvgNode {
+    assert!(!xml.is_null());
+    let xml = unsafe { &*(xml as *const XmlState) };
+
+    if let Some(ref node) = xml.get_current_node() {
+        box_node(node.clone())
+    } else {
+        ptr::null_mut()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_xml_state_set_current_node(
+    xml: *mut RsvgXmlState,
+    raw_node: *const RsvgNode,
+) {
+    assert!(!xml.is_null());
+    let xml = unsafe { &mut *(xml as *mut XmlState) };
+
+    let node = if raw_node.is_null() {
+        None
+    } else {
+        let n = unsafe { &*raw_node };
+        Some(n.clone())
+    };
+
+    xml.set_current_node(node);
 }

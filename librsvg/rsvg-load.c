@@ -61,6 +61,8 @@ extern RsvgXmlState *rsvg_xml_state_new ();
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern void rsvg_xml_state_set_root (RsvgXmlState *xml, RsvgNode *root);
 extern RsvgTree *rsvg_xml_state_steal_tree(RsvgXmlState *xml);
+extern RsvgNode *rsvg_xml_state_get_current_node(RsvgXmlState *xml);
+extern void rsvg_xml_state_set_current_node(RsvgXmlState *xml, RsvgNode *node);
 
 /* Holds the XML parsing state */
 typedef struct {
@@ -78,8 +80,6 @@ typedef struct {
      * the current element.
      */
     GSList *element_name_stack;
-
-    RsvgNode *currentnode;
 
     RsvgXmlState *rust_state;
 } XmlState;
@@ -137,7 +137,6 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
                                                 (GDestroyNotify) xmlFreeNode);
     load->xml.ctxt = NULL;
     load->xml.element_name_stack = NULL;
-    load->xml.currentnode = NULL;
     load->xml.rust_state = rsvg_xml_state_new ();
 
     return load;
@@ -174,7 +173,6 @@ rsvg_load_free (RsvgLoad *load)
     load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
 
     g_clear_object (&load->compressed_input_stream);
-    g_clear_pointer (&load->xml.currentnode, rsvg_node_unref);
     g_clear_pointer (&load->xml.rust_state, rsvg_xml_state_free);
     g_free (load);
 }
@@ -305,22 +303,25 @@ static void
 standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
 {
     RsvgDefs *defs;
+    RsvgNode *current_node;
     RsvgNode *newnode;
 
     defs = rsvg_handle_get_defs(load->handle);
 
-    newnode = rsvg_load_new_node(name, load->xml.currentnode, atts, defs);
+    current_node = rsvg_xml_state_get_current_node (load->xml.rust_state);
+
+    newnode = rsvg_load_new_node (name, current_node, atts, defs);
 
     push_element_name (load, name);
 
-    if (load->xml.currentnode) {
-        rsvg_node_add_child (load->xml.currentnode, newnode);
-        load->xml.currentnode = rsvg_node_unref (load->xml.currentnode);
+    if (current_node) {
+        rsvg_node_add_child (current_node, newnode);
     } else if (is_svg) {
         rsvg_xml_state_set_root (load->xml.rust_state, newnode);
     }
 
-    load->xml.currentnode = rsvg_node_ref (newnode);
+    rsvg_xml_state_set_current_node (load->xml.rust_state, newnode);
+    current_node = rsvg_node_unref (current_node);
 
     rsvg_load_set_node_atts (load->handle, newnode, atts);
 
@@ -654,6 +655,8 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
         load->xml.handler_nest--;
     } else {
         const char *tempname;
+        RsvgNode *current_node;
+
         for (tempname = name; *tempname != '\0'; tempname++)
             if (*tempname == ':')
                 name = tempname + 1;
@@ -663,18 +666,23 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
             load->xml.handler = NULL;
         }
 
-        if (load->xml.currentnode) {
-            rsvg_load_set_svg_node_atts (load->handle, load->xml.currentnode);
+        current_node = rsvg_xml_state_get_current_node (load->xml.rust_state);
+
+        if (current_node) {
+            rsvg_load_set_svg_node_atts (load->handle, current_node);
         }
 
-        if (load->xml.currentnode && topmost_element_name_is (load, name)) {
+        if (current_node && topmost_element_name_is (load, name)) {
             RsvgNode *parent;
 
-            parent = rsvg_node_get_parent (load->xml.currentnode);
-            load->xml.currentnode = rsvg_node_unref (load->xml.currentnode);
-            load->xml.currentnode = parent;
+            parent = rsvg_node_get_parent (current_node);
+            rsvg_xml_state_set_current_node (load->xml.rust_state, parent);
+            parent = rsvg_node_unref (parent);
+
             pop_element_name (load);
         }
+
+        current_node = rsvg_node_unref (current_node);
     }
 }
 
@@ -690,26 +698,32 @@ extern void rsvg_node_chars_append (RsvgNode *node, const char *text, gssize len
 static void
 characters_impl (RsvgLoad *load, const char *ch, gssize len)
 {
+    RsvgNode *current_node;
     RsvgNode *node;
     gboolean accept_chars = FALSE;
 
-    if (!ch || !len || !load->xml.currentnode) {
-        return;
+    current_node = rsvg_xml_state_get_current_node (load->xml.rust_state);
+
+    if (!ch || !len || !current_node) {
+        goto out;
     }
 
-    node = rsvg_node_find_last_chars_child (load->xml.currentnode, &accept_chars);
+    node = rsvg_node_find_last_chars_child (current_node, &accept_chars);
     if (!accept_chars) {
-        return;
+        goto out;
     }
 
     if (!node) {
-        node = rsvg_node_chars_new (load->xml.currentnode);
-        rsvg_node_add_child (load->xml.currentnode, node);
+        node = rsvg_node_chars_new (current_node);
+        rsvg_node_add_child (current_node, node);
     }
 
     rsvg_node_chars_append (node, ch, len);
 
     node = rsvg_node_unref (node);
+
+out:
+    current_node = rsvg_node_unref (current_node);
 }
 
 static void
