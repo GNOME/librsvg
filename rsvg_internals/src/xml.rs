@@ -4,12 +4,9 @@ use std::ptr;
 use std::rc::Rc;
 use std::str;
 
-use glib::translate::*;
-use glib_sys;
-
 use handle::{self, RsvgHandle};
 use load::rsvg_load_new_node;
-use node::{box_node, node_new, Node, NodeType, RsvgNode};
+use node::{node_new, Node, NodeType};
 use property_bag::PropertyBag;
 use structure::NodeSvg;
 use text::NodeChars;
@@ -47,10 +44,6 @@ impl XmlState {
 
     pub fn steal_tree(&mut self) -> Option<Box<Tree>> {
         self.tree.take()
-    }
-
-    pub fn get_current_node(&self) -> Option<Rc<Node>> {
-        self.current_node.clone()
     }
 
     pub fn set_current_node(&mut self, node: Option<Rc<Node>>) {
@@ -185,17 +178,6 @@ pub extern "C" fn rsvg_xml_state_free(xml: *mut RsvgXmlState) {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_set_root(xml: *mut RsvgXmlState, root: *const RsvgNode) {
-    assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-
-    assert!(!root.is_null());
-    let root = unsafe { &*root };
-
-    xml.set_root(root);
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_xml_state_steal_tree(xml: *mut RsvgXmlState) -> *mut RsvgTree {
     assert!(!xml.is_null());
     let xml = unsafe { &mut *(xml as *mut XmlState) };
@@ -205,72 +187,6 @@ pub extern "C" fn rsvg_xml_state_steal_tree(xml: *mut RsvgXmlState) -> *mut Rsvg
     } else {
         ptr::null_mut()
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_xml_state_get_current_node(xml: *const RsvgXmlState) -> *mut RsvgNode {
-    assert!(!xml.is_null());
-    let xml = unsafe { &*(xml as *const XmlState) };
-
-    if let Some(ref node) = xml.get_current_node() {
-        box_node(node.clone())
-    } else {
-        ptr::null_mut()
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_xml_state_set_current_node(
-    xml: *mut RsvgXmlState,
-    raw_node: *const RsvgNode,
-) {
-    assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-
-    let node = if raw_node.is_null() {
-        None
-    } else {
-        let n = unsafe { &*raw_node };
-        Some(n.clone())
-    };
-
-    xml.set_current_node(node);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_xml_state_push_element_name(
-    xml: *mut RsvgXmlState,
-    name: *const libc::c_char,
-) {
-    assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-
-    assert!(!name.is_null());
-
-    let name = unsafe { utf8_cstr(name) };
-    xml.push_element_name(name);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_xml_state_pop_element_name(xml: *mut RsvgXmlState) {
-    assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-
-    xml.pop_element_name();
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_xml_state_topmost_element_name_is(
-    xml: *mut RsvgXmlState,
-    name: *const libc::c_char,
-) -> glib_sys::gboolean {
-    assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-
-    assert!(!name.is_null());
-
-    let name = unsafe { utf8_cstr(name) };
-    xml.topmost_element_name_is(name).to_glib()
 }
 
 #[no_mangle]

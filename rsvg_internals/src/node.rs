@@ -645,33 +645,6 @@ impl Node {
     }
 }
 
-pub fn node_ptr_to_weak(raw_parent: *const RsvgNode) -> Option<Weak<Node>> {
-    if raw_parent.is_null() {
-        None
-    } else {
-        let p: &RsvgNode = unsafe { &*raw_parent };
-        Some(Rc::downgrade(&p.clone()))
-    }
-}
-
-pub fn boxed_node_new(
-    node_type: NodeType,
-    raw_parent: *const RsvgNode,
-    element_name: &str,
-    id: Option<&str>,
-    class: Option<&str>,
-    node_impl: Box<NodeTrait>,
-) -> *mut RsvgNode {
-    box_node(Rc::new(Node::new(
-        node_type,
-        node_ptr_to_weak(raw_parent),
-        element_name,
-        id,
-        class,
-        node_impl,
-    )))
-}
-
 pub fn node_new(
     node_type: NodeType,
     parent: Option<&RsvgNode>,
@@ -750,26 +723,6 @@ pub fn box_node(node: RsvgNode) -> *mut RsvgNode {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_get_parent(raw_node: *const RsvgNode) -> *const RsvgNode {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    match node.get_parent() {
-        None => ptr::null(),
-
-        Some(node) => box_node(node),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_ref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    box_node(node.clone())
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_unref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
     if !raw_node.is_null() {
         let _ = unsafe { Box::from_raw(raw_node) };
@@ -779,81 +732,10 @@ pub extern "C" fn rsvg_node_unref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
     ptr::null_mut()
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_node_add_child(raw_node: *mut RsvgNode, raw_child: *const RsvgNode) {
-    assert!(!raw_node.is_null());
-    assert!(!raw_child.is_null());
-    let node: &mut RsvgNode = unsafe { &mut *raw_node };
-    let child: &RsvgNode = unsafe { &*raw_child };
-
-    node.add_child(child);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_find_last_chars_child(
-    raw_node: *const RsvgNode,
-    out_accept_chars: *mut glib_sys::gboolean,
-) -> *mut RsvgNode {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let accept_chars = node.accept_chars();
-
-    assert!(!out_accept_chars.is_null());
-    unsafe {
-        *out_accept_chars = accept_chars.to_glib();
-    }
-
-    if accept_chars {
-        if let Some(chars) = node.find_last_chars_child() {
-            return box_node(chars);
-        }
-    }
-
-    ptr::null_mut()
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_children_iter_begin(raw_node: *const RsvgNode) -> *mut Children {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    Box::into_raw(Box::new(node.children()))
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_children_iter_end(iter: *mut Children) {
-    assert!(!iter.is_null());
-
-    unsafe { Box::from_raw(iter) };
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_children_iter_next(
-    iter: *mut Children,
-    out_child: *mut *mut RsvgNode,
-) -> glib_sys::gboolean {
-    assert!(!iter.is_null());
-
-    let iter = unsafe { &mut *iter };
-    if let Some(child) = iter.next() {
-        unsafe {
-            *out_child = box_node(child);
-        }
-        true.to_glib()
-    } else {
-        unsafe {
-            *out_child = ptr::null_mut();
-        }
-        false.to_glib()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use handle::RsvgHandle;
-    use std::mem;
     use std::rc::Rc;
 
     struct TestNodeImpl {}
@@ -862,6 +744,13 @@ mod tests {
         fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag<'_>) -> NodeResult {
             Ok(())
         }
+    }
+
+    fn rsvg_node_ref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
+        assert!(!raw_node.is_null());
+        let node: &RsvgNode = unsafe { &*raw_node };
+
+        box_node(node.clone())
     }
 
     #[test]
@@ -999,46 +888,5 @@ mod tests {
 
         assert!(children.next().is_none());
         assert!(children.next_back().is_none());
-    }
-
-    #[test]
-    fn node_children_iterator_c() {
-        let node = Rc::new(Node::new(
-            NodeType::Path,
-            None,
-            "path",
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        let child = Rc::new(Node::new(
-            NodeType::Path,
-            Some(Rc::downgrade(&node)),
-            "path",
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        let second_child = Rc::new(Node::new(
-            NodeType::Path,
-            Some(Rc::downgrade(&node)),
-            "path",
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        node.add_child(&child);
-        node.add_child(&second_child);
-
-        let iter = rsvg_node_children_iter_begin(&node);
-        let mut c = unsafe { mem::uninitialized() };
-
-        let result: bool = from_glib(rsvg_node_children_iter_next(iter, &mut c));
-        assert_eq!(result, true);
-        assert!(Rc::ptr_eq(unsafe { &*c }, &child));
-        rsvg_node_unref(c);
     }
 }

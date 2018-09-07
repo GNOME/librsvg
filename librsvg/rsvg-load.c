@@ -51,13 +51,7 @@ typedef struct RsvgXmlState RsvgXmlState;
 /* Implemented in rsvg_internals/src/xml.rs */
 extern RsvgXmlState *rsvg_xml_state_new ();
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
-extern void rsvg_xml_state_set_root (RsvgXmlState *xml, RsvgNode *root);
 extern RsvgTree *rsvg_xml_state_steal_tree(RsvgXmlState *xml);
-extern RsvgNode *rsvg_xml_state_get_current_node(RsvgXmlState *xml);
-extern void rsvg_xml_state_set_current_node(RsvgXmlState *xml, RsvgNode *node);
-extern void rsvg_xml_state_push_element_name(RsvgXmlState *xml, const char *name);
-extern void rsvg_xml_state_pop_element_name(RsvgXmlState *xml);
-extern gboolean rsvg_xml_state_topmost_element_name_is(RsvgXmlState *xml, const char *name);
 extern void rsvg_xml_state_free_element_name_stack(RsvgXmlState *xml);
 extern void rsvg_xml_state_standard_element_start(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
 extern void rsvg_xml_state_standard_element_end(RsvgXmlState *xml, RsvgHandle *handle, const char *name);

@@ -44,16 +44,7 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_new,
 };
 
-pub use node::{
-    rsvg_node_add_child,
-    rsvg_node_children_iter_begin,
-    rsvg_node_children_iter_end,
-    rsvg_node_children_iter_next,
-    rsvg_node_find_last_chars_child,
-    rsvg_node_get_parent,
-    rsvg_node_ref,
-    rsvg_node_unref,
-};
+pub use node::rsvg_node_unref;
 
 pub use tree::{
     rsvg_tree_cascade,
@@ -77,16 +68,10 @@ pub use xml::{
     rsvg_xml_state_add_characters,
     rsvg_xml_state_free,
     rsvg_xml_state_free_element_name_stack,
-    rsvg_xml_state_get_current_node,
     rsvg_xml_state_new,
-    rsvg_xml_state_pop_element_name,
-    rsvg_xml_state_push_element_name,
-    rsvg_xml_state_set_current_node,
-    rsvg_xml_state_set_root,
     rsvg_xml_state_standard_element_end,
     rsvg_xml_state_standard_element_start,
     rsvg_xml_state_steal_tree,
-    rsvg_xml_state_topmost_element_name_is,
 };
 
 #[macro_use]
