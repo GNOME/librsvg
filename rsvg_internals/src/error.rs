@@ -54,7 +54,7 @@ impl error::Error for NodeError {
 }
 
 impl fmt::Display for NodeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.err {
             ValueErrorKind::Parse(ref n) => write!(
                 f,
@@ -80,7 +80,7 @@ impl From<ParseError> for ValueErrorKind {
 }
 
 impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
-    fn from(e: BasicParseError) -> ValueErrorKind {
+    fn from(e: BasicParseError<'_>) -> ValueErrorKind {
         ValueErrorKind::from(ParseError::from(e))
     }
 }

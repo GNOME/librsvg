@@ -19,7 +19,7 @@ impl Parse for CoordUnits {
     type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<CoordUnits, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<CoordUnits, ValueErrorKind> {
         let loc = parser.current_source_location();
 
         parser
@@ -71,7 +71,7 @@ macro_rules! coord_units {
             type Err = $crate::error::ValueErrorKind;
 
             fn parse(
-                parser: &mut ::cssparser::Parser,
+                parser: &mut ::cssparser::Parser<'_, '_>,
                 _: (),
             ) -> Result<Self, $crate::error::ValueErrorKind> {
                 Ok($name($crate::coord_units::CoordUnits::parse(parser, ())?))

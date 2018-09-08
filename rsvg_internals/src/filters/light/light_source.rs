@@ -205,7 +205,7 @@ impl NodeTrait for LightSource {
         &self,
         _node: &RsvgNode,
         _handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match self {

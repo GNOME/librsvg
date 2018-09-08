@@ -38,7 +38,7 @@ impl Parse for MarkerUnits {
     type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<MarkerUnits, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<MarkerUnits, ValueErrorKind> {
         let loc = parser.current_source_location();
 
         parser
@@ -76,7 +76,7 @@ impl Parse for MarkerOrient {
     type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<MarkerOrient, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<MarkerOrient, ValueErrorKind> {
         if parser.try(|p| p.expect_ident_matching("auto")).is_ok() {
             Ok(MarkerOrient::Auto)
         } else {
@@ -120,7 +120,7 @@ impl NodeMarker {
     fn render(
         &self,
         node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
         xpos: f64,
         ypos: f64,
         computed_angle: f64,
@@ -207,7 +207,12 @@ impl NodeMarker {
 }
 
 impl NodeTrait for NodeMarker {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        _: *const RsvgHandle,
+        pbag: &PropertyBag<'_>,
+    ) -> NodeResult {
         // marker element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
@@ -627,7 +632,7 @@ enum MarkerType {
 }
 
 fn emit_marker_by_name(
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     name: &str,
     xpos: f64,
     ypos: f64,
@@ -684,7 +689,7 @@ where
 
 pub fn render_markers_for_path_builder(
     builder: &PathBuilder,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     values: &ComputedValues,
     clipping: bool,
 ) -> Result<(), RenderingError> {

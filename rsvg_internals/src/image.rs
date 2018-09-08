@@ -47,7 +47,7 @@ impl NodeTrait for NodeImage {
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         // SVG element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
@@ -109,8 +109,8 @@ impl NodeTrait for NodeImage {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();

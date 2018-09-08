@@ -12,7 +12,10 @@ impl Parse for cssparser::Color {
     type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: Self::Data) -> Result<cssparser::Color, ValueErrorKind> {
+    fn parse(
+        parser: &mut Parser<'_, '_>,
+        _: Self::Data,
+    ) -> Result<cssparser::Color, ValueErrorKind> {
         cssparser::Color::parse(parser)
             .map_err(|_| ValueErrorKind::Parse(ParseError::new("invalid syntax for color")))
     }
@@ -22,7 +25,10 @@ impl Parse for cssparser::RGBA {
     type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: Self::Data) -> Result<cssparser::RGBA, ValueErrorKind> {
+    fn parse(
+        parser: &mut Parser<'_, '_>,
+        _: Self::Data,
+    ) -> Result<cssparser::RGBA, ValueErrorKind> {
         match cssparser::Color::parse(parser) {
             Ok(cssparser::Color::RGBA(rgba)) => Ok(rgba),
             Ok(cssparser::Color::CurrentColor) => Err(ValueErrorKind::Value(

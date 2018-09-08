@@ -17,7 +17,7 @@ use state::ComputedValues;
 
 fn render_path_builder(
     builder: &PathBuilder,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     node: &RsvgNode,
     values: &ComputedValues,
     render_markers: bool,
@@ -51,7 +51,7 @@ fn render_ellipse(
     cy: f64,
     rx: f64,
     ry: f64,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     node: &RsvgNode,
     values: &ComputedValues,
     clipping: bool,
@@ -123,7 +123,7 @@ impl NodePath {
 }
 
 impl NodeTrait for NodePath {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             if attr == Attribute::D {
                 let mut builder = PathBuilder::new();
@@ -143,8 +143,8 @@ impl NodeTrait for NodePath {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -185,7 +185,7 @@ impl NodePoly {
 }
 
 impl NodeTrait for NodePoly {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             // support for svg < 1.0 which used verts
             if attr == Attribute::Points || attr == Attribute::Verts {
@@ -210,8 +210,8 @@ impl NodeTrait for NodePoly {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -257,7 +257,7 @@ impl NodeLine {
 }
 
 impl NodeTrait for NodeLine {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::X1 => self.x1.set(parse("x1", value, LengthDir::Horizontal)?),
@@ -274,8 +274,8 @@ impl NodeTrait for NodeLine {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -323,7 +323,7 @@ impl NodeRect {
 }
 
 impl NodeTrait for NodeRect {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
@@ -364,8 +364,8 @@ impl NodeTrait for NodeRect {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -526,7 +526,7 @@ impl NodeCircle {
 }
 
 impl NodeTrait for NodeCircle {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal)?),
@@ -548,8 +548,8 @@ impl NodeTrait for NodeCircle {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -583,7 +583,7 @@ impl NodeEllipse {
 }
 
 impl NodeTrait for NodeEllipse {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal)?),
@@ -612,8 +612,8 @@ impl NodeTrait for NodeEllipse {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();

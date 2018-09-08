@@ -67,7 +67,7 @@ impl NodeChars {
         &self,
         _node: &RsvgNode,
         values: &ComputedValues,
-        draw_ctx: &DrawingCtx,
+        draw_ctx: &DrawingCtx<'_>,
         length: &mut f64,
     ) {
         let s = self.string.borrow();
@@ -81,7 +81,7 @@ impl NodeChars {
         &self,
         _node: &RsvgNode,
         values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
@@ -109,7 +109,7 @@ impl NodeChars {
 }
 
 impl NodeTrait for NodeChars {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 }
@@ -133,7 +133,7 @@ impl NodeText {
 }
 
 impl NodeTrait for NodeText {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
@@ -154,8 +154,8 @@ impl NodeTrait for NodeText {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -208,8 +208,8 @@ impl NodeTRef {
     fn measure(
         &self,
         _node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         length: &mut f64,
     ) -> bool {
         let l = self.link.borrow();
@@ -231,8 +231,8 @@ impl NodeTRef {
     fn render(
         &self,
         _node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
@@ -253,7 +253,7 @@ impl NodeTRef {
 }
 
 impl NodeTrait for NodeTRef {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
@@ -285,8 +285,8 @@ impl NodeTSpan {
     fn measure(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         length: &mut f64,
         usetextonly: bool,
     ) -> bool {
@@ -310,8 +310,8 @@ impl NodeTSpan {
     fn render(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         x: &mut f64,
         y: &mut f64,
         usetextonly: bool,
@@ -360,7 +360,7 @@ impl NodeTSpan {
 }
 
 impl NodeTrait for NodeTSpan {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self
@@ -485,7 +485,7 @@ impl From<WritingMode> for pango::Gravity {
 }
 
 fn create_pango_layout(
-    draw_ctx: &DrawingCtx,
+    draw_ctx: &DrawingCtx<'_>,
     values: &ComputedValues,
     text: &str,
 ) -> pango::Layout {
@@ -564,8 +564,8 @@ fn create_pango_layout(
 
 fn anchor_offset(
     node: &RsvgNode,
-    cascaded: &CascadedValues,
-    draw_ctx: &mut DrawingCtx,
+    cascaded: &CascadedValues<'_>,
+    draw_ctx: &mut DrawingCtx<'_>,
     anchor: TextAnchor,
     textonly: bool,
 ) -> f64 {
@@ -587,8 +587,8 @@ fn anchor_offset(
 
 fn measure_children(
     node: &RsvgNode,
-    cascaded: &CascadedValues,
-    draw_ctx: &mut DrawingCtx,
+    cascaded: &CascadedValues<'_>,
+    draw_ctx: &mut DrawingCtx<'_>,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
@@ -612,8 +612,8 @@ fn measure_children(
 
 fn measure_child(
     node: &RsvgNode,
-    cascaded: &CascadedValues,
-    draw_ctx: &mut DrawingCtx,
+    cascaded: &CascadedValues<'_>,
+    draw_ctx: &mut DrawingCtx<'_>,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
@@ -669,8 +669,8 @@ fn measure_child(
 
 fn render_children(
     node: &RsvgNode,
-    cascaded: &CascadedValues,
-    draw_ctx: &mut DrawingCtx,
+    cascaded: &CascadedValues<'_>,
+    draw_ctx: &mut DrawingCtx<'_>,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,
@@ -689,8 +689,8 @@ fn render_children(
 
 fn render_child(
     node: &RsvgNode,
-    cascaded: &CascadedValues,
-    draw_ctx: &mut DrawingCtx,
+    cascaded: &CascadedValues<'_>,
+    draw_ctx: &mut DrawingCtx<'_>,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,

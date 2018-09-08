@@ -16,7 +16,7 @@ impl Parse for UnitInterval {
     type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<UnitInterval, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<UnitInterval, ValueErrorKind> {
         let x = f64::from(
             parser
                 .expect_number()

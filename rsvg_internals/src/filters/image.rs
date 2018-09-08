@@ -50,7 +50,7 @@ impl Image {
     fn render_node(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
         bounds: IRect,
         href: &str,
     ) -> Result<ImageSurface, FilterError> {
@@ -115,8 +115,8 @@ impl Image {
     fn render_external_image(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
-        bounds_builder: BoundsBuilder,
+        draw_ctx: &mut DrawingCtx<'_>,
+        bounds_builder: BoundsBuilder<'_>,
         href: &str,
     ) -> Result<ImageSurface, FilterError> {
         let surface = {
@@ -199,7 +199,7 @@ impl NodeTrait for Image {
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
@@ -228,7 +228,7 @@ impl Filter for Image {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterResult, FilterError> {
         let href = self.href.borrow();
         let href = href.as_ref().ok_or(FilterError::InvalidInput)?;

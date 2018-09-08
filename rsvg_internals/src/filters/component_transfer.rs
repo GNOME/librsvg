@@ -68,15 +68,15 @@ struct FunctionParameters<'a> {
 }
 
 /// The compute function type.
-type Function = fn(&FunctionParameters, f64) -> f64;
+type Function = fn(&FunctionParameters<'_>, f64) -> f64;
 
 /// The identity component transfer function.
-fn identity(_: &FunctionParameters, value: f64) -> f64 {
+fn identity(_: &FunctionParameters<'_>, value: f64) -> f64 {
     value
 }
 
 /// The table component transfer function.
-fn table(params: &FunctionParameters, value: f64) -> f64 {
+fn table(params: &FunctionParameters<'_>, value: f64) -> f64 {
     let n = params.table_values.len() - 1;
     let k = (value * (n as f64)).floor() as usize;
 
@@ -95,7 +95,7 @@ fn table(params: &FunctionParameters, value: f64) -> f64 {
 }
 
 /// The discrete component transfer function.
-fn discrete(params: &FunctionParameters, value: f64) -> f64 {
+fn discrete(params: &FunctionParameters<'_>, value: f64) -> f64 {
     let n = params.table_values.len();
     let k = (value * (n as f64)).floor() as usize;
 
@@ -103,12 +103,12 @@ fn discrete(params: &FunctionParameters, value: f64) -> f64 {
 }
 
 /// The linear component transfer function.
-fn linear(params: &FunctionParameters, value: f64) -> f64 {
+fn linear(params: &FunctionParameters<'_>, value: f64) -> f64 {
     params.slope * value + params.intercept
 }
 
 /// The gamma component transfer function.
-fn gamma(params: &FunctionParameters, value: f64) -> f64 {
+fn gamma(params: &FunctionParameters<'_>, value: f64) -> f64 {
     params.amplitude * value.powf(params.exponent) + params.offset
 }
 
@@ -177,7 +177,7 @@ impl FuncX {
 
     /// Returns the component transfer function parameters.
     #[inline]
-    fn function_parameters(&self) -> FunctionParameters {
+    fn function_parameters(&self) -> FunctionParameters<'_> {
         FunctionParameters {
             table_values: self.table_values.borrow(),
             slope: self.slope.get(),
@@ -207,7 +207,7 @@ impl NodeTrait for ComponentTransfer {
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)
     }
@@ -219,7 +219,7 @@ impl NodeTrait for FuncX {
         &self,
         _node: &RsvgNode,
         _handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
@@ -276,7 +276,7 @@ impl Filter for ComponentTransfer {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, draw_ctx)?;
         let bounds = self
