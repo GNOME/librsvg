@@ -309,7 +309,10 @@ pub enum NumberListError {
     Parse(ParseError),
 }
 
-pub fn number_list(parser: &mut Parser<'_, '_>, length: ListLength) -> Result<Vec<f64>, NumberListError> {
+pub fn number_list(
+    parser: &mut Parser<'_, '_>,
+    length: ListLength,
+) -> Result<Vec<f64>, NumberListError> {
     let n;
 
     match length {

@@ -375,7 +375,10 @@ impl Node {
         }
     }
 
-    fn parse_conditional_processing_attributes(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
+    fn parse_conditional_processing_attributes(
+        &self,
+        pbag: &PropertyBag<'_>,
+    ) -> Result<(), NodeError> {
         let mut cond = self.cond.get();
 
         for (_key, attr, value) in pbag.iter() {
@@ -413,7 +416,12 @@ impl Node {
 
     // Sets the node's state from the attributes in the pbag.  Also applies
     // CSS rules in our limited way based on the node's tag/class/id.
-    pub fn parse_style_attributes(&self, handle: *const RsvgHandle, tag: &str, pbag: &PropertyBag<'_>) {
+    pub fn parse_style_attributes(
+        &self,
+        handle: *const RsvgHandle,
+        tag: &str,
+        pbag: &PropertyBag<'_>,
+    ) {
         {
             let mut state = self.state.borrow_mut();
             match state.parse_presentation_attributes(pbag) {

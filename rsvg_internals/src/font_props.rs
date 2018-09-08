@@ -76,7 +76,10 @@ impl Parse for FontSizeSpec {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<FontSizeSpec, ::error::AttributeError> {
+    fn parse(
+        parser: &mut Parser<'_, '_>,
+        _: Self::Data,
+    ) -> Result<FontSizeSpec, ::error::AttributeError> {
         let parser_state = parser.state();
 
         Length::parse(parser, LengthDir::Both)
@@ -250,7 +253,10 @@ impl Parse for SingleFontFamily {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<SingleFontFamily, AttributeError> {
+    fn parse(
+        parser: &mut Parser<'_, '_>,
+        _: Self::Data,
+    ) -> Result<SingleFontFamily, AttributeError> {
         parse_single_font_family(parser)
             .map_err(|_| AttributeError::from(ParseError::new("expected font family")))
     }

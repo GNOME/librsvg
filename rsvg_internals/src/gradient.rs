@@ -659,7 +659,12 @@ impl NodeGradient {
 }
 
 impl NodeTrait for NodeGradient {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        _: *const RsvgHandle,
+        pbag: &PropertyBag<'_>,
+    ) -> NodeResult {
         let mut g = self.gradient.borrow_mut();
 
         let mut x1 = None;
