@@ -269,7 +269,7 @@ lazy_static! {
 pub extern "C" fn rsvg_load_new_node(
     raw_name: *const libc::c_char,
     parent: *const RsvgNode,
-    pbag: *const PropertyBag,
+    pbag: *const PropertyBag<'_>,
     defs: *mut RsvgDefs,
     out_is_svg: *mut glib_sys::gboolean,
 ) -> *const RsvgNode {
@@ -334,7 +334,7 @@ pub extern "C" fn rsvg_load_set_node_atts(
     handle: *const RsvgHandle,
     raw_node: *mut RsvgNode,
     tag: *const libc::c_char,
-    pbag: *const PropertyBag,
+    pbag: *const PropertyBag<'_>,
 ) {
     assert!(!raw_node.is_null());
     assert!(!pbag.is_null());

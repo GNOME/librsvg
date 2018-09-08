@@ -76,7 +76,7 @@ impl Parse for FontSizeSpec {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _: Self::Data) -> Result<FontSizeSpec, ::error::AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<FontSizeSpec, ::error::AttributeError> {
         let parser_state = parser.state();
 
         Length::parse(parser, LengthDir::Both)
@@ -135,7 +135,7 @@ impl Parse for FontWeightSpec {
     type Err = AttributeError;
 
     fn parse(
-        parser: &mut Parser,
+        parser: &mut Parser<'_, '_>,
         _: Self::Data,
     ) -> Result<FontWeightSpec, ::error::AttributeError> {
         if let Ok(r) = parser.try(|p| {
@@ -212,7 +212,7 @@ impl Parse for LetterSpacingSpec {
     type Err = AttributeError;
 
     fn parse(
-        parser: &mut Parser,
+        parser: &mut Parser<'_, '_>,
         _: Self::Data,
     ) -> Result<LetterSpacingSpec, ::error::AttributeError> {
         let parser_state = parser.state();
@@ -250,14 +250,14 @@ impl Parse for SingleFontFamily {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _: Self::Data) -> Result<SingleFontFamily, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<SingleFontFamily, AttributeError> {
         parse_single_font_family(parser)
             .map_err(|_| AttributeError::from(ParseError::new("expected font family")))
     }
 }
 
 fn parse_single_font_family<'i>(
-    parser: &'i mut Parser,
+    parser: &'i mut Parser<'_, '_>,
 ) -> Result<SingleFontFamily, BasicParseError<'i>> {
     if let Ok(cow) = parser.try(|p| p.expect_string_cloned()) {
         return Ok(SingleFontFamily((*cow).to_owned()));

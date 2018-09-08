@@ -58,7 +58,7 @@ trait Filter: NodeTrait {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterResult, FilterError>;
 
     /// Returns `true` if this filter primitive is affected by the `color-interpolation-filters`
@@ -111,7 +111,7 @@ impl Primitive {
 }
 
 impl NodeTrait for Primitive {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let primitiveunits = node
             .get_parent()
@@ -189,7 +189,7 @@ impl PrimitiveWithInput {
     fn get_input(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterInput, FilterError> {
         ctx.get_input(draw_ctx, self.in_.borrow().as_ref())
     }
@@ -200,7 +200,7 @@ impl NodeTrait for PrimitiveWithInput {
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
@@ -229,7 +229,7 @@ pub fn render(
     filter_node: &RsvgNode,
     node_being_filtered: &RsvgNode,
     source: &cairo::ImageSurface,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
 ) -> cairo::ImageSurface {
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);

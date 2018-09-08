@@ -913,7 +913,7 @@ impl Error for ParseError {
 }
 
 impl Display for ParseError {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "error at position {}: {}",

@@ -65,7 +65,7 @@ impl NodeTrait for Composite {
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
@@ -149,7 +149,7 @@ impl Filter for Composite {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, draw_ctx)?;
         let input_2 = ctx.get_input(draw_ctx, self.in2.borrow().as_ref())?;
@@ -239,7 +239,7 @@ impl Parse for Operator {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _data: Self::Data) -> Result<Self, Self::Err> {
+    fn parse(parser: &mut Parser<'_, '_>, _data: Self::Data) -> Result<Self, Self::Err> {
         let loc = parser.current_source_location();
 
         parser

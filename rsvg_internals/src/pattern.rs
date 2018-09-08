@@ -170,7 +170,7 @@ impl NodePattern {
 }
 
 impl NodeTrait for NodePattern {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         // pattern element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
@@ -229,7 +229,7 @@ impl NodeTrait for NodePattern {
     }
 }
 
-fn resolve_pattern(pattern: &Pattern, draw_ctx: &mut DrawingCtx) -> Pattern {
+fn resolve_pattern(pattern: &Pattern, draw_ctx: &mut DrawingCtx<'_>) -> Pattern {
     let mut result = pattern.clone();
 
     while !result.is_resolved() {
@@ -251,7 +251,7 @@ fn resolve_pattern(pattern: &Pattern, draw_ctx: &mut DrawingCtx) -> Pattern {
 fn set_pattern_on_draw_context(
     pattern: &Pattern,
     values: &ComputedValues,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     bbox: &BoundingBox,
 ) -> Result<bool, RenderingError> {
     assert!(pattern.is_resolved());
@@ -433,7 +433,7 @@ fn set_pattern_on_draw_context(
 fn resolve_fallbacks_and_set_pattern(
     pattern: &Pattern,
     values: &ComputedValues,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     bbox: &BoundingBox,
 ) -> Result<bool, RenderingError> {
     let resolved = resolve_pattern(pattern, draw_ctx);
@@ -443,7 +443,7 @@ fn resolve_fallbacks_and_set_pattern(
 
 pub fn pattern_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     bbox: &BoundingBox,
 ) -> Result<bool, RenderingError> {
     assert!(node.get_type() == NodeType::Pattern);

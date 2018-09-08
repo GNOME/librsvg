@@ -49,7 +49,7 @@ impl NodeTrait for Merge {
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)
     }
@@ -61,7 +61,7 @@ impl NodeTrait for MergeNode {
         &self,
         _node: &RsvgNode,
         _handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
@@ -80,7 +80,7 @@ impl MergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
@@ -134,7 +134,7 @@ impl Filter for Merge {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each child node's input into account.
         let mut bounds = self.base.get_bounds(ctx);

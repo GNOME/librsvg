@@ -28,15 +28,15 @@ impl NodeGroup {
 }
 
 impl NodeTrait for NodeGroup {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -56,7 +56,7 @@ impl NodeDefs {
 }
 
 impl NodeTrait for NodeDefs {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 }
@@ -70,15 +70,15 @@ impl NodeSwitch {
 }
 
 impl NodeTrait for NodeSwitch {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -125,7 +125,7 @@ impl NodeSvg {
 }
 
 impl NodeTrait for NodeSvg {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         // SVG element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
@@ -183,8 +183,8 @@ impl NodeTrait for NodeSvg {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -241,7 +241,7 @@ impl NodeUse {
 }
 
 impl NodeTrait for NodeUse {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
@@ -276,8 +276,8 @@ impl NodeTrait for NodeUse {
     fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -389,7 +389,7 @@ impl NodeSymbol {
 }
 
 impl NodeTrait for NodeSymbol {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         // symbol element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();

@@ -83,7 +83,7 @@ impl<'a> PropertyBag<'a> {
         PropertyBag(array)
     }
 
-    pub fn from_owned(owned: &OwnedPropertyBag) -> PropertyBag {
+    pub fn from_owned(owned: &OwnedPropertyBag) -> PropertyBag<'_> {
         let mut array = Vec::new();
 
         for &(ref k, a, ref v) in &owned.0 {
@@ -103,19 +103,19 @@ impl<'a> PropertyBag<'a> {
         OwnedPropertyBag(array)
     }
 
-    pub fn ffi(&self) -> *const PropertyBag {
-        self as *const PropertyBag
+    pub fn ffi(&self) -> *const PropertyBag<'_> {
+        self as *const PropertyBag<'_>
     }
 
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn iter(&self) -> PropertyBagIter {
+    pub fn iter(&self) -> PropertyBagIter<'_> {
         PropertyBagIter(self.cstr_iter())
     }
 
-    pub fn cstr_iter(&self) -> PropertyBagCStrIter {
+    pub fn cstr_iter(&self) -> PropertyBagCStrIter<'_> {
         PropertyBagCStrIter(self.0.iter())
     }
 }
@@ -147,7 +147,7 @@ pub extern "C" fn rsvg_property_bag_new<'a>(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_property_bag_free(pbag: *mut PropertyBag) {
+pub extern "C" fn rsvg_property_bag_free(pbag: *mut PropertyBag<'_>) {
     unsafe {
         let _ = Box::from_raw(pbag);
     }
@@ -155,8 +155,8 @@ pub extern "C" fn rsvg_property_bag_free(pbag: *mut PropertyBag) {
 
 #[no_mangle]
 pub extern "C" fn rsvg_property_bag_iter_begin(
-    pbag: *const PropertyBag,
-) -> *mut PropertyBagCStrIter {
+    pbag: *const PropertyBag<'_>,
+) -> *mut PropertyBagCStrIter<'_> {
     assert!(!pbag.is_null());
     let pbag = unsafe { &*pbag };
 
@@ -165,7 +165,7 @@ pub extern "C" fn rsvg_property_bag_iter_begin(
 
 #[no_mangle]
 pub extern "C" fn rsvg_property_bag_iter_next(
-    iter: *mut PropertyBagCStrIter,
+    iter: *mut PropertyBagCStrIter<'_>,
     out_key: *mut *const libc::c_char,
     out_attr: *mut Attribute,
     out_value: *mut *const libc::c_char,
@@ -190,7 +190,7 @@ pub extern "C" fn rsvg_property_bag_iter_next(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_property_bag_iter_end(iter: *mut PropertyBagCStrIter) {
+pub extern "C" fn rsvg_property_bag_iter_end(iter: *mut PropertyBagCStrIter<'_>) {
     assert!(!iter.is_null());
 
     unsafe { Box::from_raw(iter) };

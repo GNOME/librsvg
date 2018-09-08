@@ -65,7 +65,7 @@ impl NodeTrait for Turbulence {
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
@@ -344,7 +344,7 @@ impl Filter for Turbulence {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterResult, FilterError> {
         let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);
 

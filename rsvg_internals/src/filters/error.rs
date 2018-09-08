@@ -42,7 +42,7 @@ impl Error for FilterError {
 }
 
 impl fmt::Display for FilterError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             FilterError::BadInputSurfaceStatus(ref status)
             | FilterError::CairoError(ref status) => {

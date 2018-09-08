@@ -70,7 +70,7 @@ impl NodeMask {
         &self,
         node: &RsvgNode,
         affine_before_mask: &cairo::Matrix,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<(), RenderingError> {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
@@ -245,7 +245,7 @@ fn compute_luminance_to_alpha(
 }
 
 impl NodeTrait for NodeMask {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),

@@ -145,7 +145,7 @@ impl<'a> DrawingCtx<'a> {
         dpi_y: f64,
         defs: &mut Defs,
         is_testing: bool,
-    ) -> DrawingCtx {
+    ) -> DrawingCtx<'_> {
         let mut affine = cr.get_matrix();
         let rect = cairo::Rectangle {
             x: 0.0,
@@ -339,7 +339,7 @@ impl<'a> DrawingCtx<'a> {
         node: &RsvgNode,
         values: &ComputedValues,
         clipping: bool,
-        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+        draw_fn: &mut FnMut(&mut DrawingCtx<'_>) -> Result<(), RenderingError>,
     ) -> Result<(), RenderingError> {
         if clipping {
             draw_fn(self)
@@ -758,7 +758,7 @@ impl<'a> DrawingCtx<'a> {
     pub fn draw_node_on_surface(
         &mut self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
+        cascaded: &CascadedValues<'_>,
         surface: &cairo::ImageSurface,
         width: f64,
         height: f64,
@@ -789,7 +789,7 @@ impl<'a> DrawingCtx<'a> {
 
     pub fn draw_node_from_stack(
         &mut self,
-        cascaded: &CascadedValues,
+        cascaded: &CascadedValues<'_>,
         node: &RsvgNode,
         clipping: bool,
     ) -> Result<(), RenderingError> {
@@ -1051,7 +1051,7 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     raw_tree: *const RsvgTree,
 ) -> glib_sys::gboolean {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
 
     assert!(!raw_tree.is_null());
     let tree = unsafe { &*(raw_tree as *const Tree) };
@@ -1075,7 +1075,7 @@ pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
     raw_node: *const RsvgNode,
 ) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
 
     assert!(!raw_node.is_null());
     let node = unsafe { &*raw_node };
@@ -1089,7 +1089,7 @@ pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
     ink_rect: *mut cairo_sys::cairo_rectangle_t,
 ) -> glib_sys::gboolean {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
 
     assert!(!ink_rect.is_null());
 
@@ -1156,7 +1156,7 @@ pub extern "C" fn rsvg_drawing_ctx_new(
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_free(raw_draw_ctx: *mut RsvgDrawingCtx) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
 
     unsafe {
         Box::from_raw(draw_ctx);

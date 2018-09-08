@@ -70,7 +70,7 @@ impl<'a> CascadedValues<'a> {
     /// This is to be used only in the toplevel drawing function, or in elements like `<marker>`
     /// that don't propagate their parent's cascade to their children.  All others should use
     /// `new()` to derive the cascade from an existing one.
-    fn new_from_node(node: &Node) -> CascadedValues {
+    fn new_from_node(node: &Node) -> CascadedValues<'_> {
         CascadedValues {
             inner: CascadedInner::FromNode(node.values.borrow()),
         }
@@ -112,7 +112,7 @@ pub trait NodeTrait: Downcast {
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult;
 
     /// Sets any special-cased properties that the node may have, that are different
@@ -126,8 +126,8 @@ pub trait NodeTrait: Downcast {
     fn draw(
         &self,
         _node: &RsvgNode,
-        _cascaded: &CascadedValues,
-        _draw_ctx: &mut DrawingCtx,
+        _cascaded: &CascadedValues<'_>,
+        _draw_ctx: &mut DrawingCtx<'_>,
         _clipping: bool,
     ) -> Result<(), RenderingError> {
         // by default nodes don't draw themselves
@@ -289,7 +289,7 @@ impl Node {
         self.transform.get()
     }
 
-    pub fn get_cascaded_values(&self) -> CascadedValues {
+    pub fn get_cascaded_values(&self) -> CascadedValues<'_> {
         CascadedValues::new_from_node(self)
     }
 
@@ -343,7 +343,7 @@ impl Node {
         self.first_child.replace(Some(child.clone()));
     }
 
-    pub fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) {
+    pub fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag<'_>) {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::Transform => match Matrix::parse_str(value, ()) {
@@ -375,7 +375,7 @@ impl Node {
         }
     }
 
-    fn parse_conditional_processing_attributes(&self, pbag: &PropertyBag) -> Result<(), NodeError> {
+    fn parse_conditional_processing_attributes(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         let mut cond = self.cond.get();
 
         for (_key, attr, value) in pbag.iter() {
@@ -413,7 +413,7 @@ impl Node {
 
     // Sets the node's state from the attributes in the pbag.  Also applies
     // CSS rules in our limited way based on the node's tag/class/id.
-    pub fn parse_style_attributes(&self, handle: *const RsvgHandle, tag: &str, pbag: &PropertyBag) {
+    pub fn parse_style_attributes(&self, handle: *const RsvgHandle, tag: &str, pbag: &PropertyBag<'_>) {
         {
             let mut state = self.state.borrow_mut();
             match state.parse_presentation_attributes(pbag) {
@@ -529,8 +529,8 @@ impl Node {
     pub fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         if !self.is_in_error() {
@@ -586,8 +586,8 @@ impl Node {
 
     pub fn draw_children(
         &self,
-        cascaded: &CascadedValues,
-        draw_ctx: &mut DrawingCtx,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx<'_>,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         for child in self.children() {
@@ -839,7 +839,7 @@ mod tests {
     struct TestNodeImpl {}
 
     impl NodeTrait for TestNodeImpl {
-        fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
+        fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag<'_>) -> NodeResult {
             Ok(())
         }
     }
