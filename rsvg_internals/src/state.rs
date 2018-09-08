@@ -539,7 +539,7 @@ impl State {
         Ok(())
     }
 
-    pub fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
+    pub fn parse_presentation_attributes(&mut self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         for (_key, attr, value) in pbag.iter() {
             self.parse_attribute_pair(attr, value, false)?;
         }
@@ -662,7 +662,7 @@ make_property!(
 
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
-            fn parse(parser: &mut Parser, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
+            fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
                 let parser_state = parser.state();
 
                 {
@@ -1225,7 +1225,7 @@ make_property!(
             type Data = ();
             type Err = AttributeError;
 
-            fn parse(parser: &mut Parser, _: Self::Data) -> Result<TextDecoration, AttributeError> {
+            fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<TextDecoration, AttributeError> {
                 let mut overline = false;
                 let mut underline = false;
                 let mut strike = false;

@@ -37,7 +37,7 @@ impl Parse for ViewBox {
     // x, y, w, h
     //
     // Where w and h must be nonnegative.
-    fn parse(parser: &mut Parser, _: ()) -> Result<ViewBox, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<ViewBox, AttributeError> {
         let v = parsers::number_list(parser, ListLength::Exact(4))
             .map_err(|_| ParseError::new("string does not match 'x [,] y [,] w [,] h'"))?;
 

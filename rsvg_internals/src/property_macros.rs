@@ -14,7 +14,7 @@ pub trait Property<T> {
 /// make_property!(
 /// StrokeLinejoin,
 /// default: Miter,
-///     
+///
 /// "miter" => Miter,
 /// "round" => Round,
 /// "bevel" => Bevel,
@@ -47,7 +47,7 @@ macro_rules! make_property {
             type Data = ();
             type Err = ::error::AttributeError;
 
-            fn parse(parser: &mut ::cssparser::Parser, _: Self::Data) -> Result<$name, ::error::AttributeError> {
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, _: Self::Data) -> Result<$name, ::error::AttributeError> {
                 let loc = parser.current_source_location();
 
                 parser
@@ -97,7 +97,7 @@ macro_rules! make_property {
             type Data = $parse_data_type;
             type Err = ::error::AttributeError;
 
-            fn parse(parser: &mut ::cssparser::Parser, d: Self::Data) -> Result<$name, ::error::AttributeError> {
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, d: Self::Data) -> Result<$name, ::error::AttributeError> {
                 Ok($name(<$type as ::parsers::Parse>::parse(parser, d)?))
             }
         }
@@ -121,7 +121,7 @@ macro_rules! make_property {
             type Data = $parse_data_type;
             type Err = ::error::AttributeError;
 
-            fn parse(parser: &mut ::cssparser::Parser, d: Self::Data) -> Result<$name, ::error::AttributeError> {
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, d: Self::Data) -> Result<$name, ::error::AttributeError> {
                 Ok($name(<$type as ::parsers::Parse>::parse(parser, d)?))
             }
         }

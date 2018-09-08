@@ -24,7 +24,7 @@ impl ParseError {
 }
 
 impl<'a> From<BasicParseError<'a>> for ParseError {
-    fn from(_: BasicParseError) -> ParseError {
+    fn from(_: BasicParseError<'_>) -> ParseError {
         ParseError::new("parse error")
     }
 }
@@ -33,7 +33,7 @@ pub trait Parse: Sized {
     type Data;
     type Err;
 
-    fn parse(parser: &mut Parser, data: Self::Data) -> Result<Self, Self::Err>;
+    fn parse(parser: &mut Parser<'_, '_>, data: Self::Data) -> Result<Self, Self::Err>;
 
     fn parse_str(s: &str, data: Self::Data) -> Result<Self, Self::Err> {
         let mut input = ParserInput::new(s);
@@ -50,7 +50,7 @@ impl Parse for f64 {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<f64, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<f64, AttributeError> {
         Ok(f64::from(parser.expect_number().map_err(|_| {
             AttributeError::Parse(ParseError::new("expected number"))
         })?))
@@ -61,7 +61,7 @@ impl Parse for String {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<String, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<String, AttributeError> {
         Ok(String::from(
             parser
                 .expect_string()
@@ -121,7 +121,7 @@ where
 //
 // Returns an f64 angle in degrees
 
-pub fn angle_degrees(parser: &mut Parser) -> Result<f64, ParseError> {
+pub fn angle_degrees(parser: &mut Parser<'_, '_>) -> Result<f64, ParseError> {
     let angle = {
         let token = parser
             .next()
@@ -154,7 +154,7 @@ pub fn angle_degrees(parser: &mut Parser) -> Result<f64, ParseError> {
     Ok(angle)
 }
 
-pub fn optional_comma(parser: &mut Parser) {
+pub fn optional_comma(parser: &mut Parser<'_, '_>) {
     let _ = parser.try(|p| p.expect_comma());
 }
 
@@ -309,7 +309,7 @@ pub enum NumberListError {
     Parse(ParseError),
 }
 
-pub fn number_list(parser: &mut Parser, length: ListLength) -> Result<Vec<f64>, NumberListError> {
+pub fn number_list(parser: &mut Parser<'_, '_>, length: ListLength) -> Result<Vec<f64>, NumberListError> {
     let n;
 
     match length {

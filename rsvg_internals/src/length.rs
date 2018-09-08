@@ -66,7 +66,7 @@ impl Parse for Length {
     type Data = LengthDir;
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, dir: LengthDir) -> Result<Length, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, dir: LengthDir) -> Result<Length, AttributeError> {
         let length = Length::from_cssparser(parser, dir)?;
 
         parser.expect_exhausted().map_err(|_| make_err())?;
@@ -137,7 +137,7 @@ impl Length {
         }
     }
 
-    pub fn from_cssparser(parser: &mut Parser, dir: LengthDir) -> Result<Length, AttributeError> {
+    pub fn from_cssparser(parser: &mut Parser<'_, '_>, dir: LengthDir) -> Result<Length, AttributeError> {
         let length = {
             let token = parser.next().map_err(|_| {
                 AttributeError::Parse(ParseError::new(
@@ -270,7 +270,7 @@ impl Parse for Dasharray {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _: Self::Data) -> Result<Dasharray, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<Dasharray, AttributeError> {
         if parser.try(|p| p.expect_ident_matching("none")).is_ok() {
             Ok(Dasharray::None)
         } else {
@@ -280,7 +280,7 @@ impl Parse for Dasharray {
 }
 
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
-fn parse_dash_array(parser: &mut Parser) -> Result<Vec<Length>, AttributeError> {
+fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<Length>, AttributeError> {
     let mut dasharray = Vec::new();
 
     loop {

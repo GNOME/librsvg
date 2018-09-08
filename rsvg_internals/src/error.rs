@@ -52,7 +52,7 @@ impl error::Error for NodeError {
 }
 
 impl fmt::Display for NodeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.err {
             AttributeError::Parse(ref n) => write!(
                 f,
@@ -78,7 +78,7 @@ impl From<ParseError> for AttributeError {
 }
 
 impl<'a> From<BasicParseError<'a>> for AttributeError {
-    fn from(e: BasicParseError) -> AttributeError {
+    fn from(e: BasicParseError<'_>) -> AttributeError {
         AttributeError::from(ParseError::from(e))
     }
 }

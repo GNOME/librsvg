@@ -12,7 +12,7 @@ impl Parse for cairo::Matrix {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<cairo::Matrix, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<cairo::Matrix, AttributeError> {
         let matrix = parse_transform_list(parser)?;
 
         matrix
@@ -26,7 +26,7 @@ impl Parse for cairo::Matrix {
 // Its operataion and grammar are described here:
 // https://www.w3.org/TR/SVG/coords.html#TransformAttribute
 
-fn parse_transform_list(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_transform_list(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, AttributeError> {
     let mut matrix = cairo::Matrix::identity();
 
     loop {
@@ -49,7 +49,7 @@ fn make_expected_function_error() -> AttributeError {
     ))
 }
 
-fn parse_transform_command(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_transform_command(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, AttributeError> {
     match parser.next()?.clone() {
         Token::Function(ref name) => parse_transform_function(name, parser),
 
@@ -64,7 +64,7 @@ fn parse_transform_command(parser: &mut Parser) -> Result<cairo::Matrix, Attribu
 
 fn parse_transform_function(
     name: &str,
-    parser: &mut Parser,
+    parser: &mut Parser<'_, '_>,
 ) -> Result<cairo::Matrix, AttributeError> {
     match name {
         "matrix" => parse_matrix_args(parser),
@@ -77,7 +77,7 @@ fn parse_transform_function(
     }
 }
 
-fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_matrix_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, AttributeError> {
     parser
         .parse_nested_block(|p| {
             let xx = f64::from(p.expect_number()?);
@@ -102,13 +102,13 @@ fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
         .map_err(AttributeError::from)
 }
 
-fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_translate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, AttributeError> {
     parser
         .parse_nested_block(|p| {
             let tx = f64::from(p.expect_number()?);
 
             let ty = f64::from(
-                p.try(|p| -> Result<f32, CssParseError<()>> {
+                p.try(|p| -> Result<f32, CssParseError<'_, ()>> {
                     optional_comma(p);
                     Ok(p.expect_number()?)
                 }).unwrap_or(0.0),
@@ -119,13 +119,13 @@ fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeE
         .map_err(AttributeError::from)
 }
 
-fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_scale_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, AttributeError> {
     parser
         .parse_nested_block(|p| {
             let x = f64::from(p.expect_number()?);
 
             let y = p
-                .try(|p| -> Result<f32, CssParseError<()>> {
+                .try(|p| -> Result<f32, CssParseError<'_, ()>> {
                     optional_comma(p);
                     Ok(p.expect_number()?)
                 }).map(f64::from)
@@ -136,14 +136,14 @@ fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
         .map_err(AttributeError::from)
 }
 
-fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_rotate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, AttributeError> {
     parser
         .parse_nested_block(|p| {
             let angle = f64::from(p.expect_number()?) * PI / 180.0;
             let (s, c) = angle.sin_cos();
 
             let (tx, ty) = p
-                .try(|p| -> Result<_, CssParseError<()>> {
+                .try(|p| -> Result<_, CssParseError<'_, ()>> {
                     optional_comma(p);
                     let tx = f64::from(p.expect_number()?);
 
@@ -162,7 +162,7 @@ fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
         .map_err(AttributeError::from)
 }
 
-fn parse_skewx_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_skewx_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, AttributeError> {
     parser
         .parse_nested_block(|p| {
             let a = f64::from(p.expect_number()?) * PI / 180.0;
@@ -171,7 +171,7 @@ fn parse_skewx_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
         .map_err(AttributeError::from)
 }
 
-fn parse_skewy_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_skewy_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, AttributeError> {
     parser
         .parse_nested_block(|p| {
             let a = f64::from(p.expect_number()?) * PI / 180.0;

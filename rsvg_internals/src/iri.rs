@@ -29,7 +29,7 @@ impl Parse for IRI {
     type Data = ();
     type Err = ParseError;
 
-    fn parse(parser: &mut Parser, _: Self::Data) -> Result<IRI, ParseError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<IRI, ParseError> {
         if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
             Ok(IRI::None)
         } else {

@@ -791,7 +791,7 @@ impl SharedImageSurface {
     /// # Safety
     /// The returned pointer must not be used to modify the surface.
     #[inline]
-    pub unsafe fn to_glib_none(&self) -> Stash<*mut cairo_sys::cairo_surface_t, ImageSurface> {
+    pub unsafe fn to_glib_none(&self) -> Stash<'_, *mut cairo_sys::cairo_surface_t, ImageSurface> {
         self.surface.to_glib_none()
     }
 }

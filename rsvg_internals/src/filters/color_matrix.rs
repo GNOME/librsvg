@@ -52,7 +52,7 @@ impl NodeTrait for ColorMatrix {
         &self,
         node: &RsvgNode,
         handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
@@ -170,7 +170,7 @@ impl Filter for ColorMatrix {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, draw_ctx)?;
         let bounds = self

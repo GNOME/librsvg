@@ -16,7 +16,7 @@ impl Parse for UnitInterval {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<UnitInterval, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<UnitInterval, AttributeError> {
         let x = f64::from(
             parser
                 .expect_number()

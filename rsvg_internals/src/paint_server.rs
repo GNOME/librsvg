@@ -23,7 +23,7 @@ impl Parse for PaintServer {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<PaintServer, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<PaintServer, AttributeError> {
         if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
             Ok(PaintServer::None)
         } else if let Ok(url) = parser.try(|i| i.expect_url()) {
@@ -50,7 +50,7 @@ impl Parse for PaintServer {
 }
 
 fn set_color(
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     color: &cssparser::Color,
     opacity: &UnitInterval,
     current_color: &cssparser::RGBA,
@@ -70,7 +70,7 @@ fn set_color(
 }
 
 pub fn set_source_paint_server(
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     ps: &PaintServer,
     opacity: &UnitInterval,
     bbox: &BoundingBox,

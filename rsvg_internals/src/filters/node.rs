@@ -40,7 +40,7 @@ impl NodeTrait for NodeFilter {
         &self,
         _node: &RsvgNode,
         _handle: *const RsvgHandle,
-        pbag: &PropertyBag,
+        pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (_key, attr, value) in pbag.iter() {

@@ -39,7 +39,7 @@ impl Parse for SpreadMethod {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<SpreadMethod, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<SpreadMethod, AttributeError> {
         let loc = parser.current_source_location();
 
         parser
@@ -415,7 +415,7 @@ impl Gradient {
     }
 }
 
-fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx, name: &str) -> Option<AcquiredNode> {
+fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx<'_>, name: &str) -> Option<AcquiredNode> {
     draw_ctx.get_acquired_node(name).and_then(|acquired| {
         // FIXME: replace with .filter() once Option.filter() becomes stable
         let node = acquired.get();
@@ -429,7 +429,7 @@ fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx, name: &str) -> Option<Acqu
     })
 }
 
-fn resolve_gradient(gradient: &Gradient, draw_ctx: &mut DrawingCtx) -> Gradient {
+fn resolve_gradient(gradient: &Gradient, draw_ctx: &mut DrawingCtx<'_>) -> Gradient {
     let mut result = gradient.clone();
 
     while !result.is_resolved() {
@@ -457,7 +457,7 @@ fn resolve_gradient(gradient: &Gradient, draw_ctx: &mut DrawingCtx) -> Gradient 
 
 fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
     gradient: &Gradient,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     pattern: &mut P,
     bbox: &BoundingBox,
     opacity: &UnitInterval,
@@ -534,7 +534,7 @@ fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64
 fn set_pattern_on_draw_context(
     gradient: &Gradient,
     values: &ComputedValues,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
 ) {
@@ -605,7 +605,7 @@ impl NodeGradient {
 }
 
 impl NodeTrait for NodeGradient {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         let mut g = self.gradient.borrow_mut();
 
         let mut x1 = None;
@@ -671,7 +671,7 @@ impl NodeTrait for NodeGradient {
 
 pub fn gradient_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &mut DrawingCtx<'_>,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
 ) -> bool {
@@ -689,7 +689,7 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
                 let cascaded = node.get_cascaded_values();
                 let values = cascaded.get();
 
-                set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
+                set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox);
             }
         }
 
