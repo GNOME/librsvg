@@ -492,39 +492,6 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
     cr.set_source(pattern);
 }
 
-fn set_linear_gradient_on_pattern(
-    gradient: &Gradient,
-    values: &ComputedValues,
-    draw_ctx: &mut DrawingCtx,
-    bbox: &BoundingBox,
-    opacity: &UnitInterval,
-) -> bool {
-    if let GradientVariant::Linear { x1, y1, x2, y2 } = gradient.variant {
-        let units = gradient.common.units.unwrap();
-
-        {
-            let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-                draw_ctx.push_view_box(1.0, 1.0)
-            } else {
-                draw_ctx.get_view_params()
-            };
-
-            let mut pattern = cairo::LinearGradient::new(
-                x1.as_ref().unwrap().normalize(values, &params),
-                y1.as_ref().unwrap().normalize(values, &params),
-                x2.as_ref().unwrap().normalize(values, &params),
-                y2.as_ref().unwrap().normalize(values, &params),
-            );
-
-            set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
-        }
-    } else {
-        unreachable!();
-    }
-
-    true
-}
-
 // SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
 // gradient projects out from a focus point (fx, fy), which is assumed to be
 // inside the circle, to the edge of the circle.
@@ -572,23 +539,35 @@ fn fix_focus_point(mut fx: f64, mut fy: f64, cx: f64, cy: f64, radius: f64) -> (
     (vx + cx, vy + cy)
 }
 
-fn set_radial_gradient_on_pattern(
+fn set_pattern_on_draw_context(
     gradient: &Gradient,
     values: &ComputedValues,
     draw_ctx: &mut DrawingCtx,
-    bbox: &BoundingBox,
     opacity: &UnitInterval,
-) -> bool {
-    if let GradientVariant::Radial { cx, cy, r, fx, fy } = gradient.variant {
-        let units = gradient.common.units.unwrap();
+    bbox: &BoundingBox,
+) {
+    assert!(gradient.is_resolved());
 
-        {
-            let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-                draw_ctx.push_view_box(1.0, 1.0)
-            } else {
-                draw_ctx.get_view_params()
-            };
+    let units = gradient.common.units.unwrap();
+    let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+        draw_ctx.push_view_box(1.0, 1.0)
+    } else {
+        draw_ctx.get_view_params()
+    };
 
+    match gradient.variant {
+        GradientVariant::Linear { x1, y1, x2, y2 } => {
+            let mut pattern = cairo::LinearGradient::new(
+                x1.as_ref().unwrap().normalize(values, &params),
+                y1.as_ref().unwrap().normalize(values, &params),
+                x2.as_ref().unwrap().normalize(values, &params),
+                y2.as_ref().unwrap().normalize(values, &params),
+            );
+
+            set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity)
+        }
+
+        GradientVariant::Radial { cx, cy, r, fx, fy } => {
             let n_cx = cx.as_ref().unwrap().normalize(values, &params);
             let n_cy = cy.as_ref().unwrap().normalize(values, &params);
             let n_r = r.as_ref().unwrap().normalize(values, &params);
@@ -596,34 +575,9 @@ fn set_radial_gradient_on_pattern(
             let n_fy = fy.as_ref().unwrap().normalize(values, &params);
 
             let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
-
             let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
 
-            set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity);
-        }
-    } else {
-        unreachable!();
-    }
-
-    true
-}
-
-fn set_pattern_on_draw_context(
-    gradient: &Gradient,
-    values: &ComputedValues,
-    draw_ctx: &mut DrawingCtx,
-    opacity: &UnitInterval,
-    bbox: &BoundingBox,
-) -> bool {
-    assert!(gradient.is_resolved());
-
-    match gradient.variant {
-        GradientVariant::Linear { .. } => {
-            set_linear_gradient_on_pattern(gradient, values, draw_ctx, bbox, opacity)
-        }
-
-        GradientVariant::Radial { .. } => {
-            set_radial_gradient_on_pattern(gradient, values, draw_ctx, bbox, opacity)
+            set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity)
         }
     }
 }
@@ -729,14 +683,12 @@ fn resolve_fallbacks_and_set_pattern(
     draw_ctx: &mut DrawingCtx,
     opacity: &UnitInterval,
     bbox: &BoundingBox,
-) -> bool {
-    match bbox.rect {
-        Some(r) if !r.is_empty() => {
+) {
+    if let Some(r) = bbox.rect {
+        if !r.is_empty() {
             let resolved = resolve_gradient(gradient, draw_ctx);
             set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
         }
-
-        _ => true,
     }
 }
 
@@ -757,8 +709,8 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
-        did_set_gradient =
-            resolve_fallbacks_and_set_pattern(&gradient, &values, draw_ctx, opacity, bbox);
+        resolve_fallbacks_and_set_pattern(&gradient, &values, draw_ctx, opacity, bbox);
+        did_set_gradient = true;
     });
 
     did_set_gradient
