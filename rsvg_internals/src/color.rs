@@ -12,7 +12,10 @@ impl Parse for cssparser::Color {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<cssparser::Color, AttributeError> {
+    fn parse(
+        parser: &mut Parser<'_, '_>,
+        _: Self::Data,
+    ) -> Result<cssparser::Color, AttributeError> {
         cssparser::Color::parse(parser)
             .map_err(|_| AttributeError::Parse(ParseError::new("invalid syntax for color")))
     }
@@ -22,7 +25,10 @@ impl Parse for cssparser::RGBA {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<cssparser::RGBA, AttributeError> {
+    fn parse(
+        parser: &mut Parser<'_, '_>,
+        _: Self::Data,
+    ) -> Result<cssparser::RGBA, AttributeError> {
         match cssparser::Color::parse(parser) {
             Ok(cssparser::Color::RGBA(rgba)) => Ok(rgba),
             Ok(cssparser::Color::CurrentColor) => Err(AttributeError::Value(

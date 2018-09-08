@@ -137,7 +137,10 @@ impl Length {
         }
     }
 
-    pub fn from_cssparser(parser: &mut Parser<'_, '_>, dir: LengthDir) -> Result<Length, AttributeError> {
+    pub fn from_cssparser(
+        parser: &mut Parser<'_, '_>,
+        dir: LengthDir,
+    ) -> Result<Length, AttributeError> {
         let length = {
             let token = parser.next().map_err(|_| {
                 AttributeError::Parse(ParseError::new(

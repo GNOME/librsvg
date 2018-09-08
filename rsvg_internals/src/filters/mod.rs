@@ -111,7 +111,12 @@ impl Primitive {
 }
 
 impl NodeTrait for Primitive {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        _: *const RsvgHandle,
+        pbag: &PropertyBag<'_>,
+    ) -> NodeResult {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let primitiveunits = node
             .get_parent()

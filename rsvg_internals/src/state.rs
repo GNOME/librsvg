@@ -539,7 +539,10 @@ impl State {
         Ok(())
     }
 
-    pub fn parse_presentation_attributes(&mut self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
+    pub fn parse_presentation_attributes(
+        &mut self,
+        pbag: &PropertyBag<'_>,
+    ) -> Result<(), NodeError> {
         for (_key, attr, value) in pbag.iter() {
             self.parse_attribute_pair(attr, value, false)?;
         }

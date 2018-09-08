@@ -125,7 +125,12 @@ impl NodeSvg {
 }
 
 impl NodeTrait for NodeSvg {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        _: *const RsvgHandle,
+        pbag: &PropertyBag<'_>,
+    ) -> NodeResult {
         // SVG element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
@@ -389,7 +394,12 @@ impl NodeSymbol {
 }
 
 impl NodeTrait for NodeSymbol {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        _: *const RsvgHandle,
+        pbag: &PropertyBag<'_>,
+    ) -> NodeResult {
         // symbol element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
