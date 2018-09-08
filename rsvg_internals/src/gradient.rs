@@ -726,6 +726,18 @@ mod tests {
     }
 
     #[test]
+    fn fixes_focus_point() {
+        // inside the circle
+        assert_eq!(fix_focus_point(1.0, 1.0, 2.0, 1.0, 3.0), (1.0, 1.0));
+
+        // on the edge
+        assert_eq!(fix_focus_point(1.0, 1.0, 2.0, 1.0, 2.0), (1.0, 1.0));
+
+        // outside the circle
+        assert_eq!(fix_focus_point(1.0, 1.0, 3.0, 1.0, 1.0), (2.0, 1.0));
+    }
+
+    #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
         let mut gradient = Gradient {
             common: GradientCommon::unresolved(),
