@@ -677,21 +677,6 @@ impl NodeTrait for NodeGradient {
     }
 }
 
-fn resolve_fallbacks_and_set_pattern(
-    gradient: &Gradient,
-    values: &ComputedValues,
-    draw_ctx: &mut DrawingCtx,
-    opacity: &UnitInterval,
-    bbox: &BoundingBox,
-) {
-    if let Some(r) = bbox.rect {
-        if !r.is_empty() {
-            let resolved = resolve_gradient(gradient, draw_ctx);
-            set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
-        }
-    }
-}
-
 pub fn gradient_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
     draw_ctx: &mut DrawingCtx,
@@ -705,11 +690,17 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
     let mut did_set_gradient = false;
 
     node.with_impl(|node_gradient: &NodeGradient| {
-        let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
-        let cascaded = node.get_cascaded_values();
-        let values = cascaded.get();
+        if let Some(r) = bbox.rect {
+            if !r.is_empty() {
+                let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
+                let resolved = resolve_gradient(&gradient, draw_ctx);
+                let cascaded = node.get_cascaded_values();
+                let values = cascaded.get();
 
-        resolve_fallbacks_and_set_pattern(&gradient, &values, draw_ctx, opacity, bbox);
+                set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
+            }
+        }
+
         did_set_gradient = true;
     });
 
