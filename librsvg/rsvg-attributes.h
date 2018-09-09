@@ -157,8 +157,4 @@ typedef enum {
     RSVG_ATTRIBUTE_Z,
 } RsvgAttribute;
 
-/* Implemented in rust/src/attributes.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_attribute_from_name (const char *name, RsvgAttribute *out_attr);
-
 #endif /* RSVG_ATTRIBUTES_H */

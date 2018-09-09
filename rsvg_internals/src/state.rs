@@ -1387,18 +1387,25 @@ make_property!(
 #[no_mangle]
 pub extern "C" fn rsvg_state_parse_style_pair(
     state: *mut RsvgState,
-    attr: Attribute,
+    name: *const libc::c_char,
     value: *const libc::c_char,
     important: glib_sys::gboolean,
 ) -> glib_sys::gboolean {
     assert!(!state.is_null());
     let state = unsafe { &mut *(state as *mut State) };
 
+    assert!(!name.is_null());
+    let name = unsafe { utf8_cstr(name) };
+
     assert!(!value.is_null());
     let value = unsafe { utf8_cstr(value) };
 
-    match state.parse_style_pair(attr, value, from_glib(important)) {
-        Ok(_) => true.to_glib(),
-        Err(_) => false.to_glib(),
+    if let Ok(attr) = Attribute::from_str(name) {
+        match state.parse_style_pair(attr, value, from_glib(important)) {
+            Ok(_) => true.to_glib(),
+            Err(_) => false.to_glib(),
+        }
+    } else {
+        false.to_glib()
     }
 }

@@ -37,7 +37,7 @@
 #include <libcroco/libcroco.h>
 
 /* Defined in rsvg_internals/src/state.rs */
-extern gboolean rsvg_state_parse_style_pair(RsvgState *state, RsvgAttribute attr, const char *value, gboolean important, gboolean accept_shorthands) G_GNUC_WARN_UNUSED_RESULT;
+extern gboolean rsvg_state_parse_style_pair(RsvgState *state, const char *attr, const char *value, gboolean important) G_GNUC_WARN_UNUSED_RESULT;
 
 typedef struct _StyleValueData {
     gchar *value;
@@ -282,16 +282,12 @@ static void
 apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
 {
     RsvgState *state = user_data;
-    RsvgAttribute attr;
 
-    if (rsvg_attribute_from_name (key, &attr)) {
-        /* FIXME: this is ignoring errors */
-        gboolean success = rsvg_state_parse_style_pair (state,
-                                                        attr,
-                                                        value->value,
-                                                        value->important,
-                                                        TRUE);
-    }
+    /* FIXME: this is ignoring errors */
+    gboolean success = rsvg_state_parse_style_pair (state,
+                                                    key,
+                                                    value->value,
+                                                    value->important);
 }
 
 gboolean
