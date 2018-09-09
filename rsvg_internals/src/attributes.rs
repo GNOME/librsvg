@@ -1,5 +1,6 @@
 extern crate phf;
 
+use std::fmt;
 use std::str::FromStr;
 
 include!(concat!(env!("OUT_DIR"), "/attributes-codegen.rs"));
@@ -12,15 +13,15 @@ impl FromStr for Attribute {
     }
 }
 
-impl Attribute {
+impl fmt::Display for Attribute {
     // This is horribly inefficient, but for now I'm too lazy to have a
     // compile-time bijective mapping from attributes to names.  Hopefully
     // this function is only called when *printing* errors, which, uh,
     // should not be done too often.
-    pub fn to_str(&self) -> &'static str {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (k, v) in ATTRIBUTES.entries() {
             if *v == *self {
-                return k;
+                return write!(f, "{}", k);
             }
         }
 
@@ -44,8 +45,8 @@ mod tests {
 
     #[test]
     fn converts_attributes_back_to_strings() {
-        assert_eq!(Attribute::ClipPath.to_str(), "clip-path");
-        assert_eq!(Attribute::KernelUnitLength.to_str(), "kernelUnitLength");
-        assert_eq!(Attribute::Offset.to_str(), "offset");
+        assert_eq!(Attribute::ClipPath.to_string(), "clip-path");
+        assert_eq!(Attribute::KernelUnitLength.to_string(), "kernelUnitLength");
+        assert_eq!(Attribute::Offset.to_string(), "offset");
     }
 }
