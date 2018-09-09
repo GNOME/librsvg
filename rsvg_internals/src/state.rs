@@ -295,21 +295,12 @@ impl State {
         }
     }
 
-    fn parse_style_pair(
+    fn parse_attribute_pair(
         &mut self,
         attr: Attribute,
         value: &str,
-        important: bool,
         accept_shorthands: bool,
     ) -> Result<(), NodeError> {
-        if !important && self.important_styles.borrow().contains(&attr) {
-            return Ok(());
-        }
-
-        if important {
-            self.important_styles.borrow_mut().insert(attr);
-        }
-
         // FIXME: move this to "do catch" when we can bump the rustc version dependency
         let mut parse = || -> Result<(), AttributeError> {
             // please keep these sorted
@@ -550,10 +541,27 @@ impl State {
 
     pub fn parse_presentation_attributes(&mut self, pbag: &PropertyBag) -> Result<(), NodeError> {
         for (_key, attr, value) in pbag.iter() {
-            self.parse_style_pair(attr, value, false, false)?;
+            self.parse_attribute_pair(attr, value, false)?;
         }
 
         Ok(())
+    }
+
+    fn parse_style_pair(
+        &mut self,
+        attr: Attribute,
+        value: &str,
+        important: bool,
+    ) -> Result<(), NodeError> {
+        if !important && self.important_styles.borrow().contains(&attr) {
+            return Ok(());
+        }
+
+        if important {
+            self.important_styles.borrow_mut().insert(attr);
+        }
+
+        self.parse_attribute_pair(attr, value, true)
     }
 
     pub fn parse_style_declarations(&mut self, declarations: &str) -> Result<(), NodeError> {
@@ -587,7 +595,7 @@ impl State {
                     };
 
                     if let Ok(attr) = Attribute::from_str(prop_name) {
-                        self.parse_style_pair(attr, value, important, true)?;
+                        self.parse_style_pair(attr, value, important)?;
                     }
                     // else unknown property name; ignore
                 }
@@ -1382,7 +1390,6 @@ pub extern "C" fn rsvg_state_parse_style_pair(
     attr: Attribute,
     value: *const libc::c_char,
     important: glib_sys::gboolean,
-    accept_shorthands: glib_sys::gboolean,
 ) -> glib_sys::gboolean {
     assert!(!state.is_null());
     let state = unsafe { &mut *(state as *mut State) };
@@ -1390,12 +1397,7 @@ pub extern "C" fn rsvg_state_parse_style_pair(
     assert!(!value.is_null());
     let value = unsafe { utf8_cstr(value) };
 
-    match state.parse_style_pair(
-        attr,
-        value,
-        from_glib(important),
-        from_glib(accept_shorthands),
-    ) {
+    match state.parse_style_pair(attr, value, from_glib(important)) {
         Ok(_) => true.to_glib(),
         Err(_) => false.to_glib(),
     }
