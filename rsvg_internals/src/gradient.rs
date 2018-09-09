@@ -504,7 +504,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
 // defined by ‘cx’, ‘cy’ and ‘r’.
 //
 // So, let's do that!
-fn fix_focus_point(mut fx: f64, mut fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64) {
+fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64) {
     // Easy case first: the focus point is inside the circle
 
     if (fx - cx) * (fx - cx) + (fy - cy) * (fy - cy) <= radius * radius {
@@ -512,31 +512,23 @@ fn fix_focus_point(mut fx: f64, mut fy: f64, cx: f64, cy: f64, radius: f64) -> (
     }
 
     // Hard case: focus point is outside the circle.
-    // First, translate everything to the origin.
-
-    fx -= cx;
-    fy -= cy;
-
     // Find the vector from the origin to (fx, fy)
 
-    let mut vx = fx;
-    let mut vy = fy;
+    let mut dx = fx - cx;
+    let mut dy = fy - cy;
 
     // Find the vector's magnitude
+    let mag = (dx * dx + dy * dy).sqrt();
 
-    let mag = (vx * vx + vy * vy).sqrt();
-
-    // Normalize the vector to have a magnitude equal to radius; (vx, vy) will now be on the
-    // edge of the circle
-
+    // Normalize the vector to have a magnitude equal to radius
     let scale = mag / radius;
 
-    vx /= scale;
-    vy /= scale;
+    dx /= scale;
+    dy /= scale;
 
     // Translate back to (cx, cy) and we are done!
 
-    (vx + cx, vy + cy)
+    (cx + dx, cy + dy)
 }
 
 fn set_pattern_on_draw_context(
