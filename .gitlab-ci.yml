@@ -45,6 +45,8 @@ stages:
       cd _build
       ../autogen.sh --enable-gtk-doc --enable-vala
       make check
+      find . -name '*.log'
+      false
 
   artifacts:
     when: on_failure
