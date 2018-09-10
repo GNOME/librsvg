@@ -471,9 +471,7 @@ sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
             if (*tempname == ':')
                 name = (const xmlChar *) (tempname + 1);
 #if 0
-        if (!strcmp ((const char *) name, "style"))
-            start_style (load, bag);
-        else if (!strcmp ((const char *) name, "include"))      /* xi:include */
+        if (!strcmp ((const char *) name, "include"))      /* xi:include */
             start_xinclude (load, bag);
         else {
 #endif
