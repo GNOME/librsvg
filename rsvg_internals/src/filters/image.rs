@@ -10,6 +10,7 @@ use libc;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
+use defs::Reference;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
 use handle::RsvgHandle;
@@ -236,12 +237,11 @@ impl Filter for Image {
         let bounds_builder = self.base.get_bounds(ctx);
         let bounds = bounds_builder.into_irect(draw_ctx);
 
-        let output_surface = match self.render_node(ctx, draw_ctx, bounds, href) {
-            Err(FilterError::InvalidInput) => {
+        let output_surface = match Reference::parse(href).map_err(|_| FilterError::InvalidInput)? {
+            Reference::PlainUri(_) => {
                 self.render_external_image(ctx, draw_ctx, bounds_builder, href)?
             }
-            Err(err) => return Err(err),
-            Ok(surface) => surface,
+            _ => self.render_node(ctx, draw_ctx, bounds, href)?,
         };
 
         Ok(FilterResult {
