@@ -57,14 +57,14 @@ impl fmt::Display for NodeError {
             AttributeError::Parse(ref n) => write!(
                 f,
                 "error parsing value for attribute \"{}\": {}",
-                self.attr.to_str(),
+                self.attr.to_string(),
                 n.display
             ),
 
             AttributeError::Value(ref s) => write!(
                 f,
                 "invalid value for attribute \"{}\": {}",
-                self.attr.to_str(),
+                self.attr.to_string(),
                 s
             ),
         }

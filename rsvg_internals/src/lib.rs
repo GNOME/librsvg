@@ -26,8 +26,6 @@ extern crate lazy_static;
 #[macro_use]
 extern crate downcast_rs;
 
-pub use attributes::rsvg_attribute_from_name;
-
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use defs::{rsvg_defs_free, rsvg_defs_lookup, rsvg_defs_new};
