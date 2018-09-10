@@ -29,18 +29,27 @@ impl Defs {
         self.nodes.entry(id.to_string()).or_insert(node.clone());
     }
 
+    /// Returns a node from an URI reference, or `None`
+    ///
+    /// This may return a node within the same RSVG handle, or a node in a secondary RSVG
+    /// handle that is referenced by the current one.  If the element's id is not found,
+    /// returns `None`.
     pub fn lookup(&mut self, name: &str) -> Option<&Rc<Node>> {
-        match name.rfind('#') {
-            None => None,
-            Some(p) if p == 0 => self.nodes.get(&name[1..]),
-            Some(p) => {
-                let handle = self.get_extern_handle(&name[..p]);
-                if handle.is_null() {
-                    None
-                } else {
-                    handle::get_defs(handle).nodes.get(&name[(p + 1)..])
+        if let Ok(reference) = Reference::parse(name) {
+            match reference {
+                Reference::PlainUri(_) => None,
+                Reference::FragmentId(fragment) => self.nodes.get(fragment),
+                Reference::UriWithFragmentId(uri, fragment) => {
+                    let handle = self.get_extern_handle(uri);
+                    if handle.is_null() {
+                        None
+                    } else {
+                        handle::get_defs(handle).nodes.get(fragment)
+                    }
                 }
             }
+        } else {
+            None
         }
     }
 
