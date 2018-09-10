@@ -58,7 +58,7 @@ stages:
     # ^ Keep diffrerent caches for each branch
     key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
     paths:
-      - target/
+      - _build/target/
       - .cargo_cache/
       - ccache/
 
