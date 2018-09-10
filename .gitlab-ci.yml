@@ -41,7 +41,7 @@ stages:
   script:
     - rustc --version && cargo --version
     - |
-      mkdir _build
+      mkdir -p _build
       cd _build
       ../autogen.sh --enable-gtk-doc --enable-vala
       make
@@ -146,7 +146,7 @@ tarball:
   script:
     - rustc --version && cargo --version
     - |
-      mkdir _build
+      mkdir -p _build
       cd _build
       ../autogen.sh --enable-gtk-doc --enable-vala
       make distcheck DESTDIR=/tmp/distcheck
