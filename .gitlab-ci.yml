@@ -40,8 +40,11 @@ stages:
     - export CARGO_HOME="${PWD}/.cargo_cache"
   script:
     - rustc --version && cargo --version
-    - ./autogen.sh --enable-gtk-doc --enable-vala
-    - make check
+    - |
+      mkdir _build
+      cd _build
+      ../autogen.sh --enable-gtk-doc --enable-vala
+      make check
 
   artifacts:
     when: on_failure
@@ -141,8 +144,11 @@ tarball:
     LIBRSVG_DEBUG: "yes"
   script:
     - rustc --version && cargo --version
-    - ./autogen.sh --enable-gtk-doc --enable-vala
-    - make distcheck DESTDIR=/tmp/distcheck
+    - |
+      mkdir _build
+      cd _build
+      ../autogen.sh --enable-gtk-doc --enable-vala
+      make distcheck DESTDIR=/tmp/distcheck
   <<: *stage_2
 
 # STAGE 2 CROSS DISTRO TESTS
