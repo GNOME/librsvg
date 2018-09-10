@@ -44,6 +44,7 @@ stages:
       mkdir _build
       cd _build
       ../autogen.sh --enable-gtk-doc --enable-vala
+      make
       make check
 
   artifacts:
