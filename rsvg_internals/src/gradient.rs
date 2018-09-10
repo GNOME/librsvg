@@ -504,7 +504,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
 // defined by ‘cx’, ‘cy’ and ‘r’.
 //
 // So, let's do that!
-fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64) {
+fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64, tolerance: f64) -> (f64, f64) {
     // Easy case first: the focus point is inside the circle
 
     if (fx - cx) * (fx - cx) + (fy - cy) * (fy - cy) <= radius * radius {
@@ -520,14 +520,14 @@ fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64
     // Find the vector's magnitude
     let mag = (dx * dx + dy * dy).sqrt();
 
-    // Normalize the vector to have a magnitude equal to radius
-    let scale = mag / radius;
-
-    dx /= scale;
-    dy /= scale;
+    // Normalize the vector to have a magnitude equal to radius.
+    // Take tolerance into account so that we have use the worse
+    // case values.
+    let scale = (radius - tolerance) / (mag + tolerance);
+    dx *= scale;
+    dy *= scale;
 
     // Translate back to (cx, cy) and we are done!
-
     (cx + dx, cy + dy)
 }
 
@@ -566,7 +566,10 @@ fn set_pattern_on_draw_context(
             let n_fx = fx.as_ref().unwrap().normalize(values, &params);
             let n_fy = fy.as_ref().unwrap().normalize(values, &params);
 
-            let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
+            let cr = draw_ctx.get_cairo_context();
+            let tolerance = cr.get_tolerance();
+
+            let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r, tolerance);
             let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
 
             set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity)
@@ -720,13 +723,13 @@ mod tests {
     #[test]
     fn fixes_focus_point() {
         // inside the circle
-        assert_eq!(fix_focus_point(1.0, 1.0, 2.0, 1.0, 3.0), (1.0, 1.0));
+        assert_eq!(fix_focus_point(1.0, 1.0, 2.0, 1.0, 3.0, 0.0), (1.0, 1.0));
 
         // on the edge
-        assert_eq!(fix_focus_point(1.0, 1.0, 2.0, 1.0, 2.0), (1.0, 1.0));
+        assert_eq!(fix_focus_point(1.0, 1.0, 2.0, 1.0, 2.0, 0.0), (1.0, 1.0));
 
         // outside the circle
-        assert_eq!(fix_focus_point(1.0, 1.0, 3.0, 1.0, 1.0), (2.0, 1.0));
+        assert_eq!(fix_focus_point(1.0, 1.0, 3.0, 1.0, 1.0, 0.0), (2.0, 1.0));
     }
 
     #[test]
