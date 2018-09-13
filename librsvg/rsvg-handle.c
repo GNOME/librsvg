@@ -705,6 +705,7 @@ gboolean
 rsvg_handle_close (RsvgHandle *handle, GError **error)
 {
     RsvgHandlePrivate *priv;
+    gboolean read_successfully;
     gboolean result;
 
     rsvg_return_val_if_fail (handle, FALSE, error);
@@ -716,7 +717,8 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
         return TRUE;
     }
 
-    result = finish_load (handle, rsvg_load_close (priv->load, error));
+    read_successfully = rsvg_load_close (priv->load, error);
+    result = finish_load (handle, read_successfully);
 
     return result;
 }
@@ -747,6 +749,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
                               GError      **error)
 {
     RsvgHandlePrivate *priv;
+    gboolean read_successfully;
     gboolean result;
     RsvgLoad *saved_load;
 
@@ -764,7 +767,9 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     saved_load = priv->load;
 
     priv->load = rsvg_load_new (handle, (priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0);
-    result = finish_load (handle, rsvg_load_read_stream_sync (priv->load, stream, cancellable, error));
+
+    read_successfully = rsvg_load_read_stream_sync (priv->load, stream, cancellable, error);
+    result = finish_load (handle, read_successfully);
 
     priv->load = saved_load;
 
