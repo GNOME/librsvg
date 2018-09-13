@@ -654,7 +654,9 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 {
     RsvgHandlePrivate *priv;
 
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
     rsvg_return_val_if_fail (handle, FALSE, error);
+
     priv = handle->priv;
 
     rsvg_return_val_if_fail (priv->hstate == RSVG_HANDLE_STATE_START
@@ -673,19 +675,49 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 }
 
 static gboolean
-finish_load (RsvgHandle *handle, gboolean was_successful)
+tree_is_valid (RsvgTree *tree, GError **error)
 {
+    if (!tree) {
+        g_set_error (error, RSVG_ERROR, RSVG_ERROR_FAILED, _("SVG has no elements"));
+        return FALSE;
+    }
+
+    if (!rsvg_tree_root_is_svg (tree)) {
+        g_set_error (error, RSVG_ERROR, RSVG_ERROR_FAILED, _("root element is not <svg>"));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static gboolean
+finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
+{
+    RsvgTree *tree = NULL;
+
     g_assert (handle->priv->load != NULL);
     g_assert (handle->priv->tree == NULL);
 
     if (was_successful) {
+        g_assert (error == NULL || *error == NULL);
+
+        tree = rsvg_load_steal_tree (handle->priv->load);
+        was_successful = tree_is_valid (tree, error);
+        if (!was_successful) {
+            rsvg_tree_free (tree);
+            tree = NULL;
+        }
+    }
+
+    if (was_successful) {
+        g_assert (tree != NULL);
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
-        handle->priv->tree = rsvg_load_steal_tree (handle->priv->load);
     } else {
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
     }
 
     g_clear_pointer (&handle->priv->load, rsvg_load_free);
+    handle->priv->tree = tree;
 
     return was_successful;
 }
@@ -708,7 +740,9 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
     gboolean read_successfully;
     gboolean result;
 
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
     rsvg_return_val_if_fail (handle, FALSE, error);
+
     priv = handle->priv;
 
     if (priv->hstate == RSVG_HANDLE_STATE_CLOSED_OK
@@ -718,7 +752,7 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
     }
 
     read_successfully = rsvg_load_close (priv->load, error);
-    result = finish_load (handle, read_successfully);
+    result = finish_load (handle, read_successfully, error);
 
     return result;
 }
@@ -769,7 +803,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     priv->load = rsvg_load_new (handle, (priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0);
 
     read_successfully = rsvg_load_read_stream_sync (priv->load, stream, cancellable, error);
-    result = finish_load (handle, read_successfully);
+    result = finish_load (handle, read_successfully, error);
 
     priv->load = saved_load;
 
