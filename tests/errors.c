@@ -22,6 +22,21 @@ get_test_filename (const char *basename) {
                              basename,
                              NULL);
 }
+
+static void
+test_non_svg_element (void)
+{
+    char *filename = get_test_filename ("335-non-svg-element.svg");
+    RsvgHandle *handle;
+    GError *error = NULL;
+
+    handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle == NULL);
+    g_assert (g_error_matches (error, RSVG_ERROR, RSVG_ERROR_FAILED));
+}
+
 static void
 test_instancing_limit (void)
 {
@@ -49,6 +64,7 @@ main (int argc, char **argv)
 {
     g_test_init (&argc, &argv, NULL);
 
+    g_test_add_func ("/errors/non_svg_element", test_non_svg_element);
     g_test_add_func ("/errors/instancing_limit", test_instancing_limit);
 
     return g_test_run ();
