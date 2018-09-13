@@ -40,7 +40,7 @@ typedef enum {
 
 /* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts, RsvgDefs *defs, gboolean *is_svg);
+RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPropertyBag *atts, RsvgDefs *defs);
 
 /* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
@@ -298,18 +298,17 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
 {
     RsvgDefs *defs;
     RsvgNode *newnode;
-    gboolean is_svg;
 
     defs = rsvg_handle_get_defs(load->handle);
 
-    newnode = rsvg_load_new_node(name, load->currentnode, atts, defs, &is_svg);
+    newnode = rsvg_load_new_node(name, load->currentnode, atts, defs);
 
     push_element_name (load, name);
 
     if (load->currentnode) {
         rsvg_node_add_child (load->currentnode, newnode);
         load->currentnode = rsvg_node_unref (load->currentnode);
-    } else if (is_svg) {
+    } else {
         load->tree = rsvg_tree_new (newnode);
     }
 
