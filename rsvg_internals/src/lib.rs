@@ -59,6 +59,7 @@ pub use tree::{
     rsvg_tree_get_root,
     rsvg_tree_is_root,
     rsvg_tree_new,
+    rsvg_tree_root_is_svg,
 };
 
 pub use parsers::rsvg_css_parse_number_optional_number;

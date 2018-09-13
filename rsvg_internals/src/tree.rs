@@ -4,7 +4,7 @@ use glib_sys;
 use std::cell::Cell;
 use std::rc::Rc;
 
-use node::{box_node, Node, RsvgNode};
+use node::{box_node, Node, NodeType, RsvgNode};
 use state::ComputedValues;
 
 pub enum RsvgTree {}
@@ -28,6 +28,10 @@ impl Tree {
             let values = ComputedValues::default();
             self.root.cascade(&values);
         }
+    }
+
+    fn root_is_svg(&self) -> bool {
+        self.root.get_type() == NodeType::Svg
     }
 }
 
@@ -75,4 +79,12 @@ pub extern "C" fn rsvg_tree_is_root(
     let node: &RsvgNode = unsafe { &*node };
 
     Rc::ptr_eq(&tree.root, node).to_glib()
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_tree_root_is_svg(tree: *const RsvgTree) -> glib_sys::gboolean {
+    assert!(!tree.is_null());
+    let tree = unsafe { &*(tree as *const Tree) };
+
+    tree.root_is_svg().to_glib()
 }

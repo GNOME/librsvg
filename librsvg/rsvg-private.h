@@ -182,6 +182,10 @@ gboolean rsvg_tree_is_root (RsvgTree *tree, RsvgNode *node);
 
 /* Implemented in rsvg_internals/src/tree.rs */
 G_GNUC_INTERNAL
+gboolean rsvg_tree_root_is_svg (RsvgTree *tree);
+
+/* Implemented in rsvg_internals/src/tree.rs */
+G_GNUC_INTERNAL
 void rsvg_tree_cascade (RsvgTree *tree);
 
 /* Implemented in rsvg_internals/src/structure.rs */
