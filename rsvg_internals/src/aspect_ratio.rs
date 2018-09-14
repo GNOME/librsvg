@@ -174,13 +174,11 @@ fn parse_align_xy(ident: &CowRcStr) -> Result<Option<(X, Y)>, ValueErrorKind> {
     }
 }
 
-impl FitMode {
-    fn parse(s: &str) -> Result<FitMode, ValueErrorKind> {
-        match s {
-            "meet" => Ok(FitMode::Meet),
-            "slice" => Ok(FitMode::Slice),
-            _ => Err(ValueErrorKind::Parse(ParseError::new("invalid fit mode"))),
-        }
+fn parse_fit_mode(s: &str) -> Result<FitMode, ValueErrorKind> {
+    match s {
+        "meet" => Ok(FitMode::Meet),
+        "slice" => Ok(FitMode::Slice),
+        _ => Err(ValueErrorKind::Parse(ParseError::new("invalid fit mode"))),
     }
 }
 
@@ -201,7 +199,7 @@ impl Parse for AspectRatio {
             .try(|p| {
                 p.expect_ident()
                     .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
-                    .and_then(|ident| FitMode::parse(ident))
+                    .and_then(|ident| parse_fit_mode(ident))
             }).unwrap_or(FitMode::default());
 
         parser
