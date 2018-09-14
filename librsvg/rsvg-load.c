@@ -44,7 +44,7 @@ RsvgNode *rsvg_load_new_node (const char *element_name, RsvgNode *parent, RsvgPr
 
 /* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
-void rsvg_load_set_node_atts (RsvgHandle *handle, RsvgNode *node, const char *element_name, RsvgPropertyBag atts);
+void rsvg_load_set_node_atts (RsvgHandle *handle, RsvgNode *node, RsvgPropertyBag atts);
 
 /* Implemented in rsvg_internals/src/load.rs */
 G_GNUC_INTERNAL
@@ -314,7 +314,7 @@ standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts
 
     load->currentnode = rsvg_node_ref (newnode);
 
-    rsvg_load_set_node_atts (load->handle, newnode, name, atts);
+    rsvg_load_set_node_atts (load->handle, newnode, atts);
 
     newnode = rsvg_node_unref (newnode);
 }
