@@ -504,19 +504,19 @@ impl Node {
                 let target = format!("{}#{}", tag, id);
                 rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
             }
+        }
 
-            for (_key, attr, value) in pbag.iter() {
-                match attr {
-                    Attribute::Style => {
-                        let mut state = self.state.borrow_mut();
-                        if let Err(e) = state.parse_style_declarations(value) {
-                            self.set_error(e);
-                            break;
-                        }
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Style => {
+                    let mut state = self.state.borrow_mut();
+                    if let Err(e) = state.parse_style_declarations(value) {
+                        self.set_error(e);
+                        break;
                     }
-
-                    _ => (),
                 }
+
+                _ => (),
             }
         }
     }
