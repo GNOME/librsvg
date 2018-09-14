@@ -211,11 +211,11 @@ impl FitMode {
 
 impl Parse for AspectRatio {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<AspectRatio, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<AspectRatio, ValueErrorKind> {
         AspectRatio::parse_input(parser).map_err(|_| {
-            AttributeError::Parse(ParseError::new(
+            ValueErrorKind::Parse(ParseError::new(
                 "expected \"[defer] <align> [meet | slice]\"",
             ))
         })

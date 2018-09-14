@@ -8,7 +8,7 @@ use owning_ref::RcRef;
 use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
-use error::AttributeError;
+use error::ValueErrorKind;
 use handle::RsvgHandle;
 use length::{Length, LengthDir, LengthUnit};
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
@@ -136,7 +136,7 @@ impl NodeTrait for Primitive {
 
             match length.unit {
                 LengthUnit::Default | LengthUnit::Percent => Ok(length),
-                _ => Err(AttributeError::Parse(ParseError::new(
+                _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
                 ))),
             }

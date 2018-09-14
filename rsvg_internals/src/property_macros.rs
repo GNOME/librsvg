@@ -25,7 +25,7 @@ pub trait Property<T> {
 /// variants.  It will generate an `impl Default for StrokeLinejoin`
 /// with the provided `default:` value.  Finally, it will generate an
 /// `impl Parse for StrokeLinejoin`, from `parsers::Parse`, where
-/// `type Data = ()` and `type Err = AttributeError`.
+/// `type Data = ()` and `type Err = ValueErrorKind`.
 #[macro_export]
 macro_rules! make_property {
     ($computed_values_type: ty,
@@ -45,9 +45,9 @@ macro_rules! make_property {
 
         impl ::parsers::Parse for $name {
             type Data = ();
-            type Err = ::error::AttributeError;
+            type Err = ::error::ValueErrorKind;
 
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, _: Self::Data) -> Result<$name, ::error::AttributeError> {
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, _: Self::Data) -> Result<$name, ::error::ValueErrorKind> {
                 let loc = parser.current_source_location();
 
                 parser
@@ -63,7 +63,7 @@ macro_rules! make_property {
                             ),
                     })
                     .map_err(|_| {
-                        ::error::AttributeError::Parse(::parsers::ParseError::new(
+                        ::error::ValueErrorKind::Parse(::parsers::ParseError::new(
                             "unexpected value",
                         ))
                     })
@@ -95,9 +95,9 @@ macro_rules! make_property {
 
         impl ::parsers::Parse for $name {
             type Data = $parse_data_type;
-            type Err = ::error::AttributeError;
+            type Err = ::error::ValueErrorKind;
 
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, d: Self::Data) -> Result<$name, ::error::AttributeError> {
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, d: Self::Data) -> Result<$name, ::error::ValueErrorKind> {
                 Ok($name(<$type as ::parsers::Parse>::parse(parser, d)?))
             }
         }
@@ -119,9 +119,9 @@ macro_rules! make_property {
 
         impl ::parsers::Parse for $name {
             type Data = $parse_data_type;
-            type Err = ::error::AttributeError;
+            type Err = ::error::ValueErrorKind;
 
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, d: Self::Data) -> Result<$name, ::error::AttributeError> {
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, d: Self::Data) -> Result<$name, ::error::ValueErrorKind> {
                 Ok($name(<$type as ::parsers::Parse>::parse(parser, d)?))
             }
         }

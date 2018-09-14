@@ -302,7 +302,7 @@ impl State {
         accept_shorthands: bool,
     ) -> Result<(), NodeError> {
         // FIXME: move this to "do catch" when we can bump the rustc version dependency
-        let mut parse = || -> Result<(), AttributeError> {
+        let mut parse = || -> Result<(), ValueErrorKind> {
             // please keep these sorted
             match attr {
                 Attribute::BaselineShift => {
@@ -661,15 +661,15 @@ make_property!(
     parse_impl: {
         impl Parse for BaselineShift {
             type Data = ();
-            type Err = AttributeError;
+            type Err = ValueErrorKind;
 
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
-            fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
+            fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<BaselineShift, ::error::ValueErrorKind> {
                 let parser_state = parser.state();
 
                 {
-                    let token = parser.next().map_err(|_| ::error::AttributeError::Parse(
+                    let token = parser.next().map_err(|_| ::error::ValueErrorKind::Parse(
                         ::parsers::ParseError::new("expected token"),
                     ))?;
 
@@ -1226,9 +1226,9 @@ make_property!(
     parse_impl: {
         impl Parse for TextDecoration {
             type Data = ();
-            type Err = AttributeError;
+            type Err = ValueErrorKind;
 
-            fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<TextDecoration, AttributeError> {
+            fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<TextDecoration, ValueErrorKind> {
                 let mut overline = false;
                 let mut underline = false;
                 let mut strike = false;
@@ -1238,7 +1238,7 @@ make_property!(
                 }
 
                 while !parser.is_exhausted() {
-                    let cow = parser.expect_ident().map_err(|_| ::error::AttributeError::Parse(
+                    let cow = parser.expect_ident().map_err(|_| ::error::ValueErrorKind::Parse(
                         ::parsers::ParseError::new("expected identifier"),
                     ))?;
 
@@ -1246,7 +1246,7 @@ make_property!(
                         "overline" => overline = true,
                         "underline" => underline = true,
                         "line-through" => strike = true,
-                        _ => return Err(AttributeError::Parse(ParseError::new("invalid syntax"))),
+                        _ => return Err(ValueErrorKind::Parse(ParseError::new("invalid syntax"))),
                     }
                 }
 

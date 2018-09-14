@@ -36,9 +36,9 @@ impl Default for MarkerUnits {
 
 impl Parse for MarkerUnits {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<MarkerUnits, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<MarkerUnits, ValueErrorKind> {
         let loc = parser.current_source_location();
 
         parser
@@ -52,7 +52,7 @@ impl Parse for MarkerUnits {
                     ))),
                 ),
             }).map_err(|_| {
-                AttributeError::Parse(ParseError::new(
+                ValueErrorKind::Parse(ParseError::new(
                     "expected \"userSpaceOnUse\" or \"strokeWidth\"",
                 ))
             })
@@ -74,15 +74,15 @@ impl Default for MarkerOrient {
 
 impl Parse for MarkerOrient {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<MarkerOrient, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<MarkerOrient, ValueErrorKind> {
         if parser.try(|p| p.expect_ident_matching("auto")).is_ok() {
             Ok(MarkerOrient::Auto)
         } else {
             parsers::angle_degrees(parser)
                 .map(MarkerOrient::Degrees)
-                .map_err(AttributeError::Parse)
+                .map_err(ValueErrorKind::Parse)
         }
     }
 }
@@ -879,10 +879,10 @@ mod parser_tests {
     #[test]
     fn parsing_invalid_marker_units_yields_error() {
         assert!(is_parse_error(
-            &MarkerUnits::parse_str("", ()).map_err(|e| AttributeError::from(e))
+            &MarkerUnits::parse_str("", ()).map_err(|e| ValueErrorKind::from(e))
         ));
         assert!(is_parse_error(
-            &MarkerUnits::parse_str("foo", ()).map_err(|e| AttributeError::from(e))
+            &MarkerUnits::parse_str("foo", ()).map_err(|e| ValueErrorKind::from(e))
         ));
     }
 
@@ -901,13 +901,13 @@ mod parser_tests {
     #[test]
     fn parsing_invalid_marker_orient_yields_error() {
         assert!(is_parse_error(
-            &MarkerOrient::parse_str("", ()).map_err(|e| AttributeError::from(e))
+            &MarkerOrient::parse_str("", ()).map_err(|e| ValueErrorKind::from(e))
         ));
         assert!(is_parse_error(
-            &MarkerOrient::parse_str("blah", ()).map_err(|e| AttributeError::from(e))
+            &MarkerOrient::parse_str("blah", ()).map_err(|e| ValueErrorKind::from(e))
         ));
         assert!(is_parse_error(
-            &MarkerOrient::parse_str("45blah", ()).map_err(|e| AttributeError::from(e))
+            &MarkerOrient::parse_str("45blah", ()).map_err(|e| ValueErrorKind::from(e))
         ));
     }
 

@@ -9,7 +9,7 @@ use parsers::ParseError;
 
 /// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]
-pub enum AttributeError {
+pub enum ValueErrorKind {
     /// The value could not be parsed
     Parse(ParseError),
 
@@ -21,25 +21,25 @@ pub enum AttributeError {
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
     attr: Attribute,
-    err: AttributeError,
+    err: ValueErrorKind,
 }
 
 impl NodeError {
     pub fn parse_error(attr: Attribute, error: ParseError) -> NodeError {
         NodeError {
             attr,
-            err: AttributeError::Parse(error),
+            err: ValueErrorKind::Parse(error),
         }
     }
 
     pub fn value_error(attr: Attribute, description: &str) -> NodeError {
         NodeError {
             attr,
-            err: AttributeError::Value(description.to_string()),
+            err: ValueErrorKind::Value(description.to_string()),
         }
     }
 
-    pub fn attribute_error(attr: Attribute, error: AttributeError) -> NodeError {
+    pub fn attribute_error(attr: Attribute, error: ValueErrorKind) -> NodeError {
         NodeError { attr, err: error }
     }
 }
@@ -47,8 +47,8 @@ impl NodeError {
 impl error::Error for NodeError {
     fn description(&self) -> &str {
         match self.err {
-            AttributeError::Parse(_) => "parse error",
-            AttributeError::Value(_) => "invalid attribute value",
+            ValueErrorKind::Parse(_) => "parse error",
+            ValueErrorKind::Value(_) => "invalid attribute value",
         }
     }
 }
@@ -56,14 +56,14 @@ impl error::Error for NodeError {
 impl fmt::Display for NodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.err {
-            AttributeError::Parse(ref n) => write!(
+            ValueErrorKind::Parse(ref n) => write!(
                 f,
                 "error parsing value for attribute \"{}\": {}",
                 self.attr.to_string(),
                 n.display
             ),
 
-            AttributeError::Value(ref s) => write!(
+            ValueErrorKind::Value(ref s) => write!(
                 f,
                 "invalid value for attribute \"{}\": {}",
                 self.attr.to_string(),
@@ -73,15 +73,15 @@ impl fmt::Display for NodeError {
     }
 }
 
-impl From<ParseError> for AttributeError {
-    fn from(pe: ParseError) -> AttributeError {
-        AttributeError::Parse(pe)
+impl From<ParseError> for ValueErrorKind {
+    fn from(pe: ParseError) -> ValueErrorKind {
+        ValueErrorKind::Parse(pe)
     }
 }
 
-impl<'a> From<BasicParseError<'a>> for AttributeError {
-    fn from(e: BasicParseError<'_>) -> AttributeError {
-        AttributeError::from(ParseError::from(e))
+impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
+    fn from(e: BasicParseError<'_>) -> ValueErrorKind {
+        ValueErrorKind::from(ParseError::from(e))
     }
 }
 
@@ -101,17 +101,17 @@ impl From<cairo::Status> for RenderingError {
 }
 
 #[cfg(test)]
-pub fn is_parse_error<T>(r: &Result<T, AttributeError>) -> bool {
+pub fn is_parse_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
     match *r {
-        Err(AttributeError::Parse(_)) => true,
+        Err(ValueErrorKind::Parse(_)) => true,
         _ => false,
     }
 }
 
 #[cfg(test)]
-pub fn is_value_error<T>(r: &Result<T, AttributeError>) -> bool {
+pub fn is_value_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
     match *r {
-        Err(AttributeError::Value(_)) => true,
+        Err(ValueErrorKind::Value(_)) => true,
         _ => false,
     }
 }

@@ -13,7 +13,7 @@ pub struct RequiredExtensions(pub bool);
 impl RequiredExtensions {
     // Parse a requiredExtensions attribute
     // http://www.w3.org/TR/SVG/struct.html#RequiredExtensionsAttribute
-    pub fn from_attribute(s: &str) -> Result<RequiredExtensions, AttributeError> {
+    pub fn from_attribute(s: &str) -> Result<RequiredExtensions, ValueErrorKind> {
         Ok(RequiredExtensions(
             s.split_whitespace()
                 .all(|f| IMPLEMENTED_EXTENSIONS.binary_search(&f).is_ok()),
@@ -52,7 +52,7 @@ pub struct RequiredFeatures(pub bool);
 impl RequiredFeatures {
     // Parse a requiredFeatures attribute
     // http://www.w3.org/TR/SVG/struct.html#RequiredFeaturesAttribute
-    pub fn from_attribute(s: &str) -> Result<RequiredFeatures, AttributeError> {
+    pub fn from_attribute(s: &str) -> Result<RequiredFeatures, ValueErrorKind> {
         Ok(RequiredFeatures(
             s.split_whitespace()
                 .all(|f| IMPLEMENTED_FEATURES.binary_search(&f).is_ok()),
@@ -69,7 +69,7 @@ impl<'a> SystemLanguage<'a> {
     pub fn from_attribute(
         s: &str,
         system_languages: &[String],
-    ) -> Result<SystemLanguage<'a>, AttributeError> {
+    ) -> Result<SystemLanguage<'a>, ValueErrorKind> {
         Ok(SystemLanguage(
             s.split(',')
                 .map(|s| s.trim())

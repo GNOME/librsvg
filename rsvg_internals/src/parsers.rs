@@ -7,7 +7,7 @@ use std::f64::consts::*;
 use std::str::{self, FromStr};
 
 use attributes::Attribute;
-use error::{AttributeError, NodeError};
+use error::{NodeError, ValueErrorKind};
 use util::utf8_cstr;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -48,24 +48,24 @@ pub trait Parse: Sized {
 
 impl Parse for f64 {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<f64, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<f64, ValueErrorKind> {
         Ok(f64::from(parser.expect_number().map_err(|_| {
-            AttributeError::Parse(ParseError::new("expected number"))
+            ValueErrorKind::Parse(ParseError::new("expected number"))
         })?))
     }
 }
 
 impl Parse for String {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<String, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<String, ValueErrorKind> {
         Ok(String::from(
             parser
                 .expect_string()
-                .map_err(|_| AttributeError::Parse(ParseError::new("expected string")))?
+                .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected string")))?
                 .as_ref(),
         ))
     }
@@ -80,7 +80,7 @@ impl Parse for String {
 /// `LengthDir::Horizontal` for `data`, for example.
 pub fn parse<T>(key: &str, value: &str, data: <T as Parse>::Data) -> Result<T, NodeError>
 where
-    T: Parse<Err = AttributeError>,
+    T: Parse<Err = ValueErrorKind>,
 {
     let mut input = ParserInput::new(value);
     let mut parser = Parser::new(&mut input);
@@ -103,8 +103,8 @@ pub fn parse_and_validate<T, F>(
     validate: F,
 ) -> Result<T, NodeError>
 where
-    T: Parse<Err = AttributeError>,
-    F: FnOnce(T) -> Result<T, AttributeError>,
+    T: Parse<Err = ValueErrorKind>,
+    F: FnOnce(T) -> Result<T, ValueErrorKind>,
 {
     let mut input = ParserInput::new(value);
     let mut parser = Parser::new(&mut input);

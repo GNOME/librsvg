@@ -21,9 +21,9 @@ pub enum PaintServer {
 
 impl Parse for PaintServer {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<PaintServer, AttributeError> {
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<PaintServer, ValueErrorKind> {
         if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
             Ok(PaintServer::None)
         } else if let Ok(url) = parser.try(|i| i.expect_url()) {
@@ -44,7 +44,7 @@ impl Parse for PaintServer {
         } else {
             cssparser::Color::parse(parser)
                 .map(PaintServer::SolidColor)
-                .map_err(AttributeError::from)
+                .map_err(ValueErrorKind::from)
         }
     }
 }
