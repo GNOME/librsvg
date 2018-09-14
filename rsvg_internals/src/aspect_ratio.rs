@@ -150,33 +150,10 @@ impl AspectRatio {
             }
         }
     }
-
-    fn parse_input<'i, 't>(p: &mut Parser<'i, 't>) -> Result<AspectRatio, ()> {
-        let defer = p.try(|p| p.expect_ident_matching("defer")).is_ok();
-
-        let align_xy = p.try(|p| {
-            p.expect_ident()
-                .map_err(|_| ())
-                .and_then(|ident| Align::parse_xy(ident))
-        })?;
-
-        let fit = p
-            .try(|p| {
-                p.expect_ident()
-                    .map_err(|_| ())
-                    .and_then(|ident| FitMode::parse(ident))
-            }).unwrap_or(FitMode::default());
-
-        p.expect_exhausted().map_err(|_| ())?;
-
-        let align = align_xy.map(|(x, y)| Align { x, y, fit });
-
-        Ok(AspectRatio { defer, align })
-    }
 }
 
 impl Align {
-    fn parse_xy(s: &str) -> Result<Option<(X, Y)>, ()> {
+    fn parse_xy(s: &str) -> Result<Option<(X, Y)>, ValueErrorKind> {
         use self::Align1D::*;
 
         match s {
@@ -194,17 +171,17 @@ impl Align {
             "xMidYMax" => Ok(Some((X(Mid), Y(Max)))),
             "xMaxYMax" => Ok(Some((X(Max), Y(Max)))),
 
-            _ => Err(()),
+            _ => Err(ValueErrorKind::Parse(ParseError::new("invalid alignment"))),
         }
     }
 }
 
 impl FitMode {
-    fn parse(s: &str) -> Result<FitMode, ()> {
+    fn parse(s: &str) -> Result<FitMode, ValueErrorKind> {
         match s {
             "meet" => Ok(FitMode::Meet),
             "slice" => Ok(FitMode::Slice),
-            _ => Err(()),
+            _ => Err(ValueErrorKind::Parse(ParseError::new("invalid fit mode"))),
         }
     }
 }
@@ -213,12 +190,29 @@ impl Parse for AspectRatio {
     type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<AspectRatio, ValueErrorKind> {
-        AspectRatio::parse_input(parser).map_err(|_| {
-            ValueErrorKind::Parse(ParseError::new(
-                "expected \"[defer] <align> [meet | slice]\"",
-            ))
-        })
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<AspectRatio, ValueErrorKind> {
+        let defer = parser.try(|p| p.expect_ident_matching("defer")).is_ok();
+
+        let align_xy = parser.try(|p| {
+            p.expect_ident()
+                .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
+                .and_then(|ident| Align::parse_xy(ident))
+        })?;
+
+        let fit = parser
+            .try(|p| {
+                p.expect_ident()
+                    .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
+                    .and_then(|ident| FitMode::parse(ident))
+            }).unwrap_or(FitMode::default());
+
+        parser
+            .expect_exhausted()
+            .map_err(|_| ValueErrorKind::Parse(ParseError::new("extra data in AspectRatio")))?;
+
+        let align = align_xy.map(|(x, y)| Align { x, y, fit });
+
+        Ok(AspectRatio { defer, align })
     }
 }
 
