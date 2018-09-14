@@ -14,13 +14,13 @@ impl Default for UnitInterval {
 
 impl Parse for UnitInterval {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<UnitInterval, AttributeError> {
+    fn parse(parser: &mut Parser, _: ()) -> Result<UnitInterval, ValueErrorKind> {
         let x = f64::from(
             parser
                 .expect_number()
-                .map_err(|_| AttributeError::Parse(ParseError::new("expected number")))?,
+                .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected number")))?,
         );
 
         let cx = if x < 0.0 {

@@ -74,9 +74,9 @@ impl FontSizeSpec {
 
 impl Parse for FontSizeSpec {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: Self::Data) -> Result<FontSizeSpec, ::error::AttributeError> {
+    fn parse(parser: &mut Parser, _: Self::Data) -> Result<FontSizeSpec, ::error::ValueErrorKind> {
         let parser_state = parser.state();
 
         Length::parse(parser, LengthDir::Both)
@@ -86,7 +86,7 @@ impl Parse for FontSizeSpec {
 
                 {
                     let token = parser.next().map_err(|_| {
-                        ::error::AttributeError::Parse(::parsers::ParseError::new("expected token"))
+                        ::error::ValueErrorKind::Parse(::parsers::ParseError::new("expected token"))
                     })?;
 
                     if let Token::Ident(ref cow) = token {
@@ -132,12 +132,12 @@ pub enum FontWeightSpec {
 
 impl Parse for FontWeightSpec {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
     fn parse(
         parser: &mut Parser,
         _: Self::Data,
-    ) -> Result<FontWeightSpec, ::error::AttributeError> {
+    ) -> Result<FontWeightSpec, ::error::ValueErrorKind> {
         if let Ok(r) = parser.try(|p| {
             p.expect_ident()
                 .map_err(|_| ())
@@ -169,7 +169,7 @@ impl Parse for FontWeightSpec {
             }) {
             Ok(r)
         } else {
-            Err(AttributeError::Parse(ParseError::new(
+            Err(ValueErrorKind::Parse(ParseError::new(
                 "invalid font-weight specification",
             )))
         }
@@ -209,12 +209,12 @@ impl LetterSpacingSpec {
 
 impl Parse for LetterSpacingSpec {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
     fn parse(
         parser: &mut Parser,
         _: Self::Data,
-    ) -> Result<LetterSpacingSpec, ::error::AttributeError> {
+    ) -> Result<LetterSpacingSpec, ::error::ValueErrorKind> {
         let parser_state = parser.state();
 
         Length::parse(parser, LengthDir::Horizontal)
@@ -224,7 +224,7 @@ impl Parse for LetterSpacingSpec {
 
                 {
                     let token = parser.next().map_err(|_| {
-                        ::error::AttributeError::Parse(::parsers::ParseError::new("expected token"))
+                        ::error::ValueErrorKind::Parse(::parsers::ParseError::new("expected token"))
                     })?;
 
                     if let Token::Ident(ref cow) = token {
@@ -248,11 +248,11 @@ pub struct SingleFontFamily(pub String);
 
 impl Parse for SingleFontFamily {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: Self::Data) -> Result<SingleFontFamily, AttributeError> {
+    fn parse(parser: &mut Parser, _: Self::Data) -> Result<SingleFontFamily, ValueErrorKind> {
         parse_single_font_family(parser)
-            .map_err(|_| AttributeError::from(ParseError::new("expected font family")))
+            .map_err(|_| ValueErrorKind::from(ParseError::new("expected font family")))
     }
 }
 

@@ -55,8 +55,8 @@ const PICA_PER_INCH: f64 = 6.0;
 // inside Length::normalize(), when it needs to know to what the
 // length refers.
 
-fn make_err() -> AttributeError {
-    AttributeError::Parse(ParseError::new(
+fn make_err() -> ValueErrorKind {
+    ValueErrorKind::Parse(ParseError::new(
         "expected length: number(\"em\" | \"ex\" | \"px\" | \"in\" | \"cm\" | \"mm\" | \"pt\" | \
          \"pc\" | \"%\")?",
     ))
@@ -64,9 +64,9 @@ fn make_err() -> AttributeError {
 
 impl Parse for Length {
     type Data = LengthDir;
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, dir: LengthDir) -> Result<Length, AttributeError> {
+    fn parse(parser: &mut Parser, dir: LengthDir) -> Result<Length, ValueErrorKind> {
         let length = Length::from_cssparser(parser, dir)?;
 
         parser.expect_exhausted().map_err(|_| make_err())?;
@@ -84,11 +84,11 @@ impl Length {
         }
     }
 
-    pub fn check_nonnegative(self) -> Result<Length, AttributeError> {
+    pub fn check_nonnegative(self) -> Result<Length, ValueErrorKind> {
         if self.length >= 0.0 {
             Ok(self)
         } else {
-            Err(AttributeError::Value(
+            Err(ValueErrorKind::Value(
                 "value must be non-negative".to_string(),
             ))
         }
@@ -138,10 +138,10 @@ impl Length {
         }
     }
 
-    pub fn from_cssparser(parser: &mut Parser, dir: LengthDir) -> Result<Length, AttributeError> {
+    pub fn from_cssparser(parser: &mut Parser, dir: LengthDir) -> Result<Length, ValueErrorKind> {
         let length = {
             let token = parser.next().map_err(|_| {
-                AttributeError::Parse(ParseError::new(
+                ValueErrorKind::Parse(ParseError::new(
                     "expected number and optional symbol, or number and percentage",
                 ))
             })?;
@@ -274,9 +274,9 @@ impl Default for Dasharray {
 
 impl Parse for Dasharray {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: Self::Data) -> Result<Dasharray, AttributeError> {
+    fn parse(parser: &mut Parser, _: Self::Data) -> Result<Dasharray, ValueErrorKind> {
         if parser.try(|p| p.expect_ident_matching("none")).is_ok() {
             Ok(Dasharray::None)
         } else {
@@ -286,7 +286,7 @@ impl Parse for Dasharray {
 }
 
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
-fn parse_dash_array(parser: &mut Parser) -> Result<Vec<Length>, AttributeError> {
+fn parse_dash_array(parser: &mut Parser) -> Result<Vec<Length>, ValueErrorKind> {
     let mut dasharray = Vec::new();
 
     loop {
@@ -408,7 +408,7 @@ mod tests {
         );
     }
 
-    fn parse_dash_array_str(s: &str) -> Result<Dasharray, AttributeError> {
+    fn parse_dash_array_str(s: &str) -> Result<Dasharray, ValueErrorKind> {
         Dasharray::parse_str(s, ())
     }
 
@@ -462,7 +462,7 @@ mod tests {
         // Negative numbers
         assert_eq!(
             parse_dash_array_str("20,40,-20"),
-            Err(AttributeError::Value(String::from(
+            Err(ValueErrorKind::Value(String::from(
                 "value must be non-negative"
             )))
         );

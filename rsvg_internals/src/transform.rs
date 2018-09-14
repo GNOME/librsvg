@@ -10,15 +10,15 @@ use parsers::{optional_comma, Parse, ParseError};
 
 impl Parse for cairo::Matrix {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<cairo::Matrix, AttributeError> {
+    fn parse(parser: &mut Parser, _: ()) -> Result<cairo::Matrix, ValueErrorKind> {
         let matrix = parse_transform_list(parser)?;
 
         matrix
             .try_invert()
             .map(|_| matrix)
-            .map_err(|_| AttributeError::Value("invalid transformation matrix".to_string()))
+            .map_err(|_| ValueErrorKind::Value("invalid transformation matrix".to_string()))
     }
 }
 
@@ -26,7 +26,7 @@ impl Parse for cairo::Matrix {
 // Its operataion and grammar are described here:
 // https://www.w3.org/TR/SVG/coords.html#TransformAttribute
 
-fn parse_transform_list(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_transform_list(parser: &mut Parser) -> Result<cairo::Matrix, ValueErrorKind> {
     let mut matrix = cairo::Matrix::identity();
 
     loop {
@@ -43,13 +43,13 @@ fn parse_transform_list(parser: &mut Parser) -> Result<cairo::Matrix, AttributeE
     Ok(matrix)
 }
 
-fn make_expected_function_error() -> AttributeError {
-    AttributeError::from(ParseError::new(
+fn make_expected_function_error() -> ValueErrorKind {
+    ValueErrorKind::from(ParseError::new(
         "expected matrix|translate|scale|rotate|skewX|skewY",
     ))
 }
 
-fn parse_transform_command(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_transform_command(parser: &mut Parser) -> Result<cairo::Matrix, ValueErrorKind> {
     match parser.next()?.clone() {
         Token::Function(ref name) => parse_transform_function(name, parser),
 
@@ -65,7 +65,7 @@ fn parse_transform_command(parser: &mut Parser) -> Result<cairo::Matrix, Attribu
 fn parse_transform_function(
     name: &str,
     parser: &mut Parser,
-) -> Result<cairo::Matrix, AttributeError> {
+) -> Result<cairo::Matrix, ValueErrorKind> {
     match name {
         "matrix" => parse_matrix_args(parser),
         "translate" => parse_translate_args(parser),
@@ -77,7 +77,7 @@ fn parse_transform_function(
     }
 }
 
-fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let xx = f64::from(p.expect_number()?);
@@ -99,10 +99,10 @@ fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
 
             Ok(cairo::Matrix::new(xx, yx, xy, yy, x0, y0))
         }).map_err(CssParseError::<()>::basic)
-        .map_err(AttributeError::from)
+        .map_err(ValueErrorKind::from)
 }
 
-fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let tx = f64::from(p.expect_number()?);
@@ -116,10 +116,10 @@ fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeE
 
             Ok(cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx, ty))
         }).map_err(CssParseError::<()>::basic)
-        .map_err(AttributeError::from)
+        .map_err(ValueErrorKind::from)
 }
 
-fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let x = f64::from(p.expect_number()?);
@@ -133,10 +133,10 @@ fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
 
             Ok(cairo::Matrix::new(x, 0.0, 0.0, y, 0.0, 0.0))
         }).map_err(CssParseError::<()>::basic)
-        .map_err(AttributeError::from)
+        .map_err(ValueErrorKind::from)
 }
 
-fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let angle = f64::from(p.expect_number()?) * PI / 180.0;
@@ -159,25 +159,25 @@ fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
             m = cairo::Matrix::multiply(&cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
             Ok(m)
         }).map_err(CssParseError::<()>::basic)
-        .map_err(AttributeError::from)
+        .map_err(ValueErrorKind::from)
 }
 
-fn parse_skewx_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_skewx_args(parser: &mut Parser) -> Result<cairo::Matrix, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let a = f64::from(p.expect_number()?) * PI / 180.0;
             Ok(cairo::Matrix::new(1.0, 0.0, a.tan(), 1.0, 0.0, 0.0))
         }).map_err(CssParseError::<()>::basic)
-        .map_err(AttributeError::from)
+        .map_err(ValueErrorKind::from)
 }
 
-fn parse_skewy_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+fn parse_skewy_args(parser: &mut Parser) -> Result<cairo::Matrix, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let a = f64::from(p.expect_number()?) * PI / 180.0;
             Ok(cairo::Matrix::new(1.0, a.tan(), 0.0, 1.0, 0.0, 0.0))
         }).map_err(CssParseError::<()>::basic)
-        .map_err(AttributeError::from)
+        .map_err(ValueErrorKind::from)
 }
 
 #[cfg(test)]
@@ -198,7 +198,7 @@ fn make_rotation_matrix(angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
 mod tests {
     use super::*;
 
-    fn parse_transform(s: &str) -> Result<cairo::Matrix, AttributeError> {
+    fn parse_transform(s: &str) -> Result<cairo::Matrix, ValueErrorKind> {
         cairo::Matrix::parse_str(s, ())
     }
 
@@ -217,7 +217,7 @@ mod tests {
 
     fn assert_parse_error(s: &str) {
         match parse_transform(s) {
-            Err(AttributeError::Parse(_)) => {}
+            Err(ValueErrorKind::Parse(_)) => {}
             _ => {
                 panic!();
             }
@@ -239,21 +239,21 @@ mod tests {
     #[test]
     fn invalid_transform_yields_value_error() {
         match parse_transform("matrix (0 0 0 0 0 0)") {
-            Err(AttributeError::Value(_)) => {}
+            Err(ValueErrorKind::Value(_)) => {}
             _ => {
                 panic!();
             }
         }
 
         match parse_transform("scale (0), translate (10, 10)") {
-            Err(AttributeError::Value(_)) => {}
+            Err(ValueErrorKind::Value(_)) => {}
             _ => {
                 panic!();
             }
         }
 
         match parse_transform("scale (0), skewX (90)") {
-            Err(AttributeError::Value(_)) => {}
+            Err(ValueErrorKind::Value(_)) => {}
             _ => {
                 panic!();
             }

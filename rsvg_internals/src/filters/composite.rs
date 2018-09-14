@@ -5,7 +5,7 @@ use cssparser::{CowRcStr, Parser, Token};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
-use error::{AttributeError, NodeError};
+use error::{NodeError, ValueErrorKind};
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, parse, Parse};
@@ -237,7 +237,7 @@ impl Filter for Composite {
 
 impl Parse for Operator {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser, _data: Self::Data) -> Result<Self, Self::Err> {
         let loc = parser.current_source_location();
@@ -256,7 +256,7 @@ impl Parse for Operator {
                         cow.as_ref().to_string(),
                     ))),
                 ),
-            }).map_err(|_| AttributeError::Value("invalid operator value".to_string()))
+            }).map_err(|_| ValueErrorKind::Value("invalid operator value".to_string()))
     }
 }
 

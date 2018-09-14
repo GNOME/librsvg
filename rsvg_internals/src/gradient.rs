@@ -37,9 +37,9 @@ pub enum SpreadMethod {
 
 impl Parse for SpreadMethod {
     type Data = ();
-    type Err = AttributeError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser, _: ()) -> Result<SpreadMethod, AttributeError> {
+    fn parse(parser: &mut Parser, _: ()) -> Result<SpreadMethod, ValueErrorKind> {
         let loc = parser.current_source_location();
 
         parser
@@ -54,7 +54,7 @@ impl Parse for SpreadMethod {
                     ))),
                 ),
             }).map_err(|_| {
-                AttributeError::Parse(ParseError::new("expected 'pad' | 'reflect' | 'repeat'"))
+                ValueErrorKind::Parse(ParseError::new("expected 'pad' | 'reflect' | 'repeat'"))
             })
     }
 }
