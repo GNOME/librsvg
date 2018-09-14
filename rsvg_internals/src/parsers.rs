@@ -65,7 +65,7 @@ impl Parse for String {
         Ok(String::from(
             parser
                 .expect_string()
-                .map_err(|_| AttributeError::Parse(ParseError::new("expected number")))?
+                .map_err(|_| AttributeError::Parse(ParseError::new("expected string")))?
                 .as_ref(),
         ))
     }
