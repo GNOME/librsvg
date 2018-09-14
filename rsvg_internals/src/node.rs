@@ -411,29 +411,30 @@ impl Node {
         Ok(())
     }
 
-    // Sets the node's state from the style-related attributes in the pbag.  Also applies
-    // CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&self, handle: *const RsvgHandle, tag: &str, pbag: &PropertyBag<'_>) {
-        {
-            let mut state = self.state.borrow_mut();
-            match state.parse_presentation_attributes(pbag) {
-                Ok(_) => (),
-                Err(e) => {
-                    // FIXME: we'll ignore errors here for now.
-                    // If we return, we expose buggy handling of the enable-background
-                    // property; we are not parsing it correctly. This causes
-                    // tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
-                    // because it has enable-background="new 0 0 1179.75118 687.74173"
-                    // in the toplevel svg element.
-                    //
-                    //   self.set_error(e);
-                    //   return;
+    /// Hands the pbag to the node's state, to apply the presentation attributes
+    fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) {
+        let mut state = self.state.borrow_mut();
+        match state.parse_presentation_attributes(pbag) {
+            Ok(_) => (),
+            Err(e) => {
+                // FIXME: we'll ignore errors here for now.
+                //
+                // If we set the node to be in error, we expose buggy handling of the
+                // enable-background property; we are not parsing it correctly. This
+                // causes tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
+                // because it has enable-background="new 0 0 1179.75118 687.74173" in the
+                // toplevel svg element.
+                //
+                //   self.set_error(e);
+                //   return;
 
-                    rsvg_log!("(attribute error: {})", e);
-                }
+                rsvg_log!("(attribute error: {})", e);
             }
         }
+    }
 
+    /// Implements a very limited CSS selection engine
+    fn set_css_styles(&self, handle: *const RsvgHandle, tag: &str) {
         // Try to properly support all of the following, including inheritance:
         // *
         // #id
@@ -505,7 +506,10 @@ impl Node {
                 rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
             }
         }
+    }
 
+    /// Looks for the "style" attribute in the pbag, and applies CSS styles from it
+    fn set_style_attribute(&self, pbag: &PropertyBag<'_>) {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::Style => {
@@ -519,6 +523,14 @@ impl Node {
                 _ => (),
             }
         }
+    }
+
+    // Sets the node's state from the style-related attributes in the pbag.  Also applies
+    // CSS rules in our limited way based on the node's tag/class/id.
+    pub fn set_style(&self, handle: *const RsvgHandle, tag: &str, pbag: &PropertyBag<'_>) {
+        self.set_presentation_attributes(pbag);
+        self.set_css_styles(handle, tag);
+        self.set_style_attribute(pbag);
     }
 
     pub fn set_overridden_properties(&self) {
