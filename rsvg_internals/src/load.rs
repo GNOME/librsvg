@@ -332,7 +332,7 @@ pub extern "C" fn rsvg_load_set_node_atts(
     // attributes until the end, when sax_end_element_cb() calls
     // rsvg_node_svg_apply_atts()
     if node.get_type() != NodeType::Svg {
-        node.parse_style_attributes(handle, tag, pbag);
+        node.set_style(handle, tag, pbag);
     }
 
     node.set_overridden_properties();
@@ -351,6 +351,6 @@ pub extern "C" fn rsvg_load_set_svg_node_atts(
     }
 
     node.with_impl(|svg: &NodeSvg| {
-        svg.parse_style_attributes(node, handle);
+        svg.set_delayed_style(node, handle);
     });
 }
