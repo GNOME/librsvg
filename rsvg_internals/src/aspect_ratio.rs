@@ -152,27 +152,25 @@ impl AspectRatio {
     }
 }
 
-impl Align {
-    fn parse_xy(ident: &CowRcStr) -> Result<Option<(X, Y)>, ValueErrorKind> {
-        use self::Align1D::*;
+fn parse_align_xy(ident: &CowRcStr) -> Result<Option<(X, Y)>, ValueErrorKind> {
+    use self::Align1D::*;
 
-        match ident.as_ref() {
-            "none" => Ok(None),
+    match ident.as_ref() {
+        "none" => Ok(None),
 
-            "xMinYMin" => Ok(Some((X(Min), Y(Min)))),
-            "xMidYMin" => Ok(Some((X(Mid), Y(Min)))),
-            "xMaxYMin" => Ok(Some((X(Max), Y(Min)))),
+        "xMinYMin" => Ok(Some((X(Min), Y(Min)))),
+        "xMidYMin" => Ok(Some((X(Mid), Y(Min)))),
+        "xMaxYMin" => Ok(Some((X(Max), Y(Min)))),
 
-            "xMinYMid" => Ok(Some((X(Min), Y(Mid)))),
-            "xMidYMid" => Ok(Some((X(Mid), Y(Mid)))),
-            "xMaxYMid" => Ok(Some((X(Max), Y(Mid)))),
+        "xMinYMid" => Ok(Some((X(Min), Y(Mid)))),
+        "xMidYMid" => Ok(Some((X(Mid), Y(Mid)))),
+        "xMaxYMid" => Ok(Some((X(Max), Y(Mid)))),
 
-            "xMinYMax" => Ok(Some((X(Min), Y(Max)))),
-            "xMidYMax" => Ok(Some((X(Mid), Y(Max)))),
-            "xMaxYMax" => Ok(Some((X(Max), Y(Max)))),
+        "xMinYMax" => Ok(Some((X(Min), Y(Max)))),
+        "xMidYMax" => Ok(Some((X(Mid), Y(Max)))),
+        "xMaxYMax" => Ok(Some((X(Max), Y(Max)))),
 
-            _ => Err(ValueErrorKind::Parse(ParseError::new("invalid alignment"))),
-        }
+        _ => Err(ValueErrorKind::Parse(ParseError::new("invalid alignment"))),
     }
 }
 
@@ -196,7 +194,7 @@ impl Parse for AspectRatio {
         let align_xy = parser.try(|p| {
             p.expect_ident()
                 .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
-                .and_then(|ident| Align::parse_xy(ident))
+                .and_then(|ident| parse_align_xy(ident))
         })?;
 
         let fit = parser
