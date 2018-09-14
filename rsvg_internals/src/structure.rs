@@ -119,7 +119,7 @@ impl NodeSvg {
     pub fn set_delayed_style(&self, node: &RsvgNode, handle: *const RsvgHandle) {
         if let Some(owned_pbag) = self.pbag.borrow().as_ref() {
             let pbag = PropertyBag::from_owned(owned_pbag);
-            node.set_style(handle, "svg", &pbag);
+            node.set_style(handle, &pbag);
         }
     }
 }

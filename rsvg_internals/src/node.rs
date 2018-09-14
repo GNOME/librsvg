@@ -440,7 +440,7 @@ impl Node {
     }
 
     /// Implements a very limited CSS selection engine
-    fn set_css_styles(&self, handle: *const RsvgHandle, tag: &str) {
+    fn set_css_styles(&self, handle: *const RsvgHandle) {
         // Try to properly support all of the following, including inheritance:
         // *
         // #id
@@ -458,7 +458,7 @@ impl Node {
             rsvg_lookup_apply_css_style(handle, "*".to_glib_none().0, state_ptr);
 
             // tag
-            rsvg_lookup_apply_css_style(handle, tag.to_glib_none().0, state_ptr);
+            rsvg_lookup_apply_css_style(handle, self.element_name.to_glib_none().0, state_ptr);
 
             if let Some(klazz) = self.get_class() {
                 for cls in klazz.split_whitespace() {
@@ -467,7 +467,7 @@ impl Node {
                     if !cls.is_empty() {
                         // tag.class#id
                         if let Some(id) = self.get_id() {
-                            let target = format!("{}.{}#{}", tag, cls, id);
+                            let target = format!("{}.{}#{}", self.element_name, cls, id);
                             found = found || from_glib(rsvg_lookup_apply_css_style(
                                 handle,
                                 target.to_glib_none().0,
@@ -486,7 +486,7 @@ impl Node {
                         }
 
                         // tag.class
-                        let target = format!("{}.{}", tag, cls);
+                        let target = format!("{}.{}", self.element_name, cls);
                         found = found || from_glib(rsvg_lookup_apply_css_style(
                             handle,
                             target.to_glib_none().0,
@@ -508,7 +508,7 @@ impl Node {
                 rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
 
                 // tag#id
-                let target = format!("{}#{}", tag, id);
+                let target = format!("{}#{}", self.element_name, id);
                 rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
             }
         }
@@ -533,9 +533,9 @@ impl Node {
 
     // Sets the node's state from the style-related attributes in the pbag.  Also applies
     // CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&self, handle: *const RsvgHandle, tag: &str, pbag: &PropertyBag<'_>) {
+    pub fn set_style(&self, handle: *const RsvgHandle, pbag: &PropertyBag<'_>) {
         self.set_presentation_attributes(pbag);
-        self.set_css_styles(handle, tag);
+        self.set_css_styles(handle);
         self.set_style_attribute(pbag);
     }
 

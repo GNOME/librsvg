@@ -45,7 +45,14 @@ macro_rules! node_create_fn {
             class: Option<&str>,
             parent: *const RsvgNode,
         ) -> *const RsvgNode {
-            boxed_node_new(NodeType::$node_type, parent, element_name, id, class, Box::new($new_fn()))
+            boxed_node_new(
+                NodeType::$node_type,
+                parent,
+                element_name,
+                id,
+                class,
+                Box::new($new_fn()),
+            )
         }
     };
 }
@@ -317,14 +324,12 @@ pub extern "C" fn rsvg_load_new_node(
 pub extern "C" fn rsvg_load_set_node_atts(
     handle: *const RsvgHandle,
     raw_node: *mut RsvgNode,
-    tag: *const libc::c_char,
     pbag: *const PropertyBag<'_>,
 ) {
     assert!(!raw_node.is_null());
     assert!(!pbag.is_null());
 
     let node: &RsvgNode = unsafe { &*raw_node };
-    let tag = unsafe { utf8_cstr(tag) };
     let pbag = unsafe { &*pbag };
 
     node.set_atts(node, handle, pbag);
@@ -333,7 +338,7 @@ pub extern "C" fn rsvg_load_set_node_atts(
     // attributes until the end, when sax_end_element_cb() calls
     // rsvg_node_svg_apply_atts()
     if node.get_type() != NodeType::Svg {
-        node.set_style(handle, tag, pbag);
+        node.set_style(handle, pbag);
     }
 
     node.set_overridden_properties();
