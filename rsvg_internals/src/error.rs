@@ -7,15 +7,17 @@ use cssparser::BasicParseError;
 use attributes::Attribute;
 use parsers::ParseError;
 
+/// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]
 pub enum AttributeError {
-    // parse error
+    /// The value could not be parsed
     Parse(ParseError),
 
-    // invalid value
+    // The value could be parsed, but is invalid
     Value(String),
 }
 
+/// A complete error for an attribute and its erroneous value
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
     attr: Attribute,
