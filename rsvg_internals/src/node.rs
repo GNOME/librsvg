@@ -162,6 +162,7 @@ pub type NodeResult = Result<(), NodeError>;
 pub struct Node {
     node_type: NodeType,
     parent: Option<Weak<Node>>, // optional; weak ref to parent
+    element_name: String,       // we may want to intern these someday
     id: Option<String>,         // id attribute from XML element
     class: Option<String>,      // class attribute from XML element
     first_child: RefCell<Option<Rc<Node>>>,
@@ -243,6 +244,7 @@ impl Node {
     pub fn new(
         node_type: NodeType,
         parent: Option<Weak<Node>>,
+        element_name: &str,
         id: Option<&str>,
         class: Option<&str>,
         node_impl: Box<NodeTrait>,
@@ -250,6 +252,7 @@ impl Node {
         Node {
             node_type,
             parent,
+            element_name: element_name.to_string(),
             id: id.map(str::to_string),
             class: class.map(str::to_string),
             first_child: RefCell::new(None),
@@ -673,6 +676,7 @@ pub fn node_ptr_to_weak(raw_parent: *const RsvgNode) -> Option<Weak<Node>> {
 pub fn boxed_node_new(
     node_type: NodeType,
     raw_parent: *const RsvgNode,
+    element_name: &str,
     id: Option<&str>,
     class: Option<&str>,
     node_impl: Box<NodeTrait>,
@@ -680,6 +684,7 @@ pub fn boxed_node_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
+        element_name,
         id,
         class,
         node_impl,
@@ -861,6 +866,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -886,6 +892,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -908,6 +915,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -921,6 +929,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -929,6 +938,7 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -945,6 +955,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -953,6 +964,7 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -961,6 +973,7 @@ mod tests {
         let second_child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -990,6 +1003,7 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -998,6 +1012,7 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -1006,6 +1021,7 @@ mod tests {
         let second_child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
+            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),

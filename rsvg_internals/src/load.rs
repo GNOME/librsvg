@@ -40,11 +40,12 @@ use util::utf8_cstr;
 macro_rules! node_create_fn {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
         fn $name(
+            element_name: &str,
             id: Option<&str>,
             class: Option<&str>,
             parent: *const RsvgNode,
         ) -> *const RsvgNode {
-            boxed_node_new(NodeType::$node_type, parent, id, class, Box::new($new_fn()))
+            boxed_node_new(NodeType::$node_type, parent, element_name, id, class, Box::new($new_fn()))
         }
     };
 }
@@ -168,7 +169,7 @@ node_create_fn!(
 );
 node_create_fn!(create_use, Use, NodeUse::new);
 
-type NodeCreateFn = fn(Option<&str>, Option<&str>, *const RsvgNode) -> *const RsvgNode;
+type NodeCreateFn = fn(&str, Option<&str>, Option<&str>, *const RsvgNode) -> *const RsvgNode;
 
 lazy_static! {
     // Lines in comments are elements that we don't support.
@@ -301,7 +302,7 @@ pub extern "C" fn rsvg_load_new_node(
         class = None;
     };
 
-    let node = create_fn(id, class, parent);
+    let node = create_fn(name, id, class, parent);
     assert!(!node.is_null());
 
     if id.is_some() {
