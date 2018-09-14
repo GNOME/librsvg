@@ -20,8 +20,8 @@
 //! [`AspectRatio`]: struct.AspectRatio.html
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
-use cssparser::Parser;
-use error::*;
+use cssparser::{CowRcStr, Parser};
+use error::ValueErrorKind;
 use parsers::Parse;
 use parsers::ParseError;
 use std::ops::Deref;
@@ -153,10 +153,10 @@ impl AspectRatio {
 }
 
 impl Align {
-    fn parse_xy(s: &str) -> Result<Option<(X, Y)>, ValueErrorKind> {
+    fn parse_xy(ident: &CowRcStr) -> Result<Option<(X, Y)>, ValueErrorKind> {
         use self::Align1D::*;
 
-        match s {
+        match ident.as_ref() {
             "none" => Ok(None),
 
             "xMinYMin" => Ok(Some((X(Min), Y(Min)))),
