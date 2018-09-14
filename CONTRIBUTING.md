@@ -161,18 +161,13 @@ of CI pipelines will fail:
     indentation, but don't want it to make changes on its own:  
     `cargo fmt --all -- --check`
 
-***Installing rustfmt*** As of 2018/Jun, our continuous integration
-pipeline assumes the Rust nightly version of rustfmt.  You can install
-it with
+***Installing rustfmt*** As of 2018/Sep, our continuous integration
+pipeline assumes the version of rustfmt that is distributed though the
+stable channel of [rustup](rustup.rs).  You can install it with
 
 ```
-cargo +nightly install --force rustfmt-nightly
+rustup component add rustfmt-preview
 ```
-
-Note that rustfmt changes frequently.  If the CI pipeline fails on the
-`Lint` stage because your code is formatted differently, try updating
-your rustfmt.  Hopefully this will stabilize once rustfmt reaches
-version 1.0.
 
 ### Test suite
 
