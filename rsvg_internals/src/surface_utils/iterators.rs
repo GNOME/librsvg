@@ -138,8 +138,8 @@ impl<'a> Iterator for PixelRectangle<'a> {
                             a: 0,
                         },
                         EdgeMode::Duplicate => {
-                            let x = clamp(x, self.bounds.x0, self.bounds.x1);
-                            let y = clamp(y, self.bounds.y0, self.bounds.y1);
+                            let x = clamp(x, self.bounds.x0, self.bounds.x1 - 1);
+                            let y = clamp(y, self.bounds.y0, self.bounds.y1 - 1);
                             self.surface.get_pixel(x as u32, y as u32)
                         }
                         EdgeMode::Wrap => {
