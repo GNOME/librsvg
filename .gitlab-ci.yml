@@ -121,7 +121,7 @@ fedora test:
 
 # Configure and run rustfmt on nightly
 # Exits and builds fails on bad format
-rustfmt:
+.rustfmt:
   image: $RUSTFMT_NIGHTLY
   stage: lint
   script:
