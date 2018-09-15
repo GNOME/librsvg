@@ -162,7 +162,7 @@ of CI pipelines will fail:
     `cargo fmt --all -- --check`
 
 ***Installing rustfmt*** As of 2018/Sep, our continuous integration
-pipeline assumes the version of rustfmt that is distributed though the
+pipeline assumes the version of rustfmt that is distributed through the
 stable channel of [rustup](rustup.rs).  You can install it with
 
 ```
