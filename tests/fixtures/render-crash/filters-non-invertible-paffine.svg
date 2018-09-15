@@ -1,0 +1,7 @@
+<svg>
+  <filter id="f" primitiveUnits="objectBoundingBox">
+    <feOffset/>
+  </filter>
+
+  <text filter="url(#f)"/>
+</svg>
