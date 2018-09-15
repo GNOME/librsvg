@@ -1,0 +1,7 @@
+<svg>
+  <filter id="f">
+    <feConvolveMatrix kernelMatrix="0 0 0 0-0 0 0 0 0"/>
+  </filter>
+  
+  <rect width="1" height="1" filter="url(#f)"/>
+</svg>
