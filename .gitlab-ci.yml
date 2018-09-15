@@ -19,6 +19,8 @@ variables:
   RUSTFMT_NIGHTLY:           "registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly"
   CLIPPY_NIGHTLY:            "registry.gitlab.gnome.org/gnome/librsvg-oci-images/clippy:nightly"
 
+  DEBIAN_WORKAROUND: ""
+
 stages:
   - test
   - lint
@@ -40,12 +42,11 @@ stages:
     - export CARGO_HOME="${PWD}/.cargo_cache"
   script:
     - rustc --version && cargo --version
-    - |
-      mkdir -p _build
-      cd _build
-      ../autogen.sh --enable-gtk-doc --enable-vala
-      make
-      make check
+    - mkdir -p _build
+    - cd _build
+    - ../autogen.sh ${DEBIAN_WORKAROUND} --enable-gtk-doc --enable-vala
+    - make
+    - make check
 
   artifacts:
     when: on_failure
@@ -69,6 +70,8 @@ stages:
 
 .rustc_template: &rustc
     stage: rustc
+    variables:
+      DEBIAN_WORKAROUND: :"GDK_PIXBUF_QUERYLOADERS=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loader"
     <<: *test
 
 # Jobs that are marked with stage_1 will be run on every commit, across every
@@ -169,17 +172,19 @@ opensuse:tumbleweed:
   <<: *distro_test
   <<: *stage_2
 
-.debian:testing:
+debian:testing:
   image: $AMD64_DEBIAN_TESTING
   variables:
     LIBRSVG_DEBUG: "yes"
+    DEBIAN_WORKAROUND: :"GDK_PIXBUF_QUERYLOADERS=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loader"
   <<: *distro_test
   <<: *stage_2
 
-.debian_i386:testing:
+debian_i386:testing:
   image: $I386_DEBIAN_TESTING
   variables:
     LIBRSVG_DEBUG: "yes"
+    DEBIAN_WORKAROUND: :"GDK_PIXBUF_QUERYLOADERS=/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loader"
   <<: *distro_test
   <<: *stage_2
 
@@ -194,31 +199,32 @@ fedora:test_release:
   <<: *distro_test
   <<: *stage_3
 
-.debian:testing_release_i386:
+debian:testing_release_i386:
   image: $I386_DEBIAN_TESTING
   variables:
     LIBRSVG_DEBUG: "no"
+    DEBIAN_WORKAROUND: :"GDK_PIXBUF_QUERYLOADERS=/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loader"
   <<: *distro_test
   <<: *stage_3
 
 # STAGE 3 RUSTC TESTS
 #######################################################################
 
-.rustc 1.26 1:
+rustc 1.26 1:
   image: $RUSTC_1_26
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *rustc
   <<: *stage_3
 
-.rustc 1.27 2:
+rustc 1.27 2:
   image: $RUSTC_1_27
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *rustc
   <<: *stage_3
 
-.rustc 1.28 3:
+rustc 1.28 3:
   image: $RUSTC_1_28
   variables:
     LIBRSVG_DEBUG: "yes"
