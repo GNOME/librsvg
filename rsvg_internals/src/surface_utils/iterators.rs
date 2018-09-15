@@ -69,6 +69,12 @@ impl<'a> PixelRectangle<'a> {
         assert!(bounds.y1 >= bounds.y0);
         assert!(bounds.y1 <= surface.height());
 
+        // Non-None EdgeMode values need at least one pixel available.
+        if edge_mode != EdgeMode::None {
+            assert!(bounds.x1 > bounds.x0);
+            assert!(bounds.y1 > bounds.y0);
+        }
+
         assert!(rectangle.x1 >= rectangle.x0);
         assert!(rectangle.y1 >= rectangle.y0);
 
