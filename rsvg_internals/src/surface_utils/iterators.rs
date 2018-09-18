@@ -69,6 +69,12 @@ impl<'a> PixelRectangle<'a> {
         assert!(bounds.y1 >= bounds.y0);
         assert!(bounds.y1 <= surface.height());
 
+        // Non-None EdgeMode values need at least one pixel available.
+        if edge_mode != EdgeMode::None {
+            assert!(bounds.x1 > bounds.x0);
+            assert!(bounds.y1 > bounds.y0);
+        }
+
         assert!(rectangle.x1 >= rectangle.x0);
         assert!(rectangle.y1 >= rectangle.y0);
 
@@ -138,8 +144,8 @@ impl<'a> Iterator for PixelRectangle<'a> {
                             a: 0,
                         },
                         EdgeMode::Duplicate => {
-                            let x = clamp(x, self.bounds.x0, self.bounds.x1);
-                            let y = clamp(y, self.bounds.y0, self.bounds.y1);
+                            let x = clamp(x, self.bounds.x0, self.bounds.x1 - 1);
+                            let y = clamp(y, self.bounds.y0, self.bounds.y1 - 1);
                             self.surface.get_pixel(x as u32, y as u32)
                         }
                         EdgeMode::Wrap => {

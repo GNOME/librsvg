@@ -196,6 +196,14 @@ impl NodeTrait for ConvolveMatrix {
             }));
         }
 
+        // kernel_matrix must have been specified.
+        if self.kernel_matrix.borrow().is_none() {
+            return Err(NodeError::value_error(
+                Attribute::KernelMatrix,
+                "the value must be set",
+            ));
+        }
+
         // Default value for the divisor.
         if self.divisor.get().is_none() {
             self.divisor.set(Some(

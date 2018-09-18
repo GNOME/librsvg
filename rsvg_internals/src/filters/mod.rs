@@ -2,7 +2,7 @@ use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 use std::time::Instant;
 
-use cairo;
+use cairo::{self, MatrixTrait};
 use owning_ref::RcRef;
 
 use attributes::Attribute;
@@ -256,6 +256,16 @@ pub fn render(
 
     let mut filter_ctx =
         FilterContext::new(filter_node, node_being_filtered, source_surface, draw_ctx);
+
+    // If paffine is non-invertible, we won't draw anything. Also bbox combining in bounds
+    // computations will panic due to non-invertible martrix.
+    if filter_ctx.paffine().try_invert().is_err() {
+        return filter_ctx
+            .into_output()
+            .expect("could not create an empty surface to return from a filter")
+            .into_image_surface()
+            .expect("could not convert filter output into an ImageSurface");
+    }
 
     filter_node
         .children()
