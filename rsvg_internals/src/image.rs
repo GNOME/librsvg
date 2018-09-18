@@ -13,6 +13,7 @@ use attributes::Attribute;
 use bbox::BoundingBox;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
+use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
@@ -119,6 +120,10 @@ impl NodeTrait for NodeImage {
             let y = self.y.get().normalize(values, draw_ctx);
             let w = self.w.get().normalize(values, draw_ctx);
             let h = self.h.get().normalize(values, draw_ctx);
+
+            if w.approx_eq_cairo(&0.0) || h.approx_eq_cairo(&0.0) {
+                return Ok(());
+            }
 
             draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
                 let aspect = self.aspect.get();
