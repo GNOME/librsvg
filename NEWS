@@ -1,3 +1,14 @@
+Version 2.44.3
+- Fix building when srcdir != builddir (Mathieu Bridon).
+- Fix #339 - Panic in filters with primitiveUnits="objectBoundingBox"
+  on zero-sized elements (Ivan Molodetskikh).
+- Fix #335 - Don't panic if the toplevel node is not <svg>.
+- Fixes from fuzz testing (Ivan Molodetskikh): don't panic when the
+  feConvolveMatrix kernel is not set; fix upper bounds in filter pixel
+  getters.
+- Updates to the CI infrastructure and the build documentation (Jordan
+  Petridis).
+
 Version 2.44.2
 - A *double brown paper bag* release!  Super strong, this one!
 - Fix #325 - Don't leak all the elements at the toplevel.
