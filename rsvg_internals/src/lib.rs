@@ -23,7 +23,6 @@ extern crate regex;
 #[macro_use]
 extern crate lazy_static;
 
-#[macro_use]
 extern crate downcast_rs;
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
