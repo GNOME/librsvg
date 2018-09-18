@@ -142,7 +142,6 @@ impl NodeMarker {
         }
 
         let cr = draw_ctx.get_cairo_context();
-        cr.save();
 
         let mut affine = cr.get_matrix();
 
@@ -169,6 +168,10 @@ impl NodeMarker {
                 marker_height,
             );
 
+            if vbox.0.width.approx_eq_cairo(&0.0) || vbox.0.height.approx_eq_cairo(&0.0) {
+                return Ok(());
+            }
+
             affine.scale(w / vbox.0.width, h / vbox.0.height);
 
             draw_ctx.push_view_box(vbox.0.width, vbox.0.height)
@@ -180,6 +183,8 @@ impl NodeMarker {
             -self.ref_x.get().normalize(&values, &params),
             -self.ref_y.get().normalize(&values, &params),
         );
+
+        cr.save();
 
         cr.set_matrix(affine);
 
