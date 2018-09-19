@@ -129,7 +129,7 @@ pub struct DrawingCtx<'a> {
     drawsub_stack: Vec<RsvgNode>,
 
     defs: RefCell<&'a mut Defs>,
-    acquired_nodes: RefCell<Vec<RsvgNode>>,
+    acquired_nodes: Rc<RefCell<Vec<RsvgNode>>>,
 
     is_testing: bool,
 }
@@ -183,7 +183,7 @@ impl<'a> DrawingCtx<'a> {
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
             defs: RefCell::new(defs),
-            acquired_nodes: RefCell::new(Vec::new()),
+            acquired_nodes: Rc::new(RefCell::new(Vec::new())),
             is_testing,
         }
     }
@@ -290,7 +290,7 @@ impl<'a> DrawingCtx<'a> {
         if let Some(node) = self.defs.borrow_mut().lookup(url) {
             if !self.acquired_nodes_contains(node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
-                return Some(AcquiredNode(&self.acquired_nodes as *const _, node.clone()));
+                return Some(AcquiredNode(self.acquired_nodes.clone(), node.clone()));
             }
         }
 
@@ -1107,15 +1107,13 @@ pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
     res.to_glib()
 }
 
-pub struct AcquiredNode(*const RefCell<Vec<RsvgNode>>, RsvgNode);
+pub struct AcquiredNode(Rc<RefCell<Vec<RsvgNode>>>, RsvgNode);
 
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
-        unsafe {
-            let mut v = (*self.0).borrow_mut();
-            assert!(Rc::ptr_eq(v.last().unwrap(), &self.1));
-            v.pop();
-        }
+        let mut v = self.0.borrow_mut();
+        assert!(Rc::ptr_eq(v.last().unwrap(), &self.1));
+        v.pop();
     }
 }
 
