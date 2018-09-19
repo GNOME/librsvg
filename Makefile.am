@@ -161,9 +161,9 @@ distcheck-hook:
 	fi
 
 dist-hook:
-	(cd $(distdir) && \
-	cargo vendor -q && \
-	mkdir .cargo && \
+	(cd $(distdir) &&							\
+	cargo vendor -q &&							\
+	mkdir .cargo &&								\
 	cp cargo-vendor-config .cargo/config)
 
 $(RUST_LIB): $(RUST_SRC)
@@ -430,14 +430,3 @@ endif # HAVE_INTROSPECTION
 $(MSVCPROJ_GENERATED): $(top_builddir)/win32/vs12/rsvg.vs12.headers
 
 EXTRA_DIST += $(MSVCPROJ_GENERATED)
-
-# ChangeLog generation
-
-ChangeLog:
-	$(AM_V_GEN) if test -d $(top_srcdir)/.git; then \
-		GIT_DIR="$(top_srcdir)/.git" git log --stat > $@; \
-	fi
-
-dist: ChangeLog
-
-.PHONY: ChangeLog
