@@ -286,31 +286,24 @@ impl<'a> DrawingCtx<'a> {
 
             let affine = original_cr.get_matrix();
 
-            let (clip_node, clip_units) = {
-                let clip_node = self
-                    .get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
-                    .and_then(|acquired| Some(acquired.get()));
+            let (acquired_clip, clip_units) = {
+                if let Some(acquired) = self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
+                {
+                    let ClipPathUnits(units) = acquired
+                        .get()
+                        .with_impl(|clip_path: &NodeClipPath| clip_path.get_units());
 
-                let mut clip_units = Default::default();
-
-                if let Some(ref clip_node) = clip_node {
-                    clip_node.with_impl(|clip_path: &NodeClipPath| {
-                        let ClipPathUnits(u) = clip_path.get_units();
-                        clip_units = Some(u);
-                    });
+                    (Some(acquired), Some(units))
+                } else {
+                    (None, None)
                 }
-
-                (clip_node, clip_units)
             };
 
             if clip_units == Some(CoordUnits::UserSpaceOnUse) {
-                let res = if let Some(ref clip_node) = clip_node {
-                    clip_node.with_impl(|clip_path: &NodeClipPath| {
-                        clip_path.to_cairo_context(clip_node, &affine, self)
-                    })
-                } else {
-                    Ok(())
-                };
+                let clip_node = acquired_clip.as_ref().unwrap().get();
+                let res = clip_node.with_impl(|clip_path: &NodeClipPath| {
+                    clip_path.to_cairo_context(clip_node, &affine, self)
+                });
 
                 if let Err(e) = res {
                     original_cr.restore();
@@ -400,13 +393,10 @@ impl<'a> DrawingCtx<'a> {
                 original_cr.set_source_surface(&filter_result_surface, xofs, yofs);
 
                 if clip_units == Some(CoordUnits::ObjectBoundingBox) {
-                    let res = if let Some(ref clip_node) = clip_node {
-                        clip_node.with_impl(|clip_path: &NodeClipPath| {
-                            clip_path.to_cairo_context(clip_node, &affine, self)
-                        })
-                    } else {
-                        Ok(())
-                    };
+                    let clip_node = acquired_clip.as_ref().unwrap().get();
+                    let res = clip_node.with_impl(|clip_path: &NodeClipPath| {
+                        clip_path.to_cairo_context(clip_node, &affine, self)
+                    });
 
                     if let Err(e) = res {
                         original_cr.restore();
@@ -1037,8 +1027,8 @@ impl Drop for AcquiredNode {
 }
 
 impl AcquiredNode {
-    pub fn get(&self) -> RsvgNode {
-        self.1.clone()
+    pub fn get(&self) -> &RsvgNode {
+        &self.1
     }
 }
 
