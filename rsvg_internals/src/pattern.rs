@@ -9,7 +9,7 @@ use aspect_ratio::*;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use drawing_ctx::DrawingCtx;
+use drawing_ctx::{DrawingCtx, NodeStack};
 use error::RenderingError;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
@@ -237,14 +237,23 @@ impl NodeTrait for NodePattern {
 fn resolve_pattern(pattern: &Pattern, draw_ctx: &mut DrawingCtx<'_>) -> Pattern {
     let mut result = pattern.clone();
 
+    let mut stack = NodeStack::new();
+
     while !result.is_resolved() {
         if let Some(acquired) = draw_ctx.get_acquired_node_of_type(
             result.fallback.as_ref().map(String::as_ref),
             NodeType::Pattern,
         ) {
-            acquired
-                .get()
-                .with_impl(|i: &NodePattern| result.resolve_from_fallback(&*i.pattern.borrow()));
+            let node = acquired.get();
+
+            if stack.contains(node) {
+                result.resolve_from_defaults();
+                break; // reference cycle; bail out
+            }
+
+            node.with_impl(|i: &NodePattern| result.resolve_from_fallback(&*i.pattern.borrow()));
+
+            stack.push(node);
         } else {
             result.resolve_from_defaults();
         }
