@@ -11,7 +11,8 @@ test_programs =		\
 	crash		\
 	render-crash	\
 	dimensions	\
-	errors
+	errors		\
+	infinite-loop
 
 # Removed "styles" from the above; it is broken right now
 
@@ -25,6 +26,10 @@ api_SOURCES = 		\
 
 errors_SOURCES = 	\
 	errors.c	\
+	$(test_utils_common_sources)
+
+infinite_loop_SOURCES = 	\
+	infinite-loop.c		\
 	$(test_utils_common_sources)
 
 rsvg_test_SOURCES = \
@@ -70,6 +75,7 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
 	$(wildcard $(srcdir)/fixtures/errors/*)				\
+	$(wildcard $(srcdir)/fixtures/infinite-loop/*)			\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.png)			\

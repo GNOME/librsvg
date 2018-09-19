@@ -290,7 +290,9 @@ impl<'a> DrawingCtx<'a> {
         if let Some(node) = self.defs.borrow_mut().lookup(url) {
             if !self.acquired_nodes_contains(node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
-                return Some(AcquiredNode(self.acquired_nodes.clone(), node.clone()));
+                let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
+                println!("acquired {}: node={:?}", url, node.as_ref() as *const _);
+                return Some(acq);
             }
         }
 
@@ -1101,6 +1103,7 @@ pub struct AcquiredNode(Rc<RefCell<Vec<RsvgNode>>>, RsvgNode);
 
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
+        println!("dropping node={:?}", self.1.as_ref() as *const _);
         let mut v = self.0.borrow_mut();
         assert!(Rc::ptr_eq(v.last().unwrap(), &self.1));
         v.pop();
@@ -1110,6 +1113,27 @@ impl Drop for AcquiredNode {
 impl AcquiredNode {
     pub fn get(&self) -> &RsvgNode {
         &self.1
+    }
+}
+
+/// Keeps a stack of nodes and can check if a certain node is contained in the stack
+///
+/// Sometimes parts of the code cannot plainly use the implicit stack of acquired
+/// nodes as maintained by DrawingCtx::get_acquired_node(), and they must keep their
+/// own stack of nodes to test for reference cycles.  NodeStack can be used to do that.
+pub struct NodeStack(Vec<RsvgNode>);
+
+impl NodeStack {
+    pub fn new() -> NodeStack {
+        NodeStack(Vec::new())
+    }
+
+    pub fn push(&mut self, node: &RsvgNode) {
+        self.0.push(node.clone());
+    }
+
+    pub fn contains(&self, node: &RsvgNode) -> bool {
+        self.0.iter().find(|n| Rc::ptr_eq(n, node)).is_some()
     }
 }
 
