@@ -243,9 +243,7 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
 
         LengthUnit::Inch => font_size_from_inch(v.length, v.dir, params),
 
-        LengthUnit::Percent => {
-            unreachable!("ComputedValues can't have a relative font size")
-        }
+        LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
 
         LengthUnit::FontEm | LengthUnit::FontEx => {
             // This is the same default as used in rsvg_node_svg_get_size()

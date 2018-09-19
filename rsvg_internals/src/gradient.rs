@@ -416,17 +416,15 @@ impl Gradient {
 }
 
 fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx<'_>, name: &str) -> Option<AcquiredNode> {
-    draw_ctx.get_acquired_node(name).and_then(|acquired| {
-        // FIXME: replace with .filter() once Option.filter() becomes stable
-        let node = acquired.get();
-        if node.get_type() == NodeType::LinearGradient
-            || node.get_type() == NodeType::RadialGradient
-        {
-            Some(acquired)
-        } else {
-            None
+    if let Some(acquired) = draw_ctx.get_acquired_node(name) {
+        let node_type = acquired.get().get_type();
+
+        if node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient {
+            return Some(acquired);
         }
-    })
+    }
+
+    None
 }
 
 fn resolve_gradient(gradient: &Gradient, draw_ctx: &mut DrawingCtx<'_>) -> Gradient {
