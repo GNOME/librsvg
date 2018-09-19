@@ -293,86 +293,89 @@ impl NodeTrait for NodeUse {
             return Ok(());
         }
 
-        if let Some(acquired) = draw_ctx.get_acquired_node(link.as_ref().unwrap()) {
-            let child = acquired.get();
-
-            if Node::is_ancestor(node.clone(), child.clone()) {
-                // or, if we're <use>'ing ourselves
-                return Err(RenderingError::CircularReference);
-            }
-
-            draw_ctx.increase_num_elements_rendered_through_use(1);
-
-            let params = draw_ctx.get_view_params();
-
-            let nx = self.x.get().normalize(values, &params);
-            let ny = self.y.get().normalize(values, &params);
-
-            // If attributes ‘width’ and/or ‘height’ are not specified,
-            // [...] use values of '100%' for these attributes.
-            // From https://www.w3.org/TR/SVG/struct.html#UseElement in
-            // "If the ‘use’ element references a ‘symbol’ element"
-
-            let nw = self
-                .w
-                .get()
-                .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Horizontal).unwrap())
-                .normalize(values, &params);
-            let nh = self
-                .h
-                .get()
-                .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Vertical).unwrap())
-                .normalize(values, &params);
-
-            // width or height set to 0 disables rendering of the element
-            // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
-            if nw.approx_eq_cairo(&0.0) || nh.approx_eq_cairo(&0.0) {
-                return Ok(());
-            }
-
-            if child.get_type() != NodeType::Symbol {
-                let cr = draw_ctx.get_cairo_context();
-                cr.translate(nx, ny);
-
-                draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-                    dc.draw_node_from_stack(
-                        &CascadedValues::new_from_values(&child, values),
-                        &child,
-                        clipping,
-                    )
-                })
-            } else {
-                child.with_impl(|symbol: &NodeSymbol| {
-                    let do_clip = !values.is_overflow()
-                        || (values.overflow == Overflow::Visible && child.is_overflow());
-
-                    draw_in_viewport(
-                        nx,
-                        ny,
-                        nw,
-                        nh,
-                        ClipMode::ClipToVbox,
-                        do_clip,
-                        symbol.vbox.get(),
-                        symbol.preserve_aspect_ratio.get(),
-                        node,
-                        values,
-                        draw_ctx.get_cairo_context().get_matrix(),
-                        draw_ctx,
-                        clipping,
-                        &mut |dc| {
-                            // We don't push a layer because draw_in_viewport() already does it
-                            child.draw_children(
-                                &CascadedValues::new_from_values(&child, values),
-                                dc,
-                                clipping,
-                            )
-                        },
-                    )
-                })
-            }
+        let child = if let Some(acquired) = draw_ctx.get_acquired_node(link.as_ref().unwrap()) {
+            // Here we clone the acquired child, so that we can drop the AcquiredNode as
+            // early as possible.  This is so that the child's drawing method will be able
+            // to re-acquire the child for other purposes.
+            acquired.get().clone()
         } else {
-            Ok(())
+            return Ok(());
+        };
+
+        if Node::is_ancestor(node.clone(), child.clone()) {
+            // or, if we're <use>'ing ourselves
+            return Err(RenderingError::CircularReference);
+        }
+
+        draw_ctx.increase_num_elements_rendered_through_use(1);
+
+        let params = draw_ctx.get_view_params();
+
+        let nx = self.x.get().normalize(values, &params);
+        let ny = self.y.get().normalize(values, &params);
+
+        // If attributes ‘width’ and/or ‘height’ are not specified,
+        // [...] use values of '100%' for these attributes.
+        // From https://www.w3.org/TR/SVG/struct.html#UseElement in
+        // "If the ‘use’ element references a ‘symbol’ element"
+
+        let nw = self
+            .w
+            .get()
+            .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Horizontal).unwrap())
+            .normalize(values, &params);
+        let nh = self
+            .h
+            .get()
+            .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Vertical).unwrap())
+            .normalize(values, &params);
+
+        // width or height set to 0 disables rendering of the element
+        // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
+        if nw.approx_eq_cairo(&0.0) || nh.approx_eq_cairo(&0.0) {
+            return Ok(());
+        }
+
+        if child.get_type() != NodeType::Symbol {
+            let cr = draw_ctx.get_cairo_context();
+            cr.translate(nx, ny);
+
+            draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+                dc.draw_node_from_stack(
+                    &CascadedValues::new_from_values(&child, values),
+                    &child,
+                    clipping,
+                )
+            })
+        } else {
+            child.with_impl(|symbol: &NodeSymbol| {
+                let do_clip = !values.is_overflow()
+                    || (values.overflow == Overflow::Visible && child.is_overflow());
+
+                draw_in_viewport(
+                    nx,
+                    ny,
+                    nw,
+                    nh,
+                    ClipMode::ClipToVbox,
+                    do_clip,
+                    symbol.vbox.get(),
+                    symbol.preserve_aspect_ratio.get(),
+                    node,
+                    values,
+                    draw_ctx.get_cairo_context().get_matrix(),
+                    draw_ctx,
+                    clipping,
+                    &mut |dc| {
+                        // We don't push a layer because draw_in_viewport() already does it
+                        child.draw_children(
+                            &CascadedValues::new_from_values(&child, values),
+                            dc,
+                            clipping,
+                        )
+                    },
+                )
+            })
         }
     }
 }
