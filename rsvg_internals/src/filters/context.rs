@@ -267,12 +267,6 @@ impl FilterContext {
         }
     }
 
-    /// Returns the <filter> node for this context.
-    #[inline]
-    pub fn get_filter_node(&self) -> RsvgNode {
-        self.node.clone()
-    }
-
     /// Returns the node that referenced this filter.
     #[inline]
     pub fn get_node_being_filtered(&self) -> RsvgNode {
