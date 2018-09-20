@@ -1,0 +1,5 @@
+<svg>
+  <g id="g">
+    <use xlink:href="#g"/>
+  </g>
+</svg>

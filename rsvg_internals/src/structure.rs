@@ -302,7 +302,7 @@ impl NodeTrait for NodeUse {
             return Ok(());
         };
 
-        if Node::is_ancestor(node.clone(), child.clone()) {
+        if Node::is_ancestor(child.clone(), node.clone()) {
             // or, if we're <use>'ing ourselves
             return Err(RenderingError::CircularReference);
         }
