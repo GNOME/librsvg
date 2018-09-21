@@ -6,6 +6,14 @@ Version 2.45.0
 - Fixes from fuzz testing (Ivan Molodetskikh): don't panic when the
   feConvolveMatrix kernel is not set; fix upper bounds in filter pixel
   getters.
+- Fix #337 - Don't panic with "em" or "ex" units in the font-size property.
+- Fix #338 - Don't panic when an image element doesn't have
+  width/height attributes.
+- Fix #340 - Don't panic when a marker has a zero-sized viewBox attribute.
+- Fix #341 - Don't infinite-loop with cyclic pattern references.
+- Fix #342 - Don't crash if a <use> node references one of its ancestors.
+- Special thanks to Ivan Molodetskikh for doing a fuzz-testing run for
+  this round.
 - Updates to the CI infrastructure and the build documentation (Jordan
   Petridis).
 - Cleanups and refactoring (Paolo Borelli, Linus Unnebäck, Federico Mena).
