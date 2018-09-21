@@ -437,7 +437,7 @@ impl<'a> DrawingCtx<'a> {
 
                                 if !filter_node.is_in_error() {
                                     // FIXME: deal with out of memory here
-                                    Some(filters::render(&filter_node, node, &output, self))
+                                    Some(filters::render(&filter_node, values, &output, self))
                                 } else {
                                     rsvg_log!(
                                         "(ignoring filter element {} because it is in error)",

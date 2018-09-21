@@ -69,9 +69,7 @@ impl Image {
 
         draw_ctx.get_cairo_context().set_matrix(ctx.paffine());
 
-        let node_being_filtered = ctx.get_node_being_filtered();
-        let node_being_filtered_cascaded = node_being_filtered.get_cascaded_values();
-        let node_being_filtered_values = node_being_filtered_cascaded.get();
+        let node_being_filtered_values = ctx.get_computed_values_from_node_being_filtered();
 
         let cascaded = CascadedValues::new_from_values(&drawable, node_being_filtered_values);
 

@@ -10,6 +10,7 @@ use drawing_ctx::DrawingCtx;
 use length::Length;
 use node::RsvgNode;
 use paint_server::{self, PaintServer};
+use state::ComputedValues;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use unitinterval::UnitInterval;
 
@@ -58,8 +59,8 @@ pub enum FilterInput {
 pub struct FilterContext {
     /// The <filter> node.
     node: RsvgNode,
-    /// The node which referenced this filter.
-    node_being_filtered: RsvgNode,
+    /// Values from the node which referenced this filter.
+    computed_from_node_being_filtered: ComputedValues,
     /// The source graphic surface.
     source_surface: SharedImageSurface,
     /// Output of the last filter primitive.
@@ -102,15 +103,14 @@ pub struct FilterContext {
 /// Computes and returns the filter effects region.
 fn compute_effects_region(
     filter_node: &RsvgNode,
-    target_node: &RsvgNode,
+    computed_from_target_node: &ComputedValues,
     draw_ctx: &mut DrawingCtx<'_>,
     affine: cairo::Matrix,
     width: f64,
     height: f64,
 ) -> BoundingBox {
     // Filters use the properties of the target node.
-    let cascaded = target_node.get_cascaded_values();
-    let values = cascaded.get();
+    let values = computed_from_target_node;
 
     let filter = filter_node.get_impl::<NodeFilter>().unwrap();
 
@@ -193,7 +193,7 @@ impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
         filter_node: &RsvgNode,
-        node_being_filtered: &RsvgNode,
+        computed_from_node_being_filtered: &ComputedValues,
         source_surface: SharedImageSurface,
         draw_ctx: &mut DrawingCtx<'_>,
     ) -> Self {
@@ -246,14 +246,14 @@ impl FilterContext {
 
         Self {
             node: filter_node.clone(),
-            node_being_filtered: node_being_filtered.clone(),
+            computed_from_node_being_filtered: computed_from_node_being_filtered.clone(),
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: UnsafeCell::new(None),
             effects_region: compute_effects_region(
                 filter_node,
-                node_being_filtered,
+                computed_from_node_being_filtered,
                 draw_ctx,
                 affine,
                 f64::from(width),
@@ -265,10 +265,10 @@ impl FilterContext {
         }
     }
 
-    /// Returns the node that referenced this filter.
+    /// Returns the computed values from the node that referenced this filter.
     #[inline]
-    pub fn get_node_being_filtered(&self) -> RsvgNode {
-        self.node_being_filtered.clone()
+    pub fn get_computed_values_from_node_being_filtered(&self) -> &ComputedValues {
+        &self.computed_from_node_being_filtered
     }
 
     /// Returns the surface corresponding to the last filter primitive's result.
@@ -427,10 +427,6 @@ impl FilterContext {
     where
         for<'b> F: FnOnce(Box<Fn(&Length) -> f64 + 'b>) -> T,
     {
-        // Filters use the properties of the target node.
-        let cascaded = self.node_being_filtered.get_cascaded_values();
-        let values = cascaded.get();
-
         let filter = self.node.get_impl::<NodeFilter>().unwrap();
 
         // See comments in compute_effects_region() for how this works.
@@ -441,7 +437,11 @@ impl FilterContext {
             rv
         } else {
             f(Box::new(|length: &Length| {
-                length.normalize(values, &draw_ctx.get_view_params())
+                // Filters use the properties of the target node.
+                length.normalize(
+                    &self.computed_from_node_being_filtered,
+                    &draw_ctx.get_view_params(),
+                )
             }))
         }
     }
@@ -463,9 +463,6 @@ impl FilterContext {
         let cr = cairo::Context::new(&surface);
         draw_ctx.set_cairo_context(&cr);
 
-        let cascaded = self.node_being_filtered.get_cascaded_values();
-        let values = cascaded.get();
-
         let bbox = draw_ctx.get_bbox().clone();
 
         // FIXME: we are ignoring the following error; propagate it upstream
@@ -474,7 +471,7 @@ impl FilterContext {
             paint_server,
             &opacity,
             &bbox,
-            &values.color.0,
+            &self.computed_from_node_being_filtered.color.0,
         ).and_then(|had_paint_server| {
             if had_paint_server {
                 cr.paint();
@@ -505,8 +502,7 @@ impl FilterContext {
             }
         }
 
-        let cascaded = self.node_being_filtered.get_cascaded_values();
-        let values = cascaded.get();
+        let values = &self.computed_from_node_being_filtered;
 
         match *in_.unwrap() {
             Input::SourceGraphic => Ok(FilterInput::StandardInput(self.source_graphic().clone())),
