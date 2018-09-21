@@ -14,7 +14,7 @@ use length::{Length, LengthDir, LengthUnit};
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{parse_and_validate, ParseError};
 use property_bag::PropertyBag;
-use state::ColorInterpolationFilters;
+use state::{ColorInterpolationFilters, ComputedValues};
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 mod bounds;
@@ -227,7 +227,7 @@ impl Deref for PrimitiveWithInput {
 /// Applies a filter and returns the resulting surface.
 pub fn render(
     filter_node: &RsvgNode,
-    node_being_filtered: &RsvgNode,
+    computed_from_node_being_filtered: &ComputedValues,
     source: &cairo::ImageSurface,
     draw_ctx: &mut DrawingCtx,
 ) -> cairo::ImageSurface {
@@ -249,8 +249,12 @@ pub fn render(
     }
     let source_surface = SharedImageSurface::new(source_surface, SurfaceType::SRgb).unwrap();
 
-    let mut filter_ctx =
-        FilterContext::new(filter_node, node_being_filtered, source_surface, draw_ctx);
+    let mut filter_ctx = FilterContext::new(
+        filter_node,
+        computed_from_node_being_filtered,
+        source_surface,
+        draw_ctx,
+    );
 
     // If paffine is non-invertible, we won't draw anything. Also bbox combining in bounds
     // computations will panic due to non-invertible martrix.
