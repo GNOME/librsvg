@@ -437,6 +437,7 @@ impl FilterContext {
             rv
         } else {
             f(Box::new(|length: &Length| {
+                // Filters use the properties of the target node.
                 length.normalize(
                     &self.computed_from_node_being_filtered,
                     &draw_ctx.get_view_params(),
