@@ -288,7 +288,7 @@ EXTRA_DIST =				\
 
 CLEANFILES = \
 	$(enum_sources) \
-	s-enum-types-h s-enum-types-c
+	librsvg/s-enum-types-h librsvg/s-enum-types-c
 
 ## Put `exec' in the name because this should be installed by
 ## `install-exec', not `install-data'.
@@ -308,7 +308,7 @@ librsvg/s-enum-types-h: $(headers) Makefile
 		$(headers) ) > librsvg/tmp-librsvg-enum-types.h \
 	&& (cmp -s librsvg/tmp-librsvg-enum-types.h librsvg/librsvg-enum-types.h || cp librsvg/tmp-librsvg-enum-types.h librsvg/librsvg-enum-types.h ) \
 	&& rm -f librsvg/tmp-librsvg-enum-types.h	\
-	&& echo timestamp > $(@F)
+	&& echo timestamp > $@
 
 librsvg/librsvg-enum-types.c: librsvg/s-enum-types-c librsvg/librsvg-enum-types.h
 	@true
@@ -323,7 +323,7 @@ librsvg/s-enum-types-c: $(headers) Makefile
 		$(headers) ) > librsvg/tmp-librsvg-enum-types.c \
 	&& (cmp -s librsvg/tmp-librsvg-enum-types.c librsvg/librsvg-enum-types.c || cp librsvg/tmp-librsvg-enum-types.c librsvg/librsvg-enum-types.c ) \
 	&& rm -f librsvg/tmp-librsvg-enum-types.c \
-	&& echo timestamp > $(@F)
+	&& echo timestamp > $@
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 
