@@ -192,6 +192,7 @@ impl<'b> PathParser<'b> {
             sign = -1.0;
         }
 
+        let mut has_integer_part = false;
         let mut value: f64;
         let mut exponent_sign: f64;
         let mut exponent: Option<f64>;
@@ -205,6 +206,7 @@ impl<'b> PathParser<'b> {
         if self.lookahead_is_digit(&mut c) || self.lookahead_is('.') {
             // Integer part
             while self.lookahead_is_digit(&mut c) {
+                has_integer_part = true;
                 value = value * 10.0 + f64::from(char_to_digit(c));
 
                 assert!(self.match_char(c));
@@ -215,6 +217,12 @@ impl<'b> PathParser<'b> {
                 let mut fraction: f64 = 1.0;
 
                 let mut c: char = ' ';
+
+                if !has_integer_part {
+                    if !self.lookahead_is_digit(&mut c) {
+                        return Err(self.error(ErrorKind::UnexpectedToken));
+                    }
+                }
 
                 while self.lookahead_is_digit(&mut c) {
                     fraction /= 10.0;
@@ -2181,5 +2189,16 @@ mod tests {
         //             &vec![moveto(10.0, -20.0)
         //                   arc(...)],
         //             Some(ErrorKind::UnexpectedEof));
+    }
+
+    #[test]
+    fn bugs() {
+        // https://gitlab.gnome.org/GNOME/librsvg/issues/345
+        test_parser(
+            "M.. 1,0 0,100000",
+            "  ^",
+            &vec![],
+            Some(ErrorKind::UnexpectedToken),
+        );
     }
 }
