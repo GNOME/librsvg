@@ -405,7 +405,7 @@ impl<'a> DrawingCtx<'a> {
                     cairo::Format::ARgb32,
                     self.rect.width as i32,
                     self.rect.height as i32,
-                ).unwrap();
+                )?;
 
                 if filter.is_some() {
                     self.surfaces_stack.push(surface.clone());
