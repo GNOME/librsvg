@@ -397,9 +397,6 @@ impl<'a> DrawingCtx<'a> {
                 && enable_background == EnableBackground::Accumulate);
 
             if needs_temporary_surface {
-                // FIXME: in the following, we unwrap() the result of
-                // ImageSurface::create().  We have to decide how to handle
-                // out-of-memory here.
                 let surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
                     self.rect.width as i32,
@@ -425,43 +422,11 @@ impl<'a> DrawingCtx<'a> {
             if needs_temporary_surface {
                 let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
 
-                let filter_result_surface = filter
-                    .and_then(|_| {
-                        // About the following unwrap(), see the FIXME above.  We should be pushing
-                        // only surfaces that are not in an error state, but currently we don't
-                        // actually ensure that.
-                        let output = self.surfaces_stack.pop().unwrap();
-
-                        match self.get_acquired_node_of_type(filter, NodeType::Filter) {
-                            Some(acquired) => {
-                                let filter_node = acquired.get();
-
-                                if !filter_node.is_in_error() {
-                                    // FIXME: deal with out of memory here
-                                    Some(filters::render(&filter_node, values, &output, self))
-                                } else {
-                                    rsvg_log!(
-                                        "(ignoring filter element {} because it is in error)",
-                                        filter_node.get_human_readable_name()
-                                    );
-                                    None
-                                }
-                            }
-                            None => {
-                                // Non-existing filters must act as null filters (that is, an
-                                // empty surface is returned).
-                                // TODO: handle the error properly and not via expect().
-                                Some(
-                                    cairo::ImageSurface::create(
-                                        cairo::Format::ARgb32,
-                                        child_surface.get_width(),
-                                        child_surface.get_height(),
-                                    ).expect("couldn't create an empty surface"),
-                                )
-                            }
-                        }
-                    }).or(Some(child_surface))
-                    .unwrap();
+                let filter_result_surface = if let Some(filter_uri) = filter {
+                    self.run_filter(filter_uri, values, &child_surface)?
+                } else {
+                    child_surface
+                };
 
                 self.cr = self.cr_stack.pop().unwrap();
 
@@ -510,6 +475,38 @@ impl<'a> DrawingCtx<'a> {
             original_cr.restore();
 
             res
+        }
+    }
+
+    fn run_filter(
+        &mut self,
+        filter_uri: &str,
+        values: &ComputedValues,
+        child_surface: &cairo::ImageSurface,
+    ) -> Result<cairo::ImageSurface, RenderingError> {
+        let output = self.surfaces_stack.pop().unwrap();
+
+        match self.get_acquired_node_of_type(Some(filter_uri), NodeType::Filter) {
+            Some(acquired) => {
+                let filter_node = acquired.get();
+
+                if !filter_node.is_in_error() {
+                    // FIXME: deal with out of memory here
+                    Ok(filters::render(&filter_node, values, &output, self))
+                } else {
+                    Ok(child_surface.clone())
+                }
+            }
+
+            None => {
+                // Non-existing filters must act as null filters (that is, an
+                // empty surface is returned).
+                Ok(cairo::ImageSurface::create(
+                    cairo::Format::ARgb32,
+                    child_surface.get_width(),
+                    child_surface.get_height(),
+                )?)
+            }
         }
     }
 
