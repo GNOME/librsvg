@@ -291,7 +291,6 @@ impl<'a> DrawingCtx<'a> {
             if !self.acquired_nodes_contains(node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
-                println!("acquired {}: node={:?}", url, node.as_ref() as *const _);
                 return Some(acq);
             }
         }
@@ -1103,7 +1102,6 @@ pub struct AcquiredNode(Rc<RefCell<Vec<RsvgNode>>>, RsvgNode);
 
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
-        println!("dropping node={:?}", self.1.as_ref() as *const _);
         let mut v = self.0.borrow_mut();
         assert!(Rc::ptr_eq(v.last().unwrap(), &self.1));
         v.pop();
