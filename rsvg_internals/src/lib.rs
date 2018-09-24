@@ -59,8 +59,6 @@ pub use tree::{
     rsvg_tree_root_is_svg,
 };
 
-pub use parsers::rsvg_css_parse_number_optional_number;
-
 pub use property_bag::{
     rsvg_property_bag_free,
     rsvg_property_bag_iter_begin,
