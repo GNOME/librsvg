@@ -3,7 +3,6 @@ use downcast_rs::*;
 use glib;
 use glib::translate::*;
 use glib_sys;
-use libc;
 use std::cell::{Cell, Ref, RefCell};
 use std::ptr;
 use std::rc::{Rc, Weak};
@@ -12,18 +11,10 @@ use attributes::Attribute;
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use drawing_ctx::DrawingCtx;
 use error::*;
-use handle::RsvgHandle;
+use handle::{self, RsvgHandle};
 use parsers::Parse;
 use property_bag::PropertyBag;
-use state::{ComputedValues, Overflow, RsvgState, SpecifiedValue, State};
-
-extern "C" {
-    fn rsvg_lookup_apply_css_style(
-        handle: *const RsvgHandle,
-        target: *const libc::c_char,
-        state: *mut RsvgState,
-    ) -> glib_sys::gboolean;
-}
+use state::{ComputedValues, Overflow, SpecifiedValue, State};
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
 // points to an  Rc<Node>, which is our refcounted Rust representation
@@ -451,66 +442,53 @@ impl Node {
         //
         // This is basically a semi-compliant CSS2 selection engine
 
-        unsafe {
-            let state_ptr = self.state.as_ptr() as *mut RsvgState;
+        let css_styles = handle::get_css_styles(handle);
+        let mut state = self.state.borrow_mut();
 
-            // *
-            rsvg_lookup_apply_css_style(handle, "*".to_glib_none().0, state_ptr);
+        // *
+        css_styles.lookup_apply("*", &mut state);
 
-            // tag
-            rsvg_lookup_apply_css_style(handle, self.element_name.to_glib_none().0, state_ptr);
+        // tag
+        css_styles.lookup_apply(&self.element_name, &mut state);
 
-            if let Some(klazz) = self.get_class() {
-                for cls in klazz.split_whitespace() {
-                    let mut found = false;
+        if let Some(klazz) = self.get_class() {
+            for cls in klazz.split_whitespace() {
+                let mut found = false;
 
-                    if !cls.is_empty() {
-                        // tag.class#id
-                        if let Some(id) = self.get_id() {
-                            let target = format!("{}.{}#{}", self.element_name, cls, id);
-                            found = found || from_glib(rsvg_lookup_apply_css_style(
-                                handle,
-                                target.to_glib_none().0,
-                                state_ptr,
-                            ));
-                        }
+                if !cls.is_empty() {
+                    // tag.class#id
+                    if let Some(id) = self.get_id() {
+                        let target = format!("{}.{}#{}", self.element_name, cls, id);
+                        found = found || css_styles.lookup_apply(&target, &mut state);
+                    }
 
-                        // .class#id
-                        if let Some(id) = self.get_id() {
-                            let target = format!(".{}#{}", cls, id);
-                            found = found || from_glib(rsvg_lookup_apply_css_style(
-                                handle,
-                                target.to_glib_none().0,
-                                state_ptr,
-                            ));
-                        }
+                    // .class#id
+                    if let Some(id) = self.get_id() {
+                        let target = format!(".{}#{}", cls, id);
+                        found = found || css_styles.lookup_apply(&target, &mut state);
+                    }
 
-                        // tag.class
-                        let target = format!("{}.{}", self.element_name, cls);
-                        found = found || from_glib(rsvg_lookup_apply_css_style(
-                            handle,
-                            target.to_glib_none().0,
-                            state_ptr,
-                        ));
+                    // tag.class
+                    let target = format!("{}.{}", self.element_name, cls);
+                    found = found || css_styles.lookup_apply(&target, &mut state);
 
-                        if !found {
-                            // didn't find anything more specific, just apply the class style
-                            let target = format!(".{}", cls);
-                            rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
-                        }
+                    if !found {
+                        // didn't find anything more specific, just apply the class style
+                        let target = format!(".{}", cls);
+                        css_styles.lookup_apply(&target, &mut state);
                     }
                 }
             }
+        }
 
-            if let Some(id) = self.get_id() {
-                // id
-                let target = format!("#{}", id);
-                rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
+        if let Some(id) = self.get_id() {
+            // id
+            let target = format!("#{}", id);
+            css_styles.lookup_apply(&target, &mut state);
 
-                // tag#id
-                let target = format!("{}#{}", self.element_name, id);
-                rsvg_lookup_apply_css_style(handle, target.to_glib_none().0, state_ptr);
-            }
+            // tag#id
+            let target = format!("{}#{}", self.element_name, id);
+            css_styles.lookup_apply(&target, &mut state);
         }
     }
 

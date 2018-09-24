@@ -36,64 +36,6 @@
 
 #include <libcroco/libcroco.h>
 
-/* Defined in rsvg_internals/src/state.rs */
-extern gboolean rsvg_state_parse_style_pair(RsvgState *state, const char *attr, const char *value, gboolean important) G_GNUC_WARN_UNUSED_RESULT;
-
-typedef struct _StyleValueData {
-    gchar *value;
-    gboolean important;
-} StyleValueData;
-
-static StyleValueData *
-style_value_data_new (const gchar *value, gboolean important)
-{
-    StyleValueData *ret;
-
-    ret = g_new0 (StyleValueData, 1);
-    ret->value = g_strdup (value);
-    ret->important = important;
-
-    return ret;
-}
-
-static void
-style_value_data_free (StyleValueData *value)
-{
-    if (!value)
-        return;
-    g_free (value->value);
-    g_free (value);
-}
-
-static void
-rsvg_css_define_style (RsvgHandle *handle,
-                       const gchar *selector,
-                       const gchar *style_name,
-                       const gchar *style_value,
-                       gboolean important)
-{
-    GHashTable *styles;
-    gboolean need_insert = FALSE;
-
-    /* push name/style pair into HT */
-    styles = g_hash_table_lookup (handle->priv->css_props, selector);
-    if (styles == NULL) {
-        styles = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                        g_free, (GDestroyNotify) style_value_data_free);
-        g_hash_table_insert (handle->priv->css_props, (gpointer) g_strdup (selector), styles);
-        need_insert = TRUE;
-    } else {
-        StyleValueData *current_value;
-        current_value = g_hash_table_lookup (styles, style_name);
-        if (current_value == NULL || !current_value->important)
-            need_insert = TRUE;
-    }
-    if (need_insert) {
-        g_hash_table_insert (styles,
-                             (gpointer) g_strdup (style_name),
-                             (gpointer) style_value_data_new (style_value, important));
-    }
-}
 
 typedef struct _CSSUserData {
     RsvgHandle *handle;
@@ -133,7 +75,7 @@ ccss_end_selector (CRDocHandler * a_handler, CRSelector * a_selector_list)
 }
 
 static void
-ccss_property (CRDocHandler * a_handler, CRString * a_name, CRTerm * a_expr, gboolean a_important)
+ccss_property (CRDocHandler * a_handler, CRString * a_name, CRTerm * a_expr, gboolean important)
 {
     CSSUserData *user_data;
     gchar *name = NULL;
@@ -149,19 +91,19 @@ ccss_property (CRDocHandler * a_handler, CRString * a_name, CRTerm * a_expr, gbo
             if (cur->simple_sel) {
                 gchar *selector = (gchar *) cr_simple_sel_to_string (cur->simple_sel);
                 if (selector) {
-                    gchar *style_name, *style_value;
+                    gchar *prop_name, *prop_value;
                     name = (gchar *) cr_string_peek_raw_str (a_name);
                     len = cr_string_peek_raw_str_len (a_name);
-                    style_name = g_strndup (name, len);
-                    style_value = (gchar *)cr_term_to_string (a_expr);
-                    rsvg_css_define_style (user_data->handle,
+                    prop_name = g_strndup (name, len);
+                    prop_value = (gchar *)cr_term_to_string (a_expr);
+                    rsvg_css_styles_define (user_data->handle->priv->css_styles,
                                            selector,
-                                           style_name,
-                                           style_value,
-                                           a_important);
+                                           prop_name,
+                                           prop_value,
+                                           important);
                     g_free (selector);
-                    g_free (style_name);
-                    g_free (style_value);
+                    g_free (prop_name);
+                    g_free (prop_value);
                 }
             }
         }
@@ -276,32 +218,6 @@ ccss_import_style (CRDocHandler * a_this,
     rsvg_parse_cssbuffer (user_data->handle, stylesheet_data, stylesheet_data_len);
     g_free (stylesheet_data);
     g_free (mime_type);
-}
-
-static void
-apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
-{
-    RsvgState *state = user_data;
-
-    /* FIXME: this is ignoring errors */
-    gboolean success = rsvg_state_parse_style_pair (state,
-                                                    key,
-                                                    value->value,
-                                                    value->important);
-}
-
-gboolean
-rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState * state)
-{
-    GHashTable *styles;
-
-    styles = g_hash_table_lookup (handle->priv->css_props, target);
-
-    if (styles != NULL) {
-        g_hash_table_foreach (styles, (GHFunc) apply_style, state);
-        return TRUE;
-    }
-    return FALSE;
 }
 
 /* This is defined like this so that we can export the Rust function... just for

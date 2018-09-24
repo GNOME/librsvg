@@ -83,6 +83,8 @@ typedef struct RsvgLoad RsvgLoad;
 
 typedef struct RsvgTree RsvgTree;
 
+typedef struct RsvgCssStyles RsvgCssStyles;
+
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;
 
@@ -98,7 +100,7 @@ struct RsvgHandlePrivate {
 
     RsvgDefs *defs; /* lookup table for nodes that have an id="foo" attribute */
 
-    GHashTable *css_props;
+    RsvgCssStyles *css_styles;
 
     GCancellable *cancellable;
 
@@ -187,6 +189,22 @@ gboolean rsvg_tree_root_is_svg (RsvgTree *tree);
 /* Implemented in rsvg_internals/src/tree.rs */
 G_GNUC_INTERNAL
 void rsvg_tree_cascade (RsvgTree *tree);
+
+/* Implemented in rsvg_internals/src/css.rs */
+G_GNUC_INTERNAL
+RsvgCssStyles *rsvg_css_styles_new (void);
+
+/* Implemented in rsvg_internals/src/css.rs */
+G_GNUC_INTERNAL
+void rsvg_css_styles_free (RsvgCssStyles *styles);
+
+/* Implemented in rsvg_internals/src/css.rs */
+G_GNUC_INTERNAL
+void rsvg_css_styles_define (RsvgCssStyles *styles,
+                             const char *selector,
+                             const char *style_name,
+                             const char *style_value,
+                             gboolean important);
 
 /* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
@@ -293,6 +311,9 @@ RsvgNode *rsvg_defs_lookup (const RsvgDefs * defs, const char *name);
 
 G_GNUC_INTERNAL
 RsvgDefs *rsvg_handle_get_defs (RsvgHandle *handle);
+
+G_GNUC_INTERNAL
+RsvgCssStyles *rsvg_handle_get_css_styles (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
 char *rsvg_handle_resolve_uri (RsvgHandle *handle,

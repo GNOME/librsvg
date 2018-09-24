@@ -1,7 +1,4 @@
 use cssparser::{self, Parser, Token};
-use glib::translate::*;
-use glib_sys;
-use libc;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::str::FromStr;
@@ -16,7 +13,6 @@ use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
 use property_macros::Property;
 use unitinterval::UnitInterval;
-use util::utf8_cstr;
 
 /// Representation of a single CSS property value.
 ///
@@ -69,9 +65,6 @@ where
         SpecifiedValue::Unspecified
     }
 }
-
-// This is only used as *const RsvgState or *mut RsvgState, as an opaque pointer for C
-pub enum RsvgState {}
 
 /// Holds the state of CSS properties
 ///
@@ -550,7 +543,7 @@ impl State {
         Ok(())
     }
 
-    fn parse_style_pair(
+    pub fn parse_style_pair(
         &mut self,
         attr: Attribute,
         value: &str,
@@ -1386,29 +1379,3 @@ make_property!(
     "default" => Default,
     "preserve" => Preserve,
 );
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_parse_style_pair(
-    state: *mut RsvgState,
-    name: *const libc::c_char,
-    value: *const libc::c_char,
-    important: glib_sys::gboolean,
-) -> glib_sys::gboolean {
-    assert!(!state.is_null());
-    let state = unsafe { &mut *(state as *mut State) };
-
-    assert!(!name.is_null());
-    let name = unsafe { utf8_cstr(name) };
-
-    assert!(!value.is_null());
-    let value = unsafe { utf8_cstr(value) };
-
-    if let Ok(attr) = Attribute::from_str(name) {
-        match state.parse_style_pair(attr, value, from_glib(important)) {
-            Ok(_) => true.to_glib(),
-            Err(_) => false.to_glib(),
-        }
-    } else {
-        false.to_glib()
-    }
-}

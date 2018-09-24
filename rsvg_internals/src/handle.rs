@@ -1,6 +1,7 @@
 use glib::translate::*;
 use libc;
 
+use css::{CssStyles, RsvgCssStyles};
 use defs::{Defs, RsvgDefs};
 
 pub enum RsvgHandle {}
@@ -18,6 +19,8 @@ extern "C" {
         handle: *const RsvgHandle,
         uri: *const libc::c_char,
     ) -> *const RsvgHandle;
+
+    fn rsvg_handle_get_css_styles(handle: *const RsvgHandle) -> *mut RsvgCssStyles;
 }
 
 pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a Defs {
@@ -40,4 +43,8 @@ pub fn resolve_uri(handle: *const RsvgHandle, uri: &str) -> Option<String> {
 
 pub fn load_extern(handle: *const RsvgHandle, uri: &str) -> *const RsvgHandle {
     unsafe { rsvg_handle_load_extern(handle, uri.to_glib_none().0) }
+}
+
+pub fn get_css_styles<'a>(handle: *const RsvgHandle) -> &'a CssStyles {
+    unsafe { &*(rsvg_handle_get_css_styles(handle) as *const CssStyles) }
 }
