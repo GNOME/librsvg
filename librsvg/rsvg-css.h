@@ -58,12 +58,8 @@ RsvgCssColorSpec rsvg_css_parse_color_ (const char *str);
 G_GNUC_INTERNAL
 RsvgCssColorSpec rsvg_css_parse_color (const char *str);
 
-/* Implemented in rust/src/parsers.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_css_parse_number_optional_number (const char *str, double *out_x, double *out_y);
-
 #endif /* RSVG_COMPILATION */
 
 G_END_DECLS
 
-#endif  
+#endif

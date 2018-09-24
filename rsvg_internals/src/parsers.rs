@@ -1,14 +1,10 @@
 use cssparser::{BasicParseError, Parser, ParserInput, Token};
-use glib::translate::*;
-use glib_sys;
-use libc;
 
 use std::f64::consts::*;
 use std::str::{self, FromStr};
 
 use attributes::Attribute;
 use error::{NodeError, ValueErrorKind};
-use util::utf8_cstr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParseError {
@@ -251,37 +247,6 @@ pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ValueErrorKind> {
     } else {
         Ok((x, x))
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_css_parse_number_optional_number(
-    s: *const libc::c_char,
-    out_x: *mut f64,
-    out_y: *mut f64,
-) -> glib_sys::gboolean {
-    assert!(!s.is_null());
-    assert!(!out_x.is_null());
-    assert!(!out_y.is_null());
-
-    let string = unsafe { utf8_cstr(s) };
-
-    match number_optional_number(string) {
-        Ok((x, y)) => {
-            unsafe {
-                *out_x = x;
-                *out_y = y;
-            }
-            true
-        }
-
-        Err(_) => {
-            unsafe {
-                *out_x = 0.0;
-                *out_y = 0.0;
-            }
-            false
-        }
-    }.to_glib()
 }
 
 // Parse a list-of-points as for polyline and polygon elements
