@@ -75,18 +75,18 @@ impl NodeTrait for Composite {
                     self.in2.replace(Some(Input::parse(Attribute::In2, value)?));
                 }
                 Attribute::Operator => self.operator.set(parse("operator", value, ())?),
-                Attribute::K1 => self
-                    .k1
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
-                Attribute::K2 => self
-                    .k2
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
-                Attribute::K3 => self
-                    .k3
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
-                Attribute::K4 => self
-                    .k4
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
+                Attribute::K1 => self.k1.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
+                Attribute::K2 => self.k2.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
+                Attribute::K3 => self.k3.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
+                Attribute::K4 => self.k4.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
                 _ => (),
             }
         }

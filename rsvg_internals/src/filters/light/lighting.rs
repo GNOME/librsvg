@@ -108,12 +108,12 @@ impl NodeTrait for Lighting {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::SurfaceScale => self
-                    .surface_scale
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
+                Attribute::SurfaceScale => self.surface_scale.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
                 Attribute::KernelUnitLength => self.kernel_unit_length.set(Some(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::parse_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr, err))
                         .and_then(|(x, y)| {
                             if x > 0.0 && y > 0.0 {
                                 Ok((x, y))
@@ -137,7 +137,7 @@ impl NodeTrait for Lighting {
                     match attr {
                         Attribute::DiffuseConstant => diffuse_constant.set(
                             parsers::number(value)
-                                .map_err(|err| NodeError::parse_error(attr, err))
+                                .map_err(|err| NodeError::attribute_error(attr, err))
                                 .and_then(|x| {
                                     if x >= 0.0 {
                                         Ok(x)
@@ -161,7 +161,7 @@ impl NodeTrait for Lighting {
                     match attr {
                         Attribute::SpecularConstant => specular_constant.set(
                             parsers::number(value)
-                                .map_err(|err| NodeError::parse_error(attr, err))
+                                .map_err(|err| NodeError::attribute_error(attr, err))
                                 .and_then(|x| {
                                     if x >= 0.0 {
                                         Ok(x)
@@ -175,7 +175,7 @@ impl NodeTrait for Lighting {
                         ),
                         Attribute::SpecularExponent => specular_exponent.set(
                             parsers::number(value)
-                                .map_err(|err| NodeError::parse_error(attr, err))
+                                .map_err(|err| NodeError::attribute_error(attr, err))
                                 .and_then(|x| {
                                     if x >= 1.0 && x <= 128.0 {
                                         Ok(x)

@@ -55,7 +55,7 @@ impl NodeTrait for GaussianBlur {
             match attr {
                 Attribute::StdDeviation => self.std_deviation.set(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::parse_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr, err))
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))

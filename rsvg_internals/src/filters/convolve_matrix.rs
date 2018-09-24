@@ -68,7 +68,7 @@ impl NodeTrait for ConvolveMatrix {
             match attr {
                 Attribute::Order => self.order.set(
                     parsers::integer_optional_integer(value)
-                        .map_err(|err| NodeError::parse_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr, err))
                         .and_then(|(x, y)| {
                             if x > 0 && y > 0 {
                                 Ok((x as u32, y as u32))
@@ -82,7 +82,7 @@ impl NodeTrait for ConvolveMatrix {
                 ),
                 Attribute::Divisor => self.divisor.set(Some(
                     parsers::number(value)
-                        .map_err(|err| NodeError::parse_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr, err))
                         .and_then(|x| {
                             if x != 0.0 {
                                 Ok(x)
@@ -91,13 +91,13 @@ impl NodeTrait for ConvolveMatrix {
                             }
                         })?,
                 )),
-                Attribute::Bias => self
-                    .bias
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
+                Attribute::Bias => self.bias.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
                 Attribute::EdgeMode => self.edge_mode.set(EdgeMode::parse(attr, value)?),
                 Attribute::KernelUnitLength => self.kernel_unit_length.set(Some(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::parse_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr, err))
                         .and_then(|(x, y)| {
                             if x > 0.0 && y > 0.0 {
                                 Ok((x, y))
@@ -128,7 +128,7 @@ impl NodeTrait for ConvolveMatrix {
             match attr {
                 Attribute::TargetX => self.target_x.set(Some(
                     parsers::integer(value)
-                        .map_err(|err| NodeError::parse_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr, err))
                         .and_then(|x| {
                             if x >= 0 && x < self.order.get().0 as i32 {
                                 Ok(x as u32)
@@ -142,7 +142,7 @@ impl NodeTrait for ConvolveMatrix {
                 )),
                 Attribute::TargetY => self.target_y.set(Some(
                     parsers::integer(value)
-                        .map_err(|err| NodeError::parse_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr, err))
                         .and_then(|x| {
                             if x >= 0 && x < self.order.get().1 as i32 {
                                 Ok(x as u32)

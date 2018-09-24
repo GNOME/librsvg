@@ -60,9 +60,9 @@ impl NodeTrait for DisplacementMap {
                 Attribute::In2 => {
                     self.in2.replace(Some(Input::parse(Attribute::In2, value)?));
                 }
-                Attribute::Scale => self
-                    .scale
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
+                Attribute::Scale => self.scale.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
                 Attribute::XChannelSelector => self
                     .x_channel_selector
                     .set(ColorChannel::parse(attr, value)?),

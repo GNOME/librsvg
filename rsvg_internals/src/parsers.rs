@@ -46,12 +46,32 @@ pub trait Parse: Sized {
     }
 }
 
+/// Extend `cssparser::Parser` with a `expect_finite_number` method,
+/// to avoid infinities.
+pub trait CssParserExt {
+    fn expect_finite_number(&mut self) -> Result<f32, ValueErrorKind>;
+}
+
+impl<'i, 't> CssParserExt for Parser<'i, 't> {
+    fn expect_finite_number(&mut self) -> Result<f32, ValueErrorKind> {
+        finite_f32(self.expect_number()?)
+    }
+}
+
+pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
+    if n.is_finite() {
+        Ok(n)
+    } else {
+        Err(ValueErrorKind::Value("expected finite number".to_string()))
+    }
+}
+
 impl Parse for f64 {
     type Data = ();
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<f64, ValueErrorKind> {
-        Ok(f64::from(parser.expect_number().map_err(|_| {
+        Ok(f64::from(parser.expect_finite_number().map_err(|_| {
             ValueErrorKind::Parse(ParseError::new("expected number"))
         })?))
     }
@@ -161,22 +181,22 @@ pub fn optional_comma(parser: &mut Parser<'_, '_>) {
 // number
 //
 // https://www.w3.org/TR/SVG11/types.html#DataTypeNumber
-pub fn number(s: &str) -> Result<f64, ParseError> {
+pub fn number(s: &str) -> Result<f64, ValueErrorKind> {
     let mut input = ParserInput::new(s);
     let mut parser = Parser::new(&mut input);
 
-    Ok(f64::from(parser.expect_number()?))
+    Ok(f64::from(parser.expect_finite_number()?))
 }
 
 // number-optional-number
 //
 // https://www.w3.org/TR/SVG/types.html#DataTypeNumberOptionalNumber
 
-pub fn number_optional_number(s: &str) -> Result<(f64, f64), ParseError> {
+pub fn number_optional_number(s: &str) -> Result<(f64, f64), ValueErrorKind> {
     let mut input = ParserInput::new(s);
     let mut parser = Parser::new(&mut input);
 
-    let x = f64::from(parser.expect_number()?);
+    let x = f64::from(parser.expect_finite_number()?);
 
     if !parser.is_exhausted() {
         let state = parser.state();
@@ -186,7 +206,7 @@ pub fn number_optional_number(s: &str) -> Result<(f64, f64), ParseError> {
             _ => parser.reset(&state),
         };
 
-        let y = f64::from(parser.expect_number()?);
+        let y = f64::from(parser.expect_finite_number()?);
 
         parser.expect_exhausted()?;
 
@@ -199,7 +219,7 @@ pub fn number_optional_number(s: &str) -> Result<(f64, f64), ParseError> {
 // integer
 //
 // https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
-pub fn integer(s: &str) -> Result<i32, ParseError> {
+pub fn integer(s: &str) -> Result<i32, ValueErrorKind> {
     let mut input = ParserInput::new(s);
     let mut parser = Parser::new(&mut input);
 
@@ -209,7 +229,7 @@ pub fn integer(s: &str) -> Result<i32, ParseError> {
 // integer-optional-integer
 //
 // Like number-optional-number but with integers.
-pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ParseError> {
+pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ValueErrorKind> {
     let mut input = ParserInput::new(s);
     let mut parser = Parser::new(&mut input);
 
@@ -267,18 +287,18 @@ pub extern "C" fn rsvg_css_parse_number_optional_number(
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
 
-pub fn list_of_points(string: &str) -> Result<Vec<(f64, f64)>, ParseError> {
+pub fn list_of_points(string: &str) -> Result<Vec<(f64, f64)>, ValueErrorKind> {
     let mut input = ParserInput::new(string);
     let mut parser = Parser::new(&mut input);
 
     let mut v = Vec::new();
 
     loop {
-        let x = f64::from(parser.expect_number()?);
+        let x = f64::from(parser.expect_finite_number()?);
 
         optional_comma(&mut parser);
 
-        let y = f64::from(parser.expect_number()?);
+        let y = f64::from(parser.expect_finite_number()?);
 
         v.push((x, y));
 
@@ -336,7 +356,7 @@ pub fn number_list(
             optional_comma(parser);
         }
 
-        v.push(f64::from(parser.expect_number().map_err(|_| {
+        v.push(f64::from(parser.expect_finite_number().map_err(|_| {
             NumberListError::Parse(ParseError::new("expected number"))
         })?));
 
