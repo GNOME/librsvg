@@ -45,12 +45,12 @@ impl NodeTrait for Offset {
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::Dx => self
-                    .dx
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
-                Attribute::Dy => self
-                    .dy
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
+                Attribute::Dx => self.dx.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
+                Attribute::Dy => self.dy.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
                 _ => (),
             }
         }

@@ -86,5 +86,8 @@ mod tests {
         assert!(is_parse_error(&ViewBox::parse_str(" 1 2 3 4   5", ())));
 
         assert!(is_parse_error(&ViewBox::parse_str(" 1 2 foo 3 4", ())));
+
+        // https://gitlab.gnome.org/GNOME/librsvg/issues/344
+        assert!(is_parse_error(&ViewBox::parse_str("0 0 9E80.7", ())));
     }
 }

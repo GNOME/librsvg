@@ -198,7 +198,7 @@ impl NodeTrait for NodePoly {
                     }
 
                     Err(e) => {
-                        return Err(NodeError::parse_error(attr, e));
+                        return Err(NodeError::attribute_error(attr, e));
                     }
                 }
             }

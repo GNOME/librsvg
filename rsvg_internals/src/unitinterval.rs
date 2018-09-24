@@ -1,7 +1,7 @@
 use cssparser::Parser;
 
 use error::*;
-use parsers::{Parse, ParseError};
+use parsers::{CssParserExt, Parse, ParseError};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UnitInterval(pub f64);
@@ -19,7 +19,7 @@ impl Parse for UnitInterval {
     fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<UnitInterval, ValueErrorKind> {
         let x = f64::from(
             parser
-                .expect_number()
+                .expect_finite_number()
                 .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected number")))?,
         );
 

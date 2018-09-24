@@ -73,7 +73,7 @@ impl NodeTrait for Turbulence {
             match attr {
                 Attribute::BaseFrequency => self.base_frequency.set(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::parse_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr, err))
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))
@@ -82,9 +82,9 @@ impl NodeTrait for Turbulence {
                             }
                         })?,
                 ),
-                Attribute::NumOctaves => self
-                    .num_octaves
-                    .set(parsers::integer(value).map_err(|err| NodeError::parse_error(attr, err))?),
+                Attribute::NumOctaves => self.num_octaves.set(
+                    parsers::integer(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
                 // Yes, seed needs to be parsed as a number and then truncated.
                 Attribute::Seed => self.seed.set(
                     parsers::number(value)
@@ -94,7 +94,7 @@ impl NodeTrait for Turbulence {
                                 f64::from(i32::min_value()),
                                 f64::from(i32::max_value()),
                             ) as i32
-                        }).map_err(|err| NodeError::parse_error(attr, err))?,
+                        }).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
                 Attribute::StitchTiles => self.stitch_tiles.set(StitchTiles::parse(attr, value)?),
                 Attribute::Type => self.type_.set(NoiseType::parse(attr, value)?),

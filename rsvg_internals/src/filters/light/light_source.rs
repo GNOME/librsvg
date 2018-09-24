@@ -214,10 +214,12 @@ impl NodeTrait for LightSource {
                     ref elevation,
                 } => match attr {
                     Attribute::Azimuth => azimuth.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::Elevation => elevation.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     _ => (),
                 },
@@ -227,13 +229,16 @@ impl NodeTrait for LightSource {
                     ref z,
                 } => match attr {
                     Attribute::X => x.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::Y => y.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::Z => z.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     _ => (),
                 },
@@ -248,28 +253,36 @@ impl NodeTrait for LightSource {
                     ref limiting_cone_angle,
                 } => match attr {
                     Attribute::X => x.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::Y => y.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::Z => z.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::PointsAtX => points_at_x.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::PointsAtY => points_at_y.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::PointsAtZ => points_at_z.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::SpecularExponent => specular_exponent.set(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     ),
                     Attribute::LimitingConeAngle => limiting_cone_angle.set(Some(
-                        parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?,
+                        parsers::number(value)
+                            .map_err(|err| NodeError::attribute_error(attr, err))?,
                     )),
                     _ => (),
                 },

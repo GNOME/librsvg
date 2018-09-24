@@ -237,21 +237,21 @@ impl NodeTrait for FuncX {
                         )?,
                     );
                 }
-                Attribute::Slope => self
-                    .slope
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
-                Attribute::Intercept => self
-                    .intercept
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
-                Attribute::Amplitude => self
-                    .amplitude
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
-                Attribute::Exponent => self
-                    .exponent
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
-                Attribute::Offset => self
-                    .offset
-                    .set(parsers::number(value).map_err(|err| NodeError::parse_error(attr, err))?),
+                Attribute::Slope => self.slope.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
+                Attribute::Intercept => self.intercept.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
+                Attribute::Amplitude => self.amplitude.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
+                Attribute::Exponent => self.exponent.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
+                Attribute::Offset => self.offset.set(
+                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                ),
                 _ => (),
             }
         }
