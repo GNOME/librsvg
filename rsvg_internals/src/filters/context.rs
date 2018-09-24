@@ -392,7 +392,10 @@ impl FilterContext {
                     self.source_surface.height(),
                 )?;
 
-                Ok(SharedImageSurface::new(empty_surface, SurfaceType::AlphaOnly)?)
+                Ok(SharedImageSurface::new(
+                    empty_surface,
+                    SurfaceType::AlphaOnly,
+                )?)
             }
         }
     }
