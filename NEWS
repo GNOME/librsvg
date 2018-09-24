@@ -14,6 +14,7 @@ Version 2.45.0
 - Fix #342 - Don't crash if a <use> node references one of its ancestors.
 - Special thanks to Ivan Molodetskikh for doing a fuzz-testing run for
   this round.
+- Fix #344 - Don't panic when a viewBox has overflowing numbers.
 - Fix #345 - Fix panics due to bad path parsing and overflows in
   surface size.
 - Updates to the CI infrastructure and the build documentation (Jordan
