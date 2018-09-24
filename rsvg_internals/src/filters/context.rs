@@ -390,10 +390,9 @@ impl FilterContext {
                     cairo::Format::ARgb32,
                     self.source_surface.width(),
                     self.source_surface.height(),
-                ).map_err(FilterError::CairoError)?;
+                )?;
 
-                SharedImageSurface::new(empty_surface, SurfaceType::AlphaOnly)
-                    .map_err(FilterError::CairoError)
+                Ok(SharedImageSurface::new(empty_surface, SurfaceType::AlphaOnly)?)
             }
         }
     }
