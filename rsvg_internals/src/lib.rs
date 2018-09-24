@@ -27,6 +27,8 @@ extern crate downcast_rs;
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
+pub use css::{rsvg_css_styles_define, rsvg_css_styles_free, rsvg_css_styles_new};
+
 pub use defs::{rsvg_defs_free, rsvg_defs_lookup, rsvg_defs_new};
 
 pub use drawing_ctx::{
@@ -67,8 +69,6 @@ pub use property_bag::{
     rsvg_property_bag_new,
 };
 
-pub use state::rsvg_state_parse_style_pair;
-
 pub use structure::rsvg_node_svg_get_size;
 
 pub use text::{rsvg_node_chars_append, rsvg_node_chars_new};
@@ -91,6 +91,7 @@ mod bbox;
 mod clip_path;
 mod color;
 mod cond;
+mod css;
 mod defs;
 mod drawing_ctx;
 mod error;

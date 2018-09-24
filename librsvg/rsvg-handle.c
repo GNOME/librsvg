@@ -160,10 +160,7 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
 
-    self->priv->css_props = g_hash_table_new_full (g_str_hash,
-                                                   g_str_equal,
-                                                   g_free,
-                                                   (GDestroyNotify) g_hash_table_destroy);
+    self->priv->css_styles = rsvg_css_styles_new ();
 
     self->priv->tree = NULL;
 
@@ -191,7 +188,7 @@ rsvg_handle_dispose (GObject *instance)
 
     g_clear_pointer (&self->priv->load, rsvg_load_free);
     g_clear_pointer (&self->priv->defs, rsvg_defs_free);
-    g_clear_pointer (&self->priv->css_props, g_hash_table_destroy);
+    g_clear_pointer (&self->priv->css_styles, rsvg_css_styles_free);
     g_clear_pointer (&self->priv->tree, rsvg_tree_free);
     g_clear_pointer (&self->priv->base_uri, g_free);
     g_clear_object (&self->priv->base_gfile);
@@ -999,6 +996,12 @@ RsvgDefs *
 rsvg_handle_get_defs (RsvgHandle *handle)
 {
     return handle->priv->defs;
+}
+
+RsvgCssStyles *
+rsvg_handle_get_css_styles (RsvgHandle *handle)
+{
+    return handle->priv->css_styles;
 }
 
 RsvgHandle *

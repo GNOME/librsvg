@@ -35,9 +35,6 @@ G_BEGIN_DECLS
 G_GNUC_INTERNAL
 void rsvg_parse_cssbuffer (RsvgHandle *handle, const char *buff, size_t buflen);
 
-G_GNUC_INTERNAL
-gboolean rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState * state);
-
 G_END_DECLS
 
 #endif /* RSVG_STYLES_H */
