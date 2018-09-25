@@ -23,14 +23,16 @@ impl BoundingBox {
         BoundingBox { rect, ..self }
     }
 
+    pub fn with_ink_rect(self, ink_rect: Option<cairo::Rectangle>) -> BoundingBox {
+        BoundingBox { ink_rect, ..self }
+    }
+
     pub fn with_extents(self, extents: (f64, f64, f64, f64)) -> BoundingBox {
-        let rect = rect_from_extents(extents);
-        BoundingBox { rect, ..self }
+        self.with_rect(rect_from_extents(extents))
     }
 
     pub fn with_ink_extents(self, extents: (f64, f64, f64, f64)) -> BoundingBox {
-        let ink_rect = rect_from_extents(extents);
-        BoundingBox { ink_rect, ..self }
+        self.with_ink_rect(rect_from_extents(extents))
     }
 
     fn combine(&mut self, src: &BoundingBox, clip: bool) {
