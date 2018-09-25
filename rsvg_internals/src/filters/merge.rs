@@ -142,6 +142,10 @@ impl Filter for Merge {
             .children()
             .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
         {
+            if child.is_in_error() {
+                return Err(FilterError::ChildNodeInError);
+            }
+
             bounds = bounds.add_input(
                 &child
                     .with_impl(|c: &MergeNode| ctx.get_input(draw_ctx, c.in_.borrow().as_ref()))?,
