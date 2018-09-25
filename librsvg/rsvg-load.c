@@ -28,7 +28,6 @@
 
 #include "rsvg-attributes.h"
 #include "rsvg-load.h"
-#include "rsvg-styles.h"
 
 typedef enum {
     LOAD_STATE_START,
@@ -184,7 +183,7 @@ style_handler_free (RsvgSaxHandler * self)
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
 
     if (z->is_text_css)
-        rsvg_parse_cssbuffer (z->load->handle, z->style->str, z->style->len);
+        rsvg_css_parse_into_handle (z->load->handle, z->style->str, z->style->len);
 
     g_string_free (z->style, TRUE);
     g_free (z);
@@ -933,7 +932,7 @@ sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xm
                 if (style_data &&
                     mime_type &&
                     strcmp (mime_type, "text/css") == 0) {
-                    rsvg_parse_cssbuffer (load->handle, style_data, style_data_len);
+                    rsvg_css_parse_into_handle (load->handle, style_data, style_data_len);
                 }
 
                 g_free (mime_type);

@@ -48,3 +48,7 @@ pub fn load_extern(handle: *const RsvgHandle, uri: &str) -> *const RsvgHandle {
 pub fn get_css_styles<'a>(handle: *const RsvgHandle) -> &'a CssStyles {
     unsafe { &*(rsvg_handle_get_css_styles(handle) as *const CssStyles) }
 }
+
+pub fn get_css_styles_mut<'a>(handle: *const RsvgHandle) -> &'a mut CssStyles {
+    unsafe { &mut *(rsvg_handle_get_css_styles(handle) as *mut CssStyles) }
+}
