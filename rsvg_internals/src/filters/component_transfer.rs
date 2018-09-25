@@ -309,6 +309,15 @@ impl Filter for ComponentTransfer {
         let func_b = get_node(Channel::B);
         let func_a = get_node(Channel::A);
 
+        for node in [&func_r, &func_g, &func_b, &func_a]
+            .iter()
+            .filter_map(|x| x.as_ref())
+        {
+            if node.is_in_error() {
+                return Err(FilterError::ChildNodeInError);
+            }
+        }
+
         // This is the default node that performs an identity transformation.
         let func_default = FuncX::default();
 
