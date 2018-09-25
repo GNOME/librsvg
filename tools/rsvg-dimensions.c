@@ -36,7 +36,7 @@ main (int	  argc,
 
     GOptionEntry options[] = {
         { "fragment", 'f', 0, G_OPTION_ARG_STRING, &fragment, "The SVG fragment to address.", "<string>" },
-        { G_OPTION_REMAINING, 0, G_OPTION_FLAG_FILENAME, G_OPTION_ARG_FILENAME_ARRAY, &filenames, NULL, "[FILE...]" },
+        { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &filenames, NULL, "[FILE...]" },
         { NULL }
     };
 
