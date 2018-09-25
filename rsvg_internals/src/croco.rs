@@ -13,7 +13,7 @@ pub type CRTerm = gpointer;
 pub type CRStatus = u32;
 
 pub type CREncoding = u32;
-pub const CREncoding_CR_UTF_8: CREncoding = 5;
+pub const CR_UTF_8: CREncoding = 5;
 
 #[repr(C)]
 pub struct CRParsingLocation {
