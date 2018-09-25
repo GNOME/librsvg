@@ -19,6 +19,8 @@ pub enum FilterError {
     InvalidLightSourceCount,
     /// A lighting filter input surface is too small.
     LightingInputTooSmall,
+    /// Child node was in error.
+    ChildNodeInError,
 }
 
 impl Error for FilterError {
@@ -32,6 +34,7 @@ impl Error for FilterError {
             FilterError::LightingInputTooSmall => {
                 "lighting filter input surface is too small (less than 2×2 pixels)"
             }
+            FilterError::ChildNodeInError => "child node was in error",
         }
     }
 

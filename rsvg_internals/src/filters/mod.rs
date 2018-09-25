@@ -8,7 +8,7 @@ use owning_ref::RcRef;
 use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
-use error::ValueErrorKind;
+use error::{RenderingError, ValueErrorKind};
 use handle::RsvgHandle;
 use length::{Length, LengthDir, LengthUnit};
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
@@ -235,7 +235,7 @@ pub fn render(
     computed_from_node_being_filtered: &ComputedValues,
     source: &cairo::ImageSurface,
     draw_ctx: &mut DrawingCtx<'_>,
-) -> cairo::ImageSurface {
+) -> Result<cairo::ImageSurface, RenderingError> {
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);
     assert!(!filter_node.is_in_error());
@@ -246,13 +246,13 @@ pub fn render(
         cairo::Format::ARgb32,
         source.get_width(),
         source.get_height(),
-    ).unwrap();
+    )?;
     {
         let cr = cairo::Context::new(&source_surface);
         cr.set_source_surface(source, 0f64, 0f64);
         cr.paint();
     }
-    let source_surface = SharedImageSurface::new(source_surface, SurfaceType::SRgb).unwrap();
+    let source_surface = SharedImageSurface::new(source_surface, SurfaceType::SRgb)?;
 
     let mut filter_ctx = FilterContext::new(
         filter_node,
@@ -264,14 +264,10 @@ pub fn render(
     // If paffine is non-invertible, we won't draw anything. Also bbox combining in bounds
     // computations will panic due to non-invertible martrix.
     if filter_ctx.paffine().try_invert().is_err() {
-        return filter_ctx
-            .into_output()
-            .expect("could not create an empty surface to return from a filter")
-            .into_image_surface()
-            .expect("could not convert filter output into an ImageSurface");
+        return Ok(filter_ctx.into_output()?.into_image_surface()?);
     }
 
-    filter_node
+    let primitives = filter_node
         .children()
         // Skip nodes in error.
         .filter(|c| {
@@ -340,39 +336,44 @@ pub fn render(
                 }).ok();
 
             rr.map(|rr| (rr, linear_rgb))
-        }).for_each(|(rr, linear_rgb)| {
-            let mut render = |filter_ctx: &mut FilterContext| {
-                if let Err(err) = rr
-                    .render(rr.owner(), filter_ctx, draw_ctx)
-                    .and_then(|result| filter_ctx.store_result(result))
-                {
-                    rsvg_log!(
-                        "(filter primitive {} returned an error: {})",
-                        rr.owner().get_human_readable_name(),
-                        err
-                    );
-                }
-            };
-
-            let start = Instant::now();
-
-            if rr.is_affected_by_color_interpolation_filters() && linear_rgb {
-                filter_ctx.with_linear_rgb(render);
-            } else {
-                render(&mut filter_ctx);
-            }
-
-            let elapsed = start.elapsed();
-            rsvg_log!(
-                "(rendered filter primitive {} in\n    {} seconds)",
-                rr.owner().get_human_readable_name(),
-                elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
-            );
         });
 
-    filter_ctx
-        .into_output()
-        .expect("could not create an empty surface to return from a filter")
-        .into_image_surface()
-        .expect("could not convert filter output into an ImageSurface")
+    for (rr, linear_rgb) in primitives {
+        let mut render = |filter_ctx: &mut FilterContext| {
+            if let Err(err) = rr
+                .render(rr.owner(), filter_ctx, draw_ctx)
+                .and_then(|result| filter_ctx.store_result(result))
+            {
+                rsvg_log!(
+                    "(filter primitive {} returned an error: {})",
+                    rr.owner().get_human_readable_name(),
+                    err
+                );
+
+                // Exit early on Cairo errors. Continue rendering otherwise.
+                if let FilterError::CairoError(status) = err {
+                    return Err(status);
+                }
+            }
+
+            Ok(())
+        };
+
+        let start = Instant::now();
+
+        if rr.is_affected_by_color_interpolation_filters() && linear_rgb {
+            filter_ctx.with_linear_rgb(render)?;
+        } else {
+            render(&mut filter_ctx)?;
+        }
+
+        let elapsed = start.elapsed();
+        rsvg_log!(
+            "(rendered filter primitive {} in\n    {} seconds)",
+            rr.owner().get_human_readable_name(),
+            elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
+        );
+    }
+
+    Ok(filter_ctx.into_output()?.into_image_surface()?)
 }
