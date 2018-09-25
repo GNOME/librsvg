@@ -492,7 +492,7 @@ impl<'a> DrawingCtx<'a> {
 
                 if !filter_node.is_in_error() {
                     // FIXME: deal with out of memory here
-                    Ok(filters::render(&filter_node, values, &output, self))
+                    filters::render(&filter_node, values, &output, self)
                 } else {
                     Ok(child_surface.clone())
                 }

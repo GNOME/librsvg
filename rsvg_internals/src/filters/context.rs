@@ -380,11 +380,9 @@ impl FilterContext {
     /// The returned surface is in the sRGB color space.
     // TODO: sRGB conversion should probably be done by the caller.
     #[inline]
-    pub fn into_output(self) -> Result<SharedImageSurface, FilterError> {
+    pub fn into_output(self) -> Result<SharedImageSurface, cairo::Status> {
         match self.last_result {
-            Some(FilterOutput { surface, bounds }) => {
-                surface.to_srgb(bounds).map_err(FilterError::CairoError)
-            }
+            Some(FilterOutput { surface, bounds }) => surface.to_srgb(bounds),
             None => {
                 let empty_surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
