@@ -1227,7 +1227,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     if (id && *id) {
         node = rsvg_defs_lookup (handle->priv->defs, id);
 
-        if (rsvg_tree_is_root (handle->priv->tree, node))
+        if (node && rsvg_tree_is_root (handle->priv->tree, node))
             id = NULL;
     } else {
         node = root;
