@@ -91,6 +91,7 @@ mod bbox;
 mod clip_path;
 mod color;
 mod cond;
+mod croco;
 mod css;
 mod defs;
 mod drawing_ctx;

@@ -53,6 +53,7 @@ RUST_SRC =							\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
 	rsvg_internals/src/coord_units.rs			\
+	rsvg_internals/src/croco.rs				\
 	rsvg_internals/src/css.rs				\
 	rsvg_internals/src/defs.rs				\
 	rsvg_internals/src/drawing_ctx.rs			\
