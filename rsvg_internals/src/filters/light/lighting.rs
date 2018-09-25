@@ -236,6 +236,10 @@ impl Filter for Lighting {
         }
 
         let light_source = light_source.unwrap();
+        if light_source.is_in_error() {
+            return Err(FilterError::ChildNodeInError);
+        }
+
         let light_source = light_source.get_impl::<LightSource>().unwrap();
         let light_source = light_source.transform(ctx);
 
