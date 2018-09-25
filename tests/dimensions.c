@@ -93,6 +93,13 @@ static FixtureData fixtures[] =
         0, 0, 44, 45,
         FALSE, TRUE
     },
+    {
+        "/dimensions/sub/text_position",
+        "dimensions/347-wrapper.svg",
+        "#LabelA",
+        80, 48, 0, 0,
+        TRUE, FALSE
+    }
     /* {"/dimensions/sub/rect with transform", "dimensions/bug564527.svg", "#back", 0, 0, 144, 203} */
 };
 
