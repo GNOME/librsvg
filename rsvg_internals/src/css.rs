@@ -5,9 +5,10 @@ use std::str::FromStr;
 use libc;
 
 use glib::translate::*;
-use glib_sys;
+use glib_sys::{self, gboolean, GList};
 
 use attributes::Attribute;
+use croco::*;
 use state::State;
 use util::utf8_cstr;
 
@@ -75,6 +76,53 @@ impl CssStyles {
             false
         }
     }
+}
+
+fn init_cr_doc_handler(handler: &mut CRDocHandler) {
+    handler.import_style = Some(css_import_style);
+    handler.start_selector = Some(css_start_selector);
+    handler.end_selector = Some(css_end_selector);
+    handler.property = Some(css_property);
+    handler.error = Some(css_error);
+    handler.unrecoverable_error = Some(css_unrecoverable_error);
+}
+
+unsafe extern "C" fn css_import_style(
+    a_this: *mut CRDocHandler,
+    a_media_list: *mut GList,
+    a_uri: CRString,
+    a_uri_default_ns: CRString,
+    a_location: CRParsingLocation,
+) {
+    unimplemented!();
+}
+
+unsafe extern "C" fn css_start_selector(
+    a_this: *mut CRDocHandler,
+    a_selector_list: *mut CRSelector,
+) {
+    unimplemented!();
+}
+
+unsafe extern "C" fn css_end_selector(a_this: *mut CRDocHandler, a_selector_list: *mut CRSelector) {
+    unimplemented!();
+}
+
+unsafe extern "C" fn css_property(
+    a_this: *mut CRDocHandler,
+    a_name: CRString,
+    a_expression: CRTerm,
+    a_is_important: gboolean,
+) {
+    unimplemented!();
+}
+
+unsafe extern "C" fn css_error(a_this: *mut CRDocHandler) {
+    unimplemented!();
+}
+
+unsafe extern "C" fn css_unrecoverable_error(a_this: *mut CRDocHandler) {
+    unimplemented!();
 }
 
 #[no_mangle]
