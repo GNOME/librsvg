@@ -864,30 +864,30 @@ fn compute_text_bbox(
 ) -> BoundingBox {
     let pango_scale = f64::from(pango::SCALE);
 
-    let mut bbox = BoundingBox::new(affine);
-
     let ink_x = f64::from(ink.x);
     let ink_y = f64::from(ink.y);
     let ink_width = f64::from(ink.width);
     let ink_height = f64::from(ink.height);
 
-    if gravity_is_vertical(gravity) {
-        bbox.rect = Some(cairo::Rectangle {
+    let rect = if gravity_is_vertical(gravity) {
+        cairo::Rectangle {
             x: x + (ink_x - ink_height) / pango_scale,
             y: y + ink_y / pango_scale,
             width: ink_height / pango_scale,
             height: ink_width / pango_scale,
-        });
+        }
     } else {
-        bbox.rect = Some(cairo::Rectangle {
+        cairo::Rectangle {
             x: x + ink_x / pango_scale,
             y: y + ink_y / pango_scale,
             width: ink_width / pango_scale,
             height: ink_height / pango_scale,
-        });
-    }
+        }
+    };
 
-    bbox
+    BoundingBox::new(affine)
+        .with_rect(Some(rect))
+        .with_ink_rect(Some(rect))
 }
 
 fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> BoundingBox {
