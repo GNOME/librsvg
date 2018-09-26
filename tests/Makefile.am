@@ -86,22 +86,8 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/images/*)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/resources/*)	\
 	$(wildcard $(srcdir)/fixtures/render-crash/*.svg)		\
-	fixtures/dimensions/bug564527.svg				\
-	fixtures/dimensions/bug614018.svg				\
-	fixtures/dimensions/bug612951.svg				\
-	fixtures/dimensions/bug608102.svg				\
-	fixtures/dimensions/sub-rect-no-unit.svg			\
-	fixtures/styles/bug620693.svg					\
-	fixtures/styles/bug614704.svg					\
-	fixtures/styles/bug614606.svg					\
-	fixtures/styles/important.svg					\
-	fixtures/styles/svg-class.svg					\
-	fixtures/styles/bug592207.svg					\
-	fixtures/styles/bug338160.svg					\
-	fixtures/styles/bug379629.svg					\
-	fixtures/styles/bug614643.svg					\
-	fixtures/styles/bug418823.svg					\
-	fixtures/styles/order.svg
+	$(wildcard $(srcdir)/fixtures/dimensions/*.svg)			\
+	$(wildcard $(srcdir)/fixtures/styles/*.svg)
 
 clean-local:
 	rm -rf output
