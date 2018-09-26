@@ -35,11 +35,3 @@
 
 #include <libcroco/libcroco.h>
 
-/* This is defined like this so that we can export the Rust function... just for
- * the benefit of rsvg-convert.c
- */
-RsvgCssColorSpec
-rsvg_css_parse_color_ (const char *str)
-{
-    return rsvg_css_parse_color (str);
-}

@@ -27,6 +27,7 @@
 #include "config.h"
 
 #include "rsvg-private.h"
+#include "rsvg-css.h"
 
 /*
  * This is configurable at runtime
@@ -149,3 +150,11 @@ rsvg_return_if_fail_warning (const char *pretty_function, const char *expression
     g_set_error (error, RSVG_ERROR, 0, _("%s: assertion `%s' failed"), pretty_function, expression);
 }
 
+/* This is defined like this so that we can export the Rust function... just for
+ * the benefit of rsvg-convert.c
+ */
+RsvgCssColorSpec
+rsvg_css_parse_color_ (const char *str)
+{
+    return rsvg_css_parse_color (str);
+}
