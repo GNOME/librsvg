@@ -1,3 +1,8 @@
+Version 2.44.5
+- Fix #343 - Handle child being in error in feComponentTransfer.
+- Fix #346 - Handle filter primitives producing errors.
+- Fix #347 - Regression in computation of text element extents.
+
 Version 2.44.4
 - Fix #341 - Don't infinite-loop with cyclic pattern references.
 - Fix #342 - Don't crash if a <use> node references one of its ancestors.
