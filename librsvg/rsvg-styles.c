@@ -35,39 +35,6 @@
 
 #include <libcroco/libcroco.h>
 
-#if 0
-static void
-ccss_import_style (CRDocHandler * a_this,
-                   GList * a_media_list,
-                   CRString * a_uri, CRString * a_uri_default_ns, CRParsingLocation * a_location)
-{
-    CSSUserData *user_data = (CSSUserData *) a_this->app_data;
-    char *stylesheet_data;
-    gsize stylesheet_data_len;
-    char *mime_type = NULL;
-
-    if (a_uri == NULL)
-        return;
-
-    stylesheet_data = _rsvg_handle_acquire_data (user_data->handle,
-                                                 cr_string_peek_raw_str (a_uri),
-                                                 &mime_type,
-                                                 &stylesheet_data_len,
-                                                 NULL);
-    if (stylesheet_data == NULL || 
-        mime_type == NULL || 
-        strcmp (mime_type, "text/css") != 0) {
-        g_free (stylesheet_data);
-        g_free (mime_type);
-        return;
-    }
-
-    rsvg_parse_cssbuffer (user_data->handle, stylesheet_data, stylesheet_data_len);
-    g_free (stylesheet_data);
-    g_free (mime_type);
-}
-#endif
-
 /* This is defined like this so that we can export the Rust function... just for
  * the benefit of rsvg-convert.c
  */
