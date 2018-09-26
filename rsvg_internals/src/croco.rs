@@ -94,7 +94,6 @@ extern "C" {
     pub fn cr_simple_sel_to_string(a_this: CRSimpleSel) -> *mut libc::c_char;
 
     pub fn cr_string_peek_raw_str(a_this: CRString) -> *const libc::c_char;
-    pub fn cr_string_peek_raw_str_len(a_this: CRString) -> libc::c_int;
 
     pub fn cr_term_to_string(a_this: CRTerm) -> *mut libc::c_char;
 

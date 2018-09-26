@@ -127,13 +127,29 @@ fn init_cr_doc_handler(handler: &mut CRDocHandler) {
 }
 
 unsafe extern "C" fn css_import_style(
-    _a_this: *mut CRDocHandler,
+    a_this: *mut CRDocHandler,
     _a_media_list: *mut GList,
-    _a_uri: CRString,
+    a_uri: CRString,
     _a_uri_default_ns: CRString,
     _a_location: CRParsingLocation,
 ) {
-    unimplemented!();
+    let handler_data = get_doc_handler_data(a_this);
+
+    if a_uri.is_null() {
+        return;
+    }
+
+    let raw_uri = cr_string_peek_raw_str(a_uri);
+    let uri = utf8_cstr(raw_uri);
+
+    if let Ok(binary_data) = handle::acquire_data(handler_data.handle, uri) {
+        if binary_data.content_type.as_ref().map(String::as_ref) == Some("text/css") {
+            parse_into_handle(
+                handler_data.handle,
+                str::from_utf8_unchecked(&binary_data.data),
+            );
+        }
+    }
 }
 
 unsafe fn get_doc_handler_data<'a>(doc_handler: *mut CRDocHandler) -> &'a mut DocHandlerData {
@@ -180,12 +196,8 @@ unsafe extern "C" fn css_property(
             let raw_selector_name = cr_simple_sel_to_string(simple_sel) as *mut libc::c_char;
 
             if !raw_selector_name.is_null() {
-                let prop_name_ptr = cr_string_peek_raw_str(a_name);
-                let prop_name_len = cr_string_peek_raw_str_len(a_name) as usize;
-
-                let prop_name_bytes =
-                    slice::from_raw_parts(prop_name_ptr as *const u8, prop_name_len);
-                let prop_name = str::from_utf8_unchecked(prop_name_bytes);
+                let raw_prop_name = cr_string_peek_raw_str(a_name);
+                let prop_name = utf8_cstr(raw_prop_name);
 
                 let prop_value =
                     <String as FromGlibPtrFull<_>>::from_glib_full(cr_term_to_string(a_expression));
