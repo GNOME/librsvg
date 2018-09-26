@@ -1,4 +1,8 @@
+use std::ptr;
+
+use glib;
 use glib::translate::*;
+use glib_sys;
 use libc;
 
 use css::{CssStyles, RsvgCssStyles};
@@ -21,6 +25,14 @@ extern "C" {
     ) -> *const RsvgHandle;
 
     fn rsvg_handle_get_css_styles(handle: *const RsvgHandle) -> *mut RsvgCssStyles;
+
+    fn _rsvg_handle_acquire_data(
+        handle: *mut RsvgHandle,
+        url: *const libc::c_char,
+        out_content_type: *mut *mut libc::c_char,
+        out_len: *mut usize,
+        error: *mut *mut glib_sys::GError,
+    ) -> *mut u8;
 }
 
 pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a Defs {
@@ -47,4 +59,38 @@ pub fn load_extern(handle: *const RsvgHandle, uri: &str) -> *const RsvgHandle {
 
 pub fn get_css_styles<'a>(handle: *const RsvgHandle) -> &'a CssStyles {
     unsafe { &*(rsvg_handle_get_css_styles(handle) as *const CssStyles) }
+}
+
+pub fn get_css_styles_mut<'a>(handle: *const RsvgHandle) -> &'a mut CssStyles {
+    unsafe { &mut *(rsvg_handle_get_css_styles(handle) as *mut CssStyles) }
+}
+
+pub struct BinaryData {
+    pub data: Vec<u8>,
+    pub content_type: Option<String>,
+}
+
+pub fn acquire_data(handle: *mut RsvgHandle, url: &str) -> Result<BinaryData, glib::Error> {
+    unsafe {
+        let mut content_type: *mut libc::c_char = ptr::null_mut();
+        let mut len = 0;
+        let mut error = ptr::null_mut();
+
+        let buf = _rsvg_handle_acquire_data(
+            handle,
+            url.to_glib_none().0,
+            &mut content_type as *mut *mut _,
+            &mut len,
+            &mut error,
+        );
+
+        if buf.is_null() {
+            Err(from_glib_full(error))
+        } else {
+            Ok(BinaryData {
+                data: FromGlibContainer::from_glib_full_num(buf as *mut u8, len),
+                content_type: from_glib_full(content_type),
+            })
+        }
+    }
 }

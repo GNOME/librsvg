@@ -206,6 +206,12 @@ void rsvg_css_styles_define (RsvgCssStyles *styles,
                              const char *style_value,
                              gboolean important);
 
+/* Implemented in rsvg_internals/src/css.rs */
+G_GNUC_INTERNAL
+void rsvg_css_parse_into_handle (RsvgHandle *handle,
+                                 const char *buf,
+                                 gsize len);
+
 /* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
 gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int *out_width, int *out_height);

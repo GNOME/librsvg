@@ -37,8 +37,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-private.h 			\
 	librsvg/rsvg-size-callback.c		\
 	librsvg/rsvg-size-callback.h		\
-	librsvg/rsvg-styles.c			\
-	librsvg/rsvg-styles.h			\
 	librsvg/rsvg.h				\
 	$(NULL)
 
@@ -53,6 +51,7 @@ RUST_SRC =							\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
 	rsvg_internals/src/coord_units.rs			\
+	rsvg_internals/src/croco.rs				\
 	rsvg_internals/src/css.rs				\
 	rsvg_internals/src/defs.rs				\
 	rsvg_internals/src/drawing_ctx.rs			\
