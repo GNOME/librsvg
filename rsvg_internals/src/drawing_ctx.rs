@@ -516,7 +516,7 @@ impl<'a> DrawingCtx<'a> {
         let cr = self.get_cairo_context();
         pangocairo::functions::update_context(&cr, &context);
 
-        set_resolution(&context, self.dpi_x);
+        set_resolution(&context, self.dpi_y);
 
         if self.is_testing {
             let mut options = cairo::FontOptions::new();
