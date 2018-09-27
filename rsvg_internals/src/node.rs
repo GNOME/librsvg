@@ -1,7 +1,6 @@
 use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
 use glib;
-use glib::translate::*;
 use std::cell::{Cell, Ref, RefCell};
 use std::ptr;
 use std::rc::{Rc, Weak};
