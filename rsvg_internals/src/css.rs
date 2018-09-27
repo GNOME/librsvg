@@ -99,7 +99,7 @@ fn parse_into_handle(handle: *mut RsvgHandle, buf: &str) {
         (*doc_handler).app_data = &handler_data as *const _ as gpointer;
 
         let buf_ptr = buf.as_ptr() as *mut _;
-        let buf_len = buf.len() as u64;
+        let buf_len = buf.len() as libc::c_ulong;
 
         let parser = cr_parser_new_from_buf(buf_ptr, buf_len, CR_UTF_8, false.to_glib());
         if parser.is_null() {
