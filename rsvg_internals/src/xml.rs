@@ -140,7 +140,7 @@ impl NodeCreationContext {
         // The "svg" node is special; it will parse its style attributes
         // until the end, in standard_element_end().
         if new_node.get_type() != NodeType::Svg {
-            new_node.parse_style_attributes(handle, name, pbag);
+            new_node.set_style(handle, pbag);
         }
 
         new_node.set_overridden_properties();
