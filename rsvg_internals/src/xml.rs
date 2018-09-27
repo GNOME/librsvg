@@ -95,6 +95,7 @@ impl XmlHandler for NodeCreationContext {
                 let child = node_new(
                     NodeType::Chars,
                     Some(&node),
+                    "rsvg-chars",
                     None,
                     None,
                     Box::new(NodeChars::new()),
