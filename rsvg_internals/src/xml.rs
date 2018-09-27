@@ -74,7 +74,7 @@ impl XmlHandler for NodeCreationContext {
         // here, not during element creation.
         if node.get_type() == NodeType::Svg {
             node.with_impl(|svg: &NodeSvg| {
-                svg.parse_style_attributes(&node, handle);
+                svg.set_delayed_style(&node, handle);
             });
         }
 
