@@ -1764,6 +1764,10 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
     }
 
     surface = rsvg_cairo_surface_from_pixbuf (pixbuf);
+    if (!surface) {
+        g_set_error (error, RSVG_ERROR, RSVG_ERROR_FAILED, "could not convert pixbuf to cairo surface");
+        goto out;
+    }
 
     if (mime_type == NULL) {
         /* Try to get the information from the loader */
