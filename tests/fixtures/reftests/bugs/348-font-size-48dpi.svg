@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <g fill="blue">
+    <rect x="48" y="48" width="48" height="48"/>
+    <text style="font-size: 48" x="96" y="96">Hello</text>
+  </g>
+
+  <g fill="green">
+    <rect x="1in" y="2.5in" width="1in" height="1in"/>
+    <text style="font-size: 1in" x="2in" y="3.5in">Hello</text>
+  </g>
+</svg>

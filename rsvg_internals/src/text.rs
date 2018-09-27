@@ -384,7 +384,7 @@ impl NodeTrait for NodeTSpan {
 }
 
 fn to_pango_units(v: f64) -> i32 {
-    (v * f64::from(pango::SCALE)) as i32
+    (v * f64::from(pango::SCALE) + 0.5) as i32
 }
 
 impl From<FontStyle> for pango::Style {

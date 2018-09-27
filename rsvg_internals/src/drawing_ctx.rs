@@ -516,7 +516,23 @@ impl<'a> DrawingCtx<'a> {
         let cr = self.get_cairo_context();
         pangocairo::functions::update_context(&cr, &context);
 
-        set_resolution(&context, self.dpi_x);
+        // Pango says this about pango_cairo_context_set_resolution():
+        //
+        //     Sets the resolution for the context. This is a scale factor between
+        //     points specified in a #PangoFontDescription and Cairo units. The
+        //     default value is 96, meaning that a 10 point font will be 13
+        //     units high. (10 * 96. / 72. = 13.3).
+        //
+        // I.e. Pango font sizes in a PangoFontDescription are in *points*, not pixels.
+        // However, we are normalizing everything to userspace units, which amount to
+        // pixels.  So, we will use 72.0 here to make Pango not apply any further scaling
+        // to the size values we give it.
+        //
+        // An alternative would be to divide our font sizes by (dpi_y / 72) to effectively
+        // cancel out Pango's scaling, but it's probably better to deal with Pango-isms
+        // right here, instead of spreading them out through our Length normalization
+        // code.
+        set_resolution(&context, 72.0);
 
         if self.is_testing {
             let mut options = cairo::FontOptions::new();
