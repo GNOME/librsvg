@@ -2,8 +2,13 @@ Version 2.44.5
 - Fix #343 - Handle child being in error in feComponentTransfer.
 - Fix #346 - Handle filter primitives producing errors.
 - Fix #347 - Regression in computation of text element extents.
+- Fix #348 - Fix incorrect font sizing.
+- Fix #349 - Don't panic when loading an external image that is bigger
+  than Cairo's limits.
 - Fix - rsvg_handle_get_dimensions_sub() no longer panics if passed a
   nonexistent fragment identifier.
+- CSS processing code is now in Rust, although it still calls libcroco
+  to do the parsing.
 
 Version 2.44.4
 - Fix #341 - Don't infinite-loop with cyclic pattern references.
