@@ -67,9 +67,31 @@ stages:
     stage: cross_distro
     <<: *test
 
-.rustc_template: &rustc
-    stage: rustc
+.debian_template_amd64: &debian_amd64
+    stage: cross_distro
     <<: *test
+    script:
+      - rustc --version && cargo --version
+      - mkdir -p _build
+      - cd _build
+      - ../autogen.sh --enable-gtk-doc --enable-vala GDK_PIXBUF_QUERYLOADERS=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
+      - make
+      - make check
+
+.debian_template_i386: &debian_i386
+    stage: cross_distro
+    <<: *test
+    script:
+      - rustc --version && cargo --version
+      - mkdir -p _build
+      - cd _build
+      - ../autogen.sh --enable-gtk-doc --enable-vala GDK_PIXBUF_QUERYLOADERS=/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
+      - make
+      - make check
+
+.rustc_template: &rustc
+    <<: *debian_amd64
+    stage: rustc
 
 # Jobs that are marked with stage_1 will be run on every commit, across every
 # fork and branch. This only serves as documentation since it's equivelant to
@@ -169,14 +191,14 @@ opensuse:tumbleweed:
   <<: *distro_test
   <<: *stage_2
 
-.debian:testing:
+debian:testing:
   image: $AMD64_DEBIAN_TESTING
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   <<: *stage_2
 
-.debian_i386:testing:
+debian_i386:testing:
   image: $I386_DEBIAN_TESTING
   variables:
     LIBRSVG_DEBUG: "yes"
@@ -194,7 +216,7 @@ fedora:test_release:
   <<: *distro_test
   <<: *stage_3
 
-.debian:testing_release_i386:
+debian:testing_release_i386:
   image: $I386_DEBIAN_TESTING
   variables:
     LIBRSVG_DEBUG: "no"
@@ -204,21 +226,21 @@ fedora:test_release:
 # STAGE 3 RUSTC TESTS
 #######################################################################
 
-.rustc 1.26 1:
+rustc 1.26 1:
   image: $RUSTC_1_26
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *rustc
   <<: *stage_3
 
-.rustc 1.27 2:
+rustc 1.27 2:
   image: $RUSTC_1_27
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *rustc
   <<: *stage_3
 
-.rustc 1.28 3:
+rustc 1.28 3:
   image: $RUSTC_1_28
   variables:
     LIBRSVG_DEBUG: "yes"
