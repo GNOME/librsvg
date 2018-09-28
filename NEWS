@@ -1,3 +1,6 @@
+Version 2.44.6
+- Fix 32-bit builds (Jordan Petridis).
+
 Version 2.44.5
 - Fix #343 - Handle child being in error in feComponentTransfer.
 - Fix #346 - Handle filter primitives producing errors.
