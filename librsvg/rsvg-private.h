@@ -256,12 +256,7 @@ G_GNUC_INTERNAL
 gboolean rsvg_cond_check_system_language (const char *value);
 
 G_GNUC_INTERNAL
-cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
-G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
-
-G_GNUC_INTERNAL
-cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const char *href, GError ** error);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
@@ -328,6 +323,9 @@ char *rsvg_handle_resolve_uri (RsvgHandle *handle,
 G_GNUC_INTERNAL
 RsvgHandle *rsvg_handle_load_extern (RsvgHandle *handle,
                                      const char *uri);
+
+G_GNUC_INTERNAL
+gboolean rsvg_handle_keep_image_data (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
 char *_rsvg_handle_acquire_data (RsvgHandle *handle,

@@ -1,20 +1,14 @@
 use cairo;
 use cairo::{MatrixTrait, Pattern};
-use cairo_sys;
-use glib;
-use glib::translate::*;
-use glib_sys;
-use libc;
 use std::cell::{Cell, RefCell};
-use std::ptr;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use bbox::BoundingBox;
 use drawing_ctx::DrawingCtx;
-use error::RenderingError;
+use error::{NodeError, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
-use handle::RsvgHandle;
+use handle::{self, RsvgHandle};
 use length::*;
 use node::*;
 use parsers::{parse, parse_and_validate};
@@ -77,26 +71,11 @@ impl NodeTrait for NodeImage {
                 Attribute::XlinkHref | Attribute::Path => {
                     // "path" is used by some older Adobe Illustrator versions
 
-                    extern "C" {
-                        fn rsvg_cairo_surface_new_from_href(
-                            handle: *const RsvgHandle,
-                            href: *const libc::c_char,
-                            error: *mut *mut glib_sys::GError,
-                        ) -> *mut cairo_sys::cairo_surface_t;
-                    }
-
-                    let mut error = ptr::null_mut();
-
-                    let raw_surface = unsafe {
-                        rsvg_cairo_surface_new_from_href(handle, value.to_glib_none().0, &mut error)
-                    };
-                    if !raw_surface.is_null() {
-                        *self.surface.borrow_mut() = Some(unsafe {
-                            cairo::ImageSurface::from_raw_full(raw_surface).unwrap()
-                        });
-                    } else {
-                        let _: glib::Error = unsafe { from_glib_full(error) }; // FIXME: we should note that the image couldn't be loaded
-                    }
+                    *self.surface.borrow_mut() = Some(
+                        // FIXME: translate the error better here
+                        handle::image_surface_new_from_href(handle as *mut _, value)
+                            .map_err(|_| NodeError::value_error(attr, "could not load image"))?,
+                    );
                 }
 
                 _ => (),

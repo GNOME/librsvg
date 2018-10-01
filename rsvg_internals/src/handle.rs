@@ -1,5 +1,8 @@
 use std::ptr;
 
+use cairo::{ImageSurface, Status};
+use cairo_sys;
+use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use glib;
 use glib::translate::*;
 use glib_sys;
@@ -7,6 +10,8 @@ use libc;
 
 use css::{CssStyles, RsvgCssStyles};
 use defs::{Defs, RsvgDefs};
+use error::LoadingError;
+use surface_utils::shared_surface::SharedImageSurface;
 
 pub enum RsvgHandle {}
 
@@ -33,6 +38,8 @@ extern "C" {
         out_len: *mut usize,
         error: *mut *mut glib_sys::GError,
     ) -> *mut u8;
+
+    fn rsvg_handle_keep_image_data(handle: *const RsvgHandle) -> glib_sys::gboolean;
 }
 
 pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a Defs {
@@ -85,7 +92,14 @@ pub fn acquire_data(handle: *mut RsvgHandle, url: &str) -> Result<BinaryData, gl
         );
 
         if buf.is_null() {
-            Err(from_glib_full(error))
+            if error.is_null() && len == 0 {
+                Ok(BinaryData {
+                    data: Vec::new(),
+                    content_type: None,
+                })
+            } else {
+                Err(from_glib_full(error))
+            }
         } else {
             Ok(BinaryData {
                 data: FromGlibContainer::from_glib_full_num(buf as *mut u8, len),
@@ -93,4 +107,80 @@ pub fn acquire_data(handle: *mut RsvgHandle, url: &str) -> Result<BinaryData, gl
             })
         }
     }
+}
+
+fn keep_image_data(handle: *const RsvgHandle) -> bool {
+    unsafe { from_glib(rsvg_handle_keep_image_data(handle)) }
+}
+
+pub fn image_surface_new_from_href(
+    handle: *mut RsvgHandle,
+    href: &str,
+) -> Result<ImageSurface, LoadingError> {
+    let data = acquire_data(handle, href)?;
+
+    if data.data.len() == 0 {
+        return Err(LoadingError::EmptyData);
+    }
+
+    let loader = if let Some(ref content_type) = data.content_type {
+        PixbufLoader::new_with_mime_type(content_type)?
+    } else {
+        PixbufLoader::new()
+    };
+
+    loader.write(&data.data)?;
+    loader.close()?;
+
+    let pixbuf = loader.get_pixbuf().ok_or(LoadingError::Unknown)?;
+
+    let surface = SharedImageSurface::from_pixbuf(&pixbuf)?.into_image_surface()?;
+
+    if keep_image_data(handle) {
+        let mime_type = data.content_type.or_else(|| {
+            // Try to get the content type from the loader
+
+            loader.get_format().and_then(|format| {
+                let content_types = format.get_mime_types();
+
+                if content_types.len() != 0 {
+                    Some(content_types[0].clone())
+                } else {
+                    None
+                }
+            })
+        });
+
+        if let Some(mime_type) = mime_type {
+            extern "C" {
+                fn cairo_surface_set_mime_data(
+                    surface: *mut cairo_sys::cairo_surface_t,
+                    mime_type: *const libc::c_char,
+                    data: *mut libc::c_char,
+                    length: libc::c_ulong,
+                    destroy: cairo_sys::cairo_destroy_func_t,
+                    closure: *mut libc::c_void,
+                ) -> Status;
+            }
+
+            let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&data.data);
+
+            unsafe {
+                let status = cairo_surface_set_mime_data(
+                    surface.to_glib_none().0,
+                    mime_type.to_glib_none().0,
+                    data_ptr as *mut _,
+                    data.data.len() as libc::c_ulong,
+                    Some(glib_sys::g_free),
+                    data_ptr as *mut _,
+                );
+
+                if status != Status::Success {
+                    return Err(LoadingError::Cairo(status));
+                }
+            }
+        }
+    }
+
+    Ok(surface)
 }

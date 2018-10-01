@@ -172,7 +172,8 @@ fn generate_phf_of_svg_attributes() {
     writeln!(
         &mut file,
         "#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]"
-    ).unwrap();
+    )
+    .unwrap();
     writeln!(&mut file, "pub enum Attribute {{").unwrap();
 
     for &(_, valname) in attribute_defs.iter() {
@@ -184,7 +185,8 @@ fn generate_phf_of_svg_attributes() {
     writeln!(
         &mut file,
         "static ATTRIBUTES: phf::Map<&'static str, Attribute> = "
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut map = phf_codegen::Map::new();
     map.phf_path("phf");

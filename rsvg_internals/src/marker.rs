@@ -51,7 +51,8 @@ impl Parse for MarkerUnits {
                         cow.as_ref().to_string(),
                     ))),
                 ),
-            }).map_err(|_| {
+            })
+            .map_err(|_| {
                 ValueErrorKind::Parse(ParseError::new(
                     "expected \"userSpaceOnUse\" or \"strokeWidth\"",
                 ))
@@ -1261,7 +1262,8 @@ mod directionality_tests {
     fn curve_with_12_34_coincident_has_directionality() {
         let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
             20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0,
-        )).unwrap();
+        ))
+        .unwrap();
 
         assert_eq!((40.0, 30.0), (v1x, v1y));
         assert_eq!((40.0, 30.0), (v2x, v2y));
@@ -1293,7 +1295,8 @@ mod marker_tests {
                     v.push((marker_type, x, y, computed_angle));
                     Ok(())
                 }
-            ).is_ok()
+            )
+            .is_ok()
         );
 
         assert_eq!(
@@ -1329,7 +1332,8 @@ mod marker_tests {
                     v.push((marker_type, x, y, computed_angle));
                     Ok(())
                 }
-            ).is_ok()
+            )
+            .is_ok()
         );
 
         assert_eq!(

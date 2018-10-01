@@ -2,17 +2,12 @@ use std::cell::{Cell, RefCell};
 use std::ptr;
 
 use cairo::{self, ImageSurface, MatrixTrait, Pattern};
-use cairo_sys;
-use glib;
-use glib::translate::{from_glib_full, ToGlibPtr};
-use glib_sys;
-use libc;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
-use handle::RsvgHandle;
+use handle::{self, RsvgHandle};
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
@@ -80,7 +75,8 @@ impl Image {
                 &surface,
                 f64::from(ctx.source_graphic().width()),
                 f64::from(ctx.source_graphic().height()),
-            ).map_err(|e| {
+            )
+            .map_err(|e| {
                 if let RenderingError::Cairo(status) = e {
                     FilterError::CairoError(status)
                 } else {
@@ -119,32 +115,9 @@ impl Image {
         bounds_builder: BoundsBuilder<'_>,
         href: &str,
     ) -> Result<ImageSurface, FilterError> {
-        let surface = {
-            extern "C" {
-                fn rsvg_cairo_surface_new_from_href(
-                    handle: *const RsvgHandle,
-                    href: *const libc::c_char,
-                    error: *mut *mut glib_sys::GError,
-                ) -> *mut cairo_sys::cairo_surface_t;
-            }
-
-            let mut error = ptr::null_mut();
-
-            let raw_surface = unsafe {
-                rsvg_cairo_surface_new_from_href(
-                    self.handle.get(),
-                    href.to_glib_none().0,
-                    &mut error,
-                )
-            };
-            if !raw_surface.is_null() {
-                unsafe { cairo::ImageSurface::from_raw_full(raw_surface).unwrap() }
-            } else {
-                // TODO: pass the error through?
-                let _: glib::Error = unsafe { from_glib_full(error) };
-                return Err(FilterError::InvalidInput);
-            }
-        };
+        // FIXME: translate the error better here
+        let surface = handle::image_surface_new_from_href(self.handle.get() as *mut _, href)
+            .map_err(|_| FilterError::InvalidInput)?;
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,

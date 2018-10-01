@@ -94,7 +94,8 @@ impl NodeTrait for Turbulence {
                                 f64::from(i32::min_value()),
                                 f64::from(i32::max_value()),
                             ) as i32
-                        }).map_err(|err| NodeError::attribute_error(attr, err))?,
+                        })
+                        .map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
                 Attribute::StitchTiles => self.stitch_tiles.set(StitchTiles::parse(attr, value)?),
                 Attribute::Type => self.type_.set(NoiseType::parse(attr, value)?),
@@ -398,7 +399,8 @@ impl Filter for Turbulence {
                         g: generate(1),
                         b: generate(2),
                         a: generate(3),
-                    }.premultiply();
+                    }
+                    .premultiply();
 
                     output_data.set_pixel(output_stride, pixel, x as u32, y as u32);
                 }
