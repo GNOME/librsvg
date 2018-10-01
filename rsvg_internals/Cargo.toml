@@ -63,6 +63,9 @@ version = "0.6"
 #git = "https://github.com/gtk-rs/sys"
 #branch = "master"
 
+[dependencies.gdk-pixbuf]
+version = "0.4"
+
 [dev-dependencies]
 criterion = "0.2"
 

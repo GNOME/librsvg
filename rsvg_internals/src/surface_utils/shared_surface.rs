@@ -6,6 +6,7 @@ use std::ptr::NonNull;
 use cairo::prelude::SurfaceExt;
 use cairo::{self, ImageSurface};
 use cairo_sys;
+use gdk_pixbuf::{Colorspace, Pixbuf, PixbufExt};
 use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
 use rayon;
@@ -164,6 +165,73 @@ impl SharedImageSurface {
 
             self.copy_surface(bounds)
         }
+    }
+
+    pub fn from_pixbuf(pixbuf: &Pixbuf) -> Result<SharedImageSurface, cairo::Status> {
+        assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
+
+        let n_channels = pixbuf.get_n_channels();
+        assert!(n_channels == 3 || n_channels == 4);
+        let has_alpha = n_channels == 4;
+
+        let width = pixbuf.get_width();
+        assert!(width > 0);
+
+        let height = pixbuf.get_height();
+        assert!(height > 0);
+
+        let pixbuf_stride = pixbuf.get_rowstride();
+        assert!(pixbuf_stride > 0);
+        let pixbuf_stride = pixbuf_stride as usize;
+
+        let pixbuf_data = unsafe { pixbuf.get_pixels() };
+
+        let mut surf = ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+
+        let width = width as usize;
+        let height = height as usize;
+
+        {
+            let surf_stride = surf.get_stride() as usize;
+
+            let mut surf_data = surf.get_data().unwrap();
+
+            if has_alpha {
+                for y in 0..height {
+                    for x in 0..width {
+                        let ofs = pixbuf_stride * y + 4 * x;
+
+                        let pixel = Pixel {
+                            r: pixbuf_data[ofs],
+                            g: pixbuf_data[ofs + 1],
+                            b: pixbuf_data[ofs + 2],
+                            a: pixbuf_data[ofs + 3],
+                        };
+
+                        let pixel = pixel.premultiply();
+
+                        surf_data.set_pixel(surf_stride, pixel, x as u32, y as u32);
+                    }
+                }
+            } else {
+                for y in 0..height {
+                    for x in 0..width {
+                        let ofs = pixbuf_stride * y + 3 * x;
+
+                        let pixel = Pixel {
+                            r: pixbuf_data[ofs],
+                            g: pixbuf_data[ofs + 1],
+                            b: pixbuf_data[ofs + 2],
+                            a: 0xff,
+                        };
+
+                        surf_data.set_pixel(surf_stride, pixel, x as u32, y as u32);
+                    }
+                }
+            }
+        }
+
+        Self::new(surf, SurfaceType::SRgb)
     }
 
     /// Returns the surface width.
