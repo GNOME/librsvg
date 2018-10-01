@@ -53,7 +53,8 @@ impl Parse for SpreadMethod {
                         cow.as_ref().to_string(),
                     ))),
                 ),
-            }).map_err(|_| {
+            })
+            .map_err(|_| {
                 ValueErrorKind::Parse(ParseError::new("expected 'pad' | 'reflect' | 'repeat'"))
             })
     }
@@ -379,7 +380,8 @@ impl Gradient {
                 }
 
                 !in_error
-            }).for_each(|child| {
+            })
+            .for_each(|child| {
                 child.with_impl(|stop: &NodeStop| {
                     let cascaded = child.get_cascaded_values();
                     let values = cascaded.get();
@@ -444,7 +446,8 @@ fn resolve_gradient(gradient: &Gradient, draw_ctx: &mut DrawingCtx<'_>) -> Gradi
                     result.resolve_from_fallback(&fallback_grad)
                 });
                 Some(())
-            }).or_else(|| {
+            })
+            .or_else(|| {
                 result.resolve_from_defaults();
                 Some(())
             });

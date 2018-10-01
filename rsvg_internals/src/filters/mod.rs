@@ -126,7 +126,8 @@ impl NodeTrait for Primitive {
                 } else {
                     None
                 }
-            }).unwrap_or(CoordUnits::UserSpaceOnUse);
+            })
+            .unwrap_or(CoordUnits::UserSpaceOnUse);
 
         let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
         let check_units = |length: Length| {
@@ -292,7 +293,8 @@ pub fn render(
             };
 
             (c, linear_rgb)
-        }).filter_map(|(c, linear_rgb)| {
+        })
+        .filter_map(|(c, linear_rgb)| {
             let rr = RcRef::new(c)
                 .try_map(|c| {
                     // Go through the filter primitives and see if the node is one of them.
@@ -333,7 +335,8 @@ pub fn render(
                         turbulence::Turbulence,
                     );
                     filter.ok_or(())
-                }).ok();
+                })
+                .ok();
 
             rr.map(|rr| (rr, linear_rgb))
         });

@@ -260,7 +260,8 @@ impl NodeTrait for NodeUse {
                         value,
                         LengthDir::Horizontal,
                         Length::check_nonnegative,
-                    ).map(Some)?,
+                    )
+                    .map(Some)?,
                 ),
                 Attribute::Height => self.h.set(
                     parse_and_validate(
@@ -268,7 +269,8 @@ impl NodeTrait for NodeUse {
                         value,
                         LengthDir::Vertical,
                         Length::check_nonnegative,
-                    ).map(Some)?,
+                    )
+                    .map(Some)?,
                 ),
 
                 _ => (),

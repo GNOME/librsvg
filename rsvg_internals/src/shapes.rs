@@ -347,7 +347,8 @@ impl NodeTrait for NodeRect {
                         value,
                         LengthDir::Horizontal,
                         Length::check_nonnegative,
-                    ).map(Some)?,
+                    )
+                    .map(Some)?,
                 ),
                 Attribute::Ry => self.ry.set(
                     parse_and_validate("ry", value, LengthDir::Vertical, Length::check_nonnegative)

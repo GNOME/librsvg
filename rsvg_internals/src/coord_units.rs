@@ -32,7 +32,8 @@ impl Parse for CoordUnits {
                         cow.as_ref().to_string(),
                     ))),
                 ),
-            }).map_err(|_| {
+            })
+            .map_err(|_| {
                 ValueErrorKind::Parse(ParseError::new(
                     "expected 'userSpaceOnUse' or 'objectBoundingBox'",
                 ))
