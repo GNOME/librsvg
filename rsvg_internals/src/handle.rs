@@ -85,7 +85,14 @@ pub fn acquire_data(handle: *mut RsvgHandle, url: &str) -> Result<BinaryData, gl
         );
 
         if buf.is_null() {
-            Err(from_glib_full(error))
+            if error.is_null() && len == 0 {
+                Ok(BinaryData {
+                    data: Vec::new(),
+                    content_type: None,
+                })
+            } else {
+                Err(from_glib_full(error))
+            }
         } else {
             Ok(BinaryData {
                 data: FromGlibContainer::from_glib_full_num(buf as *mut u8, len),
