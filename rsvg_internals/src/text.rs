@@ -541,7 +541,8 @@ fn create_pango_layout(
     attr_list.insert(
         pango::Attribute::new_letter_spacing(to_pango_units(
             values.letter_spacing.0.normalize(values, &params),
-        )).unwrap(),
+        ))
+        .unwrap(),
     );
 
     if values.text_decoration.underline {

@@ -196,7 +196,8 @@ mod tests {
         let surface = SharedImageSurface::new(
             ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap(),
             SurfaceType::SRgb,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Full image.
         let bounds = IRect {
@@ -273,7 +274,8 @@ mod tests {
         let surface = SharedImageSurface::new(
             ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap(),
             SurfaceType::SRgb,
-        ).unwrap();
+        )
+        .unwrap();
 
         let bounds = IRect {
             x0: 0,

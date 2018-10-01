@@ -75,7 +75,8 @@ impl Image {
                 &surface,
                 f64::from(ctx.source_graphic().width()),
                 f64::from(ctx.source_graphic().height()),
-            ).map_err(|e| {
+            )
+            .map_err(|e| {
                 if let RenderingError::Cairo(status) = e {
                     FilterError::CairoError(status)
                 } else {
