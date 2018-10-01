@@ -100,6 +100,20 @@ impl From<cairo::Status> for RenderingError {
     }
 }
 
+#[derive(Clone)]
+pub enum LoadingError {
+    Cairo(cairo::Status),
+    EmptyData,
+}
+
+impl From<cairo::Status> for LoadingError {
+    fn from(e: cairo::Status) -> LoadingError {
+        assert!(e != cairo::Status::Success);
+
+        LoadingError::Cairo(e)
+    }
+}
+
 #[cfg(test)]
 pub fn is_parse_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
     match *r {
