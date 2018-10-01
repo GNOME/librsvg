@@ -3,6 +3,7 @@ use std::fmt;
 
 use cairo;
 use cssparser::BasicParseError;
+use glib;
 
 use attributes::Attribute;
 use parsers::ParseError;
@@ -104,6 +105,8 @@ impl From<cairo::Status> for RenderingError {
 pub enum LoadingError {
     Cairo(cairo::Status),
     EmptyData,
+    Glib(glib::Error),
+    Unknown,
 }
 
 impl From<cairo::Status> for LoadingError {
@@ -111,6 +114,12 @@ impl From<cairo::Status> for LoadingError {
         assert!(e != cairo::Status::Success);
 
         LoadingError::Cairo(e)
+    }
+}
+
+impl From<glib::Error> for LoadingError {
+    fn from(e: glib::Error) -> LoadingError {
+        LoadingError::Glib(e)
     }
 }
 
