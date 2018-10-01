@@ -256,8 +256,6 @@ G_GNUC_INTERNAL
 gboolean rsvg_cond_check_system_language (const char *value);
 
 G_GNUC_INTERNAL
-cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
-G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
