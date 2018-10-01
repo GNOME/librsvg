@@ -1731,9 +1731,19 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
     GdkPixbuf *pixbuf = NULL;
     cairo_surface_t *surface = NULL;
 
+    g_assert (error != NULL && *error == NULL);
+
     data = _rsvg_handle_acquire_data (handle, href, &mime_type, &data_len, error);
-    if (data == NULL)
+    if (data == NULL) {
+        if (*error == NULL && data_len == 0) {
+            g_set_error (error,
+                         RSVG_ERROR,
+                         RSVG_ERROR_FAILED,
+                         "empty image data");
+        }
+
         return NULL;
+    }
 
     if (mime_type) {
         loader = gdk_pixbuf_loader_new_with_mime_type (mime_type, error);
