@@ -174,24 +174,33 @@ impl NodeTrait for ConvolveMatrix {
             self.kernel_matrix.replace(Some({
                 let number_of_elements = self.order.get().0 as usize * self.order.get().1 as usize;
 
+                // #352: Parse as an unbounded list rather than exact length to prevent aborts due
+                //       to huge allocation attempts by underlying Vec::with_capacity().
+                let elements = parsers::number_list_from_str(value, ListLength::Unbounded)
+                    .map_err(|err| {
+                        NodeError::parse_error(
+                            attr,
+                            match err {
+                                NumberListError::IncorrectNumberOfElements => unreachable!(),
+                                NumberListError::Parse(err) => err,
+                            },
+                        )
+                    })?;
+
+                if elements.len() != number_of_elements {
+                    return Err(NodeError::value_error(
+                        attr,
+                        &format!(
+                            "incorrect number of elements: expected {}",
+                            number_of_elements
+                        ),
+                    ));
+                }
+
                 DMatrix::from_data(MatrixVec::new(
                     Dynamic::new(self.order.get().1 as usize),
                     Dynamic::new(self.order.get().0 as usize),
-                    parsers::number_list_from_str(value, ListLength::Exact(number_of_elements))
-                        .map_err(|err| {
-                            NodeError::parse_error(
-                                attr,
-                                match err {
-                                    NumberListError::IncorrectNumberOfElements => {
-                                        ParseError::new(format!(
-                                            "incorrect number of elements: expected {}",
-                                            number_of_elements
-                                        ))
-                                    }
-                                    NumberListError::Parse(err) => err,
-                                },
-                            )
-                        })?,
+                    elements,
                 ))
             }));
         }
