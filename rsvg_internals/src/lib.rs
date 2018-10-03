@@ -30,7 +30,6 @@ pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use css::{
     rsvg_css_parse_into_handle,
-    rsvg_css_styles_define,
     rsvg_css_styles_free,
     rsvg_css_styles_new,
 };
