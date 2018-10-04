@@ -1,8 +1,14 @@
-use error::*;
-use std::marker::PhantomData;
-
 #[allow(unused_imports, deprecated)]
 use std::ascii::AsciiExt;
+
+use std::str::FromStr;
+
+use itertools::{FoldWhile, Itertools};
+use language_tags::LanguageTag;
+use locale_config::Locale;
+
+use error::*;
+use parsers::ParseError;
 
 // No extensions at the moment.
 static IMPLEMENTED_EXTENSIONS: &[&str] = &[];
@@ -61,35 +67,65 @@ impl RequiredFeatures {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct SystemLanguage<'a>(pub bool, pub PhantomData<&'a i8>);
+pub struct SystemLanguage(pub bool);
 
-impl<'a> SystemLanguage<'a> {
-    // Parse a systemLanguage attribute
-    // http://www.w3.org/TR/SVG/struct.html#SystemLanguageAttribute
-    pub fn from_attribute(
-        s: &str,
-        system_languages: &[String],
-    ) -> Result<SystemLanguage<'a>, ValueErrorKind> {
-        Ok(SystemLanguage(
-            s.split(',')
-                .map(|s| s.trim())
-                .filter(|s| !s.is_empty())
-                .any(|l| {
-                    system_languages.iter().any(|sl| {
-                        if sl.eq_ignore_ascii_case(l) {
-                            return true;
+impl SystemLanguage {
+    /// Parse a `systemLanguage` attribute and match it against a given `Locale`
+    ///
+    /// The [`systemLanguage`] conditional attribute is a
+    /// comma-separated list of [BCP47] Language Tags.  This function
+    /// parses the attribute and matches the result against a given
+    /// `locale`.  If there is a match, i.e. if the given locale
+    /// supports one of the languages listed in the `systemLanguage`
+    /// attribute, then the `SystemLanguage.0` will be `true`;
+    /// otherwise it will be `false`.
+    ///
+    /// Normally, calling code will pass `&Locale::current()` for the
+    /// `locale` attribute; this is the user's current locale.
+    ///
+    /// [`systemLanguage`]: https://www.w3.org/TR/SVG/struct.html#ConditionalProcessingSystemLanguageAttribute
+    /// [BCP47]: http://www.ietf.org/rfc/bcp/bcp47.txt
+    pub fn from_attribute(s: &str, locale: &Locale) -> Result<SystemLanguage, ValueErrorKind> {
+        s.split(',')
+            .map(LanguageTag::from_str)
+            .fold_while(
+                // start with no match
+                Ok(SystemLanguage(false)),
+                // The accumulator is Result<SystemLanguage, ValueErrorKind>
+                |acc, tag_result| {
+                    if let Ok(language_tag) = tag_result {
+                        let have_match = acc.unwrap().0;
+                        if have_match {
+                            FoldWhile::Continue(Ok(SystemLanguage(have_match)))
+                        } else {
+                            locale_accepts_language_tag(locale, &language_tag)
+                                .map(|matches| FoldWhile::Continue(Ok(SystemLanguage(matches))))
+                                .unwrap_or_else(|e| FoldWhile::Done(Err(e)))
                         }
-
-                        if let Some(offset) = l.find('-') {
-                            return sl.eq_ignore_ascii_case(&l[..offset]);
-                        }
-
-                        false
-                    })
-                }),
-            PhantomData,
-        ))
+                    } else {
+                        FoldWhile::Done(Err(ValueErrorKind::Parse(ParseError::new(
+                            "invalid language tag",
+                        ))))
+                    }
+                },
+            )
+            .into_inner()
     }
+}
+
+fn locale_accepts_language_tag(
+    locale: &Locale,
+    language_tag: &LanguageTag,
+) -> Result<bool, ValueErrorKind> {
+    for locale_range in locale.tags_for("messages") {
+        let locale_tag = LanguageTag::from_str(locale_range.as_ref())
+            .map_err(|_| ValueErrorKind::Parse(ParseError::new("invalid language tag in locale")))?;
+        if locale_tag.matches(language_tag) {
+            return Ok(true);
+        }
+    }
+
+    Ok(false)
 }
 
 #[cfg(test)]
@@ -135,41 +171,50 @@ mod tests {
 
     #[test]
     fn system_language() {
-        let system_languages = vec![String::from("de"), String::from("en_US")];
+        let user_prefers = Locale::new("de,en-US").unwrap();
+
+        assert!(SystemLanguage::from_attribute("", &user_prefers).is_err());
+
+        assert!(SystemLanguage::from_attribute("12345", &user_prefers).is_err());
 
         assert_eq!(
-            SystemLanguage::from_attribute("", &system_languages),
-            Ok(SystemLanguage(false, PhantomData))
+            SystemLanguage::from_attribute("fr", &user_prefers),
+            Ok(SystemLanguage(false))
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("fr", &system_languages),
-            Ok(SystemLanguage(false, PhantomData))
+            SystemLanguage::from_attribute("en", &user_prefers),
+            Ok(SystemLanguage(false))
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("de", &system_languages),
-            Ok(SystemLanguage(true, PhantomData))
+            SystemLanguage::from_attribute("de", &user_prefers),
+            Ok(SystemLanguage(true))
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("en_US", &system_languages),
-            Ok(SystemLanguage(true, PhantomData))
+            SystemLanguage::from_attribute("en-US", &user_prefers),
+            Ok(SystemLanguage(true))
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("DE", &system_languages),
-            Ok(SystemLanguage(true, PhantomData))
+            SystemLanguage::from_attribute("en-GB", &user_prefers),
+            Ok(SystemLanguage(false))
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("de-LU", &system_languages),
-            Ok(SystemLanguage(true, PhantomData))
+            SystemLanguage::from_attribute("DE", &user_prefers),
+            Ok(SystemLanguage(true))
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("fr, de", &system_languages),
-            Ok(SystemLanguage(true, PhantomData))
+            SystemLanguage::from_attribute("de-LU", &user_prefers),
+            Ok(SystemLanguage(true))
+        );
+
+        assert_eq!(
+            SystemLanguage::from_attribute("fr, de", &user_prefers),
+            Ok(SystemLanguage(true))
         );
     }
 }

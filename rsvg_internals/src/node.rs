@@ -1,8 +1,8 @@
 use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
-use glib;
 use glib::translate::*;
 use glib_sys;
+use locale_config::Locale;
 use std::cell::{Cell, Ref, RefCell};
 use std::ptr;
 use std::rc::{Rc, Weak};
@@ -390,8 +390,8 @@ impl Node {
                     }
 
                     Attribute::SystemLanguage if cond => {
-                        cond = SystemLanguage::from_attribute(value, &glib::get_language_names())
-                            .map(|SystemLanguage(res, _)| res)?;
+                        cond = SystemLanguage::from_attribute(value, &Locale::current())
+                            .map(|SystemLanguage(res)| res)?;
                     }
 
                     _ => {}
