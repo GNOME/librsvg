@@ -1,6 +1,5 @@
 use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
-use glib;
 use glib::translate::*;
 use glib_sys;
 use std::cell::{Cell, Ref, RefCell};
@@ -8,7 +7,7 @@ use std::ptr;
 use std::rc::{Rc, Weak};
 
 use attributes::Attribute;
-use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
+use cond::{locale_from_environment, RequiredExtensions, RequiredFeatures, SystemLanguage};
 use drawing_ctx::DrawingCtx;
 use error::*;
 use handle::{self, RsvgHandle};
@@ -390,8 +389,11 @@ impl Node {
                     }
 
                     Attribute::SystemLanguage if cond => {
-                        cond = SystemLanguage::from_attribute(value, &glib::get_language_names())
-                            .map(|SystemLanguage(res, _)| res)?;
+                        cond = SystemLanguage::from_attribute(
+                            value,
+                            &(locale_from_environment().map_err(|e| ValueErrorKind::Value(e))?),
+                        )
+                        .map(|SystemLanguage(res)| res)?;
                     }
 
                     _ => {}
