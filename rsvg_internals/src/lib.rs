@@ -10,7 +10,9 @@ extern crate gdk_pixbuf;
 extern crate glib;
 extern crate glib_sys;
 extern crate itertools;
+extern crate language_tags;
 extern crate libc;
+extern crate locale_config;
 extern crate nalgebra;
 extern crate num_traits;
 extern crate owning_ref;
@@ -28,11 +30,7 @@ extern crate downcast_rs;
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
-pub use css::{
-    rsvg_css_parse_into_handle,
-    rsvg_css_styles_free,
-    rsvg_css_styles_new,
-};
+pub use css::{rsvg_css_parse_into_handle, rsvg_css_styles_free, rsvg_css_styles_new};
 
 pub use defs::{rsvg_defs_free, rsvg_defs_lookup, rsvg_defs_new};
 
