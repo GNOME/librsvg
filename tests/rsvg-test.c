@@ -380,7 +380,7 @@ main (int argc, char **argv)
     int result;
 
     /* For systemLanguage attribute tests */
-    g_setenv ("LANGUAGE", "de:en_US:en", TRUE);
+    g_setenv ("LC_ALL", "de:en_US:en", TRUE);
 
     g_test_init (&argc, &argv, NULL);
 
