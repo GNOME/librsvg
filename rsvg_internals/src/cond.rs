@@ -118,8 +118,16 @@ fn locale_accepts_language_tag(
     language_tag: &LanguageTag,
 ) -> Result<bool, ValueErrorKind> {
     for locale_range in locale.tags_for("messages") {
-        let locale_tag = LanguageTag::from_str(locale_range.as_ref())
-            .map_err(|_| ValueErrorKind::Parse(ParseError::new("invalid language tag in locale")))?;
+        let locale_tag = LanguageTag::from_str(locale_range.as_ref()).map_err(|_| {
+            ValueErrorKind::Parse(ParseError::new("invalid language tag in locale"))
+        })?;
+
+        if !locale_tag.is_language_range() {
+            return Err(ValueErrorKind::Value(
+                "locale is not a language range".to_string(),
+            ));
+        }
+
         if locale_tag.matches(language_tag) {
             return Ok(true);
         }
