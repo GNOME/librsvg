@@ -1,3 +1,5 @@
+use encoding::label::encoding_from_whatwg_label;
+use encoding::DecoderTrap;
 use libc;
 use std;
 use std::cell::RefCell;
@@ -59,13 +61,22 @@ impl XmlHandler for NodeCreationContext {
         name: &str,
         pbag: &PropertyBag,
     ) -> Box<XmlHandler> {
-        if name == "style" {
-            let ctx = StyleContext::empty();
-            ctx.start_element(Some(self), parent, handle, name, pbag)
-        } else {
-            let node = self.create_node(parent, handle, name, pbag);
+        match name {
+            "include" => {
+                let ctx = XIncludeContext::empty();
+                ctx.start_element(Some(self), parent, handle, name, pbag)
+            }
 
-            Box::new(NodeCreationContext { node: Some(node) })
+            "style" => {
+                let ctx = StyleContext::empty();
+                ctx.start_element(Some(self), parent, handle, name, pbag)
+            }
+
+            _ => {
+                let node = self.create_node(parent, handle, name, pbag);
+
+                Box::new(NodeCreationContext { node: Some(node) })
+            }
         }
     }
 
@@ -215,6 +226,108 @@ impl StyleContext {
     }
 }
 
+struct XIncludeContext {
+    needs_fallback: bool,
+}
+
+impl XmlHandler for XIncludeContext {
+    fn start_element(
+        &self,
+        _previous_handler: Option<&XmlHandler>,
+        _parent: Option<&Rc<Node>>,
+        handle: *mut RsvgHandle,
+        _name: &str,
+        pbag: &PropertyBag,
+    ) -> Box<XmlHandler> {
+        let mut href = None;
+        let mut parse = None;
+        let mut encoding = None;
+
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Href => href = Some(value),
+                Attribute::Parse => parse = Some(value),
+                Attribute::Encoding => encoding = Some(value),
+                _ => (),
+            }
+        }
+
+        self.acquire(handle, href, parse, encoding);
+
+        unimplemented!("finish start_xinclude() here");
+
+        Box::new(XIncludeContext::empty())
+    }
+
+    fn end_element(&self, handle: *mut RsvgHandle, _name: &str) -> Option<Rc<Node>> {
+        unimplemented!();
+    }
+
+    fn characters(&self, text: &str) {
+        unimplemented!();
+    }
+}
+
+impl XIncludeContext {
+    fn empty() -> XIncludeContext {
+        XIncludeContext {
+            needs_fallback: true,
+        }
+    }
+
+    fn acquire(
+        &self,
+        handle: *mut RsvgHandle,
+        href: Option<&str>,
+        parse: Option<&str>,
+        encoding: Option<&str>,
+    ) {
+        if let Some(href) = href {
+            if parse == Some("text") {
+                self.acquire_text(handle, href, encoding);
+            } else {
+                unimplemented!("finish the xml case here");
+            }
+        }
+    }
+
+    fn acquire_text(&self, handle: *mut RsvgHandle, href: &str, encoding: Option<&str>) {
+        let binary = match handle::acquire_data(handle, href) {
+            Ok(b) => b,
+            Err(e) => {
+                rsvg_log!("could not acquire \"{}\": {}", href, e);
+                return;
+            }
+        };
+
+        let encoding = encoding.unwrap_or("utf-8");
+
+        let encoder = match encoding_from_whatwg_label(encoding) {
+            Some(enc) => enc,
+            None => {
+                rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, href);
+                return;
+            }
+        };
+
+        let utf8_data = match encoder.decode(&binary.data, DecoderTrap::Strict) {
+            Ok(data) => data,
+
+            Err(e) => {
+                rsvg_log!(
+                    "could not convert contents of \"{}\" from character encoding \"{}\": {}",
+                    href,
+                    encoding,
+                    e
+                );
+                return;
+            }
+        };
+
+        unimplemented!("rsvg_xml_state_characters(utf8_data)");
+    }
+}
+
 /// A concrete parsing context for a surrounding `element_name` and its XML event handlers
 struct Context {
     element_name: String,
@@ -264,8 +377,13 @@ impl XmlState {
 
     pub fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag) {
         let next_context = if let Some(top) = self.context_stack.last() {
-            top.handler
-                .start_element(Some(&*top.handler), top.handler.get_node().as_ref(), handle, name, pbag)
+            top.handler.start_element(
+                Some(&*top.handler),
+                top.handler.get_node().as_ref(),
+                handle,
+                name,
+                pbag,
+            )
         } else {
             let default_context = NodeCreationContext::empty();
 
