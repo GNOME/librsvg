@@ -28,6 +28,7 @@ trait XmlHandler {
     /// Called when the XML parser sees the beginning of an element
     fn start_element(
         &self,
+        previous_handler: Option<&XmlHandler>,
         parent: Option<&Rc<Node>>,
         handle: *mut RsvgHandle,
         name: &str,
@@ -52,6 +53,7 @@ struct NodeCreationContext {
 impl XmlHandler for NodeCreationContext {
     fn start_element(
         &self,
+        _previous_handler: Option<&XmlHandler>,
         parent: Option<&Rc<Node>>,
         handle: *mut RsvgHandle,
         name: &str,
@@ -59,7 +61,7 @@ impl XmlHandler for NodeCreationContext {
     ) -> Box<XmlHandler> {
         if name == "style" {
             let ctx = StyleContext::empty();
-            StyleContext::start_element(&ctx, parent, handle, name, pbag)
+            ctx.start_element(Some(self), parent, handle, name, pbag)
         } else {
             let node = self.create_node(parent, handle, name, pbag);
 
@@ -158,6 +160,7 @@ struct StyleContext {
 impl XmlHandler for StyleContext {
     fn start_element(
         &self,
+        _previous_handler: Option<&XmlHandler>,
         _parent: Option<&Rc<Node>>,
         _handle: *mut RsvgHandle,
         _name: &str,
@@ -262,11 +265,11 @@ impl XmlState {
     pub fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag) {
         let next_context = if let Some(top) = self.context_stack.last() {
             top.handler
-                .start_element(top.handler.get_node().as_ref(), handle, name, pbag)
+                .start_element(Some(&*top.handler), top.handler.get_node().as_ref(), handle, name, pbag)
         } else {
             let default_context = NodeCreationContext::empty();
 
-            default_context.start_element(None, handle, name, pbag)
+            default_context.start_element(None, None, handle, name, pbag)
         };
 
         let context = Context {
