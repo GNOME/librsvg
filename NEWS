@@ -1,3 +1,11 @@
+Version 2.44.7
+- Fix #256 - Correctly match the systemLanguage attribute with the
+  user's locale.
+- Fix #320 - Parse xml:lang correctly.
+- Fix #349 - Don't panic if we get a "data:" URI with empty data.
+- Fix #352 - Don't panic on getting a very large "order" for
+  feConvolveMatrix (Ivan Molodetskikh).
+
 Version 2.44.6
 - Fix 32-bit builds (Jordan Petridis).
 
