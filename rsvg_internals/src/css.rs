@@ -7,7 +7,7 @@ use std::str::{self, FromStr};
 use libc;
 
 use glib::translate::*;
-use glib_sys::{self, gboolean, gpointer, GList};
+use glib_sys::{gboolean, gpointer, GList};
 
 use attributes::Attribute;
 use croco::*;
@@ -235,27 +235,6 @@ pub unsafe extern "C" fn rsvg_css_styles_free(raw_styles: *mut RsvgCssStyles) {
     assert!(!raw_styles.is_null());
 
     Box::from_raw(raw_styles as *mut CssStyles);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_css_styles_define(
-    raw_styles: *mut RsvgCssStyles,
-    selector: *const libc::c_char,
-    prop_name: *const libc::c_char,
-    prop_value: *const libc::c_char,
-    important: glib_sys::gboolean,
-) {
-    assert!(!raw_styles.is_null());
-    assert!(!selector.is_null());
-    assert!(!prop_name.is_null());
-    assert!(!prop_value.is_null());
-
-    let styles = unsafe { &mut *(raw_styles as *mut CssStyles) };
-    let selector = unsafe { utf8_cstr(selector) };
-    let prop_name = unsafe { utf8_cstr(prop_name) };
-    let prop_value = unsafe { utf8_cstr(prop_value) };
-
-    styles.define(selector, prop_name, prop_value, from_glib(important));
 }
 
 #[no_mangle]

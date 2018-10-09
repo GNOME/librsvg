@@ -200,14 +200,6 @@ void rsvg_css_styles_free (RsvgCssStyles *styles);
 
 /* Implemented in rsvg_internals/src/css.rs */
 G_GNUC_INTERNAL
-void rsvg_css_styles_define (RsvgCssStyles *styles,
-                             const char *selector,
-                             const char *style_name,
-                             const char *style_value,
-                             gboolean important);
-
-/* Implemented in rsvg_internals/src/css.rs */
-G_GNUC_INTERNAL
 void rsvg_css_parse_into_handle (RsvgHandle *handle,
                                  const char *buf,
                                  gsize len);
