@@ -73,20 +73,6 @@ impl Parse for f64 {
     }
 }
 
-impl Parse for String {
-    type Data = ();
-    type Err = ValueErrorKind;
-
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<String, ValueErrorKind> {
-        Ok(String::from(
-            parser
-                .expect_string()
-                .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected string")))?
-                .as_ref(),
-        ))
-    }
-}
-
 /// Parses a `value` string into a type `T`.
 ///
 /// Some value types need some extra `data` to be parsed.  This

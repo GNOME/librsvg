@@ -146,6 +146,23 @@ macro_rules! make_property {
 
     ($computed_values_type: ty,
      $name: ident,
+     default: $default: expr,
+     inherits_automatically: $inherits_automatically: expr,
+     newtype: $type: ty,
+     parse_impl: { $parse: item },
+     parse_data_type: $parse_data_type: ty
+    ) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct $name(pub $type);
+
+        impl_default!($name, $name($default));
+        impl_property!($computed_values_type, $name, $inherits_automatically);
+
+        $parse
+    };
+
+    ($computed_values_type: ty,
+     $name: ident,
      inherits_automatically: $inherits_automatically: expr,
      fields: {
        $($field_name: ident : $field_type: ty, default: $field_default : expr,)+
