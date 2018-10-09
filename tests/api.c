@@ -15,8 +15,6 @@ rsvg_handle_get_base_uri
 rsvg_handle_set_base_uri
 rsvg_handle_set_size_callback
 rsvg_handle_internal_set_testing
-rsvg_handle_render_cairo
-rsvg_handle_render_cairo_sub
 rsvg_handle_set_base_gfile
 rsvg_handle_get_title
 rsvg_handle_get_desc
@@ -495,6 +493,17 @@ detects_cairo_context_in_error (void)
     g_test_trap_assert_stderr ("*WARNING*cannot render on a cairo_t with a failure status*");
 }
 
+static gboolean
+matrixes_are_equal (cairo_matrix_t *a, cairo_matrix_t *b)
+{
+    return (a->xx == b->xx &&
+            a->yx == b->yx &&
+            a->xy == b->xy &&
+            a->yy == b->yy &&
+            a->x0 == b->x0 &&
+            a->y0 == b->y0);
+}
+
 static void
 can_draw_to_non_image_surface (void)
 {
@@ -520,10 +529,52 @@ can_draw_to_non_image_surface (void)
     surface = cairo_recording_surface_create (CAIRO_CONTENT_COLOR_ALPHA, &rect);
     cr = cairo_create (surface);
 
+    cairo_translate (cr, 42.0, 42.0);
+
+    cairo_matrix_t original_affine;
+    cairo_get_matrix (cr, &original_affine);
+
     g_assert (rsvg_handle_render_cairo (handle, cr));
+
+    cairo_matrix_t new_affine;
+    cairo_get_matrix (cr, &new_affine);
+
+    g_assert (matrixes_are_equal (&original_affine, &new_affine));
 
     g_object_unref (handle);
 
+    cairo_destroy (cr);
+}
+
+/* Test that we preserve the affine transformation in the cr during a call
+ * to rsvg_handle_render_cairo_sub().
+ */
+static void
+render_cairo_sub (void)
+{
+    char *filename = get_test_filename ("334-element-positions.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 200, 200);
+    cairo_t *cr = cairo_create (surf);
+
+    cairo_translate (cr, 42.0, 42.0);
+
+    cairo_matrix_t original_affine;
+    cairo_get_matrix (cr, &original_affine);
+
+    g_assert (rsvg_handle_render_cairo_sub (handle, cr, "#button5-leader"));
+
+    cairo_matrix_t new_affine;
+    cairo_get_matrix (cr, &new_affine);
+
+    g_assert (matrixes_are_equal (&original_affine, &new_affine));
+
+    g_object_unref (handle);
     cairo_destroy (cr);
 }
 
@@ -555,6 +606,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
     g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
+    g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
 
     return g_test_run ();
 }
