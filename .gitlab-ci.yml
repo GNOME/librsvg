@@ -68,6 +68,8 @@ stages:
 
 .rustc_template: &rustc
     stage: rustc
+    before_script:
+      - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
     <<: *test
 
 # Jobs that are marked with stage_1 will be run on every commit, across every
@@ -203,21 +205,21 @@ fedora:test_release:
 # STAGE 3 RUSTC TESTS
 #######################################################################
 
-.rustc 1.26 1:
+rustc 1.26 1:
   image: $RUSTC_1_26
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *rustc
   <<: *stage_3
 
-.rustc 1.27 2:
+rustc 1.27 2:
   image: $RUSTC_1_27
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *rustc
   <<: *stage_3
 
-.rustc 1.28 3:
+rustc 1.28 3:
   image: $RUSTC_1_28
   variables:
     LIBRSVG_DEBUG: "yes"
