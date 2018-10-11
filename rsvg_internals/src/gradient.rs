@@ -708,6 +708,7 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use float_eq_cairo::ApproxEqCairo;
 
     #[test]
     fn parses_spread_method() {
@@ -723,16 +724,21 @@ mod tests {
         assert!(SpreadMethod::parse_str("foobar", ()).is_err());
     }
 
+    fn assert_tuples_equal(a: &(f64, f64), b: &(f64, f64)) {
+        assert_approx_eq_cairo!(a.0, b.0);
+        assert_approx_eq_cairo!(a.1, b.1);
+    }
+
     #[test]
     fn fixes_focus_point() {
         // inside the circle
-        assert_eq!(fix_focus_point(1.0, 1.0, 2.0, 1.0, 3.0), (1.0, 1.0));
+        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 2.0, 1.0, 3.0), &(1.0, 1.0));
 
         // on the edge
-        assert_eq!(fix_focus_point(1.0, 1.0, 2.0, 1.0, 2.0), (1.0, 1.0));
+        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 2.0, 1.0, 2.0), &(1.0, 1.0));
 
         // outside the circle
-        assert_eq!(fix_focus_point(1.0, 1.0, 3.0, 1.0, 1.0), (2.0, 1.0));
+        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 3.0, 1.0, 1.0), &(2.0, 1.0));
     }
 
     #[test]
