@@ -27,7 +27,7 @@ stages:
   - cross_distro
 
 .test_template: &test
-  before_script:
+  script:
     # CCache Config
     - mkdir -p ccache
     - mkdir -p .cargo_cache
@@ -38,14 +38,13 @@ stages:
     # Only stuff inside the repo directory can be cached
     # Override the CARGO_HOME variable to force it location
     - export CARGO_HOME="${PWD}/.cargo_cache"
-  script:
+
     - rustc --version && cargo --version
-    - |
-      mkdir -p _build
-      cd _build
-      ../autogen.sh --enable-gtk-doc --enable-vala
-      make
-      make check
+    - mkdir -p _build
+    - cd _build
+    - ../autogen.sh --enable-gtk-doc --enable-vala
+    - make
+    - make check
 
   artifacts:
     when: on_failure
