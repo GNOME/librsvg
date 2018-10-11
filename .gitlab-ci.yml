@@ -168,17 +168,21 @@ opensuse:tumbleweed:
   <<: *distro_test
   <<: *stage_2
 
-.debian:testing:
+debian:testing:
   image: $AMD64_DEBIAN_TESTING
   variables:
     LIBRSVG_DEBUG: "yes"
+  before_script:
+    - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
   <<: *distro_test
   <<: *stage_2
 
-.debian_i386:testing:
+debian_i386:testing:
   image: $I386_DEBIAN_TESTING
   variables:
     LIBRSVG_DEBUG: "yes"
+  before_script:
+    - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
   <<: *distro_test
   <<: *stage_2
 
@@ -193,10 +197,12 @@ fedora:test_release:
   <<: *distro_test
   <<: *stage_3
 
-.debian:testing_release_i386:
+debian:testing_release_i386:
   image: $I386_DEBIAN_TESTING
   variables:
     LIBRSVG_DEBUG: "no"
+  before_script:
+    - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
   <<: *distro_test
   <<: *stage_3
 
