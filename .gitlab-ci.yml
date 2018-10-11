@@ -146,11 +146,10 @@ tarball:
     LIBRSVG_DEBUG: "yes"
   script:
     - rustc --version && cargo --version
-    - |
-      mkdir -p _build
-      cd _build
-      ../autogen.sh --enable-gtk-doc --enable-vala
-      make distcheck DESTDIR=/tmp/distcheck
+    - mkdir -p _build
+    - cd _build
+    - ../autogen.sh --enable-gtk-doc --enable-vala
+    - make distcheck DESTDIR=/tmp/distcheck
   <<: *stage_2
 
 # STAGE 2 CROSS DISTRO TESTS
