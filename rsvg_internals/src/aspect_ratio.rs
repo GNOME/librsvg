@@ -216,6 +216,7 @@ impl Parse for AspectRatio {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use float_eq_cairo::ApproxEqCairo;
 
     #[test]
     fn parsing_invalid_strings_yields_error() {
@@ -300,79 +301,85 @@ mod tests {
         );
     }
 
+    fn assert_quadruples_equal(a: &(f64, f64, f64, f64), b: &(f64, f64, f64, f64)) {
+        assert_approx_eq_cairo!(a.0, b.0);
+        assert_approx_eq_cairo!(a.1, b.1);
+        assert_approx_eq_cairo!(a.2, b.2);
+        assert_approx_eq_cairo!(a.3, b.3);
+    }
+
     #[test]
     fn aligns() {
         let foo = AspectRatio::parse_str("xMinYMin meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, 0.0, 0.1, 1.0));
+        assert_quadruples_equal(&foo, &(0.0, 0.0, 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMinYMin slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, 0.0, 10.0, 100.0));
+        assert_quadruples_equal(&foo, &(0.0, 0.0, 10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMinYMid meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, 0.0, 0.1, 1.0));
+        assert_quadruples_equal(&foo, &(0.0, 0.0, 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMinYMid slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-
-        assert_eq!(foo, (0.0, -49.5, 10.0, 100.0));
+        assert_quadruples_equal(&foo, &(0.0, -49.5, 10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMinYMax meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, 0.0, 0.1, 1.0));
+        assert_quadruples_equal(&foo, &(0.0, 0.0, 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMinYMax slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, -99.0, 10.0, 100.0));
+        assert_quadruples_equal(&foo, &(0.0, -99.0, 10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMidYMin meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (4.95, 0.0, 0.1, 1.0));
+        assert_quadruples_equal(&foo, &(4.95, 0.0, 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMidYMin slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, 0.0, 10.0, 100.0));
+        assert_quadruples_equal(&foo, &(0.0, 0.0, 10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMidYMid meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (4.95, 0.0, 0.1, 1.0));
+        assert_quadruples_equal(&foo, &(4.95, 0.0, 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMidYMid slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, -49.5, 10.0, 100.0));
+        assert_quadruples_equal(&foo, &(0.0, -49.5, 10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMidYMax meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (4.95, 0.0, 0.1, 1.0));
+        assert_quadruples_equal(&foo, &(4.95, 0.0, 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMidYMax slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, -99.0, 10.0, 100.0));
+        assert_quadruples_equal(&foo, &(0.0, -99.0, 10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMaxYMin meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (9.9, 0.0, 0.1, 1.0));
+        assert_quadruples_equal(&foo, &(9.9, 0.0, 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMaxYMin slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, 0.0, 10.0, 100.0));
+        assert_quadruples_equal(&foo, &(0.0, 0.0, 10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMaxYMid meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (9.9, 0.0, 0.1, 1.0));
+        assert_quadruples_equal(&foo, &(9.9, 0.0, 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMaxYMid slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, -49.5, 10.0, 100.0));
+        assert_quadruples_equal(&foo, &(0.0, -49.5, 10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMaxYMax meet", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (9.9, 0.0, 0.1, 1.0));
+        assert_quadruples_equal(&foo, &(9.9, 0.0, 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMaxYMax slice", ()).unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
-        assert_eq!(foo, (0.0, -99.0, 10.0, 100.0));
+        assert_quadruples_equal(&foo, &(0.0, -99.0, 10.0, 100.0));
     }
 }
