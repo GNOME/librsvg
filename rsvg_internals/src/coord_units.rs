@@ -6,9 +6,6 @@ use parsers::{Parse, ParseError};
 /// Defines the units to be used for things that can consider a
 /// coordinate system in terms of the current transformation, or in
 /// terms of the current object's bounding box.
-///
-/// Keep in sync with rsvg-private.h:RsvgCoordUnits
-#[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CoordUnits {
     UserSpaceOnUse,
