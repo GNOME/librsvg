@@ -272,6 +272,31 @@ extract_rectangle (cairo_surface_t *source,
     return dest;
 }
 
+/*
+ * Report that a test would have failed if we used stricter criteria,
+ * but that we are tolerating it for a reason given in @message.
+ *
+ * This is the same as g_test_incomplete(), but with a workaround for
+ * GNOME/glib#1474 so that we don't fail tests on older GLib.
+ */
+static void
+test_tolerate (const gchar *message)
+{
+    if (glib_check_version (2, 57, 3)) {
+        /* In GLib >= 2.57.3, g_test_incomplete() behaves as intended:
+         * the test result is reported as an expected failure and the
+         * overall test exits 0 */
+        g_test_incomplete (message);
+    }
+    else {
+        /* In GLib < 2.57.3, g_test_incomplete() reported the wrong TAP
+         * result (an unexpected success) and the overall test exited 1,
+         * which would break "make check". g_test_skip() is the next
+         * best thing available. */
+        g_test_skip (message);
+    }
+}
+
 // https://gitlab.gnome.org/GNOME/librsvg/issues/91
 //
 // We were computing some offsets incorrectly if the initial transformation matrix
@@ -356,6 +381,7 @@ rsvg_cairo_check (gconstpointer data)
         /* https://gitlab.gnome.org/GNOME/librsvg/issues/178 */
 	const unsigned int MAX_DIFF = 10;
 #endif
+	const unsigned int WARN_DIFF = 2;
 
 	surface_diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
 						   dimensions.width, dimensions.height);
@@ -364,6 +390,10 @@ rsvg_cairo_check (gconstpointer data)
 
 	if (result.pixels_changed && result.max_diff > MAX_DIFF) {
             g_test_fail ();
+            save_image (surface_diff, test_file_base, "-diff.png");
+	}
+        else if (result.pixels_changed && result.max_diff > WARN_DIFF) {
+            test_tolerate ("not the same as x86_64, but giving it the benefit of the doubt");
             save_image (surface_diff, test_file_base, "-diff.png");
 	}
 
