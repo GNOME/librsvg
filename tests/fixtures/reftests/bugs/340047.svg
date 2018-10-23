@@ -17,7 +17,7 @@
    sodipodi:docname="New document 1">
 
     <g fill = "navy">
-        <text x = "10" y = "25" font-size = "20">
+        <text x = "10" y = "25" font-size = "20" font-family="sans">
             <tspan>
                 e = mc
                 <tspan baseline-shift = "super">
