@@ -13,7 +13,7 @@ use length::*;
 use node::{boxed_node_new, CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
-use space::xml_space_normalize;
+use space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use state::{
     ComputedValues,
     Direction,
@@ -23,6 +23,7 @@ use state::{
     TextAnchor,
     UnicodeBidi,
     WritingMode,
+    XmlSpace,
 };
 
 /// In SVG text elements, we use `NodeChars` to store character data.  For example,
@@ -70,7 +71,16 @@ impl NodeChars {
         let mut normalized = self.space_normalized.borrow_mut();
 
         if (*normalized).is_none() {
-            *normalized = Some(xml_space_normalize(values.xml_space, &self.string.borrow()));
+            let mode = match values.xml_space {
+                XmlSpace::Default => XmlSpaceNormalize::Default(NormalizeDefault {
+                    has_element_before: false,
+                    has_element_after: false,
+                }),
+
+                XmlSpace::Preserve => XmlSpaceNormalize::Preserve,
+            };
+
+            *normalized = Some(xml_space_normalize(mode, &self.string.borrow()));
         }
     }
 
