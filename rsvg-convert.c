@@ -409,9 +409,11 @@ main (int argc, char **argv)
             }
 #endif
 #ifdef CAIRO_HAS_SVG_SURFACE
-            else if (!strcmp (format, "svg"))
+            else if (!strcmp (format, "svg")) {
                 surface = cairo_svg_surface_create_for_stream (rsvg_cairo_write_func, output_file,
                                                                scaled_width, scaled_height);
+                cairo_svg_surface_set_document_unit(surface, CAIRO_SVG_UNIT_PX);
+            }
 #endif
 #ifdef CAIRO_HAS_XML_SURFACE
             else if (!strcmp (format, "xml")) {
