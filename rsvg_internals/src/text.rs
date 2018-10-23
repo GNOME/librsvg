@@ -74,6 +74,13 @@ impl NodeChars {
         }
     }
 
+    fn create_layout(&self, values: &ComputedValues, draw_ctx: &DrawingCtx<'_>) -> pango::Layout {
+        self.ensure_normalized_string(values);
+        let norm = self.space_normalized.borrow();
+        let s = norm.as_ref().unwrap();
+        create_pango_layout(draw_ctx, values, &s)
+    }
+
     fn measure(
         &self,
         _node: &RsvgNode,
@@ -81,10 +88,7 @@ impl NodeChars {
         draw_ctx: &DrawingCtx<'_>,
         length: &mut f64,
     ) {
-        self.ensure_normalized_string(values);
-        let norm = self.space_normalized.borrow();
-        let s = norm.as_ref().unwrap();
-        let layout = create_pango_layout(draw_ctx, values, &s);
+        let layout = self.create_layout(values, draw_ctx);
         let (width, _) = layout.get_size();
 
         *length = f64::from(width) / f64::from(pango::SCALE);
@@ -99,10 +103,7 @@ impl NodeChars {
         y: &mut f64,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        self.ensure_normalized_string(values);
-        let norm = self.space_normalized.borrow();
-        let s = norm.as_ref().unwrap();
-        let layout = create_pango_layout(draw_ctx, values, &s);
+        let layout = self.create_layout(values, draw_ctx);
         let (width, _) = layout.get_size();
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
