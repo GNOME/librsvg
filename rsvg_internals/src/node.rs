@@ -322,6 +322,14 @@ impl Node {
         false
     }
 
+    pub fn has_previous_sibling(&self) -> bool {
+        !self.prev_sib.borrow().is_none()
+    }
+
+    pub fn has_next_sibling(&self) -> bool {
+        !self.next_sib.borrow().is_none()
+    }
+
     pub fn add_child(&self, child: &Rc<Node>) {
         assert!(child.next_sib.borrow().is_none());
         assert!(child.prev_sib.borrow().is_none());
