@@ -67,14 +67,14 @@ impl NodeChars {
         *self.space_normalized.borrow_mut() = None;
     }
 
-    fn ensure_normalized_string(&self, values: &ComputedValues) {
+    fn ensure_normalized_string(&self, node: &RsvgNode, values: &ComputedValues) {
         let mut normalized = self.space_normalized.borrow_mut();
 
         if (*normalized).is_none() {
             let mode = match values.xml_space {
                 XmlSpace::Default => XmlSpaceNormalize::Default(NormalizeDefault {
-                    has_element_before: false,
-                    has_element_after: false,
+                    has_element_before: node.has_previous_sibling(),
+                    has_element_after: node.has_next_sibling(),
                 }),
 
                 XmlSpace::Preserve => XmlSpaceNormalize::Preserve,
@@ -84,8 +84,13 @@ impl NodeChars {
         }
     }
 
-    fn create_layout(&self, values: &ComputedValues, draw_ctx: &DrawingCtx<'_>) -> pango::Layout {
-        self.ensure_normalized_string(values);
+    fn create_layout(
+        &self,
+        node: &RsvgNode,
+        values: &ComputedValues,
+        draw_ctx: &DrawingCtx<'_>,
+    ) -> pango::Layout {
+        self.ensure_normalized_string(node, values);
         let norm = self.space_normalized.borrow();
         let s = norm.as_ref().unwrap();
         create_pango_layout(draw_ctx, values, &s)
@@ -93,12 +98,12 @@ impl NodeChars {
 
     fn measure(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         values: &ComputedValues,
         draw_ctx: &DrawingCtx<'_>,
         length: &mut f64,
     ) {
-        let layout = self.create_layout(values, draw_ctx);
+        let layout = self.create_layout(node, values, draw_ctx);
         let (width, _) = layout.get_size();
 
         *length = f64::from(width) / f64::from(pango::SCALE);
@@ -106,14 +111,14 @@ impl NodeChars {
 
     fn render(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx<'_>,
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let layout = self.create_layout(values, draw_ctx);
+        let layout = self.create_layout(node, values, draw_ctx);
         let (width, _) = layout.get_size();
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
