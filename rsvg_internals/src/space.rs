@@ -1,15 +1,24 @@
 use itertools::Itertools;
-use state::XmlSpace;
+
+pub struct NormalizeDefault {
+    pub has_element_before: bool,
+    pub has_element_after: bool,
+}
+
+pub enum XmlSpaceNormalize {
+    Default(NormalizeDefault),
+    Preserve,
+}
 
 /// Implements `xml:space` handling per the SVG spec
 ///
 /// Normalizes a string as it comes out of the XML parser's handler
 /// for character data according to the SVG rules in
 /// <https://www.w3.org/TR/SVG/text.html#WhiteSpace>
-pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
+pub fn xml_space_normalize(mode: XmlSpaceNormalize, s: &str) -> String {
     match mode {
-        XmlSpace::Default => normalize_default(s),
-        XmlSpace::Preserve => normalize_preserve(s),
+        XmlSpaceNormalize::Default(d) => normalize_default(d, s),
+        XmlSpaceNormalize::Preserve => normalize_preserve(s),
     }
 }
 
@@ -21,9 +30,18 @@ pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
 // characters into space characters. Then, it will strip off all
 // leading and trailing space characters. Then, all contiguous space
 // characters will be consolidated.
-fn normalize_default(s: &str) -> String {
-    s.trim()
-        .chars()
+fn normalize_default(elements: NormalizeDefault, s: &str) -> String {
+    let mut s = s;
+
+    if !elements.has_element_before {
+        s = s.trim_left();
+    }
+
+    if !elements.has_element_after {
+        s = s.trim_right();
+    }
+
+    s.chars()
         .filter(|ch| *ch != '\n')
         .map(|ch| match ch {
             '\t' => ' ',
@@ -64,32 +82,78 @@ mod tests {
     fn xml_space_default() {
         assert_eq!(
             xml_space_normalize(
-                XmlSpace::Default,
+                XmlSpaceNormalize::Default(NormalizeDefault {
+                    has_element_before: false,
+                    has_element_after: false,
+                }),
                 "\n    WS example\n    indented lines\n  "
             ),
             "WS example indented lines"
         );
         assert_eq!(
             xml_space_normalize(
-                XmlSpace::Default,
+                XmlSpaceNormalize::Default(NormalizeDefault {
+                    has_element_before: false,
+                    has_element_after: false,
+                }),
                 "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \n  "
             ),
             "WS example indented lines"
         );
         assert_eq!(
             xml_space_normalize(
-                XmlSpace::Default,
+                XmlSpaceNormalize::Default(NormalizeDefault {
+                    has_element_before: false,
+                    has_element_after: false,
+                }),
                 "\n  \t  \tWS \t\t\texample\n  \t  duplicate letters\t\t  \n  "
             ),
             "WS example duplicate letters"
         );
         assert_eq!(
-            xml_space_normalize(XmlSpace::Default, "\nWS example\nnon-indented lines\n  "),
+            xml_space_normalize(
+                XmlSpaceNormalize::Default(NormalizeDefault {
+                    has_element_before: false,
+                    has_element_after: false,
+                }),
+                "\nWS example\nnon-indented lines\n  "
+            ),
             "WS examplenon-indented lines"
         );
         assert_eq!(
-            xml_space_normalize(XmlSpace::Default, "\nWS example\tnon-indented lines\n  "),
+            xml_space_normalize(
+                XmlSpaceNormalize::Default(NormalizeDefault {
+                    has_element_before: false,
+                    has_element_after: false,
+                }),
+                "\nWS example\tnon-indented lines\n  "
+            ),
             "WS example non-indented lines"
+        );
+    }
+
+    #[test]
+    fn xml_space_default_with_elements() {
+        assert_eq!(
+            xml_space_normalize(
+                XmlSpaceNormalize::Default(NormalizeDefault {
+                    has_element_before: true,
+                    has_element_after: false,
+                }),
+                " foo \n\t  bar "
+            ),
+            " foo bar"
+        );
+
+        assert_eq!(
+            xml_space_normalize(
+                XmlSpaceNormalize::Default(NormalizeDefault {
+                    has_element_before: false,
+                    has_element_after: true,
+                }),
+                " foo   \nbar "
+            ),
+            "foo bar "
         );
     }
 
@@ -97,21 +161,21 @@ mod tests {
     fn xml_space_preserve() {
         assert_eq!(
             xml_space_normalize(
-                XmlSpace::Preserve,
+                XmlSpaceNormalize::Preserve,
                 "\n    WS example\n    indented lines\n  "
             ),
             "     WS example     indented lines   "
         );
         assert_eq!(
             xml_space_normalize(
-                XmlSpace::Preserve,
+                XmlSpaceNormalize::Preserve,
                 "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \n  "
             ),
             "       WS    example      indented lines       "
         );
         assert_eq!(
             xml_space_normalize(
-                XmlSpace::Preserve,
+                XmlSpaceNormalize::Preserve,
                 "\n  \t  \tWS \t\t\texample\n  \t  duplicate letters\t\t  \n  "
             ),
             "       WS    example      duplicate letters       "
