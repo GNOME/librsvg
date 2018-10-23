@@ -50,17 +50,28 @@ use state::{
 
 pub struct NodeChars {
     string: RefCell<String>,
+    space_normalized: RefCell<Option<String>>,
 }
 
 impl NodeChars {
     fn new() -> NodeChars {
         NodeChars {
             string: RefCell::new(String::new()),
+            space_normalized: RefCell::new(None),
         }
     }
 
     fn append(&self, s: &str) {
         self.string.borrow_mut().push_str(s);
+        *self.space_normalized.borrow_mut() = None;
+    }
+
+    fn ensure_normalized_string(&self, values: &ComputedValues) {
+        let mut normalized = self.space_normalized.borrow_mut();
+
+        if (*normalized).is_none() {
+            *normalized = Some(xml_space_normalize(values.xml_space, &self.string.borrow()));
+        }
     }
 
     fn measure(
@@ -70,7 +81,9 @@ impl NodeChars {
         draw_ctx: &DrawingCtx<'_>,
         length: &mut f64,
     ) {
-        let s = self.string.borrow();
+        self.ensure_normalized_string(values);
+        let norm = self.space_normalized.borrow();
+        let s = norm.as_ref().unwrap();
         let layout = create_pango_layout(draw_ctx, values, &s);
         let (width, _) = layout.get_size();
 
@@ -86,7 +99,9 @@ impl NodeChars {
         y: &mut f64,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let s = self.string.borrow();
+        self.ensure_normalized_string(values);
+        let norm = self.space_normalized.borrow();
+        let s = norm.as_ref().unwrap();
         let layout = create_pango_layout(draw_ctx, values, &s);
         let (width, _) = layout.get_size();
 
@@ -558,8 +573,7 @@ fn create_pango_layout(
 
     layout.set_alignment(pango::Alignment::from(values.direction));
 
-    let t = xml_space_normalize(values.xml_space, text);
-    layout.set_text(&t);
+    layout.set_text(text);
 
     layout
 }
