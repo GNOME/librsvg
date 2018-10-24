@@ -424,7 +424,7 @@ impl<'a> DrawingCtx<'a> {
                 let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
 
                 let filter_result_surface = if let Some(filter_uri) = filter {
-                    self.run_filter(filter_uri, values, &child_surface)?
+                    self.run_filter(filter_uri, node, values, &child_surface)?
                 } else {
                     child_surface
                 };
@@ -482,6 +482,7 @@ impl<'a> DrawingCtx<'a> {
     fn run_filter(
         &mut self,
         filter_uri: &str,
+        node: &RsvgNode,
         values: &ComputedValues,
         child_surface: &cairo::ImageSurface,
     ) -> Result<cairo::ImageSurface, RenderingError> {
@@ -500,6 +501,12 @@ impl<'a> DrawingCtx<'a> {
             }
 
             None => {
+                rsvg_log!(
+                    "element {} will not be rendered since its filter \"{}\" was not found",
+                    node.get_human_readable_name(),
+                    filter_uri,
+                );
+
                 // Non-existing filters must act as null filters (that is, an
                 // empty surface is returned).
                 Ok(cairo::ImageSurface::create(
