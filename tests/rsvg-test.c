@@ -353,8 +353,9 @@ rsvg_cairo_check (gconstpointer data)
 #ifdef __x86_64__
 	const unsigned int MAX_DIFF = 2;
 #else
-        /* https://gitlab.gnome.org/GNOME/librsvg/issues/178 */
-	const unsigned int MAX_DIFF = 10;
+        /* https://gitlab.gnome.org/GNOME/librsvg/issues/178,
+         * https://gitlab.gnome.org/GNOME/librsvg/issues/366 */
+	const unsigned int MAX_DIFF = 20;
 #endif
 
 	surface_diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
