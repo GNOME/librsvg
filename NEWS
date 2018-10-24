@@ -1,3 +1,19 @@
+Version 2.44.8
+- Librsvg now requires Rust 1.27; this should have happened since
+  2.44.0.  Apologies if the 2.44.x series didn't catch this build
+  failure early for you.
+- Librsvg now requires Cairo 1.15.12.
+- Fix #363 - Don't drop spaces around <tspan> elements.
+- Fix #365 - rsvg-convert now uses pixel units for SVG output, instead
+  of points.  This requires cairo 1.15.12 (Antonio Ospite).
+- Fix #358, #366 - tweaks to have the test suite pass on i386 and
+  non-x86_64 platforms (Simon McVittie, Federico Mena).
+- Fix #368 - With RSVG_LOG=1, librsvg will now report when SVGs have
+  references to nonexistent elements, to aid debugging (for example,
+  in an xlink:href attribute).
+- Allow reference tests with a small difference to pass without
+  breaking the build (Simon McVittie).
+
 Version 2.44.7
 - Fix #256 - Correctly match the systemLanguage attribute with the
   user's locale.
