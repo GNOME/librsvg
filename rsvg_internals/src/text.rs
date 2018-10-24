@@ -239,7 +239,7 @@ impl NodeTRef {
 
     fn measure(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx<'_>,
         length: &mut f64,
@@ -250,10 +250,17 @@ impl NodeTRef {
             return false;
         }
 
-        let done = if let Some(acquired) = draw_ctx.get_acquired_node(l.as_ref().unwrap()) {
+        let url = l.as_ref().unwrap();
+
+        let done = if let Some(acquired) = draw_ctx.get_acquired_node(url) {
             let c = acquired.get();
             measure_children(&c, cascaded, draw_ctx, length, true)
         } else {
+            rsvg_log!(
+                "element {} references a nonexistent text source \"{}\"",
+                node.get_human_readable_name(),
+                url,
+            );
             false
         };
 
@@ -262,7 +269,7 @@ impl NodeTRef {
 
     fn render(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx<'_>,
         x: &mut f64,
@@ -275,9 +282,17 @@ impl NodeTRef {
             return Ok(());
         }
 
-        if let Some(acquired) = draw_ctx.get_acquired_node(l.as_ref().unwrap()) {
+        let url = l.as_ref().unwrap();
+
+        if let Some(acquired) = draw_ctx.get_acquired_node(url) {
             let c = acquired.get();
             render_children(&c, cascaded, draw_ctx, x, y, true, clipping)?;
+        } else {
+            rsvg_log!(
+                "element {} references a nonexistent text source \"{}\"",
+                node.get_human_readable_name(),
+                url,
+            );
         }
 
         Ok(())

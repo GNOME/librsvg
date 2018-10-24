@@ -295,12 +295,19 @@ impl NodeTrait for NodeUse {
             return Ok(());
         }
 
-        let child = if let Some(acquired) = draw_ctx.get_acquired_node(link.as_ref().unwrap()) {
+        let uri = link.as_ref().unwrap();
+
+        let child = if let Some(acquired) = draw_ctx.get_acquired_node(uri) {
             // Here we clone the acquired child, so that we can drop the AcquiredNode as
             // early as possible.  This is so that the child's drawing method will be able
             // to re-acquire the child for other purposes.
             acquired.get().clone()
         } else {
+            rsvg_log!(
+                "element {} references nonexistent \"{}\"",
+                node.get_human_readable_name(),
+                uri,
+            );
             return Ok(());
         };
 

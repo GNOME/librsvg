@@ -426,6 +426,8 @@ fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx<'_>, name: &str) -> Option<
         }
     }
 
+    rsvg_log!("element \"{}\" does not exist or is not a gradient", name);
+
     None
 }
 
