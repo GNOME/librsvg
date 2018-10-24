@@ -38,7 +38,6 @@ AC_SUBST([LIBRSVG_MICRO_VERSION],[rsvg_micro_version])
 
 dnl ===========================================================================
 dnl Please update COMPILING.md with version numbers if these change
-
 CAIRO_REQUIRED=1.15.12
 CROCO_REQUIRED=0.6.1
 dnl This corresponds to Freetype2 2.8
