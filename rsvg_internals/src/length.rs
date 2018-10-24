@@ -398,16 +398,12 @@ mod tests {
 
     #[test]
     fn check_nonnegative_works() {
-        assert!(
-            Length::parse_str("0", LengthDir::Both)
-                .and_then(|l| l.check_nonnegative())
-                .is_ok()
-        );
-        assert!(
-            Length::parse_str("-10", LengthDir::Both)
-                .and_then(|l| l.check_nonnegative())
-                .is_err()
-        );
+        assert!(Length::parse_str("0", LengthDir::Both)
+            .and_then(|l| l.check_nonnegative())
+            .is_ok());
+        assert!(Length::parse_str("-10", LengthDir::Both)
+            .and_then(|l| l.check_nonnegative())
+            .is_err());
     }
 
     #[test]
