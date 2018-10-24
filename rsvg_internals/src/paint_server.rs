@@ -108,6 +108,8 @@ pub fn set_source_paint_server(
                     current_color,
                 );
                 had_paint_server = true;
+            } else {
+                rsvg_log!("pattern \"{}\" was not found and there was no fallback alternate", iri);
             }
         }
 
