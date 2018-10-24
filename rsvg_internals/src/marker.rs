@@ -1233,10 +1233,10 @@ mod directionality_tests {
 
     #[test]
     fn curve_with_coincident_control_points_has_no_directionality() {
-        assert!(
-            super::get_segment_directionalities(&curve(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0))
-                .is_none()
-        );
+        assert!(super::get_segment_directionalities(&curve(
+            1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0
+        ))
+        .is_none());
     }
 
     #[test]
@@ -1284,20 +1284,18 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        assert!(
-            emit_markers_for_path_builder(
-                &builder,
-                &mut |marker_type: MarkerType,
-                      x: f64,
-                      y: f64,
-                      computed_angle: f64|
-                 -> Result<(), RenderingError> {
-                    v.push((marker_type, x, y, computed_angle));
-                    Ok(())
-                }
-            )
-            .is_ok()
-        );
+        assert!(emit_markers_for_path_builder(
+            &builder,
+            &mut |marker_type: MarkerType,
+                  x: f64,
+                  y: f64,
+                  computed_angle: f64|
+             -> Result<(), RenderingError> {
+                v.push((marker_type, x, y, computed_angle));
+                Ok(())
+            }
+        )
+        .is_ok());
 
         assert_eq!(
             v,
@@ -1321,20 +1319,18 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        assert!(
-            emit_markers_for_path_builder(
-                &builder,
-                &mut |marker_type: MarkerType,
-                      x: f64,
-                      y: f64,
-                      computed_angle: f64|
-                 -> Result<(), RenderingError> {
-                    v.push((marker_type, x, y, computed_angle));
-                    Ok(())
-                }
-            )
-            .is_ok()
-        );
+        assert!(emit_markers_for_path_builder(
+            &builder,
+            &mut |marker_type: MarkerType,
+                  x: f64,
+                  y: f64,
+                  computed_angle: f64|
+             -> Result<(), RenderingError> {
+                v.push((marker_type, x, y, computed_angle));
+                Ok(())
+            }
+        )
+        .is_ok());
 
         assert_eq!(
             v,
