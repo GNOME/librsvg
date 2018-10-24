@@ -13,7 +13,7 @@ use length::*;
 use node::{boxed_node_new, CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
-use space::xml_space_normalize;
+use space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use state::{
     ComputedValues,
     Direction,
@@ -23,6 +23,7 @@ use state::{
     TextAnchor,
     UnicodeBidi,
     WritingMode,
+    XmlSpace,
 };
 
 /// In SVG text elements, we use `NodeChars` to store character data.  For example,
@@ -50,28 +51,59 @@ use state::{
 
 pub struct NodeChars {
     string: RefCell<String>,
+    space_normalized: RefCell<Option<String>>,
 }
 
 impl NodeChars {
     fn new() -> NodeChars {
         NodeChars {
             string: RefCell::new(String::new()),
+            space_normalized: RefCell::new(None),
         }
     }
 
     fn append(&self, s: &str) {
         self.string.borrow_mut().push_str(s);
+        *self.space_normalized.borrow_mut() = None;
+    }
+
+    fn ensure_normalized_string(&self, node: &RsvgNode, values: &ComputedValues) {
+        let mut normalized = self.space_normalized.borrow_mut();
+
+        if (*normalized).is_none() {
+            let mode = match values.xml_space {
+                XmlSpace::Default => XmlSpaceNormalize::Default(NormalizeDefault {
+                    has_element_before: node.has_previous_sibling(),
+                    has_element_after: node.has_next_sibling(),
+                }),
+
+                XmlSpace::Preserve => XmlSpaceNormalize::Preserve,
+            };
+
+            *normalized = Some(xml_space_normalize(mode, &self.string.borrow()));
+        }
+    }
+
+    fn create_layout(
+        &self,
+        node: &RsvgNode,
+        values: &ComputedValues,
+        draw_ctx: &DrawingCtx<'_>,
+    ) -> pango::Layout {
+        self.ensure_normalized_string(node, values);
+        let norm = self.space_normalized.borrow();
+        let s = norm.as_ref().unwrap();
+        create_pango_layout(draw_ctx, values, &s)
     }
 
     fn measure(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         values: &ComputedValues,
         draw_ctx: &DrawingCtx<'_>,
         length: &mut f64,
     ) {
-        let s = self.string.borrow();
-        let layout = create_pango_layout(draw_ctx, values, &s);
+        let layout = self.create_layout(node, values, draw_ctx);
         let (width, _) = layout.get_size();
 
         *length = f64::from(width) / f64::from(pango::SCALE);
@@ -79,15 +111,14 @@ impl NodeChars {
 
     fn render(
         &self,
-        _node: &RsvgNode,
+        node: &RsvgNode,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx<'_>,
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let s = self.string.borrow();
-        let layout = create_pango_layout(draw_ctx, values, &s);
+        let layout = self.create_layout(node, values, draw_ctx);
         let (width, _) = layout.get_size();
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
@@ -558,8 +589,7 @@ fn create_pango_layout(
 
     layout.set_alignment(pango::Alignment::from(values.direction));
 
-    let t = xml_space_normalize(values.xml_space, text);
-    layout.set_text(&t);
+    layout.set_text(text);
 
     layout
 }
