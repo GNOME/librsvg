@@ -656,6 +656,7 @@ fn emit_marker_by_name(
             )
         })
     } else {
+        rsvg_log!("marker \"{}\" not found", name);
         Ok(())
     }
 }
