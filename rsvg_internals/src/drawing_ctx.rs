@@ -461,6 +461,12 @@ impl<'a> DrawingCtx<'a> {
                                 mask.generate_cairo_mask(&node, &affine, self)
                             })
                         });
+                    } else {
+                        rsvg_log!(
+                            "element {} references nonexistent mask \"{}\"",
+                            node.get_human_readable_name(),
+                            mask,
+                        );
                     }
                 } else if opacity < 1.0 {
                     original_cr.paint_with_alpha(opacity);
