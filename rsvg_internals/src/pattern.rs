@@ -247,8 +247,11 @@ fn resolve_pattern(pattern: &Pattern, draw_ctx: &mut DrawingCtx<'_>) -> Pattern 
             let node = acquired.get();
 
             if stack.contains(node) {
+                // FIXME: return a Result here with RenderingError::CircularReference
+                // FIXME: print the pattern's name
+                rsvg_log!("circular reference in pattern");
                 result.resolve_from_defaults();
-                break; // reference cycle; bail out
+                break;
             }
 
             node.with_impl(|i: &NodePattern| result.resolve_from_fallback(&*i.pattern.borrow()));
