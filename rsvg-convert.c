@@ -456,6 +456,10 @@ main (int argc, char **argv)
             cairo_fill (cr);
         }
 
+        cairo_scale (cr,
+                     scaled_width / unscaled_width,
+                     scaled_height / unscaled_height);
+
         if (export_lookup_id) {
             RsvgPositionData pos;
 
@@ -468,9 +472,6 @@ main (int argc, char **argv)
             cairo_translate (cr, -pos.x, -pos.y);
         }
 
-        cairo_scale (cr,
-                     scaled_width / unscaled_width,
-                     scaled_height / unscaled_height);
         if (!rsvg_handle_render_cairo_sub (rsvg, cr, export_lookup_id)) {
             g_printerr ("Could not render file %s\n", args[i]);
             exit (1);
