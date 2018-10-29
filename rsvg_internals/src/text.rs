@@ -106,7 +106,7 @@ impl NodeChars {
         let layout = self.create_layout(node, values, draw_ctx);
         let (width, _) = layout.get_size();
 
-        *length = f64::from(width) / f64::from(pango::SCALE);
+        *length += f64::from(width) / f64::from(pango::SCALE);
     }
 
     fn render(
