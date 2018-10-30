@@ -98,17 +98,11 @@ impl NodeChars {
         create_pango_layout(draw_ctx, values, &s)
     }
 
-    fn measure(
-        &self,
-        node: &RsvgNode,
-        values: &ComputedValues,
-        draw_ctx: &DrawingCtx,
-        length: &mut f64,
-    ) {
+    fn measure(&self, node: &RsvgNode, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
         let layout = self.create_layout(node, values, draw_ctx);
         let (width, _) = layout.get_size();
 
-        *length += f64::from(width) / f64::from(pango::SCALE);
+        f64::from(width) / f64::from(pango::SCALE)
     }
 
     fn render(
@@ -684,7 +678,7 @@ fn measure_child(
             // instead of child_values because NodeChars does not
             // represent a real SVG element - it is just our container
             // for character data.
-            node.with_impl(|chars: &NodeChars| chars.measure(node, values, draw_ctx, length));
+            *length += node.with_impl(|chars: &NodeChars| chars.measure(node, values, draw_ctx));
         }
         (_, true) => {
             done = measure_children(
