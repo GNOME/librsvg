@@ -60,8 +60,8 @@ struct MeasuredSpan {
 struct PositionedSpan {
     layout: pango::Layout,
     values: ComputedValues,
-    x: f64,
-    y: f64,
+    position: (f64, f64),
+    rendered_position: (f64, f64),
 }
 
 impl Span {
@@ -115,7 +115,7 @@ impl PositionedSpan {
             .normalize(&values, &draw_ctx.get_view_params());
         let offset = baseline + baseline_shift;
 
-        let (x, y) = if values.text_gravity_is_vertical() {
+        let (render_x, render_y) = if values.text_gravity_is_vertical() {
             (x + offset, y)
         } else {
             (x, y - offset)
@@ -124,13 +124,19 @@ impl PositionedSpan {
         PositionedSpan {
             layout: measured.layout.clone(),
             values,
-            x,
-            y,
+            position: (x, y),
+            rendered_position: (render_x, render_y),
         }
     }
 
     fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<(), RenderingError> {
-        draw_ctx.draw_pango_layout(&self.layout, &self.values, self.x, self.y, clipping)
+        draw_ctx.draw_pango_layout(
+            &self.layout,
+            &self.values,
+            self.rendered_position.0,
+            self.rendered_position.1,
+            clipping,
+        )
     }
 }
 
