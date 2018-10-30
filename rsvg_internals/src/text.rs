@@ -110,10 +110,10 @@ impl NodeChars {
         node: &RsvgNode,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-        x: &mut f64,
-        y: &mut f64,
+        x: f64,
+        y: f64,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<(f64, f64), RenderingError> {
         let layout = self.create_layout(node, values, draw_ctx);
         let (width, _) = layout.get_size();
 
@@ -125,14 +125,12 @@ impl NodeChars {
                 .normalize(values, &draw_ctx.get_view_params());
 
         if values.text_gravity_is_vertical() {
-            draw_ctx.draw_pango_layout(&layout, values, *x + offset, *y, clipping)?;
-            *y += f64::from(width) / f64::from(pango::SCALE);
+            draw_ctx.draw_pango_layout(&layout, values, x + offset, y, clipping)?;
+            Ok((x, y + f64::from(width) / f64::from(pango::SCALE)))
         } else {
-            draw_ctx.draw_pango_layout(&layout, values, *x, *y - offset, clipping)?;
-            *x += f64::from(width) / f64::from(pango::SCALE);
+            draw_ctx.draw_pango_layout(&layout, values, x, y - offset, clipping)?;
+            Ok((x + f64::from(width) / f64::from(pango::SCALE), y))
         }
-
-        Ok(())
     }
 }
 
@@ -218,7 +216,7 @@ impl NodeTrait for NodeText {
         x += dx;
         y += dy;
 
-        render_children(node, cascaded, draw_ctx, &mut x, &mut y, false, clipping)
+        render_children(node, cascaded, draw_ctx, x, y, false, clipping).map(|_| ())
     }
 }
 
@@ -265,30 +263,29 @@ impl NodeTRef {
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
-        x: &mut f64,
-        y: &mut f64,
+        x: f64,
+        y: f64,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
-        let link = self.link.borrow();
+    ) -> Result<(f64, f64), RenderingError> {
+        let l = self.link.borrow();
 
-        if link.is_none() {
-            return Ok(());
+        if l.is_none() {
+            return Ok((x, y));
         }
 
         let link = link.as_ref().unwrap();
 
         if let Some(acquired) = draw_ctx.get_acquired_node(link) {
             let c = acquired.get();
-            render_children(&c, cascaded, draw_ctx, x, y, true, clipping)?;
+            render_children(&c, cascaded, draw_ctx, x, y, true, clipping)
         } else {
             rsvg_log!(
                 "element {} references a nonexistent text source \"{}\"",
                 node.get_human_readable_name(),
                 link,
             );
+            Ok((x, y))
         }
-
-        Ok(())
     }
 }
 
@@ -356,11 +353,11 @@ impl NodeTSpan {
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
-        x: &mut f64,
-        y: &mut f64,
+        x: f64,
+        y: f64,
         usetextonly: bool,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<(f64, f64), RenderingError> {
         let values = cascaded.get();
 
         let params = draw_ctx.get_view_params();
@@ -368,36 +365,39 @@ impl NodeTSpan {
         let mut dx = self.dx.get().normalize(values, &params);
         let mut dy = self.dy.get().normalize(values, &params);
 
+        let mut x = x;
+        let mut y = y;
+
         let vertical = values.text_gravity_is_vertical();
         let anchor = values.text_anchor;
 
         let offset = anchor_offset(node, cascaded, draw_ctx, anchor, usetextonly);
 
         if let Some(self_x) = self.x.get() {
-            *x = self_x.normalize(values, &params);
+            x = self_x.normalize(values, &params);
             if !vertical {
-                *x -= offset;
+                x -= offset;
                 dx = match anchor {
                     TextAnchor::Start => dx,
                     TextAnchor::Middle => dx / 2f64,
-                    _ => 0f64,
+                    TextAnchor::End => 0f64,
                 }
             }
         }
-        *x += dx;
+        x += dx;
 
         if let Some(self_y) = self.y.get() {
-            *y = self_y.normalize(values, &params);
+            y = self_y.normalize(values, &params);
             if vertical {
-                *y -= offset;
+                y -= offset;
                 dy = match anchor {
                     TextAnchor::Start => dy,
                     TextAnchor::Middle => dy / 2f64,
-                    _ => 0f64,
+                    TextAnchor::End => 0f64,
                 }
             }
         }
-        *y += dy;
+        y += dy;
 
         render_children(node, cascaded, draw_ctx, x, y, usetextonly, clipping)
     }
@@ -709,31 +709,38 @@ fn render_children(
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
     draw_ctx: &mut DrawingCtx,
-    x: &mut f64,
-    y: &mut f64,
+    x: f64,
+    y: f64,
     textonly: bool,
     clipping: bool,
-) -> Result<(), RenderingError> {
+) -> Result<(f64, f64), RenderingError> {
     let values = cascaded.get();
 
-    draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-        for child in node.children() {
-            render_child(&child, cascaded, dc, x, y, textonly, clipping)?;
-        }
+    let mut x = x;
+    let mut y = y;
 
-        Ok(())
-    })
+    draw_ctx
+        .with_discrete_layer(node, values, clipping, &mut |dc| {
+            for child in node.children() {
+                let (new_x, new_y) = render_child(&child, cascaded, dc, x, y, textonly, clipping)?;
+                x = new_x;
+                y = new_y;
+            }
+
+            Ok(())
+        })
+        .map(|()| (x, y))
 }
 
 fn render_child(
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
     draw_ctx: &mut DrawingCtx,
-    x: &mut f64,
-    y: &mut f64,
+    x: f64,
+    y: f64,
     textonly: bool,
     clipping: bool,
-) -> Result<(), RenderingError> {
+) -> Result<(f64, f64), RenderingError> {
     let values = cascaded.get();
 
     let cr = draw_ctx.get_cairo_context();
@@ -781,7 +788,7 @@ fn render_child(
                 clipping,
             )
         }),
-        (_, _) => Ok(()),
+        (_, _) => Ok((x, y)),
     };
 
     cr.restore();
