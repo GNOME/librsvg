@@ -145,14 +145,17 @@ impl NodeChars {
         }
     }
 
-    fn measure(&self, node: &RsvgNode, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
+    fn make_span(&self, node: &RsvgNode, values: &ComputedValues) -> Span {
         self.ensure_normalized_string(node, values);
 
-        let span = Span::new(
+        Span::new(
             self.space_normalized.borrow().as_ref().unwrap(),
             values.clone(),
-        );
+        )
+    }
 
+    fn measure(&self, node: &RsvgNode, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
+        let span = self.make_span(node, values);
         let measured = MeasuredSpan::from_span(&span, draw_ctx);
 
         measured.layout_size.0
@@ -167,13 +170,7 @@ impl NodeChars {
         y: f64,
         clipping: bool,
     ) -> Result<(f64, f64), RenderingError> {
-        self.ensure_normalized_string(node, values);
-
-        let span = Span::new(
-            self.space_normalized.borrow().as_ref().unwrap(),
-            values.clone(),
-        );
-
+        let span = self.make_span(node, values);
         let measured = MeasuredSpan::from_span(&span, draw_ctx);
 
         let layout = &measured.layout;
