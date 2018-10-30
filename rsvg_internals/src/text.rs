@@ -201,15 +201,15 @@ impl NodeTrait for NodeText {
             y -= offset;
             dy = match anchor {
                 TextAnchor::Start => dy,
-                TextAnchor::Middle => dy / 2f64,
-                _ => 0f64,
+                TextAnchor::Middle => dy / 2.0,
+                TextAnchor::End => 0.0,
             }
         } else {
             x -= offset;
             dx = match anchor {
                 TextAnchor::Start => dx,
-                TextAnchor::Middle => dx / 2f64,
-                _ => 0f64,
+                TextAnchor::Middle => dx / 2.0,
+                TextAnchor::End => 0.0,
             }
         }
 
@@ -379,8 +379,8 @@ impl NodeTSpan {
                 x -= offset;
                 dx = match anchor {
                     TextAnchor::Start => dx,
-                    TextAnchor::Middle => dx / 2f64,
-                    TextAnchor::End => 0f64,
+                    TextAnchor::Middle => dx / 2.0,
+                    TextAnchor::End => 0.0,
                 }
             }
         }
@@ -392,8 +392,8 @@ impl NodeTSpan {
                 y -= offset;
                 dy = match anchor {
                     TextAnchor::Start => dy,
-                    TextAnchor::Middle => dy / 2f64,
-                    TextAnchor::End => 0f64,
+                    TextAnchor::Middle => dy / 2.0,
+                    TextAnchor::End => 0.0,
                 }
             }
         }
