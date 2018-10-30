@@ -535,6 +535,16 @@ populate_window (GtkWidget * win,
     gtk_box_pack_start (GTK_BOX (vbox), scroll, TRUE, TRUE, 0);
 }
 
+static gboolean
+quit_accel_cb (GtkAccelGroup  *accel_group,
+               GObject        *acceleratable,
+               guint           keyval,
+               GdkModifierType modifier)
+{
+    gtk_main_quit ();
+    return TRUE;
+}
+
 static void
 view_surface (ViewerCbInfo * info, 
               cairo_surface_t *surface /* adopted */,
@@ -551,6 +561,20 @@ view_surface (ViewerCbInfo * info,
     /* exit when 'X' is clicked */
     g_signal_connect (win, "destroy", G_CALLBACK (quit_cb), NULL);
     g_signal_connect (win, "delete_event", G_CALLBACK (quit_cb), NULL);
+
+    /* Ctrl-Q */
+    gtk_accel_group_connect (info->accel_group,
+                             GDK_KEY_Q,
+                             GDK_CONTROL_MASK,
+                             0,
+                             g_cclosure_new ((GCallback) quit_accel_cb, NULL, NULL));
+
+    /* Ctrl-W */
+    gtk_accel_group_connect (info->accel_group,
+                             GDK_KEY_W,
+                             GDK_CONTROL_MASK,
+                             0,
+                             g_cclosure_new ((GCallback) quit_accel_cb, NULL, NULL));
 
     if (bg_color && strcmp (bg_color, "none") != 0) {
         GdkRGBA rgba;

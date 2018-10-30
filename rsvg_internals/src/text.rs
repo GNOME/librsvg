@@ -24,6 +24,51 @@ use state::{
     XmlSpace,
 };
 
+/// An absolutely-positioned array of `Span`s
+///
+/// SVG defines a "[text chunk]" to occur when a text-related element
+/// has an absolute position adjustment, that is, `x` or `y`
+/// attributes.
+///
+/// A `<text>` element always starts with an absolute position from
+/// such attributes, or (0, 0) if they are not specified.
+///
+/// Subsequent children of the `<text>` element will create new chunks
+/// whenever they have `x` or `y` attributes.
+///
+/// [text chunk]: https://www.w3.org/TR/SVG11/text.html#TextLayoutIntroduction
+struct Chunk {
+    specified_x: Option<f64>,
+    specified_y: Option<f64>,
+    final_x: f64,
+    final_y: f64,
+    spans: Vec<Span>,
+}
+
+struct Span {
+    values: ComputedValues,
+    text: String,
+    layout: pango::Layout,
+    layout_size: (f64, f64),
+}
+
+impl Span {
+    fn new(text: &str, values: ComputedValues, draw_ctx: &DrawingCtx) -> Span {
+        let layout = create_pango_layout(draw_ctx, &values, text);
+        let (w, h) = layout.get_size();
+
+        let w = f64::from(w) / f64::from(pango::SCALE);
+        let h = f64::from(h) / f64::from(pango::SCALE);
+
+        Span {
+            values,
+            text: text.to_string(),
+            layout,
+            layout_size: (w, h),
+        }
+    }
+}
+
 /// In SVG text elements, we use `NodeChars` to store character data.  For example,
 /// an element like `<text>Foo Bar</text>` will be a `NodeText` with a single child,
 /// and the child will be a `NodeChars` with "Foo Bar" for its contents.
@@ -86,23 +131,16 @@ impl NodeChars {
         }
     }
 
-    fn create_layout(
-        &self,
-        node: &RsvgNode,
-        values: &ComputedValues,
-        draw_ctx: &DrawingCtx,
-    ) -> pango::Layout {
-        self.ensure_normalized_string(node, values);
-        let norm = self.space_normalized.borrow();
-        let s = norm.as_ref().unwrap();
-        create_pango_layout(draw_ctx, values, &s)
-    }
-
     fn measure(&self, node: &RsvgNode, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
-        let layout = self.create_layout(node, values, draw_ctx);
-        let (width, _) = layout.get_size();
+        self.ensure_normalized_string(node, values);
 
-        f64::from(width) / f64::from(pango::SCALE)
+        let span = Span::new(
+            self.space_normalized.borrow().as_ref().unwrap(),
+            values.clone(),
+            draw_ctx,
+        );
+
+        span.layout_size.0
     }
 
     fn render(
@@ -114,8 +152,17 @@ impl NodeChars {
         y: f64,
         clipping: bool,
     ) -> Result<(f64, f64), RenderingError> {
-        let layout = self.create_layout(node, values, draw_ctx);
-        let (width, _) = layout.get_size();
+        self.ensure_normalized_string(node, values);
+
+        let span = Span::new(
+            self.space_normalized.borrow().as_ref().unwrap(),
+            values.clone(),
+            draw_ctx,
+        );
+
+        let layout = &span.layout;
+        let width = span.layout_size.0;
+        let values = &span.values;
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
         let offset = baseline
@@ -125,11 +172,11 @@ impl NodeChars {
                 .normalize(values, &draw_ctx.get_view_params());
 
         if values.text_gravity_is_vertical() {
-            draw_ctx.draw_pango_layout(&layout, values, x + offset, y, clipping)?;
-            Ok((x, y + f64::from(width) / f64::from(pango::SCALE)))
+            draw_ctx.draw_pango_layout(layout, values, x + offset, y, clipping)?;
+            Ok((x, y + width))
         } else {
-            draw_ctx.draw_pango_layout(&layout, values, x, y - offset, clipping)?;
-            Ok((x + f64::from(width) / f64::from(pango::SCALE), y))
+            draw_ctx.draw_pango_layout(layout, values, x, y - offset, clipping)?;
+            Ok((x + width, y))
         }
     }
 }
