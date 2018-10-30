@@ -38,10 +38,8 @@ use state::{
 ///
 /// [text chunk]: https://www.w3.org/TR/SVG11/text.html#TextLayoutIntroduction
 struct Chunk {
-    specified_x: Option<f64>,
-    specified_y: Option<f64>,
-    final_x: f64,
-    final_y: f64,
+    x: Option<f64>,
+    y: Option<f64>,
     spans: Vec<Span>,
 }
 
