@@ -48,21 +48,35 @@ struct Chunk {
 struct Span {
     values: ComputedValues,
     text: String,
+}
+
+struct MeasuredSpan {
+    values: ComputedValues,
     layout: pango::Layout,
     layout_size: (f64, f64),
 }
 
 impl Span {
-    fn new(text: &str, values: ComputedValues, draw_ctx: &DrawingCtx) -> Span {
-        let layout = create_pango_layout(draw_ctx, &values, text);
+    fn new(text: &str, values: ComputedValues) -> Span {
+        Span {
+            values,
+            text: text.to_string(),
+        }
+    }
+}
+
+impl MeasuredSpan {
+    fn from_span(span: &Span, draw_ctx: &DrawingCtx) -> MeasuredSpan {
+        let values = span.values.clone();
+
+        let layout = create_pango_layout(draw_ctx, &values, &span.text);
         let (w, h) = layout.get_size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
         let h = f64::from(h) / f64::from(pango::SCALE);
 
-        Span {
+        MeasuredSpan {
             values,
-            text: text.to_string(),
             layout,
             layout_size: (w, h),
         }
@@ -137,10 +151,11 @@ impl NodeChars {
         let span = Span::new(
             self.space_normalized.borrow().as_ref().unwrap(),
             values.clone(),
-            draw_ctx,
         );
 
-        span.layout_size.0
+        let measured = MeasuredSpan::from_span(&span, draw_ctx);
+
+        measured.layout_size.0
     }
 
     fn render(
@@ -157,12 +172,13 @@ impl NodeChars {
         let span = Span::new(
             self.space_normalized.borrow().as_ref().unwrap(),
             values.clone(),
-            draw_ctx,
         );
 
-        let layout = &span.layout;
-        let width = span.layout_size.0;
-        let values = &span.values;
+        let measured = MeasuredSpan::from_span(&span, draw_ctx);
+
+        let layout = &measured.layout;
+        let width = measured.layout_size.0;
+        let values = &measured.values;
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
         let offset = baseline
