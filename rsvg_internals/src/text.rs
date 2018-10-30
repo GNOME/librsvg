@@ -54,6 +54,14 @@ struct MeasuredSpan {
     values: ComputedValues,
     layout: pango::Layout,
     layout_size: (f64, f64),
+    advance: (f64, f64),
+}
+
+struct PositionedSpan {
+    layout: pango::Layout,
+    values: ComputedValues,
+    x: f64,
+    y: f64,
 }
 
 impl Span {
@@ -75,11 +83,54 @@ impl MeasuredSpan {
         let w = f64::from(w) / f64::from(pango::SCALE);
         let h = f64::from(h) / f64::from(pango::SCALE);
 
+        let (advance_x, advance_y) = if values.text_gravity_is_vertical() {
+            (0.0, w)
+        } else {
+            (w, 0.0)
+        };
+
         MeasuredSpan {
             values,
             layout,
             layout_size: (w, h),
+            advance: (advance_x, advance_y),
         }
+    }
+}
+
+impl PositionedSpan {
+    fn from_measured(
+        measured: &MeasuredSpan,
+        draw_ctx: &DrawingCtx,
+        x: f64,
+        y: f64,
+    ) -> PositionedSpan {
+        let layout = measured.layout.clone();
+        let values = measured.values.clone();
+
+        let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
+        let baseline_shift = values
+            .baseline_shift
+            .0
+            .normalize(&values, &draw_ctx.get_view_params());
+        let offset = baseline + baseline_shift;
+
+        let (x, y) = if values.text_gravity_is_vertical() {
+            (x + offset, y)
+        } else {
+            (x, y - offset)
+        };
+
+        PositionedSpan {
+            layout: measured.layout.clone(),
+            values,
+            x,
+            y,
+        }
+    }
+
+    fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<(), RenderingError> {
+        draw_ctx.draw_pango_layout(&self.layout, &self.values, self.x, self.y, clipping)
     }
 }
 
@@ -172,25 +223,11 @@ impl NodeChars {
     ) -> Result<(f64, f64), RenderingError> {
         let span = self.make_span(node, values);
         let measured = MeasuredSpan::from_span(&span, draw_ctx);
+        let positioned = PositionedSpan::from_measured(&measured, draw_ctx, x, y);
 
-        let layout = &measured.layout;
-        let width = measured.layout_size.0;
-        let values = &measured.values;
-
-        let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let offset = baseline
-            + values
-                .baseline_shift
-                .0
-                .normalize(values, &draw_ctx.get_view_params());
-
-        if values.text_gravity_is_vertical() {
-            draw_ctx.draw_pango_layout(layout, values, x + offset, y, clipping)?;
-            Ok((x, y + width))
-        } else {
-            draw_ctx.draw_pango_layout(layout, values, x, y - offset, clipping)?;
-            Ok((x + width, y))
-        }
+        positioned
+            .draw(draw_ctx, clipping)
+            .map(|()| (x + measured.advance.0, y + measured.advance.1))
     }
 }
 
