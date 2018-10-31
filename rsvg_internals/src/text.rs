@@ -100,6 +100,9 @@ impl MeasuredChunk {
             (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
         });
 
+        println!("MeasuredChunk x={:?}, y={:?}, advance={:?}",
+                 chunk.x, chunk.y, advance);
+
         MeasuredChunk {
             values: chunk.values.clone(),
             x: chunk.x,
@@ -254,8 +257,6 @@ fn children_to_chunks(
     chunks: &mut Vec<Chunk>,
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
-    x: Option<Length>,
-    y: Option<Length>,
 ) {
     let values = cascaded.get();
 
@@ -265,23 +266,20 @@ fn children_to_chunks(
                 let span = chars.make_span(&child, &values);
 
                 let num_chunks = chunks.len();
-                if num_chunks > 0 {
-                    chunks[num_chunks - 1].spans.push(span);
-                } else {
-                    let mut chunk = Chunk::new(values, x, y);
-                    chunk.spans.push(span);
-                    chunks.push(chunk);
-                }
+                assert!(num_chunks > 0);
+
+                println!("appending span \"{}\"", span.text);
+                chunks[num_chunks - 1].spans.push(span);
             }),
 
             NodeType::TSpan => child.with_impl(|tspan: &NodeTSpan| {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                tspan.to_chunks(&child, &cascaded, chunks, x, y);
+                tspan.to_chunks(&child, &cascaded, chunks);
             }),
 
             NodeType::TRef => child.with_impl(|tref: &NodeTRef| {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                tref.to_chunks(&child, &cascaded, chunks, x, y);
+                tref.to_chunks(&child, &cascaded, chunks);
             }),
 
             _ => (),
@@ -415,7 +413,9 @@ impl NodeText {
         let x = self.x.get();
         let y = self.y.get();
 
-        children_to_chunks(&mut chunks, node, cascaded, Some(x), Some(y));
+        chunks.push(Chunk::new(cascaded.get(), Some(x), Some(y)));
+
+        children_to_chunks(&mut chunks, node, cascaded);
         chunks
     }
 }
@@ -528,8 +528,6 @@ impl NodeTRef {
         _node: &RsvgNode,
         _cascaded: &CascadedValues<'_>,
         _chunks: &mut Vec<Chunk>,
-        _x: Option<Length>,
-        _y: Option<Length>,
     ) {
         // let x = self.x.get().or(x);
         // let y = self.y.get().or(y);
@@ -632,13 +630,19 @@ impl NodeTSpan {
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         chunks: &mut Vec<Chunk>,
-        x: Option<Length>,
-        y: Option<Length>,
     ) {
-        let x = self.x.get().or(x);
-        let y = self.y.get().or(y);
+        let x = self.x.get();
+        let y = self.y.get();
 
-        children_to_chunks(chunks, node, cascaded, x, y);
+        if x.is_some() || y.is_some() {
+            // Any absolute position creates a new chunk
+            let values = cascaded.get();
+            chunks.push(Chunk::new(values, x, y));
+        }
+
+        println!("TSpan::to_chunks x={:?}, y={:?}", x, y);
+
+        children_to_chunks(chunks, node, cascaded);
     }
 
     fn measure(
