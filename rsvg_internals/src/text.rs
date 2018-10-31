@@ -38,14 +38,16 @@ use state::{
 ///
 /// [text chunk]: https://www.w3.org/TR/SVG11/text.html#TextLayoutIntroduction
 struct Chunk {
+    values: ComputedValues,
     x: Option<Length>,
     y: Option<Length>,
     spans: Vec<Span>,
 }
 
 impl Chunk {
-    fn new(x: Option<Length>, y: Option<Length>) -> Chunk {
+    fn new(values: &ComputedValues, x: Option<Length>, y: Option<Length>) -> Chunk {
         Chunk {
+            values: values.clone(),
             x,
             y,
             spans: Vec::new(),
@@ -54,9 +56,16 @@ impl Chunk {
 }
 
 struct MeasuredChunk {
+    values: ComputedValues,
     x: Option<Length>,
     y: Option<Length>,
     spans: Vec<MeasuredSpan>,
+}
+
+struct PositionedChunk {
+    next_chunk_x: f64,
+    next_chunk_y: f64,
+    spans: Vec<PositionedSpan>,
 }
 
 struct Span {
@@ -88,8 +97,9 @@ impl Span {
 }
 
 impl MeasuredChunk {
-    fn from_chunk(chunk: &Chunk, draw_ctx: &DrawingCtx<'_>) -> MeasuredChunk {
+    fn from_chunk(chunk: &Chunk, draw_ctx: &DrawingCtx) -> MeasuredChunk {
         MeasuredChunk {
+            values: chunk.values.clone(),
             x: chunk.x,
             y: chunk.y,
             spans: chunk
@@ -122,6 +132,35 @@ impl MeasuredSpan {
             layout,
             layout_size: (w, h),
             advance: (advance_x, advance_y),
+        }
+    }
+}
+
+impl PositionedChunk {
+    fn from_measured(
+        measured: &MeasuredChunk,
+        draw_ctx: &DrawingCtx,
+        x: Length,
+        y: Length,
+    ) -> PositionedChunk {
+        let mut positioned = Vec::new();
+
+        let params = draw_ctx.get_view_params();
+
+        let mut x = x.normalize(&measured.values, &params);
+        let mut y = y.normalize(&measured.values, &params);
+
+        for measured_span in &measured.spans {
+            positioned.push(PositionedSpan::from_measured(measured_span, draw_ctx, x, y));
+
+            x += measured_span.advance.0;
+            y += measured_span.advance.1;
+        }
+
+        PositionedChunk {
+            next_chunk_x: x,
+            next_chunk_y: y,
+            spans: positioned,
         }
     }
 }
@@ -193,7 +232,7 @@ fn children_to_chunks(
                 if num_chunks > 0 {
                     chunks[num_chunks - 1].spans.push(span);
                 } else {
-                    let mut chunk = Chunk::new(x, y);
+                    let mut chunk = Chunk::new(values, x, y);
                     chunk.spans.push(span);
                     chunks.push(chunk);
                 }
