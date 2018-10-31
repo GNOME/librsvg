@@ -114,15 +114,10 @@ impl PositionedChunk {
     fn from_measured(
         measured: &MeasuredChunk,
         draw_ctx: &DrawingCtx,
-        x: Length,
-        y: Length,
+        x: f64,
+        y: f64,
     ) -> PositionedChunk {
         let mut positioned = Vec::new();
-
-        let params = draw_ctx.get_view_params();
-
-        let mut x = x.normalize(&measured.values, &params);
-        let mut y = y.normalize(&measured.values, &params);
 
         // Adjust the specified coordinates with the text_anchor
 
@@ -132,8 +127,8 @@ impl PositionedChunk {
             measured.advance,
         );
 
-        x += adjusted_advance.0;
-        y += adjusted_advance.1;
+        let mut x = x + adjusted_advance.0;
+        let mut y = y + adjusted_advance.1;
 
         // Position each span
 
@@ -452,7 +447,36 @@ impl NodeTrait for NodeText {
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
+        let params = draw_ctx.get_view_params();
 
+        let mut x = self.x.get().normalize(values, &params);
+        let mut y = self.y.get().normalize(values, &params);
+
+        let chunks = self.make_chunks(node, cascaded);
+
+        let mut measured_chunks = Vec::new();
+        for chunk in &chunks {
+            measured_chunks.push(MeasuredChunk::from_chunk(chunk, draw_ctx));
+        }
+
+        let mut positioned_chunks = Vec::new();
+        for chunk in &measured_chunks {
+            let positioned = PositionedChunk::from_measured(&chunk, draw_ctx, x, y);
+
+            x = positioned.next_chunk_x;
+            y = positioned.next_chunk_y;
+
+            positioned_chunks.push(positioned);
+        }
+
+        for chunk in &positioned_chunks {
+            for span in &chunk.spans {
+                span.draw(draw_ctx, clipping)?;
+            }
+        }
+
+        Ok(())
+/*
         let params = draw_ctx.get_view_params();
 
         let mut x = self.x.get().normalize(values, &params);
@@ -484,6 +508,7 @@ impl NodeTrait for NodeText {
         y += dy;
 
         render_children(node, cascaded, draw_ctx, x, y, false, clipping).map(|_| ())
+*/
     }
 }
 
