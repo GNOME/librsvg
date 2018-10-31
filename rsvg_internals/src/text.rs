@@ -247,7 +247,10 @@ impl PositionedSpan {
     }
 
     fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<(), RenderingError> {
-        println!("render layout: size={:?}, position={:?}", self.values.font_size, self.rendered_position);
+        println!(
+            "render layout: size={:?}, position={:?}",
+            self.values.font_size, self.rendered_position
+        );
         draw_ctx.draw_pango_layout(
             &self.layout,
             &self.values,
