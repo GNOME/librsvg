@@ -48,6 +48,7 @@ struct MeasuredChunk {
     values: ComputedValues,
     x: Option<Length>,
     y: Option<Length>,
+    advance: (f64, f64),
     spans: Vec<MeasuredSpan>,
 }
 
@@ -89,15 +90,22 @@ impl Chunk {
 
 impl MeasuredChunk {
     fn from_chunk(chunk: &Chunk, draw_ctx: &DrawingCtx) -> MeasuredChunk {
+        let measured_spans: Vec<MeasuredSpan> = chunk
+            .spans
+            .iter()
+            .map(|span| MeasuredSpan::from_span(span, draw_ctx))
+            .collect();
+
+        let advance = measured_spans.iter().fold((0.0, 0.0), |acc, measured| {
+            (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
+        });
+
         MeasuredChunk {
             values: chunk.values.clone(),
             x: chunk.x,
             y: chunk.y,
-            spans: chunk
-                .spans
-                .iter()
-                .map(|span| MeasuredSpan::from_span(span, draw_ctx))
-                .collect(),
+            advance,
+            spans: measured_spans,
         }
     }
 }
