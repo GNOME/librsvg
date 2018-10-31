@@ -270,7 +270,7 @@ fn children_to_chunks(chunks: &mut Vec<Chunk>, node: &RsvgNode, cascaded: &Casca
     for child in node.children() {
         match child.get_type() {
             NodeType::Chars => child.with_impl(|chars: &NodeChars| {
-                let span = chars.make_span(&child, &values);
+                let span = chars.make_span(&child, values);
 
                 let num_chunks = chunks.len();
                 assert!(num_chunks > 0);
@@ -482,13 +482,16 @@ impl NodeTrait for NodeText {
             positioned_chunks.push(positioned);
         }
 
-        for chunk in &positioned_chunks {
-            for span in &chunk.spans {
-                span.draw(draw_ctx, clipping)?;
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            for chunk in &positioned_chunks {
+                for span in &chunk.spans {
+                    span.draw(dc, clipping)?;
+                }
             }
-        }
 
-        Ok(())
+            Ok(())
+        })
+
         // let params = draw_ctx.get_view_params();
         //
         // let mut x = self.x.get().normalize(values, &params);
