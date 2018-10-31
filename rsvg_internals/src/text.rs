@@ -100,8 +100,10 @@ impl MeasuredChunk {
             (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
         });
 
-        println!("MeasuredChunk x={:?}, y={:?}, advance={:?}",
-                 chunk.x, chunk.y, advance);
+        println!(
+            "MeasuredChunk x={:?}, y={:?}, advance={:?}",
+            chunk.x, chunk.y, advance
+        );
 
         MeasuredChunk {
             values: chunk.values.clone(),
@@ -120,6 +122,8 @@ impl PositionedChunk {
         x: f64,
         y: f64,
     ) -> PositionedChunk {
+        println!("PositionedChunk::from_measured x={}, y={}", x, y);
+
         let mut positioned = Vec::new();
 
         // Adjust the specified coordinates with the text_anchor
@@ -129,6 +133,8 @@ impl PositionedChunk {
             measured.values.writing_mode,
             measured.advance,
         );
+
+        println!("  adjusted_advance={:?}", adjusted_advance);
 
         let mut x = x + adjusted_advance.0;
         let mut y = y + adjusted_advance.1;
@@ -227,6 +233,11 @@ impl PositionedSpan {
             (x, y - offset)
         };
 
+        println!(
+            "  PositionedSpan rendered_position={:?}",
+            (render_x, render_y)
+        );
+
         PositionedSpan {
             layout: measured.layout.clone(),
             values,
@@ -253,11 +264,7 @@ impl PositionedSpan {
 /// `x` and `y` are the absolute position for the first chunk.  If the
 /// first child is a `<tspan>` with a specified absolute position, it
 /// will be used instead of the given arguments.
-fn children_to_chunks(
-    chunks: &mut Vec<Chunk>,
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-) {
+fn children_to_chunks(chunks: &mut Vec<Chunk>, node: &RsvgNode, cascaded: &CascadedValues<'_>) {
     let values = cascaded.get();
 
     for child in node.children() {
@@ -413,6 +420,7 @@ impl NodeText {
         let x = self.x.get();
         let y = self.y.get();
 
+        println!("Chunk new x={:?}, y={:?}", Some(x), Some(y));
         chunks.push(Chunk::new(cascaded.get(), Some(x), Some(y)));
 
         children_to_chunks(&mut chunks, node, cascaded);
@@ -461,7 +469,12 @@ impl NodeTrait for NodeText {
 
         let mut positioned_chunks = Vec::new();
         for chunk in &measured_chunks {
-            let positioned = PositionedChunk::from_measured(&chunk, draw_ctx, x, y);
+            let normalize = |l: Length| l.normalize(&chunk.values, &params);
+
+            let chunk_x = chunk.x.map_or(x, normalize);
+            let chunk_y = chunk.y.map_or(y, normalize);
+
+            let positioned = PositionedChunk::from_measured(&chunk, draw_ctx, chunk_x, chunk_y);
 
             x = positioned.next_chunk_x;
             y = positioned.next_chunk_y;
@@ -476,39 +489,37 @@ impl NodeTrait for NodeText {
         }
 
         Ok(())
-/*
-        let params = draw_ctx.get_view_params();
-
-        let mut x = self.x.get().normalize(values, &params);
-        let mut y = self.y.get().normalize(values, &params);
-        let mut dx = self.dx.get().normalize(values, &params);
-        let mut dy = self.dy.get().normalize(values, &params);
-
-        let anchor = values.text_anchor;
-
-        let offset = anchor_offset(node, cascaded, draw_ctx, anchor, false);
-
-        if values.text_gravity_is_vertical() {
-            y -= offset;
-            dy = match anchor {
-                TextAnchor::Start => dy,
-                TextAnchor::Middle => dy / 2.0,
-                TextAnchor::End => 0.0,
-            }
-        } else {
-            x -= offset;
-            dx = match anchor {
-                TextAnchor::Start => dx,
-                TextAnchor::Middle => dx / 2.0,
-                TextAnchor::End => 0.0,
-            }
-        }
-
-        x += dx;
-        y += dy;
-
-        render_children(node, cascaded, draw_ctx, x, y, false, clipping).map(|_| ())
-*/
+        // let params = draw_ctx.get_view_params();
+        //
+        // let mut x = self.x.get().normalize(values, &params);
+        // let mut y = self.y.get().normalize(values, &params);
+        // let mut dx = self.dx.get().normalize(values, &params);
+        // let mut dy = self.dy.get().normalize(values, &params);
+        //
+        // let anchor = values.text_anchor;
+        //
+        // let offset = anchor_offset(node, cascaded, draw_ctx, anchor, false);
+        //
+        // if values.text_gravity_is_vertical() {
+        // y -= offset;
+        // dy = match anchor {
+        // TextAnchor::Start => dy,
+        // TextAnchor::Middle => dy / 2.0,
+        // TextAnchor::End => 0.0,
+        // }
+        // } else {
+        // x -= offset;
+        // dx = match anchor {
+        // TextAnchor::Start => dx,
+        // TextAnchor::Middle => dx / 2.0,
+        // TextAnchor::End => 0.0,
+        // }
+        // }
+        //
+        // x += dx;
+        // y += dy;
+        //
+        // render_children(node, cascaded, draw_ctx, x, y, false, clipping).map(|_| ())
     }
 }
 
@@ -625,22 +636,16 @@ impl NodeTSpan {
         }
     }
 
-    fn to_chunks(
-        &self,
-        node: &RsvgNode,
-        cascaded: &CascadedValues<'_>,
-        chunks: &mut Vec<Chunk>,
-    ) {
+    fn to_chunks(&self, node: &RsvgNode, cascaded: &CascadedValues<'_>, chunks: &mut Vec<Chunk>) {
         let x = self.x.get();
         let y = self.y.get();
 
         if x.is_some() || y.is_some() {
             // Any absolute position creates a new chunk
             let values = cascaded.get();
+            println!("Chunk new x={:?}, y={:?}", x, y);
             chunks.push(Chunk::new(values, x, y));
         }
-
-        println!("TSpan::to_chunks x={:?}, y={:?}", x, y);
 
         children_to_chunks(chunks, node, cascaded);
     }
