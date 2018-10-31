@@ -53,6 +53,12 @@ impl Chunk {
     }
 }
 
+struct MeasuredChunk {
+    x: Option<Length>,
+    y: Option<Length>,
+    spans: Vec<MeasuredSpan>,
+}
+
 struct Span {
     values: ComputedValues,
     text: String,
@@ -77,6 +83,20 @@ impl Span {
         Span {
             values,
             text: text.to_string(),
+        }
+    }
+}
+
+impl MeasuredChunk {
+    fn from_chunk(chunk: &Chunk, draw_ctx: &DrawingCtx<'_>) -> MeasuredChunk {
+        MeasuredChunk {
+            x: chunk.x,
+            y: chunk.y,
+            spans: chunk
+                .spans
+                .iter()
+                .map(|span| MeasuredSpan::from_span(span, draw_ctx))
+                .collect(),
         }
     }
 }
