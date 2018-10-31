@@ -44,17 +44,6 @@ struct Chunk {
     spans: Vec<Span>,
 }
 
-impl Chunk {
-    fn new(values: &ComputedValues, x: Option<Length>, y: Option<Length>) -> Chunk {
-        Chunk {
-            values: values.clone(),
-            x,
-            y,
-            spans: Vec::new(),
-        }
-    }
-}
-
 struct MeasuredChunk {
     values: ComputedValues,
     x: Option<Length>,
@@ -87,11 +76,13 @@ struct PositionedSpan {
     rendered_position: (f64, f64),
 }
 
-impl Span {
-    fn new(text: &str, values: ComputedValues) -> Span {
-        Span {
-            values,
-            text: text.to_string(),
+impl Chunk {
+    fn new(values: &ComputedValues, x: Option<Length>, y: Option<Length>) -> Chunk {
+        Chunk {
+            values: values.clone(),
+            x,
+            y,
+            spans: Vec::new(),
         }
     }
 }
@@ -107,31 +98,6 @@ impl MeasuredChunk {
                 .iter()
                 .map(|span| MeasuredSpan::from_span(span, draw_ctx))
                 .collect(),
-        }
-    }
-}
-
-impl MeasuredSpan {
-    fn from_span(span: &Span, draw_ctx: &DrawingCtx) -> MeasuredSpan {
-        let values = span.values.clone();
-
-        let layout = create_pango_layout(draw_ctx, &values, &span.text);
-        let (w, h) = layout.get_size();
-
-        let w = f64::from(w) / f64::from(pango::SCALE);
-        let h = f64::from(h) / f64::from(pango::SCALE);
-
-        let (advance_x, advance_y) = if values.text_gravity_is_vertical() {
-            (0.0, w)
-        } else {
-            (w, 0.0)
-        };
-
-        MeasuredSpan {
-            values,
-            layout,
-            layout_size: (w, h),
-            advance: (advance_x, advance_y),
         }
     }
 }
@@ -161,6 +127,40 @@ impl PositionedChunk {
             next_chunk_x: x,
             next_chunk_y: y,
             spans: positioned,
+        }
+    }
+}
+
+impl Span {
+    fn new(text: &str, values: ComputedValues) -> Span {
+        Span {
+            values,
+            text: text.to_string(),
+        }
+    }
+}
+
+impl MeasuredSpan {
+    fn from_span(span: &Span, draw_ctx: &DrawingCtx) -> MeasuredSpan {
+        let values = span.values.clone();
+
+        let layout = create_pango_layout(draw_ctx, &values, &span.text);
+        let (w, h) = layout.get_size();
+
+        let w = f64::from(w) / f64::from(pango::SCALE);
+        let h = f64::from(h) / f64::from(pango::SCALE);
+
+        let (advance_x, advance_y) = if values.text_gravity_is_vertical() {
+            (0.0, w)
+        } else {
+            (w, 0.0)
+        };
+
+        MeasuredSpan {
+            values,
+            layout,
+            layout_size: (w, h),
+            advance: (advance_x, advance_y),
         }
     }
 }
