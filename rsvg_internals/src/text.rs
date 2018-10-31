@@ -266,7 +266,7 @@ fn children_to_chunks(
 
     for child in node.children() {
         match child.get_type() {
-            NodeType::Chars => node.with_impl(|chars: &NodeChars| {
+            NodeType::Chars => child.with_impl(|chars: &NodeChars| {
                 let span = chars.make_span(&child, &values);
 
                 let num_chunks = chunks.len();
@@ -279,12 +279,12 @@ fn children_to_chunks(
                 }
             }),
 
-            NodeType::TSpan => node.with_impl(|tspan: &NodeTSpan| {
+            NodeType::TSpan => child.with_impl(|tspan: &NodeTSpan| {
                 let cascaded = CascadedValues::new(cascaded, &child);
                 tspan.to_chunks(&child, &cascaded, chunks, x, y);
             }),
 
-            NodeType::TRef => node.with_impl(|tref: &NodeTRef| {
+            NodeType::TRef => child.with_impl(|tref: &NodeTRef| {
                 let cascaded = CascadedValues::new(cascaded, &child);
                 tref.to_chunks(&child, &cascaded, chunks, x, y);
             }),
