@@ -247,6 +247,7 @@ impl PositionedSpan {
     }
 
     fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<(), RenderingError> {
+        println!("render layout: size={:?}, position={:?}", self.values.font_size, self.rendered_position);
         draw_ctx.draw_pango_layout(
             &self.layout,
             &self.values,
@@ -364,31 +365,6 @@ impl NodeChars {
             values.clone(),
         )
     }
-
-    fn measure(&self, node: &RsvgNode, values: &ComputedValues, draw_ctx: &DrawingCtx) -> f64 {
-        let span = self.make_span(node, values);
-        let measured = MeasuredSpan::from_span(&span, draw_ctx);
-
-        measured.layout_size.0
-    }
-
-    fn render(
-        &self,
-        node: &RsvgNode,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        x: f64,
-        y: f64,
-        clipping: bool,
-    ) -> Result<(f64, f64), RenderingError> {
-        let span = self.make_span(node, values);
-        let measured = MeasuredSpan::from_span(&span, draw_ctx);
-        let positioned = PositionedSpan::from_measured(&measured, draw_ctx, x, y);
-
-        positioned
-            .draw(draw_ctx, clipping)
-            .map(|()| (x + measured.advance.0, y + measured.advance.1))
-    }
 }
 
 impl NodeTrait for NodeChars {
@@ -491,38 +467,6 @@ impl NodeTrait for NodeText {
 
             Ok(())
         })
-
-        // let params = draw_ctx.get_view_params();
-        //
-        // let mut x = self.x.get().normalize(values, &params);
-        // let mut y = self.y.get().normalize(values, &params);
-        // let mut dx = self.dx.get().normalize(values, &params);
-        // let mut dy = self.dy.get().normalize(values, &params);
-        //
-        // let anchor = values.text_anchor;
-        //
-        // let offset = anchor_offset(node, cascaded, draw_ctx, anchor, false);
-        //
-        // if values.text_gravity_is_vertical() {
-        // y -= offset;
-        // dy = match anchor {
-        // TextAnchor::Start => dy,
-        // TextAnchor::Middle => dy / 2.0,
-        // TextAnchor::End => 0.0,
-        // }
-        // } else {
-        // x -= offset;
-        // dx = match anchor {
-        // TextAnchor::Start => dx,
-        // TextAnchor::Middle => dx / 2.0,
-        // TextAnchor::End => 0.0,
-        // }
-        // }
-        //
-        // x += dx;
-        // y += dy;
-        //
-        // render_children(node, cascaded, draw_ctx, x, y, false, clipping).map(|_| ())
     }
 }
 
@@ -546,63 +490,6 @@ impl NodeTRef {
         // let x = self.x.get().or(x);
         // let y = self.y.get().or(y);
         // unimplemented!();
-    }
-
-    fn measure(
-        &self,
-        node: &RsvgNode,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> (f64, bool) {
-        let l = self.link.borrow();
-
-        if l.is_none() {
-            return (0.0, false);
-        }
-
-        let link = link.as_ref().unwrap();
-
-        if let Some(acquired) = draw_ctx.get_acquired_node(url) {
-            let c = acquired.get();
-            measure_children(&c, cascaded, draw_ctx, true)
-        } else {
-            rsvg_log!(
-                "element {} references a nonexistent text source \"{}\"",
-                node.get_human_readable_name(),
-                link,
-            );
-            (0.0, false)
-        }
-    }
-
-    fn render(
-        &self,
-        node: &RsvgNode,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        x: f64,
-        y: f64,
-        clipping: bool,
-    ) -> Result<(f64, f64), RenderingError> {
-        let l = self.link.borrow();
-
-        if l.is_none() {
-            return Ok((x, y));
-        }
-
-        let link = link.as_ref().unwrap();
-
-        if let Some(acquired) = draw_ctx.get_acquired_node(link) {
-            let c = acquired.get();
-            render_children(&c, cascaded, draw_ctx, x, y, true, clipping)
-        } else {
-            rsvg_log!(
-                "element {} references a nonexistent text source \"{}\"",
-                node.get_human_readable_name(),
-                link,
-            );
-            Ok((x, y))
-        }
     }
 }
 
@@ -651,86 +538,6 @@ impl NodeTSpan {
         }
 
         children_to_chunks(chunks, node, cascaded);
-    }
-
-    fn measure(
-        &self,
-        node: &RsvgNode,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        usetextonly: bool,
-    ) -> (f64, bool) {
-        let values = cascaded.get();
-
-        if self.x.get().is_some() || self.y.get().is_some() {
-            return (0.0, true);
-        }
-
-        let params = draw_ctx.get_view_params();
-
-        let length = if values.text_gravity_is_vertical() {
-            self.dy.get().normalize(values, &params)
-        } else {
-            self.dx.get().normalize(values, &params)
-        };
-
-        let (children_length, done) = measure_children(node, cascaded, draw_ctx, usetextonly);
-
-        (length + children_length, done)
-    }
-
-    fn render(
-        &self,
-        node: &RsvgNode,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        x: f64,
-        y: f64,
-        usetextonly: bool,
-        clipping: bool,
-    ) -> Result<(f64, f64), RenderingError> {
-        let values = cascaded.get();
-
-        let params = draw_ctx.get_view_params();
-
-        let mut dx = self.dx.get().normalize(values, &params);
-        let mut dy = self.dy.get().normalize(values, &params);
-
-        let mut x = x;
-        let mut y = y;
-
-        let vertical = values.text_gravity_is_vertical();
-        let anchor = values.text_anchor;
-
-        let offset = anchor_offset(node, cascaded, draw_ctx, anchor, usetextonly);
-
-        if let Some(self_x) = self.x.get() {
-            x = self_x.normalize(values, &params);
-            if !vertical {
-                x -= offset;
-                dx = match anchor {
-                    TextAnchor::Start => dx,
-                    TextAnchor::Middle => dx / 2.0,
-                    TextAnchor::End => 0.0,
-                }
-            }
-        }
-        x += dx;
-
-        if let Some(self_y) = self.y.get() {
-            y = self_y.normalize(values, &params);
-            if vertical {
-                y -= offset;
-                dy = match anchor {
-                    TextAnchor::Start => dy,
-                    TextAnchor::Middle => dy / 2.0,
-                    TextAnchor::End => 0.0,
-                }
-            }
-        }
-        y += dy;
-
-        render_children(node, cascaded, draw_ctx, x, y, usetextonly, clipping)
     }
 }
 
@@ -937,192 +744,37 @@ fn create_pango_layout(
     layout
 }
 
-fn anchor_offset(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    anchor: TextAnchor,
-    textonly: bool,
-) -> f64 {
-    match anchor {
-        TextAnchor::Start => 0.0,
-
-        TextAnchor::Middle => {
-            let (length, _done) = measure_children(node, cascaded, draw_ctx, textonly);
-            length / 2.0
-        }
-
-        TextAnchor::End => {
-            let (length, _done) = measure_children(node, cascaded, draw_ctx, textonly);
-            length
-        }
-    }
+#[no_mangle]
+pub extern "C" fn rsvg_node_chars_new(raw_parent: *const RsvgNode) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Chars,
+        raw_parent,
+        "rsvg_chars",
+        None,
+        None,
+        Box::new(NodeChars::new()),
+    )
 }
 
-fn measure_children(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    textonly: bool,
-) -> (f64, bool) {
-    let mut length = 0.0;
-    let mut done = false;
+#[no_mangle]
+pub extern "C" fn rsvg_node_chars_append(
+    raw_node: *const RsvgNode,
+    text: *const libc::c_char,
+    len: isize,
+) {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
 
-    for child in node.children() {
-        let (l, child_done) = measure_child(
-            &child,
-            &CascadedValues::new(cascaded, &child),
-            draw_ctx,
-            textonly,
-        );
+    assert!(node.get_type() == NodeType::Chars);
+    assert!(!text.is_null());
+    assert!(len >= 0);
 
-        length += l;
+    // libxml2 already validated the incoming string as UTF-8.  Note that
+    // it is *not* nul-terminated; this is why we create a byte slice first.
+    let bytes = unsafe { std::slice::from_raw_parts(text as *const u8, len as usize) };
+    let utf8 = unsafe { str::from_utf8_unchecked(bytes) };
 
-        if child_done {
-            done = true;
-            break;
-        }
-    }
-
-    (length, done)
-}
-
-fn measure_child(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    textonly: bool,
-) -> (f64, bool) {
-    let values = cascaded.get();
-
-    let cr = draw_ctx.get_cairo_context();
-    cr.save();
-
-    cr.transform(node.get_transform());
-
-    let (length, done) = match (node.get_type(), textonly) {
-        (NodeType::Chars, _) => {
-            // here we use the values from the current element,
-            // instead of child_values because NodeChars does not
-            // represent a real SVG element - it is just our container
-            // for character data.
-            (
-                node.with_impl(|chars: &NodeChars| chars.measure(node, values, draw_ctx)),
-                false,
-            )
-        }
-        (_, true) => measure_children(
-            node,
-            &CascadedValues::new(cascaded, node),
-            draw_ctx,
-            textonly,
-        ),
-        (NodeType::TSpan, _) => node.with_impl(|tspan: &NodeTSpan| {
-            tspan.measure(
-                node,
-                &CascadedValues::new(cascaded, node),
-                draw_ctx,
-                textonly,
-            )
-        }),
-        (NodeType::TRef, _) => node.with_impl(|tref: &NodeTRef| {
-            tref.measure(node, &CascadedValues::new(cascaded, node), draw_ctx)
-        }),
-        (_, _) => (0.0, false),
-    };
-
-    cr.restore();
-
-    (length, done)
-}
-
-fn render_children(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    x: f64,
-    y: f64,
-    textonly: bool,
-    clipping: bool,
-) -> Result<(f64, f64), RenderingError> {
-    let values = cascaded.get();
-
-    let mut x = x;
-    let mut y = y;
-
-    draw_ctx
-        .with_discrete_layer(node, values, clipping, &mut |dc| {
-            for child in node.children() {
-                let (new_x, new_y) = render_child(&child, cascaded, dc, x, y, textonly, clipping)?;
-                x = new_x;
-                y = new_y;
-            }
-
-            Ok(())
-        })
-        .map(|()| (x, y))
-}
-
-fn render_child(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    x: f64,
-    y: f64,
-    textonly: bool,
-    clipping: bool,
-) -> Result<(f64, f64), RenderingError> {
-    let values = cascaded.get();
-
-    let cr = draw_ctx.get_cairo_context();
-    cr.save();
-
-    cr.transform(node.get_transform());
-
-    let res = match (node.get_type(), textonly) {
-        (NodeType::Chars, _) => {
-            node.with_impl(|chars: &NodeChars| {
-                // here we use the values from the current element,
-                // instead of child_values because NodeChars does not
-                // represent a real SVG element - it is just our container
-                // for character data.
-                chars.render(node, values, draw_ctx, x, y, clipping)
-            })
-        }
-        (_, true) => render_children(
-            node,
-            &CascadedValues::new(cascaded, node),
-            draw_ctx,
-            x,
-            y,
-            textonly,
-            clipping,
-        ),
-        (NodeType::TSpan, _) => node.with_impl(|tspan: &NodeTSpan| {
-            tspan.render(
-                node,
-                &CascadedValues::new(cascaded, node),
-                draw_ctx,
-                x,
-                y,
-                textonly,
-                clipping,
-            )
-        }),
-        (NodeType::TRef, _) => node.with_impl(|tref: &NodeTRef| {
-            tref.render(
-                node,
-                &CascadedValues::new(cascaded, node),
-                draw_ctx,
-                x,
-                y,
-                clipping,
-            )
-        }),
-        (_, _) => Ok((x, y)),
-    };
-
-    cr.restore();
-
-    res
+    node.with_impl(|chars: &NodeChars| {
+        chars.append(utf8);
+    });
 }
