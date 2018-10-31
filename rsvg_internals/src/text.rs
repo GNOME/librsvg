@@ -124,6 +124,19 @@ impl PositionedChunk {
         let mut x = x.normalize(&measured.values, &params);
         let mut y = y.normalize(&measured.values, &params);
 
+        // Adjust the specified coordinates with the text_anchor
+
+        let adjusted_advance = text_anchor_advance(
+            measured.values.text_anchor,
+            measured.values.writing_mode,
+            measured.advance,
+        );
+
+        x += adjusted_advance.0;
+        y += adjusted_advance.1;
+
+        // Position each span
+
         for measured_span in &measured.spans {
             positioned.push(PositionedSpan::from_measured(measured_span, draw_ctx, x, y));
 
@@ -135,6 +148,26 @@ impl PositionedChunk {
             next_chunk_x: x,
             next_chunk_y: y,
             spans: positioned,
+        }
+    }
+}
+
+fn text_anchor_advance(
+    anchor: TextAnchor,
+    writing_mode: WritingMode,
+    advance: (f64, f64),
+) -> (f64, f64) {
+    if writing_mode.is_vertical() {
+        match anchor {
+            TextAnchor::Start => (0.0, 0.0),
+            TextAnchor::Middle => (0.0, -advance.1 / 2.0),
+            TextAnchor::End => (0.0, -advance.1),
+        }
+    } else {
+        match anchor {
+            TextAnchor::Start => (0.0, 0.0),
+            TextAnchor::Middle => (-advance.0 / 2.0, 0.0),
+            TextAnchor::End => (-advance.0, 0.0),
         }
     }
 }
@@ -158,7 +191,7 @@ impl MeasuredSpan {
         let w = f64::from(w) / f64::from(pango::SCALE);
         let h = f64::from(h) / f64::from(pango::SCALE);
 
-        let (advance_x, advance_y) = if values.text_gravity_is_vertical() {
+        let advance = if values.writing_mode.is_vertical() {
             (0.0, w)
         } else {
             (w, 0.0)
@@ -168,7 +201,7 @@ impl MeasuredSpan {
             values,
             layout,
             layout_size: (w, h),
-            advance: (advance_x, advance_y),
+            advance,
         }
     }
 }
