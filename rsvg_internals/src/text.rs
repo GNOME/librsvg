@@ -515,8 +515,8 @@ impl NodeTrait for NodeTRef {
 pub struct NodeTSpan {
     x: Cell<Option<Length>>,
     y: Cell<Option<Length>>,
-    dx: Cell<Length>,
-    dy: Cell<Length>,
+    dx: Cell<Option<Length>>,
+    dy: Cell<Option<Length>>,
 }
 
 impl NodeTSpan {
@@ -524,8 +524,8 @@ impl NodeTSpan {
         NodeTSpan {
             x: Cell::new(Default::default()),
             y: Cell::new(Default::default()),
-            dx: Cell::new(Length::default()),
-            dy: Cell::new(Length::default()),
+            dx: Cell::new(None),
+            dy: Cell::new(None),
         }
     }
 
@@ -554,8 +554,12 @@ impl NodeTrait for NodeTSpan {
                 Attribute::Y => self
                     .y
                     .set(parse("y", value, LengthDir::Vertical).map(Some)?),
-                Attribute::Dx => self.dx.set(parse("dx", value, LengthDir::Horizontal)?),
-                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical)?),
+                Attribute::Dx => self
+                    .dx
+                    .set(parse("dx", value, LengthDir::Horizontal).map(Some)?),
+                Attribute::Dy => self
+                    .dy
+                    .set(parse("dy", value, LengthDir::Vertical).map(Some)?),
                 _ => (),
             }
         }
