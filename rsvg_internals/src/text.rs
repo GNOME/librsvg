@@ -38,9 +38,19 @@ use state::{
 ///
 /// [text chunk]: https://www.w3.org/TR/SVG11/text.html#TextLayoutIntroduction
 struct Chunk {
-    x: Option<f64>,
-    y: Option<f64>,
+    x: Option<Length>,
+    y: Option<Length>,
     spans: Vec<Span>,
+}
+
+impl Chunk {
+    fn new(x: Option<Length>, y: Option<Length>) -> Chunk {
+        Chunk {
+            x,
+            y,
+            spans: Vec::new(),
+        }
+    }
 }
 
 struct Span {
@@ -135,6 +145,52 @@ impl PositionedSpan {
             self.rendered_position.1,
             clipping,
         )
+    }
+}
+
+/// Walks the children of a `<text>`, `<tspan>`, or `<tref>` element
+/// and appends chunks/spans from them into the specified `chunks`
+/// array.
+///
+/// `x` and `y` are the absolute position for the first chunk.  If the
+/// first child is a `<tspan>` with a specified absolute position, it
+/// will be used instead of the given arguments.
+fn children_to_chunks(
+    chunks: &mut Vec<Chunk>,
+    node: &RsvgNode,
+    cascaded: &CascadedValues<'_>,
+    x: Option<Length>,
+    y: Option<Length>,
+) {
+    let values = cascaded.get();
+
+    for child in node.children() {
+        match child.get_type() {
+            NodeType::Chars => node.with_impl(|chars: &NodeChars| {
+                let span = chars.make_span(&child, &values);
+
+                let num_chunks = chunks.len();
+                if num_chunks > 0 {
+                    chunks[num_chunks - 1].spans.push(span);
+                } else {
+                    let mut chunk = Chunk::new(x, y);
+                    chunk.spans.push(span);
+                    chunks.push(chunk);
+                }
+            }),
+
+            NodeType::TSpan => node.with_impl(|tspan: &NodeTSpan| {
+                let cascaded = CascadedValues::new(cascaded, &child);
+                tspan.to_chunks(&child, &cascaded, chunks, x, y);
+            }),
+
+            NodeType::TRef => node.with_impl(|tref: &NodeTRef| {
+                let cascaded = CascadedValues::new(cascaded, &child);
+                tref.to_chunks(&child, &cascaded, chunks, x, y);
+            }),
+
+            _ => (),
+        }
     }
 }
 
@@ -257,6 +313,16 @@ impl NodeText {
             dy: Cell::new(Length::default()),
         }
     }
+
+    fn make_chunks(&self, node: &RsvgNode, cascaded: &CascadedValues<'_>) -> Vec<Chunk> {
+        let mut chunks = Vec::new();
+
+        let x = self.x.get();
+        let y = self.y.get();
+
+        children_to_chunks(&mut chunks, node, cascaded, Some(x), Some(y));
+        chunks
+    }
 }
 
 impl NodeTrait for NodeText {
@@ -330,6 +396,19 @@ impl NodeTRef {
         NodeTRef {
             link: RefCell::new(Default::default()),
         }
+    }
+
+    fn to_chunks(
+        &self,
+        _node: &RsvgNode,
+        _cascaded: &CascadedValues<'_>,
+        _chunks: &mut Vec<Chunk>,
+        _x: Option<Length>,
+        _y: Option<Length>,
+    ) {
+        // let x = self.x.get().or(x);
+        // let y = self.y.get().or(y);
+        // unimplemented!();
     }
 
     fn measure(
@@ -421,6 +500,20 @@ impl NodeTSpan {
             dx: Cell::new(Length::default()),
             dy: Cell::new(Length::default()),
         }
+    }
+
+    fn to_chunks(
+        &self,
+        node: &RsvgNode,
+        cascaded: &CascadedValues<'_>,
+        chunks: &mut Vec<Chunk>,
+        x: Option<Length>,
+        y: Option<Length>,
+    ) {
+        let x = self.x.get().or(x);
+        let y = self.y.get().or(y);
+
+        children_to_chunks(chunks, node, cascaded, x, y);
     }
 
     fn measure(
