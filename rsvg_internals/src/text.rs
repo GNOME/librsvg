@@ -63,6 +63,7 @@ struct Span {
     text: String,
     dx: Option<Length>,
     dy: Option<Length>,
+    depth: usize,
 }
 
 struct MeasuredSpan {
@@ -181,12 +182,19 @@ fn text_anchor_advance(
 }
 
 impl Span {
-    fn new(text: &str, values: ComputedValues, dx: Option<Length>, dy: Option<Length>) -> Span {
+    fn new(
+        text: &str,
+        values: ComputedValues,
+        dx: Option<Length>,
+        dy: Option<Length>,
+        depth: usize,
+    ) -> Span {
         Span {
             values,
             text: text.to_string(),
             dx,
             dy,
+            depth,
         }
     }
 }
@@ -206,6 +214,8 @@ impl MeasuredSpan {
         } else {
             (w, 0.0)
         };
+
+        println!("span \"{}\" advance={}", span.text, w);
 
         MeasuredSpan {
             values,
@@ -290,13 +300,14 @@ fn children_to_chunks(
     cascaded: &CascadedValues<'_>,
     dx: Option<Length>,
     dy: Option<Length>,
+    depth: usize,
 ) {
     let values = cascaded.get();
 
     for child in node.children() {
         match child.get_type() {
             NodeType::Chars => child.with_impl(|chars: &NodeChars| {
-                let span = chars.make_span(&child, values, dx, dy);
+                let span = chars.make_span(&child, values, dx, dy, depth);
 
                 let num_chunks = chunks.len();
                 assert!(num_chunks > 0);
@@ -307,12 +318,12 @@ fn children_to_chunks(
 
             NodeType::TSpan => child.with_impl(|tspan: &NodeTSpan| {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                tspan.to_chunks(&child, &cascaded, chunks);
+                tspan.to_chunks(&child, &cascaded, chunks, depth + 1);
             }),
 
             NodeType::TRef => child.with_impl(|tref: &NodeTRef| {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                tref.to_chunks(&child, &cascaded, chunks);
+                tref.to_chunks(&child, &cascaded, chunks, depth + 1);
             }),
 
             _ => (),
@@ -388,6 +399,7 @@ impl NodeChars {
         values: &ComputedValues,
         dx: Option<Length>,
         dy: Option<Length>,
+        depth: usize,
     ) -> Span {
         self.ensure_normalized_string(node, values);
 
@@ -396,6 +408,7 @@ impl NodeChars {
             values.clone(),
             dx,
             dy,
+            depth,
         )
     }
 }
@@ -434,7 +447,7 @@ impl NodeText {
         println!("Chunk new x={:?}, y={:?}", Some(x), Some(y));
         chunks.push(Chunk::new(cascaded.get(), Some(x), Some(y)));
 
-        children_to_chunks(&mut chunks, node, cascaded, dx, dy);
+        children_to_chunks(&mut chunks, node, cascaded, dx, dy, 0);
         chunks
     }
 }
@@ -525,6 +538,7 @@ impl NodeTRef {
         _node: &RsvgNode,
         _cascaded: &CascadedValues<'_>,
         _chunks: &mut Vec<Chunk>,
+        _depth: usize,
     ) {
         // let x = self.x.get().or(x);
         // let y = self.y.get().or(y);
@@ -565,7 +579,13 @@ impl NodeTSpan {
         }
     }
 
-    fn to_chunks(&self, node: &RsvgNode, cascaded: &CascadedValues<'_>, chunks: &mut Vec<Chunk>) {
+    fn to_chunks(
+        &self,
+        node: &RsvgNode,
+        cascaded: &CascadedValues<'_>,
+        chunks: &mut Vec<Chunk>,
+        depth: usize,
+    ) {
         let x = self.x.get();
         let y = self.y.get();
         let dx = self.dx.get();
@@ -578,7 +598,7 @@ impl NodeTSpan {
             chunks.push(Chunk::new(values, x, y));
         }
 
-        children_to_chunks(chunks, node, cascaded, dx, dy);
+        children_to_chunks(chunks, node, cascaded, dx, dy, depth);
     }
 }
 
