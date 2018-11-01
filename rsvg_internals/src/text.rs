@@ -61,6 +61,8 @@ struct PositionedChunk {
 struct Span {
     values: ComputedValues,
     text: String,
+    dx: Option<Length>,
+    dy: Option<Length>,
 }
 
 struct MeasuredSpan {
@@ -68,6 +70,8 @@ struct MeasuredSpan {
     layout: pango::Layout,
     layout_size: (f64, f64),
     advance: (f64, f64),
+    dx: Option<Length>,
+    dy: Option<Length>,
 }
 
 struct PositionedSpan {
@@ -177,10 +181,12 @@ fn text_anchor_advance(
 }
 
 impl Span {
-    fn new(text: &str, values: ComputedValues) -> Span {
+    fn new(text: &str, values: ComputedValues, dx: Option<Length>, dy: Option<Length>) -> Span {
         Span {
             values,
             text: text.to_string(),
+            dx,
+            dy,
         }
     }
 }
@@ -206,6 +212,8 @@ impl MeasuredSpan {
             layout,
             layout_size: (w, h),
             advance,
+            dx: span.dx,
+            dy: span.dy,
         }
     }
 }
@@ -220,17 +228,25 @@ impl PositionedSpan {
         let layout = measured.layout.clone();
         let values = measured.values.clone();
 
+        let params = draw_ctx.get_view_params();
+
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let baseline_shift = values
-            .baseline_shift
-            .0
-            .normalize(&values, &draw_ctx.get_view_params());
+        let baseline_shift = values.baseline_shift.0.normalize(&values, &params);
         let offset = baseline + baseline_shift;
 
+        let dx = measured
+            .dx
+            .map(|l| l.normalize(&values, &params))
+            .unwrap_or(0.0);
+        let dy = measured
+            .dy
+            .map(|l| l.normalize(&values, &params))
+            .unwrap_or(0.0);
+
         let (render_x, render_y) = if values.text_gravity_is_vertical() {
-            (x + offset, y)
+            (x + offset + dx, y + dy)
         } else {
-            (x, y - offset)
+            (x + dx, y - offset + dy)
         };
 
         println!(
@@ -268,13 +284,19 @@ impl PositionedSpan {
 /// `x` and `y` are the absolute position for the first chunk.  If the
 /// first child is a `<tspan>` with a specified absolute position, it
 /// will be used instead of the given arguments.
-fn children_to_chunks(chunks: &mut Vec<Chunk>, node: &RsvgNode, cascaded: &CascadedValues<'_>) {
+fn children_to_chunks(
+    chunks: &mut Vec<Chunk>,
+    node: &RsvgNode,
+    cascaded: &CascadedValues<'_>,
+    dx: Option<Length>,
+    dy: Option<Length>,
+) {
     let values = cascaded.get();
 
     for child in node.children() {
         match child.get_type() {
             NodeType::Chars => child.with_impl(|chars: &NodeChars| {
-                let span = chars.make_span(&child, values);
+                let span = chars.make_span(&child, values, dx, dy);
 
                 let num_chunks = chunks.len();
                 assert!(num_chunks > 0);
@@ -360,12 +382,20 @@ impl NodeChars {
         }
     }
 
-    fn make_span(&self, node: &RsvgNode, values: &ComputedValues) -> Span {
+    fn make_span(
+        &self,
+        node: &RsvgNode,
+        values: &ComputedValues,
+        dx: Option<Length>,
+        dy: Option<Length>,
+    ) -> Span {
         self.ensure_normalized_string(node, values);
 
         Span::new(
             self.space_normalized.borrow().as_ref().unwrap(),
             values.clone(),
+            dx,
+            dy,
         )
     }
 }
@@ -379,8 +409,8 @@ impl NodeTrait for NodeChars {
 pub struct NodeText {
     x: Cell<Length>,
     y: Cell<Length>,
-    dx: Cell<Length>,
-    dy: Cell<Length>,
+    dx: Cell<Option<Length>>,
+    dy: Cell<Option<Length>>,
 }
 
 impl NodeText {
@@ -388,8 +418,8 @@ impl NodeText {
         NodeText {
             x: Cell::new(Length::default()),
             y: Cell::new(Length::default()),
-            dx: Cell::new(Length::default()),
-            dy: Cell::new(Length::default()),
+            dx: Cell::new(None),
+            dy: Cell::new(None),
         }
     }
 
@@ -398,11 +428,13 @@ impl NodeText {
 
         let x = self.x.get();
         let y = self.y.get();
+        let dx = self.dx.get();
+        let dy = self.dy.get();
 
         println!("Chunk new x={:?}, y={:?}", Some(x), Some(y));
         chunks.push(Chunk::new(cascaded.get(), Some(x), Some(y)));
 
-        children_to_chunks(&mut chunks, node, cascaded);
+        children_to_chunks(&mut chunks, node, cascaded, dx, dy);
         chunks
     }
 }
@@ -413,8 +445,12 @@ impl NodeTrait for NodeText {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
-                Attribute::Dx => self.dx.set(parse("dx", value, LengthDir::Horizontal)?),
-                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical)?),
+                Attribute::Dx => self
+                    .dx
+                    .set(parse("dx", value, LengthDir::Horizontal).map(Some)?),
+                Attribute::Dy => self
+                    .dy
+                    .set(parse("dy", value, LengthDir::Vertical).map(Some)?),
                 _ => (),
             }
         }
@@ -532,6 +568,8 @@ impl NodeTSpan {
     fn to_chunks(&self, node: &RsvgNode, cascaded: &CascadedValues<'_>, chunks: &mut Vec<Chunk>) {
         let x = self.x.get();
         let y = self.y.get();
+        let dx = self.dx.get();
+        let dy = self.dy.get();
 
         if x.is_some() || y.is_some() {
             // Any absolute position creates a new chunk
@@ -540,7 +578,7 @@ impl NodeTSpan {
             chunks.push(Chunk::new(values, x, y));
         }
 
-        children_to_chunks(chunks, node, cascaded);
+        children_to_chunks(chunks, node, cascaded, dx, dy);
     }
 }
 
