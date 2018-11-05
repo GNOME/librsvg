@@ -123,14 +123,25 @@ impl NodePath {
 }
 
 impl NodeTrait for NodePath {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        _: *const RsvgHandle,
+        pbag: &PropertyBag<'_>,
+    ) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             if attr == Attribute::D {
                 let mut builder = PathBuilder::new();
 
-                if path_parser::parse_path_into_builder(value, &mut builder).is_err() {
+                if let Err(e) = path_parser::parse_path_into_builder(value, &mut builder) {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
+
+                    rsvg_log!(
+                        "could not parse path {}: {}",
+                        node.get_human_readable_name(),
+                        e
+                    );
                 }
 
                 *self.builder.borrow_mut() = Some(builder);
