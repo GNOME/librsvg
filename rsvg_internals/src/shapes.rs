@@ -123,7 +123,12 @@ impl NodePath {
 }
 
 impl NodeTrait for NodePath {
-    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        _: *const RsvgHandle,
+        pbag: &PropertyBag<'_>,
+    ) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             if attr == Attribute::D {
                 let mut builder = PathBuilder::new();
