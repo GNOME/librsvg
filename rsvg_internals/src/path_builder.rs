@@ -135,7 +135,7 @@ impl EllipticalArc {
 
         // Compute the transformed center (cx', cy').
         let d = (rx * y1_).powi(2) + (ry * x1_).powi(2);
-        if d.approx_eq_cairo(&0.0) {
+        if d == 0.0 {
             return ArcParameterization::Omit;
         }
         let k = {
@@ -156,7 +156,7 @@ impl EllipticalArc {
         let ux = (x1_ - cx_) / rx;
         let uy = (y1_ - cy_) / ry;
         let u_len = (ux * ux + uy * uy).abs().sqrt();
-        if u_len.approx_eq_cairo(&0.0) {
+        if u_len == 0.0 {
             return ArcParameterization::Omit;
         }
         let cos_theta1 = clamp(ux / u_len, -1.0, 1.0);
@@ -172,7 +172,7 @@ impl EllipticalArc {
         let vx = (-x1_ - cx_) / rx;
         let vy = (-y1_ - cy_) / ry;
         let v_len = (vx * vx + vy * vy).abs().sqrt();
-        if v_len.approx_eq_cairo(&0.0) {
+        if v_len == 0.0 {
             return ArcParameterization::Omit;
         }
         let dp_uv = ux * vx + uy * vy;
