@@ -415,6 +415,14 @@ impl Gradient {
             }
         }
     }
+
+    fn bounds_are_valid(&self, bbox: &BoundingBox) -> bool {
+        if self.common.units == Some(GradientUnits(CoordUnits::UserSpaceOnUse)) {
+            true
+        } else {
+            bbox.rect.map_or(false, |r| !r.is_empty())
+        }
+    }
 }
 
 fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx<'_>, name: &str) -> Option<AcquiredNode> {
@@ -690,15 +698,13 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
     let mut did_set_gradient = false;
 
     node.with_impl(|node_gradient: &NodeGradient| {
-        if let Some(r) = bbox.rect {
-            if !r.is_empty() {
-                let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
-                let resolved = resolve_gradient(&gradient, draw_ctx);
-                let cascaded = node.get_cascaded_values();
-                let values = cascaded.get();
+        let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
+        let resolved = resolve_gradient(&gradient, draw_ctx);
 
-                set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox);
-            }
+        if resolved.bounds_are_valid(bbox) {
+            let cascaded = node.get_cascaded_values();
+            let values = cascaded.get();
+            set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox);
         }
 
         did_set_gradient = true;
