@@ -1,3 +1,10 @@
+Version 2.44.9
+- Fix #371 - rsvg-convert was positioning extracted elements
+  incorrectly when using the -w/-h options together with --export-id.
+- Fix #372 - Mis-rendering in small arc segments.
+- Fix #373 - Rendering of gradients for horizontal/vertical stroked
+  lines with gradientUnits="userSpaceOnUse".
+
 Version 2.44.8
 - Librsvg now requires Rust 1.27; this should have happened since
   2.44.0.  Apologies if the 2.44.x series didn't catch this build
