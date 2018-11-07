@@ -235,18 +235,6 @@ gboolean rsvg_property_bag_iter_next (RsvgPropertyBagIter *iter,
 G_GNUC_INTERNAL
 void rsvg_property_bag_iter_end (RsvgPropertyBagIter *iter);
 
-/* Implemented in rust/src/cond.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_cond_check_required_features (const char *value);
-
-/* Implemented in rust/src/cond.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_cond_check_required_extensions (const char *value);
-
-/* Implemented in rust/src/cond.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_cond_check_system_language (const char *value);
-
 G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 
