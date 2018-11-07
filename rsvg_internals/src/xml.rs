@@ -18,7 +18,6 @@ use structure::NodeSvg;
 use text::NodeChars;
 use tree::{RsvgTree, Tree};
 use util::utf8_cstr;
-
 // struct XIncludeContext {
 // needs_fallback: bool,
 // }
@@ -216,8 +215,8 @@ impl XmlState {
                 let parent = parent.clone();
                 self.element_creation_start_element(Some(&parent), handle, name, pbag)
             }
-            ContextKind::Style(_) => self.style_start_element(true, name, pbag),
-            ContextKind::UnsupportedStyleChild => self.style_start_element(true, name, pbag),
+            ContextKind::Style(_) => self.inside_style_start_element(name),
+            ContextKind::UnsupportedStyleChild => self.inside_style_start_element(name),
             ContextKind::XInclude => self.xinclude_start_element(handle, name, pbag),
         };
 
@@ -270,7 +269,7 @@ impl XmlState {
     ) -> Context {
         match name {
             "include" => unimplemented!(),
-            "style" => self.style_start_element(false, name, pbag),
+            "style" => self.style_start_element(name, pbag),
             _ => {
                 let node = self.create_node(parent, handle, name, pbag);
 
@@ -352,17 +351,7 @@ impl XmlState {
         new_node
     }
 
-    fn style_start_element(&self, inside_style: bool, name: &str, pbag: &PropertyBag) -> Context {
-        if inside_style {
-            // We are already inside a <style> element, and we don't support
-            // elements in there.  Just push a state that we will ignore.
-
-            return Context {
-                element_name: name.to_string(),
-                kind: ContextKind::UnsupportedStyleChild,
-            };
-        }
-
+    fn style_start_element(&self, name: &str, pbag: &PropertyBag) -> Context {
         // FIXME: See these:
         //
         // https://www.w3.org/TR/SVG11/styling.html#StyleElementTypeAttribute
@@ -395,6 +384,16 @@ impl XmlState {
     fn style_end_element(&mut self, style_ctx: StyleContext, handle: *mut RsvgHandle) {
         if style_ctx.is_text_css {
             css::parse_into_handle(handle, &style_ctx.text);
+        }
+    }
+
+    fn inside_style_start_element(&self, name: &str) -> Context {
+        // We are already inside a <style> element, and we don't support
+        // elements in there.  Just push a state that we will ignore.
+
+        Context {
+            element_name: name.to_string(),
+            kind: ContextKind::UnsupportedStyleChild,
         }
     }
 
