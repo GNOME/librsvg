@@ -131,6 +131,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         }
 
         if (!rsvg_handle_write (context->handle, buf, size, error)) {
+                g_clear_pointer(error, g_error_free);
                 rsvg_propagate_error (error, _("Error writing"), ERROR_WRITING);
                 return FALSE;
         }
