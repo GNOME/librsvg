@@ -131,6 +131,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         }
 
         if (!rsvg_handle_write (context->handle, buf, size, error)) {
+                g_clear_pointer(error, g_error_free);
                 rsvg_propagate_error (error, _("Error writing"), ERROR_WRITING);
                 return FALSE;
         }
@@ -153,8 +154,11 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
                 return FALSE;
         }
 
-        if (!rsvg_handle_close (context->handle, error))
+        if (!rsvg_handle_close (context->handle, error)) {
+                g_object_unref (context->handle);
+                g_free (context);
                 return FALSE;
+        }
 
         pixbuf = rsvg_handle_get_pixbuf (context->handle);
 
