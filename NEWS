@@ -4,6 +4,8 @@ Version 2.44.9
 - Fix #372 - Mis-rendering in small arc segments.
 - Fix #373 - Rendering of gradients for horizontal/vertical stroked
   lines with gradientUnits="userSpaceOnUse".
+- Fix a couple of memory leaks in the error paths of the GdkPixbuf
+  loader (Benedikt Heine).
 
 Version 2.44.8
 - Librsvg now requires Rust 1.27; this should have happened since
