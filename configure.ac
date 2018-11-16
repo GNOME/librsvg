@@ -132,6 +132,7 @@ AC_SUBST(GLIB_MKENUMS)
 PKG_CHECK_MODULES(LIBRSVG,                     \
 	cairo >= $CAIRO_REQUIRED               \
 	cairo-png >= $CAIRO_REQUIRED           \
+	cairo-gobject >= $CAIRO_REQUIRED           \
 	freetype2 >= $FREETYPE2_REQUIRED       \
 	gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED \
 	gio-2.0 >= $GIO_REQUIRED               \

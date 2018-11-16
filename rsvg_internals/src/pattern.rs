@@ -1,6 +1,6 @@
 use cairo;
 use cairo::MatrixTrait;
-use cairo::Pattern as CairoPattern;
+use cairo::PatternTrait;
 use std::cell::RefCell;
 use std::f64;
 use std::rc::*;
@@ -442,7 +442,7 @@ fn set_pattern_on_draw_context(
     surface_pattern.set_matrix(matrix);
     surface_pattern.set_filter(cairo::Filter::Best);
 
-    cr_save.set_source(&surface_pattern);
+    cr_save.set_source(&cairo::Pattern::SurfacePattern(surface_pattern));
 
     res.and_then(|_| Ok(true))
 }
