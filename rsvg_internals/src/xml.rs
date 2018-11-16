@@ -14,6 +14,7 @@ use load::rsvg_load_new_node;
 use node::{node_new, Node, NodeType};
 use property_bag::PropertyBag;
 use structure::NodeSvg;
+use style::NodeStyle;
 use text::NodeChars;
 use tree::{RsvgTree, Tree};
 use util::utf8_cstr;
@@ -25,12 +26,6 @@ enum ContextKind {
     // Creating nodes for elements under the current node
     ElementCreation,
 
-    // Inside a <style> element
-    Style(StyleContext),
-
-    // An element inside a <style> context, to be ignored
-    UnsupportedStyleChild,
-
     // Inside <xi:include>
     XInclude(XIncludeContext),
 
@@ -39,12 +34,6 @@ enum ContextKind {
 
     // Insie <xi::fallback>
     XIncludeFallback(XIncludeContext),
-}
-
-/// Handles the `<style>` element by parsing its character contents as CSS
-struct StyleContext {
-    is_text_css: bool,
-    text: String,
 }
 
 #[derive(Clone)]
@@ -79,18 +68,11 @@ pub enum RsvgXmlState {}
 /// that context, all XML events will be forwarded to it, and processed in one of the `XmlHandler`
 /// trait objects. Normally the context refers to a `NodeCreationContext` implementation which is
 /// what creates normal graphical elements.
-///
-/// When we get to a `<style>` element, we push a `StyleContext`, which processes its contents
-/// specially.
 struct XmlState {
     tree: Option<Box<Tree>>,
     context: Context,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
-}
-
-fn style_characters(style_ctx: &mut StyleContext, text: &str) {
-    style_ctx.text.push_str(text);
 }
 
 impl XmlState {
@@ -126,8 +108,6 @@ impl XmlState {
         let new_ctx = match ctx.kind {
             ContextKind::Start => self.element_creation_start_element(handle, name, pbag),
             ContextKind::ElementCreation => self.element_creation_start_element(handle, name, pbag),
-            ContextKind::Style(_) => self.inside_style_start_element(name),
-            ContextKind::UnsupportedStyleChild => self.inside_style_start_element(name),
             ContextKind::XInclude(ref ctx) => self.inside_xinclude_start_element(ctx, name),
             ContextKind::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(name),
             ContextKind::XIncludeFallback(ref ctx) => {
@@ -150,8 +130,6 @@ impl XmlState {
         match context.kind {
             ContextKind::Start => panic!("end_element: XML handler stack is empty!?"),
             ContextKind::ElementCreation => self.element_creation_end_element(handle),
-            ContextKind::Style(style_ctx) => self.style_end_element(style_ctx, handle),
-            ContextKind::UnsupportedStyleChild => (),
             ContextKind::XInclude(_) => (),
             ContextKind::UnsupportedXIncludeChild => (),
             ContextKind::XIncludeFallback(_) => (),
@@ -159,13 +137,11 @@ impl XmlState {
     }
 
     pub fn characters(&mut self, text: &str) {
-        let mut ctx = mem::replace(&mut self.context, Context::empty());
+        let ctx = mem::replace(&mut self.context, Context::empty());
 
         match ctx.kind {
             ContextKind::Start => panic!("characters: XML handler stack is empty!?"),
             ContextKind::ElementCreation => self.element_creation_characters(text),
-            ContextKind::Style(ref mut style_ctx) => style_characters(style_ctx, text),
-            ContextKind::UnsupportedStyleChild => (),
             ContextKind::XInclude(_) => (),
             ContextKind::UnsupportedXIncludeChild => (),
             ContextKind::XIncludeFallback(ref ctx) => {
@@ -184,7 +160,6 @@ impl XmlState {
     ) -> Context {
         match name {
             "include" => self.xinclude_start_element(handle, name, pbag),
-            "style" => self.style_start_element(name, pbag),
             _ => {
                 let node = self.create_node(self.current_node.as_ref(), handle, name, pbag);
                 if self.current_node.is_none() {
@@ -209,6 +184,12 @@ impl XmlState {
             node.with_impl(|svg: &NodeSvg| {
                 svg.set_delayed_style(&node, handle);
             });
+        }
+
+        if node.get_type() == NodeType::Style {
+            let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
+
+            css::parse_into_handle(handle, &css_data);
         }
 
         self.current_node = node.get_parent();
@@ -265,52 +246,6 @@ impl XmlState {
         new_node.set_overridden_properties();
 
         new_node
-    }
-
-    fn style_start_element(&self, name: &str, pbag: &PropertyBag) -> Context {
-        // FIXME: See these:
-        //
-        // https://www.w3.org/TR/SVG11/styling.html#StyleElementTypeAttribute
-        // https://www.w3.org/TR/SVG11/styling.html#ContentStyleTypeAttribute
-        //
-        // If the "type" attribute is not present, we should fallback to the
-        // "contentStyleType" attribute of the svg element, which in turn
-        // defaults to "text/css".
-        //
-        // See where is_text_css is used to see where we parse the contents
-        // of the style element.
-
-        let mut is_text_css = true;
-
-        for (_key, attr, value) in pbag.iter() {
-            if attr == Attribute::Type {
-                is_text_css = value == "text/css";
-            }
-        }
-
-        Context {
-            element_name: name.to_string(),
-            kind: ContextKind::Style(StyleContext {
-                is_text_css,
-                text: String::new(),
-            }),
-        }
-    }
-
-    fn style_end_element(&mut self, style_ctx: StyleContext, handle: *mut RsvgHandle) {
-        if style_ctx.is_text_css {
-            css::parse_into_handle(handle, &style_ctx.text);
-        }
-    }
-
-    fn inside_style_start_element(&self, name: &str) -> Context {
-        // We are already inside a <style> element, and we don't support
-        // elements in there.  Just push a state that we will ignore.
-
-        Context {
-            element_name: name.to_string(),
-            kind: ContextKind::UnsupportedStyleChild,
-        }
     }
 
     fn xinclude_start_element(

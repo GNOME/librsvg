@@ -32,6 +32,7 @@ use property_bag::PropertyBag;
 use shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
 use stop::NodeStop;
 use structure::{NodeDefs, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
+use style::NodeStyle;
 use text::{NodeTRef, NodeTSpan, NodeText};
 
 macro_rules! node_create_fn {
@@ -159,6 +160,7 @@ node_create_fn!(
 );
 node_create_fn!(create_spot_light, LightSource, LightSource::new_spot_light);
 node_create_fn!(create_stop, Stop, NodeStop::new);
+node_create_fn!(create_style, Style, NodeStyle::new);
 node_create_fn!(create_svg, Svg, NodeSvg::new);
 node_create_fn!(create_switch, Switch, NodeSwitch::new);
 node_create_fn!(create_symbol, Symbol, NodeSymbol::new);
@@ -251,7 +253,7 @@ lazy_static! {
         /* h.insert("script",           (false, as NodeCreateFn)); */
         /* h.insert("set",              (false, as NodeCreateFn)); */
         h.insert("stop",                (true,  create_stop as NodeCreateFn));
-        /* h.insert("style",            (false, as NodeCreateFn)); */
+        h.insert("style",               (false, create_style as NodeCreateFn));
         h.insert("subImage",            (false, create_group as NodeCreateFn));
         h.insert("subImageRef",         (false, create_image as NodeCreateFn));
         h.insert("svg",                 (true,  create_svg as NodeCreateFn));

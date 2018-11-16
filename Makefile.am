@@ -110,6 +110,7 @@ RUST_SRC =							\
 	rsvg_internals/src/state.rs				\
 	rsvg_internals/src/stop.rs				\
 	rsvg_internals/src/structure.rs				\
+	rsvg_internals/src/style.rs				\
 	rsvg_internals/src/text.rs				\
 	rsvg_internals/src/transform.rs				\
 	rsvg_internals/src/tree.rs				\

@@ -199,6 +199,7 @@ pub enum NodeType {
     RadialGradient,
     Rect,
     Stop,
+    Style,
     Svg,
     Switch,
     Symbol,

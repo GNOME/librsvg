@@ -121,6 +121,7 @@ pub mod srgb;
 mod state;
 mod stop;
 mod structure;
+mod style;
 pub mod surface_utils;
 mod text;
 mod transform;

@@ -87,6 +87,10 @@ struct DocHandlerData {
 }
 
 pub fn parse_into_handle(handle: *mut RsvgHandle, buf: &str) {
+    if buf.len() == 0 {
+        return; // libcroco doesn't like empty strings :(
+    }
+
     unsafe {
         let handler_data = DocHandlerData {
             handle,
