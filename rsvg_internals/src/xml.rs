@@ -361,7 +361,7 @@ impl XmlState {
                 ()
             })?;
 
-        self.characters(&utf8_data);
+        self.element_creation_characters(&utf8_data);
         Ok(())
     }
 
