@@ -1,5 +1,5 @@
 use cairo;
-use cairo::{MatrixTrait, Pattern};
+use cairo::{MatrixTrait, PatternTrait};
 use std::cell::{Cell, RefCell};
 
 use aspect_ratio::AspectRatio;
@@ -158,7 +158,7 @@ impl NodeTrait for NodeImage {
                 matrix.translate(-x, -y);
                 ptn.set_matrix(matrix);
                 ptn.set_extend(cairo::Extend::Pad);
-                cr.set_source(&ptn);
+                cr.set_source(&cairo::Pattern::SurfacePattern(ptn));
 
                 // Clip is needed due to extend being set to pad.
                 cr.rectangle(x, y, width, height);

@@ -24,10 +24,10 @@ libc = "0.2"
 downcast-rs = "^1.0.0"
 regex = "1"
 itertools = "0.7.4"
-pango = "0.4"
-pangocairo = "0.5"
-pango-sys = "0.6"
-pangocairo-sys = "0.7"
+pango = "0.5.0"
+pangocairo = "0.6.0"
+pango-sys = "0.7.0"
+pangocairo-sys = "0.8.0"
 cssparser = "0.25.1"
 lazy_static = "1.0.0"
 phf = "0.7.21"
@@ -38,35 +38,14 @@ nalgebra = "0.16"
 num-traits = "0.2"
 owning_ref = "0.3.0"
 rayon = "1"
-
-[dependencies.cairo-sys-rs]
-version = "0.6"
-#git = "https://github.com/gtk-rs/cairo.git"
-#branch = "master"
-#git = "https://github.com/federicomenaquintero/cairo.git"
-#branch = "matrix-try-invert"
-#git = "file:///home/federico/src/gtk-rs/cairo"
-#features = ["png"]
+cairo-sys-rs = "0.7.0"
+glib = "0.6.0"
+glib-sys = "0.7.0"
+gdk-pixbuf = "0.5.0"
 
 [dependencies.cairo-rs]
-version = "0.4"
-#git = "https://github.com/gtk-rs/cairo.git"
-#branch = "master"
-#git = "file:///home/federico/src/gtk-rs/cairo"
-#features = ["png"]
-
-[dependencies.glib]
-version = "0.5"
-#git = "https://github.com/gtk-rs/glib.git"
-#branch = "master"
-
-[dependencies.glib-sys]
-version = "0.6"
-#git = "https://github.com/gtk-rs/sys"
-#branch = "master"
-
-[dependencies.gdk-pixbuf]
-version = "0.4"
+version = "0.5.0"
+default-features = false
 
 [dev-dependencies]
 criterion = "0.2"
