@@ -162,74 +162,6 @@ rsvg_load_steal_tree (RsvgLoad *load)
     return rsvg_xml_state_steal_tree (load->xml.rust_state);
 }
 
-/* start xinclude */
-
-typedef struct _RsvgSaxHandlerXinclude {
-    RsvgSaxHandler super;
-
-    RsvgSaxHandler *prev_handler;
-    RsvgLoad *load;
-    gboolean success;
-    gboolean in_fallback;
-} RsvgSaxHandlerXinclude;
-
-static void start_xinclude (RsvgLoad *load, RsvgPropertyBag *atts);
-
-static void
-xinclude_handler_free (RsvgSaxHandler * self)
-{
-    g_free (self);
-}
-
-static void
-xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, gsize len)
-{
-    RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
-
-    if (z->in_fallback) {
-        rsvg_xml_state_characters (z->load->xml.rust_state, ch, len);
-    }
-}
-
-static void
-xinclude_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
-{
-    RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
-
-    if (!z->success) {
-        if (z->in_fallback) {
-            if (!strcmp (name, "xi:include"))
-                start_xinclude (z->load, atts);
-            else {
-                rsvg_xml_state_start_element (z->load->xml.rust_state,
-                                              z->load->handle,
-                                              (const char *) name,
-                                              atts);
-            }
-        } else if (!strcmp (name, "xi:fallback")) {
-            z->in_fallback = TRUE;
-        }
-    }
-}
-
-static void
-xinclude_handler_end (RsvgSaxHandler * self, const char *name)
-{
-    RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
-    RsvgSaxHandler *previous = z->prev_handler;
-    RsvgLoad *load = z->load;
-
-    if (!strcmp (name, "include") || !strcmp (name, "xi:include")) {
-        if (load->xml.handler != NULL) {
-            load->xml.handler->free (load->xml.handler);
-            load->xml.handler = previous;
-        }
-    } else if (z->in_fallback) {
-        if (!strcmp (name, "xi:fallback"))
-            z->in_fallback = FALSE;
-    }
-}
-
 static void
 set_xml_parse_options(xmlParserCtxtPtr xml_parser,
                       gboolean unlimited_size)
@@ -346,6 +278,7 @@ create_xml_stream_parser (RsvgLoad      *load,
     return parser;
 }
 
+#if 0
 /* http://www.w3.org/TR/xinclude/ */
 static void
 start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
@@ -440,8 +373,8 @@ start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
     /* needed to handle xi:fallback */
     handler = g_new0 (RsvgSaxHandlerXinclude, 1);
 
-    handler->super.free = xinclude_handler_free;
-    handler->super.characters = xinclude_handler_characters;
+    handler->super.free = NULL;
+    handler->super.characters = NULL;
     handler->super.start_element = xinclude_handler_start;
     handler->super.end_element = xinclude_handler_end;
     handler->prev_handler = load->xml.handler;
@@ -450,6 +383,7 @@ start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
 
     load->xml.handler = &handler->super;
 }
+#endif
 
 /* end xinclude */
 

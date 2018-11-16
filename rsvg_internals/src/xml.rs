@@ -18,107 +18,7 @@ use structure::NodeSvg;
 use text::NodeChars;
 use tree::{RsvgTree, Tree};
 use util::utf8_cstr;
-// struct XIncludeContext {
-// needs_fallback: bool,
-// }
-//
-// impl XmlHandler for XIncludeContext {
-// fn start_element(
-// &self,
-// _previous_handler: Option<&XmlHandler>,
-// _parent: Option<&Rc<Node>>,
-// handle: *mut RsvgHandle,
-// _name: &str,
-// pbag: &PropertyBag,
-// ) -> Box<XmlHandler> {
-// let mut href = None;
-// let mut parse = None;
-// let mut encoding = None;
-//
-// for (_key, attr, value) in pbag.iter() {
-// match attr {
-// Attribute::Href => href = Some(value),
-// Attribute::Parse => parse = Some(value),
-// Attribute::Encoding => encoding = Some(value),
-// _ => (),
-// }
-// }
-//
-// self.acquire(handle, href, parse, encoding);
-//
-// unimplemented!("finish start_xinclude() here");
-//
-// Box::new(XIncludeContext::empty())
-// }
-//
-// fn end_element(&self, handle: *mut RsvgHandle, _name: &str) -> Option<Rc<Node>> {
-// unimplemented!();
-// }
-//
-// fn characters(&self, text: &str) {
-// unimplemented!();
-// }
-// }
-//
-// impl XIncludeContext {
-// fn empty() -> XIncludeContext {
-// XIncludeContext {
-// needs_fallback: true,
-// }
-// }
-//
-// fn acquire(
-// &self,
-// handle: *mut RsvgHandle,
-// href: Option<&str>,
-// parse: Option<&str>,
-// encoding: Option<&str>,
-// ) {
-// if let Some(href) = href {
-// if parse == Some("text") {
-// self.acquire_text(handle, href, encoding);
-// } else {
-// unimplemented!("finish the xml case here");
-// }
-// }
-// }
-//
-// fn acquire_text(&self, handle: *mut RsvgHandle, href: &str, encoding: Option<&str>) {
-// let binary = match handle::acquire_data(handle, href) {
-// Ok(b) => b,
-// Err(e) => {
-// rsvg_log!("could not acquire \"{}\": {}", href, e);
-// return;
-// }
-// };
-//
-// let encoding = encoding.unwrap_or("utf-8");
-//
-// let encoder = match encoding_from_whatwg_label(encoding) {
-// Some(enc) => enc,
-// None => {
-// rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, href);
-// return;
-// }
-// };
-//
-// let utf8_data = match encoder.decode(&binary.data, DecoderTrap::Strict) {
-// Ok(data) => data,
-//
-// Err(e) => {
-// rsvg_log!(
-// "could not convert contents of \"{}\" from character encoding \"{}\": {}",
-// href,
-// encoding,
-// e
-// );
-// return;
-// }
-// };
-//
-// unimplemented!("rsvg_xml_state_characters(utf8_data)");
-// }
-// }
+
 enum ContextKind {
     // Starting state
     Start,
@@ -133,13 +33,23 @@ enum ContextKind {
     UnsupportedStyleChild,
 
     // Inside <xi:include>
-    XInclude,
+    XInclude(XIncludeContext),
+
+    // An unsupported element inside a <xi:include> context, to be ignored
+    UnsupportedXIncludeChild,
+
+    // Insie <xi::fallback>
+    XIncludeFallback,
 }
 
 /// Handles the `<style>` element by parsing its character contents as CSS
 struct StyleContext {
     is_text_css: bool,
     text: String,
+}
+
+struct XIncludeContext {
+    needs_fallback: bool,
 }
 
 /// A concrete parsing context for a surrounding `element_name` and its XML event handlers
@@ -217,7 +127,11 @@ impl XmlState {
             }
             ContextKind::Style(_) => self.inside_style_start_element(name),
             ContextKind::UnsupportedStyleChild => self.inside_style_start_element(name),
-            ContextKind::XInclude => self.xinclude_start_element(handle, name, pbag),
+            ContextKind::XInclude(ref ctx) => {
+                self.inside_xinclude_start_element(ctx, handle, name, pbag)
+            }
+            ContextKind::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(name),
+            ContextKind::XIncludeFallback => self.xinclude_fallback_start_element(ctx, handle, name, pbag),
         };
 
         self.push_context(new_ctx);
@@ -244,7 +158,8 @@ impl XmlState {
             }
             ContextKind::Style(style_ctx) => self.style_end_element(style_ctx, handle),
             ContextKind::UnsupportedStyleChild => (),
-            ContextKind::XInclude => self.xinclude_end_element(handle, name),
+            ContextKind::XInclude(_) => self.xinclude_end_element(handle, name),
+            ContextKind::UnsupportedXIncludeChild => (),
         }
     }
 
@@ -256,7 +171,9 @@ impl XmlState {
             }
             ContextKind::Style(ref mut style_ctx) => style_characters(style_ctx, text),
             ContextKind::UnsupportedStyleChild => (),
-            ContextKind::XInclude => self.xinclude_characters(text),
+            ContextKind::XInclude(ref ctx) => (),
+            ContextKind::UnsupportedXIncludeChild => (),
+            ContextKind::XIncludeFallback => self.xinclude_fallback_characters(ctx, text),
         }
     }
 
@@ -268,7 +185,7 @@ impl XmlState {
         pbag: &PropertyBag,
     ) -> Context {
         match name {
-            "include" => unimplemented!(),
+            "include" => self.xinclude_start_element(handle, name, pbag),
             "style" => self.style_start_element(name, pbag),
             _ => {
                 let node = self.create_node(parent, handle, name, pbag);
@@ -399,19 +316,129 @@ impl XmlState {
 
     fn xinclude_start_element(
         &mut self,
+        ctx: &XIncludeContext,
         handle: *mut RsvgHandle,
         name: &str,
         pbag: &PropertyBag,
     ) -> Context {
-        unimplemented!();
+        let mut href = None;
+        let mut parse = None;
+        let mut encoding = None;
+
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Href => href = Some(value),
+                Attribute::Parse => parse = Some(value),
+                Attribute::Encoding => encoding = Some(value),
+                _ => (),
+            }
+        }
+
+        let needs_fallback = self.acquire(handle, href, parse, encoding).is_ok();
+
+        Context {
+            element_name: name.to_string(),
+            kind: ContextKind::XInclude(XIncludeContext { needs_fallback }),
+        }
     }
 
     fn xinclude_end_element(&mut self, handle: *mut RsvgHandle, name: &str) {
-        unimplemented!();
     }
 
-    fn xinclude_characters(&mut self, text: &str) {
-        unimplemented!();
+    fn inside_xinclude_start_element(
+        &self,
+        ctx: &XIncludeContext,
+        handle: *mut RsvgHandle,
+        name: &str,
+        pbag: &PropertyBag,
+    ) -> Context {
+        if name == "xi:fallback" {
+            Context {
+                element_name: name.to_string(),
+                kind: ContextKind::XIncludeFallback,
+            }
+        }
+    }
+
+    fn xinclude_fallback_characters(&mut self, ctx: &XIncludeContext, text: &str) {
+        self.characters(text);
+    }
+
+    fn xinclude_fallback_start_element(
+        &self,
+        ctx: &XIncludeContext,
+        handle: *mut RsvgHandle,
+        name: &str,
+        pbag: &PropertyBag,
+    ) -> Context {
+        if name == "xi:include" {
+            self.xinclude_start_element(handle, name, pbag)
+        } else {
+            let parent = parent.clone();
+            self.element_creation_start_element(Some(&parent), handle, name, pbag)
+        }
+    }
+
+    fn acquire(
+        &self,
+        handle: *mut RsvgHandle,
+        href: Option<&str>,
+        parse: Option<&str>,
+        encoding: Option<&str>,
+    ) -> Result<(), ()> {
+        if let Some(href) = href {
+            if parse == Some("text") {
+                self.acquire_text(handle, href, encoding)
+            } else {
+                self.acquire_xml(handle, href)
+            }
+        }
+    }
+
+    fn acquire_text(
+        &mut self,
+        handle: *mut RsvgHandle,
+        href: &str,
+        encoding: Option<&str>,
+    ) -> Result<(), ()> {
+        let binary = handle::acquire_data(handle, href).map_err(|e| {
+            rsvg_log!("could not acquire \"{}\": {}", href, e);
+            ()
+        })?;
+
+        let encoding = encoding.unwrap_or("utf-8");
+
+        let encoder = encoding_from_whatwg_label(encoding)
+            .ok_or_else(|| {
+                rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, href);
+                ()
+            })?;
+
+        let utf8_data = encoder
+            .decode(&binary.data, DecoderTrap::Strict)
+            .map_err(|e| {
+                rsvg_log!(
+                    "could not convert contents of \"{}\" from character encoding \"{}\": {}",
+                    href,
+                    encoding,
+                    e
+                );
+                ()
+            })?;
+
+        self.characters(utf8_data);
+        Ok(())
+    }
+
+    fn acquire_xml(&self, handle: *mut RsvgHandle, href: &str) -> Result<(), ()> {
+        unimplemented!()
+    }
+
+    fn unsupported_xinclude_start_element(&self, name: &str) -> Context {
+        Context {
+            element_name: name.to_string(),
+            kind: ContextKind::UnsupportedXIncludeChild,
+        }
     }
 }
 
