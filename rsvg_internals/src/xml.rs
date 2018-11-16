@@ -2,7 +2,6 @@ use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use libc;
 use std;
-use std::cell::RefCell;
 use std::mem;
 use std::ptr;
 use std::rc::Rc;
@@ -23,8 +22,8 @@ enum ContextKind {
     // Starting state
     Start,
 
-    // Creating nodes for elements under the given parent
-    ElementCreation(Rc<Node>),
+    // Creating nodes for elements under the current node
+    ElementCreation,
 
     // Inside a <style> element
     Style(StyleContext),
@@ -39,7 +38,7 @@ enum ContextKind {
     UnsupportedXIncludeChild,
 
     // Insie <xi::fallback>
-    XIncludeFallback,
+    XIncludeFallback(XIncludeContext),
 }
 
 /// Handles the `<style>` element by parsing its character contents as CSS
@@ -48,8 +47,9 @@ struct StyleContext {
     text: String,
 }
 
+#[derive(Clone)]
 struct XIncludeContext {
-    needs_fallback: bool,
+    need_fallback: bool,
 }
 
 /// A concrete parsing context for a surrounding `element_name` and its XML event handlers
@@ -86,6 +86,7 @@ struct XmlState {
     tree: Option<Box<Tree>>,
     context: Context,
     context_stack: Vec<Context>,
+    current_node: Option<Rc<Node>>,
 }
 
 fn style_characters(style_ctx: &mut StyleContext, text: &str) {
@@ -98,6 +99,7 @@ impl XmlState {
             tree: None,
             context: Context::empty(),
             context_stack: Vec::new(),
+            current_node: None,
         }
     }
 
@@ -119,21 +121,21 @@ impl XmlState {
     }
 
     pub fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag) {
-        let new_ctx = match self.context.kind {
-            ContextKind::Start => self.element_creation_start_element(None, handle, name, pbag),
-            ContextKind::ElementCreation(ref parent) => {
-                let parent = parent.clone();
-                self.element_creation_start_element(Some(&parent), handle, name, pbag)
-            }
+        let ctx = mem::replace(&mut self.context, Context::empty());
+
+        let new_ctx = match ctx.kind {
+            ContextKind::Start => self.element_creation_start_element(handle, name, pbag),
+            ContextKind::ElementCreation => self.element_creation_start_element(handle, name, pbag),
             ContextKind::Style(_) => self.inside_style_start_element(name),
             ContextKind::UnsupportedStyleChild => self.inside_style_start_element(name),
-            ContextKind::XInclude(ref ctx) => {
-                self.inside_xinclude_start_element(ctx, handle, name, pbag)
-            }
+            ContextKind::XInclude(ref ctx) => self.inside_xinclude_start_element(ctx, name),
             ContextKind::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(name),
-            ContextKind::XIncludeFallback => self.xinclude_fallback_start_element(ctx, handle, name, pbag),
+            ContextKind::XIncludeFallback(ref ctx) => {
+                self.xinclude_fallback_start_element(&ctx.clone(), handle, name, pbag)
+            }
         };
 
+        mem::replace(&mut self.context, ctx);
         self.push_context(new_ctx);
     }
 
@@ -141,45 +143,41 @@ impl XmlState {
         // We can unwrap since start_element() always adds a context to the stack
         let top = self.context_stack.pop().unwrap();
 
-        let is_root = if let ContextKind::Start = top.kind {
-            true
-        } else {
-            false
-        };
-
         let context = mem::replace(&mut self.context, top);
 
         assert!(context.element_name == name);
 
         match context.kind {
             ContextKind::Start => panic!("end_element: XML handler stack is empty!?"),
-            ContextKind::ElementCreation(node) => {
-                self.element_creation_end_element(is_root, node, handle)
-            }
+            ContextKind::ElementCreation => self.element_creation_end_element(handle),
             ContextKind::Style(style_ctx) => self.style_end_element(style_ctx, handle),
             ContextKind::UnsupportedStyleChild => (),
-            ContextKind::XInclude(_) => self.xinclude_end_element(handle, name),
+            ContextKind::XInclude(_) => (),
             ContextKind::UnsupportedXIncludeChild => (),
+            ContextKind::XIncludeFallback(_) => (),
         }
     }
 
     pub fn characters(&mut self, text: &str) {
-        match self.context.kind {
+        let mut ctx = mem::replace(&mut self.context, Context::empty());
+
+        match ctx.kind {
             ContextKind::Start => panic!("characters: XML handler stack is empty!?"),
-            ContextKind::ElementCreation(ref parent) => {
-                self.element_creation_characters(parent, text)
-            }
+            ContextKind::ElementCreation => self.element_creation_characters(text),
             ContextKind::Style(ref mut style_ctx) => style_characters(style_ctx, text),
             ContextKind::UnsupportedStyleChild => (),
-            ContextKind::XInclude(ref ctx) => (),
+            ContextKind::XInclude(_) => (),
             ContextKind::UnsupportedXIncludeChild => (),
-            ContextKind::XIncludeFallback => self.xinclude_fallback_characters(ctx, text),
+            ContextKind::XIncludeFallback(ref ctx) => {
+                self.xinclude_fallback_characters(&ctx.clone(), text)
+            }
         }
+
+        mem::replace(&mut self.context, ctx);
     }
 
     fn element_creation_start_element(
-        &self,
-        parent: Option<&Rc<Node>>,
+        &mut self,
         handle: *mut RsvgHandle,
         name: &str,
         pbag: &PropertyBag,
@@ -188,22 +186,23 @@ impl XmlState {
             "include" => self.xinclude_start_element(handle, name, pbag),
             "style" => self.style_start_element(name, pbag),
             _ => {
-                let node = self.create_node(parent, handle, name, pbag);
+                let node = self.create_node(self.current_node.as_ref(), handle, name, pbag);
+                if self.current_node.is_none() {
+                    self.set_root(&node);
+                }
+                self.current_node = Some(node);
 
                 Context {
                     element_name: name.to_string(),
-                    kind: ContextKind::ElementCreation(node),
+                    kind: ContextKind::ElementCreation,
                 }
             }
         }
     }
 
-    fn element_creation_end_element(
-        &mut self,
-        is_root: bool,
-        node: Rc<Node>,
-        handle: *mut RsvgHandle,
-    ) {
+    fn element_creation_end_element(&mut self, handle: *mut RsvgHandle) {
+        let node = self.current_node.take().unwrap();
+
         // The "svg" node is special; it parses its style attributes
         // here, not during element creation.
         if node.get_type() == NodeType::Svg {
@@ -212,12 +211,12 @@ impl XmlState {
             });
         }
 
-        if is_root {
-            self.set_root(&node);
-        }
+        self.current_node = node.get_parent();
     }
 
-    fn element_creation_characters(&self, node: &Rc<Node>, text: &str) {
+    fn element_creation_characters(&self, text: &str) {
+        let node = self.current_node.as_ref().unwrap();
+
         if text.len() != 0 && node.accept_chars() {
             let chars_node = if let Some(child) = node.find_last_chars_child() {
                 child
@@ -316,7 +315,6 @@ impl XmlState {
 
     fn xinclude_start_element(
         &mut self,
-        ctx: &XIncludeContext,
         handle: *mut RsvgHandle,
         name: &str,
         pbag: &PropertyBag,
@@ -334,53 +332,54 @@ impl XmlState {
             }
         }
 
-        let needs_fallback = self.acquire(handle, href, parse, encoding).is_ok();
+        let need_fallback = !self.acquire(handle, href, parse, encoding).is_ok();
 
         Context {
             element_name: name.to_string(),
-            kind: ContextKind::XInclude(XIncludeContext { needs_fallback }),
+            kind: ContextKind::XInclude(XIncludeContext { need_fallback }),
         }
     }
 
-    fn xinclude_end_element(&mut self, handle: *mut RsvgHandle, name: &str) {
+    fn inside_xinclude_start_element(&self, ctx: &XIncludeContext, name: &str) -> Context {
+        if name == "xi:fallback" {
+            Context {
+                element_name: name.to_string(),
+                kind: ContextKind::XIncludeFallback(ctx.clone()),
+            }
+        } else {
+            self.unsupported_xinclude_start_element(name)
+        }
     }
 
-    fn inside_xinclude_start_element(
-        &self,
+    fn xinclude_fallback_start_element(
+        &mut self,
         ctx: &XIncludeContext,
         handle: *mut RsvgHandle,
         name: &str,
         pbag: &PropertyBag,
     ) -> Context {
-        if name == "xi:fallback" {
+        if ctx.need_fallback {
+            if name == "xi:include" {
+                self.xinclude_start_element(handle, name, pbag)
+            } else {
+                self.element_creation_start_element(handle, name, pbag)
+            }
+        } else {
             Context {
                 element_name: name.to_string(),
-                kind: ContextKind::XIncludeFallback,
+                kind: ContextKind::UnsupportedXIncludeChild,
             }
         }
     }
 
     fn xinclude_fallback_characters(&mut self, ctx: &XIncludeContext, text: &str) {
-        self.characters(text);
-    }
-
-    fn xinclude_fallback_start_element(
-        &self,
-        ctx: &XIncludeContext,
-        handle: *mut RsvgHandle,
-        name: &str,
-        pbag: &PropertyBag,
-    ) -> Context {
-        if name == "xi:include" {
-            self.xinclude_start_element(handle, name, pbag)
-        } else {
-            let parent = parent.clone();
-            self.element_creation_start_element(Some(&parent), handle, name, pbag)
+        if ctx.need_fallback {
+            self.characters(text);
         }
     }
 
     fn acquire(
-        &self,
+        &mut self,
         handle: *mut RsvgHandle,
         href: Option<&str>,
         parse: Option<&str>,
@@ -392,6 +391,8 @@ impl XmlState {
             } else {
                 self.acquire_xml(handle, href)
             }
+        } else {
+            Err(())
         }
     }
 
@@ -408,11 +409,10 @@ impl XmlState {
 
         let encoding = encoding.unwrap_or("utf-8");
 
-        let encoder = encoding_from_whatwg_label(encoding)
-            .ok_or_else(|| {
-                rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, href);
-                ()
-            })?;
+        let encoder = encoding_from_whatwg_label(encoding).ok_or_else(|| {
+            rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, href);
+            ()
+        })?;
 
         let utf8_data = encoder
             .decode(&binary.data, DecoderTrap::Strict)
@@ -426,7 +426,7 @@ impl XmlState {
                 ()
             })?;
 
-        self.characters(utf8_data);
+        self.characters(&utf8_data);
         Ok(())
     }
 
