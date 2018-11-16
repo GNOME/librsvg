@@ -28,7 +28,7 @@ pango = "0.4"
 pangocairo = "0.5"
 pango-sys = "0.6"
 pangocairo-sys = "0.7"
-cssparser = "0.24"
+cssparser = "0.25.1"
 lazy_static = "1.0.0"
 phf = "0.7.21"
 float-cmp = "0.4.0"
@@ -36,7 +36,7 @@ language-tags = "0.2.2"
 locale_config = "*" # recommended explicitly by locale_config's README.md
 nalgebra = "0.16"
 num-traits = "0.2"
-owning_ref = "0.3"
+owning_ref = "0.3.0"
 rayon = "1"
 
 [dependencies.cairo-sys-rs]
