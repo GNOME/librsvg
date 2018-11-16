@@ -88,10 +88,11 @@ impl NodeChars {
         let (width, _) = layout.get_size();
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let offset = baseline + values
-            .baseline_shift
-            .0
-            .normalize(values, &draw_ctx.get_view_params());
+        let offset = baseline
+            + values
+                .baseline_shift
+                .0
+                .normalize(values, &draw_ctx.get_view_params());
 
         if values.text_gravity_is_vertical() {
             draw_ctx.draw_pango_layout(&layout, values, *x + offset, *y, clipping)?;
@@ -538,7 +539,8 @@ fn create_pango_layout(
     attr_list.insert(
         pango::Attribute::new_letter_spacing(to_pango_units(
             values.letter_spacing.0.normalize(values, &params),
-        )).unwrap(),
+        ))
+        .unwrap(),
     );
 
     if values.text_decoration.underline {

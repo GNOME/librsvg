@@ -152,7 +152,8 @@ impl<'a> DrawingCtx<'a> {
             y: 0.0,
             width,
             height,
-        }.transform(&affine)
+        }
+        .transform(&affine)
         .outer();
 
         // scale according to size set by size_func callback
@@ -597,7 +598,8 @@ impl<'a> DrawingCtx<'a> {
                 fill_opacity,
                 &bbox,
                 current_color,
-            ).and_then(|had_paint_server| {
+            )
+            .and_then(|had_paint_server| {
                 if had_paint_server {
                     pangocairo::functions::update_layout(&cr, layout);
                     pangocairo::functions::show_layout(&cr, layout);
@@ -620,7 +622,8 @@ impl<'a> DrawingCtx<'a> {
                     stroke_opacity,
                     &bbox,
                     &current_color,
-                ).and_then(|had_paint_server| {
+                )
+                .and_then(|had_paint_server| {
                     if had_paint_server {
                         need_layout_path = true;
                     }
@@ -700,7 +703,8 @@ impl<'a> DrawingCtx<'a> {
             fill_opacity,
             &bbox,
             current_color,
-        ).and_then(|had_paint_server| {
+        )
+        .and_then(|had_paint_server| {
             if had_paint_server {
                 if values.stroke.0 == PaintServer::None {
                     cr.fill();
@@ -710,7 +714,8 @@ impl<'a> DrawingCtx<'a> {
             }
 
             Ok(())
-        }).and_then(|_| {
+        })
+        .and_then(|_| {
             let stroke_opacity = values.stroke_opacity.0;
 
             paint_server::set_source_paint_server(
@@ -719,7 +724,8 @@ impl<'a> DrawingCtx<'a> {
                 &stroke_opacity,
                 &bbox,
                 &current_color,
-            ).and_then(|had_paint_server| {
+            )
+            .and_then(|had_paint_server| {
                 if had_paint_server {
                     cr.stroke();
                 }

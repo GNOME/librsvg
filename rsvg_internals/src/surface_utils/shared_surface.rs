@@ -574,7 +574,8 @@ impl SharedImageSurface {
                             stride: self.stride,
                             ptr: NonNull::new(unsafe {
                                 self.ptr.as_ptr().offset(index as isize * self.stride)
-                            }).unwrap(),
+                            })
+                            .unwrap(),
                             _marker: PhantomData,
                         },
                     )
@@ -602,7 +603,8 @@ impl SharedImageSurface {
                             stride: self.stride,
                             ptr: NonNull::new(unsafe {
                                 self.ptr.as_ptr().offset(index as isize * 4)
-                            }).unwrap(),
+                            })
+                            .unwrap(),
                             _marker: PhantomData,
                         },
                     )
