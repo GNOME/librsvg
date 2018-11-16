@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 use std::ptr;
 
-use cairo::{self, ImageSurface, MatrixTrait, Pattern};
+use cairo::{self, ImageSurface, MatrixTrait, PatternTrait};
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
@@ -160,7 +160,7 @@ impl Image {
                 f64::from(bounds.y1 - bounds.y0),
             );
             cr.clip();
-            cr.set_source(&ptn);
+            cr.set_source(&cairo::Pattern::SurfacePattern(ptn));
             cr.paint();
         }
 
