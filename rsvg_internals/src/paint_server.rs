@@ -3,10 +3,11 @@ use cssparser::{self, Parser};
 use bbox::BoundingBox;
 use drawing_ctx::DrawingCtx;
 use error::*;
-use gradient;
-use node::NodeType;
+use gradient::NodeGradient;
+use node::{NodeType, RsvgNode};
 use parsers::Parse;
-use pattern;
+use pattern::NodePattern;
+use state::ComputedValues;
 use unitinterval::UnitInterval;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -69,6 +70,40 @@ fn set_color(
     );
 }
 
+pub trait PaintSource<T> {
+    fn resolve(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: &mut DrawingCtx<'_>,
+        bbox: &BoundingBox,
+    ) -> Option<T>;
+
+    fn set_pattern_on_draw_context(
+        &self,
+        pattern: &T,
+        values: &ComputedValues,
+        draw_ctx: &mut DrawingCtx<'_>,
+        opacity: &UnitInterval,
+        bbox: &BoundingBox,
+    ) -> Result<bool, RenderingError>;
+
+    fn resolve_fallbacks_and_set_pattern(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: &mut DrawingCtx<'_>,
+        opacity: &UnitInterval,
+        bbox: &BoundingBox,
+    ) -> Result<bool, RenderingError> {
+        if let Some(resolved) = self.resolve(&node, draw_ctx, bbox) {
+            let cascaded = node.get_cascaded_values();
+            let values = cascaded.get();
+            self.set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
+        } else {
+            Ok(false)
+        }
+    }
+}
+
 pub fn set_source_paint_server(
     draw_ctx: &mut DrawingCtx<'_>,
     ps: &PaintServer,
@@ -91,12 +126,13 @@ pub fn set_source_paint_server(
                 if node.get_type() == NodeType::LinearGradient
                     || node.get_type() == NodeType::RadialGradient
                 {
-                    had_paint_server = gradient::gradient_resolve_fallbacks_and_set_pattern(
-                        &node, draw_ctx, opacity, bbox,
-                    );
+                    had_paint_server = node.with_impl(|n: &NodeGradient| {
+                        n.resolve_fallbacks_and_set_pattern(&node, draw_ctx, opacity, bbox)
+                    })?;
                 } else if node.get_type() == NodeType::Pattern {
-                    had_paint_server =
-                        pattern::pattern_resolve_fallbacks_and_set_pattern(&node, draw_ctx, bbox)?;
+                    had_paint_server = node.with_impl(|n: &NodePattern| {
+                        n.resolve_fallbacks_and_set_pattern(&node, draw_ctx, opacity, bbox)
+                    })?;
                 }
             }
 
