@@ -29,18 +29,27 @@ impl Defs {
         self.nodes.entry(id.to_string()).or_insert(node.clone());
     }
 
+    /// Returns a node from an URI reference, or `None`
+    ///
+    /// This may return a node within the same RSVG handle, or a node in a secondary RSVG
+    /// handle that is referenced by the current one.  If the element's id is not found,
+    /// returns `None`.
     pub fn lookup(&mut self, name: &str) -> Option<&Rc<Node>> {
-        match name.rfind('#') {
-            None => None,
-            Some(p) if p == 0 => self.nodes.get(&name[1..]),
-            Some(p) => {
-                let handle = self.get_extern_handle(&name[..p]);
-                if handle.is_null() {
-                    None
-                } else {
-                    handle::get_defs(handle).nodes.get(&name[(p + 1)..])
+        if let Ok(reference) = Reference::parse(name) {
+            match reference {
+                Reference::PlainUri(_) => None,
+                Reference::FragmentId(fragment) => self.nodes.get(fragment),
+                Reference::UriWithFragmentId(uri, fragment) => {
+                    let handle = self.get_extern_handle(uri);
+                    if handle.is_null() {
+                        None
+                    } else {
+                        handle::get_defs(handle).nodes.get(fragment)
+                    }
                 }
             }
+        } else {
+            None
         }
     }
 
@@ -58,6 +67,39 @@ impl Defs {
                 }
             },
         )
+    }
+}
+
+/// Represents a possibly non-canonical URI with an optional fragment identifier
+///
+/// Sometimes in SVG element references (e.g. the `href` in the `<feImage>` element) we
+/// must decide between referencing an external file, or using a plain fragment identifier
+/// like `href="#foo"` as a reference to an SVG element in the same file as the one being
+/// processes.  This enum makes that distinction.
+#[derive(Debug, PartialEq)]
+pub enum Reference<'a> {
+    PlainUri(&'a str),
+    FragmentId(&'a str),
+    UriWithFragmentId(&'a str, &'a str),
+}
+
+impl<'a> Reference<'a> {
+    pub fn parse(s: &str) -> Result<Reference, ()> {
+        let (uri, fragment) = match s.rfind('#') {
+            None => (Some(s), None),
+            Some(p) if p == 0 => (None, Some(&s[1..])),
+            Some(p) => (Some(&s[..p]), Some(&s[(p + 1)..])),
+        };
+
+        match (uri, fragment) {
+            (None, Some(f)) if f.len() == 0 => Err(()),
+            (None, Some(f)) => Ok(Reference::FragmentId(f)),
+            (Some(u), _) if u.len() == 0 => Err(()),
+            (Some(u), None) => Ok(Reference::PlainUri(u)),
+            (Some(_u), Some(f)) if f.len() == 0 => Err(()),
+            (Some(u), Some(f)) => Ok(Reference::UriWithFragmentId(u, f)),
+            (_, _) => Err(()),
+        }
     }
 }
 
@@ -90,5 +132,30 @@ pub extern "C" fn rsvg_defs_lookup(
     match defs.lookup(name) {
         Some(n) => n as *const RsvgNode,
         None => ptr::null(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reference_kinds() {
+        assert_eq!(Reference::parse("uri"), Ok(Reference::PlainUri("uri")));
+        assert_eq!(
+            Reference::parse("#fragment"),
+            Ok(Reference::FragmentId("fragment"))
+        );
+        assert_eq!(
+            Reference::parse("uri#fragment"),
+            Ok(Reference::UriWithFragmentId("uri", "fragment"))
+        );
+    }
+
+    #[test]
+    fn reference_errors() {
+        assert!(Reference::parse("").is_err());
+        assert!(Reference::parse("#").is_err());
+        assert!(Reference::parse("uri#").is_err());
     }
 }

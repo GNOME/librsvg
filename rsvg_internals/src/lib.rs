@@ -5,6 +5,8 @@
 extern crate cairo;
 extern crate cairo_sys;
 extern crate cssparser;
+extern crate downcast_rs;
+extern crate encoding;
 extern crate float_cmp;
 extern crate gdk_pixbuf;
 extern crate glib;
@@ -26,8 +28,6 @@ extern crate regex;
 #[macro_use]
 extern crate lazy_static;
 
-extern crate downcast_rs;
-
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use css::{rsvg_css_parse_into_handle, rsvg_css_styles_free, rsvg_css_styles_new};
@@ -42,25 +42,13 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_new,
 };
 
-pub use load::{rsvg_load_new_node, rsvg_load_set_node_atts, rsvg_load_set_svg_node_atts};
-
-pub use node::{
-    rsvg_node_add_child,
-    rsvg_node_children_iter_begin,
-    rsvg_node_children_iter_end,
-    rsvg_node_children_iter_next,
-    rsvg_node_find_last_chars_child,
-    rsvg_node_get_parent,
-    rsvg_node_ref,
-    rsvg_node_unref,
-};
+pub use node::rsvg_node_unref;
 
 pub use tree::{
     rsvg_tree_cascade,
     rsvg_tree_free,
     rsvg_tree_get_root,
     rsvg_tree_is_root,
-    rsvg_tree_new,
     rsvg_tree_root_is_svg,
 };
 
@@ -74,7 +62,14 @@ pub use property_bag::{
 
 pub use structure::rsvg_node_svg_get_size;
 
-pub use text::{rsvg_node_chars_append, rsvg_node_chars_new};
+pub use xml::{
+    rsvg_xml_state_characters,
+    rsvg_xml_state_end_element,
+    rsvg_xml_state_free,
+    rsvg_xml_state_new,
+    rsvg_xml_state_start_element,
+    rsvg_xml_state_steal_tree,
+};
 
 #[macro_use]
 mod log;
@@ -124,6 +119,7 @@ pub mod srgb;
 mod state;
 mod stop;
 mod structure;
+mod style;
 pub mod surface_utils;
 mod text;
 mod transform;
@@ -132,3 +128,4 @@ mod unitinterval;
 mod util;
 mod viewbox;
 mod viewport;
+mod xml;

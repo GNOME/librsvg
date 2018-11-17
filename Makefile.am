@@ -110,13 +110,15 @@ RUST_SRC =							\
 	rsvg_internals/src/state.rs				\
 	rsvg_internals/src/stop.rs				\
 	rsvg_internals/src/structure.rs				\
+	rsvg_internals/src/style.rs				\
 	rsvg_internals/src/text.rs				\
 	rsvg_internals/src/transform.rs				\
 	rsvg_internals/src/tree.rs				\
 	rsvg_internals/src/unitinterval.rs			\
 	rsvg_internals/src/util.rs				\
 	rsvg_internals/src/viewbox.rs				\
-	rsvg_internals/src/viewport.rs
+	rsvg_internals/src/viewport.rs				\
+	rsvg_internals/src/xml.rs
 
 RUST_EXTRA = 						\
 	Cargo.lock					\

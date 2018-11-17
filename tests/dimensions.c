@@ -34,16 +34,9 @@ test_dimensions (FixtureData *fixture)
     g_assert_no_error (error);
 
     if (fixture->id) {
-        gboolean got_sub;
-
-        got_sub = rsvg_handle_has_sub (handle, fixture->id);
-        g_assert (got_sub);
-
-        got_sub = rsvg_handle_get_position_sub (handle, &position, fixture->id);
-        g_assert (got_sub);
-
-        got_sub = rsvg_handle_get_dimensions_sub (handle, &dimension, fixture->id);
-        g_assert (got_sub);
+        g_assert (rsvg_handle_has_sub (handle, fixture->id));
+        g_assert (rsvg_handle_get_position_sub (handle, &position, fixture->id));
+        g_assert (rsvg_handle_get_dimensions_sub (handle, &dimension, fixture->id));
 
         g_message ("w=%d h=%d", dimension.width, dimension.height);
     } else {

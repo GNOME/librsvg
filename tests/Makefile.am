@@ -80,6 +80,7 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/reftests/*.css)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.png)			\
+	$(wildcard $(srcdir)/fixtures/reftests/*.txt)			\
 	$(wildcard $(srcdir)/fixtures/reftests/bugs/*.svg)		\
 	$(wildcard $(srcdir)/fixtures/reftests/bugs/*.png)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/*.svg)		\

@@ -121,54 +121,15 @@ struct RsvgHandlePrivate {
 };
 
 /* Implemented in rust/src/node.rs */
-/* Call this as newref = rsvg_node_ref (node);  You don't own the node anymore, just the newref! */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_ref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
-
-/* Implemented in rust/src/node.rs */
 /* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_unref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
-
-/* Implemented in rust/src/node.rs
- *
- * Returns a new strong reference to the parent (or NULL); use rsvg_node_unref()
- * when you are done.
- */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_get_parent (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-void rsvg_node_add_child (RsvgNode *node, RsvgNode *child);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_set_overridden_properties (RsvgNode *node);
 
 typedef struct RsvgNodeChildrenIter *RsvgNodeChildrenIter;
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-RsvgNodeChildrenIter *rsvg_node_children_iter_begin (RsvgNode *node);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_node_children_iter_next (RsvgNodeChildrenIter *iter,
-                                       RsvgNode **out_child);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_node_children_iter_next_back (RsvgNodeChildrenIter *iter,
-                                            RsvgNode **out_child);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
-
-/* Implemented in rsvg_internals/src/tree.rs */
-G_GNUC_INTERNAL
-RsvgTree *rsvg_tree_new (RsvgNode *root);
 
 /* Implemented in rsvg_internals/src/tree.rs */
 G_GNUC_INTERNAL

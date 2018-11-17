@@ -40,12 +40,17 @@ extern "C" {
     ) -> *mut u8;
 
     fn rsvg_handle_keep_image_data(handle: *const RsvgHandle) -> glib_sys::gboolean;
+
+    fn rsvg_load_handle_xml_xinclude(
+        handle: *mut RsvgHandle,
+        url: *const libc::c_char,
+    ) -> glib_sys::gboolean;
 }
 
-pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a Defs {
+pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a mut Defs {
     unsafe {
         let d = rsvg_handle_get_defs(handle);
-        &*(d as *const Defs)
+        &mut *(d as *mut Defs)
     }
 }
 
@@ -183,4 +188,8 @@ pub fn image_surface_new_from_href(
     }
 
     Ok(surface)
+}
+
+pub fn load_xml_xinclude(handle: *mut RsvgHandle, url: &str) -> bool {
+    unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, url.to_glib_none().0)) }
 }
