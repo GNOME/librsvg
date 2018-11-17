@@ -43,35 +43,19 @@
 #include <stdlib.h>
 
 static GdkPixbuf *
-rsvg_pixbuf_from_stdio_file_with_size_data (const char *data,
-                                            gsize data_len,
-                                            struct RsvgSizeCallbackData *cb_data,
-                                            gchar * base_uri, 
-                                            GError ** error)
+pixbuf_from_file_with_size_data (GFile *file,
+                                 struct RsvgSizeCallbackData *cb_data,
+                                 GError ** error)
 {
     RsvgHandle *handle;
     GdkPixbuf *retval;
 
-    handle = rsvg_handle_new ();
-
+    handle = rsvg_handle_new_from_gfile_sync (file, 0, NULL, error);
     if (!handle) {
-        g_set_error (error, rsvg_error_quark (), 0, _("Error creating SVG reader"));
         return NULL;
     }
 
     rsvg_handle_set_size_callback (handle, _rsvg_size_callback, cb_data, NULL);
-    rsvg_handle_set_base_uri (handle, base_uri);
-
-    if (!rsvg_handle_write (handle, (guchar *) data, data_len, error)) {
-        (void) rsvg_handle_close (handle, NULL);
-        g_object_unref (handle);
-        return NULL;
-    }
-
-    if (!rsvg_handle_close (handle, error)) {
-        g_object_unref (handle);
-        return NULL;
-    }
 
     retval = rsvg_handle_get_pixbuf (handle);
     g_object_unref (handle);
@@ -84,31 +68,12 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
                                       struct RsvgSizeCallbackData *cb_data, 
                                       GError ** error)
 {
-    GdkPixbuf *pixbuf;
-    char *data;
-    gsize data_len;
     GFile *file;
-    gchar *base_uri;
+    GdkPixbuf *pixbuf;
 
     file = g_file_new_for_path (file_name);
-    base_uri = g_file_get_uri (file);
-    if (!base_uri) {
-        g_object_unref (file);
-        return NULL;
-    }
-
-    data = _rsvg_io_acquire_data (base_uri, base_uri, NULL, &data_len, NULL, error);
-
-    if (data) {
-        pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data (data, data_len,
-                                                             cb_data, base_uri, error);
-        g_free (data);
-    } else {
-        pixbuf = NULL;
-    }
-
-    g_free (base_uri);
-    g_object_unref (file);
+    pixbuf = pixbuf_from_file_with_size_data (file, cb_data, error);
+    g_clear_object (&file);
 
     return pixbuf;
 }
