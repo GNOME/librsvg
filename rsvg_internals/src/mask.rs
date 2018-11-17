@@ -1,6 +1,4 @@
 use cairo::{self, MatrixTrait};
-use cairo_sys;
-use glib::translate::*;
 use std::cell::Cell;
 
 use attributes::Attribute;
@@ -24,15 +22,6 @@ use surface_utils::{
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
-
-// remove this once cairo-rs has this mask_surface()
-fn cairo_mask_surface(cr: &cairo::Context, surface: &cairo::Surface, x: f64, y: f64) {
-    unsafe {
-        let raw_cr = cr.to_glib_none().0;
-
-        cairo_sys::cairo_mask_surface(raw_cr, surface.to_raw_none(), x, y);
-    }
-}
 
 pub struct NodeMask {
     x: Cell<Length>,
@@ -170,7 +159,7 @@ impl NodeMask {
         cr.identity_matrix();
 
         let (xofs, yofs) = draw_ctx.get_offset();
-        cairo_mask_surface(&cr, &mask_surface, xofs, yofs);
+        cr.mask_surface(&mask_surface, xofs, yofs);
 
         Ok(())
     }
