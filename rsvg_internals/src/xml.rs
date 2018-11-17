@@ -368,7 +368,11 @@ impl XmlState {
     }
 
     fn acquire_xml(&self, handle: *mut RsvgHandle, href: &str) -> Result<(), ()> {
-        unimplemented!()
+        if handle::load_xml_xinclude(handle, href) {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 
     fn unsupported_xinclude_start_element(&self, name: &str) -> Context {

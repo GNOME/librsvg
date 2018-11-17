@@ -33,6 +33,11 @@ extern "C" {
         out_len: *mut usize,
         error: *mut *mut glib_sys::GError,
     ) -> *mut u8;
+
+    fn rsvg_load_handle_xml_xinclude(
+        handle: *mut RsvgHandle,
+        url: *const libc::c_char,
+    ) -> glib_sys::gboolean;
 }
 
 pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a mut Defs {
@@ -93,4 +98,8 @@ pub fn acquire_data(handle: *mut RsvgHandle, url: &str) -> Result<BinaryData, gl
             })
         }
     }
+}
+
+pub fn load_xml_xinclude(handle: *mut RsvgHandle, url: &str) -> bool {
+    unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, url.to_glib_none().0)) }
 }
