@@ -59,12 +59,6 @@ extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminate
 
 /* Holds the XML parsing state */
 typedef struct {
-    /* not a handler stack. each nested handler keeps
-     * track of its parent
-     */
-    RsvgSaxHandler *handler;
-    int handler_nest;
-
     GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
 
     xmlParserCtxtPtr ctxt;
@@ -88,13 +82,6 @@ struct RsvgLoad {
     XmlState xml;
 };
 
-struct RsvgSaxHandler {
-    void (*free) (RsvgSaxHandler * self);
-    void (*start_element) (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts);
-    void (*end_element) (RsvgSaxHandler * self, const char *name);
-    void (*characters) (RsvgSaxHandler * self, const char *ch, gsize len);
-};
-
 static xmlSAXHandler get_xml2_sax_handler (void);
 
 RsvgLoad *
@@ -109,8 +96,6 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->error = NULL;
     load->compressed_input_stream = NULL;
 
-    load->xml.handler = NULL;
-    load->xml.handler_nest = 0;
     load->xml.entities = g_hash_table_new_full (g_str_hash,
                                                 g_str_equal,
                                                 g_free,
@@ -317,31 +302,20 @@ sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
 {
     RsvgPropertyBag bag;
     RsvgLoad *load = data;
+    const char *tempname;
 
     bag = rsvg_property_bag_new ((const char **) atts);
-#if 0
-    if (load->xml.handler) {
-        load->xml.handler_nest++;
-        load->xml.handler->start_element (load->xml.handler, (const char *) name, bag);
-    } else {
-#endif
-        const char *tempname;
-        for (tempname = (const char *) name; *tempname != '\0'; tempname++)
-            if (*tempname == ':')
-                name = (const xmlChar *) (tempname + 1);
-#if 0
-        if (!strcmp ((const char *) name, "include"))      /* xi:include */
-            start_xinclude (load, bag);
-        else {
-#endif
-            rsvg_xml_state_start_element (load->xml.rust_state,
-                                          load->handle,
-                                          (const char *) name,
-                                          bag);
-#if 0
+
+    for (tempname = (const char *) name; *tempname != '\0'; tempname++) {
+        if (*tempname == ':') {
+            name = (const xmlChar *) (tempname + 1);
         }
     }
-#endif
+
+    rsvg_xml_state_start_element (load->xml.rust_state,
+                                  load->handle,
+                                  (const char *) name,
+                                  bag);
 
     rsvg_property_bag_free (bag);
 }
@@ -351,28 +325,15 @@ sax_end_element_cb (void *data, const xmlChar * xmlname)
 {
     RsvgLoad *load =  data;
     const char *name = (const char *) xmlname;
+    const char *tempname;
 
-#if 0
-    if (load->xml.handler_nest > 0 && load->xml.handler != NULL) {
-        load->xml.handler->end_element (load->xml.handler, name);
-        load->xml.handler_nest--;
-    } else {
-#endif
-        const char *tempname;
-
-        for (tempname = name; *tempname != '\0'; tempname++)
-            if (*tempname == ':')
-                name = tempname + 1;
-#if 0
-        if (load->xml.handler != NULL) {
-            load->xml.handler->free (load->xml.handler);
-            load->xml.handler = NULL;
+    for (tempname = name; *tempname != '\0'; tempname++) {
+        if (*tempname == ':') {
+            name = tempname + 1;
         }
-#endif
-        rsvg_xml_state_end_element (load->xml.rust_state, load->handle, name);
-#if 0
     }
-#endif
+
+    rsvg_xml_state_end_element (load->xml.rust_state, load->handle, name);
 }
 
 static void
@@ -380,12 +341,6 @@ sax_characters_cb (void *data, const xmlChar * ch, int len)
 {
     RsvgLoad *load = data;
 
-#if 0
-    if (load->xml.handler) {
-        load->xml.handler->characters (load->xml.handler, (const char *) ch, (gsize) len);
-        return;
-    }
-#endif
     rsvg_xml_state_characters (load->xml.rust_state, (const char *) ch, (gsize) len);
 }
 
