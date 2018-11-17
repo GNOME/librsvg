@@ -1,4 +1,4 @@
-use cairo::{self, ImageSurface, Matrix, MatrixTrait, Pattern};
+use cairo::{self, ImageSurface, Matrix, MatrixTrait, PatternTrait};
 
 use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
@@ -93,7 +93,7 @@ impl Filter for Tile {
                     );
                     cr.clip();
 
-                    cr.set_source(&ptn);
+                    cr.set_source(&cairo::Pattern::SurfacePattern(ptn));
                     cr.paint();
                 }
 

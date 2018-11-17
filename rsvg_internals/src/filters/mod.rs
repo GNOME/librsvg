@@ -344,12 +344,12 @@ pub fn render(
     for (rr, linear_rgb) in primitives {
         let mut render = |filter_ctx: &mut FilterContext| {
             if let Err(err) = rr
-                .render(rr.owner(), filter_ctx, draw_ctx)
+                .render(rr.as_owner(), filter_ctx, draw_ctx)
                 .and_then(|result| filter_ctx.store_result(result))
             {
                 rsvg_log!(
                     "(filter primitive {} returned an error: {})",
-                    rr.owner().get_human_readable_name(),
+                    rr.as_owner().get_human_readable_name(),
                     err
                 );
 
@@ -373,7 +373,7 @@ pub fn render(
         let elapsed = start.elapsed();
         rsvg_log!(
             "(rendered filter primitive {} in\n    {} seconds)",
-            rr.owner().get_human_readable_name(),
+            rr.as_owner().get_human_readable_name(),
             elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
         );
     }

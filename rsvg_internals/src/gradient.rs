@@ -399,7 +399,11 @@ impl Gradient {
         self.common.add_color_stop(offset, rgba, opacity);
     }
 
-    fn add_color_stops_to_pattern(&self, pattern: &mut cairo::Gradient, opacity: &UnitInterval) {
+    fn add_color_stops_to_pattern<T, G: cairo::Gradient<PatternType = T>>(
+        &self,
+        pattern: &mut G,
+        opacity: &UnitInterval,
+    ) {
         if let Some(stops) = self.common.stops.as_ref() {
             for stop in stops {
                 let &UnitInterval(o) = opacity;
@@ -466,15 +470,12 @@ fn resolve_gradient(gradient: &Gradient, draw_ctx: &mut DrawingCtx<'_>) -> Gradi
     result
 }
 
-fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
+fn set_common_on_pattern<P: cairo::PatternTrait + cairo::Gradient>(
     gradient: &Gradient,
-    draw_ctx: &mut DrawingCtx<'_>,
     pattern: &mut P,
     bbox: &BoundingBox,
     opacity: &UnitInterval,
 ) {
-    let cr = draw_ctx.get_cairo_context();
-
     let mut affine = gradient.common.affine.unwrap();
 
     let units = gradient.common.units.unwrap();
@@ -499,8 +500,6 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
     ));
 
     gradient.add_color_stops_to_pattern(pattern, opacity);
-
-    cr.set_source(pattern);
 }
 
 // SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
@@ -567,7 +566,9 @@ fn set_pattern_on_draw_context(
                 y2.as_ref().unwrap().normalize(values, &params),
             );
 
-            set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity)
+            let cr = draw_ctx.get_cairo_context();
+            set_common_on_pattern(gradient, &mut pattern, bbox, opacity);
+            cr.set_source(&cairo::Pattern::LinearGradient(pattern));
         }
 
         GradientVariant::Radial { cx, cy, r, fx, fy } => {
@@ -580,7 +581,9 @@ fn set_pattern_on_draw_context(
             let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
             let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
 
-            set_common_on_pattern(gradient, draw_ctx, &mut pattern, bbox, opacity)
+            let cr = draw_ctx.get_cairo_context();
+            set_common_on_pattern(gradient, &mut pattern, bbox, opacity);
+            cr.set_source(&cairo::Pattern::RadialGradient(pattern));
         }
     }
 }
