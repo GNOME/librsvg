@@ -276,7 +276,8 @@ impl XmlState {
     }
 
     fn inside_xinclude_start_element(&self, ctx: &XIncludeContext, name: &str) -> Context {
-        if name == "xi:fallback" {
+        // FIXME: we aren't using the xi: namespace
+        if name == "fallback" {
             Context {
                 element_name: name.to_string(),
                 kind: ContextKind::XIncludeFallback(ctx.clone()),
@@ -294,7 +295,8 @@ impl XmlState {
         pbag: &PropertyBag,
     ) -> Context {
         if ctx.need_fallback {
-            if name == "xi:include" {
+            // FIXME: we aren't using the xi: namespace
+            if name == "include" {
                 self.xinclude_start_element(handle, name, pbag)
             } else {
                 self.element_creation_start_element(handle, name, pbag)
@@ -309,7 +311,7 @@ impl XmlState {
 
     fn xinclude_fallback_characters(&mut self, ctx: &XIncludeContext, text: &str) {
         if ctx.need_fallback {
-            self.characters(text);
+            self.element_creation_characters(text);
         }
     }
 
