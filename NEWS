@@ -1,4 +1,6 @@
 Version 2.45.0
+- Librsvg now requires Rust 1.27.
+- Librsvg now requires Cairo 1.15.12.
 - Fix building when srcdir != builddir (Mathieu Bridon).
 - Fix #339 - Panic in filters with primitiveUnits="objectBoundingBox"
   on zero-sized elements (Ivan Molodetskikh).
@@ -20,6 +22,44 @@ Version 2.45.0
 - Updates to the CI infrastructure and the build documentation (Jordan
   Petridis).
 - Cleanups and refactoring (Paolo Borelli, Linus Unnebäck, Federico Mena).
+- Fix #343 - Handle child being in error in feComponentTransfer.
+- Fix #346 - Handle filter primitives producing errors.
+- Fix #347 - Regression in computation of text element extents.
+- Fix #348 - Fix incorrect font sizing.
+- Fix #349 - Don't panic when loading an external image that is bigger
+  than Cairo's limits.
+- Fix - rsvg_handle_get_dimensions_sub() no longer panics if passed a
+  nonexistent fragment identifier.
+- Fix 32-bit builds (Jordan Petridis).
+- Fix #256 - Correctly match the systemLanguage attribute with the
+  user's locale.
+- Fix #320 - Parse xml:lang correctly.
+- Fix #334 - Don't modify the caller's cairo_t state during rendering.
+- Fix #349 - Don't panic if we get a "data:" URI with empty data.
+- Fix #352 - Don't panic on getting a very large "order" for
+  feConvolveMatrix (Ivan Molodetskikh).
+- Fix #363 - Don't drop spaces around <tspan> elements.
+- Fix #365 - rsvg-convert now uses pixel units for SVG output, instead
+  of points.  This requires cairo 1.15.12 (Antonio Ospite).
+- Fix #358, #366 - tweaks to have the test suite pass on i386 and
+  non-x86_64 platforms (Simon McVittie, Federico Mena).
+- Fix #368 - With RSVG_LOG=1, librsvg will now report when SVGs have
+  references to nonexistent elements, to aid debugging (for example,
+  in an xlink:href attribute).
+- Fix #371 - rsvg-convert was positioning extracted elements
+  incorrectly when using the -w/-h options together with --export-id.
+- Fix #372 - Mis-rendering in small arc segments.
+- Fix #373 - Rendering of gradients for horizontal/vertical stroked
+  lines with gradientUnits="userSpaceOnUse".
+- Fix a couple of memory leaks in the error paths of the GdkPixbuf
+  loader (Benedikt Heine).
+- Allow reference tests with a small difference to pass without
+  breaking the build (Simon McVittie).
+- CSS processing code is now in Rust, although it still calls libcroco
+  to do the parsing.
+- XML processing code is partially moved to Rust, although it still
+  calls libxml2 for the XML parsing.
+- Special thanks to Alex Crichton for ensuring that MacOS builds work.
 
 Version 2.44.2
 - A *double brown paper bag* release!  Super strong, this one!
