@@ -447,17 +447,6 @@ fn set_pattern_on_draw_context(
     res.and_then(|_| Ok(true))
 }
 
-fn resolve_fallbacks_and_set_pattern(
-    pattern: &Pattern,
-    values: &ComputedValues,
-    draw_ctx: &mut DrawingCtx<'_>,
-    bbox: &BoundingBox,
-) -> Result<bool, RenderingError> {
-    let resolved = resolve_pattern(pattern, draw_ctx);
-
-    set_pattern_on_draw_context(&resolved, values, draw_ctx, bbox)
-}
-
 pub fn pattern_resolve_fallbacks_and_set_pattern(
     node: &RsvgNode,
     draw_ctx: &mut DrawingCtx<'_>,
@@ -467,10 +456,10 @@ pub fn pattern_resolve_fallbacks_and_set_pattern(
 
     node.with_impl(|node_pattern: &NodePattern| {
         let pattern = &*node_pattern.pattern.borrow();
+        let resolved = resolve_pattern(pattern, draw_ctx);
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
-
-        resolve_fallbacks_and_set_pattern(pattern, values, draw_ctx, bbox)
+        set_pattern_on_draw_context(&resolved, values, draw_ctx, bbox)
     })
 }
 
