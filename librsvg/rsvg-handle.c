@@ -1196,7 +1196,7 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
 }
 
 static gboolean
-get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rect)
+get_node_geometry(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rect, cairo_rectangle_t *logical_rect)
 {
     RsvgDimensionData dimensions;
     cairo_surface_t *target;
@@ -1219,7 +1219,7 @@ get_node_ink_rect(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
     rsvg_tree_cascade (handle->priv->tree);
     res = rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
     if (res) {
-        res = rsvg_drawing_ctx_get_ink_rect (draw, ink_rect);
+        res = rsvg_drawing_ctx_get_geometry (draw, ink_rect, logical_rect);
     }
 
     rsvg_drawing_ctx_free (draw);
@@ -1280,7 +1280,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     if (id || !has_size) {
         cairo_rectangle_t ink_rect;
 
-        if (!get_node_ink_rect (handle, node, &ink_rect)) {
+        if (!get_node_geometry (handle, node, &ink_rect, NULL)) {
             goto out;
         }
 
@@ -1296,6 +1296,85 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
     if (handle->priv->size_func)
         (*handle->priv->size_func) (&dimension_data->width, &dimension_data->height,
+                                    handle->priv->user_data);
+
+    res = TRUE;
+
+out:
+
+    g_clear_pointer (&root, rsvg_node_unref);
+
+    return res;
+}
+
+/**
+ * rsvg_handle_get_geometry_sub:
+ * @handle: A #RsvgHandle
+ * @ink_rect: (out): A place to store the SVG fragment's geometry.
+ * @logical_rect: (out): A place to store the SVG fragment's logical geometry.
+ * @id: (nullable): An element's id within the SVG, starting with "##", for
+ * example, "##layer1"; or %NULL to use the whole SVG.
+ *
+ * Get the geometry of a subelement of the SVG file. Do not call from within
+ * the size_func callback, because an infinite loop will occur.
+ *
+ */
+gboolean
+rsvg_handle_get_geometry_sub (RsvgHandle * handle, cairo_rectangle_t * ink_rect, cairo_rectangle_t * logical_rect, const char *id)
+{
+    RsvgNode *root = NULL;
+    RsvgNode *node;
+    gboolean has_size;
+    int root_width, root_height;
+    gboolean res = FALSE;
+
+    g_return_val_if_fail (handle, FALSE);
+    g_return_val_if_fail (ink_rect, FALSE);
+    g_return_val_if_fail (logical_rect, FALSE);
+
+    memset (ink_rect, 0, sizeof (cairo_rectangle_t));
+    memset (logical_rect, 0, sizeof (cairo_rectangle_t));
+
+    if (handle->priv->tree == NULL)
+        return FALSE;
+
+    root = rsvg_tree_get_root (handle->priv->tree);
+
+    if (id && *id) {
+        node = rsvg_defs_lookup (handle->priv->defs, id);
+
+        if (node && rsvg_tree_is_root (handle->priv->tree, node))
+            id = NULL;
+    } else {
+        node = root;
+    }
+
+    if (!node && id) {
+        goto out;
+    }
+
+    has_size = rsvg_node_svg_get_size (root,
+                                       handle->priv->dpi_x, handle->priv->dpi_y,
+                                       &root_width, &root_height);
+
+    if (id || !has_size) {
+        if (!get_node_geometry (handle, node, ink_rect, logical_rect)) {
+            goto out;
+        }
+    } else {
+        ink_rect->width = root_width;
+        ink_rect->height = root_height;
+        ink_rect->x = 0;
+        ink_rect->y = 0;
+
+        logical_rect->width = root_width;
+        logical_rect->height = root_height;
+        logical_rect->x = 0;
+        logical_rect->y = 0;
+    }
+
+    if (handle->priv->size_func)
+        (*handle->priv->size_func) ((gint *)&ink_rect->width, (gint *)&ink_rect->height,
                                     handle->priv->user_data);
 
     res = TRUE;
@@ -1345,7 +1424,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     if (rsvg_tree_is_root (handle->priv->tree, node))
         return TRUE;
 
-    if (!get_node_ink_rect (handle, node, &ink_rect))
+    if (!get_node_geometry (handle, node, &ink_rect, NULL))
         return FALSE;
 
     position_data->x = ink_rect.x;

@@ -1094,16 +1094,17 @@ pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
+pub extern "C" fn rsvg_drawing_ctx_get_geometry(
     raw_draw_ctx: *const RsvgDrawingCtx,
     ink_rect: *mut cairo_sys::cairo_rectangle_t,
+    logical_rect: *mut cairo_sys::cairo_rectangle_t,
 ) -> glib_sys::gboolean {
     assert!(!raw_draw_ctx.is_null());
     let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
 
     assert!(!ink_rect.is_null());
 
-    let res = match draw_ctx.get_bbox().ink_rect {
+    let mut res = match draw_ctx.get_bbox().ink_rect {
         Some(r) => unsafe {
             (*ink_rect).x = r.x;
             (*ink_rect).y = r.y;
@@ -1113,6 +1114,20 @@ pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
         },
         _ => false,
     };
+
+    if !logical_rect.is_null() {
+        res = res
+            && match draw_ctx.get_bbox().rect {
+                Some(r) => unsafe {
+                    (*logical_rect).x = r.x;
+                    (*logical_rect).y = r.y;
+                    (*logical_rect).width = r.width;
+                    (*logical_rect).height = r.height;
+                    true
+                },
+                _ => false,
+            }
+    }
 
     res.to_glib()
 }
