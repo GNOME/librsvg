@@ -1181,6 +1181,9 @@ rsvg_handle_render_cairo (RsvgHandle * handle, cairo_t * cr)
 void
 rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_data)
 {
+    g_return_if_fail (RSVG_IS_HANDLE (handle));
+    g_return_if_fail (dimension_data != NULL);
+
     /* This function is probably called from the cairo_render functions.
      * To prevent an infinite loop we are saving the state.
      */
@@ -1250,7 +1253,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     int root_width, root_height;
     gboolean res = FALSE;
 
-    g_return_val_if_fail (handle, FALSE);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
 
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
@@ -1279,8 +1282,9 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
     if (id || !has_size) {
         cairo_rectangle_t ink_rect;
+        cairo_rectangle_t logical_rect;
 
-        if (!get_node_geometry (handle, node, &ink_rect, NULL)) {
+        if (!get_node_geometry (handle, node, &ink_rect, &logical_rect)) {
             goto out;
         }
 
@@ -1318,6 +1322,8 @@ out:
  * Get the geometry of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
  *
+ * Note that unlike rsvg_handle_get_position_sub() and
+ * rsvg_handle_get_dimensions_sub(), this function does not call the size_func.
  */
 gboolean
 rsvg_handle_get_geometry_sub (RsvgHandle * handle, cairo_rectangle_t * ink_rect, cairo_rectangle_t * logical_rect, const char *id)
@@ -1327,13 +1333,12 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, cairo_rectangle_t * ink_rect,
     gboolean has_size;
     int root_width, root_height;
     gboolean res = FALSE;
+    cairo_rectangle_t ink_r, logical_r;
 
-    g_return_val_if_fail (handle, FALSE);
-    g_return_val_if_fail (ink_rect, FALSE);
-    g_return_val_if_fail (logical_rect, FALSE);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
-    memset (ink_rect, 0, sizeof (cairo_rectangle_t));
-    memset (logical_rect, 0, sizeof (cairo_rectangle_t));
+    memset (&ink_r, 0, sizeof (cairo_rectangle_t));
+    memset (&logical_r, 0, sizeof (cairo_rectangle_t));
 
     if (handle->priv->tree == NULL)
         return FALSE;
@@ -1358,28 +1363,33 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, cairo_rectangle_t * ink_rect,
                                        &root_width, &root_height);
 
     if (id || !has_size) {
-        if (!get_node_geometry (handle, node, ink_rect, logical_rect)) {
+        res = get_node_geometry (handle, node, &ink_r, &logical_r);
+        if (!res) {
             goto out;
         }
     } else {
-        ink_rect->width = root_width;
-        ink_rect->height = root_height;
-        ink_rect->x = 0;
-        ink_rect->y = 0;
+        ink_r.width = root_width;
+        ink_r.height = root_height;
+        ink_r.x = 0;
+        ink_r.y = 0;
 
-        logical_rect->width = root_width;
-        logical_rect->height = root_height;
-        logical_rect->x = 0;
-        logical_rect->y = 0;
+        logical_r.width = root_width;
+        logical_r.height = root_height;
+        logical_r.x = 0;
+        logical_r.y = 0;
     }
-
-    if (handle->priv->size_func)
-        (*handle->priv->size_func) ((gint *)&ink_rect->width, (gint *)&ink_rect->height,
-                                    handle->priv->user_data);
 
     res = TRUE;
 
 out:
+
+    if (ink_rect != NULL) {
+        *ink_rect = ink_r;
+    }
+
+    if (logical_rect != NULL) {
+        *logical_rect = logical_r;
+    }
 
     g_clear_pointer (&root, rsvg_node_unref);
 
@@ -1402,11 +1412,11 @@ gboolean
 rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
 {
     RsvgNode *node;
-    cairo_rectangle_t ink_rect;
+    cairo_rectangle_t ink_rect, logical_rect;
     int width, height;
 
-    g_return_val_if_fail (handle, FALSE);
-    g_return_val_if_fail (position_data, FALSE);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (position_data != NULL, FALSE);
 
     memset (position_data, 0, sizeof (*position_data));
 
@@ -1424,7 +1434,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     if (rsvg_tree_is_root (handle->priv->tree, node))
         return TRUE;
 
-    if (!get_node_geometry (handle, node, &ink_rect, NULL))
+    if (!get_node_geometry (handle, node, &ink_rect, &logical_rect))
         return FALSE;
 
     position_data->x = ink_rect.x;
