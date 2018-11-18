@@ -1107,41 +1107,49 @@ pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_get_geometry(
+pub unsafe extern "C" fn rsvg_drawing_ctx_get_geometry(
     raw_draw_ctx: *const RsvgDrawingCtx,
     ink_rect: *mut cairo_sys::cairo_rectangle_t,
     logical_rect: *mut cairo_sys::cairo_rectangle_t,
-) -> glib_sys::gboolean {
+) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
+    let draw_ctx = &mut *(raw_draw_ctx as *mut DrawingCtx<'_>);
 
     assert!(!ink_rect.is_null());
     assert!(!logical_rect.is_null());
 
-    let mut res = match draw_ctx.get_bbox().ink_rect {
-        Some(r) => unsafe {
-            (*ink_rect).x = r.x;
-            (*ink_rect).y = r.y;
-            (*ink_rect).width = r.width;
-            (*ink_rect).height = r.height;
-            true
-        },
-        _ => false,
-    };
+    let ink_rect: &mut cairo::Rectangle = &mut *ink_rect;
+    let logical_rect: &mut cairo::Rectangle = &mut *logical_rect;
 
-    res = res
-        && match draw_ctx.get_bbox().rect {
-            Some(r) => unsafe {
-                (*logical_rect).x = r.x;
-                (*logical_rect).y = r.y;
-                (*logical_rect).width = r.width;
-                (*logical_rect).height = r.height;
-                true
-            },
-            _ => false,
-        };
+    match draw_ctx.get_bbox().ink_rect {
+        Some(r) => {
+            ink_rect.x = r.x;
+            ink_rect.y = r.y;
+            ink_rect.width = r.width;
+            ink_rect.height = r.height;
+        }
+        None => {
+            ink_rect.x = 0.0;
+            ink_rect.y = 0.0;
+            ink_rect.width = 0.0;
+            ink_rect.height = 0.0;
+        }
+    }
 
-    res.to_glib()
+    match draw_ctx.get_bbox().rect {
+        Some(r) => {
+            logical_rect.x = r.x;
+            logical_rect.y = r.y;
+            logical_rect.width = r.width;
+            logical_rect.height = r.height;
+        }
+        None => {
+            logical_rect.x = 0.0;
+            logical_rect.y = 0.0;
+            logical_rect.width = 0.0;
+            logical_rect.height = 0.0;
+        }
+    }
 }
 
 pub struct AcquiredNode(Rc<RefCell<Vec<RsvgNode>>>, RsvgNode);
