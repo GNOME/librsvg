@@ -1324,6 +1324,8 @@ out:
  *
  * Note that unlike rsvg_handle_get_position_sub() and
  * rsvg_handle_get_dimensions_sub(), this function does not call the size_func.
+ *
+ * Since: 2.46
  */
 gboolean
 rsvg_handle_get_geometry_sub (RsvgHandle * handle, cairo_rectangle_t * ink_rect, cairo_rectangle_t * logical_rect, const char *id)
