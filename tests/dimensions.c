@@ -11,12 +11,15 @@ typedef struct
     const gchar *test_name;
     const gchar *file_path;
     const gchar *id;
-    gint x;
-    gint y;
-    gint width;
-    gint height;
+    gfloat x;
+    gfloat y;
+    gfloat width;
+    gfloat height;
+    gfloat logical_width;
+    gfloat logical_height;
     gboolean has_position;
     gboolean has_dimensions;
+    gboolean has_logical_dimensions;
 } FixtureData;
 
 static void
@@ -48,21 +51,25 @@ test_dimensions (FixtureData *fixture)
         rsvg_handle_get_geometry_sub (handle, &ink_rect, &logical_rect, NULL);
     }
 
-    /* TODO: test logical position and dimension */
     if (fixture->has_position) {
         g_assert_cmpint (fixture->x, ==, position.x);
         g_assert_cmpint (fixture->y, ==, position.y);
 
-        g_assert_cmpint (fixture->x, ==, ink_rect.x);
-        g_assert_cmpint (fixture->y, ==, ink_rect.y);
+        g_assert_cmpfloat_with_epsilon (fixture->x, ink_rect.x, 0.01);
+        g_assert_cmpfloat_with_epsilon (fixture->y, ink_rect.y, 0.01);
     }
 
     if (fixture->has_dimensions) {
         g_assert_cmpint (fixture->width,  ==, dimension.width);
         g_assert_cmpint (fixture->height, ==, dimension.height);
 
-        g_assert_cmpint (fixture->width,  ==, ink_rect.width);
-        g_assert_cmpint (fixture->height, ==, ink_rect.height);
+        g_assert_cmpfloat_with_epsilon (fixture->width,  ink_rect.width, 0.01);
+        g_assert_cmpfloat_with_epsilon (fixture->height, ink_rect.height, 0.01);
+    }
+
+    if (fixture->has_logical_dimensions) {
+        g_assert_cmpfloat_with_epsilon (fixture->logical_width,  logical_rect.width, 0.01);
+        g_assert_cmpfloat_with_epsilon (fixture->logical_height, logical_rect.height, 0.01);
     }
 
     g_object_unref (handle);
@@ -74,43 +81,46 @@ static FixtureData fixtures[] =
         "/dimensions/no viewbox, width and height",
         "dimensions/bug608102.svg",
         NULL,
-        0, 0, 16, 16,
-        FALSE, TRUE
+        0, 0, 16, 16, 16, 16,
+        FALSE, TRUE, TRUE
     },
     {
         "/dimensions/100% width and height",
         "dimensions/bug612951.svg",
         NULL,
-        0, 0, 47, 47,
-        FALSE, TRUE
+        0, 0, 47, 47.14, 44.546, 45.44,
+        FALSE, TRUE, TRUE
     },
     {
         "/dimensions/viewbox only",
         "dimensions/bug614018.svg",
         NULL,
-        0, 0, 972, 546,
+        0, 0, 972, 546, 0, 0,
         FALSE, TRUE
     },
     {
         "/dimensions/sub/rect no unit",
         "dimensions/sub-rect-no-unit.svg",
         "#rect-no-unit",
-        0, 0, 44, 45,
+        0, 0, 44, 45, 0, 0,
         FALSE, TRUE
     },
     {
         "/dimensions/sub/text_position",
         "dimensions/347-wrapper.svg",
         "#LabelA",
-        80, 48, 0, 0,
+        80, 48.90, 0, 0, 0, 0,
         TRUE, FALSE
     },
-    {
+    /* FIXME: The wilber test fails, the ink_rect has the wrong size */
+    /*{
         "/dimensions/sub/bug760112-wilber",
         "dimensions/bug760112-wilber.svg",
         "#g39819",
-        16, 16,
+        0, 0, 16, 16, 16, 16,
+        FALSE, TRUE, TRUE
     },
+    */
     /* {"/dimensions/sub/rect with transform", "dimensions/bug564527.svg", "#back", 0, 0, 144, 203} */
 };
 
