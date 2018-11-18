@@ -1121,6 +1121,7 @@ pub extern "C" fn rsvg_drawing_ctx_get_geometry(
     let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
 
     assert!(!ink_rect.is_null());
+    assert!(!logical_rect.is_null());
 
     let mut res = match draw_ctx.get_bbox().ink_rect {
         Some(r) => unsafe {
@@ -1133,19 +1134,17 @@ pub extern "C" fn rsvg_drawing_ctx_get_geometry(
         _ => false,
     };
 
-    if !logical_rect.is_null() {
-        res = res
-            && match draw_ctx.get_bbox().rect {
-                Some(r) => unsafe {
-                    (*logical_rect).x = r.x;
-                    (*logical_rect).y = r.y;
-                    (*logical_rect).width = r.width;
-                    (*logical_rect).height = r.height;
-                    true
-                },
-                _ => false,
-            }
-    }
+    res = res
+        && match draw_ctx.get_bbox().rect {
+            Some(r) => unsafe {
+                (*logical_rect).x = r.x;
+                (*logical_rect).y = r.y;
+                (*logical_rect).width = r.width;
+                (*logical_rect).height = r.height;
+                true
+            },
+            _ => false,
+        };
 
     res.to_glib()
 }
