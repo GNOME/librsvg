@@ -481,10 +481,7 @@ RsvgHandle *
 rsvg_handle_new_from_file (const gchar *file_name, GError **error)
 {
     gchar *base_uri;
-    gchar *mime_type;
-    char *data;
-    gsize data_len;
-    RsvgHandle *handle = NULL;
+    RsvgHandle *handle;
     GFile *file;
     char *scheme;
 
@@ -507,21 +504,9 @@ rsvg_handle_new_from_file (const gchar *file_name, GError **error)
         g_object_unref (file);
         return NULL;
     }
-
-    data = _rsvg_io_acquire_data (base_uri, base_uri, &mime_type, &data_len, NULL, error);
-
-    if (data) {
-        handle = rsvg_handle_new ();
-        rsvg_handle_set_base_uri (handle, base_uri);
-        if (!rsvg_handle_fill_with_data (handle, data, data_len, error)) {
-            g_object_unref (handle);
-            handle = NULL;
-        }
-        g_free (data);
-    }
-
-    g_free (mime_type);
     g_free (base_uri);
+
+    handle = rsvg_handle_new_from_gfile_sync (file, 0, NULL, error);
     g_object_unref (file);
 
     return handle;
