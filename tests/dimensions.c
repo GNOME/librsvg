@@ -2,6 +2,7 @@
 /* vim: set ts=4 nowrap ai expandtab sw=4: */
 
 #include <glib.h>
+#include <cairo.h>
 #include "librsvg/rsvg.h"
 #include "test-utils.h"
 
@@ -24,6 +25,8 @@ test_dimensions (FixtureData *fixture)
     RsvgHandle *handle;
     RsvgPositionData position;
     RsvgDimensionData dimension;
+    cairo_rectangle_t ink_rect;
+    cairo_rectangle_t logical_rect;
     gchar *target_file;
     GError *error = NULL;
 
@@ -45,19 +48,33 @@ test_dimensions (FixtureData *fixture)
         got_sub = rsvg_handle_get_dimensions_sub (handle, &dimension, fixture->id);
         g_assert (got_sub);
 
+        got_sub = rsvg_handle_get_geometry_sub (handle, &ink_rect, &logical_rect, fixture->id);
+        g_assert (got_sub);
+
         g_message ("w=%d h=%d", dimension.width, dimension.height);
     } else {
         rsvg_handle_get_dimensions (handle, &dimension);
+
+        gboolean got_sub;
+        got_sub = rsvg_handle_get_geometry_sub (handle, &ink_rect, &logical_rect, NULL);
+        g_assert (got_sub);
     }
 
+    /* TODO: test logical position and dimension */
     if (fixture->has_position) {
         g_assert_cmpint (fixture->x, ==, position.x);
         g_assert_cmpint (fixture->y, ==, position.y);
+
+        g_assert_cmpint (fixture->x, ==, ink_rect.x);
+        g_assert_cmpint (fixture->y, ==, ink_rect.y);
     }
 
     if (fixture->has_dimensions) {
         g_assert_cmpint (fixture->width,  ==, dimension.width);
         g_assert_cmpint (fixture->height, ==, dimension.height);
+
+        g_assert_cmpint (fixture->width,  ==, ink_rect.width);
+        g_assert_cmpint (fixture->height, ==, ink_rect.height);
     }
 
     g_object_unref (handle);
