@@ -32,14 +32,16 @@ pub fn rsvg_decode_data_uri(
     error: *mut *mut glib_sys::GError,
 ) -> *mut libc::c_char {
     unsafe {
-        assert!(!out_mime_type.is_null());
         assert!(!out_size.is_null());
 
         let uri = utf8_cstr(uri);
 
         match decode_data_uri(uri) {
             Ok(binary_data) => {
-                *out_mime_type = binary_data.content_type.to_glib_full();
+                if !out_mime_type.is_null() {
+                    *out_mime_type = binary_data.content_type.to_glib_full();
+                }
+
                 *out_size = binary_data.data.len();
 
                 if !error.is_null() {
@@ -51,7 +53,10 @@ pub fn rsvg_decode_data_uri(
             }
 
             Err(_) => {
-                *out_mime_type = ptr::null_mut();
+                if !out_mime_type.is_null() {
+                    *out_mime_type = ptr::null_mut();
+                }
+
                 *out_size = 0;
 
                 set_gerror(error, 0, "could not decode data: URL");
