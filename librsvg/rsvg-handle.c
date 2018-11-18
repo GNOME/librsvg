@@ -1274,8 +1274,8 @@ out:
 /**
  * rsvg_handle_get_geometry_sub:
  * @handle: A #RsvgHandle
- * @ink_rect: (out): A place to store the SVG fragment's geometry.
- * @logical_rect: (out): A place to store the SVG fragment's logical geometry.
+ * @ink_rect: (out)(nullable): A place to store the SVG fragment's geometry.
+ * @logical_rect: (out)(nullable): A place to store the SVG fragment's logical geometry.
  * @id: (nullable): An element's id within the SVG, starting with "##", for
  * example, "##layer1"; or %NULL to use the whole SVG.
  *
