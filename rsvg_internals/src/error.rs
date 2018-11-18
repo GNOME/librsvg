@@ -4,6 +4,9 @@ use std::fmt;
 use cairo;
 use cssparser::BasicParseError;
 use glib;
+use glib::translate::*;
+use glib_sys;
+use libc;
 
 use attributes::Attribute;
 use parsers::ParseError;
@@ -103,6 +106,8 @@ impl From<cairo::Status> for RenderingError {
 
 #[derive(Clone)]
 pub enum LoadingError {
+    // Could not parse data: URL
+    BadDataUrl,
     Cairo(cairo::Status),
     EmptyData,
     Glib(glib::Error),
@@ -120,6 +125,24 @@ impl From<cairo::Status> for LoadingError {
 impl From<glib::Error> for LoadingError {
     fn from(e: glib::Error) -> LoadingError {
         LoadingError::Glib(e)
+    }
+}
+
+extern "C" {
+    fn rsvg_error_quark() -> glib_sys::GQuark;
+}
+
+pub fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) {
+    unsafe {
+        // this is RSVG_ERROR_FAILED, the only error code available in RsvgError
+        assert!(code == 0);
+
+        glib_sys::g_set_error_literal(
+            err,
+            rsvg_error_quark(),
+            code as libc::c_int,
+            msg.to_glib_none().0,
+        );
     }
 }
 
