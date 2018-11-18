@@ -1177,9 +1177,10 @@ get_node_geometry(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
     rsvg_tree_cascade (handle->priv->tree);
+    /* FIXME: expose this as a RenderingError in the public API */
     res = rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
     if (res) {
-        res = rsvg_drawing_ctx_get_geometry (draw, ink_rect, logical_rect);
+        rsvg_drawing_ctx_get_geometry (draw, ink_rect, logical_rect);
     }
 
     rsvg_drawing_ctx_free (draw);
