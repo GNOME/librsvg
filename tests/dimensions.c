@@ -104,7 +104,13 @@ static FixtureData fixtures[] =
         "#LabelA",
         80, 48, 0, 0,
         TRUE, FALSE
-    }
+    },
+    {
+        "/dimensions/sub/bug760112-wilber",
+        "dimensions/bug760112-wilber.svg",
+        "#g39819",
+        16, 16,
+    },
     /* {"/dimensions/sub/rect with transform", "dimensions/bug564527.svg", "#back", 0, 0, 144, 203} */
 };
 
