@@ -481,6 +481,7 @@ RsvgHandle *
 rsvg_handle_new_from_file (const gchar *file_name, GError **error)
 {
     gchar *base_uri;
+    gchar *mime_type;
     char *data;
     gsize data_len;
     RsvgHandle *handle = NULL;
@@ -507,7 +508,7 @@ rsvg_handle_new_from_file (const gchar *file_name, GError **error)
         return NULL;
     }
 
-    data = _rsvg_io_acquire_data (base_uri, base_uri, NULL, &data_len, NULL, error);
+    data = _rsvg_io_acquire_data (base_uri, base_uri, &mime_type, &data_len, NULL, error);
 
     if (data) {
         handle = rsvg_handle_new ();
@@ -519,6 +520,7 @@ rsvg_handle_new_from_file (const gchar *file_name, GError **error)
         g_free (data);
     }
 
+    g_free (mime_type);
     g_free (base_uri);
     g_object_unref (file);
 

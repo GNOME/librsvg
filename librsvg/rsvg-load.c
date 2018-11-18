@@ -269,10 +269,14 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url)
     GInputStream *stream;
     GError *err = NULL;
     xmlParserCtxtPtr xml_parser;
+    gchar *mime_type;
 
     g_assert (handle->priv->load != NULL);
 
-    stream = _rsvg_handle_acquire_stream (handle, url, NULL, NULL);
+    stream = _rsvg_handle_acquire_stream (handle, url, &mime_type, NULL);
+
+    g_free (mime_type);
+
     if (stream) {
         xml_parser = create_xml_stream_parser (handle->priv->load,
                                                stream,
