@@ -5,6 +5,7 @@
 extern crate cairo;
 extern crate cairo_sys;
 extern crate cssparser;
+extern crate data_url;
 extern crate downcast_rs;
 extern crate encoding;
 extern crate float_cmp;
@@ -41,6 +42,8 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_get_ink_rect,
     rsvg_drawing_ctx_new,
 };
+
+pub use io::rsvg_decode_data_uri;
 
 pub use node::rsvg_node_unref;
 
@@ -99,6 +102,7 @@ mod font_props;
 mod gradient;
 mod handle;
 mod image;
+mod io;
 mod iri;
 mod length;
 mod link;

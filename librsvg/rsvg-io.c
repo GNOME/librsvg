@@ -28,101 +28,12 @@
 
 #include <string.h>
 
-/* Copied from soup-request-data.c (LGPL2+):
- * Copyright (C) 2009, 2010 Red Hat, Inc.
- * Copyright (C) 2010 Igalia, S.L.
- * and from soup-uri.c:
- * Copyright 1999-2003 Ximian, Inc.
- */
-
-#define XDIGIT(c) ((c) <= '9' ? (c) - '0' : ((c) & 0x4F) - 'A' + 10)
-#define HEXCHAR(s) ((XDIGIT (s[1]) << 4) + XDIGIT (s[2]))
-
-static char *
-uri_decoded_copy (const char *part, 
-                  gsize length)
-{
-    unsigned char *s, *d;
-    char *decoded = g_strndup (part, length);
-
-    s = d = (unsigned char *)decoded;
-    do {
-        if (*s == '%') {
-            if (!g_ascii_isxdigit (s[1]) ||
-                !g_ascii_isxdigit (s[2])) {
-                *d++ = *s;
-                continue;
-            }
-            *d++ = HEXCHAR (s);
-            s += 2;
-        } else {
-            *d++ = *s;
-        }
-    } while (*s++);
-
-    return decoded;
-}
-
-#define BASE64_INDICATOR     ";base64"
-#define BASE64_INDICATOR_LEN (sizeof (";base64") - 1)
-
-static char *
+/* Defined in rsvg_internals/src/io.rs */
+extern char *
 rsvg_decode_data_uri (const char *uri,
                       char **out_mime_type,
                       gsize *out_len,
-                      GError **error)
-{
-    const char *comma, *start, *end;
-    char *mime_type;
-    char *data;
-    gsize data_len;
-    gboolean base64 = FALSE;
-
-    g_assert (out_len != NULL);
-    g_assert (strncmp (uri, "data:", 5) == 0);
-
-    mime_type = NULL;
-    start = uri + 5;
-    comma = strchr (start, ',');
-
-    if (comma && comma != start) {
-        /* Deal with MIME type / params */
-        if (comma >= start + BASE64_INDICATOR_LEN && 
-            !g_ascii_strncasecmp (comma - BASE64_INDICATOR_LEN, BASE64_INDICATOR, BASE64_INDICATOR_LEN)) {
-            end = comma - BASE64_INDICATOR_LEN;
-            base64 = TRUE;
-        } else {
-            end = comma;
-        }
-
-        if (end != start) {
-            mime_type = uri_decoded_copy (start, end - start);
-        }
-    }
-
-    if (comma)
-        start = comma + 1;
-
-    if (*start) {
-	data = uri_decoded_copy (start, strlen (start));
-
-        if (base64)
-            data = (char *) g_base64_decode_inplace (data, &data_len);
-        else
-            data_len = strlen (data);
-    } else {
-        data = NULL;
-        data_len = 0;
-    }
-
-    if (out_mime_type)
-        *out_mime_type = mime_type;
-    else
-        g_free (mime_type);
-
-    *out_len = data_len;
-    return data;
-}
+                      GError **error);
 
 static char *
 rsvg_acquire_file_data (const char *uri,
