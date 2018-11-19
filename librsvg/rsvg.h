@@ -107,6 +107,8 @@ struct _RsvgHandle {
  * @height: SVG's height, in pixels
  * @em: em
  * @ex: ex
+ *
+ * Deprecated: 2.46
  */
 struct _RsvgDimensionData {
     int width;
@@ -121,6 +123,8 @@ struct _RsvgDimensionData {
  * @y: position on the y axis
  *
  * Position of an SVG fragment.
+ *
+ * Deprecated: 2.46
  */
 struct _RsvgPositionData {
     int x;
