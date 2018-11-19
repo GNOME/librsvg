@@ -1205,68 +1205,27 @@ get_node_geometry(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
 gboolean
 rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id)
 {
-    RsvgNode *root = NULL;
-    RsvgNode *node;
-    gboolean has_size;
-    int root_width, root_height;
-    gboolean res = FALSE;
+    cairo_rectangle_t ink_r;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
 
+    memset (&ink_r, 0, sizeof (cairo_rectangle_t));
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
 
-    if (handle->priv->tree == NULL)
+    if (!rsvg_handle_get_geometry_sub (handle, &ink_r, NULL, id)) {
         return FALSE;
-
-    root = rsvg_tree_get_root (handle->priv->tree);
-
-    if (id && *id) {
-        node = rsvg_defs_lookup (handle->priv->defs, id);
-
-        if (node && rsvg_tree_is_root (handle->priv->tree, node))
-            id = NULL;
-    } else {
-        node = root;
     }
 
-    if (!node && id) {
-        goto out;
-    }
-
-    has_size = rsvg_node_svg_get_size (root,
-                                       handle->priv->dpi_x, handle->priv->dpi_y,
-                                       &root_width, &root_height);
-
-    if (id || !has_size) {
-        cairo_rectangle_t ink_rect;
-        cairo_rectangle_t logical_rect;
-
-        if (!get_node_geometry (handle, node, &ink_rect, &logical_rect)) {
-            goto out;
-        }
-
-        dimension_data->width = ink_rect.width;
-        dimension_data->height = ink_rect.height;
-    } else {
-        dimension_data->width = root_width;
-        dimension_data->height = root_height;
-    }
-
+    dimension_data->width = ink_r.width;
+    dimension_data->height = ink_r.height;
     dimension_data->em = dimension_data->width;
     dimension_data->ex = dimension_data->height;
 
     if (handle->priv->size_func)
         (*handle->priv->size_func) (&dimension_data->width, &dimension_data->height,
                                     handle->priv->user_data);
-
-    res = TRUE;
-
-out:
-
-    g_clear_pointer (&root, rsvg_node_unref);
-
-    return res;
+    return TRUE;
 }
 
 /**
@@ -1372,7 +1331,7 @@ gboolean
 rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
 {
     RsvgNode *node;
-    cairo_rectangle_t ink_rect, logical_rect;
+    cairo_rectangle_t ink_r;
     int width, height;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
@@ -1380,28 +1339,18 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 
     memset (position_data, 0, sizeof (*position_data));
 
-    if (handle->priv->tree == NULL)
-        return FALSE;
-
     /* Short-cut when no id is given. */
     if (NULL == id || '\0' == *id)
         return TRUE;
 
-    node = rsvg_defs_lookup (handle->priv->defs, id);
-    if (!node)
+    if (!rsvg_handle_get_geometry_sub (handle, &ink_r, NULL, id))
         return FALSE;
 
-    if (rsvg_tree_is_root (handle->priv->tree, node))
-        return TRUE;
+    position_data->x = ink_r.x;
+    position_data->y = ink_r.y;
 
-    if (!get_node_geometry (handle, node, &ink_rect, &logical_rect))
-        return FALSE;
-
-    position_data->x = ink_rect.x;
-    position_data->y = ink_rect.y;
-
-    width = ink_rect.width;
-    height = ink_rect.height;
+    width = ink_r.width;
+    height = ink_r.height;
 
     if (handle->priv->size_func)
         (*handle->priv->size_func) (&width, &height, handle->priv->user_data);
