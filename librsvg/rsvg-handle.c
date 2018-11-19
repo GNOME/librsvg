@@ -1202,6 +1202,8 @@ get_node_geometry(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
  * Get the size of a subelement of the SVG file. Do not call from within the
  * size_func callback, because an infinite loop will occur.
  *
+ * Deprecated: Use rsvg_handle_get_geometry_sub() instead.
+ *
  * Since: 2.22
  */
 gboolean
@@ -1238,8 +1240,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
  * @id: (nullable): An element's id within the SVG, starting with "##", for
  * example, "##layer1"; or %NULL to use the whole SVG.
  *
- * Get the geometry of a subelement of the SVG file. Do not call from within
- * the size_func callback, because an infinite loop will occur.
+ * Get the geometry of a subelement of the SVG file.
  *
  * Note that unlike rsvg_handle_get_position_sub() and
  * rsvg_handle_get_dimensions_sub(), this function does not call the size_func.
@@ -1326,6 +1327,8 @@ out:
  *
  * Get the position of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
+ *
+ * Deprecated: Use rsvg_handle_get_geometry_sub() instead.
  *
  * Since: 2.22
  */
