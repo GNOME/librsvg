@@ -140,7 +140,7 @@ impl XmlState {
         let ctx = mem::replace(&mut self.context, Context::empty());
 
         match ctx.kind {
-            ContextKind::Start => panic!("characters: XML handler stack is empty!?"),
+            ContextKind::Start => (), // character data outside the toplevel element?  Ignore it.
             ContextKind::ElementCreation => self.element_creation_characters(text),
             ContextKind::XInclude(_) => (),
             ContextKind::UnsupportedXIncludeChild => (),
