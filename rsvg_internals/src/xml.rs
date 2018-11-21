@@ -19,6 +19,7 @@ use text::NodeChars;
 use tree::{RsvgTree, Tree};
 use util::utf8_cstr;
 
+#[derive(Clone)]
 enum ContextKind {
     // Starting state
     Start,
@@ -42,6 +43,7 @@ struct XIncludeContext {
 }
 
 /// A concrete parsing context for a surrounding `element_name` and its XML event handlers
+#[derive(Clone)]
 struct Context {
     element_name: String,
     kind: ContextKind,
@@ -103,27 +105,23 @@ impl XmlState {
     }
 
     pub fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag) {
-        let ctx = mem::replace(&mut self.context, Context::empty());
+        let context = self.context.clone();
 
-        let new_ctx = match ctx.kind {
+        let new_context = match context.kind {
             ContextKind::Start => self.element_creation_start_element(handle, name, pbag),
             ContextKind::ElementCreation => self.element_creation_start_element(handle, name, pbag),
-            ContextKind::XInclude(ref ctx) => self.inside_xinclude_start_element(ctx, name),
+            ContextKind::XInclude(ref ctx) => self.inside_xinclude_start_element(&ctx, name),
             ContextKind::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(name),
             ContextKind::XIncludeFallback(ref ctx) => {
-                self.xinclude_fallback_start_element(&ctx.clone(), handle, name, pbag)
+                self.xinclude_fallback_start_element(&ctx, handle, name, pbag)
             }
         };
 
-        mem::replace(&mut self.context, ctx);
-        self.push_context(new_ctx);
+        self.push_context(new_context);
     }
 
     pub fn end_element(&mut self, handle: *mut RsvgHandle, name: &str) {
-        // We can unwrap since start_element() always adds a context to the stack
-        let top = self.context_stack.pop().unwrap();
-
-        let context = mem::replace(&mut self.context, top);
+        let context = self.context.clone();
 
         assert!(context.element_name == name);
 
@@ -134,22 +132,21 @@ impl XmlState {
             ContextKind::UnsupportedXIncludeChild => (),
             ContextKind::XIncludeFallback(_) => (),
         }
+
+        // We can unwrap since start_element() always adds a context to the stack
+        self.context = self.context_stack.pop().unwrap();
     }
 
     pub fn characters(&mut self, text: &str) {
-        let ctx = mem::replace(&mut self.context, Context::empty());
+        let context = self.context.clone();
 
-        match ctx.kind {
-            ContextKind::Start => (), // character data outside the toplevel element?  Ignore it.
+        match context.kind {
+            ContextKind::Start => panic!("characters: XML handler stack is empty!?"),
             ContextKind::ElementCreation => self.element_creation_characters(text),
             ContextKind::XInclude(_) => (),
             ContextKind::UnsupportedXIncludeChild => (),
-            ContextKind::XIncludeFallback(ref ctx) => {
-                self.xinclude_fallback_characters(&ctx.clone(), text)
-            }
+            ContextKind::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
         }
-
-        mem::replace(&mut self.context, ctx);
     }
 
     fn element_creation_start_element(
