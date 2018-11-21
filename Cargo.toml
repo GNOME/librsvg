@@ -9,3 +9,18 @@ debug = true
 
 [profile.bench]
 lto = true
+
+[patch.crates-io]
+cairo-rs = { git="https://github.com/gtk-rs/cairo.git" }
+cairo-sys-rs = { git="https://github.com/gtk-rs/cairo.git" }
+glib = { git="https://github.com/gtk-rs/glib.git" }
+glib-sys = { git="https://github.com/gtk-rs/sys.git" }
+gobject-sys = { git="https://github.com/gtk-rs/sys.git" }
+gdk-pixbuf = { git="https://github.com/gtk-rs/gdk-pixbuf.git" }
+gdk-pixbuf-sys = { git="https://github.com/gtk-rs/sys.git" }
+gio = { git="https://github.com/gtk-rs/gio.git" }
+gio-sys = { git="https://github.com/gtk-rs/sys.git" }
+pango = { git="https://github.com/gtk-rs/pango.git" }
+pango-sys = { git="https://github.com/gtk-rs/sys.git" }
+pangocairo = { git="https://github.com/gtk-rs/pangocairo.git" }
+pangocairo-sys = { git="https://github.com/gtk-rs/sys.git" }

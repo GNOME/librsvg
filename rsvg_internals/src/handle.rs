@@ -1,8 +1,7 @@
 use std::cell::{Ref, RefCell};
 use std::ptr;
 
-use cairo::{ImageSurface, Status};
-use cairo_sys;
+use cairo::ImageSurface;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio::{Cancellable, File as GFile, InputStream};
 use gio_sys;
@@ -139,32 +138,8 @@ pub fn image_surface_new_from_href(
 
     if keep_image_data(handle) {
         if let Some(mime_type) = data.content_type {
-            extern "C" {
-                fn cairo_surface_set_mime_data(
-                    surface: *mut cairo_sys::cairo_surface_t,
-                    mime_type: *const libc::c_char,
-                    data: *mut libc::c_char,
-                    length: libc::c_ulong,
-                    destroy: cairo_sys::cairo_destroy_func_t,
-                    closure: *mut libc::c_void,
-                ) -> Status;
-            }
-
-            let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&data.data);
-
-            unsafe {
-                let status = cairo_surface_set_mime_data(
-                    surface.to_glib_none().0,
-                    mime_type.to_glib_none().0,
-                    data_ptr as *mut _,
-                    data.data.len() as libc::c_ulong,
-                    Some(glib_sys::g_free),
-                    data_ptr as *mut _,
-                );
-
-                if status != Status::Success {
-                    return Err(LoadingError::Cairo(status));
-                }
+            if let Err(error) = surface.set_mime_data(&mime_type, data.data) {
+                return Err(LoadingError::Cairo(error));
             }
         }
     }

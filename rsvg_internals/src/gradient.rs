@@ -67,12 +67,12 @@ impl Default for SpreadMethod {
     }
 }
 
-impl From<SpreadMethod> for cairo::enums::Extend {
-    fn from(s: SpreadMethod) -> cairo::enums::Extend {
+impl From<SpreadMethod> for cairo::Extend {
+    fn from(s: SpreadMethod) -> cairo::Extend {
         match s {
-            SpreadMethod::Pad => cairo::enums::Extend::Pad,
-            SpreadMethod::Reflect => cairo::enums::Extend::Reflect,
-            SpreadMethod::Repeat => cairo::enums::Extend::Repeat,
+            SpreadMethod::Pad => cairo::Extend::Pad,
+            SpreadMethod::Reflect => cairo::Extend::Reflect,
+            SpreadMethod::Repeat => cairo::Extend::Repeat,
         }
     }
 }
@@ -469,7 +469,7 @@ fn set_common_on_pattern<P: cairo::PatternTrait + cairo::Gradient>(
 
     affine.invert();
     pattern.set_matrix(affine);
-    pattern.set_extend(cairo::enums::Extend::from(
+    pattern.set_extend(cairo::Extend::from(
         gradient.common.spread.unwrap_or_default(),
     ));
 
