@@ -14,9 +14,18 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
 
     let mime_type = data_url.mime_type().to_string();
 
-    let (bytes, _fragment_id) = data_url
+    let (bytes, fragment_id) = data_url
         .decode_to_vec()
         .map_err(|_| LoadingError::BadDataUrl)?;
+
+    // See issue #377 - per the data: URL spec
+    // (https://fetch.spec.whatwg.org/#data-urls), those URLs cannot
+    // have fragment identifiers.  So, just return an error if we find
+    // one.  This probably indicates mis-quoted SVG data inside the
+    // data: URL.
+    if fragment_id.is_some() {
+        return Err(LoadingError::BadDataUrl);
+    }
 
     Ok(BinaryData {
         data: bytes,
