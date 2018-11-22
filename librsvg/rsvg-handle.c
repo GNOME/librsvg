@@ -688,8 +688,7 @@ finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
         tree = rsvg_load_steal_tree (handle->priv->load);
         was_successful = tree_is_valid (tree, error);
         if (!was_successful) {
-            rsvg_tree_free (tree);
-            tree = NULL;
+            g_clear_pointer (&tree, rsvg_tree_free);
         }
     }
 
