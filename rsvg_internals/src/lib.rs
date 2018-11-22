@@ -71,7 +71,7 @@ pub use xml::{
     rsvg_xml_state_free,
     rsvg_xml_state_new,
     rsvg_xml_state_start_element,
-    rsvg_xml_state_steal_tree,
+    rsvg_xml_state_steal_result,
 };
 
 #[macro_use]

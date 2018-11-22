@@ -395,15 +395,19 @@ pub extern "C" fn rsvg_xml_state_free(xml: *mut RsvgXmlState) {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_steal_tree(xml: *mut RsvgXmlState) -> *mut RsvgTree {
+pub unsafe extern "C" fn rsvg_xml_state_steal_result(
+    xml: *mut RsvgXmlState,
+    out_tree: *mut *mut RsvgTree,
+) {
     assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
+    assert!(!out_tree.is_null());
 
-    if let Some(tree) = xml.steal_tree() {
-        Box::into_raw(tree) as *mut RsvgTree
-    } else {
-        ptr::null_mut()
-    }
+    let xml = &mut *(xml as *mut XmlState);
+
+    *out_tree = xml
+        .steal_tree()
+        .map(|tree| Box::into_raw(tree) as *mut RsvgTree)
+        .unwrap_or(ptr::null_mut());
 }
 
 #[no_mangle]

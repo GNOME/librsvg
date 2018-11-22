@@ -51,7 +51,7 @@ typedef struct RsvgXmlState RsvgXmlState;
 /* Implemented in rsvg_internals/src/xml.rs */
 extern RsvgXmlState *rsvg_xml_state_new ();
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
-extern RsvgTree *rsvg_xml_state_steal_tree(RsvgXmlState *xml);
+extern void rsvg_xml_state_steal_result(RsvgXmlState *xml, RsvgTree **out_tree);
 extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
 extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
 extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
@@ -145,7 +145,7 @@ void
 rsvg_load_steal_result (RsvgLoad *load,
                         RsvgTree **out_tree)
 {
-    *out_tree = rsvg_xml_state_steal_tree (load->xml.rust_state);
+    rsvg_xml_state_steal_result (load->xml.rust_state, out_tree);
 }
 
 static void
