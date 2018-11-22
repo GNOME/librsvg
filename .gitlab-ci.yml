@@ -160,7 +160,7 @@ fedora:rawhide:
   <<: *distro_test
   <<: *stage_2
 
-opensuse:tumbleweed:
+.opensuse:tumbleweed:
   image: $AMD64_OPENSUSE_TUMBLEWEED
   variables:
     LIBRSVG_DEBUG: "yes"
