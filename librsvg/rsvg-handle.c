@@ -156,7 +156,7 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->hstate = RSVG_HANDLE_STATE_START;
-    self->priv->defs = rsvg_defs_new ();
+    self->priv->defs = NULL;
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
 
@@ -678,6 +678,7 @@ static gboolean
 finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
 {
     RsvgTree *tree = NULL;
+    RsvgDefs *defs = NULL;
 
     g_assert (handle->priv->load != NULL);
     g_assert (handle->priv->tree == NULL);
@@ -685,10 +686,11 @@ finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
     if (was_successful) {
         g_assert (error == NULL || *error == NULL);
 
-        rsvg_load_steal_result (handle->priv->load, &tree);
+        rsvg_load_steal_result (handle->priv->load, &tree, &defs);
         was_successful = tree_is_valid (tree, error);
         if (!was_successful) {
             g_clear_pointer (&tree, rsvg_tree_free);
+            g_clear_pointer (&defs, rsvg_defs_free);
         }
     }
 
@@ -701,6 +703,7 @@ finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
 
     g_clear_pointer (&handle->priv->load, rsvg_load_free);
     handle->priv->tree = tree;
+    handle->priv->defs = defs;
 
     return was_successful;
 }

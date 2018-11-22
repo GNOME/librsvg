@@ -16,7 +16,7 @@ pub struct Defs {
 }
 
 impl Defs {
-    fn new() -> Defs {
+    pub fn new() -> Defs {
         Defs {
             nodes: Default::default(),
             externs: Default::default(),
@@ -102,11 +102,6 @@ impl<'a> Reference<'a> {
             (_, _) => Err(()),
         }
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_defs_new() -> *mut RsvgDefs {
-    Box::into_raw(Box::new(Defs::new())) as *mut RsvgDefs
 }
 
 #[no_mangle]

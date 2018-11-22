@@ -242,10 +242,6 @@ RsvgNode *rsvg_load_destroy (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
 /* Defined in rsvg_internals/src/defs.rs */
 G_GNUC_INTERNAL
-RsvgDefs *rsvg_defs_new (void);
-
-/* Defined in rsvg_internals/src/defs.rs */
-G_GNUC_INTERNAL
 void rsvg_defs_free (RsvgDefs *defs);
 
 /* Defined in rsvg_internals/src/defs.rs */

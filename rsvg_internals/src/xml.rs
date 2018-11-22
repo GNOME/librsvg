@@ -9,6 +9,7 @@ use std::str;
 
 use attributes::Attribute;
 use css;
+use defs::{Defs, RsvgDefs};
 use handle::{self, RsvgHandle};
 use load::rsvg_load_new_node;
 use node::{node_new, Node, NodeType};
@@ -72,6 +73,7 @@ pub enum RsvgXmlState {}
 /// what creates normal graphical elements.
 struct XmlState {
     tree: Option<Box<Tree>>,
+    defs: Option<Defs>,
     context: Context,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
@@ -81,6 +83,7 @@ impl XmlState {
     fn new() -> XmlState {
         XmlState {
             tree: None,
+            defs: Some(Defs::new()),
             context: Context::empty(),
             context_stack: Vec::new(),
             current_node: None,
@@ -95,8 +98,8 @@ impl XmlState {
         self.tree = Some(Box::new(Tree::new(root)));
     }
 
-    pub fn steal_tree(&mut self) -> Option<Box<Tree>> {
-        self.tree.take()
+    pub fn steal_result(&mut self) -> (Option<Box<Tree>>, Box<Defs>) {
+        (self.tree.take(), Box::new(self.defs.take().unwrap()))
     }
 
     fn push_context(&mut self, ctx: Context) {
@@ -158,7 +161,8 @@ impl XmlState {
         match name {
             "include" => self.xinclude_start_element(handle, name, pbag),
             _ => {
-                let node = self.create_node(self.current_node.as_ref(), handle, name, pbag);
+                let parent = self.current_node.clone();
+                let node = self.create_node(parent.as_ref(), handle, name, pbag);
                 if self.current_node.is_none() {
                     self.set_root(&node);
                 }
@@ -218,15 +222,15 @@ impl XmlState {
     }
 
     fn create_node(
-        &self,
+        &mut self,
         parent: Option<&Rc<Node>>,
         handle: *mut RsvgHandle,
         name: &str,
         pbag: &PropertyBag,
     ) -> Rc<Node> {
-        let mut defs = handle::get_defs(handle);
+        let defs = self.defs.as_mut().unwrap();
 
-        let new_node = rsvg_load_new_node(name, parent, pbag, &mut defs);
+        let new_node = rsvg_load_new_node(name, parent, pbag, defs);
 
         if let Some(parent) = parent {
             parent.add_child(&new_node);
@@ -398,16 +402,21 @@ pub extern "C" fn rsvg_xml_state_free(xml: *mut RsvgXmlState) {
 pub unsafe extern "C" fn rsvg_xml_state_steal_result(
     xml: *mut RsvgXmlState,
     out_tree: *mut *mut RsvgTree,
+    out_defs: *mut *mut RsvgDefs,
 ) {
     assert!(!xml.is_null());
     assert!(!out_tree.is_null());
+    assert!(!out_defs.is_null());
 
     let xml = &mut *(xml as *mut XmlState);
 
-    *out_tree = xml
-        .steal_tree()
+    let (tree, defs) = xml.steal_result();
+
+    *out_tree = tree
         .map(|tree| Box::into_raw(tree) as *mut RsvgTree)
         .unwrap_or(ptr::null_mut());
+
+    *out_defs = Box::into_raw(defs) as *mut RsvgDefs;
 }
 
 #[no_mangle]
