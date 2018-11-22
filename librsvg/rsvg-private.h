@@ -201,7 +201,8 @@ GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
-RsvgDrawingCtx *rsvg_drawing_ctx_new (cairo_t *cr,
+RsvgDrawingCtx *rsvg_drawing_ctx_new (RsvgHandle *handle,
+                                      cairo_t *cr,
                                       guint width,
                                       guint height,
                                       double vb_width,
@@ -241,7 +242,7 @@ RsvgNode *rsvg_load_destroy (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
 /* Defined in rsvg_internals/src/defs.rs */
 G_GNUC_INTERNAL
-RsvgDefs *rsvg_defs_new (RsvgHandle *handle);
+RsvgDefs *rsvg_defs_new (void);
 
 /* Defined in rsvg_internals/src/defs.rs */
 G_GNUC_INTERNAL
@@ -249,7 +250,7 @@ void rsvg_defs_free (RsvgDefs *defs);
 
 /* Defined in rsvg_internals/src/defs.rs */
 /* for some reason this one's public... */
-RsvgNode *rsvg_defs_lookup (const RsvgDefs * defs, const char *name);
+RsvgNode *rsvg_defs_lookup (const RsvgDefs * defs, RsvgHandle *handle, const char *name);
 
 G_GNUC_INTERNAL
 RsvgDefs *rsvg_handle_get_defs (RsvgHandle *handle);

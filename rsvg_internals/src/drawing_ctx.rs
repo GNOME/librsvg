@@ -18,6 +18,7 @@ use defs::{Defs, RsvgDefs};
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
+use handle::RsvgHandle;
 use length::Dasharray;
 use mask::NodeMask;
 use node::{CascadedValues, NodeType, RsvgNode};
@@ -99,6 +100,8 @@ impl Drop for ViewParams {
 pub enum RsvgDrawingCtx {}
 
 pub struct DrawingCtx<'a> {
+    handle: *const RsvgHandle,
+
     rect: cairo::Rectangle,
     dpi_x: f64,
     dpi_y: f64,
@@ -136,6 +139,7 @@ pub struct DrawingCtx<'a> {
 
 impl<'a> DrawingCtx<'a> {
     pub fn new(
+        handle: *const RsvgHandle,
         cr: cairo::Context,
         width: f64,
         height: f64,
@@ -171,6 +175,7 @@ impl<'a> DrawingCtx<'a> {
         view_box_stack.push(ViewBox::new(0.0, 0.0, vb_width, vb_height));
 
         DrawingCtx {
+            handle,
             rect,
             dpi_x,
             dpi_y,
@@ -288,7 +293,7 @@ impl<'a> DrawingCtx<'a> {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
-        if let Some(node) = self.defs.borrow_mut().lookup(url) {
+        if let Some(node) = self.defs.borrow_mut().lookup(self.handle, url) {
             if !self.acquired_nodes_contains(node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
@@ -1169,6 +1174,7 @@ impl NodeStack {
 
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_new(
+    handle: *const RsvgHandle,
     cr: *mut cairo_sys::cairo_t,
     width: u32,
     height: u32,
@@ -1183,6 +1189,7 @@ pub extern "C" fn rsvg_drawing_ctx_new(
     let defs = unsafe { &mut *(defs as *mut Defs) };
 
     Box::into_raw(Box::new(DrawingCtx::new(
+        handle,
         unsafe { from_glib_none(cr) },
         f64::from(width),
         f64::from(height),
