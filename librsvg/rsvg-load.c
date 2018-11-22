@@ -58,7 +58,7 @@ extern void rsvg_xml_state_steal_result(RsvgXmlState *xml,
 extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
 extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
 extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
-
+extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
 /* Holds the XML parsing state */
 typedef struct {
@@ -435,12 +435,15 @@ sax_get_parameter_entity_cb (void *data, const xmlChar * name)
 static void
 sax_error_cb (void *data, const char *msg, ...)
 {
+    RsvgLoad *load = data;
     va_list args;
     char *buf;
 
     va_start (args, msg);
     g_vasprintf (&buf, msg, args);
     va_end (args);
+
+    rsvg_xml_state_error (load->xml.rust_state, buf);
 
     g_free (buf);
 }

@@ -1,5 +1,6 @@
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
+use glib::translate::*;
 use libc;
 use std;
 use std::mem;
@@ -36,6 +37,9 @@ enum ContextKind {
 
     // Insie <xi::fallback>
     XIncludeFallback(XIncludeContext),
+
+    // An XML parsing error was found.  We will no-op upon any further XML events.
+    FatalError,
 }
 
 #[derive(Clone)]
@@ -110,6 +114,10 @@ impl XmlState {
     pub fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag) {
         let context = self.context.clone();
 
+        if let ContextKind::FatalError = context.kind {
+            return;
+        }
+
         let new_context = match context.kind {
             ContextKind::Start => self.element_creation_start_element(handle, name, pbag),
             ContextKind::ElementCreation => self.element_creation_start_element(handle, name, pbag),
@@ -118,6 +126,8 @@ impl XmlState {
             ContextKind::XIncludeFallback(ref ctx) => {
                 self.xinclude_fallback_start_element(&ctx, handle, name, pbag)
             }
+
+            ContextKind::FatalError => unreachable!(),
         };
 
         self.push_context(new_context);
@@ -125,6 +135,10 @@ impl XmlState {
 
     pub fn end_element(&mut self, handle: *mut RsvgHandle, name: &str) {
         let context = self.context.clone();
+
+        if let ContextKind::FatalError = context.kind {
+            return;
+        }
 
         assert!(context.element_name == name);
 
@@ -134,6 +148,7 @@ impl XmlState {
             ContextKind::XInclude(_) => (),
             ContextKind::UnsupportedXIncludeChild => (),
             ContextKind::XIncludeFallback(_) => (),
+            ContextKind::FatalError => unreachable!(),
         }
 
         // We can unwrap since start_element() always adds a context to the stack
@@ -143,13 +158,29 @@ impl XmlState {
     pub fn characters(&mut self, text: &str) {
         let context = self.context.clone();
 
+        if let ContextKind::FatalError = context.kind {
+            return;
+        }
+
         match context.kind {
             ContextKind::Start => panic!("characters: XML handler stack is empty!?"),
             ContextKind::ElementCreation => self.element_creation_characters(text),
             ContextKind::XInclude(_) => (),
             ContextKind::UnsupportedXIncludeChild => (),
             ContextKind::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
+            ContextKind::FatalError => unreachable!(),
         }
+    }
+
+    pub fn error(&mut self, msg: &str) {
+        // FIXME: aggregate the errors and expose them to the public result
+
+        println!("XML error: {}", msg);
+
+        self.push_context(Context {
+            element_name: "".to_string(),
+            kind: ContextKind::FatalError,
+        });
     }
 
     fn element_creation_start_element(
@@ -472,4 +503,17 @@ pub extern "C" fn rsvg_xml_state_characters(
     let utf8 = unsafe { str::from_utf8_unchecked(bytes) };
 
     xml.characters(utf8);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut RsvgXmlState, msg: *const libc::c_char) {
+    assert!(!xml.is_null());
+    let xml = &mut *(xml as *mut XmlState);
+
+    assert!(!msg.is_null());
+    // Unlike the functions that take UTF-8 validated strings from
+    // libxml2, I don't trust error messages to be validated.
+    let msg: String = from_glib_none(msg);
+
+    xml.error(&msg);
 }
