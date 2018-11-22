@@ -183,7 +183,8 @@ impl XmlState {
         // here, not during element creation.
         if node.get_type() == NodeType::Svg {
             node.with_impl(|svg: &NodeSvg| {
-                svg.set_delayed_style(&node, handle);
+                let css_styles = handle::get_css_styles(handle);
+                svg.set_delayed_style(&node, css_styles);
             });
         }
 
@@ -241,7 +242,8 @@ impl XmlState {
         // The "svg" node is special; it will parse its style attributes
         // until the end, in standard_element_end().
         if new_node.get_type() != NodeType::Svg {
-            new_node.set_style(handle, pbag);
+            let css_styles = handle::get_css_styles(handle);
+            new_node.set_style(css_styles, pbag);
         }
 
         new_node.set_overridden_properties();

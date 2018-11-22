@@ -6,6 +6,7 @@ use glib_sys;
 
 use aspect_ratio::*;
 use attributes::Attribute;
+use css::CssStyles;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
 use float_eq_cairo::ApproxEqCairo;
@@ -116,10 +117,10 @@ impl NodeSvg {
         }
     }
 
-    pub fn set_delayed_style(&self, node: &RsvgNode, handle: *const RsvgHandle) {
+    pub fn set_delayed_style(&self, node: &RsvgNode, css_styles: &CssStyles) {
         if let Some(owned_pbag) = self.pbag.borrow().as_ref() {
             let pbag = PropertyBag::from_owned(owned_pbag);
-            node.set_style(handle, &pbag);
+            node.set_style(css_styles, &pbag);
         }
     }
 }
