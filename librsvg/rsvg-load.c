@@ -25,6 +25,7 @@
 #include <libxml/parser.h>
 #include <libxml/parserInternals.h>
 #include <string.h>
+#include <glib/gprintf.h>
 
 #include "rsvg-attributes.h"
 #include "rsvg-load.h"
@@ -434,13 +435,14 @@ sax_get_parameter_entity_cb (void *data, const xmlChar * name)
 static void
 sax_error_cb (void *data, const char *msg, ...)
 {
-#ifdef G_ENABLE_DEBUG
     va_list args;
+    char *buf;
 
     va_start (args, msg);
-    vfprintf (stderr, msg, args);
+    g_vasprintf (&buf, msg, args);
     va_end (args);
-#endif
+
+    g_free (buf);
 }
 
 static void
