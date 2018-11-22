@@ -278,6 +278,8 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url)
     g_free (mime_type);
 
     if (stream) {
+        gboolean success = FALSE;
+
         xml_parser = create_xml_stream_parser (handle->priv->load,
                                                stream,
                                                NULL, /* cancellable */
@@ -286,14 +288,14 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url)
         g_object_unref (stream);
 
         if (xml_parser) {
-            (void) xmlParseDocument (xml_parser);
+            success = xmlParseDocument (xml_parser) == 0;
 
             xml_parser = free_xml_parser_and_doc (xml_parser);
         }
 
         g_clear_error (&err);
 
-        return TRUE;
+        return success;
     } else {
         return FALSE;
     }
