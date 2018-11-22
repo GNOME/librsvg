@@ -35,7 +35,8 @@ G_GNUC_INTERNAL
 gboolean rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url);
 
 G_GNUC_INTERNAL
-RsvgTree *rsvg_load_steal_tree (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
+void rsvg_load_steal_result (RsvgLoad *load,
+                             RsvgTree **out_tree);
 
 G_GNUC_INTERNAL
 gboolean rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count, GError **error) G_GNUC_WARN_UNUSED_RESULT;

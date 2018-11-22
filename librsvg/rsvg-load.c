@@ -141,10 +141,11 @@ rsvg_load_free (RsvgLoad *load)
     g_free (load);
 }
 
-RsvgTree *
-rsvg_load_steal_tree (RsvgLoad *load)
+void
+rsvg_load_steal_result (RsvgLoad *load,
+                        RsvgTree **out_tree)
 {
-    return rsvg_xml_state_steal_tree (load->xml.rust_state);
+    *out_tree = rsvg_xml_state_steal_tree (load->xml.rust_state);
 }
 
 static void
