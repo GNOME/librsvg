@@ -11,15 +11,13 @@ use util::utf8_cstr;
 pub enum RsvgDefs {}
 
 pub struct Defs {
-    handle: *const RsvgHandle,
     nodes: HashMap<String, Rc<Node>>,
     externs: HashMap<String, *const RsvgHandle>,
 }
 
 impl Defs {
-    fn new(handle: *const RsvgHandle) -> Defs {
+    pub fn new() -> Defs {
         Defs {
-            handle,
             nodes: Default::default(),
             externs: Default::default(),
         }
@@ -34,17 +32,17 @@ impl Defs {
     /// This may return a node within the same RSVG handle, or a node in a secondary RSVG
     /// handle that is referenced by the current one.  If the element's id is not found,
     /// returns `None`.
-    pub fn lookup(&mut self, name: &str) -> Option<&Rc<Node>> {
+    pub fn lookup(&mut self, handle: *const RsvgHandle, name: &str) -> Option<&Rc<Node>> {
         if let Ok(reference) = Reference::parse(name) {
             match reference {
                 Reference::PlainUri(_) => None,
                 Reference::FragmentId(fragment) => self.nodes.get(fragment),
                 Reference::UriWithFragmentId(uri, fragment) => {
-                    let handle = self.get_extern_handle(uri);
-                    if handle.is_null() {
+                    let extern_handle = self.get_extern_handle(handle, uri);
+                    if extern_handle.is_null() {
                         None
                     } else {
-                        handle::get_defs(handle).nodes.get(fragment)
+                        handle::get_defs(extern_handle).nodes.get(fragment)
                     }
                 }
             }
@@ -53,20 +51,23 @@ impl Defs {
         }
     }
 
-    fn get_extern_handle(&mut self, possibly_relative_uri: &str) -> *const RsvgHandle {
-        handle::resolve_uri(self.handle, possibly_relative_uri).map_or(
-            ptr::null(),
-            |uri| match self.externs.entry(uri) {
+    fn get_extern_handle(
+        &mut self,
+        handle: *const RsvgHandle,
+        possibly_relative_uri: &str,
+    ) -> *const RsvgHandle {
+        handle::resolve_uri(handle, possibly_relative_uri).map_or(ptr::null(), |uri| {
+            match self.externs.entry(uri) {
                 Entry::Occupied(e) => *(e.get()),
                 Entry::Vacant(e) => {
-                    let handle = handle::load_extern(self.handle, e.key());
-                    if !handle.is_null() {
-                        e.insert(handle);
+                    let extern_handle = handle::load_extern(handle, e.key());
+                    if !extern_handle.is_null() {
+                        e.insert(extern_handle);
                     }
-                    handle
+                    extern_handle
                 }
-            },
-        )
+            }
+        })
     }
 }
 
@@ -104,11 +105,6 @@ impl<'a> Reference<'a> {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_defs_new(handle: *const RsvgHandle) -> *mut RsvgDefs {
-    Box::into_raw(Box::new(Defs::new(handle))) as *mut RsvgDefs
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_defs_free(defs: *mut RsvgDefs) {
     assert!(!defs.is_null());
 
@@ -121,6 +117,7 @@ pub extern "C" fn rsvg_defs_free(defs: *mut RsvgDefs) {
 #[no_mangle]
 pub extern "C" fn rsvg_defs_lookup(
     defs: *mut RsvgDefs,
+    handle: *const RsvgHandle,
     name: *const libc::c_char,
 ) -> *const RsvgNode {
     assert!(!defs.is_null());
@@ -129,7 +126,7 @@ pub extern "C" fn rsvg_defs_lookup(
     let defs = unsafe { &mut *(defs as *mut Defs) };
     let name = unsafe { utf8_cstr(name) };
 
-    match defs.lookup(name) {
+    match defs.lookup(handle, name) {
         Some(n) => n as *const RsvgNode,
         None => ptr::null(),
     }

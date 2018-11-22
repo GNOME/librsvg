@@ -51,7 +51,9 @@ typedef struct RsvgXmlState RsvgXmlState;
 /* Implemented in rsvg_internals/src/xml.rs */
 extern RsvgXmlState *rsvg_xml_state_new ();
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
-extern RsvgTree *rsvg_xml_state_steal_tree(RsvgXmlState *xml);
+extern void rsvg_xml_state_steal_result(RsvgXmlState *xml,
+                                        RsvgTree **out_tree,
+                                        RsvgDefs **out_defs);
 extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
 extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
 extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
@@ -141,10 +143,12 @@ rsvg_load_free (RsvgLoad *load)
     g_free (load);
 }
 
-RsvgTree *
-rsvg_load_steal_tree (RsvgLoad *load)
+void
+rsvg_load_steal_result (RsvgLoad *load,
+                        RsvgTree **out_tree,
+                        RsvgDefs **out_defs)
 {
-    return rsvg_xml_state_steal_tree (load->xml.rust_state);
+    rsvg_xml_state_steal_result (load->xml.rust_state, out_tree, out_defs);
 }
 
 static void
@@ -278,6 +282,8 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url)
     g_free (mime_type);
 
     if (stream) {
+        gboolean success = FALSE;
+
         xml_parser = create_xml_stream_parser (handle->priv->load,
                                                stream,
                                                NULL, /* cancellable */
@@ -286,14 +292,14 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url)
         g_object_unref (stream);
 
         if (xml_parser) {
-            (void) xmlParseDocument (xml_parser);
+            success = xmlParseDocument (xml_parser) == 0;
 
             xml_parser = free_xml_parser_and_doc (xml_parser);
         }
 
         g_clear_error (&err);
 
-        return TRUE;
+        return success;
     } else {
         return FALSE;
     }

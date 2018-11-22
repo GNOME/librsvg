@@ -156,7 +156,7 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->hstate = RSVG_HANDLE_STATE_START;
-    self->priv->defs = rsvg_defs_new (self);
+    self->priv->defs = NULL;
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
 
@@ -678,6 +678,7 @@ static gboolean
 finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
 {
     RsvgTree *tree = NULL;
+    RsvgDefs *defs = NULL;
 
     g_assert (handle->priv->load != NULL);
     g_assert (handle->priv->tree == NULL);
@@ -685,11 +686,11 @@ finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
     if (was_successful) {
         g_assert (error == NULL || *error == NULL);
 
-        tree = rsvg_load_steal_tree (handle->priv->load);
+        rsvg_load_steal_result (handle->priv->load, &tree, &defs);
         was_successful = tree_is_valid (tree, error);
         if (!was_successful) {
-            rsvg_tree_free (tree);
-            tree = NULL;
+            g_clear_pointer (&tree, rsvg_tree_free);
+            g_clear_pointer (&defs, rsvg_defs_free);
         }
     }
 
@@ -702,6 +703,7 @@ finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
 
     g_clear_pointer (&handle->priv->load, rsvg_load_free);
     handle->priv->tree = tree;
+    handle->priv->defs = defs;
 
     return was_successful;
 }
@@ -1029,7 +1031,8 @@ rsvg_handle_create_drawing_ctx(RsvgHandle *handle,
                                cairo_t *cr,
                                RsvgDimensionData *dimensions)
 {
-    return rsvg_drawing_ctx_new (cr,
+    return rsvg_drawing_ctx_new (handle,
+                                 cr,
                                  dimensions->width, dimensions->height,
                                  dimensions->em, dimensions->ex,
                                  handle->priv->dpi_x, handle->priv->dpi_y,
@@ -1077,7 +1080,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     }
 
     if (id && *id)
-        drawsub = rsvg_defs_lookup (handle->priv->defs, id);
+        drawsub = rsvg_defs_lookup (handle->priv->defs, handle, id);
 
     if (drawsub == NULL && id != NULL) {
         g_warning ("element id=\"%s\" does not exist", id);
@@ -1218,7 +1221,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     root = rsvg_tree_get_root (handle->priv->tree);
 
     if (id && *id) {
-        node = rsvg_defs_lookup (handle->priv->defs, id);
+        node = rsvg_defs_lookup (handle->priv->defs, handle, id);
 
         if (node && rsvg_tree_is_root (handle->priv->tree, node))
             id = NULL;
@@ -1295,7 +1298,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     if (NULL == id || '\0' == *id)
         return TRUE;
 
-    node = rsvg_defs_lookup (handle->priv->defs, id);
+    node = rsvg_defs_lookup (handle->priv->defs, handle, id);
     if (!node)
         return FALSE;
 
@@ -1337,7 +1340,7 @@ rsvg_handle_has_sub (RsvgHandle * handle,
     if (G_UNLIKELY (!id || !id[0]))
       return FALSE;
 
-    return rsvg_defs_lookup (handle->priv->defs, id) != NULL;
+    return rsvg_defs_lookup (handle->priv->defs, handle, id) != NULL;
 }
 
 /**

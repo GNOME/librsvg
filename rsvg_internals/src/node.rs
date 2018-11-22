@@ -6,9 +6,10 @@ use std::rc::{Rc, Weak};
 
 use attributes::Attribute;
 use cond::{locale_from_environment, RequiredExtensions, RequiredFeatures, SystemLanguage};
+use css::CssStyles;
 use drawing_ctx::DrawingCtx;
 use error::*;
-use handle::{self, RsvgHandle};
+use handle::RsvgHandle;
 use parsers::Parse;
 use property_bag::PropertyBag;
 use state::{ComputedValues, Overflow, SpecifiedValue, State};
@@ -440,7 +441,7 @@ impl Node {
     }
 
     /// Implements a very limited CSS selection engine
-    fn set_css_styles(&self, handle: *const RsvgHandle) {
+    fn set_css_styles(&self, css_styles: &CssStyles) {
         // Try to properly support all of the following, including inheritance:
         // *
         // #id
@@ -451,7 +452,6 @@ impl Node {
         //
         // This is basically a semi-compliant CSS2 selection engine
 
-        let css_styles = handle::get_css_styles(handle);
         let mut state = self.state.borrow_mut();
 
         // *
@@ -520,9 +520,9 @@ impl Node {
 
     // Sets the node's state from the style-related attributes in the pbag.  Also applies
     // CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&self, handle: *const RsvgHandle, pbag: &PropertyBag<'_>) {
+    pub fn set_style(&self, css_styles: &CssStyles, pbag: &PropertyBag<'_>) {
         self.set_presentation_attributes(pbag);
-        self.set_css_styles(handle);
+        self.set_css_styles(css_styles);
         self.set_style_attribute(pbag);
     }
 
