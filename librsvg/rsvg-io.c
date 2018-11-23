@@ -37,7 +37,6 @@ rsvg_decode_data_uri (const char *uri,
 
 static GInputStream *
 rsvg_acquire_gvfs_stream (const char *uri, 
-                          char **out_mime_type,
                           GCancellable *cancellable,
                           GError **error)
 {
@@ -51,24 +50,6 @@ rsvg_acquire_gvfs_stream (const char *uri,
 
     if (stream == NULL) {
         return NULL;
-    }
-
-    if (out_mime_type) {
-        GFileInfo *file_info;
-        const char *content_type;
-
-        file_info = g_file_input_stream_query_info (stream, 
-                                                    G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                                                    cancellable,
-                                                    NULL /* error */);
-        if (file_info &&
-            (content_type = g_file_info_get_content_type (file_info)))
-            *out_mime_type = g_content_type_get_mime_type (content_type);
-        else
-            *out_mime_type = NULL;
-
-        if (file_info)
-            g_object_unref (file_info);
     }
 
     return G_INPUT_STREAM (stream);
@@ -131,22 +112,27 @@ _rsvg_io_acquire_data (const char *uri,
 
 GInputStream *
 _rsvg_io_acquire_stream (const char *uri,
-                         char **mime_type,
                          GCancellable *cancellable,
                          GError **error)
 {
     GInputStream *stream;
-    char *data;
-    gsize len;
 
     if (strncmp (uri, "data:", 5) == 0) {
-        if (!(data = rsvg_decode_data_uri (uri, mime_type, &len, error)))
+        char *mime_type = NULL;
+        char *data;
+        gsize len;
+
+        data = rsvg_decode_data_uri (uri, &mime_type, &len, error);
+        g_free (mime_type);
+
+        if (!data) {
             return NULL;
+        }
 
         return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
     }
 
-    if ((stream = rsvg_acquire_gvfs_stream (uri, mime_type, cancellable, error)))
+    if ((stream = rsvg_acquire_gvfs_stream (uri, cancellable, error)))
       return stream;
 
     return NULL;

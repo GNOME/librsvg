@@ -1691,7 +1691,6 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
 GInputStream *
 _rsvg_handle_acquire_stream (RsvgHandle *handle,
                              const char *href,
-                             char **content_type,
                              GError **error)
 {
     RsvgHandlePrivate *priv = handle->priv;
@@ -1702,7 +1701,6 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
 
     if (allow_load (priv->base_gfile, uri, error)) {
         stream = _rsvg_io_acquire_stream (uri,
-                                          content_type,
                                           handle->priv->cancellable,
                                           error);
     } else {

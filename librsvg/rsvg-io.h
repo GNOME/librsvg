@@ -33,7 +33,6 @@ char *_rsvg_io_acquire_data (const char *uri,
 			     GError **error);
 
 GInputStream *_rsvg_io_acquire_stream (const char *uri,
-                                       char **mime_type,
                                        GCancellable *cancellable,
                                        GError **error);
 

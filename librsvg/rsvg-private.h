@@ -272,7 +272,6 @@ char *_rsvg_handle_acquire_data (RsvgHandle *handle,
 G_GNUC_INTERNAL
 GInputStream *_rsvg_handle_acquire_stream (RsvgHandle *handle,
                                            const char *href,
-                                           char **content_type,
                                            GError **error);
 
 #define rsvg_return_if_fail(expr, error)    G_STMT_START{			\
