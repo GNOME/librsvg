@@ -61,6 +61,13 @@ impl Context {
             kind: ContextKind::Start,
         }
     }
+
+    fn fatal_error() -> Context {
+        Context {
+            element_name: "".to_string(),
+            kind: ContextKind::FatalError,
+        }
+    }
 }
 
 // A *const RsvgXmlState is just the type that we export to C
@@ -81,6 +88,18 @@ struct XmlState {
     context: Context,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
+}
+
+/// Errors returned from XmlState::acquire()
+///
+/// These follow the terminology from https://www.w3.org/TR/xinclude/#terminology
+enum AcquireError {
+    /// Resource could not be acquired (file not found), or I/O error.
+    /// In this case, the `xi:fallback` can be used if present.
+    ResourceError,
+
+    /// Resource could not be parsed/decoded
+    FatalError,
 }
 
 impl XmlState {
@@ -175,12 +194,9 @@ impl XmlState {
     pub fn error(&mut self, msg: &str) {
         // FIXME: aggregate the errors and expose them to the public result
 
-        println!("XML error: {}", msg);
+        rsvg_log!("XML error: {}", msg);
 
-        self.push_context(Context {
-            element_name: "".to_string(),
-            kind: ContextKind::FatalError,
-        });
+        self.push_context(Context::fatal_error());
     }
 
     fn element_creation_start_element(
@@ -301,7 +317,11 @@ impl XmlState {
             }
         }
 
-        let need_fallback = !self.acquire(handle, href, parse, encoding).is_ok();
+        let need_fallback = match self.acquire(handle, href, parse, encoding) {
+            Ok(()) => false,
+            Err(AcquireError::ResourceError) => true,
+            Err(AcquireError::FatalError) => return Context::fatal_error(),
+        };
 
         Context {
             element_name: name.to_string(),
@@ -317,6 +337,14 @@ impl XmlState {
                 kind: ContextKind::XIncludeFallback(ctx.clone()),
             }
         } else {
+            // https://www.w3.org/TR/xinclude/#include_element
+            //
+            // "Other content (text, processing instructions,
+            // comments, elements not in the XInclude namespace,
+            // descendants of child elements) is not constrained by
+            // this specification and is ignored by the XInclude
+            // processor"
+
             self.unsupported_xinclude_start_element(name)
         }
     }
@@ -355,15 +383,27 @@ impl XmlState {
         href: Option<&str>,
         parse: Option<&str>,
         encoding: Option<&str>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), AcquireError> {
         if let Some(href) = href {
-            if parse == Some("text") {
-                self.acquire_text(handle, href, encoding)
-            } else {
-                self.acquire_xml(handle, href)
+            // https://www.w3.org/TR/xinclude/#include_element
+            //
+            // "When omitted, the value of "xml" is implied (even in
+            // the absence of a default value declaration). Values
+            // other than "xml" and "text" are a fatal error."
+            match parse {
+                None | Some("xml") => self.acquire_xml(handle, href),
+
+                Some("text") => self.acquire_text(handle, href, encoding),
+
+                _ => Err(AcquireError::FatalError),
             }
         } else {
-            Err(())
+            // The href attribute is not present.  Per
+            // https://www.w3.org/TR/xinclude/#include_element we
+            // should use the xpointer attribute, but we do not
+            // support that yet.  So, we'll just say, "OK" and not
+            // actually include anything.
+            Ok(())
         }
     }
 
@@ -372,17 +412,17 @@ impl XmlState {
         handle: *mut RsvgHandle,
         href: &str,
         encoding: Option<&str>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), AcquireError> {
         let binary = handle::acquire_data(handle, href).map_err(|e| {
             rsvg_log!("could not acquire \"{}\": {}", href, e);
-            ()
+            AcquireError::ResourceError
         })?;
 
         let encoding = encoding.unwrap_or("utf-8");
 
         let encoder = encoding_from_whatwg_label(encoding).ok_or_else(|| {
             rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, href);
-            ()
+            AcquireError::FatalError
         })?;
 
         let utf8_data = encoder
@@ -394,18 +434,19 @@ impl XmlState {
                     encoding,
                     e
                 );
-                ()
+                AcquireError::FatalError
             })?;
 
         self.element_creation_characters(&utf8_data);
         Ok(())
     }
 
-    fn acquire_xml(&self, handle: *mut RsvgHandle, href: &str) -> Result<(), ()> {
+    fn acquire_xml(&self, handle: *mut RsvgHandle, href: &str) -> Result<(), AcquireError> {
+        // FIXME: distinguish between "file not found" and "invalid XML"
         if handle::load_xml_xinclude(handle, href) {
             Ok(())
         } else {
-            Err(())
+            Err(AcquireError::FatalError)
         }
     }
 

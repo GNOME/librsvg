@@ -190,6 +190,7 @@ pub fn image_surface_new_from_href(
     Ok(surface)
 }
 
+// FIXME: distinguish between "file not found" and "invalid XML"
 pub fn load_xml_xinclude(handle: *mut RsvgHandle, url: &str) -> bool {
     unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, url.to_glib_none().0)) }
 }
