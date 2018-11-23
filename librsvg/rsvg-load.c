@@ -641,44 +641,11 @@ close_impl (RsvgLoad *load, GError ** error)
 #define GZ_MAGIC_0 ((guchar) 0x1f)
 #define GZ_MAGIC_1 ((guchar) 0x8b)
 
-static GInputStream *
+/* Implemented in rsvg_internals/src/io.rs */
+extern GInputStream *
 rsvg_get_input_stream_for_loading (GInputStream *stream,
                                    GCancellable *cancellable,
-                                   GError      **error)
-{
-    gssize num_read;
-    const guchar *buf;
-
-    /* detect zipped streams */
-    stream = g_buffered_input_stream_new (stream);
-    num_read = g_buffered_input_stream_fill (G_BUFFERED_INPUT_STREAM (stream), 2, cancellable, error);
-    if (num_read < 2) {
-        g_object_unref (stream);
-        if (num_read < 0) {
-            g_assert (error == NULL || *error != NULL);
-        } else {
-            g_set_error (error, rsvg_error_quark (), RSVG_ERROR_FAILED,
-                         _("Input file is too short"));
-        }
-
-        return NULL;
-    }
-
-    buf = g_buffered_input_stream_peek_buffer (G_BUFFERED_INPUT_STREAM (stream), NULL);
-    if ((buf[0] == GZ_MAGIC_0) && (buf[1] == GZ_MAGIC_1)) {
-        GConverter *converter;
-        GInputStream *conv_stream;
-
-        converter = G_CONVERTER (g_zlib_decompressor_new (G_ZLIB_COMPRESSOR_FORMAT_GZIP));
-        conv_stream = g_converter_input_stream_new (stream, converter);
-        g_object_unref (converter);
-        g_object_unref (stream);
-
-        stream = conv_stream;
-    }
-
-    return stream;
-}
+                                   GError      **error);
 
 gboolean
 rsvg_load_read_stream_sync (RsvgLoad     *load,

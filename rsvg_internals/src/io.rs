@@ -1,11 +1,22 @@
 use data_url;
+use gio_sys;
 use glib_sys;
 use libc;
 
+use gio::{
+    BufferedInputStream,
+    BufferedInputStreamExt,
+    Cancellable,
+    ConverterInputStream,
+    InputStream,
+    ZlibCompressorFormat,
+    ZlibDecompressor,
+};
 use glib::translate::*;
+use glib::Cast;
 use std::ptr;
 
-use error::{set_gerror, LoadingError};
+use error::{set_gerror, LoadingError, RsvgError};
 use handle::BinaryData;
 use util::utf8_cstr;
 
@@ -72,6 +83,56 @@ pub fn rsvg_decode_data_uri(
 
                 ptr::null_mut()
             }
+        }
+    }
+}
+
+// Header of a gzip data stream
+const GZ_MAGIC_0: u8 = 0x1f;
+const GZ_MAGIC_1: u8 = 0x8b;
+
+fn get_input_stream_for_loading(
+    stream: InputStream,
+    cancellable: Option<Cancellable>,
+) -> Result<InputStream, glib::Error> {
+    // detect gzipped streams (svgz)
+
+    let buffered = BufferedInputStream::new(&stream);
+    let num_read = buffered.fill(2, cancellable.as_ref())?;
+    if num_read < 2 {
+        // FIXME: this string was localized in the original; localize it
+        return Err(glib::Error::new(RsvgError, "Input file is too short"));
+    }
+
+    let buf = buffered.peek_buffer();
+    assert!(buf.len() >= 2);
+    if buf[0] == GZ_MAGIC_0 && buf[1] == GZ_MAGIC_1 {
+        let decomp = ZlibDecompressor::new(ZlibCompressorFormat::Gzip);
+        let converter = ConverterInputStream::new(&buffered, &decomp);
+        Ok(converter.upcast::<InputStream>())
+    } else {
+        Ok(buffered.upcast::<InputStream>())
+    }
+}
+
+#[no_mangle]
+pub unsafe fn rsvg_get_input_stream_for_loading(
+    stream: *mut gio_sys::GInputStream,
+    cancellable: *mut gio_sys::GCancellable,
+    error: *mut *mut glib_sys::GError,
+) -> *mut gio_sys::GInputStream {
+    let stream = from_glib_borrow(stream);
+    let cancellable = from_glib_borrow(cancellable);
+
+    match get_input_stream_for_loading(stream, cancellable) {
+        Ok(stream) => stream.to_glib_full(),
+
+        Err(e) => {
+            if !error.is_null() {
+                *error = e.to_glib_full() as *mut _;
+            }
+
+            ptr::null_mut()
         }
     }
 }

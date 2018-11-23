@@ -10,6 +10,8 @@ extern crate downcast_rs;
 extern crate encoding;
 extern crate float_cmp;
 extern crate gdk_pixbuf;
+extern crate gio;
+extern crate gio_sys;
 extern crate glib;
 extern crate glib_sys;
 extern crate itertools;
@@ -45,7 +47,7 @@ pub use drawing_ctx::{
 
 pub use handle::rsvg_handle_load_css;
 
-pub use io::rsvg_decode_data_uri;
+pub use io::{rsvg_decode_data_uri, rsvg_get_input_stream_for_loading};
 
 pub use node::rsvg_node_unref;
 
