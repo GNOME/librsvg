@@ -139,7 +139,7 @@ rsvg_acquire_gvfs_data (const char *uri,
 }
 
 char *
-_rsvg_io_acquire_data (const char *href, 
+_rsvg_io_acquire_data (const char *uri,
                        const char *base_uri, 
                        char **mime_type,
                        gsize *len,
@@ -149,7 +149,7 @@ _rsvg_io_acquire_data (const char *href,
     char *data;
     gsize llen;
 
-    if (!(href && *href)) {
+    if (!(uri && *uri)) {
         g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                             "Invalid URI");
         return NULL;
@@ -158,17 +158,17 @@ _rsvg_io_acquire_data (const char *href,
     if (!len)
         len = &llen;
 
-    if (strncmp (href, "data:", 5) == 0)
-      return rsvg_decode_data_uri (href, mime_type, len, error);
+    if (strncmp (uri, "data:", 5) == 0)
+      return rsvg_decode_data_uri (uri, mime_type, len, error);
 
-    if ((data = rsvg_acquire_gvfs_data (href, base_uri, mime_type, len, cancellable, error)))
+    if ((data = rsvg_acquire_gvfs_data (uri, base_uri, mime_type, len, cancellable, error)))
       return data;
 
     return NULL;
 }
 
 GInputStream *
-_rsvg_io_acquire_stream (const char *href, 
+_rsvg_io_acquire_stream (const char *uri,
                          const char *base_uri, 
                          char **mime_type,
                          GCancellable *cancellable,
@@ -178,20 +178,20 @@ _rsvg_io_acquire_stream (const char *href,
     char *data;
     gsize len;
 
-    if (!(href && *href)) {
+    if (!(uri && *uri)) {
         g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                             "Invalid URI");
         return NULL;
     }
 
-    if (strncmp (href, "data:", 5) == 0) {
-        if (!(data = rsvg_decode_data_uri (href, mime_type, &len, error)))
+    if (strncmp (uri, "data:", 5) == 0) {
+        if (!(data = rsvg_decode_data_uri (uri, mime_type, &len, error)))
             return NULL;
 
         return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
     }
 
-    if ((stream = rsvg_acquire_gvfs_stream (href, base_uri, mime_type, cancellable, error)))
+    if ((stream = rsvg_acquire_gvfs_stream (uri, base_uri, mime_type, cancellable, error)))
       return stream;
 
     return NULL;

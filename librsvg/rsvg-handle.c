@@ -1663,7 +1663,7 @@ allow_load (GFile *base_gfile, const char *uri, GError **error)
 
 char *
 _rsvg_handle_acquire_data (RsvgHandle *handle,
-                           const char *url,
+                           const char *href,
                            char **content_type,
                            gsize *len,
                            GError **error)
@@ -1672,7 +1672,7 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
     char *uri;
     char *data;
 
-    uri = rsvg_handle_resolve_uri (handle, url);
+    uri = rsvg_handle_resolve_uri (handle, href);
 
     if (allow_load (priv->base_gfile, uri, error)) {
         data = _rsvg_io_acquire_data (uri,
@@ -1691,7 +1691,7 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
 
 GInputStream *
 _rsvg_handle_acquire_stream (RsvgHandle *handle,
-                             const char *url,
+                             const char *href,
                              char **content_type,
                              GError **error)
 {
@@ -1699,7 +1699,7 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
     char *uri;
     GInputStream *stream;
 
-    uri = rsvg_handle_resolve_uri (handle, url);
+    uri = rsvg_handle_resolve_uri (handle, href);
 
     if (allow_load (priv->base_gfile, uri, error)) {
         stream = _rsvg_io_acquire_stream (uri,

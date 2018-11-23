@@ -265,13 +265,13 @@ gboolean rsvg_handle_keep_image_data (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
 char *_rsvg_handle_acquire_data (RsvgHandle *handle,
-                                 const char *uri,
+                                 const char *href,
                                  char **content_type,
                                  gsize *len,
                                  GError **error);
 G_GNUC_INTERNAL
 GInputStream *_rsvg_handle_acquire_stream (RsvgHandle *handle,
-                                           const char *uri,
+                                           const char *href,
                                            char **content_type,
                                            GError **error);
 

@@ -268,7 +268,7 @@ create_xml_stream_parser (RsvgLoad      *load,
 }
 
 gboolean
-rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url)
+rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 {
     GInputStream *stream;
     GError *err = NULL;
@@ -277,7 +277,7 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url)
 
     g_assert (handle->priv->load != NULL);
 
-    stream = _rsvg_handle_acquire_stream (handle, url, &mime_type, NULL);
+    stream = _rsvg_handle_acquire_stream (handle, href, &mime_type, NULL);
 
     g_free (mime_type);
 

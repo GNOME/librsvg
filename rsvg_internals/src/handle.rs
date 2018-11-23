@@ -27,14 +27,14 @@ extern "C" {
 
     fn rsvg_handle_load_extern(
         handle: *const RsvgHandle,
-        uri: *const libc::c_char,
+        href: *const libc::c_char,
     ) -> *const RsvgHandle;
 
     fn rsvg_handle_get_css_styles(handle: *const RsvgHandle) -> *mut RsvgCssStyles;
 
     fn _rsvg_handle_acquire_data(
         handle: *mut RsvgHandle,
-        url: *const libc::c_char,
+        href: *const libc::c_char,
         out_content_type: *mut *mut libc::c_char,
         out_len: *mut usize,
         error: *mut *mut glib_sys::GError,
@@ -44,7 +44,7 @@ extern "C" {
 
     fn rsvg_load_handle_xml_xinclude(
         handle: *mut RsvgHandle,
-        url: *const libc::c_char,
+        href: *const libc::c_char,
     ) -> glib_sys::gboolean;
 }
 
@@ -83,7 +83,7 @@ pub struct BinaryData {
     pub content_type: Option<String>,
 }
 
-pub fn acquire_data(handle: *mut RsvgHandle, url: &str) -> Result<BinaryData, glib::Error> {
+pub fn acquire_data(handle: *mut RsvgHandle, href: &str) -> Result<BinaryData, glib::Error> {
     unsafe {
         let mut content_type: *mut libc::c_char = ptr::null_mut();
         let mut len = 0;
@@ -91,7 +91,7 @@ pub fn acquire_data(handle: *mut RsvgHandle, url: &str) -> Result<BinaryData, gl
 
         let buf = _rsvg_handle_acquire_data(
             handle,
-            url.to_glib_none().0,
+            href.to_glib_none().0,
             &mut content_type as *mut *mut _,
             &mut len,
             &mut error,
@@ -192,8 +192,8 @@ pub fn image_surface_new_from_href(
 }
 
 // FIXME: distinguish between "file not found" and "invalid XML"
-pub fn load_xml_xinclude(handle: *mut RsvgHandle, url: &str) -> bool {
-    unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, url.to_glib_none().0)) }
+pub fn load_xml_xinclude(handle: *mut RsvgHandle, href: &str) -> bool {
+    unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, href.to_glib_none().0)) }
 }
 
 pub fn load_css(handle: *mut RsvgHandle, href: &str) {
