@@ -143,21 +143,7 @@ pub fn image_surface_new_from_href(
     let surface = SharedImageSurface::from_pixbuf(&pixbuf)?.into_image_surface()?;
 
     if keep_image_data(handle) {
-        let mime_type = data.content_type.or_else(|| {
-            // Try to get the content type from the loader
-
-            loader.get_format().and_then(|format| {
-                let content_types = format.get_mime_types();
-
-                if content_types.len() != 0 {
-                    Some(content_types[0].clone())
-                } else {
-                    None
-                }
-            })
-        });
-
-        if let Some(mime_type) = mime_type {
+        if let Some(mime_type) = data.content_type {
             extern "C" {
                 fn cairo_surface_set_mime_data(
                     surface: *mut cairo_sys::cairo_surface_t,
