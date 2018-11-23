@@ -43,15 +43,13 @@ rsvg_acquire_gvfs_stream (const char *uri,
 {
     GFile *file;
     GFileInputStream *stream;
-    GError *err = NULL;
 
     file = g_file_new_for_uri (uri);
 
-    stream = g_file_read (file, cancellable, &err);
+    stream = g_file_read (file, cancellable, error);
     g_object_unref (file);
 
     if (stream == NULL) {
-        g_propagate_error (error, err);
         return NULL;
     }
 
@@ -84,25 +82,19 @@ rsvg_acquire_gvfs_data (const char *uri,
                         GError **error)
 {
     GFile *file;
-    GError *err;
     char *data;
     gsize len;
     char *content_type;
     gboolean res;
 
     file = g_file_new_for_uri (uri);
-
-    err = NULL;
     data = NULL;
 
-    res = g_file_load_contents (file, cancellable, &data, &len, NULL, &err);
-
+    res = g_file_load_contents (file, cancellable, &data, &len, NULL, error);
     g_object_unref (file);
+
     if (!res) {
-        if (err) {
-            g_propagate_error (error, err);
-            return NULL;
-        }
+        return NULL;
     }
 
     if (out_mime_type &&
