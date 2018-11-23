@@ -8,11 +8,15 @@ use gio::{
     BufferedInputStreamExt,
     Cancellable,
     ConverterInputStream,
+    File as GFile,
+    FileExt,
     InputStream,
+    MemoryInputStream,
     ZlibCompressorFormat,
     ZlibDecompressor,
 };
 use glib::translate::*;
+use glib::Bytes as GBytes;
 use glib::Cast;
 use std::ptr;
 
@@ -131,6 +135,46 @@ pub unsafe fn rsvg_get_input_stream_for_loading(
             if !error.is_null() {
                 *error = e.to_glib_full() as *mut _;
             }
+
+            ptr::null_mut()
+        }
+    }
+}
+
+/// Returns an input stream.  The uri can be a data: URL or a plain URI
+fn acquire_stream(
+    uri: &str,
+    cancellable: Option<Cancellable>,
+) -> Result<InputStream, LoadingError> {
+    if uri.starts_with("data:") {
+        let BinaryData { data, .. } = decode_data_uri(uri)?;
+
+        let stream = MemoryInputStream::new_from_bytes(&GBytes::from_owned(data));
+        Ok(stream.upcast::<InputStream>())
+    } else {
+        let file = GFile::new_for_uri(uri);
+        let stream = file.read(cancellable.as_ref())?;
+
+        Ok(stream.upcast::<InputStream>())
+    }
+}
+
+#[no_mangle]
+pub unsafe fn rsvg_io_acquire_stream(
+    uri: *const libc::c_char,
+    cancellable: *mut gio_sys::GCancellable,
+    error: *mut *mut glib_sys::GError,
+) -> *mut gio_sys::GInputStream {
+    assert!(!uri.is_null());
+
+    let uri: String = from_glib_none(uri);
+    let cancellable = from_glib_borrow(cancellable);
+
+    match acquire_stream(&uri, cancellable) {
+        Ok(stream) => stream.to_glib_full(),
+
+        Err(_e) => {
+            set_gerror(error, 0, "Could not acquire stream");
 
             ptr::null_mut()
         }

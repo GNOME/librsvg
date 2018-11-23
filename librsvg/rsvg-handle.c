@@ -1688,6 +1688,12 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
     return data;
 }
 
+/* Implemented in rsvg_internals/src/io.rs */
+G_GNUC_INTERNAL
+GInputStream *rsvg_io_acquire_stream (const char *uri,
+				      GCancellable *cancellable,
+				      GError **error);
+
 GInputStream *
 _rsvg_handle_acquire_stream (RsvgHandle *handle,
                              const char *href,
@@ -1700,9 +1706,7 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
     uri = rsvg_handle_resolve_uri (handle, href);
 
     if (allow_load (priv->base_gfile, uri, error)) {
-        stream = _rsvg_io_acquire_stream (uri,
-                                          handle->priv->cancellable,
-                                          error);
+        stream = rsvg_io_acquire_stream (uri, handle->priv->cancellable, error);
     } else {
         stream = NULL;
     }

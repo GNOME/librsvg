@@ -35,26 +35,6 @@ rsvg_decode_data_uri (const char *uri,
                       gsize *out_len,
                       GError **error);
 
-static GInputStream *
-rsvg_acquire_gvfs_stream (const char *uri, 
-                          GCancellable *cancellable,
-                          GError **error)
-{
-    GFile *file;
-    GFileInputStream *stream;
-
-    file = g_file_new_for_uri (uri);
-
-    stream = g_file_read (file, cancellable, error);
-    g_object_unref (file);
-
-    if (stream == NULL) {
-        return NULL;
-    }
-
-    return G_INPUT_STREAM (stream);
-}
-
 static char *
 rsvg_acquire_gvfs_data (const char *uri,
                         char **out_mime_type,
@@ -106,34 +86,6 @@ _rsvg_io_acquire_data (const char *uri,
 
     if ((data = rsvg_acquire_gvfs_data (uri, mime_type, len, cancellable, error)))
       return data;
-
-    return NULL;
-}
-
-GInputStream *
-_rsvg_io_acquire_stream (const char *uri,
-                         GCancellable *cancellable,
-                         GError **error)
-{
-    GInputStream *stream;
-
-    if (strncmp (uri, "data:", 5) == 0) {
-        char *mime_type = NULL;
-        char *data;
-        gsize len;
-
-        data = rsvg_decode_data_uri (uri, &mime_type, &len, error);
-        g_free (mime_type);
-
-        if (!data) {
-            return NULL;
-        }
-
-        return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
-    }
-
-    if ((stream = rsvg_acquire_gvfs_stream (uri, cancellable, error)))
-      return stream;
 
     return NULL;
 }

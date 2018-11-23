@@ -32,8 +32,4 @@ char *_rsvg_io_acquire_data (const char *uri,
 			     GCancellable *cancellable,
 			     GError **error);
 
-GInputStream *_rsvg_io_acquire_stream (const char *uri,
-                                       GCancellable *cancellable,
-                                       GError **error);
-
 #endif /* RSVG_IO_H */
