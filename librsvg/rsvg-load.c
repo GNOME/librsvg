@@ -641,16 +641,13 @@ close_impl (RsvgLoad *load, GError ** error)
 #define GZ_MAGIC_0 ((guchar) 0x1f)
 #define GZ_MAGIC_1 ((guchar) 0x8b)
 
-gboolean
-rsvg_load_read_stream_sync (RsvgLoad     *load,
-                            GInputStream *stream,
-                            GCancellable *cancellable,
-                            GError      **error)
+static GInputStream *
+rsvg_get_input_stream_for_loading (GInputStream *stream,
+                                   GCancellable *cancellable,
+                                   GError      **error)
 {
-    GError *err = NULL;
-    gboolean res = FALSE;
-    const guchar *buf;
     gssize num_read;
+    const guchar *buf;
 
     /* detect zipped streams */
     stream = g_buffered_input_stream_new (stream);
@@ -664,8 +661,7 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
                          _("Input file is too short"));
         }
 
-        load->state = LOAD_STATE_CLOSED;
-        return res;
+        return NULL;
     }
 
     buf = g_buffered_input_stream_peek_buffer (G_BUFFERED_INPUT_STREAM (stream), NULL);
@@ -679,6 +675,24 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
         g_object_unref (stream);
 
         stream = conv_stream;
+    }
+
+    return stream;
+}
+
+gboolean
+rsvg_load_read_stream_sync (RsvgLoad     *load,
+                            GInputStream *stream,
+                            GCancellable *cancellable,
+                            GError      **error)
+{
+    GError *err = NULL;
+    gboolean res = FALSE;
+
+    stream = rsvg_get_input_stream_for_loading (stream, cancellable, error);
+    if (stream == NULL) {
+        load->state = LOAD_STATE_CLOSED;
+        return FALSE;
     }
 
     load->error = &err;
