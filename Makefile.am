@@ -51,6 +51,7 @@ RUST_SRC =							\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
 	rsvg_internals/src/coord_units.rs			\
+	rsvg_internals/src/create_node.rs			\
 	rsvg_internals/src/croco.rs				\
 	rsvg_internals/src/css.rs				\
 	rsvg_internals/src/defs.rs				\
@@ -90,7 +91,6 @@ RUST_SRC =							\
 	rsvg_internals/src/lib.rs				\
 	rsvg_internals/src/log.rs				\
 	rsvg_internals/src/link.rs				\
-	rsvg_internals/src/load.rs				\
 	rsvg_internals/src/marker.rs				\
 	rsvg_internals/src/mask.rs				\
 	rsvg_internals/src/node.rs				\

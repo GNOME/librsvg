@@ -187,7 +187,7 @@ impl ErrorDomain for RsvgError {
     fn from(code: i32) -> Option<Self> {
         match code {
             // We don't have enough information from glib error codes
-            _ => Some(RsvgError)
+            _ => Some(RsvgError),
         }
     }
 }

@@ -10,10 +10,10 @@ use std::rc::Rc;
 use std::str;
 
 use attributes::Attribute;
+use create_node::create_node_and_register_id;
 use css;
 use defs::{Defs, RsvgDefs};
 use handle::{self, RsvgHandle};
-use load::create_node_and_register_id;
 use node::{node_new, Node, NodeType};
 use property_bag::PropertyBag;
 use structure::NodeSvg;
