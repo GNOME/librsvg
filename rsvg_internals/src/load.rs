@@ -271,7 +271,7 @@ lazy_static! {
     };
 }
 
-pub fn rsvg_load_new_node(
+pub fn create_node_and_register_id(
     name: &str,
     parent: Option<&RsvgNode>,
     pbag: &PropertyBag,

@@ -13,7 +13,7 @@ use attributes::Attribute;
 use css;
 use defs::{Defs, RsvgDefs};
 use handle::{self, RsvgHandle};
-use load::rsvg_load_new_node;
+use load::create_node_and_register_id;
 use node::{node_new, Node, NodeType};
 use property_bag::PropertyBag;
 use structure::NodeSvg;
@@ -306,7 +306,7 @@ impl XmlState {
     ) -> Rc<Node> {
         let defs = self.defs.as_mut().unwrap();
 
-        let new_node = rsvg_load_new_node(name, parent, pbag, defs);
+        let new_node = create_node_and_register_id(name, parent, pbag, defs);
 
         if let Some(parent) = parent {
             parent.add_child(&new_node);
