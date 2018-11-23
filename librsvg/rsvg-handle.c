@@ -1703,7 +1703,6 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
 
     if (allow_load (priv->base_gfile, uri, error)) {
         stream = _rsvg_io_acquire_stream (uri,
-                                          rsvg_handle_get_base_uri (handle),
                                           content_type,
                                           handle->priv->cancellable,
                                           error);
