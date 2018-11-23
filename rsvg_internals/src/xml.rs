@@ -3,6 +3,7 @@ use encoding::DecoderTrap;
 use glib::translate::*;
 use libc;
 use std;
+use std::collections::HashMap;
 use std::mem;
 use std::ptr;
 use std::rc::Rc;
@@ -73,6 +74,16 @@ impl Context {
 // A *const RsvgXmlState is just the type that we export to C
 pub enum RsvgXmlState {}
 
+// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
+// that is freed in impl Drop for XmlState
+type XmlEntityPtr = *mut libc::c_void;
+
+extern "C" {
+    // The original function takes an xmlNodePtr, but that is compatible
+    // with xmlEntityPtr for the purposes of this function.
+    fn xmlFreeNode(node: XmlEntityPtr);
+}
+
 /// Holds the state used for XML processing
 ///
 /// These methods are called when an XML event is parsed out of the XML stream: `start_element`,
@@ -88,6 +99,8 @@ struct XmlState {
     context: Context,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
+
+    entities: HashMap<String, XmlEntityPtr>,
 }
 
 /// Errors returned from XmlState::acquire()
@@ -110,6 +123,7 @@ impl XmlState {
             context: Context::empty(),
             context_stack: Vec::new(),
             current_node: None,
+            entities: HashMap::new(),
         }
     }
 
@@ -197,6 +211,18 @@ impl XmlState {
         rsvg_log!("XML error: {}", msg);
 
         self.push_context(Context::fatal_error());
+    }
+
+    pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
+        self.entities.get(entity_name).map(|v| *v)
+    }
+
+    pub fn entity_insert(&mut self, entity_name: &str, entity: XmlEntityPtr) {
+        let old_value = self.entities.insert(entity_name.to_string(), entity);
+
+        if let Some(v) = old_value {
+            unsafe { xmlFreeNode(v); }
+        }
     }
 
     fn element_creation_start_element(
@@ -458,6 +484,16 @@ impl XmlState {
     }
 }
 
+impl Drop for XmlState {
+    fn drop(&mut self) {
+        unsafe {
+            for (_key, entity) in self.entities.drain() {
+                xmlFreeNode(entity);
+            }
+        }
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn rsvg_xml_state_new() -> *mut RsvgXmlState {
     Box::into_raw(Box::new(XmlState::new())) as *mut RsvgXmlState
@@ -557,4 +593,35 @@ pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut RsvgXmlState, msg: *cons
     let msg: String = from_glib_none(msg);
 
     xml.error(&msg);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_xml_state_entity_lookup(
+    xml: *const RsvgXmlState,
+    entity_name: *const libc::c_char
+) -> XmlEntityPtr {
+    assert!(!xml.is_null());
+    let xml = &*(xml as *mut XmlState);
+
+    assert!(!entity_name.is_null());
+    let entity_name = utf8_cstr(entity_name);
+
+    xml.entity_lookup(entity_name).unwrap_or(ptr::null_mut())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_xml_state_entity_insert(
+    xml: *mut RsvgXmlState,
+    entity_name: *const libc::c_char,
+    entity: XmlEntityPtr,
+) {
+    assert!(!xml.is_null());
+    let xml = &mut *(xml as *mut XmlState);
+
+    assert!(!entity_name.is_null());
+    let entity_name = utf8_cstr(entity_name);
+
+    assert!(!entity.is_null());
+
+    xml.entity_insert(entity_name, entity);
 }

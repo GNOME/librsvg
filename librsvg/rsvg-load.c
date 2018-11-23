@@ -60,10 +60,15 @@ extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, co
 extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
+extern xmlEntityPtr rsvg_xml_state_entity_lookup(RsvgXmlState *xml,
+                                                 const char *entity_name);
+
+extern void rsvg_xml_state_entity_insert(RsvgXmlState *xml,
+                                         const char *entity_name,
+                                         xmlEntityPtr entity);
+
 /* Holds the XML parsing state */
 typedef struct {
-    GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
-
     xmlParserCtxtPtr ctxt;
 
     RsvgXmlState *rust_state;
@@ -99,10 +104,6 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->error = NULL;
     load->compressed_input_stream = NULL;
 
-    load->xml.entities = g_hash_table_new_full (g_str_hash,
-                                                g_str_equal,
-                                                g_free,
-                                                (GDestroyNotify) xmlFreeNode);
     load->xml.ctxt = NULL;
     load->xml.rust_state = rsvg_xml_state_new ();
 
@@ -135,8 +136,6 @@ free_xml_parser_and_doc (xmlParserCtxtPtr ctxt)
 void
 rsvg_load_free (RsvgLoad *load)
 {
-    g_hash_table_destroy (load->xml.entities);
-
     load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
 
     g_clear_object (&load->compressed_input_stream);
@@ -359,11 +358,8 @@ static xmlEntityPtr
 sax_get_entity_cb (void *data, const xmlChar * name)
 {
     RsvgLoad *load = data;
-    xmlEntityPtr entity;
 
-    entity = g_hash_table_lookup (load->xml.entities, name);
-
-    return entity;
+    return rsvg_xml_state_entity_lookup (load->xml.rust_state, (const char *) name);
 }
 
 static void
@@ -409,7 +405,7 @@ sax_entity_decl_cb (void *data, const xmlChar * name, int type,
     xmlFree(resolvedPublicId);
     xmlFree(resolvedSystemId);
 
-    g_hash_table_insert (load->xml.entities, g_strdup ((const char*) name), entity);
+    rsvg_xml_state_entity_insert(load->xml.rust_state, (const char *) name, entity);
 }
 
 static void
@@ -425,11 +421,8 @@ static xmlEntityPtr
 sax_get_parameter_entity_cb (void *data, const xmlChar * name)
 {
     RsvgLoad *load = data;
-    xmlEntityPtr entity;
 
-    entity = g_hash_table_lookup (load->xml.entities, name);
-
-    return entity;
+    return rsvg_xml_state_entity_lookup (load->xml.rust_state, (const char *) name);
 }
 
 static void

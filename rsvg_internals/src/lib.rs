@@ -68,6 +68,8 @@ pub use structure::rsvg_node_svg_get_size;
 pub use xml::{
     rsvg_xml_state_characters,
     rsvg_xml_state_end_element,
+    rsvg_xml_state_entity_insert,
+    rsvg_xml_state_entity_lookup,
     rsvg_xml_state_error,
     rsvg_xml_state_free,
     rsvg_xml_state_new,
