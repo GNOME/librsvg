@@ -35,48 +35,6 @@ rsvg_decode_data_uri (const char *uri,
                       gsize *out_len,
                       GError **error);
 
-static char *
-rsvg_acquire_file_data (const char *uri,
-                        char **out_mime_type,
-                        gsize *out_len,
-                        GCancellable *cancellable,
-                        GError **error)
-{
-    GFile *file;
-    gchar *path, *data;
-    gsize len;
-    char *content_type;
-
-    rsvg_return_val_if_fail (uri != NULL, NULL, error);
-    g_assert (out_len != NULL);
-
-    file = g_file_new_for_uri (uri);
-    path = g_file_get_path (file);
-
-    if (path == NULL) {
-        g_object_unref (file);
-        return NULL;
-    }
-
-    if (!g_file_get_contents (path, &data, &len, error)) {
-        g_free (path);
-        g_object_unref (file);
-        return NULL;
-    }
-
-    if (out_mime_type &&
-        (content_type = g_content_type_guess (path, (guchar *) data, len, NULL))) {
-        *out_mime_type = g_content_type_get_mime_type (content_type);
-        g_free (content_type);
-    }
-
-    g_free (path);
-    g_object_unref (file);
-
-    *out_len = len;
-    return data;
-}
-
 static GInputStream *
 rsvg_acquire_gvfs_stream (const char *uri, 
                           const char *base_uri, 
@@ -203,9 +161,6 @@ _rsvg_io_acquire_data (const char *href,
     if (strncmp (href, "data:", 5) == 0)
       return rsvg_decode_data_uri (href, mime_type, len, error);
 
-    if ((data = rsvg_acquire_file_data (href, mime_type, len, cancellable, NULL)))
-      return data;
-
     if ((data = rsvg_acquire_gvfs_data (href, base_uri, mime_type, len, cancellable, error)))
       return data;
 
@@ -235,9 +190,6 @@ _rsvg_io_acquire_stream (const char *href,
 
         return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
     }
-
-    if ((data = rsvg_acquire_file_data (href, mime_type, &len, cancellable, NULL)))
-      return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
 
     if ((stream = rsvg_acquire_gvfs_stream (href, base_uri, mime_type, cancellable, error)))
       return stream;
