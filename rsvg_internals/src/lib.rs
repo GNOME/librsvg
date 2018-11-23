@@ -10,6 +10,8 @@ extern crate downcast_rs;
 extern crate encoding;
 extern crate float_cmp;
 extern crate gdk_pixbuf;
+extern crate gio;
+extern crate gio_sys;
 extern crate glib;
 extern crate glib_sys;
 extern crate itertools;
@@ -31,7 +33,7 @@ extern crate lazy_static;
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
-pub use css::{rsvg_css_parse_into_handle, rsvg_css_styles_free, rsvg_css_styles_new};
+pub use css::{rsvg_css_styles_free, rsvg_css_styles_new};
 
 pub use defs::{rsvg_defs_free, rsvg_defs_lookup};
 
@@ -43,7 +45,9 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_new,
 };
 
-pub use io::rsvg_decode_data_uri;
+pub use handle::rsvg_handle_load_css;
+
+pub use io::{rsvg_decode_data_uri, rsvg_get_input_stream_for_loading};
 
 pub use node::rsvg_node_unref;
 
@@ -68,6 +72,9 @@ pub use structure::rsvg_node_svg_get_size;
 pub use xml::{
     rsvg_xml_state_characters,
     rsvg_xml_state_end_element,
+    rsvg_xml_state_entity_insert,
+    rsvg_xml_state_entity_lookup,
+    rsvg_xml_state_error,
     rsvg_xml_state_free,
     rsvg_xml_state_new,
     rsvg_xml_state_start_element,
@@ -92,6 +99,7 @@ mod bbox;
 mod clip_path;
 mod color;
 mod cond;
+mod create_node;
 mod croco;
 mod css;
 mod defs;
@@ -106,7 +114,6 @@ mod io;
 mod iri;
 mod length;
 mod link;
-mod load;
 mod marker;
 mod mask;
 mod node;

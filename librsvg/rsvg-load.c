@@ -25,6 +25,7 @@
 #include <libxml/parser.h>
 #include <libxml/parserInternals.h>
 #include <string.h>
+#include <glib/gprintf.h>
 
 #include "rsvg-attributes.h"
 #include "rsvg-load.h"
@@ -57,12 +58,17 @@ extern void rsvg_xml_state_steal_result(RsvgXmlState *xml,
 extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
 extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
 extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
+extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
+extern xmlEntityPtr rsvg_xml_state_entity_lookup(RsvgXmlState *xml,
+                                                 const char *entity_name);
+
+extern void rsvg_xml_state_entity_insert(RsvgXmlState *xml,
+                                         const char *entity_name,
+                                         xmlEntityPtr entity);
 
 /* Holds the XML parsing state */
 typedef struct {
-    GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
-
     xmlParserCtxtPtr ctxt;
 
     RsvgXmlState *rust_state;
@@ -98,10 +104,6 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->error = NULL;
     load->compressed_input_stream = NULL;
 
-    load->xml.entities = g_hash_table_new_full (g_str_hash,
-                                                g_str_equal,
-                                                g_free,
-                                                (GDestroyNotify) xmlFreeNode);
     load->xml.ctxt = NULL;
     load->xml.rust_state = rsvg_xml_state_new ();
 
@@ -134,8 +136,6 @@ free_xml_parser_and_doc (xmlParserCtxtPtr ctxt)
 void
 rsvg_load_free (RsvgLoad *load)
 {
-    g_hash_table_destroy (load->xml.entities);
-
     load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
 
     g_clear_object (&load->compressed_input_stream);
@@ -268,7 +268,7 @@ create_xml_stream_parser (RsvgLoad      *load,
 }
 
 gboolean
-rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url)
+rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 {
     GInputStream *stream;
     GError *err = NULL;
@@ -277,7 +277,7 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url)
 
     g_assert (handle->priv->load != NULL);
 
-    stream = _rsvg_handle_acquire_stream (handle, url, &mime_type, NULL);
+    stream = _rsvg_handle_acquire_stream (handle, href, &mime_type, NULL);
 
     g_free (mime_type);
 
@@ -358,11 +358,8 @@ static xmlEntityPtr
 sax_get_entity_cb (void *data, const xmlChar * name)
 {
     RsvgLoad *load = data;
-    xmlEntityPtr entity;
 
-    entity = g_hash_table_lookup (load->xml.entities, name);
-
-    return entity;
+    return rsvg_xml_state_entity_lookup (load->xml.rust_state, (const char *) name);
 }
 
 static void
@@ -408,7 +405,7 @@ sax_entity_decl_cb (void *data, const xmlChar * name, int type,
     xmlFree(resolvedPublicId);
     xmlFree(resolvedSystemId);
 
-    g_hash_table_insert (load->xml.entities, g_strdup ((const char*) name), entity);
+    rsvg_xml_state_entity_insert(load->xml.rust_state, (const char *) name, entity);
 }
 
 static void
@@ -424,23 +421,24 @@ static xmlEntityPtr
 sax_get_parameter_entity_cb (void *data, const xmlChar * name)
 {
     RsvgLoad *load = data;
-    xmlEntityPtr entity;
 
-    entity = g_hash_table_lookup (load->xml.entities, name);
-
-    return entity;
+    return rsvg_xml_state_entity_lookup (load->xml.rust_state, (const char *) name);
 }
 
 static void
 sax_error_cb (void *data, const char *msg, ...)
 {
-#ifdef G_ENABLE_DEBUG
+    RsvgLoad *load = data;
     va_list args;
+    char *buf;
 
     va_start (args, msg);
-    vfprintf (stderr, msg, args);
+    g_vasprintf (&buf, msg, args);
     va_end (args);
-#endif
+
+    rsvg_xml_state_error (load->xml.rust_state, buf);
+
+    g_free (buf);
 }
 
 static void
@@ -553,24 +551,9 @@ sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xm
 
             if ((!alternate || strcmp (alternate, "no") != 0)
                 && type && strcmp (type, "text/css") == 0
-                && href) {
-                char *style_data;
-                gsize style_data_len;
-                char *mime_type = NULL;
-
-                style_data = _rsvg_handle_acquire_data (load->handle,
-                                                        href,
-                                                        &mime_type,
-                                                        &style_data_len,
-                                                        NULL);
-                if (style_data &&
-                    mime_type &&
-                    strcmp (mime_type, "text/css") == 0) {
-                    rsvg_css_parse_into_handle (load->handle, style_data, style_data_len);
-                }
-
-                g_free (mime_type);
-                g_free (style_data);
+                && href)
+            {
+                rsvg_handle_load_css (load->handle, href);
             }
 
             rsvg_property_bag_free (atts);
@@ -658,6 +641,12 @@ close_impl (RsvgLoad *load, GError ** error)
 #define GZ_MAGIC_0 ((guchar) 0x1f)
 #define GZ_MAGIC_1 ((guchar) 0x8b)
 
+/* Implemented in rsvg_internals/src/io.rs */
+extern GInputStream *
+rsvg_get_input_stream_for_loading (GInputStream *stream,
+                                   GCancellable *cancellable,
+                                   GError      **error);
+
 gboolean
 rsvg_load_read_stream_sync (RsvgLoad     *load,
                             GInputStream *stream,
@@ -666,36 +655,11 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
 {
     GError *err = NULL;
     gboolean res = FALSE;
-    const guchar *buf;
-    gssize num_read;
 
-    /* detect zipped streams */
-    stream = g_buffered_input_stream_new (stream);
-    num_read = g_buffered_input_stream_fill (G_BUFFERED_INPUT_STREAM (stream), 2, cancellable, error);
-    if (num_read < 2) {
-        g_object_unref (stream);
-        if (num_read < 0) {
-            g_assert (error == NULL || *error != NULL);
-        } else {
-            g_set_error (error, rsvg_error_quark (), RSVG_ERROR_FAILED,
-                         _("Input file is too short"));
-        }
-
+    stream = rsvg_get_input_stream_for_loading (stream, cancellable, error);
+    if (stream == NULL) {
         load->state = LOAD_STATE_CLOSED;
-        return res;
-    }
-
-    buf = g_buffered_input_stream_peek_buffer (G_BUFFERED_INPUT_STREAM (stream), NULL);
-    if ((buf[0] == GZ_MAGIC_0) && (buf[1] == GZ_MAGIC_1)) {
-        GConverter *converter;
-        GInputStream *conv_stream;
-
-        converter = G_CONVERTER (g_zlib_decompressor_new (G_ZLIB_COMPRESSOR_FORMAT_GZIP));
-        conv_stream = g_converter_input_stream_new (stream, converter);
-        g_object_unref (converter);
-        g_object_unref (stream);
-
-        stream = conv_stream;
+        return FALSE;
     }
 
     load->error = &err;

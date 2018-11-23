@@ -159,12 +159,6 @@ RsvgCssStyles *rsvg_css_styles_new (void);
 G_GNUC_INTERNAL
 void rsvg_css_styles_free (RsvgCssStyles *styles);
 
-/* Implemented in rsvg_internals/src/css.rs */
-G_GNUC_INTERNAL
-void rsvg_css_parse_into_handle (RsvgHandle *handle,
-                                 const char *buf,
-                                 gsize len);
-
 /* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
 gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int *out_width, int *out_height);
@@ -254,6 +248,10 @@ RsvgDefs *rsvg_handle_get_defs (RsvgHandle *handle);
 G_GNUC_INTERNAL
 RsvgCssStyles *rsvg_handle_get_css_styles (RsvgHandle *handle);
 
+/* Implemented in rsvg_internals/src/handle.rs */
+G_GNUC_INTERNAL
+void rsvg_handle_load_css(RsvgHandle *handle, const char *href);
+
 G_GNUC_INTERNAL
 char *rsvg_handle_resolve_uri (RsvgHandle *handle,
                                const char *uri);
@@ -267,13 +265,13 @@ gboolean rsvg_handle_keep_image_data (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
 char *_rsvg_handle_acquire_data (RsvgHandle *handle,
-                                 const char *uri,
+                                 const char *href,
                                  char **content_type,
                                  gsize *len,
                                  GError **error);
 G_GNUC_INTERNAL
 GInputStream *_rsvg_handle_acquire_stream (RsvgHandle *handle,
-                                           const char *uri,
+                                           const char *href,
                                            char **content_type,
                                            GError **error);
 

@@ -4,6 +4,7 @@ use std::fmt;
 use cairo;
 use cssparser::BasicParseError;
 use glib;
+use glib::error::ErrorDomain;
 use glib::translate::*;
 use glib_sys;
 use libc;
@@ -159,5 +160,34 @@ pub fn is_value_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
     match *r {
         Err(ValueErrorKind::Value(_)) => true,
         _ => false,
+    }
+}
+
+/// Used as a generic error to translate to glib::Error
+///
+/// This type implements `glib::error::ErrorDomain`, so it can be used
+/// to obtain the error code while calling `glib::Error::new()`.  Unfortunately
+/// the public librsvg API does not have detailed error codes yet, so we use
+/// this single value as the only possible error code to return.
+#[derive(Copy, Clone)]
+pub struct RsvgError;
+
+// Keep in sync with rsvg.h:RsvgError
+const RSVG_ERROR_FAILED: i32 = 0;
+
+impl ErrorDomain for RsvgError {
+    fn domain() -> glib::Quark {
+        from_glib(unsafe { rsvg_error_quark() })
+    }
+
+    fn code(self) -> i32 {
+        RSVG_ERROR_FAILED
+    }
+
+    fn from(code: i32) -> Option<Self> {
+        match code {
+            // We don't have enough information from glib error codes
+            _ => Some(RsvgError),
+        }
     }
 }

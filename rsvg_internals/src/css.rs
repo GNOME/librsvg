@@ -1,7 +1,6 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::ptr;
-use std::slice;
 use std::str::{self, FromStr};
 
 use libc;
@@ -146,14 +145,7 @@ unsafe extern "C" fn css_import_style(
     let raw_uri = cr_string_peek_raw_str(a_uri);
     let uri = utf8_cstr(raw_uri);
 
-    if let Ok(binary_data) = handle::acquire_data(handler_data.handle, uri) {
-        if binary_data.content_type.as_ref().map(String::as_ref) == Some("text/css") {
-            parse_into_handle(
-                handler_data.handle,
-                str::from_utf8_unchecked(&binary_data.data),
-            );
-        }
-    }
+    handle::load_css(handler_data.handle, uri);
 }
 
 unsafe fn get_doc_handler_data<'a>(doc_handler: *mut CRDocHandler) -> &'a mut DocHandlerData {
@@ -239,22 +231,4 @@ pub unsafe extern "C" fn rsvg_css_styles_free(raw_styles: *mut RsvgCssStyles) {
     assert!(!raw_styles.is_null());
 
     Box::from_raw(raw_styles as *mut CssStyles);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_css_parse_into_handle(
-    handle: *mut RsvgHandle,
-    buf: *const libc::c_char,
-    len: usize,
-) {
-    assert!(!handle.is_null());
-
-    if buf.is_null() || len == 0 {
-        return;
-    }
-
-    let bytes = slice::from_raw_parts(buf as *const u8, len);
-    let utf8 = str::from_utf8_unchecked(bytes);
-
-    parse_into_handle(handle, utf8);
 }

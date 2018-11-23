@@ -8,10 +8,11 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 
-use css::{CssStyles, RsvgCssStyles};
+use css::{self, CssStyles, RsvgCssStyles};
 use defs::{Defs, RsvgDefs};
 use error::LoadingError;
 use surface_utils::shared_surface::SharedImageSurface;
+use util::utf8_cstr;
 
 pub enum RsvgHandle {}
 
@@ -26,14 +27,14 @@ extern "C" {
 
     fn rsvg_handle_load_extern(
         handle: *const RsvgHandle,
-        uri: *const libc::c_char,
+        href: *const libc::c_char,
     ) -> *const RsvgHandle;
 
     fn rsvg_handle_get_css_styles(handle: *const RsvgHandle) -> *mut RsvgCssStyles;
 
     fn _rsvg_handle_acquire_data(
         handle: *mut RsvgHandle,
-        url: *const libc::c_char,
+        href: *const libc::c_char,
         out_content_type: *mut *mut libc::c_char,
         out_len: *mut usize,
         error: *mut *mut glib_sys::GError,
@@ -43,7 +44,7 @@ extern "C" {
 
     fn rsvg_load_handle_xml_xinclude(
         handle: *mut RsvgHandle,
-        url: *const libc::c_char,
+        href: *const libc::c_char,
     ) -> glib_sys::gboolean;
 }
 
@@ -82,7 +83,7 @@ pub struct BinaryData {
     pub content_type: Option<String>,
 }
 
-pub fn acquire_data(handle: *mut RsvgHandle, url: &str) -> Result<BinaryData, glib::Error> {
+pub fn acquire_data(handle: *mut RsvgHandle, href: &str) -> Result<BinaryData, glib::Error> {
     unsafe {
         let mut content_type: *mut libc::c_char = ptr::null_mut();
         let mut len = 0;
@@ -90,7 +91,7 @@ pub fn acquire_data(handle: *mut RsvgHandle, url: &str) -> Result<BinaryData, gl
 
         let buf = _rsvg_handle_acquire_data(
             handle,
-            url.to_glib_none().0,
+            href.to_glib_none().0,
             &mut content_type as *mut *mut _,
             &mut len,
             &mut error,
@@ -190,6 +191,47 @@ pub fn image_surface_new_from_href(
     Ok(surface)
 }
 
-pub fn load_xml_xinclude(handle: *mut RsvgHandle, url: &str) -> bool {
-    unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, url.to_glib_none().0)) }
+// FIXME: distinguish between "file not found" and "invalid XML"
+pub fn load_xml_xinclude(handle: *mut RsvgHandle, href: &str) -> bool {
+    unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, href.to_glib_none().0)) }
+}
+
+pub fn load_css(handle: *mut RsvgHandle, href: &str) {
+    if let Ok(data) = acquire_data(handle, href) {
+        let BinaryData {
+            data: bytes,
+            content_type,
+        } = data;
+
+        if content_type.as_ref().map(String::as_ref) != Some("text/css") {
+            rsvg_log!("\"{}\" is not of type text/css; ignoring", href);
+            // FIXME: report errors
+            return;
+        }
+
+        if let Ok(utf8) = String::from_utf8(bytes) {
+            css::parse_into_handle(handle, &utf8);
+        } else {
+            rsvg_log!(
+                "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
+                href
+            );
+            // FIXME: report errors
+            return;
+        }
+    } else {
+        rsvg_log!("Could not load \"{}\" for CSS data", href);
+        // FIXME: report errors from not being to acquire data; this should be a fatal error
+    }
+}
+
+// This function just slurps CSS data from a possibly-relative href
+// and parses it.  We'll move it to a better place in the end.
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_load_css(handle: *mut RsvgHandle, href: *const libc::c_char) {
+    assert!(!handle.is_null());
+    assert!(!href.is_null());
+
+    let href = utf8_cstr(href);
+    load_css(handle, href);
 }
