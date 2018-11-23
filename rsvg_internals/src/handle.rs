@@ -196,7 +196,7 @@ pub fn load_xml_xinclude(handle: *mut RsvgHandle, url: &str) -> bool {
     unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, url.to_glib_none().0)) }
 }
 
-fn load_css(handle: *mut RsvgHandle, href: &str) {
+pub fn load_css(handle: *mut RsvgHandle, href: &str) {
     if let Ok(data) = acquire_data(handle, href) {
         let BinaryData {
             data: bytes,

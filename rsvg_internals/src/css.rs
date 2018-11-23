@@ -145,14 +145,7 @@ unsafe extern "C" fn css_import_style(
     let raw_uri = cr_string_peek_raw_str(a_uri);
     let uri = utf8_cstr(raw_uri);
 
-    if let Ok(binary_data) = handle::acquire_data(handler_data.handle, uri) {
-        if binary_data.content_type.as_ref().map(String::as_ref) == Some("text/css") {
-            parse_into_handle(
-                handler_data.handle,
-                str::from_utf8_unchecked(&binary_data.data),
-            );
-        }
-    }
+    handle::load_css(handler_data.handle, uri);
 }
 
 unsafe fn get_doc_handler_data<'a>(doc_handler: *mut CRDocHandler) -> &'a mut DocHandlerData {
