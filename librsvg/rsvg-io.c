@@ -117,12 +117,6 @@ _rsvg_io_acquire_data (const char *uri,
     char *data;
     gsize llen;
 
-    if (!(uri && *uri)) {
-        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                            "Invalid URI");
-        return NULL;
-    }
-
     if (!len)
         len = &llen;
 
@@ -144,12 +138,6 @@ _rsvg_io_acquire_stream (const char *uri,
     GInputStream *stream;
     char *data;
     gsize len;
-
-    if (!(uri && *uri)) {
-        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                            "Invalid URI");
-        return NULL;
-    }
 
     if (strncmp (uri, "data:", 5) == 0) {
         if (!(data = rsvg_decode_data_uri (uri, mime_type, &len, error)))
