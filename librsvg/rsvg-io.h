@@ -27,7 +27,6 @@
 #include <gio/gio.h>
 
 char *_rsvg_io_acquire_data (const char *uri,
-			     const char *base_uri,
 			     char **mime_type,
 			     gsize *len,
 			     GCancellable *cancellable,

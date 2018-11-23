@@ -1676,7 +1676,6 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
 
     if (allow_load (priv->base_gfile, uri, error)) {
         data = _rsvg_io_acquire_data (uri,
-                                      rsvg_handle_get_base_uri (handle),
                                       content_type,
                                       len,
                                       handle->priv->cancellable,
