@@ -221,7 +221,9 @@ impl XmlState {
         let old_value = self.entities.insert(entity_name.to_string(), entity);
 
         if let Some(v) = old_value {
-            unsafe { xmlFreeNode(v); }
+            unsafe {
+                xmlFreeNode(v);
+            }
         }
     }
 
@@ -598,7 +600,7 @@ pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut RsvgXmlState, msg: *cons
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_xml_state_entity_lookup(
     xml: *const RsvgXmlState,
-    entity_name: *const libc::c_char
+    entity_name: *const libc::c_char,
 ) -> XmlEntityPtr {
     assert!(!xml.is_null());
     let xml = &*(xml as *mut XmlState);

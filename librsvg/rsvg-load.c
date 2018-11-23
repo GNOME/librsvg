@@ -551,24 +551,9 @@ sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xm
 
             if ((!alternate || strcmp (alternate, "no") != 0)
                 && type && strcmp (type, "text/css") == 0
-                && href) {
-                char *style_data;
-                gsize style_data_len;
-                char *mime_type = NULL;
-
-                style_data = _rsvg_handle_acquire_data (load->handle,
-                                                        href,
-                                                        &mime_type,
-                                                        &style_data_len,
-                                                        NULL);
-                if (style_data &&
-                    mime_type &&
-                    strcmp (mime_type, "text/css") == 0) {
-                    rsvg_css_parse_into_handle (load->handle, style_data, style_data_len);
-                }
-
-                g_free (mime_type);
-                g_free (style_data);
+                && href)
+            {
+                rsvg_handle_load_css (load->handle, href);
             }
 
             rsvg_property_bag_free (atts);

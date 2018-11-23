@@ -8,10 +8,11 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 
-use css::{CssStyles, RsvgCssStyles};
+use css::{self, CssStyles, RsvgCssStyles};
 use defs::{Defs, RsvgDefs};
 use error::LoadingError;
 use surface_utils::shared_surface::SharedImageSurface;
+use util::utf8_cstr;
 
 pub enum RsvgHandle {}
 
@@ -193,4 +194,44 @@ pub fn image_surface_new_from_href(
 // FIXME: distinguish between "file not found" and "invalid XML"
 pub fn load_xml_xinclude(handle: *mut RsvgHandle, url: &str) -> bool {
     unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, url.to_glib_none().0)) }
+}
+
+fn load_css(handle: *mut RsvgHandle, href: &str) {
+    if let Ok(data) = acquire_data(handle, href) {
+        let BinaryData {
+            data: bytes,
+            content_type,
+        } = data;
+
+        if content_type.as_ref().map(String::as_ref) != Some("text/css") {
+            rsvg_log!("\"{}\" is not of type text/css; ignoring", href);
+            // FIXME: report errors
+            return;
+        }
+
+        if let Ok(utf8) = String::from_utf8(bytes) {
+            css::parse_into_handle(handle, &utf8);
+        } else {
+            rsvg_log!(
+                "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
+                href
+            );
+            // FIXME: report errors
+            return;
+        }
+    } else {
+        rsvg_log!("Could not load \"{}\" for CSS data", href);
+        // FIXME: report errors from not being to acquire data; this should be a fatal error
+    }
+}
+
+// This function just slurps CSS data from a possibly-relative href
+// and parses it.  We'll move it to a better place in the end.
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_load_css(handle: *mut RsvgHandle, href: *const libc::c_char) {
+    assert!(!handle.is_null());
+    assert!(!href.is_null());
+
+    let href = utf8_cstr(href);
+    load_css(handle, href);
 }

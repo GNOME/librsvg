@@ -1,7 +1,6 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::ptr;
-use std::slice;
 use std::str::{self, FromStr};
 
 use libc;
@@ -239,22 +238,4 @@ pub unsafe extern "C" fn rsvg_css_styles_free(raw_styles: *mut RsvgCssStyles) {
     assert!(!raw_styles.is_null());
 
     Box::from_raw(raw_styles as *mut CssStyles);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_css_parse_into_handle(
-    handle: *mut RsvgHandle,
-    buf: *const libc::c_char,
-    len: usize,
-) {
-    assert!(!handle.is_null());
-
-    if buf.is_null() || len == 0 {
-        return;
-    }
-
-    let bytes = slice::from_raw_parts(buf as *const u8, len);
-    let utf8 = str::from_utf8_unchecked(bytes);
-
-    parse_into_handle(handle, utf8);
 }
