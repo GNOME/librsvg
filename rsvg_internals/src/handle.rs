@@ -127,11 +127,7 @@ pub fn acquire_stream(handle: *mut RsvgHandle, href: &str) -> Result<InputStream
     unsafe {
         let mut error = ptr::null_mut();
 
-        let stream = _rsvg_handle_acquire_stream(
-            handle,
-            href.to_glib_none().0,
-            &mut error,
-        );
+        let stream = _rsvg_handle_acquire_stream(handle, href.to_glib_none().0, &mut error);
 
         if stream.is_null() {
             Err(from_glib_full(error))

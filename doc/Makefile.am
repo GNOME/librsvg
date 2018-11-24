@@ -71,17 +71,9 @@ EXTRA_HFILES =
 IGNORE_HFILES =			\
 	config.h		\
 	rsvg-attributes.h	\
-	rsvg-cairo-clip.h	\
-	rsvg-compat.h		\
 	rsvg-css.h		\
-	rsvg-filter.h		\
-	rsvg-io.h		\
-	rsvg-marker.h		\
-	rsvg-mask.h		\
 	rsvg-private.h		\
-	rsvg-shapes.h		\
-	rsvg-size-callback.h	\
-	rsvg-styles.h
+	rsvg-size-callback.h
 
 # Images to copy into HTML directory.
 # e.g. HTML_IMAGES=$(top_srcdir)/gtk/stock-icons/stock_about_24.png
