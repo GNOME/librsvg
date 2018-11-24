@@ -11,12 +11,12 @@ typedef struct
     const gchar *test_name;
     const gchar *file_path;
     const gchar *id;
-    gfloat x;
-    gfloat y;
-    gfloat width;
-    gfloat height;
-    gfloat logical_width;
-    gfloat logical_height;
+    gdouble x;
+    gdouble y;
+    gdouble width;
+    gdouble height;
+    gdouble logical_width;
+    gdouble logical_height;
     gboolean has_position;
     gboolean has_dimensions;
     gboolean has_logical_dimensions;
