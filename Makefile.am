@@ -29,8 +29,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-cairo.h			\
 	librsvg/rsvg-css.h 			\
 	librsvg/rsvg-handle.c			\
-	librsvg/rsvg-io.c			\
-	librsvg/rsvg-io.h			\
 	librsvg/rsvg-load.c			\
 	librsvg/rsvg-load.h			\
 	librsvg/rsvg-pixbuf.c			\

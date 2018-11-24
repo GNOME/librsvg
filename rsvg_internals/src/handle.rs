@@ -3,6 +3,8 @@ use std::ptr;
 use cairo::{ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
+use gio::InputStream;
+use gio_sys;
 use glib;
 use glib::translate::*;
 use glib_sys;
@@ -39,6 +41,12 @@ extern "C" {
         out_len: *mut usize,
         error: *mut *mut glib_sys::GError,
     ) -> *mut u8;
+
+    fn _rsvg_handle_acquire_stream(
+        handle: *mut RsvgHandle,
+        href: *const libc::c_char,
+        error: *mut *mut glib_sys::GError,
+    ) -> *mut gio_sys::GInputStream;
 
     fn rsvg_handle_keep_image_data(handle: *const RsvgHandle) -> glib_sys::gboolean;
 
@@ -115,6 +123,20 @@ pub fn acquire_data(handle: *mut RsvgHandle, href: &str) -> Result<BinaryData, g
     }
 }
 
+pub fn acquire_stream(handle: *mut RsvgHandle, href: &str) -> Result<InputStream, glib::Error> {
+    unsafe {
+        let mut error = ptr::null_mut();
+
+        let stream = _rsvg_handle_acquire_stream(handle, href.to_glib_none().0, &mut error);
+
+        if stream.is_null() {
+            Err(from_glib_full(error))
+        } else {
+            Ok(from_glib_full(stream))
+        }
+    }
+}
+
 fn keep_image_data(handle: *const RsvgHandle) -> bool {
     unsafe { from_glib(rsvg_handle_keep_image_data(handle)) }
 }
@@ -143,21 +165,7 @@ pub fn image_surface_new_from_href(
     let surface = SharedImageSurface::from_pixbuf(&pixbuf)?.into_image_surface()?;
 
     if keep_image_data(handle) {
-        let mime_type = data.content_type.or_else(|| {
-            // Try to get the content type from the loader
-
-            loader.get_format().and_then(|format| {
-                let content_types = format.get_mime_types();
-
-                if content_types.len() != 0 {
-                    Some(content_types[0].clone())
-                } else {
-                    None
-                }
-            })
-        });
-
-        if let Some(mime_type) = mime_type {
+        if let Some(mime_type) = data.content_type {
             extern "C" {
                 fn cairo_surface_set_mime_data(
                     surface: *mut cairo_sys::cairo_surface_t,

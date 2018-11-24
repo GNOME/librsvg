@@ -124,7 +124,6 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "rsvg-io.h"
 #include "rsvg-load.h"
 #include "rsvg-private.h"
 
@@ -1661,6 +1660,14 @@ allow_load (GFile *base_gfile, const char *uri, GError **error)
     return FALSE;
 }
 
+/* Implemented in rsvg_internals/src/io.rs */
+G_GNUC_INTERNAL
+char * rsvg_io_acquire_data (const char *uri,
+                             char **out_mime_type,
+                             gsize *out_len,
+                             GCancellable *cancellable,
+                             GError **error);
+
 char *
 _rsvg_handle_acquire_data (RsvgHandle *handle,
                            const char *href,
@@ -1675,11 +1682,11 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
     uri = rsvg_handle_resolve_uri (handle, href);
 
     if (allow_load (priv->base_gfile, uri, error)) {
-        data = _rsvg_io_acquire_data (uri,
-                                      content_type,
-                                      len,
-                                      handle->priv->cancellable,
-                                      error);
+        data = rsvg_io_acquire_data (uri,
+                                     content_type,
+                                     len,
+                                     handle->priv->cancellable,
+                                     error);
     } else {
         data = NULL;
     }
@@ -1688,10 +1695,15 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
     return data;
 }
 
+/* Implemented in rsvg_internals/src/io.rs */
+G_GNUC_INTERNAL
+GInputStream *rsvg_io_acquire_stream (const char *uri,
+				      GCancellable *cancellable,
+				      GError **error);
+
 GInputStream *
 _rsvg_handle_acquire_stream (RsvgHandle *handle,
                              const char *href,
-                             char **content_type,
                              GError **error)
 {
     RsvgHandlePrivate *priv = handle->priv;
@@ -1701,10 +1713,7 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
     uri = rsvg_handle_resolve_uri (handle, href);
 
     if (allow_load (priv->base_gfile, uri, error)) {
-        stream = _rsvg_io_acquire_stream (uri,
-                                          content_type,
-                                          handle->priv->cancellable,
-                                          error);
+        stream = rsvg_io_acquire_stream (uri, handle->priv->cancellable, error);
     } else {
         stream = NULL;
     }

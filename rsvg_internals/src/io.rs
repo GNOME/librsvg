@@ -8,11 +8,15 @@ use gio::{
     BufferedInputStreamExt,
     Cancellable,
     ConverterInputStream,
+    File as GFile,
+    FileExt,
     InputStream,
+    MemoryInputStream,
     ZlibCompressorFormat,
     ZlibDecompressor,
 };
 use glib::translate::*;
+use glib::Bytes as GBytes;
 use glib::Cast;
 use std::ptr;
 
@@ -44,6 +48,22 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
     })
 }
 
+fn binary_data_to_glib(
+    binary_data: &BinaryData,
+    out_mime_type: *mut *mut libc::c_char,
+    out_size: *mut usize,
+) -> *mut libc::c_char {
+    unsafe {
+        if !out_mime_type.is_null() {
+            *out_mime_type = binary_data.content_type.to_glib_full();
+        }
+
+        *out_size = binary_data.data.len();
+
+        ToGlibContainerFromSlice::to_glib_full_from_slice(&binary_data.data) as *mut libc::c_char
+    }
+}
+
 #[no_mangle]
 pub fn rsvg_decode_data_uri(
     uri: *const libc::c_char,
@@ -58,18 +78,11 @@ pub fn rsvg_decode_data_uri(
 
         match decode_data_uri(uri) {
             Ok(binary_data) => {
-                if !out_mime_type.is_null() {
-                    *out_mime_type = binary_data.content_type.to_glib_full();
-                }
-
-                *out_size = binary_data.data.len();
-
                 if !error.is_null() {
                     *error = ptr::null_mut();
                 }
 
-                ToGlibContainerFromSlice::to_glib_full_from_slice(&binary_data.data)
-                    as *mut libc::c_char
+                binary_data_to_glib(&binary_data, out_mime_type, out_size)
             }
 
             Err(_) => {
@@ -132,6 +145,92 @@ pub unsafe fn rsvg_get_input_stream_for_loading(
                 *error = e.to_glib_full() as *mut _;
             }
 
+            ptr::null_mut()
+        }
+    }
+}
+
+/// Returns an input stream.  The uri can be a data: URL or a plain URI
+fn acquire_stream(
+    uri: &str,
+    cancellable: Option<Cancellable>,
+) -> Result<InputStream, LoadingError> {
+    if uri.starts_with("data:") {
+        let BinaryData { data, .. } = decode_data_uri(uri)?;
+
+        let stream = MemoryInputStream::new_from_bytes(&GBytes::from_owned(data));
+        Ok(stream.upcast::<InputStream>())
+    } else {
+        let file = GFile::new_for_uri(uri);
+        let stream = file.read(cancellable.as_ref())?;
+
+        Ok(stream.upcast::<InputStream>())
+    }
+}
+
+#[no_mangle]
+pub unsafe fn rsvg_io_acquire_stream(
+    uri: *const libc::c_char,
+    cancellable: *mut gio_sys::GCancellable,
+    error: *mut *mut glib_sys::GError,
+) -> *mut gio_sys::GInputStream {
+    assert!(!uri.is_null());
+
+    let uri: String = from_glib_none(uri);
+    let cancellable = from_glib_borrow(cancellable);
+
+    match acquire_stream(&uri, cancellable) {
+        Ok(stream) => stream.to_glib_full(),
+
+        Err(_e) => {
+            set_gerror(error, 0, "Could not acquire stream");
+
+            ptr::null_mut()
+        }
+    }
+}
+
+fn acquire_data(uri: &str, cancellable: Option<Cancellable>) -> Result<BinaryData, LoadingError> {
+    if uri.starts_with("data:") {
+        Ok(decode_data_uri(uri)?)
+    } else {
+        let file = GFile::new_for_uri(uri);
+        let (contents, _etag) = file.load_contents(cancellable.as_ref())?;
+
+        let (content_type, _uncertain) = gio::content_type_guess(uri, &contents);
+        let mime_type = gio::content_type_get_mime_type(&content_type);
+
+        Ok(BinaryData {
+            data: contents,
+            content_type: mime_type,
+        })
+    }
+}
+
+#[no_mangle]
+pub unsafe fn rsvg_io_acquire_data(
+    uri: *const libc::c_char,
+    out_mime_type: *mut *mut libc::c_char,
+    out_size: *mut usize,
+    cancellable: *mut gio_sys::GCancellable,
+    error: *mut *mut glib_sys::GError,
+) -> *mut libc::c_char {
+    assert!(!uri.is_null());
+
+    let uri: String = from_glib_none(uri);
+    let cancellable = from_glib_borrow(cancellable);
+
+    match acquire_data(&uri, cancellable) {
+        Ok(binary_data) => {
+            if !error.is_null() {
+                *error = ptr::null_mut();
+            }
+
+            binary_data_to_glib(&binary_data, out_mime_type, out_size)
+        }
+
+        Err(_e) => {
+            set_gerror(error, 0, "Could not acquire data");
             ptr::null_mut()
         }
     }
