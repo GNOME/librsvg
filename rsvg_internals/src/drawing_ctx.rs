@@ -5,7 +5,6 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 use pango::{self, ContextExt, FontMapExt, LayoutExt};
-use pango_cairo_sys;
 use pango_sys;
 use pangocairo;
 use std::cell::RefCell;
@@ -551,7 +550,7 @@ impl<'a> DrawingCtx<'a> {
         // cancel out Pango's scaling, but it's probably better to deal with Pango-isms
         // right here, instead of spreading them out through our Length normalization
         // code.
-        set_resolution(&context, 72.0);
+        pangocairo::functions::context_set_resolution(&context, 72.0);
 
         if self.is_testing {
             let mut options = cairo::FontOptions::new();
@@ -560,7 +559,7 @@ impl<'a> DrawingCtx<'a> {
             options.set_hint_style(cairo::enums::HintStyle::Full);
             options.set_hint_metrics(cairo::enums::HintMetrics::On);
 
-            set_font_options(&context, &options);
+            pangocairo::functions::context_set_font_options(&context, &options);
         }
 
         context
@@ -867,23 +866,6 @@ impl<'a> DrawingCtx<'a> {
         } else {
             Ok(())
         }
-    }
-}
-
-// remove this binding once pangocairo-rs has ContextExt::set_resolution()
-fn set_resolution(context: &pango::Context, dpi: f64) {
-    unsafe {
-        pango_cairo_sys::pango_cairo_context_set_resolution(context.to_glib_none().0, dpi);
-    }
-}
-
-// remove this binding once pangocairo-rs has ContextExt::set_font_options()
-fn set_font_options(context: &pango::Context, options: &cairo::FontOptions) {
-    unsafe {
-        pango_cairo_sys::pango_cairo_context_set_font_options(
-            context.to_glib_none().0,
-            options.to_glib_none().0,
-        );
     }
 }
 
