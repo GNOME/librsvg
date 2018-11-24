@@ -3,6 +3,8 @@ use std::ptr;
 use cairo::{ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
+use gio::InputStream;
+use gio_sys;
 use glib;
 use glib::translate::*;
 use glib_sys;
@@ -39,6 +41,12 @@ extern "C" {
         out_len: *mut usize,
         error: *mut *mut glib_sys::GError,
     ) -> *mut u8;
+
+    fn _rsvg_handle_acquire_stream(
+        handle: *mut RsvgHandle,
+        href: *const libc::c_char,
+        error: *mut *mut glib_sys::GError,
+    ) -> *mut gio_sys::GInputStream;
 
     fn rsvg_handle_keep_image_data(handle: *const RsvgHandle) -> glib_sys::gboolean;
 
@@ -111,6 +119,24 @@ pub fn acquire_data(handle: *mut RsvgHandle, href: &str) -> Result<BinaryData, g
                 data: FromGlibContainer::from_glib_full_num(buf as *mut u8, len),
                 content_type: from_glib_full(content_type),
             })
+        }
+    }
+}
+
+pub fn acquire_stream(handle: *mut RsvgHandle, href: &str) -> Result<InputStream, glib::Error> {
+    unsafe {
+        let mut error = ptr::null_mut();
+
+        let stream = _rsvg_handle_acquire_stream(
+            handle,
+            href.to_glib_none().0,
+            &mut error,
+        );
+
+        if stream.is_null() {
+            Err(from_glib_full(error))
+        } else {
+            Ok(from_glib_full(stream))
         }
     }
 }
