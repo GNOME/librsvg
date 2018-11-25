@@ -4,6 +4,7 @@ use glib_sys;
 use libc;
 
 use gio::{
+    self,
     BufferedInputStream,
     BufferedInputStreamExt,
     Cancellable,
@@ -15,9 +16,7 @@ use gio::{
     ZlibCompressorFormat,
     ZlibDecompressor,
 };
-use glib::translate::*;
-use glib::Bytes as GBytes;
-use glib::Cast;
+use glib::{self, translate::*, Bytes as GBytes, Cast};
 use std::ptr;
 
 use error::{set_gerror, LoadingError, RsvgError};
