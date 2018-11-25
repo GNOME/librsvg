@@ -1199,7 +1199,7 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
 }
 
 static gboolean
-get_node_geometry(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rect, cairo_rectangle_t *logical_rect)
+get_node_geometry(RsvgHandle *handle, RsvgNode *node, RsvgRectangle *ink_rect, RsvgRectangle *logical_rect)
 {
     RsvgDimensionData dimensions;
     cairo_surface_t *target;
@@ -1250,12 +1250,12 @@ get_node_geometry(RsvgHandle *handle, RsvgNode *node, cairo_rectangle_t *ink_rec
 gboolean
 rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id)
 {
-    cairo_rectangle_t ink_r;
+    RsvgRectangle ink_r;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
 
-    memset (&ink_r, 0, sizeof (cairo_rectangle_t));
+    memset (&ink_r, 0, sizeof (RsvgRectangle));
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
 
     if (!rsvg_handle_get_geometry_sub (handle, &ink_r, NULL, id)) {
@@ -1289,19 +1289,19 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
  * Since: 2.46
  */
 gboolean
-rsvg_handle_get_geometry_sub (RsvgHandle * handle, cairo_rectangle_t * ink_rect, cairo_rectangle_t * logical_rect, const char *id)
+rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, RsvgRectangle * logical_rect, const char *id)
 {
     RsvgNode *root = NULL;
     RsvgNode *node;
     gboolean has_size;
     int root_width, root_height;
     gboolean res = FALSE;
-    cairo_rectangle_t ink_r, logical_r;
+    RsvgRectangle ink_r, logical_r;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
-    memset (&ink_r, 0, sizeof (cairo_rectangle_t));
-    memset (&logical_r, 0, sizeof (cairo_rectangle_t));
+    memset (&ink_r, 0, sizeof (RsvgRectangle));
+    memset (&logical_r, 0, sizeof (RsvgRectangle));
 
     if (handle->priv->tree == NULL)
         return FALSE;
@@ -1376,7 +1376,7 @@ out:
 gboolean
 rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
 {
-    cairo_rectangle_t ink_r;
+    RsvgRectangle ink_r;
     int width, height;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
