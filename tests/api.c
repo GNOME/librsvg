@@ -463,8 +463,8 @@ dimensions_and_position (void)
     g_assert_cmpint (pos.y, ==, EXAMPLE_TWO_Y);
 
     /* TODO: test logical_rect */
-    cairo_rectangle_t ink_rect;
-    cairo_rectangle_t logical_rect;
+    RsvgRectangle ink_rect;
+    RsvgRectangle logical_rect;
     g_assert (rsvg_handle_get_geometry_sub (handle, &ink_rect, &logical_rect, EXAMPLE_TWO_ID));
     g_assert_cmpint (ink_rect.x, ==, EXAMPLE_TWO_X);
     g_assert_cmpint (ink_rect.y, ==, EXAMPLE_TWO_Y);
