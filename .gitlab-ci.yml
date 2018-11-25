@@ -76,23 +76,6 @@ stages:
 .test_stage_1: &stage_1
   only: {}
 
-# Jobs that are marked as stage 2 will be run for every commit
-# at GNOME/librsvg/master too. Ideal targets for this stage are
-# debug cross_distro tests, and debug cross_arch tests to avoid
-# breakign i386 and arm builds again.
-.test_stage_2: &stage_2
-  only:
-    # When branching a stable branch,
-    # update the following line from master to branch's name.
-    - librsvg-2.44@GNOME/librsvg
-    - librsvg-2.42@GNOME/librsvg
-    - master@GNOME/librsvg
-    - librsvg-2.44
-    - librsvg-2.42
-    - schedules
-    - tags
-    - web
-
 # Jobs that are marked as stage 3 will only run on scheduled pipelines.
 # Ideal targets for this stage are expensive task, that only need to be run
 # on a regular time interval. Ex testing all the gcc/rustc version that we target
@@ -148,7 +131,7 @@ tarball:
     - cd _build
     - ../autogen.sh --enable-gtk-doc --enable-vala
     - make distcheck DESTDIR=/tmp/distcheck
-  <<: *stage_2
+  <<: *stage_1
 
 # STAGE 2 CROSS DISTRO TESTS
 #######################################################################
@@ -158,14 +141,14 @@ fedora:rawhide:
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
-  <<: *stage_2
+  <<: *stage_1
 
 .opensuse:tumbleweed:
   image: $AMD64_OPENSUSE_TUMBLEWEED
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
-  <<: *stage_2
+  <<: *stage_1
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
@@ -174,7 +157,7 @@ debian:testing:
   before_script:
     - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
   <<: *distro_test
-  <<: *stage_2
+  <<: *stage_1
 
 debian_i386:testing:
   image: $I386_DEBIAN_TESTING
@@ -183,7 +166,7 @@ debian_i386:testing:
   before_script:
     - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
   <<: *distro_test
-  <<: *stage_2
+  <<: *stage_1
 
 # STAGE 3 CROSS DISTRO TESTS
 #######################################################################
