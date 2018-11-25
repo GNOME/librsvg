@@ -71,6 +71,7 @@ typedef struct RsvgHandlePrivate RsvgHandlePrivate;
 typedef struct _RsvgHandleClass RsvgHandleClass;
 typedef struct _RsvgDimensionData RsvgDimensionData;
 typedef struct _RsvgPositionData RsvgPositionData;
+typedef struct _RsvgRectangle RsvgRectangle;
 
 /**
  * RsvgHandleClass:
@@ -131,6 +132,25 @@ struct _RsvgPositionData {
     int y;
 };
 
+/**
+ * RsvgRectangle:
+ * @x: X coordinate of the left side of the rectangle
+ * @y: Y coordinate of the the top side of the rectangle
+ * @width: width of the rectangle
+ * @height: height of the rectangle
+ *
+ * A data structure for holding a rectangle.
+ *
+ * Since: 2.46
+ */
+struct _RsvgRectangle {
+    double x;
+    double y;
+    double width;
+    double height;
+};
+
+
 void rsvg_cleanup (void);
 
 RSVG_DEPRECATED
@@ -156,7 +176,7 @@ void rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimens
 
 gboolean rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id);
 gboolean rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id);
-gboolean rsvg_handle_get_geometry_sub (RsvgHandle * handle, cairo_rectangle_t * ink_rect, cairo_rectangle_t * logical_rect, const char *id);
+gboolean rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, RsvgRectangle * logical_rect, const char *id);
 
 gboolean rsvg_handle_has_sub (RsvgHandle * handle, const char *id);
 
