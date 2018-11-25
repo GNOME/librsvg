@@ -28,8 +28,8 @@ test_dimensions (FixtureData *fixture)
     RsvgHandle *handle;
     RsvgPositionData position;
     RsvgDimensionData dimension;
-    cairo_rectangle_t ink_rect;
-    cairo_rectangle_t logical_rect;
+    RsvgRectangle ink_rect;
+    RsvgRectangle logical_rect;
     gchar *target_file;
     GError *error = NULL;
 
