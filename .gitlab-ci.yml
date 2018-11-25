@@ -70,12 +70,6 @@ stages:
     stage: rustc
     <<: *test
 
-# Jobs that are marked with stage_1 will be run on every commit, across every
-# fork and branch. This only serves as documentation since it's equivelant to
-# ommiting only: key. Thus why stage_1 jobs might not be marked.
-.test_stage_1: &stage_1
-  only: {}
-
 # Jobs that are marked as stage 3 will only run on scheduled pipelines.
 # Ideal targets for this stage are expensive task, that only need to be run
 # on a regular time interval. Ex testing all the gcc/rustc version that we target
@@ -95,6 +89,34 @@ fedora test:
     LIBRSVG_DEBUG: "yes"
   <<: *test
 
+fedora:rawhide:
+  image: $AMD64_FEDORA_RAWHIDE
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *distro_test
+
+.opensuse:tumbleweed:
+  image: $AMD64_OPENSUSE_TUMBLEWEED
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *distro_test
+
+debian:testing:
+  image: $AMD64_DEBIAN_TESTING
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  before_script:
+    - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
+  <<: *distro_test
+
+debian_i386:testing:
+  image: $I386_DEBIAN_TESTING
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  before_script:
+    - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
+  <<: *distro_test
+
 # STAGE 1 LINTS
 ########################################################################
 
@@ -107,7 +129,6 @@ rustfmt:
     - rustc --version && cargo --version
     - cargo fmt --version
     - cargo fmt --all -- --check
-
 
 # Configure and run clippy on nightly
 # Only fails on errors atm.
@@ -131,42 +152,7 @@ tarball:
     - cd _build
     - ../autogen.sh --enable-gtk-doc --enable-vala
     - make distcheck DESTDIR=/tmp/distcheck
-  <<: *stage_1
 
-# STAGE 2 CROSS DISTRO TESTS
-#######################################################################
-
-fedora:rawhide:
-  image: $AMD64_FEDORA_RAWHIDE
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
-  <<: *stage_1
-
-.opensuse:tumbleweed:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
-  <<: *stage_1
-
-debian:testing:
-  image: $AMD64_DEBIAN_TESTING
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  before_script:
-    - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
-  <<: *distro_test
-  <<: *stage_1
-
-debian_i386:testing:
-  image: $I386_DEBIAN_TESTING
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  before_script:
-    - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
-  <<: *distro_test
-  <<: *stage_1
 
 # STAGE 3 CROSS DISTRO TESTS
 #######################################################################
