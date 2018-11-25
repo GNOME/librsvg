@@ -96,7 +96,7 @@ impl Drop for ViewParams {
     }
 }
 
-pub enum RsvgDrawingCtx {}
+pub struct RsvgDrawingCtx {}
 
 pub struct DrawingCtx<'a> {
     handle: *const RsvgHandle,
@@ -1093,11 +1093,20 @@ pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
     draw_ctx.add_node_and_ancestors_to_stack(node);
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[repr(C)]
+pub struct RsvgRectangle {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_drawing_ctx_get_geometry(
     raw_draw_ctx: *const RsvgDrawingCtx,
-    ink_rect: *mut cairo_sys::cairo_rectangle_t,
-    logical_rect: *mut cairo_sys::cairo_rectangle_t,
+    ink_rect: *mut RsvgRectangle,
+    logical_rect: *mut RsvgRectangle,
 ) {
     assert!(!raw_draw_ctx.is_null());
     let draw_ctx = &mut *(raw_draw_ctx as *mut DrawingCtx<'_>);
@@ -1105,8 +1114,8 @@ pub unsafe extern "C" fn rsvg_drawing_ctx_get_geometry(
     assert!(!ink_rect.is_null());
     assert!(!logical_rect.is_null());
 
-    let ink_rect: &mut cairo::Rectangle = &mut *ink_rect;
-    let logical_rect: &mut cairo::Rectangle = &mut *logical_rect;
+    let ink_rect: &mut RsvgRectangle = &mut *ink_rect;
+    let logical_rect: &mut RsvgRectangle = &mut *logical_rect;
 
     match draw_ctx.get_bbox().ink_rect {
         Some(r) => {
