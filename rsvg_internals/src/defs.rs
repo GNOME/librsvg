@@ -60,13 +60,9 @@ impl Defs {
             Some(uri) => match self.externs.entry(uri) {
                 Entry::Occupied(e) => Ok(*(e.get())),
                 Entry::Vacant(e) => {
-                    let extern_handle = handle::load_extern(handle, e.key());
-                    if extern_handle.is_null() {
-                        Err(())
-                    } else {
-                        e.insert(extern_handle);
-                        Ok(extern_handle)
-                    }
+                    let extern_handle = handle::load_extern(handle, e.key())?;
+                    e.insert(extern_handle);
+                    Ok(extern_handle)
                 }
             },
         }

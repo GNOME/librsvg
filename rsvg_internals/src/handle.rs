@@ -92,8 +92,16 @@ pub fn resolve_uri(handle: *const RsvgHandle, uri: &str) -> Option<String> {
     }
 }
 
-pub fn load_extern(handle: *const RsvgHandle, uri: &str) -> *const RsvgHandle {
-    unsafe { rsvg_handle_load_extern(handle, uri.to_glib_none().0) }
+pub fn load_extern(handle: *const RsvgHandle, uri: &str) -> Result<*const RsvgHandle, ()> {
+    unsafe {
+        let res = rsvg_handle_load_extern(handle, uri.to_glib_none().0);
+
+        if res.is_null() {
+            Err(())
+        } else {
+            Ok(res)
+        }
+    }
 }
 
 pub fn get_css_styles<'a>(handle: *const RsvgHandle) -> &'a CssStyles {
