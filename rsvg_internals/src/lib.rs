@@ -105,6 +105,7 @@ mod float_eq_cairo;
 #[macro_use]
 mod property_macros;
 
+mod allowed_url;
 mod aspect_ratio;
 mod attributes;
 mod bbox;
