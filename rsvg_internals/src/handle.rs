@@ -128,17 +128,13 @@ pub fn acquire_data(handle: *mut RsvgHandle, href: &str) -> Result<BinaryData, g
 }
 
 pub fn acquire_stream(handle: *mut RsvgHandle, href: &str) -> Result<InputStream, glib::Error> {
-    unsafe {
-        let mut error = ptr::null_mut();
+    let rhandle = get_rust_handle(handle);
 
-        let stream = _rsvg_handle_acquire_stream(handle, href.to_glib_none().0, &mut error);
+    let aurl = AllowedUrl::from_href(href, rhandle.base_url.borrow().as_ref())
+        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))?;
 
-        if stream.is_null() {
-            Err(from_glib_full(error))
-        } else {
-            Ok(from_glib_full(stream))
-        }
-    }
+    io::acquire_stream(&aurl, get_cancellable(handle).as_ref())
+        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))
 }
 
 fn keep_image_data(handle: *const RsvgHandle) -> bool {
@@ -329,6 +325,32 @@ pub unsafe extern "C" fn rsvg_handle_acquire_data(
         Err(_) => {
             set_gerror(error, 0, "Could not acquire data");
             *out_len = 0;
+            ptr::null_mut()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_acquire_stream(
+    handle: *mut RsvgHandle,
+    href: *const libc::c_char,
+    error: *mut *mut glib_sys::GError,
+) -> *mut gio_sys::GInputStream {
+    assert!(!href.is_null());
+
+    let href: String = from_glib_none(href);
+
+    match acquire_stream(handle, &href) {
+        Ok(stream) => {
+            if !error.is_null() {
+                *error = ptr::null_mut();
+            }
+
+            stream.to_glib_full()
+        }
+
+        Err(_) => {
+            set_gerror(error, 0, "Could not acquire stream");
             ptr::null_mut()
         }
     }

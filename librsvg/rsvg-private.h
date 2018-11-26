@@ -297,12 +297,13 @@ char *rsvg_handle_acquire_data (RsvgHandle *handle,
 G_GNUC_INTERNAL
 GCancellable *rsvg_handle_get_cancellable (RsvgHandle *handle);
 
+/* Implemented in rsvg_internals/src/handle.rs */
 G_GNUC_INTERNAL
-GInputStream *_rsvg_handle_acquire_stream (RsvgHandle *handle,
-                                           const char *href,
-                                           GError **error);
+GInputStream *rsvg_handle_acquire_stream (RsvgHandle *handle,
+                                          const char *href,
+                                          GError **error);
 
-#define rsvg_return_if_fail(expr, error)    G_STMT_START{			\
+#define rsvg_return_if_fail(expr, error)    G_STMT_START{           \
      if G_LIKELY(expr) { } else                                     \
        {                                                            \
            rsvg_return_if_fail_warning (G_STRFUNC,                  \

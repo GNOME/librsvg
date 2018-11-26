@@ -48,6 +48,7 @@ pub use drawing_ctx::{
 
 pub use handle::{
     rsvg_handle_acquire_data,
+    rsvg_handle_acquire_stream,
     rsvg_handle_load_css,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
@@ -55,7 +56,7 @@ pub use handle::{
     rsvg_handle_rust_set_base_url,
 };
 
-pub use io::{rsvg_decode_data_uri, rsvg_get_input_stream_for_loading, rsvg_io_acquire_stream};
+pub use io::{rsvg_decode_data_uri, rsvg_get_input_stream_for_loading};
 
 pub use node::rsvg_node_unref;
 

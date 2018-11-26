@@ -276,7 +276,7 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 
     g_assert (handle->priv->load != NULL);
 
-    stream = _rsvg_handle_acquire_stream (handle, href, NULL);
+    stream = rsvg_handle_acquire_stream (handle, href, NULL);
 
     if (stream) {
         gboolean success = FALSE;
