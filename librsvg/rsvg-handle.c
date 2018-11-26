@@ -1014,24 +1014,28 @@ RsvgHandle *
 rsvg_handle_load_extern (RsvgHandle *handle, const char *uri)
 {
     RsvgHandle *res = NULL;
-    char *data;
-    gsize data_len;
+    GInputStream *stream;
 
-    data = _rsvg_handle_acquire_data (handle, uri, NULL, &data_len, NULL);
+    stream = _rsvg_handle_acquire_stream (handle, uri, NULL);
 
-    if (data) {
-        res = rsvg_handle_new ();
-        rsvg_handle_set_base_uri (res, uri);
+    if (stream) {
+        GFile *file = g_file_new_for_uri (uri);
 
-        if (rsvg_handle_write (res, (guchar *) data, data_len, NULL)
-            && rsvg_handle_close (res, NULL)) {
+        res = rsvg_handle_new_from_stream_sync (stream,
+                                                file,
+                                                handle->priv->flags,
+                                                NULL,
+                                                NULL);
+
+        g_object_unref (file);
+
+        if (res) {
             rsvg_tree_cascade (res->priv->tree);
         } else {
-            g_object_unref (res);
-            res = NULL;
+            /* FIXME: rsvg_log!("could not load external resource"); */
         }
 
-        g_free (data);
+        g_object_unref (stream);
     }
 
     return res;
