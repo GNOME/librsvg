@@ -47,6 +47,7 @@ pangocairo-sys = "0.8.0"
 phf = "0.7.21"
 rayon = "1"
 regex = "1"
+url = "1.7.2"
 
 [dev-dependencies]
 criterion = "0.2"

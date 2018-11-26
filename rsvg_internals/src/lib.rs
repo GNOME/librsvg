@@ -27,6 +27,7 @@ extern crate pango_sys;
 extern crate pangocairo;
 extern crate rayon;
 extern crate regex;
+extern crate url;
 
 #[macro_use]
 extern crate lazy_static;
