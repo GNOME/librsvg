@@ -377,17 +377,15 @@ sax_entity_decl_cb (void *data, const xmlChar * name, int type,
         gsize entity_data_len;
 
         if (systemId)
-            entity_data = _rsvg_handle_acquire_data (load->handle,
-                                                     (const char *) systemId,
-                                                     NULL,
-                                                     &entity_data_len,
-                                                     NULL);
+            entity_data = rsvg_handle_acquire_data (load->handle,
+                                                    (const char *) systemId,
+                                                    &entity_data_len,
+                                                    NULL);
         else if (publicId)
-            entity_data = _rsvg_handle_acquire_data (load->handle,
-                                                     (const char *) publicId,
-                                                     NULL,
-                                                     &entity_data_len,
-                                                     NULL);
+            entity_data = rsvg_handle_acquire_data (load->handle,
+                                                    (const char *) publicId,
+                                                    &entity_data_len,
+                                                    NULL);
         else
             entity_data = NULL;
 

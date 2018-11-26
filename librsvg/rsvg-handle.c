@@ -1692,38 +1692,10 @@ allow_load (RsvgHandle *handle, const char *uri, GError **error)
     return FALSE;
 }
 
-/* Implemented in rsvg_internals/src/io.rs */
-G_GNUC_INTERNAL
-char * rsvg_io_acquire_data (const char *uri,
-                             char **out_mime_type,
-                             gsize *out_len,
-                             GCancellable *cancellable,
-                             GError **error);
-
-char *
-_rsvg_handle_acquire_data (RsvgHandle *handle,
-                           const char *href,
-                           char **content_type,
-                           gsize *len,
-                           GError **error)
+GCancellable *
+rsvg_handle_get_cancellable (RsvgHandle *handle)
 {
-    char *uri;
-    char *data;
-
-    uri = rsvg_handle_resolve_uri (handle, href);
-
-    if (allow_load (handle, uri, error)) {
-        data = rsvg_io_acquire_data (uri,
-                                     content_type,
-                                     len,
-                                     handle->priv->cancellable,
-                                     error);
-    } else {
-        data = NULL;
-    }
-
-    g_free (uri);
-    return data;
+    return handle->priv->cancellable;
 }
 
 /* Implemented in rsvg_internals/src/io.rs */

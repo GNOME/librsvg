@@ -102,6 +102,10 @@ impl AllowedUrl {
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         }
     }
+
+    pub fn url(&self) -> &Url {
+        &self.0
+    }
 }
 
 // For tests, we don't want to touch the filesystem.  In that case,
@@ -164,8 +168,8 @@ mod tests {
         assert_eq!(
             AllowedUrl::from_href("data:image/jpeg;base64,xxyyzz", None)
                 .unwrap()
-                .0,
-            Url::parse("data:image/jpeg;base64,xxyyzz").unwrap(),
+                .url(),
+            &Url::parse("data:image/jpeg;base64,xxyyzz").unwrap(),
         );
     }
 
@@ -177,8 +181,8 @@ mod tests {
                 Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
             )
             .unwrap()
-            .0,
-            Url::parse("file:///example/foo.svg").unwrap(),
+            .url(),
+            &Url::parse("file:///example/foo.svg").unwrap(),
         );
     }
 
@@ -190,8 +194,8 @@ mod tests {
                 Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
             )
             .unwrap()
-            .0,
-            Url::parse("file:///example/foo.svg").unwrap(),
+            .url(),
+            &Url::parse("file:///example/foo.svg").unwrap(),
         );
     }
 
@@ -203,8 +207,8 @@ mod tests {
                 Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
             )
             .unwrap()
-            .0,
-            Url::parse("file:///example/subdir/foo.svg").unwrap(),
+            .url(),
+            &Url::parse("file:///example/subdir/foo.svg").unwrap(),
         );
     }
 

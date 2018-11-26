@@ -4,7 +4,7 @@ use std::ptr;
 use cairo::{ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
-use gio::{File as GFile, InputStream};
+use gio::{Cancellable, File as GFile, InputStream};
 use gio_sys;
 use glib;
 use glib::translate::*;
@@ -12,9 +12,11 @@ use glib_sys;
 use libc;
 use url::Url;
 
+use allowed_url::AllowedUrl;
 use css::{self, CssStyles, RsvgCssStyles};
 use defs::{Defs, RsvgDefs};
-use error::LoadingError;
+use error::{set_gerror, LoadingError, RsvgError};
+use io;
 use surface_utils::shared_surface::SharedImageSurface;
 use util::utf8_cstr;
 
@@ -50,14 +52,6 @@ extern "C" {
 
     fn rsvg_handle_get_css_styles(handle: *const RsvgHandle) -> *mut RsvgCssStyles;
 
-    fn _rsvg_handle_acquire_data(
-        handle: *mut RsvgHandle,
-        href: *const libc::c_char,
-        out_content_type: *mut *mut libc::c_char,
-        out_len: *mut usize,
-        error: *mut *mut glib_sys::GError,
-    ) -> *mut u8;
-
     fn _rsvg_handle_acquire_stream(
         handle: *mut RsvgHandle,
         href: *const libc::c_char,
@@ -72,6 +66,8 @@ extern "C" {
     ) -> glib_sys::gboolean;
 
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut RsvgHandleRust;
+
+    fn rsvg_handle_get_cancellable(handle: *const RsvgHandle) -> *mut gio_sys::GCancellable;
 }
 
 pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a mut Defs {
@@ -112,41 +108,23 @@ pub fn get_css_styles_mut<'a>(handle: *const RsvgHandle) -> &'a mut CssStyles {
     unsafe { &mut *(rsvg_handle_get_css_styles(handle) as *mut CssStyles) }
 }
 
+fn get_cancellable<'a>(handle: *const RsvgHandle) -> Option<Cancellable> {
+    unsafe { from_glib_borrow(rsvg_handle_get_cancellable(handle)) }
+}
+
 pub struct BinaryData {
     pub data: Vec<u8>,
     pub content_type: Option<String>,
 }
 
 pub fn acquire_data(handle: *mut RsvgHandle, href: &str) -> Result<BinaryData, glib::Error> {
-    unsafe {
-        let mut content_type: *mut libc::c_char = ptr::null_mut();
-        let mut len = 0;
-        let mut error = ptr::null_mut();
+    let rhandle = get_rust_handle(handle);
 
-        let buf = _rsvg_handle_acquire_data(
-            handle,
-            href.to_glib_none().0,
-            &mut content_type as *mut *mut _,
-            &mut len,
-            &mut error,
-        );
+    let aurl = AllowedUrl::from_href(href, rhandle.base_url.borrow().as_ref())
+        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))?;
 
-        if buf.is_null() {
-            if error.is_null() && len == 0 {
-                Ok(BinaryData {
-                    data: Vec::new(),
-                    content_type: None,
-                })
-            } else {
-                Err(from_glib_full(error))
-            }
-        } else {
-            Ok(BinaryData {
-                data: FromGlibContainer::from_glib_full_num(buf as *mut u8, len),
-                content_type: from_glib_full(content_type),
-            })
-        }
-    }
+    io::acquire_data(&aurl, get_cancellable(handle).as_ref())
+        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))
 }
 
 pub fn acquire_stream(handle: *mut RsvgHandle, href: &str) -> Result<InputStream, glib::Error> {
@@ -282,8 +260,8 @@ pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut RsvgHandleRust) 
     Box::from_raw(raw_handle as *mut Handle);
 }
 
-fn get_rust_handle(handle: *const RsvgHandle) -> *mut Handle {
-    unsafe { rsvg_handle_get_rust(handle) as *mut Handle }
+fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
+    unsafe { &mut *(rsvg_handle_get_rust(handle) as *mut Handle) }
 }
 
 #[no_mangle]
@@ -323,5 +301,35 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
         None => ptr::null_mut(),
 
         Some(ref url) => GFile::new_for_uri(url.as_str()).to_glib_full(),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_acquire_data(
+    handle: *mut RsvgHandle,
+    href: *const libc::c_char,
+    out_len: *mut usize,
+    error: *mut *mut glib_sys::GError,
+) -> *mut libc::c_char {
+    assert!(!href.is_null());
+    assert!(!out_len.is_null());
+
+    let href: String = from_glib_none(href);
+
+    match acquire_data(handle, &href) {
+        Ok(binary) => {
+            if !error.is_null() {
+                *error = ptr::null_mut();
+            }
+
+            *out_len = binary.data.len();
+            io::binary_data_to_glib(&binary, ptr::null_mut(), out_len)
+        }
+
+        Err(_) => {
+            set_gerror(error, 0, "Could not acquire data");
+            *out_len = 0;
+            ptr::null_mut()
+        }
     }
 }

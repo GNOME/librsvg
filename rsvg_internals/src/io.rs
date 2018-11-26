@@ -19,6 +19,7 @@ use gio::{
 use glib::{self, translate::*, Bytes as GBytes, Cast};
 use std::ptr;
 
+use allowed_url::AllowedUrl;
 use error::{set_gerror, LoadingError, RsvgError};
 use handle::BinaryData;
 use util::utf8_cstr;
@@ -47,7 +48,7 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
     })
 }
 
-fn binary_data_to_glib(
+pub fn binary_data_to_glib(
     binary_data: &BinaryData,
     out_mime_type: *mut *mut libc::c_char,
     out_size: *mut usize,
@@ -189,12 +190,17 @@ pub unsafe fn rsvg_io_acquire_stream(
     }
 }
 
-fn acquire_data(uri: &str, cancellable: Option<Cancellable>) -> Result<BinaryData, LoadingError> {
+pub fn acquire_data(
+    aurl: &AllowedUrl,
+    cancellable: Option<&Cancellable>,
+) -> Result<BinaryData, LoadingError> {
+    let uri = aurl.url().as_str();
+
     if uri.starts_with("data:") {
         Ok(decode_data_uri(uri)?)
     } else {
         let file = GFile::new_for_uri(uri);
-        let (contents, _etag) = file.load_contents(cancellable.as_ref())?;
+        let (contents, _etag) = file.load_contents(cancellable)?;
 
         let (content_type, _uncertain) = gio::content_type_guess(uri, &contents);
         let mime_type = gio::content_type_get_mime_type(&content_type);
@@ -203,34 +209,5 @@ fn acquire_data(uri: &str, cancellable: Option<Cancellable>) -> Result<BinaryDat
             data: contents,
             content_type: mime_type,
         })
-    }
-}
-
-#[no_mangle]
-pub unsafe fn rsvg_io_acquire_data(
-    uri: *const libc::c_char,
-    out_mime_type: *mut *mut libc::c_char,
-    out_size: *mut usize,
-    cancellable: *mut gio_sys::GCancellable,
-    error: *mut *mut glib_sys::GError,
-) -> *mut libc::c_char {
-    assert!(!uri.is_null());
-
-    let uri: String = from_glib_none(uri);
-    let cancellable = from_glib_borrow(cancellable);
-
-    match acquire_data(&uri, cancellable) {
-        Ok(binary_data) => {
-            if !error.is_null() {
-                *error = ptr::null_mut();
-            }
-
-            binary_data_to_glib(&binary_data, out_mime_type, out_size)
-        }
-
-        Err(_e) => {
-            set_gerror(error, 0, "Could not acquire data");
-            ptr::null_mut()
-        }
     }
 }

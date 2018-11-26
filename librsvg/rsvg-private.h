@@ -287,12 +287,16 @@ RsvgHandle *rsvg_handle_load_extern (RsvgHandle *handle,
 G_GNUC_INTERNAL
 gboolean rsvg_handle_keep_image_data (RsvgHandle *handle);
 
+/* Implemented in rsvg_internals/src/handle.rs */
 G_GNUC_INTERNAL
-char *_rsvg_handle_acquire_data (RsvgHandle *handle,
-                                 const char *href,
-                                 char **content_type,
-                                 gsize *len,
-                                 GError **error);
+char *rsvg_handle_acquire_data (RsvgHandle *handle,
+                                const char *href,
+                                gsize *len,
+                                GError **error);
+
+G_GNUC_INTERNAL
+GCancellable *rsvg_handle_get_cancellable (RsvgHandle *handle);
+
 G_GNUC_INTERNAL
 GInputStream *_rsvg_handle_acquire_stream (RsvgHandle *handle,
                                            const char *href,
