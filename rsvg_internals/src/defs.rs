@@ -38,11 +38,9 @@ impl Defs {
                 Reference::PlainUri(_) => None,
                 Reference::FragmentId(fragment) => self.nodes.get(fragment),
                 Reference::UriWithFragmentId(uri, fragment) => {
-                    let extern_handle = self.get_extern_handle(handle, uri);
-                    if extern_handle.is_null() {
-                        None
-                    } else {
-                        handle::get_defs(extern_handle).nodes.get(fragment)
+                    match self.get_extern_handle(handle, uri) {
+                        Ok(extern_handle) => handle::get_defs(extern_handle).nodes.get(fragment),
+                        Err(()) => None,
                     }
                 }
             }
@@ -55,19 +53,23 @@ impl Defs {
         &mut self,
         handle: *const RsvgHandle,
         possibly_relative_uri: &str,
-    ) -> *const RsvgHandle {
-        handle::resolve_uri(handle, possibly_relative_uri).map_or(ptr::null(), |uri| {
-            match self.externs.entry(uri) {
-                Entry::Occupied(e) => *(e.get()),
+    ) -> Result<*const RsvgHandle, ()> {
+        match handle::resolve_uri(handle, possibly_relative_uri) {
+            None => Err(()),
+
+            Some(uri) => match self.externs.entry(uri) {
+                Entry::Occupied(e) => Ok(*(e.get())),
                 Entry::Vacant(e) => {
                     let extern_handle = handle::load_extern(handle, e.key());
-                    if !extern_handle.is_null() {
+                    if extern_handle.is_null() {
+                        Err(())
+                    } else {
                         e.insert(extern_handle);
+                        Ok(extern_handle)
                     }
-                    extern_handle
                 }
-            }
-        })
+            },
+        }
     }
 }
 
