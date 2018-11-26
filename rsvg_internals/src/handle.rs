@@ -18,6 +18,10 @@ use util::utf8_cstr;
 
 pub enum RsvgHandle {}
 
+pub enum RsvgHandleRust {}
+
+struct Handle {}
+
 #[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_handle_get_defs(handle: *const RsvgHandle) -> *const RsvgDefs;
@@ -54,6 +58,8 @@ extern "C" {
         handle: *mut RsvgHandle,
         href: *const libc::c_char,
     ) -> glib_sys::gboolean;
+
+    fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut RsvgHandleRust;
 }
 
 pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a mut Defs {
@@ -242,4 +248,22 @@ pub unsafe extern "C" fn rsvg_handle_load_css(handle: *mut RsvgHandle, href: *co
 
     let href = utf8_cstr(href);
     load_css(handle, href);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_new() -> *mut RsvgHandleRust {
+    Box::into_raw(Box::new(Handle {})) as *mut RsvgHandleRust
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut RsvgHandleRust) {
+    assert!(!raw_handle.is_null());
+
+    Box::from_raw(raw_handle as *mut Handle);
+}
+
+fn get_rust_handle(handle: *const RsvgHandle) -> *mut Handle {
+    unsafe {
+        rsvg_handle_get_rust(handle) as *mut Handle
+    }
 }

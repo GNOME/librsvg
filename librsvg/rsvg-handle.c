@@ -173,6 +173,8 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->font_config_for_testing = NULL;
     self->priv->font_map_for_testing = NULL;
 #endif
+
+    self->priv->rust_handle = rsvg_handle_rust_new();
 }
 
 static void
@@ -198,6 +200,8 @@ rsvg_handle_dispose (GObject *instance)
 #endif
 
     g_clear_object (&self->priv->cancellable);
+
+    g_clear_pointer (&self->priv->rust_handle, rsvg_handle_rust_free);
 
     G_OBJECT_CLASS (rsvg_handle_parent_class)->dispose (instance);
 }
@@ -984,6 +988,12 @@ RsvgDefs *
 rsvg_handle_get_defs (RsvgHandle *handle)
 {
     return handle->priv->defs;
+}
+
+RsvgHandleRust *
+rsvg_handle_get_rust (RsvgHandle *handle)
+{
+    return handle->priv->rust_handle;
 }
 
 RsvgCssStyles *

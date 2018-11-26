@@ -85,6 +85,9 @@ typedef struct RsvgTree RsvgTree;
 
 typedef struct RsvgCssStyles RsvgCssStyles;
 
+/* Defined in rsvg_internals/src/handle.rs */
+typedef struct RsvgHandleRust RsvgHandleRust;
+
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;
 
@@ -118,6 +121,8 @@ struct RsvgHandlePrivate {
     FcConfig *font_config_for_testing;
     PangoFontMap *font_map_for_testing;
 #endif
+
+    RsvgHandleRust *rust_handle;
 };
 
 /* Implemented in rust/src/node.rs */
@@ -246,6 +251,9 @@ G_GNUC_INTERNAL
 RsvgDefs *rsvg_handle_get_defs (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
+RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
+
+G_GNUC_INTERNAL
 RsvgCssStyles *rsvg_handle_get_css_styles (RsvgHandle *handle);
 
 /* Implemented in rsvg_internals/src/handle.rs */
@@ -255,6 +263,14 @@ void rsvg_handle_load_css(RsvgHandle *handle, const char *href);
 G_GNUC_INTERNAL
 char *rsvg_handle_resolve_uri (RsvgHandle *handle,
                                const char *uri);
+
+/* Implemented in rsvg_internals/src/handle.rs */
+G_GNUC_INTERNAL
+RsvgHandleRust *rsvg_handle_rust_new (void);
+
+/* Implemented in rsvg_internals/src/handle.rs */
+G_GNUC_INTERNAL
+void rsvg_handle_rust_free (RsvgHandleRust *raw_handle);
 
 G_GNUC_INTERNAL
 RsvgHandle *rsvg_handle_load_extern (RsvgHandle *handle,
