@@ -1,14 +1,16 @@
+use std::cell::RefCell;
 use std::ptr;
 
 use cairo::{ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
-use gio::InputStream;
+use gio::{File as GFile, InputStream};
 use gio_sys;
 use glib;
 use glib::translate::*;
 use glib_sys;
 use libc;
+use url::Url;
 
 use css::{self, CssStyles, RsvgCssStyles};
 use defs::{Defs, RsvgDefs};
@@ -20,7 +22,17 @@ pub enum RsvgHandle {}
 
 pub enum RsvgHandleRust {}
 
-struct Handle {}
+struct Handle {
+    base_url: RefCell<Option<Url>>,
+}
+
+impl Handle {
+    fn new() -> Handle {
+        Handle {
+            base_url: RefCell::new(None),
+        }
+    }
+}
 
 #[allow(improper_ctypes)]
 extern "C" {
@@ -252,7 +264,7 @@ pub unsafe extern "C" fn rsvg_handle_load_css(handle: *mut RsvgHandle, href: *co
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_new() -> *mut RsvgHandleRust {
-    Box::into_raw(Box::new(Handle {})) as *mut RsvgHandleRust
+    Box::into_raw(Box::new(Handle::new())) as *mut RsvgHandleRust
 }
 
 #[no_mangle]
@@ -263,7 +275,45 @@ pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut RsvgHandleRust) 
 }
 
 fn get_rust_handle(handle: *const RsvgHandle) -> *mut Handle {
-    unsafe {
-        rsvg_handle_get_rust(handle) as *mut Handle
+    unsafe { rsvg_handle_get_rust(handle) as *mut Handle }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
+    raw_handle: *const RsvgHandleRust,
+    uri: *const libc::c_char,
+) {
+    let handle = &*(raw_handle as *const Handle);
+
+    assert!(!uri.is_null());
+    let uri: String = from_glib_none(uri);
+
+    let url = match Url::parse(&uri) {
+        Ok(u) => u,
+
+        Err(e) => {
+            rsvg_log!(
+                "not setting base_uri to \"{}\" since it is invalid: {}",
+                uri,
+                e
+            );
+            return;
+        }
+    };
+
+    rsvg_log!("setting base_uri to \"{}\"", url);
+    *handle.base_url.borrow_mut() = Some(url);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
+    raw_handle: *const RsvgHandleRust,
+) -> *mut gio_sys::GFile {
+    let handle = &*(raw_handle as *const Handle);
+
+    match *handle.base_url.borrow() {
+        None => ptr::null_mut(),
+
+        Some(ref url) => GFile::new_for_uri(url.as_str()).to_glib_full(),
     }
 }

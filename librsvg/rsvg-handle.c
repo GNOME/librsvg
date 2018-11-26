@@ -192,7 +192,6 @@ rsvg_handle_dispose (GObject *instance)
     g_clear_pointer (&self->priv->css_styles, rsvg_css_styles_free);
     g_clear_pointer (&self->priv->tree, rsvg_tree_free);
     g_clear_pointer (&self->priv->base_uri, g_free);
-    g_clear_object (&self->priv->base_gfile);
 
 #ifdef HAVE_PANGOFT2
     g_clear_pointer (&self->priv->font_config_for_testing, FcConfigDestroy);
@@ -899,19 +898,28 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
                             GFile      *base_file)
 {
     RsvgHandlePrivate *priv;
+    char *uri;
+    GFile *real_base_file;
 
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (G_IS_FILE (base_file));
 
     priv = handle->priv;
 
-    g_object_ref (base_file);
-    if (priv->base_gfile)
-        g_object_unref (priv->base_gfile);
-    priv->base_gfile = base_file;
+    uri = g_file_get_uri (base_file);
+    rsvg_handle_rust_set_base_url (priv->rust_handle, uri);
+    g_free (uri);
 
+    /* Obtain the sanitized version */
+
+    real_base_file = rsvg_handle_rust_get_base_gfile (priv->rust_handle);
     g_free (priv->base_uri);
-    priv->base_uri = g_file_get_uri (base_file);
+
+    if (real_base_file) {
+        priv->base_uri = g_file_get_uri (real_base_file);
+    } else {
+        priv->base_uri = NULL;
+    }
 }
 
 /**
@@ -1538,15 +1546,19 @@ rsvg_handle_resolve_uri (RsvgHandle *handle,
 {
     RsvgHandlePrivate *priv = handle->priv;
     char *scheme, *resolved_uri;
+    GFile *base_gfile;
     GFile *base, *resolved;
 
     if (uri == NULL)
         return NULL;
 
+    base_gfile = rsvg_handle_rust_get_base_gfile (priv->rust_handle);
+
     scheme = g_uri_parse_scheme (uri);
     if (scheme != NULL ||
-        priv->base_gfile == NULL ||
-        (base = g_file_get_parent (priv->base_gfile)) == NULL) {
+        base_gfile == NULL ||
+        (base = g_file_get_parent (base_gfile)) == NULL) {
+        g_object_unref (base_gfile);
         g_free (scheme);
         return g_strdup (uri);
     }
@@ -1556,6 +1568,7 @@ rsvg_handle_resolve_uri (RsvgHandle *handle,
 
     g_free (scheme);
     g_object_unref (base);
+    g_object_unref (base_gfile);
     g_object_unref (resolved);
 
     return resolved_uri;
@@ -1591,13 +1604,16 @@ rsvg_realpath_utf8 (const char *filename, const char *unused)
 #endif
 
 static gboolean
-allow_load (GFile *base_gfile, const char *uri, GError **error)
+allow_load (RsvgHandle *handle, const char *uri, GError **error)
 {
+    GFile *base_gfile;
     GFile *base;
     char *path, *dir;
     char *scheme = NULL, *cpath = NULL, *cdir = NULL;
 
     g_assert (error == NULL || *error == NULL);
+
+    base_gfile = rsvg_handle_rust_get_base_gfile (handle->priv->rust_handle);
 
     scheme = g_uri_parse_scheme (uri);
 
@@ -1655,12 +1671,14 @@ allow_load (GFile *base_gfile, const char *uri, GError **error)
     /* Allow load! */
 
  allow:
+    g_object_unref (base_gfile);
     g_free (scheme);
     free (cpath);
     free (cdir);
     return TRUE;
 
  deny:
+    g_object_unref (base_gfile);
     g_free (scheme);
     free (cpath);
     free (cdir);
@@ -1685,13 +1703,12 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
                            gsize *len,
                            GError **error)
 {
-    RsvgHandlePrivate *priv = handle->priv;
     char *uri;
     char *data;
 
     uri = rsvg_handle_resolve_uri (handle, href);
 
-    if (allow_load (priv->base_gfile, uri, error)) {
+    if (allow_load (handle, uri, error)) {
         data = rsvg_io_acquire_data (uri,
                                      content_type,
                                      len,
@@ -1716,13 +1733,12 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
                              const char *href,
                              GError **error)
 {
-    RsvgHandlePrivate *priv = handle->priv;
     char *uri;
     GInputStream *stream;
 
     uri = rsvg_handle_resolve_uri (handle, href);
 
-    if (allow_load (priv->base_gfile, uri, error)) {
+    if (allow_load (handle, uri, error)) {
         stream = rsvg_io_acquire_stream (uri, handle->priv->cancellable, error);
     } else {
         stream = NULL;

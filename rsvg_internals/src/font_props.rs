@@ -169,8 +169,7 @@ impl Parse for FontWeightSpec {
                 800 => Ok(FontWeightSpec::W800),
                 900 => Ok(FontWeightSpec::W900),
                 _ => Err(()),
-            })
-        {
+            }) {
             Ok(r)
         } else {
             Err(ValueErrorKind::Parse(ParseError::new(

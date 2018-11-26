@@ -110,8 +110,7 @@ struct RsvgHandlePrivate {
     double dpi_x;
     double dpi_y;
 
-    gchar *base_uri;
-    GFile *base_gfile;
+    gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *
 
     gboolean in_loop;		/* see get_dimension() */
 
@@ -271,6 +270,15 @@ RsvgHandleRust *rsvg_handle_rust_new (void);
 /* Implemented in rsvg_internals/src/handle.rs */
 G_GNUC_INTERNAL
 void rsvg_handle_rust_free (RsvgHandleRust *raw_handle);
+
+/* Implemented in rsvg_internals/src/handle.rs */
+G_GNUC_INTERNAL
+void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle,
+                                    const char *uri);
+
+/* Implemented in rsvg_internals/src/handle.rs */
+G_GNUC_INTERNAL
+GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 
 G_GNUC_INTERNAL
 RsvgHandle *rsvg_handle_load_extern (RsvgHandle *handle,

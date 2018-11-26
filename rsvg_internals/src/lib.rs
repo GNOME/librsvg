@@ -46,7 +46,13 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_new,
 };
 
-pub use handle::{rsvg_handle_load_css, rsvg_handle_rust_free, rsvg_handle_rust_new};
+pub use handle::{
+    rsvg_handle_load_css,
+    rsvg_handle_rust_free,
+    rsvg_handle_rust_get_base_gfile,
+    rsvg_handle_rust_new,
+    rsvg_handle_rust_set_base_url,
+};
 
 pub use io::{
     rsvg_decode_data_uri,

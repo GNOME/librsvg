@@ -229,6 +229,44 @@ auto_generated (void)
 }
 
 static void
+base_uri (void)
+{
+    RsvgHandle *handle = rsvg_handle_new ();
+    const char *uri;
+
+    uri = rsvg_handle_get_base_uri (handle);
+    g_assert (uri == NULL);
+
+    rsvg_handle_set_base_uri (handle, "file:///foo/bar.svg");
+    uri = rsvg_handle_get_base_uri (handle);
+
+    g_assert_cmpstr (uri, ==, "file:///foo/bar.svg");
+
+    g_object_unref (handle);
+}
+
+static void
+base_gfile (void)
+{
+    RsvgHandle *handle = rsvg_handle_new ();
+    GFile *file;
+    const char *uri;
+
+    uri = rsvg_handle_get_base_uri (handle);
+    g_assert (uri == NULL);
+
+    file = g_file_new_for_uri ("file:///foo/bar.svg");
+
+    rsvg_handle_set_base_gfile (handle, file);
+    uri = rsvg_handle_get_base_uri (handle);
+
+    g_assert_cmpstr (uri, ==, "file:///foo/bar.svg");
+
+    g_object_unref (file);
+    g_object_unref (handle);
+}
+
+static void
 handle_write_close_free (void)
 {
     char *filename = get_test_filename ("dpi.svg");
@@ -594,6 +632,8 @@ main (int argc, char **argv)
     g_test_add_func ("/api/set_dpi", set_dpi);
     g_test_add_func ("/api/error_quark", error_quark);
     g_test_add_func ("/api/auto_generated", auto_generated);
+    g_test_add_func ("/api/base_uri", base_uri);
+    g_test_add_func ("/api/base_gfile", base_gfile);
     g_test_add_func ("/api/handle_write_close_free", handle_write_close_free);
     g_test_add_func ("/api/handle_new_from_file", handle_new_from_file);
     g_test_add_func ("/api/handle_new_from_data", handle_new_from_data);
