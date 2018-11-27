@@ -44,12 +44,6 @@ extern "C" {
         href: *const libc::c_char,
     ) -> *const RsvgHandle;
 
-    fn _rsvg_handle_acquire_stream(
-        handle: *mut RsvgHandle,
-        href: *const libc::c_char,
-        error: *mut *mut glib_sys::GError,
-    ) -> *mut gio_sys::GInputStream;
-
     fn rsvg_handle_keep_image_data(handle: *const RsvgHandle) -> glib_sys::gboolean;
 
     fn rsvg_load_handle_xml_xinclude(
