@@ -728,21 +728,38 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
 {
     RsvgHandlePrivate *priv;
     gboolean read_successfully;
-    gboolean result;
+    gboolean result = FALSE;
 
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
     rsvg_return_val_if_fail (handle, FALSE, error);
 
     priv = handle->priv;
 
-    if (priv->hstate == RSVG_HANDLE_STATE_CLOSED_OK
-        || priv->hstate == RSVG_HANDLE_STATE_CLOSED_ERROR) {
+    switch (priv->hstate) {
+    case RSVG_HANDLE_STATE_START:
+        g_set_error (error, RSVG_ERROR, RSVG_ERROR_FAILED, _("no data passed to parser"));
+        priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
+        result = FALSE;
+        break;
+
+    case RSVG_HANDLE_STATE_LOADING:
+        g_assert (priv->load != NULL);
+        read_successfully = rsvg_load_close (priv->load, error);
+        result = finish_load (handle, read_successfully, error);
+        break;
+
+    case RSVG_HANDLE_STATE_CLOSED_OK:
+    case RSVG_HANDLE_STATE_CLOSED_ERROR:
         /* closing is idempotent */
-        return TRUE;
+        result = TRUE;
+        break;
+
+    default:
+        g_assert_not_reached ();
     }
 
-    read_successfully = rsvg_load_close (priv->load, error);
-    result = finish_load (handle, read_successfully, error);
+    g_assert (priv->hstate == RSVG_HANDLE_STATE_CLOSED_OK
+              || priv->hstate == RSVG_HANDLE_STATE_CLOSED_ERROR);
 
     return result;
 }
