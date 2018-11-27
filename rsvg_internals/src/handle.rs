@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::ptr;
 
 use cairo::{ImageSurface, Status};
@@ -40,11 +40,6 @@ impl Handle {
 extern "C" {
     fn rsvg_handle_get_defs(handle: *const RsvgHandle) -> *const RsvgDefs;
 
-    fn rsvg_handle_resolve_uri(
-        handle: *const RsvgHandle,
-        uri: *const libc::c_char,
-    ) -> *const libc::c_char;
-
     fn rsvg_handle_load_extern(
         handle: *const RsvgHandle,
         href: *const libc::c_char,
@@ -77,17 +72,6 @@ pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a mut Defs {
     }
 }
 
-pub fn resolve_uri(handle: *const RsvgHandle, uri: &str) -> Option<String> {
-    unsafe {
-        let resolved = rsvg_handle_resolve_uri(handle, uri.to_glib_none().0);
-        if resolved.is_null() {
-            None
-        } else {
-            Some(from_glib_full(resolved))
-        }
-    }
-}
-
 pub fn load_extern(handle: *const RsvgHandle, uri: &str) -> Result<*const RsvgHandle, ()> {
     unsafe {
         let res = rsvg_handle_load_extern(handle, uri.to_glib_none().0);
@@ -98,6 +82,12 @@ pub fn load_extern(handle: *const RsvgHandle, uri: &str) -> Result<*const RsvgHa
             Ok(res)
         }
     }
+}
+
+pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
+    let rhandle = get_rust_handle(handle);
+
+    rhandle.base_url.borrow()
 }
 
 pub fn get_css_styles<'a>(handle: *const RsvgHandle) -> &'a CssStyles {

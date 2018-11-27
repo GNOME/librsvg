@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::ptr;
 use std::rc::Rc;
 
+use allowed_url::AllowedUrl;
 use handle::{self, RsvgHandle};
 use node::{Node, RsvgNode};
 use util::utf8_cstr;
@@ -37,8 +38,8 @@ impl Defs {
             match reference {
                 Reference::PlainUri(_) => None,
                 Reference::FragmentId(fragment) => self.nodes.get(fragment),
-                Reference::UriWithFragmentId(uri, fragment) => {
-                    match self.get_extern_handle(handle, uri) {
+                Reference::UriWithFragmentId(href, fragment) => {
+                    match self.get_extern_handle(handle, href) {
                         Ok(extern_handle) => handle::get_defs(extern_handle).nodes.get(fragment),
                         Err(()) => None,
                     }
@@ -52,19 +53,18 @@ impl Defs {
     fn get_extern_handle(
         &mut self,
         handle: *const RsvgHandle,
-        possibly_relative_uri: &str,
+        href: &str,
     ) -> Result<*const RsvgHandle, ()> {
-        match handle::resolve_uri(handle, possibly_relative_uri) {
-            None => Err(()),
+        let aurl =
+            AllowedUrl::from_href(href, handle::get_base_url(handle).as_ref()).map_err(|_| ())?;
 
-            Some(uri) => match self.externs.entry(uri) {
-                Entry::Occupied(e) => Ok(*(e.get())),
-                Entry::Vacant(e) => {
-                    let extern_handle = handle::load_extern(handle, e.key())?;
-                    e.insert(extern_handle);
-                    Ok(extern_handle)
-                }
-            },
+        match self.externs.entry(aurl.url().as_str().to_string()) {
+            Entry::Occupied(e) => Ok(*(e.get())),
+            Entry::Vacant(e) => {
+                let extern_handle = handle::load_extern(handle, e.key())?;
+                e.insert(extern_handle);
+                Ok(extern_handle)
+            }
         }
     }
 }

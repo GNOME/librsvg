@@ -1544,40 +1544,6 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
     handle->priv->user_data_destroy = user_data_destroy;
 }
 
-char *
-rsvg_handle_resolve_uri (RsvgHandle *handle,
-                         const char *uri)
-{
-    RsvgHandlePrivate *priv = handle->priv;
-    char *scheme, *resolved_uri;
-    GFile *base_gfile;
-    GFile *base, *resolved;
-
-    if (uri == NULL)
-        return NULL;
-
-    base_gfile = rsvg_handle_rust_get_base_gfile (priv->rust_handle);
-
-    scheme = g_uri_parse_scheme (uri);
-    if (scheme != NULL ||
-        base_gfile == NULL ||
-        (base = g_file_get_parent (base_gfile)) == NULL) {
-        g_object_unref (base_gfile);
-        g_free (scheme);
-        return g_strdup (uri);
-    }
-
-    resolved = g_file_resolve_relative_path (base, uri);
-    resolved_uri = g_file_get_uri (resolved);
-
-    g_free (scheme);
-    g_object_unref (base);
-    g_object_unref (base_gfile);
-    g_object_unref (resolved);
-
-    return resolved_uri;
-}
-
 GCancellable *
 rsvg_handle_get_cancellable (RsvgHandle *handle)
 {
