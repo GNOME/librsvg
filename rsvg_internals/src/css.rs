@@ -153,7 +153,7 @@ unsafe extern "C" fn css_import_style(
     let raw_uri = cr_string_peek_raw_str(a_uri);
     let uri = utf8_cstr(raw_uri);
 
-    handle::load_css(handler_data.handle, uri);
+    handle::load_css(handler_data.css_styles, handler_data.handle, uri);
 }
 
 unsafe extern "C" fn css_start_selector(

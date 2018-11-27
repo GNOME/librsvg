@@ -194,7 +194,7 @@ pub fn load_xml_xinclude(handle: *mut RsvgHandle, href: &str) -> bool {
     unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, href.to_glib_none().0)) }
 }
 
-pub fn load_css(handle: *mut RsvgHandle, href: &str) {
+pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href: &str) {
     if let Ok(data) = acquire_data(handle, href) {
         let BinaryData {
             data: bytes,
@@ -208,7 +208,6 @@ pub fn load_css(handle: *mut RsvgHandle, href: &str) {
         }
 
         if let Ok(utf8) = String::from_utf8(bytes) {
-            let css_styles = get_css_styles_mut(handle);
             css::parse_into_css_styles(css_styles, handle, &utf8);
         } else {
             rsvg_log!(
@@ -232,7 +231,7 @@ pub unsafe extern "C" fn rsvg_handle_load_css(handle: *mut RsvgHandle, href: *co
     assert!(!href.is_null());
 
     let href = utf8_cstr(href);
-    load_css(handle, href);
+    load_css(get_css_styles_mut(handle), handle, href);
 }
 
 #[no_mangle]
