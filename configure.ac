@@ -268,7 +268,7 @@ AC_ARG_ENABLE(debug,
                              [Build Rust code with debugging information [default=no]]),
               [debug_release=$enableval],
 	      [
-	        if test "x$LIBRSVG_DEBUG" == "x"; then
+	        if test "x$LIBRSVG_DEBUG" = "x"; then
 		  debug_release="no"
 		elif test "x$LIBRSVG_DEBUG" = "xyes"; then
 		  debug_release="yes"
@@ -288,7 +288,7 @@ fi
 AM_CONDITIONAL([DEBUG_RELEASE], [test "x$debug_release" = "xyes"])
 
 AC_ARG_VAR(RUST_TARGET, [Set rust target (default=$host)])
-if test "x$RUST_TARGET" == x; then
+if test "x$RUST_TARGET" = x; then
 	RUST_TARGET=$host
 fi
 
