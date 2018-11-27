@@ -548,7 +548,9 @@ sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xm
                 && type && strcmp (type, "text/css") == 0
                 && href)
             {
-                rsvg_handle_load_css (load->handle, href);
+                rsvg_handle_load_css (load->handle,
+                                      rsvg_handle_get_css_styles(load->handle),
+                                      href);
             }
 
             rsvg_property_bag_free (atts);

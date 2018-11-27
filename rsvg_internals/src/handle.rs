@@ -226,12 +226,19 @@ pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href: &str)
 // This function just slurps CSS data from a possibly-relative href
 // and parses it.  We'll move it to a better place in the end.
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_load_css(handle: *mut RsvgHandle, href: *const libc::c_char) {
+pub unsafe extern "C" fn rsvg_handle_load_css(
+    handle: *mut RsvgHandle,
+    css_styles: *mut RsvgCssStyles,
+    href: *const libc::c_char,
+) {
     assert!(!handle.is_null());
+    assert!(!css_styles.is_null());
     assert!(!href.is_null());
 
+    let css_styles = &mut *(css_styles as *mut CssStyles);
+
     let href = utf8_cstr(href);
-    load_css(get_css_styles_mut(handle), handle, href);
+    load_css(css_styles, handle, href);
 }
 
 #[no_mangle]

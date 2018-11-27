@@ -257,7 +257,7 @@ RsvgCssStyles *rsvg_handle_get_css_styles (RsvgHandle *handle);
 
 /* Implemented in rsvg_internals/src/handle.rs */
 G_GNUC_INTERNAL
-void rsvg_handle_load_css(RsvgHandle *handle, const char *href);
+void rsvg_handle_load_css(RsvgHandle *handle, RsvgCssStyles *css_styles, const char *href);
 
 /* Implemented in rsvg_internals/src/handle.rs */
 G_GNUC_INTERNAL
