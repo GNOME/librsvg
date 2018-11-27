@@ -80,12 +80,19 @@ impl CssStyles {
     }
 }
 
-struct DocHandlerData {
+struct DocHandlerData<'a> {
     handle: *mut RsvgHandle,
+    css_styles: &'a mut CssStyles,
     selector: *mut CRSelector,
 }
 
-pub fn parse_into_handle(handle: *mut RsvgHandle, buf: &str) {
+macro_rules! get_doc_handler_data {
+    ($doc_handler:expr) => {
+        &mut *((*$doc_handler).app_data as *mut DocHandlerData)
+    };
+}
+
+pub fn parse_into_css_styles(css_styles: &mut CssStyles, handle: *mut RsvgHandle, buf: &str) {
     if buf.len() == 0 {
         return; // libcroco doesn't like empty strings :(
     }
@@ -93,6 +100,7 @@ pub fn parse_into_handle(handle: *mut RsvgHandle, buf: &str) {
     unsafe {
         let mut handler_data = DocHandlerData {
             handle,
+            css_styles,
             selector: ptr::null_mut(),
         };
 
@@ -136,7 +144,7 @@ unsafe extern "C" fn css_import_style(
     _a_uri_default_ns: CRString,
     _a_location: CRParsingLocation,
 ) {
-    let handler_data = get_doc_handler_data(a_this);
+    let handler_data = get_doc_handler_data!(a_this);
 
     if a_uri.is_null() {
         return;
@@ -148,15 +156,11 @@ unsafe extern "C" fn css_import_style(
     handle::load_css(handler_data.handle, uri);
 }
 
-unsafe fn get_doc_handler_data<'a>(doc_handler: *mut CRDocHandler) -> &'a mut DocHandlerData {
-    &mut *((*doc_handler).app_data as *mut DocHandlerData)
-}
-
 unsafe extern "C" fn css_start_selector(
     a_this: *mut CRDocHandler,
     a_selector_list: *mut CRSelector,
 ) {
-    let handler_data = get_doc_handler_data(a_this);
+    let handler_data = get_doc_handler_data!(a_this);
 
     cr_selector_ref(a_selector_list);
     handler_data.selector = a_selector_list;
@@ -166,7 +170,7 @@ unsafe extern "C" fn css_end_selector(
     a_this: *mut CRDocHandler,
     _a_selector_list: *mut CRSelector,
 ) {
-    let handler_data = get_doc_handler_data(a_this);
+    let handler_data = get_doc_handler_data!(a_this);
 
     cr_selector_unref(handler_data.selector);
     handler_data.selector = ptr::null_mut();
@@ -178,7 +182,7 @@ unsafe extern "C" fn css_property(
     a_expression: CRTerm,
     a_is_important: gboolean,
 ) {
-    let handler_data = get_doc_handler_data(a_this);
+    let handler_data = get_doc_handler_data!(a_this);
 
     if a_name.is_null() || a_expression.is_null() || handler_data.selector.is_null() {
         return;
@@ -203,9 +207,9 @@ unsafe extern "C" fn css_property(
 
                 let important = from_glib(a_is_important);
 
-                let styles = handle::get_css_styles_mut(handler_data.handle);
-
-                styles.define(&selector_name, prop_name, &prop_value, important);
+                handler_data
+                    .css_styles
+                    .define(&selector_name, prop_name, &prop_value, important);
             }
         }
 

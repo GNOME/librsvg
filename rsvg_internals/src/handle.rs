@@ -208,7 +208,8 @@ pub fn load_css(handle: *mut RsvgHandle, href: &str) {
         }
 
         if let Ok(utf8) = String::from_utf8(bytes) {
-            css::parse_into_handle(handle, &utf8);
+            let css_styles = get_css_styles_mut(handle);
+            css::parse_into_css_styles(css_styles, handle, &utf8);
         } else {
             rsvg_log!(
                 "\"{}\" does not contain valid UTF-8 CSS data; ignoring",

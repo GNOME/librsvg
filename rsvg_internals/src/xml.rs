@@ -266,7 +266,9 @@ impl XmlState {
         if node.get_type() == NodeType::Style {
             let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
 
-            css::parse_into_handle(handle, &css_data);
+            let css_styles = handle::get_css_styles_mut(handle);
+
+            css::parse_into_css_styles(css_styles, handle, &css_data);
         }
 
         self.current_node = node.get_parent();
