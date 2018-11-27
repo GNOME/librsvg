@@ -91,7 +91,7 @@ pub fn parse_into_handle(handle: *mut RsvgHandle, buf: &str) {
     }
 
     unsafe {
-        let handler_data = DocHandlerData {
+        let mut handler_data = DocHandlerData {
             handle,
             selector: ptr::null_mut(),
         };
@@ -99,7 +99,7 @@ pub fn parse_into_handle(handle: *mut RsvgHandle, buf: &str) {
         let doc_handler = cr_doc_handler_new();
         init_cr_doc_handler(&mut *doc_handler);
 
-        (*doc_handler).app_data = &handler_data as *const _ as gpointer;
+        (*doc_handler).app_data = &mut handler_data as *mut _ as gpointer;
 
         let buf_ptr = buf.as_ptr() as *mut _;
         let buf_len = buf.len() as libc::c_ulong;
