@@ -578,6 +578,38 @@ render_cairo_sub (void)
     cairo_destroy (cr);
 }
 
+/* https://gitlab.gnome.org/GNOME/librsvg/issues/385 */
+static void
+no_write_before_close (void)
+{
+    RsvgHandle *handle = rsvg_handle_new();
+    GError *error = NULL;
+
+    g_assert (rsvg_handle_close (handle, &error) == FALSE);
+    g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
+    g_error_free (error);
+
+    g_object_unref (handle);
+}
+
+static void
+empty_write_close (void)
+{
+    RsvgHandle *handle = rsvg_handle_new();
+    GError *error = NULL;
+    guchar buf = 0;
+
+    g_assert (rsvg_handle_write (handle, &buf, 0, &error) == TRUE);
+    g_assert_no_error (error);
+
+    g_assert (rsvg_handle_close (handle, &error) == FALSE);
+    g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
+
+    g_error_free (error);
+
+    g_object_unref (handle);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -607,6 +639,8 @@ main (int argc, char **argv)
     g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
+    g_test_add_func ("/api/no_write_before_close", no_write_before_close);
+    g_test_add_func ("/api/empty_write_close", empty_write_close);
 
     return g_test_run ();
 }
