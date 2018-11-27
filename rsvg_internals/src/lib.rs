@@ -49,7 +49,6 @@ pub use drawing_ctx::{
 pub use handle::{
     rsvg_handle_acquire_data,
     rsvg_handle_acquire_stream,
-    rsvg_handle_load_css,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
     rsvg_handle_rust_new,
@@ -85,6 +84,7 @@ pub use xml::{
     rsvg_xml_state_entity_lookup,
     rsvg_xml_state_error,
     rsvg_xml_state_free,
+    rsvg_xml_state_load_css_from_href,
     rsvg_xml_state_new,
     rsvg_xml_state_start_element,
     rsvg_xml_state_steal_result,

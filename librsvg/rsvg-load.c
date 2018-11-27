@@ -54,7 +54,8 @@ extern RsvgXmlState *rsvg_xml_state_new ();
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern void rsvg_xml_state_steal_result(RsvgXmlState *xml,
                                         RsvgTree **out_tree,
-                                        RsvgDefs **out_defs);
+                                        RsvgDefs **out_defs,
+                                        RsvgCssStyles **out_css_styles);
 extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
 extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
 extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
@@ -66,6 +67,11 @@ extern xmlEntityPtr rsvg_xml_state_entity_lookup(RsvgXmlState *xml,
 extern void rsvg_xml_state_entity_insert(RsvgXmlState *xml,
                                          const char *entity_name,
                                          xmlEntityPtr entity);
+
+extern void rsvg_xml_state_load_css_from_href(RsvgXmlState *xml,
+                                              RsvgHandle *handle,
+                                              const char *href);
+
 
 /* Holds the XML parsing state */
 typedef struct {
@@ -146,9 +152,10 @@ rsvg_load_free (RsvgLoad *load)
 void
 rsvg_load_steal_result (RsvgLoad *load,
                         RsvgTree **out_tree,
-                        RsvgDefs **out_defs)
+                        RsvgDefs **out_defs,
+                        RsvgCssStyles **out_css_styles)
 {
-    rsvg_xml_state_steal_result (load->xml.rust_state, out_tree, out_defs);
+    rsvg_xml_state_steal_result (load->xml.rust_state, out_tree, out_defs, out_css_styles);
 }
 
 static void
@@ -548,9 +555,9 @@ sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xm
                 && type && strcmp (type, "text/css") == 0
                 && href)
             {
-                rsvg_handle_load_css (load->handle,
-                                      rsvg_handle_get_css_styles(load->handle),
-                                      href);
+                rsvg_xml_state_load_css_from_href (load->xml.rust_state,
+                                                   load->handle,
+                                                   href);
             }
 
             rsvg_property_bag_free (atts);

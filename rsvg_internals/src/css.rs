@@ -29,7 +29,7 @@ pub struct CssStyles {
 }
 
 impl CssStyles {
-    fn new() -> CssStyles {
+    pub fn new() -> CssStyles {
         CssStyles {
             selectors_to_declarations: HashMap::new(),
         }

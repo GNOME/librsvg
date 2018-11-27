@@ -13,12 +13,11 @@ use libc;
 use url::Url;
 
 use allowed_url::AllowedUrl;
-use css::{self, CssStyles, RsvgCssStyles};
+use css::{self, CssStyles};
 use defs::{Defs, RsvgDefs};
 use error::{set_gerror, LoadingError, RsvgError};
 use io;
 use surface_utils::shared_surface::SharedImageSurface;
-use util::utf8_cstr;
 
 pub enum RsvgHandle {}
 
@@ -44,8 +43,6 @@ extern "C" {
         handle: *const RsvgHandle,
         href: *const libc::c_char,
     ) -> *const RsvgHandle;
-
-    fn rsvg_handle_get_css_styles(handle: *const RsvgHandle) -> *mut RsvgCssStyles;
 
     fn _rsvg_handle_acquire_stream(
         handle: *mut RsvgHandle,
@@ -88,14 +85,6 @@ pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
     let rhandle = get_rust_handle(handle);
 
     rhandle.base_url.borrow()
-}
-
-pub fn get_css_styles<'a>(handle: *const RsvgHandle) -> &'a CssStyles {
-    unsafe { &*(rsvg_handle_get_css_styles(handle) as *const CssStyles) }
-}
-
-pub fn get_css_styles_mut<'a>(handle: *const RsvgHandle) -> &'a mut CssStyles {
-    unsafe { &mut *(rsvg_handle_get_css_styles(handle) as *mut CssStyles) }
 }
 
 fn get_cancellable<'a>(handle: *const RsvgHandle) -> Option<Cancellable> {
@@ -194,6 +183,8 @@ pub fn load_xml_xinclude(handle: *mut RsvgHandle, href: &str) -> bool {
     unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, href.to_glib_none().0)) }
 }
 
+// This function just slurps CSS data from a possibly-relative href
+// and parses it.  We'll move it to a better place in the end.
 pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href: &str) {
     if let Ok(data) = acquire_data(handle, href) {
         let BinaryData {
@@ -221,24 +212,6 @@ pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href: &str)
         rsvg_log!("Could not load \"{}\" for CSS data", href);
         // FIXME: report errors from not being to acquire data; this should be a fatal error
     }
-}
-
-// This function just slurps CSS data from a possibly-relative href
-// and parses it.  We'll move it to a better place in the end.
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_load_css(
-    handle: *mut RsvgHandle,
-    css_styles: *mut RsvgCssStyles,
-    href: *const libc::c_char,
-) {
-    assert!(!handle.is_null());
-    assert!(!css_styles.is_null());
-    assert!(!href.is_null());
-
-    let css_styles = &mut *(css_styles as *mut CssStyles);
-
-    let href = utf8_cstr(href);
-    load_css(css_styles, handle, href);
 }
 
 #[no_mangle]

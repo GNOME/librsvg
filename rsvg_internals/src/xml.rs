@@ -11,7 +11,7 @@ use std::str;
 
 use attributes::Attribute;
 use create_node::create_node_and_register_id;
-use css;
+use css::{self, CssStyles, RsvgCssStyles};
 use defs::{Defs, RsvgDefs};
 use handle::{self, RsvgHandle};
 use node::{node_new, Node, NodeType};
@@ -96,6 +96,7 @@ extern "C" {
 struct XmlState {
     tree: Option<Box<Tree>>,
     defs: Option<Defs>,
+    css_styles: Option<CssStyles>,
     context: Context,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
@@ -120,6 +121,7 @@ impl XmlState {
         XmlState {
             tree: None,
             defs: Some(Defs::new()),
+            css_styles: Some(CssStyles::new()),
             context: Context::empty(),
             context_stack: Vec::new(),
             current_node: None,
@@ -135,8 +137,12 @@ impl XmlState {
         self.tree = Some(Box::new(Tree::new(root)));
     }
 
-    pub fn steal_result(&mut self) -> (Option<Box<Tree>>, Box<Defs>) {
-        (self.tree.take(), Box::new(self.defs.take().unwrap()))
+    pub fn steal_result(&mut self) -> (Option<Box<Tree>>, Box<Defs>, Box<CssStyles>) {
+        (
+            self.tree.take(),
+            Box::new(self.defs.take().unwrap()),
+            Box::new(self.css_styles.take().unwrap()),
+        )
     }
 
     fn push_context(&mut self, ctx: Context) {
@@ -258,17 +264,14 @@ impl XmlState {
         // here, not during element creation.
         if node.get_type() == NodeType::Svg {
             node.with_impl(|svg: &NodeSvg| {
-                let css_styles = handle::get_css_styles(handle);
-                svg.set_delayed_style(&node, css_styles);
+                svg.set_delayed_style(&node, self.css_styles.as_ref().unwrap());
             });
         }
 
         if node.get_type() == NodeType::Style {
             let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
 
-            let css_styles = handle::get_css_styles_mut(handle);
-
-            css::parse_into_css_styles(css_styles, handle, &css_data);
+            css::parse_into_css_styles(self.css_styles.as_mut().unwrap(), handle, &css_data);
         }
 
         self.current_node = node.get_parent();
@@ -319,8 +322,7 @@ impl XmlState {
         // The "svg" node is special; it will parse its style attributes
         // until the end, in standard_element_end().
         if new_node.get_type() != NodeType::Svg {
-            let css_styles = handle::get_css_styles(handle);
-            new_node.set_style(css_styles, pbag);
+            new_node.set_style(self.css_styles.as_ref().unwrap(), pbag);
         }
 
         new_node.set_overridden_properties();
@@ -517,20 +519,24 @@ pub unsafe extern "C" fn rsvg_xml_state_steal_result(
     xml: *mut RsvgXmlState,
     out_tree: *mut *mut RsvgTree,
     out_defs: *mut *mut RsvgDefs,
+    out_css_styles: *mut *mut RsvgCssStyles,
 ) {
     assert!(!xml.is_null());
     assert!(!out_tree.is_null());
     assert!(!out_defs.is_null());
+    assert!(!out_css_styles.is_null());
 
     let xml = &mut *(xml as *mut XmlState);
 
-    let (tree, defs) = xml.steal_result();
+    let (tree, defs, css_styles) = xml.steal_result();
 
     *out_tree = tree
         .map(|tree| Box::into_raw(tree) as *mut RsvgTree)
         .unwrap_or(ptr::null_mut());
 
     *out_defs = Box::into_raw(defs) as *mut RsvgDefs;
+
+    *out_css_styles = Box::into_raw(css_styles) as *mut RsvgCssStyles;
 }
 
 #[no_mangle]
@@ -628,4 +634,21 @@ pub unsafe extern "C" fn rsvg_xml_state_entity_insert(
     assert!(!entity.is_null());
 
     xml.entity_insert(entity_name, entity);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_xml_state_load_css_from_href(
+    xml: *mut RsvgXmlState,
+    handle: *mut RsvgHandle,
+    href: *const libc::c_char,
+) {
+    assert!(!xml.is_null());
+    let xml = &mut *(xml as *mut XmlState);
+
+    assert!(!handle.is_null());
+    assert!(!href.is_null());
+
+    let href: String = from_glib_none(href);
+
+    handle::load_css(xml.css_styles.as_mut().unwrap(), handle, &href);
 }
