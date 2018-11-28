@@ -1,4 +1,4 @@
-use std::error;
+use std::error::{self, Error};
 use std::fmt;
 
 use cairo;
@@ -105,7 +105,7 @@ impl From<cairo::Status> for RenderingError {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum LoadingError {
     // Could not parse data: URL
     BadDataUrl,
@@ -113,6 +113,30 @@ pub enum LoadingError {
     EmptyData,
     Glib(glib::Error),
     Unknown,
+}
+
+impl error::Error for LoadingError {
+    fn description(&self) -> &str {
+        match *self {
+            LoadingError::BadDataUrl => "invalid data: URL",
+            LoadingError::Cairo(_) => "cairo error",
+            LoadingError::EmptyData => "empty data",
+            LoadingError::Glib(ref e) => e.description(),
+            LoadingError::Unknown => "unknown error",
+        }
+    }
+}
+
+impl fmt::Display for LoadingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            LoadingError::Cairo(status) => write!(f, "cairo error: {:?}", status),
+            LoadingError::BadDataUrl
+            | LoadingError::EmptyData
+            | LoadingError::Glib(_)
+            | LoadingError::Unknown => write!(f, "{}", self.description()),
+        }
+    }
 }
 
 impl From<cairo::Status> for LoadingError {
