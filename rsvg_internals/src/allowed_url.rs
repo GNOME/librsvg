@@ -1,3 +1,5 @@
+use std::error::{self, Error};
+use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
 use url::{self, Url};
@@ -105,6 +107,30 @@ impl AllowedUrl {
 
     pub fn url(&self) -> &Url {
         &self.0
+    }
+}
+
+impl error::Error for AllowedUrlError {
+    fn description(&self) -> &str {
+        match *self {
+            AllowedUrlError::HrefParseError(_) => "href parse error",
+            AllowedUrlError::BaseRequired => "base required",
+            AllowedUrlError::DifferentURISchemes => "different URI schemes",
+            AllowedUrlError::DisallowedScheme => "disallowed scheme",
+            AllowedUrlError::NotSiblingOrChildOfBaseFile => "not sibling or child of base file",
+            AllowedUrlError::InvalidPath => "invalid path",
+            AllowedUrlError::BaseIsRoot => "base is root",
+            AllowedUrlError::CanonicalizationError => "canonicalization error",
+        }
+    }
+}
+
+impl fmt::Display for AllowedUrlError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            AllowedUrlError::HrefParseError(e) => write!(f, "{}: {}", self.description(), e),
+            _ => write!(f, "{}", self.description()),
+        }
     }
 }
 
