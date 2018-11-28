@@ -124,6 +124,25 @@ impl Reference {
             (_, _) => Err(ReferenceError::ParseError),
         }
     }
+
+    pub fn without_fragment(href: &str) -> Result<Reference, ReferenceError> {
+        use self::Reference::*;
+
+        match Reference::parse(href)? {
+            r @ PlainUri(_) => Ok(r),
+            FragmentId(_) | UriWithFragmentId(_, _) => Err(ReferenceError::FragmentForbidden),
+        }
+    }
+
+    pub fn with_fragment(href: &str) -> Result<Reference, ReferenceError> {
+        use self::Reference::*;
+
+        match Reference::parse(href)? {
+            PlainUri(_) => Err(ReferenceError::FragmentRequired),
+            r @ FragmentId(_) => Ok(r),
+            r @ UriWithFragmentId(_, _) => Ok(r),
+        }
+    }
 }
 
 #[no_mangle]
@@ -179,5 +198,41 @@ mod tests {
         assert_eq!(Reference::parse(""), Err(ReferenceError::ParseError));
         assert_eq!(Reference::parse("#"), Err(ReferenceError::ParseError));
         assert_eq!(Reference::parse("uri#"), Err(ReferenceError::ParseError));
+    }
+
+    #[test]
+    fn without_fragment() {
+        assert_eq!(
+            Reference::without_fragment("uri").unwrap(),
+            Reference::PlainUri("uri".to_string())
+        );
+
+        assert_eq!(
+            Reference::without_fragment("#foo"),
+            Err(ReferenceError::FragmentForbidden)
+        );
+
+        assert_eq!(
+            Reference::without_fragment("uri#foo"),
+            Err(ReferenceError::FragmentForbidden)
+        );
+    }
+
+    #[test]
+    fn with_fragment() {
+        assert_eq!(
+            Reference::with_fragment("#foo").unwrap(),
+            Reference::FragmentId("foo".to_string())
+        );
+
+        assert_eq!(
+            Reference::with_fragment("uri#foo").unwrap(),
+            Reference::UriWithFragmentId("uri".to_string(), "foo".to_string())
+        );
+
+        assert_eq!(
+            Reference::with_fragment("uri"),
+            Err(ReferenceError::FragmentRequired)
+        );
     }
 }
