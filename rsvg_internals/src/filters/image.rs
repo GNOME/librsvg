@@ -127,7 +127,7 @@ impl Image {
         };
 
         // FIXME: translate the error better here
-        let surface = handle::image_surface_new_from_href(self.handle.get() as *mut _, url)
+        let surface = handle::load_image_to_surface(self.handle.get() as *mut _, url)
             .map_err(|_| FilterError::InvalidInput)?;
 
         let output_surface = ImageSurface::create(

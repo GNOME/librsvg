@@ -109,7 +109,7 @@ fn keep_image_data(handle: *const RsvgHandle) -> bool {
     unsafe { from_glib(rsvg_handle_keep_image_data(handle)) }
 }
 
-pub fn image_surface_new_from_href(
+pub fn load_image_to_surface(
     handle: *mut RsvgHandle,
     href_str: &str,
 ) -> Result<ImageSurface, LoadingError> {
