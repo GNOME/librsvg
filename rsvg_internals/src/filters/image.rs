@@ -5,7 +5,7 @@ use cairo::{self, ImageSurface, MatrixTrait, PatternTrait};
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
-use defs::Reference;
+use defs::Href;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
 use handle::{self, RsvgHandle};
@@ -210,10 +210,8 @@ impl Filter for Image {
         let bounds_builder = self.base.get_bounds(ctx);
         let bounds = bounds_builder.into_irect(draw_ctx);
 
-        let output_surface = match Reference::parse(href).map_err(|_| FilterError::InvalidInput)? {
-            Reference::PlainUri(_) => {
-                self.render_external_image(ctx, draw_ctx, bounds_builder, href)?
-            }
+        let output_surface = match Href::parse(href).map_err(|_| FilterError::InvalidInput)? {
+            Href::PlainUri(_) => self.render_external_image(ctx, draw_ctx, bounds_builder, href)?,
             _ => self.render_node(ctx, draw_ctx, bounds, href)?,
         };
 
