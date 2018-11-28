@@ -91,9 +91,11 @@ pub struct BinaryData {
     pub content_type: Option<String>,
 }
 
-pub fn acquire_data(handle: *mut RsvgHandle, aurl: &AllowedUrl) -> Result<BinaryData, glib::Error> {
+pub fn acquire_data(
+    handle: *mut RsvgHandle,
+    aurl: &AllowedUrl,
+) -> Result<BinaryData, LoadingError> {
     io::acquire_data(aurl, get_cancellable(handle).as_ref())
-        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))
 }
 
 pub fn acquire_stream(
