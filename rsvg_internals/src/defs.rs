@@ -101,6 +101,12 @@ pub enum ReferenceError {
 }
 
 impl Reference {
+    /// Parses an href into a Reference, or returns an error
+    ///
+    /// An href can come from an `xlink:href` attribute in an SVG
+    /// element.  This function determines if the provided href is a
+    /// plain absolute or relative URL ("`foo.png`"), or one with a
+    /// fragment identifier ("`foo.svg#bar`").
     pub fn parse(href: &str) -> Result<Reference, ReferenceError> {
         let (uri, fragment) = match href.rfind('#') {
             None => (Some(href), None),
@@ -153,20 +159,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reference_kinds() {
-        assert_eq!(Reference::parse("uri"), Ok(Reference::PlainUri("uri".to_string())));
+    fn parse() {
         assert_eq!(
-            Reference::parse("#fragment"),
-            Ok(Reference::FragmentId("fragment".to_string()))
+            Reference::parse("uri").unwrap(),
+            Reference::PlainUri("uri".to_string())
         );
         assert_eq!(
-            Reference::parse("uri#fragment"),
-            Ok(Reference::UriWithFragmentId("uri".to_string(), "fragment".to_string()))
+            Reference::parse("#fragment").unwrap(),
+            Reference::FragmentId("fragment".to_string())
+        );
+        assert_eq!(
+            Reference::parse("uri#fragment").unwrap(),
+            Reference::UriWithFragmentId("uri".to_string(), "fragment".to_string())
         );
     }
 
     #[test]
-    fn reference_errors() {
+    fn parse_errors() {
         assert_eq!(Reference::parse(""), Err(ReferenceError::ParseError));
         assert_eq!(Reference::parse("#"), Err(ReferenceError::ParseError));
         assert_eq!(Reference::parse("uri#"), Err(ReferenceError::ParseError));
