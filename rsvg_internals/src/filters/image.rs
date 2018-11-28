@@ -114,10 +114,10 @@ impl Image {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx<'_>,
         bounds_builder: BoundsBuilder<'_>,
-        href: &str,
+        uri: &str,
     ) -> Result<ImageSurface, FilterError> {
         // FIXME: translate the error better here
-        let surface = handle::image_surface_new_from_href(self.handle.get() as *mut _, href)
+        let surface = handle::image_surface_new_from_href(self.handle.get() as *mut _, uri)
             .map_err(|_| FilterError::InvalidInput)?;
 
         let output_surface = ImageSurface::create(
@@ -204,15 +204,19 @@ impl Filter for Image {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterResult, FilterError> {
-        let href = self.href.borrow();
-        let href = href.as_ref().ok_or(FilterError::InvalidInput)?;
+        let href_str = self.href.borrow();
+        let href_str = href_str.as_ref().ok_or(FilterError::InvalidInput)?;
 
         let bounds_builder = self.base.get_bounds(ctx);
         let bounds = bounds_builder.into_irect(draw_ctx);
 
-        let output_surface = match Href::parse(href).map_err(|_| FilterError::InvalidInput)? {
-            Href::PlainUri(_) => self.render_external_image(ctx, draw_ctx, bounds_builder, href)?,
-            _ => self.render_node(ctx, draw_ctx, bounds, href)?,
+        let href = Href::parse(href_str).map_err(|_| FilterError::InvalidInput)?;
+
+        let output_surface = match href {
+            Href::PlainUri(ref uri) => {
+                self.render_external_image(ctx, draw_ctx, bounds_builder, uri)?
+            }
+            _ => self.render_node(ctx, draw_ctx, bounds, href_str)?,
         };
 
         Ok(FilterResult {
