@@ -82,8 +82,13 @@ pub enum Reference {
     UriWithFragmentId(String, String),
 }
 
+#[derive(Debug, PartialEq)]
+pub enum ReferenceError {
+    ParseError,
+}
+
 impl Reference {
-    pub fn parse(s: &str) -> Result<Reference, ()> {
+    pub fn parse(s: &str) -> Result<Reference, ReferenceError> {
         let (uri, fragment) = match s.rfind('#') {
             None => (Some(s), None),
             Some(p) if p == 0 => (None, Some(&s[1..])),
@@ -91,13 +96,13 @@ impl Reference {
         };
 
         match (uri, fragment) {
-            (None, Some(f)) if f.len() == 0 => Err(()),
+            (None, Some(f)) if f.len() == 0 => Err(ReferenceError::ParseError),
             (None, Some(f)) => Ok(Reference::FragmentId(f.to_string())),
-            (Some(u), _) if u.len() == 0 => Err(()),
+            (Some(u), _) if u.len() == 0 => Err(ReferenceError::ParseError),
             (Some(u), None) => Ok(Reference::PlainUri(u.to_string())),
-            (Some(_u), Some(f)) if f.len() == 0 => Err(()),
+            (Some(_u), Some(f)) if f.len() == 0 => Err(ReferenceError::ParseError),
             (Some(u), Some(f)) => Ok(Reference::UriWithFragmentId(u.to_string(), f.to_string())),
-            (_, _) => Err(()),
+            (_, _) => Err(ReferenceError::ParseError),
         }
     }
 }
@@ -149,8 +154,8 @@ mod tests {
 
     #[test]
     fn reference_errors() {
-        assert!(Reference::parse("").is_err());
-        assert!(Reference::parse("#").is_err());
-        assert!(Reference::parse("uri#").is_err());
+        assert_eq!(Reference::parse(""), Err(ReferenceError::ParseError));
+        assert_eq!(Reference::parse("#"), Err(ReferenceError::ParseError));
+        assert_eq!(Reference::parse("uri#"), Err(ReferenceError::ParseError));
     }
 }
