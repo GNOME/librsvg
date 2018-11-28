@@ -82,17 +82,30 @@ pub enum Reference {
     UriWithFragmentId(String, String),
 }
 
+/// Errors returned when creating a `Reference` out of an href
 #[derive(Debug, PartialEq)]
 pub enum ReferenceError {
+    /// The href is an invalid URI or has empty components.
     ParseError,
+
+    /// A fragment identifier ("`#foo`") is not allowed here
+    ///
+    /// For example, the SVG `<image>` element only allows referencing
+    /// resources without fragment identifiers like
+    /// `xlink:href="foo.png"`.
+    FragmentForbidden,
+
+    /// A fragment identifier ("`#foo`") was required but not found.  For example,
+    /// the SVG `<use>` element requires one, as in `<use xlink:href="foo.svg#bar">`.
+    FragmentRequired,
 }
 
 impl Reference {
-    pub fn parse(s: &str) -> Result<Reference, ReferenceError> {
-        let (uri, fragment) = match s.rfind('#') {
-            None => (Some(s), None),
-            Some(p) if p == 0 => (None, Some(&s[1..])),
-            Some(p) => (Some(&s[..p]), Some(&s[(p + 1)..])),
+    pub fn parse(href: &str) -> Result<Reference, ReferenceError> {
+        let (uri, fragment) = match href.rfind('#') {
+            None => (Some(href), None),
+            Some(p) if p == 0 => (None, Some(&href[1..])),
+            Some(p) => (Some(&href[..p]), Some(&href[(p + 1)..])),
         };
 
         match (uri, fragment) {
