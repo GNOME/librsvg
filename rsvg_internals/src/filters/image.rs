@@ -48,13 +48,15 @@ impl Image {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx<'_>,
         bounds: IRect,
-        href: &str,
+        href: &Href,
     ) -> Result<ImageSurface, FilterError> {
-        // TODO: Port more of this to Rust.
-        // Currently this is essentially a direct port of the C function.
-        let acquired_drawable = draw_ctx
-            .get_acquired_node(href)
-            .ok_or(FilterError::InvalidInput)?;
+        let url = match *href {
+            Href::FragmentId(ref f) => format!("#{}", f),
+            Href::UriWithFragmentId(ref u, ref f) => format!("{}#{}", u, f),
+            _ => unreachable!(),
+        };
+
+        let acquired_drawable = draw_ctx.get_acquired_node(&url).ok_or(FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
         let surface = ImageSurface::create(
@@ -114,10 +116,16 @@ impl Image {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx<'_>,
         bounds_builder: BoundsBuilder<'_>,
-        uri: &str,
+        href: &Href,
     ) -> Result<ImageSurface, FilterError> {
+        let url = if let Href::PlainUri(ref url) = *href {
+            url
+        } else {
+            unreachable!();
+        };
+
         // FIXME: translate the error better here
-        let surface = handle::image_surface_new_from_href(self.handle.get() as *mut _, uri)
+        let surface = handle::image_surface_new_from_href(self.handle.get() as *mut _, url)
             .map_err(|_| FilterError::InvalidInput)?;
 
         let output_surface = ImageSurface::create(
@@ -213,10 +221,10 @@ impl Filter for Image {
         let href = Href::parse(href_str).map_err(|_| FilterError::InvalidInput)?;
 
         let output_surface = match href {
-            Href::PlainUri(ref uri) => {
-                self.render_external_image(ctx, draw_ctx, bounds_builder, uri)?
+            Href::PlainUri(_) => {
+                self.render_external_image(ctx, draw_ctx, bounds_builder, &href)?
             }
-            _ => self.render_node(ctx, draw_ctx, bounds, href_str)?,
+            _ => self.render_node(ctx, draw_ctx, bounds, &href)?,
         };
 
         Ok(FilterResult {
