@@ -1,4 +1,5 @@
 use std::cell::{Ref, RefCell};
+use std::error::Error;
 use std::ptr;
 
 use cairo::{ImageSurface, Status};
@@ -291,8 +292,8 @@ pub unsafe extern "C" fn rsvg_handle_acquire_data(
 
     let aurl = match AllowedUrl::from_href(&href_str, rhandle.base_url.borrow().as_ref()) {
         Ok(a) => a,
-        Err(_) => {
-            set_gerror(error, 0, "URL is not allowed");
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
             return ptr::null_mut();
         }
     };
@@ -307,8 +308,8 @@ pub unsafe extern "C" fn rsvg_handle_acquire_data(
             io::binary_data_to_glib(&binary, ptr::null_mut(), out_len)
         }
 
-        Err(_) => {
-            set_gerror(error, 0, "Could not acquire data");
+        Err(e) => {
+            set_gerror(error, 0, e.description());
             *out_len = 0;
             ptr::null_mut()
         }
@@ -329,8 +330,8 @@ pub unsafe extern "C" fn rsvg_handle_acquire_stream(
 
     let aurl = match AllowedUrl::from_href(&href_str, rhandle.base_url.borrow().as_ref()) {
         Ok(a) => a,
-        Err(_) => {
-            set_gerror(error, 0, "URL is not allowed");
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
             return ptr::null_mut();
         }
     };
@@ -344,8 +345,8 @@ pub unsafe extern "C" fn rsvg_handle_acquire_stream(
             stream.to_glib_full()
         }
 
-        Err(_) => {
-            set_gerror(error, 0, "Could not acquire stream");
+        Err(e) => {
+            set_gerror(error, 0, e.description());
             ptr::null_mut()
         }
     }
