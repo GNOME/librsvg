@@ -20,9 +20,8 @@ use glib::{self, translate::*, Bytes as GBytes, Cast};
 use std::ptr;
 
 use allowed_url::AllowedUrl;
-use error::{set_gerror, LoadingError, RsvgError};
+use error::{LoadingError, RsvgError};
 use handle::BinaryData;
-use util::utf8_cstr;
 
 fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
     let data_url = data_url::DataUrl::process(uri).map_err(|_| LoadingError::BadDataUrl)?;
@@ -61,42 +60,6 @@ pub fn binary_data_to_glib(
         *out_size = binary_data.data.len();
 
         ToGlibContainerFromSlice::to_glib_full_from_slice(&binary_data.data) as *mut libc::c_char
-    }
-}
-
-#[no_mangle]
-pub fn rsvg_decode_data_uri(
-    uri: *const libc::c_char,
-    out_mime_type: *mut *mut libc::c_char,
-    out_size: *mut usize,
-    error: *mut *mut glib_sys::GError,
-) -> *mut libc::c_char {
-    unsafe {
-        assert!(!out_size.is_null());
-
-        let uri = utf8_cstr(uri);
-
-        match decode_data_uri(uri) {
-            Ok(binary_data) => {
-                if !error.is_null() {
-                    *error = ptr::null_mut();
-                }
-
-                binary_data_to_glib(&binary_data, out_mime_type, out_size)
-            }
-
-            Err(_) => {
-                if !out_mime_type.is_null() {
-                    *out_mime_type = ptr::null_mut();
-                }
-
-                *out_size = 0;
-
-                set_gerror(error, 0, "could not decode data: URL");
-
-                ptr::null_mut()
-            }
-        }
     }
 }
 

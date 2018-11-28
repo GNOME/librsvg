@@ -55,7 +55,7 @@ pub use handle::{
     rsvg_handle_rust_set_base_url,
 };
 
-pub use io::{rsvg_decode_data_uri, rsvg_get_input_stream_for_loading};
+pub use io::rsvg_get_input_stream_for_loading;
 
 pub use node::rsvg_node_unref;
 
