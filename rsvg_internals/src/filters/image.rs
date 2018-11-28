@@ -56,7 +56,9 @@ impl Image {
             _ => unreachable!(),
         };
 
-        let acquired_drawable = draw_ctx.get_acquired_node(&url).ok_or(FilterError::InvalidInput)?;
+        let acquired_drawable = draw_ctx
+            .get_acquired_node(&url)
+            .ok_or(FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
         let surface = ImageSurface::create(

@@ -90,13 +90,8 @@ pub struct BinaryData {
     pub content_type: Option<String>,
 }
 
-pub fn acquire_data(handle: *mut RsvgHandle, href: &str) -> Result<BinaryData, glib::Error> {
-    let rhandle = get_rust_handle(handle);
-
-    let aurl = AllowedUrl::from_href(href, rhandle.base_url.borrow().as_ref())
-        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))?;
-
-    io::acquire_data(&aurl, get_cancellable(handle).as_ref())
+pub fn acquire_data(handle: *mut RsvgHandle, aurl: &AllowedUrl) -> Result<BinaryData, glib::Error> {
+    io::acquire_data(aurl, get_cancellable(handle).as_ref())
         .map_err(|_| glib::Error::new(RsvgError, "FIXME"))
 }
 
@@ -116,9 +111,14 @@ fn keep_image_data(handle: *const RsvgHandle) -> bool {
 
 pub fn image_surface_new_from_href(
     handle: *mut RsvgHandle,
-    href: &str,
+    href_str: &str,
 ) -> Result<ImageSurface, LoadingError> {
-    let data = acquire_data(handle, href)?;
+    let rhandle = get_rust_handle(handle);
+
+    let aurl = AllowedUrl::from_href(href_str, rhandle.base_url.borrow().as_ref())
+        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))?;
+
+    let data = acquire_data(handle, &aurl)?;
 
     if data.data.len() == 0 {
         return Err(LoadingError::EmptyData);
@@ -173,21 +173,34 @@ pub fn image_surface_new_from_href(
 }
 
 // FIXME: distinguish between "file not found" and "invalid XML"
-pub fn load_xml_xinclude(handle: *mut RsvgHandle, href: &str) -> bool {
+pub fn load_xml_xinclude(handle: *mut RsvgHandle, aurl: &AllowedUrl) -> bool {
+    let href = aurl.url().as_str();
+
     unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, href.to_glib_none().0)) }
 }
 
 // This function just slurps CSS data from a possibly-relative href
 // and parses it.  We'll move it to a better place in the end.
-pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href: &str) {
-    if let Ok(data) = acquire_data(handle, href) {
+pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href_str: &str) {
+    let rhandle = get_rust_handle(handle);
+
+    let aurl = match AllowedUrl::from_href(href_str, rhandle.base_url.borrow().as_ref()) {
+        Ok(a) => a,
+        Err(_) => {
+            rsvg_log!("Could not load \"{}\" for CSS data", href_str);
+            // FIXME: report errors; this should be a fatal error
+            return;
+        }
+    };
+
+    if let Ok(data) = acquire_data(handle, &aurl) {
         let BinaryData {
             data: bytes,
             content_type,
         } = data;
 
         if content_type.as_ref().map(String::as_ref) != Some("text/css") {
-            rsvg_log!("\"{}\" is not of type text/css; ignoring", href);
+            rsvg_log!("\"{}\" is not of type text/css; ignoring", href_str);
             // FIXME: report errors
             return;
         }
@@ -197,13 +210,13 @@ pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href: &str)
         } else {
             rsvg_log!(
                 "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
-                href
+                href_str
             );
             // FIXME: report errors
             return;
         }
     } else {
-        rsvg_log!("Could not load \"{}\" for CSS data", href);
+        rsvg_log!("Could not load \"{}\" for CSS data", href_str);
         // FIXME: report errors from not being to acquire data; this should be a fatal error
     }
 }
@@ -267,16 +280,26 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_acquire_data(
     handle: *mut RsvgHandle,
-    href: *const libc::c_char,
+    href_str: *const libc::c_char,
     out_len: *mut usize,
     error: *mut *mut glib_sys::GError,
 ) -> *mut libc::c_char {
-    assert!(!href.is_null());
+    assert!(!href_str.is_null());
     assert!(!out_len.is_null());
 
-    let href: String = from_glib_none(href);
+    let href_str: String = from_glib_none(href_str);
 
-    match acquire_data(handle, &href) {
+    let rhandle = get_rust_handle(handle);
+
+    let aurl = match AllowedUrl::from_href(&href_str, rhandle.base_url.borrow().as_ref()) {
+        Ok(a) => a,
+        Err(_) => {
+            set_gerror(error, 0, "URL is not allowed");
+            return ptr::null_mut();
+        }
+    };
+
+    match acquire_data(handle, &aurl) {
         Ok(binary) => {
             if !error.is_null() {
                 *error = ptr::null_mut();

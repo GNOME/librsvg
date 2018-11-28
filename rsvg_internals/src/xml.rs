@@ -9,6 +9,7 @@ use std::ptr;
 use std::rc::Rc;
 use std::str;
 
+use allowed_url::AllowedUrl;
 use attributes::Attribute;
 use create_node::create_node_and_register_id;
 use css::{self, CssStyles, RsvgCssStyles};
@@ -417,15 +418,24 @@ impl XmlState {
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
         if let Some(href) = href {
+            let aurl = AllowedUrl::from_href(href, handle::get_base_url(handle).as_ref()).map_err(
+                |e| {
+                    // FIXME: should AlloweUrlError::HrefParseError be a fatal error,
+                    // not a resource error?
+                    rsvg_log!("could not acquire \"{}\": {}", href, e);
+                    AcquireError::ResourceError
+                },
+            )?;
+
             // https://www.w3.org/TR/xinclude/#include_element
             //
             // "When omitted, the value of "xml" is implied (even in
             // the absence of a default value declaration). Values
             // other than "xml" and "text" are a fatal error."
             match parse {
-                None | Some("xml") => self.acquire_xml(handle, href),
+                None | Some("xml") => self.acquire_xml(handle, &aurl),
 
-                Some("text") => self.acquire_text(handle, href, encoding),
+                Some("text") => self.acquire_text(handle, &aurl, encoding),
 
                 _ => Err(AcquireError::FatalError),
             }
@@ -442,18 +452,18 @@ impl XmlState {
     fn acquire_text(
         &mut self,
         handle: *mut RsvgHandle,
-        href: &str,
+        aurl: &AllowedUrl,
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
-        let binary = handle::acquire_data(handle, href).map_err(|e| {
-            rsvg_log!("could not acquire \"{}\": {}", href, e);
+        let binary = handle::acquire_data(handle, aurl).map_err(|e| {
+            rsvg_log!("could not acquire \"{}\": {}", aurl.url(), e);
             AcquireError::ResourceError
         })?;
 
         let encoding = encoding.unwrap_or("utf-8");
 
         let encoder = encoding_from_whatwg_label(encoding).ok_or_else(|| {
-            rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, href);
+            rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, aurl.url());
             AcquireError::FatalError
         })?;
 
@@ -462,7 +472,7 @@ impl XmlState {
             .map_err(|e| {
                 rsvg_log!(
                     "could not convert contents of \"{}\" from character encoding \"{}\": {}",
-                    href,
+                    aurl.url(),
                     encoding,
                     e
                 );
@@ -473,9 +483,9 @@ impl XmlState {
         Ok(())
     }
 
-    fn acquire_xml(&self, handle: *mut RsvgHandle, href: &str) -> Result<(), AcquireError> {
+    fn acquire_xml(&self, handle: *mut RsvgHandle, aurl: &AllowedUrl) -> Result<(), AcquireError> {
         // FIXME: distinguish between "file not found" and "invalid XML"
-        if handle::load_xml_xinclude(handle, href) {
+        if handle::load_xml_xinclude(handle, aurl) {
             Ok(())
         } else {
             Err(AcquireError::FatalError)
