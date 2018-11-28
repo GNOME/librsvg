@@ -101,9 +101,8 @@ pub fn acquire_data(
 pub fn acquire_stream(
     handle: *mut RsvgHandle,
     aurl: &AllowedUrl,
-) -> Result<InputStream, glib::Error> {
+) -> Result<InputStream, LoadingError> {
     io::acquire_stream(&aurl, get_cancellable(handle).as_ref())
-        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))
 }
 
 fn keep_image_data(handle: *const RsvgHandle) -> bool {
