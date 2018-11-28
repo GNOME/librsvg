@@ -95,12 +95,10 @@ pub fn acquire_data(handle: *mut RsvgHandle, aurl: &AllowedUrl) -> Result<Binary
         .map_err(|_| glib::Error::new(RsvgError, "FIXME"))
 }
 
-pub fn acquire_stream(handle: *mut RsvgHandle, href: &str) -> Result<InputStream, glib::Error> {
-    let rhandle = get_rust_handle(handle);
-
-    let aurl = AllowedUrl::from_href(href, rhandle.base_url.borrow().as_ref())
-        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))?;
-
+pub fn acquire_stream(
+    handle: *mut RsvgHandle,
+    aurl: &AllowedUrl,
+) -> Result<InputStream, glib::Error> {
     io::acquire_stream(&aurl, get_cancellable(handle).as_ref())
         .map_err(|_| glib::Error::new(RsvgError, "FIXME"))
 }
@@ -320,14 +318,24 @@ pub unsafe extern "C" fn rsvg_handle_acquire_data(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_acquire_stream(
     handle: *mut RsvgHandle,
-    href: *const libc::c_char,
+    href_str: *const libc::c_char,
     error: *mut *mut glib_sys::GError,
 ) -> *mut gio_sys::GInputStream {
-    assert!(!href.is_null());
+    assert!(!href_str.is_null());
 
-    let href: String = from_glib_none(href);
+    let href_str: String = from_glib_none(href_str);
 
-    match acquire_stream(handle, &href) {
+    let rhandle = get_rust_handle(handle);
+
+    let aurl = match AllowedUrl::from_href(&href_str, rhandle.base_url.borrow().as_ref()) {
+        Ok(a) => a,
+        Err(_) => {
+            set_gerror(error, 0, "URL is not allowed");
+            return ptr::null_mut();
+        }
+    };
+
+    match acquire_stream(handle, &aurl) {
         Ok(stream) => {
             if !error.is_null() {
                 *error = ptr::null_mut();
