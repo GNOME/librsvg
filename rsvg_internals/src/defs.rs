@@ -37,10 +37,10 @@ impl Defs {
         if let Ok(reference) = Reference::parse(name) {
             match reference {
                 Reference::PlainUri(_) => None,
-                Reference::FragmentId(fragment) => self.nodes.get(fragment),
+                Reference::FragmentId(fragment) => self.nodes.get(&fragment),
                 Reference::UriWithFragmentId(href, fragment) => {
-                    match self.get_extern_handle(handle, href) {
-                        Ok(extern_handle) => handle::get_defs(extern_handle).nodes.get(fragment),
+                    match self.get_extern_handle(handle, &href) {
+                        Ok(extern_handle) => handle::get_defs(extern_handle).nodes.get(&fragment),
                         Err(()) => None,
                     }
                 }
@@ -76,13 +76,13 @@ impl Defs {
 /// like `href="#foo"` as a reference to an SVG element in the same file as the one being
 /// processes.  This enum makes that distinction.
 #[derive(Debug, PartialEq)]
-pub enum Reference<'a> {
-    PlainUri(&'a str),
-    FragmentId(&'a str),
-    UriWithFragmentId(&'a str, &'a str),
+pub enum Reference {
+    PlainUri(String),
+    FragmentId(String),
+    UriWithFragmentId(String, String),
 }
 
-impl<'a> Reference<'a> {
+impl Reference {
     pub fn parse(s: &str) -> Result<Reference, ()> {
         let (uri, fragment) = match s.rfind('#') {
             None => (Some(s), None),
@@ -92,11 +92,11 @@ impl<'a> Reference<'a> {
 
         match (uri, fragment) {
             (None, Some(f)) if f.len() == 0 => Err(()),
-            (None, Some(f)) => Ok(Reference::FragmentId(f)),
+            (None, Some(f)) => Ok(Reference::FragmentId(f.to_string())),
             (Some(u), _) if u.len() == 0 => Err(()),
-            (Some(u), None) => Ok(Reference::PlainUri(u)),
+            (Some(u), None) => Ok(Reference::PlainUri(u.to_string())),
             (Some(_u), Some(f)) if f.len() == 0 => Err(()),
-            (Some(u), Some(f)) => Ok(Reference::UriWithFragmentId(u, f)),
+            (Some(u), Some(f)) => Ok(Reference::UriWithFragmentId(u.to_string(), f.to_string())),
             (_, _) => Err(()),
         }
     }
@@ -136,14 +136,14 @@ mod tests {
 
     #[test]
     fn reference_kinds() {
-        assert_eq!(Reference::parse("uri"), Ok(Reference::PlainUri("uri")));
+        assert_eq!(Reference::parse("uri"), Ok(Reference::PlainUri("uri".to_string())));
         assert_eq!(
             Reference::parse("#fragment"),
-            Ok(Reference::FragmentId("fragment"))
+            Ok(Reference::FragmentId("fragment".to_string()))
         );
         assert_eq!(
             Reference::parse("uri#fragment"),
-            Ok(Reference::UriWithFragmentId("uri", "fragment"))
+            Ok(Reference::UriWithFragmentId("uri".to_string(), "fragment".to_string()))
         );
     }
 
