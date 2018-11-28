@@ -33,20 +33,20 @@ impl Defs {
     /// This may return a node within the same RSVG handle, or a node in a secondary RSVG
     /// handle that is referenced by the current one.  If the element's id is not found,
     /// returns `None`.
-    pub fn lookup(&mut self, handle: *const RsvgHandle, name: &str) -> Option<&Rc<Node>> {
-        if let Ok(reference) = Reference::parse(name) {
-            match reference {
-                Reference::PlainUri(_) => None,
-                Reference::FragmentId(fragment) => self.nodes.get(&fragment),
-                Reference::UriWithFragmentId(href, fragment) => {
-                    match self.get_extern_handle(handle, &href) {
-                        Ok(extern_handle) => handle::get_defs(extern_handle).nodes.get(&fragment),
-                        Err(()) => None,
-                    }
+    pub fn lookup(
+        &mut self,
+        handle: *const RsvgHandle,
+        reference: &Reference,
+    ) -> Option<&Rc<Node>> {
+        match reference {
+            Reference::PlainUri(_) => None,
+            Reference::FragmentId(ref fragment) => self.nodes.get(fragment),
+            Reference::UriWithFragmentId(ref href, ref fragment) => {
+                match self.get_extern_handle(handle, href) {
+                    Ok(extern_handle) => handle::get_defs(extern_handle).nodes.get(fragment),
+                    Err(()) => None,
                 }
             }
-        } else {
-            None
         }
     }
 
@@ -167,7 +167,12 @@ pub extern "C" fn rsvg_defs_lookup(
     let defs = unsafe { &mut *(defs as *mut Defs) };
     let name = unsafe { utf8_cstr(name) };
 
-    match defs.lookup(handle, name) {
+    let r = Reference::parse(name);
+    if r.is_err() {
+        return ptr::null();
+    }
+
+    match defs.lookup(handle, &r.unwrap()) {
         Some(n) => n as *const RsvgNode,
         None => ptr::null(),
     }

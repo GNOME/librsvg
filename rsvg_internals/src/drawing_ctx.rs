@@ -13,7 +13,7 @@ use std::rc::{Rc, Weak};
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
-use defs::{Defs, RsvgDefs};
+use defs::{Defs, Reference, RsvgDefs};
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
@@ -292,7 +292,9 @@ impl<'a> DrawingCtx<'a> {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
-        if let Some(node) = self.defs.borrow_mut().lookup(self.handle, url) {
+        let reference = Reference::parse(url).ok()?;
+
+        if let Some(node) = self.defs.borrow_mut().lookup(self.handle, &reference) {
             if !self.acquired_nodes_contains(node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
