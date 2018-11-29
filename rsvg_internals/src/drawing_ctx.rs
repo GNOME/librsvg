@@ -294,7 +294,12 @@ impl<'a> DrawingCtx<'a> {
     pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
         let href = Href::parse(url).ok()?;
 
-        if let Some(node) = self.defs.borrow_mut().lookup(self.handle, &href) {
+        let fragment = match href {
+            Href::WithFragment(f) => f,
+            _ => return None,
+        };
+
+        if let Some(node) = self.defs.borrow_mut().lookup(self.handle, &fragment) {
             if !self.acquired_nodes_contains(node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());

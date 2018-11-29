@@ -28,26 +28,23 @@ impl Defs {
         self.nodes.entry(id.to_string()).or_insert(node.clone());
     }
 
-    /// Returns a node from an URI reference, or `None`
+    /// Returns a node referenced by a fragment ID
     ///
-    /// This may return a node within the same RSVG handle, or a node in a secondary RSVG
-    /// handle that is referenced by the current one.  If the element's id is not found,
-    /// returns `None`.
-    pub fn lookup(&mut self, handle: *const RsvgHandle, reference: &Href) -> Option<&Rc<Node>> {
-        match reference {
-            Href::PlainUri(_) => None,
-            Href::WithFragment(ref fragment) => {
-                if let Some(ref href) = fragment.uri() {
-                    match self.get_extern_handle(handle, href) {
-                        Ok(extern_handle) => handle::get_defs(extern_handle)
-                            .nodes
-                            .get(fragment.fragment()),
-                        Err(()) => None,
-                    }
-                } else {
-                    self.nodes.get(fragment.fragment())
-                }
+    /// If the `Fragment`'s URL is `None`, then the fragment ID refers
+    /// to the RSVG handle in question.  Otherwise, it will refer to
+    /// an externally-loaded SVG file that is referenced by the
+    /// current one.  If the element's id is not found, returns
+    /// `None`.
+    pub fn lookup(&mut self, handle: *const RsvgHandle, fragment: &Fragment) -> Option<&Rc<Node>> {
+        if let Some(ref href) = fragment.uri() {
+            match self.get_extern_handle(handle, href) {
+                Ok(extern_handle) => handle::get_defs(extern_handle)
+                    .nodes
+                    .get(fragment.fragment()),
+                Err(()) => None,
             }
+        } else {
+            self.nodes.get(fragment.fragment())
         }
     }
 
@@ -187,14 +184,18 @@ pub extern "C" fn rsvg_defs_lookup(
     let defs = unsafe { &mut *(defs as *mut Defs) };
     let name = unsafe { utf8_cstr(name) };
 
-    let r = Href::parse(name);
+    let r = Href::with_fragment(name);
     if r.is_err() {
         return ptr::null();
     }
 
-    match defs.lookup(handle, &r.unwrap()) {
-        Some(n) => n as *const RsvgNode,
-        None => ptr::null(),
+    match r.unwrap() {
+        Href::WithFragment(fragment) => match defs.lookup(handle, &fragment) {
+            Some(n) => n as *const RsvgNode,
+            None => ptr::null(),
+        },
+
+        _ => unreachable!(),
     }
 }
 
