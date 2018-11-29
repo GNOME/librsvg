@@ -105,6 +105,38 @@ impl From<cairo::Status> for RenderingError {
     }
 }
 
+/// Helper for converting `Result<O, E>` into `Result<O, NodeError>`
+///
+/// A `NodeError` requires an `Attribute` to which the error refers,
+/// plus the actual `ValueErrorKind` that describes the error.  However,
+/// parsing functions for attribute value types will want to return their
+/// own kind of error, instead of `ValueErrorKind`.  If that particular error
+/// type has an `impl From<FooError> for ValueErrorKind`, then this
+/// trait helps assign attribute values in `set_atts()` methods as follows:
+///
+/// ```ignore
+/// use error::AttributeResultExt;
+///
+/// // fn parse_foo(...) -> Result<Foo, FooError>
+///
+/// // It is assumed that there is an impl From<FooError> for ValueErrorKind
+///
+/// self.foo = parse_foo(value).attribute(Attribute::Foo)?;
+/// ```
+///
+/// The call to `.attribute(attr)` converts the `Result` from `parse_foo()` into a full
+/// `NodeError` with the provided `attr`.
+pub trait AttributeResultExt<O, E> {
+    fn attribute(self, attr: Attribute) -> Result<O, NodeError>;
+}
+
+impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O, E> for Result<O, E> {
+    fn attribute(self, attr: Attribute) -> Result<O, NodeError> {
+        self.map_err(|e| e.into())
+            .map_err(|e| NodeError::attribute_error(attr, e))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum LoadingError {
     // Could not parse data: URL
