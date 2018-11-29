@@ -1,0 +1,105 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR The librsvg authors
+# This file is distributed under the same license as the librsvg package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: librsvg 2.45.0\n"
+"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/librsvg/issues\n"
+"POT-Creation-Date: 2018-11-29 10:16+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: librsvg/rsvg-base.c:150
+#, c-format
+msgid "%s: assertion `%s' failed"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:307 librsvg/rsvg-handle.c:308
+msgid "Horizontal resolution"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:315 librsvg/rsvg-handle.c:316
+msgid "Vertical resolution"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:323 librsvg/rsvg-handle.c:324
+msgid "Base URI"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:330 librsvg/rsvg-handle.c:331
+msgid "Image width"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:336 librsvg/rsvg-handle.c:337
+msgid "Image height"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:342 librsvg/rsvg-handle.c:343
+msgid "em"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:348 librsvg/rsvg-handle.c:349
+msgid "ex"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:361
+msgid "Title"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:362
+msgid "SVG file title"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:374
+msgid "Description"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:375
+msgid "SVG file description"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:387
+msgid "Metadata"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:388
+msgid "SVG file metadata"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:504
+#, c-format
+msgid "Cannot obtain URI from '%s'"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:666
+msgid "SVG has no elements"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:671
+msgid "root element is not <svg>"
+msgstr ""
+
+#: librsvg/rsvg-handle.c:740
+msgid "no data passed to parser"
+msgstr ""
+
+#: librsvg/rsvg-load.c:267
+msgid "Error creating XML parser"
+msgstr ""
+
+#: librsvg/rsvg-load.c:577
+#, c-format
+msgid "Error domain %d code %d on line %d column %d of %s: %s"
+msgstr ""
+
+#: librsvg/rsvg-load.c:583
+msgid "Error parsing XML data"
+msgstr ""
