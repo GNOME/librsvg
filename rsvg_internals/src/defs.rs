@@ -7,6 +7,7 @@ use std::rc::Rc;
 use allowed_url::AllowedUrl;
 use handle::{self, RsvgHandle};
 use node::{Node, RsvgNode};
+use util::rsvg_g_warning;
 use util::utf8_cstr;
 
 pub enum RsvgDefs {}
@@ -190,10 +191,34 @@ pub extern "C" fn rsvg_defs_lookup(
     }
 
     match r.unwrap() {
-        Href::WithFragment(fragment) => match defs.lookup(handle, &fragment) {
-            Some(n) => n as *const RsvgNode,
-            None => ptr::null(),
-        },
+        Href::WithFragment(fragment) => {
+            if let Some(uri) = fragment.uri() {
+                // The public APIs to get geometries of individual elements, or to render
+                // them, should only allow referencing elements within the main handle's
+                // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
+                // Otherwise, a calling program could request "another-file#foo" and cause
+                // another-file to be loaded, even if it is not part of the set of
+                // resources that the main SVG actually references.  In the future we may
+                // relax this requirement to allow lookups within that set, but not to
+                // other random files.
+
+                let msg = format!(
+                    "the public API is not allowed to look up external references: {}#{}",
+                    uri,
+                    fragment.fragment()
+                );
+
+                rsvg_log!("{}", msg);
+
+                rsvg_g_warning(&msg);
+                return ptr::null();
+            }
+
+            match defs.lookup(handle, &fragment) {
+                Some(n) => n as *const RsvgNode,
+                None => ptr::null(),
+            }
+        }
 
         _ => unreachable!(),
     }

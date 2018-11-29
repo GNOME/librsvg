@@ -648,6 +648,37 @@ empty_write_close (void)
     g_object_unref (handle);
 }
 
+static void
+cannot_request_external_elements (void)
+{
+    if (g_test_subprocess ()) {
+        /* We want to test that using one of the _sub() functions will fail
+         * if the element's id is within an external file.  First, ensure
+         * that the main file and the external file actually exist.
+         */
+
+        char *filename = get_test_filename ("example.svg");
+
+        RsvgHandle *handle;
+        GError *error = NULL;
+        RsvgPositionData pos;
+
+        handle = rsvg_handle_new_from_file (filename, &error);
+        g_free (filename);
+
+        g_assert (handle != NULL);
+        g_assert (error == NULL);
+
+        g_assert (rsvg_handle_get_position_sub (handle, &pos, "dpi.svg#one") == FALSE);
+
+        g_object_unref (handle);
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    g_test_trap_assert_failed ();
+    g_test_trap_assert_stderr ("*WARNING*the public API is not allowed to look up external references*");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -681,6 +712,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
     g_test_add_func ("/api/no_write_before_close", no_write_before_close);
     g_test_add_func ("/api/empty_write_close", empty_write_close);
+    g_test_add_func ("/api/cannot_request_external_elements", cannot_request_external_elements);
 
     return g_test_run ();
 }
