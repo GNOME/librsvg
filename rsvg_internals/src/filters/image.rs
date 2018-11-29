@@ -8,10 +8,10 @@ use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use defs::{Fragment, Href};
 use drawing_ctx::DrawingCtx;
-use error::RenderingError;
+use error::{NodeError, RenderingError};
 use handle::{self, RsvgHandle};
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use parsers::parse;
+use parsers::{parse, ParseError};
 use property_bag::PropertyBag;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
@@ -23,7 +23,7 @@ use super::{Filter, FilterError, Primitive};
 pub struct Image {
     base: Primitive,
     aspect: Cell<AspectRatio>,
-    href: RefCell<Option<String>>,
+    href: RefCell<Option<Href>>,
 
     // Storing this here seems hack-ish... It's required by rsvg_cairo_surface_new_from_href(). The
     // <image> element calls it in set_atts() but I don't think it belongs there.
@@ -41,6 +41,15 @@ impl Image {
 
             handle: Cell::new(ptr::null()),
         }
+    }
+
+    fn set_href(&self, attr: Attribute, href_str: &str) -> NodeResult {
+        let href = Href::parse(href_str)
+            .map_err(|_| NodeError::parse_error(attr, ParseError::new("could not parse href")))?;
+
+        *self.href.borrow_mut() = Some(href);
+
+        Ok(())
     }
 
     /// Renders the filter if the source is an existing node.
@@ -192,9 +201,8 @@ impl NodeTrait for Image {
                 }
 
                 // "path" is used by some older Adobe Illustrator versions
-                Attribute::XlinkHref | Attribute::Path => {
-                    drop(self.href.replace(Some(value.to_string())))
-                }
+                Attribute::XlinkHref | Attribute::Path => self.set_href(attr, value)?,
+
                 _ => (),
             }
         }
@@ -212,28 +220,30 @@ impl Filter for Image {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx<'_>,
     ) -> Result<FilterResult, FilterError> {
-        let href_str = self.href.borrow();
-        let href_str = href_str.as_ref().ok_or(FilterError::InvalidInput)?;
-
         let bounds_builder = self.base.get_bounds(ctx);
         let bounds = bounds_builder.into_irect(draw_ctx);
 
-        let href = Href::parse(href_str).map_err(|_| FilterError::InvalidInput)?;
+        let href_borrow = self.href.borrow();
+        let href_opt = href_borrow.as_ref();
 
-        let output_surface = match href {
-            Href::PlainUri(_) => {
-                self.render_external_image(ctx, draw_ctx, bounds_builder, &href)?
-            }
-            Href::WithFragment(frag) => self.render_node(ctx, draw_ctx, bounds, &frag)?,
-        };
+        if let Some(href) = href_opt {
+            let output_surface = match *href {
+                Href::PlainUri(_) => {
+                    self.render_external_image(ctx, draw_ctx, bounds_builder, href)?
+                }
+                Href::WithFragment(ref frag) => self.render_node(ctx, draw_ctx, bounds, frag)?,
+            };
 
-        Ok(FilterResult {
-            name: self.base.result.borrow().clone(),
-            output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
-                bounds,
-            },
-        })
+            Ok(FilterResult {
+                name: self.base.result.borrow().clone(),
+                output: FilterOutput {
+                    surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
+                    bounds,
+                },
+            })
+        } else {
+            Err(FilterError::InvalidInput)
+        }
     }
 
     #[inline]
