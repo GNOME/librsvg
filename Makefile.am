@@ -1,4 +1,4 @@
-SUBDIRS = . gdk-pixbuf-loader tests tools doc win32
+SUBDIRS = . gdk-pixbuf-loader tests tools doc win32 po
 
 NULL =
 BUILT_SOURCES =
