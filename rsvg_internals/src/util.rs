@@ -3,6 +3,8 @@ use libc;
 use std::ffi::CStr;
 use std::str;
 
+use glib::translate::*;
+
 // In paint servers (patterns, gradients, etc.), we have an
 // Option<String> for fallback names.  This is a utility function to
 // clone one of those.
@@ -33,5 +35,15 @@ pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {
         high
     } else {
         val
+    }
+}
+
+extern "C" {
+    fn rsvg_g_warning_from_c(msg: *const libc::c_char);
+}
+
+pub fn rsvg_g_warning(msg: &str) {
+    unsafe {
+        rsvg_g_warning_from_c(msg.to_glib_none().0);
     }
 }
