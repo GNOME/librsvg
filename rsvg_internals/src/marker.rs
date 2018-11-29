@@ -6,6 +6,7 @@ use cssparser::{CowRcStr, Parser, Token};
 
 use aspect_ratio::*;
 use attributes::Attribute;
+use defs::Fragment;
 use drawing_ctx::DrawingCtx;
 use error::*;
 use float_eq_cairo::ApproxEqCairo;
@@ -634,14 +635,14 @@ enum MarkerType {
 
 fn emit_marker_by_name(
     draw_ctx: &mut DrawingCtx<'_>,
-    name: &str,
+    name: &Fragment,
     xpos: f64,
     ypos: f64,
     computed_angle: f64,
     line_width: f64,
     clipping: bool,
 ) -> Result<(), RenderingError> {
-    if let Some(acquired) = draw_ctx.get_acquired_href_of_type(Some(name), NodeType::Marker) {
+    if let Some(acquired) = draw_ctx.get_acquired_node_of_type(Some(name), NodeType::Marker) {
         let node = acquired.get();
 
         node.with_impl(|marker: &NodeMarker| {
@@ -721,15 +722,7 @@ pub fn render_markers_for_path_builder(
                 MarkerType::Middle => &values.marker_mid.0,
                 MarkerType::End => &values.marker_end.0,
             } {
-                emit_marker_by_name(
-                    draw_ctx,
-                    &marker,
-                    x,
-                    y,
-                    computed_angle,
-                    line_width,
-                    clipping,
-                )
+                emit_marker_by_name(draw_ctx, marker, x, y, computed_angle, line_width, clipping)
             } else {
                 Ok(())
             }

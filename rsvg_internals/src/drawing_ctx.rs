@@ -403,7 +403,7 @@ impl<'a> DrawingCtx<'a> {
             let affine = original_cr.get_matrix();
 
             let (acquired_clip, clip_units) = {
-                if let Some(acquired) = self.get_acquired_href_of_type(clip_uri, NodeType::ClipPath)
+                if let Some(acquired) = self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
                 {
                     let ClipPathUnits(units) = acquired
                         .get()
@@ -489,7 +489,7 @@ impl<'a> DrawingCtx<'a> {
 
                 if let Some(mask) = mask {
                     if let Some(acquired) =
-                        self.get_acquired_href_of_type(Some(mask), NodeType::Mask)
+                        self.get_acquired_node_of_type(Some(mask), NodeType::Mask)
                     {
                         let node = acquired.get();
 
@@ -524,14 +524,14 @@ impl<'a> DrawingCtx<'a> {
 
     fn run_filter(
         &mut self,
-        filter_uri: &str,
+        filter_uri: &Fragment,
         node: &RsvgNode,
         values: &ComputedValues,
         child_surface: &cairo::ImageSurface,
     ) -> Result<cairo::ImageSurface, RenderingError> {
         let output = self.surfaces_stack.pop().unwrap();
 
-        match self.get_acquired_href_of_type(Some(filter_uri), NodeType::Filter) {
+        match self.get_acquired_node_of_type(Some(filter_uri), NodeType::Filter) {
             Some(acquired) => {
                 let filter_node = acquired.get();
 

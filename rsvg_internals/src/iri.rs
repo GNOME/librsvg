@@ -1,5 +1,6 @@
 use cssparser::Parser;
 
+use defs::{Fragment, Href};
 use parsers::Parse;
 use parsers::ParseError;
 
@@ -12,7 +13,7 @@ use parsers::ParseError;
 #[derive(Debug, Clone, PartialEq)]
 pub enum IRI {
     None,
-    Resource(String),
+    Resource(Fragment),
 }
 
 impl Default for IRI {
@@ -23,10 +24,10 @@ impl Default for IRI {
 
 impl IRI {
     /// Returns the contents of an `IRI::Resource`, or `None`
-    pub fn get(&self) -> Option<&str> {
+    pub fn get(&self) -> Option<&Fragment> {
         match *self {
             IRI::None => None,
-            IRI::Resource(ref s) => Some(s.as_ref()),
+            IRI::Resource(ref f) => Some(f),
         }
     }
 }
@@ -47,7 +48,14 @@ impl Parse for IRI {
                 .expect_exhausted()
                 .map_err(|_| ParseError::new("expected url"))?;
 
-            Ok(IRI::Resource(url.as_ref().to_owned()))
+            let href =
+                Href::with_fragment(&url).map_err(|_| ParseError::new("could not parse href"))?;
+
+            if let Href::WithFragment(fragment) = href {
+                Ok(IRI::Resource(fragment))
+            } else {
+                Err(ParseError::new("href requires a fragment identifier"))
+            }
         }
     }
 }
@@ -64,28 +72,33 @@ mod tests {
     #[test]
     fn parses_url() {
         assert_eq!(
-            IRI::parse_str("url(foo)", ()),
-            Ok(IRI::Resource("foo".to_string()))
+            IRI::parse_str("url(#bar)", ()),
+            Ok(IRI::Resource(Fragment::new(None, "bar".to_string())))
+        );
+
+        assert_eq!(
+            IRI::parse_str("url(foo#bar)", ()),
+            Ok(IRI::Resource(Fragment::new(
+                Some("foo".to_string()),
+                "bar".to_string()
+            )))
         );
 
         // be permissive if the closing ) is missing
         assert_eq!(
-            IRI::parse_str("url(", ()),
-            Ok(IRI::Resource("".to_string()))
+            IRI::parse_str("url(#bar", ()),
+            Ok(IRI::Resource(Fragment::new(None, "bar".to_string())))
         );
         assert_eq!(
-            IRI::parse_str("url(foo", ()),
-            Ok(IRI::Resource("foo".to_string()))
+            IRI::parse_str("url(foo#bar", ()),
+            Ok(IRI::Resource(Fragment::new(
+                Some("foo".to_string()),
+                "bar".to_string()
+            )))
         );
 
         assert!(IRI::parse_str("", ()).is_err());
         assert!(IRI::parse_str("foo", ()).is_err());
         assert!(IRI::parse_str("url(foo)bar", ()).is_err());
-    }
-
-    #[test]
-    fn get() {
-        assert_eq!(IRI::None.get(), None);
-        assert_eq!(IRI::Resource(String::from("foo")).get(), Some("foo"));
     }
 }

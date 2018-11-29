@@ -1,6 +1,7 @@
 use libc;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::fmt;
 use std::ptr;
 use std::rc::Rc;
 
@@ -81,10 +82,13 @@ pub enum Href {
 }
 
 /// Optional URI, mandatory fragment id
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Fragment(Option<String>, String);
 
 impl Fragment {
+    // Outside of testing, we don't want code creating Fragments by hand;
+    // they should get them from Href.
+    #[cfg(test)]
     pub fn new(uri: Option<String>, fragment: String) -> Fragment {
         Fragment(uri, fragment)
     }
@@ -95,6 +99,17 @@ impl Fragment {
 
     pub fn fragment(&self) -> &str {
         &self.1
+    }
+}
+
+impl fmt::Display for Fragment {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}#{}",
+            self.0.as_ref().map(String::as_str).unwrap_or(""),
+            self.1
+        )
     }
 }
 
@@ -132,11 +147,11 @@ impl Href {
 
         match (uri, fragment) {
             (None, Some(f)) if f.len() == 0 => Err(HrefError::ParseError),
-            (None, Some(f)) => Ok(Href::WithFragment(Fragment::new(None, f.to_string()))),
+            (None, Some(f)) => Ok(Href::WithFragment(Fragment(None, f.to_string()))),
             (Some(u), _) if u.len() == 0 => Err(HrefError::ParseError),
             (Some(u), None) => Ok(Href::PlainUri(u.to_string())),
             (Some(_u), Some(f)) if f.len() == 0 => Err(HrefError::ParseError),
-            (Some(u), Some(f)) => Ok(Href::WithFragment(Fragment::new(
+            (Some(u), Some(f)) => Ok(Href::WithFragment(Fragment(
                 Some(u.to_string()),
                 f.to_string(),
             ))),
