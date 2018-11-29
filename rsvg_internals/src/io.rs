@@ -82,7 +82,7 @@ fn get_input_stream_for_loading(
 
     let buf = buffered.peek_buffer();
     assert!(buf.len() >= 2);
-    if buf[0] == GZ_MAGIC_0 && buf[1] == GZ_MAGIC_1 {
+    if buf[0..2] == [GZ_MAGIC_0, GZ_MAGIC_1] {
         let decomp = ZlibDecompressor::new(ZlibCompressorFormat::Gzip);
         let converter = ConverterInputStream::new(&buffered, &decomp);
         Ok(converter.upcast::<InputStream>())
