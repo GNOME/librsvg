@@ -36,14 +36,16 @@ impl Defs {
     pub fn lookup(&mut self, handle: *const RsvgHandle, reference: &Href) -> Option<&Rc<Node>> {
         match reference {
             Href::PlainUri(_) => None,
-            Href::WithFragment(ref opt_href, ref fragment) => {
-                if let Some(ref href) = *opt_href {
+            Href::WithFragment(ref fragment) => {
+                if let Some(ref href) = fragment.uri() {
                     match self.get_extern_handle(handle, href) {
-                        Ok(extern_handle) => handle::get_defs(extern_handle).nodes.get(fragment),
+                        Ok(extern_handle) => handle::get_defs(extern_handle)
+                            .nodes
+                            .get(fragment.fragment()),
                         Err(()) => None,
                     }
                 } else {
-                    self.nodes.get(fragment)
+                    self.nodes.get(fragment.fragment())
                 }
             }
         }
@@ -77,9 +79,25 @@ impl Defs {
 #[derive(Debug, PartialEq)]
 pub enum Href {
     PlainUri(String),
+    WithFragment(Fragment),
+}
 
-    /// Optional URI, mandatory fragment id
-    WithFragment(Option<String>, String),
+/// Optional URI, mandatory fragment id
+#[derive(Debug, PartialEq)]
+pub struct Fragment(Option<String>, String);
+
+impl Fragment {
+    pub fn new(uri: Option<String>, fragment: String) -> Fragment {
+        Fragment(uri, fragment)
+    }
+
+    pub fn uri(&self) -> Option<&str> {
+        self.0.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn fragment(&self) -> &str {
+        &self.1
+    }
 }
 
 /// Errors returned when creating an `Href` out of a string
@@ -116,11 +134,14 @@ impl Href {
 
         match (uri, fragment) {
             (None, Some(f)) if f.len() == 0 => Err(HrefError::ParseError),
-            (None, Some(f)) => Ok(Href::WithFragment(None, f.to_string())),
+            (None, Some(f)) => Ok(Href::WithFragment(Fragment::new(None, f.to_string()))),
             (Some(u), _) if u.len() == 0 => Err(HrefError::ParseError),
             (Some(u), None) => Ok(Href::PlainUri(u.to_string())),
             (Some(_u), Some(f)) if f.len() == 0 => Err(HrefError::ParseError),
-            (Some(u), Some(f)) => Ok(Href::WithFragment(Some(u.to_string()), f.to_string())),
+            (Some(u), Some(f)) => Ok(Href::WithFragment(Fragment::new(
+                Some(u.to_string()),
+                f.to_string(),
+            ))),
             (_, _) => Err(HrefError::ParseError),
         }
     }
@@ -130,7 +151,7 @@ impl Href {
 
         match Href::parse(href)? {
             r @ PlainUri(_) => Ok(r),
-            WithFragment(_, _) => Err(HrefError::FragmentForbidden),
+            WithFragment(_) => Err(HrefError::FragmentForbidden),
         }
     }
 
@@ -139,7 +160,7 @@ impl Href {
 
         match Href::parse(href)? {
             PlainUri(_) => Err(HrefError::FragmentRequired),
-            r @ WithFragment(_, _) => Ok(r),
+            r @ WithFragment(_) => Ok(r),
         }
     }
 }
@@ -189,11 +210,14 @@ mod tests {
         );
         assert_eq!(
             Href::parse("#fragment").unwrap(),
-            Href::WithFragment(None, "fragment".to_string())
+            Href::WithFragment(Fragment::new(None, "fragment".to_string()))
         );
         assert_eq!(
             Href::parse("uri#fragment").unwrap(),
-            Href::WithFragment(Some("uri".to_string()), "fragment".to_string())
+            Href::WithFragment(Fragment::new(
+                Some("uri".to_string()),
+                "fragment".to_string()
+            ))
         );
     }
 
@@ -226,12 +250,12 @@ mod tests {
     fn with_fragment() {
         assert_eq!(
             Href::with_fragment("#foo").unwrap(),
-            Href::WithFragment(None, "foo".to_string())
+            Href::WithFragment(Fragment::new(None, "foo".to_string()))
         );
 
         assert_eq!(
             Href::with_fragment("uri#foo").unwrap(),
-            Href::WithFragment(Some("uri".to_string()), "foo".to_string())
+            Href::WithFragment(Fragment::new(Some("uri".to_string()), "foo".to_string()))
         );
 
         assert_eq!(Href::with_fragment("uri"), Err(HrefError::FragmentRequired));
