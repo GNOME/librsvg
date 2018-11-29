@@ -9,8 +9,9 @@ use aspect_ratio::*;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
+use defs::Fragment;
 use drawing_ctx::{DrawingCtx, NodeStack};
-use error::RenderingError;
+use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
@@ -36,7 +37,7 @@ pub struct Pattern {
     pub vbox: Option<Option<ViewBox>>,
     pub preserve_aspect_ratio: Option<AspectRatio>,
     pub affine: Option<cairo::Matrix>,
-    pub fallback: Option<String>,
+    pub fallback: Option<Fragment>,
     pub x: Option<Length>,
     pub y: Option<Length>,
     pub width: Option<Length>,
@@ -204,7 +205,9 @@ impl NodeTrait for NodePattern {
                     p.affine = Some(parse("patternTransform", value, ())?)
                 }
 
-                Attribute::XlinkHref => p.fallback = Some(value.to_owned()),
+                Attribute::XlinkHref => {
+                    p.fallback = Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?);
+                }
 
                 Attribute::X => p.x = Some(parse("x", value, LengthDir::Horizontal)?),
 
@@ -249,10 +252,9 @@ impl PaintSource<Pattern> for NodePattern {
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
-            if let Some(acquired) = draw_ctx.get_acquired_href_of_type(
-                result.fallback.as_ref().map(String::as_ref),
-                NodeType::Pattern,
-            ) {
+            if let Some(acquired) =
+                draw_ctx.get_acquired_node_of_type(result.fallback.as_ref(), NodeType::Pattern)
+            {
                 let node = acquired.get();
 
                 if stack.contains(node) {

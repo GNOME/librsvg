@@ -6,8 +6,10 @@ use std::ptr;
 use std::rc::Rc;
 
 use allowed_url::AllowedUrl;
+use error::ValueErrorKind;
 use handle::{self, RsvgHandle};
 use node::{Node, RsvgNode};
+use parsers::ParseError;
 use util::rsvg_g_warning;
 use util::utf8_cstr;
 
@@ -139,6 +141,20 @@ pub enum HrefError {
     /// A fragment identifier ("`#foo`") was required but not found.  For example,
     /// the SVG `<use>` element requires one, as in `<use xlink:href="foo.svg#bar">`.
     FragmentRequired,
+}
+
+impl From<HrefError> for ValueErrorKind {
+    fn from(e: HrefError) -> ValueErrorKind {
+        match e {
+            HrefError::ParseError => ValueErrorKind::Parse(ParseError::new("url parse error")),
+            HrefError::FragmentForbidden => {
+                ValueErrorKind::Value("fragment identifier not allowed".to_string())
+            }
+            HrefError::FragmentRequired => {
+                ValueErrorKind::Value("fragment identifier required".to_string())
+            }
+        }
+    }
 }
 
 impl Href {
