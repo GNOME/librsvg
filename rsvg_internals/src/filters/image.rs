@@ -6,7 +6,7 @@ use cairo::{self, ImageSurface, MatrixTrait, PatternTrait};
 use allowed_url::AllowedUrl;
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
-use defs::Href;
+use defs::{Fragment, Href};
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
 use handle::{self, RsvgHandle};
@@ -49,15 +49,10 @@ impl Image {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx<'_>,
         bounds: IRect,
-        href: &Href,
+        fragment: &Fragment,
     ) -> Result<ImageSurface, FilterError> {
-        let url = match *href {
-            Href::WithFragment(ref f) => format!("{}#{}", f.uri().unwrap_or(""), f.fragment()),
-            _ => unreachable!(),
-        };
-
         let acquired_drawable = draw_ctx
-            .get_acquired_href(&url)
+            .get_acquired_node(fragment)
             .ok_or(FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
@@ -229,7 +224,7 @@ impl Filter for Image {
             Href::PlainUri(_) => {
                 self.render_external_image(ctx, draw_ctx, bounds_builder, &href)?
             }
-            Href::WithFragment(_) => self.render_node(ctx, draw_ctx, bounds, &href)?,
+            Href::WithFragment(frag) => self.render_node(ctx, draw_ctx, bounds, &frag)?,
         };
 
         Ok(FilterResult {
