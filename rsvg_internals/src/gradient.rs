@@ -6,6 +6,7 @@ use std::cell::RefCell;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
+use defs::Fragment;
 use drawing_ctx::{AcquiredNode, DrawingCtx};
 use error::*;
 use handle::RsvgHandle;
@@ -18,7 +19,6 @@ use rect::RectangleExt;
 use state::{ComputedValues, StopColor};
 use stop::*;
 use unitinterval::UnitInterval;
-use util::clone_fallback_name;
 
 #[derive(Copy, Clone)]
 pub struct ColorStop {
@@ -85,7 +85,7 @@ pub struct GradientCommon {
     pub units: Option<GradientUnits>,
     pub affine: Option<cairo::Matrix>,
     pub spread: Option<SpreadMethod>,
-    pub fallback: Option<String>,
+    pub fallback: Option<Fragment>,
     pub stops: Option<Vec<ColorStop>>,
 }
 
@@ -184,7 +184,7 @@ impl GradientCommon {
         fallback_to!(self.spread, fallback.spread);
         fallback_to!(self.stops, fallback.clone_stops());
 
-        self.fallback = clone_fallback_name(&fallback.fallback);
+        self.fallback = fallback.fallback.clone();
     }
 
     fn add_color_stop(&mut self, mut offset: f64, rgba: cssparser::RGBA, opacity: UnitInterval) {
@@ -430,8 +430,8 @@ impl Gradient {
     }
 }
 
-fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx<'_>, name: &str) -> Option<AcquiredNode> {
-    if let Some(acquired) = draw_ctx.get_acquired_href(name) {
+fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx<'_>, name: &Fragment) -> Option<AcquiredNode> {
+    if let Some(acquired) = draw_ctx.get_acquired_node(name) {
         let node_type = acquired.get().get_type();
 
         if node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient {
@@ -671,7 +671,10 @@ impl NodeTrait for NodeGradient {
                     g.common.spread = Some(parse("spreadMethod", value, ())?)
                 }
 
-                Attribute::XlinkHref => g.common.fallback = Some(value.to_owned()),
+                Attribute::XlinkHref => {
+                    g.common.fallback =
+                        Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
+                }
 
                 // Attributes specific to each gradient type.  The defaults mandated by the spec
                 // are in GradientVariant::resolve_from_defaults()

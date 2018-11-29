@@ -5,17 +5,6 @@ use std::str;
 
 use glib::translate::*;
 
-// In paint servers (patterns, gradients, etc.), we have an
-// Option<String> for fallback names.  This is a utility function to
-// clone one of those.
-pub fn clone_fallback_name(fallback: &Option<String>) -> Option<String> {
-    if let Some(ref fallback_name) = *fallback {
-        Some(fallback_name.clone())
-    } else {
-        None
-    }
-}
-
 /// Converts a `char *` which is known to be valid UTF-8 into a `&str`
 ///
 /// The usual `from_glib_none(s)` allocates an owned String.  The
