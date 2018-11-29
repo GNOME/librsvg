@@ -87,18 +87,24 @@ fedora test:
   stage: test
   variables:
     LIBRSVG_DEBUG: "yes"
+  before_script:
+    - dnf install -y gettext-devel
   <<: *test
 
 fedora:rawhide:
   image: $AMD64_FEDORA_RAWHIDE
   variables:
     LIBRSVG_DEBUG: "yes"
+  before_script:
+    - dnf install -y gettext-devel
   <<: *distro_test
 
 .opensuse:tumbleweed:
   image: $AMD64_OPENSUSE_TUMBLEWEED
   variables:
     LIBRSVG_DEBUG: "yes"
+  before_script:
+    - zypper install gettext-tools
   <<: *distro_test
 
 debian:testing:
@@ -107,6 +113,7 @@ debian:testing:
     LIBRSVG_DEBUG: "yes"
   before_script:
     - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
+    - apt-get install gettext libgettextpo-dev
   <<: *distro_test
 
 debian_i386:testing:
@@ -115,6 +122,7 @@ debian_i386:testing:
     LIBRSVG_DEBUG: "yes"
   before_script:
     - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
+    - apt-get install gettext libgettextpo-dev
   <<: *distro_test
 
 # STAGE 1 LINTS
