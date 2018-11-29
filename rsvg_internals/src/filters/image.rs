@@ -52,8 +52,8 @@ impl Image {
         href: &Href,
     ) -> Result<ImageSurface, FilterError> {
         let url = match *href {
-            Href::FragmentId(ref f) => format!("#{}", f),
-            Href::UriWithFragmentId(ref u, ref f) => format!("{}#{}", u, f),
+            Href::WithFragment(None, ref f) => format!("#{}", f),
+            Href::WithFragment(Some(ref u), ref f) => format!("{}#{}", u, f),
             _ => unreachable!(),
         };
 
@@ -230,7 +230,7 @@ impl Filter for Image {
             Href::PlainUri(_) => {
                 self.render_external_image(ctx, draw_ctx, bounds_builder, &href)?
             }
-            _ => self.render_node(ctx, draw_ctx, bounds, &href)?,
+            Href::WithFragment(_, _) => self.render_node(ctx, draw_ctx, bounds, &href)?,
         };
 
         Ok(FilterResult {
