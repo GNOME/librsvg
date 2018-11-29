@@ -2,6 +2,7 @@ use cairo;
 use cairo::{MatrixTrait, PatternTrait};
 use std::cell::{Cell, RefCell};
 
+use allowed_url::AllowedUrl;
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use bbox::BoundingBox;
@@ -68,12 +69,16 @@ impl NodeTrait for NodeImage {
                     self.aspect.set(parse("preserveAspectRatio", value, ())?)
                 }
 
+                // "path" is used by some older Adobe Illustrator versions
                 Attribute::XlinkHref | Attribute::Path => {
-                    // "path" is used by some older Adobe Illustrator versions
+                    // FIXME: use better errors here; these should be loading errors
+
+                    let aurl = AllowedUrl::from_href(value, handle::get_base_url(handle).as_ref())
+                        .map_err(|_| NodeError::value_error(attr, "invalid URL"))?;
 
                     *self.surface.borrow_mut() = Some(
                         // FIXME: translate the error better here
-                        handle::load_image_to_surface(handle as *mut _, value)
+                        handle::load_image_to_surface(handle as *mut _, &aurl)
                             .map_err(|_| NodeError::value_error(attr, "could not load image"))?,
                     );
                 }

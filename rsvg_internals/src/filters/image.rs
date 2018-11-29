@@ -3,6 +3,7 @@ use std::ptr;
 
 use cairo::{self, ImageSurface, MatrixTrait, PatternTrait};
 
+use allowed_url::AllowedUrl;
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use defs::Href;
@@ -126,8 +127,11 @@ impl Image {
             unreachable!();
         };
 
+        let aurl = AllowedUrl::from_href(url, handle::get_base_url(self.handle.get()).as_ref())
+            .map_err(|_| FilterError::InvalidInput)?;
+
         // FIXME: translate the error better here
-        let surface = handle::load_image_to_surface(self.handle.get() as *mut _, url)
+        let surface = handle::load_image_to_surface(self.handle.get() as *mut _, &aurl)
             .map_err(|_| FilterError::InvalidInput)?;
 
         let output_surface = ImageSurface::create(

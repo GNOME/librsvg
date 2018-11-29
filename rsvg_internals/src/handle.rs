@@ -7,7 +7,6 @@ use cairo_sys;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio::{Cancellable, File as GFile, InputStream};
 use gio_sys;
-use glib;
 use glib::translate::*;
 use glib_sys;
 use libc;
@@ -16,7 +15,7 @@ use url::Url;
 use allowed_url::AllowedUrl;
 use css::{self, CssStyles};
 use defs::{Defs, RsvgDefs};
-use error::{set_gerror, LoadingError, RsvgError};
+use error::{set_gerror, LoadingError};
 use io;
 use surface_utils::shared_surface::SharedImageSurface;
 
@@ -111,14 +110,9 @@ fn keep_image_data(handle: *const RsvgHandle) -> bool {
 
 pub fn load_image_to_surface(
     handle: *mut RsvgHandle,
-    href_str: &str,
+    aurl: &AllowedUrl,
 ) -> Result<ImageSurface, LoadingError> {
-    let rhandle = get_rust_handle(handle);
-
-    let aurl = AllowedUrl::from_href(href_str, rhandle.base_url.borrow().as_ref())
-        .map_err(|_| glib::Error::new(RsvgError, "FIXME"))?;
-
-    let data = acquire_data(handle, &aurl)?;
+    let data = acquire_data(handle, aurl)?;
 
     if data.data.len() == 0 {
         return Err(LoadingError::EmptyData);
