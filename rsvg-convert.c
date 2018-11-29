@@ -97,11 +97,11 @@ get_lookup_id_from_command_line (const char *lookup_id)
     if (lookup_id == NULL)
         export_lookup_id = NULL;
     else {
-        /* rsvg_handle_has_sub() and rsvg_defs_lookup() expect ids to have a
-         * '#' prepended to them, so they can lookup ids in externs like
-         * "subfile.svg#subid".  For the user's convenience, we include this
-         * '#' automatically; we only support specifying ids from the
-         * toplevel, and don't expect users to lookup things in externs.
+        /* rsvg_handle_has_sub() expects ids to have a '#' prepended to them, so
+         * it can lookup ids in externs like "subfile.svg#subid".  For the
+         * user's convenience, we include this '#' automatically; we only
+         * support specifying ids from the toplevel, and don't expect users to
+         * lookup things in externs.
          */
         export_lookup_id = g_strdup_printf ("#%s", lookup_id);
     }

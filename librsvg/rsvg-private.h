@@ -241,7 +241,7 @@ G_GNUC_INTERNAL
 void rsvg_defs_free (RsvgDefs *defs);
 
 /* Defined in rsvg_internals/src/defs.rs */
-/* for some reason this one's public... */
+G_GNUC_INTERNAL
 RsvgNode *rsvg_defs_lookup (const RsvgDefs * defs, RsvgHandle *handle, const char *name);
 
 G_GNUC_INTERNAL
