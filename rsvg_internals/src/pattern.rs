@@ -249,7 +249,7 @@ impl PaintSource<Pattern> for NodePattern {
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
-            if let Some(acquired) = draw_ctx.get_acquired_node_of_type(
+            if let Some(acquired) = draw_ctx.get_acquired_href_of_type(
                 result.fallback.as_ref().map(String::as_ref),
                 NodeType::Pattern,
             ) {

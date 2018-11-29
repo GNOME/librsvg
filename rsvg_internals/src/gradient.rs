@@ -431,7 +431,7 @@ impl Gradient {
 }
 
 fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx<'_>, name: &str) -> Option<AcquiredNode> {
-    if let Some(acquired) = draw_ctx.get_acquired_node(name) {
+    if let Some(acquired) = draw_ctx.get_acquired_href(name) {
         let node_type = acquired.get().get_type();
 
         if node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient {

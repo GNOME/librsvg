@@ -57,7 +57,7 @@ impl Image {
         };
 
         let acquired_drawable = draw_ctx
-            .get_acquired_node(&url)
+            .get_acquired_href(&url)
             .ok_or(FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 

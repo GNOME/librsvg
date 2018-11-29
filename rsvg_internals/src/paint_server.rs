@@ -120,7 +120,7 @@ pub fn set_source_paint_server(
         } => {
             had_paint_server = false;
 
-            if let Some(acquired) = draw_ctx.get_acquired_node(iri.as_str()) {
+            if let Some(acquired) = draw_ctx.get_acquired_href(iri.as_str()) {
                 let node = acquired.get();
 
                 if node.get_type() == NodeType::LinearGradient

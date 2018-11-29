@@ -13,7 +13,7 @@ use std::rc::{Rc, Weak};
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
-use defs::{Defs, Href, RsvgDefs};
+use defs::{Defs, Fragment, Href, RsvgDefs};
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
@@ -282,6 +282,38 @@ impl<'a> DrawingCtx<'a> {
         &self.bbox
     }
 
+    // This function will go away once all callers are converted to call
+    // get_acquired_node() with an actual Fragment.
+    pub fn get_acquired_href(&mut self, url: &str) -> Option<AcquiredNode> {
+        let href = Href::parse(url).ok()?;
+
+        let fragment = match href {
+            Href::WithFragment(f) => f,
+            _ => return None,
+        };
+
+        self.get_acquired_node(&fragment)
+    }
+
+    // This function will go away once all callers are converted to call
+    // get_acquired_node_of_type() with an actual Fragment.
+    pub fn get_acquired_href_of_type(
+        &mut self,
+        url: Option<&str>,
+        node_type: NodeType,
+    ) -> Option<AcquiredNode> {
+        url.and_then(|url| {
+            let href = Href::parse(url).ok()?;
+
+            let fragment = match href {
+                Href::WithFragment(f) => f,
+                _ => return None,
+            };
+
+            self.get_acquired_node_of_type(Some(&fragment), node_type)
+        })
+    }
+
     // Use this function when looking up urls to other nodes. This function
     // does proper recursion checking and thereby avoids infinite loops.
     //
@@ -291,15 +323,8 @@ impl<'a> DrawingCtx<'a> {
     // Note that if you acquire a node, you have to release it before trying to
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
-    pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
-        let href = Href::parse(url).ok()?;
-
-        let fragment = match href {
-            Href::WithFragment(f) => f,
-            _ => return None,
-        };
-
-        if let Some(node) = self.defs.borrow_mut().lookup(self.handle, &fragment) {
+    pub fn get_acquired_node(&mut self, fragment: &Fragment) -> Option<AcquiredNode> {
+        if let Some(node) = self.defs.borrow_mut().lookup(self.handle, fragment) {
             if !self.acquired_nodes_contains(node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
@@ -334,10 +359,11 @@ impl<'a> DrawingCtx<'a> {
     // FIXME: return a Result<AcquiredNode, RenderingError::InvalidReference>
     pub fn get_acquired_node_of_type(
         &mut self,
-        url: Option<&str>,
+        fragment: Option<&Fragment>,
         node_type: NodeType,
     ) -> Option<AcquiredNode> {
-        url.and_then(move |url| self.get_acquired_node(url))
+        fragment
+            .and_then(move |fragment| self.get_acquired_node(fragment))
             .and_then(|acquired| {
                 if acquired.get().get_type() == node_type {
                     Some(acquired)
@@ -377,7 +403,7 @@ impl<'a> DrawingCtx<'a> {
             let affine = original_cr.get_matrix();
 
             let (acquired_clip, clip_units) = {
-                if let Some(acquired) = self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
+                if let Some(acquired) = self.get_acquired_href_of_type(clip_uri, NodeType::ClipPath)
                 {
                     let ClipPathUnits(units) = acquired
                         .get()
@@ -463,7 +489,7 @@ impl<'a> DrawingCtx<'a> {
 
                 if let Some(mask) = mask {
                     if let Some(acquired) =
-                        self.get_acquired_node_of_type(Some(mask), NodeType::Mask)
+                        self.get_acquired_href_of_type(Some(mask), NodeType::Mask)
                     {
                         let node = acquired.get();
 
@@ -505,7 +531,7 @@ impl<'a> DrawingCtx<'a> {
     ) -> Result<cairo::ImageSurface, RenderingError> {
         let output = self.surfaces_stack.pop().unwrap();
 
-        match self.get_acquired_node_of_type(Some(filter_uri), NodeType::Filter) {
+        match self.get_acquired_href_of_type(Some(filter_uri), NodeType::Filter) {
             Some(acquired) => {
                 let filter_node = acquired.get();
 

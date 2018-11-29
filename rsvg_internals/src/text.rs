@@ -253,7 +253,7 @@ impl NodeTRef {
 
         let url = l.as_ref().unwrap();
 
-        let done = if let Some(acquired) = draw_ctx.get_acquired_node(url) {
+        let done = if let Some(acquired) = draw_ctx.get_acquired_href(url) {
             let c = acquired.get();
             measure_children(&c, cascaded, draw_ctx, length, true)
         } else {
@@ -285,7 +285,7 @@ impl NodeTRef {
 
         let url = l.as_ref().unwrap();
 
-        if let Some(acquired) = draw_ctx.get_acquired_node(url) {
+        if let Some(acquired) = draw_ctx.get_acquired_href(url) {
             let c = acquired.get();
             render_children(&c, cascaded, draw_ctx, x, y, true, clipping)?;
         } else {

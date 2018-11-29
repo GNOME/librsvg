@@ -641,7 +641,7 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) -> Result<(), RenderingError> {
-    if let Some(acquired) = draw_ctx.get_acquired_node_of_type(Some(name), NodeType::Marker) {
+    if let Some(acquired) = draw_ctx.get_acquired_href_of_type(Some(name), NodeType::Marker) {
         let node = acquired.get();
 
         node.with_impl(|marker: &NodeMarker| {
