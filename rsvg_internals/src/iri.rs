@@ -3,6 +3,12 @@ use cssparser::Parser;
 use parsers::Parse;
 use parsers::ParseError;
 
+/// Used where style properties take a funciri or "none"
+///
+/// This is not to be used for values which don't come from properties.
+/// For example, the `xlink:href` attribute in the `<image>` element
+/// does not take a funciri value (which looks like `url(...)`), but rather
+/// it takes a plain URL.  Use the `Href` type in that case.
 #[derive(Debug, Clone, PartialEq)]
 pub enum IRI {
     None,
