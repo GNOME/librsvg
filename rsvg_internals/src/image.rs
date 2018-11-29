@@ -6,6 +6,7 @@ use allowed_url::AllowedUrl;
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use bbox::BoundingBox;
+use defs::Href;
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
@@ -73,7 +74,15 @@ impl NodeTrait for NodeImage {
                 Attribute::XlinkHref | Attribute::Path => {
                     // FIXME: use better errors here; these should be loading errors
 
-                    let aurl = AllowedUrl::from_href(value, handle::get_base_url(handle).as_ref())
+                    let href = Href::without_fragment(value)
+                        .map_err(|_| NodeError::value_error(attr, "fragment not allowed here"))?;
+
+                    let url = match href {
+                        Href::PlainUri(u) => u,
+                        _ => unreachable!(),
+                    };
+
+                    let aurl = AllowedUrl::from_href(&url, handle::get_base_url(handle).as_ref())
                         .map_err(|_| NodeError::value_error(attr, "invalid URL"))?;
 
                     *self.surface.borrow_mut() = Some(
