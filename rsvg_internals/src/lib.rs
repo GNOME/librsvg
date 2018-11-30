@@ -42,7 +42,7 @@ pub use drawing_ctx::{
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack,
     rsvg_drawing_ctx_draw_node_from_stack,
     rsvg_drawing_ctx_free,
-    rsvg_drawing_ctx_get_ink_rect,
+    rsvg_drawing_ctx_get_geometry,
     rsvg_drawing_ctx_new,
 };
 

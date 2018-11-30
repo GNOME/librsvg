@@ -223,7 +223,7 @@ gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgTree *t
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
-gboolean rsvg_drawing_ctx_get_ink_rect (RsvgDrawingCtx *ctx, cairo_rectangle_t *ink_rect);
+void rsvg_drawing_ctx_get_geometry (RsvgDrawingCtx *ctx, RsvgRectangle *ink_rect, RsvgRectangle *logical_rect);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
