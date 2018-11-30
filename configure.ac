@@ -37,6 +37,16 @@ AC_SUBST([LIBRSVG_MINOR_VERSION],[rsvg_minor_version])
 AC_SUBST([LIBRSVG_MICRO_VERSION],[rsvg_micro_version])
 
 dnl ===========================================================================
+dnl Gettext stuff
+dnl ===========================================================================
+
+AM_GNU_GETTEXT_VERSION([0.19.8])
+AM_GNU_GETTEXT([external])
+
+AC_SUBST([GETTEXT_PACKAGE], [librsvg])
+AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], "$GETTEXT_PACKAGE", [Define to the gettext package name.])
+
+dnl ===========================================================================
 dnl Please update COMPILING.md with version numbers if these change
 CAIRO_REQUIRED=1.15.12
 CROCO_REQUIRED=0.6.1
@@ -373,6 +383,7 @@ win32/vs12/Makefile
 win32/vs12/rsvg-version-paths.props
 win32/vs14/Makefile
 win32/vs15/Makefile
+po/Makefile.in
 ])
 
 AC_CONFIG_FILES([librsvg-${RSVG_API_VERSION}.pc:librsvg.pc.in],[],[RSVG_API_VERSION=$RSVG_API_VERSION])
