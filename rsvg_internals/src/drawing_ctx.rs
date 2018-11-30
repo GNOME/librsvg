@@ -13,7 +13,7 @@ use std::rc::{Rc, Weak};
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
-use defs::{Defs, Fragment, Href, RsvgDefs};
+use defs::{Defs, Fragment, RsvgDefs};
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
@@ -280,38 +280,6 @@ impl<'a> DrawingCtx<'a> {
 
     pub fn get_bbox(&self) -> &BoundingBox {
         &self.bbox
-    }
-
-    // This function will go away once all callers are converted to call
-    // get_acquired_node() with an actual Fragment.
-    pub fn get_acquired_href(&mut self, url: &str) -> Option<AcquiredNode> {
-        let href = Href::parse(url).ok()?;
-
-        let fragment = match href {
-            Href::WithFragment(f) => f,
-            _ => return None,
-        };
-
-        self.get_acquired_node(&fragment)
-    }
-
-    // This function will go away once all callers are converted to call
-    // get_acquired_node_of_type() with an actual Fragment.
-    pub fn get_acquired_href_of_type(
-        &mut self,
-        url: Option<&str>,
-        node_type: NodeType,
-    ) -> Option<AcquiredNode> {
-        url.and_then(|url| {
-            let href = Href::parse(url).ok()?;
-
-            let fragment = match href {
-                Href::WithFragment(f) => f,
-                _ => return None,
-            };
-
-            self.get_acquired_node_of_type(Some(&fragment), node_type)
-        })
     }
 
     // Use this function when looking up urls to other nodes. This function
