@@ -1,6 +1,7 @@
 use cssparser::{self, Parser};
 
 use bbox::BoundingBox;
+use defs::Fragment;
 use drawing_ctx::DrawingCtx;
 use error::*;
 use gradient::NodeGradient;
@@ -14,7 +15,7 @@ use unitinterval::UnitInterval;
 pub enum PaintServer {
     None,
     Iri {
-        iri: String,
+        iri: Fragment,
         alternate: Option<cssparser::Color>,
     },
     SolidColor(cssparser::Color),
@@ -39,7 +40,7 @@ impl Parse for PaintServer {
             };
 
             Ok(PaintServer::Iri {
-                iri: String::from(url.as_ref()),
+                iri: Fragment::parse(&url)?,
                 alternate,
             })
         } else {
@@ -120,7 +121,7 @@ pub fn set_source_paint_server(
         } => {
             had_paint_server = false;
 
-            if let Some(acquired) = draw_ctx.get_acquired_href(iri.as_str()) {
+            if let Some(acquired) = draw_ctx.get_acquired_node(iri) {
                 let node = acquired.get();
 
                 if node.get_type() == NodeType::LinearGradient
@@ -201,15 +202,15 @@ mod tests {
         assert_eq!(
             PaintServer::parse_str("url(#link)", ()),
             Ok(PaintServer::Iri {
-                iri: "#link".to_string(),
+                iri: Fragment::new(None, "link".to_string()),
                 alternate: None,
             },)
         );
 
         assert_eq!(
-            PaintServer::parse_str("url(#link) none", ()),
+            PaintServer::parse_str("url(foo#link) none", ()),
             Ok(PaintServer::Iri {
-                iri: "#link".to_string(),
+                iri: Fragment::new(Some("foo".to_string()), "link".to_string()),
                 alternate: None,
             },)
         );
@@ -217,7 +218,7 @@ mod tests {
         assert_eq!(
             PaintServer::parse_str("url(#link) #ff8040", ()),
             Ok(PaintServer::Iri {
-                iri: "#link".to_string(),
+                iri: Fragment::new(None, "link".to_string()),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
                     255, 128, 64, 255
                 ))),
@@ -227,7 +228,7 @@ mod tests {
         assert_eq!(
             PaintServer::parse_str("url(#link) rgb(255, 128, 64, 0.5)", ()),
             Ok(PaintServer::Iri {
-                iri: "#link".to_string(),
+                iri: Fragment::new(None, "link".to_string()),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
                     255, 128, 64, 128
                 ))),
@@ -237,7 +238,7 @@ mod tests {
         assert_eq!(
             PaintServer::parse_str("url(#link) currentColor", ()),
             Ok(PaintServer::Iri {
-                iri: "#link".to_string(),
+                iri: Fragment::new(None, "link".to_string()),
                 alternate: Some(cssparser::Color::CurrentColor),
             },)
         );
