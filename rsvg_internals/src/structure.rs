@@ -7,8 +7,9 @@ use glib_sys;
 use aspect_ratio::*;
 use attributes::Attribute;
 use css::CssStyles;
+use defs::Fragment;
 use drawing_ctx::DrawingCtx;
-use error::RenderingError;
+use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
@@ -227,7 +228,7 @@ impl NodeTrait for NodeSvg {
 }
 
 pub struct NodeUse {
-    link: RefCell<Option<String>>,
+    link: RefCell<Option<Fragment>>,
     x: Cell<Length>,
     y: Cell<Length>,
     w: Cell<Option<Length>>,
@@ -250,7 +251,10 @@ impl NodeTrait for NodeUse {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
+                Attribute::XlinkHref => {
+                    *self.link.borrow_mut() =
+                        Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
+                }
 
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
@@ -296,9 +300,9 @@ impl NodeTrait for NodeUse {
             return Ok(());
         }
 
-        let uri = link.as_ref().unwrap();
+        let link = link.as_ref().unwrap();
 
-        let child = if let Some(acquired) = draw_ctx.get_acquired_href(uri) {
+        let child = if let Some(acquired) = draw_ctx.get_acquired_node(link) {
             // Here we clone the acquired child, so that we can drop the AcquiredNode as
             // early as possible.  This is so that the child's drawing method will be able
             // to re-acquire the child for other purposes.
@@ -307,7 +311,7 @@ impl NodeTrait for NodeUse {
             rsvg_log!(
                 "element {} references nonexistent \"{}\"",
                 node.get_human_readable_name(),
-                uri,
+                link,
             );
             return Ok(());
         };
