@@ -2,8 +2,9 @@ use pango::{self, ContextExt, LayoutExt};
 use std::cell::{Cell, RefCell};
 
 use attributes::Attribute;
+use defs::Fragment;
 use drawing_ctx::DrawingCtx;
-use error::RenderingError;
+use error::{AttributeResultExt, RenderingError};
 use font_props::FontWeightSpec;
 use handle::RsvgHandle;
 use length::*;
@@ -228,7 +229,7 @@ impl NodeTrait for NodeText {
 }
 
 pub struct NodeTRef {
-    link: RefCell<Option<String>>,
+    link: RefCell<Option<Fragment>>,
 }
 
 impl NodeTRef {
@@ -245,22 +246,22 @@ impl NodeTRef {
         draw_ctx: &mut DrawingCtx<'_>,
         length: &mut f64,
     ) -> bool {
-        let l = self.link.borrow();
+        let link = self.link.borrow();
 
-        if l.is_none() {
+        if link.is_none() {
             return false;
         }
 
-        let url = l.as_ref().unwrap();
+        let link = link.as_ref().unwrap();
 
-        let done = if let Some(acquired) = draw_ctx.get_acquired_href(url) {
+        let done = if let Some(acquired) = draw_ctx.get_acquired_node(link) {
             let c = acquired.get();
             measure_children(&c, cascaded, draw_ctx, length, true)
         } else {
             rsvg_log!(
                 "element {} references a nonexistent text source \"{}\"",
                 node.get_human_readable_name(),
-                url,
+                link,
             );
             false
         };
@@ -277,22 +278,22 @@ impl NodeTRef {
         y: &mut f64,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let l = self.link.borrow();
+        let link = self.link.borrow();
 
-        if l.is_none() {
+        if link.is_none() {
             return Ok(());
         }
 
-        let url = l.as_ref().unwrap();
+        let link = link.as_ref().unwrap();
 
-        if let Some(acquired) = draw_ctx.get_acquired_href(url) {
+        if let Some(acquired) = draw_ctx.get_acquired_node(link) {
             let c = acquired.get();
             render_children(&c, cascaded, draw_ctx, x, y, true, clipping)?;
         } else {
             rsvg_log!(
                 "element {} references a nonexistent text source \"{}\"",
                 node.get_human_readable_name(),
-                url,
+                link,
             );
         }
 
@@ -304,7 +305,10 @@ impl NodeTrait for NodeTRef {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
+                Attribute::XlinkHref => {
+                    *self.link.borrow_mut() =
+                        Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
+                }
                 _ => (),
             }
         }
