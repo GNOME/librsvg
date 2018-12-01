@@ -345,7 +345,7 @@ impl Filter for Turbulence {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);
 

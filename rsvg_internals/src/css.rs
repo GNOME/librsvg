@@ -14,8 +14,6 @@ use handle::{self, RsvgHandle};
 use state::State;
 use util::utf8_cstr;
 
-pub enum RsvgCssStyles {}
-
 struct Declaration {
     prop_value: String,
     important: bool,
@@ -223,16 +221,4 @@ unsafe extern "C" fn css_error(_a_this: *mut CRDocHandler) {
 
 unsafe extern "C" fn css_unrecoverable_error(_a_this: *mut CRDocHandler) {
     println!("CSS unrecoverable error");
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_css_styles_new() -> *mut RsvgCssStyles {
-    Box::into_raw(Box::new(CssStyles::new())) as *mut RsvgCssStyles
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_css_styles_free(raw_styles: *mut RsvgCssStyles) {
-    assert!(!raw_styles.is_null());
-
-    Box::from_raw(raw_styles as *mut CssStyles);
 }

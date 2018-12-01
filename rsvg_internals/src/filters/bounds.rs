@@ -83,7 +83,7 @@ impl<'a> BoundsBuilder<'a> {
 
     /// Returns the final pixel bounds.
     #[inline]
-    pub fn into_irect(self, draw_ctx: &mut DrawingCtx<'_>) -> IRect {
+    pub fn into_irect(self, draw_ctx: &mut DrawingCtx) -> IRect {
         let mut bbox = self.apply_properties(draw_ctx);
 
         let effects_region = self.ctx.effects_region();
@@ -96,12 +96,12 @@ impl<'a> BoundsBuilder<'a> {
     ///
     /// Used by feImage.
     #[inline]
-    pub fn into_irect_without_clipping(self, draw_ctx: &mut DrawingCtx<'_>) -> IRect {
+    pub fn into_irect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> IRect {
         self.apply_properties(draw_ctx).rect.unwrap().into()
     }
 
     /// Applies the filter primitive properties.
-    fn apply_properties(mut self, draw_ctx: &mut DrawingCtx<'_>) -> BoundingBox {
+    fn apply_properties(mut self, draw_ctx: &mut DrawingCtx) -> BoundingBox {
         if self.bbox.rect.is_none() || self.standard_input_was_referenced {
             // The default value is the filter effects region.
             let effects_region = self.ctx.effects_region();

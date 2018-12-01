@@ -38,7 +38,7 @@ impl NodeTrait for NodeGroup {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -80,7 +80,7 @@ impl NodeTrait for NodeSwitch {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -191,7 +191,7 @@ impl NodeTrait for NodeSvg {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -289,7 +289,7 @@ impl NodeTrait for NodeUse {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();

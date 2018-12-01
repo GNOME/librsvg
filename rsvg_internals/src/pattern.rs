@@ -243,7 +243,7 @@ impl PaintSource<Pattern> for NodePattern {
     fn resolve(
         &self,
         node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
     ) -> Option<Pattern> {
         let node_pattern = node.get_impl::<NodePattern>().unwrap();
@@ -282,7 +282,7 @@ impl PaintSource<Pattern> for NodePattern {
         &self,
         pattern: &Pattern,
         values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         _opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {

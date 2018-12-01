@@ -430,7 +430,7 @@ impl Gradient {
     }
 }
 
-fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx<'_>, name: &Fragment) -> Option<AcquiredNode> {
+fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx, name: &Fragment) -> Option<AcquiredNode> {
     if let Some(acquired) = draw_ctx.get_acquired_node(name) {
         let node_type = acquired.get().get_type();
 
@@ -519,7 +519,7 @@ impl PaintSource<Gradient> for NodeGradient {
     fn resolve(
         &self,
         node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Option<Gradient> {
         let gradient =
@@ -559,7 +559,7 @@ impl PaintSource<Gradient> for NodeGradient {
         &self,
         gradient: &Gradient,
         values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {

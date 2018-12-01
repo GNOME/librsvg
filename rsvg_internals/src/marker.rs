@@ -122,7 +122,7 @@ impl NodeMarker {
     fn render(
         &self,
         node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         xpos: f64,
         ypos: f64,
         computed_angle: f64,
@@ -634,7 +634,7 @@ enum MarkerType {
 }
 
 fn emit_marker_by_name(
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     name: &Fragment,
     xpos: f64,
     ypos: f64,
@@ -692,7 +692,7 @@ where
 
 pub fn render_markers_for_path_builder(
     builder: &PathBuilder,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     values: &ComputedValues,
     clipping: bool,
 ) -> Result<(), RenderingError> {

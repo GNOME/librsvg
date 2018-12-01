@@ -59,7 +59,7 @@ impl NodeMask {
         &self,
         node: &RsvgNode,
         affine_before_mask: &cairo::Matrix,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<(), RenderingError> {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();

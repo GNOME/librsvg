@@ -32,7 +32,7 @@ impl NodeClipPath {
         &self,
         node: &RsvgNode,
         affine_before_clip: &cairo::Matrix,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<(), RenderingError> {
         let cascaded = node.get_cascaded_values();
 

@@ -34,10 +34,6 @@ extern crate lazy_static;
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
-pub use css::{rsvg_css_styles_free, rsvg_css_styles_new};
-
-pub use defs::{rsvg_defs_free, rsvg_defs_lookup};
-
 pub use drawing_ctx::{
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack,
     rsvg_drawing_ctx_draw_node_from_stack,
@@ -49,23 +45,18 @@ pub use drawing_ctx::{
 pub use handle::{
     rsvg_handle_acquire_data,
     rsvg_handle_acquire_stream,
+    rsvg_handle_defs_lookup,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
     rsvg_handle_rust_new,
+    rsvg_handle_rust_node_is_root,
     rsvg_handle_rust_set_base_url,
+    rsvg_handle_rust_steal_result,
 };
 
 pub use io::rsvg_get_input_stream_for_loading;
 
 pub use node::rsvg_node_unref;
-
-pub use tree::{
-    rsvg_tree_cascade,
-    rsvg_tree_free,
-    rsvg_tree_get_root,
-    rsvg_tree_is_root,
-    rsvg_tree_root_is_svg,
-};
 
 pub use property_bag::{
     rsvg_property_bag_free,
@@ -87,7 +78,6 @@ pub use xml::{
     rsvg_xml_state_load_css_from_href,
     rsvg_xml_state_new,
     rsvg_xml_state_start_element,
-    rsvg_xml_state_steal_result,
 };
 
 #[macro_use]
@@ -142,6 +132,7 @@ mod stop;
 mod structure;
 mod style;
 pub mod surface_utils;
+mod svg;
 mod text;
 mod transform;
 mod tree;

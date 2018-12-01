@@ -58,7 +58,7 @@ trait Filter: NodeTrait {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError>;
 
     /// Returns `true` if this filter primitive is affected by the `color-interpolation-filters`
@@ -195,7 +195,7 @@ impl PrimitiveWithInput {
     fn get_input(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterInput, FilterError> {
         ctx.get_input(draw_ctx, self.in_.borrow().as_ref())
     }
@@ -235,7 +235,7 @@ pub fn render(
     filter_node: &RsvgNode,
     computed_from_node_being_filtered: &ComputedValues,
     source: &cairo::ImageSurface,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
 ) -> Result<cairo::ImageSurface, RenderingError> {
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);

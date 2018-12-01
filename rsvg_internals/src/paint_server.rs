@@ -52,7 +52,7 @@ impl Parse for PaintServer {
 }
 
 fn set_color(
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     color: &cssparser::Color,
     opacity: &UnitInterval,
     current_color: &cssparser::RGBA,
@@ -72,18 +72,13 @@ fn set_color(
 }
 
 pub trait PaintSource<T> {
-    fn resolve(
-        &self,
-        node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx<'_>,
-        bbox: &BoundingBox,
-    ) -> Option<T>;
+    fn resolve(&self, node: &RsvgNode, draw_ctx: &mut DrawingCtx, bbox: &BoundingBox) -> Option<T>;
 
     fn set_pattern_on_draw_context(
         &self,
         pattern: &T,
         values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError>;
@@ -91,7 +86,7 @@ pub trait PaintSource<T> {
     fn resolve_fallbacks_and_set_pattern(
         &self,
         node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
@@ -106,7 +101,7 @@ pub trait PaintSource<T> {
 }
 
 pub fn set_source_paint_server(
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     ps: &PaintServer,
     opacity: &UnitInterval,
     bbox: &BoundingBox,

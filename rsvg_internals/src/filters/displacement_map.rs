@@ -82,7 +82,7 @@ impl Filter for DisplacementMap {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, draw_ctx)?;
         let displacement_input = ctx.get_input(draw_ctx, self.in2.borrow().as_ref())?;

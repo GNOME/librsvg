@@ -12,15 +12,17 @@ use std::str;
 use allowed_url::AllowedUrl;
 use attributes::Attribute;
 use create_node::create_node_and_register_id;
-use css::{self, CssStyles, RsvgCssStyles};
-use defs::{Defs, RsvgDefs};
+use css::{self, CssStyles};
+use defs::Defs;
+use error::set_gerror;
 use handle::{self, RsvgHandle};
 use node::{node_new, Node, NodeType};
 use property_bag::PropertyBag;
 use structure::NodeSvg;
 use style::NodeStyle;
+use svg::Svg;
 use text::NodeChars;
-use tree::{RsvgTree, Tree};
+use tree::Tree;
 use util::utf8_cstr;
 
 #[derive(Clone)]
@@ -94,8 +96,8 @@ extern "C" {
 /// that context, all XML events will be forwarded to it, and processed in one of the `XmlHandler`
 /// trait objects. Normally the context refers to a `NodeCreationContext` implementation which is
 /// what creates normal graphical elements.
-struct XmlState {
-    tree: Option<Box<Tree>>,
+pub struct XmlState {
+    tree: Option<Tree>,
     defs: Option<Defs>,
     css_styles: Option<CssStyles>,
     context: Context,
@@ -130,19 +132,19 @@ impl XmlState {
         }
     }
 
-    pub fn set_root(&mut self, root: &Rc<Node>) {
+    fn set_root(&mut self, root: &Rc<Node>) {
         if self.tree.is_some() {
             panic!("The tree root has already been set");
         }
 
-        self.tree = Some(Box::new(Tree::new(root)));
+        self.tree = Some(Tree::new(root));
     }
 
-    pub fn steal_result(&mut self) -> (Option<Box<Tree>>, Box<Defs>, Box<CssStyles>) {
-        (
-            self.tree.take(),
-            Box::new(self.defs.take().unwrap()),
-            Box::new(self.css_styles.take().unwrap()),
+    pub fn steal_result(&mut self) -> Svg {
+        Svg::new(
+            self.tree.take().unwrap(),
+            self.defs.take().unwrap(),
+            self.css_styles.take().unwrap(),
         )
     }
 
@@ -525,31 +527,6 @@ pub extern "C" fn rsvg_xml_state_free(xml: *mut RsvgXmlState) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_steal_result(
-    xml: *mut RsvgXmlState,
-    out_tree: *mut *mut RsvgTree,
-    out_defs: *mut *mut RsvgDefs,
-    out_css_styles: *mut *mut RsvgCssStyles,
-) {
-    assert!(!xml.is_null());
-    assert!(!out_tree.is_null());
-    assert!(!out_defs.is_null());
-    assert!(!out_css_styles.is_null());
-
-    let xml = &mut *(xml as *mut XmlState);
-
-    let (tree, defs, css_styles) = xml.steal_result();
-
-    *out_tree = tree
-        .map(|tree| Box::into_raw(tree) as *mut RsvgTree)
-        .unwrap_or(ptr::null_mut());
-
-    *out_defs = Box::into_raw(defs) as *mut RsvgDefs;
-
-    *out_css_styles = Box::into_raw(css_styles) as *mut RsvgCssStyles;
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_xml_state_start_element(
     xml: *mut RsvgXmlState,
     handle: *mut RsvgHandle,
@@ -661,4 +638,25 @@ pub unsafe extern "C" fn rsvg_xml_state_load_css_from_href(
     let href: String = from_glib_none(href);
 
     handle::load_css(xml.css_styles.as_mut().unwrap(), handle, &href);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_xml_state_tree_is_valid(
+    xml: *mut RsvgXmlState,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    assert!(!xml.is_null());
+    let xml = &mut *(xml as *mut XmlState);
+
+    if let Some(ref tree) = xml.tree {
+        if tree.root_is_svg() {
+            true.to_glib()
+        } else {
+            set_gerror(error, 0, "root element is not <svg>");
+            false.to_glib()
+        }
+    } else {
+        set_gerror(error, 0, "SVG has no elements");
+        false.to_glib()
+    }
 }

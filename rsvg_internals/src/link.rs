@@ -43,7 +43,7 @@ impl NodeTrait for NodeLink {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let link = self.link.borrow();

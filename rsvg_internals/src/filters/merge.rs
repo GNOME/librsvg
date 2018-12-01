@@ -80,7 +80,7 @@ impl MergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
@@ -134,7 +134,7 @@ impl Filter for Merge {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each child node's input into account.
         let mut bounds = self.base.get_bounds(ctx);

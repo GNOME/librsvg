@@ -27,9 +27,9 @@ pub fn draw_in_viewport(
     node: &RsvgNode,
     values: &ComputedValues,
     mut affine: cairo::Matrix,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     clipping: bool,
-    draw_fn: &mut FnMut(&mut DrawingCtx<'_>) -> Result<(), RenderingError>,
+    draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
 ) -> Result<(), RenderingError> {
     // width or height set to 0 disables rendering of the element
     // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute

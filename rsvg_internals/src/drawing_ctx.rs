@@ -13,7 +13,7 @@ use std::rc::{Rc, Weak};
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
-use defs::{Defs, Fragment};
+use defs::Fragment;
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
@@ -35,7 +35,6 @@ use state::{
     StrokeLinejoin,
     TextRendering,
 };
-use tree::{RsvgTree, Tree};
 use unitinterval::UnitInterval;
 use viewbox::ViewBox;
 
@@ -98,7 +97,7 @@ impl Drop for ViewParams {
 
 pub enum RsvgDrawingCtx {}
 
-pub struct DrawingCtx<'a> {
+pub struct DrawingCtx {
     handle: *const RsvgHandle,
 
     rect: cairo::Rectangle,
@@ -130,13 +129,12 @@ pub struct DrawingCtx<'a> {
 
     drawsub_stack: Vec<RsvgNode>,
 
-    defs: RefCell<&'a mut Defs>,
     acquired_nodes: Rc<RefCell<Vec<RsvgNode>>>,
 
     is_testing: bool,
 }
 
-impl<'a> DrawingCtx<'a> {
+impl DrawingCtx {
     pub fn new(
         handle: *const RsvgHandle,
         cr: cairo::Context,
@@ -147,7 +145,7 @@ impl<'a> DrawingCtx<'a> {
         dpi_x: f64,
         dpi_y: f64,
         is_testing: bool,
-    ) -> DrawingCtx<'a> {
+    ) -> DrawingCtx {
         let mut affine = cr.get_matrix();
         let rect = cairo::Rectangle {
             x: 0.0,
@@ -186,7 +184,6 @@ impl<'a> DrawingCtx<'a> {
             bbox: BoundingBox::new(&affine),
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
-            defs: RefCell::new(handle::get_defs(handle)),
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
             is_testing,
         }
@@ -291,8 +288,8 @@ impl<'a> DrawingCtx<'a> {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, fragment: &Fragment) -> Option<AcquiredNode> {
-        if let Some(node) = self.defs.borrow_mut().lookup(self.handle, fragment) {
-            if !self.acquired_nodes_contains(node) {
+        if let Some(node) = handle::lookup_node(self.handle, fragment) {
+            if !self.acquired_nodes_contains(&node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
                 return Some(acq);
@@ -345,7 +342,7 @@ impl<'a> DrawingCtx<'a> {
         node: &RsvgNode,
         values: &ComputedValues,
         clipping: bool,
-        draw_fn: &mut FnMut(&mut DrawingCtx<'_>) -> Result<(), RenderingError>,
+        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
     ) -> Result<(), RenderingError> {
         if clipping {
             draw_fn(self)
@@ -1058,19 +1055,21 @@ impl From<TextRendering> for cairo::Antialias {
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     raw_draw_ctx: *mut RsvgDrawingCtx,
-    raw_tree: *const RsvgTree,
 ) -> glib_sys::gboolean {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
-
-    assert!(!raw_tree.is_null());
-    let tree = unsafe { &*(raw_tree as *const Tree) };
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
     // FIXME: The public API doesn't let us return a GError from the rendering
     // functions, just a boolean.  Add a proper API to return proper errors from
     // the rendering path.
+
+    let svg_ref = handle::get_svg(draw_ctx.handle);
+    let svg = svg_ref.as_ref().unwrap();
+
+    let root = svg.tree.root();
+
     if draw_ctx
-        .draw_node_from_stack(&tree.root.get_cascaded_values(), &tree.root, false)
+        .draw_node_from_stack(&root.get_cascaded_values(), &root, false)
         .is_ok()
     {
         true.to_glib()
@@ -1085,7 +1084,7 @@ pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
     raw_node: *const RsvgNode,
 ) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
     assert!(!raw_node.is_null());
     let node = unsafe { &*raw_node };
@@ -1109,7 +1108,7 @@ pub unsafe extern "C" fn rsvg_drawing_ctx_get_geometry(
     logical_rect: *mut RsvgRectangle,
 ) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = &mut *(raw_draw_ctx as *mut DrawingCtx<'_>);
+    let draw_ctx = &mut *(raw_draw_ctx as *mut DrawingCtx);
 
     assert!(!ink_rect.is_null());
     assert!(!logical_rect.is_null());
@@ -1213,7 +1212,7 @@ pub extern "C" fn rsvg_drawing_ctx_new(
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_free(raw_draw_ctx: *mut RsvgDrawingCtx) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
+    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
 
     unsafe {
         Box::from_raw(draw_ctx);

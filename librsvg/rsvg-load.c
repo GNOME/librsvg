@@ -38,24 +38,13 @@ typedef enum {
     LOAD_STATE_CLOSED
 } LoadState;
 
-/* Implemented in rsvg_internals/src/load.rs */
-G_GNUC_INTERNAL
-void rsvg_load_set_svg_node_atts (RsvgHandle *handle, RsvgNode *node);
-
-/* Implemented in rsvg_internals/src/node.rs */
-G_GNUC_INTERNAL
-void rsvg_node_register_in_defs(RsvgNode *node, RsvgDefs *defs);
-
 /* Implemented in rsvg_internals/src/xml.rs */
 typedef struct RsvgXmlState RsvgXmlState;
 
 /* Implemented in rsvg_internals/src/xml.rs */
 extern RsvgXmlState *rsvg_xml_state_new ();
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
-extern void rsvg_xml_state_steal_result(RsvgXmlState *xml,
-                                        RsvgTree **out_tree,
-                                        RsvgDefs **out_defs,
-                                        RsvgCssStyles **out_css_styles);
+extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
 extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
 extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
 extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
@@ -71,6 +60,9 @@ extern void rsvg_xml_state_entity_insert(RsvgXmlState *xml,
 extern void rsvg_xml_state_load_css_from_href(RsvgXmlState *xml,
                                               RsvgHandle *handle,
                                               const char *href);
+
+/* Implemented in rsvg_internals/src/handle.rs */
+extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
 
 
 /* Holds the XML parsing state */
@@ -149,13 +141,16 @@ rsvg_load_free (RsvgLoad *load)
     g_free (load);
 }
 
-void
-rsvg_load_steal_result (RsvgLoad *load,
-                        RsvgTree **out_tree,
-                        RsvgDefs **out_defs,
-                        RsvgCssStyles **out_css_styles)
+gboolean
+rsvg_load_finish_load (RsvgLoad *load, GError **error)
 {
-    rsvg_xml_state_steal_result (load->xml.rust_state, out_tree, out_defs, out_css_styles);
+    gboolean was_successful = rsvg_xml_state_tree_is_valid(load->xml.rust_state, error);
+
+    if (was_successful) {
+        rsvg_handle_rust_steal_result (load->handle->priv->rust_handle, load->xml.rust_state);
+    }
+
+    return was_successful;
 }
 
 static void

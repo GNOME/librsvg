@@ -90,7 +90,7 @@ impl NodeChars {
         &self,
         node: &RsvgNode,
         values: &ComputedValues,
-        draw_ctx: &DrawingCtx<'_>,
+        draw_ctx: &DrawingCtx,
     ) -> pango::Layout {
         self.ensure_normalized_string(node, values);
         let norm = self.space_normalized.borrow();
@@ -102,7 +102,7 @@ impl NodeChars {
         &self,
         node: &RsvgNode,
         values: &ComputedValues,
-        draw_ctx: &DrawingCtx<'_>,
+        draw_ctx: &DrawingCtx,
         length: &mut f64,
     ) {
         let layout = self.create_layout(node, values, draw_ctx);
@@ -115,7 +115,7 @@ impl NodeChars {
         &self,
         node: &RsvgNode,
         values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
@@ -189,7 +189,7 @@ impl NodeTrait for NodeText {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -243,7 +243,7 @@ impl NodeTRef {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         length: &mut f64,
     ) -> bool {
         let link = self.link.borrow();
@@ -273,7 +273,7 @@ impl NodeTRef {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         x: &mut f64,
         y: &mut f64,
         clipping: bool,
@@ -338,7 +338,7 @@ impl NodeTSpan {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         length: &mut f64,
         usetextonly: bool,
     ) -> bool {
@@ -363,7 +363,7 @@ impl NodeTSpan {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         x: &mut f64,
         y: &mut f64,
         usetextonly: bool,
@@ -537,7 +537,7 @@ impl From<WritingMode> for pango::Gravity {
 }
 
 fn create_pango_layout(
-    draw_ctx: &DrawingCtx<'_>,
+    draw_ctx: &DrawingCtx,
     values: &ComputedValues,
     text: &str,
 ) -> pango::Layout {
@@ -617,7 +617,7 @@ fn create_pango_layout(
 fn anchor_offset(
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     anchor: TextAnchor,
     textonly: bool,
 ) -> f64 {
@@ -640,7 +640,7 @@ fn anchor_offset(
 fn measure_children(
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
@@ -665,7 +665,7 @@ fn measure_children(
 fn measure_child(
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
@@ -722,7 +722,7 @@ fn measure_child(
 fn render_children(
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,
@@ -742,7 +742,7 @@ fn render_children(
 fn render_child(
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,

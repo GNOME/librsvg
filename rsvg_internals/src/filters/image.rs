@@ -56,7 +56,7 @@ impl Image {
     fn render_node(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         bounds: IRect,
         fragment: &Fragment,
     ) -> Result<ImageSurface, FilterError> {
@@ -120,7 +120,7 @@ impl Image {
     fn render_external_image(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         bounds_builder: BoundsBuilder<'_>,
         href: &Href,
     ) -> Result<ImageSurface, FilterError> {
@@ -218,7 +218,7 @@ impl Filter for Image {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds_builder = self.base.get_bounds(ctx);
         let bounds = bounds_builder.into_irect(draw_ctx);

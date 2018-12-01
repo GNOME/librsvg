@@ -116,7 +116,7 @@ pub trait NodeTrait: Downcast {
         &self,
         _node: &RsvgNode,
         _cascaded: &CascadedValues<'_>,
-        _draw_ctx: &mut DrawingCtx<'_>,
+        _draw_ctx: &mut DrawingCtx,
         _clipping: bool,
     ) -> Result<(), RenderingError> {
         // by default nodes don't draw themselves
@@ -535,7 +535,7 @@ impl Node {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         if !self.is_in_error() {
@@ -592,7 +592,7 @@ impl Node {
     pub fn draw_children(
         &self,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         for child in self.children() {

@@ -104,7 +104,7 @@ pub struct FilterContext {
 fn compute_effects_region(
     filter_node: &RsvgNode,
     computed_from_target_node: &ComputedValues,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     affine: cairo::Matrix,
     width: f64,
     height: f64,
@@ -195,7 +195,7 @@ impl FilterContext {
         filter_node: &RsvgNode,
         computed_from_node_being_filtered: &ComputedValues,
         source_surface: SharedImageSurface,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Self {
         let cr_affine = draw_ctx.get_cairo_context().get_matrix();
         let bbox = draw_ctx.get_bbox().clone();
@@ -294,7 +294,7 @@ impl FilterContext {
     /// Computes and returns the background image snapshot.
     fn compute_background_image(
         &self,
-        draw_ctx: &DrawingCtx<'_>,
+        draw_ctx: &DrawingCtx,
     ) -> Result<cairo::ImageSurface, cairo::Status> {
         let surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
@@ -325,7 +325,7 @@ impl FilterContext {
     /// Returns the surface corresponding to the background image snapshot.
     pub fn background_image(
         &self,
-        draw_ctx: &DrawingCtx<'_>,
+        draw_ctx: &DrawingCtx,
     ) -> Result<&SharedImageSurface, FilterError> {
         {
             // At this point either no, or only immutable references to background_surface exist, so
@@ -360,7 +360,7 @@ impl FilterContext {
     #[inline]
     pub fn background_alpha(
         &self,
-        draw_ctx: &DrawingCtx<'_>,
+        draw_ctx: &DrawingCtx,
         bounds: IRect,
     ) -> Result<SharedImageSurface, FilterError> {
         self.background_image(draw_ctx)?
@@ -422,7 +422,7 @@ impl FilterContext {
     }
 
     /// Calls the given function with correct behavior for the value of `primitiveUnits`.
-    pub fn with_primitive_units<F, T>(&self, draw_ctx: &mut DrawingCtx<'_>, f: F) -> T
+    pub fn with_primitive_units<F, T>(&self, draw_ctx: &mut DrawingCtx, f: F) -> T
     // TODO: Get rid of this Box? Can't just impl Trait because Rust cannot do higher-ranked types.
     where
         for<'b> F: FnOnce(Box<Fn(&Length) -> f64 + 'b>) -> T,
@@ -449,7 +449,7 @@ impl FilterContext {
     /// Computes and returns a surface corresponding to the given paint server.
     fn get_paint_server_surface(
         &self,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         paint_server: &PaintServer,
         opacity: UnitInterval,
     ) -> Result<cairo::ImageSurface, cairo::Status> {
@@ -489,7 +489,7 @@ impl FilterContext {
     /// Does not take `processing_linear_rgb` into account.
     fn get_input_raw(
         &self,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         in_: Option<&Input>,
     ) -> Result<FilterInput, FilterError> {
         if in_.is_none() {
@@ -546,7 +546,7 @@ impl FilterContext {
     /// Retrieves the filter input surface according to the SVG rules.
     pub fn get_input(
         &self,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         in_: Option<&Input>,
     ) -> Result<FilterInput, FilterError> {
         let raw = self.get_input_raw(draw_ctx, in_)?;

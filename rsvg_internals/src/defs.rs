@@ -1,19 +1,13 @@
-use libc;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt;
-use std::ptr;
 use std::rc::Rc;
 
 use allowed_url::AllowedUrl;
 use error::ValueErrorKind;
 use handle::{self, RsvgHandle};
-use node::{Node, RsvgNode};
+use node::Node;
 use parsers::ParseError;
-use util::rsvg_g_warning;
-use util::utf8_cstr;
-
-pub enum RsvgDefs {}
 
 pub struct Defs {
     nodes: HashMap<String, Rc<Node>>,
@@ -32,6 +26,10 @@ impl Defs {
         self.nodes.entry(id.to_string()).or_insert(node.clone());
     }
 
+    pub fn lookup_fragment_id(&self, id: &str) -> Option<Rc<Node>> {
+        self.nodes.get(id).map(|n| (*n).clone())
+    }
+
     /// Returns a node referenced by a fragment ID
     ///
     /// If the `Fragment`'s URL is `None`, then the fragment ID refers
@@ -39,16 +37,14 @@ impl Defs {
     /// an externally-loaded SVG file that is referenced by the
     /// current one.  If the element's id is not found, returns
     /// `None`.
-    pub fn lookup(&mut self, handle: *const RsvgHandle, fragment: &Fragment) -> Option<&Rc<Node>> {
+    pub fn lookup(&mut self, handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
         if let Some(ref href) = fragment.uri() {
             match self.get_extern_handle(handle, href) {
-                Ok(extern_handle) => handle::get_defs(extern_handle)
-                    .nodes
-                    .get(fragment.fragment()),
+                Ok(extern_handle) => handle::lookup_fragment_id(extern_handle, fragment),
                 Err(()) => None,
             }
         } else {
-            self.nodes.get(fragment.fragment())
+            self.lookup_fragment_id(fragment.fragment())
         }
     }
 
@@ -201,67 +197,6 @@ impl Href {
             PlainUri(_) => Err(HrefError::FragmentRequired),
             r @ WithFragment(_) => Ok(r),
         }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_defs_free(defs: *mut RsvgDefs) {
-    assert!(!defs.is_null());
-
-    unsafe {
-        let defs = { &mut *(defs as *mut Defs) };
-        Box::from_raw(defs);
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_defs_lookup(
-    defs: *mut RsvgDefs,
-    handle: *const RsvgHandle,
-    name: *const libc::c_char,
-) -> *const RsvgNode {
-    assert!(!defs.is_null());
-    assert!(!name.is_null());
-
-    let defs = unsafe { &mut *(defs as *mut Defs) };
-    let name = unsafe { utf8_cstr(name) };
-
-    let r = Href::with_fragment(name);
-    if r.is_err() {
-        return ptr::null();
-    }
-
-    match r.unwrap() {
-        Href::WithFragment(fragment) => {
-            if let Some(uri) = fragment.uri() {
-                // The public APIs to get geometries of individual elements, or to render
-                // them, should only allow referencing elements within the main handle's
-                // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
-                // Otherwise, a calling program could request "another-file#foo" and cause
-                // another-file to be loaded, even if it is not part of the set of
-                // resources that the main SVG actually references.  In the future we may
-                // relax this requirement to allow lookups within that set, but not to
-                // other random files.
-
-                let msg = format!(
-                    "the public API is not allowed to look up external references: {}#{}",
-                    uri,
-                    fragment.fragment()
-                );
-
-                rsvg_log!("{}", msg);
-
-                rsvg_g_warning(&msg);
-                return ptr::null();
-            }
-
-            match defs.lookup(handle, &fragment) {
-                Some(n) => n as *const RsvgNode,
-                None => ptr::null(),
-            }
-        }
-
-        _ => unreachable!(),
     }
 }
 

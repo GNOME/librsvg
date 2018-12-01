@@ -233,7 +233,7 @@ impl Filter for ConvolveMatrix {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, draw_ctx)?;
         let mut bounds = self

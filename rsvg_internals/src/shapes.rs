@@ -17,7 +17,7 @@ use state::ComputedValues;
 
 fn render_path_builder(
     builder: &PathBuilder,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     node: &RsvgNode,
     values: &ComputedValues,
     render_markers: bool,
@@ -51,7 +51,7 @@ fn render_ellipse(
     cy: f64,
     rx: f64,
     ry: f64,
-    draw_ctx: &mut DrawingCtx<'_>,
+    draw_ctx: &mut DrawingCtx,
     node: &RsvgNode,
     values: &ComputedValues,
     clipping: bool,
@@ -155,7 +155,7 @@ impl NodeTrait for NodePath {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -222,7 +222,7 @@ impl NodeTrait for NodePoly {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -286,7 +286,7 @@ impl NodeTrait for NodeLine {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -377,7 +377,7 @@ impl NodeTrait for NodeRect {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -561,7 +561,7 @@ impl NodeTrait for NodeCircle {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
@@ -625,7 +625,7 @@ impl NodeTrait for NodeEllipse {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();

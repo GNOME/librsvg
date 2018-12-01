@@ -149,7 +149,7 @@ impl Filter for Composite {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx<'_>,
+        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, draw_ctx)?;
         let input_2 = ctx.get_input(draw_ctx, self.in2.borrow().as_ref())?;

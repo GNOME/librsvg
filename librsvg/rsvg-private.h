@@ -58,7 +58,6 @@ typedef struct RsvgDrawingCtx RsvgDrawingCtx;
 typedef struct RsvgState RsvgState;
 
 typedef void   *RsvgPropertyBag;
-typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgNode RsvgNode;
 typedef struct _RsvgFilter RsvgFilter;
 
@@ -81,10 +80,6 @@ typedef enum {
 
 typedef struct RsvgLoad RsvgLoad;
 
-typedef struct RsvgTree RsvgTree;
-
-typedef struct RsvgCssStyles RsvgCssStyles;
-
 /* Defined in rsvg_internals/src/handle.rs */
 typedef struct RsvgHandleRust RsvgHandleRust;
 
@@ -98,10 +93,6 @@ struct RsvgHandlePrivate {
     RsvgSizeFunc size_func;
     gpointer user_data;
     GDestroyNotify user_data_destroy;
-
-    RsvgTree *tree;
-    RsvgDefs *defs; /* lookup table for nodes that have an id="foo" attribute */
-    RsvgCssStyles *css_styles;
 
     GCancellable *cancellable;
 
@@ -132,34 +123,6 @@ G_GNUC_INTERNAL
 void rsvg_node_set_overridden_properties (RsvgNode *node);
 
 typedef struct RsvgNodeChildrenIter *RsvgNodeChildrenIter;
-
-/* Implemented in rsvg_internals/src/tree.rs */
-G_GNUC_INTERNAL
-void rsvg_tree_free (RsvgTree *tree);
-
-/* Implemented in rsvg_internals/src/tree.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_tree_get_root (RsvgTree *tree);
-
-/* Implemented in rsvg_internals/src/tree.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_tree_is_root (RsvgTree *tree, RsvgNode *node);
-
-/* Implemented in rsvg_internals/src/tree.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_tree_root_is_svg (RsvgTree *tree);
-
-/* Implemented in rsvg_internals/src/tree.rs */
-G_GNUC_INTERNAL
-void rsvg_tree_cascade (RsvgTree *tree);
-
-/* Implemented in rsvg_internals/src/css.rs */
-G_GNUC_INTERNAL
-RsvgCssStyles *rsvg_css_styles_new (void);
-
-/* Implemented in rsvg_internals/src/css.rs */
-G_GNUC_INTERNAL
-void rsvg_css_styles_free (RsvgCssStyles *styles);
 
 /* Implemented in rsvg_internals/src/structure.rs */
 G_GNUC_INTERNAL
@@ -218,7 +181,7 @@ void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
-gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgTree *tree) G_GNUC_WARN_UNUSED_RESULT;;
+gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx) G_GNUC_WARN_UNUSED_RESULT;;
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 G_GNUC_INTERNAL
@@ -235,45 +198,11 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
 G_GNUC_INTERNAL
 RsvgNode *rsvg_load_destroy (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
-/* Defined in rsvg_internals/src/defs.rs */
-G_GNUC_INTERNAL
-void rsvg_defs_free (RsvgDefs *defs);
-
-/* Defined in rsvg_internals/src/defs.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_defs_lookup (const RsvgDefs * defs, RsvgHandle *handle, const char *name);
-
 G_GNUC_INTERNAL
 guint rsvg_handle_get_flags (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
-RsvgDefs *rsvg_handle_get_defs (RsvgHandle *handle);
-
-G_GNUC_INTERNAL
-RsvgTree *rsvg_handle_get_tree (RsvgHandle *handle);
-
-G_GNUC_INTERNAL
 RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
-
-G_GNUC_INTERNAL
-RsvgCssStyles *rsvg_handle_get_css_styles (RsvgHandle *handle);
-
-/* Implemented in rsvg_internals/src/handle.rs */
-G_GNUC_INTERNAL
-RsvgHandleRust *rsvg_handle_rust_new (void);
-
-/* Implemented in rsvg_internals/src/handle.rs */
-G_GNUC_INTERNAL
-void rsvg_handle_rust_free (RsvgHandleRust *raw_handle);
-
-/* Implemented in rsvg_internals/src/handle.rs */
-G_GNUC_INTERNAL
-void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle,
-                                    const char *uri);
-
-/* Implemented in rsvg_internals/src/handle.rs */
-G_GNUC_INTERNAL
-GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 
 G_GNUC_INTERNAL
 gboolean rsvg_handle_keep_image_data (RsvgHandle *handle);

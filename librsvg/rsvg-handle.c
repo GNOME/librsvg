@@ -127,6 +127,16 @@
 #include "rsvg-load.h"
 #include "rsvg-private.h"
 
+/* Implemented in rsvg_internals/src/handle.rs */
+extern RsvgHandleRust *rsvg_handle_rust_new (void);
+extern void rsvg_handle_rust_free (RsvgHandleRust *raw_handle);
+extern void rsvg_handle_rust_cascade (RsvgHandleRust *raw_handle);
+extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const char *uri);
+extern RsvgNode *rsvg_handle_rust_get_root (RsvgHandleRust *raw_handle);
+extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
+extern RsvgNode *rsvg_handle_defs_lookup (RsvgHandle *handle, const char *name);
+extern gboolean rsvg_handle_rust_node_is_root(RsvgHandleRust *raw_handle, RsvgNode *node);
+
 enum {
     PROP_0,
     PROP_FLAGS,
@@ -158,10 +168,6 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
 
-    self->priv->tree = NULL;
-    self->priv->defs = NULL;
-    self->priv->css_styles = NULL;
-
     self->priv->cancellable = NULL;
 
     self->priv->in_loop = FALSE;
@@ -187,9 +193,7 @@ rsvg_handle_dispose (GObject *instance)
     }
 
     g_clear_pointer (&self->priv->load, rsvg_load_free);
-    g_clear_pointer (&self->priv->defs, rsvg_defs_free);
-    g_clear_pointer (&self->priv->css_styles, rsvg_css_styles_free);
-    g_clear_pointer (&self->priv->tree, rsvg_tree_free);
+
     g_clear_pointer (&self->priv->base_uri, g_free);
 
 #ifdef HAVE_PANGOFT2
@@ -660,54 +664,23 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 }
 
 static gboolean
-tree_is_valid (RsvgTree *tree, GError **error)
-{
-    if (!tree) {
-        g_set_error (error, RSVG_ERROR, RSVG_ERROR_FAILED, _("SVG has no elements"));
-        return FALSE;
-    }
-
-    if (!rsvg_tree_root_is_svg (tree)) {
-        g_set_error (error, RSVG_ERROR, RSVG_ERROR_FAILED, _("root element is not <svg>"));
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-static gboolean
 finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
 {
-    RsvgTree *tree = NULL;
-    RsvgDefs *defs = NULL;
-    RsvgCssStyles *css_styles = NULL;
-
     g_assert (handle->priv->load != NULL);
-    g_assert (handle->priv->tree == NULL);
 
     if (was_successful) {
         g_assert (error == NULL || *error == NULL);
 
-        rsvg_load_steal_result (handle->priv->load, &tree, &defs, &css_styles);
-        was_successful = tree_is_valid (tree, error);
-        if (!was_successful) {
-            g_clear_pointer (&tree, rsvg_tree_free);
-            g_clear_pointer (&defs, rsvg_defs_free);
-            g_clear_pointer (&css_styles, rsvg_css_styles_free);
-        }
+        was_successful = rsvg_load_finish_load(handle->priv->load, error);
     }
 
     if (was_successful) {
-        g_assert (tree != NULL);
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
     } else {
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
     }
 
     g_clear_pointer (&handle->priv->load, rsvg_load_free);
-    handle->priv->tree = tree;
-    handle->priv->defs = defs;
-    handle->priv->css_styles = css_styles;
 
     return was_successful;
 }
@@ -885,7 +858,7 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
     gchar *uri;
     GFile *file;
 
-    g_return_if_fail (handle != NULL);
+    g_return_if_fail (RSVG_IS_HANDLE (handle));
 
     if (base_uri == NULL)
         return;
@@ -1017,28 +990,10 @@ rsvg_handle_get_flags (RsvgHandle *handle)
     return (guint) handle->priv->flags;
 }
 
-RsvgDefs *
-rsvg_handle_get_defs (RsvgHandle *handle)
-{
-    return handle->priv->defs;
-}
-
-RsvgTree *
-rsvg_handle_get_tree (RsvgHandle *handle)
-{
-    return handle->priv->tree;
-}
-
 RsvgHandleRust *
 rsvg_handle_get_rust (RsvgHandle *handle)
 {
     return handle->priv->rust_handle;
-}
-
-RsvgCssStyles *
-rsvg_handle_get_css_styles (RsvgHandle *handle)
-{
-    return handle->priv->css_styles;
 }
 
 gboolean
@@ -1085,7 +1040,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     cairo_status_t status;
     gboolean res;
 
-    g_return_val_if_fail (handle != NULL, FALSE);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
     if (handle->priv->hstate != RSVG_HANDLE_STATE_CLOSED_OK)
         return FALSE;
@@ -1100,7 +1055,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     }
 
     if (id && *id)
-        drawsub = rsvg_defs_lookup (handle->priv->defs, handle, id);
+        drawsub = rsvg_handle_defs_lookup (handle, id);
 
     if (drawsub == NULL && id != NULL) {
         g_warning ("element id=\"%s\" does not exist", id);
@@ -1120,8 +1075,8 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
         rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, drawsub);
     }
 
-    rsvg_tree_cascade (handle->priv->tree);
-    res = rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
+    rsvg_handle_rust_cascade (handle->priv->rust_handle);
+    res = rsvg_drawing_ctx_draw_node_from_stack (draw);
 
     rsvg_drawing_ctx_free (draw);
 
@@ -1199,9 +1154,9 @@ get_node_geometry(RsvgHandle *handle, RsvgNode *node, RsvgRectangle *ink_rect, R
     draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
     rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
-    rsvg_tree_cascade (handle->priv->tree);
+    rsvg_handle_rust_cascade (handle->priv->rust_handle);
     /* FIXME: expose this as a RenderingError in the public API */
-    res = rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->tree);
+    res = rsvg_drawing_ctx_draw_node_from_stack (draw);
     if (res) {
         rsvg_drawing_ctx_get_geometry (draw, ink_rect, logical_rect);
     }
@@ -1272,7 +1227,7 @@ gboolean
 rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, RsvgRectangle * logical_rect, const char *id)
 {
     RsvgNode *root = NULL;
-    RsvgNode *node;
+    RsvgNode *node = NULL;
     gboolean has_size;
     int root_width, root_height;
     gboolean res = FALSE;
@@ -1283,18 +1238,15 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, Rsv
     memset (&ink_r, 0, sizeof (RsvgRectangle));
     memset (&logical_r, 0, sizeof (RsvgRectangle));
 
-    if (handle->priv->tree == NULL)
-        return FALSE;
+    g_return_val_if_fail (handle->priv->hstate == RSVG_HANDLE_STATE_CLOSED_OK, FALSE);
 
-    root = rsvg_tree_get_root (handle->priv->tree);
+    root = rsvg_handle_rust_get_root (handle->priv->rust_handle);
 
     if (id && *id) {
-        node = rsvg_defs_lookup (handle->priv->defs, handle, id);
+        node = rsvg_handle_defs_lookup (handle, id);
 
-        if (node && rsvg_tree_is_root (handle->priv->tree, node))
+        if (node && rsvg_handle_rust_node_is_root (handle->priv->rust_handle, node))
             id = NULL;
-    } else {
-        node = root;
     }
 
     if (!node && id) {
@@ -1306,7 +1258,7 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, Rsv
                                        &root_width, &root_height);
 
     if (id || !has_size) {
-        res = get_node_geometry (handle, node, &ink_r, &logical_r);
+        res = get_node_geometry (handle, node ? node : root, &ink_r, &logical_r);
         if (!res) {
             goto out;
         }
@@ -1334,6 +1286,7 @@ out:
         *logical_rect = logical_r;
     }
 
+    g_clear_pointer (&node, rsvg_node_unref);
     g_clear_pointer (&root, rsvg_node_unref);
 
     return res;
@@ -1398,12 +1351,12 @@ gboolean
 rsvg_handle_has_sub (RsvgHandle * handle,
                      const char *id)
 {
-    g_return_val_if_fail (handle, FALSE);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
     if (G_UNLIKELY (!id || !id[0]))
       return FALSE;
 
-    return rsvg_defs_lookup (handle->priv->defs, handle, id) != NULL;
+    return rsvg_handle_defs_lookup (handle, id) != NULL;
 }
 
 /**
@@ -1436,7 +1389,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
     cairo_surface_t *surface;
     cairo_t *cr;
 
-    g_return_val_if_fail (handle != NULL, NULL);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), NULL);
 
     if (handle->priv->hstate != RSVG_HANDLE_STATE_CLOSED_OK)
         return NULL;
@@ -1518,7 +1471,7 @@ rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
 void
 rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
 {
-    g_return_if_fail (handle != NULL);
+    g_return_if_fail (RSVG_IS_HANDLE (handle));
 
     if (dpi_x <= 0.)
         handle->priv->dpi_x = rsvg_internal_dpi_x;
@@ -1576,7 +1529,7 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
                                RsvgSizeFunc size_func,
                                gpointer user_data, GDestroyNotify user_data_destroy)
 {
-    g_return_if_fail (handle != NULL);
+    g_return_if_fail (RSVG_IS_HANDLE (handle));
 
     if (handle->priv->user_data_destroy)
         (*handle->priv->user_data_destroy) (handle->priv->user_data);
