@@ -1076,7 +1076,6 @@ rsvg_handle_create_drawing_ctx(RsvgHandle *handle,
                                  dimensions->width, dimensions->height,
                                  dimensions->em, dimensions->ex,
                                  handle->priv->dpi_x, handle->priv->dpi_y,
-                                 handle->priv->defs,
                                  handle->priv->is_testing);
 }
 

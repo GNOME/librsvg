@@ -205,7 +205,6 @@ RsvgDrawingCtx *rsvg_drawing_ctx_new (RsvgHandle *handle,
                                       double vb_height,
                                       double dpi_x,
                                       double dpi_y,
-                                      RsvgDefs *defs,
                                       gboolean testing);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */

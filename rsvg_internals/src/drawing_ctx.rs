@@ -13,11 +13,11 @@ use std::rc::{Rc, Weak};
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
-use defs::{Defs, Fragment, RsvgDefs};
+use defs::{Defs, Fragment};
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
-use handle::RsvgHandle;
+use handle::{self, RsvgHandle};
 use length::Dasharray;
 use mask::NodeMask;
 use node::{CascadedValues, NodeType, RsvgNode};
@@ -146,9 +146,8 @@ impl<'a> DrawingCtx<'a> {
         vb_height: f64,
         dpi_x: f64,
         dpi_y: f64,
-        defs: &mut Defs,
         is_testing: bool,
-    ) -> DrawingCtx<'_> {
+    ) -> DrawingCtx<'a> {
         let mut affine = cr.get_matrix();
         let rect = cairo::Rectangle {
             x: 0.0,
@@ -187,7 +186,7 @@ impl<'a> DrawingCtx<'a> {
             bbox: BoundingBox::new(&affine),
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
-            defs: RefCell::new(defs),
+            defs: RefCell::new(handle::get_defs(handle)),
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
             is_testing,
         }
@@ -1196,12 +1195,8 @@ pub extern "C" fn rsvg_drawing_ctx_new(
     vb_height: libc::c_double,
     dpi_x: libc::c_double,
     dpi_y: libc::c_double,
-    defs: *mut RsvgDefs,
     is_testing: glib_sys::gboolean,
 ) -> *mut RsvgDrawingCtx {
-    assert!(!defs.is_null());
-    let defs = unsafe { &mut *(defs as *mut Defs) };
-
     Box::into_raw(Box::new(DrawingCtx::new(
         handle,
         unsafe { from_glib_none(cr) },
@@ -1211,7 +1206,6 @@ pub extern "C" fn rsvg_drawing_ctx_new(
         vb_height,
         dpi_x,
         dpi_y,
-        defs,
         from_glib(is_testing),
     ))) as *mut RsvgDrawingCtx
 }
