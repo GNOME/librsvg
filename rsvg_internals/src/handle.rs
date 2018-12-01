@@ -18,6 +18,7 @@ use defs::{Defs, RsvgDefs};
 use error::{set_gerror, LoadingError};
 use io;
 use surface_utils::shared_surface::SharedImageSurface;
+use tree::{RsvgTree, Tree};
 
 pub enum RsvgHandle {}
 
@@ -37,12 +38,16 @@ impl Handle {
 
 #[allow(improper_ctypes)]
 extern "C" {
+    fn rsvg_handle_get_flags(handle: *const RsvgHandle) -> u32;
     fn rsvg_handle_get_defs(handle: *const RsvgHandle) -> *const RsvgDefs;
+    fn rsvg_handle_get_tree(handle: *const RsvgHandle) -> *const RsvgTree;
 
-    fn rsvg_handle_load_extern(
-        handle: *const RsvgHandle,
+    fn rsvg_handle_new_from_gfile_sync(
         file: *const gio_sys::GFile,
-    ) -> *const RsvgHandle;
+        flags: u32,
+        cancellable: *const gio_sys::GCancellable,
+        error: *mut *mut glib_sys::GError,
+    ) -> *mut RsvgHandle;
 
     fn rsvg_handle_keep_image_data(handle: *const RsvgHandle) -> glib_sys::gboolean;
 
@@ -63,15 +68,30 @@ pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a mut Defs {
     }
 }
 
+pub fn get_tree<'a>(handle: *const RsvgHandle) -> &'a Tree {
+    unsafe {
+        let t = rsvg_handle_get_tree(handle);
+        &*(t as *mut Tree)
+    }
+}
+
 pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*const RsvgHandle, ()> {
     unsafe {
         let file = GFile::new_for_uri(aurl.url().as_str());
 
-        let res = rsvg_handle_load_extern(handle, file.to_glib_none().0);
+        let res = rsvg_handle_new_from_gfile_sync(
+            file.to_glib_none().0,
+            rsvg_handle_get_flags(handle),
+            ptr::null(),
+            ptr::null_mut(),
+        );
 
         if res.is_null() {
             Err(())
         } else {
+            let tree = get_tree(res);
+            tree.cascade();
+
             Ok(res)
         }
     }

@@ -244,7 +244,13 @@ G_GNUC_INTERNAL
 RsvgNode *rsvg_defs_lookup (const RsvgDefs * defs, RsvgHandle *handle, const char *name);
 
 G_GNUC_INTERNAL
+guint rsvg_handle_get_flags (RsvgHandle *handle);
+
+G_GNUC_INTERNAL
 RsvgDefs *rsvg_handle_get_defs (RsvgHandle *handle);
+
+G_GNUC_INTERNAL
+RsvgTree *rsvg_handle_get_tree (RsvgHandle *handle);
 
 G_GNUC_INTERNAL
 RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
@@ -268,10 +274,6 @@ void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle,
 /* Implemented in rsvg_internals/src/handle.rs */
 G_GNUC_INTERNAL
 GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
-
-G_GNUC_INTERNAL
-RsvgHandle *rsvg_handle_load_extern (RsvgHandle *handle,
-                                     GFile *file);
 
 G_GNUC_INTERNAL
 gboolean rsvg_handle_keep_image_data (RsvgHandle *handle);

@@ -1011,10 +1011,22 @@ rsvg_handle_get_desc (RsvgHandle * handle)
     return NULL;
 }
 
+guint
+rsvg_handle_get_flags (RsvgHandle *handle)
+{
+    return (guint) handle->priv->flags;
+}
+
 RsvgDefs *
 rsvg_handle_get_defs (RsvgHandle *handle)
 {
     return handle->priv->defs;
+}
+
+RsvgTree *
+rsvg_handle_get_tree (RsvgHandle *handle)
+{
+    return handle->priv->tree;
 }
 
 RsvgHandleRust *
@@ -1027,25 +1039,6 @@ RsvgCssStyles *
 rsvg_handle_get_css_styles (RsvgHandle *handle)
 {
     return handle->priv->css_styles;
-}
-
-RsvgHandle *
-rsvg_handle_load_extern (RsvgHandle *handle, GFile *file)
-{
-    RsvgHandle *res;
-
-    res = rsvg_handle_new_from_gfile_sync (file,
-                                           handle->priv->flags,
-                                           NULL,
-                                           NULL);
-
-    if (res) {
-        rsvg_tree_cascade (res->priv->tree);
-    } else {
-        /* FIXME: rsvg_log!("could not load external resource"); */
-    }
-
-    return res;
 }
 
 gboolean
