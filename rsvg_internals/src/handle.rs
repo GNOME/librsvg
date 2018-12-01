@@ -41,7 +41,7 @@ extern "C" {
 
     fn rsvg_handle_load_extern(
         handle: *const RsvgHandle,
-        href: *const libc::c_char,
+        file: *const gio_sys::GFile,
     ) -> *const RsvgHandle;
 
     fn rsvg_handle_keep_image_data(handle: *const RsvgHandle) -> glib_sys::gboolean;
@@ -63,9 +63,11 @@ pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a mut Defs {
     }
 }
 
-pub fn load_extern(handle: *const RsvgHandle, uri: &str) -> Result<*const RsvgHandle, ()> {
+pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*const RsvgHandle, ()> {
     unsafe {
-        let res = rsvg_handle_load_extern(handle, uri.to_glib_none().0);
+        let file = GFile::new_for_uri(aurl.url().as_str());
+
+        let res = rsvg_handle_load_extern(handle, file.to_glib_none().0);
 
         if res.is_null() {
             Err(())

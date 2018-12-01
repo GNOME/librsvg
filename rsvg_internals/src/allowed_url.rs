@@ -11,7 +11,7 @@ use url::{self, Url};
 /// a specified `href` (a possibly-relative filename, for example)
 /// should be allowed to be loaded, given the base URL of the SVG
 /// being loaded.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct AllowedUrl(Url);
 
 #[derive(Debug, PartialEq)]

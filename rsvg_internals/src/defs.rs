@@ -17,7 +17,7 @@ pub enum RsvgDefs {}
 
 pub struct Defs {
     nodes: HashMap<String, Rc<Node>>,
-    externs: HashMap<String, *const RsvgHandle>,
+    externs: HashMap<AllowedUrl, *const RsvgHandle>,
 }
 
 impl Defs {
@@ -60,7 +60,7 @@ impl Defs {
         let aurl =
             AllowedUrl::from_href(href, handle::get_base_url(handle).as_ref()).map_err(|_| ())?;
 
-        match self.externs.entry(aurl.url().as_str().to_string()) {
+        match self.externs.entry(aurl) {
             Entry::Occupied(e) => Ok(*(e.get())),
             Entry::Vacant(e) => {
                 let extern_handle = handle::load_extern(handle, e.key())?;

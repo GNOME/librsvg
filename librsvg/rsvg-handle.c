@@ -1030,31 +1030,19 @@ rsvg_handle_get_css_styles (RsvgHandle *handle)
 }
 
 RsvgHandle *
-rsvg_handle_load_extern (RsvgHandle *handle, const char *uri)
+rsvg_handle_load_extern (RsvgHandle *handle, GFile *file)
 {
-    RsvgHandle *res = NULL;
-    GInputStream *stream;
+    RsvgHandle *res;
 
-    stream = rsvg_handle_acquire_stream (handle, uri, NULL);
+    res = rsvg_handle_new_from_gfile_sync (file,
+                                           handle->priv->flags,
+                                           NULL,
+                                           NULL);
 
-    if (stream) {
-        GFile *file = g_file_new_for_uri (uri);
-
-        res = rsvg_handle_new_from_stream_sync (stream,
-                                                file,
-                                                handle->priv->flags,
-                                                NULL,
-                                                NULL);
-
-        g_object_unref (file);
-
-        if (res) {
-            rsvg_tree_cascade (res->priv->tree);
-        } else {
-            /* FIXME: rsvg_log!("could not load external resource"); */
-        }
-
-        g_object_unref (stream);
+    if (res) {
+        rsvg_tree_cascade (res->priv->tree);
+    } else {
+        /* FIXME: rsvg_log!("could not load external resource"); */
     }
 
     return res;

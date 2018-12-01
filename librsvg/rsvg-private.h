@@ -271,7 +271,7 @@ GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 
 G_GNUC_INTERNAL
 RsvgHandle *rsvg_handle_load_extern (RsvgHandle *handle,
-                                     const char *uri);
+                                     GFile *file);
 
 G_GNUC_INTERNAL
 gboolean rsvg_handle_keep_image_data (RsvgHandle *handle);
