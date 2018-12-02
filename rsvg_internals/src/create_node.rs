@@ -69,24 +69,24 @@ node_create_fn!(
     ComponentTransfer::new
 );
 node_create_fn!(
-    create_component_transfer_func_r,
-    ComponentTransferFunction,
-    FuncX::new_r
-);
-node_create_fn!(
-    create_component_transfer_func_g,
-    ComponentTransferFunction,
-    FuncX::new_g
+    create_component_transfer_func_a,
+    ComponentTransferFunctionA,
+    FuncX::new_a
 );
 node_create_fn!(
     create_component_transfer_func_b,
-    ComponentTransferFunction,
+    ComponentTransferFunctionB,
     FuncX::new_b
 );
 node_create_fn!(
-    create_component_transfer_func_a,
-    ComponentTransferFunction,
-    FuncX::new_a
+    create_component_transfer_func_g,
+    ComponentTransferFunctionG,
+    FuncX::new_g
+);
+node_create_fn!(
+    create_component_transfer_func_r,
+    ComponentTransferFunctionR,
+    FuncX::new_r
 );
 node_create_fn!(create_composite, FilterPrimitiveComposite, Composite::new);
 node_create_fn!(
@@ -207,10 +207,10 @@ lazy_static! {
         h.insert("feDiffuseLighting",   (true,  create_diffuse_lighting as NodeCreateFn));
         h.insert("feDisplacementMap",   (true,  create_displacement_map as NodeCreateFn));
         h.insert("feDistantLight",      (false, create_distant_light as NodeCreateFn));
-        h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
-        h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
-        h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
         h.insert("feFuncA",             (false, create_component_transfer_func_a as NodeCreateFn));
+        h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
+        h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
+        h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
         h.insert("feFlood",             (true,  create_flood as NodeCreateFn));
         h.insert("feGaussianBlur",      (true,  create_gaussian_blur as NodeCreateFn));
         h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));
