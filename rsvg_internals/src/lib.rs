@@ -145,6 +145,7 @@ pub mod surface_utils;
 mod text;
 mod transform;
 mod tree;
+pub mod tree_utils;
 mod unitinterval;
 mod util;
 mod viewbox;
