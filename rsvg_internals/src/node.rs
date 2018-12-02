@@ -151,7 +151,6 @@ pub type NodeResult = Result<(), NodeError>;
 pub struct Node {
     node_type: NodeType,
     parent: Option<Weak<Node>>, // optional; weak ref to parent
-    element_name: String,       // we may want to intern these someday
     id: Option<String>,         // id attribute from XML element
     class: Option<String>,      // class attribute from XML element
     first_child: RefCell<Option<Rc<Node>>>,
@@ -294,7 +293,6 @@ impl Node {
     pub fn new(
         node_type: NodeType,
         parent: Option<Weak<Node>>,
-        element_name: &str,
         id: Option<&str>,
         class: Option<&str>,
         node_impl: Box<NodeTrait>,
@@ -302,7 +300,6 @@ impl Node {
         Node {
             node_type,
             parent,
-            element_name: element_name.to_string(),
             id: id.map(str::to_string),
             class: class.map(str::to_string),
             first_child: RefCell::new(None),
@@ -512,13 +509,14 @@ impl Node {
         //
         // This is basically a semi-compliant CSS2 selection engine
 
+        let element_name = self.node_type.element_name();
         let mut state = self.state.borrow_mut();
 
         // *
         css_styles.lookup_apply("*", &mut state);
 
         // tag
-        css_styles.lookup_apply(&self.element_name, &mut state);
+        css_styles.lookup_apply(element_name, &mut state);
 
         if let Some(klazz) = self.get_class() {
             for cls in klazz.split_whitespace() {
@@ -527,7 +525,7 @@ impl Node {
                 if !cls.is_empty() {
                     // tag.class#id
                     if let Some(id) = self.get_id() {
-                        let target = format!("{}.{}#{}", self.element_name, cls, id);
+                        let target = format!("{}.{}#{}", element_name, cls, id);
                         found = found || css_styles.lookup_apply(&target, &mut state);
                     }
 
@@ -538,7 +536,7 @@ impl Node {
                     }
 
                     // tag.class
-                    let target = format!("{}.{}", self.element_name, cls);
+                    let target = format!("{}.{}", element_name, cls);
                     found = found || css_styles.lookup_apply(&target, &mut state);
 
                     if !found {
@@ -556,7 +554,7 @@ impl Node {
             css_styles.lookup_apply(&target, &mut state);
 
             // tag#id
-            let target = format!("{}#{}", self.element_name, id);
+            let target = format!("{}#{}", element_name, id);
             css_styles.lookup_apply(&target, &mut state);
         }
     }
@@ -717,7 +715,6 @@ impl Node {
 pub fn node_new(
     node_type: NodeType,
     parent: Option<&RsvgNode>,
-    element_name: &str,
     id: Option<&str>,
     class: Option<&str>,
     node_impl: Box<NodeTrait>,
@@ -729,7 +726,6 @@ pub fn node_new(
         } else {
             None
         },
-        element_name,
         id,
         class,
         node_impl,
@@ -827,7 +823,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -853,7 +848,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -876,7 +870,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -890,7 +883,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -899,7 +891,6 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -916,7 +907,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -925,7 +915,6 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -934,7 +923,6 @@ mod tests {
         let second_child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),

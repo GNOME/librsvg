@@ -37,20 +37,8 @@ use text::{NodeTRef, NodeTSpan, NodeText};
 
 macro_rules! node_create_fn {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
-        fn $name(
-            element_name: &str,
-            id: Option<&str>,
-            class: Option<&str>,
-            parent: Option<&RsvgNode>,
-        ) -> RsvgNode {
-            node_new(
-                NodeType::$node_type,
-                parent,
-                element_name,
-                id,
-                class,
-                Box::new($new_fn()),
-            )
+        fn $name(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode {
+            node_new(NodeType::$node_type, parent, id, class, Box::new($new_fn()))
         }
     };
 }
@@ -184,7 +172,7 @@ node_create_fn!(create_sub_image, Group, NodeGroup::new);
 node_create_fn!(create_sub_image_ref, Image, NodeImage::new);
 
 type NodeCreateFn =
-    fn(name: &str, id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode;
+    fn(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode;
 
 lazy_static! {
     // Lines in comments are elements that we don't support.
@@ -308,7 +296,7 @@ pub fn create_node_and_register_id(
         class = None;
     };
 
-    let node = create_fn(name, id, class, parent);
+    let node = create_fn(id, class, parent);
 
     if id.is_some() {
         defs.insert(id.unwrap(), &node);
