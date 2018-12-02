@@ -175,8 +175,6 @@ pub struct Children {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum NodeType {
-    Invalid = 0,
-
     Chars,
     Circle,
     ClipPath,
@@ -209,7 +207,6 @@ pub enum NodeType {
     Use,
 
     // Filter primitives
-    FilterPrimitiveFirst, // just a marker; not a valid type
     FilterPrimitiveBlend,
     FilterPrimitiveColorMatrix,
     FilterPrimitiveComponentTransfer,
@@ -227,7 +224,6 @@ pub enum NodeType {
     FilterPrimitiveSpecularLighting,
     FilterPrimitiveTile,
     FilterPrimitiveTurbulence,
-    FilterPrimitiveLast, // just a marker; not a valid type
 }
 
 impl Node {
