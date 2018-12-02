@@ -231,6 +231,65 @@ pub enum NodeType {
     FilterPrimitiveTurbulence,
 }
 
+impl NodeType {
+    fn element_name(&self) -> &'static str {
+        match self {
+            NodeType::Chars => "rsvg-chars", // Dummy element name for chars
+            NodeType::Circle => "circle",
+            NodeType::ClipPath => "clipPath",
+            NodeType::ComponentTransferFunctionA => "feFuncA",
+            NodeType::ComponentTransferFunctionB => "feFuncB",
+            NodeType::ComponentTransferFunctionG => "feFuncG",
+            NodeType::ComponentTransferFunctionR => "feFuncR",
+            NodeType::Defs => "defs",
+            NodeType::DistantLight => "feDistantLight",
+            NodeType::Ellipse => "ellipse",
+            NodeType::Filter => "filter",
+            NodeType::Group => "g",
+            NodeType::Image => "image",
+            NodeType::Line => "line",
+            NodeType::LinearGradient => "linearGradient",
+            NodeType::Link => "a",
+            NodeType::Marker => "marker",
+            NodeType::Mask => "mask",
+            NodeType::Path => "path",
+            NodeType::Pattern => "pattern",
+            NodeType::PointLight => "fePointight",
+            NodeType::Polygon => "polygon",
+            NodeType::Polyline => "polyline",
+            NodeType::RadialGradient => "radialGradient",
+            NodeType::Rect => "rect",
+            NodeType::SpotLight => "feSpotLight",
+            NodeType::Stop => "stop",
+            NodeType::Style => "style",
+            NodeType::Svg => "svg",
+            NodeType::Switch => "switch",
+            NodeType::Symbol => "symbol",
+            NodeType::Text => "text",
+            NodeType::TRef => "tref",
+            NodeType::TSpan => "tspan",
+            NodeType::Use => "use",
+            NodeType::FilterPrimitiveBlend => "feBlend",
+            NodeType::FilterPrimitiveColorMatrix => "feColorMatrix",
+            NodeType::FilterPrimitiveComponentTransfer => "feComponentTransfer",
+            NodeType::FilterPrimitiveComposite => "feComposite",
+            NodeType::FilterPrimitiveConvolveMatrix => "feConvolveMatrix",
+            NodeType::FilterPrimitiveDiffuseLighting => "feDiffuseLighting",
+            NodeType::FilterPrimitiveDisplacementMap => "feDisplacementMap",
+            NodeType::FilterPrimitiveFlood => "feFlood",
+            NodeType::FilterPrimitiveGaussianBlur => "feGaussianBlur",
+            NodeType::FilterPrimitiveImage => "feImage",
+            NodeType::FilterPrimitiveMerge => "feMerge",
+            NodeType::FilterPrimitiveMergeNode => "feMergeNode",
+            NodeType::FilterPrimitiveMorphology => "feMorphology",
+            NodeType::FilterPrimitiveOffset => "feOffset",
+            NodeType::FilterPrimitiveSpecularLighting => "feSpecularLighting",
+            NodeType::FilterPrimitiveTile => "feTile",
+            NodeType::FilterPrimitiveTurbulence => "feTurbulence",
+        }
+    }
+}
+
 impl Node {
     pub fn new(
         node_type: NodeType,
