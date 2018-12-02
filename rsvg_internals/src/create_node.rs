@@ -171,6 +171,18 @@ node_create_fn!(
 );
 node_create_fn!(create_use, Use, NodeUse::new);
 
+// hack to partially support conical gradient
+node_create_fn!(
+    create_conical_gradient,
+    RadialGradient,
+    NodeGradient::new_radial
+);
+
+// hack to make multiImage sort-of work
+node_create_fn!(create_multi_image, Switch, NodeSwitch::new);
+node_create_fn!(create_sub_image, Group, NodeGroup::new);
+node_create_fn!(create_sub_image_ref, Image, NodeImage::new);
+
 type NodeCreateFn =
     fn(name: &str, id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode;
 
@@ -190,7 +202,7 @@ lazy_static! {
         h.insert("circle",              (true,  create_circle as NodeCreateFn));
         h.insert("clipPath",            (true,  create_clip_path as NodeCreateFn));
         /* h.insert("color-profile",    (false, as NodeCreateFn)); */
-        h.insert("conicalGradient",     (true,  create_radial_gradient as NodeCreateFn));
+        h.insert("conicalGradient",     (true,  create_conical_gradient as NodeCreateFn));
         /* h.insert("cursor",           (false, as NodeCreateFn)); */
         h.insert("defs",                (true,  create_defs as NodeCreateFn));
         /* h.insert("desc",             (true,  as NodeCreateFn)); */
@@ -239,7 +251,7 @@ lazy_static! {
         /* h.insert("metadata",         (false, as NodeCreateFn)); */
         /* h.insert("missing-glyph",    (true,  as NodeCreateFn)); */
         /* h.insert("mpath",            (false, as NodeCreateFn)); */
-        h.insert("multiImage",          (false, create_switch as NodeCreateFn)); // hack to make multiImage sort-of work
+        h.insert("multiImage",          (false, create_multi_image as NodeCreateFn));
         h.insert("path",                (true,  create_path as NodeCreateFn));
         h.insert("pattern",             (true,  create_pattern as NodeCreateFn));
         h.insert("polygon",             (true,  create_polygon as NodeCreateFn));
@@ -250,8 +262,8 @@ lazy_static! {
         /* h.insert("set",              (false, as NodeCreateFn)); */
         h.insert("stop",                (true,  create_stop as NodeCreateFn));
         h.insert("style",               (false, create_style as NodeCreateFn));
-        h.insert("subImage",            (false, create_group as NodeCreateFn));
-        h.insert("subImageRef",         (false, create_image as NodeCreateFn));
+        h.insert("subImage",            (false, create_sub_image as NodeCreateFn));
+        h.insert("subImageRef",         (false, create_sub_image_ref as NodeCreateFn));
         h.insert("svg",                 (true,  create_svg as NodeCreateFn));
         h.insert("switch",              (true,  create_switch as NodeCreateFn));
         h.insert("symbol",              (true,  create_symbol as NodeCreateFn));
