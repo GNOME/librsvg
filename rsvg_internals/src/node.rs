@@ -13,6 +13,7 @@ use handle::RsvgHandle;
 use parsers::Parse;
 use property_bag::PropertyBag;
 use state::{ComputedValues, Overflow, SpecifiedValue, State};
+use tree_utils;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
 // points to an  Rc<Node>, which is our refcounted Rust representation
@@ -47,7 +48,7 @@ impl<'a> CascadedValues<'a> {
     pub fn new(&self, node: &'a Node) -> CascadedValues<'a> {
         match self.inner {
             CascadedInner::FromNode(_) => CascadedValues {
-                inner: CascadedInner::FromNode(node.values.borrow()),
+                inner: CascadedInner::FromNode(node.data.values.borrow()),
             },
 
             CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, v),
@@ -61,7 +62,7 @@ impl<'a> CascadedValues<'a> {
     /// `new()` to derive the cascade from an existing one.
     fn new_from_node(node: &Node) -> CascadedValues<'_> {
         CascadedValues {
-            inner: CascadedInner::FromNode(node.values.borrow()),
+            inner: CascadedInner::FromNode(node.data.values.borrow()),
         }
     }
 
@@ -71,7 +72,7 @@ impl<'a> CascadedValues<'a> {
     /// This is for the `<use>` element, which draws the element which it references with the
     /// `<use>`'s own cascade, not wih the element's original cascade.
     pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
-        let state = node.state.borrow();
+        let state = node.data.state.borrow();
         let mut v = values.clone();
         state.get_specified_values().to_computed_values(&mut v);
 
@@ -148,15 +149,10 @@ impl_downcast!(NodeTrait);
 // validator, not a renderer like librsvg is.
 pub type NodeResult = Result<(), NodeError>;
 
-pub struct Node {
+pub struct NodeData {
     node_type: NodeType,
-    parent: Option<Weak<Node>>, // optional; weak ref to parent
-    id: Option<String>,         // id attribute from XML element
-    class: Option<String>,      // class attribute from XML element
-    first_child: RefCell<Option<Rc<Node>>>,
-    last_child: RefCell<Option<Weak<Node>>>,
-    next_sib: RefCell<Option<Rc<Node>>>, // next sibling; strong ref
-    prev_sib: RefCell<Option<Weak<Node>>>, // previous sibling; weak ref
+    id: Option<String>,    // id attribute from XML element
+    class: Option<String>, // class attribute from XML element
     state: RefCell<State>,
     result: RefCell<NodeResult>,
     transform: Cell<Matrix>,
@@ -165,12 +161,7 @@ pub struct Node {
     node_impl: Box<NodeTrait>,
 }
 
-// An iterator over the Node's children
-#[derive(Clone)]
-pub struct Children {
-    next: Option<Rc<Node>>,
-    next_back: Option<Rc<Node>>,
-}
+pub type Node = tree_utils::Node<NodeData>;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum NodeType {
@@ -297,46 +288,50 @@ impl Node {
         class: Option<&str>,
         node_impl: Box<NodeTrait>,
     ) -> Node {
-        Node {
+        let data = NodeData {
             node_type,
-            parent,
             id: id.map(str::to_string),
             class: class.map(str::to_string),
-            first_child: RefCell::new(None),
-            last_child: RefCell::new(None),
-            next_sib: RefCell::new(None),
-            prev_sib: RefCell::new(None),
             state: RefCell::new(State::new()),
             transform: Cell::new(Matrix::identity()),
             result: RefCell::new(Ok(())),
             values: RefCell::new(ComputedValues::default()),
             cond: Cell::new(true),
             node_impl,
+        };
+
+        tree_utils::Node::<NodeData> {
+            parent,
+            first_child: RefCell::new(None),
+            last_child: RefCell::new(None),
+            next_sib: RefCell::new(None),
+            prev_sib: RefCell::new(None),
+            data,
         }
     }
 
     pub fn get_type(&self) -> NodeType {
-        self.node_type
+        self.data.node_type
     }
 
     pub fn get_id(&self) -> Option<&str> {
-        self.id.as_ref().map(String::as_str)
+        self.data.id.as_ref().map(String::as_str)
     }
 
     pub fn get_class(&self) -> Option<&str> {
-        self.class.as_ref().map(String::as_str)
+        self.data.class.as_ref().map(String::as_str)
     }
 
     pub fn get_human_readable_name(&self) -> String {
         format!(
             "{:?} id={}",
-            self.node_type,
+            self.get_type(),
             self.get_id().unwrap_or("None")
         )
     }
 
     pub fn get_transform(&self) -> Matrix {
-        self.transform.get()
+        self.data.transform.get()
     }
 
     pub fn get_cascaded_values(&self) -> CascadedValues<'_> {
@@ -344,10 +339,10 @@ impl Node {
     }
 
     pub fn cascade(&self, values: &ComputedValues) {
-        let state = self.state.borrow();
+        let state = self.data.state.borrow();
         let mut values = values.clone();
         state.get_specified_values().to_computed_values(&mut values);
-        *self.values.borrow_mut() = values.clone();
+        *self.data.values.borrow_mut() = values.clone();
 
         for child in self.children() {
             child.cascade(&values);
@@ -355,57 +350,14 @@ impl Node {
     }
 
     pub fn get_cond(&self) -> bool {
-        self.cond.get()
-    }
-
-    pub fn get_parent(&self) -> Option<Rc<Node>> {
-        match self.parent {
-            None => None,
-            Some(ref weak_node) => Some(weak_node.upgrade().unwrap()),
-        }
-    }
-
-    pub fn is_ancestor(ancestor: Rc<Node>, descendant: Rc<Node>) -> bool {
-        let mut desc = Some(descendant.clone());
-
-        while let Some(ref d) = desc.clone() {
-            if Rc::ptr_eq(&ancestor, d) {
-                return true;
-            }
-
-            desc = d.get_parent();
-        }
-
-        false
-    }
-
-    pub fn has_previous_sibling(&self) -> bool {
-        !self.prev_sib.borrow().is_none()
-    }
-
-    pub fn has_next_sibling(&self) -> bool {
-        !self.next_sib.borrow().is_none()
-    }
-
-    pub fn add_child(&self, child: &Rc<Node>) {
-        assert!(child.next_sib.borrow().is_none());
-        assert!(child.prev_sib.borrow().is_none());
-
-        if let Some(last_child_weak) = self.last_child.replace(Some(Rc::downgrade(child))) {
-            if let Some(last_child) = last_child_weak.upgrade() {
-                child.prev_sib.replace(Some(last_child_weak));
-                last_child.next_sib.replace(Some(child.clone()));
-                return;
-            }
-        }
-        self.first_child.replace(Some(child.clone()));
+        self.data.cond.get()
     }
 
     pub fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag<'_>) {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::Transform => match Matrix::parse_str(value, ()) {
-                    Ok(affine) => self.transform.set(affine),
+                    Ok(affine) => self.data.transform.set(affine),
                     Err(e) => {
                         self.set_error(NodeError::attribute_error(Attribute::Transform, e));
                         return;
@@ -424,7 +376,7 @@ impl Node {
             }
         }
 
-        match self.node_impl.set_atts(node, handle, pbag) {
+        match self.data.node_impl.set_atts(node, handle, pbag) {
             Ok(_) => (),
             Err(e) => {
                 self.set_error(e);
@@ -437,7 +389,7 @@ impl Node {
         &self,
         pbag: &PropertyBag<'_>,
     ) -> Result<(), NodeError> {
-        let mut cond = self.cond.get();
+        let mut cond = self.get_cond();
 
         for (_key, attr, value) in pbag.iter() {
             // FIXME: move this to "do catch" when we can bump the rustc version dependency
@@ -468,7 +420,7 @@ impl Node {
             };
 
             parse()
-                .map(|c| self.cond.set(c))
+                .map(|c| self.data.cond.set(c))
                 .map_err(|e| NodeError::attribute_error(attr, e))?;
         }
 
@@ -477,7 +429,7 @@ impl Node {
 
     /// Hands the pbag to the node's state, to apply the presentation attributes
     fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) {
-        let mut state = self.state.borrow_mut();
+        let mut state = self.data.state.borrow_mut();
         match state.parse_presentation_attributes(pbag) {
             Ok(_) => (),
             Err(e) => {
@@ -509,8 +461,8 @@ impl Node {
         //
         // This is basically a semi-compliant CSS2 selection engine
 
-        let element_name = self.node_type.element_name();
-        let mut state = self.state.borrow_mut();
+        let element_name = self.get_type().element_name();
+        let mut state = self.data.state.borrow_mut();
 
         // *
         css_styles.lookup_apply("*", &mut state);
@@ -564,7 +516,7 @@ impl Node {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::Style => {
-                    let mut state = self.state.borrow_mut();
+                    let mut state = self.data.state.borrow_mut();
                     if let Err(e) = state.parse_style_declarations(value) {
                         self.set_error(e);
                         break;
@@ -585,8 +537,8 @@ impl Node {
     }
 
     pub fn set_overridden_properties(&self) {
-        let mut state = self.state.borrow_mut();
-        self.node_impl.set_overridden_properties(&mut state);
+        let mut state = self.data.state.borrow_mut();
+        self.data.node_impl.set_overridden_properties(&mut state);
     }
 
     pub fn draw(
@@ -602,7 +554,7 @@ impl Node {
 
             cr.transform(self.get_transform());
 
-            let res = self.node_impl.draw(node, cascaded, draw_ctx, clipping);
+            let res = self.data.node_impl.draw(node, cascaded, draw_ctx, clipping);
 
             cr.set_matrix(save_affine);
 
@@ -624,11 +576,11 @@ impl Node {
             error
         );
 
-        *self.result.borrow_mut() = Err(error);
+        *self.data.result.borrow_mut() = Err(error);
     }
 
     pub fn is_in_error(&self) -> bool {
-        self.result.borrow().is_err()
+        self.data.result.borrow().is_err()
     }
 
     pub fn with_impl<T, F, U>(&self, f: F) -> U
@@ -636,7 +588,7 @@ impl Node {
         T: NodeTrait,
         F: FnOnce(&T) -> U,
     {
-        if let Some(t) = (&self.node_impl).downcast_ref::<T>() {
+        if let Some(t) = (&self.data.node_impl).downcast_ref::<T>() {
             f(t)
         } else {
             panic!("could not downcast");
@@ -644,7 +596,7 @@ impl Node {
     }
 
     pub fn get_impl<T: NodeTrait>(&self) -> Option<&T> {
-        (&self.node_impl).downcast_ref::<T>()
+        (&self.data.node_impl).downcast_ref::<T>()
     }
 
     pub fn draw_children(
@@ -664,31 +616,18 @@ impl Node {
         Ok(())
     }
 
-    pub fn children(&self) -> Children {
-        let last_child = self
-            .last_child
-            .borrow()
-            .as_ref()
-            .and_then(|child_weak| child_weak.upgrade());
-        Children::new(self.first_child.borrow().clone(), last_child)
-    }
-
-    pub fn has_children(&self) -> bool {
-        self.first_child.borrow().is_some()
-    }
-
     pub fn is_overflow(&self) -> bool {
-        let state = self.state.borrow();
+        let state = self.data.state.borrow();
         state.get_specified_values().is_overflow()
     }
 
     pub fn set_overflow_hidden(&self) {
-        let mut state = self.state.borrow_mut();
+        let mut state = self.data.state.borrow_mut();
         state.values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
 
     pub fn accept_chars(&self) -> bool {
-        self.node_impl.accept_chars()
+        self.data.node_impl.accept_chars()
     }
 
     // find the last Chars node so that we can coalesce
@@ -730,57 +669,6 @@ pub fn node_new(
         class,
         node_impl,
     ))
-}
-
-impl Children {
-    fn new(next: Option<Rc<Node>>, next_back: Option<Rc<Node>>) -> Self {
-        Self { next, next_back }
-    }
-
-    // true if self.next_back's next sibling is self.next
-    fn finished(&self) -> bool {
-        match &self.next_back {
-            &Some(ref next_back) => {
-                next_back
-                    .next_sib
-                    .borrow()
-                    .clone()
-                    .map(|rc| &*rc as *const Node)
-                    == self.next.clone().map(|rc| &*rc as *const Node)
-            }
-            _ => true,
-        }
-    }
-}
-
-impl Iterator for Children {
-    type Item = Rc<Node>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.finished() {
-            return None;
-        }
-        self.next.take().and_then(|next| {
-            self.next = next.next_sib.borrow().clone();
-            Some(next)
-        })
-    }
-}
-
-impl DoubleEndedIterator for Children {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        if self.finished() {
-            return None;
-        }
-        self.next_back.take().and_then(|next_back| {
-            self.next_back = next_back
-                .prev_sib
-                .borrow()
-                .as_ref()
-                .and_then(|sib_weak| sib_weak.upgrade());
-            Some(next_back)
-        })
-    }
 }
 
 pub fn box_node(node: RsvgNode) -> *mut RsvgNode {
@@ -863,87 +751,5 @@ mod tests {
 
         rsvg_node_unref(ref1);
         rsvg_node_unref(ref2);
-    }
-
-    #[test]
-    fn node_is_its_own_ancestor() {
-        let node = Rc::new(Node::new(
-            NodeType::Path,
-            None,
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        assert!(Node::is_ancestor(node.clone(), node.clone()));
-    }
-
-    #[test]
-    fn node_is_ancestor_of_child() {
-        let node = Rc::new(Node::new(
-            NodeType::Path,
-            None,
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        let child = Rc::new(Node::new(
-            NodeType::Path,
-            Some(Rc::downgrade(&node)),
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        node.add_child(&child);
-
-        assert!(Node::is_ancestor(node.clone(), child.clone()));
-        assert!(!Node::is_ancestor(child.clone(), node.clone()));
-    }
-
-    #[test]
-    fn node_children_iterator() {
-        let node = Rc::new(Node::new(
-            NodeType::Path,
-            None,
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        let child = Rc::new(Node::new(
-            NodeType::Path,
-            Some(Rc::downgrade(&node)),
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        let second_child = Rc::new(Node::new(
-            NodeType::Path,
-            Some(Rc::downgrade(&node)),
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        node.add_child(&child);
-        node.add_child(&second_child);
-
-        let mut children = node.children();
-
-        let c = children.next();
-        assert!(c.is_some());
-        let c = c.unwrap();
-        assert!(Rc::ptr_eq(&c, &child));
-
-        let c = children.next_back();
-        assert!(c.is_some());
-        let c = c.unwrap();
-        assert!(Rc::ptr_eq(&c, &second_child));
-
-        assert!(children.next().is_none());
-        assert!(children.next_back().is_none());
     }
 }
