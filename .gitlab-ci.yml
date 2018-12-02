@@ -87,24 +87,18 @@ fedora test:
   stage: test
   variables:
     LIBRSVG_DEBUG: "yes"
-  before_script:
-    - dnf install -y gettext-devel
   <<: *test
 
 fedora:rawhide:
   image: $AMD64_FEDORA_RAWHIDE
   variables:
     LIBRSVG_DEBUG: "yes"
-  before_script:
-    - dnf install -y gettext-devel
   <<: *distro_test
 
 .opensuse:tumbleweed:
   image: $AMD64_OPENSUSE_TUMBLEWEED
   variables:
     LIBRSVG_DEBUG: "yes"
-  before_script:
-    - zypper install -y gettext-tools
   <<: *distro_test
 
 debian:testing:
@@ -113,7 +107,6 @@ debian:testing:
     LIBRSVG_DEBUG: "yes"
   before_script:
     - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
-    - apt-get update && apt-get install -y autotools-dev libltdl-dev libtool autoconf autopoint
   <<: *distro_test
 
 debian_i386:testing:
@@ -122,7 +115,6 @@ debian_i386:testing:
     LIBRSVG_DEBUG: "yes"
   before_script:
     - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
-    - apt-get update && apt-get install -y autotools-dev libltdl-dev libtool autoconf autopoint
   <<: *distro_test
 
 # STAGE 1 LINTS
@@ -155,7 +147,6 @@ tarball:
   variables:
     LIBRSVG_DEBUG: "yes"
   script:
-    - dnf install -y gettext-devel
     - rustc --version && cargo --version
     - mkdir -p _build
     - cd _build
@@ -171,8 +162,6 @@ fedora:test_release:
   stage: test
   variables:
     LIBRSVG_DEBUG: "no"
-  before_script:
-    - dnf install -y gettext-devel
   <<: *distro_test
   <<: *stage_3
 
@@ -182,7 +171,6 @@ debian:testing_release_i386:
     LIBRSVG_DEBUG: "no"
   before_script:
     - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
-    - apt-get update && apt-get install -y autotools-dev libltdl-dev libtool autoconf autopoint
   <<: *distro_test
   <<: *stage_3
 
