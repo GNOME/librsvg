@@ -226,10 +226,10 @@ impl Filter for Lighting {
             cssparser::Color::RGBA(rgba) => rgba,
         };
 
-        let mut light_sources = node
-            .children()
-            .rev()
-            .filter(|c| c.get_type() == NodeType::LightSource);
+        let mut light_sources = node.children().rev().filter(|c| match c.get_type() {
+            NodeType::DistantLight | NodeType::PointLight | NodeType::SpotLight => true,
+            _ => false,
+        });
         let light_source = light_sources.next();
         if light_source.is_none() || light_sources.next().is_some() {
             return Err(FilterError::InvalidLightSourceCount);

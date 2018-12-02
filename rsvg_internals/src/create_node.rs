@@ -102,7 +102,7 @@ node_create_fn!(
 );
 node_create_fn!(
     create_distant_light,
-    LightSource,
+    DistantLight,
     LightSource::new_distant_light
 );
 node_create_fn!(
@@ -140,11 +140,7 @@ node_create_fn!(
 node_create_fn!(create_offset, FilterPrimitiveOffset, Offset::new);
 node_create_fn!(create_path, Path, NodePath::new);
 node_create_fn!(create_pattern, Pattern, NodePattern::new);
-node_create_fn!(
-    create_point_light,
-    LightSource,
-    LightSource::new_point_light
-);
+node_create_fn!(create_point_light, PointLight, LightSource::new_point_light);
 node_create_fn!(create_polygon, Polygon, NodePoly::new_closed);
 node_create_fn!(create_polyline, Polyline, NodePoly::new_open);
 node_create_fn!(
@@ -158,7 +154,7 @@ node_create_fn!(
     FilterPrimitiveSpecularLighting,
     Lighting::new_specular
 );
-node_create_fn!(create_spot_light, LightSource, LightSource::new_spot_light);
+node_create_fn!(create_spot_light, SpotLight, LightSource::new_spot_light);
 node_create_fn!(create_stop, Stop, NodeStop::new);
 node_create_fn!(create_style, Style, NodeStyle::new);
 node_create_fn!(create_svg, Svg, NodeSvg::new);
