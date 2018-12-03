@@ -137,6 +137,34 @@ extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern RsvgNode *rsvg_handle_defs_lookup (RsvgHandle *handle, const char *name);
 extern gboolean rsvg_handle_rust_node_is_root(RsvgHandleRust *raw_handle, RsvgNode *node);
 
+/* Implemented in rust/src/node.rs */
+/* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
+extern RsvgNode *rsvg_node_unref (RsvgNode *node);
+
+/* Implemented in rsvg_internals/src/structure.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int *out_width, int *out_height);
+
+/* Defined in rsvg_internals/src/drawing_ctx.rs */
+extern RsvgDrawingCtx *rsvg_drawing_ctx_new (RsvgHandle *handle,
+                                             cairo_t *cr,
+                                             guint width,
+                                             guint height,
+                                             double vb_width,
+                                             double vb_height,
+                                             double dpi_x,
+                                             double dpi_y,
+                                             gboolean testing);
+extern void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
+extern void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
+                                                              RsvgNode       *node);
+extern gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx) G_GNUC_WARN_UNUSED_RESULT;
+extern void rsvg_drawing_ctx_get_geometry (RsvgDrawingCtx *ctx,
+                                           RsvgRectangle *ink_rect,
+                                           RsvgRectangle *logical_rect);
+
+
+
 enum {
     PROP_0,
     PROP_FLAGS,

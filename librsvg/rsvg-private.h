@@ -113,23 +113,6 @@ struct RsvgHandlePrivate {
     RsvgHandleRust *rust_handle;
 };
 
-/* Implemented in rust/src/node.rs */
-/* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_unref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-void rsvg_node_set_overridden_properties (RsvgNode *node);
-
-typedef struct RsvgNodeChildrenIter *RsvgNodeChildrenIter;
-
-/* Implemented in rsvg_internals/src/structure.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int *out_width, int *out_height);
-
-typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
-
 /* Implemented in rust/src/property_bag.rs */
 G_GNUC_INTERNAL
 RsvgPropertyBag	    rsvg_property_bag_new       (const char **atts);
@@ -158,45 +141,9 @@ void rsvg_property_bag_iter_end (RsvgPropertyBagIter *iter);
 G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 
-/* Defined in rsvg_internals/src/drawing_ctx.rs */
-G_GNUC_INTERNAL
-RsvgDrawingCtx *rsvg_drawing_ctx_new (RsvgHandle *handle,
-                                      cairo_t *cr,
-                                      guint width,
-                                      guint height,
-                                      double vb_width,
-                                      double vb_height,
-                                      double dpi_x,
-                                      double dpi_y,
-                                      gboolean testing);
-
-/* Defined in rsvg_internals/src/drawing_ctx.rs */
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
-
-/* Defined in rsvg_internals/src/drawing_ctx.rs */
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
-                                                       RsvgNode        *node);
-
-/* Defined in rsvg_internals/src/drawing_ctx.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx) G_GNUC_WARN_UNUSED_RESULT;;
-
-/* Defined in rsvg_internals/src/drawing_ctx.rs */
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_get_geometry (RsvgDrawingCtx *ctx, RsvgRectangle *ink_rect, RsvgRectangle *logical_rect);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-void rsvg_root_node_cascade(RsvgNode *node);
-
 G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
-
-G_GNUC_INTERNAL
-RsvgNode *rsvg_load_destroy (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
 guint rsvg_handle_get_flags (RsvgHandle *handle);
