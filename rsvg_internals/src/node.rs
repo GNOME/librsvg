@@ -151,7 +151,6 @@ pub type NodeResult = Result<(), NodeError>;
 pub struct Node {
     node_type: NodeType,
     parent: Option<Weak<Node>>, // optional; weak ref to parent
-    element_name: String,       // we may want to intern these someday
     id: Option<String>,         // id attribute from XML element
     class: Option<String>,      // class attribute from XML element
     first_child: RefCell<Option<Rc<Node>>>,
@@ -175,18 +174,19 @@ pub struct Children {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum NodeType {
-    Invalid = 0,
-
     Chars,
     Circle,
     ClipPath,
-    ComponentTransferFunction,
+    ComponentTransferFunctionA,
+    ComponentTransferFunctionB,
+    ComponentTransferFunctionG,
+    ComponentTransferFunctionR,
     Defs,
+    DistantLight,
     Ellipse,
     Filter,
     Group,
     Image,
-    LightSource,
     Line,
     LinearGradient,
     Link,
@@ -194,10 +194,12 @@ pub enum NodeType {
     Mask,
     Path,
     Pattern,
+    PointLight,
     Polygon,
     Polyline,
     RadialGradient,
     Rect,
+    SpotLight,
     Stop,
     Style,
     Svg,
@@ -209,7 +211,6 @@ pub enum NodeType {
     Use,
 
     // Filter primitives
-    FilterPrimitiveFirst, // just a marker; not a valid type
     FilterPrimitiveBlend,
     FilterPrimitiveColorMatrix,
     FilterPrimitiveComponentTransfer,
@@ -227,14 +228,71 @@ pub enum NodeType {
     FilterPrimitiveSpecularLighting,
     FilterPrimitiveTile,
     FilterPrimitiveTurbulence,
-    FilterPrimitiveLast, // just a marker; not a valid type
+}
+
+impl NodeType {
+    fn element_name(&self) -> &'static str {
+        match self {
+            NodeType::Chars => "rsvg-chars", // Dummy element name for chars
+            NodeType::Circle => "circle",
+            NodeType::ClipPath => "clipPath",
+            NodeType::ComponentTransferFunctionA => "feFuncA",
+            NodeType::ComponentTransferFunctionB => "feFuncB",
+            NodeType::ComponentTransferFunctionG => "feFuncG",
+            NodeType::ComponentTransferFunctionR => "feFuncR",
+            NodeType::Defs => "defs",
+            NodeType::DistantLight => "feDistantLight",
+            NodeType::Ellipse => "ellipse",
+            NodeType::Filter => "filter",
+            NodeType::Group => "g",
+            NodeType::Image => "image",
+            NodeType::Line => "line",
+            NodeType::LinearGradient => "linearGradient",
+            NodeType::Link => "a",
+            NodeType::Marker => "marker",
+            NodeType::Mask => "mask",
+            NodeType::Path => "path",
+            NodeType::Pattern => "pattern",
+            NodeType::PointLight => "fePointight",
+            NodeType::Polygon => "polygon",
+            NodeType::Polyline => "polyline",
+            NodeType::RadialGradient => "radialGradient",
+            NodeType::Rect => "rect",
+            NodeType::SpotLight => "feSpotLight",
+            NodeType::Stop => "stop",
+            NodeType::Style => "style",
+            NodeType::Svg => "svg",
+            NodeType::Switch => "switch",
+            NodeType::Symbol => "symbol",
+            NodeType::Text => "text",
+            NodeType::TRef => "tref",
+            NodeType::TSpan => "tspan",
+            NodeType::Use => "use",
+            NodeType::FilterPrimitiveBlend => "feBlend",
+            NodeType::FilterPrimitiveColorMatrix => "feColorMatrix",
+            NodeType::FilterPrimitiveComponentTransfer => "feComponentTransfer",
+            NodeType::FilterPrimitiveComposite => "feComposite",
+            NodeType::FilterPrimitiveConvolveMatrix => "feConvolveMatrix",
+            NodeType::FilterPrimitiveDiffuseLighting => "feDiffuseLighting",
+            NodeType::FilterPrimitiveDisplacementMap => "feDisplacementMap",
+            NodeType::FilterPrimitiveFlood => "feFlood",
+            NodeType::FilterPrimitiveGaussianBlur => "feGaussianBlur",
+            NodeType::FilterPrimitiveImage => "feImage",
+            NodeType::FilterPrimitiveMerge => "feMerge",
+            NodeType::FilterPrimitiveMergeNode => "feMergeNode",
+            NodeType::FilterPrimitiveMorphology => "feMorphology",
+            NodeType::FilterPrimitiveOffset => "feOffset",
+            NodeType::FilterPrimitiveSpecularLighting => "feSpecularLighting",
+            NodeType::FilterPrimitiveTile => "feTile",
+            NodeType::FilterPrimitiveTurbulence => "feTurbulence",
+        }
+    }
 }
 
 impl Node {
     pub fn new(
         node_type: NodeType,
         parent: Option<Weak<Node>>,
-        element_name: &str,
         id: Option<&str>,
         class: Option<&str>,
         node_impl: Box<NodeTrait>,
@@ -242,7 +300,6 @@ impl Node {
         Node {
             node_type,
             parent,
-            element_name: element_name.to_string(),
             id: id.map(str::to_string),
             class: class.map(str::to_string),
             first_child: RefCell::new(None),
@@ -452,13 +509,14 @@ impl Node {
         //
         // This is basically a semi-compliant CSS2 selection engine
 
+        let element_name = self.node_type.element_name();
         let mut state = self.state.borrow_mut();
 
         // *
         css_styles.lookup_apply("*", &mut state);
 
         // tag
-        css_styles.lookup_apply(&self.element_name, &mut state);
+        css_styles.lookup_apply(element_name, &mut state);
 
         if let Some(klazz) = self.get_class() {
             for cls in klazz.split_whitespace() {
@@ -467,7 +525,7 @@ impl Node {
                 if !cls.is_empty() {
                     // tag.class#id
                     if let Some(id) = self.get_id() {
-                        let target = format!("{}.{}#{}", self.element_name, cls, id);
+                        let target = format!("{}.{}#{}", element_name, cls, id);
                         found = found || css_styles.lookup_apply(&target, &mut state);
                     }
 
@@ -478,7 +536,7 @@ impl Node {
                     }
 
                     // tag.class
-                    let target = format!("{}.{}", self.element_name, cls);
+                    let target = format!("{}.{}", element_name, cls);
                     found = found || css_styles.lookup_apply(&target, &mut state);
 
                     if !found {
@@ -496,7 +554,7 @@ impl Node {
             css_styles.lookup_apply(&target, &mut state);
 
             // tag#id
-            let target = format!("{}#{}", self.element_name, id);
+            let target = format!("{}#{}", element_name, id);
             css_styles.lookup_apply(&target, &mut state);
         }
     }
@@ -657,7 +715,6 @@ impl Node {
 pub fn node_new(
     node_type: NodeType,
     parent: Option<&RsvgNode>,
-    element_name: &str,
     id: Option<&str>,
     class: Option<&str>,
     node_impl: Box<NodeTrait>,
@@ -669,7 +726,6 @@ pub fn node_new(
         } else {
             None
         },
-        element_name,
         id,
         class,
         node_impl,
@@ -767,7 +823,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -793,7 +848,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -816,7 +870,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -830,7 +883,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -839,7 +891,6 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -856,7 +907,6 @@ mod tests {
         let node = Rc::new(Node::new(
             NodeType::Path,
             None,
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -865,7 +915,6 @@ mod tests {
         let child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),
@@ -874,7 +923,6 @@ mod tests {
         let second_child = Rc::new(Node::new(
             NodeType::Path,
             Some(Rc::downgrade(&node)),
-            "path",
             None,
             None,
             Box::new(TestNodeImpl {}),

@@ -293,10 +293,13 @@ impl Filter for ComponentTransfer {
         )?;
 
         // Enumerate all child <feFuncX> nodes.
-        let functions = node
-            .children()
-            .rev()
-            .filter(|c| c.get_type() == NodeType::ComponentTransferFunction);
+        let functions = node.children().rev().filter(|c| match c.get_type() {
+            NodeType::ComponentTransferFunctionA
+            | NodeType::ComponentTransferFunctionB
+            | NodeType::ComponentTransferFunctionG
+            | NodeType::ComponentTransferFunctionR => true,
+            _ => false,
+        });
 
         // Get a node for every pixel component.
         let get_node = |channel| {

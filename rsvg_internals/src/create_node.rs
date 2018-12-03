@@ -37,20 +37,8 @@ use text::{NodeTRef, NodeTSpan, NodeText};
 
 macro_rules! node_create_fn {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
-        fn $name(
-            element_name: &str,
-            id: Option<&str>,
-            class: Option<&str>,
-            parent: Option<&RsvgNode>,
-        ) -> RsvgNode {
-            node_new(
-                NodeType::$node_type,
-                parent,
-                element_name,
-                id,
-                class,
-                Box::new($new_fn()),
-            )
+        fn $name(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode {
+            node_new(NodeType::$node_type, parent, id, class, Box::new($new_fn()))
         }
     };
 }
@@ -69,24 +57,24 @@ node_create_fn!(
     ComponentTransfer::new
 );
 node_create_fn!(
-    create_component_transfer_func_r,
-    ComponentTransferFunction,
-    FuncX::new_r
-);
-node_create_fn!(
-    create_component_transfer_func_g,
-    ComponentTransferFunction,
-    FuncX::new_g
+    create_component_transfer_func_a,
+    ComponentTransferFunctionA,
+    FuncX::new_a
 );
 node_create_fn!(
     create_component_transfer_func_b,
-    ComponentTransferFunction,
+    ComponentTransferFunctionB,
     FuncX::new_b
 );
 node_create_fn!(
-    create_component_transfer_func_a,
-    ComponentTransferFunction,
-    FuncX::new_a
+    create_component_transfer_func_g,
+    ComponentTransferFunctionG,
+    FuncX::new_g
+);
+node_create_fn!(
+    create_component_transfer_func_r,
+    ComponentTransferFunctionR,
+    FuncX::new_r
 );
 node_create_fn!(create_composite, FilterPrimitiveComposite, Composite::new);
 node_create_fn!(
@@ -102,7 +90,7 @@ node_create_fn!(
 );
 node_create_fn!(
     create_distant_light,
-    LightSource,
+    DistantLight,
     LightSource::new_distant_light
 );
 node_create_fn!(
@@ -140,11 +128,7 @@ node_create_fn!(
 node_create_fn!(create_offset, FilterPrimitiveOffset, Offset::new);
 node_create_fn!(create_path, Path, NodePath::new);
 node_create_fn!(create_pattern, Pattern, NodePattern::new);
-node_create_fn!(
-    create_point_light,
-    LightSource,
-    LightSource::new_point_light
-);
+node_create_fn!(create_point_light, PointLight, LightSource::new_point_light);
 node_create_fn!(create_polygon, Polygon, NodePoly::new_closed);
 node_create_fn!(create_polyline, Polyline, NodePoly::new_open);
 node_create_fn!(
@@ -158,7 +142,7 @@ node_create_fn!(
     FilterPrimitiveSpecularLighting,
     Lighting::new_specular
 );
-node_create_fn!(create_spot_light, LightSource, LightSource::new_spot_light);
+node_create_fn!(create_spot_light, SpotLight, LightSource::new_spot_light);
 node_create_fn!(create_stop, Stop, NodeStop::new);
 node_create_fn!(create_style, Style, NodeStyle::new);
 node_create_fn!(create_svg, Svg, NodeSvg::new);
@@ -175,8 +159,20 @@ node_create_fn!(
 );
 node_create_fn!(create_use, Use, NodeUse::new);
 
+// hack to partially support conical gradient
+node_create_fn!(
+    create_conical_gradient,
+    RadialGradient,
+    NodeGradient::new_radial
+);
+
+// hack to make multiImage sort-of work
+node_create_fn!(create_multi_image, Switch, NodeSwitch::new);
+node_create_fn!(create_sub_image, Group, NodeGroup::new);
+node_create_fn!(create_sub_image_ref, Image, NodeImage::new);
+
 type NodeCreateFn =
-    fn(name: &str, id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode;
+    fn(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode;
 
 lazy_static! {
     // Lines in comments are elements that we don't support.
@@ -194,7 +190,7 @@ lazy_static! {
         h.insert("circle",              (true,  create_circle as NodeCreateFn));
         h.insert("clipPath",            (true,  create_clip_path as NodeCreateFn));
         /* h.insert("color-profile",    (false, as NodeCreateFn)); */
-        h.insert("conicalGradient",     (true,  create_radial_gradient as NodeCreateFn));
+        h.insert("conicalGradient",     (true,  create_conical_gradient as NodeCreateFn));
         /* h.insert("cursor",           (false, as NodeCreateFn)); */
         h.insert("defs",                (true,  create_defs as NodeCreateFn));
         /* h.insert("desc",             (true,  as NodeCreateFn)); */
@@ -207,10 +203,10 @@ lazy_static! {
         h.insert("feDiffuseLighting",   (true,  create_diffuse_lighting as NodeCreateFn));
         h.insert("feDisplacementMap",   (true,  create_displacement_map as NodeCreateFn));
         h.insert("feDistantLight",      (false, create_distant_light as NodeCreateFn));
-        h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
-        h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
-        h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
         h.insert("feFuncA",             (false, create_component_transfer_func_a as NodeCreateFn));
+        h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
+        h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
+        h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
         h.insert("feFlood",             (true,  create_flood as NodeCreateFn));
         h.insert("feGaussianBlur",      (true,  create_gaussian_blur as NodeCreateFn));
         h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));
@@ -243,7 +239,7 @@ lazy_static! {
         /* h.insert("metadata",         (false, as NodeCreateFn)); */
         /* h.insert("missing-glyph",    (true,  as NodeCreateFn)); */
         /* h.insert("mpath",            (false, as NodeCreateFn)); */
-        h.insert("multiImage",          (false, create_switch as NodeCreateFn)); // hack to make multiImage sort-of work
+        h.insert("multiImage",          (false, create_multi_image as NodeCreateFn));
         h.insert("path",                (true,  create_path as NodeCreateFn));
         h.insert("pattern",             (true,  create_pattern as NodeCreateFn));
         h.insert("polygon",             (true,  create_polygon as NodeCreateFn));
@@ -254,8 +250,8 @@ lazy_static! {
         /* h.insert("set",              (false, as NodeCreateFn)); */
         h.insert("stop",                (true,  create_stop as NodeCreateFn));
         h.insert("style",               (false, create_style as NodeCreateFn));
-        h.insert("subImage",            (false, create_group as NodeCreateFn));
-        h.insert("subImageRef",         (false, create_image as NodeCreateFn));
+        h.insert("subImage",            (false, create_sub_image as NodeCreateFn));
+        h.insert("subImageRef",         (false, create_sub_image_ref as NodeCreateFn));
         h.insert("svg",                 (true,  create_svg as NodeCreateFn));
         h.insert("switch",              (true,  create_switch as NodeCreateFn));
         h.insert("symbol",              (true,  create_symbol as NodeCreateFn));
@@ -300,7 +296,7 @@ pub fn create_node_and_register_id(
         class = None;
     };
 
-    let node = create_fn(name, id, class, parent);
+    let node = create_fn(id, class, parent);
 
     if id.is_some() {
         defs.insert(id.unwrap(), &node);
