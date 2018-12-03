@@ -46,8 +46,10 @@ pub use handle::{
     rsvg_handle_acquire_data,
     rsvg_handle_acquire_stream,
     rsvg_handle_defs_lookup,
+    rsvg_handle_rust_cascade,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
+    rsvg_handle_rust_get_root,
     rsvg_handle_rust_new,
     rsvg_handle_rust_node_is_root,
     rsvg_handle_rust_set_base_url,
@@ -78,6 +80,7 @@ pub use xml::{
     rsvg_xml_state_load_css_from_href,
     rsvg_xml_state_new,
     rsvg_xml_state_start_element,
+    rsvg_xml_state_tree_is_valid,
 };
 
 #[macro_use]
