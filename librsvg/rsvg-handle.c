@@ -184,12 +184,13 @@ enum {
 extern double rsvg_internal_dpi_x;
 extern double rsvg_internal_dpi_y;
 
-G_DEFINE_TYPE (RsvgHandle, rsvg_handle, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_CODE (RsvgHandle, rsvg_handle, G_TYPE_OBJECT,
+                         G_ADD_PRIVATE (RsvgHandle))
 
 static void
 rsvg_handle_init (RsvgHandle * self)
 {
-    self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, RSVG_TYPE_HANDLE, RsvgHandlePrivate);
+    self->priv = rsvg_handle_get_instance_private (self);
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->hstate = RSVG_HANDLE_STATE_START;
@@ -419,8 +420,6 @@ rsvg_handle_class_init (RsvgHandleClass * klass)
                                      g_param_spec_string ("metadata", _("Metadata"),
                                                           _("SVG file metadata"), NULL,
                                                           (GParamFlags) (G_PARAM_READABLE)));
-
-    g_type_class_add_private (klass, sizeof (RsvgHandlePrivate));
 
     xmlInitParser ();
 }
