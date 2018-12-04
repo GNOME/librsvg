@@ -367,42 +367,18 @@ sax_entity_decl_cb (void *data, const xmlChar * name, int type,
 {
     RsvgLoad *load = data;
     xmlEntityPtr entity;
-    xmlChar *resolvedSystemId = NULL, *resolvedPublicId = NULL;
 
-    if (systemId)
-        resolvedSystemId = xmlBuildRelativeURI (systemId, (xmlChar*) rsvg_handle_get_base_uri (load->handle));
-    else if (publicId)
-        resolvedPublicId = xmlBuildRelativeURI (publicId, (xmlChar*) rsvg_handle_get_base_uri (load->handle));
-
-    if (type == XML_EXTERNAL_PARAMETER_ENTITY && !content) {
-        char *entity_data;
-        gsize entity_data_len;
-
-        if (systemId)
-            entity_data = rsvg_handle_acquire_data (load->handle,
-                                                    (const char *) systemId,
-                                                    &entity_data_len,
-                                                    NULL);
-        else if (publicId)
-            entity_data = rsvg_handle_acquire_data (load->handle,
-                                                    (const char *) publicId,
-                                                    &entity_data_len,
-                                                    NULL);
-        else
-            entity_data = NULL;
-
-        if (entity_data) {
-            content = xmlCharStrndup (entity_data, entity_data_len);
-            g_free (entity_data);
-        }
+    if (type != XML_INTERNAL_GENERAL_ENTITY) {
+        /* We don't allow loading external entities; we don't support defining
+        * parameter entities in the DTD, and libxml2 should handle internal
+        * predefined entities by itself (e.g. "&amp;").
+        */
+        return;
     }
 
-    entity = xmlNewEntity(NULL, name, type, resolvedPublicId, resolvedSystemId, content);
+    entity = xmlNewEntity (NULL, name, type, NULL, NULL, content);
 
-    xmlFree(resolvedPublicId);
-    xmlFree(resolvedSystemId);
-
-    rsvg_xml_state_entity_insert(load->xml.rust_state, (const char *) name, entity);
+    rsvg_xml_state_entity_insert (load->xml.rust_state, (const char *) name, entity);
 }
 
 static void
