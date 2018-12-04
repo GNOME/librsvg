@@ -8,6 +8,7 @@ use std::mem;
 use std::ptr;
 use std::rc::Rc;
 use std::str;
+use xml_rs::{reader::XmlEvent, ParserConfig};
 
 use allowed_url::AllowedUrl;
 use attributes::Attribute;
@@ -105,6 +106,8 @@ pub struct XmlState {
     current_node: Option<Rc<Node>>,
 
     entities: HashMap<String, XmlEntityPtr>,
+
+    handle: *mut RsvgHandle,
 }
 
 /// Errors returned from XmlState::acquire()
@@ -120,7 +123,7 @@ enum AcquireError {
 }
 
 impl XmlState {
-    fn new() -> XmlState {
+    fn new(handle: *mut RsvgHandle) -> XmlState {
         XmlState {
             tree: None,
             defs: Some(Defs::new()),
@@ -129,6 +132,7 @@ impl XmlState {
             context_stack: Vec::new(),
             current_node: None,
             entities: HashMap::new(),
+            handle,
         }
     }
 
@@ -211,6 +215,40 @@ impl XmlState {
             ContextKind::UnsupportedXIncludeChild => (),
             ContextKind::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
             ContextKind::FatalError => unreachable!(),
+        }
+    }
+
+    pub fn processing_instruction(&mut self, target: &str, data: &str) {
+        if target != "xml-stylesheet" {
+            return;
+        }
+
+        if let Ok(pairs) = parse_xml_stylesheet_processing_instruction(data) {
+            let mut alternate = None;
+            let mut type_ = None;
+            let mut href = None;
+
+            for (att, value) in pairs {
+                match att.as_str() {
+                    "alternate" => alternate = Some(value),
+                    "type" => type_ = Some(value),
+                    "href" => href = Some(value),
+                    _ => (),
+                }
+            }
+
+            if (alternate == None || alternate.as_ref().map(String::as_str) == Some("no"))
+                && type_.as_ref().map(String::as_str) == Some("text/css")
+                && href.is_some()
+            {
+                handle::load_css(
+                    self.css_styles.as_mut().unwrap(),
+                    self.handle,
+                    &href.unwrap(),
+                );
+            }
+        } else {
+            self.error("invalid processing instruction data in xml-stylesheet");
         }
     }
 
@@ -511,9 +549,46 @@ impl Drop for XmlState {
     }
 }
 
+// https://www.w3.org/TR/xml-stylesheet/
+//
+// The syntax for the xml-stylesheet processing instruction we support
+// is this:
+//
+//   <?xml-stylesheet href="uri" alternate="no" type="text/css"?>
+//
+// XML parsers just feed us the raw data after the target name
+// ("xml-stylesheet"), so we'll create a mini-parser with a hackish
+// element just to extract the data as attributes.
+fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String, String)>, ()> {
+    let xml_str = format!("<rsvg-hack {} />\n", data);
+
+    let mut buf = xml_str.as_bytes();
+
+    let reader = ParserConfig::new().create_reader(&mut buf);
+
+    for event in reader {
+        if let Ok(event) = event {
+            match event {
+                XmlEvent::StartElement { attributes, .. } => {
+                    return Ok(attributes
+                        .iter()
+                        .map(|att| (att.name.local_name.clone(), att.value.clone()))
+                        .collect());
+                }
+
+                _ => (),
+            }
+        } else {
+            return Err(());
+        }
+    }
+
+    unreachable!();
+}
+
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_new() -> *mut RsvgXmlState {
-    Box::into_raw(Box::new(XmlState::new())) as *mut RsvgXmlState
+pub extern "C" fn rsvg_xml_state_new(handle: *mut RsvgHandle) -> *mut RsvgXmlState {
+    Box::into_raw(Box::new(XmlState::new(handle))) as *mut RsvgXmlState
 }
 
 #[no_mangle]
@@ -576,6 +651,24 @@ pub extern "C" fn rsvg_xml_state_characters(
     let utf8 = unsafe { str::from_utf8_unchecked(bytes) };
 
     xml.characters(utf8);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_xml_state_processing_instruction(
+    xml: *mut RsvgXmlState,
+    target: *const libc::c_char,
+    data: *const libc::c_char,
+) {
+    assert!(!xml.is_null());
+    let xml = &mut *(xml as *mut XmlState);
+
+    assert!(!target.is_null());
+    let target = utf8_cstr(target);
+
+    assert!(!data.is_null());
+    let data = utf8_cstr(data);
+
+    xml.processing_instruction(target, data);
 }
 
 #[no_mangle]

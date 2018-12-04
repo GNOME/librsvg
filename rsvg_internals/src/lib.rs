@@ -28,6 +28,7 @@ extern crate pangocairo;
 extern crate rayon;
 extern crate regex;
 extern crate url;
+extern crate xml as xml_rs;
 
 #[macro_use]
 extern crate lazy_static;
@@ -79,6 +80,7 @@ pub use xml::{
     rsvg_xml_state_free,
     rsvg_xml_state_load_css_from_href,
     rsvg_xml_state_new,
+    rsvg_xml_state_processing_instruction,
     rsvg_xml_state_start_element,
     rsvg_xml_state_tree_is_valid,
 };

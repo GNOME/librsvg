@@ -42,7 +42,7 @@ typedef enum {
 typedef struct RsvgXmlState RsvgXmlState;
 
 /* Implemented in rsvg_internals/src/xml.rs */
-extern RsvgXmlState *rsvg_xml_state_new ();
+extern RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
 extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
@@ -60,6 +60,10 @@ extern void rsvg_xml_state_entity_insert(RsvgXmlState *xml,
 extern void rsvg_xml_state_load_css_from_href(RsvgXmlState *xml,
                                               RsvgHandle *handle,
                                               const char *href);
+
+extern void rsvg_xml_state_processing_instruction(RsvgXmlState *xml,
+                                                  const char *target,
+                                                  const char *data);
 
 /* Implemented in rsvg_internals/src/handle.rs */
 extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
@@ -103,7 +107,7 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->compressed_input_stream = NULL;
 
     load->xml.ctxt = NULL;
-    load->xml.rust_state = rsvg_xml_state_new ();
+    load->xml.rust_state = rsvg_xml_state_new (handle);
 
     return load;
 }
@@ -415,126 +419,14 @@ sax_error_cb (void *data, const char *msg, ...)
 }
 
 static void
-xml_noerror (void *data, xmlErrorPtr error)
-{
-}
-
-/* This is quite hacky and not entirely correct, but apparently
- * libxml2 has NO support for parsing pseudo attributes as defined
- * by the xml-styleheet spec.
- */
-static char **
-parse_xml_attribute_string (const char *attribute_string)
-{
-    xmlSAXHandler handler;
-    xmlParserCtxtPtr parser;
-    xmlDocPtr doc;
-    xmlNodePtr node;
-    xmlAttrPtr attr;
-    char *tag;
-    GPtrArray *attributes;
-    char **retval = NULL;
-
-    tag = g_strdup_printf ("<rsvg-hack %s />\n", attribute_string);
-
-    memset (&handler, 0, sizeof (handler));
-    xmlSAX2InitDefaultSAXHandler (&handler, 0);
-    handler.serror = xml_noerror;
-    parser = xmlCreatePushParserCtxt (&handler, NULL, tag, strlen (tag) + 1, NULL);
-    parser->options |= XML_PARSE_NONET;
-
-    if (xmlParseDocument (parser) != 0)
-        goto done;
-
-    if ((doc = parser->myDoc) == NULL ||
-        (node = doc->children) == NULL ||
-        strcmp ((const char *) node->name, "rsvg-hack") != 0 ||
-        node->next != NULL ||
-        node->properties == NULL)
-          goto done;
-
-    attributes = g_ptr_array_new ();
-    for (attr = node->properties; attr; attr = attr->next) {
-        xmlNodePtr content = attr->children;
-
-        g_ptr_array_add (attributes, g_strdup ((char *) attr->name));
-        if (content)
-            g_ptr_array_add (attributes, g_strdup ((char *) content->content));
-        else
-            g_ptr_array_add (attributes, g_strdup (""));
-    }
-
-    g_ptr_array_add (attributes, NULL);
-    retval = (char **) g_ptr_array_free (attributes, FALSE);
-
-  done:
-    if (parser->myDoc)
-        xmlFreeDoc (parser->myDoc);
-    xmlFreeParserCtxt (parser);
-    g_free (tag);
-
-    return retval;
-}
-
-static void
 sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xmlChar * data)
 {
     /* http://www.w3.org/TR/xml-stylesheet/ */
     RsvgLoad *load = user_data;
 
-    if (!strcmp ((const char *) target, "xml-stylesheet")) {
-        RsvgPropertyBag *atts;
-        char **xml_atts;
-
-        xml_atts = parse_xml_attribute_string ((const char *) data);
-
-        if (xml_atts) {
-            const char *alternate = NULL;
-            const char *type = NULL;
-            const char *href = NULL;
-            RsvgPropertyBagIter *iter;
-            const char *key;
-            RsvgAttribute attr;
-            const char *value;
-
-            atts = rsvg_property_bag_new ((const char **) xml_atts);
-
-            iter = rsvg_property_bag_iter_begin (atts);
-
-            while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-                switch (attr) {
-                case RSVG_ATTRIBUTE_ALTERNATE:
-                    alternate = value;
-                    break;
-
-                case RSVG_ATTRIBUTE_TYPE:
-                    type = value;
-                    break;
-
-                case RSVG_ATTRIBUTE_HREF:
-                    href = value;
-                    break;
-
-                default:
-                    break;
-                }
-            }
-
-            rsvg_property_bag_iter_end (iter);
-
-            if ((!alternate || strcmp (alternate, "no") != 0)
-                && type && strcmp (type, "text/css") == 0
-                && href)
-            {
-                rsvg_xml_state_load_css_from_href (load->xml.rust_state,
-                                                   load->handle,
-                                                   href);
-            }
-
-            rsvg_property_bag_free (atts);
-            g_strfreev (xml_atts);
-        }
-    }
+    rsvg_xml_state_processing_instruction(load->xml.rust_state,
+                                          (const char *) target,
+                                          (const char *) data);
 }
 
 static void
