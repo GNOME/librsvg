@@ -144,3 +144,4 @@ mod util;
 mod viewbox;
 mod viewport;
 mod xml;
+mod xml2;
