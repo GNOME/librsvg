@@ -1,3 +1,21 @@
+Version 2.45.1
+- New public API, rsvg_handle_get_geometry_sub(), to get the exact
+  geometry of an element.  The functions
+  rsvg_handle_get_position_sub() and rsvg_handle_get_dimensions_sub()
+  are deprecated now; these returned incomplete data with integer
+  coordinates (Julian Sparber).
+
+- Librsvg no longer tries to load XML entities which reference
+  external resources, either parameter or general entities, declared
+  in the DTD.  This never worked properly, and it is better to do so
+  via the xi:include mechanism.  Also, unparsed external entities with
+  a notation are not really supported in SVG; it has its own <image>
+  element and similar for that purpose.  Only internal general
+  entities are supported now, for example:
+
+     <!ENTITY foo "<some xml here>">
+     <!ENTITY bar "some text here">
+
 Version 2.45.0
 - Librsvg now requires Rust 1.27.
 - Librsvg now requires Cairo 1.15.12.
