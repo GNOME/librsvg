@@ -145,35 +145,82 @@ rsvg_load_finish_load (RsvgLoad *load, GError **error)
     return was_successful;
 }
 
+static void
+set_error_from_xml (GError **error, xmlParserCtxtPtr ctxt)
+{
+    xmlErrorPtr xerr;
+
+    xerr = xmlCtxtGetLastError (ctxt);
+    if (xerr) {
+        g_set_error (error, rsvg_error_quark (), 0,
+                     _("Error domain %d code %d on line %d column %d of %s: %s"),
+                     xerr->domain, xerr->code,
+                     xerr->line, xerr->int2,
+                     xerr->file ? xerr->file : "data",
+                     xerr->message ? xerr->message: "-");
+    } else {
+        g_set_error (error, rsvg_error_quark (), 0, _("Error parsing XML data"));
+    }
+}
+
+static gboolean
+rsvg_parse_xml_from_stream (RsvgXmlState *xml,
+                            gboolean      unlimited_size,
+                            GInputStream *stream,
+                            GCancellable *cancellable,
+                            GError      **error)
+{
+    GError *err = NULL;
+    xmlParserCtxtPtr xml_parser;
+    gboolean xml_parse_success;
+    gboolean svg_parse_success;
+
+    xml_parser = rsvg_create_xml_stream_parser (xml,
+                                                unlimited_size,
+                                                stream,
+                                                cancellable,
+                                                &err);
+    if (!xml_parser) {
+        g_assert (err != NULL);
+        g_propagate_error (error, err);
+        return FALSE;
+    }
+
+    g_assert (err == NULL);
+    xml_parse_success = xmlParseDocument (xml_parser) == 0;
+
+    svg_parse_success = err == NULL;
+
+    if (!svg_parse_success) {
+        g_propagate_error (error, err);
+    } else if (!xml_parse_success) {
+        set_error_from_xml (error, xml_parser);
+    }
+
+    xml_parser = free_xml_parser_and_doc (xml_parser);
+
+    return svg_parse_success && xml_parse_success;
+}
+
 gboolean
 rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 {
     GInputStream *stream;
-    GError *err = NULL;
-    xmlParserCtxtPtr xml_parser;
 
     g_assert (handle->priv->load != NULL);
 
     stream = rsvg_handle_acquire_stream (handle, href, NULL);
 
     if (stream) {
-        gboolean success = FALSE;
+        gboolean success;
 
-        xml_parser = rsvg_create_xml_stream_parser (handle->priv->load->xml.rust_state,
-                                                    handle->priv->load->unlimited_size,
-                                                    stream,
-                                                    handle->priv->cancellable,
-                                                    &err);
+        success = rsvg_parse_xml_from_stream (handle->priv->load->xml.rust_state,
+                                              handle->priv->load->unlimited_size,
+                                              stream,
+                                              handle->priv->cancellable,
+                                              NULL);
 
         g_object_unref (stream);
-
-        if (xml_parser) {
-            success = xmlParseDocument (xml_parser) == 0;
-
-            xml_parser = free_xml_parser_and_doc (xml_parser);
-        }
-
-        g_clear_error (&err);
 
         return success;
     } else {
@@ -202,24 +249,6 @@ rsvg_sax_error_cb (void *data, const char *msg, ...)
     rsvg_xml_state_error (xml, buf);
 
     g_free (buf);
-}
-
-static void
-set_error_from_xml (GError **error, xmlParserCtxtPtr ctxt)
-{
-    xmlErrorPtr xerr;
-
-    xerr = xmlCtxtGetLastError (ctxt);
-    if (xerr) {
-        g_set_error (error, rsvg_error_quark (), 0,
-                     _("Error domain %d code %d on line %d column %d of %s: %s"),
-                     xerr->domain, xerr->code,
-                     xerr->line, xerr->int2,
-                     xerr->file ? xerr->file : "data",
-                     xerr->message ? xerr->message: "-");
-    } else {
-        g_set_error (error, rsvg_error_quark (), 0, _("Error parsing XML data"));
-    }
 }
 
 static gboolean
@@ -303,8 +332,7 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
                             GError      **error)
 {
     GError *err = NULL;
-    gboolean res = FALSE;
-    xmlParserCtxtPtr xml_parser;
+    gboolean res;
 
     stream = rsvg_get_input_stream_for_loading (stream, cancellable, error);
     if (stream == NULL) {
@@ -315,43 +343,19 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     load->error = &err;
 
     g_assert (load->xml.ctxt == NULL);
-    xml_parser = rsvg_create_xml_stream_parser (load->xml.rust_state,
-                                                load->unlimited_size,
-                                                stream,
-                                                cancellable,
-                                                &err);
 
-    if (!xml_parser) {
-        g_assert (err != NULL);
+    res = rsvg_parse_xml_from_stream (load->xml.rust_state,
+                                      load->unlimited_size,
+                                      stream,
+                                      cancellable,
+                                      &err);
+    if (!res) {
         g_propagate_error (error, err);
-
-        goto out;
     }
-
-    if (xmlParseDocument (xml_parser) != 0) {
-        if (err) {
-            g_propagate_error (error, err);
-        } else {
-            set_error_from_xml (error, xml_parser);
-        }
-
-        goto out;
-    }
-
-    if (err != NULL) {
-        g_propagate_error (error, err);
-        goto out;
-    }
-
-    res = TRUE;
-
-  out:
-
-    xml_parser = free_xml_parser_and_doc (xml_parser);
-
-    g_object_unref (stream);
 
     load->error = NULL;
+
+    g_object_unref (stream);
 
     return res;
 }
