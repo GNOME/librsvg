@@ -152,7 +152,7 @@ pub type xmlErrorPtr = *mut xmlError;
 
 pub type xmlInputReadCallback = Option<unsafe extern "C" fn(
     context: *mut libc::c_void,
-    buffer: *const libc::c_char,
+    buffer: *mut libc::c_char,
     len: libc::c_int,
 ) -> libc::c_int>;
 
@@ -168,7 +168,7 @@ extern "C" {
         user_data: *mut libc::c_void,
         chunk: *const libc::c_char,
         size: libc::c_int,
-        filename: *const libc::c_int,
+        filename: *const libc::c_char,
     ) -> xmlParserCtxtPtr;
 
     pub fn xmlCreateIOParserCtxt(

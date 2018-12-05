@@ -2,10 +2,8 @@ use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use glib::translate::*;
 use libc;
-use std;
 use std::collections::HashMap;
 use std::mem;
-use std::ptr;
 use std::rc::Rc;
 use std::str;
 use xml_rs::{reader::XmlEvent, ParserConfig};
@@ -24,7 +22,6 @@ use style::NodeStyle;
 use svg::Svg;
 use text::NodeChars;
 use tree::Tree;
-use util::utf8_cstr;
 
 #[derive(Clone)]
 enum ContextKind {
@@ -596,71 +593,6 @@ pub extern "C" fn rsvg_xml_state_free(xml: *mut RsvgXmlState) {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_start_element(
-    xml: *mut RsvgXmlState,
-    name: *const libc::c_char,
-    atts: *const *const libc::c_char,
-) {
-    assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-
-    assert!(!name.is_null());
-    let name = unsafe { utf8_cstr(name) };
-
-    let pbag = unsafe { PropertyBag::new_from_key_value_pairs(atts) };
-
-    xml.start_element(name, &pbag);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_xml_state_end_element(xml: *mut RsvgXmlState, name: *const libc::c_char) {
-    assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-
-    assert!(!name.is_null());
-    let name = unsafe { utf8_cstr(name) };
-
-    xml.end_element(name);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_xml_state_characters(
-    xml: *mut RsvgXmlState,
-    unterminated_text: *const libc::c_char,
-    len: usize,
-) {
-    assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-
-    assert!(!unterminated_text.is_null());
-
-    // libxml2 already validated the incoming string as UTF-8.  Note that
-    // it is *not* nul-terminated; this is why we create a byte slice first.
-    let bytes = unsafe { std::slice::from_raw_parts(unterminated_text as *const u8, len) };
-    let utf8 = unsafe { str::from_utf8_unchecked(bytes) };
-
-    xml.characters(utf8);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_processing_instruction(
-    xml: *mut RsvgXmlState,
-    target: *const libc::c_char,
-    data: *const libc::c_char,
-) {
-    assert!(!xml.is_null());
-    let xml = &mut *(xml as *mut XmlState);
-
-    assert!(!target.is_null());
-    let target = utf8_cstr(target);
-
-    assert!(!data.is_null());
-    let data = utf8_cstr(data);
-
-    xml.processing_instruction(target, data);
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut RsvgXmlState, msg: *const libc::c_char) {
     assert!(!xml.is_null());
     let xml = &mut *(xml as *mut XmlState);
@@ -671,37 +603,6 @@ pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut RsvgXmlState, msg: *cons
     let msg: String = from_glib_none(msg);
 
     xml.error(&msg);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_entity_lookup(
-    xml: *const RsvgXmlState,
-    entity_name: *const libc::c_char,
-) -> XmlEntityPtr {
-    assert!(!xml.is_null());
-    let xml = &*(xml as *mut XmlState);
-
-    assert!(!entity_name.is_null());
-    let entity_name = utf8_cstr(entity_name);
-
-    xml.entity_lookup(entity_name).unwrap_or(ptr::null_mut())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_entity_insert(
-    xml: *mut RsvgXmlState,
-    entity_name: *const libc::c_char,
-    entity: XmlEntityPtr,
-) {
-    assert!(!xml.is_null());
-    let xml = &mut *(xml as *mut XmlState);
-
-    assert!(!entity_name.is_null());
-    let entity_name = utf8_cstr(entity_name);
-
-    assert!(!entity.is_null());
-
-    xml.entity_insert(entity_name, entity);
 }
 
 #[no_mangle]

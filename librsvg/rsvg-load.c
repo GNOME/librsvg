@@ -45,24 +45,21 @@ typedef struct RsvgXmlState RsvgXmlState;
 extern RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
-extern void rsvg_xml_state_start_element(RsvgXmlState *xml, const char *name, const char **atts);
-extern void rsvg_xml_state_end_element(RsvgXmlState *xml, const char *name);
-extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
-
-extern xmlEntityPtr rsvg_xml_state_entity_lookup(RsvgXmlState *xml,
-                                                 const char *entity_name);
-
-extern void rsvg_xml_state_entity_insert(RsvgXmlState *xml,
-                                         const char *entity_name,
-                                         xmlEntityPtr entity);
-
-extern void rsvg_xml_state_processing_instruction(RsvgXmlState *xml,
-                                                  const char *target,
-                                                  const char *data);
 
 /* Implemented in rsvg_internals/src/handle.rs */
 extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
+
+/* Implemented in rsvg_internals/src/xml2_load.rs */
+extern xmlParserCtxtPtr rsvg_create_xml_stream_parser (RsvgXmlState  *xml,
+                                                       gboolean       unlimited_size,
+                                                       GInputStream  *stream,
+                                                       GCancellable  *cancellable,
+                                                       GError       **error);
+extern xmlParserCtxtPtr rsvg_create_xml_push_parser (RsvgXmlState *xml,
+                                                     gboolean unlimited_size,
+                                                     const char *base_uri,
+                                                     GError **error);
 
 
 /* Holds the XML parsing state */
@@ -87,8 +84,6 @@ struct RsvgLoad {
 
     XmlState xml;
 };
-
-static xmlSAXHandler get_xml2_sax_handler (void);
 
 RsvgLoad *
 rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
@@ -153,124 +148,6 @@ rsvg_load_finish_load (RsvgLoad *load, GError **error)
     return was_successful;
 }
 
-static void
-set_xml_parse_options(xmlParserCtxtPtr xml_parser,
-                      gboolean unlimited_size)
-{
-    int options;
-
-    options = (XML_PARSE_NONET |
-               XML_PARSE_BIG_LINES);
-
-    if (unlimited_size) {
-        options |= XML_PARSE_HUGE;
-    }
-
-    xmlCtxtUseOptions (xml_parser, options);
-
-    /* if false, external entities work, but internal ones don't. if true, internal entities
-       work, but external ones don't. favor internal entities, in order to not cause a
-       regression */
-    xml_parser->replaceEntities = TRUE;
-}
-
-static xmlParserCtxtPtr
-rsvg_create_xml_push_parser (RsvgXmlState *xml,
-                             gboolean unlimited_size,
-                             const char *base_uri)
-{
-    xmlParserCtxtPtr parser;
-    xmlSAXHandler sax_handler = get_xml2_sax_handler ();
-
-    parser = xmlCreatePushParserCtxt (&sax_handler, xml, NULL, 0, base_uri);
-    set_xml_parse_options (parser, unlimited_size);
-
-    return parser;
-}
-
-typedef struct {
-    GInputStream *stream;
-    GCancellable *cancellable;
-    GError      **error;
-} RsvgXmlInputStreamContext;
-
-/* this should use gsize, but libxml2 is borked */
-static int
-context_read (void *data,
-              char *buffer,
-              int   len)
-{
-    RsvgXmlInputStreamContext *context = data;
-    gssize n_read;
-
-    if (*(context->error))
-        return -1;
-
-    n_read = g_input_stream_read (context->stream, buffer, (gsize) len,
-                                  context->cancellable,
-                                  context->error);
-    if (n_read < 0)
-        return -1;
-
-    return (int) n_read;
-}
-
-static int
-context_close (void *data)
-{
-    RsvgXmlInputStreamContext *context = data;
-    gboolean ret;
-
-    /* Don't overwrite a previous error */
-    ret = g_input_stream_close (context->stream, context->cancellable,
-                                *(context->error) == NULL ? context->error : NULL);
-
-    g_object_unref (context->stream);
-    if (context->cancellable)
-        g_object_unref (context->cancellable);
-    g_slice_free (RsvgXmlInputStreamContext, context);
-
-    return ret ? 0 : -1;
-}
-
-static xmlParserCtxtPtr
-rsvg_create_xml_stream_parser (RsvgXmlState  *xml,
-                               gboolean       unlimited_size,
-                               GInputStream  *stream,
-                               GCancellable  *cancellable,
-                               GError       **error)
-{
-    RsvgXmlInputStreamContext *context;
-    xmlParserCtxtPtr parser;
-    xmlSAXHandler sax_handler = get_xml2_sax_handler ();
-
-    g_return_val_if_fail (G_IS_INPUT_STREAM (stream), NULL);
-    g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
-    g_return_val_if_fail (error != NULL, NULL);
-
-    context = g_slice_new (RsvgXmlInputStreamContext);
-    context->stream = g_object_ref (stream);
-    context->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
-    context->error = error;
-
-    parser = xmlCreateIOParserCtxt (&sax_handler,
-                                    xml,
-                                    context_read,
-                                    context_close,
-                                    context,
-                                    XML_CHAR_ENCODING_NONE);
-
-    if (!parser) {
-        g_set_error (error, rsvg_error_quark (), 0, _("Error creating XML parser"));
-
-        /* on error, xmlCreateIOParserCtxt() frees our context via the context_close function */
-    } else {
-        set_xml_parse_options (parser, unlimited_size);
-    }
-
-    return parser;
-}
-
 gboolean
 rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 {
@@ -309,77 +186,13 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 
 /* end xinclude */
 
-static void
-sax_start_element_cb (void *data, const xmlChar *name, const xmlChar **atts)
-{
-    RsvgXmlState *xml = data;
+/* This one is defined in the C code, because the prototype has varargs
+ * and we can't handle those from Rust :(
+ */
+G_GNUC_INTERNAL void rsvg_sax_error_cb (void *data, const char *msg, ...);
 
-    rsvg_xml_state_start_element (xml, (const char *) name, (const char **) atts);
-}
-
-static void
-sax_end_element_cb (void *data, const xmlChar *name)
-{
-    RsvgXmlState *xml = data;
-
-    rsvg_xml_state_end_element (xml, (const char *) name);
-}
-
-static void
-sax_characters_cb (void *data, const xmlChar * ch, int len)
-{
-    RsvgXmlState *xml = data;
-
-    rsvg_xml_state_characters (xml, (const char *) ch, (gsize) len);
-}
-
-static xmlEntityPtr
-sax_get_entity_cb (void *data, const xmlChar * name)
-{
-    RsvgXmlState *xml = data;
-
-    return rsvg_xml_state_entity_lookup (xml, (const char *) name);
-}
-
-static void
-sax_entity_decl_cb (void *data, const xmlChar * name, int type,
-                    const xmlChar * publicId, const xmlChar * systemId, xmlChar * content)
-{
-    RsvgXmlState *xml = data;
-    xmlEntityPtr entity;
-
-    if (type != XML_INTERNAL_GENERAL_ENTITY) {
-        /* We don't allow loading external entities; we don't support defining
-        * parameter entities in the DTD, and libxml2 should handle internal
-        * predefined entities by itself (e.g. "&amp;").
-        */
-        return;
-    }
-
-    entity = xmlNewEntity (NULL, name, type, NULL, NULL, content);
-
-    rsvg_xml_state_entity_insert (xml, (const char *) name, entity);
-}
-
-static void
-sax_unparsed_entity_decl_cb (void *data,
-                             const xmlChar * name,
-                             const xmlChar * publicId,
-                             const xmlChar * systemId, const xmlChar * notationName)
-{
-    sax_entity_decl_cb (data, name, XML_INTERNAL_GENERAL_ENTITY, publicId, systemId, NULL);
-}
-
-static xmlEntityPtr
-sax_get_parameter_entity_cb (void *data, const xmlChar * name)
-{
-    RsvgXmlState *xml = data;
-
-    return rsvg_xml_state_entity_lookup (xml, (const char *) name);
-}
-
-static void
-sax_error_cb (void *data, const char *msg, ...)
+void
+rsvg_sax_error_cb (void *data, const char *msg, ...)
 {
     RsvgXmlState *xml = data;
     va_list args;
@@ -392,14 +205,6 @@ sax_error_cb (void *data, const char *msg, ...)
     rsvg_xml_state_error (xml, buf);
 
     g_free (buf);
-}
-
-static void
-sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xmlChar * data)
-{
-    RsvgXmlState *xml = user_data;
-
-    rsvg_xml_state_processing_instruction (xml, (const char *) target, (const char *) data);
 }
 
 static void
@@ -431,13 +236,18 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
     if (load->xml.ctxt == NULL) {
         load->xml.ctxt = rsvg_create_xml_push_parser (load->xml.rust_state,
                                                       load->unlimited_size,
-                                                      rsvg_handle_get_base_uri (load->handle));
+                                                      rsvg_handle_get_base_uri (load->handle),
+                                                      &real_error);
     }
 
-    result = xmlParseChunk (load->xml.ctxt, (char *) buf, count, 0);
-    if (result != 0) {
-        set_error_from_xml (error, load->xml.ctxt);
-        return FALSE;
+    if (load->xml.ctxt != NULL) {
+        result = xmlParseChunk (load->xml.ctxt, (char *) buf, count, 0);
+        if (result != 0) {
+            set_error_from_xml (error, load->xml.ctxt);
+            return FALSE;
+        }
+    } else {
+        g_assert (real_error != NULL);
     }
 
     load->error = NULL;
@@ -644,25 +454,4 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     load->state = LOAD_STATE_CLOSED;
 
     return res;
-}
-
-static xmlSAXHandler
-get_xml2_sax_handler (void)
-{
-    xmlSAXHandler sax_handler;
-
-    memset (&sax_handler, 0, sizeof (sax_handler));
-
-    sax_handler.getEntity = sax_get_entity_cb;
-    sax_handler.entityDecl = sax_entity_decl_cb;
-    sax_handler.unparsedEntityDecl = sax_unparsed_entity_decl_cb;
-    sax_handler.getParameterEntity = sax_get_parameter_entity_cb;
-    sax_handler.characters = sax_characters_cb;
-    sax_handler.error = sax_error_cb;
-    sax_handler.cdataBlock = sax_characters_cb;
-    sax_handler.startElement = sax_start_element_cb;
-    sax_handler.endElement = sax_end_element_cb;
-    sax_handler.processingInstruction = sax_processing_instruction_cb;
-
-    return sax_handler;
 }

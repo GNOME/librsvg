@@ -121,7 +121,8 @@ RUST_SRC =							\
 	rsvg_internals/src/viewbox.rs				\
 	rsvg_internals/src/viewport.rs				\
 	rsvg_internals/src/xml.rs				\
-	rsvg_internals/src/xml2.rs
+	rsvg_internals/src/xml2.rs				\
+	rsvg_internals/src/xml2_load.rs
 
 RUST_EXTRA = 						\
 	Cargo.lock					\

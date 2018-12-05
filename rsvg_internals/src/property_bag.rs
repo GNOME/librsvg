@@ -138,7 +138,6 @@ impl<'a> Iterator for PropertyBagCStrIter<'a> {
 mod tests {
     use super::*;
     use std::ffi::CString;
-    use std::mem;
     use std::ptr;
 
     #[test]

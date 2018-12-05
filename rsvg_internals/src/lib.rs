@@ -64,17 +64,13 @@ pub use node::rsvg_node_unref;
 pub use structure::rsvg_node_svg_get_size;
 
 pub use xml::{
-    rsvg_xml_state_characters,
-    rsvg_xml_state_end_element,
-    rsvg_xml_state_entity_insert,
-    rsvg_xml_state_entity_lookup,
     rsvg_xml_state_error,
     rsvg_xml_state_free,
     rsvg_xml_state_new,
-    rsvg_xml_state_processing_instruction,
-    rsvg_xml_state_start_element,
     rsvg_xml_state_tree_is_valid,
 };
+
+pub use xml2_load::{rsvg_create_xml_push_parser, rsvg_create_xml_stream_parser};
 
 #[macro_use]
 mod log;
@@ -139,3 +135,4 @@ mod viewbox;
 mod viewport;
 mod xml;
 mod xml2;
+mod xml2_load;
