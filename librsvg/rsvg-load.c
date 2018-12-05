@@ -175,9 +175,9 @@ set_xml_parse_options(xmlParserCtxtPtr xml_parser,
 }
 
 static xmlParserCtxtPtr
-create_xml_push_parser (RsvgXmlState *xml,
-                        gboolean unlimited_size,
-                        const char *base_uri)
+rsvg_create_xml_push_parser (RsvgXmlState *xml,
+                             gboolean unlimited_size,
+                             const char *base_uri)
 {
     xmlParserCtxtPtr parser;
     xmlSAXHandler sax_handler = get_xml2_sax_handler ();
@@ -234,11 +234,11 @@ context_close (void *data)
 }
 
 static xmlParserCtxtPtr
-create_xml_stream_parser (RsvgXmlState  *xml,
-                          gboolean       unlimited_size,
-                          GInputStream  *stream,
-                          GCancellable  *cancellable,
-                          GError       **error)
+rsvg_create_xml_stream_parser (RsvgXmlState  *xml,
+                               gboolean       unlimited_size,
+                               GInputStream  *stream,
+                               GCancellable  *cancellable,
+                               GError       **error)
 {
     RsvgXmlInputStreamContext *context;
     xmlParserCtxtPtr parser;
@@ -285,11 +285,11 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
     if (stream) {
         gboolean success = FALSE;
 
-        xml_parser = create_xml_stream_parser (handle->priv->load->xml.rust_state,
-                                               handle->priv->load->unlimited_size,
-                                               stream,
-                                               NULL, /* cancellable */
-                                               &err);
+        xml_parser = rsvg_create_xml_stream_parser (handle->priv->load->xml.rust_state,
+                                                    handle->priv->load->unlimited_size,
+                                                    stream,
+                                                    NULL, /* cancellable */
+                                                    &err);
 
         g_object_unref (stream);
 
@@ -429,9 +429,9 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
     load->error = &real_error;
 
     if (load->xml.ctxt == NULL) {
-        load->xml.ctxt = create_xml_push_parser (load->xml.rust_state,
-                                                 load->unlimited_size,
-                                                 rsvg_handle_get_base_uri (load->handle));
+        load->xml.ctxt = rsvg_create_xml_push_parser (load->xml.rust_state,
+                                                      load->unlimited_size,
+                                                      rsvg_handle_get_base_uri (load->handle));
     }
 
     result = xmlParseChunk (load->xml.ctxt, (char *) buf, count, 0);
@@ -508,11 +508,11 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     load->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
 
     g_assert (load->xml.ctxt == NULL);
-    load->xml.ctxt = create_xml_stream_parser (load->xml.rust_state,
-                                               load->unlimited_size,
-                                               stream,
-                                               cancellable,
-                                               &err);
+    load->xml.ctxt = rsvg_create_xml_stream_parser (load->xml.rust_state,
+                                                    load->unlimited_size,
+                                                    stream,
+                                                    cancellable,
+                                                    &err);
 
     if (!load->xml.ctxt) {
         g_assert (err != NULL);
