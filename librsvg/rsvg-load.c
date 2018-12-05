@@ -175,14 +175,14 @@ set_xml_parse_options(xmlParserCtxtPtr xml_parser,
 }
 
 static xmlParserCtxtPtr
-create_xml_push_parser (RsvgLoad *load,
+create_xml_push_parser (RsvgXmlState *xml,
                         gboolean unlimited_size,
                         const char *base_uri)
 {
     xmlParserCtxtPtr parser;
     xmlSAXHandler sax_handler = get_xml2_sax_handler ();
 
-    parser = xmlCreatePushParserCtxt (&sax_handler, load, NULL, 0, base_uri);
+    parser = xmlCreatePushParserCtxt (&sax_handler, xml, NULL, 0, base_uri);
     set_xml_parse_options (parser, unlimited_size);
 
     return parser;
@@ -234,7 +234,7 @@ context_close (void *data)
 }
 
 static xmlParserCtxtPtr
-create_xml_stream_parser (RsvgLoad      *load,
+create_xml_stream_parser (RsvgXmlState  *xml,
                           gboolean       unlimited_size,
                           GInputStream  *stream,
                           GCancellable  *cancellable,
@@ -254,7 +254,7 @@ create_xml_stream_parser (RsvgLoad      *load,
     context->error = error;
 
     parser = xmlCreateIOParserCtxt (&sax_handler,
-                                    load,
+                                    xml,
                                     context_read,
                                     context_close,
                                     context,
@@ -285,7 +285,7 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
     if (stream) {
         gboolean success = FALSE;
 
-        xml_parser = create_xml_stream_parser (handle->priv->load,
+        xml_parser = create_xml_stream_parser (handle->priv->load->xml.rust_state,
                                                handle->priv->load->unlimited_size,
                                                stream,
                                                NULL, /* cancellable */
@@ -312,42 +312,40 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 static void
 sax_start_element_cb (void *data, const xmlChar *name, const xmlChar **atts)
 {
-    RsvgLoad *load = data;
+    RsvgXmlState *xml = data;
 
-    rsvg_xml_state_start_element (load->xml.rust_state,
-                                  (const char *) name,
-                                  (const char **) atts);
+    rsvg_xml_state_start_element (xml, (const char *) name, (const char **) atts);
 }
 
 static void
 sax_end_element_cb (void *data, const xmlChar *name)
 {
-    RsvgLoad *load =  data;
+    RsvgXmlState *xml = data;
 
-    rsvg_xml_state_end_element (load->xml.rust_state, (const char *) name);
+    rsvg_xml_state_end_element (xml, (const char *) name);
 }
 
 static void
 sax_characters_cb (void *data, const xmlChar * ch, int len)
 {
-    RsvgLoad *load = data;
+    RsvgXmlState *xml = data;
 
-    rsvg_xml_state_characters (load->xml.rust_state, (const char *) ch, (gsize) len);
+    rsvg_xml_state_characters (xml, (const char *) ch, (gsize) len);
 }
 
 static xmlEntityPtr
 sax_get_entity_cb (void *data, const xmlChar * name)
 {
-    RsvgLoad *load = data;
+    RsvgXmlState *xml = data;
 
-    return rsvg_xml_state_entity_lookup (load->xml.rust_state, (const char *) name);
+    return rsvg_xml_state_entity_lookup (xml, (const char *) name);
 }
 
 static void
 sax_entity_decl_cb (void *data, const xmlChar * name, int type,
                     const xmlChar * publicId, const xmlChar * systemId, xmlChar * content)
 {
-    RsvgLoad *load = data;
+    RsvgXmlState *xml = data;
     xmlEntityPtr entity;
 
     if (type != XML_INTERNAL_GENERAL_ENTITY) {
@@ -360,7 +358,7 @@ sax_entity_decl_cb (void *data, const xmlChar * name, int type,
 
     entity = xmlNewEntity (NULL, name, type, NULL, NULL, content);
 
-    rsvg_xml_state_entity_insert (load->xml.rust_state, (const char *) name, entity);
+    rsvg_xml_state_entity_insert (xml, (const char *) name, entity);
 }
 
 static void
@@ -375,15 +373,15 @@ sax_unparsed_entity_decl_cb (void *data,
 static xmlEntityPtr
 sax_get_parameter_entity_cb (void *data, const xmlChar * name)
 {
-    RsvgLoad *load = data;
+    RsvgXmlState *xml = data;
 
-    return rsvg_xml_state_entity_lookup (load->xml.rust_state, (const char *) name);
+    return rsvg_xml_state_entity_lookup (xml, (const char *) name);
 }
 
 static void
 sax_error_cb (void *data, const char *msg, ...)
 {
-    RsvgLoad *load = data;
+    RsvgXmlState *xml = data;
     va_list args;
     char *buf;
 
@@ -391,7 +389,7 @@ sax_error_cb (void *data, const char *msg, ...)
     g_vasprintf (&buf, msg, args);
     va_end (args);
 
-    rsvg_xml_state_error (load->xml.rust_state, buf);
+    rsvg_xml_state_error (xml, buf);
 
     g_free (buf);
 }
@@ -399,12 +397,9 @@ sax_error_cb (void *data, const char *msg, ...)
 static void
 sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xmlChar * data)
 {
-    /* http://www.w3.org/TR/xml-stylesheet/ */
-    RsvgLoad *load = user_data;
+    RsvgXmlState *xml = user_data;
 
-    rsvg_xml_state_processing_instruction(load->xml.rust_state,
-                                          (const char *) target,
-                                          (const char *) data);
+    rsvg_xml_state_processing_instruction (xml, (const char *) target, (const char *) data);
 }
 
 static void
@@ -434,7 +429,7 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
     load->error = &real_error;
 
     if (load->xml.ctxt == NULL) {
-        load->xml.ctxt = create_xml_push_parser (load,
+        load->xml.ctxt = create_xml_push_parser (load->xml.rust_state,
                                                  load->unlimited_size,
                                                  rsvg_handle_get_base_uri (load->handle));
     }
@@ -513,7 +508,7 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     load->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
 
     g_assert (load->xml.ctxt == NULL);
-    load->xml.ctxt = create_xml_stream_parser (load,
+    load->xml.ctxt = create_xml_stream_parser (load->xml.rust_state,
                                                load->unlimited_size,
                                                stream,
                                                cancellable,
