@@ -307,6 +307,7 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
 {
     GError *err = NULL;
     gboolean res = FALSE;
+    xmlParserCtxtPtr xml_parser;
 
     stream = rsvg_get_input_stream_for_loading (stream, cancellable, error);
     if (stream == NULL) {
@@ -318,24 +319,24 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     load->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
 
     g_assert (load->xml.ctxt == NULL);
-    load->xml.ctxt = rsvg_create_xml_stream_parser (load->xml.rust_state,
-                                                    load->unlimited_size,
-                                                    stream,
-                                                    cancellable,
-                                                    &err);
+    xml_parser = rsvg_create_xml_stream_parser (load->xml.rust_state,
+                                                load->unlimited_size,
+                                                stream,
+                                                cancellable,
+                                                &err);
 
-    if (!load->xml.ctxt) {
+    if (!xml_parser) {
         g_assert (err != NULL);
         g_propagate_error (error, err);
 
         goto out;
     }
 
-    if (xmlParseDocument (load->xml.ctxt) != 0) {
+    if (xmlParseDocument (xml_parser) != 0) {
         if (err) {
             g_propagate_error (error, err);
         } else {
-            set_error_from_xml (error, load->xml.ctxt);
+            set_error_from_xml (error, xml_parser);
         }
 
         goto out;
@@ -350,7 +351,7 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
 
   out:
 
-    load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
+    xml_parser = free_xml_parser_and_doc (xml_parser);
 
     g_object_unref (stream);
 
