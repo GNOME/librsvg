@@ -157,7 +157,7 @@ impl XmlState {
         self.context_stack.push(top);
     }
 
-    pub fn start_element(&mut self, handle: *mut RsvgHandle, name: &str, pbag: &PropertyBag) {
+    pub fn start_element(&mut self, name: &str, pbag: &PropertyBag) {
         let context = self.context.clone();
 
         if let ContextKind::FatalError = context.kind {
@@ -168,12 +168,12 @@ impl XmlState {
         let name = skip_namespace(name);
 
         let new_context = match context.kind {
-            ContextKind::Start => self.element_creation_start_element(handle, name, pbag),
-            ContextKind::ElementCreation => self.element_creation_start_element(handle, name, pbag),
+            ContextKind::Start => self.element_creation_start_element(name, pbag),
+            ContextKind::ElementCreation => self.element_creation_start_element(name, pbag),
             ContextKind::XInclude(ref ctx) => self.inside_xinclude_start_element(&ctx, name),
             ContextKind::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(name),
             ContextKind::XIncludeFallback(ref ctx) => {
-                self.xinclude_fallback_start_element(&ctx, handle, name, pbag)
+                self.xinclude_fallback_start_element(&ctx, name, pbag)
             }
 
             ContextKind::FatalError => unreachable!(),
@@ -182,7 +182,7 @@ impl XmlState {
         self.push_context(new_context);
     }
 
-    pub fn end_element(&mut self, handle: *mut RsvgHandle, name: &str) {
+    pub fn end_element(&mut self, name: &str) {
         let context = self.context.clone();
 
         if let ContextKind::FatalError = context.kind {
@@ -196,7 +196,7 @@ impl XmlState {
 
         match context.kind {
             ContextKind::Start => panic!("end_element: XML handler stack is empty!?"),
-            ContextKind::ElementCreation => self.element_creation_end_element(handle),
+            ContextKind::ElementCreation => self.element_creation_end_element(),
             ContextKind::XInclude(_) => (),
             ContextKind::UnsupportedXIncludeChild => (),
             ContextKind::XIncludeFallback(_) => (),
@@ -280,17 +280,12 @@ impl XmlState {
         }
     }
 
-    fn element_creation_start_element(
-        &mut self,
-        handle: *mut RsvgHandle,
-        name: &str,
-        pbag: &PropertyBag,
-    ) -> Context {
+    fn element_creation_start_element(&mut self, name: &str, pbag: &PropertyBag) -> Context {
         match name {
-            "include" => self.xinclude_start_element(handle, name, pbag),
+            "include" => self.xinclude_start_element(name, pbag),
             _ => {
                 let parent = self.current_node.clone();
-                let node = self.create_node(parent.as_ref(), handle, name, pbag);
+                let node = self.create_node(parent.as_ref(), name, pbag);
                 if self.current_node.is_none() {
                     self.set_root(&node);
                 }
@@ -304,7 +299,7 @@ impl XmlState {
         }
     }
 
-    fn element_creation_end_element(&mut self, handle: *mut RsvgHandle) {
+    fn element_creation_end_element(&mut self) {
         let node = self.current_node.take().unwrap();
 
         // The "svg" node is special; it parses its style attributes
@@ -318,7 +313,7 @@ impl XmlState {
         if node.get_type() == NodeType::Style {
             let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
 
-            css::parse_into_css_styles(self.css_styles.as_mut().unwrap(), handle, &css_data);
+            css::parse_into_css_styles(self.css_styles.as_mut().unwrap(), self.handle, &css_data);
         }
 
         self.current_node = node.get_parent();
@@ -351,7 +346,6 @@ impl XmlState {
     fn create_node(
         &mut self,
         parent: Option<&Rc<Node>>,
-        handle: *mut RsvgHandle,
         name: &str,
         pbag: &PropertyBag,
     ) -> Rc<Node> {
@@ -363,7 +357,7 @@ impl XmlState {
             parent.add_child(&new_node);
         }
 
-        new_node.set_atts(&new_node, handle, pbag);
+        new_node.set_atts(&new_node, self.handle, pbag);
 
         // The "svg" node is special; it will parse its style attributes
         // until the end, in standard_element_end().
@@ -376,12 +370,7 @@ impl XmlState {
         new_node
     }
 
-    fn xinclude_start_element(
-        &mut self,
-        handle: *mut RsvgHandle,
-        name: &str,
-        pbag: &PropertyBag,
-    ) -> Context {
+    fn xinclude_start_element(&mut self, name: &str, pbag: &PropertyBag) -> Context {
         let mut href = None;
         let mut parse = None;
         let mut encoding = None;
@@ -395,7 +384,7 @@ impl XmlState {
             }
         }
 
-        let need_fallback = match self.acquire(handle, href, parse, encoding) {
+        let need_fallback = match self.acquire(href, parse, encoding) {
             Ok(()) => false,
             Err(AcquireError::ResourceError) => true,
             Err(AcquireError::FatalError) => return Context::fatal_error(),
@@ -430,16 +419,15 @@ impl XmlState {
     fn xinclude_fallback_start_element(
         &mut self,
         ctx: &XIncludeContext,
-        handle: *mut RsvgHandle,
         name: &str,
         pbag: &PropertyBag,
     ) -> Context {
         if ctx.need_fallback {
             // FIXME: we aren't using the xi: namespace
             if name == "include" {
-                self.xinclude_start_element(handle, name, pbag)
+                self.xinclude_start_element(name, pbag)
             } else {
-                self.element_creation_start_element(handle, name, pbag)
+                self.element_creation_start_element(name, pbag)
             }
         } else {
             Context {
@@ -457,20 +445,18 @@ impl XmlState {
 
     fn acquire(
         &mut self,
-        handle: *mut RsvgHandle,
         href: Option<&str>,
         parse: Option<&str>,
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
         if let Some(href) = href {
-            let aurl = AllowedUrl::from_href(href, handle::get_base_url(handle).as_ref()).map_err(
-                |e| {
+            let aurl = AllowedUrl::from_href(href, handle::get_base_url(self.handle).as_ref())
+                .map_err(|e| {
                     // FIXME: should AlloweUrlError::HrefParseError be a fatal error,
                     // not a resource error?
                     rsvg_log!("could not acquire \"{}\": {}", href, e);
                     AcquireError::ResourceError
-                },
-            )?;
+                })?;
 
             // https://www.w3.org/TR/xinclude/#include_element
             //
@@ -478,9 +464,9 @@ impl XmlState {
             // the absence of a default value declaration). Values
             // other than "xml" and "text" are a fatal error."
             match parse {
-                None | Some("xml") => self.acquire_xml(handle, &aurl),
+                None | Some("xml") => self.acquire_xml(&aurl),
 
-                Some("text") => self.acquire_text(handle, &aurl, encoding),
+                Some("text") => self.acquire_text(&aurl, encoding),
 
                 _ => Err(AcquireError::FatalError),
             }
@@ -496,11 +482,10 @@ impl XmlState {
 
     fn acquire_text(
         &mut self,
-        handle: *mut RsvgHandle,
         aurl: &AllowedUrl,
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
-        let binary = handle::acquire_data(handle, aurl).map_err(|e| {
+        let binary = handle::acquire_data(self.handle, aurl).map_err(|e| {
             rsvg_log!("could not acquire \"{}\": {}", aurl.url(), e);
             AcquireError::ResourceError
         })?;
@@ -528,9 +513,9 @@ impl XmlState {
         Ok(())
     }
 
-    fn acquire_xml(&self, handle: *mut RsvgHandle, aurl: &AllowedUrl) -> Result<(), AcquireError> {
+    fn acquire_xml(&self, aurl: &AllowedUrl) -> Result<(), AcquireError> {
         // FIXME: distinguish between "file not found" and "invalid XML"
-        if handle::load_xml_xinclude(handle, aurl) {
+        if handle::load_xml_xinclude(self.handle, aurl) {
             Ok(())
         } else {
             Err(AcquireError::FatalError)
@@ -613,7 +598,6 @@ pub extern "C" fn rsvg_xml_state_free(xml: *mut RsvgXmlState) {
 #[no_mangle]
 pub extern "C" fn rsvg_xml_state_start_element(
     xml: *mut RsvgXmlState,
-    handle: *mut RsvgHandle,
     name: *const libc::c_char,
     atts: *const *const libc::c_char,
 ) {
@@ -625,22 +609,18 @@ pub extern "C" fn rsvg_xml_state_start_element(
 
     let pbag = unsafe { PropertyBag::new_from_key_value_pairs(atts) };
 
-    xml.start_element(handle, name, &pbag);
+    xml.start_element(name, &pbag);
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_end_element(
-    xml: *mut RsvgXmlState,
-    handle: *mut RsvgHandle,
-    name: *const libc::c_char,
-) {
+pub extern "C" fn rsvg_xml_state_end_element(xml: *mut RsvgXmlState, name: *const libc::c_char) {
     assert!(!xml.is_null());
     let xml = unsafe { &mut *(xml as *mut XmlState) };
 
     assert!(!name.is_null());
     let name = unsafe { utf8_cstr(name) };
 
-    xml.end_element(handle, name);
+    xml.end_element(name);
 }
 
 #[no_mangle]
@@ -722,23 +702,6 @@ pub unsafe extern "C" fn rsvg_xml_state_entity_insert(
     assert!(!entity.is_null());
 
     xml.entity_insert(entity_name, entity);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_load_css_from_href(
-    xml: *mut RsvgXmlState,
-    handle: *mut RsvgHandle,
-    href: *const libc::c_char,
-) {
-    assert!(!xml.is_null());
-    let xml = &mut *(xml as *mut XmlState);
-
-    assert!(!handle.is_null());
-    assert!(!href.is_null());
-
-    let href: String = from_glib_none(href);
-
-    handle::load_css(xml.css_styles.as_mut().unwrap(), handle, &href);
 }
 
 #[no_mangle]

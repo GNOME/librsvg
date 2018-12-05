@@ -70,7 +70,6 @@ pub use xml::{
     rsvg_xml_state_entity_lookup,
     rsvg_xml_state_error,
     rsvg_xml_state_free,
-    rsvg_xml_state_load_css_from_href,
     rsvg_xml_state_new,
     rsvg_xml_state_processing_instruction,
     rsvg_xml_state_start_element,

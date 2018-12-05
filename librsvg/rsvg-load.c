@@ -45,8 +45,8 @@ typedef struct RsvgXmlState RsvgXmlState;
 extern RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
-extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, const char **atts);
-extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
+extern void rsvg_xml_state_start_element(RsvgXmlState *xml, const char *name, const char **atts);
+extern void rsvg_xml_state_end_element(RsvgXmlState *xml, const char *name);
 extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
@@ -56,10 +56,6 @@ extern xmlEntityPtr rsvg_xml_state_entity_lookup(RsvgXmlState *xml,
 extern void rsvg_xml_state_entity_insert(RsvgXmlState *xml,
                                          const char *entity_name,
                                          xmlEntityPtr entity);
-
-extern void rsvg_xml_state_load_css_from_href(RsvgXmlState *xml,
-                                              RsvgHandle *handle,
-                                              const char *href);
 
 extern void rsvg_xml_state_processing_instruction(RsvgXmlState *xml,
                                                   const char *target,
@@ -316,7 +312,6 @@ sax_start_element_cb (void *data, const xmlChar *name, const xmlChar **atts)
     RsvgLoad *load = data;
 
     rsvg_xml_state_start_element (load->xml.rust_state,
-                                  load->handle,
                                   (const char *) name,
                                   (const char **) atts);
 }
@@ -326,7 +321,7 @@ sax_end_element_cb (void *data, const xmlChar *name)
 {
     RsvgLoad *load =  data;
 
-    rsvg_xml_state_end_element (load->xml.rust_state, load->handle, (const char *) name);
+    rsvg_xml_state_end_element (load->xml.rust_state, (const char *) name);
 }
 
 static void
