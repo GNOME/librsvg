@@ -176,13 +176,14 @@ set_xml_parse_options(xmlParserCtxtPtr xml_parser,
 
 static xmlParserCtxtPtr
 create_xml_push_parser (RsvgLoad *load,
+                        gboolean unlimited_size,
                         const char *base_uri)
 {
     xmlParserCtxtPtr parser;
     xmlSAXHandler sax_handler = get_xml2_sax_handler ();
 
     parser = xmlCreatePushParserCtxt (&sax_handler, load, NULL, 0, base_uri);
-    set_xml_parse_options (parser, load->unlimited_size);
+    set_xml_parse_options (parser, unlimited_size);
 
     return parser;
 }
@@ -234,6 +235,7 @@ context_close (void *data)
 
 static xmlParserCtxtPtr
 create_xml_stream_parser (RsvgLoad      *load,
+                          gboolean       unlimited_size,
                           GInputStream  *stream,
                           GCancellable  *cancellable,
                           GError       **error)
@@ -263,7 +265,7 @@ create_xml_stream_parser (RsvgLoad      *load,
 
         /* on error, xmlCreateIOParserCtxt() frees our context via the context_close function */
     } else {
-        set_xml_parse_options (parser, load->unlimited_size);
+        set_xml_parse_options (parser, unlimited_size);
     }
 
     return parser;
@@ -284,6 +286,7 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
         gboolean success = FALSE;
 
         xml_parser = create_xml_stream_parser (handle->priv->load,
+                                               handle->priv->load->unlimited_size,
                                                stream,
                                                NULL, /* cancellable */
                                                &err);
@@ -431,7 +434,9 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
     load->error = &real_error;
 
     if (load->xml.ctxt == NULL) {
-        load->xml.ctxt = create_xml_push_parser (load, rsvg_handle_get_base_uri (load->handle));
+        load->xml.ctxt = create_xml_push_parser (load,
+                                                 load->unlimited_size,
+                                                 rsvg_handle_get_base_uri (load->handle));
     }
 
     result = xmlParseChunk (load->xml.ctxt, (char *) buf, count, 0);
@@ -509,6 +514,7 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
 
     g_assert (load->xml.ctxt == NULL);
     load->xml.ctxt = create_xml_stream_parser (load,
+                                               load->unlimited_size,
                                                stream,
                                                cancellable,
                                                &err);
