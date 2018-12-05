@@ -45,7 +45,7 @@ typedef struct RsvgXmlState RsvgXmlState;
 extern RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
-extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, RsvgPropertyBag atts);
+extern void rsvg_xml_state_start_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name, const char **atts);
 extern void rsvg_xml_state_end_element(RsvgXmlState *xml, RsvgHandle *handle, const char *name);
 extern void rsvg_xml_state_characters(RsvgXmlState *xml, const char *unterminated_text, gsize len);
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
@@ -313,17 +313,12 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 static void
 sax_start_element_cb (void *data, const xmlChar *name, const xmlChar **atts)
 {
-    RsvgPropertyBag bag;
     RsvgLoad *load = data;
-
-    bag = rsvg_property_bag_new ((const char **) atts);
 
     rsvg_xml_state_start_element (load->xml.rust_state,
                                   load->handle,
                                   (const char *) name,
-                                  bag);
-
-    rsvg_property_bag_free (bag);
+                                  (const char **) atts);
 }
 
 static void

@@ -615,7 +615,7 @@ pub extern "C" fn rsvg_xml_state_start_element(
     xml: *mut RsvgXmlState,
     handle: *mut RsvgHandle,
     name: *const libc::c_char,
-    pbag: *const PropertyBag,
+    atts: *const *const libc::c_char,
 ) {
     assert!(!xml.is_null());
     let xml = unsafe { &mut *(xml as *mut XmlState) };
@@ -623,10 +623,9 @@ pub extern "C" fn rsvg_xml_state_start_element(
     assert!(!name.is_null());
     let name = unsafe { utf8_cstr(name) };
 
-    assert!(!pbag.is_null());
-    let pbag = unsafe { &*pbag };
+    let pbag = unsafe { PropertyBag::new_from_key_value_pairs(atts) };
 
-    xml.start_element(handle, name, pbag);
+    xml.start_element(handle, name, &pbag);
 }
 
 #[no_mangle]
