@@ -76,8 +76,6 @@ struct RsvgLoad {
 
     LoadState state;
 
-    GCancellable *cancellable;
-
     GError **error;
 
     GInputStream *compressed_input_stream; /* for rsvg_handle_write of svgz data */
@@ -93,7 +91,6 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->handle = handle;
     load->unlimited_size = unlimited_size;
     load->state = LOAD_STATE_START;
-    load->cancellable = NULL;
     load->error = NULL;
     load->compressed_input_stream = NULL;
 
@@ -316,7 +313,6 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     }
 
     load->error = &err;
-    load->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
 
     g_assert (load->xml.ctxt == NULL);
     xml_parser = rsvg_create_xml_stream_parser (load->xml.rust_state,
@@ -356,7 +352,6 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     g_object_unref (stream);
 
     load->error = NULL;
-    g_clear_object (&load->cancellable);
 
     return res;
 }
