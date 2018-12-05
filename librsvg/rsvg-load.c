@@ -165,7 +165,7 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
         xml_parser = rsvg_create_xml_stream_parser (handle->priv->load->xml.rust_state,
                                                     handle->priv->load->unlimited_size,
                                                     stream,
-                                                    NULL, /* cancellable */
+                                                    handle->priv->cancellable,
                                                     &err);
 
         g_object_unref (stream);
