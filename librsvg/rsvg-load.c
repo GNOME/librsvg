@@ -76,8 +76,6 @@ struct RsvgLoad {
 
     LoadState state;
 
-    GError **error;
-
     GInputStream *compressed_input_stream; /* for rsvg_handle_write of svgz data */
 
     XmlState xml;
@@ -91,7 +89,6 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->handle = handle;
     load->unlimited_size = unlimited_size;
     load->state = LOAD_STATE_START;
-    load->error = NULL;
     load->compressed_input_stream = NULL;
 
     load->xml.ctxt = NULL;
@@ -257,8 +254,6 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
     GError *real_error = NULL;
     int result;
 
-    load->error = &real_error;
-
     if (load->xml.ctxt == NULL) {
         load->xml.ctxt = rsvg_create_xml_push_parser (load->xml.rust_state,
                                                       load->unlimited_size,
@@ -276,8 +271,6 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
         g_assert (real_error != NULL);
     }
 
-    load->error = NULL;
-
     if (real_error != NULL) {
         g_propagate_error (error, real_error);
         return FALSE;
@@ -291,8 +284,6 @@ close_impl (RsvgLoad *load, GError ** error)
 {
     GError *real_error = NULL;
 
-    load->error = &real_error;
-
     if (load->xml.ctxt != NULL) {
         int result;
 
@@ -305,8 +296,6 @@ close_impl (RsvgLoad *load, GError ** error)
 
         load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
     }
-
-    load->error = NULL;
 
     if (real_error != NULL) {
         g_propagate_error (error, real_error);
@@ -340,8 +329,6 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
         return FALSE;
     }
 
-    load->error = &err;
-
     g_assert (load->xml.ctxt == NULL);
 
     res = rsvg_parse_xml_from_stream (load->xml.rust_state,
@@ -352,8 +339,6 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     if (!res) {
         g_propagate_error (error, err);
     }
-
-    load->error = NULL;
 
     g_object_unref (stream);
 
