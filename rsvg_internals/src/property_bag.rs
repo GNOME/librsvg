@@ -1,11 +1,7 @@
 use libc;
 
-use glib::translate::*;
-use glib_sys;
-
 use std::ffi::{CStr, CString};
 use std::ops::Deref;
-use std::ptr;
 use std::slice;
 use std::str::{self, FromStr};
 
@@ -138,69 +134,12 @@ impl<'a> Iterator for PropertyBagCStrIter<'a> {
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_property_bag_new<'a>(
-    atts: *const *const libc::c_char,
-) -> *const PropertyBag<'a> {
-    let pbag = unsafe { PropertyBag::new_from_key_value_pairs(atts) };
-    Box::into_raw(Box::new(pbag))
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_property_bag_free(pbag: *mut PropertyBag<'_>) {
-    unsafe {
-        let _ = Box::from_raw(pbag);
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_property_bag_iter_begin(
-    pbag: *const PropertyBag<'_>,
-) -> *mut PropertyBagCStrIter<'_> {
-    assert!(!pbag.is_null());
-    let pbag = unsafe { &*pbag };
-
-    Box::into_raw(Box::new(pbag.cstr_iter()))
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_property_bag_iter_next(
-    iter: *mut PropertyBagCStrIter<'_>,
-    out_key: *mut *const libc::c_char,
-    out_attr: *mut Attribute,
-    out_value: *mut *const libc::c_char,
-) -> glib_sys::gboolean {
-    assert!(!iter.is_null());
-    let iter = unsafe { &mut *iter };
-
-    if let Some((key, attr, val)) = iter.next() {
-        unsafe {
-            *out_key = key.as_ptr();
-            *out_attr = attr;
-            *out_value = val.as_ptr();
-        }
-        true.to_glib()
-    } else {
-        unsafe {
-            *out_key = ptr::null();
-            *out_value = ptr::null();
-        }
-        false.to_glib()
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_property_bag_iter_end(iter: *mut PropertyBagCStrIter<'_>) {
-    assert!(!iter.is_null());
-
-    unsafe { Box::from_raw(iter) };
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::ffi::CString;
     use std::mem;
+    use std::ptr;
 
     #[test]
     fn empty_property_bag() {
@@ -243,60 +182,6 @@ mod tests {
                 unreachable!();
             }
         }
-
-        assert!(had_rx);
-        assert!(had_ry);
-    }
-
-    #[test]
-    fn property_bag_can_iterate_from_c() {
-        let pairs = [
-            CString::new("rx").unwrap(),
-            CString::new("1").unwrap(),
-            CString::new("ry").unwrap(),
-            CString::new("2").unwrap(),
-        ];
-
-        let mut v = Vec::new();
-
-        for x in &pairs {
-            v.push(x.as_ptr() as *const libc::c_char);
-        }
-
-        v.push(ptr::null());
-
-        let pbag = unsafe { PropertyBag::new_from_key_value_pairs(v.as_ptr()) };
-
-        let mut had_rx: bool = false;
-        let mut had_ry: bool = false;
-
-        let iter = rsvg_property_bag_iter_begin(&pbag as *const PropertyBag);
-
-        let mut key = unsafe { mem::uninitialized() };
-        let mut att = unsafe { mem::uninitialized() };
-        let mut val = unsafe { mem::uninitialized() };
-
-        while from_glib(rsvg_property_bag_iter_next(
-            iter,
-            &mut key as *mut _,
-            &mut att as *mut _,
-            &mut val as *mut _,
-        )) {
-            let k = unsafe { CStr::from_ptr(key).to_str_utf8() };
-            let v = unsafe { CStr::from_ptr(val).to_str_utf8() };
-
-            if k == "rx" {
-                assert!(att == Attribute::Rx);
-                assert!(v == "1");
-                had_rx = true;
-            } else if k == "ry" {
-                assert!(att == Attribute::Ry);
-                assert!(v == "2");
-                had_ry = true;
-            }
-        }
-
-        rsvg_property_bag_iter_end(iter);
 
         assert!(had_rx);
         assert!(had_ry);

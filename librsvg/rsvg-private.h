@@ -113,31 +113,6 @@ struct RsvgHandlePrivate {
     RsvgHandleRust *rust_handle;
 };
 
-/* Implemented in rust/src/property_bag.rs */
-G_GNUC_INTERNAL
-RsvgPropertyBag	    rsvg_property_bag_new       (const char **atts);
-
-/* Implemented in rust/src/property_bag.rs */
-G_GNUC_INTERNAL
-void                 rsvg_property_bag_free      (RsvgPropertyBag bag);
-
-typedef struct RsvgPropertyBagIter *RsvgPropertyBagIter;
-
-/* Implemented in rust/src/property_bag.rs */
-G_GNUC_INTERNAL
-RsvgPropertyBagIter *rsvg_property_bag_iter_begin (RsvgPropertyBag bag);
-
-/* Implemented in rust/src/property_bag.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_property_bag_iter_next (RsvgPropertyBagIter *iter,
-                                      const char **out_key,
-                                      RsvgAttribute *out_attr,
-                                      const char **out_value);
-
-/* Implemented in rust/src/property_bag.rs */
-G_GNUC_INTERNAL
-void rsvg_property_bag_iter_end (RsvgPropertyBagIter *iter);
-
 G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 

@@ -61,14 +61,6 @@ pub use io::rsvg_get_input_stream_for_loading;
 
 pub use node::rsvg_node_unref;
 
-pub use property_bag::{
-    rsvg_property_bag_free,
-    rsvg_property_bag_iter_begin,
-    rsvg_property_bag_iter_end,
-    rsvg_property_bag_iter_next,
-    rsvg_property_bag_new,
-};
-
 pub use structure::rsvg_node_svg_get_size;
 
 pub use xml::{
