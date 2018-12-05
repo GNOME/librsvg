@@ -311,19 +311,12 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 /* end xinclude */
 
 static void
-sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
+sax_start_element_cb (void *data, const xmlChar *name, const xmlChar **atts)
 {
     RsvgPropertyBag bag;
     RsvgLoad *load = data;
-    const char *tempname;
 
     bag = rsvg_property_bag_new ((const char **) atts);
-
-    for (tempname = (const char *) name; *tempname != '\0'; tempname++) {
-        if (*tempname == ':') {
-            name = (const xmlChar *) (tempname + 1);
-        }
-    }
 
     rsvg_xml_state_start_element (load->xml.rust_state,
                                   load->handle,
@@ -334,19 +327,11 @@ sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
 }
 
 static void
-sax_end_element_cb (void *data, const xmlChar * xmlname)
+sax_end_element_cb (void *data, const xmlChar *name)
 {
     RsvgLoad *load =  data;
-    const char *name = (const char *) xmlname;
-    const char *tempname;
 
-    for (tempname = name; *tempname != '\0'; tempname++) {
-        if (*tempname == ':') {
-            name = tempname + 1;
-        }
-    }
-
-    rsvg_xml_state_end_element (load->xml.rust_state, load->handle, name);
+    rsvg_xml_state_end_element (load->xml.rust_state, load->handle, (const char *) name);
 }
 
 static void

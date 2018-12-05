@@ -164,6 +164,9 @@ impl XmlState {
             return;
         }
 
+        // FIXME: we should deal with namespaces at some point
+        let name = skip_namespace(name);
+
         let new_context = match context.kind {
             ContextKind::Start => self.element_creation_start_element(handle, name, pbag),
             ContextKind::ElementCreation => self.element_creation_start_element(handle, name, pbag),
@@ -185,6 +188,9 @@ impl XmlState {
         if let ContextKind::FatalError = context.kind {
             return;
         }
+
+        // FIXME: we should deal with namespaces at some point
+        let name = skip_namespace(name);
 
         assert!(context.element_name == name);
 
@@ -549,6 +555,10 @@ impl Drop for XmlState {
     }
 }
 
+fn skip_namespace(s: &str) -> &str {
+    s.find(':').map_or(s, |pos| &s[pos + 1..])
+}
+
 // https://www.w3.org/TR/xml-stylesheet/
 //
 // The syntax for the xml-stylesheet processing instruction we support
@@ -750,5 +760,17 @@ pub unsafe extern "C" fn rsvg_xml_state_tree_is_valid(
     } else {
         set_gerror(error, 0, "SVG has no elements");
         false.to_glib()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skips_namespaces() {
+        assert_eq!(skip_namespace("foo"), "foo");
+        assert_eq!(skip_namespace("foo:bar"), "bar");
+        assert_eq!(skip_namespace("foo:bar:baz"), "bar:baz");
     }
 }
