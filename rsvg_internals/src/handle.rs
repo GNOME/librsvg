@@ -6,7 +6,7 @@ use std::rc::Rc;
 use cairo::{ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
-use gio::{Cancellable, File as GFile, InputStream};
+use gio::{File as GFile, InputStream};
 use gio_sys;
 use glib::translate::*;
 use glib_sys;
@@ -61,8 +61,6 @@ extern "C" {
     ) -> glib_sys::gboolean;
 
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut RsvgHandleRust;
-
-    fn rsvg_handle_get_cancellable(handle: *const RsvgHandle) -> *mut gio_sys::GCancellable;
 }
 
 pub fn lookup_node(handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
@@ -120,27 +118,23 @@ pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
     rhandle.base_url.borrow()
 }
 
-fn get_cancellable<'a>(handle: *const RsvgHandle) -> Option<Cancellable> {
-    unsafe { from_glib_borrow(rsvg_handle_get_cancellable(handle)) }
-}
-
 pub struct BinaryData {
     pub data: Vec<u8>,
     pub content_type: Option<String>,
 }
 
 pub fn acquire_data(
-    handle: *mut RsvgHandle,
+    _handle: *mut RsvgHandle,
     aurl: &AllowedUrl,
 ) -> Result<BinaryData, LoadingError> {
-    io::acquire_data(aurl, get_cancellable(handle).as_ref())
+    io::acquire_data(aurl, None)
 }
 
 pub fn acquire_stream(
-    handle: *mut RsvgHandle,
+    _handle: *mut RsvgHandle,
     aurl: &AllowedUrl,
 ) -> Result<InputStream, LoadingError> {
-    io::acquire_stream(&aurl, get_cancellable(handle).as_ref())
+    io::acquire_stream(&aurl, None)
 }
 
 fn keep_image_data(handle: *const RsvgHandle) -> bool {

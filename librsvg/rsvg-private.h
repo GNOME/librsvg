@@ -94,8 +94,6 @@ struct RsvgHandlePrivate {
     gpointer user_data;
     GDestroyNotify user_data_destroy;
 
-    GCancellable *cancellable;
-
     double dpi_x;
     double dpi_y;
 
@@ -135,9 +133,6 @@ char *rsvg_handle_acquire_data (RsvgHandle *handle,
                                 const char *href,
                                 gsize *len,
                                 GError **error);
-
-G_GNUC_INTERNAL
-GCancellable *rsvg_handle_get_cancellable (RsvgHandle *handle);
 
 /* Implemented in rsvg_internals/src/handle.rs */
 G_GNUC_INTERNAL

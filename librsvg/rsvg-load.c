@@ -160,7 +160,7 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
         success = rsvg_xml_state_parse_from_stream (handle->priv->load->xml.rust_state,
                                                     handle->priv->load->unlimited_size,
                                                     stream,
-                                                    handle->priv->cancellable,
+                                                    NULL, /* cancellable */
                                                     NULL);
 
         g_object_unref (stream);

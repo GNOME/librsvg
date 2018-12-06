@@ -197,8 +197,6 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
 
-    self->priv->cancellable = NULL;
-
     self->priv->in_loop = FALSE;
 
     self->priv->is_testing = FALSE;
@@ -229,8 +227,6 @@ rsvg_handle_dispose (GObject *instance)
     g_clear_pointer (&self->priv->font_config_for_testing, FcConfigDestroy);
     g_clear_object (&self->priv->font_map_for_testing);
 #endif
-
-    g_clear_object (&self->priv->cancellable);
 
     g_clear_pointer (&self->priv->rust_handle, rsvg_handle_rust_free);
 
@@ -1564,12 +1560,6 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
     handle->priv->size_func = size_func;
     handle->priv->user_data = user_data;
     handle->priv->user_data_destroy = user_data_destroy;
-}
-
-GCancellable *
-rsvg_handle_get_cancellable (RsvgHandle *handle)
-{
-    return handle->priv->cancellable;
 }
 
 #ifdef HAVE_PANGOFT2
