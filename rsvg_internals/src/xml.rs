@@ -73,7 +73,10 @@ impl Context {
 }
 
 // A *const RsvgXmlState is just the type that we export to C
-pub enum RsvgXmlState {}
+#[repr(C)]
+pub struct RsvgXmlState {
+    _private: [u8; 0],
+}
 
 // This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
 // that is freed in impl Drop for XmlState

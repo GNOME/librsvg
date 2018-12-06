@@ -78,9 +78,15 @@ pub trait BlurDirection {
 }
 
 /// Vertical blur direction.
-pub enum Vertical {}
+#[repr(C)]
+pub struct Vertical {
+    _private: [u8; 0],
+}
 /// Horizontal blur direction.
-pub enum Horizontal {}
+#[repr(C)]
+pub struct Horizontal {
+    _private: [u8; 0],
+}
 
 impl BlurDirection for Vertical {
     const IS_VERTICAL: bool = true;
@@ -96,9 +102,15 @@ pub trait IsAlphaOnly {
 }
 
 /// Alpha-only.
-pub enum AlphaOnly {}
+#[repr(C)]
+pub struct AlphaOnly {
+    _private: [u8; 0],
+}
 /// Not alpha-only.
-pub enum NotAlphaOnly {}
+#[repr(C)]
+pub struct NotAlphaOnly {
+    _private: [u8; 0],
+}
 
 impl IsAlphaOnly for AlphaOnly {
     const IS_ALPHA_ONLY: bool = true;
