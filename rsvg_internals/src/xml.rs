@@ -72,12 +72,6 @@ impl Context {
     }
 }
 
-// A *const RsvgXmlState is just the type that we export to C
-#[repr(C)]
-pub struct RsvgXmlState {
-    _private: [u8; 0],
-}
-
 // This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
 // that is freed in impl Drop for XmlState
 type XmlEntityPtr = *mut libc::c_void;
@@ -582,23 +576,20 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_new(handle: *mut RsvgHandle) -> *mut RsvgXmlState {
-    Box::into_raw(Box::new(XmlState::new(handle))) as *mut RsvgXmlState
+pub extern "C" fn rsvg_xml_state_new(handle: *mut RsvgHandle) -> *mut XmlState {
+    Box::into_raw(Box::new(XmlState::new(handle)))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_free(xml: *mut RsvgXmlState) {
+pub unsafe extern "C" fn rsvg_xml_state_free(xml: *mut XmlState) {
     assert!(!xml.is_null());
-    let xml = unsafe { &mut *(xml as *mut XmlState) };
-    unsafe {
-        Box::from_raw(xml);
-    }
+    Box::from_raw(xml);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut RsvgXmlState, msg: *const libc::c_char) {
+pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut XmlState, msg: *const libc::c_char) {
     assert!(!xml.is_null());
-    let xml = &mut *(xml as *mut XmlState);
+    let xml = &mut *xml;
 
     assert!(!msg.is_null());
     // Unlike the functions that take UTF-8 validated strings from
@@ -610,11 +601,11 @@ pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut RsvgXmlState, msg: *cons
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_xml_state_tree_is_valid(
-    xml: *mut RsvgXmlState,
+    xml: *mut XmlState,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
     assert!(!xml.is_null());
-    let xml = &mut *(xml as *mut XmlState);
+    let xml = &mut *xml;
 
     if let Some(ref tree) = xml.tree {
         if tree.root_is_svg() {

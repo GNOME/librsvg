@@ -22,19 +22,15 @@ use node::{box_node, Node, RsvgNode};
 use surface_utils::shared_surface::SharedImageSurface;
 use svg::Svg;
 use util::rsvg_g_warning;
-use xml::{RsvgXmlState, XmlState};
+use xml::XmlState;
 
+// A *const RsvgHandle is just an opaque pointer we get from C
 #[repr(C)]
 pub struct RsvgHandle {
     _private: [u8; 0],
 }
 
-#[repr(C)]
-pub struct RsvgHandleRust {
-    _private: [u8; 0],
-}
-
-struct Handle {
+pub struct Handle {
     base_url: RefCell<Option<Url>>,
     svg: RefCell<Option<Svg>>,
 }
@@ -66,7 +62,7 @@ extern "C" {
         href: *const libc::c_char,
     ) -> glib_sys::gboolean;
 
-    fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut RsvgHandleRust;
+    fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
 }
 
 pub fn lookup_node(handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
@@ -261,15 +257,14 @@ pub fn get_svg<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Svg>> {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_new() -> *mut RsvgHandleRust {
-    Box::into_raw(Box::new(Handle::new())) as *mut RsvgHandleRust
+pub unsafe extern "C" fn rsvg_handle_rust_new() -> *mut Handle {
+    Box::into_raw(Box::new(Handle::new()))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut RsvgHandleRust) {
+pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut Handle) {
     assert!(!raw_handle.is_null());
-
-    Box::from_raw(raw_handle as *mut Handle);
+    Box::from_raw(raw_handle);
 }
 
 fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
@@ -278,10 +273,10 @@ fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
-    raw_handle: *const RsvgHandleRust,
+    raw_handle: *const Handle,
     uri: *const libc::c_char,
 ) {
-    let handle = &*(raw_handle as *const Handle);
+    let handle = &*raw_handle;
 
     assert!(!uri.is_null());
     let uri: String = from_glib_none(uri);
@@ -305,9 +300,9 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
-    raw_handle: *const RsvgHandleRust,
+    raw_handle: *const Handle,
 ) -> *mut gio_sys::GFile {
-    let handle = &*(raw_handle as *const Handle);
+    let handle = &*raw_handle;
 
     match *handle.base_url.borrow() {
         None => ptr::null_mut(),
@@ -449,18 +444,18 @@ pub unsafe extern "C" fn rsvg_handle_acquire_stream(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_steal_result(
-    raw_handle: *const RsvgHandleRust,
-    raw_xml_state: *mut RsvgXmlState,
+    raw_handle: *const Handle,
+    raw_xml_state: *mut XmlState,
 ) {
-    let handle = &*(raw_handle as *const Handle);
-    let xml = &mut *(raw_xml_state as *mut XmlState);
+    let handle = &*raw_handle;
+    let xml = &mut *raw_xml_state;
 
     *handle.svg.borrow_mut() = Some(xml.steal_result());
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_cascade(raw_handle: *const RsvgHandleRust) {
-    let rhandle = &*(raw_handle as *const Handle);
+pub unsafe extern "C" fn rsvg_handle_rust_cascade(raw_handle: *const Handle) {
+    let rhandle = &*raw_handle;
 
     let svg_ref = rhandle.svg.borrow();
     let svg = svg_ref.as_ref().unwrap();
@@ -469,10 +464,8 @@ pub unsafe extern "C" fn rsvg_handle_rust_cascade(raw_handle: *const RsvgHandleR
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_root(
-    raw_handle: *const RsvgHandleRust,
-) -> *const RsvgNode {
-    let rhandle = &*(raw_handle as *const Handle);
+pub unsafe extern "C" fn rsvg_handle_rust_get_root(raw_handle: *const Handle) -> *const RsvgNode {
+    let rhandle = &*raw_handle;
 
     let svg_ref = rhandle.svg.borrow();
     let svg = svg_ref.as_ref().unwrap();
@@ -482,10 +475,10 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_root(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_node_is_root(
-    raw_handle: *const RsvgHandleRust,
+    raw_handle: *const Handle,
     node: *mut RsvgNode,
 ) -> glib_sys::gboolean {
-    let rhandle = &*(raw_handle as *const Handle);
+    let rhandle = &*raw_handle;
 
     assert!(!node.is_null());
     let node: &RsvgNode = &*node;

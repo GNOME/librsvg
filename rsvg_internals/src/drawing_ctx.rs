@@ -95,11 +95,6 @@ impl Drop for ViewParams {
     }
 }
 
-#[repr(C)]
-pub struct RsvgDrawingCtx {
-    _private: [u8; 0],
-}
-
 pub struct DrawingCtx {
     handle: *const RsvgHandle,
 
@@ -1057,10 +1052,10 @@ impl From<TextRendering> for cairo::Antialias {
 
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
-    raw_draw_ctx: *mut RsvgDrawingCtx,
+    raw_draw_ctx: *mut DrawingCtx,
 ) -> glib_sys::gboolean {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
+    let draw_ctx = unsafe { &mut *raw_draw_ctx };
 
     // FIXME: The public API doesn't let us return a GError from the rendering
     // functions, just a boolean.  Add a proper API to return proper errors from
@@ -1083,11 +1078,11 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
 
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
-    raw_draw_ctx: *const RsvgDrawingCtx,
+    raw_draw_ctx: *mut DrawingCtx,
     raw_node: *const RsvgNode,
 ) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
+    let draw_ctx = unsafe { &mut *raw_draw_ctx };
 
     assert!(!raw_node.is_null());
     let node = unsafe { &*raw_node };
@@ -1106,12 +1101,12 @@ pub struct RsvgRectangle {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_drawing_ctx_get_geometry(
-    raw_draw_ctx: *const RsvgDrawingCtx,
+    raw_draw_ctx: *const DrawingCtx,
     ink_rect: *mut RsvgRectangle,
     logical_rect: *mut RsvgRectangle,
 ) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = &mut *(raw_draw_ctx as *mut DrawingCtx);
+    let draw_ctx = &*raw_draw_ctx;
 
     assert!(!ink_rect.is_null());
     assert!(!logical_rect.is_null());
@@ -1198,7 +1193,7 @@ pub extern "C" fn rsvg_drawing_ctx_new(
     dpi_x: libc::c_double,
     dpi_y: libc::c_double,
     is_testing: glib_sys::gboolean,
-) -> *mut RsvgDrawingCtx {
+) -> *mut DrawingCtx {
     Box::into_raw(Box::new(DrawingCtx::new(
         handle,
         unsafe { from_glib_none(cr) },
@@ -1209,15 +1204,11 @@ pub extern "C" fn rsvg_drawing_ctx_new(
         dpi_x,
         dpi_y,
         from_glib(is_testing),
-    ))) as *mut RsvgDrawingCtx
+    )))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_free(raw_draw_ctx: *mut RsvgDrawingCtx) {
+pub unsafe extern "C" fn rsvg_drawing_ctx_free(raw_draw_ctx: *mut DrawingCtx) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx) };
-
-    unsafe {
-        Box::from_raw(draw_ctx);
-    }
+    Box::from_raw(raw_draw_ctx);
 }

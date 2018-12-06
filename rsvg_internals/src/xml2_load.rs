@@ -15,7 +15,7 @@ use glib::translate::*;
 use error::{set_gerror, RsvgError};
 use property_bag::PropertyBag;
 use util::utf8_cstr;
-use xml::{RsvgXmlState, XmlState};
+use xml::XmlState;
 use xml2::*;
 
 extern "C" {
@@ -294,7 +294,7 @@ fn create_xml_stream_parser(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_create_xml_push_parser(
-    xml: *mut RsvgXmlState,
+    xml: *mut XmlState,
     unlimited_size: glib_sys::gboolean,
     base_uri: *const libc::c_char,
     error: *mut *mut glib_sys::GError,
@@ -347,14 +347,14 @@ pub unsafe extern "C" fn rsvg_set_error_from_xml(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
-    xml: *mut RsvgXmlState,
+    xml: *mut XmlState,
     unlimited_size: glib_sys::gboolean,
     stream: *mut gio_sys::GInputStream,
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
     assert!(!xml.is_null());
-    let xml = &mut *(xml as *mut XmlState);
+    let xml = &mut *xml;
 
     let unlimited_size = from_glib(unlimited_size);
 
