@@ -117,6 +117,12 @@ pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*cons
     }
 }
 
+pub fn get_dpi<'a>(handle: *const RsvgHandle) -> &'a Dpi {
+    let rhandle = get_rust_handle(handle);
+
+    &rhandle.dpi
+}
+
 pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
     let rhandle = get_rust_handle(handle);
 
