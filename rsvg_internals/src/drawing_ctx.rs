@@ -95,7 +95,10 @@ impl Drop for ViewParams {
     }
 }
 
-pub enum RsvgDrawingCtx {}
+#[repr(C)]
+pub struct RsvgDrawingCtx {
+    _private: [u8; 0],
+}
 
 pub struct DrawingCtx {
     handle: *const RsvgHandle,

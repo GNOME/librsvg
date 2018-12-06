@@ -24,9 +24,15 @@ use svg::Svg;
 use util::rsvg_g_warning;
 use xml::{RsvgXmlState, XmlState};
 
-pub enum RsvgHandle {}
+#[repr(C)]
+pub struct RsvgHandle {
+    _private: [u8; 0],
+}
 
-pub enum RsvgHandleRust {}
+#[repr(C)]
+pub struct RsvgHandleRust {
+    _private: [u8; 0],
+}
 
 struct Handle {
     base_url: RefCell<Option<Url>>,
