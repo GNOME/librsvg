@@ -118,6 +118,12 @@ pub fn get_unlimited_size(handle: *const RsvgHandle) -> bool {
     unsafe { (rsvg_handle_get_flags(handle) & RSVG_HANDLE_FLAG_UNLIMITED) != 0 }
 }
 
+pub fn get_dpi<'a>(handle: *const RsvgHandle) -> &'a Dpi {
+    let rhandle = get_rust_handle(handle);
+
+    &rhandle.dpi
+}
+
 pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
     let rhandle = get_rust_handle(handle);
 

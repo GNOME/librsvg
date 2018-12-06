@@ -156,8 +156,6 @@ extern RsvgDrawingCtx *rsvg_drawing_ctx_new (RsvgHandle *handle,
                                              guint height,
                                              double vb_width,
                                              double vb_height,
-                                             double dpi_x,
-                                             double dpi_y,
                                              gboolean testing);
 extern void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
 extern void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
@@ -1031,8 +1029,6 @@ rsvg_handle_create_drawing_ctx(RsvgHandle *handle,
                                  cr,
                                  dimensions->width, dimensions->height,
                                  dimensions->em, dimensions->ex,
-                                 rsvg_handle_rust_get_dpi_x (handle->priv->rust_handle),
-                                 rsvg_handle_rust_get_dpi_y (handle->priv->rust_handle),
                                  handle->priv->is_testing);
 }
 
