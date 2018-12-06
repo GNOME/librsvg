@@ -116,7 +116,7 @@ impl NodeTrait for ConvolveMatrix {
                         return Err(NodeError::parse_error(
                             attr,
                             ParseError::new("expected false or true"),
-                        ))
+                        ));
                     }
                 }),
                 _ => (),
