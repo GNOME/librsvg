@@ -35,10 +35,8 @@
 #define RSVG_DEFAULT_DPI_X 90.0
 #define RSVG_DEFAULT_DPI_Y 90.0
 
-G_GNUC_INTERNAL
-double rsvg_internal_dpi_x = RSVG_DEFAULT_DPI_X;
-G_GNUC_INTERNAL
-double rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
+static double rsvg_internal_dpi_x = RSVG_DEFAULT_DPI_X;
+static double rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
 /**
  * rsvg_error_quark:
@@ -102,6 +100,18 @@ rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
         rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
     else
         rsvg_internal_dpi_y = dpi_y;
+}
+
+double
+rsvg_get_default_dpi_x (void)
+{
+    return rsvg_internal_dpi_x;
+}
+
+double
+rsvg_get_default_dpi_y (void)
+{
+    return rsvg_internal_dpi_y;
 }
 
 /**
