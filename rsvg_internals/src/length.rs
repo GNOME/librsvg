@@ -228,10 +228,11 @@ impl Length {
 }
 
 fn font_size_from_inch(length: f64, dir: LengthDir, params: &ViewParams) -> f64 {
+    let dpi = params.dpi();
     match dir {
-        LengthDir::Horizontal => length * params.dpi_x(),
-        LengthDir::Vertical => length * params.dpi_y(),
-        LengthDir::Both => length * viewport_percentage(params.dpi_x(), params.dpi_y()),
+        LengthDir::Horizontal => length * dpi.x(),
+        LengthDir::Vertical => length * dpi.y(),
+        LengthDir::Both => length * viewport_percentage(dpi.x(), dpi.y()),
     }
 }
 
