@@ -7,7 +7,10 @@ use std::rc::Rc;
 use node::{box_node, Node, NodeType, RsvgNode};
 use state::ComputedValues;
 
-pub enum RsvgTree {}
+#[repr(C)]
+pub struct RsvgTree {
+    _private: [u8; 0],
+}
 
 pub struct Tree {
     pub root: Rc<Node>,

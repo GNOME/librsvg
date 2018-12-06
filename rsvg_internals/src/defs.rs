@@ -8,7 +8,10 @@ use handle::{self, RsvgHandle};
 use node::{Node, RsvgNode};
 use util::utf8_cstr;
 
-pub enum RsvgDefs {}
+#[repr(C)]
+pub struct RsvgDefs {
+    _private: [u8; 0],
+}
 
 pub struct Defs {
     handle: *const RsvgHandle,

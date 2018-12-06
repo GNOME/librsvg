@@ -13,7 +13,10 @@ use defs::{Defs, RsvgDefs};
 use error::LoadingError;
 use surface_utils::shared_surface::SharedImageSurface;
 
-pub enum RsvgHandle {}
+#[repr(C)]
+pub struct RsvgHandle {
+    _private: [u8; 0],
+}
 
 #[allow(improper_ctypes)]
 extern "C" {

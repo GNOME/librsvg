@@ -96,7 +96,10 @@ impl Drop for ViewParams {
     }
 }
 
-pub enum RsvgDrawingCtx {}
+#[repr(C)]
+pub struct RsvgDrawingCtx {
+    _private: [u8; 0],
+}
 
 pub struct DrawingCtx<'a> {
     rect: cairo::Rectangle,

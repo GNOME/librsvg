@@ -15,7 +15,10 @@ use handle::{self, RsvgHandle};
 use state::State;
 use util::utf8_cstr;
 
-pub enum RsvgCssStyles {}
+#[repr(C)]
+pub struct RsvgCssStyles {
+    _private: [u8; 0],
+}
 
 struct Declaration {
     prop_value: String,
