@@ -50,10 +50,14 @@ pub use handle::{
     rsvg_handle_rust_cascade,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
+    rsvg_handle_rust_get_dpi_x,
+    rsvg_handle_rust_get_dpi_y,
     rsvg_handle_rust_get_root,
     rsvg_handle_rust_new,
     rsvg_handle_rust_node_is_root,
     rsvg_handle_rust_set_base_url,
+    rsvg_handle_rust_set_dpi_x,
+    rsvg_handle_rust_set_dpi_y,
     rsvg_handle_rust_steal_result,
 };
 
@@ -97,6 +101,7 @@ mod create_node;
 mod croco;
 mod css;
 mod defs;
+mod dpi;
 mod drawing_ctx;
 mod error;
 pub mod filters;
