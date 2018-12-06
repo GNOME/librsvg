@@ -12,6 +12,13 @@ pub struct Dpi {
 }
 
 impl Dpi {
+    pub fn new(x: f64, y: f64) -> Dpi {
+        Dpi {
+            x: Cell::new(x),
+            y: Cell::new(y),
+        }
+    }
+
     pub fn x(&self) -> f64 {
         if self.x.get() <= 0.0 {
             unsafe { rsvg_get_default_dpi_x() }

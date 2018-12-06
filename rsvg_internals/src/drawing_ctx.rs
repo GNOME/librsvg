@@ -14,6 +14,7 @@ use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
 use defs::Fragment;
+use dpi::Dpi;
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
@@ -48,8 +49,7 @@ use viewbox::ViewBox;
 /// returned `ViewParams` is dropped; at that point, the `DrawingCtx` will resume using its
 /// previous viewport.
 pub struct ViewParams {
-    dpi_x: f64,
-    dpi_y: f64,
+    dpi: Dpi,
     view_box_width: f64,
     view_box_height: f64,
     view_box_stack: Option<Weak<RefCell<Vec<ViewBox>>>>,
@@ -57,22 +57,17 @@ pub struct ViewParams {
 
 impl ViewParams {
     #[cfg(test)]
-    pub fn new(dpi_x: f64, dpi_y: f64, view_box_width: f64, view_box_height: f64) -> ViewParams {
+    pub fn new(dpi: Dpi, view_box_width: f64, view_box_height: f64) -> ViewParams {
         ViewParams {
-            dpi_x,
-            dpi_y,
+            dpi,
             view_box_width,
             view_box_height,
             view_box_stack: None,
         }
     }
 
-    pub fn dpi_x(&self) -> f64 {
-        self.dpi_x
-    }
-
-    pub fn dpi_y(&self) -> f64 {
-        self.dpi_y
+    pub fn dpi(&self) -> &Dpi {
+        &self.dpi
     }
 
     pub fn view_box_width(&self) -> f64 {
@@ -99,8 +94,7 @@ pub struct DrawingCtx {
     handle: *const RsvgHandle,
 
     rect: cairo::Rectangle,
-    dpi_x: f64,
-    dpi_y: f64,
+    dpi: Dpi,
 
     /// This is a mitigation for the security-related bug
     /// https://gitlab.gnome.org/GNOME/librsvg/issues/323 - imagine
@@ -140,8 +134,7 @@ impl DrawingCtx {
         height: f64,
         vb_width: f64,
         vb_height: f64,
-        dpi_x: f64,
-        dpi_y: f64,
+        dpi: Dpi,
         is_testing: bool,
     ) -> DrawingCtx {
         let mut affine = cr.get_matrix();
@@ -171,8 +164,7 @@ impl DrawingCtx {
         DrawingCtx {
             handle,
             rect,
-            dpi_x,
-            dpi_y,
+            dpi,
             num_elements_rendered_through_use: 0,
             cr_stack: Vec::new(),
             cr: cr.clone(),
@@ -235,8 +227,7 @@ impl DrawingCtx {
         let stack_top = &view_box_stack[last];
 
         ViewParams {
-            dpi_x: self.dpi_x,
-            dpi_y: self.dpi_y,
+            dpi: self.dpi.clone(),
             view_box_width: stack_top.0.width,
             view_box_height: stack_top.0.height,
             view_box_stack: None,
@@ -256,8 +247,7 @@ impl DrawingCtx {
             .push(ViewBox::new(0.0, 0.0, width, height));
 
         ViewParams {
-            dpi_x: self.dpi_x,
-            dpi_y: self.dpi_y,
+            dpi: self.dpi.clone(),
             view_box_width: width,
             view_box_height: height,
             view_box_stack: Some(Rc::downgrade(&self.view_box_stack)),
@@ -1201,8 +1191,7 @@ pub extern "C" fn rsvg_drawing_ctx_new(
         f64::from(height),
         vb_width,
         vb_height,
-        dpi_x,
-        dpi_y,
+        Dpi::new(dpi_x, dpi_y),
         from_glib(is_testing),
     )))
 }

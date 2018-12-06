@@ -228,10 +228,11 @@ impl Length {
 }
 
 fn font_size_from_inch(length: f64, dir: LengthDir, params: &ViewParams) -> f64 {
+    let dpi = params.dpi();
     match dir {
-        LengthDir::Horizontal => length * params.dpi_x(),
-        LengthDir::Vertical => length * params.dpi_y(),
-        LengthDir::Both => length * viewport_percentage(params.dpi_x(), params.dpi_y()),
+        LengthDir::Horizontal => length * dpi.x(),
+        LengthDir::Vertical => length * dpi.y(),
+        LengthDir::Both => length * viewport_percentage(dpi.x(), dpi.y()),
     }
 }
 
@@ -307,6 +308,7 @@ fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<Length>, ValueErr
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dpi::Dpi;
 
     use float_eq_cairo::ApproxEqCairo;
 
@@ -408,7 +410,8 @@ mod tests {
 
     #[test]
     fn normalize_default_works() {
-        let params = ViewParams::new(40.0, 40.0, 100.0, 100.0);
+        let dpi = Dpi::new(40.0, 40.0);
+        let params = ViewParams::new(dpi, 100.0, 100.0);
 
         let values = ComputedValues::default();
 
@@ -420,8 +423,8 @@ mod tests {
 
     #[test]
     fn normalize_absolute_units_works() {
-        let params = ViewParams::new(40.0, 50.0, 100.0, 100.0);
-
+        let dpi = Dpi::new(40.0, 50.0);
+        let params = ViewParams::new(dpi, 100.0, 100.0);
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
@@ -436,8 +439,8 @@ mod tests {
 
     #[test]
     fn normalize_percent_works() {
-        let params = ViewParams::new(40.0, 40.0, 100.0, 200.0);
-
+        let dpi = Dpi::new(40.0, 40.0);
+        let params = ViewParams::new(dpi, 100.0, 200.0);
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
@@ -453,8 +456,8 @@ mod tests {
 
     #[test]
     fn normalize_font_em_ex_works() {
-        let params = ViewParams::new(40.0, 40.0, 100.0, 200.0);
-
+        let dpi = Dpi::new(40.0, 40.0);
+        let params = ViewParams::new(dpi, 100.0, 200.0);
         let values = ComputedValues::default();
 
         // These correspond to the default size for the font-size
