@@ -69,6 +69,12 @@ typedef struct _RsvgFilter RsvgFilter;
 #define N_(X) X
 #endif
 
+G_GNUC_INTERNAL
+double rsvg_get_default_dpi_x (void);
+
+G_GNUC_INTERNAL
+double rsvg_get_default_dpi_y (void);
+
 /* Reading state for an RsvgHandle */
 typedef enum {
     RSVG_HANDLE_STATE_START,
