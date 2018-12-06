@@ -100,9 +100,6 @@ struct RsvgHandlePrivate {
     gpointer user_data;
     GDestroyNotify user_data_destroy;
 
-    double dpi_x;
-    double dpi_y;
-
     gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *
 
     gboolean in_loop;		/* see get_dimension() */

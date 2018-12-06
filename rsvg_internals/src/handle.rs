@@ -16,6 +16,7 @@ use url::Url;
 use allowed_url::AllowedUrl;
 use css::{self, CssStyles};
 use defs::{Fragment, Href};
+use dpi::Dpi;
 use error::{set_gerror, LoadingError};
 use io;
 use node::{box_node, Node, RsvgNode};
@@ -31,6 +32,7 @@ pub struct RsvgHandle {
 }
 
 pub struct Handle {
+    dpi: Dpi,
     base_url: RefCell<Option<Url>>,
     svg: RefCell<Option<Svg>>,
 }
@@ -38,6 +40,7 @@ pub struct Handle {
 impl Handle {
     fn new() -> Handle {
         Handle {
+            dpi: Dpi::default(),
             base_url: RefCell::new(None),
             svg: RefCell::new(None),
         }
@@ -309,6 +312,34 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
 
         Some(ref url) => GFile::new_for_uri(url.as_str()).to_glib_full(),
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_x(raw_handle: *const Handle, dpi_x: f64) {
+    let handle = &*(raw_handle as *const Handle);
+
+    handle.dpi.set_x(dpi_x);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_x(raw_handle: *const Handle) -> f64 {
+    let handle = &*(raw_handle as *const Handle);
+
+    handle.dpi.x()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_y(raw_handle: *const Handle, dpi_y: f64) {
+    let handle = &*(raw_handle as *const Handle);
+
+    handle.dpi.set_y(dpi_y);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_y(raw_handle: *const Handle) -> f64 {
+    let handle = &*(raw_handle as *const Handle);
+
+    handle.dpi.y()
 }
 
 #[no_mangle]
