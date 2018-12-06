@@ -47,19 +47,22 @@ extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
+/* Implemented in rsvg_internals/src/xml2_load.rs */
+extern gboolean rsvg_xml_state_parse_from_stream (RsvgXmlState *xml,
+                                                  gboolean      unlimited_size,
+                                                  GInputStream *stream,
+                                                  GCancellable *cancellable,
+                                                  GError      **error);
+
 /* Implemented in rsvg_internals/src/handle.rs */
 extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
 
 /* Implemented in rsvg_internals/src/xml2_load.rs */
-extern xmlParserCtxtPtr rsvg_create_xml_stream_parser (RsvgXmlState  *xml,
-                                                       gboolean       unlimited_size,
-                                                       GInputStream  *stream,
-                                                       GCancellable  *cancellable,
-                                                       GError       **error);
 extern xmlParserCtxtPtr rsvg_create_xml_push_parser (RsvgXmlState *xml,
                                                      gboolean unlimited_size,
                                                      const char *base_uri,
                                                      GError **error);
+extern void rsvg_set_error_from_xml (GError **error, xmlParserCtxtPtr ctxt);
 
 
 /* Holds the XML parsing state */
@@ -142,63 +145,6 @@ rsvg_load_finish_load (RsvgLoad *load, GError **error)
     return was_successful;
 }
 
-static void
-set_error_from_xml (GError **error, xmlParserCtxtPtr ctxt)
-{
-    xmlErrorPtr xerr;
-
-    xerr = xmlCtxtGetLastError (ctxt);
-    if (xerr) {
-        g_set_error (error, rsvg_error_quark (), 0,
-                     _("Error domain %d code %d on line %d column %d of %s: %s"),
-                     xerr->domain, xerr->code,
-                     xerr->line, xerr->int2,
-                     xerr->file ? xerr->file : "data",
-                     xerr->message ? xerr->message: "-");
-    } else {
-        g_set_error (error, rsvg_error_quark (), 0, _("Error parsing XML data"));
-    }
-}
-
-static gboolean
-rsvg_parse_xml_from_stream (RsvgXmlState *xml,
-                            gboolean      unlimited_size,
-                            GInputStream *stream,
-                            GCancellable *cancellable,
-                            GError      **error)
-{
-    GError *err = NULL;
-    xmlParserCtxtPtr xml_parser;
-    gboolean xml_parse_success;
-    gboolean svg_parse_success;
-
-    xml_parser = rsvg_create_xml_stream_parser (xml,
-                                                unlimited_size,
-                                                stream,
-                                                cancellable,
-                                                &err);
-    if (!xml_parser) {
-        g_assert (err != NULL);
-        g_propagate_error (error, err);
-        return FALSE;
-    }
-
-    g_assert (err == NULL);
-    xml_parse_success = xmlParseDocument (xml_parser) == 0;
-
-    svg_parse_success = err == NULL;
-
-    if (!svg_parse_success) {
-        g_propagate_error (error, err);
-    } else if (!xml_parse_success) {
-        set_error_from_xml (error, xml_parser);
-    }
-
-    xml_parser = free_xml_parser_and_doc (xml_parser);
-
-    return svg_parse_success && xml_parse_success;
-}
-
 gboolean
 rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
 {
@@ -211,11 +157,11 @@ rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
     if (stream) {
         gboolean success;
 
-        success = rsvg_parse_xml_from_stream (handle->priv->load->xml.rust_state,
-                                              handle->priv->load->unlimited_size,
-                                              stream,
-                                              handle->priv->cancellable,
-                                              NULL);
+        success = rsvg_xml_state_parse_from_stream (handle->priv->load->xml.rust_state,
+                                                    handle->priv->load->unlimited_size,
+                                                    stream,
+                                                    handle->priv->cancellable,
+                                                    NULL);
 
         g_object_unref (stream);
 
@@ -264,7 +210,7 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
     if (load->xml.ctxt != NULL) {
         result = xmlParseChunk (load->xml.ctxt, (char *) buf, count, 0);
         if (result != 0) {
-            set_error_from_xml (error, load->xml.ctxt);
+            rsvg_set_error_from_xml (error, load->xml.ctxt);
             return FALSE;
         }
     } else {
@@ -289,7 +235,7 @@ close_impl (RsvgLoad *load, GError ** error)
 
         result = xmlParseChunk (load->xml.ctxt, "", 0, TRUE);
         if (result != 0) {
-            set_error_from_xml (error, load->xml.ctxt);
+            rsvg_set_error_from_xml (error, load->xml.ctxt);
             load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
             return FALSE;
         }
@@ -331,11 +277,11 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
 
     g_assert (load->xml.ctxt == NULL);
 
-    res = rsvg_parse_xml_from_stream (load->xml.rust_state,
-                                      load->unlimited_size,
-                                      stream,
-                                      cancellable,
-                                      &err);
+    res = rsvg_xml_state_parse_from_stream (load->xml.rust_state,
+                                            load->unlimited_size,
+                                            stream,
+                                            cancellable,
+                                            &err);
     if (!res) {
         g_propagate_error (error, err);
     }

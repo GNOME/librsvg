@@ -12,7 +12,7 @@ use std::str;
 
 use glib::translate::*;
 
-use error::set_gerror;
+use error::{set_gerror, RsvgError};
 use property_bag::PropertyBag;
 use util::utf8_cstr;
 use xml::{RsvgXmlState, XmlState};
@@ -40,6 +40,21 @@ fn get_xml2_sax_handler() -> xmlSAXHandler {
     h.error = rsvg_sax_error_cb as *mut _;
 
     h
+}
+
+fn free_xml_parser_and_doc(parser: xmlParserCtxtPtr) {
+    unsafe {
+        if !parser.is_null() {
+            let rparser = &mut *parser;
+
+            if !rparser.myDoc.is_null() {
+                xmlFreeDoc(rparser.myDoc);
+                rparser.myDoc = ptr::null_mut();
+            }
+
+            xmlFreeParserCtxt(parser);
+        }
+    }
 }
 
 unsafe extern "C" fn sax_get_entity_cb(
@@ -241,40 +256,40 @@ unsafe extern "C" fn stream_ctx_close(context: *mut libc::c_void) -> libc::c_int
     ret
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_create_xml_stream_parser(
-    xml: *mut RsvgXmlState,
-    unlimited_size: glib_sys::gboolean,
-    stream: *mut gio_sys::GInputStream,
-    cancellable: *mut gio_sys::GCancellable,
+fn create_xml_stream_parser(
+    xml: &mut XmlState,
+    unlimited_size: bool,
+    stream: gio::InputStream,
+    cancellable: Option<gio::Cancellable>,
     error: *mut *mut glib_sys::GError,
-) -> xmlParserCtxtPtr {
+) -> Result<xmlParserCtxtPtr, glib::Error> {
     let ctx = Box::new(StreamCtx {
-        stream: from_glib_none(stream),
-        cancellable: from_glib_none(cancellable),
+        stream,
+        cancellable,
         error,
     });
 
     let mut sax_handler = get_xml2_sax_handler();
 
-    let parser = xmlCreateIOParserCtxt(
-        &mut sax_handler,
-        xml as *mut _,
-        Some(stream_ctx_read),
-        Some(stream_ctx_close),
-        Box::into_raw(ctx) as *mut _,
-        XML_CHAR_ENCODING_NONE,
-    );
+    unsafe {
+        let parser = xmlCreateIOParserCtxt(
+            &mut sax_handler,
+            xml as *mut _ as *mut _,
+            Some(stream_ctx_read),
+            Some(stream_ctx_close),
+            Box::into_raw(ctx) as *mut _,
+            XML_CHAR_ENCODING_NONE,
+        );
 
-    if parser.is_null() {
-        set_gerror(error, 0, "Error creating XML parser");
-    // on error, xmlCreateIOParserCtxt() frees our context via the
-    // stream_ctx_close function
-    } else {
-        set_xml_parse_options(parser, from_glib(unlimited_size));
+        if parser.is_null() {
+            // on error, xmlCreateIOParserCtxt() frees our context via the
+            // stream_ctx_close function
+            Err(glib::Error::new(RsvgError, "Error creating XML parser"))
+        } else {
+            set_xml_parse_options(parser, unlimited_size);
+            Ok(parser)
+        }
     }
-
-    parser
 }
 
 #[no_mangle]
@@ -295,4 +310,84 @@ pub unsafe extern "C" fn rsvg_create_xml_push_parser(
     }
 
     parser
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_set_error_from_xml(
+    error: *mut *mut glib_sys::GError,
+    ctxt: xmlParserCtxtPtr,
+) {
+    let xerr = xmlCtxtGetLastError(ctxt as *mut _);
+
+    if !xerr.is_null() {
+        let xerr = &*xerr;
+
+        let file = if xerr.file.is_null() {
+            "data".to_string()
+        } else {
+            from_glib_none(xerr.file)
+        };
+
+        let message = if xerr.message.is_null() {
+            "-".to_string()
+        } else {
+            from_glib_none(xerr.message)
+        };
+
+        let msg = format!(
+            "Error domain {} code {} on line {} column {} of {}: {}",
+            xerr.domain, xerr.code, xerr.line, xerr.int2, file, message
+        );
+
+        set_gerror(error, 0, &msg);
+    } else {
+        set_gerror(error, 0, "Error parsing XML data");
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
+    xml: *mut RsvgXmlState,
+    unlimited_size: glib_sys::gboolean,
+    stream: *mut gio_sys::GInputStream,
+    cancellable: *mut gio_sys::GCancellable,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    assert!(!xml.is_null());
+    let xml = &mut *(xml as *mut XmlState);
+
+    let unlimited_size = from_glib(unlimited_size);
+
+    let stream = from_glib_none(stream);
+    let cancellable = from_glib_none(cancellable);
+
+    let mut err: *mut glib_sys::GError = ptr::null_mut();
+
+    match create_xml_stream_parser(xml, unlimited_size, stream, cancellable, &mut err) {
+        Ok(parser) => {
+            let xml_parse_success = xmlParseDocument(parser) == 0;
+
+            let svg_parse_success = err.is_null();
+
+            if !svg_parse_success {
+                if !error.is_null() {
+                    *error = err;
+                }
+            } else if !xml_parse_success {
+                rsvg_set_error_from_xml(error, parser);
+            }
+
+            free_xml_parser_and_doc(parser);
+
+            (svg_parse_success && xml_parse_success).to_glib()
+        }
+
+        Err(e) => {
+            if !error.is_null() {
+                *error = e.to_glib_full() as *mut _;
+            }
+
+            false.to_glib()
+        }
+    }
 }
