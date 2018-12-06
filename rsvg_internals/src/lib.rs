@@ -70,7 +70,11 @@ pub use xml::{
     rsvg_xml_state_tree_is_valid,
 };
 
-pub use xml2_load::{rsvg_create_xml_push_parser, rsvg_xml_state_parse_from_stream};
+pub use xml2_load::{
+    rsvg_create_xml_push_parser,
+    rsvg_set_error_from_xml,
+    rsvg_xml_state_parse_from_stream,
+};
 
 #[macro_use]
 mod log;
