@@ -14,6 +14,7 @@ use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
 use defs::Fragment;
+use dpi::Dpi;
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
@@ -99,8 +100,7 @@ pub struct DrawingCtx {
     handle: *const RsvgHandle,
 
     rect: cairo::Rectangle,
-    dpi_x: f64,
-    dpi_y: f64,
+    dpi: Dpi,
 
     /// This is a mitigation for the security-related bug
     /// https://gitlab.gnome.org/GNOME/librsvg/issues/323 - imagine
@@ -140,8 +140,7 @@ impl DrawingCtx {
         height: f64,
         vb_width: f64,
         vb_height: f64,
-        dpi_x: f64,
-        dpi_y: f64,
+        dpi: Dpi,
         is_testing: bool,
     ) -> DrawingCtx {
         let mut affine = cr.get_matrix();
@@ -171,8 +170,7 @@ impl DrawingCtx {
         DrawingCtx {
             handle,
             rect,
-            dpi_x,
-            dpi_y,
+            dpi,
             num_elements_rendered_through_use: 0,
             cr_stack: Vec::new(),
             cr: cr.clone(),
@@ -235,8 +233,8 @@ impl DrawingCtx {
         let stack_top = &view_box_stack[last];
 
         ViewParams {
-            dpi_x: self.dpi_x,
-            dpi_y: self.dpi_y,
+            dpi_x: self.dpi.x(),
+            dpi_y: self.dpi.y(),
             view_box_width: stack_top.0.width,
             view_box_height: stack_top.0.height,
             view_box_stack: None,
@@ -256,8 +254,8 @@ impl DrawingCtx {
             .push(ViewBox::new(0.0, 0.0, width, height));
 
         ViewParams {
-            dpi_x: self.dpi_x,
-            dpi_y: self.dpi_y,
+            dpi_x: self.dpi.x(),
+            dpi_y: self.dpi.y(),
             view_box_width: width,
             view_box_height: height,
             view_box_stack: Some(Rc::downgrade(&self.view_box_stack)),
@@ -1201,8 +1199,7 @@ pub extern "C" fn rsvg_drawing_ctx_new(
         f64::from(height),
         vb_width,
         vb_height,
-        dpi_x,
-        dpi_y,
+        Dpi::new(dpi_x, dpi_y),
         from_glib(is_testing),
     )))
 }
