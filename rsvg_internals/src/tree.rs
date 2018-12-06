@@ -7,11 +7,6 @@ use std::rc::Rc;
 use node::{box_node, Node, NodeType, RsvgNode};
 use state::ComputedValues;
 
-#[repr(C)]
-pub struct RsvgTree {
-    _private: [u8; 0],
-}
-
 pub struct Tree {
     pub root: Rc<Node>,
     already_cascaded: Cell<bool>,
@@ -39,44 +34,40 @@ impl Tree {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_tree_new(root: *const RsvgNode) -> *mut RsvgTree {
+pub extern "C" fn rsvg_tree_new(root: *const RsvgNode) -> *mut Tree {
     assert!(!root.is_null());
     let root: &RsvgNode = unsafe { &*root };
 
-    Box::into_raw(Box::new(Tree::new(root))) as *mut RsvgTree
+    Box::into_raw(Box::new(Tree::new(root)))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_tree_free(tree: *mut RsvgTree) {
+pub unsafe extern "C" fn rsvg_tree_free(tree: *mut Tree) {
     if !tree.is_null() {
-        let tree = unsafe { &mut *(tree as *mut Tree) };
-        let _ = unsafe { Box::from_raw(tree) };
+        Box::from_raw(tree);
     }
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_tree_cascade(tree: *const RsvgTree) {
+pub extern "C" fn rsvg_tree_cascade(tree: *const Tree) {
     assert!(!tree.is_null());
-    let tree = unsafe { &*(tree as *const Tree) };
+    let tree = unsafe { &*tree };
 
     tree.cascade();
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_tree_get_root(tree: *const RsvgTree) -> *mut RsvgNode {
+pub extern "C" fn rsvg_tree_get_root(tree: *const Tree) -> *mut RsvgNode {
     assert!(!tree.is_null());
-    let tree = unsafe { &*(tree as *const Tree) };
+    let tree = unsafe { &*tree };
 
     box_node(tree.root.clone())
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_tree_is_root(
-    tree: *const RsvgTree,
-    node: *mut RsvgNode,
-) -> glib_sys::gboolean {
+pub extern "C" fn rsvg_tree_is_root(tree: *const Tree, node: *mut RsvgNode) -> glib_sys::gboolean {
     assert!(!tree.is_null());
-    let tree = unsafe { &*(tree as *const Tree) };
+    let tree = unsafe { &*tree };
 
     assert!(!node.is_null());
     let node: &RsvgNode = unsafe { &*node };
@@ -85,9 +76,9 @@ pub extern "C" fn rsvg_tree_is_root(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_tree_root_is_svg(tree: *const RsvgTree) -> glib_sys::gboolean {
+pub extern "C" fn rsvg_tree_root_is_svg(tree: *const Tree) -> glib_sys::gboolean {
     assert!(!tree.is_null());
-    let tree = unsafe { &*(tree as *const Tree) };
+    let tree = unsafe { &*tree };
 
     tree.root_is_svg().to_glib()
 }

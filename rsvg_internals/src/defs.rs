@@ -8,11 +8,6 @@ use handle::{self, RsvgHandle};
 use node::{Node, RsvgNode};
 use util::utf8_cstr;
 
-#[repr(C)]
-pub struct RsvgDefs {
-    _private: [u8; 0],
-}
-
 pub struct Defs {
     handle: *const RsvgHandle,
     nodes: HashMap<String, Rc<Node>>,
@@ -65,29 +60,22 @@ impl Defs {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_defs_new(handle: *const RsvgHandle) -> *mut RsvgDefs {
-    Box::into_raw(Box::new(Defs::new(handle))) as *mut RsvgDefs
+pub extern "C" fn rsvg_defs_new(handle: *const RsvgHandle) -> *mut Defs {
+    Box::into_raw(Box::new(Defs::new(handle)))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_defs_free(defs: *mut RsvgDefs) {
+pub unsafe extern "C" fn rsvg_defs_free(defs: *mut Defs) {
     assert!(!defs.is_null());
-
-    unsafe {
-        let defs = { &mut *(defs as *mut Defs) };
-        Box::from_raw(defs);
-    }
+    Box::from_raw(defs);
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_defs_lookup(
-    defs: *mut RsvgDefs,
-    name: *const libc::c_char,
-) -> *const RsvgNode {
+pub extern "C" fn rsvg_defs_lookup(defs: *mut Defs, name: *const libc::c_char) -> *const RsvgNode {
     assert!(!defs.is_null());
     assert!(!name.is_null());
 
-    let defs = unsafe { &mut *(defs as *mut Defs) };
+    let defs = unsafe { &mut *defs };
     let name = unsafe { utf8_cstr(name) };
 
     match defs.lookup(name) {

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use attributes::Attribute;
 use clip_path::NodeClipPath;
-use defs::{Defs, RsvgDefs};
+use defs::Defs;
 use filters::{
     blend::Blend,
     color_matrix::ColorMatrix,
@@ -276,7 +276,7 @@ pub extern "C" fn rsvg_load_new_node(
     raw_name: *const libc::c_char,
     parent: *const RsvgNode,
     pbag: *const PropertyBag<'_>,
-    defs: *mut RsvgDefs,
+    defs: *mut Defs,
 ) -> *const RsvgNode {
     assert!(!raw_name.is_null());
     assert!(!pbag.is_null());
@@ -284,7 +284,7 @@ pub extern "C" fn rsvg_load_new_node(
 
     let name = unsafe { utf8_cstr(raw_name) };
     let pbag = unsafe { &*pbag };
-    let defs = unsafe { &mut *(defs as *mut Defs) };
+    let defs = unsafe { &mut *defs };
 
     let mut id = None;
     let mut class = None;

@@ -14,7 +14,7 @@ use std::rc::{Rc, Weak};
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
-use defs::{Defs, RsvgDefs};
+use defs::Defs;
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
@@ -35,7 +35,7 @@ use state::{
     StrokeLinejoin,
     TextRendering,
 };
-use tree::{RsvgTree, Tree};
+use tree::Tree;
 use unitinterval::UnitInterval;
 use viewbox::ViewBox;
 
@@ -94,11 +94,6 @@ impl Drop for ViewParams {
             stack.borrow_mut().pop();
         }
     }
-}
-
-#[repr(C)]
-pub struct RsvgDrawingCtx {
-    _private: [u8; 0],
 }
 
 pub struct DrawingCtx<'a> {
@@ -1073,14 +1068,14 @@ impl From<TextRendering> for cairo::Antialias {
 
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
-    raw_draw_ctx: *mut RsvgDrawingCtx,
-    raw_tree: *const RsvgTree,
+    raw_draw_ctx: *mut DrawingCtx<'_>,
+    raw_tree: *const Tree,
 ) -> glib_sys::gboolean {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
+    let draw_ctx = unsafe { &mut *raw_draw_ctx };
 
     assert!(!raw_tree.is_null());
-    let tree = unsafe { &*(raw_tree as *const Tree) };
+    let tree = unsafe { &*raw_tree };
 
     // FIXME: The public API doesn't let us return a GError from the rendering
     // functions, just a boolean.  Add a proper API to return proper errors from
@@ -1097,11 +1092,11 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
 
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
-    raw_draw_ctx: *const RsvgDrawingCtx,
+    raw_draw_ctx: *mut DrawingCtx<'_>,
     raw_node: *const RsvgNode,
 ) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
+    let draw_ctx = unsafe { &mut *raw_draw_ctx };
 
     assert!(!raw_node.is_null());
     let node = unsafe { &*raw_node };
@@ -1111,11 +1106,11 @@ pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
 
 #[no_mangle]
 pub extern "C" fn rsvg_drawing_ctx_get_ink_rect(
-    raw_draw_ctx: *const RsvgDrawingCtx,
+    raw_draw_ctx: *const DrawingCtx<'_>,
     ink_rect: *mut cairo_sys::cairo_rectangle_t,
 ) -> glib_sys::gboolean {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
+    let draw_ctx = unsafe { &*raw_draw_ctx };
 
     assert!(!ink_rect.is_null());
 
@@ -1171,7 +1166,7 @@ impl NodeStack {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_new(
+pub extern "C" fn rsvg_drawing_ctx_new<'a>(
     cr: *mut cairo_sys::cairo_t,
     width: u32,
     height: u32,
@@ -1179,11 +1174,11 @@ pub extern "C" fn rsvg_drawing_ctx_new(
     vb_height: libc::c_double,
     dpi_x: libc::c_double,
     dpi_y: libc::c_double,
-    defs: *mut RsvgDefs,
+    defs: *mut Defs,
     is_testing: glib_sys::gboolean,
-) -> *mut RsvgDrawingCtx {
+) -> *mut DrawingCtx<'a> {
     assert!(!defs.is_null());
-    let defs = unsafe { &mut *(defs as *mut Defs) };
+    let defs = unsafe { &mut *defs };
 
     Box::into_raw(Box::new(DrawingCtx::new(
         unsafe { from_glib_none(cr) },
@@ -1195,15 +1190,11 @@ pub extern "C" fn rsvg_drawing_ctx_new(
         dpi_y,
         defs,
         from_glib(is_testing),
-    ))) as *mut RsvgDrawingCtx
+    )))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_free(raw_draw_ctx: *mut RsvgDrawingCtx) {
+pub unsafe extern "C" fn rsvg_drawing_ctx_free(raw_draw_ctx: *mut DrawingCtx<'_>) {
     assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *(raw_draw_ctx as *mut DrawingCtx<'_>) };
-
-    unsafe {
-        Box::from_raw(draw_ctx);
-    }
+    Box::from_raw(raw_draw_ctx);
 }

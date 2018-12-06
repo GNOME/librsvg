@@ -8,8 +8,8 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 
-use css::{CssStyles, RsvgCssStyles};
-use defs::{Defs, RsvgDefs};
+use css::CssStyles;
+use defs::Defs;
 use error::LoadingError;
 use surface_utils::shared_surface::SharedImageSurface;
 
@@ -20,7 +20,7 @@ pub struct RsvgHandle {
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn rsvg_handle_get_defs(handle: *const RsvgHandle) -> *const RsvgDefs;
+    fn rsvg_handle_get_defs(handle: *const RsvgHandle) -> *const Defs;
 
     fn rsvg_handle_resolve_uri(
         handle: *const RsvgHandle,
@@ -32,7 +32,7 @@ extern "C" {
         uri: *const libc::c_char,
     ) -> *const RsvgHandle;
 
-    fn rsvg_handle_get_css_styles(handle: *const RsvgHandle) -> *mut RsvgCssStyles;
+    fn rsvg_handle_get_css_styles(handle: *const RsvgHandle) -> *mut CssStyles;
 
     fn _rsvg_handle_acquire_data(
         handle: *mut RsvgHandle,
@@ -48,7 +48,7 @@ extern "C" {
 pub fn get_defs<'a>(handle: *const RsvgHandle) -> &'a Defs {
     unsafe {
         let d = rsvg_handle_get_defs(handle);
-        &*(d as *const Defs)
+        &*d
     }
 }
 
@@ -68,11 +68,11 @@ pub fn load_extern(handle: *const RsvgHandle, uri: &str) -> *const RsvgHandle {
 }
 
 pub fn get_css_styles<'a>(handle: *const RsvgHandle) -> &'a CssStyles {
-    unsafe { &*(rsvg_handle_get_css_styles(handle) as *const CssStyles) }
+    unsafe { &*rsvg_handle_get_css_styles(handle) }
 }
 
 pub fn get_css_styles_mut<'a>(handle: *const RsvgHandle) -> &'a mut CssStyles {
-    unsafe { &mut *(rsvg_handle_get_css_styles(handle) as *mut CssStyles) }
+    unsafe { &mut *rsvg_handle_get_css_styles(handle) }
 }
 
 pub struct BinaryData {
