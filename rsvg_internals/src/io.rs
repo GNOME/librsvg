@@ -1,6 +1,4 @@
 use data_url;
-use gio_sys;
-use glib_sys;
 use libc;
 
 use gio::{
@@ -17,7 +15,6 @@ use gio::{
     ZlibDecompressor,
 };
 use glib::{self, translate::*, Bytes as GBytes, Cast};
-use std::ptr;
 
 use allowed_url::AllowedUrl;
 use error::{LoadingError, RsvgError};
@@ -67,14 +64,14 @@ pub fn binary_data_to_glib(
 const GZ_MAGIC_0: u8 = 0x1f;
 const GZ_MAGIC_1: u8 = 0x8b;
 
-fn get_input_stream_for_loading(
+pub fn get_input_stream_for_loading(
     stream: InputStream,
-    cancellable: Option<Cancellable>,
+    cancellable: Option<&Cancellable>,
 ) -> Result<InputStream, glib::Error> {
     // detect gzipped streams (svgz)
 
     let buffered = BufferedInputStream::new(&stream);
-    let num_read = buffered.fill(2, cancellable.as_ref())?;
+    let num_read = buffered.fill(2, cancellable)?;
     if num_read < 2 {
         // FIXME: this string was localized in the original; localize it
         return Err(glib::Error::new(RsvgError, "Input file is too short"));
@@ -88,28 +85,6 @@ fn get_input_stream_for_loading(
         Ok(converter.upcast::<InputStream>())
     } else {
         Ok(buffered.upcast::<InputStream>())
-    }
-}
-
-#[no_mangle]
-pub unsafe fn rsvg_get_input_stream_for_loading(
-    stream: *mut gio_sys::GInputStream,
-    cancellable: *mut gio_sys::GCancellable,
-    error: *mut *mut glib_sys::GError,
-) -> *mut gio_sys::GInputStream {
-    let stream = from_glib_borrow(stream);
-    let cancellable = from_glib_borrow(cancellable);
-
-    match get_input_stream_for_loading(stream, cancellable) {
-        Ok(stream) => stream.to_glib_full(),
-
-        Err(e) => {
-            if !error.is_null() {
-                *error = e.to_glib_full() as *mut _;
-            }
-
-            ptr::null_mut()
-        }
     }
 }
 

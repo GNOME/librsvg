@@ -57,8 +57,6 @@ pub use handle::{
     rsvg_handle_rust_steal_result,
 };
 
-pub use io::rsvg_get_input_stream_for_loading;
-
 pub use node::rsvg_node_unref;
 
 pub use structure::rsvg_node_svg_get_size;
@@ -73,7 +71,7 @@ pub use xml::{
 pub use xml2_load::{
     rsvg_create_xml_push_parser,
     rsvg_set_error_from_xml,
-    rsvg_xml_state_parse_from_stream,
+    rsvg_xml_state_load_from_possibly_compressed_stream,
 };
 
 #[macro_use]

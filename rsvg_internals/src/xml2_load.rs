@@ -15,6 +15,7 @@ use std::str;
 use glib::translate::*;
 
 use error::set_gerror;
+use io::get_input_stream_for_loading;
 use property_bag::PropertyBag;
 use util::utf8_cstr;
 use xml::XmlState;
@@ -285,7 +286,7 @@ impl Xml2Parser {
         xml: &mut XmlState,
         unlimited_size: bool,
         stream: gio::InputStream,
-        cancellable: Option<gio::Cancellable>,
+        cancellable: Option<&gio::Cancellable>,
     ) -> Result<Xml2Parser, ParseFromStreamError> {
         // The Xml2Parser we end up creating, if
         // xmlCreateIOParserCtxt() is successful, needs to hold a
@@ -298,7 +299,7 @@ impl Xml2Parser {
 
         let ctx = Box::new(StreamCtx {
             stream,
-            cancellable,
+            cancellable: cancellable.map(|c| c.clone()),
             gio_error: gio_error.clone(),
         });
 
@@ -431,14 +432,26 @@ pub fn xml_state_parse_from_stream(
     xml: &mut XmlState,
     unlimited_size: bool,
     stream: gio::InputStream,
-    cancellable: Option<gio::Cancellable>,
+    cancellable: Option<&gio::Cancellable>,
 ) -> Result<(), ParseFromStreamError> {
     Xml2Parser::from_stream(xml, unlimited_size, stream, cancellable)
         .and_then(|parser| parser.parse())
 }
 
+fn xml_state_load_from_possibly_compressed_stream(
+    xml: &mut XmlState,
+    unlimited_size: bool,
+    stream: gio::InputStream,
+    cancellable: Option<gio::Cancellable>,
+) -> Result<(), ParseFromStreamError> {
+    let stream = get_input_stream_for_loading(stream, cancellable.as_ref())
+        .map_err(|e| ParseFromStreamError::IoError(e))?;
+
+    xml_state_parse_from_stream(xml, unlimited_size, stream, cancellable.as_ref())
+}
+
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
+pub unsafe extern "C" fn rsvg_xml_state_load_from_possibly_compressed_stream(
     xml: *mut XmlState,
     unlimited_size: glib_sys::gboolean,
     stream: *mut gio_sys::GInputStream,
@@ -453,7 +466,7 @@ pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
     let stream = from_glib_none(stream);
     let cancellable = from_glib_none(cancellable);
 
-    match xml_state_parse_from_stream(xml, unlimited_size, stream, cancellable) {
+    match xml_state_load_from_possibly_compressed_stream(xml, unlimited_size, stream, cancellable) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {

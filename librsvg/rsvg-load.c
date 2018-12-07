@@ -48,11 +48,11 @@ extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
 /* Implemented in rsvg_internals/src/xml2_load.rs */
-extern gboolean rsvg_xml_state_parse_from_stream (RsvgXmlState *xml,
-                                                  gboolean      unlimited_size,
-                                                  GInputStream *stream,
-                                                  GCancellable *cancellable,
-                                                  GError      **error);
+extern gboolean rsvg_xml_state_load_from_possibly_compressed_stream (RsvgXmlState *xml,
+                                                                     gboolean      unlimited_size,
+                                                                     GInputStream *stream,
+                                                                     GCancellable *cancellable,
+                                                                     GError      **error);
 
 /* Implemented in rsvg_internals/src/handle.rs */
 extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
@@ -226,12 +226,6 @@ close_impl (RsvgLoad *load, GError ** error)
 #define GZ_MAGIC_0 ((guchar) 0x1f)
 #define GZ_MAGIC_1 ((guchar) 0x8b)
 
-/* Implemented in rsvg_internals/src/io.rs */
-extern GInputStream *
-rsvg_get_input_stream_for_loading (GInputStream *stream,
-                                   GCancellable *cancellable,
-                                   GError      **error);
-
 gboolean
 rsvg_load_read_stream_sync (RsvgLoad     *load,
                             GInputStream *stream,
@@ -241,25 +235,16 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     GError *err = NULL;
     gboolean res = FALSE;
 
-    stream = rsvg_get_input_stream_for_loading (stream, cancellable, error);
-    if (stream == NULL) {
-        goto out;
-    }
-
     g_assert (load->xml.ctxt == NULL);
 
-    res = rsvg_xml_state_parse_from_stream (load->xml.rust_state,
-                                            load->unlimited_size,
-                                            stream,
-                                            cancellable,
-                                            &err);
+    res = rsvg_xml_state_load_from_possibly_compressed_stream (load->xml.rust_state,
+                                                               load->unlimited_size,
+                                                               stream,
+                                                               cancellable,
+                                                               &err);
     if (!res) {
         g_propagate_error (error, err);
     }
-
-    g_object_unref (stream);
-
-out:
 
     load->state = LOAD_STATE_CLOSED;
 
