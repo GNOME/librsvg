@@ -232,7 +232,6 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
                             GCancellable *cancellable,
                             GError      **error)
 {
-    GError *err = NULL;
     gboolean res = FALSE;
 
     g_assert (load->xml.ctxt == NULL);
@@ -241,11 +240,7 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
                                                                load->unlimited_size,
                                                                stream,
                                                                cancellable,
-                                                               &err);
-    if (!res) {
-        g_propagate_error (error, err);
-    }
-
+                                                               error);
     load->state = LOAD_STATE_CLOSED;
 
     return res;
