@@ -239,12 +239,11 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
                             GError      **error)
 {
     GError *err = NULL;
-    gboolean res;
+    gboolean res = FALSE;
 
     stream = rsvg_get_input_stream_for_loading (stream, cancellable, error);
     if (stream == NULL) {
-        load->state = LOAD_STATE_CLOSED;
-        return FALSE;
+        goto out;
     }
 
     g_assert (load->xml.ctxt == NULL);
@@ -259,6 +258,10 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     }
 
     g_object_unref (stream);
+
+out:
+
+    load->state = LOAD_STATE_CLOSED;
 
     return res;
 }
