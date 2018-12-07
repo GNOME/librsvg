@@ -326,6 +326,34 @@ pub unsafe extern "C" fn rsvg_create_xml_push_parser(
     parser
 }
 
+fn xml2_error_to_string(xerr: xmlErrorPtr) -> String {
+    unsafe {
+        if !xerr.is_null() {
+            let xerr = &*xerr;
+
+            let file = if xerr.file.is_null() {
+                "data".to_string()
+            } else {
+                from_glib_none(xerr.file)
+            };
+
+            let message = if xerr.message.is_null() {
+                "-".to_string()
+            } else {
+                from_glib_none(xerr.message)
+            };
+
+            format!(
+                "Error domain {} code {} on line {} column {} of {}: {}",
+                xerr.domain, xerr.code, xerr.line, xerr.int2, file, message
+            )
+        } else {
+            // The error is not set?  Return a generic message :(
+            "Error parsing XML data".to_string()
+        }
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_set_error_from_xml(
     error: *mut *mut glib_sys::GError,
@@ -333,30 +361,7 @@ pub unsafe extern "C" fn rsvg_set_error_from_xml(
 ) {
     let xerr = xmlCtxtGetLastError(ctxt as *mut _);
 
-    if !xerr.is_null() {
-        let xerr = &*xerr;
-
-        let file = if xerr.file.is_null() {
-            "data".to_string()
-        } else {
-            from_glib_none(xerr.file)
-        };
-
-        let message = if xerr.message.is_null() {
-            "-".to_string()
-        } else {
-            from_glib_none(xerr.message)
-        };
-
-        let msg = format!(
-            "Error domain {} code {} on line {} column {} of {}: {}",
-            xerr.domain, xerr.code, xerr.line, xerr.int2, file, message
-        );
-
-        set_gerror(error, 0, &msg);
-    } else {
-        set_gerror(error, 0, "Error parsing XML data");
-    }
+    set_gerror(error, 0, &xml2_error_to_string(xerr));
 }
 
 #[no_mangle]
@@ -388,7 +393,8 @@ pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
                     *error = gio_err;
                 }
             } else if !xml_parse_success {
-                rsvg_set_error_from_xml(error, parser);
+                let xerr = xmlCtxtGetLastError(parser as *mut _);
+                set_gerror(error, 0, &xml2_error_to_string(xerr));
             }
 
             free_xml_parser_and_doc(parser);
