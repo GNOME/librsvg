@@ -272,7 +272,7 @@ unsafe extern "C" fn stream_ctx_close(context: *mut libc::c_void) -> libc::c_int
 
 struct Xml2Parser {
     parser: xmlParserCtxtPtr,
-    gio_error: *mut *mut glib_sys::GError,
+    gio_error: Box<*mut glib_sys::GError>,
 }
 
 impl Xml2Parser {
@@ -281,12 +281,22 @@ impl Xml2Parser {
         unlimited_size: bool,
         stream: gio::InputStream,
         cancellable: Option<gio::Cancellable>,
-        gio_error: *mut *mut glib_sys::GError,
     ) -> Result<Xml2Parser, ParseFromStreamError> {
+        // The Xml2Parser we end up creating, if
+        // xmlCreateIOParserCtxt() is successful, needs to hold a
+        // location to place a GError from within the I/O callbacks
+        // stream_ctx_read() and stream_ctx_close().  We put this
+        // location in a Box so that it can outlive the call to
+        // xmlCreateIOParserCtxt() in case that fails, since on
+        // failure that function frees the StreamCtx.
+        let mut gio_error: Box<*mut glib_sys::GError> = Box::new(ptr::null_mut());
+
+        let p_gio_error: *mut *mut glib_sys::GError = &mut *gio_error;
+
         let ctx = Box::new(StreamCtx {
             stream,
             cancellable,
-            gio_error,
+            gio_error: p_gio_error,
         });
 
         let mut sax_handler = get_xml2_sax_handler();
@@ -316,7 +326,7 @@ impl Xml2Parser {
         unsafe {
             let xml_parse_success = xmlParseDocument(self.parser) == 0;
 
-            let io_success = (*self.gio_error).is_null();
+            let io_success = self.gio_error.is_null();
 
             if !io_success {
                 Err(ParseFromStreamError::IoError(from_glib_full(
@@ -421,9 +431,7 @@ pub fn xml_state_parse_from_stream(
     stream: gio::InputStream,
     cancellable: Option<gio::Cancellable>,
 ) -> Result<(), ParseFromStreamError> {
-    let mut gio_err: *mut glib_sys::GError = ptr::null_mut();
-
-    Xml2Parser::from_stream(xml, unlimited_size, stream, cancellable, &mut gio_err)
+    Xml2Parser::from_stream(xml, unlimited_size, stream, cancellable)
         .and_then(|parser| parser.parse())
 }
 
