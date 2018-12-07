@@ -201,10 +201,24 @@ fn set_xml_parse_options(parser: xmlParserCtxtPtr, unlimited_size: bool) {
     }
 }
 
+// Struct used as closure data for xmlCreateIOParserCtxt().  In conjunction
+// with stream_ctx_read() and stream_ctx_close(), this struct provides the
+// I/O callbacks and their context for libxml2.
+//
+// We call I/O methods on the stream, and as soon as we get an error
+// we store it in the gio_error field.  Libxml2 just allows us to
+// return -1 from the I/O callbacks in that case; it doesn't actually
+// see the error code.
+//
+// The gio_error field comes from the place that constructs the
+// StreamCtx.  That place is later responsible for seeing if the error
+// is set; if it is, it means that there was an I/O error.  Otherwise,
+// there were no I/O errors but the caller must then ask libxml2 for
+// XML parsing errors.
 struct StreamCtx {
     stream: gio::InputStream,
     cancellable: Option<gio::Cancellable>,
-    error: *mut *mut glib_sys::GError,
+    gio_error: *mut *mut glib_sys::GError,
 }
 
 // read() callback from xmlCreateIOParserCtxt()
@@ -216,7 +230,7 @@ unsafe extern "C" fn stream_ctx_read(
     let ctx = &mut *(context as *mut StreamCtx);
 
     // has the error been set already?
-    if !(*ctx.error).is_null() {
+    if !(*ctx.gio_error).is_null() {
         return -1;
     }
 
@@ -227,7 +241,7 @@ unsafe extern "C" fn stream_ctx_read(
 
         Err(e) => {
             let e: *const glib_sys::GError = e.to_glib_full();
-            *ctx.error = e as *mut _;
+            *ctx.gio_error = e as *mut _;
             -1
         }
     }
@@ -242,9 +256,9 @@ unsafe extern "C" fn stream_ctx_close(context: *mut libc::c_void) -> libc::c_int
 
         Err(e) => {
             // don't overwrite a previous error
-            if (*ctx.error).is_null() {
+            if (*ctx.gio_error).is_null() {
                 let e: *const glib_sys::GError = e.to_glib_full();
-                *ctx.error = e as *mut _;
+                *ctx.gio_error = e as *mut _;
             }
 
             -1
@@ -261,12 +275,12 @@ fn create_xml_stream_parser(
     unlimited_size: bool,
     stream: gio::InputStream,
     cancellable: Option<gio::Cancellable>,
-    error: *mut *mut glib_sys::GError,
+    gio_error: *mut *mut glib_sys::GError,
 ) -> Result<xmlParserCtxtPtr, glib::Error> {
     let ctx = Box::new(StreamCtx {
         stream,
         cancellable,
-        error,
+        gio_error,
     });
 
     let mut sax_handler = get_xml2_sax_handler();
@@ -361,17 +375,17 @@ pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
     let stream = from_glib_none(stream);
     let cancellable = from_glib_none(cancellable);
 
-    let mut err: *mut glib_sys::GError = ptr::null_mut();
+    let mut gio_err: *mut glib_sys::GError = ptr::null_mut();
 
-    match create_xml_stream_parser(xml, unlimited_size, stream, cancellable, &mut err) {
+    match create_xml_stream_parser(xml, unlimited_size, stream, cancellable, &mut gio_err) {
         Ok(parser) => {
             let xml_parse_success = xmlParseDocument(parser) == 0;
 
-            let svg_parse_success = err.is_null();
+            let io_success = gio_err.is_null();
 
-            if !svg_parse_success {
+            if !io_success {
                 if !error.is_null() {
-                    *error = err;
+                    *error = gio_err;
                 }
             } else if !xml_parse_success {
                 rsvg_set_error_from_xml(error, parser);
@@ -379,7 +393,7 @@ pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
 
             free_xml_parser_and_doc(parser);
 
-            (svg_parse_success && xml_parse_success).to_glib()
+            (io_success && xml_parse_success).to_glib()
         }
 
         Err(e) => {
