@@ -35,9 +35,6 @@ G_GNUC_INTERNAL
 gboolean rsvg_load_finish_load(RsvgLoad *load, GError **error);
 
 G_GNUC_INTERNAL
-gboolean rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *url);
-
-G_GNUC_INTERNAL
 gboolean rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count, GError **error) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL

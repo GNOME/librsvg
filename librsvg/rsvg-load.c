@@ -145,34 +145,6 @@ rsvg_load_finish_load (RsvgLoad *load, GError **error)
     return was_successful;
 }
 
-gboolean
-rsvg_load_handle_xml_xinclude (RsvgHandle *handle, const char *href)
-{
-    GInputStream *stream;
-
-    g_assert (handle->priv->load != NULL);
-
-    stream = rsvg_handle_acquire_stream (handle, href, NULL);
-
-    if (stream) {
-        gboolean success;
-
-        success = rsvg_xml_state_parse_from_stream (handle->priv->load->xml.rust_state,
-                                                    handle->priv->load->unlimited_size,
-                                                    stream,
-                                                    NULL, /* cancellable */
-                                                    NULL);
-
-        g_object_unref (stream);
-
-        return success;
-    } else {
-        return FALSE;
-    }
-}
-
-/* end xinclude */
-
 /* This one is defined in the C code, because the prototype has varargs
  * and we can't handle those from Rust :(
  */

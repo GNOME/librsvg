@@ -13,7 +13,7 @@ use attributes::Attribute;
 use create_node::create_node_and_register_id;
 use css::{self, CssStyles};
 use defs::Defs;
-use error::set_gerror;
+use error::{set_gerror, LoadingError};
 use handle::{self, RsvgHandle};
 use node::{node_new, Node, NodeType};
 use property_bag::PropertyBag;
@@ -22,6 +22,7 @@ use style::NodeStyle;
 use svg::Svg;
 use text::NodeChars;
 use tree::Tree;
+use xml2_load::{xml_state_parse_from_stream, ParseFromStreamError};
 
 #[derive(Clone)]
 enum ContextKind {
@@ -507,13 +508,22 @@ impl XmlState {
         Ok(())
     }
 
-    fn acquire_xml(&self, aurl: &AllowedUrl) -> Result<(), AcquireError> {
+    fn acquire_xml(&mut self, aurl: &AllowedUrl) -> Result<(), AcquireError> {
         // FIXME: distinguish between "file not found" and "invalid XML"
-        if handle::load_xml_xinclude(self.handle, aurl) {
-            Ok(())
-        } else {
-            Err(AcquireError::FatalError)
-        }
+
+        let stream = handle::acquire_stream(self.handle, aurl).map_err(|e| match e {
+            LoadingError::BadDataUrl => AcquireError::FatalError,
+            _ => AcquireError::ResourceError,
+        })?;
+
+        let unlimited_size = handle::get_unlimited_size(self.handle);
+
+        // FIXME: pass a cancellable
+        xml_state_parse_from_stream(self, unlimited_size, stream, None).map_err(|e| match e {
+            ParseFromStreamError::CouldNotCreateParser => AcquireError::FatalError,
+            ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
+            ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,
+        })
     }
 
     fn unsupported_xinclude_start_element(&self, name: &str) -> Context {

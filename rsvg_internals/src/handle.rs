@@ -57,11 +57,6 @@ extern "C" {
 
     fn rsvg_handle_keep_image_data(handle: *const RsvgHandle) -> glib_sys::gboolean;
 
-    fn rsvg_load_handle_xml_xinclude(
-        handle: *mut RsvgHandle,
-        href: *const libc::c_char,
-    ) -> glib_sys::gboolean;
-
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
 }
 
@@ -112,6 +107,12 @@ pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*cons
             Ok(res)
         }
     }
+}
+
+const RSVG_HANDLE_FLAG_UNLIMITED: u32 = 1 << 0;
+
+pub fn get_unlimited_size(handle: *const RsvgHandle) -> bool {
+    unsafe { (rsvg_handle_get_flags(handle) & RSVG_HANDLE_FLAG_UNLIMITED) != 0 }
 }
 
 pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
@@ -199,13 +200,6 @@ pub fn load_image_to_surface(
     }
 
     Ok(surface)
-}
-
-// FIXME: distinguish between "file not found" and "invalid XML"
-pub fn load_xml_xinclude(handle: *mut RsvgHandle, aurl: &AllowedUrl) -> bool {
-    let href = aurl.url().as_str();
-
-    unsafe { from_glib(rsvg_load_handle_xml_xinclude(handle, href.to_glib_none().0)) }
 }
 
 // This function just slurps CSS data from a possibly-relative href
