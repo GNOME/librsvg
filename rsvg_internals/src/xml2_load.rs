@@ -364,6 +364,55 @@ pub unsafe extern "C" fn rsvg_set_error_from_xml(
     set_gerror(error, 0, &xml2_error_to_string(xerr));
 }
 
+// Error returned when parsing an XML stream
+pub enum ParseFromStreamError {
+    // GIO error from the I/O callbacks
+    IoError(glib::Error),
+
+    // XML parsing error from libxml2
+    XmlParseError(String),
+}
+
+// Parses XML from a stream into an XmlState.
+//
+// This can be called "in the middle" of an XmlState's processing status,
+// for example, when including another XML file via xi:include.
+pub fn xml_state_parse_from_stream(
+    xml: &mut XmlState,
+    unlimited_size: bool,
+    stream: gio::InputStream,
+    cancellable: Option<gio::Cancellable>,
+) -> Result<(), ParseFromStreamError> {
+    let mut gio_err: *mut glib_sys::GError = ptr::null_mut();
+
+    match create_xml_stream_parser(xml, unlimited_size, stream, cancellable, &mut gio_err) {
+        Ok(parser) => unsafe {
+            let xml_parse_success = xmlParseDocument(parser) == 0;
+
+            let io_success = gio_err.is_null();
+
+            let res;
+
+            if !io_success {
+                res = Err(ParseFromStreamError::IoError(from_glib_full(gio_err)));
+            } else if !xml_parse_success {
+                let xerr = xmlCtxtGetLastError(parser as *mut _);
+                res = Err(ParseFromStreamError::XmlParseError(xml2_error_to_string(
+                    xerr,
+                )));
+            } else {
+                res = Ok(());
+            }
+
+            free_xml_parser_and_doc(parser);
+
+            res
+        },
+
+        Err(e) => Err(ParseFromStreamError::IoError(e)),
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
     xml: *mut XmlState,
@@ -380,31 +429,20 @@ pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
     let stream = from_glib_none(stream);
     let cancellable = from_glib_none(cancellable);
 
-    let mut gio_err: *mut glib_sys::GError = ptr::null_mut();
-
-    match create_xml_stream_parser(xml, unlimited_size, stream, cancellable, &mut gio_err) {
-        Ok(parser) => {
-            let xml_parse_success = xmlParseDocument(parser) == 0;
-
-            let io_success = gio_err.is_null();
-
-            if !io_success {
-                if !error.is_null() {
-                    *error = gio_err;
-                }
-            } else if !xml_parse_success {
-                let xerr = xmlCtxtGetLastError(parser as *mut _);
-                set_gerror(error, 0, &xml2_error_to_string(xerr));
-            }
-
-            free_xml_parser_and_doc(parser);
-
-            (io_success && xml_parse_success).to_glib()
-        }
+    match xml_state_parse_from_stream(xml, unlimited_size, stream, cancellable) {
+        Ok(()) => true.to_glib(),
 
         Err(e) => {
-            if !error.is_null() {
-                *error = e.to_glib_full() as *mut _;
+            match e {
+                ParseFromStreamError::IoError(e) => {
+                    if !error.is_null() {
+                        *error = e.to_glib_full() as *mut _;
+                    }
+                }
+
+                ParseFromStreamError::XmlParseError(s) => {
+                    set_gerror(error, 0, &s);
+                }
             }
 
             false.to_glib()
