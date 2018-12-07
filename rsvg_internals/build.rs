@@ -13,7 +13,6 @@ fn main() {
 fn generate_phf_of_svg_attributes() {
     // (attribute name, Rust enum value)
     //
-    // Keep this in sync with rsvg-attributes.h
     #[cfg_attr(rustfmt, rustfmt_skip)]
     let attribute_defs = [
         ( "alternate",          "Alternate" ),

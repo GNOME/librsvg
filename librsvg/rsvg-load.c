@@ -27,7 +27,6 @@
 #include <string.h>
 #include <glib/gprintf.h>
 
-#include "rsvg-attributes.h"
 #include "rsvg-load.h"
 
 typedef enum {
