@@ -5,8 +5,10 @@ use gio;
 use gio::prelude::*;
 use gio_sys;
 use glib_sys;
+use std::cell::RefCell;
 use std::mem;
 use std::ptr;
+use std::rc::Rc;
 use std::slice;
 use std::str;
 
@@ -218,7 +220,7 @@ fn set_xml_parse_options(parser: xmlParserCtxtPtr, unlimited_size: bool) {
 struct StreamCtx {
     stream: gio::InputStream,
     cancellable: Option<gio::Cancellable>,
-    gio_error: *mut *mut glib_sys::GError,
+    gio_error: Rc<RefCell<Option<glib::Error>>>,
 }
 
 // read() callback from xmlCreateIOParserCtxt()
@@ -229,8 +231,10 @@ unsafe extern "C" fn stream_ctx_read(
 ) -> libc::c_int {
     let ctx = &mut *(context as *mut StreamCtx);
 
+    let mut err_ref = ctx.gio_error.borrow_mut();
+
     // has the error been set already?
-    if !(*ctx.gio_error).is_null() {
+    if err_ref.is_some() {
         return -1;
     }
 
@@ -240,8 +244,8 @@ unsafe extern "C" fn stream_ctx_read(
         Ok(size) => size as libc::c_int,
 
         Err(e) => {
-            let e: *const glib_sys::GError = e.to_glib_full();
-            *ctx.gio_error = e as *mut _;
+            // Just store the first I/O error we get; ignore subsequent ones.
+            *err_ref = Some(e);
             -1
         }
     }
@@ -255,10 +259,11 @@ unsafe extern "C" fn stream_ctx_close(context: *mut libc::c_void) -> libc::c_int
         Ok(()) => 0,
 
         Err(e) => {
+            let mut err_ref = ctx.gio_error.borrow_mut();
+
             // don't overwrite a previous error
-            if (*ctx.gio_error).is_null() {
-                let e: *const glib_sys::GError = e.to_glib_full();
-                *ctx.gio_error = e as *mut _;
+            if err_ref.is_none() {
+                *err_ref = Some(e);
             }
 
             -1
@@ -272,7 +277,7 @@ unsafe extern "C" fn stream_ctx_close(context: *mut libc::c_void) -> libc::c_int
 
 struct Xml2Parser {
     parser: xmlParserCtxtPtr,
-    gio_error: Box<*mut glib_sys::GError>,
+    gio_error: Rc<RefCell<Option<glib::Error>>>,
 }
 
 impl Xml2Parser {
@@ -286,17 +291,15 @@ impl Xml2Parser {
         // xmlCreateIOParserCtxt() is successful, needs to hold a
         // location to place a GError from within the I/O callbacks
         // stream_ctx_read() and stream_ctx_close().  We put this
-        // location in a Box so that it can outlive the call to
+        // location in an Rc so that it can outlive the call to
         // xmlCreateIOParserCtxt() in case that fails, since on
         // failure that function frees the StreamCtx.
-        let mut gio_error: Box<*mut glib_sys::GError> = Box::new(ptr::null_mut());
-
-        let p_gio_error: *mut *mut glib_sys::GError = &mut *gio_error;
+        let gio_error = Rc::new(RefCell::new(None));
 
         let ctx = Box::new(StreamCtx {
             stream,
             cancellable,
-            gio_error: p_gio_error,
+            gio_error: gio_error.clone(),
         });
 
         let mut sax_handler = get_xml2_sax_handler();
@@ -326,17 +329,16 @@ impl Xml2Parser {
         unsafe {
             let xml_parse_success = xmlParseDocument(self.parser) == 0;
 
-            let io_success = self.gio_error.is_null();
+            let mut err_ref = self.gio_error.borrow_mut();
 
-            if !io_success {
-                Err(ParseFromStreamError::IoError(from_glib_full(
-                    *self.gio_error,
-                )))
+            let io_error = err_ref.take();
+
+            if let Some(io_error) = io_error {
+                Err(ParseFromStreamError::IoError(io_error))
             } else if !xml_parse_success {
                 let xerr = xmlCtxtGetLastError(self.parser as *mut _);
-                Err(ParseFromStreamError::XmlParseError(xml2_error_to_string(
-                    xerr,
-                )))
+                let msg = xml2_error_to_string(xerr);
+                Err(ParseFromStreamError::XmlParseError(msg))
             } else {
                 Ok(())
             }
