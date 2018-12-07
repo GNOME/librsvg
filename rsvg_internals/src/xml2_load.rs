@@ -270,39 +270,74 @@ unsafe extern "C" fn stream_ctx_close(context: *mut libc::c_void) -> libc::c_int
     ret
 }
 
-fn create_xml_stream_parser(
-    xml: &mut XmlState,
-    unlimited_size: bool,
-    stream: gio::InputStream,
-    cancellable: Option<gio::Cancellable>,
+struct Xml2Parser {
+    parser: xmlParserCtxtPtr,
     gio_error: *mut *mut glib_sys::GError,
-) -> Result<xmlParserCtxtPtr, ParseFromStreamError> {
-    let ctx = Box::new(StreamCtx {
-        stream,
-        cancellable,
-        gio_error,
-    });
+}
 
-    let mut sax_handler = get_xml2_sax_handler();
+impl Xml2Parser {
+    fn from_stream(
+        xml: &mut XmlState,
+        unlimited_size: bool,
+        stream: gio::InputStream,
+        cancellable: Option<gio::Cancellable>,
+        gio_error: *mut *mut glib_sys::GError,
+    ) -> Result<Xml2Parser, ParseFromStreamError> {
+        let ctx = Box::new(StreamCtx {
+            stream,
+            cancellable,
+            gio_error,
+        });
 
-    unsafe {
-        let parser = xmlCreateIOParserCtxt(
-            &mut sax_handler,
-            xml as *mut _ as *mut _,
-            Some(stream_ctx_read),
-            Some(stream_ctx_close),
-            Box::into_raw(ctx) as *mut _,
-            XML_CHAR_ENCODING_NONE,
-        );
+        let mut sax_handler = get_xml2_sax_handler();
 
-        if parser.is_null() {
-            // on error, xmlCreateIOParserCtxt() frees our ctx via the
-            // stream_ctx_close function
-            Err(ParseFromStreamError::CouldNotCreateParser)
-        } else {
-            set_xml_parse_options(parser, unlimited_size);
-            Ok(parser)
+        unsafe {
+            let parser = xmlCreateIOParserCtxt(
+                &mut sax_handler,
+                xml as *mut _ as *mut _,
+                Some(stream_ctx_read),
+                Some(stream_ctx_close),
+                Box::into_raw(ctx) as *mut _,
+                XML_CHAR_ENCODING_NONE,
+            );
+
+            if parser.is_null() {
+                // on error, xmlCreateIOParserCtxt() frees our ctx via the
+                // stream_ctx_close function
+                Err(ParseFromStreamError::CouldNotCreateParser)
+            } else {
+                set_xml_parse_options(parser, unlimited_size);
+                Ok(Xml2Parser { parser, gio_error })
+            }
         }
+    }
+
+    fn parse(&self) -> Result<(), ParseFromStreamError> {
+        unsafe {
+            let xml_parse_success = xmlParseDocument(self.parser) == 0;
+
+            let io_success = (*self.gio_error).is_null();
+
+            if !io_success {
+                Err(ParseFromStreamError::IoError(from_glib_full(
+                    *self.gio_error,
+                )))
+            } else if !xml_parse_success {
+                let xerr = xmlCtxtGetLastError(self.parser as *mut _);
+                Err(ParseFromStreamError::XmlParseError(xml2_error_to_string(
+                    xerr,
+                )))
+            } else {
+                Ok(())
+            }
+        }
+    }
+}
+
+impl Drop for Xml2Parser {
+    fn drop(&mut self) {
+        free_xml_parser_and_doc(self.parser);
+        self.parser = ptr::null_mut();
     }
 }
 
@@ -388,32 +423,8 @@ pub fn xml_state_parse_from_stream(
 ) -> Result<(), ParseFromStreamError> {
     let mut gio_err: *mut glib_sys::GError = ptr::null_mut();
 
-    match create_xml_stream_parser(xml, unlimited_size, stream, cancellable, &mut gio_err) {
-        Ok(parser) => unsafe {
-            let xml_parse_success = xmlParseDocument(parser) == 0;
-
-            let io_success = gio_err.is_null();
-
-            let res;
-
-            if !io_success {
-                res = Err(ParseFromStreamError::IoError(from_glib_full(gio_err)));
-            } else if !xml_parse_success {
-                let xerr = xmlCtxtGetLastError(parser as *mut _);
-                res = Err(ParseFromStreamError::XmlParseError(xml2_error_to_string(
-                    xerr,
-                )));
-            } else {
-                res = Ok(());
-            }
-
-            free_xml_parser_and_doc(parser);
-
-            res
-        },
-
-        Err(e) => Err(e),
-    }
+    Xml2Parser::from_stream(xml, unlimited_size, stream, cancellable, &mut gio_err)
+        .and_then(|parser| parser.parse())
 }
 
 #[no_mangle]
