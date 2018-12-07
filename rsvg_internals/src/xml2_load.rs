@@ -12,7 +12,7 @@ use std::str;
 
 use glib::translate::*;
 
-use error::{set_gerror, RsvgError};
+use error::set_gerror;
 use property_bag::PropertyBag;
 use util::utf8_cstr;
 use xml::XmlState;
@@ -276,7 +276,7 @@ fn create_xml_stream_parser(
     stream: gio::InputStream,
     cancellable: Option<gio::Cancellable>,
     gio_error: *mut *mut glib_sys::GError,
-) -> Result<xmlParserCtxtPtr, glib::Error> {
+) -> Result<xmlParserCtxtPtr, ParseFromStreamError> {
     let ctx = Box::new(StreamCtx {
         stream,
         cancellable,
@@ -296,9 +296,9 @@ fn create_xml_stream_parser(
         );
 
         if parser.is_null() {
-            // on error, xmlCreateIOParserCtxt() frees our context via the
+            // on error, xmlCreateIOParserCtxt() frees our ctx via the
             // stream_ctx_close function
-            Err(glib::Error::new(RsvgError, "Error creating XML parser"))
+            Err(ParseFromStreamError::CouldNotCreateParser)
         } else {
             set_xml_parse_options(parser, unlimited_size);
             Ok(parser)
@@ -366,6 +366,9 @@ pub unsafe extern "C" fn rsvg_set_error_from_xml(
 
 // Error returned when parsing an XML stream
 pub enum ParseFromStreamError {
+    // We couldn't even create the libxml2 parser
+    CouldNotCreateParser,
+
     // GIO error from the I/O callbacks
     IoError(glib::Error),
 
@@ -409,7 +412,7 @@ pub fn xml_state_parse_from_stream(
             res
         },
 
-        Err(e) => Err(ParseFromStreamError::IoError(e)),
+        Err(e) => Err(e),
     }
 }
 
@@ -434,6 +437,10 @@ pub unsafe extern "C" fn rsvg_xml_state_parse_from_stream(
 
         Err(e) => {
             match e {
+                ParseFromStreamError::CouldNotCreateParser => {
+                    set_gerror(error, 0, "Error creating XML parser");
+                }
+
                 ParseFromStreamError::IoError(e) => {
                     if !error.is_null() {
                         *error = e.to_glib_full() as *mut _;
