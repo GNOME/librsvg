@@ -125,7 +125,7 @@ impl NodeMarker {
         draw_ctx: &mut DrawingCtx,
         xpos: f64,
         ypos: f64,
-        computed_angle: f64,
+        computed_angle: Angle,
         line_width: f64,
         clipping: bool,
     ) -> Result<(), RenderingError> {
@@ -151,10 +151,10 @@ impl NodeMarker {
 
         let rotation = match self.orient.get() {
             MarkerOrient::Auto => computed_angle,
-            MarkerOrient::Degrees(d) => d * PI / 180.0,
+            MarkerOrient::Degrees(d) => Angle::from_degrees(d),
         };
 
-        affine.rotate(rotation);
+        affine.rotate(rotation.radians());
 
         if self.units.get() == MarkerUnits::StrokeWidth {
             affine.scale(line_width, line_width);
@@ -588,35 +588,50 @@ fn find_outgoing_directionality_forwards(
     (false, 0.0, 0.0)
 }
 
-// Normalizes an angle to [0.0, 2*PI)
-fn normalize_angle(angle: f64) -> f64 {
-    let res = angle % (PI * 2.0);
-    if res < 0.0 {
-        res + PI * 2.0
-    } else {
-        res
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct Angle(f64);
+
+impl Angle {
+    pub fn new(rad: f64) -> Angle {
+        Angle(Angle::normalize(rad))
     }
-}
 
-fn angle_from_vector(vx: f64, vy: f64) -> f64 {
-    let angle = vy.atan2(vx);
-
-    if angle.is_nan() {
-        0.0
-    } else {
-        normalize_angle(angle)
+    pub fn from_degrees(deg: f64) -> Angle {
+        Angle(Angle::normalize(deg * PI / 180.0))
     }
-}
 
-fn bisect_angles(incoming: f64, outgoing: f64) -> f64 {
-    let half_delta: f64;
+    pub fn from_vector(vx: f64, vy: f64) -> Angle {
+        let rad = vy.atan2(vx);
 
-    half_delta = (outgoing - incoming) * 0.5;
+        if rad.is_nan() {
+            Angle(0.0)
+        } else {
+            Angle(Angle::normalize(rad))
+        }
+    }
 
-    if FRAC_PI_2 < half_delta.abs() {
-        normalize_angle(incoming + half_delta - PI)
-    } else {
-        normalize_angle(incoming + half_delta)
+    pub fn radians(&self) -> f64 {
+        self.0
+    }
+
+    pub fn bisect(&self, other: Angle) -> Angle {
+        let half_delta = (other.0 - self.0) * 0.5;
+
+        if FRAC_PI_2 < half_delta.abs() {
+            Angle(Angle::normalize(self.0 + half_delta - PI))
+        } else {
+            Angle(Angle::normalize(self.0 + half_delta))
+        }
+    }
+
+    // Normalizes an angle to [0.0, 2*PI)
+    fn normalize(rad: f64) -> f64 {
+        let res = rad % (PI * 2.0);
+        if res < 0.0 {
+            res + PI * 2.0
+        } else {
+            res
+        }
     }
 }
 
@@ -633,7 +648,7 @@ fn emit_marker_by_name(
     name: &Fragment,
     xpos: f64,
     ypos: f64,
-    computed_angle: f64,
+    computed_angle: Angle,
     line_width: f64,
     clipping: bool,
 ) -> Result<(), RenderingError> {
@@ -667,11 +682,11 @@ fn emit_marker<E>(
     segment: &Segment,
     endpoint: MarkerEndpoint,
     marker_type: MarkerType,
-    orient: f64,
+    orient: Angle,
     emit_fn: &mut E,
 ) -> Result<(), RenderingError>
 where
-    E: FnMut(MarkerType, f64, f64, f64) -> Result<(), RenderingError>,
+    E: FnMut(MarkerType, f64, f64, Angle) -> Result<(), RenderingError>,
 {
     let (x, y) = match *segment {
         Segment::Degenerate { x, y } => (x, y),
@@ -711,7 +726,7 @@ pub fn render_markers_for_path_builder(
 
     emit_markers_for_path_builder(
         builder,
-        &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
+        &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
             if let &IRI::Resource(ref marker) = match marker_type {
                 MarkerType::Start => &values.marker_start.0,
                 MarkerType::Middle => &values.marker_mid.0,
@@ -730,7 +745,7 @@ fn emit_markers_for_path_builder<E>(
     emit_fn: &mut E,
 ) -> Result<(), RenderingError>
 where
-    E: FnMut(MarkerType, f64, f64, f64) -> Result<(), RenderingError>,
+    E: FnMut(MarkerType, f64, f64, Angle) -> Result<(), RenderingError>,
 {
     enum SubpathState {
         NoSubpath,
@@ -755,7 +770,7 @@ where
                         &segments[i - 1],
                         MarkerEndpoint::End,
                         MarkerType::End,
-                        angle_from_vector(incoming_vx, incoming_vy),
+                        Angle::from_vector(incoming_vx, incoming_vy),
                         emit_fn,
                     )?;
                 }
@@ -765,7 +780,7 @@ where
                     segment,
                     MarkerEndpoint::Start,
                     MarkerType::Middle,
-                    0.0,
+                    Angle::new(0.0),
                     emit_fn,
                 )?;
 
@@ -782,7 +797,7 @@ where
                             segment,
                             MarkerEndpoint::Start,
                             MarkerType::Start,
-                            angle_from_vector(outgoing_vx, outgoing_vy),
+                            Angle::from_vector(outgoing_vx, outgoing_vy),
                             emit_fn,
                         )?;
 
@@ -797,22 +812,19 @@ where
                         let (has_outgoing, outgoing_vx, outgoing_vy) =
                             find_outgoing_directionality_forwards(&segments, i);
 
-                        let incoming: f64;
-                        let outgoing: f64;
+                        let incoming = Angle::from_vector(incoming_vx, incoming_vy);
+                        let outgoing = Angle::from_vector(outgoing_vx, outgoing_vy);
 
-                        incoming = angle_from_vector(incoming_vx, incoming_vy);
-                        outgoing = angle_from_vector(outgoing_vx, outgoing_vy);
-
-                        let angle: f64;
+                        let angle: Angle;
 
                         if has_incoming && has_outgoing {
-                            angle = bisect_angles(incoming, outgoing);
+                            angle = incoming.bisect(outgoing);
                         } else if has_incoming {
                             angle = incoming;
                         } else if has_outgoing {
                             angle = outgoing;
                         } else {
-                            angle = 0.0;
+                            angle = Angle::new(0.0);
                         }
 
                         emit_marker(
@@ -839,12 +851,11 @@ where
                 if let PathCommand::ClosePath = builder.get_path_commands()[segments.len()] {
                     let (_, outgoing_vx, outgoing_vy) =
                         find_outgoing_directionality_forwards(&segments, 0);
-                    bisect_angles(
-                        angle_from_vector(incoming_vx, incoming_vy),
-                        angle_from_vector(outgoing_vx, outgoing_vy),
-                    )
+                    let incoming = Angle::from_vector(incoming_vx, incoming_vy);
+                    let outgoing = Angle::from_vector(outgoing_vx, outgoing_vy);
+                    incoming.bisect(outgoing)
                 } else {
-                    angle_from_vector(incoming_vx, incoming_vy)
+                    Angle::from_vector(incoming_vx, incoming_vy)
                 }
             };
 
@@ -941,11 +952,10 @@ mod directionality_tests {
         outgoing_vx: f64,
         outgoing_vy: f64,
     ) {
-        let bisected = super::bisect_angles(
-            super::angle_from_vector(incoming_vx, incoming_vy),
-            super::angle_from_vector(outgoing_vx, outgoing_vy),
-        );
-        assert!(expected.approx_eq(&bisected, 2.0 * PI * f64::EPSILON, 1));
+        let i = Angle::from_vector(incoming_vx, incoming_vy);
+        let o = Angle::from_vector(outgoing_vx, outgoing_vy);
+        let bisected = i.bisect(o);
+        assert!(expected.approx_eq(&bisected.radians(), 2.0 * PI * f64::EPSILON, 1));
     }
 
     #[test]
@@ -1278,7 +1288,7 @@ mod marker_tests {
             &mut |marker_type: MarkerType,
                   x: f64,
                   y: f64,
-                  computed_angle: f64|
+                  computed_angle: Angle|
              -> Result<(), RenderingError> {
                 v.push((marker_type, x, y, computed_angle));
                 Ok(())
@@ -1289,10 +1299,10 @@ mod marker_tests {
         assert_eq!(
             v,
             vec![
-                (MarkerType::Start, 0.0, 0.0, 0.0),
-                (MarkerType::Middle, 1.0, 0.0, angle_from_vector(1.0, 1.0)),
-                (MarkerType::Middle, 1.0, 1.0, angle_from_vector(-1.0, 1.0)),
-                (MarkerType::End, 0.0, 1.0, angle_from_vector(-1.0, 0.0)),
+                (MarkerType::Start, 0.0, 0.0, Angle::new(0.0)),
+                (MarkerType::Middle, 1.0, 0.0, Angle::from_vector(1.0, 1.0)),
+                (MarkerType::Middle, 1.0, 1.0, Angle::from_vector(-1.0, 1.0)),
+                (MarkerType::End, 0.0, 1.0, Angle::from_vector(-1.0, 0.0)),
             ]
         );
     }
@@ -1313,7 +1323,7 @@ mod marker_tests {
             &mut |marker_type: MarkerType,
                   x: f64,
                   y: f64,
-                  computed_angle: f64|
+                  computed_angle: Angle|
              -> Result<(), RenderingError> {
                 v.push((marker_type, x, y, computed_angle));
                 Ok(())
@@ -1324,11 +1334,11 @@ mod marker_tests {
         assert_eq!(
             v,
             vec![
-                (MarkerType::Start, 0.0, 0.0, 0.0),
-                (MarkerType::Middle, 1.0, 0.0, angle_from_vector(1.0, 1.0)),
-                (MarkerType::Middle, 1.0, 1.0, angle_from_vector(-1.0, 1.0)),
-                (MarkerType::Middle, 0.0, 1.0, angle_from_vector(-1.0, -1.0)),
-                (MarkerType::End, 0.0, 0.0, angle_from_vector(1.0, -1.0)),
+                (MarkerType::Start, 0.0, 0.0, Angle::new(0.0)),
+                (MarkerType::Middle, 1.0, 0.0, Angle::from_vector(1.0, 1.0)),
+                (MarkerType::Middle, 1.0, 1.0, Angle::from_vector(-1.0, 1.0)),
+                (MarkerType::Middle, 0.0, 1.0, Angle::from_vector(-1.0, -1.0)),
+                (MarkerType::End, 0.0, 0.0, Angle::from_vector(1.0, -1.0)),
             ]
         );
     }
