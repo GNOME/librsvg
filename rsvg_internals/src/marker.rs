@@ -589,18 +589,13 @@ fn find_outgoing_directionality_forwards(
 }
 
 // Normalizes an angle to [0.0, 2*PI)
-fn normalize_angle(mut angle: f64) -> f64 {
-    if angle < 0.0 {
-        while angle < 0.0 {
-            angle += PI * 2.0;
-        }
+fn normalize_angle(angle: f64) -> f64 {
+    let res = angle % (PI * 2.0);
+    if res < 0.0 {
+        res + PI * 2.0
     } else {
-        while angle > PI * 2.0 {
-            angle -= PI * 2.0;
-        }
+        res
     }
-
-    angle
 }
 
 fn angle_from_vector(vx: f64, vy: f64) -> f64 {
