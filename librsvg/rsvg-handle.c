@@ -683,7 +683,7 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 
     if (priv->hstate == RSVG_HANDLE_STATE_START) {
         priv->hstate = RSVG_HANDLE_STATE_LOADING;
-        priv->load = rsvg_load_new (handle,
+        priv->load = rsvg_load_new (rsvg_xml_state_new (handle),
                                     (priv->flags && RSVG_HANDLE_FLAG_UNLIMITED) != 0);
     }
 

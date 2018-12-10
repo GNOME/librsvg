@@ -46,7 +46,7 @@ struct RsvgLoad {
 };
 
 RsvgLoad *
-rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
+rsvg_load_new (RsvgXmlState *xml, gboolean unlimited_size)
 {
     RsvgLoad *load = g_new0 (RsvgLoad, 1);
 
@@ -54,7 +54,7 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->state = LOAD_STATE_START;
     load->buffer = NULL;
 
-    load->xml = rsvg_xml_state_new (handle);
+    load->xml = xml;
 
     return load;
 }
