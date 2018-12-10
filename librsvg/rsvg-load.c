@@ -60,8 +60,7 @@ struct RsvgLoad {
     RsvgHandle *handle;
 
     LoadState state;
-
-    GInputStream *stream;
+    GByteArray *buffer;
 
     RsvgXmlState *rust_state;
 };
@@ -73,7 +72,7 @@ rsvg_load_new (RsvgHandle *handle)
 
     load->handle = handle;
     load->state = LOAD_STATE_START;
-    load->stream = NULL;
+    load->buffer = NULL;
 
     load->rust_state = rsvg_xml_state_new (handle);
 
@@ -83,7 +82,10 @@ rsvg_load_new (RsvgHandle *handle)
 void
 rsvg_load_free (RsvgLoad *load)
 {
-    g_clear_object (&load->stream);
+    if (load->buffer) {
+        g_byte_array_free (load->buffer, TRUE);
+    }
+
     g_clear_pointer (&load->rust_state, rsvg_xml_state_free);
     g_free (load);
 }
@@ -140,30 +142,21 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     return res;
 }
 
-static void
-create_stream (RsvgLoad *load)
-{
-    g_assert (load->stream == NULL);
-
-    load->stream = g_memory_input_stream_new ();
-}
-
 gboolean
 rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count, GError **error)
 {
     switch (load->state) {
     case LOAD_STATE_START:
-        g_assert (load->stream == NULL);
+        g_assert (load->buffer == NULL);
 
-        create_stream (load);
-        g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (load->stream),
-                                        g_memdup (buf, count), count, (GDestroyNotify) g_free);
+        load->buffer = g_byte_array_new();
+        g_byte_array_append (load->buffer, buf, count);
+
         load->state = LOAD_STATE_READING;
         break;
 
     case LOAD_STATE_READING:
-        g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (load->stream),
-                                        g_memdup (buf, count), count, (GDestroyNotify) g_free);
+        g_byte_array_append (load->buffer, buf, count);
         break;
 
     default:
@@ -183,10 +176,20 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     case LOAD_STATE_CLOSED:
         return TRUE;
 
-    case LOAD_STATE_READING:
-        res = rsvg_load_read_stream_sync (load, load->stream, NULL, error);
-        g_clear_object (&load->stream);
+    case LOAD_STATE_READING: {
+        GInputStream *stream;
+        GBytes *bytes;
+
+        bytes = g_byte_array_free_to_bytes (load->buffer);
+        load->buffer = NULL;
+
+        stream = g_memory_input_stream_new_from_bytes (bytes);
+        g_bytes_unref (bytes);
+        
+        res = rsvg_load_read_stream_sync (load, stream, NULL, error);
+        g_clear_object (&stream);
         break;
+    }
 
     default:
         g_assert_not_reached();
