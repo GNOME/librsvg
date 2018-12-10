@@ -597,7 +597,7 @@ impl Angle {
     }
 
     pub fn from_degrees(deg: f64) -> Angle {
-        Angle(Angle::normalize(deg * PI / 180.0))
+        Angle(Angle::normalize(deg.to_radians()))
     }
 
     pub fn from_vector(vx: f64, vy: f64) -> Angle {
