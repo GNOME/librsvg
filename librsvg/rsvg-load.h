@@ -25,14 +25,14 @@
 #include <glib.h>
 #include "rsvg-private.h"
 
+/* Implemented in rsvg_internals/src/xml.rs */
+typedef struct RsvgXmlState RsvgXmlState;
+
 G_GNUC_INTERNAL
 RsvgLoad *rsvg_load_new (RsvgHandle *handle) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
-void rsvg_load_free (RsvgLoad *load);
-
-G_GNUC_INTERNAL
-gboolean rsvg_load_finish_load(RsvgLoad *load, GError **error);
+RsvgXmlState *rsvg_load_free (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
 gboolean rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count, GError **error) G_GNUC_WARN_UNUSED_RESULT;

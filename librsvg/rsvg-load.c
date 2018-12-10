@@ -36,12 +36,7 @@ typedef enum {
 } LoadState;
 
 /* Implemented in rsvg_internals/src/xml.rs */
-typedef struct RsvgXmlState RsvgXmlState;
-
-/* Implemented in rsvg_internals/src/xml.rs */
 extern RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
-extern void rsvg_xml_state_free (RsvgXmlState *xml);
-extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
 /* Implemented in rsvg_internals/src/xml2_load.rs */
@@ -50,10 +45,6 @@ extern gboolean rsvg_xml_state_load_from_possibly_compressed_stream (RsvgXmlStat
                                                                      GInputStream *stream,
                                                                      GCancellable *cancellable,
                                                                      GError      **error);
-
-/* Implemented in rsvg_internals/src/handle.rs */
-extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
-
 
 /* Holds the GIO and loading state for compressed data */
 struct RsvgLoad {
@@ -79,27 +70,19 @@ rsvg_load_new (RsvgHandle *handle)
     return load;
 }
 
-void
+RsvgXmlState *
 rsvg_load_free (RsvgLoad *load)
 {
+    RsvgXmlState *rust_state;
+
     if (load->buffer) {
         g_byte_array_free (load->buffer, TRUE);
     }
 
-    g_clear_pointer (&load->rust_state, rsvg_xml_state_free);
+    rust_state = load->rust_state;
     g_free (load);
-}
 
-gboolean
-rsvg_load_finish_load (RsvgLoad *load, GError **error)
-{
-    gboolean was_successful = rsvg_xml_state_tree_is_valid(load->rust_state, error);
-
-    if (was_successful) {
-        rsvg_handle_rust_steal_result (load->handle->priv->rust_handle, load->rust_state);
-    }
-
-    return was_successful;
+    return rust_state;
 }
 
 /* This one is defined in the C code, because the prototype has varargs
@@ -193,10 +176,6 @@ rsvg_load_close (RsvgLoad *load, GError **error)
 
     default:
         g_assert_not_reached();
-    }
-
-    if (!res) {
-        g_clear_pointer (&load->rust_state, rsvg_xml_state_free);
     }
 
     load->state = LOAD_STATE_CLOSED;

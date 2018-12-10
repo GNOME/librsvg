@@ -140,6 +140,11 @@ extern RsvgNode *rsvg_handle_rust_get_root (RsvgHandleRust *raw_handle);
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern RsvgNode *rsvg_handle_defs_lookup (RsvgHandle *handle, const char *name);
 extern gboolean rsvg_handle_rust_node_is_root(RsvgHandleRust *raw_handle, RsvgNode *node);
+extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
+
+/* Implemented in rsvg_internals/src/xml.rs */
+extern void rsvg_xml_state_free (RsvgXmlState *xml);
+extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
 
 /* Implemented in rust/src/node.rs */
 /* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
@@ -214,7 +219,12 @@ rsvg_handle_dispose (GObject *instance)
         self->priv->user_data_destroy = NULL;
     }
 
-    g_clear_pointer (&self->priv->load, rsvg_load_free);
+    if (self->priv->load) {
+        RsvgXmlState *xml = rsvg_load_free (self->priv->load);
+        self->priv->load = NULL;
+
+        rsvg_xml_state_free (xml);
+    }
 
     g_clear_pointer (&self->priv->base_uri, g_free);
 
@@ -684,21 +694,29 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 static gboolean
 finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
 {
+    RsvgXmlState *xml;
+
     g_assert (handle->priv->load != NULL);
+
+    xml = rsvg_load_free (handle->priv->load);
+    handle->priv->load = NULL;
 
     if (was_successful) {
         g_assert (error == NULL || *error == NULL);
 
-        was_successful = rsvg_load_finish_load(handle->priv->load, error);
+        was_successful = rsvg_xml_state_tree_is_valid (xml, error);
+        if (was_successful) {
+            rsvg_handle_rust_steal_result (handle->priv->rust_handle, xml);
+        }
     }
+
+    rsvg_xml_state_free (xml);
 
     if (was_successful) {
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
     } else {
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
     }
-
-    g_clear_pointer (&handle->priv->load, rsvg_load_free);
 
     return was_successful;
 }
