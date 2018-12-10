@@ -14,7 +14,6 @@ use handle::RsvgHandle;
 use iri::IRI;
 use length::{Length, LengthDir};
 use node::*;
-use parsers;
 use parsers::ParseError;
 use parsers::{parse, parse_and_validate, Parse};
 use path_builder::*;
@@ -65,12 +64,12 @@ impl Parse for MarkerUnits {
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum MarkerOrient {
     Auto,
-    Degrees(f64),
+    Angle(Angle),
 }
 
 impl Default for MarkerOrient {
     fn default() -> MarkerOrient {
-        MarkerOrient::Degrees(0.0)
+        MarkerOrient::Angle(Angle::new(0.0))
     }
 }
 
@@ -82,9 +81,8 @@ impl Parse for MarkerOrient {
         if parser.try(|p| p.expect_ident_matching("auto")).is_ok() {
             Ok(MarkerOrient::Auto)
         } else {
-            parsers::angle_degrees(parser)
-                .map(MarkerOrient::Degrees)
-                .map_err(ValueErrorKind::Parse)
+            Angle::parse(parser, ())
+                .map(MarkerOrient::Angle)
         }
     }
 }
@@ -151,7 +149,7 @@ impl NodeMarker {
 
         let rotation = match self.orient.get() {
             MarkerOrient::Auto => computed_angle,
-            MarkerOrient::Degrees(d) => Angle::from_degrees(d),
+            MarkerOrient::Angle(a) => a,
         };
 
         affine.rotate(rotation.radians());
@@ -635,6 +633,49 @@ impl Angle {
     }
 }
 
+// angle:
+// https://www.w3.org/TR/SVG/types.html#DataTypeAngle
+//
+// angle ::= number ("deg" | "grad" | "rad")?
+//
+impl Parse for Angle {
+    type Data = ();
+    type Err = ValueErrorKind;
+
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<Angle, ValueErrorKind> {
+        let angle = {
+            let token = parser
+                .next()
+                .map_err(|_| ParseError::new("expected angle"))?;
+
+            match *token {
+                Token::Number { value, .. } => Angle::from_degrees(value as f64),
+
+                Token::Dimension {
+                    value, ref unit, ..
+                } => {
+                    let value = f64::from(value);
+
+                    match unit.as_ref() {
+                        "deg" => Angle::from_degrees(value),
+                        "grad" => Angle::from_degrees(value * 360.0 / 400.0),
+                        "rad" => Angle::new(value),
+                        _ => return Err(ValueErrorKind::Parse(ParseError::new("expected 'deg' | 'grad' | 'rad'"))),
+                    }
+                }
+
+                _ => return Err(ValueErrorKind::Parse(ParseError::new("expected angle"))),
+            }
+        };
+
+        parser
+            .expect_exhausted()
+            .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected angle")))?;
+
+        Ok(angle)
+    }
+}
+
 // From SVG's marker-start, marker-mid, marker-end properties
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum MarkerType {
@@ -878,6 +919,19 @@ mod parser_tests {
     use super::*;
 
     #[test]
+    fn parses_angle() {
+        assert_eq!(Angle::parse_str("0", ()), Ok(Angle::new(0.0)));
+        assert_eq!(Angle::parse_str("15", ()), Ok(Angle::from_degrees(15.0)));
+        assert_eq!(Angle::parse_str("180.5deg", ()), Ok(Angle::from_degrees(180.5)));
+        assert_eq!(Angle::parse_str("1rad", ()), Ok(Angle::new(1.0)));
+        assert_eq!(Angle::parse_str("-400grad", ()), Ok(Angle::from_degrees(-360.0)));
+
+        assert!(Angle::parse_str("", ()).is_err());
+        assert!(Angle::parse_str("foo", ()).is_err());
+        assert!(Angle::parse_str("300foo", ()).is_err());
+    }
+
+    #[test]
     fn parsing_invalid_marker_units_yields_error() {
         assert!(is_parse_error(
             &MarkerUnits::parse_str("", ()).map_err(|e| ValueErrorKind::from(e))
@@ -918,23 +972,23 @@ mod parser_tests {
 
         assert_eq!(
             MarkerOrient::parse_str("0", ()),
-            Ok(MarkerOrient::Degrees(0.0))
+            Ok(MarkerOrient::Angle(Angle::new(0.0)))
         );
         assert_eq!(
             MarkerOrient::parse_str("180", ()),
-            Ok(MarkerOrient::Degrees(180.0))
+            Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
         );
         assert_eq!(
             MarkerOrient::parse_str("180deg", ()),
-            Ok(MarkerOrient::Degrees(180.0))
+            Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
         );
         assert_eq!(
             MarkerOrient::parse_str("-400grad", ()),
-            Ok(MarkerOrient::Degrees(-360.0))
+            Ok(MarkerOrient::Angle(Angle::from_degrees(-360.0)))
         );
         assert_eq!(
             MarkerOrient::parse_str("1rad", ()),
-            Ok(MarkerOrient::Degrees(180.0 / PI))
+            Ok(MarkerOrient::Angle(Angle::new(1.0)))
         );
     }
 }
