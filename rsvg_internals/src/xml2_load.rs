@@ -46,6 +46,8 @@ fn get_xml2_sax_handler() -> xmlSAXHandler {
 }
 
 fn free_xml_parser_and_doc(parser: xmlParserCtxtPtr) {
+    // Free the ctxt and its ctxt->myDoc - libxml2 doesn't free them together
+    // http://xmlsoft.org/html/libxml-parser.html#xmlFreeParserCtxt
     unsafe {
         if !parser.is_null() {
             let rparser = &mut *parser;
@@ -354,26 +356,6 @@ impl Drop for Xml2Parser {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_create_xml_push_parser(
-    xml: *mut XmlState,
-    unlimited_size: glib_sys::gboolean,
-    base_uri: *const libc::c_char,
-    error: *mut *mut glib_sys::GError,
-) -> xmlParserCtxtPtr {
-    let mut sax_handler = get_xml2_sax_handler();
-
-    let parser = xmlCreatePushParserCtxt(&mut sax_handler, xml as *mut _, ptr::null(), 0, base_uri);
-
-    if parser.is_null() {
-        set_gerror(error, 0, "Error creating XML parser");
-    } else {
-        set_xml_parse_options(parser, from_glib(unlimited_size));
-    }
-
-    parser
-}
-
 fn xml2_error_to_string(xerr: xmlErrorPtr) -> String {
     unsafe {
         if !xerr.is_null() {
@@ -400,16 +382,6 @@ fn xml2_error_to_string(xerr: xmlErrorPtr) -> String {
             "Error parsing XML data".to_string()
         }
     }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_set_error_from_xml(
-    error: *mut *mut glib_sys::GError,
-    ctxt: xmlParserCtxtPtr,
-) {
-    let xerr = xmlCtxtGetLastError(ctxt as *mut _);
-
-    set_gerror(error, 0, &xml2_error_to_string(xerr));
 }
 
 // Error returned when parsing an XML stream

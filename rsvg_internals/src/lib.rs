@@ -73,8 +73,6 @@ pub use xml::{
 };
 
 pub use xml2_load::{
-    rsvg_create_xml_push_parser,
-    rsvg_set_error_from_xml,
     rsvg_xml_state_load_from_possibly_compressed_stream,
 };
 

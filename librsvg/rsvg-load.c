@@ -31,8 +31,6 @@
 
 typedef enum {
     LOAD_STATE_START,
-    LOAD_STATE_EXPECTING_GZ_1,
-    LOAD_STATE_READING_COMPRESSED,
     LOAD_STATE_READING,
     LOAD_STATE_CLOSED
 } LoadState;
@@ -56,18 +54,9 @@ extern gboolean rsvg_xml_state_load_from_possibly_compressed_stream (RsvgXmlStat
 /* Implemented in rsvg_internals/src/handle.rs */
 extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
 
-/* Implemented in rsvg_internals/src/xml2_load.rs */
-extern xmlParserCtxtPtr rsvg_create_xml_push_parser (RsvgXmlState *xml,
-                                                     gboolean unlimited_size,
-                                                     const char *base_uri,
-                                                     GError **error);
-extern void rsvg_set_error_from_xml (GError **error, xmlParserCtxtPtr ctxt);
-
 
 /* Holds the XML parsing state */
 typedef struct {
-    xmlParserCtxtPtr ctxt;
-
     RsvgXmlState *rust_state;
 } XmlState;
 
@@ -77,7 +66,7 @@ struct RsvgLoad {
 
     LoadState state;
 
-    GInputStream *compressed_input_stream; /* for rsvg_handle_write of svgz data */
+    GInputStream *stream;
 
     XmlState xml;
 };
@@ -89,43 +78,17 @@ rsvg_load_new (RsvgHandle *handle)
 
     load->handle = handle;
     load->state = LOAD_STATE_START;
-    load->compressed_input_stream = NULL;
+    load->stream = NULL;
 
-    load->xml.ctxt = NULL;
     load->xml.rust_state = rsvg_xml_state_new (handle);
 
     return load;
 }
 
-static xmlParserCtxtPtr
-free_xml_parser_and_doc (xmlParserCtxtPtr ctxt) G_GNUC_WARN_UNUSED_RESULT;
-
-/* Frees the ctxt and its ctxt->myDoc - libxml2 doesn't free them together
- * http://xmlsoft.org/html/libxml-parser.html#xmlFreeParserCtxt
- *
- * Returns NULL.
- */
-static xmlParserCtxtPtr
-free_xml_parser_and_doc (xmlParserCtxtPtr ctxt)
-{
-    if (ctxt) {
-        if (ctxt->myDoc) {
-            xmlFreeDoc (ctxt->myDoc);
-            ctxt->myDoc = NULL;
-        }
-
-        xmlFreeParserCtxt (ctxt);
-    }
-
-    return NULL;
-}
-
 void
 rsvg_load_free (RsvgLoad *load)
 {
-    load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
-
-    g_clear_object (&load->compressed_input_stream);
+    g_clear_object (&load->stream);
     g_clear_pointer (&load->xml.rust_state, rsvg_xml_state_free);
     g_free (load);
 }
@@ -163,68 +126,6 @@ rsvg_sax_error_cb (void *data, const char *msg, ...)
     g_free (buf);
 }
 
-static gboolean
-write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
-{
-    GError *real_error = NULL;
-    int result;
-
-    if (load->xml.ctxt == NULL) {
-        gboolean unlimited_size = (rsvg_handle_get_flags (load->handle) && RSVG_HANDLE_FLAG_UNLIMITED) != 0;
-
-        load->xml.ctxt = rsvg_create_xml_push_parser (load->xml.rust_state,
-                                                      unlimited_size,
-                                                      rsvg_handle_get_base_uri (load->handle),
-                                                      &real_error);
-    }
-
-    if (load->xml.ctxt != NULL) {
-        result = xmlParseChunk (load->xml.ctxt, (char *) buf, count, 0);
-        if (result != 0) {
-            rsvg_set_error_from_xml (error, load->xml.ctxt);
-            return FALSE;
-        }
-    } else {
-        g_assert (real_error != NULL);
-    }
-
-    if (real_error != NULL) {
-        g_propagate_error (error, real_error);
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-static gboolean
-close_impl (RsvgLoad *load, GError ** error)
-{
-    GError *real_error = NULL;
-
-    if (load->xml.ctxt != NULL) {
-        int result;
-
-        result = xmlParseChunk (load->xml.ctxt, "", 0, TRUE);
-        if (result != 0) {
-            rsvg_set_error_from_xml (error, load->xml.ctxt);
-            load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
-            return FALSE;
-        }
-
-        load->xml.ctxt = free_xml_parser_and_doc (load->xml.ctxt);
-    }
-
-    if (real_error != NULL) {
-        g_propagate_error (error, real_error);
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-#define GZ_MAGIC_0 ((guchar) 0x1f)
-#define GZ_MAGIC_1 ((guchar) 0x8b)
-
 gboolean
 rsvg_load_read_stream_sync (RsvgLoad     *load,
                             GInputStream *stream,
@@ -233,9 +134,6 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
 {
     gboolean res = FALSE;
     gboolean unlimited_size = (rsvg_handle_get_flags (load->handle) && RSVG_HANDLE_FLAG_UNLIMITED) != 0;
-
-
-    g_assert (load->xml.ctxt == NULL);
 
     res = rsvg_xml_state_load_from_possibly_compressed_stream (load->xml.rust_state,
                                                                unlimited_size,
@@ -247,68 +145,34 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     return res;
 }
 
-/* Creates handle->priv->compressed_input_stream and adds the gzip header data
- * to it.  We implicitly consume the header data from the caller in
- * rsvg_handle_write(); that's why we add it back here.
- */
 static void
-create_compressed_input_stream (RsvgLoad *load)
+create_stream (RsvgLoad *load)
 {
-    static const guchar gz_magic[2] = { GZ_MAGIC_0, GZ_MAGIC_1 };
+    g_assert (load->stream == NULL);
 
-    g_assert (load->compressed_input_stream == NULL);
-
-    load->compressed_input_stream = g_memory_input_stream_new ();
-    g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (load->compressed_input_stream),
-                                    gz_magic, 2, NULL);
+    load->stream = g_memory_input_stream_new ();
 }
 
 gboolean
 rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count, GError **error)
 {
-    g_assert (load->state == LOAD_STATE_START
-              || load->state == LOAD_STATE_EXPECTING_GZ_1
-              || load->state == LOAD_STATE_READING_COMPRESSED
-              || load->state == LOAD_STATE_READING);
+    switch (load->state) {
+    case LOAD_STATE_START:
+        g_assert (load->stream == NULL);
 
-    while (count > 0) {
-        switch (load->state) {
-        case LOAD_STATE_START:
-            if (buf[0] == GZ_MAGIC_0) {
-                load->state = LOAD_STATE_EXPECTING_GZ_1;
-                buf++;
-                count--;
-            } else {
-                load->state = LOAD_STATE_READING;
-                return write_impl (load, buf, count, error);
-            }
+        create_stream (load);
+        g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (load->stream),
+                                        g_memdup (buf, count), count, (GDestroyNotify) g_free);
+        load->state = LOAD_STATE_READING;
+        break;
 
-            break;
+    case LOAD_STATE_READING:
+        g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (load->stream),
+                                        g_memdup (buf, count), count, (GDestroyNotify) g_free);
+        break;
 
-        case LOAD_STATE_EXPECTING_GZ_1:
-            if (buf[0] == GZ_MAGIC_1) {
-                load->state = LOAD_STATE_READING_COMPRESSED;
-                create_compressed_input_stream (load);
-                buf++;
-                count--;
-            } else {
-                load->state = LOAD_STATE_READING;
-                return write_impl (load, buf, count, error);
-            }
-
-            break;
-
-        case LOAD_STATE_READING_COMPRESSED:
-            g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (load->compressed_input_stream),
-                                            g_memdup (buf, count), count, (GDestroyNotify) g_free);
-            return TRUE;
-
-        case LOAD_STATE_READING:
-            return write_impl (load, buf, count, error);
-
-        default:
-            g_assert_not_reached ();
-        }
+    default:
+        g_assert_not_reached ();
     }
 
     return TRUE;
@@ -319,19 +183,18 @@ rsvg_load_close (RsvgLoad *load, GError **error)
 {
     gboolean res;
 
-    if (load->state == LOAD_STATE_READING_COMPRESSED) {
+    switch (load->state) {
+    case LOAD_STATE_START:
+    case LOAD_STATE_CLOSED:
+        return TRUE;
 
-        /* FIXME: when using rsvg_handle_write()/rsvg_handle_close(), as opposed to using the
-         * stream functions, for compressed SVGs we buffer the whole compressed file in memory
-         * and *then* uncompress/parse it here.
-         *
-         * We should make it so that the incoming data is decompressed and parsed on the fly.
-         */
-        load->state = LOAD_STATE_START;
-        res = rsvg_load_read_stream_sync (load, load->compressed_input_stream, NULL, error);
-        g_clear_object (&load->compressed_input_stream);
-    } else {
-        res = close_impl (load, error);
+    case LOAD_STATE_READING:
+        res = rsvg_load_read_stream_sync (load, load->stream, NULL, error);
+        g_clear_object (&load->stream);
+        break;
+
+    default:
+        g_assert_not_reached();
     }
 
     if (!res) {
