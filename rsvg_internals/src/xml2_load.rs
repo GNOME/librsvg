@@ -410,7 +410,7 @@ pub fn xml_state_parse_from_stream(
         .and_then(|parser| parser.parse())
 }
 
-fn xml_state_load_from_possibly_compressed_stream(
+pub fn xml_state_load_from_possibly_compressed_stream(
     xml: &mut XmlState,
     unlimited_size: bool,
     stream: gio::InputStream,

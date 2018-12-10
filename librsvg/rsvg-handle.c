@@ -124,7 +124,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "rsvg-load.h"
+#include <glib/gprintf.h>
 #include "rsvg-private.h"
 
 /* Implemented in rsvg_internals/src/handle.rs */
@@ -145,6 +145,13 @@ extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlSt
 /* Implemented in rsvg_internals/src/xml.rs */
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
+
+/* Implemented in rsvg_internals/src/load.rs */
+extern RsvgLoad *rsvg_load_new (RsvgXmlState *xml, gboolean unlimited_size) G_GNUC_WARN_UNUSED_RESULT;
+extern RsvgXmlState *rsvg_load_free (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
+extern void rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count);
+extern gboolean rsvg_load_close (RsvgLoad *load, GError **error) G_GNUC_WARN_UNUSED_RESULT;
+
 
 /* Implemented in rust/src/node.rs */
 /* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
@@ -676,10 +683,9 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 
     priv = handle->priv;
 
-    rsvg_return_val_if_fail (priv->hstate == RSVG_HANDLE_STATE_START
-                             || priv->hstate == RSVG_HANDLE_STATE_LOADING,
-                             FALSE,
-                             error);
+    g_return_val_if_fail (priv->hstate == RSVG_HANDLE_STATE_START
+                          || priv->hstate == RSVG_HANDLE_STATE_LOADING,
+                          FALSE);
 
     if (priv->hstate == RSVG_HANDLE_STATE_START) {
         priv->hstate = RSVG_HANDLE_STATE_LOADING;
@@ -689,7 +695,9 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 
     g_assert (priv->hstate == RSVG_HANDLE_STATE_LOADING);
 
-    return rsvg_load_write (priv->load, buf, count, error);
+    rsvg_load_write (priv->load, buf, count);
+
+    return TRUE;
 }
 
 static gboolean
@@ -1635,4 +1643,25 @@ rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
     handle->priv->is_testing = testing ? TRUE : FALSE;
 
     rsvg_handle_update_font_map_for_testing (handle);
+}
+
+/* This one is defined in the C code, because the prototype has varargs
+ * and we can't handle those from Rust :(
+ */
+G_GNUC_INTERNAL void rsvg_sax_error_cb (void *data, const char *msg, ...);
+
+void
+rsvg_sax_error_cb (void *data, const char *msg, ...)
+{
+    RsvgXmlState *xml = data;
+    va_list args;
+    char *buf;
+
+    va_start (args, msg);
+    g_vasprintf (&buf, msg, args);
+    va_end (args);
+
+    rsvg_xml_state_error (xml, buf);
+
+    g_free (buf);
 }

@@ -61,6 +61,8 @@ pub use handle::{
     rsvg_handle_rust_steal_result,
 };
 
+pub use load::{rsvg_load_close, rsvg_load_free, rsvg_load_new, rsvg_load_write};
+
 pub use node::rsvg_node_unref;
 
 pub use structure::rsvg_node_svg_get_size;
@@ -72,9 +74,7 @@ pub use xml::{
     rsvg_xml_state_tree_is_valid,
 };
 
-pub use xml2_load::{
-    rsvg_xml_state_load_from_possibly_compressed_stream,
-};
+pub use xml2_load::rsvg_xml_state_load_from_possibly_compressed_stream;
 
 #[macro_use]
 mod log;
@@ -111,6 +111,7 @@ mod io;
 mod iri;
 mod length;
 mod link;
+mod load;
 mod marker;
 mod mask;
 mod node;

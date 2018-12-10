@@ -28,8 +28,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-cairo.h			\
 	librsvg/rsvg-css.h 			\
 	librsvg/rsvg-handle.c			\
-	librsvg/rsvg-load.c			\
-	librsvg/rsvg-load.h			\
 	librsvg/rsvg-pixbuf.c			\
 	librsvg/rsvg-private.h 			\
 	librsvg/rsvg-size-callback.c		\
@@ -88,6 +86,7 @@ RUST_SRC =							\
 	rsvg_internals/src/iri.rs				\
 	rsvg_internals/src/length.rs				\
 	rsvg_internals/src/lib.rs				\
+	rsvg_internals/src/load.rs				\
 	rsvg_internals/src/log.rs				\
 	rsvg_internals/src/link.rs				\
 	rsvg_internals/src/marker.rs				\
