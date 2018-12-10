@@ -692,15 +692,8 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 }
 
 static gboolean
-finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
+finish_load (RsvgHandle *handle, RsvgXmlState *xml, gboolean was_successful, GError **error)
 {
-    RsvgXmlState *xml;
-
-    g_assert (handle->priv->load != NULL);
-
-    xml = rsvg_load_free (handle->priv->load);
-    handle->priv->load = NULL;
-
     if (was_successful) {
         g_assert (error == NULL || *error == NULL);
 
@@ -709,8 +702,6 @@ finish_load (RsvgHandle *handle, gboolean was_successful, GError **error)
             rsvg_handle_rust_steal_result (handle->priv->rust_handle, xml);
         }
     }
-
-    rsvg_xml_state_free (xml);
 
     if (was_successful) {
         handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
@@ -738,6 +729,7 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
     RsvgHandlePrivate *priv;
     gboolean read_successfully;
     gboolean result = FALSE;
+    RsvgXmlState *xml;
 
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
     rsvg_return_val_if_fail (handle, FALSE, error);
@@ -754,7 +746,12 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
     case RSVG_HANDLE_STATE_LOADING:
         g_assert (priv->load != NULL);
         read_successfully = rsvg_load_close (priv->load, error);
-        result = finish_load (handle, read_successfully, error);
+
+        xml = rsvg_load_free (priv->load);
+        priv->load = NULL;
+
+        result = finish_load (handle, xml, read_successfully, error);
+        rsvg_xml_state_free (xml);
         break;
 
     case RSVG_HANDLE_STATE_CLOSED_OK:
@@ -801,7 +798,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     RsvgHandlePrivate *priv;
     gboolean read_successfully;
     gboolean result;
-    RsvgLoad *saved_load;
+    RsvgXmlState *xml;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (G_IS_INPUT_STREAM (stream), FALSE);
@@ -814,14 +811,17 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     priv->hstate = RSVG_HANDLE_STATE_LOADING;
 
-    saved_load = priv->load;
+    xml = rsvg_xml_state_new (handle);
+    read_successfully = rsvg_xml_state_load_from_possibly_compressed_stream (
+        xml,
+        (priv->flags && RSVG_HANDLE_FLAG_UNLIMITED) != 0,
+        stream,
+        cancellable,
+        error
+    );
 
-    priv->load = rsvg_load_new (handle);
-
-    read_successfully = rsvg_load_read_stream_sync (priv->load, stream, cancellable, error);
-    result = finish_load (handle, read_successfully, error);
-
-    priv->load = saved_load;
+    result = finish_load (handle, xml, read_successfully, error);
+    rsvg_xml_state_free (xml);
 
     return result;
 }

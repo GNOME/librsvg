@@ -35,17 +35,6 @@ typedef enum {
     LOAD_STATE_CLOSED
 } LoadState;
 
-/* Implemented in rsvg_internals/src/xml.rs */
-extern RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
-extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
-
-/* Implemented in rsvg_internals/src/xml2_load.rs */
-extern gboolean rsvg_xml_state_load_from_possibly_compressed_stream (RsvgXmlState *xml,
-                                                                     gboolean      unlimited_size,
-                                                                     GInputStream *stream,
-                                                                     GCancellable *cancellable,
-                                                                     GError      **error);
-
 /* Holds the GIO and loading state for compressed data */
 struct RsvgLoad {
     RsvgHandle *handle;
@@ -107,25 +96,6 @@ rsvg_sax_error_cb (void *data, const char *msg, ...)
 }
 
 gboolean
-rsvg_load_read_stream_sync (RsvgLoad     *load,
-                            GInputStream *stream,
-                            GCancellable *cancellable,
-                            GError      **error)
-{
-    gboolean res = FALSE;
-    gboolean unlimited_size = (rsvg_handle_get_flags (load->handle) && RSVG_HANDLE_FLAG_UNLIMITED) != 0;
-
-    res = rsvg_xml_state_load_from_possibly_compressed_stream (load->rust_state,
-                                                               unlimited_size,
-                                                               stream,
-                                                               cancellable,
-                                                               error);
-    load->state = LOAD_STATE_CLOSED;
-
-    return res;
-}
-
-gboolean
 rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count, GError **error)
 {
     switch (load->state) {
@@ -162,6 +132,7 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     case LOAD_STATE_READING: {
         GInputStream *stream;
         GBytes *bytes;
+        gboolean unlimited_size = (rsvg_handle_get_flags (load->handle) && RSVG_HANDLE_FLAG_UNLIMITED) != 0;        
 
         bytes = g_byte_array_free_to_bytes (load->buffer);
         load->buffer = NULL;
@@ -169,7 +140,12 @@ rsvg_load_close (RsvgLoad *load, GError **error)
         stream = g_memory_input_stream_new_from_bytes (bytes);
         g_bytes_unref (bytes);
         
-        res = rsvg_load_read_stream_sync (load, stream, NULL, error);
+        res = rsvg_xml_state_load_from_possibly_compressed_stream (load->rust_state,
+                                                                   unlimited_size,
+                                                                   stream,
+                                                                   NULL,
+                                                                   error);
+
         g_clear_object (&stream);
         break;
     }

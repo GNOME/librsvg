@@ -113,6 +113,24 @@ struct RsvgHandlePrivate {
     RsvgHandleRust *rust_handle;
 };
 
+/* Implemented in rsvg_internals/src/xml.rs */
+typedef struct RsvgXmlState RsvgXmlState;
+
+/* Implemented in rsvg_internals/src/xml.rs */
+G_GNUC_INTERNAL
+RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
+
+G_GNUC_INTERNAL
+void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
+
+/* Implemented in rsvg_internals/src/xml2_load.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_xml_state_load_from_possibly_compressed_stream (RsvgXmlState *xml,
+                                                              gboolean      unlimited_size,
+                                                              GInputStream *stream,
+                                                              GCancellable *cancellable,
+                                                              GError      **error);
+
 G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 
