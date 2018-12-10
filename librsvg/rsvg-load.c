@@ -55,11 +55,6 @@ extern gboolean rsvg_xml_state_load_from_possibly_compressed_stream (RsvgXmlStat
 extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
 
 
-/* Holds the XML parsing state */
-typedef struct {
-    RsvgXmlState *rust_state;
-} XmlState;
-
 /* Holds the GIO and loading state for compressed data */
 struct RsvgLoad {
     RsvgHandle *handle;
@@ -68,7 +63,7 @@ struct RsvgLoad {
 
     GInputStream *stream;
 
-    XmlState xml;
+    RsvgXmlState *rust_state;
 };
 
 RsvgLoad *
@@ -80,7 +75,7 @@ rsvg_load_new (RsvgHandle *handle)
     load->state = LOAD_STATE_START;
     load->stream = NULL;
 
-    load->xml.rust_state = rsvg_xml_state_new (handle);
+    load->rust_state = rsvg_xml_state_new (handle);
 
     return load;
 }
@@ -89,17 +84,17 @@ void
 rsvg_load_free (RsvgLoad *load)
 {
     g_clear_object (&load->stream);
-    g_clear_pointer (&load->xml.rust_state, rsvg_xml_state_free);
+    g_clear_pointer (&load->rust_state, rsvg_xml_state_free);
     g_free (load);
 }
 
 gboolean
 rsvg_load_finish_load (RsvgLoad *load, GError **error)
 {
-    gboolean was_successful = rsvg_xml_state_tree_is_valid(load->xml.rust_state, error);
+    gboolean was_successful = rsvg_xml_state_tree_is_valid(load->rust_state, error);
 
     if (was_successful) {
-        rsvg_handle_rust_steal_result (load->handle->priv->rust_handle, load->xml.rust_state);
+        rsvg_handle_rust_steal_result (load->handle->priv->rust_handle, load->rust_state);
     }
 
     return was_successful;
@@ -135,7 +130,7 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
     gboolean res = FALSE;
     gboolean unlimited_size = (rsvg_handle_get_flags (load->handle) && RSVG_HANDLE_FLAG_UNLIMITED) != 0;
 
-    res = rsvg_xml_state_load_from_possibly_compressed_stream (load->xml.rust_state,
+    res = rsvg_xml_state_load_from_possibly_compressed_stream (load->rust_state,
                                                                unlimited_size,
                                                                stream,
                                                                cancellable,
@@ -198,7 +193,7 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     }
 
     if (!res) {
-        g_clear_pointer (&load->xml.rust_state, rsvg_xml_state_free);
+        g_clear_pointer (&load->rust_state, rsvg_xml_state_free);
     }
 
     load->state = LOAD_STATE_CLOSED;
