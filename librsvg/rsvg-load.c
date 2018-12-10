@@ -42,7 +42,7 @@ struct RsvgLoad {
     LoadState state;
     GByteArray *buffer;
 
-    RsvgXmlState *rust_state;
+    RsvgXmlState *xml;
 };
 
 RsvgLoad *
@@ -54,7 +54,7 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
     load->state = LOAD_STATE_START;
     load->buffer = NULL;
 
-    load->rust_state = rsvg_xml_state_new (handle);
+    load->xml = rsvg_xml_state_new (handle);
 
     return load;
 }
@@ -62,16 +62,16 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
 RsvgXmlState *
 rsvg_load_free (RsvgLoad *load)
 {
-    RsvgXmlState *rust_state;
+    RsvgXmlState *xml;
 
     if (load->buffer) {
         g_byte_array_free (load->buffer, TRUE);
     }
 
-    rust_state = load->rust_state;
+    xml = load->xml;
     g_free (load);
 
-    return rust_state;
+    return xml;
 }
 
 /* This one is defined in the C code, because the prototype has varargs
@@ -139,7 +139,7 @@ rsvg_load_close (RsvgLoad *load, GError **error)
         stream = g_memory_input_stream_new_from_bytes (bytes);
         g_bytes_unref (bytes);
         
-        res = rsvg_xml_state_load_from_possibly_compressed_stream (load->rust_state,
+        res = rsvg_xml_state_load_from_possibly_compressed_stream (load->xml,
                                                                    load->unlimited_size,
                                                                    stream,
                                                                    NULL,
