@@ -131,6 +131,10 @@
 extern RsvgHandleRust *rsvg_handle_rust_new (void);
 extern void rsvg_handle_rust_free (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_cascade (RsvgHandleRust *raw_handle);
+extern double rsvg_handle_rust_get_dpi_x (RsvgHandleRust *raw_handle);
+extern double rsvg_handle_rust_get_dpi_y (RsvgHandleRust *raw_handle);
+extern void rsvg_handle_rust_set_dpi_x (RsvgHandleRust *raw_handle, double dpi_x);
+extern void rsvg_handle_rust_set_dpi_y (RsvgHandleRust *raw_handle, double dpi_y);
 extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const char *uri);
 extern RsvgNode *rsvg_handle_rust_get_root (RsvgHandleRust *raw_handle);
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
@@ -152,8 +156,6 @@ extern RsvgDrawingCtx *rsvg_drawing_ctx_new (RsvgHandle *handle,
                                              guint height,
                                              double vb_width,
                                              double vb_height,
-                                             double dpi_x,
-                                             double dpi_y,
                                              gboolean testing);
 extern void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
 extern void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
@@ -162,8 +164,6 @@ extern gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx) G_GN
 extern void rsvg_drawing_ctx_get_geometry (RsvgDrawingCtx *ctx,
                                            RsvgRectangle *ink_rect,
                                            RsvgRectangle *logical_rect);
-
-
 
 enum {
     PROP_0,
@@ -181,9 +181,6 @@ enum {
     NUM_PROPS
 };
 
-extern double rsvg_internal_dpi_x;
-extern double rsvg_internal_dpi_y;
-
 G_DEFINE_TYPE_WITH_CODE (RsvgHandle, rsvg_handle, G_TYPE_OBJECT,
                          G_ADD_PRIVATE (RsvgHandle))
 
@@ -194,8 +191,6 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->hstate = RSVG_HANDLE_STATE_START;
-    self->priv->dpi_x = rsvg_internal_dpi_x;
-    self->priv->dpi_y = rsvg_internal_dpi_y;
 
     self->priv->in_loop = FALSE;
 
@@ -243,10 +238,10 @@ rsvg_handle_set_property (GObject * instance, guint prop_id, GValue const *value
         self->priv->flags = g_value_get_flags (value);
         break;
     case PROP_DPI_X:
-        rsvg_handle_set_dpi_x_y (self, g_value_get_double (value), self->priv->dpi_y);
+        rsvg_handle_rust_set_dpi_x (self->priv->rust_handle, g_value_get_double (value));
         break;
     case PROP_DPI_Y:
-        rsvg_handle_set_dpi_x_y (self, self->priv->dpi_x, g_value_get_double (value));
+        rsvg_handle_rust_set_dpi_y (self->priv->rust_handle, g_value_get_double (value));
         break;
     case PROP_BASE_URI:
         rsvg_handle_set_base_uri (self, g_value_get_string (value));
@@ -267,10 +262,10 @@ rsvg_handle_get_property (GObject * instance, guint prop_id, GValue * value, GPa
         g_value_set_flags (value, self->priv->flags);
         break;
     case PROP_DPI_X:
-        g_value_set_double (value, self->priv->dpi_x);
+        g_value_set_double (value, rsvg_handle_rust_get_dpi_x (self->priv->rust_handle));
         break;
     case PROP_DPI_Y:
-        g_value_set_double (value, self->priv->dpi_y);
+        g_value_set_double (value, rsvg_handle_rust_get_dpi_y (self->priv->rust_handle));
         break;
     case PROP_BASE_URI:
         g_value_set_string (value, rsvg_handle_get_base_uri (self));
@@ -334,16 +329,16 @@ rsvg_handle_class_init (RsvgHandleClass * klass)
     g_object_class_install_property (gobject_class,
                                      PROP_DPI_X,
                                      g_param_spec_double ("dpi-x", _("Horizontal resolution"),
-                                                          _("Horizontal resolution"), 0.,
-                                                          G_MAXDOUBLE, rsvg_internal_dpi_x,
+                                                          _("Horizontal resolution"),
+                                                          0., G_MAXDOUBLE, 0.,
                                                           (GParamFlags) (G_PARAM_READWRITE |
                                                                          G_PARAM_CONSTRUCT)));
 
     g_object_class_install_property (gobject_class,
                                      PROP_DPI_Y,
                                      g_param_spec_double ("dpi-y", _("Vertical resolution"),
-                                                          _("Vertical resolution"), 0., G_MAXDOUBLE,
-                                                          rsvg_internal_dpi_y,
+                                                          _("Vertical resolution"),
+                                                          0., G_MAXDOUBLE, 0.,
                                                           (GParamFlags) (G_PARAM_READWRITE |
                                                                          G_PARAM_CONSTRUCT)));
 
@@ -1034,7 +1029,6 @@ rsvg_handle_create_drawing_ctx(RsvgHandle *handle,
                                  cr,
                                  dimensions->width, dimensions->height,
                                  dimensions->em, dimensions->ex,
-                                 handle->priv->dpi_x, handle->priv->dpi_y,
                                  handle->priv->is_testing);
 }
 
@@ -1277,7 +1271,8 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, Rsv
     }
 
     has_size = rsvg_node_svg_get_size (root,
-                                       handle->priv->dpi_x, handle->priv->dpi_y,
+                                       rsvg_handle_rust_get_dpi_x (handle->priv->rust_handle),
+                                       rsvg_handle_rust_get_dpi_y (handle->priv->rust_handle),
                                        &root_width, &root_height);
 
     if (id || !has_size) {
@@ -1496,15 +1491,8 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    if (dpi_x <= 0.)
-        handle->priv->dpi_x = rsvg_internal_dpi_x;
-    else
-        handle->priv->dpi_x = dpi_x;
-
-    if (dpi_y <= 0.)
-        handle->priv->dpi_y = rsvg_internal_dpi_y;
-    else
-        handle->priv->dpi_y = dpi_y;
+    rsvg_handle_rust_set_dpi_x (handle->priv->rust_handle, dpi_x);
+    rsvg_handle_rust_set_dpi_y (handle->priv->rust_handle, dpi_y);
 }
 
 /**

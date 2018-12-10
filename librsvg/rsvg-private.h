@@ -69,6 +69,12 @@ typedef struct _RsvgFilter RsvgFilter;
 #define N_(X) X
 #endif
 
+G_GNUC_INTERNAL
+double rsvg_get_default_dpi_x (void);
+
+G_GNUC_INTERNAL
+double rsvg_get_default_dpi_y (void);
+
 /* Reading state for an RsvgHandle */
 typedef enum {
     RSVG_HANDLE_STATE_START,
@@ -92,9 +98,6 @@ struct RsvgHandlePrivate {
     RsvgSizeFunc size_func;
     gpointer user_data;
     GDestroyNotify user_data_destroy;
-
-    double dpi_x;
-    double dpi_y;
 
     gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *
 
