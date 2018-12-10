@@ -74,7 +74,6 @@ typedef struct {
 /* Holds the GIO and loading state for compressed data */
 struct RsvgLoad {
     RsvgHandle *handle;
-    gboolean unlimited_size;
 
     LoadState state;
 
@@ -84,12 +83,11 @@ struct RsvgLoad {
 };
 
 RsvgLoad *
-rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
+rsvg_load_new (RsvgHandle *handle)
 {
     RsvgLoad *load = g_new0 (RsvgLoad, 1);
 
     load->handle = handle;
-    load->unlimited_size = unlimited_size;
     load->state = LOAD_STATE_START;
     load->compressed_input_stream = NULL;
 
@@ -172,8 +170,10 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
     int result;
 
     if (load->xml.ctxt == NULL) {
+        gboolean unlimited_size = (rsvg_handle_get_flags (load->handle) && RSVG_HANDLE_FLAG_UNLIMITED) != 0;
+
         load->xml.ctxt = rsvg_create_xml_push_parser (load->xml.rust_state,
-                                                      load->unlimited_size,
+                                                      unlimited_size,
                                                       rsvg_handle_get_base_uri (load->handle),
                                                       &real_error);
     }
@@ -232,11 +232,13 @@ rsvg_load_read_stream_sync (RsvgLoad     *load,
                             GError      **error)
 {
     gboolean res = FALSE;
+    gboolean unlimited_size = (rsvg_handle_get_flags (load->handle) && RSVG_HANDLE_FLAG_UNLIMITED) != 0;
+
 
     g_assert (load->xml.ctxt == NULL);
 
     res = rsvg_xml_state_load_from_possibly_compressed_stream (load->xml.rust_state,
-                                                               load->unlimited_size,
+                                                               unlimited_size,
                                                                stream,
                                                                cancellable,
                                                                error);

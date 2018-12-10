@@ -673,7 +673,7 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 
     if (priv->hstate == RSVG_HANDLE_STATE_START) {
         priv->hstate = RSVG_HANDLE_STATE_LOADING;
-        priv->load = rsvg_load_new (handle, (priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0);
+        priv->load = rsvg_load_new (handle);
     }
 
     g_assert (priv->hstate == RSVG_HANDLE_STATE_LOADING);
@@ -798,7 +798,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     saved_load = priv->load;
 
-    priv->load = rsvg_load_new (handle, (priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0);
+    priv->load = rsvg_load_new (handle);
 
     read_successfully = rsvg_load_read_stream_sync (priv->load, stream, cancellable, error);
     result = finish_load (handle, read_successfully, error);

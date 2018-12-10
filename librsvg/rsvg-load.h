@@ -26,7 +26,7 @@
 #include "rsvg-private.h"
 
 G_GNUC_INTERNAL
-RsvgLoad *rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size) G_GNUC_WARN_UNUSED_RESULT;
+RsvgLoad *rsvg_load_new (RsvgHandle *handle) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
 void rsvg_load_free (RsvgLoad *load);
