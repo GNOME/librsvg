@@ -37,7 +37,7 @@ typedef enum {
 
 /* Holds the GIO and loading state for compressed data */
 struct RsvgLoad {
-    RsvgHandle *handle;
+    gboolean unlimited_size;
 
     LoadState state;
     GByteArray *buffer;
@@ -46,11 +46,11 @@ struct RsvgLoad {
 };
 
 RsvgLoad *
-rsvg_load_new (RsvgHandle *handle)
+rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
 {
     RsvgLoad *load = g_new0 (RsvgLoad, 1);
 
-    load->handle = handle;
+    load->unlimited_size = unlimited_size;
     load->state = LOAD_STATE_START;
     load->buffer = NULL;
 
@@ -132,7 +132,6 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     case LOAD_STATE_READING: {
         GInputStream *stream;
         GBytes *bytes;
-        gboolean unlimited_size = (rsvg_handle_get_flags (load->handle) && RSVG_HANDLE_FLAG_UNLIMITED) != 0;        
 
         bytes = g_byte_array_free_to_bytes (load->buffer);
         load->buffer = NULL;
@@ -141,7 +140,7 @@ rsvg_load_close (RsvgLoad *load, GError **error)
         g_bytes_unref (bytes);
         
         res = rsvg_xml_state_load_from_possibly_compressed_stream (load->rust_state,
-                                                                   unlimited_size,
+                                                                   load->unlimited_size,
                                                                    stream,
                                                                    NULL,
                                                                    error);
