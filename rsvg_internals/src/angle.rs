@@ -82,7 +82,7 @@ impl Parse for Angle {
                         _ => {
                             return Err(ValueErrorKind::Parse(ParseError::new(
                                 "expected 'deg' | 'grad' | 'rad'",
-                            )))
+                            )));
                         }
                     }
                 }

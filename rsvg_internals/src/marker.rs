@@ -82,8 +82,7 @@ impl Parse for MarkerOrient {
         if parser.try(|p| p.expect_ident_matching("auto")).is_ok() {
             Ok(MarkerOrient::Auto)
         } else {
-            Angle::parse(parser, ())
-                .map(MarkerOrient::Angle)
+            Angle::parse(parser, ()).map(MarkerOrient::Angle)
         }
     }
 }
