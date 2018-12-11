@@ -899,6 +899,17 @@ get_base_uri_from_filename (const gchar * filename)
     return base_uri;
 }
 
+static gboolean
+is_at_start_for_setting_base_file (RsvgHandle *handle)
+{
+    if (handle->priv->hstate == RSVG_HANDLE_STATE_START) {
+        return TRUE;
+    } else {
+        g_warning ("Please set the base file or URI before loading any data into RsvgHandle");
+        return FALSE;
+    }
+}
+
 /**
  * rsvg_handle_set_base_uri:
  * @handle: A #RsvgHandle
@@ -917,8 +928,13 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
 
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    if (base_uri == NULL)
+    if (!is_at_start_for_setting_base_file (handle)) {
         return;
+    }
+
+    if (base_uri == NULL) {
+        return;
+    }
 
     if (path_is_uri (base_uri))
         uri = g_strdup (base_uri);
@@ -952,6 +968,10 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
 
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (G_IS_FILE (base_file));
+
+    if (!is_at_start_for_setting_base_file (handle)) {
+        return;
+    }
 
     priv = handle->priv;
 
