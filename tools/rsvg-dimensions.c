@@ -5,6 +5,8 @@
  * Author: Robert Staudinger <robsta@gnome.org>.
  */
 
+#define RSVG_DISABLE_DEPRECATION_WARNINGS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>

@@ -1,5 +1,7 @@
 /* vim: set ts=4 nowrap ai expandtab sw=4: */
 
+#define RSVG_DISABLE_DEPRECATION_WARNINGS
+
 #include <glib.h>
 #include "librsvg/rsvg.h"
 #include "test-utils.h"

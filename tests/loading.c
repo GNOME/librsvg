@@ -1,6 +1,8 @@
 /* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* vim: set ts=4 nowrap ai expandtab sw=4: */
 
+#define RSVG_DISABLE_DEPRECATION_WARNINGS
+
 #include "config.h"
 
 #include <stdio.h>

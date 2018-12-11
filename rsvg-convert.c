@@ -28,6 +28,8 @@
             Dom Lachowicz <cinamod@hotmail.com>
 */
 
+#define RSVG_DISABLE_DEPRECATION_WARNINGS
+
 #include "config.h"
 
 #include <errno.h>
