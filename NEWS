@@ -5,6 +5,10 @@ Version 2.45.1
   are deprecated now; these returned incomplete data with integer
   coordinates (Julian Sparber).
 
+- rsvg_handle_write() and rsvg_handle_close() are now deprecated in
+  favor of the functions which use a GInputStream.  The former need to
+  buffer the entire SVG data first; the latter don't need buffering.
+
 - Librsvg no longer tries to load XML entities which reference
   external resources, either parameter or general entities, declared
   in the DTD.  This never worked properly, and it is better to do so
@@ -15,6 +19,15 @@ Version 2.45.1
 
      <!ENTITY foo "<some xml here>">
      <!ENTITY bar "some text here">
+
+- Started support for localized error messages (Daniel García Moreno).
+
+- Ported to Rust: loading code, XML processing code, data: URL parsing, 
+
+- Many code cleanups and refactorings, courtesy of Paolo Borelli.
+- Fix undefined behavior in casts (Jordan Petridis).
+- Cairo/Rust API updates by Julian Sparber.
+- configure.ac cleanups by Maya Rashish.
 
 Version 2.45.0
 - Librsvg now requires Rust 1.27.
