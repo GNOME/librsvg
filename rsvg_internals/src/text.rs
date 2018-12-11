@@ -808,38 +808,3 @@ fn create_pango_layout(
 
     layout
 }
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_chars_new(raw_parent: *const RsvgNode) -> *const RsvgNode {
-    boxed_node_new(
-        NodeType::Chars,
-        raw_parent,
-        "rsvg_chars",
-        None,
-        None,
-        Box::new(NodeChars::new()),
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_chars_append(
-    raw_node: *const RsvgNode,
-    text: *const libc::c_char,
-    len: isize,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    assert!(node.get_type() == NodeType::Chars);
-    assert!(!text.is_null());
-    assert!(len >= 0);
-
-    // libxml2 already validated the incoming string as UTF-8.  Note that
-    // it is *not* nul-terminated; this is why we create a byte slice first.
-    let bytes = unsafe { std::slice::from_raw_parts(text as *const u8, len as usize) };
-    let utf8 = unsafe { str::from_utf8_unchecked(bytes) };
-
-    node.with_impl(|chars: &NodeChars| {
-        chars.append(utf8);
-    });
-}
