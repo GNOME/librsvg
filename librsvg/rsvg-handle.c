@@ -1067,6 +1067,32 @@ rsvg_handle_create_drawing_ctx(RsvgHandle *handle,
                                  handle->priv->is_testing);
 }
 
+static gboolean
+is_loaded (RsvgHandle *handle)
+{
+    switch (handle->priv->hstate) {
+    case RSVG_HANDLE_STATE_START:
+        g_warning ("RsvgHandle has not been loaded");
+        return FALSE;
+
+    case RSVG_HANDLE_STATE_LOADING:
+        g_warning ("RsvgHandle is still loading; call rsvg_handle_close() first");
+        return FALSE;
+
+    case RSVG_HANDLE_STATE_CLOSED_OK:
+        return TRUE;
+
+    case RSVG_HANDLE_STATE_CLOSED_ERROR:
+        g_warning ("RsvgHandle could not read or parse the SVG; did you check for errors\n"
+                   "during the loading stage?");
+        return FALSE;
+
+    default:
+        g_assert_not_reached();
+        return FALSE;
+    }
+}
+
 /**
  * rsvg_handle_render_cairo_sub:
  * @handle: A #RsvgHandle
@@ -1094,8 +1120,9 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     g_return_val_if_fail (handle != NULL, FALSE);
 
-    if (handle->priv->hstate != RSVG_HANDLE_STATE_CLOSED_OK)
+    if (!is_loaded (handle)) {
         return FALSE;
+    }
 
     status = cairo_status (cr);
 
@@ -1168,6 +1195,13 @@ rsvg_handle_render_cairo (RsvgHandle * handle, cairo_t * cr)
 void
 rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_data)
 {
+    g_return_if_fail (RSVG_IS_HANDLE (handle));
+    g_return_if_fail (dimension_data != NULL);
+
+    if (!is_loaded (handle)) {
+        return;
+    }
+
     /* This function is probably called from the cairo_render functions.
      * To prevent an infinite loop we are saving the state.
      */
@@ -1237,8 +1271,12 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     int root_width, root_height;
     gboolean res = FALSE;
 
-    g_return_val_if_fail (handle, FALSE);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
+
+    if (!is_loaded (handle)) {
+        return FALSE;
+    }
 
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
 
@@ -1313,8 +1351,12 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     cairo_rectangle_t ink_rect;
     int width, height;
 
-    g_return_val_if_fail (handle, FALSE);
-    g_return_val_if_fail (position_data, FALSE);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (position_data != NULL, FALSE);
+ 
+    if (!is_loaded (handle)) {
+        return FALSE;
+    }
 
     memset (position_data, 0, sizeof (*position_data));
 
@@ -1362,7 +1404,11 @@ gboolean
 rsvg_handle_has_sub (RsvgHandle * handle,
                      const char *id)
 {
-    g_return_val_if_fail (handle, FALSE);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+ 
+    if (!is_loaded (handle)) {
+        return FALSE;
+    }
 
     if (G_UNLIKELY (!id || !id[0]))
       return FALSE;
@@ -1400,10 +1446,11 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
     cairo_surface_t *surface;
     cairo_t *cr;
 
-    g_return_val_if_fail (handle != NULL, NULL);
-
-    if (handle->priv->hstate != RSVG_HANDLE_STATE_CLOSED_OK)
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), NULL);
+ 
+    if (!is_loaded (handle)) {
         return NULL;
+    }
 
     rsvg_handle_get_dimensions (handle, &dimensions);
     if (!(dimensions.width && dimensions.height))
