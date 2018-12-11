@@ -1,3 +1,11 @@
+Version 2.44.10
+- Fix #385 - Don't crash if there is no rsvg_handle_write() before
+  rsvg_handle_close().
+- Fix #391 - Avoid undefined behavior when casting opaque pointers
+  (Jordan Petridis).
+- Added g_warning()s to ensure the API is called in the correct
+  sequence.
+
 Version 2.44.9
 - Fix #371 - rsvg-convert was positioning extracted elements
   incorrectly when using the -w/-h options together with --export-id.
