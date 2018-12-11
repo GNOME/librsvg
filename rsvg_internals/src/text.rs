@@ -298,6 +298,7 @@ fn children_to_chunks(
     chunks: &mut Vec<Chunk>,
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
+    draw_ctx: &mut DrawingCtx,
     dx: Option<Length>,
     dy: Option<Length>,
     depth: usize,
@@ -318,12 +319,12 @@ fn children_to_chunks(
 
             NodeType::TSpan => child.with_impl(|tspan: &NodeTSpan| {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                tspan.to_chunks(&child, &cascaded, chunks, depth + 1);
+                tspan.to_chunks(&child, &cascaded, draw_ctx, chunks, depth + 1);
             }),
 
             NodeType::TRef => child.with_impl(|tref: &NodeTRef| {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                tref.to_chunks(&child, &cascaded, chunks, depth + 1);
+                tref.to_chunks(&child, &cascaded, draw_ctx, chunks, depth + 1);
             }),
 
             _ => (),
@@ -436,7 +437,12 @@ impl NodeText {
         }
     }
 
-    fn make_chunks(&self, node: &RsvgNode, cascaded: &CascadedValues<'_>) -> Vec<Chunk> {
+    fn make_chunks(
+        &self,
+        node: &RsvgNode,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Vec<Chunk> {
         let mut chunks = Vec::new();
 
         let x = self.x.get();
@@ -447,7 +453,7 @@ impl NodeText {
         println!("Chunk new x={:?}, y={:?}", Some(x), Some(y));
         chunks.push(Chunk::new(cascaded.get(), Some(x), Some(y)));
 
-        children_to_chunks(&mut chunks, node, cascaded, dx, dy, 0);
+        children_to_chunks(&mut chunks, node, cascaded, draw_ctx, dx, dy, 0);
         chunks
     }
 }
@@ -488,7 +494,7 @@ impl NodeTrait for NodeText {
         let mut x = self.x.get().normalize(values, &params);
         let mut y = self.y.get().normalize(values, &params);
 
-        let chunks = self.make_chunks(node, cascaded);
+        let chunks = self.make_chunks(node, cascaded, draw_ctx);
 
         let mut measured_chunks = Vec::new();
         for chunk in &chunks {
@@ -535,14 +541,55 @@ impl NodeTRef {
 
     fn to_chunks(
         &self,
-        _node: &RsvgNode,
-        _cascaded: &CascadedValues<'_>,
-        _chunks: &mut Vec<Chunk>,
-        _depth: usize,
+        node: &RsvgNode,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        chunks: &mut Vec<Chunk>,
+        depth: usize,
     ) {
-        // let x = self.x.get().or(x);
-        // let y = self.y.get().or(y);
-        // unimplemented!();
+        let link = self.link.borrow();
+
+        if link.is_none() {
+            return;
+        }
+
+        let link = link.as_ref().unwrap();
+
+        let values = cascaded.get();
+
+        if let Some(acquired) = draw_ctx.get_acquired_node(link) {
+            let c = acquired.get();
+            extract_chars_children_to_chunks_recursively(chunks, &c, values, depth);
+        } else {
+            rsvg_log!(
+                "element {} references a nonexistent text source \"{}\"",
+                node.get_human_readable_name(),
+                link,
+            );
+        }
+    }
+}
+
+fn extract_chars_children_to_chunks_recursively(
+    chunks: &mut Vec<Chunk>,
+    node: &RsvgNode,
+    values: &ComputedValues,
+    depth: usize,
+) {
+    for child in node.children() {
+        match child.get_type() {
+            NodeType::Chars => child.with_impl(|chars: &NodeChars| {
+                let span = chars.make_span(&child, values, None, None, depth);
+
+                let num_chunks = chunks.len();
+                assert!(num_chunks > 0);
+
+                println!("appending span \"{}\"", span.text);
+                chunks[num_chunks - 1].spans.push(span);
+            }),
+
+            _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
+        }
     }
 }
 
@@ -583,6 +630,7 @@ impl NodeTSpan {
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
         chunks: &mut Vec<Chunk>,
         depth: usize,
     ) {
@@ -598,7 +646,7 @@ impl NodeTSpan {
             chunks.push(Chunk::new(values, x, y));
         }
 
-        children_to_chunks(chunks, node, cascaded, dx, dy, depth);
+        children_to_chunks(chunks, node, cascaded, draw_ctx, dx, dy, depth);
     }
 }
 
