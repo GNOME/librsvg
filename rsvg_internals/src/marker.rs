@@ -4,6 +4,7 @@ use std::f64::consts::*;
 use cairo::MatrixTrait;
 use cssparser::{CowRcStr, Parser, Token};
 
+use angle::Angle;
 use aspect_ratio::*;
 use attributes::Attribute;
 use defs::Fragment;
@@ -14,7 +15,6 @@ use handle::RsvgHandle;
 use iri::IRI;
 use length::{Length, LengthDir};
 use node::*;
-use parsers;
 use parsers::ParseError;
 use parsers::{parse, parse_and_validate, Parse};
 use path_builder::*;
@@ -65,12 +65,12 @@ impl Parse for MarkerUnits {
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum MarkerOrient {
     Auto,
-    Degrees(f64),
+    Angle(Angle),
 }
 
 impl Default for MarkerOrient {
     fn default() -> MarkerOrient {
-        MarkerOrient::Degrees(0.0)
+        MarkerOrient::Angle(Angle::new(0.0))
     }
 }
 
@@ -82,9 +82,8 @@ impl Parse for MarkerOrient {
         if parser.try(|p| p.expect_ident_matching("auto")).is_ok() {
             Ok(MarkerOrient::Auto)
         } else {
-            parsers::angle_degrees(parser)
-                .map(MarkerOrient::Degrees)
-                .map_err(ValueErrorKind::Parse)
+            Angle::parse(parser, ())
+                .map(MarkerOrient::Angle)
         }
     }
 }
@@ -151,7 +150,7 @@ impl NodeMarker {
 
         let rotation = match self.orient.get() {
             MarkerOrient::Auto => computed_angle,
-            MarkerOrient::Degrees(d) => Angle::from_degrees(d),
+            MarkerOrient::Angle(a) => a,
         };
 
         affine.rotate(rotation.radians());
@@ -588,53 +587,6 @@ fn find_outgoing_directionality_forwards(
     (false, 0.0, 0.0)
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-struct Angle(f64);
-
-impl Angle {
-    pub fn new(rad: f64) -> Angle {
-        Angle(Angle::normalize(rad))
-    }
-
-    pub fn from_degrees(deg: f64) -> Angle {
-        Angle(Angle::normalize(deg.to_radians()))
-    }
-
-    pub fn from_vector(vx: f64, vy: f64) -> Angle {
-        let rad = vy.atan2(vx);
-
-        if rad.is_nan() {
-            Angle(0.0)
-        } else {
-            Angle(Angle::normalize(rad))
-        }
-    }
-
-    pub fn radians(&self) -> f64 {
-        self.0
-    }
-
-    pub fn bisect(&self, other: Angle) -> Angle {
-        let half_delta = (other.0 - self.0) * 0.5;
-
-        if FRAC_PI_2 < half_delta.abs() {
-            Angle(Angle::normalize(self.0 + half_delta - PI))
-        } else {
-            Angle(Angle::normalize(self.0 + half_delta))
-        }
-    }
-
-    // Normalizes an angle to [0.0, 2*PI)
-    fn normalize(rad: f64) -> f64 {
-        let res = rad % (PI * 2.0);
-        if res < 0.0 {
-            res + PI * 2.0
-        } else {
-            res
-        }
-    }
-}
-
 // From SVG's marker-start, marker-mid, marker-end properties
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum MarkerType {
@@ -918,23 +870,23 @@ mod parser_tests {
 
         assert_eq!(
             MarkerOrient::parse_str("0", ()),
-            Ok(MarkerOrient::Degrees(0.0))
+            Ok(MarkerOrient::Angle(Angle::new(0.0)))
         );
         assert_eq!(
             MarkerOrient::parse_str("180", ()),
-            Ok(MarkerOrient::Degrees(180.0))
+            Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
         );
         assert_eq!(
             MarkerOrient::parse_str("180deg", ()),
-            Ok(MarkerOrient::Degrees(180.0))
+            Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
         );
         assert_eq!(
             MarkerOrient::parse_str("-400grad", ()),
-            Ok(MarkerOrient::Degrees(-360.0))
+            Ok(MarkerOrient::Angle(Angle::from_degrees(-360.0)))
         );
         assert_eq!(
             MarkerOrient::parse_str("1rad", ()),
-            Ok(MarkerOrient::Degrees(180.0 / PI))
+            Ok(MarkerOrient::Angle(Angle::new(1.0)))
         );
     }
 }

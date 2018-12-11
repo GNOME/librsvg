@@ -1,6 +1,5 @@
 use cssparser::{BasicParseError, Parser, ParserInput, Token};
 
-use std::f64::consts::*;
 use std::str::{self, FromStr};
 
 use attributes::Attribute;
@@ -114,46 +113,6 @@ where
     T::parse(&mut parser, data)
         .and_then(validate)
         .map_err(|e| NodeError::attribute_error(Attribute::from_str(key).unwrap(), e))
-}
-
-// angle:
-// https://www.w3.org/TR/SVG/types.html#DataTypeAngle
-//
-// angle ::= number ("deg" | "grad" | "rad")?
-//
-// Returns an f64 angle in degrees
-
-pub fn angle_degrees(parser: &mut Parser<'_, '_>) -> Result<f64, ParseError> {
-    let angle = {
-        let token = parser
-            .next()
-            .map_err(|_| ParseError::new("expected angle"))?;
-
-        match *token {
-            Token::Number { value, .. } => f64::from(value),
-
-            Token::Dimension {
-                value, ref unit, ..
-            } => {
-                let value = f64::from(value);
-
-                match unit.as_ref() {
-                    "deg" => value,
-                    "grad" => value * 360.0 / 400.0,
-                    "rad" => value * 180.0 / PI,
-                    _ => return Err(ParseError::new("expected 'deg' | 'grad' | 'rad'")),
-                }
-            }
-
-            _ => return Err(ParseError::new("expected angle")),
-        }
-    };
-
-    parser
-        .expect_exhausted()
-        .map_err(|_| ParseError::new("expected angle"))?;
-
-    Ok(angle)
 }
 
 pub fn optional_comma(parser: &mut Parser<'_, '_>) {
@@ -389,26 +348,6 @@ mod tests {
     fn errors_on_invalid_list_of_points() {
         assert!(list_of_points("-1-2-3-4").is_err());
         assert!(list_of_points("1 2-3,-4").is_err());
-    }
-
-    fn angle_degrees_str(s: &str) -> Result<f64, ParseError> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
-        angle_degrees(&mut parser)
-    }
-
-    #[test]
-    fn parses_angle() {
-        assert_eq!(angle_degrees_str("0"), Ok(0.0));
-        assert_eq!(angle_degrees_str("15"), Ok(15.0));
-        assert_eq!(angle_degrees_str("180.5deg"), Ok(180.5));
-        assert_eq!(angle_degrees_str("1rad"), Ok(180.0 / PI));
-        assert_eq!(angle_degrees_str("-400grad"), Ok(-360.0));
-
-        assert!(angle_degrees_str("").is_err());
-        assert!(angle_degrees_str("foo").is_err());
-        assert!(angle_degrees_str("300foo").is_err());
     }
 
     #[test]

@@ -40,6 +40,7 @@ RUST_SRC =							\
 	rsvg_internals/Cargo.toml				\
 	rsvg_internals/build.rs					\
 	rsvg_internals/src/allowed_url.rs			\
+	rsvg_internals/src/angle.rs				\
 	rsvg_internals/src/aspect_ratio.rs			\
 	rsvg_internals/src/attributes.rs			\
 	rsvg_internals/src/bbox.rs				\
