@@ -449,11 +449,17 @@ rsvg_handle_free (RsvgHandle * handle)
  * rsvg_handle_new:
  *
  * Returns a new rsvg handle.  Must be freed with @g_object_unref.  This
- * handle can be used for dynamically loading an image.  You need to feed it
- * data using @rsvg_handle_write, then call @rsvg_handle_close when done.
- * Afterwords, you can render it using Cairo or get a GdkPixbuf from it. When
- * finished, free with g_object_unref(). No more than one image can be loaded
- * with one handle.
+ * handle can be used to load an image.
+ *
+ * The preferred way of loading SVG data into the returned #RsvgHandle is with
+ * rsvg_handle_read_stream_sync().
+ *
+ * The deprecated way of loading SVG data is with rsvg_handle_write() and
+ * rsvg_handle_close().
+ *
+ * After loading the #RsvgHandl with data, you can render it using Cairo or get
+ * a GdkPixbuf from it. When finished, free with g_object_unref(). No more than
+ * one image can be loaded with one handle.
  *
  * Returns: A new #RsvgHandle
  **/
@@ -665,13 +671,16 @@ rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
  * @count: length of the @buf buffer in bytes
  * @error: (allow-none): a location to store a #GError, or %NULL
  *
- * Loads the next @count bytes of the image.  This will return %TRUE if the data
- * was loaded successful, and %FALSE if an error occurred.  In the latter case,
- * the loader will be closed, and will not accept further writes. If %FALSE is
- * returned, @error will be set to an error from the #RsvgError domain. Errors
- * from #GIOErrorEnum are also possible.
+ * Loads the next @count bytes of the image.
  *
- * Returns: %TRUE on success, or %FALSE on error
+ * Returns: This function always returns %TRUE, and does not set the @error.
+ *
+ * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
+ * functions rsvg_handle_new_from_gfile_sync() or rsvg_handle_new_from_stream_sync().
+ *
+ * Notes: This function will accumlate data from the @buf in memory until
+ * rsvg_handle_close() gets called.  To avoid a big temporary buffer, use the
+ * funtions listed before, which take a #GFile or a #GInputStream.
  **/
 gboolean
 rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error)
@@ -727,10 +736,13 @@ finish_load (RsvgHandle *handle, RsvgXmlState *xml, gboolean was_successful, GEr
  * @error: (allow-none): a location to store a #GError, or %NULL
  *
  * Closes @handle, to indicate that loading the image is complete.  This will
- * return %TRUE if the loader closed successfully.  Note that @handle isn't
- * freed until @g_object_unref is called.
+ * return %TRUE if the loader closed successfully and the SVG data was parsed
+ * correctly.  Note that @handle isn't freed until @g_object_unref is called.
  *
- * Returns: %TRUE on success, or %FALSE on error
+ * Returns: %TRUE on success, or %FALSE on error.
+ *
+ * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
+ * functions rsvg_handle_new_from_gfile_sync() or rsvg_handle_new_from_stream_sync().
  **/
 gboolean
 rsvg_handle_close (RsvgHandle *handle, GError **error)

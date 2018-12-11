@@ -163,9 +163,13 @@ void rsvg_handle_set_dpi	(RsvgHandle * handle, double dpi);
 void rsvg_handle_set_dpi_x_y	(RsvgHandle * handle, double dpi_x, double dpi_y);
 
 RsvgHandle  *rsvg_handle_new		(void);
+
+RSVG_DEPRECATED_FOR(rsvg_handle_read_stream_sync)
 gboolean     rsvg_handle_write		(RsvgHandle * handle, const guchar * buf, 
-                                     gsize count, GError ** error);
+                                         gsize count, GError ** error);
+RSVG_DEPRECATED_FOR(rsvg_handle_read_stream_sync)
 gboolean     rsvg_handle_close		(RsvgHandle * handle, GError ** error);
+
 GdkPixbuf   *rsvg_handle_get_pixbuf	(RsvgHandle * handle);
 GdkPixbuf   *rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id);
 

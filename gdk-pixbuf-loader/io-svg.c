@@ -21,6 +21,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#define RSVG_DISABLE_DEPRECATION_WARNINGS
+
 #include "config.h"
 
 #include <stdlib.h>
