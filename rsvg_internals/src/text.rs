@@ -303,18 +303,11 @@ fn children_to_chunks(
     dy: Option<Length>,
     depth: usize,
 ) {
-    let values = cascaded.get();
-
     for child in node.children() {
         match child.get_type() {
             NodeType::Chars => child.with_impl(|chars: &NodeChars| {
-                let span = chars.make_span(&child, values, dx, dy, depth);
-
-                let num_chunks = chunks.len();
-                assert!(num_chunks > 0);
-
-                println!("appending span \"{}\"", span.text);
-                chunks[num_chunks - 1].spans.push(span);
+                let values = cascaded.get();
+                chars.to_chunks(&child, values, chunks, dx, dy, depth);
             }),
 
             NodeType::TSpan => child.with_impl(|tspan: &NodeTSpan| {
@@ -411,6 +404,24 @@ impl NodeChars {
             dy,
             depth,
         )
+    }
+
+    fn to_chunks(
+        &self,
+        node: &RsvgNode,
+        values: &ComputedValues,
+        chunks: &mut Vec<Chunk>,
+        dx: Option<Length>,
+        dy: Option<Length>,
+        depth: usize,
+    ) {
+        let span = self.make_span(&node, values, dx, dy, depth);
+
+        let num_chunks = chunks.len();
+        assert!(num_chunks > 0);
+
+        println!("appending span \"{}\"", span.text);
+        chunks[num_chunks - 1].spans.push(span);
     }
 }
 
@@ -579,13 +590,7 @@ fn extract_chars_children_to_chunks_recursively(
     for child in node.children() {
         match child.get_type() {
             NodeType::Chars => child.with_impl(|chars: &NodeChars| {
-                let span = chars.make_span(&child, values, None, None, depth);
-
-                let num_chunks = chunks.len();
-                assert!(num_chunks > 0);
-
-                println!("appending span \"{}\"", span.text);
-                chunks[num_chunks - 1].spans.push(span);
+                chars.to_chunks(&child, values, chunks, None, None, depth);
             }),
 
             _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
