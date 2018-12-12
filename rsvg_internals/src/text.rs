@@ -488,10 +488,6 @@ impl NodeTrait for NodeText {
         Ok(())
     }
 
-    fn accept_chars(&self) -> bool {
-        true
-    }
-
     fn draw(
         &self,
         node: &RsvgNode,
@@ -676,10 +672,6 @@ impl NodeTrait for NodeTSpan {
         }
 
         Ok(())
-    }
-
-    fn accept_chars(&self) -> bool {
-        true
     }
 }
 
