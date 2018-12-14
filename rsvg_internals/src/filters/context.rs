@@ -551,30 +551,30 @@ impl FilterContext {
     ) -> Result<FilterInput, FilterError> {
         let raw = self.get_input_raw(draw_ctx, in_)?;
 
-        // Linearize the returned surface if needed.
-        if self.processing_linear_rgb {
-            let (surface, bounds) = match raw {
-                FilterInput::StandardInput(ref surface) => {
-                    (surface, self.effects_region().rect.unwrap().into())
-                }
-                FilterInput::PrimitiveOutput(FilterOutput {
-                    ref surface,
-                    ref bounds,
-                }) => (surface, *bounds),
-            };
+        // Convert the input surface to the desired format.
+        let (surface, bounds) = match raw {
+            FilterInput::StandardInput(ref surface) => {
+                (surface, self.effects_region().rect.unwrap().into())
+            }
+            FilterInput::PrimitiveOutput(FilterOutput {
+                ref surface,
+                ref bounds,
+            }) => (surface, *bounds),
+        };
 
-            surface
-                .to_linear_rgb(bounds)
-                .map_err(FilterError::CairoError)
-                .map(|surface| match raw {
-                    FilterInput::StandardInput(_) => FilterInput::StandardInput(surface),
-                    FilterInput::PrimitiveOutput(ref output) => {
-                        FilterInput::PrimitiveOutput(FilterOutput { surface, ..*output })
-                    }
-                })
+        let surface = if self.processing_linear_rgb {
+            surface.to_linear_rgb(bounds)
         } else {
-            Ok(raw)
-        }
+            surface.to_srgb(bounds)
+        };
+        surface
+            .map_err(FilterError::CairoError)
+            .map(|surface| match raw {
+                FilterInput::StandardInput(_) => FilterInput::StandardInput(surface),
+                FilterInput::PrimitiveOutput(ref output) => {
+                    FilterInput::PrimitiveOutput(FilterOutput { surface, ..*output })
+                }
+            })
     }
 
     /// Calls the given closure with linear RGB processing enabled.
