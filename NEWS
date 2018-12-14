@@ -1,6 +1,7 @@
 Version 2.44.11
 - Fix crash when a linear RGB filter is followed by an SRGB filter
   (Ivan Molodetskikh).
+- Fix #393 - Stack overflow when freeing thousands of sibling elements.
 - Fix positioning of adjacent <tspan> elements.
 
 Version 2.44.10
