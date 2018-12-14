@@ -655,6 +655,75 @@ impl Node {
     }
 }
 
+/// Prevent stack overflow when recursively dropping nodes
+///
+/// Dropping nodes is recursive, since a node owns strong references
+/// to its next sibling and its first child.  When there is an SVG
+/// with a flat hierarchy of a few hundred thousand elements,
+/// recursively dropping these siblings can cause stack overflow.
+///
+/// Here, we convert recursion to an explicit heap-allocated stack of
+/// nodes that need to be dropped.  This technique is borrowed from
+/// [kuchiki]'s tree implementation.
+///
+/// [kuchiki]: https://github.com/kuchiki-rs/kuchiki/blob/master/src/tree.rs
+impl Drop for Node {
+    fn drop(&mut self) {
+        let mut stack = Vec::new();
+
+        if let Some(rc) = take_if_unique_strong(&self.first_child) {
+            non_recursive_drop_unique_rc(rc, &mut stack);
+        }
+
+        if let Some(rc) = take_if_unique_strong(&self.next_sib) {
+            non_recursive_drop_unique_rc(rc, &mut stack);
+        }
+
+        fn non_recursive_drop_unique_rc(mut rc: Rc<Node>, stack: &mut Vec<Rc<Node>>) {
+            loop {
+                if let Some(child) = take_if_unique_strong(&rc.first_child) {
+                    stack.push(rc);
+                    rc = child;
+                    continue;
+                }
+
+                if let Some(sibling) = take_if_unique_strong(&rc.next_sib) {
+                    rc = sibling;
+                    continue;
+                }
+
+                if let Some(parent) = stack.pop() {
+                    rc = parent;
+                    continue;
+                }
+
+                return;
+            }
+        }
+    }
+}
+
+/// Return `Some` if the `NodeRef` is the only strong reference count
+///
+/// Note that this leaves the tree in a partially inconsistent state, since
+/// the weak references to the node referenced by `r` will now point to
+/// an unlinked node.
+fn take_if_unique_strong(r: &RefCell<Option<Rc<Node>>>) -> Option<Rc<Node>> {
+    let mut r = r.borrow_mut();
+
+    let has_single_ref = match *r {
+        None => false,
+        Some(ref rc) if Rc::strong_count(rc) > 1 => false,
+        Some(_) => true,
+    };
+
+    if has_single_ref {
+        r.take()
+    } else {
+        None
+    }
+}
+
 pub fn node_ptr_to_weak(raw_parent: *const RsvgNode) -> Option<Weak<Node>> {
     if raw_parent.is_null() {
         None
