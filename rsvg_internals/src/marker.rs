@@ -262,7 +262,7 @@ impl NodeTrait for NodeMarker {
 
 // Machinery to figure out marker orientations
 #[derive(Debug, PartialEq)]
-pub enum Segment {
+enum Segment {
     Degenerate {
         // A single lone point
         x: f64,
@@ -279,6 +279,78 @@ pub enum Segment {
         x4: f64,
         y4: f64,
     },
+}
+
+impl Segment {
+    fn degenerate(x: f64, y: f64) -> Segment {
+        Segment::Degenerate { x, y }
+    }
+
+    fn curve(x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
+        Segment::LineOrCurve {
+            x1,
+            y1,
+            x2,
+            y2,
+            x3,
+            y3,
+            x4,
+            y4,
+        }
+    }
+
+    fn line(x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
+        Segment::curve(x1, y1, x2, y2, x1, y1, x2, y2)
+    }
+
+    // If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise,
+    // returns None.  The vectors are the tangents at the beginning and at the end of the segment,
+    // respectively.  A segment does not have directionality if it is degenerate (i.e. a single
+    // point) or a zero-length segment, i.e. where all four control points are coincident (the first
+    // and last control points may coincide, but the others may define a loop - thus nonzero length)
+    fn get_directionalities(&self) -> Option<(f64, f64, f64, f64)> {
+        match *self {
+            Segment::Degenerate { .. } => None,
+
+            Segment::LineOrCurve {
+                x1,
+                y1,
+                x2,
+                y2,
+                x3,
+                y3,
+                x4,
+                y4,
+            } => {
+                let coincide_1_and_2 = points_equal(x1, y1, x2, y2);
+                let coincide_1_and_3 = points_equal(x1, y1, x3, y3);
+                let coincide_1_and_4 = points_equal(x1, y1, x4, y4);
+                let coincide_2_and_3 = points_equal(x2, y2, x3, y3);
+                let coincide_2_and_4 = points_equal(x2, y2, x4, y4);
+                let coincide_3_and_4 = points_equal(x3, y3, x4, y4);
+
+                if coincide_1_and_2 && coincide_1_and_3 && coincide_1_and_4 {
+                    None
+                } else if coincide_1_and_2 && coincide_1_and_3 {
+                    Some((x4 - x1, y4 - y1, x4 - x3, y4 - y3))
+                } else if coincide_1_and_2 && coincide_3_and_4 {
+                    Some((x4 - x1, y4 - y1, x4 - x1, y4 - y1))
+                } else if coincide_2_and_3 && coincide_2_and_4 {
+                    Some((x2 - x1, y2 - y1, x4 - x1, y4 - y1))
+                } else if coincide_1_and_2 {
+                    Some((x3 - x1, y3 - y1, x4 - x3, y4 - y3))
+                } else if coincide_3_and_4 {
+                    Some((x2 - x1, y2 - y1, x4 - x2, y4 - y2))
+                } else {
+                    Some((x2 - x1, y2 - y1, x4 - x3, y4 - y3))
+                }
+            }
+        }
+    }
+}
+
+fn points_equal(x1: f64, y1: f64, x2: f64, y2: f64) -> bool {
+    x1.approx_eq_cairo(&x2) && y1.approx_eq_cairo(&y2)
 }
 
 enum SegmentState {
@@ -303,26 +375,6 @@ enum SegmentState {
 //    The tangent at the end point is given by the vector (P4 - P3).
 // The tangents also work if the segment refers to a lineto (they will both just point in the
 // same direction).
-fn make_degenerate(x: f64, y: f64) -> Segment {
-    Segment::Degenerate { x, y }
-}
-
-fn make_curve(x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
-    Segment::LineOrCurve {
-        x1,
-        y1,
-        x2,
-        y2,
-        x3,
-        y3,
-        x4,
-        y4,
-    }
-}
-
-fn make_line(x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
-    make_curve(x1, y1, x2, y2, x1, y1, x2, y2)
-}
 
 pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
     let mut last_x: f64;
@@ -366,7 +418,7 @@ pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
                         // We had just begun a new subpath (i.e. from a moveto) and we got
                         // another moveto?  Output a stray point for the
                         // previous moveto.
-                        segments.push(make_degenerate(last_x, last_y));
+                        segments.push(Segment::degenerate(last_x, last_y));
                         state = SegmentState::NewSubpath;
                     }
 
@@ -388,7 +440,7 @@ pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
                 cur_x = x;
                 cur_y = y;
 
-                segments.push(make_line(last_x, last_y, cur_x, cur_y));
+                segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
 
                 state = SegmentState::InSubpath;
             }
@@ -402,7 +454,7 @@ pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
                 cur_x = to.0;
                 cur_y = to.1;
 
-                segments.push(make_curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
+                segments.push(Segment::curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
 
                 state = SegmentState::InSubpath;
             }
@@ -428,12 +480,12 @@ pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
 
                         let (x2, y2) = segment1.pt1;
                         let (x3, y3) = segment2.pt2;
-                        segments.push(make_curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
+                        segments.push(Segment::curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
 
                         state = SegmentState::InSubpath;
                     }
                     ArcParameterization::LineTo => {
-                        segments.push(make_line(last_x, last_y, cur_x, cur_y));
+                        segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
 
                         state = SegmentState::InSubpath;
                     }
@@ -445,7 +497,7 @@ pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
                 cur_x = subpath_start_x;
                 cur_y = subpath_start_y;
 
-                segments.push(make_line(last_x, last_y, cur_x, cur_y));
+                segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
 
                 state = SegmentState::ClosedSubpath;
             }
@@ -455,59 +507,10 @@ pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
     if let SegmentState::NewSubpath = state {
         // Output a lone point if we started a subpath with a moveto
         // command, but there are no subsequent commands.
-        segments.push(make_degenerate(cur_x, cur_y));
+        segments.push(Segment::degenerate(cur_x, cur_y));
     };
 
     segments
-}
-
-fn points_equal(x1: f64, y1: f64, x2: f64, y2: f64) -> bool {
-    x1.approx_eq_cairo(&x2) && y1.approx_eq_cairo(&y2)
-}
-
-// If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise,
-// returns None.  The vectors are the tangents at the beginning and at the end of the segment,
-// respectively.  A segment does not have directionality if it is degenerate (i.e. a single
-// point) or a zero-length segment, i.e. where all four control points are coincident (the first
-// and last control points may coincide, but the others may define a loop - thus nonzero length)
-fn get_segment_directionalities(segment: &Segment) -> Option<(f64, f64, f64, f64)> {
-    match *segment {
-        Segment::Degenerate { .. } => None,
-
-        Segment::LineOrCurve {
-            x1,
-            y1,
-            x2,
-            y2,
-            x3,
-            y3,
-            x4,
-            y4,
-        } => {
-            let coincide_1_and_2 = points_equal(x1, y1, x2, y2);
-            let coincide_1_and_3 = points_equal(x1, y1, x3, y3);
-            let coincide_1_and_4 = points_equal(x1, y1, x4, y4);
-            let coincide_2_and_3 = points_equal(x2, y2, x3, y3);
-            let coincide_2_and_4 = points_equal(x2, y2, x4, y4);
-            let coincide_3_and_4 = points_equal(x3, y3, x4, y4);
-
-            if coincide_1_and_2 && coincide_1_and_3 && coincide_1_and_4 {
-                None
-            } else if coincide_1_and_2 && coincide_1_and_3 {
-                Some((x4 - x1, y4 - y1, x4 - x3, y4 - y3))
-            } else if coincide_1_and_2 && coincide_3_and_4 {
-                Some((x4 - x1, y4 - y1, x4 - x1, y4 - y1))
-            } else if coincide_2_and_3 && coincide_2_and_4 {
-                Some((x2 - x1, y2 - y1, x4 - x1, y4 - y1))
-            } else if coincide_1_and_2 {
-                Some((x3 - x1, y3 - y1, x4 - x3, y4 - y3))
-            } else if coincide_3_and_4 {
-                Some((x2 - x1, y2 - y1, x4 - x2, y4 - y2))
-            } else {
-                Some((x2 - x1, y2 - y1, x4 - x3, y4 - y3))
-            }
-        }
-    }
 }
 
 // The SVG spec 1.1 says http://www.w3.org/TR/SVG/implnote.html#PathElementImplementationNotes
@@ -546,7 +549,7 @@ fn find_incoming_directionality_backwards(
                 return (false, 0.0, 0.0); // reached the beginning of the subpath as we ran into a standalone point
             }
 
-            Segment::LineOrCurve { .. } => match get_segment_directionalities(segment) {
+            Segment::LineOrCurve { .. } => match segment.get_directionalities() {
                 Some((_, _, v2x, v2y)) => {
                     return (true, v2x, v2y);
                 }
@@ -572,7 +575,7 @@ fn find_outgoing_directionality_forwards(
                 return (false, 0.0, 0.0); // reached the end of a subpath as we ran into a standalone point
             }
 
-            Segment::LineOrCurve { .. } => match get_segment_directionalities(segment) {
+            Segment::LineOrCurve { .. } => match segment.get_directionalities() {
                 Some((v1x, v1y, _, _)) => {
                     return (true, v1x, v1y);
                 }
@@ -914,8 +917,10 @@ mod directionality_tests {
 
     #[test]
     fn path_to_segments_handles_open_path() {
-        let expected_segments: Vec<Segment> =
-            vec![line(10.0, 10.0, 20.0, 10.0), line(20.0, 10.0, 20.0, 20.0)];
+        let expected_segments: Vec<Segment> = vec![
+            Segment::line(10.0, 10.0, 20.0, 10.0),
+            Segment::line(20.0, 10.0, 20.0, 20.0),
+        ];
 
         test_path_builder_to_segments(&setup_open_path(), expected_segments);
     }
@@ -938,11 +943,11 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_multiple_open_subpaths() {
         let expected_segments: Vec<Segment> = vec![
-            line(10.0, 10.0, 20.0, 10.0),
-            line(20.0, 10.0, 20.0, 20.0),
-            line(30.0, 30.0, 40.0, 30.0),
-            curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
-            line(70.0, 70.0, 80.0, 90.0),
+            Segment::line(10.0, 10.0, 20.0, 10.0),
+            Segment::line(20.0, 10.0, 20.0, 20.0),
+            Segment::line(30.0, 30.0, 40.0, 30.0),
+            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
+            Segment::line(70.0, 70.0, 80.0, 90.0),
         ];
 
         test_path_builder_to_segments(&setup_multiple_open_subpaths(), expected_segments);
@@ -963,9 +968,9 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_closed_subpath() {
         let expected_segments: Vec<Segment> = vec![
-            line(10.0, 10.0, 20.0, 10.0),
-            line(20.0, 10.0, 20.0, 20.0),
-            line(20.0, 20.0, 10.0, 10.0),
+            Segment::line(10.0, 10.0, 20.0, 10.0),
+            Segment::line(20.0, 10.0, 20.0, 20.0),
+            Segment::line(20.0, 20.0, 10.0, 10.0),
         ];
 
         test_path_builder_to_segments(&setup_closed_subpath(), expected_segments);
@@ -993,13 +998,13 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_multiple_closed_subpaths() {
         let expected_segments: Vec<Segment> = vec![
-            line(10.0, 10.0, 20.0, 10.0),
-            line(20.0, 10.0, 20.0, 20.0),
-            line(20.0, 20.0, 10.0, 10.0),
-            line(30.0, 30.0, 40.0, 30.0),
-            curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
-            line(70.0, 70.0, 80.0, 90.0),
-            line(80.0, 90.0, 30.0, 30.0),
+            Segment::line(10.0, 10.0, 20.0, 10.0),
+            Segment::line(20.0, 10.0, 20.0, 20.0),
+            Segment::line(20.0, 20.0, 10.0, 10.0),
+            Segment::line(30.0, 30.0, 40.0, 30.0),
+            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
+            Segment::line(70.0, 70.0, 80.0, 90.0),
+            Segment::line(80.0, 90.0, 30.0, 30.0),
         ];
 
         test_path_builder_to_segments(&setup_multiple_closed_subpaths(), expected_segments);
@@ -1023,10 +1028,10 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_no_moveto_after_closepath() {
         let expected_segments: Vec<Segment> = vec![
-            line(10.0, 10.0, 20.0, 10.0),
-            line(20.0, 10.0, 20.0, 20.0),
-            line(20.0, 20.0, 10.0, 10.0),
-            line(10.0, 10.0, 40.0, 30.0),
+            Segment::line(10.0, 10.0, 20.0, 10.0),
+            Segment::line(20.0, 10.0, 20.0, 20.0),
+            Segment::line(20.0, 20.0, 10.0, 10.0),
+            Segment::line(10.0, 10.0, 40.0, 30.0),
         ];
 
         test_path_builder_to_segments(&setup_no_moveto_after_closepath(), expected_segments);
@@ -1057,10 +1062,10 @@ mod directionality_tests {
     // #[test]
     // fn path_to_segments_handles_sequence_of_moveto () {
     // let expected_segments: Vec<Segment> = vec! [
-    // degenerate (10.0, 10.0),
-    // degenerate (20.0, 20.0),
-    // degenerate (30.0, 30.0),
-    // degenerate (40.0, 40.0)
+    // Segment::degenerate(10.0, 10.0),
+    // Segment::degenerate(20.0, 20.0),
+    // Segment::degenerate(30.0, 30.0),
+    // Segment::degenerate(40.0, 40.0),
     // ];
     //
     // test_path_builder_to_segments (&setup_sequence_of_moveto (), expected_segments);
@@ -1068,86 +1073,76 @@ mod directionality_tests {
 
     #[test]
     fn degenerate_segment_has_no_directionality() {
-        assert!(super::get_segment_directionalities(&degenerate(1.0, 2.0)).is_none());
+        let s = Segment::degenerate(1.0, 2.0);
+        assert!(s.get_directionalities().is_none());
     }
 
     #[test]
     fn line_segment_has_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&line(1.0, 2.0, 3.0, 4.0)).unwrap();
+        let s = Segment::line(1.0, 2.0, 3.0, 4.0);
+        let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((2.0, 2.0), (v2x, v2y));
     }
 
     #[test]
     fn line_segment_with_coincident_ends_has_no_directionality() {
-        assert!(super::get_segment_directionalities(&line(1.0, 2.0, 1.0, 2.0)).is_none());
+        let s = Segment::line(1.0, 2.0, 1.0, 2.0);
+        assert!(s.get_directionalities().is_none());
     }
 
     #[test]
     fn curve_has_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0))
-                .unwrap();
+        let s = Segment::curve(1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0);
+        let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 3.0), (v1x, v1y));
         assert_eq!((12.0, 20.0), (v2x, v2y));
     }
 
     #[test]
     fn curves_with_loops_and_coincident_ends_have_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0))
-                .unwrap();
+        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0);
+        let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-4.0, -4.0), (v2x, v2y));
 
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0))
-                .unwrap();
+        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0);
+        let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
 
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0))
-                .unwrap();
+        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0);
+        let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
     }
 
     #[test]
     fn curve_with_coincident_control_points_has_no_directionality() {
-        assert!(super::get_segment_directionalities(&curve(
-            1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0
-        ))
-        .is_none());
+        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0);
+        assert!(s.get_directionalities().is_none());
     }
 
     #[test]
     fn curve_with_123_coincident_has_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0))
-                .unwrap();
+        let s = Segment::curve(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0);
+        let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((20.0, 40.0), (v1x, v1y));
         assert_eq!((20.0, 40.0), (v2x, v2y));
     }
 
     #[test]
     fn curve_with_234_coincident_has_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities(&curve(20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
-                .unwrap();
-
+        let s = Segment::curve(20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((-20.0, -40.0), (v1x, v1y));
         assert_eq!((-20.0, -40.0), (v2x, v2y));
     }
 
     #[test]
     fn curve_with_12_34_coincident_has_directionality() {
-        let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
-            20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0,
-        ))
-        .unwrap();
-
+        let s = Segment::curve(20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0);
+        let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((40.0, 30.0), (v1x, v1y));
         assert_eq!((40.0, 30.0), (v2x, v2y));
     }
