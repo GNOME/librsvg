@@ -893,74 +893,7 @@ mod parser_tests {
 #[cfg(test)]
 mod directionality_tests {
     use super::*;
-    use float_cmp::ApproxEq;
     use std::f64;
-
-    fn test_bisection_angle(
-        expected: f64,
-        incoming_vx: f64,
-        incoming_vy: f64,
-        outgoing_vx: f64,
-        outgoing_vy: f64,
-    ) {
-        let i = Angle::from_vector(incoming_vx, incoming_vy);
-        let o = Angle::from_vector(outgoing_vx, outgoing_vy);
-        let bisected = i.bisect(o);
-        assert!(expected.approx_eq(&bisected.radians(), 2.0 * PI * f64::EPSILON, 1));
-    }
-
-    #[test]
-    fn bisection_angle_is_correct_from_incoming_counterclockwise_to_outgoing() {
-        // 1st quadrant
-        test_bisection_angle(FRAC_PI_4, 1.0, 0.0, 0.0, 1.0);
-
-        // 2nd quadrant
-        test_bisection_angle(FRAC_PI_2 + FRAC_PI_4, 0.0, 1.0, -1.0, 0.0);
-
-        // 3rd quadrant
-        test_bisection_angle(PI + FRAC_PI_4, -1.0, 0.0, 0.0, -1.0);
-
-        // 4th quadrant
-        test_bisection_angle(PI + FRAC_PI_2 + FRAC_PI_4, 0.0, -1.0, 1.0, 0.0);
-    }
-
-    #[test]
-    fn bisection_angle_is_correct_from_incoming_clockwise_to_outgoing() {
-        // 1st quadrant
-        test_bisection_angle(FRAC_PI_4, 0.0, 1.0, 1.0, 0.0);
-
-        // 2nd quadrant
-        test_bisection_angle(FRAC_PI_2 + FRAC_PI_4, -1.0, 0.0, 0.0, 1.0);
-
-        // 3rd quadrant
-        test_bisection_angle(PI + FRAC_PI_4, 0.0, -1.0, -1.0, 0.0);
-
-        // 4th quadrant
-        test_bisection_angle(PI + FRAC_PI_2 + FRAC_PI_4, 1.0, 0.0, 0.0, -1.0);
-    }
-
-    #[test]
-    fn bisection_angle_is_correct_for_more_than_quarter_turn_angle() {
-        test_bisection_angle(0.0, 0.1, -1.0, 0.1, 1.0);
-
-        test_bisection_angle(FRAC_PI_2, 1.0, 0.1, -1.0, 0.1);
-
-        test_bisection_angle(PI, -0.1, 1.0, -0.1, -1.0);
-
-        test_bisection_angle(PI + FRAC_PI_2, -1.0, -0.1, 1.0, -0.1);
-    }
-
-    fn degenerate(x: f64, y: f64) -> Segment {
-        super::make_degenerate(x, y)
-    }
-
-    fn line(x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
-        super::make_line(x1, y1, x2, y2)
-    }
-
-    fn curve(x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
-        super::make_curve(x1, y1, x2, y2, x3, y3, x4, y4)
-    }
 
     fn test_path_builder_to_segments(builder: &PathBuilder, expected_segments: Vec<Segment>) {
         let segments = path_builder_to_segments(builder);
