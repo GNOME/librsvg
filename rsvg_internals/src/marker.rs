@@ -1,5 +1,6 @@
 use std::cell::Cell;
 use std::f64::consts::*;
+use std::ops::Deref;
 
 use cairo::MatrixTrait;
 use cssparser::{CowRcStr, Parser, Token};
@@ -360,157 +361,175 @@ enum SegmentState {
     ClosedSubpath,
 }
 
-// This converts a cairo_path_t into a list of curveto-like segments.  Each segment can be:
+#[derive(Debug, PartialEq)]
+struct Segments(Vec<Segment>);
+
+impl Deref for Segments {
+    type Target = [Segment];
+
+    fn deref(&self) -> &[Segment] {
+        &self.0
+    }
+}
+
+// This converts a path builder into a vector of curveto-like segments.
+// Each segment can be:
+//
 // 1. Segment::Degenerate => the segment is actually a single point (x, y)
 //
-// 2. Segment::LineOrCurve => either a lineto or a curveto (or the effective lineto that results
-// from a closepath).    We have the following points:
+// 2. Segment::LineOrCurve => either a lineto or a curveto (or the effective
+// lineto that results from a closepath).
+// We have the following points:
 //       P1 = (x1, y1)
 //       P2 = (x2, y2)
 //       P3 = (x3, y3)
 //       P4 = (x4, y4)
 //
-//    The start and end points are P1 and P4, respectively.
-//    The tangent at the start point is given by the vector (P2 - P1).
-//    The tangent at the end point is given by the vector (P4 - P3).
-// The tangents also work if the segment refers to a lineto (they will both just point in the
-// same direction).
+// The start and end points are P1 and P4, respectively.
+// The tangent at the start point is given by the vector (P2 - P1).
+// The tangent at the end point is given by the vector (P4 - P3).
+// The tangents also work if the segment refers to a lineto (they will
+// both just point in the same direction).
+impl<'a> From<&'a PathBuilder> for Segments {
+    fn from(builder: &PathBuilder) -> Segments {
+        let mut last_x: f64;
+        let mut last_y: f64;
+        let mut cur_x: f64;
+        let mut cur_y: f64;
+        let mut subpath_start_x: f64;
+        let mut subpath_start_y: f64;
+        let mut segments: Vec<Segment>;
+        let mut state: SegmentState;
 
-pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
-    let mut last_x: f64;
-    let mut last_y: f64;
-    let mut cur_x: f64;
-    let mut cur_y: f64;
-    let mut subpath_start_x: f64;
-    let mut subpath_start_y: f64;
-    let mut segments: Vec<Segment>;
-    let mut state: SegmentState;
+        cur_x = 0.0;
+        cur_y = 0.0;
+        subpath_start_x = 0.0;
+        subpath_start_y = 0.0;
 
-    cur_x = 0.0;
-    cur_y = 0.0;
-    subpath_start_x = 0.0;
-    subpath_start_y = 0.0;
+        segments = Vec::new();
+        state = SegmentState::Initial;
 
-    segments = Vec::new();
-    state = SegmentState::Initial;
+        for path_command in builder.get_path_commands() {
+            last_x = cur_x;
+            last_y = cur_y;
 
-    for path_command in builder.get_path_commands() {
-        last_x = cur_x;
-        last_y = cur_y;
+            match *path_command {
+                PathCommand::MoveTo(x, y) => {
+                    cur_x = x;
+                    cur_y = y;
 
-        match *path_command {
-            PathCommand::MoveTo(x, y) => {
-                cur_x = x;
-                cur_y = y;
+                    subpath_start_x = cur_x;
+                    subpath_start_y = cur_y;
 
-                subpath_start_x = cur_x;
-                subpath_start_y = cur_y;
+                    match state {
+                        SegmentState::Initial | SegmentState::InSubpath => {
+                            // Ignore the very first moveto in a sequence (Initial state),
+                            // or if we were already drawing within a subpath, start
+                            // a new subpath.
+                            state = SegmentState::NewSubpath;
+                        }
 
-                match state {
-                    SegmentState::Initial | SegmentState::InSubpath => {
-                        // Ignore the very first moveto in a sequence (Initial state), or if we
-                        // were already drawing within a subpath, start
-                        // a new subpath.
-                        state = SegmentState::NewSubpath;
-                    }
+                        SegmentState::NewSubpath => {
+                            // We had just begun a new subpath (i.e. from a moveto) and we got
+                            // another moveto?  Output a stray point for the
+                            // previous moveto.
+                            segments.push(Segment::degenerate(last_x, last_y));
+                            state = SegmentState::NewSubpath;
+                        }
 
-                    SegmentState::NewSubpath => {
-                        // We had just begun a new subpath (i.e. from a moveto) and we got
-                        // another moveto?  Output a stray point for the
-                        // previous moveto.
-                        segments.push(Segment::degenerate(last_x, last_y));
-                        state = SegmentState::NewSubpath;
-                    }
-
-                    SegmentState::ClosedSubpath => {
-                        // Cairo outputs a moveto after every closepath, so that subsequent
-                        // lineto/curveto commands will start at the closed vertex.
-                        // We don't want to actually emit a point (a degenerate segment) in that
-                        // artificial-moveto case.
-                        //
-                        // We'll reset to the Initial state so that a subsequent "real" moveto will
-                        // be handled as the beginning of a new subpath, or a degenerate point, as
-                        // usual.
-                        state = SegmentState::Initial;
+                        SegmentState::ClosedSubpath => {
+                            // Cairo outputs a moveto after every closepath, so that subsequent
+                            // lineto/curveto commands will start at the closed vertex.
+                            // We don't want to actually emit a point (a degenerate segment) in
+                            // that artificial-moveto case.
+                            //
+                            // We'll reset to the Initial state so that a subsequent "real"
+                            // moveto will be handled as the beginning of a new subpath, or a
+                            // degenerate point, as usual.
+                            state = SegmentState::Initial;
+                        }
                     }
                 }
-            }
 
-            PathCommand::LineTo(x, y) => {
-                cur_x = x;
-                cur_y = y;
+                PathCommand::LineTo(x, y) => {
+                    cur_x = x;
+                    cur_y = y;
 
-                segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
+                    segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
 
-                state = SegmentState::InSubpath;
-            }
-
-            PathCommand::CurveTo(curve) => {
-                let CubicBezierCurve {
-                    pt1: (x2, y2),
-                    pt2: (x3, y3),
-                    to,
-                } = curve;
-                cur_x = to.0;
-                cur_y = to.1;
-
-                segments.push(Segment::curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
-
-                state = SegmentState::InSubpath;
-            }
-
-            PathCommand::Arc(arc) => {
-                cur_x = arc.to.0;
-                cur_y = arc.to.1;
-
-                match arc.center_parameterization() {
-                    ArcParameterization::CenterParameters {
-                        center,
-                        radii,
-                        theta1,
-                        delta_theta,
-                    } => {
-                        let rot = arc.x_axis_rotation;
-                        let theta2 = theta1 + delta_theta;
-                        let n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as u32;
-                        let d_theta = delta_theta / f64::from(n_segs);
-
-                        let segment1 = arc_segment(center, radii, rot, theta1, theta1 + d_theta);
-                        let segment2 = arc_segment(center, radii, rot, theta2 - d_theta, theta2);
-
-                        let (x2, y2) = segment1.pt1;
-                        let (x3, y3) = segment2.pt2;
-                        segments.push(Segment::curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
-
-                        state = SegmentState::InSubpath;
-                    }
-                    ArcParameterization::LineTo => {
-                        segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
-
-                        state = SegmentState::InSubpath;
-                    }
-                    ArcParameterization::Omit => {}
+                    state = SegmentState::InSubpath;
                 }
-            }
 
-            PathCommand::ClosePath => {
-                cur_x = subpath_start_x;
-                cur_y = subpath_start_y;
+                PathCommand::CurveTo(curve) => {
+                    let CubicBezierCurve {
+                        pt1: (x2, y2),
+                        pt2: (x3, y3),
+                        to,
+                    } = curve;
+                    cur_x = to.0;
+                    cur_y = to.1;
 
-                segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
+                    segments.push(Segment::curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
 
-                state = SegmentState::ClosedSubpath;
+                    state = SegmentState::InSubpath;
+                }
+
+                PathCommand::Arc(arc) => {
+                    cur_x = arc.to.0;
+                    cur_y = arc.to.1;
+
+                    match arc.center_parameterization() {
+                        ArcParameterization::CenterParameters {
+                            center,
+                            radii,
+                            theta1,
+                            delta_theta,
+                        } => {
+                            let rot = arc.x_axis_rotation;
+                            let theta2 = theta1 + delta_theta;
+                            let n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as u32;
+                            let d_theta = delta_theta / f64::from(n_segs);
+
+                            let segment1 =
+                                arc_segment(center, radii, rot, theta1, theta1 + d_theta);
+                            let segment2 =
+                                arc_segment(center, radii, rot, theta2 - d_theta, theta2);
+
+                            let (x2, y2) = segment1.pt1;
+                            let (x3, y3) = segment2.pt2;
+                            segments
+                                .push(Segment::curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
+
+                            state = SegmentState::InSubpath;
+                        }
+                        ArcParameterization::LineTo => {
+                            segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
+
+                            state = SegmentState::InSubpath;
+                        }
+                        ArcParameterization::Omit => {}
+                    }
+                }
+
+                PathCommand::ClosePath => {
+                    cur_x = subpath_start_x;
+                    cur_y = subpath_start_y;
+
+                    segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
+
+                    state = SegmentState::ClosedSubpath;
+                }
             }
         }
+
+        if let SegmentState::NewSubpath = state {
+            // Output a lone point if we started a subpath with a moveto
+            // command, but there are no subsequent commands.
+            segments.push(Segment::degenerate(cur_x, cur_y));
+        };
+
+        Segments(segments)
     }
-
-    if let SegmentState::NewSubpath = state {
-        // Output a lone point if we started a subpath with a moveto
-        // command, but there are no subsequent commands.
-        segments.push(Segment::degenerate(cur_x, cur_y));
-    };
-
-    segments
 }
 
 // The SVG spec 1.1 says http://www.w3.org/TR/SVG/implnote.html#PathElementImplementationNotes
@@ -537,56 +556,52 @@ pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
 // directionality. Otherwise, set the directionality for the path
 // segment's start and end points to align with the positive x-axis
 // in user space.
-fn find_incoming_directionality_backwards(
-    segments: &[Segment],
-    start_index: usize,
-) -> (bool, f64, f64) {
-    // "go backwards ... within the current subpath until ... segment which has directionality
-    // at its end point"
-    for segment in segments[..start_index + 1].iter().rev() {
-        match *segment {
-            Segment::Degenerate { .. } => {
-                return (false, 0.0, 0.0); // reached the beginning of the subpath as we ran into a standalone point
-            }
+impl Segments {
+    fn find_incoming_directionality_backwards(&self, start_index: usize) -> (bool, f64, f64) {
+        // "go backwards ... within the current subpath until ... segment which has directionality
+        // at its end point"
+        for segment in self[..start_index + 1].iter().rev() {
+            match *segment {
+                Segment::Degenerate { .. } => {
+                    return (false, 0.0, 0.0); // reached the beginning of the subpath as we ran into a standalone point
+                }
 
-            Segment::LineOrCurve { .. } => match segment.get_directionalities() {
-                Some((_, _, v2x, v2y)) => {
-                    return (true, v2x, v2y);
-                }
-                None => {
-                    continue;
-                }
-            },
+                Segment::LineOrCurve { .. } => match segment.get_directionalities() {
+                    Some((_, _, v2x, v2y)) => {
+                        return (true, v2x, v2y);
+                    }
+                    None => {
+                        continue;
+                    }
+                },
+            }
         }
+
+        (false, 0.0, 0.0)
     }
 
-    (false, 0.0, 0.0)
-}
+    fn find_outgoing_directionality_forwards(&self, start_index: usize) -> (bool, f64, f64) {
+        // "go forwards ... within the current subpath until ... segment which has directionality at
+        // its start point"
+        for segment in &self[start_index..] {
+            match *segment {
+                Segment::Degenerate { .. } => {
+                    return (false, 0.0, 0.0); // reached the end of a subpath as we ran into a standalone point
+                }
 
-fn find_outgoing_directionality_forwards(
-    segments: &[Segment],
-    start_index: usize,
-) -> (bool, f64, f64) {
-    // "go forwards ... within the current subpath until ... segment which has directionality at
-    // its start point"
-    for segment in &segments[start_index..] {
-        match *segment {
-            Segment::Degenerate { .. } => {
-                return (false, 0.0, 0.0); // reached the end of a subpath as we ran into a standalone point
+                Segment::LineOrCurve { .. } => match segment.get_directionalities() {
+                    Some((v1x, v1y, _, _)) => {
+                        return (true, v1x, v1y);
+                    }
+                    None => {
+                        continue;
+                    }
+                },
             }
-
-            Segment::LineOrCurve { .. } => match segment.get_directionalities() {
-                Some((v1x, v1y, _, _)) => {
-                    return (true, v1x, v1y);
-                }
-                None => {
-                    continue;
-                }
-            },
         }
-    }
 
-    (false, 0.0, 0.0)
+        (false, 0.0, 0.0)
+    }
 }
 
 // From SVG's marker-start, marker-mid, marker-end properties
@@ -707,7 +722,7 @@ where
     };
 
     // Convert the path to a list of segments and bare points
-    let segments = path_builder_to_segments(builder);
+    let segments = Segments::from(builder);
 
     let mut subpath_state = SubpathState::NoSubpath;
 
@@ -719,7 +734,7 @@ where
 
                     // Got a lone point after a subpath; render the subpath's end marker first
                     let (_, incoming_vx, incoming_vy) =
-                        find_incoming_directionality_backwards(&segments, i - 1);
+                        segments.find_incoming_directionality_backwards(i - 1);
                     emit_marker(
                         &segments[i - 1],
                         MarkerEndpoint::End,
@@ -746,7 +761,7 @@ where
                 match subpath_state {
                     SubpathState::NoSubpath => {
                         let (_, outgoing_vx, outgoing_vy) =
-                            find_outgoing_directionality_forwards(&segments, i);
+                            segments.find_outgoing_directionality_forwards(i);
                         emit_marker(
                             segment,
                             MarkerEndpoint::Start,
@@ -762,9 +777,9 @@ where
                         assert!(i > 0);
 
                         let (has_incoming, incoming_vx, incoming_vy) =
-                            find_incoming_directionality_backwards(&segments, i - 1);
+                            segments.find_incoming_directionality_backwards(i - 1);
                         let (has_outgoing, outgoing_vx, outgoing_vy) =
-                            find_outgoing_directionality_forwards(&segments, i);
+                            segments.find_outgoing_directionality_forwards(i);
 
                         let incoming = Angle::from_vector(incoming_vx, incoming_vy);
                         let outgoing = Angle::from_vector(outgoing_vx, outgoing_vy);
@@ -799,12 +814,12 @@ where
         let segment = &segments[segments.len() - 1];
         if let Segment::LineOrCurve { .. } = *segment {
             let (_, incoming_vx, incoming_vy) =
-                find_incoming_directionality_backwards(&segments, segments.len() - 1);
+                segments.find_incoming_directionality_backwards(segments.len() - 1);
 
             let angle = {
                 if let PathCommand::ClosePath = builder.get_path_commands()[segments.len()] {
                     let (_, outgoing_vx, outgoing_vy) =
-                        find_outgoing_directionality_forwards(&segments, 0);
+                        segments.find_outgoing_directionality_forwards(0);
                     let incoming = Angle::from_vector(incoming_vx, incoming_vy);
                     let outgoing = Angle::from_vector(outgoing_vx, outgoing_vy);
                     incoming.bisect(outgoing)
@@ -826,7 +841,6 @@ where
     Ok(())
 }
 
-// ************************************  Tests ************************************
 #[cfg(test)]
 mod parser_tests {
     use super::*;
@@ -896,36 +910,29 @@ mod parser_tests {
 #[cfg(test)]
 mod directionality_tests {
     use super::*;
-    use std::f64;
-
-    fn test_path_builder_to_segments(builder: &PathBuilder, expected_segments: Vec<Segment>) {
-        let segments = path_builder_to_segments(builder);
-        assert_eq!(expected_segments, segments);
-    }
 
     // Single open path; the easy case
-
-    fn setup_open_path() -> PathBuilder {
+    fn setup_open_path() -> Segments {
         let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
         builder.line_to(20.0, 20.0);
 
-        builder
+        Segments::from(&builder)
     }
 
     #[test]
     fn path_to_segments_handles_open_path() {
-        let expected_segments: Vec<Segment> = vec![
+        let expected_segments: Segments = Segments(vec![
             Segment::line(10.0, 10.0, 20.0, 10.0),
             Segment::line(20.0, 10.0, 20.0, 20.0),
-        ];
+        ]);
 
-        test_path_builder_to_segments(&setup_open_path(), expected_segments);
+        assert_eq!(setup_open_path(), expected_segments);
     }
 
-    fn setup_multiple_open_subpaths() -> PathBuilder {
+    fn setup_multiple_open_subpaths() -> Segments {
         let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
@@ -937,24 +944,24 @@ mod directionality_tests {
         builder.curve_to(50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
         builder.line_to(80.0, 90.0);
 
-        builder
+        Segments::from(&builder)
     }
 
     #[test]
     fn path_to_segments_handles_multiple_open_subpaths() {
-        let expected_segments: Vec<Segment> = vec![
+        let expected_segments: Segments = Segments(vec![
             Segment::line(10.0, 10.0, 20.0, 10.0),
             Segment::line(20.0, 10.0, 20.0, 20.0),
             Segment::line(30.0, 30.0, 40.0, 30.0),
             Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
             Segment::line(70.0, 70.0, 80.0, 90.0),
-        ];
+        ]);
 
-        test_path_builder_to_segments(&setup_multiple_open_subpaths(), expected_segments);
+        assert_eq!(setup_multiple_open_subpaths(), expected_segments);
     }
 
     // Closed subpath; must have a line segment back to the first point
-    fn setup_closed_subpath() -> PathBuilder {
+    fn setup_closed_subpath() -> Segments {
         let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
@@ -962,23 +969,23 @@ mod directionality_tests {
         builder.line_to(20.0, 20.0);
         builder.close_path();
 
-        builder
+        Segments::from(&builder)
     }
 
     #[test]
     fn path_to_segments_handles_closed_subpath() {
-        let expected_segments: Vec<Segment> = vec![
+        let expected_segments: Segments = Segments(vec![
             Segment::line(10.0, 10.0, 20.0, 10.0),
             Segment::line(20.0, 10.0, 20.0, 20.0),
             Segment::line(20.0, 20.0, 10.0, 10.0),
-        ];
+        ]);
 
-        test_path_builder_to_segments(&setup_closed_subpath(), expected_segments);
+        assert_eq!(setup_closed_subpath(), expected_segments);
     }
 
     // Multiple closed subpaths; each must have a line segment back to their
     // initial points, with no degenerate segments between subpaths.
-    fn setup_multiple_closed_subpaths() -> PathBuilder {
+    fn setup_multiple_closed_subpaths() -> Segments {
         let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
@@ -992,12 +999,12 @@ mod directionality_tests {
         builder.line_to(80.0, 90.0);
         builder.close_path();
 
-        builder
+        Segments::from(&builder)
     }
 
     #[test]
     fn path_to_segments_handles_multiple_closed_subpaths() {
-        let expected_segments: Vec<Segment> = vec![
+        let expected_segments: Segments = Segments(vec![
             Segment::line(10.0, 10.0, 20.0, 10.0),
             Segment::line(20.0, 10.0, 20.0, 20.0),
             Segment::line(20.0, 20.0, 10.0, 10.0),
@@ -1005,14 +1012,14 @@ mod directionality_tests {
             Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
             Segment::line(70.0, 70.0, 80.0, 90.0),
             Segment::line(80.0, 90.0, 30.0, 30.0),
-        ];
+        ]);
 
-        test_path_builder_to_segments(&setup_multiple_closed_subpaths(), expected_segments);
+        assert_eq!(setup_multiple_closed_subpaths(), expected_segments);
     }
 
     // A lineto follows the first closed subpath, with no moveto to start the second subpath.
     // The lineto must start at the first point of the first subpath.
-    fn setup_no_moveto_after_closepath() -> PathBuilder {
+    fn setup_no_moveto_after_closepath() -> Segments {
         let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
@@ -1022,19 +1029,19 @@ mod directionality_tests {
 
         builder.line_to(40.0, 30.0);
 
-        builder
+        Segments::from(&builder)
     }
 
     #[test]
     fn path_to_segments_handles_no_moveto_after_closepath() {
-        let expected_segments: Vec<Segment> = vec![
+        let expected_segments: Segments = Segments(vec![
             Segment::line(10.0, 10.0, 20.0, 10.0),
             Segment::line(20.0, 10.0, 20.0, 20.0),
             Segment::line(20.0, 20.0, 10.0, 10.0),
             Segment::line(10.0, 10.0, 40.0, 30.0),
-        ];
+        ]);
 
-        test_path_builder_to_segments(&setup_no_moveto_after_closepath(), expected_segments);
+        assert_eq!(setup_no_moveto_after_closepath(), expected_segments);
     }
 
     // Sequence of moveto; should generate degenerate points.
@@ -1048,7 +1055,7 @@ mod directionality_tests {
     // allow for unelided path commands, and which should
     // only build a cairo_path_t for the final rendering step.
     //
-    // fn setup_sequence_of_moveto () -> PathBuilder {
+    // fn setup_sequence_of_moveto () -> Segments {
     // let mut builder = PathBuilder::new ();
     //
     // builder.move_to (10.0, 10.0);
@@ -1056,19 +1063,19 @@ mod directionality_tests {
     // builder.move_to (30.0, 30.0);
     // builder.move_to (40.0, 40.0);
     //
-    // builder
+    // Segments::from(&builder)
     // }
     //
     // #[test]
     // fn path_to_segments_handles_sequence_of_moveto () {
-    // let expected_segments: Vec<Segment> = vec! [
+    // let expected_segments: Segments = Segments(vec! [
     // Segment::degenerate(10.0, 10.0),
     // Segment::degenerate(20.0, 20.0),
     // Segment::degenerate(30.0, 30.0),
     // Segment::degenerate(40.0, 40.0),
-    // ];
+    // ]);
     //
-    // test_path_builder_to_segments (&setup_sequence_of_moveto (), expected_segments);
+    // assert_eq!(setup_sequence_of_moveto(), expected_segments);
     // }
 
     #[test]
