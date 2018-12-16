@@ -18,7 +18,7 @@
   <mailing-list rdf:resource="https://mail.gnome.org/mailman/listinfo/desktop-devel-list" />
   <download-page rdf:resource="https://download.gnome.org/sources/librsvg/" />
   <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/librsvg/issues" />
-  <category rdf:resource="http://api.gnome.org/doap-extensions#deprecated" />
+  <!-- <category rdf:resource="http://api.gnome.org/doap-extensions#deprecated" /> -->
   <programming-language>C</programming-language>
   <programming-language>Rust</programming-language>
 
