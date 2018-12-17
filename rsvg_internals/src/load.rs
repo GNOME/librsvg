@@ -6,6 +6,7 @@ use glib_sys;
 use std::slice;
 
 use error::set_gerror;
+use handle::LoadOptions;
 use xml::XmlState;
 use xml2_load::{xml_state_load_from_possibly_compressed_stream, ParseFromStreamError};
 
@@ -18,7 +19,7 @@ use xml2_load::{xml_state_load_from_possibly_compressed_stream, ParseFromStreamE
 // This struct maintains the loading context while an RsvgHandle is being
 // populated with data, in case the caller is using write()/close().
 pub struct LoadContext<'a> {
-    unlimited_size: bool,
+    load_options: LoadOptions,
 
     state: LoadState,
 
@@ -35,9 +36,9 @@ enum LoadState {
 }
 
 impl<'a> LoadContext<'a> {
-    pub fn new(xml: &mut XmlState, unlimited_size: bool) -> LoadContext {
+    pub fn new(xml: &mut XmlState, load_options: LoadOptions) -> LoadContext {
         LoadContext {
-            unlimited_size,
+            load_options,
             state: LoadState::Start,
             buffer: Vec::new(),
             xml,
@@ -74,7 +75,7 @@ impl<'a> LoadContext<'a> {
 
                 xml_state_load_from_possibly_compressed_stream(
                     &mut self.xml,
-                    self.unlimited_size,
+                    &self.load_options,
                     stream.upcast(),
                     None,
                 )
@@ -86,14 +87,14 @@ impl<'a> LoadContext<'a> {
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_load_new<'a>(
     raw_xml: *mut XmlState,
-    unlimited_size: glib_sys::gboolean,
+    flags: u32,
 ) -> *mut LoadContext<'a> {
     assert!(!raw_xml.is_null());
 
     let xml = &mut *raw_xml;
-    let unlimited_size = from_glib(unlimited_size);
+    let load_options = LoadOptions::from_flags(flags);
 
-    Box::into_raw(Box::new(LoadContext::new(xml, unlimited_size)))
+    Box::into_raw(Box::new(LoadContext::new(xml, load_options)))
 }
 
 #[no_mangle]

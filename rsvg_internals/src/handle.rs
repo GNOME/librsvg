@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell};
+use std::cell::{Cell, Ref, RefCell};
 use std::error::Error;
 use std::ptr;
 use std::rc::Rc;
@@ -31,10 +31,24 @@ pub struct RsvgHandle {
     _private: [u8; 0],
 }
 
+/// Flags used during loading
+///
+/// We communicate these to/from the C code with a guint <-> u32,
+/// and this struct provides to_flags() and from_flags() methods.
+#[derive(Default, Copy, Clone)]
+pub struct LoadOptions {
+    /// Whether to turn off size limits in libxml2
+    pub unlimited_size: bool,
+
+    /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces
+    pub keep_image_data: bool,
+}
+
 pub struct Handle {
     dpi: Dpi,
     base_url: RefCell<Option<Url>>,
     svg: RefCell<Option<Svg>>,
+    load_options: Cell<LoadOptions>,
 }
 
 impl Handle {
@@ -43,22 +57,51 @@ impl Handle {
             dpi: Dpi::default(),
             base_url: RefCell::new(None),
             svg: RefCell::new(None),
+            load_options: Cell::new(LoadOptions::default()),
         }
+    }
+}
+
+// Keep these in sync with rsvg.h:RsvgHandleFlags
+const RSVG_HANDLE_FLAG_UNLIMITED: u32 = 1 << 0;
+const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: u32 = 1 << 1;
+
+pub fn get_load_options(handle: *const RsvgHandle) -> LoadOptions {
+    let rhandle = get_rust_handle(handle);
+    rhandle.load_options.get()
+}
+
+impl LoadOptions {
+    pub fn from_flags(flags: u32) -> Self {
+        LoadOptions {
+            unlimited_size: (flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0,
+            keep_image_data: (flags & RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA) != 0,
+        }
+    }
+
+    fn to_flags(&self) -> u32 {
+        let mut flags = 0;
+
+        if self.unlimited_size {
+            flags |= RSVG_HANDLE_FLAG_UNLIMITED;
+        }
+
+        if self.keep_image_data {
+            flags |= RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA;
+        }
+
+        flags
     }
 }
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn rsvg_handle_get_flags(handle: *const RsvgHandle) -> u32;
-
     fn rsvg_handle_new_from_gfile_sync(
         file: *const gio_sys::GFile,
         flags: u32,
         cancellable: *const gio_sys::GCancellable,
         error: *mut *mut glib_sys::GError,
     ) -> *mut RsvgHandle;
-
-    fn rsvg_handle_keep_image_data(handle: *const RsvgHandle) -> glib_sys::gboolean;
 
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
 }
@@ -88,11 +131,13 @@ pub fn lookup_fragment_id(handle: *const RsvgHandle, fragment: &Fragment) -> Opt
 
 pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*const RsvgHandle, ()> {
     unsafe {
+        let rhandle = get_rust_handle(handle);
+
         let file = GFile::new_for_uri(aurl.url().as_str());
 
         let res = rsvg_handle_new_from_gfile_sync(
             file.to_glib_none().0,
-            rsvg_handle_get_flags(handle),
+            rhandle.load_options.get().to_flags(),
             ptr::null(),
             ptr::null_mut(),
         );
@@ -110,12 +155,6 @@ pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*cons
             Ok(res)
         }
     }
-}
-
-const RSVG_HANDLE_FLAG_UNLIMITED: u32 = 1 << 0;
-
-pub fn get_unlimited_size(handle: *const RsvgHandle) -> bool {
-    unsafe { (rsvg_handle_get_flags(handle) & RSVG_HANDLE_FLAG_UNLIMITED) != 0 }
 }
 
 pub fn get_dpi<'a>(handle: *const RsvgHandle) -> &'a Dpi {
@@ -149,14 +188,12 @@ pub fn acquire_stream(
     io::acquire_stream(&aurl, None)
 }
 
-fn keep_image_data(handle: *const RsvgHandle) -> bool {
-    unsafe { from_glib(rsvg_handle_keep_image_data(handle)) }
-}
-
 pub fn load_image_to_surface(
     handle: *mut RsvgHandle,
     aurl: &AllowedUrl,
 ) -> Result<ImageSurface, LoadingError> {
+    let rhandle = get_rust_handle(handle);
+
     let data = acquire_data(handle, aurl)?;
 
     if data.data.len() == 0 {
@@ -176,7 +213,7 @@ pub fn load_image_to_surface(
 
     let surface = SharedImageSurface::from_pixbuf(&pixbuf)?.into_image_surface()?;
 
-    if keep_image_data(handle) {
+    if rhandle.load_options.get().keep_image_data {
         if let Some(mime_type) = data.content_type {
             extern "C" {
                 fn cairo_surface_set_mime_data(
@@ -270,7 +307,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut Handle) {
     Box::from_raw(raw_handle);
 }
 
-fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
+pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
     unsafe { &mut *(rsvg_handle_get_rust(handle) as *mut Handle) }
 }
 
@@ -518,4 +555,18 @@ pub unsafe extern "C" fn rsvg_handle_rust_node_is_root(
     let svg = svg_ref.as_ref().unwrap();
 
     Rc::ptr_eq(&svg.tree.root(), node).to_glib()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_flags(raw_handle: *const Handle) -> u32 {
+    let rhandle = &*raw_handle;
+
+    rhandle.load_options.get().to_flags()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, flags: u32) {
+    let rhandle = &*raw_handle;
+
+    rhandle.load_options.set(LoadOptions::from_flags(flags));
 }

@@ -89,8 +89,6 @@ typedef struct RsvgLoad RsvgLoad;
 typedef struct RsvgHandleRust RsvgHandleRust;
 
 struct RsvgHandlePrivate {
-    RsvgHandleFlags flags;
-
     RsvgHandleState hstate;
 
     RsvgLoad *load;
@@ -126,7 +124,7 @@ void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 /* Implemented in rsvg_internals/src/xml2_load.rs */
 G_GNUC_INTERNAL
 gboolean rsvg_xml_state_load_from_possibly_compressed_stream (RsvgXmlState *xml,
-                                                              gboolean      unlimited_size,
+                                                              guint         flags,
                                                               GInputStream *stream,
                                                               GCancellable *cancellable,
                                                               GError      **error);
@@ -139,13 +137,7 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
 
 G_GNUC_INTERNAL
-guint rsvg_handle_get_flags (RsvgHandle *handle);
-
-G_GNUC_INTERNAL
 RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
-
-G_GNUC_INTERNAL
-gboolean rsvg_handle_keep_image_data (RsvgHandle *handle);
 
 /* Implemented in rsvg_internals/src/handle.rs */
 G_GNUC_INTERNAL

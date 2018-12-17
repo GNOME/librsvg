@@ -141,13 +141,15 @@ extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern RsvgNode *rsvg_handle_defs_lookup (RsvgHandle *handle, const char *name);
 extern gboolean rsvg_handle_rust_node_is_root(RsvgHandleRust *raw_handle, RsvgNode *node);
 extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
+extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
+extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
 
 /* Implemented in rsvg_internals/src/xml.rs */
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
 extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
 
 /* Implemented in rsvg_internals/src/load.rs */
-extern RsvgLoad *rsvg_load_new (RsvgXmlState *xml, gboolean unlimited_size) G_GNUC_WARN_UNUSED_RESULT;
+extern RsvgLoad *rsvg_load_new (RsvgXmlState *xml, guint flags) G_GNUC_WARN_UNUSED_RESULT;
 extern RsvgXmlState *rsvg_load_free (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 extern void rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count);
 extern gboolean rsvg_load_close (RsvgLoad *load, GError **error) G_GNUC_WARN_UNUSED_RESULT;
@@ -201,7 +203,6 @@ rsvg_handle_init (RsvgHandle * self)
 {
     self->priv = rsvg_handle_get_instance_private (self);
 
-    self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->hstate = RSVG_HANDLE_STATE_START;
 
     self->priv->in_loop = FALSE;
@@ -252,7 +253,7 @@ rsvg_handle_set_property (GObject * instance, guint prop_id, GValue const *value
 
     switch (prop_id) {
     case PROP_FLAGS:
-        self->priv->flags = g_value_get_flags (value);
+        rsvg_handle_rust_set_flags (self->priv->rust_handle, g_value_get_flags (value));
         break;
     case PROP_DPI_X:
         rsvg_handle_rust_set_dpi_x (self->priv->rust_handle, g_value_get_double (value));
@@ -276,7 +277,7 @@ rsvg_handle_get_property (GObject * instance, guint prop_id, GValue * value, GPa
 
     switch (prop_id) {
     case PROP_FLAGS:
-        g_value_set_flags (value, self->priv->flags);
+        g_value_set_flags (value, rsvg_handle_rust_get_flags (self->priv->rust_handle));
         break;
     case PROP_DPI_X:
         g_value_set_double (value, rsvg_handle_rust_get_dpi_x (self->priv->rust_handle));
@@ -686,7 +687,7 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
     if (priv->hstate == RSVG_HANDLE_STATE_START) {
         priv->hstate = RSVG_HANDLE_STATE_LOADING;
         priv->load = rsvg_load_new (rsvg_xml_state_new (handle),
-                                    (priv->flags && RSVG_HANDLE_FLAG_UNLIMITED) != 0);
+                                    rsvg_handle_rust_get_flags (priv->rust_handle));
     }
 
     g_assert (priv->hstate == RSVG_HANDLE_STATE_LOADING);
@@ -822,7 +823,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     xml = rsvg_xml_state_new (handle);
     read_successfully = rsvg_xml_state_load_from_possibly_compressed_stream (
         xml,
-        (priv->flags && RSVG_HANDLE_FLAG_UNLIMITED) != 0,
+        rsvg_handle_rust_get_flags (priv->rust_handle),
         stream,
         cancellable,
         error
@@ -1048,22 +1049,10 @@ rsvg_handle_get_desc (RsvgHandle * handle)
     return NULL;
 }
 
-guint
-rsvg_handle_get_flags (RsvgHandle *handle)
-{
-    return (guint) handle->priv->flags;
-}
-
 RsvgHandleRust *
 rsvg_handle_get_rust (RsvgHandle *handle)
 {
     return handle->priv->rust_handle;
-}
-
-gboolean
-rsvg_handle_keep_image_data (RsvgHandle *handle)
-{
-    return (handle->priv->flags & RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA) != 0;
 }
 
 static RsvgDrawingCtx *

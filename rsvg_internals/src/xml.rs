@@ -516,10 +516,10 @@ impl XmlState {
             _ => AcquireError::ResourceError,
         })?;
 
-        let unlimited_size = handle::get_unlimited_size(self.handle);
+        let load_options = handle::get_load_options(self.handle);
 
         // FIXME: pass a cancellable
-        xml_state_parse_from_stream(self, unlimited_size, stream, None).map_err(|e| match e {
+        xml_state_parse_from_stream(self, &load_options, stream, None).map_err(|e| match e {
             ParseFromStreamError::CouldNotCreateParser => AcquireError::FatalError,
             ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
             ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,
