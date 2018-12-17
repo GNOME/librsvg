@@ -102,6 +102,8 @@ impl Parse for Angle {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use float_cmp::ApproxEq;
+    use std::f64;
 
     #[test]
     fn parses_angle() {
@@ -120,5 +122,59 @@ mod tests {
         assert!(Angle::parse_str("", ()).is_err());
         assert!(Angle::parse_str("foo", ()).is_err());
         assert!(Angle::parse_str("300foo", ()).is_err());
+    }
+
+    fn test_bisection_angle(
+        expected: f64,
+        incoming_vx: f64,
+        incoming_vy: f64,
+        outgoing_vx: f64,
+        outgoing_vy: f64,
+    ) {
+        let i = Angle::from_vector(incoming_vx, incoming_vy);
+        let o = Angle::from_vector(outgoing_vx, outgoing_vy);
+        let bisected = i.bisect(o);
+        assert!(expected.approx_eq(&bisected.radians(), 2.0 * PI * f64::EPSILON, 1));
+    }
+
+    #[test]
+    fn bisection_angle_is_correct_from_incoming_counterclockwise_to_outgoing() {
+        // 1st quadrant
+        test_bisection_angle(FRAC_PI_4, 1.0, 0.0, 0.0, 1.0);
+
+        // 2nd quadrant
+        test_bisection_angle(FRAC_PI_2 + FRAC_PI_4, 0.0, 1.0, -1.0, 0.0);
+
+        // 3rd quadrant
+        test_bisection_angle(PI + FRAC_PI_4, -1.0, 0.0, 0.0, -1.0);
+
+        // 4th quadrant
+        test_bisection_angle(PI + FRAC_PI_2 + FRAC_PI_4, 0.0, -1.0, 1.0, 0.0);
+    }
+
+    #[test]
+    fn bisection_angle_is_correct_from_incoming_clockwise_to_outgoing() {
+        // 1st quadrant
+        test_bisection_angle(FRAC_PI_4, 0.0, 1.0, 1.0, 0.0);
+
+        // 2nd quadrant
+        test_bisection_angle(FRAC_PI_2 + FRAC_PI_4, -1.0, 0.0, 0.0, 1.0);
+
+        // 3rd quadrant
+        test_bisection_angle(PI + FRAC_PI_4, 0.0, -1.0, -1.0, 0.0);
+
+        // 4th quadrant
+        test_bisection_angle(PI + FRAC_PI_2 + FRAC_PI_4, 1.0, 0.0, 0.0, -1.0);
+    }
+
+    #[test]
+    fn bisection_angle_is_correct_for_more_than_quarter_turn_angle() {
+        test_bisection_angle(0.0, 0.1, -1.0, 0.1, 1.0);
+
+        test_bisection_angle(FRAC_PI_2, 1.0, 0.1, -1.0, 0.1);
+
+        test_bisection_angle(PI, -0.1, 1.0, -0.1, -1.0);
+
+        test_bisection_angle(PI + FRAC_PI_2, -1.0, -0.1, 1.0, -0.1);
     }
 }
