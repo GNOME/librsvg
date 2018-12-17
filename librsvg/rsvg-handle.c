@@ -469,29 +469,16 @@ rsvg_handle_new (void)
     return RSVG_HANDLE (g_object_new (RSVG_TYPE_HANDLE, NULL));
 }
 
-static gboolean
-rsvg_handle_fill_with_data (RsvgHandle *handle,
-                            const char *data,
-                            gsize data_len,
-                            GError ** error)
-{
-    gboolean rv;
-
-    rsvg_return_val_if_fail (data != NULL, FALSE, error);
-    rsvg_return_val_if_fail (data_len != 0, FALSE, error);
-
-    rv = rsvg_handle_write (handle, (guchar *) data, data_len, error);
-
-    return rsvg_handle_close (handle, rv ? error : NULL) && rv;
-}
-
 /**
  * rsvg_handle_new_from_data:
  * @data: (array length=data_len): The SVG data
  * @data_len: The length of @data, in bytes
  * @error: return location for errors
  *
- * Loads the SVG specified by @data.
+ * Loads the SVG specified by @data.  Note that this function creates an
+ * #RsvgHandle without a base file, and without any special flags.  If you
+ * need these, use rsvg_handle_new_from_stream_sync() instead by creating
+ * a #GMemoryInputStream from your data.
  *
  * Returns: A #RsvgHandle or %NULL if an error occurs.
  * Since: 2.14
@@ -499,16 +486,16 @@ rsvg_handle_fill_with_data (RsvgHandle *handle,
 RsvgHandle *
 rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
 {
+    GInputStream *stream;
     RsvgHandle *handle;
 
-    handle = rsvg_handle_new ();
+    g_return_val_if_fail (data != NULL, NULL);
+    g_return_val_if_fail (data_len <= G_MAXSSIZE, NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-    if (handle) {
-        if (!rsvg_handle_fill_with_data (handle, (char *) data, data_len, error)) {
-            g_object_unref (handle);
-            handle = NULL;
-        }
-    }
+    stream = g_memory_input_stream_new_from_data (data, data_len, NULL);
+    handle = rsvg_handle_new_from_stream_sync (stream, NULL, RSVG_HANDLE_FLAGS_NONE, NULL, error);
+    g_object_unref (stream);
 
     return handle;
 }
