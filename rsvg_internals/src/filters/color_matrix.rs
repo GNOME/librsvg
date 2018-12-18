@@ -58,7 +58,7 @@ impl NodeTrait for ColorMatrix {
 
         // First, determine the operation type.
         let mut operation_type = OperationType::Matrix;
-        for (_, attr, value) in pbag.iter().filter(|(_, attr, _)| *attr == Attribute::Type) {
+        for (attr, value) in pbag.iter().filter(|(attr, _)| *attr == Attribute::Type) {
             operation_type = OperationType::parse(attr, value)?;
         }
 
@@ -76,9 +76,9 @@ impl NodeTrait for ColorMatrix {
                 ),
             );
         } else {
-            for (_, attr, value) in pbag
+            for (attr, value) in pbag
                 .iter()
-                .filter(|(_, attr, _)| *attr == Attribute::Values)
+                .filter(|(attr, _)| *attr == Attribute::Values)
             {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),

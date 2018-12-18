@@ -656,7 +656,7 @@ impl NodeTrait for NodeGradient {
         let mut fx = None;
         let mut fy = None;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 // Attributes common to linear and radial gradients
                 Attribute::GradientUnits => {

@@ -7,14 +7,13 @@ use std::str::{self, FromStr};
 
 use attributes::Attribute;
 
-// We store (key, attribute, value)
-pub struct PropertyBag<'a>(Vec<(&'a CStr, Attribute, &'a CStr)>);
+pub struct PropertyBag<'a>(Vec<(Attribute, &'a CStr)>);
 
-pub struct OwnedPropertyBag(Vec<(CString, Attribute, CString)>);
+pub struct OwnedPropertyBag(Vec<(Attribute, CString)>);
 
 pub struct PropertyBagIter<'a>(PropertyBagCStrIter<'a>);
 
-pub struct PropertyBagCStrIter<'a>(slice::Iter<'a, (&'a CStr, Attribute, &'a CStr)>);
+pub struct PropertyBagCStrIter<'a>(slice::Iter<'a, (Attribute, &'a CStr)>);
 
 trait Utf8CStrToStr {
     fn to_str_utf8(&self) -> &str;
@@ -66,7 +65,7 @@ impl<'a> PropertyBag<'a> {
                     // We silently drop unknown attributes.  New attributes should be added in
                     // build.rs.
                     if let Ok(attr) = Attribute::from_str(key_str.to_str_utf8()) {
-                        array.push((key_str, attr, val_str));
+                        array.push((attr, val_str));
                     }
                 } else {
                     break;
@@ -82,18 +81,18 @@ impl<'a> PropertyBag<'a> {
     pub fn from_owned(owned: &OwnedPropertyBag) -> PropertyBag<'_> {
         let mut array = Vec::new();
 
-        for &(ref k, a, ref v) in &owned.0 {
-            array.push((k.deref(), a, v.deref()));
+        for &(a, ref v) in &owned.0 {
+            array.push((a, v.deref()));
         }
 
         PropertyBag(array)
     }
 
     pub fn to_owned(&self) -> OwnedPropertyBag {
-        let mut array = Vec::<(CString, Attribute, CString)>::new();
+        let mut array = Vec::<(Attribute, CString)>::new();
 
-        for &(k, a, v) in &self.0 {
-            array.push(((*k).to_owned(), a, (*v).to_owned()));
+        for &(a, v) in &self.0 {
+            array.push((a, (*v).to_owned()));
         }
 
         OwnedPropertyBag(array)
@@ -117,20 +116,18 @@ impl<'a> PropertyBag<'a> {
 }
 
 impl<'a> Iterator for PropertyBagIter<'a> {
-    type Item = (&'a str, Attribute, &'a str);
+    type Item = (Attribute, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0
-            .next()
-            .map(|(k, a, v)| (k.to_str_utf8(), a, v.to_str_utf8()))
+        self.0.next().map(|(a, v)| (a, v.to_str_utf8()))
     }
 }
 
 impl<'a> Iterator for PropertyBagCStrIter<'a> {
-    type Item = (&'a CStr, Attribute, &'a CStr);
+    type Item = (Attribute, &'a CStr);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|&(k, a, v)| (k, a, v))
+        self.0.next().map(|&(a, v)| (a, v))
     }
 }
 
@@ -168,17 +165,17 @@ mod tests {
         let mut had_rx: bool = false;
         let mut had_ry: bool = false;
 
-        for (k, a, v) in pbag.iter() {
-            if k == "rx" {
-                assert!(a == Attribute::Rx);
-                assert!(v == "1");
-                had_rx = true;
-            } else if k == "ry" {
-                assert!(a == Attribute::Ry);
-                assert!(v == "2");
-                had_ry = true;
-            } else {
-                unreachable!();
+        for (a, v) in pbag.iter() {
+            match a {
+                Attribute::Rx => {
+                    assert!(v == "1");
+                    had_rx = true;
+                }
+                Attribute::Ry => {
+                    assert!(v == "2");
+                    had_ry = true;
+                }
+                _ => unreachable!()
             }
         }
 

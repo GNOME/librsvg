@@ -354,7 +354,7 @@ impl Node {
     }
 
     pub fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag<'_>) {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Transform => match Matrix::parse_str(value, ()) {
                     Ok(affine) => self.data.transform.set(affine),
@@ -391,7 +391,7 @@ impl Node {
     ) -> Result<(), NodeError> {
         let mut cond = self.get_cond();
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             // FIXME: move this to "do catch" when we can bump the rustc version dependency
             let mut parse = || {
                 match attr {
@@ -513,7 +513,7 @@ impl Node {
 
     /// Looks for the "style" attribute in the pbag, and applies CSS styles from it
     fn set_style_attribute(&self, pbag: &PropertyBag<'_>) {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Style => {
                     let mut state = self.data.state.borrow_mut();

@@ -145,7 +145,7 @@ impl NodeTrait for Primitive {
         let check_units_and_ensure_nonnegative =
             |length: Length| check_units(length).and_then(Length::check_nonnegative);
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(Some(parse_and_validate(
                     "x",
@@ -210,7 +210,7 @@ impl NodeTrait for PrimitiveWithInput {
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::In => drop(self.in_.replace(Some(Input::parse(Attribute::In, value)?))),
                 _ => (),

@@ -235,7 +235,7 @@ fn compute_luminance_to_alpha(
 
 impl NodeTrait for NodeMask {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),

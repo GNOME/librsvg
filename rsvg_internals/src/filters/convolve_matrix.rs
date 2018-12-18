@@ -64,7 +64,7 @@ impl NodeTrait for ConvolveMatrix {
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Order => self.order.set(
                     parsers::integer_optional_integer(value)
@@ -124,7 +124,7 @@ impl NodeTrait for ConvolveMatrix {
         }
 
         // target_x and target_y depend on order.
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::TargetX => self.target_x.set(Some(
                     parsers::integer(value)
@@ -167,9 +167,9 @@ impl NodeTrait for ConvolveMatrix {
         }
 
         // Finally, parse the kernel matrix.
-        for (_, attr, value) in pbag
+        for (attr, value) in pbag
             .iter()
-            .filter(|(_, attr, _)| *attr == Attribute::KernelMatrix)
+            .filter(|(attr, _)| *attr == Attribute::KernelMatrix)
         {
             self.kernel_matrix.replace(Some({
                 let number_of_elements = self.order.get().0 as usize * self.order.get().1 as usize;

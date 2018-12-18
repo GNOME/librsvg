@@ -276,7 +276,7 @@ pub fn create_node_and_register_id(
     let mut id = None;
     let mut class = None;
 
-    for (_key, attr, value) in pbag.iter() {
+    for (attr, value) in pbag.iter() {
         match attr {
             Attribute::Id => id = Some(value),
             Attribute::Class => class = Some(value),

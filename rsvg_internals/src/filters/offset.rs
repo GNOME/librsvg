@@ -43,7 +43,7 @@ impl NodeTrait for Offset {
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Dx => self.dx.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
