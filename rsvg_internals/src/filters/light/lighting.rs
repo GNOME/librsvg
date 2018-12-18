@@ -106,7 +106,7 @@ impl NodeTrait for Lighting {
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::SurfaceScale => self.surface_scale.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
@@ -133,7 +133,7 @@ impl NodeTrait for Lighting {
             Data::Diffuse {
                 ref diffuse_constant,
             } => {
-                for (_key, attr, value) in pbag.iter() {
+                for (attr, value) in pbag.iter() {
                     match attr {
                         Attribute::DiffuseConstant => diffuse_constant.set(
                             parsers::number(value)
@@ -157,7 +157,7 @@ impl NodeTrait for Lighting {
                 ref specular_constant,
                 ref specular_exponent,
             } => {
-                for (_key, attr, value) in pbag.iter() {
+                for (attr, value) in pbag.iter() {
                     match attr {
                         Attribute::SpecularConstant => specular_constant.set(
                             parsers::number(value)

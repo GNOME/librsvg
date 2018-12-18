@@ -49,7 +49,7 @@ impl NodeTrait for NodeImage {
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),

@@ -382,7 +382,7 @@ impl XmlState {
         let mut parse = None;
         let mut encoding = None;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Href => href = Some(value),
                 Attribute::Parse => parse = Some(value),

@@ -43,7 +43,7 @@ impl NodeTrait for NodeFilter {
         pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::FilterUnits => self.filterunits.set(parse("filterUnits", value, ())?),
                 _ => (),
@@ -68,7 +68,7 @@ impl NodeTrait for NodeFilter {
             |length: Length| check_units(length).and_then(Length::check_nonnegative);
 
         // Parse the rest of the attributes.
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(parse_and_validate(
                     "x",

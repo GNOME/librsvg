@@ -46,7 +46,7 @@ fn validate_offset(length: Length) -> Result<Length, ValueErrorKind> {
 
 impl NodeTrait for NodeStop {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Offset => {
                     let length =

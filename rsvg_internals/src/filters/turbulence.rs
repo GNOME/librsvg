@@ -69,7 +69,7 @@ impl NodeTrait for Turbulence {
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::BaseFrequency => self.base_frequency.set(
                     parsers::number_optional_number(value)

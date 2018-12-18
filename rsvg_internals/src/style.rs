@@ -57,7 +57,7 @@ impl NodeStyle {
 
 impl NodeTrait for NodeStyle {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             if attr == Attribute::Type {
                 *self.type_.borrow_mut() = Some(value.to_string());
             }

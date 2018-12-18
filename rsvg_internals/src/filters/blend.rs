@@ -53,7 +53,7 @@ impl NodeTrait for Blend {
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::In2 => {
                     self.in2.replace(Some(Input::parse(attr, value)?));
