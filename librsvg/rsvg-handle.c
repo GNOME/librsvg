@@ -127,6 +127,37 @@
 #include <glib/gprintf.h>
 #include "rsvg-private.h"
 
+/* Defined in rsvg_internals/src/load.rs */
+typedef struct RsvgLoad RsvgLoad;
+
+/* Defined in rsvg_internals/src/handle.rs */
+typedef struct RsvgHandleRust RsvgHandleRust;
+
+/* Implemented in rsvg_internals/src/xml.rs */
+typedef struct RsvgXmlState RsvgXmlState;
+
+/* Reading state for an RsvgHandle */
+typedef enum {
+    RSVG_HANDLE_STATE_START,
+    RSVG_HANDLE_STATE_LOADING,
+    RSVG_HANDLE_STATE_CLOSED_OK,
+    RSVG_HANDLE_STATE_CLOSED_ERROR
+} RsvgHandleState;
+
+/* Implemented in rsvg_internals/src/xml.rs */
+extern RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
+extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
+
+/* Implemented in rsvg_internals/src/xml2_load.rs */
+extern gboolean rsvg_xml_state_load_from_possibly_compressed_stream (RsvgXmlState *xml,
+                                                                     guint         flags,
+                                                                     GInputStream *stream,
+                                                                     GCancellable *cancellable,
+                                                                     GError      **error);
+
+G_GNUC_INTERNAL
+RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
+
 /* Implemented in rsvg_internals/src/handle.rs */
 extern RsvgHandleRust *rsvg_handle_rust_new (void);
 extern void rsvg_handle_rust_free (RsvgHandleRust *raw_handle);
@@ -180,6 +211,27 @@ extern gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx) G_GN
 extern void rsvg_drawing_ctx_get_geometry (RsvgDrawingCtx *ctx,
                                            RsvgRectangle *ink_rect,
                                            RsvgRectangle *logical_rect);
+
+struct RsvgHandlePrivate {
+    RsvgLoad *load;
+
+    RsvgSizeFunc size_func;
+    gpointer user_data;
+    GDestroyNotify user_data_destroy;
+
+    gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *
+
+    gboolean in_loop;		/* see get_dimension() */
+
+    gboolean is_testing; /* Are we being run from the test suite? */
+
+#ifdef HAVE_PANGOFT2
+    FcConfig *font_config_for_testing;
+    PangoFontMap *font_map_for_testing;
+#endif
+
+    RsvgHandleRust *rust_handle;
+};
 
 enum {
     PROP_0,
