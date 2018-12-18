@@ -536,7 +536,7 @@ impl State {
         &mut self,
         pbag: &PropertyBag<'_>,
     ) -> Result<(), NodeError> {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             self.parse_attribute_pair(attr, value, false)?;
         }
 

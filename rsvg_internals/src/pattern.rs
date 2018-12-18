@@ -187,7 +187,7 @@ impl NodeTrait for NodePattern {
 
         p.node = Some(Rc::downgrade(node));
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::PatternUnits => p.units = Some(parse("patternUnits", value, ())?),
 

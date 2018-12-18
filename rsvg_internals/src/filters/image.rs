@@ -194,7 +194,7 @@ impl NodeTrait for Image {
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
                     self.aspect.set(parse("preserveAspectRatio", value, ())?)

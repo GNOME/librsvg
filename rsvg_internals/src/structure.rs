@@ -141,7 +141,7 @@ impl NodeTrait for NodeSvg {
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         let is_inner_svg = node.get_parent().is_some();
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
                     self.preserve_aspect_ratio
@@ -249,7 +249,7 @@ impl NodeUse {
 
 impl NodeTrait for NodeUse {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::XlinkHref => {
                     *self.link.borrow_mut() =
@@ -419,7 +419,7 @@ impl NodeTrait for NodeSymbol {
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
                     self.preserve_aspect_ratio

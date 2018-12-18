@@ -218,7 +218,7 @@ impl NodeTrait for NodeMarker {
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::MarkerUnits => self.units.set(parse("markerUnits", value, ())?),
 

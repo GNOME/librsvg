@@ -221,7 +221,7 @@ impl NodeTrait for FuncX {
         _handle: *const RsvgHandle,
         pbag: &PropertyBag<'_>,
     ) -> NodeResult {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Type => self.function_type.set(FunctionType::parse(attr, value)?),
                 Attribute::TableValues => {

@@ -168,7 +168,7 @@ impl NodeText {
 
 impl NodeTrait for NodeText {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
@@ -303,7 +303,7 @@ impl NodeTRef {
 
 impl NodeTrait for NodeTRef {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::XlinkHref => {
                     *self.link.borrow_mut() =
@@ -413,7 +413,7 @@ impl NodeTSpan {
 
 impl NodeTrait for NodeTSpan {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self
                     .x

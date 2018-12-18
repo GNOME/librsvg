@@ -51,7 +51,7 @@ impl NodeTrait for GaussianBlur {
     ) -> NodeResult {
         self.base.set_atts(node, handle, pbag)?;
 
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::StdDeviation => self.std_deviation.set(
                     parsers::number_optional_number(value)

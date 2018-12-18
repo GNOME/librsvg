@@ -207,7 +207,7 @@ impl NodeTrait for LightSource {
         _handle: *const RsvgHandle,
         pbag: &PropertyBag<'_>,
     ) -> NodeResult {
-        for (_key, attr, value) in pbag.iter() {
+        for (attr, value) in pbag.iter() {
             match self {
                 LightSource::Distant {
                     ref azimuth,
