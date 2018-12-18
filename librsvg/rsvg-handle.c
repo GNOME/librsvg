@@ -163,10 +163,8 @@ extern RsvgNode *rsvg_handle_rust_get_root (RsvgHandleRust *raw_handle);
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern RsvgNode *rsvg_handle_defs_lookup (RsvgHandle *handle, const char *name);
 extern gboolean rsvg_handle_rust_node_is_root(RsvgHandleRust *raw_handle, RsvgNode *node);
-extern void rsvg_handle_rust_steal_result (RsvgHandleRust *raw_handle, RsvgXmlState *xml);
 extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
-extern void rsvg_handle_rust_set_load_state (RsvgHandleRust *raw_handle, RsvgHandleState state);
 extern RsvgHandleState rsvg_handle_rust_get_load_state (RsvgHandleRust *raw_handle);
 extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,

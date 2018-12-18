@@ -1,5 +1,4 @@
 use data_url;
-use libc;
 
 use gio::{
     self,
@@ -14,7 +13,7 @@ use gio::{
     ZlibCompressorFormat,
     ZlibDecompressor,
 };
-use glib::{self, translate::*, Bytes as GBytes, Cast};
+use glib::{self, Bytes as GBytes, Cast};
 
 use allowed_url::AllowedUrl;
 use error::{LoadingError, RsvgError};
@@ -42,22 +41,6 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
         data: bytes,
         content_type: Some(mime_type),
     })
-}
-
-pub fn binary_data_to_glib(
-    binary_data: &BinaryData,
-    out_mime_type: *mut *mut libc::c_char,
-    out_size: *mut usize,
-) -> *mut libc::c_char {
-    unsafe {
-        if !out_mime_type.is_null() {
-            *out_mime_type = binary_data.content_type.to_glib_full();
-        }
-
-        *out_size = binary_data.data.len();
-
-        ToGlibContainerFromSlice::to_glib_full_from_slice(&binary_data.data) as *mut libc::c_char
-    }
 }
 
 // Header of a gzip data stream

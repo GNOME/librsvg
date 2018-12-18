@@ -44,8 +44,6 @@ pub use drawing_ctx::{
 };
 
 pub use handle::{
-    rsvg_handle_acquire_data,
-    rsvg_handle_acquire_stream,
     rsvg_handle_defs_lookup,
     rsvg_handle_rust_cascade,
     rsvg_handle_rust_close,
@@ -63,8 +61,6 @@ pub use handle::{
     rsvg_handle_rust_set_dpi_x,
     rsvg_handle_rust_set_dpi_y,
     rsvg_handle_rust_set_flags,
-    rsvg_handle_rust_set_load_state,
-    rsvg_handle_rust_steal_result,
     rsvg_handle_rust_write,
 };
 

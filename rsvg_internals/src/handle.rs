@@ -1,5 +1,4 @@
 use std::cell::{Cell, Ref, RefCell};
-use std::error::Error;
 use std::ptr;
 use std::rc::Rc;
 use std::slice;
@@ -556,93 +555,6 @@ pub unsafe extern "C" fn rsvg_handle_defs_lookup(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_acquire_data(
-    handle: *mut RsvgHandle,
-    href_str: *const libc::c_char,
-    out_len: *mut usize,
-    error: *mut *mut glib_sys::GError,
-) -> *mut libc::c_char {
-    assert!(!href_str.is_null());
-    assert!(!out_len.is_null());
-
-    let href_str: String = from_glib_none(href_str);
-
-    let rhandle = get_rust_handle(handle);
-
-    let aurl = match AllowedUrl::from_href(&href_str, rhandle.base_url.borrow().as_ref()) {
-        Ok(a) => a,
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            return ptr::null_mut();
-        }
-    };
-
-    match acquire_data(handle, &aurl) {
-        Ok(binary) => {
-            if !error.is_null() {
-                *error = ptr::null_mut();
-            }
-
-            *out_len = binary.data.len();
-            io::binary_data_to_glib(&binary, ptr::null_mut(), out_len)
-        }
-
-        Err(e) => {
-            set_gerror(error, 0, e.description());
-            *out_len = 0;
-            ptr::null_mut()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_acquire_stream(
-    handle: *mut RsvgHandle,
-    href_str: *const libc::c_char,
-    error: *mut *mut glib_sys::GError,
-) -> *mut gio_sys::GInputStream {
-    assert!(!href_str.is_null());
-
-    let href_str: String = from_glib_none(href_str);
-
-    let rhandle = get_rust_handle(handle);
-
-    let aurl = match AllowedUrl::from_href(&href_str, rhandle.base_url.borrow().as_ref()) {
-        Ok(a) => a,
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            return ptr::null_mut();
-        }
-    };
-
-    match acquire_stream(handle, &aurl) {
-        Ok(stream) => {
-            if !error.is_null() {
-                *error = ptr::null_mut();
-            }
-
-            stream.to_glib_full()
-        }
-
-        Err(e) => {
-            set_gerror(error, 0, e.description());
-            ptr::null_mut()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_steal_result(
-    raw_handle: *const Handle,
-    raw_xml_state: *mut XmlState,
-) {
-    let handle = &*raw_handle;
-    let xml = &mut *raw_xml_state;
-
-    *handle.svg.borrow_mut() = Some(xml.steal_result());
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_cascade(raw_handle: *const Handle) {
     let rhandle = &*raw_handle;
 
@@ -697,16 +609,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_load_state(raw_handle: *const Hand
     let rhandle = &*raw_handle;
 
     rhandle.load_state.get()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_load_state(
-    raw_handle: *const Handle,
-    load_state: LoadState,
-) {
-    let rhandle = &*raw_handle;
-
-    rhandle.load_state.set(load_state)
 }
 
 #[no_mangle]
