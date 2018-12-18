@@ -3,8 +3,6 @@
 
 use gio;
 use gio::prelude::*;
-use gio_sys;
-use glib_sys;
 use std::cell::RefCell;
 use std::mem;
 use std::ptr;
@@ -14,7 +12,7 @@ use std::str;
 
 use glib::translate::*;
 
-use error::set_gerror;
+use error::LoadingError;
 use handle::LoadOptions;
 use io::get_input_stream_for_loading;
 use property_bag::PropertyBag;
@@ -321,7 +319,7 @@ impl Xml2Parser {
             if parser.is_null() {
                 // on error, xmlCreateIOParserCtxt() frees our ctx via the
                 // stream_ctx_close function
-                Err(ParseFromStreamError::CouldNotCreateParser)
+                Err(ParseFromStreamError::CouldNotCreateXmlParser)
             } else {
                 set_xml_parse_options(parser, load_options);
                 Ok(Xml2Parser { parser, gio_error })
@@ -388,13 +386,23 @@ fn xml2_error_to_string(xerr: xmlErrorPtr) -> String {
 // Error returned when parsing an XML stream
 pub enum ParseFromStreamError {
     // We couldn't even create the libxml2 parser
-    CouldNotCreateParser,
+    CouldNotCreateXmlParser,
 
     // GIO error from the I/O callbacks
     IoError(glib::Error),
 
     // XML parsing error from libxml2
     XmlParseError(String),
+}
+
+impl From<ParseFromStreamError> for LoadingError {
+    fn from(e: ParseFromStreamError) -> LoadingError {
+        match e {
+            ParseFromStreamError::CouldNotCreateXmlParser => LoadingError::CouldNotCreateXmlParser,
+            ParseFromStreamError::IoError(e) => LoadingError::Glib(e),
+            ParseFromStreamError::XmlParseError(s) => LoadingError::XmlParseError(s),
+        }
+    }
 }
 
 // Parses XML from a stream into an XmlState.
@@ -421,45 +429,4 @@ pub fn xml_state_load_from_possibly_compressed_stream(
         .map_err(|e| ParseFromStreamError::IoError(e))?;
 
     xml_state_parse_from_stream(xml, load_options, stream, cancellable.as_ref())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_load_from_possibly_compressed_stream(
-    xml: *mut XmlState,
-    flags: u32,
-    stream: *mut gio_sys::GInputStream,
-    cancellable: *mut gio_sys::GCancellable,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
-    assert!(!xml.is_null());
-    let xml = &mut *xml;
-
-    let load_options = LoadOptions::from_flags(flags);
-
-    let stream = from_glib_none(stream);
-    let cancellable = from_glib_none(cancellable);
-
-    match xml_state_load_from_possibly_compressed_stream(xml, &load_options, stream, cancellable) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            match e {
-                ParseFromStreamError::CouldNotCreateParser => {
-                    set_gerror(error, 0, "Error creating XML parser");
-                }
-
-                ParseFromStreamError::IoError(e) => {
-                    if !error.is_null() {
-                        *error = e.to_glib_full() as *mut _;
-                    }
-                }
-
-                ParseFromStreamError::XmlParseError(s) => {
-                    set_gerror(error, 0, &s);
-                }
-            }
-
-            false.to_glib()
-        }
-    }
 }

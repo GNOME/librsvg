@@ -148,13 +148,6 @@ typedef enum {
 extern RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
-/* Implemented in rsvg_internals/src/xml2_load.rs */
-extern gboolean rsvg_xml_state_load_from_possibly_compressed_stream (RsvgXmlState *xml,
-                                                                     guint         flags,
-                                                                     GInputStream *stream,
-                                                                     GCancellable *cancellable,
-                                                                     GError      **error);
-
 G_GNUC_INTERNAL
 RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
 
@@ -176,6 +169,10 @@ extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
 extern void rsvg_handle_rust_set_load_state (RsvgHandleRust *raw_handle, RsvgHandleState state);
 extern RsvgHandleState rsvg_handle_rust_get_load_state (RsvgHandleRust *raw_handle);
+extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
+                                                   GInputStream *stream,
+                                                   GCancellable *cancellable,
+                                                   GError **error);
 
 /* Implemented in rsvg_internals/src/xml.rs */
 extern void rsvg_xml_state_free (RsvgXmlState *xml);
@@ -859,36 +856,15 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
                               GCancellable *cancellable,
                               GError      **error)
 {
-    RsvgHandlePrivate *priv;
-    gboolean read_successfully;
-    gboolean result;
-    RsvgXmlState *xml;
-
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (G_IS_INPUT_STREAM (stream), FALSE);
     g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
-    priv = handle->priv;
-
-    g_return_val_if_fail (rsvg_handle_rust_get_load_state (priv->rust_handle) == RSVG_HANDLE_STATE_START,
-                          FALSE);
-
-    rsvg_handle_rust_set_load_state (priv->rust_handle, RSVG_HANDLE_STATE_LOADING);
-
-    xml = rsvg_xml_state_new (handle);
-    read_successfully = rsvg_xml_state_load_from_possibly_compressed_stream (
-        xml,
-        rsvg_handle_rust_get_flags (priv->rust_handle),
-        stream,
-        cancellable,
-        error
-    );
-
-    result = finish_load (handle, xml, read_successfully, error);
-    rsvg_xml_state_free (xml);
-
-    return result;
+    return rsvg_handle_rust_read_stream_sync (handle,
+                                              stream,
+                                              cancellable,
+                                              error);
 }
 
 /* http://www.ietf.org/rfc/rfc2396.txt */

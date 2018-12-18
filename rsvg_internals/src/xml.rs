@@ -118,7 +118,7 @@ enum AcquireError {
 }
 
 impl XmlState {
-    fn new(handle: *mut RsvgHandle) -> XmlState {
+    pub fn new(handle: *mut RsvgHandle) -> XmlState {
         XmlState {
             tree: None,
             defs: Some(Defs::new()),
@@ -137,6 +137,18 @@ impl XmlState {
         }
 
         self.tree = Some(Tree::new(root));
+    }
+
+    pub fn validate_tree(&self) -> Result<(), LoadingError> {
+        if let Some(ref tree) = self.tree {
+            if tree.root_is_svg() {
+                Ok(())
+            } else {
+                Err(LoadingError::RootElementIsNotSvg)
+            }
+        } else {
+            Err(LoadingError::SvgHasNoElements)
+        }
     }
 
     pub fn steal_result(&mut self) -> Svg {
@@ -520,7 +532,7 @@ impl XmlState {
 
         // FIXME: pass a cancellable
         xml_state_parse_from_stream(self, &load_options, stream, None).map_err(|e| match e {
-            ParseFromStreamError::CouldNotCreateParser => AcquireError::FatalError,
+            ParseFromStreamError::CouldNotCreateXmlParser => AcquireError::FatalError,
             ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
             ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,
         })
@@ -617,16 +629,13 @@ pub unsafe extern "C" fn rsvg_xml_state_tree_is_valid(
     assert!(!xml.is_null());
     let xml = &mut *xml;
 
-    if let Some(ref tree) = xml.tree {
-        if tree.root_is_svg() {
-            true.to_glib()
-        } else {
-            set_gerror(error, 0, "root element is not <svg>");
+    match xml.validate_tree() {
+        Ok(()) => true.to_glib(),
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
             false.to_glib()
         }
-    } else {
-        set_gerror(error, 0, "SVG has no elements");
-        false.to_glib()
     }
 }
 

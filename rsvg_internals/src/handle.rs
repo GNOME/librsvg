@@ -24,6 +24,7 @@ use surface_utils::shared_surface::SharedImageSurface;
 use svg::Svg;
 use util::rsvg_g_warning;
 use xml::XmlState;
+use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 // A *const RsvgHandle is just an opaque pointer we get from C
 #[repr(C)]
@@ -45,7 +46,7 @@ pub struct LoadOptions {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum LoadState {
     Start,
     Loading,
@@ -70,6 +71,48 @@ impl Handle {
             load_options: Cell::new(LoadOptions::default()),
             load_state: Cell::new(LoadState::Start),
         }
+    }
+
+    pub fn read_stream_sync(
+        &mut self,
+        handle: *mut RsvgHandle,
+        stream: gio::InputStream,
+        cancellable: Option<gio::Cancellable>,
+    ) -> Result<(), LoadingError> {
+        self.load_state.set(LoadState::Loading);
+
+        self.read_stream_internal(handle, stream, cancellable)
+            .and_then(|_| {
+                self.load_state.set(LoadState::ClosedOk);
+                Ok(())
+            })
+            .map_err(|e| {
+                self.load_state.set(LoadState::ClosedError);
+                e
+            })
+    }
+
+    fn read_stream_internal(
+        &mut self,
+        handle: *mut RsvgHandle,
+        stream: gio::InputStream,
+        cancellable: Option<gio::Cancellable>,
+    ) -> Result<(), LoadingError> {
+        let load_options = self.load_options.get();
+
+        let mut xml = XmlState::new(handle);
+
+        xml_state_load_from_possibly_compressed_stream(
+            &mut xml,
+            &load_options,
+            stream,
+            cancellable,
+        )?;
+
+        xml.validate_tree()?;
+
+        *self.svg.borrow_mut() = Some(xml.steal_result());
+        Ok(())
     }
 }
 
@@ -597,4 +640,33 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_load_state(
     let rhandle = &*raw_handle;
 
     rhandle.load_state.set(load_state)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
+    handle: *mut RsvgHandle,
+    stream: *mut gio_sys::GInputStream,
+    cancellable: *mut gio_sys::GCancellable,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    if rhandle.load_state.get() != LoadState::Start {
+        rsvg_g_warning(
+            "handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",
+        );
+        return false.to_glib();
+    }
+
+    let stream = from_glib_none(stream);
+    let cancellable = from_glib_none(cancellable);
+
+    match rhandle.read_stream_sync(handle, stream, cancellable) {
+        Ok(()) => true.to_glib(),
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
+    }
 }

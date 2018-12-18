@@ -78,8 +78,6 @@ pub use xml::{
     rsvg_xml_state_tree_is_valid,
 };
 
-pub use xml2_load::rsvg_xml_state_load_from_possibly_compressed_stream;
-
 #[macro_use]
 mod log;
 

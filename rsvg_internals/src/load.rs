@@ -138,7 +138,7 @@ pub unsafe extern "C" fn rsvg_load_close(
 
         Err(e) => {
             match e {
-                ParseFromStreamError::CouldNotCreateParser => {
+                ParseFromStreamError::CouldNotCreateXmlParser => {
                     set_gerror(error, 0, "Error creating XML parser");
                 }
 

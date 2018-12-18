@@ -140,9 +140,13 @@ impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O, E> for Result<O, E> {
 #[derive(Debug, Clone)]
 pub enum LoadingError {
     // Could not parse data: URL
+    CouldNotCreateXmlParser,
+    XmlParseError(String),
     BadDataUrl,
     Cairo(cairo::Status),
     EmptyData,
+    SvgHasNoElements,
+    RootElementIsNotSvg,
     Glib(glib::Error),
     Unknown,
 }
@@ -150,9 +154,13 @@ pub enum LoadingError {
 impl error::Error for LoadingError {
     fn description(&self) -> &str {
         match *self {
+            LoadingError::CouldNotCreateXmlParser => "could not create XML parser",
+            LoadingError::XmlParseError(_) => "XML parse error",
             LoadingError::BadDataUrl => "invalid data: URL",
             LoadingError::Cairo(_) => "cairo error",
             LoadingError::EmptyData => "empty data",
+            LoadingError::SvgHasNoElements => "SVG has no elements",
+            LoadingError::RootElementIsNotSvg => "root element is not <svg>",
             LoadingError::Glib(ref e) => e.description(),
             LoadingError::Unknown => "unknown error",
         }
@@ -163,8 +171,12 @@ impl fmt::Display for LoadingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             LoadingError::Cairo(status) => write!(f, "cairo error: {:?}", status),
-            LoadingError::BadDataUrl
+            LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {}", s),
+            LoadingError::CouldNotCreateXmlParser
+            | LoadingError::BadDataUrl
             | LoadingError::EmptyData
+            | LoadingError::SvgHasNoElements
+            | LoadingError::RootElementIsNotSvg
             | LoadingError::Glib(_)
             | LoadingError::Unknown => write!(f, "{}", self.description()),
         }
