@@ -76,10 +76,7 @@ impl NodeTrait for ColorMatrix {
                 ),
             );
         } else {
-            for (attr, value) in pbag
-                .iter()
-                .filter(|(attr, _)| *attr == Attribute::Values)
-            {
+            for (attr, value) in pbag.iter().filter(|(attr, _)| *attr == Attribute::Values) {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
