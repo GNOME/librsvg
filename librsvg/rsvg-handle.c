@@ -990,15 +990,26 @@ rsvg_handle_get_rust (RsvgHandle *handle)
 }
 
 static RsvgDrawingCtx *
-rsvg_handle_create_drawing_ctx(RsvgHandle *handle,
-                               cairo_t *cr,
-                               RsvgDimensionData *dimensions)
+rsvg_handle_create_drawing_ctx_for_node(RsvgHandle *handle,
+                                        cairo_t *cr,
+                                        RsvgDimensionData *dimensions,
+                                        RsvgNode *node)
 {
-    return rsvg_drawing_ctx_new (handle,
-                                 cr,
-                                 dimensions->width, dimensions->height,
-                                 dimensions->em, dimensions->ex,
-                                 handle->priv->is_testing);
+    RsvgDrawingCtx *draw_ctx;
+
+    draw_ctx = rsvg_drawing_ctx_new (handle,
+                                     cr,
+                                     dimensions->width, dimensions->height,
+                                     dimensions->em, dimensions->ex,
+                                     handle->priv->is_testing);
+
+    if (node != NULL) {
+        rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw_ctx, node);
+    }
+
+    rsvg_handle_rust_cascade (handle->priv->rust_handle);
+
+    return draw_ctx;
 }
 
 static gboolean
@@ -1082,13 +1093,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     cairo_save (cr);
 
-    draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
-
-    if (drawsub != NULL) {
-        rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, drawsub);
-    }
-
-    rsvg_handle_rust_cascade (handle->priv->rust_handle);
+    draw = rsvg_handle_create_drawing_ctx_for_node (handle, cr, &dimensions, drawsub);
     res = rsvg_drawing_ctx_draw_node_from_stack (draw);
 
     rsvg_drawing_ctx_free (draw);
@@ -1168,10 +1173,8 @@ get_node_geometry(RsvgHandle *handle, RsvgNode *node, RsvgRectangle *ink_rect, R
     target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
     cr = cairo_create (target);
 
-    draw = rsvg_handle_create_drawing_ctx (handle, cr, &dimensions);
-    rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
+    draw = rsvg_handle_create_drawing_ctx_for_node (handle, cr, &dimensions, node);
 
-    rsvg_handle_rust_cascade (handle->priv->rust_handle);
     /* FIXME: expose this as a RenderingError in the public API */
     res = rsvg_drawing_ctx_draw_node_from_stack (draw);
     if (res) {
