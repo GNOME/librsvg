@@ -89,8 +89,6 @@ typedef struct RsvgLoad RsvgLoad;
 typedef struct RsvgHandleRust RsvgHandleRust;
 
 struct RsvgHandlePrivate {
-    RsvgHandleState hstate;
-
     RsvgLoad *load;
 
     RsvgSizeFunc size_func;

@@ -44,11 +44,21 @@ pub struct LoadOptions {
     pub keep_image_data: bool,
 }
 
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum LoadState {
+    Start,
+    Loading,
+    ClosedOk,
+    ClosedError,
+}
+
 pub struct Handle {
     dpi: Dpi,
     base_url: RefCell<Option<Url>>,
     svg: RefCell<Option<Svg>>,
     load_options: Cell<LoadOptions>,
+    load_state: Cell<LoadState>,
 }
 
 impl Handle {
@@ -58,6 +68,7 @@ impl Handle {
             base_url: RefCell::new(None),
             svg: RefCell::new(None),
             load_options: Cell::new(LoadOptions::default()),
+            load_state: Cell::new(LoadState::Start),
         }
     }
 }
@@ -569,4 +580,21 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, f
     let rhandle = &*raw_handle;
 
     rhandle.load_options.set(LoadOptions::from_flags(flags));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_load_state(raw_handle: *const Handle) -> LoadState {
+    let rhandle = &*raw_handle;
+
+    rhandle.load_state.get()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_load_state(
+    raw_handle: *const Handle,
+    load_state: LoadState,
+) {
+    let rhandle = &*raw_handle;
+
+    rhandle.load_state.set(load_state)
 }
