@@ -2,6 +2,7 @@ use std::cell::{Cell, Ref, RefCell};
 use std::error::Error;
 use std::ptr;
 use std::rc::Rc;
+use std::slice;
 
 use cairo::{ImageSurface, Status};
 use cairo_sys;
@@ -19,6 +20,7 @@ use defs::{Fragment, Href};
 use dpi::Dpi;
 use error::{set_gerror, LoadingError};
 use io;
+use load::LoadContext;
 use node::{box_node, Node, RsvgNode};
 use surface_utils::shared_surface::SharedImageSurface;
 use svg::Svg;
@@ -60,6 +62,7 @@ pub struct Handle {
     svg: RefCell<Option<Svg>>,
     load_options: Cell<LoadOptions>,
     load_state: Cell<LoadState>,
+    load: RefCell<Option<LoadContext>>,
 }
 
 impl Handle {
@@ -70,6 +73,7 @@ impl Handle {
             svg: RefCell::new(None),
             load_options: Cell::new(LoadOptions::default()),
             load_state: Cell::new(LoadState::Start),
+            load: RefCell::new(None),
         }
     }
 
@@ -108,6 +112,69 @@ impl Handle {
             stream,
             cancellable,
         )?;
+
+        xml.validate_tree()?;
+
+        *self.svg.borrow_mut() = Some(xml.steal_result());
+        Ok(())
+    }
+
+    pub fn write(&mut self, handle: *mut RsvgHandle, buf: &[u8]) {
+        assert!(
+            self.load_state.get() == LoadState::Start
+                || self.load_state.get() == LoadState::Loading
+        );
+
+        if self.load_state.get() == LoadState::Start {
+            self.load_state.set(LoadState::Loading);
+
+            self.load = RefCell::new(Some(LoadContext::new(handle, self.load_options.get())));
+        }
+
+        assert!(self.load_state.get() == LoadState::Loading);
+
+        self.load.borrow_mut().as_mut().unwrap().write(buf);
+    }
+
+    pub fn close(&mut self) -> Result<(), LoadingError> {
+        let load_state = self.load_state.get();
+
+        let res = match load_state {
+            LoadState::Start => {
+                self.load_state.set(LoadState::ClosedError);
+                Err(LoadingError::NoDataPassedToParser)
+            }
+
+            LoadState::Loading => self
+                .close_internal()
+                .and_then(|_| {
+                    self.load_state.set(LoadState::ClosedOk);
+                    Ok(())
+                })
+                .map_err(|e| {
+                    self.load_state.set(LoadState::ClosedError);
+                    e
+                }),
+
+            LoadState::ClosedOk | LoadState::ClosedError => {
+                // closing is idempotent
+                Ok(())
+            }
+        };
+
+        assert!(
+            self.load_state.get() == LoadState::ClosedOk
+                || self.load_state.get() == LoadState::ClosedError
+        );
+
+        res
+    }
+
+    fn close_internal(&mut self) -> Result<(), LoadingError> {
+        let mut r = self.load.borrow_mut();
+        let mut load = r.take().unwrap();
+
+        let mut xml = load.close()?;
 
         xml.validate_tree()?;
 
@@ -662,6 +729,43 @@ pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
     let cancellable = from_glib_none(cancellable);
 
     match rhandle.read_stream_sync(handle, stream, cancellable) {
+        Ok(()) => true.to_glib(),
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_write(
+    handle: *mut RsvgHandle,
+    buf: *const u8,
+    count: usize,
+) {
+    let rhandle = get_rust_handle(handle);
+
+    let load_state = rhandle.load_state.get();
+
+    if !(load_state == LoadState::Start || load_state == LoadState::Loading) {
+        rsvg_g_warning("handle must not be closed in order to write to it");
+        return;
+    }
+
+    let buffer = slice::from_raw_parts(buf, count);
+
+    rhandle.write(handle, buffer);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_close(
+    handle: *mut RsvgHandle,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    match rhandle.close() {
         Ok(()) => true.to_glib(),
 
         Err(e) => {

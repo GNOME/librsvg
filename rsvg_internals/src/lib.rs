@@ -48,6 +48,7 @@ pub use handle::{
     rsvg_handle_acquire_stream,
     rsvg_handle_defs_lookup,
     rsvg_handle_rust_cascade,
+    rsvg_handle_rust_close,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
     rsvg_handle_rust_get_dpi_x,
@@ -64,20 +65,14 @@ pub use handle::{
     rsvg_handle_rust_set_flags,
     rsvg_handle_rust_set_load_state,
     rsvg_handle_rust_steal_result,
+    rsvg_handle_rust_write,
 };
-
-pub use load::{rsvg_load_close, rsvg_load_free, rsvg_load_new, rsvg_load_write};
 
 pub use node::rsvg_node_unref;
 
 pub use structure::rsvg_node_svg_get_size;
 
-pub use xml::{
-    rsvg_xml_state_error,
-    rsvg_xml_state_free,
-    rsvg_xml_state_new,
-    rsvg_xml_state_tree_is_valid,
-};
+pub use xml::rsvg_xml_state_error;
 
 #[macro_use]
 mod log;

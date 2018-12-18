@@ -139,9 +139,10 @@ impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O, E> for Result<O, E> {
 
 #[derive(Debug, Clone)]
 pub enum LoadingError {
+    NoDataPassedToParser,
+    XmlParseError(String),
     // Could not parse data: URL
     CouldNotCreateXmlParser,
-    XmlParseError(String),
     BadDataUrl,
     Cairo(cairo::Status),
     EmptyData,
@@ -154,6 +155,7 @@ pub enum LoadingError {
 impl error::Error for LoadingError {
     fn description(&self) -> &str {
         match *self {
+            LoadingError::NoDataPassedToParser => "no data passed to parser",
             LoadingError::CouldNotCreateXmlParser => "could not create XML parser",
             LoadingError::XmlParseError(_) => "XML parse error",
             LoadingError::BadDataUrl => "invalid data: URL",
@@ -172,7 +174,8 @@ impl fmt::Display for LoadingError {
         match *self {
             LoadingError::Cairo(status) => write!(f, "cairo error: {:?}", status),
             LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {}", s),
-            LoadingError::CouldNotCreateXmlParser
+            LoadingError::NoDataPassedToParser
+            | LoadingError::CouldNotCreateXmlParser
             | LoadingError::BadDataUrl
             | LoadingError::EmptyData
             | LoadingError::SvgHasNoElements

@@ -145,7 +145,6 @@ typedef enum {
 } RsvgHandleState;
 
 /* Implemented in rsvg_internals/src/xml.rs */
-extern RsvgXmlState *rsvg_xml_state_new (RsvgHandle *handle);
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
 G_GNUC_INTERNAL
@@ -173,16 +172,8 @@ extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,
                                                    GCancellable *cancellable,
                                                    GError **error);
-
-/* Implemented in rsvg_internals/src/xml.rs */
-extern void rsvg_xml_state_free (RsvgXmlState *xml);
-extern gboolean rsvg_xml_state_tree_is_valid(RsvgXmlState *xml, GError **error);
-
-/* Implemented in rsvg_internals/src/load.rs */
-extern RsvgLoad *rsvg_load_new (RsvgXmlState *xml, guint flags) G_GNUC_WARN_UNUSED_RESULT;
-extern RsvgXmlState *rsvg_load_free (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
-extern void rsvg_load_write (RsvgLoad *load, const guchar *buf, gsize count);
-extern gboolean rsvg_load_close (RsvgLoad *load, GError **error) G_GNUC_WARN_UNUSED_RESULT;
+extern void rsvg_handle_rust_write (RsvgHandle *handle, const guchar *buf, gsize count);
+extern gboolean rsvg_handle_rust_close (RsvgHandle *handle, GError **error);
 
 
 /* Implemented in rust/src/node.rs */
@@ -210,8 +201,6 @@ extern void rsvg_drawing_ctx_get_geometry (RsvgDrawingCtx *ctx,
                                            RsvgRectangle *logical_rect);
 
 struct RsvgHandlePrivate {
-    RsvgLoad *load;
-
     RsvgSizeFunc size_func;
     gpointer user_data;
     GDestroyNotify user_data_destroy;
@@ -274,13 +263,6 @@ rsvg_handle_dispose (GObject *instance)
     if (self->priv->user_data_destroy) {
         (*self->priv->user_data_destroy) (self->priv->user_data);
         self->priv->user_data_destroy = NULL;
-    }
-
-    if (self->priv->load) {
-        RsvgXmlState *xml = rsvg_load_free (self->priv->load);
-        self->priv->load = NULL;
-
-        rsvg_xml_state_free (xml);
     }
 
     g_clear_pointer (&self->priv->base_uri, g_free);
@@ -722,52 +704,12 @@ rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
 gboolean
 rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error)
 {
-    RsvgHandlePrivate *priv;
-    RsvgHandleState lstate;
-
+    rsvg_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE, error);
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
-    rsvg_return_val_if_fail (handle, FALSE, error);
+    g_return_val_if_fail ((buf != NULL && count != 0) || (count == 0), FALSE);
 
-    priv = handle->priv;
-
-    lstate = rsvg_handle_rust_get_load_state (priv->rust_handle);
-
-    g_return_val_if_fail (lstate == RSVG_HANDLE_STATE_START
-                          || lstate == RSVG_HANDLE_STATE_LOADING,
-                          FALSE);
-
-    if (lstate == RSVG_HANDLE_STATE_START) {
-        rsvg_handle_rust_set_load_state (priv->rust_handle, RSVG_HANDLE_STATE_LOADING);
-        priv->load = rsvg_load_new (rsvg_xml_state_new (handle),
-                                    rsvg_handle_rust_get_flags (priv->rust_handle));
-    }
-
-    g_assert (rsvg_handle_rust_get_load_state (priv->rust_handle) == RSVG_HANDLE_STATE_LOADING);
-
-    rsvg_load_write (priv->load, buf, count);
-
+    rsvg_handle_rust_write (handle, buf, count);
     return TRUE;
-}
-
-static gboolean
-finish_load (RsvgHandle *handle, RsvgXmlState *xml, gboolean was_successful, GError **error)
-{
-    if (was_successful) {
-        g_assert (error == NULL || *error == NULL);
-
-        was_successful = rsvg_xml_state_tree_is_valid (xml, error);
-        if (was_successful) {
-            rsvg_handle_rust_steal_result (handle->priv->rust_handle, xml);
-        }
-    }
-
-    if (was_successful) {
-        rsvg_handle_rust_set_load_state (handle->priv->rust_handle, RSVG_HANDLE_STATE_CLOSED_OK);
-    } else {
-        rsvg_handle_rust_set_load_state (handle->priv->rust_handle, RSVG_HANDLE_STATE_CLOSED_ERROR);
-    }
-
-    return was_successful;
 }
 
 /**
@@ -787,48 +729,10 @@ finish_load (RsvgHandle *handle, RsvgXmlState *xml, gboolean was_successful, GEr
 gboolean
 rsvg_handle_close (RsvgHandle *handle, GError **error)
 {
-    RsvgHandlePrivate *priv;
-    gboolean read_successfully;
-    gboolean result = FALSE;
-    RsvgXmlState *xml;
-
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
     rsvg_return_val_if_fail (handle, FALSE, error);
 
-    priv = handle->priv;
-
-    switch (rsvg_handle_rust_get_load_state (priv->rust_handle)) {
-    case RSVG_HANDLE_STATE_START:
-        g_set_error (error, RSVG_ERROR, RSVG_ERROR_FAILED, _("no data passed to parser"));
-        rsvg_handle_rust_set_load_state (priv->rust_handle, RSVG_HANDLE_STATE_CLOSED_ERROR);
-        result = FALSE;
-        break;
-
-    case RSVG_HANDLE_STATE_LOADING:
-        g_assert (priv->load != NULL);
-        read_successfully = rsvg_load_close (priv->load, error);
-
-        xml = rsvg_load_free (priv->load);
-        priv->load = NULL;
-
-        result = finish_load (handle, xml, read_successfully, error);
-        rsvg_xml_state_free (xml);
-        break;
-
-    case RSVG_HANDLE_STATE_CLOSED_OK:
-    case RSVG_HANDLE_STATE_CLOSED_ERROR:
-        /* closing is idempotent */
-        result = TRUE;
-        break;
-
-    default:
-        g_assert_not_reached ();
-    }
-
-    g_assert (rsvg_handle_rust_get_load_state (priv->rust_handle) == RSVG_HANDLE_STATE_CLOSED_OK
-              || rsvg_handle_rust_get_load_state (priv->rust_handle) == RSVG_HANDLE_STATE_CLOSED_ERROR);
-
-    return result;
+    return rsvg_handle_rust_close(handle, error);
 }
 
 /**

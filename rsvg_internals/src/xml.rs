@@ -13,7 +13,7 @@ use attributes::Attribute;
 use create_node::create_node_and_register_id;
 use css::{self, CssStyles};
 use defs::Defs;
-use error::{set_gerror, LoadingError};
+use error::LoadingError;
 use handle::{self, RsvgHandle};
 use node::{node_new, Node, NodeType};
 use property_bag::PropertyBag;
@@ -598,17 +598,6 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_xml_state_new(handle: *mut RsvgHandle) -> *mut XmlState {
-    Box::into_raw(Box::new(XmlState::new(handle)))
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_free(xml: *mut XmlState) {
-    assert!(!xml.is_null());
-    Box::from_raw(xml);
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut XmlState, msg: *const libc::c_char) {
     assert!(!xml.is_null());
     let xml = &mut *xml;
@@ -619,24 +608,6 @@ pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut XmlState, msg: *const li
     let msg: String = from_glib_none(msg);
 
     xml.error(&msg);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_tree_is_valid(
-    xml: *mut XmlState,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
-    assert!(!xml.is_null());
-    let xml = &mut *xml;
-
-    match xml.validate_tree() {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
 }
 
 #[cfg(test)]
