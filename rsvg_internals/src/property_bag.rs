@@ -11,9 +11,7 @@ pub struct PropertyBag<'a>(Vec<(Attribute, &'a CStr)>);
 
 pub struct OwnedPropertyBag(Vec<(Attribute, CString)>);
 
-pub struct PropertyBagIter<'a>(PropertyBagCStrIter<'a>);
-
-pub struct PropertyBagCStrIter<'a>(slice::Iter<'a, (Attribute, &'a CStr)>);
+pub struct PropertyBagIter<'a>(slice::Iter<'a, (Attribute, &'a CStr)>);
 
 trait Utf8CStrToStr {
     fn to_str_utf8(&self) -> &str;
@@ -98,20 +96,12 @@ impl<'a> PropertyBag<'a> {
         OwnedPropertyBag(array)
     }
 
-    pub fn ffi(&self) -> *const PropertyBag<'_> {
-        self as *const PropertyBag<'_>
-    }
-
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
     pub fn iter(&self) -> PropertyBagIter<'_> {
-        PropertyBagIter(self.cstr_iter())
-    }
-
-    pub fn cstr_iter(&self) -> PropertyBagCStrIter<'_> {
-        PropertyBagCStrIter(self.0.iter())
+        PropertyBagIter(self.0.iter())
     }
 }
 
@@ -119,15 +109,7 @@ impl<'a> Iterator for PropertyBagIter<'a> {
     type Item = (Attribute, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(a, v)| (a, v.to_str_utf8()))
-    }
-}
-
-impl<'a> Iterator for PropertyBagCStrIter<'a> {
-    type Item = (Attribute, &'a CStr);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|&(a, v)| (a, v))
+        self.0.next().map(|&(a, v)| (a, v.to_str_utf8()))
     }
 }
 
