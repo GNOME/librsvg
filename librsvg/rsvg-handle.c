@@ -1190,10 +1190,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 gboolean
 rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, RsvgRectangle * logical_rect, const char *id)
 {
-    RsvgNode *root = NULL;
     RsvgNode *node = NULL;
-    gboolean has_size;
-    int root_width, root_height;
     gboolean res = FALSE;
     RsvgRectangle ink_r, logical_r;
 
@@ -1206,42 +1203,39 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, Rsv
         return FALSE;
     }
 
-    root = rsvg_handle_rust_get_root (handle->priv->rust_handle);
-
     if (id && *id) {
         node = rsvg_handle_defs_lookup (handle, id);
-
-        if (node && rsvg_handle_rust_node_is_root (handle->priv->rust_handle, node))
-            id = NULL;
+    } else {
+        node = rsvg_handle_rust_get_root (handle->priv->rust_handle);
     }
 
-    if (!node && id) {
+    if (!node) {
         goto out;
     }
 
-    has_size = rsvg_node_svg_get_size (root,
-                                       rsvg_handle_rust_get_dpi_x (handle->priv->rust_handle),
-                                       rsvg_handle_rust_get_dpi_y (handle->priv->rust_handle),
-                                       &root_width, &root_height);
+    if (rsvg_handle_rust_node_is_root (handle->priv->rust_handle, node)) {
+        int root_width, root_height;
+        if (rsvg_node_svg_get_size (node,
+                                    rsvg_handle_rust_get_dpi_x (handle->priv->rust_handle),
+                                    rsvg_handle_rust_get_dpi_y (handle->priv->rust_handle),
+                                    &root_width, &root_height))
+        {
+            ink_r.width = root_width;
+            ink_r.height = root_height;
+            ink_r.x = 0;
+            ink_r.y = 0;
 
-    if (id || !has_size) {
-        res = rsvg_handle_get_node_geometry (handle, node ? node : root, &ink_r, &logical_r);
-        if (!res) {
+            logical_r.width = root_width;
+            logical_r.height = root_height;
+            logical_r.x = 0;
+            logical_r.y = 0;
+
+            res = TRUE;
             goto out;
         }
-    } else {
-        ink_r.width = root_width;
-        ink_r.height = root_height;
-        ink_r.x = 0;
-        ink_r.y = 0;
-
-        logical_r.width = root_width;
-        logical_r.height = root_height;
-        logical_r.x = 0;
-        logical_r.y = 0;
     }
 
-    res = TRUE;
+    res = rsvg_handle_get_node_geometry (handle, node, &ink_r, &logical_r);
 
 out:
 
@@ -1254,7 +1248,6 @@ out:
     }
 
     g_clear_pointer (&node, rsvg_node_unref);
-    g_clear_pointer (&root, rsvg_node_unref);
 
     return res;
 }
