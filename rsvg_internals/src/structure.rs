@@ -1,9 +1,6 @@
 use std::cell::Cell;
 use std::cell::RefCell;
 
-use glib::translate::*;
-use glib_sys;
-
 use aspect_ratio::*;
 use attributes::Attribute;
 use css::CssStyles;
@@ -13,7 +10,6 @@ use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
-use libc;
 use node::*;
 use parsers::{parse, parse_and_validate, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
@@ -122,6 +118,22 @@ impl NodeSvg {
         if let Some(owned_pbag) = self.pbag.borrow().as_ref() {
             let pbag = PropertyBag::from_owned(owned_pbag);
             node.set_style(css_styles, &pbag);
+        }
+    }
+
+    pub fn get_size(&self, dpi_x: f64, dpi_y: f64) -> Option<(i32, i32)> {
+        match (self.w.get(), self.h.get(), self.vbox.get()) {
+            (w, h, Some(vb)) => Some((
+                w.hand_normalize(dpi_x, vb.0.width, 12.0).round() as i32,
+                h.hand_normalize(dpi_y, vb.0.height, 12.0).round() as i32,
+            )),
+            (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
+                Some((
+                    w.hand_normalize(dpi_x, 0.0, 12.0).round() as i32,
+                    h.hand_normalize(dpi_y, 0.0, 12.0).round() as i32,
+                ))
+            }
+            (_, _, _) => None,
         }
     }
 }
@@ -434,39 +446,4 @@ impl NodeTrait for NodeSymbol {
 
         Ok(())
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_svg_get_size(
-    raw_node: *const RsvgNode,
-    dpi_x: libc::c_double,
-    dpi_y: libc::c_double,
-    out_width: *mut i32,
-    out_height: *mut i32,
-) -> glib_sys::gboolean {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    assert!(!out_width.is_null());
-    assert!(!out_height.is_null());
-
-    node.with_impl(
-        |svg: &NodeSvg| match (svg.w.get(), svg.h.get(), svg.vbox.get()) {
-            (w, h, Some(vb)) => {
-                unsafe {
-                    *out_width = w.hand_normalize(dpi_x, vb.0.width, 12.0).round() as i32;
-                    *out_height = h.hand_normalize(dpi_y, vb.0.height, 12.0).round() as i32;
-                }
-                true.to_glib()
-            }
-            (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
-                unsafe {
-                    *out_width = w.hand_normalize(dpi_x, 0.0, 12.0).round() as i32;
-                    *out_height = h.hand_normalize(dpi_y, 0.0, 12.0).round() as i32;
-                }
-                true.to_glib()
-            }
-            (_, _, _) => false.to_glib(),
-        },
-    )
 }

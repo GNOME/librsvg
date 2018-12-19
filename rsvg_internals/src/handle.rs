@@ -23,6 +23,7 @@ use error::{set_gerror, LoadingError};
 use io;
 use load::LoadContext;
 use node::{box_node, Node, RsvgNode};
+use structure::NodeSvg;
 use surface_utils::shared_surface::SharedImageSurface;
 use svg::Svg;
 use util::rsvg_g_warning;
@@ -275,6 +276,46 @@ impl Handle {
             .unwrap_or_else(|| RsvgRectangle::default());
 
         Ok((ink_rect, logical_rect))
+    }
+
+    fn get_geometry_sub(
+        &mut self,
+        handle: *mut RsvgHandle,
+        id: Option<&str>,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), ()> {
+        let root = {
+            let svg_ref = self.svg.borrow();
+            let svg = svg_ref.as_ref().unwrap();
+
+            svg.tree.root()
+        };
+
+        let (node, is_root) = if let Some(id) = id {
+            let n = self.defs_lookup(handle, id).map_err(|_| ())?;
+            let is_root = Rc::ptr_eq(&n, &root);
+            (n, is_root)
+        } else {
+            (root, true)
+        };
+
+        if is_root {
+            if let Some((root_width, root_height)) =
+                node.with_impl(|svg: &NodeSvg| svg.get_size(self.dpi.x(), self.dpi.y()))
+            {
+                let ink_r = RsvgRectangle {
+                    x: 0.0,
+                    y: 0.0,
+                    width: f64::from(root_width),
+                    height: f64::from(root_height),
+                };
+
+                let logical_r = ink_r;
+
+                return Ok((ink_r, logical_r));
+            }
+        }
+
+        self.get_node_geometry(handle, &node)
     }
 
     fn defs_lookup(
@@ -673,32 +714,6 @@ pub unsafe extern "C" fn rsvg_handle_defs_lookup(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_root(raw_handle: *const Handle) -> *const RsvgNode {
-    let rhandle = &*raw_handle;
-
-    let svg_ref = rhandle.svg.borrow();
-    let svg = svg_ref.as_ref().unwrap();
-
-    box_node(svg.tree.root())
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_node_is_root(
-    raw_handle: *const Handle,
-    node: *mut RsvgNode,
-) -> glib_sys::gboolean {
-    let rhandle = &*raw_handle;
-
-    assert!(!node.is_null());
-    let node: &RsvgNode = &*node;
-
-    let svg_ref = rhandle.svg.borrow();
-    let svg = svg_ref.as_ref().unwrap();
-
-    Rc::ptr_eq(&svg.tree.root(), node).to_glib()
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_flags(raw_handle: *const Handle) -> u32 {
     let rhandle = &*raw_handle;
 
@@ -806,33 +821,39 @@ pub unsafe extern "C" fn rsvg_handle_create_drawing_ctx_for_node(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_get_node_geometry(
+pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
     handle: *mut RsvgHandle,
-    node: *const RsvgNode,
     out_ink_rect: *mut RsvgRectangle,
     out_logical_rect: *mut RsvgRectangle,
+    id: *const libc::c_char,
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    assert!(!node.is_null());
-    let node = &*node;
+    let id: Option<String> = from_glib_none(id);
 
-    assert!(!out_ink_rect.is_null());
-    assert!(!out_logical_rect.is_null());
+    match rhandle.get_geometry_sub(handle, id.as_ref().map(String::as_str)) {
+        Ok((ink_r, logical_r)) => {
+            if !out_ink_rect.is_null() {
+                *out_ink_rect = ink_r;
+            }
 
-    let out_ink_rect = &mut *out_ink_rect;
-    let out_logical_rect = &mut *out_logical_rect;
+            if !out_logical_rect.is_null() {
+                *out_logical_rect = logical_r;
+            }
 
-    match rhandle.get_node_geometry(handle, node) {
-        Ok((ink_rect, logical_rect)) => {
-            *out_ink_rect = ink_rect;
-            *out_logical_rect = logical_rect;
             true.to_glib()
         }
 
         Err(()) => {
-            *out_ink_rect = mem::zeroed();
-            *out_logical_rect = mem::zeroed();
+            if !out_ink_rect.is_null() {
+                *out_ink_rect = mem::zeroed();
+            }
+
+            if !out_logical_rect.is_null() {
+                *out_logical_rect = mem::zeroed();
+            }
+
+            // FIXME: return a proper error code to the public API
             false.to_glib()
         }
     }

@@ -40,17 +40,15 @@ pub use drawing_ctx::{rsvg_drawing_ctx_draw_node_from_stack, rsvg_drawing_ctx_fr
 pub use handle::{
     rsvg_handle_create_drawing_ctx_for_node,
     rsvg_handle_defs_lookup,
-    rsvg_handle_get_node_geometry,
     rsvg_handle_rust_close,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
     rsvg_handle_rust_get_dpi_x,
     rsvg_handle_rust_get_dpi_y,
     rsvg_handle_rust_get_flags,
+    rsvg_handle_rust_get_geometry_sub,
     rsvg_handle_rust_get_load_state,
-    rsvg_handle_rust_get_root,
     rsvg_handle_rust_new,
-    rsvg_handle_rust_node_is_root,
     rsvg_handle_rust_read_stream_sync,
     rsvg_handle_rust_set_base_url,
     rsvg_handle_rust_set_dpi_x,
@@ -60,8 +58,6 @@ pub use handle::{
 };
 
 pub use node::rsvg_node_unref;
-
-pub use structure::rsvg_node_svg_get_size;
 
 pub use xml::rsvg_xml_state_error;
 

@@ -158,10 +158,8 @@ extern double rsvg_handle_rust_get_dpi_y (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_dpi_x (RsvgHandleRust *raw_handle, double dpi_x);
 extern void rsvg_handle_rust_set_dpi_y (RsvgHandleRust *raw_handle, double dpi_y);
 extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const char *uri);
-extern RsvgNode *rsvg_handle_rust_get_root (RsvgHandleRust *raw_handle);
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern RsvgNode *rsvg_handle_defs_lookup (RsvgHandle *handle, const char *name);
-extern gboolean rsvg_handle_rust_node_is_root(RsvgHandleRust *raw_handle, RsvgNode *node);
 extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
 extern RsvgHandleState rsvg_handle_rust_get_load_state (RsvgHandleRust *raw_handle);
@@ -176,19 +174,14 @@ extern RsvgDrawingCtx *rsvg_handle_create_drawing_ctx_for_node(RsvgHandle *handl
                                                                RsvgDimensionData *dimensions,
                                                                RsvgNode *node,
                                                                gboolean is_testing);
-extern gboolean rsvg_handle_get_node_geometry(RsvgHandle *handle,
-                                              RsvgNode *node,
-                                              RsvgRectangle *ink_rect,
-                                              RsvgRectangle *logical_rect);
-
+extern gboolean rsvg_handle_rust_get_geometry_sub (RsvgHandle *handle,
+                                                   RsvgRectangle *out_ink_rect,
+                                                   RsvgRectangle *out_logical_rect,
+                                                   const char *id);
 
 /* Implemented in rust/src/node.rs */
 /* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
 extern RsvgNode *rsvg_node_unref (RsvgNode *node);
-
-/* Implemented in rsvg_internals/src/structure.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int *out_width, int *out_height);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 extern void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
@@ -1190,66 +1183,13 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 gboolean
 rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, RsvgRectangle * logical_rect, const char *id)
 {
-    RsvgNode *node = NULL;
-    gboolean res = FALSE;
-    RsvgRectangle ink_r, logical_r;
-
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-
-    memset (&ink_r, 0, sizeof (RsvgRectangle));
-    memset (&logical_r, 0, sizeof (RsvgRectangle));
 
     if (!is_loaded (handle)) {
         return FALSE;
     }
 
-    if (id && *id) {
-        node = rsvg_handle_defs_lookup (handle, id);
-    } else {
-        node = rsvg_handle_rust_get_root (handle->priv->rust_handle);
-    }
-
-    if (!node) {
-        goto out;
-    }
-
-    if (rsvg_handle_rust_node_is_root (handle->priv->rust_handle, node)) {
-        int root_width, root_height;
-        if (rsvg_node_svg_get_size (node,
-                                    rsvg_handle_rust_get_dpi_x (handle->priv->rust_handle),
-                                    rsvg_handle_rust_get_dpi_y (handle->priv->rust_handle),
-                                    &root_width, &root_height))
-        {
-            ink_r.width = root_width;
-            ink_r.height = root_height;
-            ink_r.x = 0;
-            ink_r.y = 0;
-
-            logical_r.width = root_width;
-            logical_r.height = root_height;
-            logical_r.x = 0;
-            logical_r.y = 0;
-
-            res = TRUE;
-            goto out;
-        }
-    }
-
-    res = rsvg_handle_get_node_geometry (handle, node, &ink_r, &logical_r);
-
-out:
-
-    if (ink_rect != NULL) {
-        *ink_rect = ink_r;
-    }
-
-    if (logical_rect != NULL) {
-        *logical_rect = logical_r;
-    }
-
-    g_clear_pointer (&node, rsvg_node_unref);
-
-    return res;
+    return rsvg_handle_rust_get_geometry_sub(handle, ink_rect, logical_rect, id);
 }
 
 /**
