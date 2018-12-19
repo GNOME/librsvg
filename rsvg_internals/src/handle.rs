@@ -363,6 +363,10 @@ impl Handle {
             _ => unreachable!(), // we explicitly requested a with_fragment after all
         }
     }
+
+    fn has_sub(&mut self, handle: *const RsvgHandle, name: &str) -> bool {
+        self.defs_lookup(handle, name).is_ok()
+    }
 }
 
 enum DefsLookupErrorKind {
@@ -856,5 +860,21 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
             // FIXME: return a proper error code to the public API
             false.to_glib()
         }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
+    handle: *mut RsvgHandle,
+    id: *const libc::c_char,
+) -> glib_sys::gboolean {
+    if id.is_null() {
+        false.to_glib()
+    } else {
+        let id: String = from_glib_none(id);
+
+        let rhandle = get_rust_handle(handle);
+
+        rhandle.has_sub(handle, &id).to_glib()
     }
 }

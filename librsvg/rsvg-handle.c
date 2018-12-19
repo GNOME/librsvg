@@ -178,6 +178,7 @@ extern gboolean rsvg_handle_rust_get_geometry_sub (RsvgHandle *handle,
                                                    RsvgRectangle *out_ink_rect,
                                                    RsvgRectangle *out_logical_rect,
                                                    const char *id);
+extern gboolean rsvg_handle_rust_has_sub(RsvgHandle *handle, const char *id);
 
 /* Implemented in rust/src/node.rs */
 /* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
@@ -1253,27 +1254,16 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
  * Since: 2.22
  */
 gboolean
-rsvg_handle_has_sub (RsvgHandle * handle,
+rsvg_handle_has_sub (RsvgHandle *handle,
                      const char *id)
 {
-    RsvgNode *node;
-    gboolean has_sub;
-
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
     if (!is_loaded (handle)) {
         return FALSE;
     }
 
-    if (G_UNLIKELY (!id || !id[0]))
-      return FALSE;
-
-    node = rsvg_handle_defs_lookup (handle, id);
-    has_sub = node != NULL;
-
-    node = rsvg_node_unref (node);
-
-    return has_sub;
+    return rsvg_handle_rust_has_sub (handle, id);
 }
 
 /**
