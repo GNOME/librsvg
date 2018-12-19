@@ -16,7 +16,7 @@ use url::Url;
 
 use allowed_url::AllowedUrl;
 use css::{self, CssStyles};
-use defs::{Fragment, Href};
+use defs::{Fragment, Href, HrefError};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, LoadingError};
@@ -276,6 +276,58 @@ impl Handle {
 
         Ok((ink_rect, logical_rect))
     }
+
+    fn defs_lookup(
+        &mut self,
+        handle: *const RsvgHandle,
+        name: &str,
+    ) -> Result<RsvgNode, DefsLookupErrorKind> {
+        let svg_ref = self.svg.borrow();
+        let svg = svg_ref.as_ref().unwrap();
+
+        let mut defs = svg.defs.borrow_mut();
+
+        let href = Href::with_fragment(name).map_err(DefsLookupErrorKind::HrefError)?;
+
+        match href {
+            Href::WithFragment(fragment) => {
+                if let Some(uri) = fragment.uri() {
+                    // The public APIs to get geometries of individual elements, or to render
+                    // them, should only allow referencing elements within the main handle's
+                    // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
+                    // Otherwise, a calling program could request "another-file#foo" and cause
+                    // another-file to be loaded, even if it is not part of the set of
+                    // resources that the main SVG actually references.  In the future we may
+                    // relax this requirement to allow lookups within that set, but not to
+                    // other random files.
+
+                    let msg = format!(
+                        "the public API is not allowed to look up external references: {}#{}",
+                        uri,
+                        fragment.fragment()
+                    );
+
+                    rsvg_log!("{}", msg);
+
+                    rsvg_g_warning(&msg);
+                    return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
+                }
+
+                match defs.lookup(handle, &fragment) {
+                    Some(n) => Ok(n),
+                    None => Err(DefsLookupErrorKind::NotFound),
+                }
+            }
+
+            _ => unreachable!(), // we explicitly requested a with_fragment after all
+        }
+    }
+}
+
+enum DefsLookupErrorKind {
+    HrefError(HrefError),
+    CannotLookupExternalReferences,
+    NotFound,
 }
 
 // Keep these in sync with rsvg.h:RsvgHandleFlags
@@ -611,50 +663,12 @@ pub unsafe extern "C" fn rsvg_handle_defs_lookup(
     assert!(!name.is_null());
 
     let rhandle = get_rust_handle(handle);
-
-    let svg_ref = rhandle.svg.borrow();
-    let svg = svg_ref.as_ref().unwrap();
-
-    let mut defs = svg.defs.borrow_mut();
-
     let name: String = from_glib_none(name);
 
-    let r = Href::with_fragment(&name);
-    if r.is_err() {
-        return ptr::null();
-    }
+    match rhandle.defs_lookup(handle, &name) {
+        Ok(node) => box_node(node),
 
-    match r.unwrap() {
-        Href::WithFragment(fragment) => {
-            if let Some(uri) = fragment.uri() {
-                // The public APIs to get geometries of individual elements, or to render
-                // them, should only allow referencing elements within the main handle's
-                // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
-                // Otherwise, a calling program could request "another-file#foo" and cause
-                // another-file to be loaded, even if it is not part of the set of
-                // resources that the main SVG actually references.  In the future we may
-                // relax this requirement to allow lookups within that set, but not to
-                // other random files.
-
-                let msg = format!(
-                    "the public API is not allowed to look up external references: {}#{}",
-                    uri,
-                    fragment.fragment()
-                );
-
-                rsvg_log!("{}", msg);
-
-                rsvg_g_warning(&msg);
-                return ptr::null();
-            }
-
-            match defs.lookup(handle, &fragment) {
-                Some(n) => box_node(n),
-                None => ptr::null(),
-            }
-        }
-
-        _ => unreachable!(),
+        Err(_) => ptr::null(),
     }
 }
 
