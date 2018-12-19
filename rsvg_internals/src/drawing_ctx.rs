@@ -1073,7 +1073,7 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq)]
 #[repr(C)]
 pub struct RsvgRectangle {
     pub x: f64,
@@ -1082,48 +1082,13 @@ pub struct RsvgRectangle {
     pub height: f64,
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_drawing_ctx_get_geometry(
-    raw_draw_ctx: *const DrawingCtx,
-    ink_rect: *mut RsvgRectangle,
-    logical_rect: *mut RsvgRectangle,
-) {
-    assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = &*raw_draw_ctx;
-
-    assert!(!ink_rect.is_null());
-    assert!(!logical_rect.is_null());
-
-    let ink_rect: &mut RsvgRectangle = &mut *ink_rect;
-    let logical_rect: &mut RsvgRectangle = &mut *logical_rect;
-
-    match draw_ctx.get_bbox().ink_rect {
-        Some(r) => {
-            ink_rect.x = r.x;
-            ink_rect.y = r.y;
-            ink_rect.width = r.width;
-            ink_rect.height = r.height;
-        }
-        None => {
-            ink_rect.x = 0.0;
-            ink_rect.y = 0.0;
-            ink_rect.width = 0.0;
-            ink_rect.height = 0.0;
-        }
-    }
-
-    match draw_ctx.get_bbox().rect {
-        Some(r) => {
-            logical_rect.x = r.x;
-            logical_rect.y = r.y;
-            logical_rect.width = r.width;
-            logical_rect.height = r.height;
-        }
-        None => {
-            logical_rect.x = 0.0;
-            logical_rect.y = 0.0;
-            logical_rect.width = 0.0;
-            logical_rect.height = 0.0;
+impl From<cairo::Rectangle> for RsvgRectangle {
+    fn from(r: cairo::Rectangle) -> RsvgRectangle {
+        RsvgRectangle {
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
         }
     }
 }

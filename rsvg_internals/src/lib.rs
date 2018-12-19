@@ -35,15 +35,12 @@ extern crate lazy_static;
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
-pub use drawing_ctx::{
-    rsvg_drawing_ctx_draw_node_from_stack,
-    rsvg_drawing_ctx_free,
-    rsvg_drawing_ctx_get_geometry,
-};
+pub use drawing_ctx::{rsvg_drawing_ctx_draw_node_from_stack, rsvg_drawing_ctx_free};
 
 pub use handle::{
     rsvg_handle_create_drawing_ctx_for_node,
     rsvg_handle_defs_lookup,
+    rsvg_handle_get_node_geometry,
     rsvg_handle_rust_close,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,

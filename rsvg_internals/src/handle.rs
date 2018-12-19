@@ -1,4 +1,5 @@
 use std::cell::{Cell, Ref, RefCell};
+use std::mem;
 use std::ptr;
 use std::rc::Rc;
 use std::slice;
@@ -17,7 +18,7 @@ use allowed_url::AllowedUrl;
 use css::{self, CssStyles};
 use defs::{Fragment, Href};
 use dpi::Dpi;
-use drawing_ctx::DrawingCtx;
+use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, LoadingError};
 use io;
 use load::LoadContext;
@@ -225,6 +226,56 @@ impl Handle {
 
         draw_ctx
     }
+
+    fn get_node_geometry(
+        &mut self,
+        handle: *mut RsvgHandle,
+        node: &RsvgNode,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), ()> {
+        let mut dimensions = unsafe { mem::zeroed() };
+
+        unsafe {
+            rsvg_handle_get_dimensions(handle, &mut dimensions);
+        }
+
+        if dimensions.width == 0 || dimensions.height == 0 {
+            return Err(());
+        }
+
+        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1).map_err(|_| ())?;
+
+        let cr = cairo::Context::new(&target);
+
+        let mut draw_ctx = self.create_drawing_ctx_for_node(
+            handle,
+            &cr,
+            &dimensions,
+            Some(node),
+            is_testing(handle),
+        );
+
+        let svg_ref = self.svg.borrow();
+        let svg = svg_ref.as_ref().unwrap();
+
+        let root = svg.tree.root();
+
+        draw_ctx
+            .draw_node_from_stack(&root.get_cascaded_values(), &root, false)
+            .map_err(|_| ())?;
+
+        let bbox = draw_ctx.get_bbox();
+
+        let ink_rect = bbox
+            .ink_rect
+            .map(|r| RsvgRectangle::from(r))
+            .unwrap_or_else(|| RsvgRectangle::default());
+        let logical_rect = bbox
+            .rect
+            .map(|r| RsvgRectangle::from(r))
+            .unwrap_or_else(|| RsvgRectangle::default());
+
+        Ok((ink_rect, logical_rect))
+    }
 }
 
 // Keep these in sync with rsvg.h:RsvgHandleFlags
@@ -269,6 +320,14 @@ extern "C" {
     ) -> *mut RsvgHandle;
 
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
+
+    fn rsvg_handle_get_is_testing(handle: *const RsvgHandle) -> glib_sys::gboolean;
+
+    fn rsvg_handle_get_dimensions(handle: *mut RsvgHandle, dimensions: *mut RsvgDimensionData);
+}
+
+fn is_testing(handle: *const RsvgHandle) -> bool {
+    unsafe { from_glib(rsvg_handle_get_is_testing(handle)) }
 }
 
 pub fn lookup_node(handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
@@ -730,4 +789,37 @@ pub unsafe extern "C" fn rsvg_handle_create_drawing_ctx_for_node(
     let draw_ctx = rhandle.create_drawing_ctx_for_node(handle, &cr, dimensions, node, is_testing);
 
     Box::into_raw(Box::new(draw_ctx))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_get_node_geometry(
+    handle: *mut RsvgHandle,
+    node: *const RsvgNode,
+    out_ink_rect: *mut RsvgRectangle,
+    out_logical_rect: *mut RsvgRectangle,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    assert!(!node.is_null());
+    let node = &*node;
+
+    assert!(!out_ink_rect.is_null());
+    assert!(!out_logical_rect.is_null());
+
+    let out_ink_rect = &mut *out_ink_rect;
+    let out_logical_rect = &mut *out_logical_rect;
+
+    match rhandle.get_node_geometry(handle, node) {
+        Ok((ink_rect, logical_rect)) => {
+            *out_ink_rect = ink_rect;
+            *out_logical_rect = logical_rect;
+            true.to_glib()
+        }
+
+        Err(()) => {
+            *out_ink_rect = mem::zeroed();
+            *out_logical_rect = mem::zeroed();
+            false.to_glib()
+        }
+    }
 }

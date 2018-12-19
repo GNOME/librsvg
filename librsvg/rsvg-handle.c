@@ -176,6 +176,11 @@ extern RsvgDrawingCtx *rsvg_handle_create_drawing_ctx_for_node(RsvgHandle *handl
                                                                RsvgDimensionData *dimensions,
                                                                RsvgNode *node,
                                                                gboolean is_testing);
+extern gboolean rsvg_handle_get_node_geometry(RsvgHandle *handle,
+                                              RsvgNode *node,
+                                              RsvgRectangle *ink_rect,
+                                              RsvgRectangle *logical_rect);
+
 
 /* Implemented in rust/src/node.rs */
 /* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
@@ -188,9 +193,6 @@ gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
 extern void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
 extern gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx) G_GNUC_WARN_UNUSED_RESULT;
-extern void rsvg_drawing_ctx_get_geometry (RsvgDrawingCtx *ctx,
-                                           RsvgRectangle *ink_rect,
-                                           RsvgRectangle *logical_rect);
 
 struct RsvgHandlePrivate {
     RsvgSizeFunc size_func;
@@ -1126,39 +1128,6 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
     }
 }
 
-static gboolean
-get_node_geometry(RsvgHandle *handle, RsvgNode *node, RsvgRectangle *ink_rect, RsvgRectangle *logical_rect)
-{
-    RsvgDimensionData dimensions;
-    cairo_surface_t *target;
-    cairo_t *cr;
-    RsvgDrawingCtx *draw;
-    gboolean res = FALSE;
-
-    g_assert (node != NULL);
-
-    rsvg_handle_get_dimensions (handle, &dimensions);
-    if (dimensions.width == 0 || dimensions.height == 0)
-        return res;
-
-    target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
-    cr = cairo_create (target);
-
-    draw = rsvg_handle_create_drawing_ctx_for_node (handle, cr, &dimensions, node, handle->priv->is_testing);
-
-    /* FIXME: expose this as a RenderingError in the public API */
-    res = rsvg_drawing_ctx_draw_node_from_stack (draw);
-    if (res) {
-        rsvg_drawing_ctx_get_geometry (draw, ink_rect, logical_rect);
-    }
-
-    rsvg_drawing_ctx_free (draw);
-    cairo_destroy (cr);
-    cairo_surface_destroy (target);
-
-    return res;
-}
-
 /**
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
@@ -1256,7 +1225,7 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, Rsv
                                        &root_width, &root_height);
 
     if (id || !has_size) {
-        res = get_node_geometry (handle, node ? node : root, &ink_r, &logical_r);
+        res = rsvg_handle_get_node_geometry (handle, node ? node : root, &ink_r, &logical_r);
         if (!res) {
             goto out;
         }
@@ -1605,6 +1574,15 @@ rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
     handle->priv->is_testing = testing ? TRUE : FALSE;
 
     rsvg_handle_update_font_map_for_testing (handle);
+}
+
+G_GNUC_INTERNAL
+gboolean rsvg_handle_get_is_testing (RsvgHandle *handle);
+
+gboolean
+rsvg_handle_get_is_testing (RsvgHandle *handle)
+{
+    return handle->priv->is_testing;
 }
 
 /* This one is defined in the C code, because the prototype has varargs
