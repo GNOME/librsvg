@@ -5,6 +5,7 @@ use aspect_ratio::*;
 use attributes::Attribute;
 use css::CssStyles;
 use defs::Fragment;
+use dpi::Dpi;
 use drawing_ctx::DrawingCtx;
 use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
@@ -121,7 +122,10 @@ impl NodeSvg {
         }
     }
 
-    pub fn get_size(&self, dpi_x: f64, dpi_y: f64) -> Option<(i32, i32)> {
+    pub fn get_size(&self, dpi: &Dpi) -> Option<(i32, i32)> {
+        let dpi_x = dpi.x();
+        let dpi_y = dpi.y();
+
         match (self.w.get(), self.h.get(), self.vbox.get()) {
             (w, h, Some(vb)) => Some((
                 w.hand_normalize(dpi_x, vb.0.width, 12.0).round() as i32,

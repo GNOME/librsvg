@@ -300,7 +300,7 @@ impl Handle {
 
         if is_root {
             if let Some((root_width, root_height)) =
-                node.with_impl(|svg: &NodeSvg| svg.get_size(self.dpi.x(), self.dpi.y()))
+                node.with_impl(|svg: &NodeSvg| svg.get_size(&self.dpi))
             {
                 let ink_r = RsvgRectangle {
                     x: 0.0,
