@@ -3,7 +3,7 @@ use std::ptr;
 use std::rc::Rc;
 use std::slice;
 
-use cairo::{ImageSurface, Status};
+use cairo::{self, ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio::{File as GFile, InputStream};
@@ -17,6 +17,7 @@ use allowed_url::AllowedUrl;
 use css::{self, CssStyles};
 use defs::{Fragment, Href};
 use dpi::Dpi;
+use drawing_ctx::DrawingCtx;
 use error::{set_gerror, LoadingError};
 use io;
 use load::LoadContext;
@@ -31,6 +32,15 @@ use xml2_load::xml_state_load_from_possibly_compressed_stream;
 #[repr(C)]
 pub struct RsvgHandle {
     _private: [u8; 0],
+}
+
+// Keep in sync with rsvg.h:RsvgDimensionData
+#[repr(C)]
+pub struct RsvgDimensionData {
+    width: libc::c_int,
+    height: libc::c_int,
+    em: f64,
+    ex: f64,
 }
 
 /// Flags used during loading
@@ -179,6 +189,41 @@ impl Handle {
 
         *self.svg.borrow_mut() = Some(xml.steal_result());
         Ok(())
+    }
+
+    fn cascade(&mut self) {
+        let svg_ref = self.svg.borrow();
+        let svg = svg_ref.as_ref().unwrap();
+
+        svg.tree.cascade();
+    }
+
+    fn create_drawing_ctx_for_node(
+        &mut self,
+        handle: *mut RsvgHandle,
+        cr: &cairo::Context,
+        dimensions: &RsvgDimensionData,
+        node: Option<&RsvgNode>,
+        is_testing: bool,
+    ) -> DrawingCtx {
+        let mut draw_ctx = DrawingCtx::new(
+            handle,
+            cr,
+            f64::from(dimensions.width),
+            f64::from(dimensions.height),
+            dimensions.em,
+            dimensions.ex,
+            get_dpi(handle).clone(),
+            is_testing,
+        );
+
+        if let Some(node) = node {
+            draw_ctx.add_node_and_ancestors_to_stack(node);
+        }
+
+        self.cascade();
+
+        draw_ctx
     }
 }
 
@@ -555,16 +600,6 @@ pub unsafe extern "C" fn rsvg_handle_defs_lookup(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_cascade(raw_handle: *const Handle) {
-    let rhandle = &*raw_handle;
-
-    let svg_ref = rhandle.svg.borrow();
-    let svg = svg_ref.as_ref().unwrap();
-
-    svg.tree.cascade();
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_root(raw_handle: *const Handle) -> *const RsvgNode {
     let rhandle = &*raw_handle;
 
@@ -675,4 +710,24 @@ pub unsafe extern "C" fn rsvg_handle_rust_close(
             false.to_glib()
         }
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_create_drawing_ctx_for_node(
+    handle: *mut RsvgHandle,
+    cr: *mut cairo_sys::cairo_t,
+    dimensions: *const RsvgDimensionData,
+    node: *const RsvgNode,
+    is_testing: glib_sys::gboolean,
+) -> *mut DrawingCtx {
+    let cr = from_glib_none(cr);
+    let dimensions = &*dimensions;
+    let is_testing = from_glib(is_testing);
+
+    let node = if node.is_null() { None } else { Some(&*node) };
+
+    let rhandle = get_rust_handle(handle);
+    let draw_ctx = rhandle.create_drawing_ctx_for_node(handle, &cr, dimensions, node, is_testing);
+
+    Box::into_raw(Box::new(draw_ctx))
 }

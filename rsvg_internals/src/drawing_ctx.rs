@@ -3,7 +3,6 @@ use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
 use glib_sys;
-use libc;
 use pango::{self, ContextExt, FontMapExt, LayoutExt};
 use pango_sys;
 use pangocairo;
@@ -135,7 +134,7 @@ pub struct DrawingCtx {
 impl DrawingCtx {
     pub fn new(
         handle: *const RsvgHandle,
-        cr: cairo::Context,
+        cr: &cairo::Context,
         width: f64,
         height: f64,
         vb_width: f64,
@@ -1074,20 +1073,6 @@ pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_add_node_and_ancestors_to_stack(
-    raw_draw_ctx: *mut DrawingCtx,
-    raw_node: *const RsvgNode,
-) {
-    assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *raw_draw_ctx };
-
-    assert!(!raw_node.is_null());
-    let node = unsafe { &*raw_node };
-
-    draw_ctx.add_node_and_ancestors_to_stack(node);
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(C)]
 pub struct RsvgRectangle {
@@ -1178,28 +1163,6 @@ impl NodeStack {
     pub fn contains(&self, node: &RsvgNode) -> bool {
         self.0.iter().find(|n| Rc::ptr_eq(n, node)).is_some()
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_new(
-    handle: *const RsvgHandle,
-    cr: *mut cairo_sys::cairo_t,
-    width: u32,
-    height: u32,
-    vb_width: libc::c_double,
-    vb_height: libc::c_double,
-    is_testing: glib_sys::gboolean,
-) -> *mut DrawingCtx {
-    Box::into_raw(Box::new(DrawingCtx::new(
-        handle,
-        unsafe { from_glib_none(cr) },
-        f64::from(width),
-        f64::from(height),
-        vb_width,
-        vb_height,
-        handle::get_dpi(handle).clone(),
-        from_glib(is_testing),
-    )))
 }
 
 #[no_mangle]

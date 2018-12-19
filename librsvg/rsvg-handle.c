@@ -153,7 +153,6 @@ RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
 /* Implemented in rsvg_internals/src/handle.rs */
 extern RsvgHandleRust *rsvg_handle_rust_new (void);
 extern void rsvg_handle_rust_free (RsvgHandleRust *raw_handle);
-extern void rsvg_handle_rust_cascade (RsvgHandleRust *raw_handle);
 extern double rsvg_handle_rust_get_dpi_x (RsvgHandleRust *raw_handle);
 extern double rsvg_handle_rust_get_dpi_y (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_dpi_x (RsvgHandleRust *raw_handle, double dpi_x);
@@ -172,7 +171,11 @@ extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
                                                    GError **error);
 extern void rsvg_handle_rust_write (RsvgHandle *handle, const guchar *buf, gsize count);
 extern gboolean rsvg_handle_rust_close (RsvgHandle *handle, GError **error);
-
+extern RsvgDrawingCtx *rsvg_handle_create_drawing_ctx_for_node(RsvgHandle *handle,
+                                                               cairo_t *cr,
+                                                               RsvgDimensionData *dimensions,
+                                                               RsvgNode *node,
+                                                               gboolean is_testing);
 
 /* Implemented in rust/src/node.rs */
 /* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
@@ -183,16 +186,7 @@ G_GNUC_INTERNAL
 gboolean rsvg_node_svg_get_size (RsvgNode *node, double dpi_x, double dpi_y, int *out_width, int *out_height);
 
 /* Defined in rsvg_internals/src/drawing_ctx.rs */
-extern RsvgDrawingCtx *rsvg_drawing_ctx_new (RsvgHandle *handle,
-                                             cairo_t *cr,
-                                             guint width,
-                                             guint height,
-                                             double vb_width,
-                                             double vb_height,
-                                             gboolean testing);
 extern void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
-extern void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx,
-                                                              RsvgNode       *node);
 extern gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx) G_GNUC_WARN_UNUSED_RESULT;
 extern void rsvg_drawing_ctx_get_geometry (RsvgDrawingCtx *ctx,
                                            RsvgRectangle *ink_rect,
@@ -989,29 +983,6 @@ rsvg_handle_get_rust (RsvgHandle *handle)
     return handle->priv->rust_handle;
 }
 
-static RsvgDrawingCtx *
-rsvg_handle_create_drawing_ctx_for_node(RsvgHandle *handle,
-                                        cairo_t *cr,
-                                        RsvgDimensionData *dimensions,
-                                        RsvgNode *node)
-{
-    RsvgDrawingCtx *draw_ctx;
-
-    draw_ctx = rsvg_drawing_ctx_new (handle,
-                                     cr,
-                                     dimensions->width, dimensions->height,
-                                     dimensions->em, dimensions->ex,
-                                     handle->priv->is_testing);
-
-    if (node != NULL) {
-        rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw_ctx, node);
-    }
-
-    rsvg_handle_rust_cascade (handle->priv->rust_handle);
-
-    return draw_ctx;
-}
-
 static gboolean
 is_loaded (RsvgHandle *handle)
 {
@@ -1093,7 +1064,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     cairo_save (cr);
 
-    draw = rsvg_handle_create_drawing_ctx_for_node (handle, cr, &dimensions, drawsub);
+    draw = rsvg_handle_create_drawing_ctx_for_node (handle, cr, &dimensions, drawsub, handle->priv->is_testing);
     res = rsvg_drawing_ctx_draw_node_from_stack (draw);
 
     rsvg_drawing_ctx_free (draw);
@@ -1173,7 +1144,7 @@ get_node_geometry(RsvgHandle *handle, RsvgNode *node, RsvgRectangle *ink_rect, R
     target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
     cr = cairo_create (target);
 
-    draw = rsvg_handle_create_drawing_ctx_for_node (handle, cr, &dimensions, node);
+    draw = rsvg_handle_create_drawing_ctx_for_node (handle, cr, &dimensions, node, handle->priv->is_testing);
 
     /* FIXME: expose this as a RenderingError in the public API */
     res = rsvg_drawing_ctx_draw_node_from_stack (draw);
