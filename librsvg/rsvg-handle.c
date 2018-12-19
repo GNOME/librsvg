@@ -1063,6 +1063,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     res = rsvg_drawing_ctx_draw_node_from_stack (draw);
 
     rsvg_drawing_ctx_free (draw);
+    drawsub = rsvg_node_unref (drawsub);
 
     cairo_restore (cr);
 
@@ -1255,6 +1256,9 @@ gboolean
 rsvg_handle_has_sub (RsvgHandle * handle,
                      const char *id)
 {
+    RsvgNode *node;
+    gboolean has_sub;
+
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
     if (!is_loaded (handle)) {
@@ -1264,7 +1268,12 @@ rsvg_handle_has_sub (RsvgHandle * handle,
     if (G_UNLIKELY (!id || !id[0]))
       return FALSE;
 
-    return rsvg_handle_defs_lookup (handle, id) != NULL;
+    node = rsvg_handle_defs_lookup (handle, id);
+    has_sub = node != NULL;
+
+    node = rsvg_node_unref (node);
+
+    return has_sub;
 }
 
 /**
