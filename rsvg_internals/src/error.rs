@@ -10,6 +10,7 @@ use glib_sys;
 use libc;
 
 use attributes::Attribute;
+use defs::HrefError;
 use parsers::ParseError;
 
 /// A simple error which refers to an attribute's value
@@ -91,10 +92,19 @@ impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
 }
 
 #[derive(Clone)]
+pub enum DefsLookupErrorKind {
+    HrefError(HrefError),
+    CannotLookupExternalReferences,
+    NotFound,
+}
+
+#[derive(Clone)]
 pub enum RenderingError {
     Cairo(cairo::Status),
     CircularReference,
     InstancingLimit,
+    InvalidId(DefsLookupErrorKind),
+    SvgHasNoSize,
 }
 
 impl From<cairo::Status> for RenderingError {

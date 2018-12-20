@@ -178,7 +178,10 @@ extern gboolean rsvg_handle_rust_get_geometry_sub (RsvgHandle *handle,
                                                    RsvgRectangle *out_ink_rect,
                                                    RsvgRectangle *out_logical_rect,
                                                    const char *id);
-extern gboolean rsvg_handle_rust_has_sub(RsvgHandle *handle, const char *id);
+extern gboolean rsvg_handle_rust_has_sub (RsvgHandle *handle, const char *id);
+extern gboolean rsvg_handle_rust_render_cairo_sub (RsvgHandle *handle,
+                                                   cairo_t *cr,
+                                                   const char *id);
 
 /* Implemented in rust/src/node.rs */
 /* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
@@ -1024,51 +1027,14 @@ is_loaded (RsvgHandle *handle)
 gboolean
 rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 {
-    RsvgDimensionData dimensions;
-    RsvgDrawingCtx *draw;
-    RsvgNode *drawsub = NULL;
-    cairo_status_t status;
-    gboolean res;
-
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (cr != NULL, FALSE);
 
     if (!is_loaded (handle)) {
         return FALSE;
     }
 
-    status = cairo_status (cr);
-
-    if (status != CAIRO_STATUS_SUCCESS) {
-        g_warning ("cannot render on a cairo_t with a failure status (status=%d, %s)",
-                   (int) status,
-                   cairo_status_to_string (status));
-        return FALSE;
-    }
-
-    if (id && *id)
-        drawsub = rsvg_handle_defs_lookup (handle, id);
-
-    if (drawsub == NULL && id != NULL) {
-        g_warning ("element id=\"%s\" does not exist", id);
-        /* todo: there's no way to signal that @id doesn't exist */
-        return FALSE;
-    }
-
-    rsvg_handle_get_dimensions (handle, &dimensions);
-    if (dimensions.width == 0 || dimensions.height == 0)
-        return FALSE;
-
-    cairo_save (cr);
-
-    draw = rsvg_handle_create_drawing_ctx_for_node (handle, cr, &dimensions, drawsub, handle->priv->is_testing);
-    res = rsvg_drawing_ctx_draw_node_from_stack (draw);
-
-    rsvg_drawing_ctx_free (draw);
-    drawsub = rsvg_node_unref (drawsub);
-
-    cairo_restore (cr);
-
-    return res;
+    return rsvg_handle_rust_render_cairo_sub (handle, cr, id);
 }
 
 /**

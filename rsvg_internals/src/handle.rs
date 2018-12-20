@@ -16,10 +16,10 @@ use url::Url;
 
 use allowed_url::AllowedUrl;
 use css::{self, CssStyles};
-use defs::{Fragment, Href, HrefError};
+use defs::{Fragment, Href};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
-use error::{set_gerror, LoadingError};
+use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
 use io;
 use load::LoadContext;
 use node::{box_node, Node, RsvgNode};
@@ -228,6 +228,7 @@ impl Handle {
         draw_ctx
     }
 
+    // FIXME: return proper errors
     fn get_node_geometry(
         &mut self,
         handle: *mut RsvgHandle,
@@ -278,6 +279,7 @@ impl Handle {
         Ok((ink_rect, logical_rect))
     }
 
+    // FIXME: return proper errors
     fn get_geometry_sub(
         &mut self,
         handle: *mut RsvgHandle,
@@ -365,14 +367,67 @@ impl Handle {
     }
 
     fn has_sub(&mut self, handle: *const RsvgHandle, name: &str) -> bool {
+        // FIXME: return a proper error; only NotFound should map to false
         self.defs_lookup(handle, name).is_ok()
     }
-}
 
-enum DefsLookupErrorKind {
-    HrefError(HrefError),
-    CannotLookupExternalReferences,
-    NotFound,
+    fn render_cairo_sub(
+        &mut self,
+        handle: *mut RsvgHandle,
+        cr: &cairo::Context,
+        id: Option<&str>,
+    ) -> Result<(), RenderingError> {
+        let status = cr.status();
+        if status != Status::Success {
+            let msg = format!(
+                "cannot render on a cairo_t with a failure status (status={:?})",
+                status,
+            );
+
+            rsvg_g_warning(&msg);
+            return Err(RenderingError::Cairo(status));
+        }
+
+        let node = if let Some(id) = id {
+            Some(
+                self.defs_lookup(handle, id)
+                    .map_err(|e| RenderingError::InvalidId(e))?,
+            )
+        } else {
+            None
+        };
+
+        let mut dimensions = unsafe { mem::zeroed() };
+
+        unsafe {
+            rsvg_handle_get_dimensions(handle, &mut dimensions);
+        }
+
+        if dimensions.width == 0 || dimensions.height == 0 {
+            return Err(RenderingError::SvgHasNoSize);
+        }
+
+        cr.save();
+
+        let mut draw_ctx = self.create_drawing_ctx_for_node(
+            handle,
+            cr,
+            &dimensions,
+            node.as_ref(),
+            is_testing(handle),
+        );
+
+        let svg_ref = self.svg.borrow();
+        let svg = svg_ref.as_ref().unwrap();
+
+        let root = svg.tree.root();
+
+        let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
+
+        cr.restore();
+
+        res
+    }
 }
 
 // Keep these in sync with rsvg.h:RsvgHandleFlags
@@ -876,5 +931,25 @@ pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
         let rhandle = get_rust_handle(handle);
 
         rhandle.has_sub(handle, &id).to_glib()
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
+    handle: *mut RsvgHandle,
+    cr: *mut cairo_sys::cairo_t,
+    id: *const libc::c_char,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+    let cr = from_glib_none(cr);
+    let id: Option<String> = from_glib_none(id);
+
+    match rhandle.render_cairo_sub(handle, &cr, id.as_ref().map(String::as_str)) {
+        Ok(()) => true.to_glib(),
+
+        Err(_) => {
+            // FIXME: return a proper error code to the public API
+            false.to_glib()
+        }
     }
 }

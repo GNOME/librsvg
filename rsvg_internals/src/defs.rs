@@ -122,7 +122,7 @@ impl fmt::Display for Fragment {
 }
 
 /// Errors returned when creating an `Href` out of a string
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum HrefError {
     /// The href is an invalid URI or has empty components.
     ParseError,
