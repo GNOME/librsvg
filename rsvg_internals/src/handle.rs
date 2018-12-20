@@ -22,7 +22,7 @@ use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
 use io;
 use load::LoadContext;
-use node::{box_node, Node, RsvgNode};
+use node::{Node, RsvgNode};
 use structure::NodeSvg;
 use surface_utils::shared_surface::SharedImageSurface;
 use svg::Svg;
@@ -666,12 +666,6 @@ pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href_str: &
     }
 }
 
-pub fn get_svg<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Svg>> {
-    let rhandle = get_rust_handle(handle);
-
-    rhandle.svg.borrow()
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_new() -> *mut Handle {
     Box::into_raw(Box::new(Handle::new()))
@@ -753,23 +747,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_y(raw_handle: *const Handle) -
     let handle = &*(raw_handle as *const Handle);
 
     handle.dpi.y()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_defs_lookup(
-    handle: *const RsvgHandle,
-    name: *const libc::c_char,
-) -> *const RsvgNode {
-    assert!(!name.is_null());
-
-    let rhandle = get_rust_handle(handle);
-    let name: String = from_glib_none(name);
-
-    match rhandle.defs_lookup(handle, &name) {
-        Ok(node) => box_node(node),
-
-        Err(_) => ptr::null(),
-    }
 }
 
 #[no_mangle]
@@ -857,26 +834,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_close(
             false.to_glib()
         }
     }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_create_drawing_ctx_for_node(
-    handle: *mut RsvgHandle,
-    cr: *mut cairo_sys::cairo_t,
-    dimensions: *const RsvgDimensionData,
-    node: *const RsvgNode,
-    is_testing: glib_sys::gboolean,
-) -> *mut DrawingCtx {
-    let cr = from_glib_none(cr);
-    let dimensions = &*dimensions;
-    let is_testing = from_glib(is_testing);
-
-    let node = if node.is_null() { None } else { Some(&*node) };
-
-    let rhandle = get_rust_handle(handle);
-    let draw_ctx = rhandle.create_drawing_ctx_for_node(handle, &cr, dimensions, node, is_testing);
-
-    Box::into_raw(Box::new(draw_ctx))
 }
 
 #[no_mangle]

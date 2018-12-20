@@ -159,7 +159,6 @@ extern void rsvg_handle_rust_set_dpi_x (RsvgHandleRust *raw_handle, double dpi_x
 extern void rsvg_handle_rust_set_dpi_y (RsvgHandleRust *raw_handle, double dpi_y);
 extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const char *uri);
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
-extern RsvgNode *rsvg_handle_defs_lookup (RsvgHandle *handle, const char *name);
 extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
 extern RsvgHandleState rsvg_handle_rust_get_load_state (RsvgHandleRust *raw_handle);
@@ -169,11 +168,6 @@ extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
                                                    GError **error);
 extern void rsvg_handle_rust_write (RsvgHandle *handle, const guchar *buf, gsize count);
 extern gboolean rsvg_handle_rust_close (RsvgHandle *handle, GError **error);
-extern RsvgDrawingCtx *rsvg_handle_create_drawing_ctx_for_node(RsvgHandle *handle,
-                                                               cairo_t *cr,
-                                                               RsvgDimensionData *dimensions,
-                                                               RsvgNode *node,
-                                                               gboolean is_testing);
 extern gboolean rsvg_handle_rust_get_geometry_sub (RsvgHandle *handle,
                                                    RsvgRectangle *out_ink_rect,
                                                    RsvgRectangle *out_logical_rect,
@@ -182,14 +176,6 @@ extern gboolean rsvg_handle_rust_has_sub (RsvgHandle *handle, const char *id);
 extern gboolean rsvg_handle_rust_render_cairo_sub (RsvgHandle *handle,
                                                    cairo_t *cr,
                                                    const char *id);
-
-/* Implemented in rust/src/node.rs */
-/* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
-extern RsvgNode *rsvg_node_unref (RsvgNode *node);
-
-/* Defined in rsvg_internals/src/drawing_ctx.rs */
-extern void rsvg_drawing_ctx_free (RsvgDrawingCtx *draw_ctx);
-extern gboolean rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx) G_GNUC_WARN_UNUSED_RESULT;
 
 struct RsvgHandlePrivate {
     RsvgSizeFunc size_func;

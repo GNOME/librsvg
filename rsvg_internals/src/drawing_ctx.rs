@@ -2,7 +2,6 @@ use cairo;
 use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
-use glib_sys;
 use pango::{self, ContextExt, FontMapExt, LayoutExt};
 use pango_sys;
 use pangocairo;
@@ -1047,32 +1046,6 @@ impl From<TextRendering> for cairo::Antialias {
     }
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_drawing_ctx_draw_node_from_stack(
-    raw_draw_ctx: *mut DrawingCtx,
-) -> glib_sys::gboolean {
-    assert!(!raw_draw_ctx.is_null());
-    let draw_ctx = unsafe { &mut *raw_draw_ctx };
-
-    // FIXME: The public API doesn't let us return a GError from the rendering
-    // functions, just a boolean.  Add a proper API to return proper errors from
-    // the rendering path.
-
-    let svg_ref = handle::get_svg(draw_ctx.handle);
-    let svg = svg_ref.as_ref().unwrap();
-
-    let root = svg.tree.root();
-
-    if draw_ctx
-        .draw_node_from_stack(&root.get_cascaded_values(), &root, false)
-        .is_ok()
-    {
-        true.to_glib()
-    } else {
-        false.to_glib()
-    }
-}
-
 #[derive(Default, Clone, Copy, Debug, PartialEq)]
 #[repr(C)]
 pub struct RsvgRectangle {
@@ -1128,10 +1101,4 @@ impl NodeStack {
     pub fn contains(&self, node: &RsvgNode) -> bool {
         self.0.iter().find(|n| Rc::ptr_eq(n, node)).is_some()
     }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_drawing_ctx_free(raw_draw_ctx: *mut DrawingCtx) {
-    assert!(!raw_draw_ctx.is_null());
-    Box::from_raw(raw_draw_ctx);
 }

@@ -1,7 +1,6 @@
 use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
 use std::cell::{Cell, Ref, RefCell};
-use std::ptr;
 use std::rc::{Rc, Weak};
 
 use attributes::Attribute;
@@ -669,87 +668,4 @@ pub fn node_new(
         class,
         node_impl,
     ))
-}
-
-pub fn box_node(node: RsvgNode) -> *mut RsvgNode {
-    Box::into_raw(Box::new(node))
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_unref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
-    if !raw_node.is_null() {
-        let _ = unsafe { Box::from_raw(raw_node) };
-    }
-
-    // so the caller can do "node = rsvg_node_unref (node);" and lose access to the node
-    ptr::null_mut()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use handle::RsvgHandle;
-    use std::rc::Rc;
-
-    struct TestNodeImpl {}
-
-    impl NodeTrait for TestNodeImpl {
-        fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag<'_>) -> NodeResult {
-            Ok(())
-        }
-    }
-
-    fn rsvg_node_ref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
-        assert!(!raw_node.is_null());
-        let node: &RsvgNode = unsafe { &*raw_node };
-
-        box_node(node.clone())
-    }
-
-    #[test]
-    fn node_refs_and_unrefs() {
-        let node = Rc::new(Node::new(
-            NodeType::Path,
-            None,
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        let ref1 = box_node(node);
-
-        let new_node: &mut RsvgNode = unsafe { &mut *ref1 };
-        let weak = Rc::downgrade(new_node);
-
-        let ref2 = rsvg_node_ref(new_node);
-        assert!(weak.upgrade().is_some());
-
-        rsvg_node_unref(ref2);
-        assert!(weak.upgrade().is_some());
-
-        rsvg_node_unref(ref1);
-        assert!(weak.upgrade().is_none());
-    }
-
-    #[test]
-    fn reffed_node_is_same_as_original_node() {
-        let node = Rc::new(Node::new(
-            NodeType::Path,
-            None,
-            None,
-            None,
-            Box::new(TestNodeImpl {}),
-        ));
-
-        let ref1 = box_node(node);
-        let node1: &RsvgNode = unsafe { &*ref1 };
-
-        let ref2 = rsvg_node_ref(ref1);
-        let node2: &RsvgNode = unsafe { &*ref2 };
-
-        assert!(Rc::ptr_eq(node1, node2));
-
-        rsvg_node_unref(ref1);
-        rsvg_node_unref(ref2);
-    }
 }
