@@ -1,6 +1,7 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clone_on_ref_ptr))]
 #![cfg_attr(feature = "cargo-clippy", allow(not_unsafe_ptr_arg_deref))]
 #![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#![warn(unused)]
 
 extern crate cairo;
 extern crate cairo_sys;
@@ -22,7 +23,6 @@ extern crate nalgebra;
 extern crate num_traits;
 extern crate owning_ref;
 extern crate pango;
-extern crate pango_cairo_sys;
 extern crate pango_sys;
 extern crate pangocairo;
 extern crate rayon;
