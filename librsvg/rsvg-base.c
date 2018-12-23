@@ -144,14 +144,12 @@ rsvg_term (void)
  * rsvg_cleanup:
  *
  * This function should not be called from normal programs.
- * See xmlCleanupParser() for more information.
  *
  * Since: 2.36
  **/
 void
 rsvg_cleanup (void)
 {
-    xmlCleanupParser ();
 }
 
 void

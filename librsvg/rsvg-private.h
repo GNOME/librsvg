@@ -31,8 +31,6 @@
 
 #include "rsvg.h"
 
-#include <libxml/SAX.h>
-#include <libxml/xmlmemory.h>
 #include <pango/pango.h>
 #include <glib.h>
 #include <glib-object.h>
