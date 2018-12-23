@@ -547,8 +547,8 @@ impl DrawingCtx {
             let mut options = cairo::FontOptions::new();
 
             options.set_antialias(cairo::Antialias::Gray);
-            options.set_hint_style(cairo::enums::HintStyle::Full);
-            options.set_hint_metrics(cairo::enums::HintMetrics::On);
+            options.set_hint_style(cairo::HintStyle::Full);
+            options.set_hint_metrics(cairo::HintMetrics::On);
 
             pangocairo::functions::context_set_font_options(&context, &options);
         }
