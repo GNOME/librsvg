@@ -49,16 +49,6 @@ struct XIncludeContext {
     need_fallback: bool,
 }
 
-impl Context {
-    fn empty() -> Context {
-        Context::Start
-    }
-
-    fn fatal_error() -> Context {
-        Context::FatalError
-    }
-}
-
 // This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
 // that is freed in impl Drop for XmlState
 type XmlEntityPtr = *mut libc::c_void;
@@ -108,7 +98,7 @@ impl XmlState {
             tree: None,
             defs: Some(Defs::new()),
             css_styles: Some(CssStyles::new()),
-            context_stack: vec![Context::empty()],
+            context_stack: vec![Context::Start],
             current_node: None,
             entities: HashMap::new(),
             handle,
@@ -241,7 +231,7 @@ impl XmlState {
 
         rsvg_log!("XML error: {}", msg);
 
-        self.context_stack.push(Context::fatal_error());
+        self.context_stack.push(Context::FatalError);
     }
 
     pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
@@ -362,7 +352,7 @@ impl XmlState {
         let need_fallback = match self.acquire(href, parse, encoding) {
             Ok(()) => false,
             Err(AcquireError::ResourceError) => true,
-            Err(AcquireError::FatalError) => return Context::fatal_error(),
+            Err(AcquireError::FatalError) => return Context::FatalError,
         };
 
         Context::XInclude(XIncludeContext { need_fallback })
