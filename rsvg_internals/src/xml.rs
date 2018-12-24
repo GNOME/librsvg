@@ -3,7 +3,6 @@ use encoding::DecoderTrap;
 use glib::translate::*;
 use libc;
 use std::collections::HashMap;
-use std::mem;
 use std::rc::Rc;
 use std::str;
 use xml_rs::{reader::XmlEvent, ParserConfig};
@@ -96,7 +95,6 @@ pub struct XmlState {
     tree: Option<Tree>,
     defs: Option<Defs>,
     css_styles: Option<CssStyles>,
-    context: Context,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
 
@@ -123,8 +121,7 @@ impl XmlState {
             tree: None,
             defs: Some(Defs::new()),
             css_styles: Some(CssStyles::new()),
-            context: Context::empty(),
-            context_stack: Vec::new(),
+            context_stack: vec![Context::empty()],
             current_node: None,
             entities: HashMap::new(),
             handle,
@@ -159,13 +156,13 @@ impl XmlState {
         )
     }
 
-    fn push_context(&mut self, ctx: Context) {
-        let top = mem::replace(&mut self.context, ctx);
-        self.context_stack.push(top);
+    fn context(&self) -> Context {
+        // We can unwrap since the stack is never empty
+        self.context_stack.last().unwrap().clone()
     }
 
     pub fn start_element(&mut self, name: &str, pbag: &PropertyBag) {
-        let context = self.context.clone();
+        let context = self.context();
 
         if let ContextKind::FatalError = context.kind {
             return;
@@ -186,11 +183,11 @@ impl XmlState {
             ContextKind::FatalError => unreachable!(),
         };
 
-        self.push_context(new_context);
+        self.context_stack.push(new_context);
     }
 
     pub fn end_element(&mut self, name: &str) {
-        let context = self.context.clone();
+        let context = self.context();
 
         if let ContextKind::FatalError = context.kind {
             return;
@@ -211,11 +208,11 @@ impl XmlState {
         }
 
         // We can unwrap since start_element() always adds a context to the stack
-        self.context = self.context_stack.pop().unwrap();
+        self.context_stack.pop().unwrap();
     }
 
     pub fn characters(&mut self, text: &str) {
-        let context = self.context.clone();
+        let context = self.context();
 
         if let ContextKind::FatalError = context.kind {
             return;
@@ -270,7 +267,7 @@ impl XmlState {
 
         rsvg_log!("XML error: {}", msg);
 
-        self.push_context(Context::fatal_error());
+        self.context_stack.push(Context::fatal_error());
     }
 
     pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
