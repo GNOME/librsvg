@@ -49,24 +49,21 @@ struct XIncludeContext {
     need_fallback: bool,
 }
 
-/// A concrete parsing context for a surrounding `element_name` and its XML event handlers
+/// A concrete parsing context for a surrounding element and its XML event handlers
 #[derive(Clone)]
 struct Context {
-    element_name: String,
     kind: ContextKind,
 }
 
 impl Context {
     fn empty() -> Context {
         Context {
-            element_name: String::new(),
             kind: ContextKind::Start,
         }
     }
 
     fn fatal_error() -> Context {
         Context {
-            element_name: "".to_string(),
             kind: ContextKind::FatalError,
         }
     }
@@ -186,17 +183,12 @@ impl XmlState {
         self.context_stack.push(new_context);
     }
 
-    pub fn end_element(&mut self, name: &str) {
+    pub fn end_element(&mut self, _name: &str) {
         let context = self.context();
 
         if let ContextKind::FatalError = context.kind {
             return;
         }
-
-        // FIXME: we should deal with namespaces at some point
-        let name = skip_namespace(name);
-
-        assert!(context.element_name == name);
 
         match context.kind {
             ContextKind::Start => panic!("end_element: XML handler stack is empty!?"),
@@ -296,7 +288,6 @@ impl XmlState {
                 self.current_node = Some(node);
 
                 Context {
-                    element_name: name.to_string(),
                     kind: ContextKind::ElementCreation,
                 }
             }
@@ -374,7 +365,7 @@ impl XmlState {
         new_node
     }
 
-    fn xinclude_start_element(&mut self, name: &str, pbag: &PropertyBag) -> Context {
+    fn xinclude_start_element(&mut self, _name: &str, pbag: &PropertyBag) -> Context {
         let mut href = None;
         let mut parse = None;
         let mut encoding = None;
@@ -395,7 +386,6 @@ impl XmlState {
         };
 
         Context {
-            element_name: name.to_string(),
             kind: ContextKind::XInclude(XIncludeContext { need_fallback }),
         }
     }
@@ -404,7 +394,6 @@ impl XmlState {
         // FIXME: we aren't using the xi: namespace
         if name == "fallback" {
             Context {
-                element_name: name.to_string(),
                 kind: ContextKind::XIncludeFallback(ctx.clone()),
             }
         } else {
@@ -435,7 +424,6 @@ impl XmlState {
             }
         } else {
             Context {
-                element_name: name.to_string(),
                 kind: ContextKind::UnsupportedXIncludeChild,
             }
         }
@@ -535,9 +523,8 @@ impl XmlState {
         })
     }
 
-    fn unsupported_xinclude_start_element(&self, name: &str) -> Context {
+    fn unsupported_xinclude_start_element(&self, _name: &str) -> Context {
         Context {
-            element_name: name.to_string(),
             kind: ContextKind::UnsupportedXIncludeChild,
         }
     }
