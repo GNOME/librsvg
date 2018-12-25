@@ -143,7 +143,7 @@ rsvg_term (void)
 /**
  * rsvg_cleanup:
  *
- * This function should not be called from normal programs.
+ * Deprecated: 2.46: No-op. This function should not be called from normal programs.
  *
  * Since: 2.36
  **/
