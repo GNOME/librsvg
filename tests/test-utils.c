@@ -100,6 +100,117 @@ test_utils_compare_surfaces (cairo_surface_t           *surface_a,
                     result->pixels_changed, result->max_diff);
 }
 
+/* Copied from gdk_cairo_surface_paint_pixbuf in gdkcairo.c,
+ * we do not want to depend on GDK
+ */
+static void
+test_utils_cairo_surface_paint_pixbuf (cairo_surface_t *surface,
+                                       const GdkPixbuf *pixbuf)
+{
+  gint width, height;
+  guchar *gdk_pixels, *cairo_pixels;
+  int gdk_rowstride, cairo_stride;
+  int n_channels;
+  int j;
+
+  if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS)
+    return;
+
+  /* This function can't just copy any pixbuf to any surface, be
+   * sure to read the invariants here before calling it */
+
+  g_assert (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
+  g_assert (cairo_image_surface_get_format (surface) == CAIRO_FORMAT_RGB24 ||
+            cairo_image_surface_get_format (surface) == CAIRO_FORMAT_ARGB32);
+  g_assert (cairo_image_surface_get_width (surface) == gdk_pixbuf_get_width (pixbuf));
+  g_assert (cairo_image_surface_get_height (surface) == gdk_pixbuf_get_height (pixbuf));
+
+  cairo_surface_flush (surface);
+
+  width = gdk_pixbuf_get_width (pixbuf);
+  height = gdk_pixbuf_get_height (pixbuf);
+  gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
+  gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+  n_channels = gdk_pixbuf_get_n_channels (pixbuf);
+  cairo_stride = cairo_image_surface_get_stride (surface);
+  cairo_pixels = cairo_image_surface_get_data (surface);
+
+  for (j = height; j; j--)
+    {
+      guchar *p = gdk_pixels;
+      guchar *q = cairo_pixels;
+
+      if (n_channels == 3)
+        {
+          guchar *end = p + 3 * width;
+
+          while (p < end)
+            {
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+              q[0] = p[2];
+              q[1] = p[1];
+              q[2] = p[0];
+#else
+              q[1] = p[0];
+              q[2] = p[1];
+              q[3] = p[2];
+#endif
+              p += 3;
+              q += 4;
+            }
+        }
+      else
+        {
+          guchar *end = p + 4 * width;
+          guint t1,t2,t3;
+
+#define MULT(d,c,a,t) G_STMT_START { t = c * a + 0x80; d = ((t >> 8) + t) >> 8; } G_STMT_END
+
+          while (p < end)
+            {
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+              MULT(q[0], p[2], p[3], t1);
+              MULT(q[1], p[1], p[3], t2);
+              MULT(q[2], p[0], p[3], t3);
+              q[3] = p[3];
+#else
+              q[0] = p[3];
+              MULT(q[1], p[0], p[3], t1);
+              MULT(q[2], p[1], p[3], t2);
+              MULT(q[3], p[2], p[3], t3);
+#endif
+
+              p += 4;
+              q += 4;
+            }
+
+#undef MULT
+        }
+
+      gdk_pixels += gdk_rowstride;
+      cairo_pixels += cairo_stride;
+    }
+
+  cairo_surface_mark_dirty (surface);
+}
+
+cairo_surface_t *
+test_utils_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf)
+{
+  cairo_surface_t *surface;
+
+  g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
+  g_return_val_if_fail (gdk_pixbuf_get_n_channels (pixbuf) == 4, NULL);
+
+  surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+                                        gdk_pixbuf_get_width (pixbuf),
+                                        gdk_pixbuf_get_height (pixbuf));
+
+  test_utils_cairo_surface_paint_pixbuf (surface, pixbuf);
+
+  return surface;
+}
+
 static gchar *data_path = NULL;
 
 const gchar *

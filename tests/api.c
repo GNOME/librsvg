@@ -425,7 +425,7 @@ handle_has_sub (void)
 }
 
 static void
-handle_get_pixbuf (void)
+test_get_pixbuf (gboolean sub)
 {
     char *filename = get_test_filename ("example.svg");
     GError *error = NULL;
@@ -436,29 +436,13 @@ handle_get_pixbuf (void)
     g_assert (handle != NULL);
     g_assert (error == NULL);
 
-    GdkPixbuf *pixbuf = rsvg_handle_get_pixbuf (handle);
-    g_assert (pixbuf != NULL);
+    GdkPixbuf *pixbuf;
+    if (sub) {
+        pixbuf = rsvg_handle_get_pixbuf_sub (handle, EXAMPLE_ONE_ID);
+    } else {
+        pixbuf = rsvg_handle_get_pixbuf (handle);
+    }
 
-    g_assert_cmpint (gdk_pixbuf_get_width (pixbuf), ==, EXAMPLE_WIDTH);
-    g_assert_cmpint (gdk_pixbuf_get_height (pixbuf), ==, EXAMPLE_HEIGHT);
-
-    g_object_unref (pixbuf);
-    g_object_unref (handle);
-}
-
-static void
-handle_get_pixbuf_sub (void)
-{
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
-
-    GdkPixbuf *pixbuf = rsvg_handle_get_pixbuf_sub (handle, EXAMPLE_ONE_ID);
     g_assert (pixbuf != NULL);
 
     /* Note that rsvg_handle_get_pixbuf_sub() creates a surface the size of the
@@ -467,8 +451,48 @@ handle_get_pixbuf_sub (void)
     g_assert_cmpint (gdk_pixbuf_get_width (pixbuf), ==, EXAMPLE_WIDTH);
     g_assert_cmpint (gdk_pixbuf_get_height (pixbuf), ==, EXAMPLE_HEIGHT);
 
+    cairo_surface_t *surface_a = test_utils_cairo_surface_from_pixbuf (pixbuf);
+    cairo_surface_t *surface_b = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, EXAMPLE_WIDTH, EXAMPLE_HEIGHT);
+    cairo_surface_t *surface_diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, EXAMPLE_WIDTH, EXAMPLE_HEIGHT);
+
     g_object_unref (pixbuf);
+
+    g_assert (surface_a != NULL);
+    g_assert (surface_b != NULL);
+    g_assert (surface_diff != NULL);
+
+    cairo_t *cr = cairo_create (surface_b);
+    if (sub) {
+        g_assert (rsvg_handle_render_cairo_sub (handle, cr, EXAMPLE_ONE_ID));
+    } else {
+        g_assert (rsvg_handle_render_cairo (handle, cr));
+    }
+    cairo_destroy (cr);
+
     g_object_unref (handle);
+
+    TestUtilsBufferDiffResult result = {0, 0};
+    test_utils_compare_surfaces (surface_a, surface_b, surface_diff, &result);
+
+    if (result.pixels_changed && result.max_diff > 0) {
+        g_test_fail ();
+    }
+
+    cairo_surface_destroy (surface_a);
+    cairo_surface_destroy (surface_b);
+    cairo_surface_destroy (surface_diff);
+}
+
+static void
+handle_get_pixbuf (void)
+{
+    test_get_pixbuf (FALSE);
+}
+
+static void
+handle_get_pixbuf_sub (void)
+{
+    test_get_pixbuf (TRUE);
 }
 
 static void
