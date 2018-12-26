@@ -6,7 +6,7 @@ extern crate cairo;
 extern crate cairo_sys;
 extern crate rsvg_internals;
 
-use rsvg_internals::filters::context::IRect;
+use rsvg_internals::rect::IRect;
 use rsvg_internals::srgb::{linearize, map_unpremultiplied_components_loop};
 use rsvg_internals::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},

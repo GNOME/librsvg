@@ -12,12 +12,13 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
+use rect::IRect;
 use surface_utils::{
     shared_surface::{BlurDirection, Horizontal, SharedImageSurface, Vertical},
     EdgeMode,
 };
 
-use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
+use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, PrimitiveWithInput};
 
 /// The maximum gaussian blur kernel size.

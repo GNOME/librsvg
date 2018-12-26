@@ -21,10 +21,10 @@ use defs::{Fragment, Href};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
-use filters::context::IRect;
 use io;
 use load::LoadContext;
 use node::{Node, RsvgNode};
+use rect::IRect;
 use structure::NodeSvg;
 use surface_utils::{
     iterators::Pixels,

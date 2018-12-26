@@ -13,10 +13,11 @@ use handle::{self, RsvgHandle};
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use parsers::{parse, ParseError};
 use property_bag::PropertyBag;
+use rect::IRect;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::bounds::BoundsBuilder;
-use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
+use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, Primitive};
 
 /// The `feImage` filter primitive.
