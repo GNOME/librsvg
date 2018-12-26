@@ -6,7 +6,8 @@ extern crate cairo;
 extern crate cairo_sys;
 extern crate rsvg_internals;
 
-use rsvg_internals::filters::{composite::composite_arithmetic, context::IRect};
+use rsvg_internals::filters::composite::composite_arithmetic;
+use rsvg_internals::rect::IRect;
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 const SURFACE_SIDE: i32 = 512;

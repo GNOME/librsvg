@@ -5,12 +5,12 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
-use filters::context::IRect;
 use handle::RsvgHandle;
 use length::{Length, LengthDir};
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{parse, parse_and_validate, Parse};
 use property_bag::PropertyBag;
+use rect::IRect;
 use state::Opacity;
 use surface_utils::{
     iterators::Pixels,

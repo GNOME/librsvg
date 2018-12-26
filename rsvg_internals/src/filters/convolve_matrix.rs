@@ -10,6 +10,7 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, ListLength, NumberListError, ParseError};
 use property_bag::PropertyBag;
+use rect::IRect;
 use surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::SharedImageSurface,
@@ -19,7 +20,7 @@ use surface_utils::{
 };
 use util::clamp;
 
-use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
+use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, PrimitiveWithInput};
 
 /// The `feConvolveMatrix` filter primitive.

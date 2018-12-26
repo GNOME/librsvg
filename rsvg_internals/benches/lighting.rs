@@ -9,21 +9,19 @@ extern crate rsvg_internals;
 
 use nalgebra::{Matrix3, Vector2};
 
-use rsvg_internals::filters::{
-    context::IRect,
-    light::{
-        bottom_left_normal,
-        bottom_right_normal,
-        bottom_row_normal,
-        interior_normal,
-        left_column_normal,
-        right_column_normal,
-        top_left_normal,
-        top_right_normal,
-        top_row_normal,
-        Normal,
-    },
+use rsvg_internals::filters::light::{
+    bottom_left_normal,
+    bottom_right_normal,
+    bottom_row_normal,
+    interior_normal,
+    left_column_normal,
+    right_column_normal,
+    top_left_normal,
+    top_right_normal,
+    top_row_normal,
+    Normal,
 };
+use rsvg_internals::rect::IRect;
 use rsvg_internals::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::{SharedImageSurface, SurfaceType},

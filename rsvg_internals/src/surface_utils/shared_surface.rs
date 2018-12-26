@@ -11,7 +11,7 @@ use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
 use rayon;
 
-use filters::context::IRect;
+use rect::IRect;
 use srgb;
 use util::clamp;
 

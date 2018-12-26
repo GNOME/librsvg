@@ -3,7 +3,7 @@
 //! The constant values in this module are taken from http://www.color.org/chardata/rgb/srgb.xalter
 use cairo;
 
-use filters::context::IRect;
+use rect::IRect;
 use surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},

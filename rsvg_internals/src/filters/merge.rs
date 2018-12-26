@@ -7,9 +7,10 @@ use drawing_ctx::DrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use property_bag::PropertyBag;
+use rect::IRect;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
+use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
 use super::{Filter, FilterError, Primitive};
 
