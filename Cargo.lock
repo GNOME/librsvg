@@ -957,6 +957,7 @@ dependencies = [
  "encoding 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
  "float-cmp 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdk-pixbuf 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gdk-pixbuf-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",

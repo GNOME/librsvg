@@ -6,7 +6,8 @@ use std::slice;
 
 use cairo::{self, ImageSurface, Status};
 use cairo_sys;
-use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
+use gdk_pixbuf::{Colorspace, Pixbuf, PixbufLoader, PixbufLoaderExt};
+use gdk_pixbuf_sys;
 use gio::{File as GFile, InputStream};
 use gio_sys;
 use glib::translate::*;
@@ -20,11 +21,16 @@ use defs::{Fragment, Href};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
+use filters::context::IRect;
 use io;
 use load::LoadContext;
 use node::{Node, RsvgNode};
 use structure::NodeSvg;
-use surface_utils::shared_surface::SharedImageSurface;
+use surface_utils::{
+    iterators::Pixels,
+    shared_surface::SharedImageSurface,
+    shared_surface::SurfaceType,
+};
 use svg::Svg;
 use util::rsvg_g_warning;
 use xml::XmlState;
@@ -427,6 +433,60 @@ impl Handle {
         cr.restore();
 
         res
+    }
+
+    fn get_pixbuf_sub(
+        &mut self,
+        handle: *mut RsvgHandle,
+        id: Option<&str>,
+    ) -> Result<Pixbuf, RenderingError> {
+        let mut dimensions = unsafe { mem::zeroed() };
+
+        unsafe {
+            rsvg_handle_get_dimensions(handle, &mut dimensions);
+        }
+
+        if dimensions.width == 0 || dimensions.height == 0 {
+            return Err(RenderingError::SvgHasNoSize);
+        }
+
+        let surface =
+            ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
+
+        {
+            let cr = cairo::Context::new(&surface);
+            self.render_cairo_sub(handle, &cr, id)?;
+        }
+
+        let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
+
+        let bounds = IRect {
+            x0: 0,
+            y0: 0,
+            x1: dimensions.width,
+            y1: dimensions.height,
+        };
+
+        let pixbuf = Pixbuf::new(
+            Colorspace::Rgb,
+            true,
+            8,
+            dimensions.width,
+            dimensions.height,
+        );
+
+        for (x, y, pixel) in Pixels::new(&surface, bounds) {
+            let (r, g, b, a) = if pixel.a == 0 {
+                (0, 0, 0, 0)
+            } else {
+                let pixel = pixel.unpremultiply();
+                (pixel.r, pixel.g, pixel.b, pixel.a)
+            };
+
+            pixbuf.put_pixel(x as i32, y as i32, r, g, b, a);
+        }
+
+        Ok(pixbuf)
     }
 }
 
@@ -908,5 +968,20 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
             // FIXME: return a proper error code to the public API
             false.to_glib()
         }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
+    handle: *mut RsvgHandle,
+    id: *const libc::c_char,
+) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    let rhandle = get_rust_handle(handle);
+
+    let id: Option<String> = from_glib_none(id);
+
+    match rhandle.get_pixbuf_sub(handle, id.as_ref().map(String::as_str)) {
+        Ok(pixbuf) => pixbuf.to_glib_full(),
+        Err(_) => ptr::null_mut(),
     }
 }
