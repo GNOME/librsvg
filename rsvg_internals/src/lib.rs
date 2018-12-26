@@ -11,10 +11,12 @@ extern crate downcast_rs;
 extern crate encoding;
 extern crate float_cmp;
 extern crate gdk_pixbuf;
+extern crate gdk_pixbuf_sys;
 extern crate gio;
 extern crate gio_sys;
 extern crate glib;
 extern crate glib_sys;
+extern crate gobject_sys;
 extern crate itertools;
 extern crate language_tags;
 extern crate libc;
@@ -44,6 +46,7 @@ pub use handle::{
     rsvg_handle_rust_get_flags,
     rsvg_handle_rust_get_geometry_sub,
     rsvg_handle_rust_get_load_state,
+    rsvg_handle_rust_get_pixbuf_sub,
     rsvg_handle_rust_has_sub,
     rsvg_handle_rust_new,
     rsvg_handle_rust_read_stream_sync,
