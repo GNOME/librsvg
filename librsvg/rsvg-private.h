@@ -69,9 +69,6 @@ G_GNUC_INTERNAL
 double rsvg_get_default_dpi_y (void);
 
 G_GNUC_INTERNAL
-GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
-
-G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
 
