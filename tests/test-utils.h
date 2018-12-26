@@ -4,9 +4,20 @@
 #ifndef TEST_UTILS_H
 #define TEST_UTILS_H
 
+#include <cairo.h>
 #include <gio/gio.h>
 
-G_BEGIN_DECLS 
+G_BEGIN_DECLS
+
+typedef struct {
+    unsigned int pixels_changed;
+    unsigned int max_diff;
+} TestUtilsBufferDiffResult;
+
+void test_utils_compare_surfaces (cairo_surface_t           *surface_a,
+                                  cairo_surface_t           *surface_b,
+                                  cairo_surface_t           *surface_diff,
+                                  TestUtilsBufferDiffResult *result);
 
 typedef gboolean (* AddTestFunc) (GFile *file);
 
