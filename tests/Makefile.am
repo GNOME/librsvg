@@ -57,7 +57,8 @@ loading_SOURCES =		 	\
 	$(test_utils_common_sources)
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
-	$(LIBRSVG_LIBS)							\
+	$(GTK3_LIBS)				\
+	$(LIBRSVG_LIBS)				\
 	$(LIBM)
 
 AM_CPPFLAGS =					\
@@ -67,6 +68,7 @@ AM_CPPFLAGS =					\
 	-DTEST_DATA_DIR="\"$(srcdir)\""		\
 	-DTEST_SRC_DIR="\"$(PWD)\""		\
 	-DTOP_SRC_DIR="\"$(top_srcdir)\""	\
+	$(GTK3_CFLAGS)				\
 	$(LIBRSVG_CFLAGS)
 
 dist_installed_test_data =						\
