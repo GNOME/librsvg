@@ -1,5 +1,5 @@
 //! Pixel iterators for `SharedImageSurface`.
-use filters::context::IRect;
+use rect::IRect;
 use util::clamp;
 
 use super::shared_surface::SharedImageSurface;

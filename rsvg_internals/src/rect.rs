@@ -111,6 +111,54 @@ impl RectangleExt for cairo::Rectangle {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IRect {
+    pub x0: i32,
+    pub y0: i32,
+    pub x1: i32,
+    pub y1: i32,
+}
+
+impl IRect {
+    /// Returns true if the `IRect` contains the given coordinates.
+    #[inline]
+    pub fn contains(self, x: i32, y: i32) -> bool {
+        x >= self.x0 && x < self.x1 && y >= self.y0 && y < self.y1
+    }
+
+    /// Returns an `IRect` scaled by the given amounts.
+    ///
+    /// The returned `IRect` encompasses all, even partially covered, pixels after the scaling.
+    #[inline]
+    pub fn scale(self, x: f64, y: f64) -> IRect {
+        IRect {
+            x0: (f64::from(self.x0) * x).floor() as i32,
+            y0: (f64::from(self.y0) * y).floor() as i32,
+            x1: (f64::from(self.x1) * x).ceil() as i32,
+            y1: (f64::from(self.y1) * y).ceil() as i32,
+        }
+    }
+}
+
+impl From<cairo::Rectangle> for IRect {
+    #[inline]
+    fn from(
+        cairo::Rectangle {
+            x,
+            y,
+            width,
+            height,
+        }: cairo::Rectangle,
+    ) -> Self {
+        Self {
+            x0: x.floor() as i32,
+            y0: y.floor() as i32,
+            x1: (x + width).ceil() as i32,
+            y1: (y + height).ceil() as i32,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

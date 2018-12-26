@@ -4,8 +4,9 @@ use cairo::{self, MatrixTrait};
 use bbox::BoundingBox;
 use drawing_ctx::DrawingCtx;
 use length::Length;
+use rect::IRect;
 
-use super::context::{FilterContext, FilterInput, FilterOutput, IRect};
+use super::context::{FilterContext, FilterInput, FilterOutput};
 
 /// A helper type for filter primitive subregion computation.
 #[derive(Clone, Copy)]

@@ -10,7 +10,6 @@ extern crate rsvg_internals;
 use nalgebra::{Matrix3, Vector2};
 
 use rsvg_internals::filters::{
-    context::IRect,
     light::{
         bottom_left_normal,
         bottom_right_normal,
@@ -24,6 +23,7 @@ use rsvg_internals::filters::{
         Normal,
     },
 };
+use rsvg_internals::rect::IRect;
 use rsvg_internals::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::{SharedImageSurface, SurfaceType},

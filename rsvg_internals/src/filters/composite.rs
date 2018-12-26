@@ -10,6 +10,7 @@ use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, parse, Parse};
 use property_bag::PropertyBag;
+use rect::IRect;
 use surface_utils::{
     iterators::Pixels,
     shared_surface::SharedImageSurface,
@@ -18,7 +19,7 @@ use surface_utils::{
 };
 use util::clamp;
 
-use super::context::{FilterContext, FilterOutput, FilterResult, IRect};
+use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
 use super::{Filter, FilterError, PrimitiveWithInput};
 
