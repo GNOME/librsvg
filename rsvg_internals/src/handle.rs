@@ -234,12 +234,11 @@ impl Handle {
         draw_ctx
     }
 
-    // FIXME: return proper errors
     fn get_node_geometry(
         &mut self,
         handle: *mut RsvgHandle,
         node: &RsvgNode,
-    ) -> Result<(RsvgRectangle, RsvgRectangle), ()> {
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let dimensions = unsafe {
             let mut dimensions = mem::zeroed();
             rsvg_handle_get_dimensions(handle, &mut dimensions);
@@ -247,10 +246,10 @@ impl Handle {
         };
 
         if dimensions.width == 0 || dimensions.height == 0 {
-            return Err(());
+            return Err(RenderingError::SvgHasNoSize);
         }
 
-        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1).map_err(|_| ())?;
+        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
 
         let cr = cairo::Context::new(&target);
 
@@ -267,9 +266,7 @@ impl Handle {
 
         let root = svg.tree.root();
 
-        draw_ctx
-            .draw_node_from_stack(&root.get_cascaded_values(), &root, false)
-            .map_err(|_| ())?;
+        draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
 
         let bbox = draw_ctx.get_bbox();
 
@@ -285,12 +282,11 @@ impl Handle {
         Ok((ink_rect, logical_rect))
     }
 
-    // FIXME: return proper errors
     fn get_geometry_sub(
         &mut self,
         handle: *mut RsvgHandle,
         id: Option<&str>,
-    ) -> Result<(RsvgRectangle, RsvgRectangle), ()> {
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let root = {
             let svg_ref = self.svg.borrow();
             let svg = svg_ref.as_ref().unwrap();
@@ -299,7 +295,9 @@ impl Handle {
         };
 
         let (node, is_root) = if let Some(id) = id {
-            let n = self.defs_lookup(handle, id).map_err(|_| ())?;
+            let n = self
+                .defs_lookup(handle, id)
+                .map_err(RenderingError::InvalidId)?;
             let is_root = Rc::ptr_eq(&n, &root);
             (n, is_root)
         } else {
@@ -397,7 +395,7 @@ impl Handle {
         let node = if let Some(id) = id {
             Some(
                 self.defs_lookup(handle, id)
-                    .map_err(|e| RenderingError::InvalidId(e))?,
+                    .map_err(RenderingError::InvalidId)?,
             )
         } else {
             None
@@ -920,7 +918,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
             true.to_glib()
         }
 
-        Err(()) => {
+        Err(_) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = mem::zeroed();
             }
