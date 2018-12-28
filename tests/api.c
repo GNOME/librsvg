@@ -12,14 +12,8 @@
 #include "test-utils.h"
 
 /*
-rsvg_handle_get_base_uri
-rsvg_handle_set_base_uri
 rsvg_handle_set_size_callback
 rsvg_handle_internal_set_testing
-rsvg_handle_set_base_gfile
-rsvg_handle_get_title
-rsvg_handle_get_desc
-rsvg_handle_get_metadata
 */
 
 static void
@@ -167,6 +161,11 @@ noops (void)
     rsvg_init ();
     rsvg_term ();
     rsvg_cleanup ();
+
+    /* Just test that these are in the binary */
+    g_assert (rsvg_handle_get_title != NULL);
+    g_assert (rsvg_handle_get_desc != NULL);
+    g_assert (rsvg_handle_get_metadata != NULL);
 }
 
 static void
