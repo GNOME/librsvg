@@ -105,11 +105,6 @@ impl MeasuredChunk {
             (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
         });
 
-        println!(
-            "MeasuredChunk x={:?}, y={:?}, advance={:?}",
-            chunk.x, chunk.y, advance
-        );
-
         MeasuredChunk {
             values: chunk.values.clone(),
             x: chunk.x,
@@ -127,8 +122,6 @@ impl PositionedChunk {
         x: f64,
         y: f64,
     ) -> PositionedChunk {
-        println!("PositionedChunk::from_measured x={}, y={}", x, y);
-
         let mut positioned = Vec::new();
 
         // Adjust the specified coordinates with the text_anchor
@@ -138,8 +131,6 @@ impl PositionedChunk {
             measured.values.writing_mode,
             measured.advance,
         );
-
-        println!("  adjusted_advance={:?}", adjusted_advance);
 
         let mut x = x + adjusted_advance.0;
         let mut y = y + adjusted_advance.1;
@@ -215,8 +206,6 @@ impl MeasuredSpan {
             (w, 0.0)
         };
 
-        println!("span \"{}\" advance={}", span.text, w);
-
         MeasuredSpan {
             values,
             layout,
@@ -259,11 +248,6 @@ impl PositionedSpan {
             (x + dx, y - offset + dy)
         };
 
-        println!(
-            "  PositionedSpan rendered_position={:?}",
-            (render_x, render_y)
-        );
-
         PositionedSpan {
             layout: measured.layout.clone(),
             values,
@@ -273,10 +257,6 @@ impl PositionedSpan {
     }
 
     fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<(), RenderingError> {
-        println!(
-            "render layout: size={:?}, position={:?}",
-            self.values.font_size, self.rendered_position
-        );
         draw_ctx.draw_pango_layout(
             &self.layout,
             &self.values,
@@ -420,7 +400,6 @@ impl NodeChars {
         let num_chunks = chunks.len();
         assert!(num_chunks > 0);
 
-        println!("appending span \"{}\"", span.text);
         chunks[num_chunks - 1].spans.push(span);
     }
 }
@@ -461,7 +440,6 @@ impl NodeText {
         let dx = self.dx.get();
         let dy = self.dy.get();
 
-        println!("Chunk new x={:?}, y={:?}", Some(x), Some(y));
         chunks.push(Chunk::new(cascaded.get(), Some(x), Some(y)));
 
         children_to_chunks(&mut chunks, node, cascaded, draw_ctx, dx, dy, 0);
@@ -643,7 +621,6 @@ impl NodeTSpan {
         if x.is_some() || y.is_some() {
             // Any absolute position creates a new chunk
             let values = cascaded.get();
-            println!("Chunk new x={:?}, y={:?}", x, y);
             chunks.push(Chunk::new(values, x, y));
         }
 
