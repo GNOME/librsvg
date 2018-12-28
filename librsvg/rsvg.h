@@ -151,6 +151,7 @@ struct _RsvgRectangle {
 };
 
 
+RSVG_DEPRECATED
 void rsvg_cleanup (void);
 
 RSVG_DEPRECATED
