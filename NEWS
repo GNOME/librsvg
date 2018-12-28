@@ -1,3 +1,36 @@
+Version 2.45.2
+- rsvg_cleaup() is now deprecated.  This was only meant to be called
+  from code to be checked by Valgrind.  Leak checkers may show
+  reachable memory from libxml2; real memory leaks should still be
+  reported, of course.  (Kornel Lesiński).
+
+- As an experimental change, librsvg no longer calls xmlInitParser()
+  from libxml2.  Please tell us if this causes problems for
+  multithreaded programs.
+
+- Added g_warning()s to ensure the API is called in the correct
+  sequence.
+
+- The text handling code has been completely refactored and
+  simplified.  This will allow us to implement the x/y/dx/dy
+  properties for multiple glyphs in the future.  Please report any
+  problems you experience in text rendering.
+
+- Fix #385 - Don't crash if there is no rsvg_handle_write() before
+  rsvg_handle_close().
+- Fix #391 - Avoid undefined behavior when casting opaque pointers
+  (Jordan Petridis).
+- Fix crash when a linear RGB filter is followed by an SRGB filter
+  (Ivan Molodetskikh).
+- Fix #393 - Stack overflow when freeing thousands of sibling elements.
+- Fix positioning of adjacent <tspan> elements.
+- All the toplevel loading and drawing code is implemented in Rust now.
+- Pixbuf conversion code is in Rust now (Paolo Borelli).
+- Cleanups in the code for XML processing, markers, attributes (Paolo
+  Borelli).
+- Many build/link fixes (Jordan Petridis).
+- Cleanups in the code that calls libxml2 (Kornel Lesiński).
+
 Version 2.45.1
 - New public API, rsvg_handle_get_geometry_sub(), to get the exact
   geometry of an element.  The functions
