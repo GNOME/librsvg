@@ -440,11 +440,11 @@ impl Handle {
         handle: *mut RsvgHandle,
         id: Option<&str>,
     ) -> Result<Pixbuf, RenderingError> {
-        let mut dimensions = unsafe { mem::zeroed() };
-
-        unsafe {
+        let dimensions = unsafe {
+            let mut dimensions = mem::zeroed();
             rsvg_handle_get_dimensions(handle, &mut dimensions);
-        }
+            dimensions
+        };
 
         if dimensions.width == 0 || dimensions.height == 0 {
             return Err(RenderingError::SvgHasNoSize);
