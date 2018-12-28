@@ -270,11 +270,11 @@ impl Handle {
         let ink_rect = bbox
             .ink_rect
             .map(|r| RsvgRectangle::from(r))
-            .unwrap_or_else(|| RsvgRectangle::default());
+            .unwrap_or_default();
         let logical_rect = bbox
             .rect
             .map(|r| RsvgRectangle::from(r))
-            .unwrap_or_else(|| RsvgRectangle::default());
+            .unwrap_or_default();
 
         Ok((ink_rect, logical_rect))
     }
