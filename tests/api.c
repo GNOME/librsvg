@@ -166,7 +166,7 @@ noops (void)
     /* Just to test that these functions are present in the binary, I guess */
     rsvg_init ();
     rsvg_term ();
-    g_assert (rsvg_cleanup != NULL); /* shouldn't call this one! */
+    rsvg_cleanup ();
 }
 
 static void

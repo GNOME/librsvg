@@ -145,7 +145,5 @@ bail:
     if (error)
         g_error_free (error), error = NULL;
 
-    rsvg_cleanup ();
-
     return exit_code;
 }

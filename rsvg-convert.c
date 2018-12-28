@@ -508,7 +508,5 @@ main (int argc, char **argv)
 
     g_strfreev (args);
 
-    rsvg_cleanup ();
-
     return 0;
 }

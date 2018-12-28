@@ -73,7 +73,5 @@ main (int argc, char *argv[])
 
     result = g_test_run ();
 
-    rsvg_cleanup ();
-
     return result;
 }

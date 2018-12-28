@@ -758,7 +758,5 @@ main (int argc, char **argv)
     g_free (info.base_uri);
     g_object_unref (info.handle);
 
-    rsvg_cleanup ();
-
     return retval;
 }
