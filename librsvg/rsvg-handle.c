@@ -437,8 +437,6 @@ rsvg_handle_class_init (RsvgHandleClass * klass)
                                      g_param_spec_string ("metadata", _("Metadata"),
                                                           _("SVG file metadata"), NULL,
                                                           (GParamFlags) (G_PARAM_READABLE)));
-
-    xmlInitParser ();
 }
 
 /**
