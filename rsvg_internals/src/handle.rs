@@ -234,11 +234,10 @@ impl Handle {
         draw_ctx
     }
 
-    fn get_node_geometry(
+    fn get_dimensions(
         &mut self,
         handle: *mut RsvgHandle,
-        node: &RsvgNode,
-    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+    ) -> Result<RsvgDimensionData, RenderingError> {
         let dimensions = unsafe {
             let mut dimensions = mem::zeroed();
             rsvg_handle_get_dimensions(handle, &mut dimensions);
@@ -246,8 +245,18 @@ impl Handle {
         };
 
         if dimensions.width == 0 || dimensions.height == 0 {
-            return Err(RenderingError::SvgHasNoSize);
+            Err(RenderingError::SvgHasNoSize)
+        } else {
+            Ok(dimensions)
         }
+    }
+
+    fn get_node_geometry(
+        &mut self,
+        handle: *mut RsvgHandle,
+        node: &RsvgNode,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+        let dimensions = self.get_dimensions(handle)?;
 
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
 
@@ -401,15 +410,7 @@ impl Handle {
             None
         };
 
-        let dimensions = unsafe {
-            let mut dimensions = mem::zeroed();
-            rsvg_handle_get_dimensions(handle, &mut dimensions);
-            dimensions
-        };
-
-        if dimensions.width == 0 || dimensions.height == 0 {
-            return Err(RenderingError::SvgHasNoSize);
-        }
+        let dimensions = self.get_dimensions(handle)?;
 
         cr.save();
 
@@ -438,15 +439,7 @@ impl Handle {
         handle: *mut RsvgHandle,
         id: Option<&str>,
     ) -> Result<Pixbuf, RenderingError> {
-        let dimensions = unsafe {
-            let mut dimensions = mem::zeroed();
-            rsvg_handle_get_dimensions(handle, &mut dimensions);
-            dimensions
-        };
-
-        if dimensions.width == 0 || dimensions.height == 0 {
-            return Err(RenderingError::SvgHasNoSize);
-        }
+        let dimensions = self.get_dimensions(handle)?;
 
         let surface =
             ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
