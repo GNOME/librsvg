@@ -3,7 +3,6 @@ use encoding::DecoderTrap;
 use glib::translate::*;
 use libc;
 use std::collections::HashMap;
-use std::mem;
 use std::rc::Rc;
 use std::str;
 use xml_rs::{reader::XmlEvent, ParserConfig};
@@ -25,7 +24,7 @@ use tree::Tree;
 use xml2_load::{xml_state_parse_from_stream, ParseFromStreamError};
 
 #[derive(Clone)]
-enum ContextKind {
+enum Context {
     // Starting state
     Start,
 
@@ -48,29 +47,6 @@ enum ContextKind {
 #[derive(Clone)]
 struct XIncludeContext {
     need_fallback: bool,
-}
-
-/// A concrete parsing context for a surrounding `element_name` and its XML event handlers
-#[derive(Clone)]
-struct Context {
-    element_name: String,
-    kind: ContextKind,
-}
-
-impl Context {
-    fn empty() -> Context {
-        Context {
-            element_name: String::new(),
-            kind: ContextKind::Start,
-        }
-    }
-
-    fn fatal_error() -> Context {
-        Context {
-            element_name: "".to_string(),
-            kind: ContextKind::FatalError,
-        }
-    }
 }
 
 // This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
@@ -96,7 +72,6 @@ pub struct XmlState {
     tree: Option<Tree>,
     defs: Option<Defs>,
     css_styles: Option<CssStyles>,
-    context: Context,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
 
@@ -123,8 +98,7 @@ impl XmlState {
             tree: None,
             defs: Some(Defs::new()),
             css_styles: Some(CssStyles::new()),
-            context: Context::empty(),
-            context_stack: Vec::new(),
+            context_stack: vec![Context::Start],
             current_node: None,
             entities: HashMap::new(),
             handle,
@@ -159,75 +133,62 @@ impl XmlState {
         )
     }
 
-    fn push_context(&mut self, ctx: Context) {
-        let top = mem::replace(&mut self.context, ctx);
-        self.context_stack.push(top);
+    fn context(&self) -> Context {
+        // We can unwrap since the stack is never empty
+        self.context_stack.last().unwrap().clone()
     }
 
     pub fn start_element(&mut self, name: &str, pbag: &PropertyBag) {
-        let context = self.context.clone();
+        let context = self.context();
 
-        if let ContextKind::FatalError = context.kind {
+        if let Context::FatalError = context {
             return;
         }
 
         // FIXME: we should deal with namespaces at some point
         let name = skip_namespace(name);
 
-        let new_context = match context.kind {
-            ContextKind::Start => self.element_creation_start_element(name, pbag),
-            ContextKind::ElementCreation => self.element_creation_start_element(name, pbag),
-            ContextKind::XInclude(ref ctx) => self.inside_xinclude_start_element(&ctx, name),
-            ContextKind::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(name),
-            ContextKind::XIncludeFallback(ref ctx) => {
+        let new_context = match context {
+            Context::Start => self.element_creation_start_element(name, pbag),
+            Context::ElementCreation => self.element_creation_start_element(name, pbag),
+            Context::XInclude(ref ctx) => self.inside_xinclude_start_element(&ctx, name),
+            Context::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(name),
+            Context::XIncludeFallback(ref ctx) => {
                 self.xinclude_fallback_start_element(&ctx, name, pbag)
             }
 
-            ContextKind::FatalError => unreachable!(),
+            Context::FatalError => unreachable!(),
         };
 
-        self.push_context(new_context);
+        self.context_stack.push(new_context);
     }
 
-    pub fn end_element(&mut self, name: &str) {
-        let context = self.context.clone();
+    pub fn end_element(&mut self, _name: &str) {
+        let context = self.context();
 
-        if let ContextKind::FatalError = context.kind {
-            return;
-        }
-
-        // FIXME: we should deal with namespaces at some point
-        let name = skip_namespace(name);
-
-        assert!(context.element_name == name);
-
-        match context.kind {
-            ContextKind::Start => panic!("end_element: XML handler stack is empty!?"),
-            ContextKind::ElementCreation => self.element_creation_end_element(),
-            ContextKind::XInclude(_) => (),
-            ContextKind::UnsupportedXIncludeChild => (),
-            ContextKind::XIncludeFallback(_) => (),
-            ContextKind::FatalError => unreachable!(),
+        match context {
+            Context::Start => panic!("end_element: XML handler stack is empty!?"),
+            Context::ElementCreation => self.element_creation_end_element(),
+            Context::XInclude(_) => (),
+            Context::UnsupportedXIncludeChild => (),
+            Context::XIncludeFallback(_) => (),
+            Context::FatalError => return,
         }
 
         // We can unwrap since start_element() always adds a context to the stack
-        self.context = self.context_stack.pop().unwrap();
+        self.context_stack.pop().unwrap();
     }
 
     pub fn characters(&mut self, text: &str) {
-        let context = self.context.clone();
+        let context = self.context();
 
-        if let ContextKind::FatalError = context.kind {
-            return;
-        }
-
-        match context.kind {
-            ContextKind::Start => panic!("characters: XML handler stack is empty!?"),
-            ContextKind::ElementCreation => self.element_creation_characters(text),
-            ContextKind::XInclude(_) => (),
-            ContextKind::UnsupportedXIncludeChild => (),
-            ContextKind::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
-            ContextKind::FatalError => unreachable!(),
+        match context {
+            Context::Start => panic!("characters: XML handler stack is empty!?"),
+            Context::ElementCreation => self.element_creation_characters(text),
+            Context::XInclude(_) => (),
+            Context::UnsupportedXIncludeChild => (),
+            Context::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
+            Context::FatalError => return,
         }
     }
 
@@ -270,7 +231,7 @@ impl XmlState {
 
         rsvg_log!("XML error: {}", msg);
 
-        self.push_context(Context::fatal_error());
+        self.context_stack.push(Context::FatalError);
     }
 
     pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
@@ -298,10 +259,7 @@ impl XmlState {
                 }
                 self.current_node = Some(node);
 
-                Context {
-                    element_name: name.to_string(),
-                    kind: ContextKind::ElementCreation,
-                }
+                Context::ElementCreation
             }
         }
     }
@@ -377,7 +335,7 @@ impl XmlState {
         new_node
     }
 
-    fn xinclude_start_element(&mut self, name: &str, pbag: &PropertyBag) -> Context {
+    fn xinclude_start_element(&mut self, _name: &str, pbag: &PropertyBag) -> Context {
         let mut href = None;
         let mut parse = None;
         let mut encoding = None;
@@ -394,22 +352,16 @@ impl XmlState {
         let need_fallback = match self.acquire(href, parse, encoding) {
             Ok(()) => false,
             Err(AcquireError::ResourceError) => true,
-            Err(AcquireError::FatalError) => return Context::fatal_error(),
+            Err(AcquireError::FatalError) => return Context::FatalError,
         };
 
-        Context {
-            element_name: name.to_string(),
-            kind: ContextKind::XInclude(XIncludeContext { need_fallback }),
-        }
+        Context::XInclude(XIncludeContext { need_fallback })
     }
 
     fn inside_xinclude_start_element(&self, ctx: &XIncludeContext, name: &str) -> Context {
         // FIXME: we aren't using the xi: namespace
         if name == "fallback" {
-            Context {
-                element_name: name.to_string(),
-                kind: ContextKind::XIncludeFallback(ctx.clone()),
-            }
+            Context::XIncludeFallback(ctx.clone())
         } else {
             // https://www.w3.org/TR/xinclude/#include_element
             //
@@ -437,10 +389,7 @@ impl XmlState {
                 self.element_creation_start_element(name, pbag)
             }
         } else {
-            Context {
-                element_name: name.to_string(),
-                kind: ContextKind::UnsupportedXIncludeChild,
-            }
+            Context::UnsupportedXIncludeChild
         }
     }
 
@@ -538,11 +487,8 @@ impl XmlState {
         })
     }
 
-    fn unsupported_xinclude_start_element(&self, name: &str) -> Context {
-        Context {
-            element_name: name.to_string(),
-            kind: ContextKind::UnsupportedXIncludeChild,
-        }
+    fn unsupported_xinclude_start_element(&self, _name: &str) -> Context {
+        Context::UnsupportedXIncludeChild
     }
 }
 
