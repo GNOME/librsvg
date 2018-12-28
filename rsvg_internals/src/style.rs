@@ -65,8 +65,4 @@ impl NodeTrait for NodeStyle {
 
         Ok(())
     }
-
-    fn accept_chars(&self) -> bool {
-        true
-    }
 }

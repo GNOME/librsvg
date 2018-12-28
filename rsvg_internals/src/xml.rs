@@ -287,7 +287,7 @@ impl XmlState {
     fn element_creation_characters(&self, text: &str) {
         let node = self.current_node.as_ref().unwrap();
 
-        if text.len() != 0 && node.accept_chars() {
+        if text.len() != 0 {
             let chars_node = if let Some(child) = node.find_last_chars_child() {
                 child
             } else {

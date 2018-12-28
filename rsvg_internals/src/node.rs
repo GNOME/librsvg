@@ -108,10 +108,6 @@ pub trait NodeTrait: Downcast {
     /// from defaults in the node's `State`.
     fn set_overridden_properties(&self, _state: &mut State) {}
 
-    fn accept_chars(&self) -> bool {
-        false
-    }
-
     fn draw(
         &self,
         _node: &RsvgNode,
@@ -625,10 +621,6 @@ impl Node {
         state.values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
 
-    pub fn accept_chars(&self) -> bool {
-        self.data.node_impl.accept_chars()
-    }
-
     // find the last Chars node so that we can coalesce
     // the text and avoid screwing up the Pango layouts
     pub fn find_last_chars_child(&self) -> Option<Rc<Node>> {
@@ -636,13 +628,7 @@ impl Node {
             match child.get_type() {
                 NodeType::Chars => return Some(child),
 
-                // If a node that accepts chars is encountered before
-                // any chars node (which means for instance that there
-                // is a tspan node after any chars nodes, because this
-                // is backwards iteration), return None.
-                _ if child.accept_chars() => return None,
-
-                _ => {}
+                _ => return None,
             }
         }
 

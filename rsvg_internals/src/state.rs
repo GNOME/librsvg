@@ -206,10 +206,7 @@ impl ComputedValues {
     }
 
     pub fn text_gravity_is_vertical(&self) -> bool {
-        match self.writing_mode {
-            WritingMode::Tb | WritingMode::TbRl => true,
-            _ => false,
-        }
+        self.writing_mode.is_vertical()
     }
 }
 
@@ -1359,6 +1356,15 @@ make_property!(
     "tb" => Tb,
     "tb-rl" => TbRl,
 );
+
+impl WritingMode {
+    pub fn is_vertical(&self) -> bool {
+        match *self {
+            WritingMode::Tb | WritingMode::TbRl => true,
+            _ => false,
+        }
+    }
+}
 
 make_property!(
     ComputedValues,

@@ -24,6 +24,287 @@ use state::{
     XmlSpace,
 };
 
+/// An absolutely-positioned array of `Span`s
+///
+/// SVG defines a "[text chunk]" to occur when a text-related element
+/// has an absolute position adjustment, that is, `x` or `y`
+/// attributes.
+///
+/// A `<text>` element always starts with an absolute position from
+/// such attributes, or (0, 0) if they are not specified.
+///
+/// Subsequent children of the `<text>` element will create new chunks
+/// whenever they have `x` or `y` attributes.
+///
+/// [text chunk]: https://www.w3.org/TR/SVG11/text.html#TextLayoutIntroduction
+struct Chunk {
+    values: ComputedValues,
+    x: Option<Length>,
+    y: Option<Length>,
+    spans: Vec<Span>,
+}
+
+struct MeasuredChunk {
+    values: ComputedValues,
+    x: Option<Length>,
+    y: Option<Length>,
+    advance: (f64, f64),
+    spans: Vec<MeasuredSpan>,
+}
+
+struct PositionedChunk {
+    next_chunk_x: f64,
+    next_chunk_y: f64,
+    spans: Vec<PositionedSpan>,
+}
+
+struct Span {
+    values: ComputedValues,
+    text: String,
+    dx: Option<Length>,
+    dy: Option<Length>,
+    depth: usize,
+}
+
+struct MeasuredSpan {
+    values: ComputedValues,
+    layout: pango::Layout,
+    layout_size: (f64, f64),
+    advance: (f64, f64),
+    dx: Option<Length>,
+    dy: Option<Length>,
+}
+
+struct PositionedSpan {
+    layout: pango::Layout,
+    values: ComputedValues,
+    position: (f64, f64),
+    rendered_position: (f64, f64),
+}
+
+impl Chunk {
+    fn new(values: &ComputedValues, x: Option<Length>, y: Option<Length>) -> Chunk {
+        Chunk {
+            values: values.clone(),
+            x,
+            y,
+            spans: Vec::new(),
+        }
+    }
+}
+
+impl MeasuredChunk {
+    fn from_chunk(chunk: &Chunk, draw_ctx: &DrawingCtx) -> MeasuredChunk {
+        let measured_spans: Vec<MeasuredSpan> = chunk
+            .spans
+            .iter()
+            .map(|span| MeasuredSpan::from_span(span, draw_ctx))
+            .collect();
+
+        let advance = measured_spans.iter().fold((0.0, 0.0), |acc, measured| {
+            (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
+        });
+
+        MeasuredChunk {
+            values: chunk.values.clone(),
+            x: chunk.x,
+            y: chunk.y,
+            advance,
+            spans: measured_spans,
+        }
+    }
+}
+
+impl PositionedChunk {
+    fn from_measured(
+        measured: &MeasuredChunk,
+        draw_ctx: &DrawingCtx,
+        x: f64,
+        y: f64,
+    ) -> PositionedChunk {
+        let mut positioned = Vec::new();
+
+        // Adjust the specified coordinates with the text_anchor
+
+        let adjusted_advance = text_anchor_advance(
+            measured.values.text_anchor,
+            measured.values.writing_mode,
+            measured.advance,
+        );
+
+        let mut x = x + adjusted_advance.0;
+        let mut y = y + adjusted_advance.1;
+
+        // Position each span
+
+        for measured_span in &measured.spans {
+            positioned.push(PositionedSpan::from_measured(measured_span, draw_ctx, x, y));
+
+            x += measured_span.advance.0;
+            y += measured_span.advance.1;
+        }
+
+        PositionedChunk {
+            next_chunk_x: x,
+            next_chunk_y: y,
+            spans: positioned,
+        }
+    }
+}
+
+fn text_anchor_advance(
+    anchor: TextAnchor,
+    writing_mode: WritingMode,
+    advance: (f64, f64),
+) -> (f64, f64) {
+    if writing_mode.is_vertical() {
+        match anchor {
+            TextAnchor::Start => (0.0, 0.0),
+            TextAnchor::Middle => (0.0, -advance.1 / 2.0),
+            TextAnchor::End => (0.0, -advance.1),
+        }
+    } else {
+        match anchor {
+            TextAnchor::Start => (0.0, 0.0),
+            TextAnchor::Middle => (-advance.0 / 2.0, 0.0),
+            TextAnchor::End => (-advance.0, 0.0),
+        }
+    }
+}
+
+impl Span {
+    fn new(
+        text: &str,
+        values: ComputedValues,
+        dx: Option<Length>,
+        dy: Option<Length>,
+        depth: usize,
+    ) -> Span {
+        Span {
+            values,
+            text: text.to_string(),
+            dx,
+            dy,
+            depth,
+        }
+    }
+}
+
+impl MeasuredSpan {
+    fn from_span(span: &Span, draw_ctx: &DrawingCtx) -> MeasuredSpan {
+        let values = span.values.clone();
+
+        let layout = create_pango_layout(draw_ctx, &values, &span.text);
+        let (w, h) = layout.get_size();
+
+        let w = f64::from(w) / f64::from(pango::SCALE);
+        let h = f64::from(h) / f64::from(pango::SCALE);
+
+        let advance = if values.writing_mode.is_vertical() {
+            (0.0, w)
+        } else {
+            (w, 0.0)
+        };
+
+        MeasuredSpan {
+            values,
+            layout,
+            layout_size: (w, h),
+            advance,
+            dx: span.dx,
+            dy: span.dy,
+        }
+    }
+}
+
+impl PositionedSpan {
+    fn from_measured(
+        measured: &MeasuredSpan,
+        draw_ctx: &DrawingCtx,
+        x: f64,
+        y: f64,
+    ) -> PositionedSpan {
+        let layout = measured.layout.clone();
+        let values = measured.values.clone();
+
+        let params = draw_ctx.get_view_params();
+
+        let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
+        let baseline_shift = values.baseline_shift.0.normalize(&values, &params);
+        let offset = baseline + baseline_shift;
+
+        let dx = measured
+            .dx
+            .map(|l| l.normalize(&values, &params))
+            .unwrap_or(0.0);
+        let dy = measured
+            .dy
+            .map(|l| l.normalize(&values, &params))
+            .unwrap_or(0.0);
+
+        let (render_x, render_y) = if values.text_gravity_is_vertical() {
+            (x + offset + dx, y + dy)
+        } else {
+            (x + dx, y - offset + dy)
+        };
+
+        PositionedSpan {
+            layout: measured.layout.clone(),
+            values,
+            position: (x, y),
+            rendered_position: (render_x, render_y),
+        }
+    }
+
+    fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<(), RenderingError> {
+        draw_ctx.draw_pango_layout(
+            &self.layout,
+            &self.values,
+            self.rendered_position.0,
+            self.rendered_position.1,
+            clipping,
+        )
+    }
+}
+
+/// Walks the children of a `<text>`, `<tspan>`, or `<tref>` element
+/// and appends chunks/spans from them into the specified `chunks`
+/// array.
+///
+/// `x` and `y` are the absolute position for the first chunk.  If the
+/// first child is a `<tspan>` with a specified absolute position, it
+/// will be used instead of the given arguments.
+fn children_to_chunks(
+    chunks: &mut Vec<Chunk>,
+    node: &RsvgNode,
+    cascaded: &CascadedValues<'_>,
+    draw_ctx: &mut DrawingCtx,
+    dx: Option<Length>,
+    dy: Option<Length>,
+    depth: usize,
+) {
+    for child in node.children() {
+        match child.get_type() {
+            NodeType::Chars => child.with_impl(|chars: &NodeChars| {
+                let values = cascaded.get();
+                chars.to_chunks(&child, values, chunks, dx, dy, depth);
+            }),
+
+            NodeType::TSpan => child.with_impl(|tspan: &NodeTSpan| {
+                let cascaded = CascadedValues::new(cascaded, &child);
+                tspan.to_chunks(&child, &cascaded, draw_ctx, chunks, depth + 1);
+            }),
+
+            NodeType::TRef => child.with_impl(|tref: &NodeTRef| {
+                let cascaded = CascadedValues::new(cascaded, &child);
+                tref.to_chunks(&child, &cascaded, draw_ctx, chunks, depth + 1);
+            }),
+
+            _ => (),
+        }
+    }
+}
+
 /// In SVG text elements, we use `NodeChars` to store character data.  For example,
 /// an element like `<text>Foo Bar</text>` will be a `NodeText` with a single child,
 /// and the child will be a `NodeChars` with "Foo Bar" for its contents.
@@ -86,59 +367,40 @@ impl NodeChars {
         }
     }
 
-    fn create_layout(
+    fn make_span(
         &self,
         node: &RsvgNode,
         values: &ComputedValues,
-        draw_ctx: &DrawingCtx,
-    ) -> pango::Layout {
+        dx: Option<Length>,
+        dy: Option<Length>,
+        depth: usize,
+    ) -> Span {
         self.ensure_normalized_string(node, values);
-        let norm = self.space_normalized.borrow();
-        let s = norm.as_ref().unwrap();
-        create_pango_layout(draw_ctx, values, &s)
+
+        Span::new(
+            self.space_normalized.borrow().as_ref().unwrap(),
+            values.clone(),
+            dx,
+            dy,
+            depth,
+        )
     }
 
-    fn measure(
+    fn to_chunks(
         &self,
         node: &RsvgNode,
         values: &ComputedValues,
-        draw_ctx: &DrawingCtx,
-        length: &mut f64,
+        chunks: &mut Vec<Chunk>,
+        dx: Option<Length>,
+        dy: Option<Length>,
+        depth: usize,
     ) {
-        let layout = self.create_layout(node, values, draw_ctx);
-        let (width, _) = layout.get_size();
+        let span = self.make_span(&node, values, dx, dy, depth);
 
-        *length = f64::from(width) / f64::from(pango::SCALE);
-    }
+        let num_chunks = chunks.len();
+        assert!(num_chunks > 0);
 
-    fn render(
-        &self,
-        node: &RsvgNode,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        x: &mut f64,
-        y: &mut f64,
-        clipping: bool,
-    ) -> Result<(), RenderingError> {
-        let layout = self.create_layout(node, values, draw_ctx);
-        let (width, _) = layout.get_size();
-
-        let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let offset = baseline
-            + values
-                .baseline_shift
-                .0
-                .normalize(values, &draw_ctx.get_view_params());
-
-        if values.text_gravity_is_vertical() {
-            draw_ctx.draw_pango_layout(&layout, values, *x + offset, *y, clipping)?;
-            *y += f64::from(width) / f64::from(pango::SCALE);
-        } else {
-            draw_ctx.draw_pango_layout(&layout, values, *x, *y - offset, clipping)?;
-            *x += f64::from(width) / f64::from(pango::SCALE);
-        }
-
-        Ok(())
+        chunks[num_chunks - 1].spans.push(span);
     }
 }
 
@@ -151,8 +413,8 @@ impl NodeTrait for NodeChars {
 pub struct NodeText {
     x: Cell<Length>,
     y: Cell<Length>,
-    dx: Cell<Length>,
-    dy: Cell<Length>,
+    dx: Cell<Option<Length>>,
+    dy: Cell<Option<Length>>,
 }
 
 impl NodeText {
@@ -160,9 +422,28 @@ impl NodeText {
         NodeText {
             x: Cell::new(Length::default()),
             y: Cell::new(Length::default()),
-            dx: Cell::new(Length::default()),
-            dy: Cell::new(Length::default()),
+            dx: Cell::new(None),
+            dy: Cell::new(None),
         }
+    }
+
+    fn make_chunks(
+        &self,
+        node: &RsvgNode,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Vec<Chunk> {
+        let mut chunks = Vec::new();
+
+        let x = self.x.get();
+        let y = self.y.get();
+        let dx = self.dx.get();
+        let dy = self.dy.get();
+
+        chunks.push(Chunk::new(cascaded.get(), Some(x), Some(y)));
+
+        children_to_chunks(&mut chunks, node, cascaded, draw_ctx, dx, dy, 0);
+        chunks
     }
 }
 
@@ -172,17 +453,17 @@ impl NodeTrait for NodeText {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
-                Attribute::Dx => self.dx.set(parse("dx", value, LengthDir::Horizontal)?),
-                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical)?),
+                Attribute::Dx => self
+                    .dx
+                    .set(parse("dx", value, LengthDir::Horizontal).map(Some)?),
+                Attribute::Dy => self
+                    .dy
+                    .set(parse("dy", value, LengthDir::Vertical).map(Some)?),
                 _ => (),
             }
         }
 
         Ok(())
-    }
-
-    fn accept_chars(&self) -> bool {
-        true
     }
 
     fn draw(
@@ -193,38 +474,42 @@ impl NodeTrait for NodeText {
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
-
         let params = draw_ctx.get_view_params();
 
         let mut x = self.x.get().normalize(values, &params);
         let mut y = self.y.get().normalize(values, &params);
-        let mut dx = self.dx.get().normalize(values, &params);
-        let mut dy = self.dy.get().normalize(values, &params);
 
-        let anchor = values.text_anchor;
+        let chunks = self.make_chunks(node, cascaded, draw_ctx);
 
-        let offset = anchor_offset(node, cascaded, draw_ctx, anchor, false);
-
-        if values.text_gravity_is_vertical() {
-            y -= offset;
-            dy = match anchor {
-                TextAnchor::Start => dy,
-                TextAnchor::Middle => dy / 2f64,
-                _ => 0f64,
-            }
-        } else {
-            x -= offset;
-            dx = match anchor {
-                TextAnchor::Start => dx,
-                TextAnchor::Middle => dx / 2f64,
-                _ => 0f64,
-            }
+        let mut measured_chunks = Vec::new();
+        for chunk in &chunks {
+            measured_chunks.push(MeasuredChunk::from_chunk(chunk, draw_ctx));
         }
 
-        x += dx;
-        y += dy;
+        let mut positioned_chunks = Vec::new();
+        for chunk in &measured_chunks {
+            let normalize = |l: Length| l.normalize(&chunk.values, &params);
 
-        render_children(node, cascaded, draw_ctx, &mut x, &mut y, false, clipping)
+            let chunk_x = chunk.x.map_or(x, normalize);
+            let chunk_y = chunk.y.map_or(y, normalize);
+
+            let positioned = PositionedChunk::from_measured(&chunk, draw_ctx, chunk_x, chunk_y);
+
+            x = positioned.next_chunk_x;
+            y = positioned.next_chunk_y;
+
+            positioned_chunks.push(positioned);
+        }
+
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            for chunk in &positioned_chunks {
+                for span in &chunk.spans {
+                    span.draw(dc, clipping)?;
+                }
+            }
+
+            Ok(())
+        })
     }
 }
 
@@ -239,56 +524,27 @@ impl NodeTRef {
         }
     }
 
-    fn measure(
+    fn to_chunks(
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
-        length: &mut f64,
-    ) -> bool {
+        chunks: &mut Vec<Chunk>,
+        depth: usize,
+    ) {
         let link = self.link.borrow();
 
         if link.is_none() {
-            return false;
+            return;
         }
 
         let link = link.as_ref().unwrap();
 
-        let done = if let Some(acquired) = draw_ctx.get_acquired_node(link) {
-            let c = acquired.get();
-            measure_children(&c, cascaded, draw_ctx, length, true)
-        } else {
-            rsvg_log!(
-                "element {} references a nonexistent text source \"{}\"",
-                node.get_human_readable_name(),
-                link,
-            );
-            false
-        };
-
-        done
-    }
-
-    fn render(
-        &self,
-        node: &RsvgNode,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        x: &mut f64,
-        y: &mut f64,
-        clipping: bool,
-    ) -> Result<(), RenderingError> {
-        let link = self.link.borrow();
-
-        if link.is_none() {
-            return Ok(());
-        }
-
-        let link = link.as_ref().unwrap();
+        let values = cascaded.get();
 
         if let Some(acquired) = draw_ctx.get_acquired_node(link) {
             let c = acquired.get();
-            render_children(&c, cascaded, draw_ctx, x, y, true, clipping)?;
+            extract_chars_children_to_chunks_recursively(chunks, &c, values, depth);
         } else {
             rsvg_log!(
                 "element {} references a nonexistent text source \"{}\"",
@@ -296,8 +552,23 @@ impl NodeTRef {
                 link,
             );
         }
+    }
+}
 
-        Ok(())
+fn extract_chars_children_to_chunks_recursively(
+    chunks: &mut Vec<Chunk>,
+    node: &RsvgNode,
+    values: &ComputedValues,
+    depth: usize,
+) {
+    for child in node.children() {
+        match child.get_type() {
+            NodeType::Chars => child.with_impl(|chars: &NodeChars| {
+                chars.to_chunks(&child, values, chunks, None, None, depth);
+            }),
+
+            _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
+        }
     }
 }
 
@@ -320,8 +591,8 @@ impl NodeTrait for NodeTRef {
 pub struct NodeTSpan {
     x: Cell<Option<Length>>,
     y: Cell<Option<Length>>,
-    dx: Cell<Length>,
-    dy: Cell<Length>,
+    dx: Cell<Option<Length>>,
+    dy: Cell<Option<Length>>,
 }
 
 impl NodeTSpan {
@@ -329,85 +600,31 @@ impl NodeTSpan {
         NodeTSpan {
             x: Cell::new(Default::default()),
             y: Cell::new(Default::default()),
-            dx: Cell::new(Length::default()),
-            dy: Cell::new(Length::default()),
+            dx: Cell::new(None),
+            dy: Cell::new(None),
         }
     }
 
-    fn measure(
+    fn to_chunks(
         &self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
-        length: &mut f64,
-        usetextonly: bool,
-    ) -> bool {
-        let values = cascaded.get();
+        chunks: &mut Vec<Chunk>,
+        depth: usize,
+    ) {
+        let x = self.x.get();
+        let y = self.y.get();
+        let dx = self.dx.get();
+        let dy = self.dy.get();
 
-        if self.x.get().is_some() || self.y.get().is_some() {
-            return true;
+        if x.is_some() || y.is_some() {
+            // Any absolute position creates a new chunk
+            let values = cascaded.get();
+            chunks.push(Chunk::new(values, x, y));
         }
 
-        let params = draw_ctx.get_view_params();
-
-        if values.text_gravity_is_vertical() {
-            *length += self.dy.get().normalize(values, &params);
-        } else {
-            *length += self.dx.get().normalize(values, &params);
-        }
-
-        measure_children(node, cascaded, draw_ctx, length, usetextonly)
-    }
-
-    fn render(
-        &self,
-        node: &RsvgNode,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        x: &mut f64,
-        y: &mut f64,
-        usetextonly: bool,
-        clipping: bool,
-    ) -> Result<(), RenderingError> {
-        let values = cascaded.get();
-
-        let params = draw_ctx.get_view_params();
-
-        let mut dx = self.dx.get().normalize(values, &params);
-        let mut dy = self.dy.get().normalize(values, &params);
-
-        let vertical = values.text_gravity_is_vertical();
-        let anchor = values.text_anchor;
-
-        let offset = anchor_offset(node, cascaded, draw_ctx, anchor, usetextonly);
-
-        if let Some(self_x) = self.x.get() {
-            *x = self_x.normalize(values, &params);
-            if !vertical {
-                *x -= offset;
-                dx = match anchor {
-                    TextAnchor::Start => dx,
-                    TextAnchor::Middle => dx / 2f64,
-                    _ => 0f64,
-                }
-            }
-        }
-        *x += dx;
-
-        if let Some(self_y) = self.y.get() {
-            *y = self_y.normalize(values, &params);
-            if vertical {
-                *y -= offset;
-                dy = match anchor {
-                    TextAnchor::Start => dy,
-                    TextAnchor::Middle => dy / 2f64,
-                    _ => 0f64,
-                }
-            }
-        }
-        *y += dy;
-
-        render_children(node, cascaded, draw_ctx, x, y, usetextonly, clipping)
+        children_to_chunks(chunks, node, cascaded, draw_ctx, dx, dy, depth);
     }
 }
 
@@ -421,17 +638,17 @@ impl NodeTrait for NodeTSpan {
                 Attribute::Y => self
                     .y
                     .set(parse("y", value, LengthDir::Vertical).map(Some)?),
-                Attribute::Dx => self.dx.set(parse("dx", value, LengthDir::Horizontal)?),
-                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical)?),
+                Attribute::Dx => self
+                    .dx
+                    .set(parse("dx", value, LengthDir::Horizontal).map(Some)?),
+                Attribute::Dy => self
+                    .dy
+                    .set(parse("dy", value, LengthDir::Vertical).map(Some)?),
                 _ => (),
             }
         }
 
         Ok(())
-    }
-
-    fn accept_chars(&self) -> bool {
-        true
     }
 }
 
@@ -612,193 +829,4 @@ fn create_pango_layout(
     layout.set_text(text);
 
     layout
-}
-
-fn anchor_offset(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    anchor: TextAnchor,
-    textonly: bool,
-) -> f64 {
-    let mut offset = 0f64;
-
-    match anchor {
-        TextAnchor::Start => {}
-        TextAnchor::Middle => {
-            measure_children(node, cascaded, draw_ctx, &mut offset, textonly);
-            offset /= 2f64;
-        }
-        _ => {
-            measure_children(node, cascaded, draw_ctx, &mut offset, textonly);
-        }
-    }
-
-    offset
-}
-
-fn measure_children(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    length: &mut f64,
-    textonly: bool,
-) -> bool {
-    let mut done = false;
-
-    for child in node.children() {
-        done = measure_child(
-            &child,
-            &CascadedValues::new(cascaded, &child),
-            draw_ctx,
-            length,
-            textonly,
-        );
-        if done {
-            break;
-        }
-    }
-
-    done
-}
-
-fn measure_child(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    length: &mut f64,
-    textonly: bool,
-) -> bool {
-    let values = cascaded.get();
-
-    let mut done = false;
-
-    let cr = draw_ctx.get_cairo_context();
-    cr.save();
-
-    cr.transform(node.get_transform());
-
-    match (node.get_type(), textonly) {
-        (NodeType::Chars, _) => {
-            // here we use the values from the current element,
-            // instead of child_values because NodeChars does not
-            // represent a real SVG element - it is just our container
-            // for character data.
-            node.with_impl(|chars: &NodeChars| chars.measure(node, values, draw_ctx, length));
-        }
-        (_, true) => {
-            done = measure_children(
-                node,
-                &CascadedValues::new(cascaded, node),
-                draw_ctx,
-                length,
-                textonly,
-            );
-        }
-        (NodeType::TSpan, _) => {
-            node.with_impl(|tspan: &NodeTSpan| {
-                done = tspan.measure(
-                    node,
-                    &CascadedValues::new(cascaded, node),
-                    draw_ctx,
-                    length,
-                    textonly,
-                );
-            });
-        }
-        (NodeType::TRef, _) => {
-            node.with_impl(|tref: &NodeTRef| {
-                done = tref.measure(node, &CascadedValues::new(cascaded, node), draw_ctx, length);
-            });
-        }
-        (_, _) => {}
-    }
-
-    cr.restore();
-
-    done
-}
-
-fn render_children(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    x: &mut f64,
-    y: &mut f64,
-    textonly: bool,
-    clipping: bool,
-) -> Result<(), RenderingError> {
-    let values = cascaded.get();
-
-    draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-        for child in node.children() {
-            render_child(&child, cascaded, dc, x, y, textonly, clipping)?;
-        }
-
-        Ok(())
-    })
-}
-
-fn render_child(
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    x: &mut f64,
-    y: &mut f64,
-    textonly: bool,
-    clipping: bool,
-) -> Result<(), RenderingError> {
-    let values = cascaded.get();
-
-    let cr = draw_ctx.get_cairo_context();
-    cr.save();
-
-    cr.transform(node.get_transform());
-
-    let res = match (node.get_type(), textonly) {
-        (NodeType::Chars, _) => {
-            node.with_impl(|chars: &NodeChars| {
-                // here we use the values from the current element,
-                // instead of child_values because NodeChars does not
-                // represent a real SVG element - it is just our container
-                // for character data.
-                chars.render(node, values, draw_ctx, x, y, clipping)
-            })
-        }
-        (_, true) => render_children(
-            node,
-            &CascadedValues::new(cascaded, node),
-            draw_ctx,
-            x,
-            y,
-            textonly,
-            clipping,
-        ),
-        (NodeType::TSpan, _) => node.with_impl(|tspan: &NodeTSpan| {
-            tspan.render(
-                node,
-                &CascadedValues::new(cascaded, node),
-                draw_ctx,
-                x,
-                y,
-                textonly,
-                clipping,
-            )
-        }),
-        (NodeType::TRef, _) => node.with_impl(|tref: &NodeTRef| {
-            tref.render(
-                node,
-                &CascadedValues::new(cascaded, node),
-                draw_ctx,
-                x,
-                y,
-                clipping,
-            )
-        }),
-        (_, _) => Ok(()),
-    };
-
-    cr.restore();
-
-    res
 }
