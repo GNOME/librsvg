@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="53px" height="53px" viewBox="0 0 53 53" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 47 (45396) - http://www.bohemiancoding.com/sketch -->
+    <title>next_normal</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <rect id="path-1" x="9" y="4" width="35" height="35" rx="4"></rect>
+        <filter x="-44.3%" y="-30.0%" width="188.6%" height="188.6%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="1" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="5" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="4" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.2 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="图标" transform="translate(-146.000000, -142.000000)">
+            <g id="Group-Copy-7" transform="translate(172.500000, 168.500000) scale(-1, 1) translate(-172.500000, -168.500000) translate(146.000000, 142.000000)">
+                <g id="Rectangle-2">
+                    <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                    <use fill-opacity="0.4" fill="#000000" fill-rule="evenodd" xlink:href="#path-1"></use>
+                    <rect stroke-opacity="0.2" stroke="#FFFFFF" stroke-width="1" x="8.5" y="3.5" width="36" height="36" rx="4"></rect>
+                </g>
+                <path d="M22.4742121,14.0008305 C22.2710317,14.0118483 22.0947892,14.1448834 22.0285097,14.3372651 C21.9622303,14.5296468 22.0191331,14.7430052 22.1724121,14.8768305 L29.2593121,21.2546305 L22.1724121,27.6326305 C22.0359184,27.7510215 21.9739085,27.9338375 22.0102072,28.1108385 C22.0465059,28.2878395 22.1754668,28.4314919 22.3475416,28.4866027 C22.5196164,28.5417136 22.7080378,28.4997101 22.8404121,28.3767305 L30.3404121,21.6267305 C30.4460251,21.5318878 30.5063531,21.3966286 30.5063531,21.2546805 C30.5063531,21.1127325 30.4460251,20.9774733 30.3404121,20.8826305 L22.8404121,14.1326305 C22.7411687,14.0410113 22.6090829,13.9934359 22.4742121,14.0007305 L22.4742121,14.0008305 Z" id="polyline34476" fill="#FFFFFF" opacity="0.699999988" transform="translate(26.253177, 21.255221) scale(-1, 1) translate(-26.253177, -21.255221) "></path>
+            </g>
+        </g>
+    </g>
+</svg>
