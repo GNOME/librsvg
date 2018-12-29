@@ -136,14 +136,6 @@ typedef struct RsvgHandleRust RsvgHandleRust;
 /* Implemented in rsvg_internals/src/xml.rs */
 typedef struct RsvgXmlState RsvgXmlState;
 
-/* Reading state for an RsvgHandle */
-typedef enum {
-    RSVG_HANDLE_STATE_START,
-    RSVG_HANDLE_STATE_LOADING,
-    RSVG_HANDLE_STATE_CLOSED_OK,
-    RSVG_HANDLE_STATE_CLOSED_ERROR
-} RsvgHandleState;
-
 /* Implemented in rsvg_internals/src/xml.rs */
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
@@ -161,7 +153,7 @@ extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const cha
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
-extern RsvgHandleState rsvg_handle_rust_get_load_state (RsvgHandleRust *raw_handle);
+extern gboolean rsvg_handle_rust_is_at_start_for_setting_base_file (RsvgHandle *handle);
 extern gboolean rsvg_handle_rust_is_loaded (RsvgHandle *handle);
 extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,
@@ -800,17 +792,6 @@ get_base_uri_from_filename (const gchar * filename)
     return base_uri;
 }
 
-static gboolean
-is_at_start_for_setting_base_file (RsvgHandle *handle)
-{
-    if (rsvg_handle_rust_get_load_state (handle->priv->rust_handle) == RSVG_HANDLE_STATE_START) {
-        return TRUE;
-    } else {
-        g_warning ("Please set the base file or URI before loading any data into RsvgHandle");
-        return FALSE;
-    }
-}
-
 /**
  * rsvg_handle_set_base_uri:
  * @handle: A #RsvgHandle
@@ -829,7 +810,7 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
 
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    if (!is_at_start_for_setting_base_file (handle)) {
+    if (!rsvg_handle_rust_is_at_start_for_setting_base_file (handle)) {
         return;
     }
 
@@ -870,7 +851,7 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (G_IS_FILE (base_file));
 
-    if (!is_at_start_for_setting_base_file (handle)) {
+    if (!rsvg_handle_rust_is_at_start_for_setting_base_file (handle)) {
         return;
     }
 
