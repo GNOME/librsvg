@@ -11,7 +11,7 @@ use handle::RsvgHandle;
 use length::*;
 use marker;
 use node::*;
-use parsers::{optional_comma, parse, parse_and_validate, CssParserExt, Parse};
+use parsers::{parse, parse_and_validate, CssParserExt, Parse};
 use path_builder::*;
 use path_parser;
 use property_bag::PropertyBag;
@@ -198,7 +198,7 @@ impl Parse for Points {
 
         loop {
             let x = f64::from(parser.expect_finite_number()?);
-            optional_comma(parser);
+            parser.optional_comma();
             let y = f64::from(parser.expect_finite_number()?);
 
             v.push((x, y));
@@ -209,7 +209,7 @@ impl Parse for Points {
 
             match parser.next_including_whitespace() {
                 Ok(&Token::WhiteSpace(_)) => (),
-                _ => optional_comma(parser),
+                _ => parser.optional_comma(),
             }
         }
 

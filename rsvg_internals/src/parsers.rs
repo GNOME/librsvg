@@ -41,15 +41,20 @@ pub trait Parse: Sized {
     }
 }
 
-/// Extend `cssparser::Parser` with a `expect_finite_number` method,
-/// to avoid infinities.
 pub trait CssParserExt {
+    /// Avoid infinities.
     fn expect_finite_number(&mut self) -> Result<f32, ValueErrorKind>;
+
+    fn optional_comma(&mut self);
 }
 
 impl<'i, 't> CssParserExt for Parser<'i, 't> {
     fn expect_finite_number(&mut self) -> Result<f32, ValueErrorKind> {
         finite_f32(self.expect_number()?)
+    }
+
+    fn optional_comma(&mut self) {
+        let _ = self.try(|p| p.expect_comma());
     }
 }
 
@@ -113,10 +118,6 @@ where
     T::parse(&mut parser, data)
         .and_then(validate)
         .map_err(|e| NodeError::attribute_error(Attribute::from_str(key).unwrap(), e))
-}
-
-pub fn optional_comma(parser: &mut Parser<'_, '_>) {
-    let _ = parser.try(|p| p.expect_comma());
 }
 
 // number
@@ -232,7 +233,7 @@ pub fn number_list(
 
     for i in 0.. {
         if i != 0 {
-            optional_comma(parser);
+            parser.optional_comma();
         }
 
         v.push(f64::from(parser.expect_finite_number().map_err(|_| {

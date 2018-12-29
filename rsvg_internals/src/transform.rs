@@ -6,7 +6,7 @@ use cairo::MatrixTrait;
 use cssparser::{ParseError as CssParseError, Parser, Token};
 
 use error::*;
-use parsers::{finite_f32, optional_comma, Parse, ParseError};
+use parsers::{finite_f32, CssParserExt, Parse, ParseError};
 
 impl Parse for cairo::Matrix {
     type Data = ();
@@ -37,7 +37,7 @@ fn parse_transform_list(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Va
         let m = parse_transform_command(parser)?;
         matrix = cairo::Matrix::multiply(&m, &matrix);
 
-        optional_comma(parser);
+        parser.optional_comma();
     }
 
     Ok(matrix)
@@ -81,19 +81,19 @@ fn parse_matrix_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Value
     parser
         .parse_nested_block(|p| {
             let xx = p.expect_number()?;
-            optional_comma(p);
+            p.optional_comma();
 
             let yx = p.expect_number()?;
-            optional_comma(p);
+            p.optional_comma();
 
             let xy = p.expect_number()?;
-            optional_comma(p);
+            p.optional_comma();
 
             let yy = p.expect_number()?;
-            optional_comma(p);
+            p.optional_comma();
 
             let x0 = p.expect_number()?;
-            optional_comma(p);
+            p.optional_comma();
 
             let y0 = p.expect_number()?;
 
@@ -120,7 +120,7 @@ fn parse_translate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Va
 
             let ty = p
                 .try(|p| -> Result<f32, CssParseError<'_, ()>> {
-                    optional_comma(p);
+                    p.optional_comma();
                     Ok(p.expect_number()?)
                 })
                 .unwrap_or(0.0);
@@ -144,7 +144,7 @@ fn parse_scale_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueE
 
             let y = p
                 .try(|p| -> Result<f32, CssParseError<'_, ()>> {
-                    optional_comma(p);
+                    p.optional_comma();
                     Ok(p.expect_number()?)
                 })
                 .unwrap_or(x);
@@ -168,10 +168,10 @@ fn parse_rotate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Value
 
             let (tx, ty) = p
                 .try(|p| -> Result<_, CssParseError<'_, ()>> {
-                    optional_comma(p);
+                    p.optional_comma();
                     let tx = p.expect_number()?;
 
-                    optional_comma(p);
+                    p.optional_comma();
                     let ty = p.expect_number()?;
 
                     Ok((tx, ty))
