@@ -42,37 +42,24 @@
 #include <stdlib.h>
 
 static GdkPixbuf *
-pixbuf_from_file_with_size_data (GFile *file,
-                                 struct RsvgSizeCallbackData *cb_data,
-                                 GError ** error)
-{
-    RsvgHandle *handle;
-    GdkPixbuf *retval;
-
-    handle = rsvg_handle_new_from_gfile_sync (file, 0, NULL, error);
-    if (!handle) {
-        return NULL;
-    }
-
-    rsvg_handle_set_size_callback (handle, _rsvg_size_callback, cb_data, NULL);
-
-    retval = rsvg_handle_get_pixbuf (handle);
-    g_object_unref (handle);
-
-    return retval;
-}
-
-static GdkPixbuf *
 rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
                                       struct RsvgSizeCallbackData *cb_data, 
                                       GError ** error)
 {
     GFile *file;
-    GdkPixbuf *pixbuf;
+    RsvgHandle *handle;
+    GdkPixbuf *pixbuf = NULL;
 
     file = g_file_new_for_path (file_name);
-    pixbuf = pixbuf_from_file_with_size_data (file, cb_data, error);
-    g_clear_object (&file);
+    handle = rsvg_handle_new_from_gfile_sync (file, 0, NULL, error);
+
+    if (handle) {
+        rsvg_handle_set_size_callback (handle, _rsvg_size_callback, cb_data, NULL);
+        pixbuf = rsvg_handle_get_pixbuf (handle);
+    }
+
+    g_object_unref (handle);
+    g_object_unref (file);
 
     return pixbuf;
 }
