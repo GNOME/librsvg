@@ -64,7 +64,6 @@ pub struct LoadOptions {
     pub keep_image_data: bool,
 }
 
-#[repr(C)]
 #[derive(Copy, Clone, PartialEq)]
 pub enum LoadState {
     Start,
@@ -815,10 +814,20 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, f
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_load_state(raw_handle: *const Handle) -> LoadState {
-    let rhandle = &*raw_handle;
+pub unsafe extern "C" fn rsvg_handle_rust_is_at_start_for_setting_base_file(
+    handle: *const RsvgHandle,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
 
-    rhandle.load_state.get()
+    match rhandle.load_state.get() {
+        LoadState::Start => true.to_glib(),
+        _ => {
+            rsvg_g_warning(
+                "Please set the base file or URI before loading any data into RsvgHandle",
+            );
+            false.to_glib()
+        }
+    }
 }
 
 #[no_mangle]
