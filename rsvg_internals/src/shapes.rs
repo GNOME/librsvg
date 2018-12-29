@@ -1,15 +1,17 @@
 use cairo;
 use std::cell::Cell;
 use std::cell::RefCell;
+use std::ops::Deref;
 
 use attributes::Attribute;
+use cssparser::{Parser, ParserInput, Token};
 use drawing_ctx::DrawingCtx;
 use error::*;
 use handle::RsvgHandle;
 use length::*;
 use marker;
 use node::*;
-use parsers::{self, parse, parse_and_validate};
+use parsers::{optional_comma, parse, parse_and_validate, CssParserExt, Parse};
 use path_builder::*;
 use path_parser;
 use property_bag::PropertyBag;
@@ -174,8 +176,49 @@ enum PolyKind {
     Closed,
 }
 
+#[derive(Debug, PartialEq)]
+struct Points(Vec<(f64, f64)>);
+
+impl Deref for Points {
+    type Target = [(f64, f64)];
+
+    fn deref(&self) -> &[(f64, f64)] {
+        &self.0
+    }
+}
+
+// Parse a list-of-points as for polyline and polygon elements
+// https://www.w3.org/TR/SVG/shapes.html#PointsBNF
+impl Parse for Points {
+    type Data = ();
+    type Err = ValueErrorKind;
+
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<Points, ValueErrorKind> {
+        let mut v = Vec::new();
+
+        loop {
+            let x = f64::from(parser.expect_finite_number()?);
+            optional_comma(parser);
+            let y = f64::from(parser.expect_finite_number()?);
+
+            v.push((x, y));
+
+            if parser.is_exhausted() {
+                break;
+            }
+
+            match parser.next_including_whitespace() {
+                Ok(&Token::WhiteSpace(_)) => (),
+                _ => optional_comma(parser),
+            }
+        }
+
+        Ok(Points(v))
+    }
+}
+
 pub struct NodePoly {
-    points: RefCell<Option<Vec<(f64, f64)>>>,
+    points: RefCell<Option<Points>>,
     kind: PolyKind,
 }
 
@@ -200,18 +243,12 @@ impl NodeTrait for NodePoly {
         for (attr, value) in pbag.iter() {
             // support for svg < 1.0 which used verts
             if attr == Attribute::Points || attr == Attribute::Verts {
-                let result = parsers::list_of_points(value.trim());
+                let mut input = ParserInput::new(value.trim());
+                let mut parser = Parser::new(&mut input);
 
-                match result {
-                    Ok(v) => {
-                        *self.points.borrow_mut() = Some(v);
-                        break;
-                    }
-
-                    Err(e) => {
-                        return Err(NodeError::attribute_error(attr, e));
-                    }
-                }
+                *self.points.borrow_mut() = Points::parse(&mut parser, ())
+                    .map_err(|err| NodeError::attribute_error(attr, err))
+                    .ok();
             }
         }
 
@@ -638,5 +675,41 @@ impl NodeTrait for NodeEllipse {
         let ry = self.ry.get().normalize(values, &params);
 
         render_ellipse(cx, cy, rx, ry, draw_ctx, node, values, clipping)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_points() {
+        assert_eq!(Points::parse_str(" 1 2 ", ()), Ok(Points(vec![(1.0, 2.0)])));
+        assert_eq!(
+            Points::parse_str("1 2 3 4", ()),
+            Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
+        );
+        assert_eq!(
+            Points::parse_str("1,2,3,4", ()),
+            Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
+        );
+        assert_eq!(
+            Points::parse_str("1,2 3,4", ()),
+            Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
+        );
+        assert_eq!(
+            Points::parse_str("1,2 -3,4", ()),
+            Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
+        );
+        assert_eq!(
+            Points::parse_str("1,2,-3,4", ()),
+            Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
+        );
+    }
+
+    #[test]
+    fn errors_on_invalid_points() {
+        assert!(Points::parse_str("-1-2-3-4", ()).is_err());
+        assert!(Points::parse_str("1 2-3,-4", ()).is_err());
     }
 }

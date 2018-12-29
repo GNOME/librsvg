@@ -194,37 +194,6 @@ pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ValueErrorKind> {
     }
 }
 
-// Parse a list-of-points as for polyline and polygon elements
-// https://www.w3.org/TR/SVG/shapes.html#PointsBNF
-
-pub fn list_of_points(string: &str) -> Result<Vec<(f64, f64)>, ValueErrorKind> {
-    let mut input = ParserInput::new(string);
-    let mut parser = Parser::new(&mut input);
-
-    let mut v = Vec::new();
-
-    loop {
-        let x = f64::from(parser.expect_finite_number()?);
-
-        optional_comma(&mut parser);
-
-        let y = f64::from(parser.expect_finite_number()?);
-
-        v.push((x, y));
-
-        if parser.is_exhausted() {
-            break;
-        }
-
-        match parser.next_including_whitespace() {
-            Ok(&Token::WhiteSpace(_)) => (),
-            _ => optional_comma(&mut parser),
-        }
-    }
-
-    Ok(v)
-}
-
 // Lists of number values
 
 #[derive(Eq, PartialEq)]
@@ -326,28 +295,6 @@ mod tests {
         assert!(number_optional_number("1 , x").is_err());
         assert!(number_optional_number("1 , 2x").is_err());
         assert!(number_optional_number("1 2 x").is_err());
-    }
-
-    #[test]
-    fn parses_list_of_points() {
-        assert_eq!(list_of_points(" 1 2 "), Ok(vec![(1.0, 2.0)]));
-        assert_eq!(list_of_points("1 2 3 4"), Ok(vec![(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq!(list_of_points("1,2,3,4"), Ok(vec![(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq!(list_of_points("1,2 3,4"), Ok(vec![(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq!(
-            list_of_points("1,2 -3,4"),
-            Ok(vec![(1.0, 2.0), (-3.0, 4.0)])
-        );
-        assert_eq!(
-            list_of_points("1,2,-3,4"),
-            Ok(vec![(1.0, 2.0), (-3.0, 4.0)])
-        );
-    }
-
-    #[test]
-    fn errors_on_invalid_list_of_points() {
-        assert!(list_of_points("-1-2-3-4").is_err());
-        assert!(list_of_points("1 2-3,-4").is_err());
     }
 
     #[test]
