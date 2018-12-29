@@ -822,6 +822,35 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_load_state(raw_handle: *const Hand
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_is_loaded(
+    handle: *const RsvgHandle,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    match rhandle.load_state.get() {
+        LoadState::Start => {
+            rsvg_g_warning("RsvgHandle has not been loaded");
+            false.to_glib()
+        }
+
+        LoadState::Loading => {
+            rsvg_g_warning("RsvgHandle is still loading; call rsvg_handle_close() first");
+            false.to_glib()
+        }
+
+        LoadState::ClosedOk => true.to_glib(),
+
+        LoadState::ClosedError => {
+            rsvg_g_warning(
+                "RsvgHandle could not read or parse the SVG; did you check for errors during the \
+                 loading stage?"
+            );
+            false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
     handle: *mut RsvgHandle,
     stream: *mut gio_sys::GInputStream,
