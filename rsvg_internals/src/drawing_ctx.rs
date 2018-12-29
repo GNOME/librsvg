@@ -34,7 +34,7 @@ use state::{
     StrokeLinejoin,
     TextRendering,
 };
-use unitinterval::UnitInterval;
+use unit_interval::UnitInterval;
 use viewbox::ViewBox;
 
 /// Holds values that are required to normalize `Length` values to a current viewport.

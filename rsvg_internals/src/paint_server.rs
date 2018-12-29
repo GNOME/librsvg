@@ -9,7 +9,7 @@ use node::{NodeType, RsvgNode};
 use parsers::Parse;
 use pattern::NodePattern;
 use state::ComputedValues;
-use unitinterval::UnitInterval;
+use unit_interval::UnitInterval;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {

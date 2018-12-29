@@ -12,7 +12,7 @@ use paint_server::PaintServer;
 use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
 use property_macros::Property;
-use unitinterval::UnitInterval;
+use unit_interval::UnitInterval;
 
 /// Representation of a single CSS property value.
 ///

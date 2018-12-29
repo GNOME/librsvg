@@ -116,7 +116,7 @@ RUST_SRC =							\
 	rsvg_internals/src/transform.rs				\
 	rsvg_internals/src/tree.rs				\
 	rsvg_internals/src/tree_utils/mod.rs			\
-	rsvg_internals/src/unitinterval.rs			\
+	rsvg_internals/src/unit_interval.rs			\
 	rsvg_internals/src/util.rs				\
 	rsvg_internals/src/viewbox.rs				\
 	rsvg_internals/src/viewport.rs				\

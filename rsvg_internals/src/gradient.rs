@@ -18,7 +18,7 @@ use property_bag::PropertyBag;
 use rect::RectangleExt;
 use state::{ComputedValues, StopColor};
 use stop::*;
-use unitinterval::UnitInterval;
+use unit_interval::UnitInterval;
 
 #[derive(Copy, Clone)]
 pub struct ColorStop {

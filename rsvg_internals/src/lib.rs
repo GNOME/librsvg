@@ -119,7 +119,7 @@ mod text;
 mod transform;
 mod tree;
 pub mod tree_utils;
-mod unitinterval;
+mod unit_interval;
 mod util;
 mod viewbox;
 mod viewport;

@@ -20,7 +20,7 @@ use paint_server::PaintSource;
 use parsers::{parse, parse_and_validate};
 use property_bag::PropertyBag;
 use state::ComputedValues;
-use unitinterval::UnitInterval;
+use unit_interval::UnitInterval;
 use viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);

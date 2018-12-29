@@ -13,7 +13,7 @@ use paint_server::{self, PaintServer};
 use rect::IRect;
 use state::ComputedValues;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use unitinterval::UnitInterval;
+use unit_interval::UnitInterval;
 
 use super::error::FilterError;
 use super::input::Input;
