@@ -2,13 +2,14 @@ use cssparser::Parser;
 
 use error::*;
 use parsers::{CssParserExt, Parse, ParseError};
+use util;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct UnitInterval(pub f64);
 
-impl Default for UnitInterval {
-    fn default() -> UnitInterval {
-        UnitInterval(1.0)
+impl UnitInterval {
+    pub fn clamp(val: f64) -> UnitInterval {
+        UnitInterval(util::clamp(val, 0.0, 1.0))
     }
 }
 
@@ -23,15 +24,7 @@ impl Parse for UnitInterval {
                 .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected number")))?,
         );
 
-        let cx = if x < 0.0 {
-            0.0
-        } else if x > 1.0 {
-            1.0
-        } else {
-            x
-        };
-
-        Ok(UnitInterval(cx))
+        Ok(UnitInterval::clamp(x))
     }
 }
 
@@ -45,6 +38,15 @@ impl From<UnitInterval> for u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clamps() {
+        assert_eq!(UnitInterval::clamp(-1.0), UnitInterval(0.0));
+        assert_eq!(UnitInterval::clamp(0.0), UnitInterval(0.0));
+        assert_eq!(UnitInterval::clamp(0.5), UnitInterval(0.5));
+        assert_eq!(UnitInterval::clamp(1.0), UnitInterval(1.0));
+        assert_eq!(UnitInterval::clamp(2.0), UnitInterval(1.0));
+    }
 
     #[test]
     fn parses_number() {
