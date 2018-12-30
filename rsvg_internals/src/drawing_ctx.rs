@@ -762,7 +762,7 @@ impl DrawingCtx {
         cr.set_matrix(matrix);
     }
 
-    pub fn clip(&mut self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn clip(&self, x: f64, y: f64, w: f64, h: f64) {
         let cr = self.get_cairo_context();
         let save_affine = cr.get_matrix();
 
