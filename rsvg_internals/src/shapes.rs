@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::ops::Deref;
 
 use attributes::Attribute;
-use cssparser::{Parser, ParserInput, Token};
+use cssparser::{Parser, Token};
 use drawing_ctx::DrawingCtx;
 use error::*;
 use handle::RsvgHandle;
@@ -243,12 +243,7 @@ impl NodeTrait for NodePoly {
         for (attr, value) in pbag.iter() {
             // support for svg < 1.0 which used verts
             if attr == Attribute::Points || attr == Attribute::Verts {
-                let mut input = ParserInput::new(value.trim());
-                let mut parser = Parser::new(&mut input);
-
-                *self.points.borrow_mut() = Points::parse(&mut parser, ())
-                    .map_err(|err| NodeError::attribute_error(attr, err))
-                    .ok();
+                *self.points.borrow_mut() = attr.parse(value.trim(), ()).map(Some)?;
             }
         }
 
