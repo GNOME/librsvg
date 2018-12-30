@@ -243,7 +243,7 @@ impl PositionedSpan {
             .map(|l| l.normalize(&values, &params))
             .unwrap_or(0.0);
 
-        let (render_x, render_y) = if values.text_gravity_is_vertical() {
+        let (render_x, render_y) = if values.writing_mode.is_vertical() {
             (x + offset + dx, y + dy)
         } else {
             (x + dx, y - offset + dy)

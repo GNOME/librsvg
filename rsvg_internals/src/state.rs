@@ -204,10 +204,6 @@ impl ComputedValues {
             _ => false,
         }
     }
-
-    pub fn text_gravity_is_vertical(&self) -> bool {
-        self.writing_mode.is_vertical()
-    }
 }
 
 macro_rules! compute_value {
