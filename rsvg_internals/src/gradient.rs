@@ -13,7 +13,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use paint_server::PaintSource;
-use parsers::{parse, Parse, ParseError};
+use parsers::{Parse, ParseError, ParseValue};
 use property_bag::PropertyBag;
 use rect::RectangleExt;
 use state::{ComputedValues, StopColor};
@@ -659,18 +659,9 @@ impl NodeTrait for NodeGradient {
         for (attr, value) in pbag.iter() {
             match attr {
                 // Attributes common to linear and radial gradients
-                Attribute::GradientUnits => {
-                    g.common.units = Some(parse("gradientUnits", value, ())?)
-                }
-
-                Attribute::GradientTransform => {
-                    g.common.affine = Some(parse("gradientTransform", value, ())?)
-                }
-
-                Attribute::SpreadMethod => {
-                    g.common.spread = Some(parse("spreadMethod", value, ())?)
-                }
-
+                Attribute::GradientUnits => g.common.units = Some(attr.parse(value, ())?),
+                Attribute::GradientTransform => g.common.affine = Some(attr.parse(value, ())?),
+                Attribute::SpreadMethod => g.common.spread = Some(attr.parse(value, ())?),
                 Attribute::XlinkHref => {
                     g.common.fallback =
                         Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
@@ -678,16 +669,16 @@ impl NodeTrait for NodeGradient {
 
                 // Attributes specific to each gradient type.  The defaults mandated by the spec
                 // are in GradientVariant::resolve_from_defaults()
-                Attribute::X1 => x1 = Some(parse("x1", value, LengthDir::Horizontal)?),
-                Attribute::Y1 => y1 = Some(parse("y1", value, LengthDir::Vertical)?),
-                Attribute::X2 => x2 = Some(parse("x2", value, LengthDir::Horizontal)?),
-                Attribute::Y2 => y2 = Some(parse("y2", value, LengthDir::Vertical)?),
+                Attribute::X1 => x1 = Some(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Y1 => y1 = Some(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::X2 => x2 = Some(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Y2 => y2 = Some(attr.parse(value, LengthDir::Vertical)?),
 
-                Attribute::Cx => cx = Some(parse("cx", value, LengthDir::Horizontal)?),
-                Attribute::Cy => cy = Some(parse("cy", value, LengthDir::Vertical)?),
-                Attribute::R => r = Some(parse("r", value, LengthDir::Both)?),
-                Attribute::Fx => fx = Some(parse("fx", value, LengthDir::Horizontal)?),
-                Attribute::Fy => fy = Some(parse("fy", value, LengthDir::Vertical)?),
+                Attribute::Cx => cx = Some(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Cy => cy = Some(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::R => r = Some(attr.parse(value, LengthDir::Both)?),
+                Attribute::Fx => fx = Some(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Fy => fy = Some(attr.parse(value, LengthDir::Vertical)?),
 
                 _ => (),
             }

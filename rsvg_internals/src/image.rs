@@ -13,7 +13,7 @@ use float_eq_cairo::ApproxEqCairo;
 use handle::{self, RsvgHandle};
 use length::*;
 use node::*;
-use parsers::{parse, parse_and_validate};
+use parsers::ParseValue;
 use property_bag::PropertyBag;
 
 pub struct NodeImage {
@@ -51,24 +51,20 @@ impl NodeTrait for NodeImage {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
-                Attribute::Width => self.w.set(parse_and_validate(
-                    "width",
+                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::Width => self.w.set(attr.parse_and_validate(
                     value,
                     LengthDir::Horizontal,
                     Length::check_nonnegative,
                 )?),
-                Attribute::Height => self.h.set(parse_and_validate(
-                    "height",
+                Attribute::Height => self.h.set(attr.parse_and_validate(
                     value,
                     LengthDir::Vertical,
                     Length::check_nonnegative,
                 )?),
 
-                Attribute::PreserveAspectRatio => {
-                    self.aspect.set(parse("preserveAspectRatio", value, ())?)
-                }
+                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value, ())?),
 
                 // "path" is used by some older Adobe Illustrator versions
                 Attribute::XlinkHref | Attribute::Path => {

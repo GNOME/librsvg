@@ -8,7 +8,7 @@ use drawing_ctx::DrawingCtx;
 use error::{NodeError, ValueErrorKind};
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{self, parse, Parse};
+use parsers::{self, Parse, ParseValue};
 use property_bag::PropertyBag;
 use rect::IRect;
 use surface_utils::{
@@ -75,7 +75,7 @@ impl NodeTrait for Composite {
                 Attribute::In2 => {
                     self.in2.replace(Some(Input::parse(Attribute::In2, value)?));
                 }
-                Attribute::Operator => self.operator.set(parse("operator", value, ())?),
+                Attribute::Operator => self.operator.set(attr.parse(value, ())?),
                 Attribute::K1 => self.k1.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),

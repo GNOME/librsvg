@@ -1,6 +1,6 @@
 use cssparser::{BasicParseError, Parser, ParserInput, Token};
 
-use std::str::{self, FromStr};
+use std::str;
 
 use attributes::Attribute;
 use error::{NodeError, ValueErrorKind};
@@ -66,6 +66,54 @@ pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
     }
 }
 
+pub trait ParseValue<T: Parse<Err = ValueErrorKind>> {
+    /// Parses a `value` string into a type `T`.
+    ///
+    /// Some value types need some extra `data` to be parsed.  This
+    /// corresponds to the `<T as Parse>::Data` associated type.  For
+    /// example, an `Length` has an associated `type Data =
+    /// LengthDir`, so to parse a length value, you could specify
+    /// `LengthDir::Horizontal` for `data`, for example.
+    fn parse(&self, value: &str, data: <T as Parse>::Data) -> Result<T, NodeError>;
+
+    /// Parses a `value` string into a type `T` with an optional validation function.
+    ///
+    /// Some value types need some extra `data` to be parsed.  This
+    /// corresponds to the `<T as Parse>::Data` associated type.  For
+    /// example, an `Length` has an associated `type Data =
+    /// LengthDir`, so to parse a length value, you could specify
+    /// `LengthDir::Horizontal` for `data`, for example.
+    fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
+        &self,
+        value: &str,
+        data: <T as Parse>::Data,
+        validate: F,
+    ) -> Result<T, NodeError>;
+}
+
+impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for Attribute {
+    fn parse(&self, value: &str, data: <T as Parse>::Data) -> Result<T, NodeError> {
+        let mut input = ParserInput::new(value);
+        let mut parser = Parser::new(&mut input);
+
+        T::parse(&mut parser, data).map_err(|e| NodeError::attribute_error(*self, e))
+    }
+
+    fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
+        &self,
+        value: &str,
+        data: <T as Parse>::Data,
+        validate: F,
+    ) -> Result<T, NodeError> {
+        let mut input = ParserInput::new(value);
+        let mut parser = Parser::new(&mut input);
+
+        T::parse(&mut parser, data)
+            .and_then(validate)
+            .map_err(|e| NodeError::attribute_error(*self, e))
+    }
+}
+
 impl Parse for f64 {
     type Data = ();
     type Err = ValueErrorKind;
@@ -75,49 +123,6 @@ impl Parse for f64 {
             ValueErrorKind::Parse(ParseError::new("expected number"))
         })?))
     }
-}
-
-/// Parses a `value` string into a type `T`.
-///
-/// Some value types need some extra `data` to be parsed.  This
-/// corresponds to the `<T as Parse>::Data` associated type.  For
-/// example, an `Length` has an associated `type Data =
-/// LengthDir`, so to parse a length value, you could specify
-/// `LengthDir::Horizontal` for `data`, for example.
-pub fn parse<T>(key: &str, value: &str, data: <T as Parse>::Data) -> Result<T, NodeError>
-where
-    T: Parse<Err = ValueErrorKind>,
-{
-    let mut input = ParserInput::new(value);
-    let mut parser = Parser::new(&mut input);
-
-    T::parse(&mut parser, data)
-        .map_err(|e| NodeError::attribute_error(Attribute::from_str(key).unwrap(), e))
-}
-
-/// Parses a `value` string into a type `T` with an optional validation function.
-///
-/// Some value types need some extra `data` to be parsed.  This
-/// corresponds to the `<T as Parse>::Data` associated type.  For
-/// example, an `Length` has an associated `type Data =
-/// LengthDir`, so to parse a length value, you could specify
-/// `LengthDir::Horizontal` for `data`, for example.
-pub fn parse_and_validate<T, F>(
-    key: &str,
-    value: &str,
-    data: <T as Parse>::Data,
-    validate: F,
-) -> Result<T, NodeError>
-where
-    T: Parse<Err = ValueErrorKind>,
-    F: FnOnce(T) -> Result<T, ValueErrorKind>,
-{
-    let mut input = ParserInput::new(value);
-    let mut parser = Parser::new(&mut input);
-
-    T::parse(&mut parser, data)
-        .and_then(validate)
-        .map_err(|e| NodeError::attribute_error(Attribute::from_str(key).unwrap(), e))
 }
 
 // number

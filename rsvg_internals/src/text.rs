@@ -9,7 +9,7 @@ use font_props::FontWeightSpec;
 use handle::RsvgHandle;
 use length::*;
 use node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use parsers::parse;
+use parsers::ParseValue;
 use property_bag::PropertyBag;
 use space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use state::{
@@ -451,14 +451,14 @@ impl NodeTrait for NodeText {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
+                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
                 Attribute::Dx => self
                     .dx
-                    .set(parse("dx", value, LengthDir::Horizontal).map(Some)?),
+                    .set(attr.parse(value, LengthDir::Horizontal).map(Some)?),
                 Attribute::Dy => self
                     .dy
-                    .set(parse("dy", value, LengthDir::Vertical).map(Some)?),
+                    .set(attr.parse(value, LengthDir::Vertical).map(Some)?),
                 _ => (),
             }
         }
@@ -634,16 +634,16 @@ impl NodeTrait for NodeTSpan {
             match attr {
                 Attribute::X => self
                     .x
-                    .set(parse("x", value, LengthDir::Horizontal).map(Some)?),
+                    .set(attr.parse(value, LengthDir::Horizontal).map(Some)?),
                 Attribute::Y => self
                     .y
-                    .set(parse("y", value, LengthDir::Vertical).map(Some)?),
+                    .set(attr.parse(value, LengthDir::Vertical).map(Some)?),
                 Attribute::Dx => self
                     .dx
-                    .set(parse("dx", value, LengthDir::Horizontal).map(Some)?),
+                    .set(attr.parse(value, LengthDir::Horizontal).map(Some)?),
                 Attribute::Dy => self
                     .dy
-                    .set(parse("dy", value, LengthDir::Vertical).map(Some)?),
+                    .set(attr.parse(value, LengthDir::Vertical).map(Some)?),
                 _ => (),
             }
         }

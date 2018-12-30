@@ -11,7 +11,7 @@ use handle::RsvgHandle;
 use length::*;
 use marker;
 use node::*;
-use parsers::{parse, parse_and_validate, CssParserExt, Parse};
+use parsers::{CssParserExt, Parse, ParseValue};
 use path_builder::*;
 use path_parser;
 use property_bag::PropertyBag;
@@ -308,10 +308,10 @@ impl NodeTrait for NodeLine {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X1 => self.x1.set(parse("x1", value, LengthDir::Horizontal)?),
-                Attribute::Y1 => self.y1.set(parse("y1", value, LengthDir::Vertical)?),
-                Attribute::X2 => self.x2.set(parse("x2", value, LengthDir::Horizontal)?),
-                Attribute::Y2 => self.y2.set(parse("y2", value, LengthDir::Vertical)?),
+                Attribute::X1 => self.x1.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Y1 => self.y1.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::X2 => self.x2.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Y2 => self.y2.set(attr.parse(value, LengthDir::Vertical)?),
                 _ => (),
             }
         }
@@ -374,24 +374,20 @@ impl NodeTrait for NodeRect {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
-                Attribute::Width => self.w.set(parse_and_validate(
-                    "width",
+                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::Width => self.w.set(attr.parse_and_validate(
                     value,
                     LengthDir::Horizontal,
                     Length::check_nonnegative,
                 )?),
-                Attribute::Height => self.h.set(parse_and_validate(
-                    "height",
+                Attribute::Height => self.h.set(attr.parse_and_validate(
                     value,
                     LengthDir::Vertical,
                     Length::check_nonnegative,
                 )?),
-
                 Attribute::Rx => self.rx.set(
-                    parse_and_validate(
-                        "rx",
+                    attr.parse_and_validate(
                         value,
                         LengthDir::Horizontal,
                         Length::check_nonnegative,
@@ -399,7 +395,7 @@ impl NodeTrait for NodeRect {
                     .map(Some)?,
                 ),
                 Attribute::Ry => self.ry.set(
-                    parse_and_validate("ry", value, LengthDir::Vertical, Length::check_nonnegative)
+                    attr.parse_and_validate(value, LengthDir::Vertical, Length::check_nonnegative)
                         .map(Some)?,
                 ),
 
@@ -578,10 +574,9 @@ impl NodeTrait for NodeCircle {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal)?),
-                Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical)?),
-                Attribute::R => self.r.set(parse_and_validate(
-                    "r",
+                Attribute::Cx => self.cx.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Cy => self.cy.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::R => self.r.set(attr.parse_and_validate(
                     value,
                     LengthDir::Both,
                     Length::check_nonnegative,
@@ -635,17 +630,14 @@ impl NodeTrait for NodeEllipse {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal)?),
-                Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical)?),
-
-                Attribute::Rx => self.rx.set(parse_and_validate(
-                    "rx",
+                Attribute::Cx => self.cx.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Cy => self.cy.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::Rx => self.rx.set(attr.parse_and_validate(
                     value,
                     LengthDir::Horizontal,
                     Length::check_nonnegative,
                 )?),
-                Attribute::Ry => self.ry.set(parse_and_validate(
-                    "ry",
+                Attribute::Ry => self.ry.set(attr.parse_and_validate(
                     value,
                     LengthDir::Vertical,
                     Length::check_nonnegative,

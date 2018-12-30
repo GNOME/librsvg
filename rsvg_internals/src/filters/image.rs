@@ -11,7 +11,7 @@ use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
 use handle::{self, RsvgHandle};
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use parsers::{parse, ParseError};
+use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
 use rect::IRect;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -197,9 +197,7 @@ impl NodeTrait for Image {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::PreserveAspectRatio => {
-                    self.aspect.set(parse("preserveAspectRatio", value, ())?)
-                }
+                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value, ())?),
 
                 // "path" is used by some older Adobe Illustrator versions
                 Attribute::XlinkHref | Attribute::Path => self.set_href(attr, value)?,

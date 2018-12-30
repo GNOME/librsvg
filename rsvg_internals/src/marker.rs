@@ -16,8 +16,7 @@ use handle::RsvgHandle;
 use iri::IRI;
 use length::{Length, LengthDir};
 use node::*;
-use parsers::ParseError;
-use parsers::{parse, parse_and_validate, Parse};
+use parsers::{Parse, ParseError, ParseValue};
 use path_builder::*;
 use property_bag::PropertyBag;
 use state::{ComputedValues, SpecifiedValue, State};
@@ -220,33 +219,29 @@ impl NodeTrait for NodeMarker {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::MarkerUnits => self.units.set(parse("markerUnits", value, ())?),
+                Attribute::MarkerUnits => self.units.set(attr.parse(value, ())?),
 
-                Attribute::RefX => self.ref_x.set(parse("refX", value, LengthDir::Horizontal)?),
+                Attribute::RefX => self.ref_x.set(attr.parse(value, LengthDir::Horizontal)?),
 
-                Attribute::RefY => self.ref_y.set(parse("refY", value, LengthDir::Vertical)?),
+                Attribute::RefY => self.ref_y.set(attr.parse(value, LengthDir::Vertical)?),
 
-                Attribute::MarkerWidth => self.width.set(parse_and_validate(
-                    "markerWidth",
+                Attribute::MarkerWidth => self.width.set(attr.parse_and_validate(
                     value,
                     LengthDir::Horizontal,
                     Length::check_nonnegative,
                 )?),
 
-                Attribute::MarkerHeight => self.height.set(parse_and_validate(
-                    "markerHeight",
+                Attribute::MarkerHeight => self.height.set(attr.parse_and_validate(
                     value,
                     LengthDir::Vertical,
                     Length::check_nonnegative,
                 )?),
 
-                Attribute::Orient => self.orient.set(parse("orient", value, ())?),
+                Attribute::Orient => self.orient.set(attr.parse(value, ())?),
 
-                Attribute::PreserveAspectRatio => {
-                    self.aspect.set(parse("preserveAspectRatio", value, ())?)
-                }
+                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value, ())?),
 
-                Attribute::ViewBox => self.vbox.set(Some(parse("viewBox", value, ())?)),
+                Attribute::ViewBox => self.vbox.set(Some(attr.parse(value, ())?)),
 
                 _ => (),
             }

@@ -17,7 +17,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use paint_server::PaintSource;
-use parsers::{parse, parse_and_validate};
+use parsers::ParseValue;
 use property_bag::PropertyBag;
 use state::ComputedValues;
 use unit_interval::UnitInterval;
@@ -189,33 +189,28 @@ impl NodeTrait for NodePattern {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::PatternUnits => p.units = Some(parse("patternUnits", value, ())?),
+                Attribute::PatternUnits => p.units = Some(attr.parse(value, ())?),
 
-                Attribute::PatternContentUnits => {
-                    p.content_units = Some(parse("patternContentUnits", value, ())?)
-                }
+                Attribute::PatternContentUnits => p.content_units = Some(attr.parse(value, ())?),
 
-                Attribute::ViewBox => p.vbox = Some(Some(parse("viewBox", value, ())?)),
+                Attribute::ViewBox => p.vbox = Some(Some(attr.parse(value, ())?)),
 
                 Attribute::PreserveAspectRatio => {
-                    p.preserve_aspect_ratio = Some(parse("preserveAspectRatio", value, ())?)
+                    p.preserve_aspect_ratio = Some(attr.parse(value, ())?)
                 }
 
-                Attribute::PatternTransform => {
-                    p.affine = Some(parse("patternTransform", value, ())?)
-                }
+                Attribute::PatternTransform => p.affine = Some(attr.parse(value, ())?),
 
                 Attribute::XlinkHref => {
                     p.fallback = Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?);
                 }
 
-                Attribute::X => p.x = Some(parse("x", value, LengthDir::Horizontal)?),
+                Attribute::X => p.x = Some(attr.parse(value, LengthDir::Horizontal)?),
 
-                Attribute::Y => p.y = Some(parse("y", value, LengthDir::Vertical)?),
+                Attribute::Y => p.y = Some(attr.parse(value, LengthDir::Vertical)?),
 
                 Attribute::Width => {
-                    p.width = Some(parse_and_validate(
-                        "width",
+                    p.width = Some(attr.parse_and_validate(
                         value,
                         LengthDir::Horizontal,
                         Length::check_nonnegative,
@@ -223,8 +218,7 @@ impl NodeTrait for NodePattern {
                 }
 
                 Attribute::Height => {
-                    p.height = Some(parse_and_validate(
-                        "height",
+                    p.height = Some(attr.parse_and_validate(
                         value,
                         LengthDir::Vertical,
                         Length::check_nonnegative,

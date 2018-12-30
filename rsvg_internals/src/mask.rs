@@ -8,7 +8,7 @@ use error::RenderingError;
 use handle::RsvgHandle;
 use length::{Length, LengthDir};
 use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{parse, parse_and_validate, Parse};
+use parsers::{Parse, ParseValue};
 use property_bag::PropertyBag;
 use rect::IRect;
 use state::Opacity;
@@ -237,28 +237,20 @@ impl NodeTrait for NodeMask {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
-                Attribute::Width => self.width.set(parse_and_validate(
-                    "width",
+                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::Width => self.width.set(attr.parse_and_validate(
                     value,
                     LengthDir::Horizontal,
                     Length::check_nonnegative,
                 )?),
-                Attribute::Height => self.height.set(parse_and_validate(
-                    "height",
+                Attribute::Height => self.height.set(attr.parse_and_validate(
                     value,
                     LengthDir::Vertical,
                     Length::check_nonnegative,
                 )?),
-
-                Attribute::MaskUnits => self.units.set(parse("maskUnits", value, ())?),
-
-                Attribute::MaskContentUnits => {
-                    self.content_units
-                        .set(parse("maskContentUnits", value, ())?)
-                }
-
+                Attribute::MaskUnits => self.units.set(attr.parse(value, ())?),
+                Attribute::MaskContentUnits => self.content_units.set(attr.parse(value, ())?),
                 _ => (),
             }
         }

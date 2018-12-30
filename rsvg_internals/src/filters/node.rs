@@ -7,7 +7,7 @@ use error::ValueErrorKind;
 use handle::RsvgHandle;
 use length::{Length, LengthDir, LengthUnit};
 use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{parse, parse_and_validate, Parse, ParseError};
+use parsers::{Parse, ParseError, ParseValue};
 use property_bag::PropertyBag;
 
 /// The <filter> node.
@@ -45,7 +45,7 @@ impl NodeTrait for NodeFilter {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::FilterUnits => self.filterunits.set(parse("filterUnits", value, ())?),
+                Attribute::FilterUnits => self.filterunits.set(attr.parse(value, ())?),
                 _ => (),
             }
         }
@@ -70,33 +70,26 @@ impl NodeTrait for NodeFilter {
         // Parse the rest of the attributes.
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse_and_validate(
-                    "x",
+                Attribute::X => self.x.set(attr.parse_and_validate(
                     value,
                     LengthDir::Horizontal,
                     check_units,
                 )?),
-                Attribute::Y => self.y.set(parse_and_validate(
-                    "y",
-                    value,
-                    LengthDir::Vertical,
-                    check_units,
-                )?),
-                Attribute::Width => self.width.set(parse_and_validate(
-                    "width",
-                    value,
-                    LengthDir::Horizontal,
-                    check_units_and_ensure_nonnegative,
-                )?),
-                Attribute::Height => self.height.set(parse_and_validate(
-                    "height",
-                    value,
-                    LengthDir::Vertical,
-                    check_units_and_ensure_nonnegative,
-                )?),
-                Attribute::PrimitiveUnits => {
-                    self.primitiveunits.set(parse("primitiveUnits", value, ())?)
+                Attribute::Y => {
+                    self.y
+                        .set(attr.parse_and_validate(value, LengthDir::Vertical, check_units)?)
                 }
+                Attribute::Width => self.width.set(attr.parse_and_validate(
+                    value,
+                    LengthDir::Horizontal,
+                    check_units_and_ensure_nonnegative,
+                )?),
+                Attribute::Height => self.height.set(attr.parse_and_validate(
+                    value,
+                    LengthDir::Vertical,
+                    check_units_and_ensure_nonnegative,
+                )?),
+                Attribute::PrimitiveUnits => self.primitiveunits.set(attr.parse(value, ())?),
                 _ => (),
             }
         }

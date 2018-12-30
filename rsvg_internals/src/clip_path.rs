@@ -8,7 +8,7 @@ use drawing_ctx::DrawingCtx;
 use error::RenderingError;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::parse;
+use parsers::ParseValue;
 use property_bag::PropertyBag;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
@@ -82,8 +82,7 @@ impl NodeTrait for NodeClipPath {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::ClipPathUnits => self.units.set(parse("clipPathUnits", value, ())?),
-
+                Attribute::ClipPathUnits => self.units.set(attr.parse(value, ())?),
                 _ => (),
             }
         }

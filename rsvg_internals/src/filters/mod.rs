@@ -12,7 +12,7 @@ use error::{RenderingError, ValueErrorKind};
 use handle::RsvgHandle;
 use length::{Length, LengthDir, LengthUnit};
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
-use parsers::{parse_and_validate, ParseError};
+use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
 use state::{ColorInterpolationFilters, ComputedValues};
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -147,26 +147,22 @@ impl NodeTrait for Primitive {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(Some(parse_and_validate(
-                    "x",
+                Attribute::X => self.x.set(Some(attr.parse_and_validate(
                     value,
                     LengthDir::Horizontal,
                     check_units,
                 )?)),
-                Attribute::Y => self.y.set(Some(parse_and_validate(
-                    "y",
+                Attribute::Y => self.y.set(Some(attr.parse_and_validate(
                     value,
                     LengthDir::Vertical,
                     check_units,
                 )?)),
-                Attribute::Width => self.width.set(Some(parse_and_validate(
-                    "width",
+                Attribute::Width => self.width.set(Some(attr.parse_and_validate(
                     value,
                     LengthDir::Horizontal,
                     check_units_and_ensure_nonnegative,
                 )?)),
-                Attribute::Height => self.height.set(Some(parse_and_validate(
-                    "height",
+                Attribute::Height => self.height.set(Some(attr.parse_and_validate(
                     value,
                     LengthDir::Vertical,
                     check_units_and_ensure_nonnegative,

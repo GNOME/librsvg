@@ -12,7 +12,7 @@ use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use parsers::{parse, parse_and_validate, Parse};
+use parsers::{Parse, ParseValue};
 use property_bag::{OwnedPropertyBag, PropertyBag};
 use state::Overflow;
 use viewbox::*;
@@ -164,37 +164,34 @@ impl NodeTrait for NodeSvg {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
-                    self.preserve_aspect_ratio
-                        .set(parse("preserveAspectRatio", value, ())?)
+                    self.preserve_aspect_ratio.set(attr.parse(value, ())?)
                 }
 
                 Attribute::X => {
                     if is_inner_svg {
-                        self.x.set(parse("x", value, LengthDir::Horizontal)?);
+                        self.x.set(attr.parse(value, LengthDir::Horizontal)?);
                     }
                 }
 
                 Attribute::Y => {
                     if is_inner_svg {
-                        self.y.set(parse("y", value, LengthDir::Vertical)?);
+                        self.y.set(attr.parse(value, LengthDir::Vertical)?);
                     }
                 }
 
-                Attribute::Width => self.w.set(parse_and_validate(
-                    "width",
+                Attribute::Width => self.w.set(attr.parse_and_validate(
                     value,
                     LengthDir::Horizontal,
                     Length::check_nonnegative,
                 )?),
 
-                Attribute::Height => self.h.set(parse_and_validate(
-                    "height",
+                Attribute::Height => self.h.set(attr.parse_and_validate(
                     value,
                     LengthDir::Vertical,
                     Length::check_nonnegative,
                 )?),
 
-                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, ()).map(Some)?),
+                Attribute::ViewBox => self.vbox.set(attr.parse(value, ()).map(Some)?),
 
                 _ => (),
             }
@@ -276,12 +273,11 @@ impl NodeTrait for NodeUse {
                         Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
                 }
 
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical)?),
+                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
 
                 Attribute::Width => self.w.set(
-                    parse_and_validate(
-                        "width",
+                    attr.parse_and_validate(
                         value,
                         LengthDir::Horizontal,
                         Length::check_nonnegative,
@@ -289,13 +285,8 @@ impl NodeTrait for NodeUse {
                     .map(Some)?,
                 ),
                 Attribute::Height => self.h.set(
-                    parse_and_validate(
-                        "height",
-                        value,
-                        LengthDir::Vertical,
-                        Length::check_nonnegative,
-                    )
-                    .map(Some)?,
+                    attr.parse_and_validate(value, LengthDir::Vertical, Length::check_nonnegative)
+                        .map(Some)?,
                 ),
 
                 _ => (),
@@ -442,11 +433,10 @@ impl NodeTrait for NodeSymbol {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
-                    self.preserve_aspect_ratio
-                        .set(parse("preserveAspectRatio", value, ())?)
+                    self.preserve_aspect_ratio.set(attr.parse(value, ())?)
                 }
 
-                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, ()).map(Some)?),
+                Attribute::ViewBox => self.vbox.set(attr.parse(value, ()).map(Some)?),
 
                 _ => (),
             }
