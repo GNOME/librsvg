@@ -187,7 +187,12 @@ impl GradientCommon {
         self.fallback = fallback.fallback.clone();
     }
 
-    fn add_color_stop(&mut self, offset: UnitInterval, rgba: cssparser::RGBA, opacity: UnitInterval) {
+    fn add_color_stop(
+        &mut self,
+        offset: UnitInterval,
+        rgba: cssparser::RGBA,
+        opacity: UnitInterval,
+    ) {
         if self.stops.is_none() {
             self.stops = Some(Vec::<ColorStop>::new());
         }
@@ -399,7 +404,12 @@ impl Gradient {
             });
     }
 
-    fn add_color_stop(&mut self, offset: UnitInterval, rgba: cssparser::RGBA, opacity: UnitInterval) {
+    fn add_color_stop(
+        &mut self,
+        offset: UnitInterval,
+        rgba: cssparser::RGBA,
+        opacity: UnitInterval,
+    ) {
         self.common.add_color_stop(offset, rgba, opacity);
     }
 

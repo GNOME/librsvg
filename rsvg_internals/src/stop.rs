@@ -39,11 +39,10 @@ impl NodeTrait for NodeStop {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Offset => {
-                    self.offset.set(attr.parse_and_validate(
-                        value,
-                        LengthDir::Both,
-                        validate_offset,
-                    ).map(|l| UnitInterval::clamp(l.length))?);
+                    self.offset.set(
+                        attr.parse_and_validate(value, LengthDir::Both, validate_offset)
+                            .map(|l| UnitInterval::clamp(l.length))?,
+                    );
                 }
                 _ => (),
             }
