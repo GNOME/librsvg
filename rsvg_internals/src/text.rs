@@ -21,6 +21,7 @@ use state::{
     TextAnchor,
     UnicodeBidi,
     WritingMode,
+    XmlLang,
     XmlSpace,
 };
 
@@ -656,6 +657,12 @@ fn to_pango_units(v: f64) -> i32 {
     (v * f64::from(pango::SCALE) + 0.5) as i32
 }
 
+impl From<&XmlLang> for pango::Language {
+    fn from(l: &XmlLang) -> pango::Language {
+        pango::Language::from_string(&l.0)
+    }
+}
+
 impl From<FontStyle> for pango::Style {
     fn from(s: FontStyle) -> pango::Style {
         match s {
@@ -764,8 +771,7 @@ fn create_pango_layout(
     // We use "" there as the default value; this means that the language is not set.
     // If the language *is* set, we can use it here.
     if !values.xml_lang.0.is_empty() {
-        let pango_lang = pango::Language::from_string(&values.xml_lang.0);
-        pango_context.set_language(&pango_lang);
+        pango_context.set_language(&pango::Language::from(&values.xml_lang));
     }
 
     pango_context.set_base_gravity(pango::Gravity::from(values.writing_mode));
