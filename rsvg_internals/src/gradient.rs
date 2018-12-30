@@ -22,7 +22,7 @@ use unit_interval::UnitInterval;
 
 #[derive(Copy, Clone)]
 pub struct ColorStop {
-    pub offset: f64,
+    pub offset: UnitInterval,
     pub rgba: cssparser::RGBA,
     pub opacity: UnitInterval,
 }
@@ -187,21 +187,23 @@ impl GradientCommon {
         self.fallback = fallback.fallback.clone();
     }
 
-    fn add_color_stop(&mut self, mut offset: f64, rgba: cssparser::RGBA, opacity: UnitInterval) {
+    fn add_color_stop(&mut self, offset: UnitInterval, rgba: cssparser::RGBA, opacity: UnitInterval) {
         if self.stops.is_none() {
             self.stops = Some(Vec::<ColorStop>::new());
         }
 
         if let Some(ref mut stops) = self.stops {
-            let last_offset: f64 = if !stops.is_empty() {
+            let last_offset = if !stops.is_empty() {
                 stops[stops.len() - 1].offset
             } else {
-                0.0
+                UnitInterval(0.0)
             };
 
-            if last_offset > offset {
-                offset = last_offset;
-            }
+            let offset = if offset > last_offset {
+                offset
+            } else {
+                last_offset
+            };
 
             stops.push(ColorStop {
                 offset,
@@ -391,12 +393,13 @@ impl Gradient {
                         StopColor(cssparser::Color::CurrentColor) => values.color.0,
                         StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
                     };
+
                     self.add_color_stop(stop.get_offset(), rgba, values.stop_opacity.0);
                 })
             });
     }
 
-    fn add_color_stop(&mut self, offset: f64, rgba: cssparser::RGBA, opacity: UnitInterval) {
+    fn add_color_stop(&mut self, offset: UnitInterval, rgba: cssparser::RGBA, opacity: UnitInterval) {
         self.common.add_color_stop(offset, rgba, opacity);
     }
 
@@ -407,11 +410,12 @@ impl Gradient {
     ) {
         if let Some(stops) = self.common.stops.as_ref() {
             for stop in stops {
+                let UnitInterval(stop_offset) = stop.offset;
                 let &UnitInterval(o) = opacity;
                 let UnitInterval(stop_opacity) = stop.opacity;
 
                 pattern.add_color_stop_rgba(
-                    stop.offset,
+                    stop_offset,
                     f64::from(stop.rgba.red_f32()),
                     f64::from(stop.rgba.green_f32()),
                     f64::from(stop.rgba.blue_f32()),
