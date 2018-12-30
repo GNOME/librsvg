@@ -9,7 +9,7 @@ use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use length::Length;
 use node::RsvgNode;
-use paint_server::{self, PaintServer};
+use paint_server::PaintServer;
 use rect::IRect;
 use state::ComputedValues;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -438,8 +438,7 @@ impl FilterContext {
         let bbox = draw_ctx.get_bbox().clone();
 
         // FIXME: we are ignoring the following error; propagate it upstream
-        let _ = paint_server::set_source_paint_server(
-            draw_ctx,
+        let _ = draw_ctx.set_source_paint_server(
             paint_server,
             &opacity,
             &bbox,

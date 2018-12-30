@@ -16,11 +16,13 @@ use dpi::Dpi;
 use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
+use gradient::NodeGradient;
 use handle::{self, RsvgHandle};
 use length::Dasharray;
 use mask::NodeMask;
 use node::{CascadedValues, NodeType, RsvgNode};
-use paint_server::{self, PaintServer};
+use paint_server::{PaintServer, PaintSource};
+use pattern::NodePattern;
 use rect::RectangleExt;
 use state::{
     ClipRule,
@@ -519,6 +521,82 @@ impl DrawingCtx {
         }
     }
 
+    fn set_color(
+        &self,
+        color: &cssparser::Color,
+        opacity: &UnitInterval,
+        current_color: &cssparser::RGBA,
+    ) {
+        let rgba = match *color {
+            cssparser::Color::RGBA(ref rgba) => rgba,
+            cssparser::Color::CurrentColor => current_color,
+        };
+
+        let &UnitInterval(o) = opacity;
+        self.get_cairo_context().set_source_rgba(
+            f64::from(rgba.red_f32()),
+            f64::from(rgba.green_f32()),
+            f64::from(rgba.blue_f32()),
+            f64::from(rgba.alpha_f32()) * o,
+        );
+    }
+
+    pub fn set_source_paint_server(
+        &mut self,
+        ps: &PaintServer,
+        opacity: &UnitInterval,
+        bbox: &BoundingBox,
+        current_color: &cssparser::RGBA,
+    ) -> Result<bool, RenderingError> {
+        let mut had_paint_server;
+
+        match *ps {
+            PaintServer::Iri {
+                ref iri,
+                ref alternate,
+            } => {
+                had_paint_server = false;
+
+                if let Some(acquired) = self.get_acquired_node(iri) {
+                    let node = acquired.get();
+
+                    if node.get_type() == NodeType::LinearGradient
+                        || node.get_type() == NodeType::RadialGradient
+                    {
+                        had_paint_server = node.with_impl(|n: &NodeGradient| {
+                            n.resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)
+                        })?;
+                    } else if node.get_type() == NodeType::Pattern {
+                        had_paint_server = node.with_impl(|n: &NodePattern| {
+                            n.resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)
+                        })?;
+                    }
+                }
+
+                if !had_paint_server && alternate.is_some() {
+                    self.set_color(alternate.as_ref().unwrap(), opacity, current_color);
+                    had_paint_server = true;
+                } else {
+                    rsvg_log!(
+                        "pattern \"{}\" was not found and there was no fallback alternate",
+                        iri
+                    );
+                }
+            }
+
+            PaintServer::SolidColor(color) => {
+                self.set_color(&color, opacity, current_color);
+                had_paint_server = true;
+            }
+
+            PaintServer::None => {
+                had_paint_server = false;
+            }
+        };
+
+        Ok(had_paint_server)
+    }
+
     pub fn get_pango_context(&self) -> pango::Context {
         let font_map = pangocairo::FontMap::get_default().unwrap();
         let context = font_map.create_context().unwrap();
@@ -600,20 +678,14 @@ impl DrawingCtx {
         let fill_opacity = &values.fill_opacity.0;
 
         let res = if !clipping {
-            paint_server::set_source_paint_server(
-                self,
-                &values.fill.0,
-                fill_opacity,
-                &bbox,
-                current_color,
-            )
-            .and_then(|had_paint_server| {
-                if had_paint_server {
-                    pangocairo::functions::update_layout(&cr, layout);
-                    pangocairo::functions::show_layout(&cr, layout);
-                };
-                Ok(())
-            })
+            self.set_source_paint_server(&values.fill.0, fill_opacity, &bbox, current_color)
+                .and_then(|had_paint_server| {
+                    if had_paint_server {
+                        pangocairo::functions::update_layout(&cr, layout);
+                        pangocairo::functions::show_layout(&cr, layout);
+                    };
+                    Ok(())
+                })
         } else {
             Ok(())
         };
@@ -624,8 +696,7 @@ impl DrawingCtx {
             let mut need_layout_path = clipping;
 
             let res = if !clipping {
-                paint_server::set_source_paint_server(
-                    self,
+                self.set_source_paint_server(
                     &values.stroke.0,
                     stroke_opacity,
                     &bbox,
@@ -705,41 +776,35 @@ impl DrawingCtx {
 
         let fill_opacity = &values.fill_opacity.0;
 
-        let res = paint_server::set_source_paint_server(
-            self,
-            &values.fill.0,
-            fill_opacity,
-            &bbox,
-            current_color,
-        )
-        .and_then(|had_paint_server| {
-            if had_paint_server {
-                if values.stroke.0 == PaintServer::None {
-                    cr.fill();
-                } else {
-                    cr.fill_preserve();
-                }
-            }
-
-            Ok(())
-        })
-        .and_then(|_| {
-            let stroke_opacity = values.stroke_opacity.0;
-
-            paint_server::set_source_paint_server(
-                self,
-                &values.stroke.0,
-                &stroke_opacity,
-                &bbox,
-                &current_color,
-            )
+        let res = self
+            .set_source_paint_server(&values.fill.0, fill_opacity, &bbox, current_color)
             .and_then(|had_paint_server| {
                 if had_paint_server {
-                    cr.stroke();
+                    if values.stroke.0 == PaintServer::None {
+                        cr.fill();
+                    } else {
+                        cr.fill_preserve();
+                    }
                 }
+
                 Ok(())
             })
-        });
+            .and_then(|_| {
+                let stroke_opacity = values.stroke_opacity.0;
+
+                self.set_source_paint_server(
+                    &values.stroke.0,
+                    &stroke_opacity,
+                    &bbox,
+                    &current_color,
+                )
+                .and_then(|had_paint_server| {
+                    if had_paint_server {
+                        cr.stroke();
+                    }
+                    Ok(())
+                })
+            });
 
         // clear the path in case stroke == fill == None; otherwise
         // we leave it around from computing the bounding box

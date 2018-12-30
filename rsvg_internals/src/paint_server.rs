@@ -4,10 +4,8 @@ use bbox::BoundingBox;
 use defs::Fragment;
 use drawing_ctx::DrawingCtx;
 use error::*;
-use gradient::NodeGradient;
-use node::{NodeType, RsvgNode};
+use node::RsvgNode;
 use parsers::Parse;
-use pattern::NodePattern;
 use state::ComputedValues;
 use unit_interval::UnitInterval;
 
@@ -51,26 +49,6 @@ impl Parse for PaintServer {
     }
 }
 
-fn set_color(
-    draw_ctx: &mut DrawingCtx,
-    color: &cssparser::Color,
-    opacity: &UnitInterval,
-    current_color: &cssparser::RGBA,
-) {
-    let rgba = match *color {
-        cssparser::Color::RGBA(ref rgba) => rgba,
-        cssparser::Color::CurrentColor => current_color,
-    };
-
-    let &UnitInterval(o) = opacity;
-    draw_ctx.get_cairo_context().set_source_rgba(
-        f64::from(rgba.red_f32()),
-        f64::from(rgba.green_f32()),
-        f64::from(rgba.blue_f32()),
-        f64::from(rgba.alpha_f32()) * o,
-    );
-}
-
 pub trait PaintSource<T> {
     fn resolve(&self, node: &RsvgNode, draw_ctx: &mut DrawingCtx, bbox: &BoundingBox) -> Option<T>;
 
@@ -98,67 +76,6 @@ pub trait PaintSource<T> {
             Ok(false)
         }
     }
-}
-
-pub fn set_source_paint_server(
-    draw_ctx: &mut DrawingCtx,
-    ps: &PaintServer,
-    opacity: &UnitInterval,
-    bbox: &BoundingBox,
-    current_color: &cssparser::RGBA,
-) -> Result<bool, RenderingError> {
-    let mut had_paint_server;
-
-    match *ps {
-        PaintServer::Iri {
-            ref iri,
-            ref alternate,
-        } => {
-            had_paint_server = false;
-
-            if let Some(acquired) = draw_ctx.get_acquired_node(iri) {
-                let node = acquired.get();
-
-                if node.get_type() == NodeType::LinearGradient
-                    || node.get_type() == NodeType::RadialGradient
-                {
-                    had_paint_server = node.with_impl(|n: &NodeGradient| {
-                        n.resolve_fallbacks_and_set_pattern(&node, draw_ctx, opacity, bbox)
-                    })?;
-                } else if node.get_type() == NodeType::Pattern {
-                    had_paint_server = node.with_impl(|n: &NodePattern| {
-                        n.resolve_fallbacks_and_set_pattern(&node, draw_ctx, opacity, bbox)
-                    })?;
-                }
-            }
-
-            if !had_paint_server && alternate.is_some() {
-                set_color(
-                    draw_ctx,
-                    alternate.as_ref().unwrap(),
-                    opacity,
-                    current_color,
-                );
-                had_paint_server = true;
-            } else {
-                rsvg_log!(
-                    "pattern \"{}\" was not found and there was no fallback alternate",
-                    iri
-                );
-            }
-        }
-
-        PaintServer::SolidColor(color) => {
-            set_color(draw_ctx, &color, opacity, current_color);
-            had_paint_server = true;
-        }
-
-        PaintServer::None => {
-            had_paint_server = false;
-        }
-    };
-
-    Ok(had_paint_server)
 }
 
 #[cfg(test)]
