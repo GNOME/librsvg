@@ -1,10 +1,14 @@
+use glib::translate::*;
 use pango::{self, ContextExt, LayoutExt};
+use pango_sys;
 use std::cell::{Cell, RefCell};
 
 use attributes::Attribute;
+use bbox::BoundingBox;
 use defs::Fragment;
 use drawing_ctx::DrawingCtx;
 use error::{AttributeResultExt, RenderingError};
+use float_eq_cairo::ApproxEqCairo;
 use font_props::FontWeightSpec;
 use handle::RsvgHandle;
 use length::*;
@@ -13,16 +17,8 @@ use parsers::ParseValue;
 use property_bag::PropertyBag;
 use space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use state::{
-    ComputedValues,
-    Direction,
-    FontStretch,
-    FontStyle,
-    FontVariant,
-    TextAnchor,
-    UnicodeBidi,
-    WritingMode,
-    XmlLang,
-    XmlSpace,
+    ComputedValues, Direction, FontStretch, FontStyle, FontVariant, TextAnchor, UnicodeBidi,
+    WritingMode, XmlLang, XmlSpace,
 };
 
 /// An absolutely-positioned array of `Span`s
@@ -258,13 +254,143 @@ impl PositionedSpan {
     }
 
     fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<(), RenderingError> {
-        draw_ctx.draw_pango_layout(
-            &self.layout,
-            &self.values,
-            self.rendered_position.0,
-            self.rendered_position.1,
-            clipping,
-        )
+        let cr = draw_ctx.get_cairo_context();
+        cr.save();
+
+        draw_ctx.set_affine_on_cr(&cr);
+
+        let affine = cr.get_matrix();
+
+        let gravity = self.layout.get_context().unwrap().get_gravity();
+        let bbox = self.compute_text_bbox(&affine, gravity);
+        if bbox.is_none() {
+            cr.restore();
+            return Ok(());
+        }
+
+        let bbox = bbox.unwrap();
+
+        if !clipping {
+            draw_ctx.insert_bbox(&bbox);
+        }
+
+        cr.set_antialias(cairo::Antialias::from(self.values.text_rendering));
+
+        draw_ctx.setup_cr_for_stroke(&cr, &self.values);
+
+        cr.move_to(self.rendered_position.0, self.rendered_position.1);
+
+        let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
+        if !rotation.approx_eq_cairo(&0.0) {
+            cr.rotate(-rotation);
+        }
+
+        let current_color = &self.values.color.0;
+
+        let fill_opacity = &self.values.fill_opacity.0;
+
+        let res = if !clipping {
+            draw_ctx
+                .set_source_paint_server(&self.values.fill.0, fill_opacity, &bbox, current_color)
+                .and_then(|had_paint_server| {
+                    if had_paint_server {
+                        pangocairo::functions::update_layout(&cr, &self.layout);
+                        pangocairo::functions::show_layout(&cr, &self.layout);
+                    };
+                    Ok(())
+                })
+        } else {
+            Ok(())
+        };
+
+        if res.is_ok() {
+            let stroke_opacity = &self.values.stroke_opacity.0;
+
+            let mut need_layout_path = clipping;
+
+            let res = if !clipping {
+                draw_ctx
+                    .set_source_paint_server(
+                        &self.values.stroke.0,
+                        stroke_opacity,
+                        &bbox,
+                        &current_color,
+                    )
+                    .and_then(|had_paint_server| {
+                        if had_paint_server {
+                            need_layout_path = true;
+                        }
+                        Ok(())
+                    })
+            } else {
+                Ok(())
+            };
+
+            if res.is_ok() {
+                if need_layout_path {
+                    pangocairo::functions::update_layout(&cr, &self.layout);
+                    pangocairo::functions::layout_path(&cr, &self.layout);
+
+                    if !clipping {
+                        let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
+                        cr.stroke();
+                        draw_ctx.insert_bbox(&ib);
+                    }
+                }
+            }
+        }
+
+        cr.restore();
+
+        res
+    }
+
+    fn compute_text_bbox(
+        &self,
+        affine: &cairo::Matrix,
+        gravity: pango::Gravity,
+    ) -> Option<BoundingBox> {
+        let (ink, _) = self.layout.get_extents();
+        if ink.width == 0 || ink.height == 0 {
+            return None;
+        }
+
+        let (x, y) = self.rendered_position;
+        let ink_x = f64::from(ink.x);
+        let ink_y = f64::from(ink.y);
+        let ink_width = f64::from(ink.width);
+        let ink_height = f64::from(ink.height);
+        let pango_scale = f64::from(pango::SCALE);
+
+        let rect = if gravity_is_vertical(gravity) {
+            cairo::Rectangle {
+                x: x + (ink_x - ink_height) / pango_scale,
+                y: y + ink_y / pango_scale,
+                width: ink_height / pango_scale,
+                height: ink_width / pango_scale,
+            }
+        } else {
+            cairo::Rectangle {
+                x: x + ink_x / pango_scale,
+                y: y + ink_y / pango_scale,
+                width: ink_width / pango_scale,
+                height: ink_height / pango_scale,
+            }
+        };
+
+        let bbox = BoundingBox::new(affine)
+            .with_rect(Some(rect))
+            .with_ink_rect(Some(rect));
+
+        Some(bbox)
+    }
+}
+
+// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
+fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
+    match gravity {
+        pango::Gravity::East | pango::Gravity::West => true,
+        _ => false,
     }
 }
 
