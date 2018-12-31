@@ -2,8 +2,7 @@ use cairo;
 use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
-use pango::{self, ContextExt, FontMapExt, LayoutExt};
-use pango_sys;
+use pango::{self, FontMapExt};
 use pangocairo;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
@@ -15,7 +14,6 @@ use defs::Fragment;
 use dpi::Dpi;
 use error::RenderingError;
 use filters;
-use float_eq_cairo::ApproxEqCairo;
 use gradient::NodeGradient;
 use handle::{self, RsvgHandle};
 use length::Dasharray;
@@ -634,104 +632,7 @@ impl DrawingCtx {
         context
     }
 
-    pub fn draw_pango_layout(
-        &mut self,
-        layout: &pango::Layout,
-        values: &ComputedValues,
-        x: f64,
-        y: f64,
-        clipping: bool,
-    ) -> Result<(), RenderingError> {
-        let (ink, _) = layout.get_extents();
-
-        if ink.width == 0 || ink.height == 0 {
-            return Ok(());
-        }
-
-        let cr = self.get_cairo_context();
-        cr.save();
-
-        self.set_affine_on_cr(&cr);
-
-        let affine = cr.get_matrix();
-
-        let gravity = layout.get_context().unwrap().get_gravity();
-        let bbox = compute_text_bbox(&ink, x, y, &affine, gravity);
-
-        if !clipping {
-            self.insert_bbox(&bbox);
-        }
-
-        cr.set_antialias(cairo::Antialias::from(values.text_rendering));
-
-        self.setup_cr_for_stroke(&cr, values);
-
-        let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
-
-        cr.move_to(x, y);
-        if !rotation.approx_eq_cairo(&0.0) {
-            cr.rotate(-rotation);
-        }
-
-        let current_color = &values.color.0;
-
-        let fill_opacity = &values.fill_opacity.0;
-
-        let res = if !clipping {
-            self.set_source_paint_server(&values.fill.0, fill_opacity, &bbox, current_color)
-                .and_then(|had_paint_server| {
-                    if had_paint_server {
-                        pangocairo::functions::update_layout(&cr, layout);
-                        pangocairo::functions::show_layout(&cr, layout);
-                    };
-                    Ok(())
-                })
-        } else {
-            Ok(())
-        };
-
-        if res.is_ok() {
-            let stroke_opacity = &values.stroke_opacity.0;
-
-            let mut need_layout_path = clipping;
-
-            let res = if !clipping {
-                self.set_source_paint_server(
-                    &values.stroke.0,
-                    stroke_opacity,
-                    &bbox,
-                    &current_color,
-                )
-                .and_then(|had_paint_server| {
-                    if had_paint_server {
-                        need_layout_path = true;
-                    }
-                    Ok(())
-                })
-            } else {
-                Ok(())
-            };
-
-            if res.is_ok() {
-                if need_layout_path {
-                    pangocairo::functions::update_layout(&cr, layout);
-                    pangocairo::functions::layout_path(&cr, layout);
-
-                    if !clipping {
-                        let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
-                        cr.stroke();
-                        self.insert_bbox(&ib);
-                    }
-                }
-            }
-        }
-
-        cr.restore();
-
-        res
-    }
-
-    fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
+    pub fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
         let params = self.get_view_params();
 
         cr.set_line_width(values.stroke_width.0.normalize(values, &params));
@@ -923,49 +824,6 @@ impl DrawingCtx {
             Ok(())
         }
     }
-}
-
-// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
-fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
-    match gravity {
-        pango::Gravity::East | pango::Gravity::West => true,
-        _ => false,
-    }
-}
-
-fn compute_text_bbox(
-    ink: &pango::Rectangle,
-    x: f64,
-    y: f64,
-    affine: &cairo::Matrix,
-    gravity: pango::Gravity,
-) -> BoundingBox {
-    let pango_scale = f64::from(pango::SCALE);
-
-    let ink_x = f64::from(ink.x);
-    let ink_y = f64::from(ink.y);
-    let ink_width = f64::from(ink.width);
-    let ink_height = f64::from(ink.height);
-
-    let rect = if gravity_is_vertical(gravity) {
-        cairo::Rectangle {
-            x: x + (ink_x - ink_height) / pango_scale,
-            y: y + ink_y / pango_scale,
-            width: ink_height / pango_scale,
-            height: ink_width / pango_scale,
-        }
-    } else {
-        cairo::Rectangle {
-            x: x + ink_x / pango_scale,
-            y: y + ink_y / pango_scale,
-            width: ink_width / pango_scale,
-            height: ink_height / pango_scale,
-        }
-    };
-
-    BoundingBox::new(affine)
-        .with_rect(Some(rect))
-        .with_ink_rect(Some(rect))
 }
 
 fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> BoundingBox {
