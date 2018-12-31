@@ -17,8 +17,8 @@ use surface_utils::{
     shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
     ImageSurfaceDataExt,
-    Pixel,
 };
+use unit_interval::UnitInterval;
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -147,10 +147,7 @@ impl NodeMask {
             }
         }?;
 
-        let opacity = {
-            let Opacity(o) = values.opacity;
-            u8::from(o)
-        };
+        let Opacity(opacity) = values.opacity;
 
         let mask_surface = compute_luminance_to_alpha(surface, opacity)?;
 
@@ -173,7 +170,7 @@ impl NodeMask {
 // This is to get a mask suitable for use with cairo_mask_surface().
 fn compute_luminance_to_alpha(
     surface: cairo::ImageSurface,
-    opacity: u8,
+    opacity: UnitInterval,
 ) -> Result<cairo::ImageSurface, cairo::Status> {
     let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
 
@@ -187,46 +184,15 @@ fn compute_luminance_to_alpha(
         y1: height,
     };
 
-    let opacity = opacity as u32;
-
+    let opacity = u8::from(opacity);
     let mut output = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
-
     let output_stride = output.get_stride() as usize;
 
     {
         let mut output_data = output.get_data().unwrap();
 
         for (x, y, pixel) in Pixels::new(&surface, bounds) {
-            //  Assuming, the pixel is linear RGB (not sRGB)
-            //  y = luminance
-            //  Y = 0.2126 R + 0.7152 G + 0.0722 B
-            //  1.0 opacity = 255
-            //
-            //  When Y = 1.0, pixel for mask should be 0xFFFFFFFF
-            //    (you get 1.0 luminance from 255 from R, G and B)
-            //
-            // r_mult = 0xFFFFFFFF / (255.0 * 255.0) * .2126 = 14042.45  ~= 14042
-            // g_mult = 0xFFFFFFFF / (255.0 * 255.0) * .7152 = 47239.69  ~= 47240
-            // b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
-            //
-            // This allows for the following expected behaviour:
-            //    (we only care about the most sig byte)
-            // if pixel = 0x00FFFFFF, pixel' = 0xFF......
-            // if pixel = 0x00020202, pixel' = 0x02......
-            // if pixel = 0x00000000, pixel' = 0x00......
-
-            let r = pixel.r as u32;
-            let g = pixel.g as u32;
-            let b = pixel.b as u32;
-
-            let output_pixel = Pixel {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: (((r * 14042 + g * 47240 + b * 4769) * opacity) >> 24) as u8,
-            };
-
-            output_data.set_pixel(output_stride, output_pixel, x, y);
+            output_data.set_pixel(output_stride, pixel.to_mask(opacity), x, y);
         }
     }
 

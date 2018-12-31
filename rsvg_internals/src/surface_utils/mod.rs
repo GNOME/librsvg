@@ -92,6 +92,39 @@ impl Pixel {
             a: ((x >> 24) & 0xFF) as u8,
         }
     }
+
+    /// Returns a 'mask' pixel with only the alpha channel
+    ///
+    /// Assuming, the pixel is linear RGB (not sRGB)
+    /// y = luminance
+    /// Y = 0.2126 R + 0.7152 G + 0.0722 B
+    /// 1.0 opacity = 255
+    ///
+    /// When Y = 1.0, pixel for mask should be 0xFFFFFFFF
+    /// (you get 1.0 luminance from 255 from R, G and B)
+    ///
+    /// r_mult = 0xFFFFFFFF / (255.0 * 255.0) * .2126 = 14042.45  ~= 14042
+    /// g_mult = 0xFFFFFFFF / (255.0 * 255.0) * .7152 = 47239.69  ~= 47240
+    /// b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
+    ///
+    /// This allows for the following expected behaviour:
+    ///    (we only care about the most sig byte)
+    /// if pixel = 0x00FFFFFF, pixel' = 0xFF......
+    /// if pixel = 0x00020202, pixel' = 0x02......
+    /// if pixel = 0x00000000, pixel' = 0x00......
+    pub fn to_mask(self, opacity: u8) -> Self {
+        let r = self.r as u32;
+        let g = self.g as u32;
+        let b = self.b as u32;
+        let o = opacity as u32;
+
+        Self {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: (((r * 14042 + g * 47240 + b * 4769) * o) >> 24) as u8,
+        }
+    }
 }
 
 impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {}
