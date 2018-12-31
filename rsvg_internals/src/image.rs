@@ -123,6 +123,12 @@ impl NodeTrait for NodeImage {
                     dc.clip(x, y, w, h);
                 }
 
+                let width = surface.get_width();
+                let height = surface.get_height();
+                if clipping || width == 0 || height == 0 {
+                    return Ok(());
+                }
+
                 // The bounding box for <image> is decided by the values of x, y, w, h and not by
                 // the final computed image bounds.
                 let bbox = BoundingBox::new(&dc.get_cairo_context().get_matrix()).with_rect(Some(
@@ -133,12 +139,6 @@ impl NodeTrait for NodeImage {
                         height: h,
                     },
                 ));
-
-                let width = surface.get_width();
-                let height = surface.get_height();
-                if clipping || width == 0 || height == 0 {
-                    return Ok(());
-                }
 
                 let width = f64::from(width);
                 let height = f64::from(height);
