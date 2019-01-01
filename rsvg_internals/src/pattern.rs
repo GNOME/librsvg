@@ -233,13 +233,15 @@ impl NodeTrait for NodePattern {
     }
 }
 
-impl PaintSource<Pattern> for NodePattern {
+impl PaintSource for NodePattern {
+    type Source = Pattern;
+
     fn resolve(
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
-    ) -> Option<Pattern> {
+    ) -> Option<Self::Source> {
         let node_pattern = node.get_impl::<NodePattern>().unwrap();
         let pattern = &*node_pattern.pattern.borrow();
         let mut result = pattern.clone();
@@ -274,7 +276,7 @@ impl PaintSource<Pattern> for NodePattern {
 
     fn set_pattern_on_draw_context(
         &self,
-        pattern: &Pattern,
+        pattern: &Self::Source,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         _opacity: &UnitInterval,

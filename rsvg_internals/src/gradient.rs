@@ -529,13 +529,15 @@ fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64
     (cx + dx, cy + dy)
 }
 
-impl PaintSource<Gradient> for NodeGradient {
+impl PaintSource for NodeGradient {
+    type Source = Gradient;
+
     fn resolve(
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
-    ) -> Option<Gradient> {
+    ) -> Option<Self::Source> {
         let gradient =
             node.with_impl(|i: &NodeGradient| i.get_gradient_with_color_stops_from_node(node));
         let mut result = gradient.clone();
@@ -571,7 +573,7 @@ impl PaintSource<Gradient> for NodeGradient {
 
     fn set_pattern_on_draw_context(
         &self,
-        gradient: &Gradient,
+        gradient: &Self::Source,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         opacity: &UnitInterval,

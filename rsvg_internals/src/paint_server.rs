@@ -49,12 +49,19 @@ impl Parse for PaintServer {
     }
 }
 
-pub trait PaintSource<T> {
-    fn resolve(&self, node: &RsvgNode, draw_ctx: &mut DrawingCtx, bbox: &BoundingBox) -> Option<T>;
+pub trait PaintSource {
+    type Source;
+
+    fn resolve(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: &mut DrawingCtx,
+        bbox: &BoundingBox,
+    ) -> Option<Self::Source>;
 
     fn set_pattern_on_draw_context(
         &self,
-        pattern: &T,
+        pattern: &Self::Source,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         opacity: &UnitInterval,
