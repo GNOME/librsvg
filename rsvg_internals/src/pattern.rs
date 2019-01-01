@@ -241,7 +241,7 @@ impl PaintSource for NodePattern {
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
-    ) -> Option<Self::Source> {
+    ) -> Result<Option<Self::Source>, RenderingError> {
         let node_pattern = node.get_impl::<NodePattern>().unwrap();
         let pattern = &*node_pattern.pattern.borrow();
         let mut result = pattern.clone();
@@ -254,11 +254,9 @@ impl PaintSource for NodePattern {
                 let node = acquired.get();
 
                 if stack.contains(node) {
-                    // FIXME: return a Result here with RenderingError::CircularReference
                     // FIXME: print the pattern's name
                     rsvg_log!("circular reference in pattern");
-                    result.resolve_from_defaults();
-                    break;
+                    return Err(RenderingError::CircularReference)
                 }
 
                 node.with_impl(|i: &NodePattern| {
@@ -271,7 +269,7 @@ impl PaintSource for NodePattern {
             }
         }
 
-        Some(result)
+        Ok(Some(result))
     }
 
     fn set_pattern_on_draw_context(
