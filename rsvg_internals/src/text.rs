@@ -17,8 +17,16 @@ use parsers::ParseValue;
 use property_bag::PropertyBag;
 use space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use state::{
-    ComputedValues, Direction, FontStretch, FontStyle, FontVariant, TextAnchor, UnicodeBidi,
-    WritingMode, XmlLang, XmlSpace,
+    ComputedValues,
+    Direction,
+    FontStretch,
+    FontStyle,
+    FontVariant,
+    TextAnchor,
+    UnicodeBidi,
+    WritingMode,
+    XmlLang,
+    XmlSpace,
 };
 
 /// An absolutely-positioned array of `Span`s
