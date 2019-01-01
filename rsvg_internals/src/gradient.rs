@@ -537,7 +537,7 @@ impl PaintSource for NodeGradient {
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
-    ) -> Option<Self::Source> {
+    ) -> Result<Option<Self::Source>, RenderingError> {
         let gradient =
             node.with_impl(|i: &NodeGradient| i.get_gradient_with_color_stops_from_node(node));
         let mut result = gradient.clone();
@@ -565,9 +565,9 @@ impl PaintSource for NodeGradient {
         }
 
         if result.bounds_are_valid(bbox) {
-            Some(result)
+            Ok(Some(result))
         } else {
-            None
+            Ok(None)
         }
     }
 

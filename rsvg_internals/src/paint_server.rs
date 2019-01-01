@@ -57,7 +57,7 @@ pub trait PaintSource {
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
-    ) -> Option<Self::Source>;
+    ) -> Result<Option<Self::Source>, RenderingError>;
 
     fn set_pattern_on_draw_context(
         &self,
@@ -75,7 +75,7 @@ pub trait PaintSource {
         opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        if let Some(resolved) = self.resolve(&node, draw_ctx, bbox) {
+        if let Some(resolved) = self.resolve(&node, draw_ctx, bbox)? {
             let cascaded = node.get_cascaded_values();
             let values = cascaded.get();
             self.set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
