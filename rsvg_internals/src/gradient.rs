@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use drawing_ctx::{AcquiredNode, DrawingCtx};
+use drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
 use error::*;
 use handle::RsvgHandle;
 use length::*;
@@ -425,42 +425,53 @@ impl Gradient {
     }
 }
 
-fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx<'_>, name: &str) -> Option<AcquiredNode> {
-    if let Some(acquired) = draw_ctx.get_acquired_node(name) {
-        let node_type = acquired.get().get_type();
+fn acquire_gradient<'a>(
+    draw_ctx: &'a mut DrawingCtx<'_>,
+    name: Option<&str>,
+) -> Option<AcquiredNode> {
+    name.and_then(move |name| draw_ctx.get_acquired_node(name))
+        .and_then(|acquired| {
+            let node_type = acquired.get().get_type();
 
-        if node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient {
-            return Some(acquired);
-        }
-    }
-
-    rsvg_log!("element \"{}\" does not exist or is not a gradient", name);
-
-    None
+            if node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient {
+                Some(acquired)
+            } else {
+                None
+            }
+        })
 }
 
 fn resolve_gradient(gradient: &Gradient, draw_ctx: &mut DrawingCtx<'_>) -> Gradient {
     let mut result = gradient.clone();
 
-    while !result.is_resolved() {
-        result
-            .common
-            .fallback
-            .as_ref()
-            .and_then(|fallback_name| acquire_gradient(draw_ctx, fallback_name))
-            .and_then(|acquired| {
-                let fallback_node = acquired.get();
+    let mut stack = NodeStack::new();
 
-                fallback_node.with_impl(|i: &NodeGradient| {
-                    let fallback_grad = i.get_gradient_with_color_stops_from_node(&fallback_node);
-                    result.resolve_from_fallback(&fallback_grad)
-                });
-                Some(())
-            })
-            .or_else(|| {
+    while !result.is_resolved() {
+        if let Some(acquired) = acquire_gradient(
+            draw_ctx,
+            result.common.fallback.as_ref().map(String::as_ref),
+        ) {
+            let a_node = acquired.get();
+
+            if stack.contains(a_node) {
+                rsvg_log!(
+                    "circular reference in gradient {}",
+                    a_node.get_human_readable_name()
+                );
                 result.resolve_from_defaults();
-                Some(())
+                break; // reference cycle; bail out
+            }
+
+            a_node.with_impl(|i: &NodeGradient| {
+                let fallback_grad = i.get_gradient_with_color_stops_from_node(&a_node);
+                result.resolve_from_fallback(&fallback_grad)
             });
+
+            stack.push(a_node);
+            continue;
+        }
+
+        result.resolve_from_defaults();
     }
 
     result
