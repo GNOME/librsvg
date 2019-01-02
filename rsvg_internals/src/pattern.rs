@@ -251,19 +251,21 @@ impl PaintSource for NodePattern {
             if let Some(acquired) =
                 draw_ctx.get_acquired_node_of_type(result.fallback.as_ref(), NodeType::Pattern)
             {
-                let node = acquired.get();
+                let a_node = acquired.get();
 
-                if stack.contains(node) {
-                    // FIXME: print the pattern's name
-                    rsvg_log!("circular reference in pattern");
+                if stack.contains(a_node) {
+                    rsvg_log!(
+                        "circular reference in pattern {}",
+                        node.get_human_readable_name()
+                    );
                     return Err(RenderingError::CircularReference);
                 }
 
-                node.with_impl(|i: &NodePattern| {
+                a_node.with_impl(|i: &NodePattern| {
                     result.resolve_from_fallback(&*i.pattern.borrow())
                 });
 
-                stack.push(node);
+                stack.push(a_node);
             } else {
                 result.resolve_from_defaults();
             }
