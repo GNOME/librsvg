@@ -7,7 +7,7 @@ use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
 use defs::Fragment;
-use drawing_ctx::{AcquiredNode, DrawingCtx};
+use drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
 use error::*;
 use handle::RsvgHandle;
 use length::*;
@@ -444,18 +444,20 @@ impl Gradient {
     }
 }
 
-fn acquire_gradient<'a>(draw_ctx: &'a mut DrawingCtx, name: &Fragment) -> Option<AcquiredNode> {
-    if let Some(acquired) = draw_ctx.get_acquired_node(name) {
-        let node_type = acquired.get().get_type();
+fn acquire_gradient<'a>(
+    draw_ctx: &'a mut DrawingCtx,
+    name: Option<&Fragment>,
+) -> Option<AcquiredNode> {
+    name.and_then(move |fragment| draw_ctx.get_acquired_node(fragment))
+        .and_then(|acquired| {
+            let node_type = acquired.get().get_type();
 
-        if node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient {
-            return Some(acquired);
-        }
-    }
-
-    rsvg_log!("element \"{}\" does not exist or is not a gradient", name);
-
-    None
+            if node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient {
+                Some(acquired)
+            } else {
+                None
+            }
+        })
 }
 
 fn set_common_on_pattern<P: cairo::PatternTrait + cairo::Gradient>(
@@ -538,30 +540,33 @@ impl PaintSource for NodeGradient {
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
-        let gradient =
-            node.with_impl(|i: &NodeGradient| i.get_gradient_with_color_stops_from_node(node));
+        let node_gradient = node.get_impl::<NodeGradient>().unwrap();
+        let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
         let mut result = gradient.clone();
+        let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
-            result
-                .common
-                .fallback
-                .as_ref()
-                .and_then(|fallback_name| acquire_gradient(draw_ctx, fallback_name))
-                .and_then(|acquired| {
-                    let fallback_node = acquired.get();
+            if let Some(acquired) = acquire_gradient(draw_ctx, result.common.fallback.as_ref()) {
+                let a_node = acquired.get();
 
-                    fallback_node.with_impl(|i: &NodeGradient| {
-                        let fallback_grad =
-                            i.get_gradient_with_color_stops_from_node(&fallback_node);
-                        result.resolve_from_fallback(&fallback_grad)
-                    });
-                    Some(())
-                })
-                .or_else(|| {
-                    result.resolve_from_defaults();
-                    Some(())
+                if stack.contains(a_node) {
+                    rsvg_log!(
+                        "circular reference in gradient {}",
+                        node.get_human_readable_name()
+                    );
+                    return Err(RenderingError::CircularReference);
+                }
+
+                a_node.with_impl(|i: &NodeGradient| {
+                    let fallback_grad = i.get_gradient_with_color_stops_from_node(&a_node);
+                    result.resolve_from_fallback(&fallback_grad)
                 });
+
+                stack.push(a_node);
+                continue;
+            }
+
+            result.resolve_from_defaults();
         }
 
         if result.bounds_are_valid(bbox) {
