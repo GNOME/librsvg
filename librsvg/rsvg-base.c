@@ -29,14 +29,7 @@
 #include "rsvg-private.h"
 #include "rsvg-css.h"
 
-/*
- * This is configurable at runtime
- */
-#define RSVG_DEFAULT_DPI_X 90.0
-#define RSVG_DEFAULT_DPI_Y 90.0
-
-static double rsvg_internal_dpi_x = RSVG_DEFAULT_DPI_X;
-static double rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
+extern void rsvg_rust_set_default_dpi_x_y(float dpi_x, float dpi_y);
 
 /**
  * rsvg_error_quark:
@@ -70,7 +63,7 @@ rsvg_error_quark (void)
 void
 rsvg_set_default_dpi (double dpi)
 {
-    rsvg_set_default_dpi_x_y (dpi, dpi);
+    rsvg_rust_set_default_dpi_x_y (dpi, dpi);
 }
 
 /**
@@ -91,27 +84,7 @@ rsvg_set_default_dpi (double dpi)
 void
 rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
 {
-    if (dpi_x <= 0.)
-        rsvg_internal_dpi_x = RSVG_DEFAULT_DPI_X;
-    else
-        rsvg_internal_dpi_x = dpi_x;
-
-    if (dpi_y <= 0.)
-        rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
-    else
-        rsvg_internal_dpi_y = dpi_y;
-}
-
-double
-rsvg_get_default_dpi_x (void)
-{
-    return rsvg_internal_dpi_x;
-}
-
-double
-rsvg_get_default_dpi_y (void)
-{
-    return rsvg_internal_dpi_y;
+    rsvg_rust_set_default_dpi_x_y (dpi_x, dpi_y);
 }
 
 /**
