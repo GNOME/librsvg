@@ -61,12 +61,6 @@ typedef struct _RsvgNode RsvgNode;
 #endif
 
 G_GNUC_INTERNAL
-double rsvg_get_default_dpi_x (void);
-
-G_GNUC_INTERNAL
-double rsvg_get_default_dpi_y (void);
-
-G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
 
