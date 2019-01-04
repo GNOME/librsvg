@@ -791,8 +791,8 @@ fn to_pango_units(v: f64) -> i32 {
     (v * f64::from(pango::SCALE) + 0.5) as i32
 }
 
-impl From<&XmlLang> for pango::Language {
-    fn from(l: &XmlLang) -> pango::Language {
+impl<'a> From<&'a XmlLang> for pango::Language {
+    fn from(l: &'a XmlLang) -> pango::Language {
         pango::Language::from_string(&l.0)
     }
 }
