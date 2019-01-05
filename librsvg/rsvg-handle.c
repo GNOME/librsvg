@@ -1010,6 +1010,14 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
     }
 }
 
+static void
+call_size_func (RsvgHandle *handle, int *width, int *height)
+{
+    if (handle->priv->size_func) {
+        (*handle->priv->size_func) (width, height, handle->priv->user_data);
+    }
+}
+
 /**
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
@@ -1048,9 +1056,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     dimension_data->em = dimension_data->width;
     dimension_data->ex = dimension_data->height;
 
-    if (handle->priv->size_func)
-        (*handle->priv->size_func) (&dimension_data->width, &dimension_data->height,
-                                    handle->priv->user_data);
+    call_size_func (handle, &dimension_data->width, &dimension_data->height);
+
     return TRUE;
 }
 
@@ -1123,8 +1130,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     width = ink_r.width;
     height = ink_r.height;
 
-    if (handle->priv->size_func)
-        (*handle->priv->size_func) (&width, &height, handle->priv->user_data);
+    call_size_func (handle, &width, &height);
 
     return TRUE;
 }
