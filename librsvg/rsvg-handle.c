@@ -123,8 +123,12 @@
 #include <string.h>
 #include <limits.h>
 #include <stdlib.h>
-
 #include <glib/gprintf.h>
+#include <pango/pango.h>
+#include <pango/pangocairo.h>
+#ifdef HAVE_PANGOFT2
+#include <pango/pangofc-fontmap.h>
+#endif
 #include "rsvg-private.h"
 
 /* Defined in rsvg_internals/src/load.rs */
@@ -182,7 +186,6 @@ struct RsvgHandlePrivate {
     gboolean in_loop;		/* see get_dimension() */
 
 #ifdef HAVE_PANGOFT2
-    FcConfig *font_config_for_testing;
     PangoFontMap *font_map_for_testing;
 #endif
 
@@ -216,7 +219,6 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->in_loop = FALSE;
 
 #ifdef HAVE_PANGOFT2
-    self->priv->font_config_for_testing = NULL;
     self->priv->font_map_for_testing = NULL;
 #endif
 
@@ -236,7 +238,6 @@ rsvg_handle_dispose (GObject *instance)
     g_clear_pointer (&self->priv->base_uri, g_free);
 
 #ifdef HAVE_PANGOFT2
-    g_clear_pointer (&self->priv->font_config_for_testing, FcConfigDestroy);
     g_clear_object (&self->priv->font_map_for_testing);
 #endif
 
@@ -1352,14 +1353,12 @@ rsvg_handle_update_font_map_for_testing (RsvgHandle *handle, gboolean testing)
     PangoCairoFontMap *font_map = NULL;
 
     if (testing) {
-        if (handle->priv->font_config_for_testing == NULL) {
-            handle->priv->font_config_for_testing = create_font_config_for_testing ();
-        }
-
         if (handle->priv->font_map_for_testing == NULL) {
+            FcConfig *config = create_font_config_for_testing ();
+
             handle->priv->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-            pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (handle->priv->font_map_for_testing),
-                                          handle->priv->font_config_for_testing);
+            pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (handle->priv->font_map_for_testing), config);
+            FcConfigDestroy (config);
         }
 
         font_map = PANGO_CAIRO_FONT_MAP (handle->priv->font_map_for_testing);
