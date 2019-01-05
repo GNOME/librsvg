@@ -963,15 +963,10 @@ fn create_pango_layout(
     }
 
     let mut font_desc = pango_context.get_font_description().unwrap();
-
     font_desc.set_family(&(values.font_family.0).0);
-
     font_desc.set_style(pango::Style::from(values.font_style));
-
     font_desc.set_variant(pango::Variant::from(values.font_variant));
-
     font_desc.set_weight(pango::Weight::from(values.font_weight.0));
-
     font_desc.set_stretch(pango::Stretch::from(values.font_stretch));
 
     let params = draw_ctx.get_view_params();
@@ -1001,9 +996,7 @@ fn create_pango_layout(
     }
 
     layout.set_attributes(&attr_list);
-
     layout.set_alignment(pango::Alignment::from(values.direction));
-
     layout.set_text(text);
 
     layout
