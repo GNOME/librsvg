@@ -847,19 +847,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_size_closure(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_call_size_closure(
-    raw_handle: *const Handle,
-    width: *mut libc::c_int,
-    height: *mut libc::c_int,
-) {
-    let rhandle = &*raw_handle;
-
-    if !rhandle.size_closure.is_null() {
-        rsvg_size_closure_call(rhandle.size_closure, width, height);
-    }
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
     raw_handle: *const Handle,
     testing: glib_sys::gboolean,

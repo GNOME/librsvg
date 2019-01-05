@@ -221,7 +221,6 @@ rsvg_size_closure_call (RsvgSizeClosure *closure, int *width, int *height)
 }
 
 extern void rsvg_handle_rust_set_size_closure (RsvgHandleRust *raw_handle, RsvgSizeClosure *closure);
-extern void rsvg_handle_rust_call_size_closure (RsvgHandleRust *raw_handle, int *width, int *height);
 
 struct RsvgHandlePrivate {
     gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *

@@ -37,7 +37,6 @@ extern crate lazy_static;
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use handle::{
-    rsvg_handle_rust_call_size_closure,
     rsvg_handle_rust_close,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
