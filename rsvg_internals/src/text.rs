@@ -24,6 +24,7 @@ use state::{
     FontStyle,
     FontVariant,
     TextAnchor,
+    TextRendering,
     UnicodeBidi,
     WritingMode,
     XmlLang,
@@ -795,6 +796,17 @@ fn to_pango_units(v: f64) -> i32 {
 impl<'a> From<&'a XmlLang> for pango::Language {
     fn from(l: &'a XmlLang) -> pango::Language {
         pango::Language::from_string(&l.0)
+    }
+}
+
+impl From<TextRendering> for cairo::Antialias {
+    fn from(tr: TextRendering) -> cairo::Antialias {
+        match tr {
+            TextRendering::Auto
+            | TextRendering::OptimizeLegibility
+            | TextRendering::GeometricPrecision => cairo::Antialias::Default,
+            TextRendering::OptimizeSpeed => cairo::Antialias::None,
+        }
     }
 }
 
