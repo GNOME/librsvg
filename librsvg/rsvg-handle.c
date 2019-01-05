@@ -154,7 +154,6 @@ extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
 extern guint rsvg_handle_rust_set_testing (RsvgHandleRust *raw_handle, gboolean testing);
 extern gboolean rsvg_handle_rust_is_at_start_for_setting_base_file (RsvgHandle *handle);
-extern gboolean rsvg_handle_rust_is_loaded (RsvgHandle *handle);
 extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,
                                                    GCancellable *cancellable,
@@ -990,10 +989,6 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (cr != NULL, FALSE);
 
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
-
     return rsvg_handle_rust_render_cairo_sub (handle, cr, id);
 }
 
@@ -1031,10 +1026,6 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (dimension_data != NULL);
 
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return;
-    }
-
     rsvg_handle_rust_get_dimensions (handle, dimension_data);
 }
 
@@ -1057,10 +1048,6 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
-
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
 
     return rsvg_handle_rust_get_dimensions_sub (handle, dimension_data, id);
 }
@@ -1085,10 +1072,6 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, Rsv
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
-
     return rsvg_handle_rust_get_geometry_sub(handle, ink_rect, logical_rect, id);
 }
 
@@ -1112,10 +1095,6 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (position_data != NULL, FALSE);
 
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
-
     return rsvg_handle_rust_get_position_sub (handle, position_data, id);
 }
 
@@ -1135,10 +1114,6 @@ rsvg_handle_has_sub (RsvgHandle *handle,
                      const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
 
     return rsvg_handle_rust_has_sub (handle, id);
 }
@@ -1169,10 +1144,6 @@ GdkPixbuf *
 rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), NULL);
-
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return NULL;
-    }
 
     return rsvg_handle_rust_get_pixbuf_sub (handle, id);
 }

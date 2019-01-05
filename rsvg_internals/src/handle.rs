@@ -875,31 +875,26 @@ pub unsafe extern "C" fn rsvg_handle_rust_is_at_start_for_setting_base_file(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_is_loaded(
-    handle: *const RsvgHandle,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    match rhandle.load_state.get() {
+fn is_loaded(handle: &Handle) -> bool {
+    match handle.load_state.get() {
         LoadState::Start => {
             rsvg_g_warning("RsvgHandle has not been loaded");
-            false.to_glib()
+            false
         }
 
         LoadState::Loading => {
             rsvg_g_warning("RsvgHandle is still loading; call rsvg_handle_close() first");
-            false.to_glib()
+            false
         }
 
-        LoadState::ClosedOk => true.to_glib(),
+        LoadState::ClosedOk => true,
 
         LoadState::ClosedError => {
             rsvg_g_warning(
                 "RsvgHandle could not read or parse the SVG; did you check for errors during the \
                  loading stage?",
             );
-            false.to_glib()
+            false
         }
     }
 }
@@ -979,6 +974,10 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
+    if !is_loaded(rhandle) {
+        return false.to_glib();
+    }
+
     let id: Option<String> = from_glib_none(id);
 
     match rhandle.get_geometry_sub(handle, id.as_ref().map(String::as_str)) {
@@ -1014,15 +1013,18 @@ pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
     handle: *mut RsvgHandle,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
-    if id.is_null() {
-        false.to_glib()
-    } else {
-        let id: String = from_glib_none(id);
+    let rhandle = get_rust_handle(handle);
 
-        let rhandle = get_rust_handle(handle);
-
-        rhandle.has_sub(handle, &id).to_glib()
+    if !is_loaded(rhandle) {
+        return false.to_glib();
     }
+
+    if id.is_null() {
+        return false.to_glib();
+    }
+
+    let id: String = from_glib_none(id);
+    rhandle.has_sub(handle, &id).to_glib()
 }
 
 #[no_mangle]
@@ -1034,6 +1036,10 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
     let rhandle = get_rust_handle(handle);
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
+
+    if !is_loaded(rhandle) {
+        return false.to_glib();
+    }
 
     match rhandle.render_cairo_sub(handle, &cr, id.as_ref().map(String::as_str)) {
         Ok(()) => true.to_glib(),
@@ -1051,8 +1057,11 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
     id: *const libc::c_char,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
     let rhandle = get_rust_handle(handle);
-
     let id: Option<String> = from_glib_none(id);
+
+    if !is_loaded(rhandle) {
+        return ptr::null_mut();
+    }
 
     match rhandle.get_pixbuf_sub(handle, id.as_ref().map(String::as_str)) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
@@ -1066,6 +1075,10 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
     dimension_data: *mut RsvgDimensionData,
 ) {
     let rhandle = get_rust_handle(handle);
+
+    if !is_loaded(rhandle) {
+        return;
+    }
 
     // This function is probably called from the cairo_render functions.
     // To prevent an infinite loop we are saving the state.
@@ -1090,6 +1103,10 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
+
+    if !is_loaded(rhandle) {
+        return false.to_glib();
+    }
 
     let mut ink_r = RsvgRectangle {
         x: 0.0,
@@ -1128,14 +1145,18 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
     position: *mut RsvgPositionData,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    if !is_loaded(rhandle) {
+        return false.to_glib();
+    }
+
     // Short-cut when no id is given
     if id.is_null() || *id == 0 {
         (*position).x = 0;
         (*position).y = 0;
         return true.to_glib();
     }
-
-    let rhandle = get_rust_handle(handle);
 
     let mut ink_r = RsvgRectangle {
         x: 0.0,
