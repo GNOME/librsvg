@@ -193,14 +193,6 @@ impl DrawingCtx {
         self.cr = cr.clone();
     }
 
-    pub fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
-        cr.to_raw_none() != self.initial_cr.to_raw_none()
-    }
-
-    pub fn get_cr_stack(&self) -> &Vec<cairo::Context> {
-        &self.cr_stack
-    }
-
     pub fn get_width(&self) -> f64 {
         self.rect.width
     }
@@ -209,8 +201,8 @@ impl DrawingCtx {
         self.rect.height
     }
 
-    pub fn get_raw_offset(&self) -> (f64, f64) {
-        (self.rect.x, self.rect.y)
+    fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
+        cr.to_raw_none() != self.initial_cr.to_raw_none()
     }
 
     pub fn get_offset(&self) -> (f64, f64) {
@@ -697,6 +689,24 @@ impl DrawingCtx {
         cr.rectangle(x, y, w, h);
         cr.clip();
         cr.set_matrix(save_affine);
+    }
+
+    pub fn get_snapshot(&self, surface: &cairo::ImageSurface) {
+        let (x, y) = (self.rect.x, self.rect.y);
+
+        // TODO: as far as I can tell this should not render elements past the last (topmost) one
+        // with enable-background: new (because technically we shouldn't have been caching them).
+        // Right now there are no enable-background checks whatsoever.
+        let cr = cairo::Context::new(&surface);
+        for draw in self.cr_stack.iter() {
+            let nested = self.is_cairo_context_nested(&draw);
+            cr.set_source_surface(
+                &draw.get_target(),
+                if nested { 0f64 } else { -x },
+                if nested { 0f64 } else { -y },
+            );
+            cr.paint();
+        }
     }
 
     pub fn draw_node_on_surface(
