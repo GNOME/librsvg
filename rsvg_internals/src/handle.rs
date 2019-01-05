@@ -211,7 +211,6 @@ impl Handle {
         cr: &cairo::Context,
         dimensions: &RsvgDimensionData,
         node: Option<&RsvgNode>,
-        is_testing: bool,
     ) -> DrawingCtx {
         let mut draw_ctx = DrawingCtx::new(
             handle,
@@ -221,7 +220,6 @@ impl Handle {
             dimensions.em,
             dimensions.ex,
             get_dpi(handle).clone(),
-            is_testing,
         );
 
         if let Some(node) = node {
@@ -266,7 +264,6 @@ impl Handle {
             &cr,
             &dimensions,
             Some(node),
-            is_testing(handle),
         );
 
         let svg_ref = self.svg.borrow();
@@ -418,7 +415,6 @@ impl Handle {
             cr,
             &dimensions,
             node.as_ref(),
-            is_testing(handle),
         );
 
         let svg_ref = self.svg.borrow();
@@ -528,7 +524,7 @@ extern "C" {
     fn rsvg_handle_get_dimensions(handle: *mut RsvgHandle, dimensions: *mut RsvgDimensionData);
 }
 
-fn is_testing(handle: *const RsvgHandle) -> bool {
+pub fn is_testing(handle: *const RsvgHandle) -> bool {
     unsafe { from_glib(rsvg_handle_get_is_testing(handle)) }
 }
 

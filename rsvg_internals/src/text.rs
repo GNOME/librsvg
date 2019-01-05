@@ -1,5 +1,6 @@
 use glib::translate::*;
-use pango::{self, ContextExt, LayoutExt};
+use pango::{self, ContextExt, FontMapExt, LayoutExt};
+use pangocairo;
 use pango_sys;
 use std::cell::{Cell, RefCell};
 
@@ -894,12 +895,49 @@ impl From<WritingMode> for pango::Gravity {
     }
 }
 
+fn get_pango_context(cr: &cairo::Context, is_testing: bool) -> pango::Context {
+    let font_map = pangocairo::FontMap::get_default().unwrap();
+    let context = font_map.create_context().unwrap();
+    pangocairo::functions::update_context(&cr, &context);
+
+    // Pango says this about pango_cairo_context_set_resolution():
+    //
+    //     Sets the resolution for the context. This is a scale factor between
+    //     points specified in a #PangoFontDescription and Cairo units. The
+    //     default value is 96, meaning that a 10 point font will be 13
+    //     units high. (10 * 96. / 72. = 13.3).
+    //
+    // I.e. Pango font sizes in a PangoFontDescription are in *points*, not pixels.
+    // However, we are normalizing everything to userspace units, which amount to
+    // pixels.  So, we will use 72.0 here to make Pango not apply any further scaling
+    // to the size values we give it.
+    //
+    // An alternative would be to divide our font sizes by (dpi_y / 72) to effectively
+    // cancel out Pango's scaling, but it's probably better to deal with Pango-isms
+    // right here, instead of spreading them out through our Length normalization
+    // code.
+    pangocairo::functions::context_set_resolution(&context, 72.0);
+
+    if is_testing {
+        let mut options = cairo::FontOptions::new();
+
+        options.set_antialias(cairo::Antialias::Gray);
+        options.set_hint_style(cairo::enums::HintStyle::Full);
+        options.set_hint_metrics(cairo::enums::HintMetrics::On);
+
+        pangocairo::functions::context_set_font_options(&context, &options);
+    }
+
+    context
+}
+
 fn create_pango_layout(
     draw_ctx: &DrawingCtx,
     values: &ComputedValues,
     text: &str,
 ) -> pango::Layout {
-    let pango_context = draw_ctx.get_pango_context();
+    let cr = draw_ctx.get_cairo_context();
+    let pango_context = get_pango_context(&cr, draw_ctx.is_testing());
 
     // See the construction of the XmlLang property
     // We use "" there as the default value; this means that the language is not set.
