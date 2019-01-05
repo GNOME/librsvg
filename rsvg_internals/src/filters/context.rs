@@ -263,37 +263,6 @@ impl FilterContext {
             .map_err(FilterError::CairoError)
     }
 
-    /// Computes and returns the background image snapshot.
-    fn compute_background_image(
-        &self,
-        draw_ctx: &DrawingCtx,
-    ) -> Result<cairo::ImageSurface, cairo::Status> {
-        let surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            self.source_surface.width(),
-            self.source_surface.height(),
-        )?;
-
-        let (x, y) = draw_ctx.get_raw_offset();
-        let stack = draw_ctx.get_cr_stack();
-
-        // TODO: as far as I can tell this should not render elements past the last (topmost) one
-        // with enable-background: new (because technically we shouldn't have been caching them).
-        // Right now there are no enable-background checks whatsoever.
-        let cr = cairo::Context::new(&surface);
-        for draw in stack.into_iter() {
-            let nested = draw_ctx.is_cairo_context_nested(&draw);
-            cr.set_source_surface(
-                &draw.get_target(),
-                if nested { 0f64 } else { -x },
-                if nested { 0f64 } else { -y },
-            );
-            cr.paint();
-        }
-
-        Ok(surface)
-    }
-
     /// Returns the surface corresponding to the background image snapshot.
     pub fn background_image(
         &self,
@@ -316,12 +285,16 @@ impl FilterContext {
         let bg = unsafe { &mut *self.background_surface.get() };
 
         *bg = Some(
-            self.compute_background_image(draw_ctx)
-                .map_err(FilterError::CairoError)
-                .and_then(|surface| {
-                    SharedImageSurface::new(surface, SurfaceType::SRgb)
-                        .map_err(FilterError::CairoError)
-                }),
+            cairo::ImageSurface::create(
+                cairo::Format::ARgb32,
+                self.source_surface.width(),
+                self.source_surface.height(),
+            )
+            .map_err(FilterError::CairoError)
+            .and_then(|s| {
+                draw_ctx.get_snapshot(&s);
+                SharedImageSurface::new(s, SurfaceType::SRgb).map_err(FilterError::CairoError)
+            }),
         );
 
         // Return the only existing reference as immutable.
