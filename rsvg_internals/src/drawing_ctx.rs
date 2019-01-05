@@ -30,7 +30,6 @@ use state::{
     StrokeDasharray,
     StrokeLinecap,
     StrokeLinejoin,
-    TextRendering,
 };
 use unit_interval::UnitInterval;
 use viewbox::ViewBox;
@@ -915,17 +914,6 @@ impl From<ShapeRendering> for cairo::Antialias {
         match sr {
             ShapeRendering::Auto | ShapeRendering::GeometricPrecision => cairo::Antialias::Default,
             ShapeRendering::OptimizeSpeed | ShapeRendering::CrispEdges => cairo::Antialias::None,
-        }
-    }
-}
-
-impl From<TextRendering> for cairo::Antialias {
-    fn from(tr: TextRendering) -> cairo::Antialias {
-        match tr {
-            TextRendering::Auto
-            | TextRendering::OptimizeLegibility
-            | TextRendering::GeometricPrecision => cairo::Antialias::Default,
-            TextRendering::OptimizeSpeed => cairo::Antialias::None,
         }
     }
 }
