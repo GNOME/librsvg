@@ -1,4 +1,5 @@
 use std::cell::{Cell, Ref, RefCell};
+use std::ffi::CString;
 use std::mem;
 use std::ptr;
 use std::rc::Rc;
@@ -99,6 +100,7 @@ pub enum LoadState {
 pub struct Handle {
     dpi: Dpi,
     base_url: RefCell<Option<Url>>,
+    base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     svg: RefCell<Option<Svg>>,
     load_options: Cell<LoadOptions>,
     load_state: Cell<LoadState>,
@@ -113,6 +115,7 @@ impl Handle {
         Handle {
             dpi: Dpi::default(),
             base_url: RefCell::new(None),
+            base_url_cstring: RefCell::new(None),
             svg: RefCell::new(None),
             load_options: Cell::new(LoadOptions::default()),
             load_state: Cell::new(LoadState::Start),
@@ -775,8 +778,11 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
         }
     };
 
+    let url_cstring = CString::new(url.as_str()).unwrap();
+
     rsvg_log!("setting base_uri to \"{}\"", url);
     *handle.base_url.borrow_mut() = Some(url);
+    *handle.base_url_cstring.borrow_mut() = Some(url_cstring);
 }
 
 #[no_mangle]
@@ -787,8 +793,19 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
 
     match *handle.base_url.borrow() {
         None => ptr::null_mut(),
-
         Some(ref url) => GFile::new_for_uri(url.as_str()).to_glib_full(),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_base_url(
+    raw_handle: *const Handle,
+) -> *const libc::c_char {
+    let handle = &*raw_handle;
+
+    match *handle.base_url_cstring.borrow() {
+        None => ptr::null(),
+        Some(ref url) => url.as_ptr(),
     }
 }
 

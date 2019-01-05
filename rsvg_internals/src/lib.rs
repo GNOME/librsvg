@@ -40,6 +40,7 @@ pub use handle::{
     rsvg_handle_rust_close,
     rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
+    rsvg_handle_rust_get_base_url,
     rsvg_handle_rust_get_dimensions,
     rsvg_handle_rust_get_dimensions_sub,
     rsvg_handle_rust_get_dpi_x,

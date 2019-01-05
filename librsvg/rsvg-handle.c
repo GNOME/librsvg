@@ -149,6 +149,7 @@ extern double rsvg_handle_rust_get_dpi_y (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_dpi_x (RsvgHandleRust *raw_handle, double dpi_x);
 extern void rsvg_handle_rust_set_dpi_y (RsvgHandleRust *raw_handle, double dpi_y);
 extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const char *uri);
+extern const char *rsvg_handle_rust_get_base_url (RsvgHandleRust *raw_handle);
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
@@ -224,8 +225,6 @@ rsvg_size_closure_call (RsvgSizeClosure *closure, int *width, int *height)
 extern void rsvg_handle_rust_set_size_closure (RsvgHandleRust *raw_handle, RsvgSizeClosure *closure);
 
 struct RsvgHandlePrivate {
-    gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *
-
     RsvgHandleRust *rust_handle;
 };
 
@@ -260,7 +259,6 @@ rsvg_handle_dispose (GObject *instance)
 {
     RsvgHandle *self = (RsvgHandle *) instance;
 
-    g_clear_pointer (&self->priv->base_uri, g_free);
     g_clear_pointer (&self->priv->rust_handle, rsvg_handle_rust_free);
 
     G_OBJECT_CLASS (rsvg_handle_parent_class)->dispose (instance);
@@ -864,7 +862,6 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
 {
     RsvgHandlePrivate *priv;
     char *uri;
-    GFile *real_base_file;
 
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (G_IS_FILE (base_file));
@@ -878,17 +875,6 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
     uri = g_file_get_uri (base_file);
     rsvg_handle_rust_set_base_url (priv->rust_handle, uri);
     g_free (uri);
-
-    /* Obtain the sanitized version */
-
-    real_base_file = rsvg_handle_rust_get_base_gfile (priv->rust_handle);
-    g_free (priv->base_uri);
-
-    if (real_base_file) {
-        priv->base_uri = g_file_get_uri (real_base_file);
-    } else {
-        priv->base_uri = NULL;
-    }
 }
 
 /**
@@ -904,7 +890,8 @@ const char *
 rsvg_handle_get_base_uri (RsvgHandle * handle)
 {
     g_return_val_if_fail (handle, NULL);
-    return handle->priv->base_uri;
+
+    return rsvg_handle_rust_get_base_url (handle->priv->rust_handle);
 }
 
 /**
