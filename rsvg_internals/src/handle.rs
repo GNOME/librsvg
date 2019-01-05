@@ -68,6 +68,13 @@ pub struct RsvgDimensionData {
     ex: f64,
 }
 
+// Keep in sync with rsvg.h:RsvgPositionData
+#[repr(C)]
+pub struct RsvgPositionData {
+    x: libc::c_int,
+    y: libc::c_int,
+}
+
 /// Flags used during loading
 ///
 /// We communicate these to/from the C code with a guint <-> u32,
@@ -1098,6 +1105,46 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
         (*dimension_data).height = 0;
         (*dimension_data).em = 0.0;
         (*dimension_data).ex = 0.0;
+    }
+
+    res
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
+    handle: *mut RsvgHandle,
+    position: *mut RsvgPositionData,
+    id: *const libc::c_char,
+) -> glib_sys::gboolean {
+    // Short-cut when no id is given
+    if id.is_null() || *id == 0 {
+        (*position).x = 0;
+        (*position).y = 0;
+        return true.to_glib();
+    }
+
+    let rhandle = get_rust_handle(handle);
+
+    let mut ink_r = RsvgRectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 0.0,
+        height: 0.0,
+    };
+
+    let res = rsvg_handle_rust_get_geometry_sub(handle, &mut ink_r, ptr::null_mut(), id);
+    if from_glib(res) {
+        (*position).x = ink_r.x as libc::c_int;
+        (*position).y = ink_r.y as libc::c_int;
+
+        let mut width = ink_r.width as libc::c_int;
+        let mut height = ink_r.height as libc::c_int;
+        if !rhandle.size_closure.is_null() {
+            rsvg_size_closure_call(rhandle.size_closure, &mut width, &mut height);
+        }
+    } else {
+        (*position).x = 0;
+        (*position).y = 0;
     }
 
     res
