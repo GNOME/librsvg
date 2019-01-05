@@ -104,6 +104,7 @@ pub struct Handle {
     load_state: Cell<LoadState>,
     load: RefCell<Option<LoadContext>>,
     size_closure: *mut RsvgSizeClosure,
+    in_loop: Cell<bool>,
     is_testing: Cell<bool>,
 }
 
@@ -117,6 +118,7 @@ impl Handle {
             load_state: Cell::new(LoadState::Start),
             load: RefCell::new(None),
             size_closure: ptr::null_mut(),
+            in_loop: Cell::new(false),
             is_testing: Cell::new(false),
         }
     }
@@ -1056,6 +1058,29 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(_) => ptr::null_mut(),
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
+    handle: *mut RsvgHandle,
+    dimension_data: *mut RsvgDimensionData,
+) {
+    let rhandle = get_rust_handle(handle);
+
+    // This function is probably called from the cairo_render functions.
+    // To prevent an infinite loop we are saving the state.
+    if rhandle.in_loop.get() {
+        // Called within the size function, so return a standard size
+        (*dimension_data).width = 1;
+        (*dimension_data).height = 1;
+        (*dimension_data).em = 1.0;
+        (*dimension_data).ex = 1.0;
+        return;
+    }
+
+    rhandle.in_loop.set(true);
+    rsvg_handle_rust_get_dimensions_sub(handle, dimension_data, ptr::null());
+    rhandle.in_loop.set(false);
 }
 
 #[no_mangle]

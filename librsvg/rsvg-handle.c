@@ -170,6 +170,8 @@ extern gboolean rsvg_handle_rust_render_cairo_sub (RsvgHandle *handle,
                                                    cairo_t *cr,
                                                    const char *id);
 extern GdkPixbuf *rsvg_handle_rust_get_pixbuf_sub (RsvgHandle *handle, const char *id);
+extern void rsvg_handle_rust_get_dimensions (RsvgHandle *handle,
+                                             RsvgDimensionData *dimension_data);
 extern gboolean rsvg_handle_rust_get_dimensions_sub (RsvgHandle *handle,
                                                      RsvgDimensionData *dimension_data,
                                                      const char *id);
@@ -225,8 +227,6 @@ extern void rsvg_handle_rust_set_size_closure (RsvgHandleRust *raw_handle, RsvgS
 struct RsvgHandlePrivate {
     gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *
 
-    gboolean in_loop;		/* see get_dimension() */
-
     RsvgHandleRust *rust_handle;
 };
 
@@ -253,9 +253,6 @@ static void
 rsvg_handle_init (RsvgHandle * self)
 {
     self->priv = rsvg_handle_get_instance_private (self);
-
-    self->priv->in_loop = FALSE;
-
     self->priv->rust_handle = rsvg_handle_rust_new();
 }
 
@@ -1038,18 +1035,7 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
         return;
     }
 
-    /* This function is probably called from the cairo_render functions.
-     * To prevent an infinite loop we are saving the state.
-     */
-    if (!handle->priv->in_loop) {
-        handle->priv->in_loop = TRUE;
-        rsvg_handle_get_dimensions_sub (handle, dimension_data, NULL);
-        handle->priv->in_loop = FALSE;
-    } else {
-        /* Called within the size function, so return a standard size */
-        dimension_data->em = dimension_data->width = 1;
-        dimension_data->ex = dimension_data->height = 1;
-    }
+    rsvg_handle_rust_get_dimensions (handle, dimension_data);
 }
 
 /**
