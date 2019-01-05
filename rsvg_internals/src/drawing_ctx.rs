@@ -201,18 +201,6 @@ impl DrawingCtx {
         self.rect.height
     }
 
-    fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
-        cr.to_raw_none() != self.initial_cr.to_raw_none()
-    }
-
-    pub fn get_offset(&self) -> (f64, f64) {
-        if self.is_cairo_context_nested(&self.get_cairo_context()) {
-            (0.0, 0.0)
-        } else {
-            (self.rect.x, self.rect.y)
-        }
-    }
-
     /// Gets the viewport that was last pushed with `push_view_box()`.
     pub fn get_view_params(&self) -> ViewParams {
         let view_box_stack = self.view_box_stack.borrow();
@@ -318,6 +306,18 @@ impl DrawingCtx {
                     None
                 }
             })
+    }
+
+    fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
+        cr.to_raw_none() != self.initial_cr.to_raw_none()
+    }
+
+    fn get_offset(&self) -> (f64, f64) {
+        if self.is_cairo_context_nested(&self.get_cairo_context()) {
+            (0.0, 0.0)
+        } else {
+            (self.rect.x, self.rect.y)
+        }
     }
 
     pub fn with_discrete_layer(
@@ -774,6 +774,15 @@ impl DrawingCtx {
         }
 
         res
+    }
+
+    pub fn mask_surface(&mut self, mask: &cairo::ImageSurface) {
+        let cr = self.get_cairo_context();
+
+        cr.identity_matrix();
+
+        let (xofs, yofs) = self.get_offset();
+        cr.mask_surface(&mask, xofs, yofs);
     }
 
     pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {
