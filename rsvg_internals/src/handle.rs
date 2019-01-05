@@ -1063,3 +1063,42 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
         Err(_) => ptr::null_mut(),
     }
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
+    handle: *mut RsvgHandle,
+    dimension_data: *mut RsvgDimensionData,
+    id: *const libc::c_char,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    let mut ink_r = RsvgRectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 0.0,
+        height: 0.0,
+    };
+
+    let res = rsvg_handle_rust_get_geometry_sub(handle, &mut ink_r, ptr::null_mut(), id);
+    if from_glib(res) {
+        (*dimension_data).width = ink_r.width as libc::c_int;
+        (*dimension_data).height = ink_r.height as libc::c_int;
+        (*dimension_data).em = ink_r.width;
+        (*dimension_data).ex = ink_r.height;
+
+        if !rhandle.size_closure.is_null() {
+            rsvg_size_closure_call(
+                rhandle.size_closure,
+                &mut (*dimension_data).width,
+                &mut (*dimension_data).height,
+            );
+        }
+    } else {
+        (*dimension_data).width = 0;
+        (*dimension_data).height = 0;
+        (*dimension_data).em = 0.0;
+        (*dimension_data).ex = 0.0;
+    }
+
+    res
+}

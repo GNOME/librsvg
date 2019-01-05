@@ -170,6 +170,9 @@ extern gboolean rsvg_handle_rust_render_cairo_sub (RsvgHandle *handle,
                                                    cairo_t *cr,
                                                    const char *id);
 extern GdkPixbuf *rsvg_handle_rust_get_pixbuf_sub (RsvgHandle *handle, const char *id);
+extern gboolean rsvg_handle_rust_get_dimensions_sub (RsvgHandle *handle,
+                                                     RsvgDimensionData *dimension_data,
+                                                     const char *id);
 
 typedef struct {
     RsvgSizeFunc func;
@@ -1064,8 +1067,6 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
 gboolean
 rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id)
 {
-    RsvgRectangle ink_r;
-
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
 
@@ -1073,21 +1074,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         return FALSE;
     }
 
-    memset (&ink_r, 0, sizeof (RsvgRectangle));
-    memset (dimension_data, 0, sizeof (RsvgDimensionData));
-
-    if (!rsvg_handle_get_geometry_sub (handle, &ink_r, NULL, id)) {
-        return FALSE;
-    }
-
-    dimension_data->width = ink_r.width;
-    dimension_data->height = ink_r.height;
-    dimension_data->em = dimension_data->width;
-    dimension_data->ex = dimension_data->height;
-
-    rsvg_handle_rust_call_size_closure (handle->priv->rust_handle, &dimension_data->width, &dimension_data->height);
-
-    return TRUE;
+    return rsvg_handle_rust_get_dimensions_sub (handle, dimension_data, id);
 }
 
 /**
