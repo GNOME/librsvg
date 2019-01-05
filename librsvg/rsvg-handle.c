@@ -123,7 +123,6 @@
 #include <string.h>
 #include <limits.h>
 #include <stdlib.h>
-
 #include <glib/gprintf.h>
 #include "rsvg-private.h"
 
@@ -181,11 +180,6 @@ struct RsvgHandlePrivate {
 
     gboolean in_loop;		/* see get_dimension() */
 
-#ifdef HAVE_PANGOFT2
-    FcConfig *font_config_for_testing;
-    PangoFontMap *font_map_for_testing;
-#endif
-
     RsvgHandleRust *rust_handle;
 };
 
@@ -215,11 +209,6 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->in_loop = FALSE;
 
-#ifdef HAVE_PANGOFT2
-    self->priv->font_config_for_testing = NULL;
-    self->priv->font_map_for_testing = NULL;
-#endif
-
     self->priv->rust_handle = rsvg_handle_rust_new();
 }
 
@@ -234,12 +223,6 @@ rsvg_handle_dispose (GObject *instance)
     }
 
     g_clear_pointer (&self->priv->base_uri, g_free);
-
-#ifdef HAVE_PANGOFT2
-    g_clear_pointer (&self->priv->font_config_for_testing, FcConfigDestroy);
-    g_clear_object (&self->priv->font_map_for_testing);
-#endif
-
     g_clear_pointer (&self->priv->rust_handle, rsvg_handle_rust_free);
 
     G_OBJECT_CLASS (rsvg_handle_parent_class)->dispose (instance);
@@ -1315,60 +1298,6 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
     handle->priv->user_data_destroy = user_data_destroy;
 }
 
-#ifdef HAVE_PANGOFT2
-
-static FcConfig *
-create_font_config_for_testing (void)
-{
-    const char *font_paths[] = {
-        "resources/Roboto-Regular.ttf",
-        "resources/Roboto-Italic.ttf",
-        "resources/Roboto-Bold.ttf",
-        "resources/Roboto-BoldItalic.ttf",
-    };
-
-    FcConfig *config = FcConfigCreate ();
-    int i;
-
-    for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
-        char *font_path = g_test_build_filename (G_TEST_DIST, font_paths[i], NULL);
-
-        if (!FcConfigAppFontAddFile (config, (const FcChar8 *) font_path)) {
-            g_error ("Could not load font file \"%s\" for tests; aborting", font_path);
-        }
-
-        g_free (font_path);
-    }
-
-    return config;
-}
-
-#endif
-
-static void
-rsvg_handle_update_font_map_for_testing (RsvgHandle *handle, gboolean testing)
-{
-#ifdef HAVE_PANGOFT2
-    PangoCairoFontMap *font_map = NULL;
-
-    if (testing) {
-        if (handle->priv->font_config_for_testing == NULL) {
-            handle->priv->font_config_for_testing = create_font_config_for_testing ();
-        }
-
-        if (handle->priv->font_map_for_testing == NULL) {
-            handle->priv->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-            pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (handle->priv->font_map_for_testing),
-                                          handle->priv->font_config_for_testing);
-        }
-
-        font_map = PANGO_CAIRO_FONT_MAP (handle->priv->font_map_for_testing);
-    }
-
-    pango_cairo_font_map_set_default (font_map);
-#endif
-}
-
 /**
  * rsvg_handle_internal_set_testing:
  * @handle: a #RsvgHandle
@@ -1383,7 +1312,6 @@ rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
     rsvg_handle_rust_set_testing (handle->priv->rust_handle, testing);
-    rsvg_handle_update_font_map_for_testing (handle, testing);
 }
 
 /* This one is defined in the C code, because the prototype has varargs

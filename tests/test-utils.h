@@ -31,6 +31,9 @@ void         test_utils_add_test_for_all_files  (const gchar    *prefix,
                                                  GFile          *file,
                                                  GTestDataFunc   test_func,
                                                  AddTestFunc     add_test_func);
+
+void test_utils_setup_font_map (void);
+
 G_END_DECLS
 
 #endif /* TEST_UTILS_H */

@@ -31,18 +31,12 @@
 
 #include "rsvg.h"
 
-#include <pango/pango.h>
 #include <glib.h>
 #include <glib-object.h>
 #include <math.h>
 
 #if defined(HAVE_FLOAT_H)
 # include <float.h>
-#endif
-
-#include <pango/pangocairo.h>
-#ifdef HAVE_PANGOFT2
-#include <pango/pangofc-fontmap.h>
 #endif
 
 G_BEGIN_DECLS 
