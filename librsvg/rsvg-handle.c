@@ -153,6 +153,7 @@ extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const cha
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
+extern guint rsvg_handle_rust_set_testing (RsvgHandleRust *raw_handle, gboolean testing);
 extern gboolean rsvg_handle_rust_is_at_start_for_setting_base_file (RsvgHandle *handle);
 extern gboolean rsvg_handle_rust_is_loaded (RsvgHandle *handle);
 extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
@@ -179,8 +180,6 @@ struct RsvgHandlePrivate {
     gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *
 
     gboolean in_loop;		/* see get_dimension() */
-
-    gboolean is_testing; /* Are we being run from the test suite? */
 
 #ifdef HAVE_PANGOFT2
     FcConfig *font_config_for_testing;
@@ -215,8 +214,6 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv = rsvg_handle_get_instance_private (self);
 
     self->priv->in_loop = FALSE;
-
-    self->priv->is_testing = FALSE;
 
 #ifdef HAVE_PANGOFT2
     self->priv->font_config_for_testing = NULL;
@@ -1320,8 +1317,8 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
 
 #ifdef HAVE_PANGOFT2
 
-static void
-create_font_config_for_testing (RsvgHandle *handle)
+static FcConfig *
+create_font_config_for_testing (void)
 {
     const char *font_paths[] = {
         "resources/Roboto-Regular.ttf",
@@ -1330,46 +1327,50 @@ create_font_config_for_testing (RsvgHandle *handle)
         "resources/Roboto-BoldItalic.ttf",
     };
 
+    FcConfig *config = FcConfigCreate ();
     int i;
-
-    if (handle->priv->font_config_for_testing != NULL)
-        return;
-
-    handle->priv->font_config_for_testing = FcConfigCreate ();
 
     for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
         char *font_path = g_test_build_filename (G_TEST_DIST, font_paths[i], NULL);
 
-        if (!FcConfigAppFontAddFile (handle->priv->font_config_for_testing, (const FcChar8 *) font_path)) {
+        if (!FcConfigAppFontAddFile (config, (const FcChar8 *) font_path)) {
             g_error ("Could not load font file \"%s\" for tests; aborting", font_path);
         }
 
         g_free (font_path);
     }
+
+    return config;
 }
 
 #endif
 
 static void
-rsvg_handle_update_font_map_for_testing (RsvgHandle *handle)
+rsvg_handle_update_font_map_for_testing (RsvgHandle *handle, gboolean testing)
 {
 #ifdef HAVE_PANGOFT2
-    if (handle->priv->is_testing) {
-        create_font_config_for_testing (handle);
+    PangoCairoFontMap *font_map = NULL;
+
+    if (testing) {
+        if (handle->priv->font_config_for_testing == NULL) {
+            handle->priv->font_config_for_testing = create_font_config_for_testing ();
+        }
 
         if (handle->priv->font_map_for_testing == NULL) {
             handle->priv->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
             pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (handle->priv->font_map_for_testing),
                                           handle->priv->font_config_for_testing);
-
-            pango_cairo_font_map_set_default (PANGO_CAIRO_FONT_MAP (handle->priv->font_map_for_testing));
         }
+
+        font_map = PANGO_CAIRO_FONT_MAP (handle->priv->font_map_for_testing);
     }
+
+    pango_cairo_font_map_set_default (font_map);
 #endif
 }
 
 /**
- * _rsvg_handle_internal_set_testing:
+ * rsvg_handle_internal_set_testing:
  * @handle: a #RsvgHandle
  * @testing: Whether to enable testing mode
  *
@@ -1381,18 +1382,8 @@ rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    handle->priv->is_testing = testing ? TRUE : FALSE;
-
-    rsvg_handle_update_font_map_for_testing (handle);
-}
-
-G_GNUC_INTERNAL
-gboolean rsvg_handle_get_is_testing (RsvgHandle *handle);
-
-gboolean
-rsvg_handle_get_is_testing (RsvgHandle *handle)
-{
-    return handle->priv->is_testing;
+    rsvg_handle_rust_set_testing (handle->priv->rust_handle, testing);
+    rsvg_handle_update_font_map_for_testing (handle, testing);
 }
 
 /* This one is defined in the C code, because the prototype has varargs

@@ -79,6 +79,7 @@ pub struct Handle {
     load_options: Cell<LoadOptions>,
     load_state: Cell<LoadState>,
     load: RefCell<Option<LoadContext>>,
+    is_testing: Cell<bool>,
 }
 
 impl Handle {
@@ -90,6 +91,7 @@ impl Handle {
             load_options: Cell::new(LoadOptions::default()),
             load_state: Cell::new(LoadState::Start),
             load: RefCell::new(None),
+            is_testing: Cell::new(false),
         }
     }
 
@@ -211,7 +213,6 @@ impl Handle {
         cr: &cairo::Context,
         dimensions: &RsvgDimensionData,
         node: Option<&RsvgNode>,
-        is_testing: bool,
     ) -> DrawingCtx {
         let mut draw_ctx = DrawingCtx::new(
             handle,
@@ -221,7 +222,6 @@ impl Handle {
             dimensions.em,
             dimensions.ex,
             get_dpi(handle).clone(),
-            is_testing,
         );
 
         if let Some(node) = node {
@@ -256,22 +256,11 @@ impl Handle {
         node: &RsvgNode,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let dimensions = self.get_dimensions(handle)?;
-
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-
         let cr = cairo::Context::new(&target);
-
-        let mut draw_ctx = self.create_drawing_ctx_for_node(
-            handle,
-            &cr,
-            &dimensions,
-            Some(node),
-            is_testing(handle),
-        );
-
+        let mut draw_ctx = self.create_drawing_ctx_for_node(handle, &cr, &dimensions, Some(node));
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
-
         let root = svg.tree.root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
@@ -413,17 +402,10 @@ impl Handle {
 
         cr.save();
 
-        let mut draw_ctx = self.create_drawing_ctx_for_node(
-            handle,
-            cr,
-            &dimensions,
-            node.as_ref(),
-            is_testing(handle),
-        );
+        let mut draw_ctx = self.create_drawing_ctx_for_node(handle, cr, &dimensions, node.as_ref());
 
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
-
         let root = svg.tree.root();
 
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
@@ -523,13 +505,14 @@ extern "C" {
 
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
 
-    fn rsvg_handle_get_is_testing(handle: *const RsvgHandle) -> glib_sys::gboolean;
-
     fn rsvg_handle_get_dimensions(handle: *mut RsvgHandle, dimensions: *mut RsvgDimensionData);
 }
 
-fn is_testing(handle: *const RsvgHandle) -> bool {
-    unsafe { from_glib(rsvg_handle_get_is_testing(handle)) }
+/// Whether we are being run from the test suite
+pub fn is_testing(handle: *const RsvgHandle) -> bool {
+    let rhandle = get_rust_handle(handle);
+
+    rhandle.is_testing.get()
 }
 
 pub fn lookup_node(handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
@@ -811,6 +794,16 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, f
     let rhandle = &*raw_handle;
 
     rhandle.load_options.set(LoadOptions::from_flags(flags));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
+    raw_handle: *const Handle,
+    testing: glib_sys::gboolean,
+) {
+    let rhandle = &*raw_handle;
+
+    rhandle.is_testing.set(from_glib(testing));
 }
 
 #[no_mangle]
