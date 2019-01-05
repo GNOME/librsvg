@@ -171,11 +171,53 @@ extern gboolean rsvg_handle_rust_render_cairo_sub (RsvgHandle *handle,
                                                    const char *id);
 extern GdkPixbuf *rsvg_handle_rust_get_pixbuf_sub (RsvgHandle *handle, const char *id);
 
-struct RsvgHandlePrivate {
-    RsvgSizeFunc size_func;
-    gpointer user_data;
-    GDestroyNotify user_data_destroy;
+typedef struct {
+    RsvgSizeFunc func;
+    gpointer data;
+    GDestroyNotify data_destroy;
+} RsvgSizeClosure;
 
+static RsvgSizeClosure *
+rsvg_size_closure_new (RsvgSizeFunc func, gpointer data, GDestroyNotify data_destroy)
+{
+    RsvgSizeClosure *closure;
+
+    closure = g_new0(RsvgSizeClosure, 1);
+    closure->func = func;
+    closure->data = data;
+    closure->data_destroy = data_destroy;
+
+    return closure;
+}
+
+G_GNUC_INTERNAL
+void rsvg_size_closure_free (RsvgSizeClosure *closure);
+
+void
+rsvg_size_closure_free (RsvgSizeClosure *closure)
+{
+    if (closure && closure->data && closure->data_destroy) {
+        (*closure->data_destroy) (closure->data);
+    }
+
+    g_free (closure);
+}
+
+G_GNUC_INTERNAL
+void rsvg_size_closure_call (RsvgSizeClosure *closure, int *width, int *height);
+
+void
+rsvg_size_closure_call (RsvgSizeClosure *closure, int *width, int *height)
+{
+    if (closure && closure->func) {
+        (*closure->func) (width, height, closure->data);
+    }
+}
+
+extern void rsvg_handle_rust_set_size_closure (RsvgHandleRust *raw_handle, RsvgSizeClosure *closure);
+extern void rsvg_handle_rust_call_size_closure (RsvgHandleRust *raw_handle, int *width, int *height);
+
+struct RsvgHandlePrivate {
     gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *
 
     gboolean in_loop;		/* see get_dimension() */
@@ -216,11 +258,6 @@ static void
 rsvg_handle_dispose (GObject *instance)
 {
     RsvgHandle *self = (RsvgHandle *) instance;
-
-    if (self->priv->user_data_destroy) {
-        (*self->priv->user_data_destroy) (self->priv->user_data);
-        self->priv->user_data_destroy = NULL;
-    }
 
     g_clear_pointer (&self->priv->base_uri, g_free);
     g_clear_pointer (&self->priv->rust_handle, rsvg_handle_rust_free);
@@ -1048,9 +1085,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     dimension_data->em = dimension_data->width;
     dimension_data->ex = dimension_data->height;
 
-    if (handle->priv->size_func)
-        (*handle->priv->size_func) (&dimension_data->width, &dimension_data->height,
-                                    handle->priv->user_data);
+    rsvg_handle_rust_call_size_closure (handle->priv->rust_handle, &dimension_data->width, &dimension_data->height);
+
     return TRUE;
 }
 
@@ -1123,8 +1159,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     width = ink_r.width;
     height = ink_r.height;
 
-    if (handle->priv->size_func)
-        (*handle->priv->size_func) (&width, &height, handle->priv->user_data);
+    rsvg_handle_rust_call_size_closure (handle->priv->rust_handle, &width, &height);
 
     return TRUE;
 }
@@ -1286,16 +1321,13 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
 void
 rsvg_handle_set_size_callback (RsvgHandle * handle,
                                RsvgSizeFunc size_func,
-                               gpointer user_data, GDestroyNotify user_data_destroy)
+                               gpointer user_data,
+                               GDestroyNotify user_data_destroy)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    if (handle->priv->user_data_destroy)
-        (*handle->priv->user_data_destroy) (handle->priv->user_data);
-
-    handle->priv->size_func = size_func;
-    handle->priv->user_data = user_data;
-    handle->priv->user_data_destroy = user_data_destroy;
+    rsvg_handle_rust_set_size_closure (handle->priv->rust_handle,
+                                       rsvg_size_closure_new (size_func, user_data, user_data_destroy));
 }
 
 /**

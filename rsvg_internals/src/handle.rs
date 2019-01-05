@@ -42,6 +42,23 @@ pub struct RsvgHandle {
     _private: [u8; 0],
 }
 
+// A *const RsvgSizeClosure is just an opaque pointer we get from C
+#[repr(C)]
+pub struct RsvgSizeClosure {
+    _private: [u8; 0],
+}
+
+#[allow(improper_ctypes)]
+extern "C" {
+    fn rsvg_size_closure_free(closure: *mut RsvgSizeClosure);
+
+    fn rsvg_size_closure_call(
+        closure: *const RsvgSizeClosure,
+        width: *mut libc::c_int,
+        height: *mut libc::c_int,
+    );
+}
+
 // Keep in sync with rsvg.h:RsvgDimensionData
 #[repr(C)]
 pub struct RsvgDimensionData {
@@ -79,6 +96,7 @@ pub struct Handle {
     load_options: Cell<LoadOptions>,
     load_state: Cell<LoadState>,
     load: RefCell<Option<LoadContext>>,
+    size_closure: *mut RsvgSizeClosure,
     is_testing: Cell<bool>,
 }
 
@@ -91,6 +109,7 @@ impl Handle {
             load_options: Cell::new(LoadOptions::default()),
             load_state: Cell::new(LoadState::Start),
             load: RefCell::new(None),
+            size_closure: ptr::null_mut(),
             is_testing: Cell::new(false),
         }
     }
@@ -462,6 +481,16 @@ impl Handle {
     }
 }
 
+impl Drop for Handle {
+    fn drop(&mut self) {
+        if !self.size_closure.is_null() {
+            unsafe {
+                rsvg_size_closure_free(self.size_closure);
+            }
+        }
+    }
+}
+
 // Keep these in sync with rsvg.h:RsvgHandleFlags
 const RSVG_HANDLE_FLAG_UNLIMITED: u32 = 1 << 0;
 const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: u32 = 1 << 1;
@@ -794,6 +823,33 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, f
     let rhandle = &*raw_handle;
 
     rhandle.load_options.set(LoadOptions::from_flags(flags));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_size_closure(
+    raw_handle: *mut Handle,
+    closure: *mut RsvgSizeClosure,
+) {
+    let rhandle = &mut *raw_handle;
+
+    if !rhandle.size_closure.is_null() {
+        rsvg_size_closure_free(rhandle.size_closure);
+    }
+
+    rhandle.size_closure = closure;
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_call_size_closure(
+    raw_handle: *const Handle,
+    width: *mut libc::c_int,
+    height: *mut libc::c_int,
+) {
+    let rhandle = &*raw_handle;
+
+    if !rhandle.size_closure.is_null() {
+        rsvg_size_closure_call(rhandle.size_closure, width, height);
+    }
 }
 
 #[no_mangle]
