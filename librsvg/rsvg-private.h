@@ -41,10 +41,6 @@
 
 G_BEGIN_DECLS 
 
-typedef struct RsvgDrawingCtx RsvgDrawingCtx;
-
-typedef struct _RsvgNode RsvgNode;
-
 /* prepare for gettext */
 #ifndef _
 #define _(X) X
