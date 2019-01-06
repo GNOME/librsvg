@@ -660,11 +660,14 @@ pub fn acquire_stream(
 
 pub fn load_image_to_surface(
     handle: *mut RsvgHandle,
-    aurl: &AllowedUrl,
+    url: &str,
 ) -> Result<ImageSurface, LoadingError> {
     let rhandle = get_rust_handle(handle);
 
-    let data = acquire_data(handle, aurl)?;
+    let aurl = AllowedUrl::from_href(url, get_base_url(handle).as_ref())
+        .map_err(|_| LoadingError::BadUrl)?;
+
+    let data = acquire_data(handle, &aurl)?;
 
     if data.data.len() == 0 {
         return Err(LoadingError::EmptyData);

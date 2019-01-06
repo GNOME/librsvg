@@ -153,6 +153,7 @@ pub enum LoadingError {
     XmlParseError(String),
     // Could not parse data: URL
     CouldNotCreateXmlParser,
+    BadUrl,
     BadDataUrl,
     Cairo(cairo::Status),
     EmptyData,
@@ -168,6 +169,7 @@ impl error::Error for LoadingError {
             LoadingError::NoDataPassedToParser => "no data passed to parser",
             LoadingError::CouldNotCreateXmlParser => "could not create XML parser",
             LoadingError::XmlParseError(_) => "XML parse error",
+            LoadingError::BadUrl => "invalid URL",
             LoadingError::BadDataUrl => "invalid data: URL",
             LoadingError::Cairo(_) => "cairo error",
             LoadingError::EmptyData => "empty data",
@@ -186,6 +188,7 @@ impl fmt::Display for LoadingError {
             LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {}", s),
             LoadingError::NoDataPassedToParser
             | LoadingError::CouldNotCreateXmlParser
+            | LoadingError::BadUrl
             | LoadingError::BadDataUrl
             | LoadingError::EmptyData
             | LoadingError::SvgHasNoElements
