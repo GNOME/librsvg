@@ -126,6 +126,26 @@ impl Handle {
         }
     }
 
+    fn set_base_url(&self, url: &str) {
+        match Url::parse(&url) {
+            Ok(u) => {
+                let url_cstring = CString::new(u.as_str()).unwrap();
+
+                rsvg_log!("setting base_uri to \"{}\"", u.as_str());
+                *self.base_url.borrow_mut() = Some(u);
+                *self.base_url_cstring.borrow_mut() = Some(url_cstring);
+            }
+
+            Err(e) => {
+                rsvg_log!(
+                    "not setting base_uri to \"{}\" since it is invalid: {}",
+                    url,
+                    e
+                );
+            }
+        }
+    }
+
     pub fn read_stream_sync(
         &mut self,
         handle: *mut RsvgHandle,
@@ -762,27 +782,15 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
 ) {
     let handle = &*raw_handle;
 
+    if handle.load_state.get() != LoadState::Start {
+        rsvg_g_warning("Please set the base file or URI before loading any data into RsvgHandle");
+        return;
+    }
+
     assert!(!uri.is_null());
     let uri: String = from_glib_none(uri);
 
-    let url = match Url::parse(&uri) {
-        Ok(u) => u,
-
-        Err(e) => {
-            rsvg_log!(
-                "not setting base_uri to \"{}\" since it is invalid: {}",
-                uri,
-                e
-            );
-            return;
-        }
-    };
-
-    let url_cstring = CString::new(url.as_str()).unwrap();
-
-    rsvg_log!("setting base_uri to \"{}\"", url);
-    *handle.base_url.borrow_mut() = Some(url);
-    *handle.base_url_cstring.borrow_mut() = Some(url_cstring);
+    handle.set_base_url(&uri);
 }
 
 #[no_mangle]
@@ -873,23 +881,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
     let rhandle = &*raw_handle;
 
     rhandle.is_testing.set(from_glib(testing));
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_is_at_start_for_setting_base_file(
-    handle: *const RsvgHandle,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    match rhandle.load_state.get() {
-        LoadState::Start => true.to_glib(),
-        _ => {
-            rsvg_g_warning(
-                "Please set the base file or URI before loading any data into RsvgHandle",
-            );
-            false.to_glib()
-        }
-    }
 }
 
 fn is_loaded(handle: &Handle) -> bool {

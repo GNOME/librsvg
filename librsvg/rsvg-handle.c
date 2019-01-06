@@ -154,7 +154,6 @@ extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
 extern guint rsvg_handle_rust_set_testing (RsvgHandleRust *raw_handle, gboolean testing);
-extern gboolean rsvg_handle_rust_is_at_start_for_setting_base_file (RsvgHandle *handle);
 extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,
                                                    GCancellable *cancellable,
@@ -826,10 +825,6 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
 
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    if (!rsvg_handle_rust_is_at_start_for_setting_base_file (handle)) {
-        return;
-    }
-
     if (base_uri == NULL) {
         return;
     }
@@ -860,20 +855,13 @@ void
 rsvg_handle_set_base_gfile (RsvgHandle *handle,
                             GFile      *base_file)
 {
-    RsvgHandlePrivate *priv;
     char *uri;
 
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (G_IS_FILE (base_file));
 
-    if (!rsvg_handle_rust_is_at_start_for_setting_base_file (handle)) {
-        return;
-    }
-
-    priv = handle->priv;
-
     uri = g_file_get_uri (base_file);
-    rsvg_handle_rust_set_base_url (priv->rust_handle, uri);
+    rsvg_handle_rust_set_base_url (handle->priv->rust_handle, uri);
     g_free (uri);
 }
 
