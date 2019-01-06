@@ -13,7 +13,6 @@ use dpi::Dpi;
 use error::RenderingError;
 use filters;
 use gradient::NodeGradient;
-use handle::{self, RsvgHandle};
 use length::Dasharray;
 use mask::NodeMask;
 use node::{CascadedValues, NodeType, RsvgNode};
@@ -31,6 +30,7 @@ use state::{
     StrokeLinecap,
     StrokeLinejoin,
 };
+use svg::Svg;
 use unit_interval::UnitInterval;
 use viewbox::ViewBox;
 
@@ -92,7 +92,7 @@ impl Drop for ViewParams {
 }
 
 pub struct DrawingCtx {
-    handle: *const RsvgHandle,
+    svg: Rc<Svg>,
 
     rect: cairo::Rectangle,
     dpi: Dpi,
@@ -123,17 +123,20 @@ pub struct DrawingCtx {
     drawsub_stack: Vec<RsvgNode>,
 
     acquired_nodes: Rc<RefCell<Vec<RsvgNode>>>,
+
+    testing: bool,
 }
 
 impl DrawingCtx {
     pub fn new(
-        handle: *const RsvgHandle,
+        svg: Rc<Svg>,
         cr: &cairo::Context,
         width: f64,
         height: f64,
         vb_width: f64,
         vb_height: f64,
         dpi: Dpi,
+        testing: bool,
     ) -> DrawingCtx {
         let mut affine = cr.get_matrix();
         let rect = cairo::Rectangle {
@@ -160,7 +163,7 @@ impl DrawingCtx {
         view_box_stack.push(ViewBox::new(0.0, 0.0, vb_width, vb_height));
 
         DrawingCtx {
-            handle,
+            svg: svg.clone(),
             rect,
             dpi,
             num_elements_rendered_through_use: 0,
@@ -173,11 +176,12 @@ impl DrawingCtx {
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
+            testing,
         }
     }
 
     pub fn is_testing(&self) -> bool {
-        handle::is_testing(self.handle)
+        self.testing
     }
 
     pub fn get_cairo_context(&self) -> cairo::Context {
@@ -259,7 +263,7 @@ impl DrawingCtx {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, fragment: &Fragment) -> Option<AcquiredNode> {
-        if let Some(node) = handle::lookup_node(self.handle, fragment) {
+        if let Some(node) = self.svg.lookup_node(fragment) {
             if !self.acquired_nodes_contains(&node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());

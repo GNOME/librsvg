@@ -101,7 +101,7 @@ pub struct Handle {
     dpi: Dpi,
     base_url: RefCell<Option<Url>>,
     base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
-    svg: RefCell<Option<Svg>>,
+    svg: RefCell<Option<Rc<Svg>>>,
     load_options: Cell<LoadOptions>,
     load_state: Cell<LoadState>,
     load: RefCell<Option<LoadContext>>,
@@ -184,7 +184,7 @@ impl Handle {
 
         xml.validate_tree()?;
 
-        *self.svg.borrow_mut() = Some(xml.steal_result());
+        *self.svg.borrow_mut() = Some(Rc::new(xml.steal_result()));
         Ok(())
     }
 
@@ -247,7 +247,7 @@ impl Handle {
 
         xml.validate_tree()?;
 
-        *self.svg.borrow_mut() = Some(xml.steal_result());
+        *self.svg.borrow_mut() = Some(Rc::new(xml.steal_result()));
         Ok(())
     }
 
@@ -266,13 +266,14 @@ impl Handle {
         node: Option<&RsvgNode>,
     ) -> DrawingCtx {
         let mut draw_ctx = DrawingCtx::new(
-            handle,
+            self.svg.borrow().as_ref().unwrap().clone(),
             cr,
             f64::from(dimensions.width),
             f64::from(dimensions.height),
             dimensions.em,
             dimensions.ex,
             get_dpi(handle).clone(),
+            self.is_testing.get(),
         );
 
         if let Some(node) = node {
@@ -567,23 +568,6 @@ extern "C" {
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
 
     fn rsvg_handle_get_dimensions(handle: *mut RsvgHandle, dimensions: *mut RsvgDimensionData);
-}
-
-/// Whether we are being run from the test suite
-pub fn is_testing(handle: *const RsvgHandle) -> bool {
-    let rhandle = get_rust_handle(handle);
-
-    rhandle.is_testing.get()
-}
-
-pub fn lookup_node(handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
-    let rhandle = get_rust_handle(handle);
-
-    let svg_ref = rhandle.svg.borrow();
-    let svg = svg_ref.as_ref().unwrap();
-    let mut defs_ref = svg.defs.borrow_mut();
-
-    defs_ref.lookup(handle, fragment)
 }
 
 // Looks up a node by its id.

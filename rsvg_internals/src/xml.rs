@@ -127,6 +127,7 @@ impl XmlState {
 
     pub fn steal_result(&mut self) -> Svg {
         Svg::new(
+            self.handle,
             self.tree.take().unwrap(),
             self.defs.take().unwrap(),
             self.css_styles.take().unwrap(),
