@@ -1,4 +1,5 @@
 use std::cell::{Cell, Ref, RefCell};
+use std::ffi::CString;
 use std::mem;
 use std::ptr;
 use std::rc::Rc;
@@ -42,6 +43,23 @@ pub struct RsvgHandle {
     _private: [u8; 0],
 }
 
+// A *const RsvgSizeClosure is just an opaque pointer we get from C
+#[repr(C)]
+pub struct RsvgSizeClosure {
+    _private: [u8; 0],
+}
+
+#[allow(improper_ctypes)]
+extern "C" {
+    fn rsvg_size_closure_free(closure: *mut RsvgSizeClosure);
+
+    fn rsvg_size_closure_call(
+        closure: *const RsvgSizeClosure,
+        width: *mut libc::c_int,
+        height: *mut libc::c_int,
+    );
+}
+
 // Keep in sync with rsvg.h:RsvgDimensionData
 #[repr(C)]
 pub struct RsvgDimensionData {
@@ -49,6 +67,13 @@ pub struct RsvgDimensionData {
     height: libc::c_int,
     em: f64,
     ex: f64,
+}
+
+// Keep in sync with rsvg.h:RsvgPositionData
+#[repr(C)]
+pub struct RsvgPositionData {
+    x: libc::c_int,
+    y: libc::c_int,
 }
 
 /// Flags used during loading
@@ -75,10 +100,14 @@ pub enum LoadState {
 pub struct Handle {
     dpi: Dpi,
     base_url: RefCell<Option<Url>>,
+    base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     svg: RefCell<Option<Svg>>,
     load_options: Cell<LoadOptions>,
     load_state: Cell<LoadState>,
     load: RefCell<Option<LoadContext>>,
+    size_closure: *mut RsvgSizeClosure,
+    in_loop: Cell<bool>,
+    is_testing: Cell<bool>,
 }
 
 impl Handle {
@@ -86,10 +115,14 @@ impl Handle {
         Handle {
             dpi: Dpi::default(),
             base_url: RefCell::new(None),
+            base_url_cstring: RefCell::new(None),
             svg: RefCell::new(None),
             load_options: Cell::new(LoadOptions::default()),
             load_state: Cell::new(LoadState::Start),
             load: RefCell::new(None),
+            size_closure: ptr::null_mut(),
+            in_loop: Cell::new(false),
+            is_testing: Cell::new(false),
         }
     }
 
@@ -211,7 +244,6 @@ impl Handle {
         cr: &cairo::Context,
         dimensions: &RsvgDimensionData,
         node: Option<&RsvgNode>,
-        is_testing: bool,
     ) -> DrawingCtx {
         let mut draw_ctx = DrawingCtx::new(
             handle,
@@ -221,7 +253,6 @@ impl Handle {
             dimensions.em,
             dimensions.ex,
             get_dpi(handle).clone(),
-            is_testing,
         );
 
         if let Some(node) = node {
@@ -256,22 +287,11 @@ impl Handle {
         node: &RsvgNode,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let dimensions = self.get_dimensions(handle)?;
-
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-
         let cr = cairo::Context::new(&target);
-
-        let mut draw_ctx = self.create_drawing_ctx_for_node(
-            handle,
-            &cr,
-            &dimensions,
-            Some(node),
-            is_testing(handle),
-        );
-
+        let mut draw_ctx = self.create_drawing_ctx_for_node(handle, &cr, &dimensions, Some(node));
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
-
         let root = svg.tree.root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
@@ -413,17 +433,10 @@ impl Handle {
 
         cr.save();
 
-        let mut draw_ctx = self.create_drawing_ctx_for_node(
-            handle,
-            cr,
-            &dimensions,
-            node.as_ref(),
-            is_testing(handle),
-        );
+        let mut draw_ctx = self.create_drawing_ctx_for_node(handle, cr, &dimensions, node.as_ref());
 
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
-
         let root = svg.tree.root();
 
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
@@ -480,6 +493,16 @@ impl Handle {
     }
 }
 
+impl Drop for Handle {
+    fn drop(&mut self) {
+        if !self.size_closure.is_null() {
+            unsafe {
+                rsvg_size_closure_free(self.size_closure);
+            }
+        }
+    }
+}
+
 // Keep these in sync with rsvg.h:RsvgHandleFlags
 const RSVG_HANDLE_FLAG_UNLIMITED: u32 = 1 << 0;
 const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: u32 = 1 << 1;
@@ -523,13 +546,14 @@ extern "C" {
 
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
 
-    fn rsvg_handle_get_is_testing(handle: *const RsvgHandle) -> glib_sys::gboolean;
-
     fn rsvg_handle_get_dimensions(handle: *mut RsvgHandle, dimensions: *mut RsvgDimensionData);
 }
 
-fn is_testing(handle: *const RsvgHandle) -> bool {
-    unsafe { from_glib(rsvg_handle_get_is_testing(handle)) }
+/// Whether we are being run from the test suite
+pub fn is_testing(handle: *const RsvgHandle) -> bool {
+    let rhandle = get_rust_handle(handle);
+
+    rhandle.is_testing.get()
 }
 
 pub fn lookup_node(handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
@@ -754,8 +778,11 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
         }
     };
 
+    let url_cstring = CString::new(url.as_str()).unwrap();
+
     rsvg_log!("setting base_uri to \"{}\"", url);
     *handle.base_url.borrow_mut() = Some(url);
+    *handle.base_url_cstring.borrow_mut() = Some(url_cstring);
 }
 
 #[no_mangle]
@@ -766,8 +793,19 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
 
     match *handle.base_url.borrow() {
         None => ptr::null_mut(),
-
         Some(ref url) => GFile::new_for_uri(url.as_str()).to_glib_full(),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_base_url(
+    raw_handle: *const Handle,
+) -> *const libc::c_char {
+    let handle = &*raw_handle;
+
+    match *handle.base_url_cstring.borrow() {
+        None => ptr::null(),
+        Some(ref url) => url.as_ptr(),
     }
 }
 
@@ -814,6 +852,30 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, f
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_size_closure(
+    raw_handle: *mut Handle,
+    closure: *mut RsvgSizeClosure,
+) {
+    let rhandle = &mut *raw_handle;
+
+    if !rhandle.size_closure.is_null() {
+        rsvg_size_closure_free(rhandle.size_closure);
+    }
+
+    rhandle.size_closure = closure;
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
+    raw_handle: *const Handle,
+    testing: glib_sys::gboolean,
+) {
+    let rhandle = &*raw_handle;
+
+    rhandle.is_testing.set(from_glib(testing));
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_is_at_start_for_setting_base_file(
     handle: *const RsvgHandle,
 ) -> glib_sys::gboolean {
@@ -830,31 +892,26 @@ pub unsafe extern "C" fn rsvg_handle_rust_is_at_start_for_setting_base_file(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_is_loaded(
-    handle: *const RsvgHandle,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    match rhandle.load_state.get() {
+fn is_loaded(handle: &Handle) -> bool {
+    match handle.load_state.get() {
         LoadState::Start => {
             rsvg_g_warning("RsvgHandle has not been loaded");
-            false.to_glib()
+            false
         }
 
         LoadState::Loading => {
             rsvg_g_warning("RsvgHandle is still loading; call rsvg_handle_close() first");
-            false.to_glib()
+            false
         }
 
-        LoadState::ClosedOk => true.to_glib(),
+        LoadState::ClosedOk => true,
 
         LoadState::ClosedError => {
             rsvg_g_warning(
                 "RsvgHandle could not read or parse the SVG; did you check for errors during the \
                  loading stage?",
             );
-            false.to_glib()
+            false
         }
     }
 }
@@ -934,6 +991,10 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
+    if !is_loaded(rhandle) {
+        return false.to_glib();
+    }
+
     let id: Option<String> = from_glib_none(id);
 
     match rhandle.get_geometry_sub(handle, id.as_ref().map(String::as_str)) {
@@ -969,15 +1030,18 @@ pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
     handle: *mut RsvgHandle,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
-    if id.is_null() {
-        false.to_glib()
-    } else {
-        let id: String = from_glib_none(id);
+    let rhandle = get_rust_handle(handle);
 
-        let rhandle = get_rust_handle(handle);
-
-        rhandle.has_sub(handle, &id).to_glib()
+    if !is_loaded(rhandle) {
+        return false.to_glib();
     }
+
+    if id.is_null() {
+        return false.to_glib();
+    }
+
+    let id: String = from_glib_none(id);
+    rhandle.has_sub(handle, &id).to_glib()
 }
 
 #[no_mangle]
@@ -989,6 +1053,10 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
     let rhandle = get_rust_handle(handle);
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
+
+    if !is_loaded(rhandle) {
+        return false.to_glib();
+    }
 
     match rhandle.render_cairo_sub(handle, &cr, id.as_ref().map(String::as_str)) {
         Ok(()) => true.to_glib(),
@@ -1006,11 +1074,128 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
     id: *const libc::c_char,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
     let rhandle = get_rust_handle(handle);
-
     let id: Option<String> = from_glib_none(id);
+
+    if !is_loaded(rhandle) {
+        return ptr::null_mut();
+    }
 
     match rhandle.get_pixbuf_sub(handle, id.as_ref().map(String::as_str)) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(_) => ptr::null_mut(),
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
+    handle: *mut RsvgHandle,
+    dimension_data: *mut RsvgDimensionData,
+) {
+    let rhandle = get_rust_handle(handle);
+
+    if !is_loaded(rhandle) {
+        return;
+    }
+
+    // This function is probably called from the cairo_render functions.
+    // To prevent an infinite loop we are saving the state.
+    if rhandle.in_loop.get() {
+        // Called within the size function, so return a standard size
+        (*dimension_data).width = 1;
+        (*dimension_data).height = 1;
+        (*dimension_data).em = 1.0;
+        (*dimension_data).ex = 1.0;
+        return;
+    }
+
+    rhandle.in_loop.set(true);
+    rsvg_handle_rust_get_dimensions_sub(handle, dimension_data, ptr::null());
+    rhandle.in_loop.set(false);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
+    handle: *mut RsvgHandle,
+    dimension_data: *mut RsvgDimensionData,
+    id: *const libc::c_char,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    if !is_loaded(rhandle) {
+        return false.to_glib();
+    }
+
+    let mut ink_r = RsvgRectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 0.0,
+        height: 0.0,
+    };
+
+    let res = rsvg_handle_rust_get_geometry_sub(handle, &mut ink_r, ptr::null_mut(), id);
+    if from_glib(res) {
+        (*dimension_data).width = ink_r.width as libc::c_int;
+        (*dimension_data).height = ink_r.height as libc::c_int;
+        (*dimension_data).em = ink_r.width;
+        (*dimension_data).ex = ink_r.height;
+
+        if !rhandle.size_closure.is_null() {
+            rsvg_size_closure_call(
+                rhandle.size_closure,
+                &mut (*dimension_data).width,
+                &mut (*dimension_data).height,
+            );
+        }
+    } else {
+        (*dimension_data).width = 0;
+        (*dimension_data).height = 0;
+        (*dimension_data).em = 0.0;
+        (*dimension_data).ex = 0.0;
+    }
+
+    res
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
+    handle: *mut RsvgHandle,
+    position: *mut RsvgPositionData,
+    id: *const libc::c_char,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    if !is_loaded(rhandle) {
+        return false.to_glib();
+    }
+
+    // Short-cut when no id is given
+    if id.is_null() || *id == 0 {
+        (*position).x = 0;
+        (*position).y = 0;
+        return true.to_glib();
+    }
+
+    let mut ink_r = RsvgRectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 0.0,
+        height: 0.0,
+    };
+
+    let res = rsvg_handle_rust_get_geometry_sub(handle, &mut ink_r, ptr::null_mut(), id);
+    if from_glib(res) {
+        (*position).x = ink_r.x as libc::c_int;
+        (*position).y = ink_r.y as libc::c_int;
+
+        let mut width = ink_r.width as libc::c_int;
+        let mut height = ink_r.height as libc::c_int;
+        if !rhandle.size_closure.is_null() {
+            rsvg_size_closure_call(rhandle.size_closure, &mut width, &mut height);
+        }
+    } else {
+        (*position).x = 0;
+        (*position).y = 0;
+    }
+
+    res
 }

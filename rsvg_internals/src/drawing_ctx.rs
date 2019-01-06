@@ -2,8 +2,6 @@ use cairo;
 use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
-use pango::{self, FontMapExt};
-use pangocairo;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
@@ -32,7 +30,6 @@ use state::{
     StrokeDasharray,
     StrokeLinecap,
     StrokeLinejoin,
-    TextRendering,
 };
 use unit_interval::UnitInterval;
 use viewbox::ViewBox;
@@ -126,8 +123,6 @@ pub struct DrawingCtx {
     drawsub_stack: Vec<RsvgNode>,
 
     acquired_nodes: Rc<RefCell<Vec<RsvgNode>>>,
-
-    is_testing: bool,
 }
 
 impl DrawingCtx {
@@ -139,7 +134,6 @@ impl DrawingCtx {
         vb_width: f64,
         vb_height: f64,
         dpi: Dpi,
-        is_testing: bool,
     ) -> DrawingCtx {
         let mut affine = cr.get_matrix();
         let rect = cairo::Rectangle {
@@ -179,8 +173,11 @@ impl DrawingCtx {
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
-            is_testing,
         }
+    }
+
+    pub fn is_testing(&self) -> bool {
+        handle::is_testing(self.handle)
     }
 
     pub fn get_cairo_context(&self) -> cairo::Context {
@@ -196,32 +193,12 @@ impl DrawingCtx {
         self.cr = cr.clone();
     }
 
-    pub fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
-        cr.to_raw_none() != self.initial_cr.to_raw_none()
-    }
-
-    pub fn get_cr_stack(&self) -> &Vec<cairo::Context> {
-        &self.cr_stack
-    }
-
     pub fn get_width(&self) -> f64 {
         self.rect.width
     }
 
     pub fn get_height(&self) -> f64 {
         self.rect.height
-    }
-
-    pub fn get_raw_offset(&self) -> (f64, f64) {
-        (self.rect.x, self.rect.y)
-    }
-
-    pub fn get_offset(&self) -> (f64, f64) {
-        if self.is_cairo_context_nested(&self.get_cairo_context()) {
-            (0.0, 0.0)
-        } else {
-            (self.rect.x, self.rect.y)
-        }
     }
 
     /// Gets the viewport that was last pushed with `push_view_box()`.
@@ -329,6 +306,18 @@ impl DrawingCtx {
                     None
                 }
             })
+    }
+
+    fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
+        cr.to_raw_none() != self.initial_cr.to_raw_none()
+    }
+
+    fn get_offset(&self) -> (f64, f64) {
+        if self.is_cairo_context_nested(&self.get_cairo_context()) {
+            (0.0, 0.0)
+        } else {
+            (self.rect.x, self.rect.y)
+        }
     }
 
     pub fn with_discrete_layer(
@@ -595,43 +584,6 @@ impl DrawingCtx {
         Ok(had_paint_server)
     }
 
-    pub fn get_pango_context(&self) -> pango::Context {
-        let font_map = pangocairo::FontMap::get_default().unwrap();
-        let context = font_map.create_context().unwrap();
-        let cr = self.get_cairo_context();
-        pangocairo::functions::update_context(&cr, &context);
-
-        // Pango says this about pango_cairo_context_set_resolution():
-        //
-        //     Sets the resolution for the context. This is a scale factor between
-        //     points specified in a #PangoFontDescription and Cairo units. The
-        //     default value is 96, meaning that a 10 point font will be 13
-        //     units high. (10 * 96. / 72. = 13.3).
-        //
-        // I.e. Pango font sizes in a PangoFontDescription are in *points*, not pixels.
-        // However, we are normalizing everything to userspace units, which amount to
-        // pixels.  So, we will use 72.0 here to make Pango not apply any further scaling
-        // to the size values we give it.
-        //
-        // An alternative would be to divide our font sizes by (dpi_y / 72) to effectively
-        // cancel out Pango's scaling, but it's probably better to deal with Pango-isms
-        // right here, instead of spreading them out through our Length normalization
-        // code.
-        pangocairo::functions::context_set_resolution(&context, 72.0);
-
-        if self.is_testing {
-            let mut options = cairo::FontOptions::new();
-
-            options.set_antialias(cairo::Antialias::Gray);
-            options.set_hint_style(cairo::enums::HintStyle::Full);
-            options.set_hint_metrics(cairo::enums::HintMetrics::On);
-
-            pangocairo::functions::context_set_font_options(&context, &options);
-        }
-
-        context
-    }
-
     pub fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
         let params = self.get_view_params();
 
@@ -739,6 +691,24 @@ impl DrawingCtx {
         cr.set_matrix(save_affine);
     }
 
+    pub fn get_snapshot(&self, surface: &cairo::ImageSurface) {
+        let (x, y) = (self.rect.x, self.rect.y);
+
+        // TODO: as far as I can tell this should not render elements past the last (topmost) one
+        // with enable-background: new (because technically we shouldn't have been caching them).
+        // Right now there are no enable-background checks whatsoever.
+        let cr = cairo::Context::new(&surface);
+        for draw in self.cr_stack.iter() {
+            let nested = self.is_cairo_context_nested(&draw);
+            cr.set_source_surface(
+                &draw.get_target(),
+                if nested { 0f64 } else { -x },
+                if nested { 0f64 } else { -y },
+            );
+            cr.paint();
+        }
+    }
+
     pub fn draw_node_on_surface(
         &mut self,
         node: &RsvgNode,
@@ -804,6 +774,15 @@ impl DrawingCtx {
         }
 
         res
+    }
+
+    pub fn mask_surface(&mut self, mask: &cairo::ImageSurface) {
+        let cr = self.get_cairo_context();
+
+        cr.identity_matrix();
+
+        let (xofs, yofs) = self.get_offset();
+        cr.mask_surface(&mask, xofs, yofs);
     }
 
     pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {
@@ -954,17 +933,6 @@ impl From<ShapeRendering> for cairo::Antialias {
         match sr {
             ShapeRendering::Auto | ShapeRendering::GeometricPrecision => cairo::Antialias::Default,
             ShapeRendering::OptimizeSpeed | ShapeRendering::CrispEdges => cairo::Antialias::None,
-        }
-    }
-}
-
-impl From<TextRendering> for cairo::Antialias {
-    fn from(tr: TextRendering) -> cairo::Antialias {
-        match tr {
-            TextRendering::Auto
-            | TextRendering::OptimizeLegibility
-            | TextRendering::GeometricPrecision => cairo::Antialias::Default,
-            TextRendering::OptimizeSpeed => cairo::Antialias::None,
         }
     }
 }

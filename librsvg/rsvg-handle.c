@@ -123,7 +123,6 @@
 #include <string.h>
 #include <limits.h>
 #include <stdlib.h>
-
 #include <glib/gprintf.h>
 #include "rsvg-private.h"
 
@@ -150,11 +149,12 @@ extern double rsvg_handle_rust_get_dpi_y (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_dpi_x (RsvgHandleRust *raw_handle, double dpi_x);
 extern void rsvg_handle_rust_set_dpi_y (RsvgHandleRust *raw_handle, double dpi_y);
 extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const char *uri);
+extern const char *rsvg_handle_rust_get_base_url (RsvgHandleRust *raw_handle);
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
+extern guint rsvg_handle_rust_set_testing (RsvgHandleRust *raw_handle, gboolean testing);
 extern gboolean rsvg_handle_rust_is_at_start_for_setting_base_file (RsvgHandle *handle);
-extern gboolean rsvg_handle_rust_is_loaded (RsvgHandle *handle);
 extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,
                                                    GCancellable *cancellable,
@@ -170,23 +170,61 @@ extern gboolean rsvg_handle_rust_render_cairo_sub (RsvgHandle *handle,
                                                    cairo_t *cr,
                                                    const char *id);
 extern GdkPixbuf *rsvg_handle_rust_get_pixbuf_sub (RsvgHandle *handle, const char *id);
+extern void rsvg_handle_rust_get_dimensions (RsvgHandle *handle,
+                                             RsvgDimensionData *dimension_data);
+extern gboolean rsvg_handle_rust_get_dimensions_sub (RsvgHandle *handle,
+                                                     RsvgDimensionData *dimension_data,
+                                                     const char *id);
+extern gboolean rsvg_handle_rust_get_position_sub (RsvgHandle *handle,
+                                                   RsvgPositionData *dimension_data,
+                                                   const char *id);
+
+typedef struct {
+    RsvgSizeFunc func;
+    gpointer data;
+    GDestroyNotify data_destroy;
+} RsvgSizeClosure;
+
+static RsvgSizeClosure *
+rsvg_size_closure_new (RsvgSizeFunc func, gpointer data, GDestroyNotify data_destroy)
+{
+    RsvgSizeClosure *closure;
+
+    closure = g_new0(RsvgSizeClosure, 1);
+    closure->func = func;
+    closure->data = data;
+    closure->data_destroy = data_destroy;
+
+    return closure;
+}
+
+G_GNUC_INTERNAL
+void rsvg_size_closure_free (RsvgSizeClosure *closure);
+
+void
+rsvg_size_closure_free (RsvgSizeClosure *closure)
+{
+    if (closure && closure->data && closure->data_destroy) {
+        (*closure->data_destroy) (closure->data);
+    }
+
+    g_free (closure);
+}
+
+G_GNUC_INTERNAL
+void rsvg_size_closure_call (RsvgSizeClosure *closure, int *width, int *height);
+
+void
+rsvg_size_closure_call (RsvgSizeClosure *closure, int *width, int *height)
+{
+    if (closure && closure->func) {
+        (*closure->func) (width, height, closure->data);
+    }
+}
+
+extern void rsvg_handle_rust_set_size_closure (RsvgHandleRust *raw_handle, RsvgSizeClosure *closure);
 
 struct RsvgHandlePrivate {
-    RsvgSizeFunc size_func;
-    gpointer user_data;
-    GDestroyNotify user_data_destroy;
-
-    gchar *base_uri; // Keep this here; since rsvg_handle_get_base_uri() returns a const char *
-
-    gboolean in_loop;		/* see get_dimension() */
-
-    gboolean is_testing; /* Are we being run from the test suite? */
-
-#ifdef HAVE_PANGOFT2
-    FcConfig *font_config_for_testing;
-    PangoFontMap *font_map_for_testing;
-#endif
-
     RsvgHandleRust *rust_handle;
 };
 
@@ -213,16 +251,6 @@ static void
 rsvg_handle_init (RsvgHandle * self)
 {
     self->priv = rsvg_handle_get_instance_private (self);
-
-    self->priv->in_loop = FALSE;
-
-    self->priv->is_testing = FALSE;
-
-#ifdef HAVE_PANGOFT2
-    self->priv->font_config_for_testing = NULL;
-    self->priv->font_map_for_testing = NULL;
-#endif
-
     self->priv->rust_handle = rsvg_handle_rust_new();
 }
 
@@ -230,18 +258,6 @@ static void
 rsvg_handle_dispose (GObject *instance)
 {
     RsvgHandle *self = (RsvgHandle *) instance;
-
-    if (self->priv->user_data_destroy) {
-        (*self->priv->user_data_destroy) (self->priv->user_data);
-        self->priv->user_data_destroy = NULL;
-    }
-
-    g_clear_pointer (&self->priv->base_uri, g_free);
-
-#ifdef HAVE_PANGOFT2
-    g_clear_pointer (&self->priv->font_config_for_testing, FcConfigDestroy);
-    g_clear_object (&self->priv->font_map_for_testing);
-#endif
 
     g_clear_pointer (&self->priv->rust_handle, rsvg_handle_rust_free);
 
@@ -846,7 +862,6 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
 {
     RsvgHandlePrivate *priv;
     char *uri;
-    GFile *real_base_file;
 
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (G_IS_FILE (base_file));
@@ -860,17 +875,6 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
     uri = g_file_get_uri (base_file);
     rsvg_handle_rust_set_base_url (priv->rust_handle, uri);
     g_free (uri);
-
-    /* Obtain the sanitized version */
-
-    real_base_file = rsvg_handle_rust_get_base_gfile (priv->rust_handle);
-    g_free (priv->base_uri);
-
-    if (real_base_file) {
-        priv->base_uri = g_file_get_uri (real_base_file);
-    } else {
-        priv->base_uri = NULL;
-    }
 }
 
 /**
@@ -886,7 +890,8 @@ const char *
 rsvg_handle_get_base_uri (RsvgHandle * handle)
 {
     g_return_val_if_fail (handle, NULL);
-    return handle->priv->base_uri;
+
+    return rsvg_handle_rust_get_base_url (handle->priv->rust_handle);
 }
 
 /**
@@ -971,10 +976,6 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (cr != NULL, FALSE);
 
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
-
     return rsvg_handle_rust_render_cairo_sub (handle, cr, id);
 }
 
@@ -1012,22 +1013,7 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (dimension_data != NULL);
 
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return;
-    }
-
-    /* This function is probably called from the cairo_render functions.
-     * To prevent an infinite loop we are saving the state.
-     */
-    if (!handle->priv->in_loop) {
-        handle->priv->in_loop = TRUE;
-        rsvg_handle_get_dimensions_sub (handle, dimension_data, NULL);
-        handle->priv->in_loop = FALSE;
-    } else {
-        /* Called within the size function, so return a standard size */
-        dimension_data->em = dimension_data->width = 1;
-        dimension_data->ex = dimension_data->height = 1;
-    }
+    rsvg_handle_rust_get_dimensions (handle, dimension_data);
 }
 
 /**
@@ -1047,31 +1033,10 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
 gboolean
 rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id)
 {
-    RsvgRectangle ink_r;
-
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
 
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
-
-    memset (&ink_r, 0, sizeof (RsvgRectangle));
-    memset (dimension_data, 0, sizeof (RsvgDimensionData));
-
-    if (!rsvg_handle_get_geometry_sub (handle, &ink_r, NULL, id)) {
-        return FALSE;
-    }
-
-    dimension_data->width = ink_r.width;
-    dimension_data->height = ink_r.height;
-    dimension_data->em = dimension_data->width;
-    dimension_data->ex = dimension_data->height;
-
-    if (handle->priv->size_func)
-        (*handle->priv->size_func) (&dimension_data->width, &dimension_data->height,
-                                    handle->priv->user_data);
-    return TRUE;
+    return rsvg_handle_rust_get_dimensions_sub (handle, dimension_data, id);
 }
 
 /**
@@ -1094,10 +1059,6 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, Rsv
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
-
     return rsvg_handle_rust_get_geometry_sub(handle, ink_rect, logical_rect, id);
 }
 
@@ -1118,35 +1079,10 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, Rsv
 gboolean
 rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
 {
-    RsvgRectangle ink_r;
-    int width, height;
-
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (position_data != NULL, FALSE);
 
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
-
-    memset (position_data, 0, sizeof (*position_data));
-
-    /* Short-cut when no id is given. */
-    if (NULL == id || '\0' == *id)
-        return TRUE;
-
-    if (!rsvg_handle_get_geometry_sub (handle, &ink_r, NULL, id))
-        return FALSE;
-
-    position_data->x = ink_r.x;
-    position_data->y = ink_r.y;
-
-    width = ink_r.width;
-    height = ink_r.height;
-
-    if (handle->priv->size_func)
-        (*handle->priv->size_func) (&width, &height, handle->priv->user_data);
-
-    return TRUE;
+    return rsvg_handle_rust_get_position_sub (handle, position_data, id);
 }
 
 /**
@@ -1165,10 +1101,6 @@ rsvg_handle_has_sub (RsvgHandle *handle,
                      const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return FALSE;
-    }
 
     return rsvg_handle_rust_has_sub (handle, id);
 }
@@ -1199,10 +1131,6 @@ GdkPixbuf *
 rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), NULL);
-
-    if (!rsvg_handle_rust_is_loaded (handle)) {
-        return NULL;
-    }
 
     return rsvg_handle_rust_get_pixbuf_sub (handle, id);
 }
@@ -1306,70 +1234,17 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
 void
 rsvg_handle_set_size_callback (RsvgHandle * handle,
                                RsvgSizeFunc size_func,
-                               gpointer user_data, GDestroyNotify user_data_destroy)
+                               gpointer user_data,
+                               GDestroyNotify user_data_destroy)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    if (handle->priv->user_data_destroy)
-        (*handle->priv->user_data_destroy) (handle->priv->user_data);
-
-    handle->priv->size_func = size_func;
-    handle->priv->user_data = user_data;
-    handle->priv->user_data_destroy = user_data_destroy;
-}
-
-#ifdef HAVE_PANGOFT2
-
-static void
-create_font_config_for_testing (RsvgHandle *handle)
-{
-    const char *font_paths[] = {
-        "resources/Roboto-Regular.ttf",
-        "resources/Roboto-Italic.ttf",
-        "resources/Roboto-Bold.ttf",
-        "resources/Roboto-BoldItalic.ttf",
-    };
-
-    int i;
-
-    if (handle->priv->font_config_for_testing != NULL)
-        return;
-
-    handle->priv->font_config_for_testing = FcConfigCreate ();
-
-    for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
-        char *font_path = g_test_build_filename (G_TEST_DIST, font_paths[i], NULL);
-
-        if (!FcConfigAppFontAddFile (handle->priv->font_config_for_testing, (const FcChar8 *) font_path)) {
-            g_error ("Could not load font file \"%s\" for tests; aborting", font_path);
-        }
-
-        g_free (font_path);
-    }
-}
-
-#endif
-
-static void
-rsvg_handle_update_font_map_for_testing (RsvgHandle *handle)
-{
-#ifdef HAVE_PANGOFT2
-    if (handle->priv->is_testing) {
-        create_font_config_for_testing (handle);
-
-        if (handle->priv->font_map_for_testing == NULL) {
-            handle->priv->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-            pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (handle->priv->font_map_for_testing),
-                                          handle->priv->font_config_for_testing);
-
-            pango_cairo_font_map_set_default (PANGO_CAIRO_FONT_MAP (handle->priv->font_map_for_testing));
-        }
-    }
-#endif
+    rsvg_handle_rust_set_size_closure (handle->priv->rust_handle,
+                                       rsvg_size_closure_new (size_func, user_data, user_data_destroy));
 }
 
 /**
- * _rsvg_handle_internal_set_testing:
+ * rsvg_handle_internal_set_testing:
  * @handle: a #RsvgHandle
  * @testing: Whether to enable testing mode
  *
@@ -1381,18 +1256,7 @@ rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    handle->priv->is_testing = testing ? TRUE : FALSE;
-
-    rsvg_handle_update_font_map_for_testing (handle);
-}
-
-G_GNUC_INTERNAL
-gboolean rsvg_handle_get_is_testing (RsvgHandle *handle);
-
-gboolean
-rsvg_handle_get_is_testing (RsvgHandle *handle)
-{
-    return handle->priv->is_testing;
+    rsvg_handle_rust_set_testing (handle->priv->rust_handle, testing);
 }
 
 /* This one is defined in the C code, because the prototype has varargs
