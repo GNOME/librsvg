@@ -890,7 +890,8 @@ rsvg_handle_get_base_uri (RsvgHandle * handle)
  *
  * Since: 2.9
  *
- * Deprecated: 2.36
+ * Deprecated: 2.36.  Librsvg does not read the metadata/desc/title elements;
+ * this function always returns #NULL.
  */
 const char *
 rsvg_handle_get_metadata (RsvgHandle * handle)
@@ -908,7 +909,8 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
  *
  * Since: 2.4
  *
- * Deprecated: 2.36
+ * Deprecated: 2.36.  Librsvg does not read the metadata/desc/title elements;
+ * this function always returns #NULL.
  */
 const char *
 rsvg_handle_get_title (RsvgHandle * handle)
@@ -926,7 +928,8 @@ rsvg_handle_get_title (RsvgHandle * handle)
  *
  * Since: 2.4
  *
- * Deprecated: 2.36
+ * Deprecated: 2.36.  Librsvg does not read the metadata/desc/title elements;
+ * this function always returns #NULL.
  */
 const char *
 rsvg_handle_get_desc (RsvgHandle * handle)
