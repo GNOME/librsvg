@@ -263,7 +263,7 @@ impl DrawingCtx {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, fragment: &Fragment) -> Option<AcquiredNode> {
-        if let Some(node) = self.svg.lookup_node(fragment) {
+        if let Some(node) = self.svg.lookup(fragment) {
             if !self.acquired_nodes_contains(&node) {
                 self.acquired_nodes.borrow_mut().push(node.clone());
                 let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());

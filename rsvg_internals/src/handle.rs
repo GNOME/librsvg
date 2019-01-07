@@ -18,7 +18,7 @@ use url::Url;
 
 use allowed_url::AllowedUrl;
 use css::{self, CssStyles};
-use defs::{Fragment, Href};
+use defs::Href;
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
@@ -344,9 +344,7 @@ impl Handle {
         };
 
         let (node, is_root) = if let Some(id) = id {
-            let n = self
-                .defs_lookup(handle, id)
-                .map_err(RenderingError::InvalidId)?;
+            let n = self.lookup_node(id).map_err(RenderingError::InvalidId)?;
             let is_root = Rc::ptr_eq(&n, &root);
             (n, is_root)
         } else {
@@ -373,17 +371,11 @@ impl Handle {
         self.get_node_geometry(handle, &node)
     }
 
-    fn defs_lookup(
-        &mut self,
-        handle: *const RsvgHandle,
-        name: &str,
-    ) -> Result<RsvgNode, DefsLookupErrorKind> {
+    fn lookup_node(&mut self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
 
-        let mut defs = svg.defs.borrow_mut();
-
-        let href = Href::with_fragment(name).map_err(DefsLookupErrorKind::HrefError)?;
+        let href = Href::with_fragment(id).map_err(DefsLookupErrorKind::HrefError)?;
 
         match href {
             Href::WithFragment(fragment) => {
@@ -409,7 +401,7 @@ impl Handle {
                     return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
                 }
 
-                match defs.lookup(handle, &fragment) {
+                match svg.lookup_node_by_id(fragment.fragment()) {
                     Some(n) => Ok(n),
                     None => Err(DefsLookupErrorKind::NotFound),
                 }
@@ -419,9 +411,9 @@ impl Handle {
         }
     }
 
-    fn has_sub(&mut self, handle: *const RsvgHandle, name: &str) -> bool {
+    fn has_sub(&mut self, name: &str) -> bool {
         // FIXME: return a proper error; only NotFound should map to false
-        self.defs_lookup(handle, name).is_ok()
+        self.lookup_node(name).is_ok()
     }
 
     fn render_cairo_sub(
@@ -442,10 +434,7 @@ impl Handle {
         }
 
         let node = if let Some(id) = id {
-            Some(
-                self.defs_lookup(handle, id)
-                    .map_err(RenderingError::InvalidId)?,
-            )
+            Some(self.lookup_node(id).map_err(RenderingError::InvalidId)?)
         } else {
             None
         };
@@ -571,16 +560,13 @@ extern "C" {
 }
 
 // Looks up a node by its id.
-//
-// Note that this ignores the Fragment's url; it only uses the fragment identifier.
-pub fn lookup_fragment_id(handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
+pub fn lookup_fragment_id(handle: *const RsvgHandle, id: &str) -> Option<Rc<Node>> {
     let rhandle = get_rust_handle(handle);
 
     let svg_ref = rhandle.svg.borrow();
     let svg = svg_ref.as_ref().unwrap();
-    let defs_ref = svg.defs.borrow();
 
-    defs_ref.lookup_fragment_id(fragment.fragment())
+    svg.lookup_node_by_id(id)
 }
 
 pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*const RsvgHandle, ()> {
@@ -1019,7 +1005,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
     }
 
     let id: String = from_glib_none(id);
-    rhandle.has_sub(handle, &id).to_glib()
+    rhandle.has_sub(&id).to_glib()
 }
 
 #[no_mangle]

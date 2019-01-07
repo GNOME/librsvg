@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 use css::CssStyles;
 use defs::{Defs, Fragment};
@@ -20,20 +21,37 @@ pub struct Svg {
     // once, at loading time, and keep this immutable.
     pub defs: RefCell<Defs>,
 
+    ids: HashMap<String, RsvgNode>,
+
     pub css_styles: CssStyles,
 }
 
 impl Svg {
-    pub fn new(handle: *mut RsvgHandle, tree: Tree, defs: Defs, css_styles: CssStyles) -> Svg {
+    pub fn new(
+        handle: *mut RsvgHandle,
+        tree: Tree,
+        defs: Defs,
+        ids: HashMap<String, RsvgNode>,
+        css_styles: CssStyles,
+    ) -> Svg {
         Svg {
             handle,
             tree,
             defs: RefCell::new(defs),
+            ids,
             css_styles,
         }
     }
 
-    pub fn lookup_node(&self, fragment: &Fragment) -> Option<RsvgNode> {
-        self.defs.borrow_mut().lookup(self.handle, fragment)
+    pub fn lookup(&self, fragment: &Fragment) -> Option<RsvgNode> {
+        if fragment.uri().is_some() {
+            self.defs.borrow_mut().lookup(self.handle, fragment)
+        } else {
+            self.lookup_node_by_id(fragment.fragment())
+        }
+    }
+
+    pub fn lookup_node_by_id(&self, id: &str) -> Option<RsvgNode> {
+        self.ids.get(id).map(|n| (*n).clone())
     }
 }

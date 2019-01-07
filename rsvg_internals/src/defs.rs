@@ -10,41 +10,26 @@ use node::Node;
 use parsers::ParseError;
 
 pub struct Defs {
-    nodes: HashMap<String, Rc<Node>>,
     externs: HashMap<AllowedUrl, *const RsvgHandle>,
 }
 
 impl Defs {
     pub fn new() -> Defs {
         Defs {
-            nodes: Default::default(),
             externs: Default::default(),
         }
     }
 
-    pub fn insert(&mut self, id: &str, node: &Rc<Node>) {
-        self.nodes.entry(id.to_string()).or_insert(node.clone());
-    }
-
-    pub fn lookup_fragment_id(&self, id: &str) -> Option<Rc<Node>> {
-        self.nodes.get(id).map(|n| (*n).clone())
-    }
-
-    /// Returns a node referenced by a fragment ID
-    ///
-    /// If the `Fragment`'s URL is `None`, then the fragment ID refers
-    /// to the RSVG handle in question.  Otherwise, it will refer to
-    /// an externally-loaded SVG file that is referenced by the
-    /// current one.  If the element's id is not found, returns
-    /// `None`.
+    /// Returns a node referenced by a fragment ID, from an
+    /// externally-loaded SVG file.
     pub fn lookup(&mut self, handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
         if let Some(ref href) = fragment.uri() {
             match self.get_extern_handle(handle, href) {
-                Ok(extern_handle) => handle::lookup_fragment_id(extern_handle, fragment),
+                Ok(extern_handle) => handle::lookup_fragment_id(extern_handle, fragment.fragment()),
                 Err(()) => None,
             }
         } else {
-            self.lookup_fragment_id(fragment.fragment())
+            unreachable!();
         }
     }
 

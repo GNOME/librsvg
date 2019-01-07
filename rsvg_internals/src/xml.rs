@@ -14,7 +14,7 @@ use css::{self, CssStyles};
 use defs::Defs;
 use error::LoadingError;
 use handle::{self, RsvgHandle};
-use node::{node_new, Node, NodeType};
+use node::{node_new, Node, NodeType, RsvgNode};
 use property_bag::PropertyBag;
 use structure::NodeSvg;
 use style::NodeStyle;
@@ -71,6 +71,7 @@ extern "C" {
 pub struct XmlState {
     tree: Option<Tree>,
     defs: Option<Defs>,
+    ids: Option<HashMap<String, RsvgNode>>,
     css_styles: Option<CssStyles>,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
@@ -97,6 +98,7 @@ impl XmlState {
         XmlState {
             tree: None,
             defs: Some(Defs::new()),
+            ids: Some(HashMap::new()),
             css_styles: Some(CssStyles::new()),
             context_stack: vec![Context::Start],
             current_node: None,
@@ -130,6 +132,7 @@ impl XmlState {
             self.handle,
             self.tree.take().unwrap(),
             self.defs.take().unwrap(),
+            self.ids.take().unwrap(),
             self.css_styles.take().unwrap(),
         )
     }
@@ -315,9 +318,9 @@ impl XmlState {
         name: &str,
         pbag: &PropertyBag,
     ) -> Rc<Node> {
-        let defs = self.defs.as_mut().unwrap();
+        let ids = self.ids.as_mut().unwrap();
 
-        let new_node = create_node_and_register_id(name, parent, pbag, defs);
+        let new_node = create_node_and_register_id(name, parent, pbag, ids);
 
         if let Some(parent) = parent {
             parent.add_child(&new_node);
