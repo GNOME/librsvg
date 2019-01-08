@@ -1,5 +1,4 @@
 use attributes::Attribute;
-use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use property_bag::PropertyBag;
 use text::NodeChars;
@@ -56,7 +55,7 @@ impl NodeStyle {
 }
 
 impl NodeTrait for NodeStyle {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == Attribute::Type {
                 *self.type_.borrow_mut() = Some(value.to_string());

@@ -10,7 +10,6 @@ use std::cell::RefCell;
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
-use handle::LoadOptions;
 use node::*;
 use property_bag::PropertyBag;
 
@@ -27,7 +26,7 @@ impl NodeLink {
 }
 
 impl NodeTrait for NodeLink {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),

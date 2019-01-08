@@ -9,7 +9,6 @@ use dpi::Dpi;
 use drawing_ctx::DrawingCtx;
 use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
-use handle::LoadOptions;
 use length::*;
 use node::*;
 use parsers::{Parse, ParseValue};
@@ -27,7 +26,7 @@ impl NodeGroup {
 }
 
 impl NodeTrait for NodeGroup {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 
@@ -55,7 +54,7 @@ impl NodeDefs {
 }
 
 impl NodeTrait for NodeDefs {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 }
@@ -69,7 +68,7 @@ impl NodeSwitch {
 }
 
 impl NodeTrait for NodeSwitch {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 
@@ -147,7 +146,7 @@ impl NodeSvg {
 }
 
 impl NodeTrait for NodeSvg {
-    fn set_atts(&self, node: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         // SVG element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
@@ -260,7 +259,7 @@ impl NodeUse {
 }
 
 impl NodeTrait for NodeUse {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::XlinkHref => {
@@ -415,7 +414,7 @@ impl NodeSymbol {
 }
 
 impl NodeTrait for NodeSymbol {
-    fn set_atts(&self, node: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         // symbol element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();

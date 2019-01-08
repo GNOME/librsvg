@@ -13,7 +13,6 @@ use defs::Fragment;
 use drawing_ctx::{DrawingCtx, NodeStack};
 use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
-use handle::LoadOptions;
 use length::*;
 use node::*;
 use paint_server::PaintSource;
@@ -173,7 +172,7 @@ impl NodePattern {
 }
 
 impl NodeTrait for NodePattern {
-    fn set_atts(&self, node: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         // pattern element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();

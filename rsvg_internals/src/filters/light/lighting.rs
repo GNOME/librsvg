@@ -29,7 +29,6 @@ use filters::{
     FilterError,
     PrimitiveWithInput,
 };
-use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
@@ -98,13 +97,8 @@ impl Lighting {
 }
 
 impl NodeTrait for Lighting {
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        load_options: &LoadOptions,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
-        self.base.set_atts(node, load_options, pbag)?;
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.base.set_atts(node, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {

@@ -6,7 +6,6 @@ use cssparser::{CowRcStr, Parser, Token};
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, ValueErrorKind};
-use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, Parse, ParseValue};
 use property_bag::PropertyBag;
@@ -62,13 +61,8 @@ impl Composite {
 }
 
 impl NodeTrait for Composite {
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        load_options: &LoadOptions,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
-        self.base.set_atts(node, load_options, pbag)?;
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.base.set_atts(node, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {

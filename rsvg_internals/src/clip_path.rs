@@ -6,7 +6,6 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
-use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::ParseValue;
 use property_bag::PropertyBag;
@@ -79,7 +78,7 @@ impl NodeClipPath {
 }
 
 impl NodeTrait for NodeClipPath {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::ClipPathUnits => self.units.set(attr.parse(value, ())?),

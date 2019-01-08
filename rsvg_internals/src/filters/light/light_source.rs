@@ -7,7 +7,6 @@ use nalgebra::Vector3;
 use attributes::Attribute;
 use error::NodeError;
 use filters::context::FilterContext;
-use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
@@ -201,7 +200,7 @@ impl TransformedLightSource {
 }
 
 impl NodeTrait for LightSource {
-    fn set_atts(&self, _node: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match self {
                 LightSource::Distant {
