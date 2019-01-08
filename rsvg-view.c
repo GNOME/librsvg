@@ -18,8 +18,6 @@
  */
 
 #include "config.h"
-#include "librsvg/rsvg-private.h"
-#include "librsvg/rsvg-size-callback.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,12 +25,10 @@
 #include <locale.h>
 #include <math.h>
 
+#include <glib/gi18n.h>
 #include <gtk/gtk.h>
-#include <gdk/gdk.h>
 
-#if 0 // defined (G_OS_UNIX)
-#include <gio/gunixinputstream.h>
-#endif
+#include "librsvg/rsvg.h"
 
 /* RsvgImage */
 
