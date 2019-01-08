@@ -3,9 +3,11 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
+use url::Url;
+
 use allowed_url::AllowedUrl;
 use error::ValueErrorKind;
-use handle::{self, RsvgHandle};
+use handle::{self, LoadOptions, RsvgHandle};
 use node::Node;
 use parsers::ParseError;
 
@@ -24,7 +26,10 @@ impl Defs {
     /// externally-loaded SVG file.
     pub fn lookup(&mut self, handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
         if let Some(ref href) = fragment.uri() {
-            match self.get_extern_handle(handle, href) {
+            let load_options = handle::get_load_options(handle);
+            let base_url = handle::get_base_url(handle).clone();
+
+            match self.get_extern_handle(&load_options, base_url, href) {
                 Ok(extern_handle) => handle::lookup_fragment_id(extern_handle, fragment.fragment()),
                 Err(()) => None,
             }
@@ -35,17 +40,16 @@ impl Defs {
 
     fn get_extern_handle(
         &mut self,
-        handle: *const RsvgHandle,
+        load_options: &LoadOptions,
+        base_url: Option<Url>,
         href: &str,
     ) -> Result<*const RsvgHandle, ()> {
-        let aurl =
-            AllowedUrl::from_href(href, handle::get_base_url(handle).as_ref()).map_err(|_| ())?;
+        let aurl = AllowedUrl::from_href(href, base_url.as_ref()).map_err(|_| ())?;
 
         match self.externs.entry(aurl) {
             Entry::Occupied(e) => Ok(*(e.get())),
             Entry::Vacant(e) => {
-                let load_options = handle::get_load_options(handle);
-                let extern_handle = handle::load_extern(&load_options, e.key())?;
+                let extern_handle = handle::load_extern(load_options, e.key())?;
                 e.insert(extern_handle);
                 Ok(extern_handle)
             }
