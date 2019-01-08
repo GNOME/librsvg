@@ -164,35 +164,19 @@ impl Handle {
     ) -> Result<(), LoadingError> {
         self.load_state.set(LoadState::Loading);
 
-        self.read_stream_internal(handle, stream, cancellable)
-            .and_then(|_| {
-                self.load_state.set(LoadState::ClosedOk);
-                Ok(())
-            })
+        let svg = Svg::load_from_stream(&self.load_options(), handle, stream, cancellable)
             .map_err(|e| {
                 self.load_state.set(LoadState::ClosedError);
                 e
-            })
+            })?;
+
+        *self.svg.borrow_mut() = Some(Rc::new(svg));
+        self.load_state.set(LoadState::ClosedOk);
+        Ok(())
     }
 
     fn load_options(&self) -> LoadOptions {
         LoadOptions::new(self.load_flags.get(), self.base_url.borrow().clone())
-    }
-
-    fn read_stream_internal(
-        &mut self,
-        handle: *mut RsvgHandle,
-        stream: gio::InputStream,
-        cancellable: Option<gio::Cancellable>,
-    ) -> Result<(), LoadingError> {
-        *self.svg.borrow_mut() = Some(Rc::new(Svg::load_from_stream(
-            &self.load_options(),
-            handle,
-            stream,
-            cancellable,
-        )?));
-
-        Ok(())
     }
 
     pub fn write(&mut self, handle: *mut RsvgHandle, buf: &[u8]) {
