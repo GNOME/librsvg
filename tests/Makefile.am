@@ -14,8 +14,6 @@ test_programs =		\
 	errors		\
 	infinite-loop
 
-# Removed "styles" from the above; it is broken right now
-
 test_utils_common_sources = \
 	test-utils.c	\
 	test-utils.h
@@ -43,10 +41,6 @@ crash_SOURCES = \
 render_crash_SOURCES = \
 	render-crash.c	\
 	$(test_utils_common_sources)
-
-# styles_SOURCES = \
-# 	styles.c	\
-# 	$(test_utils_common_sources)
 
 dimensions_SOURCES = \
 	dimensions.c	\
@@ -88,8 +82,7 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/images/*)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/resources/*)	\
 	$(wildcard $(srcdir)/fixtures/render-crash/*.svg)		\
-	$(wildcard $(srcdir)/fixtures/dimensions/*.svg)			\
-	$(wildcard $(srcdir)/fixtures/styles/*.svg)
+	$(wildcard $(srcdir)/fixtures/dimensions/*.svg)
 
 clean-local:
 	rm -rf output
