@@ -151,6 +151,7 @@ extern double rsvg_handle_rust_get_dpi_y (RsvgHandleRust *raw_handle);
 extern void rsvg_handle_rust_set_dpi_x (RsvgHandleRust *raw_handle, double dpi_x);
 extern void rsvg_handle_rust_set_dpi_y (RsvgHandleRust *raw_handle, double dpi_y);
 extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const char *uri);
+extern void rsvg_handle_rust_set_base_gfile (RsvgHandleRust *raw_handle, GFile *file);
 extern const char *rsvg_handle_rust_get_base_url (RsvgHandleRust *raw_handle);
 extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
 extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
@@ -817,14 +818,10 @@ void
 rsvg_handle_set_base_gfile (RsvgHandle *handle,
                             GFile      *base_file)
 {
-    char *uri;
-
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (G_IS_FILE (base_file));
 
-    uri = g_file_get_uri (base_file);
-    rsvg_handle_rust_set_base_url (handle->priv->rust_handle, uri);
-    g_free (uri);
+    rsvg_handle_rust_set_base_gfile (handle->priv->rust_handle, base_file);
 }
 
 /**

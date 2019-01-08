@@ -55,6 +55,7 @@ pub use handle::{
     rsvg_handle_rust_new,
     rsvg_handle_rust_read_stream_sync,
     rsvg_handle_rust_render_cairo_sub,
+    rsvg_handle_rust_set_base_gfile,
     rsvg_handle_rust_set_base_url,
     rsvg_handle_rust_set_dpi_x,
     rsvg_handle_rust_set_dpi_y,

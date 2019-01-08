@@ -9,7 +9,7 @@ use cairo::{self, ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{Colorspace, Pixbuf, PixbufLoader, PixbufLoaderExt};
 use gdk_pixbuf_sys;
-use gio::File as GFile;
+use gio::{File as GFile, FileExt};
 use gio_sys;
 use glib::translate::*;
 use glib_sys;
@@ -191,6 +191,14 @@ impl Handle {
                     e
                 );
             }
+        }
+    }
+
+    fn set_base_gfile(&self, file: &GFile) {
+        if let Some(uri) = file.get_uri() {
+            self.set_base_url(&uri);
+        } else {
+            rsvg_g_warning("file has no URI; will not set the base URI");
         }
     }
 
@@ -749,6 +757,20 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
         None => ptr::null_mut(),
         Some(ref url) => GFile::new_for_uri(url.as_str()).to_glib_full(),
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_set_base_gfile(
+    raw_handle: *const Handle,
+    raw_gfile: *mut gio_sys::GFile,
+) {
+    let handle = &*raw_handle;
+
+    assert!(!raw_gfile.is_null());
+
+    let file: GFile = from_glib_none(raw_gfile);
+
+    handle.set_base_gfile(&file);
 }
 
 #[no_mangle]
