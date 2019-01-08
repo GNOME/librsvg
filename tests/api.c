@@ -12,7 +12,6 @@
 #include "test-utils.h"
 
 /*
-rsvg_handle_set_size_callback
 rsvg_handle_internal_set_testing
 */
 
@@ -534,6 +533,64 @@ dimensions_and_position (void)
     g_object_unref (handle);
 }
 
+struct size_func_data {
+    gboolean called;
+    gboolean destroyed;
+};
+
+static void
+size_func (gint *width, gint *height, gpointer user_data)
+{
+    struct size_func_data *data = user_data;
+
+    g_assert (!data->called);
+    data->called = TRUE;
+
+    g_assert (!data->destroyed);
+
+    *width = 42;
+    *height = 43;
+}
+
+static void
+size_func_destroy (gpointer user_data)
+{
+    struct size_func_data *data = user_data;
+
+    g_assert (!data->destroyed);
+    data->destroyed = TRUE;
+}
+
+static void
+set_size_callback (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+    RsvgHandle *handle;
+    struct size_func_data data;
+    RsvgDimensionData dim;
+
+    handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    data.called = FALSE;
+    data.destroyed = FALSE;
+
+    rsvg_handle_set_size_callback (handle, size_func, &data, size_func_destroy);
+
+    rsvg_handle_get_dimensions (handle, &dim);
+    g_assert_cmpint (dim.width,  ==, 42);
+    g_assert_cmpint (dim.height, ==, 43);
+
+    g_object_unref (handle);
+
+    g_assert (data.called);
+    g_assert (data.destroyed);
+}
+
 static void
 detects_cairo_context_in_error (void)
 {
@@ -735,6 +792,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/handle_get_pixbuf", handle_get_pixbuf);
     g_test_add_func ("/api/handle_get_pixbuf_sub", handle_get_pixbuf_sub);
     g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
+    g_test_add_func ("/api/set_size_callback", set_size_callback);
     g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
