@@ -41,23 +41,6 @@ pub struct RsvgHandle {
     _private: [u8; 0],
 }
 
-// A *const RsvgSizeClosure is just an opaque pointer we get from C
-#[repr(C)]
-pub struct RsvgSizeClosure {
-    _private: [u8; 0],
-}
-
-#[allow(improper_ctypes)]
-extern "C" {
-    fn rsvg_size_closure_free(closure: *mut RsvgSizeClosure);
-
-    fn rsvg_size_closure_call(
-        closure: *const RsvgSizeClosure,
-        width: *mut libc::c_int,
-        height: *mut libc::c_int,
-    );
-}
-
 // Keep in sync with rsvg.h:RsvgDimensionData
 #[repr(C)]
 pub struct RsvgDimensionData {
@@ -107,6 +90,54 @@ pub enum LoadState {
     ClosedError,
 }
 
+// Keep in sync with rsvg.h:RsvgSizeFunc
+type RsvgSizeFunc = Option<
+    unsafe extern "C" fn(
+        inout_width: *mut libc::c_int,
+        inout_height: *mut libc::c_int,
+        user_data: glib_sys::gpointer,
+    ),
+>;
+
+struct SizeCallback {
+    size_func: RsvgSizeFunc,
+    user_data: glib_sys::gpointer,
+    destroy_notify: glib_sys::GDestroyNotify,
+}
+
+impl SizeCallback {
+    fn new() -> SizeCallback {
+        SizeCallback {
+            size_func: None,
+            user_data: ptr::null_mut(),
+            destroy_notify: None,
+        }
+    }
+
+    fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
+        unsafe {
+            let mut w = width;
+            let mut h = height;
+
+            if let Some(ref f) = self.size_func {
+                f(&mut w, &mut h, self.user_data);
+            };
+
+            (w, h)
+        }
+    }
+}
+
+impl Drop for SizeCallback {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(ref f) = self.destroy_notify {
+                f(self.user_data);
+            };
+        }
+    }
+}
+
 pub struct Handle {
     dpi: Dpi,
     base_url: RefCell<Option<Url>>,
@@ -115,7 +146,7 @@ pub struct Handle {
     load_flags: Cell<LoadFlags>,
     load_state: Cell<LoadState>,
     load: RefCell<Option<LoadContext>>,
-    size_closure: *mut RsvgSizeClosure,
+    size_callback: RefCell<SizeCallback>,
     in_loop: Cell<bool>,
     is_testing: Cell<bool>,
 }
@@ -130,7 +161,7 @@ impl Handle {
             load_flags: Cell::new(LoadFlags::default()),
             load_state: Cell::new(LoadState::Start),
             load: RefCell::new(None),
-            size_closure: ptr::null_mut(),
+            size_callback: RefCell::new(SizeCallback::new()),
             in_loop: Cell::new(false),
             is_testing: Cell::new(false),
         }
@@ -493,16 +524,6 @@ impl Handle {
     }
 }
 
-impl Drop for Handle {
-    fn drop(&mut self) {
-        if !self.size_closure.is_null() {
-            unsafe {
-                rsvg_size_closure_free(self.size_closure);
-            }
-        }
-    }
-}
-
 // Keep these in sync with rsvg.h:RsvgHandleFlags
 const RSVG_HANDLE_FLAG_UNLIMITED: u32 = 1 << 0;
 const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: u32 = 1 << 1;
@@ -783,17 +804,19 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, f
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_size_closure(
+pub unsafe extern "C" fn rsvg_handle_rust_set_size_callback(
     raw_handle: *mut Handle,
-    closure: *mut RsvgSizeClosure,
+    size_func: RsvgSizeFunc,
+    user_data: glib_sys::gpointer,
+    destroy_notify: glib_sys::GDestroyNotify,
 ) {
     let rhandle = &mut *raw_handle;
 
-    if !rhandle.size_closure.is_null() {
-        rsvg_size_closure_free(rhandle.size_closure);
-    }
-
-    rhandle.size_closure = closure;
+    *rhandle.size_callback.borrow_mut() = SizeCallback {
+        size_func,
+        user_data,
+        destroy_notify,
+    };
 }
 
 #[no_mangle]
@@ -1048,18 +1071,15 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
 
     let res = rsvg_handle_rust_get_geometry_sub(handle, &mut ink_r, ptr::null_mut(), id);
     if from_glib(res) {
-        (*dimension_data).width = ink_r.width as libc::c_int;
-        (*dimension_data).height = ink_r.height as libc::c_int;
+        let (w, h) = rhandle
+            .size_callback
+            .borrow()
+            .call(ink_r.width as libc::c_int, ink_r.height as libc::c_int);
+
+        (*dimension_data).width = w;
+        (*dimension_data).height = h;
         (*dimension_data).em = ink_r.width;
         (*dimension_data).ex = ink_r.height;
-
-        if !rhandle.size_closure.is_null() {
-            rsvg_size_closure_call(
-                rhandle.size_closure,
-                &mut (*dimension_data).width,
-                &mut (*dimension_data).height,
-            );
-        }
     } else {
         (*dimension_data).width = 0;
         (*dimension_data).height = 0;
@@ -1101,11 +1121,10 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
         (*position).x = ink_r.x as libc::c_int;
         (*position).y = ink_r.y as libc::c_int;
 
-        let mut width = ink_r.width as libc::c_int;
-        let mut height = ink_r.height as libc::c_int;
-        if !rhandle.size_closure.is_null() {
-            rsvg_size_closure_call(rhandle.size_closure, &mut width, &mut height);
-        }
+        let width = ink_r.width as libc::c_int;
+        let height = ink_r.height as libc::c_int;
+
+        rhandle.size_callback.borrow().call(width, height);
     } else {
         (*position).x = 0;
         (*position).y = 0;

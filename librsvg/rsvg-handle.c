@@ -179,51 +179,10 @@ extern gboolean rsvg_handle_rust_get_dimensions_sub (RsvgHandle *handle,
 extern gboolean rsvg_handle_rust_get_position_sub (RsvgHandle *handle,
                                                    RsvgPositionData *dimension_data,
                                                    const char *id);
-
-typedef struct {
-    RsvgSizeFunc func;
-    gpointer data;
-    GDestroyNotify data_destroy;
-} RsvgSizeClosure;
-
-static RsvgSizeClosure *
-rsvg_size_closure_new (RsvgSizeFunc func, gpointer data, GDestroyNotify data_destroy)
-{
-    RsvgSizeClosure *closure;
-
-    closure = g_new0(RsvgSizeClosure, 1);
-    closure->func = func;
-    closure->data = data;
-    closure->data_destroy = data_destroy;
-
-    return closure;
-}
-
-G_GNUC_INTERNAL
-void rsvg_size_closure_free (RsvgSizeClosure *closure);
-
-void
-rsvg_size_closure_free (RsvgSizeClosure *closure)
-{
-    if (closure && closure->data && closure->data_destroy) {
-        (*closure->data_destroy) (closure->data);
-    }
-
-    g_free (closure);
-}
-
-G_GNUC_INTERNAL
-void rsvg_size_closure_call (RsvgSizeClosure *closure, int *width, int *height);
-
-void
-rsvg_size_closure_call (RsvgSizeClosure *closure, int *width, int *height)
-{
-    if (closure && closure->func) {
-        (*closure->func) (width, height, closure->data);
-    }
-}
-
-extern void rsvg_handle_rust_set_size_closure (RsvgHandleRust *raw_handle, RsvgSizeClosure *closure);
+extern void rsvg_handle_rust_set_size_callback (RsvgHandleRust *raw_handle,
+                                                RsvgSizeFunc size_func,
+                                                gpointer user_data,
+                                                GDestroyNotify destroy_notify);
 
 struct RsvgHandlePrivate {
     RsvgHandleRust *rust_handle;
@@ -1233,8 +1192,10 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    rsvg_handle_rust_set_size_closure (handle->priv->rust_handle,
-                                       rsvg_size_closure_new (size_func, user_data, user_data_destroy));
+    rsvg_handle_rust_set_size_callback (handle->priv->rust_handle,
+                                        size_func,
+                                        user_data,
+                                        user_data_destroy);
 }
 
 /**

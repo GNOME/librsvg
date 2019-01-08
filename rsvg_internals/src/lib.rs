@@ -59,7 +59,7 @@ pub use handle::{
     rsvg_handle_rust_set_dpi_x,
     rsvg_handle_rust_set_dpi_y,
     rsvg_handle_rust_set_flags,
-    rsvg_handle_rust_set_size_closure,
+    rsvg_handle_rust_set_size_callback,
     rsvg_handle_rust_set_testing,
     rsvg_handle_rust_write,
 };
