@@ -89,11 +89,12 @@ pub struct LoadFlags {
 
 pub struct LoadOptions {
     pub flags: LoadFlags,
+    pub base_url: Option<Url>,
 }
 
 impl LoadOptions {
-    fn new(flags: LoadFlags) -> LoadOptions {
-        LoadOptions { flags }
+    fn new(flags: LoadFlags, base_url: Option<Url>) -> LoadOptions {
+        LoadOptions { flags, base_url }
     }
 }
 
@@ -173,6 +174,10 @@ impl Handle {
             })
     }
 
+    fn load_options(&self) -> LoadOptions {
+        LoadOptions::new(self.load_flags.get(), self.base_url.borrow().clone())
+    }
+
     fn read_stream_internal(
         &mut self,
         handle: *mut RsvgHandle,
@@ -180,7 +185,7 @@ impl Handle {
         cancellable: Option<gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         *self.svg.borrow_mut() = Some(Rc::new(Svg::load_from_stream(
-            LoadOptions::new(self.load_flags.get()),
+            self.load_options(),
             handle,
             stream,
             cancellable,
@@ -198,10 +203,7 @@ impl Handle {
         if self.load_state.get() == LoadState::Start {
             self.load_state.set(LoadState::Loading);
 
-            self.load = RefCell::new(Some(LoadContext::new(
-                handle,
-                LoadOptions::new(self.load_flags.get()),
-            )));
+            self.load = RefCell::new(Some(LoadContext::new(handle, self.load_options())));
         }
 
         assert!(self.load_state.get() == LoadState::Loading);
@@ -523,9 +525,7 @@ const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: u32 = 1 << 1;
 pub fn get_load_options(handle: *const RsvgHandle) -> LoadOptions {
     let rhandle = get_rust_handle(handle);
 
-    LoadOptions {
-        flags: rhandle.load_flags.get(),
-    }
+    rhandle.load_options()
 }
 
 impl LoadFlags {
