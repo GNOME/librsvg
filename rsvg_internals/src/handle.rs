@@ -168,6 +168,13 @@ impl Handle {
     }
 
     fn set_base_url(&self, url: &str) {
+        if self.load_state.get() != LoadState::Start {
+            rsvg_g_warning(
+                "Please set the base file or URI before loading any data into RsvgHandle",
+            );
+            return;
+        }
+
         match Url::parse(&url) {
             Ok(u) => {
                 let url_cstring = CString::new(u.as_str()).unwrap();
@@ -725,11 +732,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
     uri: *const libc::c_char,
 ) {
     let handle = &*raw_handle;
-
-    if handle.load_state.get() != LoadState::Start {
-        rsvg_g_warning("Please set the base file or URI before loading any data into RsvgHandle");
-        return;
-    }
 
     assert!(!uri.is_null());
     let uri: String = from_glib_none(uri);
