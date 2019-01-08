@@ -124,7 +124,9 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <glib/gprintf.h>
-#include "rsvg-private.h"
+#include <glib/gi18n-lib.h>
+
+#include "rsvg.h"
 
 /* Defined in rsvg_internals/src/load.rs */
 typedef struct RsvgLoad RsvgLoad;
