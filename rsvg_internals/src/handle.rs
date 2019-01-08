@@ -34,8 +34,6 @@ use surface_utils::{
 };
 use svg::Svg;
 use util::rsvg_g_warning;
-use xml::XmlState;
-use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 // A *const RsvgHandle is just an opaque pointer we get from C
 #[repr(C)]
@@ -171,20 +169,13 @@ impl Handle {
         stream: gio::InputStream,
         cancellable: Option<gio::Cancellable>,
     ) -> Result<(), LoadingError> {
-        let load_options = self.load_options.get();
-
-        let mut xml = XmlState::new(handle);
-
-        xml_state_load_from_possibly_compressed_stream(
-            &mut xml,
-            &load_options,
+        *self.svg.borrow_mut() = Some(Rc::new(Svg::load_from_stream(
+            self.load_options.get(),
+            handle,
             stream,
             cancellable,
-        )?;
+        )?));
 
-        xml.validate_tree()?;
-
-        *self.svg.borrow_mut() = Some(Rc::new(xml.steal_result()));
         Ok(())
     }
 

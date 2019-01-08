@@ -1,11 +1,16 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use gio;
+
 use css::CssStyles;
 use defs::{Defs, Fragment};
-use handle::RsvgHandle;
+use error::LoadingError;
+use handle::{LoadOptions, RsvgHandle};
 use node::RsvgNode;
 use tree::Tree;
+use xml::XmlState;
+use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 /// A loaded SVG file and its derived data
 ///
@@ -41,6 +46,26 @@ impl Svg {
             ids,
             css_styles,
         }
+    }
+
+    pub fn load_from_stream(
+        load_options: LoadOptions,
+        handle: *mut RsvgHandle,
+        stream: gio::InputStream,
+        cancellable: Option<gio::Cancellable>,
+    ) -> Result<Svg, LoadingError> {
+        let mut xml = XmlState::new(handle);
+
+        xml_state_load_from_possibly_compressed_stream(
+            &mut xml,
+            &load_options,
+            stream,
+            cancellable,
+        )?;
+
+        xml.validate_tree()?;
+
+        Ok(xml.steal_result())
     }
 
     pub fn lookup(&self, fragment: &Fragment) -> Option<RsvgNode> {
