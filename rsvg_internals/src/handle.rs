@@ -575,13 +575,6 @@ pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*cons
         if res.is_null() {
             Err(())
         } else {
-            let rhandle = get_rust_handle(handle);
-
-            let svg_ref = rhandle.svg.borrow();
-            let svg = svg_ref.as_ref().unwrap();
-
-            svg.tree.cascade();
-
             Ok(res)
         }
     }
