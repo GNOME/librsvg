@@ -592,6 +592,37 @@ set_size_callback (void)
 }
 
 static void
+reset_size_callback (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+    RsvgHandle *handle;
+    struct size_func_data data_1;
+    struct size_func_data data_2;
+
+    handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    data_1.called = FALSE;
+    data_1.destroyed = FALSE;
+
+    rsvg_handle_set_size_callback (handle, size_func, &data_1, size_func_destroy);
+
+    data_2.called = FALSE;
+    data_2.destroyed = FALSE;
+
+    rsvg_handle_set_size_callback (handle, size_func, &data_2, size_func_destroy);
+    g_assert (data_1.destroyed);
+
+    g_object_unref (handle);
+
+    g_assert (data_2.destroyed);
+}
+
+static void
 detects_cairo_context_in_error (void)
 {
     if (g_test_subprocess ()) {
@@ -793,6 +824,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/handle_get_pixbuf_sub", handle_get_pixbuf_sub);
     g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
     g_test_add_func ("/api/set_size_callback", set_size_callback);
+    g_test_add_func ("/api/reset_size_callback", reset_size_callback);
     g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
