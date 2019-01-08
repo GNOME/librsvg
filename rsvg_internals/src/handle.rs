@@ -704,7 +704,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut Handle) {
     Box::from_raw(raw_handle);
 }
 
-pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
+fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
     unsafe { &mut *(rsvg_handle_get_rust(handle) as *mut Handle) }
 }
 
