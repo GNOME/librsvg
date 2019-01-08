@@ -534,7 +534,8 @@ rsvg_handle_new_from_file (const gchar *file_name, GError **error)
     GFile *file;
     char *scheme;
 
-    rsvg_return_val_if_fail (file_name != NULL, NULL, error);
+    g_return_val_if_fail (file_name != NULL, NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
     scheme = g_uri_parse_scheme (file_name);
     if (scheme) {
@@ -688,7 +689,7 @@ rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
 gboolean
 rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error)
 {
-    rsvg_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE, error);
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
     g_return_val_if_fail ((buf != NULL && count != 0) || (count == 0), FALSE);
 
@@ -713,8 +714,8 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 gboolean
 rsvg_handle_close (RsvgHandle *handle, GError **error)
 {
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
-    rsvg_return_val_if_fail (handle, FALSE, error);
 
     return rsvg_handle_rust_close(handle, error);
 }

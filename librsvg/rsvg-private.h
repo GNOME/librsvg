@@ -50,26 +50,6 @@ G_BEGIN_DECLS
 #define N_(X) X
 #endif
 
-G_GNUC_INTERNAL
-void rsvg_return_if_fail_warning (const char *pretty_function,
-                                  const char *expression, GError ** error);
-
-#define rsvg_return_if_fail(expr, error)    G_STMT_START{           \
-     if G_LIKELY(expr) { } else                                     \
-       {                                                            \
-           rsvg_return_if_fail_warning (G_STRFUNC,                  \
-                                        #expr, error);              \
-           return;                                                  \
-       };				}G_STMT_END
-
-#define rsvg_return_val_if_fail(expr,val,error)	G_STMT_START{       \
-     if G_LIKELY(expr) { } else                                     \
-       {                                                            \
-           rsvg_return_if_fail_warning (G_STRFUNC,                  \
-                                        #expr, error);              \
-           return (val);                                            \
-       };				}G_STMT_END
-
 G_END_DECLS
 
 #endif
