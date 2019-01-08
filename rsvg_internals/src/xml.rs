@@ -477,7 +477,7 @@ impl XmlState {
     fn acquire_xml(&mut self, aurl: &AllowedUrl) -> Result<(), AcquireError> {
         // FIXME: distinguish between "file not found" and "invalid XML"
 
-        let stream = handle::acquire_stream(self.handle, aurl).map_err(|e| match e {
+        let stream = io::acquire_stream(aurl, None).map_err(|e| match e {
             LoadingError::BadDataUrl => AcquireError::FatalError,
             _ => AcquireError::ResourceError,
         })?;

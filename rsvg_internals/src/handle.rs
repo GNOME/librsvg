@@ -9,7 +9,7 @@ use cairo::{self, ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{Colorspace, Pixbuf, PixbufLoader, PixbufLoaderExt};
 use gdk_pixbuf_sys;
-use gio::{File as GFile, InputStream};
+use gio::{File as GFile};
 use gio_sys;
 use glib::translate::*;
 use glib_sys;
@@ -603,13 +603,6 @@ pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
 pub struct BinaryData {
     pub data: Vec<u8>,
     pub content_type: Option<String>,
-}
-
-pub fn acquire_stream(
-    _handle: *mut RsvgHandle,
-    aurl: &AllowedUrl,
-) -> Result<InputStream, LoadingError> {
-    io::acquire_stream(&aurl, None)
 }
 
 pub fn load_image_to_surface(
