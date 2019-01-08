@@ -220,12 +220,15 @@ impl XmlState {
                 && type_.as_ref().map(String::as_str) == Some("text/css")
                 && href.is_some()
             {
-                // FIXME: handle CSS errors
-                let _ = handle::load_css(
-                    self.css_styles.as_mut().unwrap(),
-                    self.handle,
+                if let Ok(aurl) = AllowedUrl::from_href(
                     &href.unwrap(),
-                );
+                    handle::get_base_url(self.handle).as_ref(),
+                ) {
+                    // FIXME: handle CSS errors
+                    let _ = handle::load_css(self.css_styles.as_mut().unwrap(), &aurl);
+                } else {
+                    self.error("disallowed URL in xml-stylesheet");
+                }
             }
         } else {
             self.error("invalid processing instruction data in xml-stylesheet");
@@ -284,7 +287,11 @@ impl XmlState {
         if node.get_type() == NodeType::Style {
             let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
 
-            css::parse_into_css_styles(self.css_styles.as_mut().unwrap(), self.handle, &css_data);
+            css::parse_into_css_styles(
+                self.css_styles.as_mut().unwrap(),
+                handle::get_base_url(self.handle).clone(),
+                &css_data,
+            );
         }
 
         self.current_node = node.get_parent();

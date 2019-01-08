@@ -4,13 +4,15 @@ use std::ptr;
 use std::str::{self, FromStr};
 
 use libc;
+use url::Url;
 
 use glib::translate::*;
 use glib_sys::{gboolean, gpointer, GList};
 
+use allowed_url::AllowedUrl;
 use attributes::Attribute;
 use croco::*;
-use handle::{self, RsvgHandle};
+use handle;
 use state::State;
 use util::utf8_cstr;
 
@@ -79,7 +81,7 @@ impl CssStyles {
 }
 
 struct DocHandlerData<'a> {
-    handle: *mut RsvgHandle,
+    base_url: Option<Url>,
     css_styles: &'a mut CssStyles,
     selector: *mut CRSelector,
 }
@@ -90,14 +92,14 @@ macro_rules! get_doc_handler_data {
     };
 }
 
-pub fn parse_into_css_styles(css_styles: &mut CssStyles, handle: *mut RsvgHandle, buf: &str) {
+pub fn parse_into_css_styles(css_styles: &mut CssStyles, base_url: Option<Url>, buf: &str) {
     if buf.len() == 0 {
         return; // libcroco doesn't like empty strings :(
     }
 
     unsafe {
         let mut handler_data = DocHandlerData {
-            handle,
+            base_url,
             css_styles,
             selector: ptr::null_mut(),
         };
@@ -151,8 +153,12 @@ unsafe extern "C" fn css_import_style(
     let raw_uri = cr_string_peek_raw_str(a_uri);
     let uri = utf8_cstr(raw_uri);
 
-    // FIXME: handle CSS errors
-    let _ = handle::load_css(handler_data.css_styles, handler_data.handle, uri);
+    if let Ok(aurl) = AllowedUrl::from_href(uri, handler_data.base_url.as_ref()) {
+        // FIXME: handle CSS errors
+        let _ = handle::load_css(handler_data.css_styles, &aurl);
+    } else {
+        rsvg_log!("disallowed URL \"{}\" for importing CSS", uri);
+    }
 }
 
 unsafe extern "C" fn css_start_selector(

@@ -670,20 +670,8 @@ pub fn load_image_to_surface(
 
 // This function just slurps CSS data from a possibly-relative href
 // and parses it.  We'll move it to a better place in the end.
-pub fn load_css(
-    css_styles: &mut CssStyles,
-    handle: *mut RsvgHandle,
-    href_str: &str,
-) -> Result<(), LoadingError> {
-    let rhandle = get_rust_handle(handle);
-
-    let aurl =
-        AllowedUrl::from_href(href_str, rhandle.base_url.borrow().as_ref()).map_err(|_| {
-            rsvg_log!("Could not load \"{}\" for CSS data", href_str);
-            LoadingError::BadUrl
-        })?;
-
-    io::acquire_data(&aurl, None)
+pub fn load_css(css_styles: &mut CssStyles, aurl: &AllowedUrl) -> Result<(), LoadingError> {
+    io::acquire_data(aurl, None)
         .and_then(|data| {
             let BinaryData {
                 data: bytes,
@@ -693,7 +681,7 @@ pub fn load_css(
             if content_type.as_ref().map(String::as_ref) == Some("text/css") {
                 Ok(bytes)
             } else {
-                rsvg_log!("\"{}\" is not of type text/css; ignoring", href_str);
+                rsvg_log!("\"{}\" is not of type text/css; ignoring", aurl);
                 Err(LoadingError::BadCss)
             }
         })
@@ -701,13 +689,13 @@ pub fn load_css(
             String::from_utf8(bytes).map_err(|_| {
                 rsvg_log!(
                     "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
-                    href_str
+                    aurl
                 );
                 LoadingError::BadCss
             })
         })
         .and_then(|utf8| {
-            css::parse_into_css_styles(css_styles, handle, &utf8);
+            css::parse_into_css_styles(css_styles, Some(aurl.url().clone()), &utf8);
             Ok(()) // FIXME: return CSS parsing errors
         })
 }
