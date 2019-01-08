@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use attributes::Attribute;
 use clip_path::NodeClipPath;
-use defs::Defs;
 use filters::{
     blend::Blend,
     color_matrix::ColorMatrix,
@@ -271,7 +270,7 @@ pub fn create_node_and_register_id(
     name: &str,
     parent: Option<&RsvgNode>,
     pbag: &PropertyBag,
-    defs: &mut Defs,
+    ids: &mut HashMap<String, RsvgNode>,
 ) -> RsvgNode {
     let mut id = None;
     let mut class = None;
@@ -298,8 +297,9 @@ pub fn create_node_and_register_id(
 
     let node = create_fn(id, class, parent);
 
-    if id.is_some() {
-        defs.insert(id.unwrap(), &node);
+    if let Some(id) = id {
+        // This is so we don't overwrite an existing id
+        ids.entry(id.to_string()).or_insert(node.clone());
     }
 
     node

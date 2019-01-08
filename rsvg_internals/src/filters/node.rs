@@ -4,7 +4,6 @@ use std::cell::Cell;
 use attributes::Attribute;
 use coord_units::CoordUnits;
 use error::ValueErrorKind;
-use handle::RsvgHandle;
 use length::{Length, LengthDir, LengthUnit};
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{Parse, ParseError, ParseValue};
@@ -36,12 +35,7 @@ impl NodeFilter {
 }
 
 impl NodeTrait for NodeFilter {
-    fn set_atts(
-        &self,
-        _node: &RsvgNode,
-        _handle: *const RsvgHandle,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
+    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr {

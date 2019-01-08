@@ -9,7 +9,7 @@ use cairo::{self, ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{Colorspace, Pixbuf, PixbufLoader, PixbufLoaderExt};
 use gdk_pixbuf_sys;
-use gio::{File as GFile, InputStream};
+use gio::File as GFile;
 use gio_sys;
 use glib::translate::*;
 use glib_sys;
@@ -18,7 +18,7 @@ use url::Url;
 
 use allowed_url::AllowedUrl;
 use css::{self, CssStyles};
-use defs::{Fragment, Href};
+use defs::Href;
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
@@ -34,8 +34,6 @@ use surface_utils::{
 };
 use svg::Svg;
 use util::rsvg_g_warning;
-use xml::XmlState;
-use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 // A *const RsvgHandle is just an opaque pointer we get from C
 #[repr(C)]
@@ -81,12 +79,24 @@ pub struct RsvgPositionData {
 /// We communicate these to/from the C code with a guint <-> u32,
 /// and this struct provides to_flags() and from_flags() methods.
 #[derive(Default, Copy, Clone)]
-pub struct LoadOptions {
+pub struct LoadFlags {
     /// Whether to turn off size limits in libxml2
     pub unlimited_size: bool,
 
     /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces
     pub keep_image_data: bool,
+}
+
+#[derive(Clone)]
+pub struct LoadOptions {
+    pub flags: LoadFlags,
+    pub base_url: Option<Url>,
+}
+
+impl LoadOptions {
+    fn new(flags: LoadFlags, base_url: Option<Url>) -> LoadOptions {
+        LoadOptions { flags, base_url }
+    }
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -101,8 +111,8 @@ pub struct Handle {
     dpi: Dpi,
     base_url: RefCell<Option<Url>>,
     base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
-    svg: RefCell<Option<Svg>>,
-    load_options: Cell<LoadOptions>,
+    svg: RefCell<Option<Rc<Svg>>>,
+    load_flags: Cell<LoadFlags>,
     load_state: Cell<LoadState>,
     load: RefCell<Option<LoadContext>>,
     size_closure: *mut RsvgSizeClosure,
@@ -117,7 +127,7 @@ impl Handle {
             base_url: RefCell::new(None),
             base_url_cstring: RefCell::new(None),
             svg: RefCell::new(None),
-            load_options: Cell::new(LoadOptions::default()),
+            load_flags: Cell::new(LoadFlags::default()),
             load_state: Cell::new(LoadState::Start),
             load: RefCell::new(None),
             size_closure: ptr::null_mut(),
@@ -154,38 +164,19 @@ impl Handle {
     ) -> Result<(), LoadingError> {
         self.load_state.set(LoadState::Loading);
 
-        self.read_stream_internal(handle, stream, cancellable)
-            .and_then(|_| {
-                self.load_state.set(LoadState::ClosedOk);
-                Ok(())
-            })
+        let svg = Svg::load_from_stream(&self.load_options(), handle, stream, cancellable)
             .map_err(|e| {
                 self.load_state.set(LoadState::ClosedError);
                 e
-            })
+            })?;
+
+        *self.svg.borrow_mut() = Some(Rc::new(svg));
+        self.load_state.set(LoadState::ClosedOk);
+        Ok(())
     }
 
-    fn read_stream_internal(
-        &mut self,
-        handle: *mut RsvgHandle,
-        stream: gio::InputStream,
-        cancellable: Option<gio::Cancellable>,
-    ) -> Result<(), LoadingError> {
-        let load_options = self.load_options.get();
-
-        let mut xml = XmlState::new(handle);
-
-        xml_state_load_from_possibly_compressed_stream(
-            &mut xml,
-            &load_options,
-            stream,
-            cancellable,
-        )?;
-
-        xml.validate_tree()?;
-
-        *self.svg.borrow_mut() = Some(xml.steal_result());
-        Ok(())
+    fn load_options(&self) -> LoadOptions {
+        LoadOptions::new(self.load_flags.get(), self.base_url.borrow().clone())
     }
 
     pub fn write(&mut self, handle: *mut RsvgHandle, buf: &[u8]) {
@@ -197,7 +188,7 @@ impl Handle {
         if self.load_state.get() == LoadState::Start {
             self.load_state.set(LoadState::Loading);
 
-            self.load = RefCell::new(Some(LoadContext::new(handle, self.load_options.get())));
+            self.load = RefCell::new(Some(LoadContext::new(handle, self.load_options())));
         }
 
         assert!(self.load_state.get() == LoadState::Loading);
@@ -247,7 +238,7 @@ impl Handle {
 
         xml.validate_tree()?;
 
-        *self.svg.borrow_mut() = Some(xml.steal_result());
+        *self.svg.borrow_mut() = Some(Rc::new(xml.steal_result()));
         Ok(())
     }
 
@@ -260,19 +251,19 @@ impl Handle {
 
     fn create_drawing_ctx_for_node(
         &mut self,
-        handle: *mut RsvgHandle,
         cr: &cairo::Context,
         dimensions: &RsvgDimensionData,
         node: Option<&RsvgNode>,
     ) -> DrawingCtx {
         let mut draw_ctx = DrawingCtx::new(
-            handle,
+            self.svg.borrow().as_ref().unwrap().clone(),
             cr,
             f64::from(dimensions.width),
             f64::from(dimensions.height),
             dimensions.em,
             dimensions.ex,
-            get_dpi(handle).clone(),
+            self.dpi.clone(),
+            self.is_testing.get(),
         );
 
         if let Some(node) = node {
@@ -309,7 +300,7 @@ impl Handle {
         let dimensions = self.get_dimensions(handle)?;
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = self.create_drawing_ctx_for_node(handle, &cr, &dimensions, Some(node));
+        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, &dimensions, Some(node));
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
         let root = svg.tree.root();
@@ -343,9 +334,7 @@ impl Handle {
         };
 
         let (node, is_root) = if let Some(id) = id {
-            let n = self
-                .defs_lookup(handle, id)
-                .map_err(RenderingError::InvalidId)?;
+            let n = self.lookup_node(id).map_err(RenderingError::InvalidId)?;
             let is_root = Rc::ptr_eq(&n, &root);
             (n, is_root)
         } else {
@@ -372,17 +361,11 @@ impl Handle {
         self.get_node_geometry(handle, &node)
     }
 
-    fn defs_lookup(
-        &mut self,
-        handle: *const RsvgHandle,
-        name: &str,
-    ) -> Result<RsvgNode, DefsLookupErrorKind> {
+    fn lookup_node(&mut self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
 
-        let mut defs = svg.defs.borrow_mut();
-
-        let href = Href::with_fragment(name).map_err(DefsLookupErrorKind::HrefError)?;
+        let href = Href::with_fragment(id).map_err(DefsLookupErrorKind::HrefError)?;
 
         match href {
             Href::WithFragment(fragment) => {
@@ -408,7 +391,7 @@ impl Handle {
                     return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
                 }
 
-                match defs.lookup(handle, &fragment) {
+                match svg.lookup_node_by_id(fragment.fragment()) {
                     Some(n) => Ok(n),
                     None => Err(DefsLookupErrorKind::NotFound),
                 }
@@ -418,9 +401,9 @@ impl Handle {
         }
     }
 
-    fn has_sub(&mut self, handle: *const RsvgHandle, name: &str) -> bool {
+    fn has_sub(&mut self, name: &str) -> bool {
         // FIXME: return a proper error; only NotFound should map to false
-        self.defs_lookup(handle, name).is_ok()
+        self.lookup_node(name).is_ok()
     }
 
     fn render_cairo_sub(
@@ -441,10 +424,7 @@ impl Handle {
         }
 
         let node = if let Some(id) = id {
-            Some(
-                self.defs_lookup(handle, id)
-                    .map_err(RenderingError::InvalidId)?,
-            )
+            Some(self.lookup_node(id).map_err(RenderingError::InvalidId)?)
         } else {
             None
         };
@@ -453,7 +433,7 @@ impl Handle {
 
         cr.save();
 
-        let mut draw_ctx = self.create_drawing_ctx_for_node(handle, cr, &dimensions, node.as_ref());
+        let mut draw_ctx = self.create_drawing_ctx_for_node(cr, &dimensions, node.as_ref());
 
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
@@ -529,12 +509,13 @@ const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: u32 = 1 << 1;
 
 pub fn get_load_options(handle: *const RsvgHandle) -> LoadOptions {
     let rhandle = get_rust_handle(handle);
-    rhandle.load_options.get()
+
+    rhandle.load_options()
 }
 
-impl LoadOptions {
+impl LoadFlags {
     pub fn from_flags(flags: u32) -> Self {
-        LoadOptions {
+        LoadFlags {
             unlimited_size: (flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0,
             keep_image_data: (flags & RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA) != 0,
         }
@@ -569,45 +550,23 @@ extern "C" {
     fn rsvg_handle_get_dimensions(handle: *mut RsvgHandle, dimensions: *mut RsvgDimensionData);
 }
 
-/// Whether we are being run from the test suite
-pub fn is_testing(handle: *const RsvgHandle) -> bool {
-    let rhandle = get_rust_handle(handle);
-
-    rhandle.is_testing.get()
-}
-
-pub fn lookup_node(handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
-    let rhandle = get_rust_handle(handle);
-
-    let svg_ref = rhandle.svg.borrow();
-    let svg = svg_ref.as_ref().unwrap();
-    let mut defs_ref = svg.defs.borrow_mut();
-
-    defs_ref.lookup(handle, fragment)
-}
-
 // Looks up a node by its id.
-//
-// Note that this ignores the Fragment's url; it only uses the fragment identifier.
-pub fn lookup_fragment_id(handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
+pub fn lookup_fragment_id(handle: *const RsvgHandle, id: &str) -> Option<Rc<Node>> {
     let rhandle = get_rust_handle(handle);
 
     let svg_ref = rhandle.svg.borrow();
     let svg = svg_ref.as_ref().unwrap();
-    let defs_ref = svg.defs.borrow();
 
-    defs_ref.lookup_fragment_id(fragment.fragment())
+    svg.lookup_node_by_id(id)
 }
 
-pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*const RsvgHandle, ()> {
+pub fn load_extern(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<*const RsvgHandle, ()> {
     unsafe {
-        let rhandle = get_rust_handle(handle);
-
         let file = GFile::new_for_uri(aurl.url().as_str());
 
         let res = rsvg_handle_new_from_gfile_sync(
             file.to_glib_none().0,
-            rhandle.load_options.get().to_flags(),
+            load_options.flags.to_flags(),
             ptr::null(),
             ptr::null_mut(),
         );
@@ -615,22 +574,9 @@ pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*cons
         if res.is_null() {
             Err(())
         } else {
-            let rhandle = get_rust_handle(handle);
-
-            let svg_ref = rhandle.svg.borrow();
-            let svg = svg_ref.as_ref().unwrap();
-
-            svg.tree.cascade();
-
             Ok(res)
         }
     }
-}
-
-pub fn get_dpi<'a>(handle: *const RsvgHandle) -> &'a Dpi {
-    let rhandle = get_rust_handle(handle);
-
-    &rhandle.dpi
 }
 
 pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
@@ -644,30 +590,14 @@ pub struct BinaryData {
     pub content_type: Option<String>,
 }
 
-pub fn acquire_data(
-    _handle: *mut RsvgHandle,
-    aurl: &AllowedUrl,
-) -> Result<BinaryData, LoadingError> {
-    io::acquire_data(aurl, None)
-}
-
-pub fn acquire_stream(
-    _handle: *mut RsvgHandle,
-    aurl: &AllowedUrl,
-) -> Result<InputStream, LoadingError> {
-    io::acquire_stream(&aurl, None)
-}
-
 pub fn load_image_to_surface(
-    handle: *mut RsvgHandle,
+    load_options: &LoadOptions,
     url: &str,
 ) -> Result<ImageSurface, LoadingError> {
-    let rhandle = get_rust_handle(handle);
-
-    let aurl = AllowedUrl::from_href(url, get_base_url(handle).as_ref())
+    let aurl = AllowedUrl::from_href(url, load_options.base_url.as_ref())
         .map_err(|_| LoadingError::BadUrl)?;
 
-    let data = acquire_data(handle, &aurl)?;
+    let data = io::acquire_data(&aurl, None)?;
 
     if data.data.len() == 0 {
         return Err(LoadingError::EmptyData);
@@ -686,7 +616,7 @@ pub fn load_image_to_surface(
 
     let surface = SharedImageSurface::from_pixbuf(&pixbuf)?.into_image_surface()?;
 
-    if rhandle.load_options.get().keep_image_data {
+    if load_options.flags.keep_image_data {
         if let Some(mime_type) = data.content_type {
             extern "C" {
                 fn cairo_surface_set_mime_data(
@@ -723,44 +653,34 @@ pub fn load_image_to_surface(
 
 // This function just slurps CSS data from a possibly-relative href
 // and parses it.  We'll move it to a better place in the end.
-pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href_str: &str) {
-    let rhandle = get_rust_handle(handle);
+pub fn load_css(css_styles: &mut CssStyles, aurl: &AllowedUrl) -> Result<(), LoadingError> {
+    io::acquire_data(aurl, None)
+        .and_then(|data| {
+            let BinaryData {
+                data: bytes,
+                content_type,
+            } = data;
 
-    let aurl = match AllowedUrl::from_href(href_str, rhandle.base_url.borrow().as_ref()) {
-        Ok(a) => a,
-        Err(_) => {
-            rsvg_log!("Could not load \"{}\" for CSS data", href_str);
-            // FIXME: report errors; this should be a fatal error
-            return;
-        }
-    };
-
-    if let Ok(data) = acquire_data(handle, &aurl) {
-        let BinaryData {
-            data: bytes,
-            content_type,
-        } = data;
-
-        if content_type.as_ref().map(String::as_ref) != Some("text/css") {
-            rsvg_log!("\"{}\" is not of type text/css; ignoring", href_str);
-            // FIXME: report errors
-            return;
-        }
-
-        if let Ok(utf8) = String::from_utf8(bytes) {
-            css::parse_into_css_styles(css_styles, handle, &utf8);
-        } else {
-            rsvg_log!(
-                "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
-                href_str
-            );
-            // FIXME: report errors
-            return;
-        }
-    } else {
-        rsvg_log!("Could not load \"{}\" for CSS data", href_str);
-        // FIXME: report errors from not being to acquire data; this should be a fatal error
-    }
+            if content_type.as_ref().map(String::as_ref) == Some("text/css") {
+                Ok(bytes)
+            } else {
+                rsvg_log!("\"{}\" is not of type text/css; ignoring", aurl);
+                Err(LoadingError::BadCss)
+            }
+        })
+        .and_then(|bytes| {
+            String::from_utf8(bytes).map_err(|_| {
+                rsvg_log!(
+                    "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
+                    aurl
+                );
+                LoadingError::BadCss
+            })
+        })
+        .and_then(|utf8| {
+            css::parse_into_css_styles(css_styles, Some(aurl.url().clone()), &utf8);
+            Ok(()) // FIXME: return CSS parsing errors
+        })
 }
 
 #[no_mangle]
@@ -774,7 +694,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut Handle) {
     Box::from_raw(raw_handle);
 }
 
-pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
+fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
     unsafe { &mut *(rsvg_handle_get_rust(handle) as *mut Handle) }
 }
 
@@ -852,14 +772,14 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_y(raw_handle: *const Handle) -
 pub unsafe extern "C" fn rsvg_handle_rust_get_flags(raw_handle: *const Handle) -> u32 {
     let rhandle = &*raw_handle;
 
-    rhandle.load_options.get().to_flags()
+    rhandle.load_flags.get().to_flags()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, flags: u32) {
     let rhandle = &*raw_handle;
 
-    rhandle.load_options.set(LoadOptions::from_flags(flags));
+    rhandle.load_flags.set(LoadFlags::from_flags(flags));
 }
 
 #[no_mangle]
@@ -1035,7 +955,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
     }
 
     let id: String = from_glib_none(id);
-    rhandle.has_sub(handle, &id).to_glib()
+    rhandle.has_sub(&id).to_glib()
 }
 
 #[no_mangle]

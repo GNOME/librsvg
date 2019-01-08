@@ -5,7 +5,6 @@ use cairo;
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
-use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::ParseError;
 use property_bag::PropertyBag;
@@ -45,13 +44,8 @@ impl Blend {
 }
 
 impl NodeTrait for Blend {
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        handle: *const RsvgHandle,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
-        self.base.set_atts(node, handle, pbag)?;
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.base.set_atts(node, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {

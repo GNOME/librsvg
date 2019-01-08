@@ -5,61 +5,45 @@ use std::rc::Rc;
 
 use allowed_url::AllowedUrl;
 use error::ValueErrorKind;
-use handle::{self, RsvgHandle};
+use handle::{self, LoadOptions, RsvgHandle};
 use node::Node;
 use parsers::ParseError;
 
 pub struct Defs {
-    nodes: HashMap<String, Rc<Node>>,
     externs: HashMap<AllowedUrl, *const RsvgHandle>,
 }
 
 impl Defs {
     pub fn new() -> Defs {
         Defs {
-            nodes: Default::default(),
             externs: Default::default(),
         }
     }
 
-    pub fn insert(&mut self, id: &str, node: &Rc<Node>) {
-        self.nodes.entry(id.to_string()).or_insert(node.clone());
-    }
-
-    pub fn lookup_fragment_id(&self, id: &str) -> Option<Rc<Node>> {
-        self.nodes.get(id).map(|n| (*n).clone())
-    }
-
-    /// Returns a node referenced by a fragment ID
-    ///
-    /// If the `Fragment`'s URL is `None`, then the fragment ID refers
-    /// to the RSVG handle in question.  Otherwise, it will refer to
-    /// an externally-loaded SVG file that is referenced by the
-    /// current one.  If the element's id is not found, returns
-    /// `None`.
-    pub fn lookup(&mut self, handle: *const RsvgHandle, fragment: &Fragment) -> Option<Rc<Node>> {
+    /// Returns a node referenced by a fragment ID, from an
+    /// externally-loaded SVG file.
+    pub fn lookup(&mut self, load_options: &LoadOptions, fragment: &Fragment) -> Option<Rc<Node>> {
         if let Some(ref href) = fragment.uri() {
-            match self.get_extern_handle(handle, href) {
-                Ok(extern_handle) => handle::lookup_fragment_id(extern_handle, fragment),
+            match self.get_extern_handle(load_options, href) {
+                Ok(extern_handle) => handle::lookup_fragment_id(extern_handle, fragment.fragment()),
                 Err(()) => None,
             }
         } else {
-            self.lookup_fragment_id(fragment.fragment())
+            unreachable!();
         }
     }
 
     fn get_extern_handle(
         &mut self,
-        handle: *const RsvgHandle,
+        load_options: &LoadOptions,
         href: &str,
     ) -> Result<*const RsvgHandle, ()> {
-        let aurl =
-            AllowedUrl::from_href(href, handle::get_base_url(handle).as_ref()).map_err(|_| ())?;
+        let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref()).map_err(|_| ())?;
 
         match self.externs.entry(aurl) {
             Entry::Occupied(e) => Ok(*(e.get())),
             Entry::Vacant(e) => {
-                let extern_handle = handle::load_extern(handle, e.key())?;
+                let extern_handle = handle::load_extern(load_options, e.key())?;
                 e.insert(extern_handle);
                 Ok(extern_handle)
             }

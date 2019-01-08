@@ -110,6 +110,12 @@ impl AllowedUrl {
     }
 }
 
+impl fmt::Display for AllowedUrl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 impl error::Error for AllowedUrlError {
     fn description(&self) -> &str {
         match *self {

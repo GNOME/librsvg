@@ -6,7 +6,6 @@ use cairo::{self, ImageSurface};
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
-use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{self, ListLength, NumberListError, ParseError};
 use property_bag::PropertyBag;
@@ -203,24 +202,14 @@ impl FuncX {
 
 impl NodeTrait for ComponentTransfer {
     #[inline]
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        handle: *const RsvgHandle,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
-        self.base.set_atts(node, handle, pbag)
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.base.set_atts(node, pbag)
     }
 }
 
 impl NodeTrait for FuncX {
     #[inline]
-    fn set_atts(
-        &self,
-        _node: &RsvgNode,
-        _handle: *const RsvgHandle,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
+    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Type => self.function_type.set(FunctionType::parse(attr, value)?),

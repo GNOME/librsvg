@@ -14,7 +14,8 @@ use css::{self, CssStyles};
 use defs::Defs;
 use error::LoadingError;
 use handle::{self, RsvgHandle};
-use node::{node_new, Node, NodeType};
+use io;
+use node::{node_new, Node, NodeType, RsvgNode};
 use property_bag::PropertyBag;
 use structure::NodeSvg;
 use style::NodeStyle;
@@ -71,6 +72,7 @@ extern "C" {
 pub struct XmlState {
     tree: Option<Tree>,
     defs: Option<Defs>,
+    ids: Option<HashMap<String, RsvgNode>>,
     css_styles: Option<CssStyles>,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
@@ -97,6 +99,7 @@ impl XmlState {
         XmlState {
             tree: None,
             defs: Some(Defs::new()),
+            ids: Some(HashMap::new()),
             css_styles: Some(CssStyles::new()),
             context_stack: vec![Context::Start],
             current_node: None,
@@ -127,8 +130,10 @@ impl XmlState {
 
     pub fn steal_result(&mut self) -> Svg {
         Svg::new(
+            self.handle,
             self.tree.take().unwrap(),
             self.defs.take().unwrap(),
+            self.ids.take().unwrap(),
             self.css_styles.take().unwrap(),
         )
     }
@@ -215,11 +220,15 @@ impl XmlState {
                 && type_.as_ref().map(String::as_str) == Some("text/css")
                 && href.is_some()
             {
-                handle::load_css(
-                    self.css_styles.as_mut().unwrap(),
-                    self.handle,
+                if let Ok(aurl) = AllowedUrl::from_href(
                     &href.unwrap(),
-                );
+                    handle::get_base_url(self.handle).as_ref(),
+                ) {
+                    // FIXME: handle CSS errors
+                    let _ = handle::load_css(self.css_styles.as_mut().unwrap(), &aurl);
+                } else {
+                    self.error("disallowed URL in xml-stylesheet");
+                }
             }
         } else {
             self.error("invalid processing instruction data in xml-stylesheet");
@@ -278,7 +287,11 @@ impl XmlState {
         if node.get_type() == NodeType::Style {
             let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
 
-            css::parse_into_css_styles(self.css_styles.as_mut().unwrap(), self.handle, &css_data);
+            css::parse_into_css_styles(
+                self.css_styles.as_mut().unwrap(),
+                handle::get_base_url(self.handle).clone(),
+                &css_data,
+            );
         }
 
         self.current_node = node.get_parent();
@@ -314,15 +327,15 @@ impl XmlState {
         name: &str,
         pbag: &PropertyBag,
     ) -> Rc<Node> {
-        let defs = self.defs.as_mut().unwrap();
+        let ids = self.ids.as_mut().unwrap();
 
-        let new_node = create_node_and_register_id(name, parent, pbag, defs);
+        let new_node = create_node_and_register_id(name, parent, pbag, ids);
 
         if let Some(parent) = parent {
             parent.add_child(&new_node);
         }
 
-        new_node.set_atts(&new_node, self.handle, pbag);
+        new_node.set_atts(&new_node, pbag);
 
         // The "svg" node is special; it will parse its style attributes
         // until the end, in standard_element_end().
@@ -331,6 +344,10 @@ impl XmlState {
         }
 
         new_node.set_overridden_properties();
+
+        // For now we load resources directly when parsing, but probably we should
+        // move this to a trasversal of the tree once we finished parsing
+        new_node.resolve_resources(&handle::get_load_options(self.handle));
 
         new_node
     }
@@ -441,7 +458,7 @@ impl XmlState {
         aurl: &AllowedUrl,
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
-        let binary = handle::acquire_data(self.handle, aurl).map_err(|e| {
+        let binary = io::acquire_data(aurl, None).map_err(|e| {
             rsvg_log!("could not acquire \"{}\": {}", aurl.url(), e);
             AcquireError::ResourceError
         })?;
@@ -472,7 +489,7 @@ impl XmlState {
     fn acquire_xml(&mut self, aurl: &AllowedUrl) -> Result<(), AcquireError> {
         // FIXME: distinguish between "file not found" and "invalid XML"
 
-        let stream = handle::acquire_stream(self.handle, aurl).map_err(|e| match e {
+        let stream = io::acquire_stream(aurl, None).map_err(|e| match e {
             LoadingError::BadDataUrl => AcquireError::FatalError,
             _ => AcquireError::ResourceError,
         })?;

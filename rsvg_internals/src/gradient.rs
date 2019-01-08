@@ -9,7 +9,6 @@ use coord_units::CoordUnits;
 use defs::Fragment;
 use drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
 use error::*;
-use handle::RsvgHandle;
 use length::*;
 use node::*;
 use paint_server::PaintSource;
@@ -658,12 +657,7 @@ impl NodeGradient {
 }
 
 impl NodeTrait for NodeGradient {
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        _: *const RsvgHandle,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         let mut g = self.gradient.borrow_mut();
 
         let mut x1 = None;
