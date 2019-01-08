@@ -6,7 +6,7 @@ use gio;
 use css::CssStyles;
 use defs::{Defs, Fragment};
 use error::LoadingError;
-use handle::{LoadOptions, RsvgHandle};
+use handle::{self, LoadOptions, RsvgHandle};
 use node::RsvgNode;
 use tree::Tree;
 use xml::XmlState;
@@ -49,7 +49,7 @@ impl Svg {
     }
 
     pub fn load_from_stream(
-        load_options: LoadOptions,
+        load_options: &LoadOptions,
         handle: *mut RsvgHandle,
         stream: gio::InputStream,
         cancellable: Option<gio::Cancellable>,
@@ -70,7 +70,9 @@ impl Svg {
 
     pub fn lookup(&self, fragment: &Fragment) -> Option<RsvgNode> {
         if fragment.uri().is_some() {
-            self.defs.borrow_mut().lookup(self.handle, fragment)
+            self.defs
+                .borrow_mut()
+                .lookup(&handle::get_load_options(self.handle), fragment)
         } else {
             self.lookup_node_by_id(fragment.fragment())
         }

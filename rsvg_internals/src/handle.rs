@@ -186,7 +186,7 @@ impl Handle {
         cancellable: Option<gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         *self.svg.borrow_mut() = Some(Rc::new(Svg::load_from_stream(
-            self.load_options(),
+            &self.load_options(),
             handle,
             stream,
             cancellable,
