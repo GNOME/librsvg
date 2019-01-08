@@ -44,7 +44,8 @@ impl Defs {
         match self.externs.entry(aurl) {
             Entry::Occupied(e) => Ok(*(e.get())),
             Entry::Vacant(e) => {
-                let extern_handle = handle::load_extern(handle, e.key())?;
+                let load_options = handle::get_load_options(handle);
+                let extern_handle = handle::load_extern(&load_options, e.key())?;
                 e.insert(extern_handle);
                 Ok(extern_handle)
             }

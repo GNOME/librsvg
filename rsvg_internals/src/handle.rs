@@ -559,15 +559,13 @@ pub fn lookup_fragment_id(handle: *const RsvgHandle, id: &str) -> Option<Rc<Node
     svg.lookup_node_by_id(id)
 }
 
-pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*const RsvgHandle, ()> {
+pub fn load_extern(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<*const RsvgHandle, ()> {
     unsafe {
-        let rhandle = get_rust_handle(handle);
-
         let file = GFile::new_for_uri(aurl.url().as_str());
 
         let res = rsvg_handle_new_from_gfile_sync(
             file.to_glib_none().0,
-            rhandle.load_options.get().to_flags(),
+            load_options.to_flags(),
             ptr::null(),
             ptr::null_mut(),
         );
