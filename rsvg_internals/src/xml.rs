@@ -220,7 +220,8 @@ impl XmlState {
                 && type_.as_ref().map(String::as_str) == Some("text/css")
                 && href.is_some()
             {
-                handle::load_css(
+                // FIXME: handle CSS errors
+                let _ = handle::load_css(
                     self.css_styles.as_mut().unwrap(),
                     self.handle,
                     &href.unwrap(),
