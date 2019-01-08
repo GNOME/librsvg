@@ -79,9 +79,13 @@ impl NodeTrait for NodeImage {
 
                     *self.surface.borrow_mut() = Some(
                         // FIXME: translate the error better here
-                        handle::load_image_to_surface(handle as *mut _, &url).map_err(|e| {
-                            NodeError::value_error(attr, &format!("could not load image: {}", e))
-                        })?,
+                        handle::load_image_to_surface(&handle::get_load_options(handle), &url)
+                            .map_err(|e| {
+                                NodeError::value_error(
+                                    attr,
+                                    &format!("could not load image: {}", e),
+                                )
+                            })?,
                     );
                 }
 

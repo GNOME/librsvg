@@ -131,8 +131,9 @@ impl Image {
         };
 
         // FIXME: translate the error better here
-        let surface = handle::load_image_to_surface(self.handle.get() as *mut _, &url)
-            .map_err(|_| FilterError::InvalidInput)?;
+        let surface =
+            handle::load_image_to_surface(&handle::get_load_options(self.handle.get()), &url)
+                .map_err(|_| FilterError::InvalidInput)?;
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,

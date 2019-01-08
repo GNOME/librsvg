@@ -606,12 +606,10 @@ pub struct BinaryData {
 }
 
 pub fn load_image_to_surface(
-    handle: *mut RsvgHandle,
+    load_options: &LoadOptions,
     url: &str,
 ) -> Result<ImageSurface, LoadingError> {
-    let rhandle = get_rust_handle(handle);
-
-    let aurl = AllowedUrl::from_href(url, get_base_url(handle).as_ref())
+    let aurl = AllowedUrl::from_href(url, load_options.base_url.as_ref())
         .map_err(|_| LoadingError::BadUrl)?;
 
     let data = io::acquire_data(&aurl, None)?;
@@ -633,7 +631,7 @@ pub fn load_image_to_surface(
 
     let surface = SharedImageSurface::from_pixbuf(&pixbuf)?.into_image_surface()?;
 
-    if rhandle.load_flags.get().keep_image_data {
+    if load_options.flags.keep_image_data {
         if let Some(mime_type) = data.content_type {
             extern "C" {
                 fn cairo_surface_set_mime_data(
