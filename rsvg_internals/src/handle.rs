@@ -251,7 +251,6 @@ impl Handle {
 
     fn create_drawing_ctx_for_node(
         &mut self,
-        handle: *mut RsvgHandle,
         cr: &cairo::Context,
         dimensions: &RsvgDimensionData,
         node: Option<&RsvgNode>,
@@ -263,7 +262,7 @@ impl Handle {
             f64::from(dimensions.height),
             dimensions.em,
             dimensions.ex,
-            get_dpi(handle).clone(),
+            self.dpi.clone(),
             self.is_testing.get(),
         );
 
@@ -301,7 +300,7 @@ impl Handle {
         let dimensions = self.get_dimensions(handle)?;
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = self.create_drawing_ctx_for_node(handle, &cr, &dimensions, Some(node));
+        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, &dimensions, Some(node));
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
         let root = svg.tree.root();
@@ -434,7 +433,7 @@ impl Handle {
 
         cr.save();
 
-        let mut draw_ctx = self.create_drawing_ctx_for_node(handle, cr, &dimensions, node.as_ref());
+        let mut draw_ctx = self.create_drawing_ctx_for_node(cr, &dimensions, node.as_ref());
 
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
@@ -586,12 +585,6 @@ pub fn load_extern(handle: *const RsvgHandle, aurl: &AllowedUrl) -> Result<*cons
             Ok(res)
         }
     }
-}
-
-pub fn get_dpi<'a>(handle: *const RsvgHandle) -> &'a Dpi {
-    let rhandle = get_rust_handle(handle);
-
-    &rhandle.dpi
 }
 
 pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
