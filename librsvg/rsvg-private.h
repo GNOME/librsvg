@@ -33,13 +33,6 @@
 
 #include <glib.h>
 #include <glib-object.h>
-#include <math.h>
-
-#if defined(HAVE_FLOAT_H)
-# include <float.h>
-#endif
-
-G_BEGIN_DECLS 
 
 /* prepare for gettext */
 #ifndef _
@@ -49,7 +42,5 @@ G_BEGIN_DECLS
 #ifndef N_
 #define N_(X) X
 #endif
-
-G_END_DECLS
 
 #endif
