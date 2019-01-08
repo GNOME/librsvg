@@ -11,7 +11,7 @@ use drawing_ctx::DrawingCtx;
 use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
 use font_props::FontWeightSpec;
-use handle::RsvgHandle;
+use handle::LoadOptions;
 use length::*;
 use node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::ParseValue;
@@ -542,7 +542,7 @@ impl NodeChars {
 }
 
 impl NodeTrait for NodeChars {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 }
@@ -585,7 +585,7 @@ impl NodeText {
 }
 
 impl NodeTrait for NodeText {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
@@ -710,7 +710,7 @@ fn extract_chars_children_to_chunks_recursively(
 }
 
 impl NodeTrait for NodeTRef {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::XlinkHref => {
@@ -766,7 +766,7 @@ impl NodeTSpan {
 }
 
 impl NodeTrait for NodeTSpan {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self

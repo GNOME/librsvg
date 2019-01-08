@@ -5,7 +5,7 @@ use cairo::{self, ImageSurface, MatrixTrait};
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
-use handle::RsvgHandle;
+use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers;
 use property_bag::PropertyBag;
@@ -39,10 +39,10 @@ impl NodeTrait for Offset {
     fn set_atts(
         &self,
         node: &RsvgNode,
-        handle: *const RsvgHandle,
+        load_options: &LoadOptions,
         pbag: &PropertyBag<'_>,
     ) -> NodeResult {
-        self.base.set_atts(node, handle, pbag)?;
+        self.base.set_atts(node, load_options, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {

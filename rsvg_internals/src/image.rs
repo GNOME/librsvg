@@ -9,7 +9,7 @@ use defs::Href;
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
-use handle::{self, RsvgHandle};
+use handle::{self, LoadOptions};
 use length::*;
 use node::*;
 use parsers::ParseValue;
@@ -41,7 +41,7 @@ impl NodeTrait for NodeImage {
     fn set_atts(
         &self,
         node: &RsvgNode,
-        handle: *const RsvgHandle,
+        load_options: &LoadOptions,
         pbag: &PropertyBag<'_>,
     ) -> NodeResult {
         // SVG element has overflow:hidden
@@ -79,13 +79,9 @@ impl NodeTrait for NodeImage {
 
                     *self.surface.borrow_mut() = Some(
                         // FIXME: translate the error better here
-                        handle::load_image_to_surface(&handle::get_load_options(handle), &url)
-                            .map_err(|e| {
-                                NodeError::value_error(
-                                    attr,
-                                    &format!("could not load image: {}", e),
-                                )
-                            })?,
+                        handle::load_image_to_surface(load_options, &url).map_err(|e| {
+                            NodeError::value_error(attr, &format!("could not load image: {}", e))
+                        })?,
                     );
                 }
 

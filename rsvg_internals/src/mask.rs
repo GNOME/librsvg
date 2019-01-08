@@ -5,7 +5,7 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
-use handle::RsvgHandle;
+use handle::LoadOptions;
 use length::{Length, LengthDir};
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{Parse, ParseValue};
@@ -193,7 +193,7 @@ fn compute_luminance_to_alpha(
 }
 
 impl NodeTrait for NodeMask {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),

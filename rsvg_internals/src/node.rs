@@ -8,7 +8,7 @@ use cond::{locale_from_environment, RequiredExtensions, RequiredFeatures, System
 use css::CssStyles;
 use drawing_ctx::DrawingCtx;
 use error::*;
-use handle::RsvgHandle;
+use handle::LoadOptions;
 use parsers::Parse;
 use property_bag::PropertyBag;
 use state::{ComputedValues, Overflow, SpecifiedValue, State};
@@ -100,7 +100,7 @@ pub trait NodeTrait: Downcast {
     fn set_atts(
         &self,
         node: &RsvgNode,
-        handle: *const RsvgHandle,
+        load_options: &LoadOptions,
         pbag: &PropertyBag<'_>,
     ) -> NodeResult;
 
@@ -348,7 +348,7 @@ impl Node {
         self.data.cond.get()
     }
 
-    pub fn set_atts(&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag<'_>) {
+    pub fn set_atts(&self, node: &RsvgNode, load_options: &LoadOptions, pbag: &PropertyBag<'_>) {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Transform => match Matrix::parse_str(value, ()) {
@@ -371,7 +371,7 @@ impl Node {
             }
         }
 
-        match self.data.node_impl.set_atts(node, handle, pbag) {
+        match self.data.node_impl.set_atts(node, load_options, pbag) {
             Ok(_) => (),
             Err(e) => {
                 self.set_error(e);

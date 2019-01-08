@@ -2,7 +2,7 @@ use cairo::{self, ImageSurface};
 use cssparser;
 
 use drawing_ctx::DrawingCtx;
-use handle::RsvgHandle;
+use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use property_bag::PropertyBag;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -30,10 +30,10 @@ impl NodeTrait for Flood {
     fn set_atts(
         &self,
         node: &RsvgNode,
-        handle: *const RsvgHandle,
+        load_options: &LoadOptions,
         pbag: &PropertyBag<'_>,
     ) -> NodeResult {
-        self.base.set_atts(node, handle, pbag)
+        self.base.set_atts(node, load_options, pbag)
     }
 }
 

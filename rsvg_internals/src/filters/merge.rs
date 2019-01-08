@@ -4,7 +4,7 @@ use cairo::{self, ImageSurface};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
-use handle::RsvgHandle;
+use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use property_bag::PropertyBag;
 use rect::IRect;
@@ -49,21 +49,16 @@ impl NodeTrait for Merge {
     fn set_atts(
         &self,
         node: &RsvgNode,
-        handle: *const RsvgHandle,
+        load_options: &LoadOptions,
         pbag: &PropertyBag<'_>,
     ) -> NodeResult {
-        self.base.set_atts(node, handle, pbag)
+        self.base.set_atts(node, load_options, pbag)
     }
 }
 
 impl NodeTrait for MergeNode {
     #[inline]
-    fn set_atts(
-        &self,
-        _node: &RsvgNode,
-        _handle: *const RsvgHandle,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
+    fn set_atts(&self, _node: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::In => {

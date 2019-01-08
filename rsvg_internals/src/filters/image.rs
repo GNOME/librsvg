@@ -7,7 +7,7 @@ use attributes::Attribute;
 use defs::{Fragment, Href};
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
-use handle::{self, LoadOptions, RsvgHandle};
+use handle::{self, LoadOptions};
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
@@ -183,10 +183,10 @@ impl NodeTrait for Image {
     fn set_atts(
         &self,
         node: &RsvgNode,
-        handle: *const RsvgHandle,
+        load_options: &LoadOptions,
         pbag: &PropertyBag<'_>,
     ) -> NodeResult {
-        self.base.set_atts(node, handle, pbag)?;
+        self.base.set_atts(node, load_options, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {
@@ -199,7 +199,7 @@ impl NodeTrait for Image {
             }
         }
 
-        *self.load_options.borrow_mut() = Some(handle::get_load_options(handle));
+        *self.load_options.borrow_mut() = Some(load_options.clone());
 
         Ok(())
     }

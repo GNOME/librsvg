@@ -335,7 +335,7 @@ impl XmlState {
             parent.add_child(&new_node);
         }
 
-        new_node.set_atts(&new_node, self.handle, pbag);
+        new_node.set_atts(&new_node, &handle::get_load_options(self.handle), pbag);
 
         // The "svg" node is special; it will parse its style attributes
         // until the end, in standard_element_end().

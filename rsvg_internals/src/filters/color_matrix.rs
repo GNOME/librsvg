@@ -6,7 +6,7 @@ use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
-use handle::RsvgHandle;
+use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, ListLength, NumberListError, ParseError};
 use property_bag::PropertyBag;
@@ -51,10 +51,10 @@ impl NodeTrait for ColorMatrix {
     fn set_atts(
         &self,
         node: &RsvgNode,
-        handle: *const RsvgHandle,
+        load_options: &LoadOptions,
         pbag: &PropertyBag<'_>,
     ) -> NodeResult {
-        self.base.set_atts(node, handle, pbag)?;
+        self.base.set_atts(node, load_options, pbag)?;
 
         // First, determine the operation type.
         let mut operation_type = OperationType::Matrix;
