@@ -34,12 +34,13 @@
  */
 
 #include "config.h"
-#include "rsvg-private.h"
-#include "rsvg-size-callback.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "rsvg.h"
+#include "rsvg-size-callback.h"
 
 static GdkPixbuf *
 rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
