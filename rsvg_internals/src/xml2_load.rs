@@ -191,7 +191,7 @@ unsafe extern "C" fn sax_get_parameter_entity_cb(
 fn set_xml_parse_options(parser: xmlParserCtxtPtr, load_options: &LoadOptions) {
     let mut options: libc::c_int = XML_PARSE_NONET | XML_PARSE_BIG_LINES;
 
-    if load_options.unlimited_size {
+    if load_options.flags.unlimited_size {
         options |= XML_PARSE_HUGE;
     }
 

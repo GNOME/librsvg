@@ -79,12 +79,22 @@ pub struct RsvgPositionData {
 /// We communicate these to/from the C code with a guint <-> u32,
 /// and this struct provides to_flags() and from_flags() methods.
 #[derive(Default, Copy, Clone)]
-pub struct LoadOptions {
+pub struct LoadFlags {
     /// Whether to turn off size limits in libxml2
     pub unlimited_size: bool,
 
     /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces
     pub keep_image_data: bool,
+}
+
+pub struct LoadOptions {
+    pub flags: LoadFlags,
+}
+
+impl LoadOptions {
+    fn new(flags: LoadFlags) -> LoadOptions {
+        LoadOptions { flags }
+    }
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -100,7 +110,7 @@ pub struct Handle {
     base_url: RefCell<Option<Url>>,
     base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     svg: RefCell<Option<Rc<Svg>>>,
-    load_options: Cell<LoadOptions>,
+    load_flags: Cell<LoadFlags>,
     load_state: Cell<LoadState>,
     load: RefCell<Option<LoadContext>>,
     size_closure: *mut RsvgSizeClosure,
@@ -115,7 +125,7 @@ impl Handle {
             base_url: RefCell::new(None),
             base_url_cstring: RefCell::new(None),
             svg: RefCell::new(None),
-            load_options: Cell::new(LoadOptions::default()),
+            load_flags: Cell::new(LoadFlags::default()),
             load_state: Cell::new(LoadState::Start),
             load: RefCell::new(None),
             size_closure: ptr::null_mut(),
@@ -170,7 +180,7 @@ impl Handle {
         cancellable: Option<gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         *self.svg.borrow_mut() = Some(Rc::new(Svg::load_from_stream(
-            self.load_options.get(),
+            LoadOptions::new(self.load_flags.get()),
             handle,
             stream,
             cancellable,
@@ -188,7 +198,10 @@ impl Handle {
         if self.load_state.get() == LoadState::Start {
             self.load_state.set(LoadState::Loading);
 
-            self.load = RefCell::new(Some(LoadContext::new(handle, self.load_options.get())));
+            self.load = RefCell::new(Some(LoadContext::new(
+                handle,
+                LoadOptions::new(self.load_flags.get()),
+            )));
         }
 
         assert!(self.load_state.get() == LoadState::Loading);
@@ -509,12 +522,15 @@ const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: u32 = 1 << 1;
 
 pub fn get_load_options(handle: *const RsvgHandle) -> LoadOptions {
     let rhandle = get_rust_handle(handle);
-    rhandle.load_options.get()
+
+    LoadOptions {
+        flags: rhandle.load_flags.get(),
+    }
 }
 
-impl LoadOptions {
+impl LoadFlags {
     pub fn from_flags(flags: u32) -> Self {
-        LoadOptions {
+        LoadFlags {
             unlimited_size: (flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0,
             keep_image_data: (flags & RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA) != 0,
         }
@@ -565,7 +581,7 @@ pub fn load_extern(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<*con
 
         let res = rsvg_handle_new_from_gfile_sync(
             file.to_glib_none().0,
-            load_options.to_flags(),
+            load_options.flags.to_flags(),
             ptr::null(),
             ptr::null_mut(),
         );
@@ -617,7 +633,7 @@ pub fn load_image_to_surface(
 
     let surface = SharedImageSurface::from_pixbuf(&pixbuf)?.into_image_surface()?;
 
-    if rhandle.load_options.get().keep_image_data {
+    if rhandle.load_flags.get().keep_image_data {
         if let Some(mime_type) = data.content_type {
             extern "C" {
                 fn cairo_surface_set_mime_data(
@@ -773,14 +789,14 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_y(raw_handle: *const Handle) -
 pub unsafe extern "C" fn rsvg_handle_rust_get_flags(raw_handle: *const Handle) -> u32 {
     let rhandle = &*raw_handle;
 
-    rhandle.load_options.get().to_flags()
+    rhandle.load_flags.get().to_flags()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, flags: u32) {
     let rhandle = &*raw_handle;
 
-    rhandle.load_options.set(LoadOptions::from_flags(flags));
+    rhandle.load_flags.set(LoadFlags::from_flags(flags));
 }
 
 #[no_mangle]
