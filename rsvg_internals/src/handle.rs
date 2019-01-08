@@ -87,6 +87,7 @@ pub struct LoadFlags {
     pub keep_image_data: bool,
 }
 
+#[derive(Clone)]
 pub struct LoadOptions {
     pub flags: LoadFlags,
     pub base_url: Option<Url>,

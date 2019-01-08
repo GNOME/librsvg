@@ -1,5 +1,4 @@
 use std::cell::{Cell, RefCell};
-use std::ptr;
 
 use cairo::{self, ImageSurface, MatrixTrait, PatternTrait};
 
@@ -8,7 +7,7 @@ use attributes::Attribute;
 use defs::{Fragment, Href};
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
-use handle::{self, RsvgHandle};
+use handle::{self, LoadOptions, RsvgHandle};
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
@@ -24,10 +23,7 @@ pub struct Image {
     base: Primitive,
     aspect: Cell<AspectRatio>,
     href: RefCell<Option<Href>>,
-
-    // Storing this here seems hack-ish... It's required by rsvg_cairo_surface_new_from_href(). The
-    // <image> element calls it in set_atts() but I don't think it belongs there.
-    handle: Cell<*const RsvgHandle>,
+    load_options: RefCell<Option<LoadOptions>>,
 }
 
 impl Image {
@@ -38,8 +34,7 @@ impl Image {
             base: Primitive::new::<Self>(),
             aspect: Cell::new(AspectRatio::default()),
             href: RefCell::new(None),
-
-            handle: Cell::new(ptr::null()),
+            load_options: RefCell::new(None),
         }
     }
 
@@ -130,10 +125,11 @@ impl Image {
             unreachable!();
         };
 
+        let load_options_ref = self.load_options.borrow();
+
         // FIXME: translate the error better here
-        let surface =
-            handle::load_image_to_surface(&handle::get_load_options(self.handle.get()), &url)
-                .map_err(|_| FilterError::InvalidInput)?;
+        let surface = handle::load_image_to_surface(load_options_ref.as_ref().unwrap(), &url)
+            .map_err(|_| FilterError::InvalidInput)?;
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
@@ -203,7 +199,7 @@ impl NodeTrait for Image {
             }
         }
 
-        self.handle.set(handle);
+        *self.load_options.borrow_mut() = Some(handle::get_load_options(handle));
 
         Ok(())
     }
