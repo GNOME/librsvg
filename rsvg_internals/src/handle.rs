@@ -605,13 +605,6 @@ pub struct BinaryData {
     pub content_type: Option<String>,
 }
 
-pub fn acquire_data(
-    _handle: *mut RsvgHandle,
-    aurl: &AllowedUrl,
-) -> Result<BinaryData, LoadingError> {
-    io::acquire_data(aurl, None)
-}
-
 pub fn acquire_stream(
     _handle: *mut RsvgHandle,
     aurl: &AllowedUrl,
@@ -628,7 +621,7 @@ pub fn load_image_to_surface(
     let aurl = AllowedUrl::from_href(url, get_base_url(handle).as_ref())
         .map_err(|_| LoadingError::BadUrl)?;
 
-    let data = acquire_data(handle, &aurl)?;
+    let data = io::acquire_data(&aurl, None)?;
 
     if data.data.len() == 0 {
         return Err(LoadingError::EmptyData);
@@ -696,7 +689,7 @@ pub fn load_css(css_styles: &mut CssStyles, handle: *mut RsvgHandle, href_str: &
         }
     };
 
-    if let Ok(data) = acquire_data(handle, &aurl) {
+    if let Ok(data) = io::acquire_data(&aurl, None) {
         let BinaryData {
             data: bytes,
             content_type,

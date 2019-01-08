@@ -14,6 +14,7 @@ use css::{self, CssStyles};
 use defs::Defs;
 use error::LoadingError;
 use handle::{self, RsvgHandle};
+use io;
 use node::{node_new, Node, NodeType, RsvgNode};
 use property_bag::PropertyBag;
 use structure::NodeSvg;
@@ -445,7 +446,7 @@ impl XmlState {
         aurl: &AllowedUrl,
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
-        let binary = handle::acquire_data(self.handle, aurl).map_err(|e| {
+        let binary = io::acquire_data(aurl, None).map_err(|e| {
             rsvg_log!("could not acquire \"{}\": {}", aurl.url(), e);
             AcquireError::ResourceError
         })?;
