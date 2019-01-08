@@ -29,8 +29,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <glib/gi18n.h>
+
 #include "librsvg/rsvg.h"
-#include "librsvg/rsvg-private.h"
 #include "rsvg-tools-main.h"
 
 static gboolean
