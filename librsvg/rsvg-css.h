@@ -28,11 +28,6 @@
 
 #include <glib.h>
 
-#ifdef RSVG_COMPILATION
-#include <pango/pango.h>
-#include "rsvg-private.h"
-#endif
-
 G_BEGIN_DECLS
 
 /* Keep this in sync with rust/src/color.rs:ColorKind */
