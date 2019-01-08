@@ -21,6 +21,7 @@ pub struct NodeImage {
     y: Cell<Length>,
     w: Cell<Length>,
     h: Cell<Length>,
+    href: RefCell<Option<Href>>,
     surface: RefCell<Option<cairo::ImageSurface>>,
 }
 
@@ -32,18 +33,14 @@ impl NodeImage {
             y: Cell::new(Length::default()),
             w: Cell::new(Length::default()),
             h: Cell::new(Length::default()),
+            href: RefCell::new(None),
             surface: RefCell::new(None),
         }
     }
 }
 
 impl NodeTrait for NodeImage {
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        load_options: &LoadOptions,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         // SVG element has overflow:hidden
         // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
         node.set_overflow_hidden();
@@ -68,26 +65,35 @@ impl NodeTrait for NodeImage {
                 // "path" is used by some older Adobe Illustrator versions
                 Attribute::XlinkHref | Attribute::Path => {
                     // FIXME: use better errors here; these should be loading errors
-
-                    let href = Href::without_fragment(value)
-                        .map_err(|_| NodeError::value_error(attr, "fragment not allowed here"))?;
-
-                    let url = match href {
-                        Href::PlainUri(u) => u,
-                        _ => unreachable!(),
-                    };
-
-                    *self.surface.borrow_mut() = Some(
-                        // FIXME: translate the error better here
-                        handle::load_image_to_surface(load_options, &url).map_err(|e| {
-                            NodeError::value_error(attr, &format!("could not load image: {}", e))
-                        })?,
-                    );
+                    *self.href.borrow_mut() =
+                        Some(Href::without_fragment(value).map_err(|_| {
+                            NodeError::value_error(attr, "fragment not allowed here")
+                        })?);
                 }
 
                 _ => (),
             }
         }
+
+        Ok(())
+    }
+
+    fn resolve_resources(&self, load_options: &LoadOptions) -> NodeResult {
+        match *self.href.borrow() {
+            None => (),
+            Some(Href::PlainUri(ref url)) => {
+                *self.surface.borrow_mut() = Some(
+                    // FIXME: translate the error better here
+                    handle::load_image_to_surface(load_options, &url).map_err(|e| {
+                        NodeError::value_error(
+                            Attribute::XlinkHref,
+                            &format!("could not load image: {}", e),
+                        )
+                    })?,
+                );
+            }
+            _ => unreachable!(),
+        };
 
         Ok(())
     }

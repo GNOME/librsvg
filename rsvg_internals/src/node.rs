@@ -97,16 +97,17 @@ pub trait NodeTrait: Downcast {
     /// Sets per-node attributes from the `pbag`
     ///
     /// Each node is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        load_options: &LoadOptions,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult;
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult;
 
     /// Sets any special-cased properties that the node may have, that are different
     /// from defaults in the node's `State`.
     fn set_overridden_properties(&self, _state: &mut State) {}
+
+    /// Load resources specified in the attributes.
+    fn resolve_resources(&self, _load_options: &LoadOptions) -> NodeResult {
+        // Most of the nodes do not need to load resources
+        Ok(())
+    }
 
     fn draw(
         &self,
@@ -348,7 +349,7 @@ impl Node {
         self.data.cond.get()
     }
 
-    pub fn set_atts(&self, node: &RsvgNode, load_options: &LoadOptions, pbag: &PropertyBag<'_>) {
+    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Transform => match Matrix::parse_str(value, ()) {
@@ -371,7 +372,7 @@ impl Node {
             }
         }
 
-        match self.data.node_impl.set_atts(node, load_options, pbag) {
+        match self.data.node_impl.set_atts(node, pbag) {
             Ok(_) => (),
             Err(e) => {
                 self.set_error(e);
@@ -440,6 +441,15 @@ impl Node {
                 //   return;
 
                 rsvg_log!("(attribute error: {})", e);
+            }
+        }
+    }
+
+    pub fn resolve_resources(&self, load_options: &LoadOptions) {
+        match self.data.node_impl.resolve_resources(load_options) {
+            Ok(_) => (),
+            Err(e) => {
+                self.set_error(e);
             }
         }
     }

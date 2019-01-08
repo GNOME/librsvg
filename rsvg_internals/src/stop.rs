@@ -2,7 +2,6 @@ use std::cell::Cell;
 
 use attributes::Attribute;
 use error::*;
-use handle::LoadOptions;
 use length::*;
 use node::*;
 use parsers::ParseValue;
@@ -35,7 +34,7 @@ fn validate_offset(length: Length) -> Result<Length, ValueErrorKind> {
 }
 
 impl NodeTrait for NodeStop {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Offset => {

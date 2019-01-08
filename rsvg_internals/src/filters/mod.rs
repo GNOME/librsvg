@@ -9,7 +9,6 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use error::{RenderingError, ValueErrorKind};
-use handle::LoadOptions;
 use length::{Length, LengthDir, LengthUnit};
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{ParseError, ParseValue};
@@ -111,7 +110,7 @@ impl Primitive {
 }
 
 impl NodeTrait for Primitive {
-    fn set_atts(&self, node: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let primitiveunits = node
             .get_parent()
@@ -193,13 +192,8 @@ impl PrimitiveWithInput {
 }
 
 impl NodeTrait for PrimitiveWithInput {
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        load_options: &LoadOptions,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
-        self.base.set_atts(node, load_options, pbag)?;
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.base.set_atts(node, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {

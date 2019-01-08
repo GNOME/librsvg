@@ -7,7 +7,6 @@ use attributes::Attribute;
 use cssparser::{Parser, Token};
 use drawing_ctx::DrawingCtx;
 use error::*;
-use handle::LoadOptions;
 use length::*;
 use marker;
 use node::*;
@@ -125,7 +124,7 @@ impl NodePath {
 }
 
 impl NodeTrait for NodePath {
-    fn set_atts(&self, node: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == Attribute::D {
                 let mut builder = PathBuilder::new();
@@ -234,7 +233,7 @@ impl NodePoly {
 }
 
 impl NodeTrait for NodePoly {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             // support for svg < 1.0 which used verts
             if attr == Attribute::Points || attr == Attribute::Verts {
@@ -295,7 +294,7 @@ impl NodeLine {
 }
 
 impl NodeTrait for NodeLine {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X1 => self.x1.set(attr.parse(value, LengthDir::Horizontal)?),
@@ -361,7 +360,7 @@ impl NodeRect {
 }
 
 impl NodeTrait for NodeRect {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
@@ -561,7 +560,7 @@ impl NodeCircle {
 }
 
 impl NodeTrait for NodeCircle {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Cx => self.cx.set(attr.parse(value, LengthDir::Horizontal)?),
@@ -617,7 +616,7 @@ impl NodeEllipse {
 }
 
 impl NodeTrait for NodeEllipse {
-    fn set_atts(&self, _: &RsvgNode, _: &LoadOptions, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Cx => self.cx.set(attr.parse(value, LengthDir::Horizontal)?),

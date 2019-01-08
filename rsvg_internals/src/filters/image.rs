@@ -180,13 +180,8 @@ impl Image {
 }
 
 impl NodeTrait for Image {
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        load_options: &LoadOptions,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
-        self.base.set_atts(node, load_options, pbag)?;
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.base.set_atts(node, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {
@@ -199,6 +194,10 @@ impl NodeTrait for Image {
             }
         }
 
+        Ok(())
+    }
+
+    fn resolve_resources(&self, load_options: &LoadOptions) -> NodeResult {
         *self.load_options.borrow_mut() = Some(load_options.clone());
 
         Ok(())

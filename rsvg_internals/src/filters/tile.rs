@@ -1,7 +1,6 @@
 use cairo::{self, ImageSurface, Matrix, MatrixTrait, PatternTrait};
 
 use drawing_ctx::DrawingCtx;
-use handle::LoadOptions;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use property_bag::PropertyBag;
 use surface_utils::shared_surface::SharedImageSurface;
@@ -25,13 +24,8 @@ impl Tile {
 }
 
 impl NodeTrait for Tile {
-    fn set_atts(
-        &self,
-        node: &RsvgNode,
-        load_options: &LoadOptions,
-        pbag: &PropertyBag<'_>,
-    ) -> NodeResult {
-        self.base.set_atts(node, load_options, pbag)
+    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.base.set_atts(node, pbag)
     }
 }
 
