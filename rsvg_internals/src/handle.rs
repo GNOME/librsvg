@@ -12,6 +12,7 @@ use gdk_pixbuf_sys;
 use gio::{self, FileExt};
 use gio_sys;
 use glib::translate::*;
+use glib::Cast;
 use glib_sys;
 use gobject_sys;
 use libc;
@@ -537,6 +538,16 @@ impl Handle {
         }
 
         Ok(pixbuf)
+    }
+
+    fn construct_new_from_gfile_sync(
+        &mut self,
+        handle: *mut RsvgHandle,
+        file: &gio::File,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<(), LoadingError> {
+        let stream = file.read(cancellable)?;
+        self.construct_read_stream_sync(handle, &stream.upcast(), Some(file), cancellable)
     }
 
     fn construct_read_stream_sync(
@@ -1172,6 +1183,31 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
     }
 
     res
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_new_from_gfile_sync(
+    file: *mut gio_sys::GFile,
+    flags: u32,
+    cancellable: *mut gio_sys::GCancellable,
+    error: *mut *mut glib_sys::GError,
+) -> *mut RsvgHandle {
+    let raw_handle = rsvg_handle_new_with_flags(flags);
+
+    let rhandle = get_rust_handle(raw_handle);
+
+    let file = from_glib_none(file);
+    let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
+
+    match rhandle.construct_new_from_gfile_sync(raw_handle, &file, cancellable.as_ref()) {
+        Ok(()) => raw_handle,
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            gobject_sys::g_object_unref(raw_handle as *mut _);
+            ptr::null_mut()
+        }
+    }
 }
 
 #[no_mangle]

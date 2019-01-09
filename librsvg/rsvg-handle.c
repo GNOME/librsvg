@@ -181,6 +181,10 @@ extern void rsvg_handle_rust_set_size_callback (RsvgHandleRust *raw_handle,
                                                 RsvgSizeFunc size_func,
                                                 gpointer user_data,
                                                 GDestroyNotify destroy_notify);
+extern RsvgHandle *rsvg_handle_rust_new_from_gfile_sync (GFile *file,
+                                                         RsvgHandleFlags flags,
+                                                         GCancellable *cancellable,
+                                                         GError **error);
 extern RsvgHandle *rsvg_handle_rust_new_from_stream_sync (GInputStream *input_stream,
                                                           GFile *base_file,
                                                           RsvgHandleFlags flags,
@@ -574,22 +578,11 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
                                  GCancellable   *cancellable,
                                  GError        **error)
 {
-    RsvgHandle *handle;
-    GFileInputStream *stream;
-
     g_return_val_if_fail (G_IS_FILE (file), NULL);
     g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
     g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-    stream = g_file_read (file, cancellable, error);
-    if (stream == NULL)
-        return NULL;
-
-    handle = rsvg_handle_new_from_stream_sync (G_INPUT_STREAM (stream), file,
-                                               flags, cancellable, error);
-    g_object_unref (stream);
-
-    return handle;
+    return rsvg_handle_rust_new_from_gfile_sync (file, flags, cancellable, error);
 }
 
 /**
