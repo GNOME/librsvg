@@ -128,9 +128,6 @@
 
 #include "rsvg.h"
 
-/* Defined in rsvg_internals/src/load.rs */
-typedef struct RsvgLoad RsvgLoad;
-
 /* Defined in rsvg_internals/src/handle.rs */
 typedef struct RsvgHandleRust RsvgHandleRust;
 
