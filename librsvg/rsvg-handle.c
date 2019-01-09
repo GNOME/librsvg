@@ -240,9 +240,15 @@ rsvg_handle_set_property (GObject * instance, guint prop_id, GValue const *value
     case PROP_DPI_Y:
         rsvg_handle_rust_set_dpi_y (self->priv->rust_handle, g_value_get_double (value));
         break;
-    case PROP_BASE_URI:
-        rsvg_handle_set_base_uri (self, g_value_get_string (value));
+    case PROP_BASE_URI: {
+        const char *str = g_value_get_string (value);
+
+        if (str) {
+            rsvg_handle_set_base_uri (self, str);
+        }
+
         break;
+    }
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (instance, prop_id, pspec);
     }
@@ -718,58 +724,6 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
                                               error);
 }
 
-/* http://www.ietf.org/rfc/rfc2396.txt */
-
-static gboolean
-path_is_uri (char const *path)
-{
-    char const *p;
-
-    if (path == NULL)
-        return FALSE;
-
-    if (strlen (path) < 4)
-        return FALSE;
-
-    if ((path[0] < 'a' || path[0] > 'z') &&
-        (path[0] < 'A' || path[0] > 'Z')) {
-        return FALSE;
-    }
-
-    for (p = &path[1];
-	    (*p >= 'a' && *p <= 'z') ||
-        (*p >= 'A' && *p <= 'Z') ||
-        (*p >= '0' && *p <= '9') ||
-         *p == '+' ||
-         *p == '-' ||
-         *p == '.';
-        p++);
-
-    if (strlen (p) < 3)
-        return FALSE;
-
-    return (p[0] == ':' && p[1] == '/' && p[2] == '/');
-}
-
-static gchar *
-get_base_uri_from_filename (const gchar * filename)
-{
-    gchar *current_dir;
-    gchar *absolute_filename;
-    gchar *base_uri;
-
-    if (g_path_is_absolute (filename))
-        return g_filename_to_uri (filename, NULL, NULL);
-
-    current_dir = g_get_current_dir ();
-    absolute_filename = g_build_filename (current_dir, filename, NULL);
-    base_uri = g_filename_to_uri (absolute_filename, NULL, NULL);
-    g_free (absolute_filename);
-    g_free (current_dir);
-
-    return base_uri;
-}
-
 /**
  * rsvg_handle_set_base_uri:
  * @handle: A #RsvgHandle
@@ -783,24 +737,10 @@ get_base_uri_from_filename (const gchar * filename)
 void
 rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
 {
-    gchar *uri;
-    GFile *file;
-
     g_return_if_fail (RSVG_IS_HANDLE (handle));
+    g_return_if_fail (base_uri != NULL);
 
-    if (base_uri == NULL) {
-        return;
-    }
-
-    if (path_is_uri (base_uri))
-        uri = g_strdup (base_uri);
-    else
-        uri = get_base_uri_from_filename (base_uri);
-
-    file = g_file_new_for_uri (uri ? uri : "data:");
-    rsvg_handle_set_base_gfile (handle, file);
-    g_object_unref (file);
-    g_free (uri);
+    rsvg_handle_rust_set_base_url (handle->priv->rust_handle, base_uri);
 }
 
 /**
