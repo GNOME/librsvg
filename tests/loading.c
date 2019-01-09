@@ -50,6 +50,9 @@ load_n_bytes_at_a_time (gconstpointer data)
         }
     } while (!done);
 
+    fclose (file);
+    g_free (filename);
+
     g_assert (rsvg_handle_close (handle, NULL) != FALSE);
 
     g_object_unref (handle);
