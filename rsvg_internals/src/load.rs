@@ -71,7 +71,7 @@ impl LoadContext {
                 xml_state_load_from_possibly_compressed_stream(
                     self.xml.as_mut().unwrap(),
                     &self.load_options,
-                    stream.upcast(),
+                    &stream.upcast(),
                     None,
                 )
                 .and_then(|_| Ok(self.xml.take().unwrap()))

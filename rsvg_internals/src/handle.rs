@@ -9,7 +9,7 @@ use cairo::{self, ImageSurface, Status};
 use cairo_sys;
 use gdk_pixbuf::{Colorspace, Pixbuf, PixbufLoader, PixbufLoaderExt};
 use gdk_pixbuf_sys;
-use gio::{File as GFile, FileExt};
+use gio::{self, FileExt};
 use gio_sys;
 use glib::translate::*;
 use glib_sys;
@@ -195,7 +195,7 @@ impl Handle {
         }
     }
 
-    fn set_base_gfile(&self, file: &GFile) {
+    fn set_base_gfile(&self, file: &gio::File) {
         if let Some(uri) = file.get_uri() {
             self.set_base_url(&uri);
         } else {
@@ -206,8 +206,8 @@ impl Handle {
     pub fn read_stream_sync(
         &mut self,
         handle: *mut RsvgHandle,
-        stream: gio::InputStream,
-        cancellable: Option<gio::Cancellable>,
+        stream: &gio::InputStream,
+        cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         self.load_state.set(LoadState::Loading);
 
@@ -538,6 +538,20 @@ impl Handle {
 
         Ok(pixbuf)
     }
+
+    fn construct_read_stream_sync(
+        &mut self,
+        handle: *mut RsvgHandle,
+        stream: &gio::InputStream,
+        base_file: Option<&gio::File>,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<(), LoadingError> {
+        if let Some(file) = base_file {
+            self.set_base_gfile(file);
+        }
+
+        self.read_stream_sync(handle, stream, cancellable)
+    }
 }
 
 // Keep these in sync with rsvg.h:RsvgHandleFlags
@@ -601,7 +615,7 @@ pub fn lookup_fragment_id(handle: *const RsvgHandle, id: &str) -> Option<Rc<Node
 
 pub fn load_extern(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<*const RsvgHandle, ()> {
     unsafe {
-        let file = GFile::new_for_uri(aurl.url().as_str());
+        let file = gio::File::new_for_uri(aurl.url().as_str());
 
         let res = rsvg_handle_new_from_gfile_sync(
             file.to_glib_none().0,
@@ -758,7 +772,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
 
     match *handle.base_url.borrow() {
         None => ptr::null_mut(),
-        Some(ref url) => GFile::new_for_uri(url.as_str()).to_glib_full(),
+        Some(ref url) => gio::File::new_for_uri(url.as_str()).to_glib_full(),
     }
 }
 
@@ -771,7 +785,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_base_gfile(
 
     assert!(!raw_gfile.is_null());
 
-    let file: GFile = from_glib_none(raw_gfile);
+    let file: gio::File = from_glib_none(raw_gfile);
 
     handle.set_base_gfile(&file);
 }
@@ -897,9 +911,9 @@ pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
     }
 
     let stream = from_glib_none(stream);
-    let cancellable = from_glib_none(cancellable);
+    let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.read_stream_sync(handle, stream, cancellable) {
+    match rhandle.read_stream_sync(handle, &stream, cancellable.as_ref()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -1172,15 +1186,16 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_stream_sync(
 
     let rhandle = get_rust_handle(raw_handle);
 
-    if !base_file.is_null() {
-        let file: GFile = from_glib_none(base_file);
-        rhandle.set_base_gfile(&file);
-    }
-
+    let base_file: Option<gio::File> = from_glib_none(base_file);
     let stream = from_glib_none(input_stream);
-    let cancellable = from_glib_none(cancellable);
+    let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.read_stream_sync(raw_handle, stream, cancellable) {
+    match rhandle.construct_read_stream_sync(
+        raw_handle,
+        &stream,
+        base_file.as_ref(),
+        cancellable.as_ref(),
+    ) {
         Ok(()) => raw_handle,
 
         Err(e) => {

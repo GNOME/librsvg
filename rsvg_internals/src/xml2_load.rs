@@ -422,11 +422,11 @@ pub fn xml_state_parse_from_stream(
 pub fn xml_state_load_from_possibly_compressed_stream(
     xml: &mut XmlState,
     load_options: &LoadOptions,
-    stream: gio::InputStream,
-    cancellable: Option<gio::Cancellable>,
+    stream: &gio::InputStream,
+    cancellable: Option<&gio::Cancellable>,
 ) -> Result<(), ParseFromStreamError> {
-    let stream = get_input_stream_for_loading(stream, cancellable.as_ref())
+    let stream = get_input_stream_for_loading(stream, cancellable)
         .map_err(|e| ParseFromStreamError::IoError(e))?;
 
-    xml_state_parse_from_stream(xml, load_options, stream, cancellable.as_ref())
+    xml_state_parse_from_stream(xml, load_options, stream, cancellable)
 }

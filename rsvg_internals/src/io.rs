@@ -48,12 +48,12 @@ const GZ_MAGIC_0: u8 = 0x1f;
 const GZ_MAGIC_1: u8 = 0x8b;
 
 pub fn get_input_stream_for_loading(
-    stream: InputStream,
+    stream: &InputStream,
     cancellable: Option<&Cancellable>,
 ) -> Result<InputStream, glib::Error> {
     // detect gzipped streams (svgz)
 
-    let buffered = BufferedInputStream::new(&stream);
+    let buffered = BufferedInputStream::new(stream);
     let num_read = buffered.fill(2, cancellable)?;
     if num_read < 2 {
         // FIXME: this string was localized in the original; localize it

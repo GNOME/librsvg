@@ -51,8 +51,8 @@ impl Svg {
     pub fn load_from_stream(
         load_options: &LoadOptions,
         handle: *mut RsvgHandle,
-        stream: gio::InputStream,
-        cancellable: Option<gio::Cancellable>,
+        stream: &gio::InputStream,
+        cancellable: Option<&gio::Cancellable>,
     ) -> Result<Svg, LoadingError> {
         let mut xml = XmlState::new(handle);
 
