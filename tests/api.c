@@ -200,6 +200,8 @@ set_dpi (void)
     g_assert_cmpint (dim.width,  ==, 400);
     g_assert_cmpint (dim.height, ==, 1200);
     g_object_unref (handle);
+
+    g_free (filename);
 }
 
 static void
@@ -270,6 +272,8 @@ handle_write_close_free (void)
     GError *error = NULL;
 
     g_assert (g_file_get_contents (filename, &data, &length, &error));
+    g_free (filename);
+
     g_assert (data != NULL);
     g_assert (error == NULL);
 
@@ -321,6 +325,8 @@ handle_new_from_data (void)
     GError *error = NULL;
 
     g_assert (g_file_get_contents (filename, &data, &length, &error));
+    g_free (filename);
+
     g_assert (data != NULL);
     g_assert (error == NULL);
 
@@ -421,6 +427,8 @@ handle_has_sub (void)
     g_assert (rsvg_handle_has_sub (handle, EXAMPLE_ONE_ID));
     g_assert (rsvg_handle_has_sub (handle, EXAMPLE_TWO_ID));
     g_assert (!rsvg_handle_has_sub (handle, "#foo"));
+
+    g_object_unref (handle);
 }
 
 static void
@@ -669,6 +677,8 @@ can_draw_to_non_image_surface (void)
     GError *error = NULL;
 
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
     g_assert (handle != NULL);
     g_assert (error == NULL);
 
@@ -698,6 +708,7 @@ can_draw_to_non_image_surface (void)
     g_object_unref (handle);
 
     cairo_destroy (cr);
+    cairo_surface_destroy (surface);
 }
 
 /* Test that we preserve the affine transformation in the cr during a call
@@ -710,6 +721,8 @@ render_cairo_sub (void)
     GError *error = NULL;
 
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
     g_assert (handle != NULL);
     g_assert (error == NULL);
 
@@ -730,6 +743,7 @@ render_cairo_sub (void)
 
     g_object_unref (handle);
     cairo_destroy (cr);
+    cairo_surface_destroy (surf);
 }
 
 /* https://gitlab.gnome.org/GNOME/librsvg/issues/385 */

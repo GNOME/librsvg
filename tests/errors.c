@@ -35,6 +35,8 @@ test_non_svg_element (void)
 
     g_assert (handle == NULL);
     g_assert (g_error_matches (error, RSVG_ERROR, RSVG_ERROR_FAILED));
+
+    g_error_free (error);
 }
 
 static void
