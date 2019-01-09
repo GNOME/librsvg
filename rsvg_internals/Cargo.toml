@@ -33,6 +33,7 @@ gio = { version="0.5.1", features=["v2_48"] } # per configure.ac
 gio-sys = "0.7.0"
 glib = "0.6.0"
 glib-sys = "0.7.0"
+gobject-sys = "0.7.0"
 itertools = "0.7.4"
 language-tags = "0.2.2"
 lazy_static = "1.0.0"

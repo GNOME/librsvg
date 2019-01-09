@@ -13,6 +13,7 @@ use gio::{File as GFile, FileExt};
 use gio_sys;
 use glib::translate::*;
 use glib_sys;
+use gobject_sys;
 use libc;
 use url::Url;
 
@@ -574,6 +575,8 @@ impl LoadFlags {
 
 #[allow(improper_ctypes)]
 extern "C" {
+    fn rsvg_handle_new_with_flags(flags: u32) -> *mut RsvgHandle;
+
     fn rsvg_handle_new_from_gfile_sync(
         file: *const gio_sys::GFile,
         flags: u32,
@@ -1155,4 +1158,35 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
     }
 
     res
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_new_from_stream_sync(
+    input_stream: *mut gio_sys::GInputStream,
+    base_file: *mut gio_sys::GFile,
+    flags: u32,
+    cancellable: *mut gio_sys::GCancellable,
+    error: *mut *mut glib_sys::GError,
+) -> *mut RsvgHandle {
+    let raw_handle = rsvg_handle_new_with_flags(flags);
+
+    let rhandle = get_rust_handle(raw_handle);
+
+    if !base_file.is_null() {
+        let file: GFile = from_glib_none(base_file);
+        rhandle.set_base_gfile(&file);
+    }
+
+    let stream = from_glib_none(input_stream);
+    let cancellable = from_glib_none(cancellable);
+
+    match rhandle.read_stream_sync(raw_handle, stream, cancellable) {
+        Ok(()) => raw_handle,
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            gobject_sys::g_object_unref(raw_handle as *mut _);
+            ptr::null_mut()
+        }
+    }
 }

@@ -16,6 +16,7 @@ extern crate gio;
 extern crate gio_sys;
 extern crate glib;
 extern crate glib_sys;
+extern crate gobject_sys;
 extern crate itertools;
 extern crate language_tags;
 extern crate libc;
@@ -53,6 +54,7 @@ pub use handle::{
     rsvg_handle_rust_get_position_sub,
     rsvg_handle_rust_has_sub,
     rsvg_handle_rust_new,
+    rsvg_handle_rust_new_from_stream_sync,
     rsvg_handle_rust_read_stream_sync,
     rsvg_handle_rust_render_cairo_sub,
     rsvg_handle_rust_set_base_gfile,
