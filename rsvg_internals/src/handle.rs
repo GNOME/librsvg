@@ -1,3 +1,4 @@
+use std;
 use std::cell::{Cell, Ref, RefCell};
 use std::ffi::CString;
 use std::mem;
@@ -1238,4 +1239,37 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_stream_sync(
             ptr::null_mut()
         }
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_new_from_data(
+    data: *mut u8,
+    len: usize,
+    error: *mut *mut glib_sys::GError,
+) -> *mut RsvgHandle {
+    // We create the MemoryInputStream without the gtk-rs binding because of this:
+    //
+    // - The binding doesn't provide _new_from_data().  All of the binding's ways to
+    // put data into a MemoryInputStream involve copying the data buffer.
+    //
+    // - We can't use glib::Bytes from the binding either, for the same reason.
+    //
+    // - For now, we are using the other C-visible constructor, so we need a raw pointer to the
+    //   stream, anyway.
+
+    assert!(len <= std::isize::MAX as usize);
+    let len = len as isize;
+
+    let raw_stream = gio_sys::g_memory_input_stream_new_from_data(data, len, None);
+
+    let ret = rsvg_handle_rust_new_from_stream_sync(
+        raw_stream as *mut _,
+        ptr::null_mut(), // base_file
+        0,               // flags
+        ptr::null_mut(), // cancellable
+        error,
+    );
+
+    gobject_sys::g_object_unref(raw_stream as *mut _);
+    ret
 }

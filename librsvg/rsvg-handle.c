@@ -190,6 +190,9 @@ extern RsvgHandle *rsvg_handle_rust_new_from_stream_sync (GInputStream *input_st
                                                           RsvgHandleFlags flags,
                                                           GCancellable *cancellable,
                                                           GError **error);
+extern RsvgHandle *rsvg_handle_rust_new_from_data (const guint8 *data,
+                                                   gsize data_len,
+                                                   GError **error);
 
 struct RsvgHandlePrivate {
     RsvgHandleRust *rust_handle;
@@ -476,18 +479,11 @@ rsvg_handle_new (void)
 RsvgHandle *
 rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
 {
-    GInputStream *stream;
-    RsvgHandle *handle;
-
-    g_return_val_if_fail (data != NULL, NULL);
+    g_return_val_if_fail ((data != NULL && data_len != 0) || (data_len == 0), NULL);
     g_return_val_if_fail (data_len <= G_MAXSSIZE, NULL);
     g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-    stream = g_memory_input_stream_new_from_data (data, data_len, NULL);
-    handle = rsvg_handle_new_from_stream_sync (stream, NULL, RSVG_HANDLE_FLAGS_NONE, NULL, error);
-    g_object_unref (stream);
-
-    return handle;
+    return rsvg_handle_rust_new_from_data (data, data_len, error);
 }
 
 /**
