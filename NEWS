@@ -1,3 +1,8 @@
+Version 2.45.4
+- Brown paper bag release, my apologies.
+- Fix #402 - Fix the library's soname.  Thanks to Gabriele Balducci
+  for reporting it, and Kalev Lember for fixing it.
+
 Version 2.45.3
 - Big news!  All the real work in the library is now implemented in
   Rust.  The public API is implemented in C, but most it calls
