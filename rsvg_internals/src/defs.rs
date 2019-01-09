@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
+use gobject_sys;
+
 use allowed_url::AllowedUrl;
 use error::ValueErrorKind;
 use handle::{self, LoadOptions, RsvgHandle};
@@ -10,7 +12,7 @@ use node::Node;
 use parsers::ParseError;
 
 pub struct Defs {
-    externs: HashMap<AllowedUrl, *const RsvgHandle>,
+    externs: HashMap<AllowedUrl, *mut RsvgHandle>,
 }
 
 impl Defs {
@@ -47,6 +49,14 @@ impl Defs {
                 e.insert(extern_handle);
                 Ok(extern_handle)
             }
+        }
+    }
+}
+
+impl Drop for Defs {
+    fn drop(&mut self) {
+        for (_, handle) in self.externs.iter() {
+            unsafe { gobject_sys::g_object_unref(*handle as *mut _); }
         }
     }
 }
