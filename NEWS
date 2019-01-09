@@ -1,5 +1,25 @@
+Version 2.45.3
+- Big news!  All the real work in the library is now implemented in
+  Rust.  The public API is implemented in C, but most it calls
+  immediately into the Rust code.  Special thanks to Paolo Borelli and
+  Carlos Martín Nieto for making this possible.
+
+- rsvg_handle_set_base_uri() now really assumes that it is passed a
+  URI.  Previously it would try to differentiate between real URIs,
+  and absolute or relative file paths.  If this breaks your code
+  (i.e. you are passing a filename, not a URI), please tell us so we
+  can restore the old behavior!
+
+- Fix #395 - Don't panic in feMorphology if it ends up with a negative
+  scaling transformation.
+- Fix #398 - Detect circular references in gradients.
+- Match the Firefox/Chrome behavior on gradients and patterns with
+  circular references for fallbacks (Paolo Borelli).
+- Fixes for Rust 1.30 and below (Jordan Petridis).
+- Lots and lots of refactoring (Paolo Borelli, Federico Mena).
+
 Version 2.45.2
-- rsvg_cleaup() is now deprecated.  This was only meant to be called
+- rsvg_cleanup() is now deprecated.  This was only meant to be called
   from code to be checked by Valgrind.  Leak checkers may show
   reachable memory from libxml2; real memory leaks should still be
   reported, of course.  (Kornel Lesiński).
