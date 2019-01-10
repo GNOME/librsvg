@@ -376,6 +376,28 @@ impl Handle {
         })
     }
 
+    fn get_position_sub(
+        &mut self,
+        handle: *mut RsvgHandle,
+        id: Option<&str>,
+    ) -> Result<RsvgPositionData, RenderingError> {
+        if let None = id {
+            return Ok(RsvgPositionData { x: 0, y: 0 });
+        }
+
+        let (ink_r, _) = self.get_geometry_sub(handle, id)?;
+
+        let width = ink_r.width as libc::c_int;
+        let height = ink_r.height as libc::c_int;
+
+        self.size_callback.borrow().call(width, height);
+
+        Ok(RsvgPositionData {
+            x: ink_r.x as libc::c_int,
+            y: ink_r.y as libc::c_int,
+        })
+    }
+
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry(
         &mut self,
@@ -1177,7 +1199,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
     handle: *mut RsvgHandle,
-    position: *mut RsvgPositionData,
+    position_data: *mut RsvgPositionData,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
@@ -1186,35 +1208,24 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
         return false.to_glib();
     }
 
-    // Short-cut when no id is given
-    if id.is_null() || *id == 0 {
-        (*position).x = 0;
-        (*position).y = 0;
-        return true.to_glib();
+    let id: Option<String> = from_glib_none(id);
+
+    match rhandle.get_position_sub(handle, id.as_ref().map(String::as_str)) {
+        Ok(position) => {
+            *position_data = position;
+            true.to_glib()
+        }
+
+        Err(_) => {
+            let p = &mut *position_data;
+
+            p.x = 0;
+            p.y = 0;
+
+            // FIXME: return a proper error code to the public API
+            false.to_glib()
+        }
     }
-
-    let mut ink_r = RsvgRectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 0.0,
-        height: 0.0,
-    };
-
-    let res = rsvg_handle_rust_get_geometry_sub(handle, &mut ink_r, ptr::null_mut(), id);
-    if from_glib(res) {
-        (*position).x = ink_r.x as libc::c_int;
-        (*position).y = ink_r.y as libc::c_int;
-
-        let width = ink_r.width as libc::c_int;
-        let height = ink_r.height as libc::c_int;
-
-        rhandle.size_callback.borrow().call(width, height);
-    } else {
-        (*position).x = 0;
-        (*position).y = 0;
-    }
-
-    res
 }
 
 #[no_mangle]
