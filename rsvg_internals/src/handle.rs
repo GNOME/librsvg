@@ -324,10 +324,7 @@ impl Handle {
         draw_ctx
     }
 
-    fn get_dimensions(
-        &mut self,
-        handle: *mut RsvgHandle,
-    ) -> Result<RsvgDimensionData, RenderingError> {
+    fn get_dimensions(&mut self) -> Result<RsvgDimensionData, RenderingError> {
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
         // To prevent an infinite loop we are saving the state, and
@@ -343,7 +340,7 @@ impl Handle {
 
         self.in_loop.set(true);
 
-        let res = self.get_dimensions_sub(handle, None);
+        let res = self.get_dimensions_sub(None);
 
         self.in_loop.set(false);
 
@@ -358,10 +355,9 @@ impl Handle {
 
     fn get_dimensions_sub(
         &mut self,
-        handle: *mut RsvgHandle,
         id: Option<&str>,
     ) -> Result<RsvgDimensionData, RenderingError> {
-        let (ink_r, _) = self.get_geometry_sub(handle, id)?;
+        let (ink_r, _) = self.get_geometry_sub(id)?;
 
         let (w, h) = self
             .size_callback
@@ -376,16 +372,12 @@ impl Handle {
         })
     }
 
-    fn get_position_sub(
-        &mut self,
-        handle: *mut RsvgHandle,
-        id: Option<&str>,
-    ) -> Result<RsvgPositionData, RenderingError> {
+    fn get_position_sub(&mut self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
         if let None = id {
             return Ok(RsvgPositionData { x: 0, y: 0 });
         }
 
-        let (ink_r, _) = self.get_geometry_sub(handle, id)?;
+        let (ink_r, _) = self.get_geometry_sub(id)?;
 
         let width = ink_r.width as libc::c_int;
         let height = ink_r.height as libc::c_int;
@@ -401,10 +393,9 @@ impl Handle {
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry(
         &mut self,
-        handle: *mut RsvgHandle,
         node: &RsvgNode,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
-        let dimensions = self.get_dimensions(handle)?;
+        let dimensions = self.get_dimensions()?;
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
         let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, &dimensions, Some(node));
@@ -431,7 +422,6 @@ impl Handle {
     /// Returns (ink_rect, logical_rect)
     fn get_geometry_sub(
         &mut self,
-        handle: *mut RsvgHandle,
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let root = {
@@ -466,7 +456,7 @@ impl Handle {
             }
         }
 
-        self.get_node_geometry(handle, &node)
+        self.get_node_geometry(&node)
     }
 
     fn lookup_node(&mut self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
@@ -516,7 +506,6 @@ impl Handle {
 
     fn render_cairo_sub(
         &mut self,
-        handle: *mut RsvgHandle,
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
@@ -537,7 +526,7 @@ impl Handle {
             None
         };
 
-        let dimensions = self.get_dimensions(handle)?;
+        let dimensions = self.get_dimensions()?;
 
         cr.save();
 
@@ -554,19 +543,15 @@ impl Handle {
         res
     }
 
-    fn get_pixbuf_sub(
-        &mut self,
-        handle: *mut RsvgHandle,
-        id: Option<&str>,
-    ) -> Result<Pixbuf, RenderingError> {
-        let dimensions = self.get_dimensions(handle)?;
+    fn get_pixbuf_sub(&mut self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
+        let dimensions = self.get_dimensions()?;
 
         let surface =
             ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
 
         {
             let cr = cairo::Context::new(&surface);
-            self.render_cairo_sub(handle, &cr, id)?;
+            self.render_cairo_sub(&cr, id)?;
         }
 
         let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
@@ -1044,7 +1029,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_sub(handle, id.as_ref().map(String::as_str)) {
+    match rhandle.get_geometry_sub(id.as_ref().map(String::as_str)) {
         Ok((ink_r, logical_r)) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_r;
@@ -1105,7 +1090,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
         return false.to_glib();
     }
 
-    match rhandle.render_cairo_sub(handle, &cr, id.as_ref().map(String::as_str)) {
+    match rhandle.render_cairo_sub(&cr, id.as_ref().map(String::as_str)) {
         Ok(()) => true.to_glib(),
 
         Err(_) => {
@@ -1127,7 +1112,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
         return ptr::null_mut();
     }
 
-    match rhandle.get_pixbuf_sub(handle, id.as_ref().map(String::as_str)) {
+    match rhandle.get_pixbuf_sub(id.as_ref().map(String::as_str)) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(_) => ptr::null_mut(),
     }
@@ -1144,7 +1129,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
         return;
     }
 
-    match rhandle.get_dimensions(handle) {
+    match rhandle.get_dimensions() {
         Ok(dimensions) => {
             *dimension_data = dimensions;
         }
@@ -1176,7 +1161,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_dimensions_sub(handle, id.as_ref().map(String::as_str)) {
+    match rhandle.get_dimensions_sub(id.as_ref().map(String::as_str)) {
         Ok(dimensions) => {
             *dimension_data = dimensions;
             true.to_glib()
@@ -1210,7 +1195,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_position_sub(handle, id.as_ref().map(String::as_str)) {
+    match rhandle.get_position_sub(id.as_ref().map(String::as_str)) {
         Ok(position) => {
             *position_data = position;
             true.to_glib()
