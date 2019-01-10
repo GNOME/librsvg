@@ -328,17 +328,32 @@ impl Handle {
         &mut self,
         handle: *mut RsvgHandle,
     ) -> Result<RsvgDimensionData, RenderingError> {
-        let dimensions = unsafe {
-            let mut dimensions = mem::zeroed();
-            rsvg_handle_rust_get_dimensions(handle, &mut dimensions);
-            dimensions
-        };
-
-        if dimensions.width == 0 || dimensions.height == 0 {
-            Err(RenderingError::SvgHasNoSize)
-        } else {
-            Ok(dimensions)
+        // This function is probably called from the cairo_render functions,
+        // or is being erroneously called within the size_func.
+        // To prevent an infinite loop we are saving the state, and
+        // returning a meaningless size.
+        if self.in_loop.get() {
+            return Ok(RsvgDimensionData {
+                width: 1,
+                height: 1,
+                em: 1.0,
+                ex: 1.0,
+            });
         }
+
+        self.in_loop.set(true);
+
+        let res = self.get_dimensions_sub(handle, None);
+
+        self.in_loop.set(false);
+
+        res.and_then(|dimensions| {
+            if dimensions.width == 0 || dimensions.height == 0 {
+                Err(RenderingError::SvgHasNoSize)
+            } else {
+                Ok(dimensions)
+            }
+        })
     }
 
     fn get_dimensions_sub(
@@ -1107,20 +1122,22 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
         return;
     }
 
-    // This function is probably called from the cairo_render functions.
-    // To prevent an infinite loop we are saving the state.
-    if rhandle.in_loop.get() {
-        // Called within the size function, so return a standard size
-        (*dimension_data).width = 1;
-        (*dimension_data).height = 1;
-        (*dimension_data).em = 1.0;
-        (*dimension_data).ex = 1.0;
-        return;
-    }
+    match rhandle.get_dimensions(handle) {
+        Ok(dimensions) => {
+            *dimension_data = dimensions;
+        }
 
-    rhandle.in_loop.set(true);
-    rsvg_handle_rust_get_dimensions_sub(handle, dimension_data, ptr::null());
-    rhandle.in_loop.set(false);
+        Err(_) => {
+            let d = &mut *dimension_data;
+
+            d.width = 0;
+            d.height = 0;
+            d.em = 0.0;
+            d.ex = 0.0;
+
+            // This old API doesn't even let us return an error, sigh.
+        }
+    }
 }
 
 #[no_mangle]
