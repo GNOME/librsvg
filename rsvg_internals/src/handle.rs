@@ -20,7 +20,6 @@ use libc;
 use url::Url;
 
 use allowed_url::AllowedUrl;
-use css::{self, CssStyles};
 use defs::Href;
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
@@ -692,11 +691,6 @@ pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
     rhandle.base_url.borrow()
 }
 
-pub struct BinaryData {
-    pub data: Vec<u8>,
-    pub content_type: Option<String>,
-}
-
 pub fn load_image_to_surface(
     load_options: &LoadOptions,
     url: &str,
@@ -756,38 +750,6 @@ pub fn load_image_to_surface(
     }
 
     Ok(surface)
-}
-
-// This function just slurps CSS data from a possibly-relative href
-// and parses it.  We'll move it to a better place in the end.
-pub fn load_css(css_styles: &mut CssStyles, aurl: &AllowedUrl) -> Result<(), LoadingError> {
-    io::acquire_data(aurl, None)
-        .and_then(|data| {
-            let BinaryData {
-                data: bytes,
-                content_type,
-            } = data;
-
-            if content_type.as_ref().map(String::as_ref) == Some("text/css") {
-                Ok(bytes)
-            } else {
-                rsvg_log!("\"{}\" is not of type text/css; ignoring", aurl);
-                Err(LoadingError::BadCss)
-            }
-        })
-        .and_then(|bytes| {
-            String::from_utf8(bytes).map_err(|_| {
-                rsvg_log!(
-                    "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
-                    aurl
-                );
-                LoadingError::BadCss
-            })
-        })
-        .and_then(|utf8| {
-            css::parse_into_css_styles(css_styles, Some(aurl.url().clone()), &utf8);
-            Ok(()) // FIXME: return CSS parsing errors
-        })
 }
 
 #[no_mangle]

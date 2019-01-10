@@ -17,7 +17,11 @@ use glib::{self, Bytes as GBytes, Cast};
 
 use allowed_url::AllowedUrl;
 use error::{LoadingError, RsvgError};
-use handle::BinaryData;
+
+pub struct BinaryData {
+    pub data: Vec<u8>,
+    pub content_type: Option<String>,
+}
 
 fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
     let data_url = data_url::DataUrl::process(uri).map_err(|_| LoadingError::BadDataUrl)?;

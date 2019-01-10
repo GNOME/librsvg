@@ -12,7 +12,8 @@ use glib_sys::{gboolean, gpointer, GList};
 use allowed_url::AllowedUrl;
 use attributes::Attribute;
 use croco::*;
-use handle;
+use error::LoadingError;
+use io::{self, BinaryData};
 use state::State;
 use util::utf8_cstr;
 
@@ -137,6 +138,38 @@ fn init_cr_doc_handler(handler: &mut CRDocHandler) {
     handler.unrecoverable_error = Some(css_unrecoverable_error);
 }
 
+// This function just slurps CSS data from a possibly-relative href
+// and parses it.  We'll move it to a better place in the end.
+pub fn load_css(css_styles: &mut CssStyles, aurl: &AllowedUrl) -> Result<(), LoadingError> {
+    io::acquire_data(aurl, None)
+        .and_then(|data| {
+            let BinaryData {
+                data: bytes,
+                content_type,
+            } = data;
+
+            if content_type.as_ref().map(String::as_ref) == Some("text/css") {
+                Ok(bytes)
+            } else {
+                rsvg_log!("\"{}\" is not of type text/css; ignoring", aurl);
+                Err(LoadingError::BadCss)
+            }
+        })
+        .and_then(|bytes| {
+            String::from_utf8(bytes).map_err(|_| {
+                rsvg_log!(
+                    "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
+                    aurl
+                );
+                LoadingError::BadCss
+            })
+        })
+        .and_then(|utf8| {
+            parse_into_css_styles(css_styles, Some(aurl.url().clone()), &utf8);
+            Ok(()) // FIXME: return CSS parsing errors
+        })
+}
+
 unsafe extern "C" fn css_import_style(
     a_this: *mut CRDocHandler,
     _a_media_list: *mut GList,
@@ -155,7 +188,7 @@ unsafe extern "C" fn css_import_style(
 
     if let Ok(aurl) = AllowedUrl::from_href(uri, handler_data.base_url.as_ref()) {
         // FIXME: handle CSS errors
-        let _ = handle::load_css(handler_data.css_styles, &aurl);
+        let _ = load_css(handler_data.css_styles, &aurl);
     } else {
         rsvg_log!("disallowed URL \"{}\" for importing CSS", uri);
     }

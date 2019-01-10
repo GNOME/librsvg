@@ -225,7 +225,7 @@ impl XmlState {
                     handle::get_base_url(self.handle).as_ref(),
                 ) {
                     // FIXME: handle CSS errors
-                    let _ = handle::load_css(self.css_styles.as_mut().unwrap(), &aurl);
+                    let _ = css::load_css(self.css_styles.as_mut().unwrap(), &aurl);
                 } else {
                     self.error("disallowed URL in xml-stylesheet");
                 }

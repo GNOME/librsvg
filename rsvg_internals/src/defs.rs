@@ -56,7 +56,9 @@ impl Defs {
 impl Drop for Defs {
     fn drop(&mut self) {
         for (_, handle) in self.externs.iter() {
-            unsafe { gobject_sys::g_object_unref(*handle as *mut _); }
+            unsafe {
+                gobject_sys::g_object_unref(*handle as *mut _);
+            }
         }
     }
 }
