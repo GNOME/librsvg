@@ -341,6 +341,27 @@ impl Handle {
         }
     }
 
+    fn get_dimensions_sub(
+        &mut self,
+        handle: *mut RsvgHandle,
+        id: Option<&str>,
+    ) -> Result<RsvgDimensionData, RenderingError> {
+        let (ink_r, _) = self.get_geometry_sub(handle, id)?;
+
+        let (w, h) = self
+            .size_callback
+            .borrow()
+            .call(ink_r.width as libc::c_int, ink_r.height as libc::c_int);
+
+        Ok(RsvgDimensionData {
+            width: w,
+            height: h,
+            em: ink_r.width,
+            ex: ink_r.height,
+        })
+    }
+
+    /// Returns (ink_rect, logical_rect)
     fn get_node_geometry(
         &mut self,
         handle: *mut RsvgHandle,
@@ -370,6 +391,7 @@ impl Handle {
         Ok((ink_rect, logical_rect))
     }
 
+    /// Returns (ink_rect, logical_rect)
     fn get_geometry_sub(
         &mut self,
         handle: *mut RsvgHandle,
@@ -1113,32 +1135,26 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
         return false.to_glib();
     }
 
-    let mut ink_r = RsvgRectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 0.0,
-        height: 0.0,
-    };
+    let id: Option<String> = from_glib_none(id);
 
-    let res = rsvg_handle_rust_get_geometry_sub(handle, &mut ink_r, ptr::null_mut(), id);
-    if from_glib(res) {
-        let (w, h) = rhandle
-            .size_callback
-            .borrow()
-            .call(ink_r.width as libc::c_int, ink_r.height as libc::c_int);
+    match rhandle.get_dimensions_sub(handle, id.as_ref().map(String::as_str)) {
+        Ok(dimensions) => {
+            *dimension_data = dimensions;
+            true.to_glib()
+        }
 
-        (*dimension_data).width = w;
-        (*dimension_data).height = h;
-        (*dimension_data).em = ink_r.width;
-        (*dimension_data).ex = ink_r.height;
-    } else {
-        (*dimension_data).width = 0;
-        (*dimension_data).height = 0;
-        (*dimension_data).em = 0.0;
-        (*dimension_data).ex = 0.0;
+        Err(_) => {
+            let d = &mut *dimension_data;
+
+            d.width = 0;
+            d.height = 0;
+            d.em = 0.0;
+            d.ex = 0.0;
+
+            // FIXME: return a proper error code to the public API
+            false.to_glib()
+        }
     }
-
-    res
 }
 
 #[no_mangle]
