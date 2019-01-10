@@ -10,7 +10,7 @@ use xml_rs::{reader::XmlEvent, ParserConfig};
 use allowed_url::AllowedUrl;
 use attributes::Attribute;
 use create_node::create_node_and_register_id;
-use css::{self, CssStyles};
+use css::CssStyles;
 use defs::Defs;
 use error::LoadingError;
 use handle::{self, RsvgHandle};
@@ -225,7 +225,8 @@ impl XmlState {
                     handle::get_base_url(self.handle).as_ref(),
                 ) {
                     // FIXME: handle CSS errors
-                    let _ = css::load_css(self.css_styles.as_mut().unwrap(), &aurl);
+                    let css_styles = self.css_styles.as_mut().unwrap();
+                    let _ = css_styles.load_css(&aurl);
                 } else {
                     self.error("disallowed URL in xml-stylesheet");
                 }
@@ -287,11 +288,9 @@ impl XmlState {
         if node.get_type() == NodeType::Style {
             let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
 
-            css::parse_into_css_styles(
-                self.css_styles.as_mut().unwrap(),
-                handle::get_base_url(self.handle).clone(),
-                &css_data,
-            );
+            let css_styles = self.css_styles.as_mut().unwrap();
+
+            css_styles.parse(handle::get_base_url(self.handle).clone(), &css_data);
         }
 
         self.current_node = node.get_parent();

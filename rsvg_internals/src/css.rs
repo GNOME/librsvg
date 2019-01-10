@@ -36,6 +36,72 @@ impl CssStyles {
         }
     }
 
+    pub fn parse(&mut self, base_url: Option<Url>, buf: &str) {
+        if buf.len() == 0 {
+            return; // libcroco doesn't like empty strings :(
+        }
+
+        unsafe {
+            let mut handler_data = DocHandlerData {
+                base_url,
+                css_styles: self,
+                selector: ptr::null_mut(),
+            };
+
+            let doc_handler = cr_doc_handler_new();
+            init_cr_doc_handler(&mut *doc_handler);
+
+            (*doc_handler).app_data = &mut handler_data as *mut _ as gpointer;
+
+            let buf_ptr = buf.as_ptr() as *mut _;
+            let buf_len = buf.len() as libc::c_ulong;
+
+            let parser = cr_parser_new_from_buf(buf_ptr, buf_len, CR_UTF_8, false.to_glib());
+            if parser.is_null() {
+                cr_doc_handler_unref(doc_handler);
+                return;
+            }
+
+            cr_parser_set_sac_handler(parser, doc_handler);
+            cr_doc_handler_unref(doc_handler);
+
+            cr_parser_set_use_core_grammar(parser, false.to_glib());
+            cr_parser_parse(parser);
+
+            cr_parser_destroy(parser);
+        }
+    }
+
+    pub fn load_css(&mut self, aurl: &AllowedUrl) -> Result<(), LoadingError> {
+        io::acquire_data(aurl, None)
+            .and_then(|data| {
+                let BinaryData {
+                    data: bytes,
+                    content_type,
+                } = data;
+
+                if content_type.as_ref().map(String::as_ref) == Some("text/css") {
+                    Ok(bytes)
+                } else {
+                    rsvg_log!("\"{}\" is not of type text/css; ignoring", aurl);
+                    Err(LoadingError::BadCss)
+                }
+            })
+            .and_then(|bytes| {
+                String::from_utf8(bytes).map_err(|_| {
+                    rsvg_log!(
+                        "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
+                        aurl
+                    );
+                    LoadingError::BadCss
+                })
+            })
+            .and_then(|utf8| {
+                self.parse(Some(aurl.url().clone()), &utf8);
+                Ok(()) // FIXME: return CSS parsing errors
+            })
+    }
+
     fn define(&mut self, selector: &str, prop_name: &str, prop_value: &str, important: bool) {
         let decl_list = self
             .selectors_to_declarations
@@ -93,42 +159,6 @@ macro_rules! get_doc_handler_data {
     };
 }
 
-pub fn parse_into_css_styles(css_styles: &mut CssStyles, base_url: Option<Url>, buf: &str) {
-    if buf.len() == 0 {
-        return; // libcroco doesn't like empty strings :(
-    }
-
-    unsafe {
-        let mut handler_data = DocHandlerData {
-            base_url,
-            css_styles,
-            selector: ptr::null_mut(),
-        };
-
-        let doc_handler = cr_doc_handler_new();
-        init_cr_doc_handler(&mut *doc_handler);
-
-        (*doc_handler).app_data = &mut handler_data as *mut _ as gpointer;
-
-        let buf_ptr = buf.as_ptr() as *mut _;
-        let buf_len = buf.len() as libc::c_ulong;
-
-        let parser = cr_parser_new_from_buf(buf_ptr, buf_len, CR_UTF_8, false.to_glib());
-        if parser.is_null() {
-            cr_doc_handler_unref(doc_handler);
-            return;
-        }
-
-        cr_parser_set_sac_handler(parser, doc_handler);
-        cr_doc_handler_unref(doc_handler);
-
-        cr_parser_set_use_core_grammar(parser, false.to_glib());
-        cr_parser_parse(parser);
-
-        cr_parser_destroy(parser);
-    }
-}
-
 fn init_cr_doc_handler(handler: &mut CRDocHandler) {
     handler.import_style = Some(css_import_style);
     handler.start_selector = Some(css_start_selector);
@@ -136,38 +166,6 @@ fn init_cr_doc_handler(handler: &mut CRDocHandler) {
     handler.property = Some(css_property);
     handler.error = Some(css_error);
     handler.unrecoverable_error = Some(css_unrecoverable_error);
-}
-
-// This function just slurps CSS data from a possibly-relative href
-// and parses it.  We'll move it to a better place in the end.
-pub fn load_css(css_styles: &mut CssStyles, aurl: &AllowedUrl) -> Result<(), LoadingError> {
-    io::acquire_data(aurl, None)
-        .and_then(|data| {
-            let BinaryData {
-                data: bytes,
-                content_type,
-            } = data;
-
-            if content_type.as_ref().map(String::as_ref) == Some("text/css") {
-                Ok(bytes)
-            } else {
-                rsvg_log!("\"{}\" is not of type text/css; ignoring", aurl);
-                Err(LoadingError::BadCss)
-            }
-        })
-        .and_then(|bytes| {
-            String::from_utf8(bytes).map_err(|_| {
-                rsvg_log!(
-                    "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
-                    aurl
-                );
-                LoadingError::BadCss
-            })
-        })
-        .and_then(|utf8| {
-            parse_into_css_styles(css_styles, Some(aurl.url().clone()), &utf8);
-            Ok(()) // FIXME: return CSS parsing errors
-        })
 }
 
 unsafe extern "C" fn css_import_style(
@@ -188,7 +186,7 @@ unsafe extern "C" fn css_import_style(
 
     if let Ok(aurl) = AllowedUrl::from_href(uri, handler_data.base_url.as_ref()) {
         // FIXME: handle CSS errors
-        let _ = load_css(handler_data.css_styles, &aurl);
+        let _ = handler_data.css_styles.load_css(&aurl);
     } else {
         rsvg_log!("disallowed URL \"{}\" for importing CSS", uri);
     }
