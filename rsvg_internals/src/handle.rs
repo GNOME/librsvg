@@ -329,7 +329,7 @@ impl Handle {
     ) -> Result<RsvgDimensionData, RenderingError> {
         let dimensions = unsafe {
             let mut dimensions = mem::zeroed();
-            rsvg_handle_get_dimensions(handle, &mut dimensions);
+            rsvg_handle_rust_get_dimensions(handle, &mut dimensions);
             dimensions
         };
 
@@ -610,8 +610,6 @@ extern "C" {
     ) -> *mut RsvgHandle;
 
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
-
-    fn rsvg_handle_get_dimensions(handle: *mut RsvgHandle, dimensions: *mut RsvgDimensionData);
 }
 
 // Looks up a node by its id.
