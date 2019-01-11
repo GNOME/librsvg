@@ -116,6 +116,7 @@ mod parsers;
 mod path_builder;
 mod path_parser;
 mod pattern;
+mod pixbuf_utils;
 mod property_bag;
 mod rect;
 mod shapes;

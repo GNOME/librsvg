@@ -105,6 +105,7 @@ pub enum RenderingError {
     InstancingLimit,
     InvalidId(DefsLookupErrorKind),
     SvgHasNoSize,
+    OutOfMemory,
 }
 
 impl From<cairo::Status> for RenderingError {

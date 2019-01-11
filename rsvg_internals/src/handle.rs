@@ -8,7 +8,7 @@ use std::slice;
 
 use cairo::{self, ImageSurface, Status};
 use cairo_sys;
-use gdk_pixbuf::{Colorspace, Pixbuf, PixbufLoader, PixbufLoaderExt};
+use gdk_pixbuf::{Pixbuf, PixbufLoader, PixbufLoaderExt};
 use gdk_pixbuf_sys;
 use gio::{self, FileExt};
 use gio_sys;
@@ -27,13 +27,9 @@ use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
 use io;
 use load::LoadContext;
 use node::{Node, RsvgNode};
-use rect::IRect;
+use pixbuf_utils::pixbuf_from_surface;
 use structure::NodeSvg;
-use surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    shared_surface::SurfaceType,
-};
+use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use svg::Svg;
 use util::rsvg_g_warning;
 
@@ -555,33 +551,7 @@ impl Handle {
 
         let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
 
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: dimensions.width,
-            y1: dimensions.height,
-        };
-
-        let pixbuf = Pixbuf::new(
-            Colorspace::Rgb,
-            true,
-            8,
-            dimensions.width,
-            dimensions.height,
-        );
-
-        for (x, y, pixel) in Pixels::new(&surface, bounds) {
-            let (r, g, b, a) = if pixel.a == 0 {
-                (0, 0, 0, 0)
-            } else {
-                let pixel = pixel.unpremultiply();
-                (pixel.r, pixel.g, pixel.b, pixel.a)
-            };
-
-            pixbuf.put_pixel(x as i32, y as i32, r, g, b, a);
-        }
-
-        Ok(pixbuf)
+        pixbuf_from_surface(&surface)
     }
 
     fn construct_new_from_gfile_sync(
