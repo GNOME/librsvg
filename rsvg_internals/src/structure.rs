@@ -1,10 +1,10 @@
 use std::cell::Cell;
 use std::cell::RefCell;
 
+use allowed_url::Fragment;
 use aspect_ratio::*;
 use attributes::Attribute;
 use css::CssStyles;
-use defs::Fragment;
 use dpi::Dpi;
 use drawing_ctx::DrawingCtx;
 use error::{AttributeResultExt, RenderingError};

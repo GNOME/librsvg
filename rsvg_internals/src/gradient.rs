@@ -3,10 +3,10 @@ use cssparser::{self, CowRcStr, Parser, Token};
 
 use std::cell::RefCell;
 
+use allowed_url::Fragment;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use defs::Fragment;
 use drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
 use error::*;
 use length::*;

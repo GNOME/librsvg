@@ -1,10 +1,12 @@
 use std::cell::RefCell;
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use gio;
+use gobject_sys;
 
+use allowed_url::{AllowedUrl, Fragment};
 use css::CssStyles;
-use defs::{Defs, Fragment};
 use error::LoadingError;
 use handle::{self, LoadOptions, RsvgHandle};
 use node::RsvgNode;
@@ -21,12 +23,12 @@ pub struct Svg {
 
     pub tree: Tree,
 
-    // This requires interior mutability because we load the extern
-    // defs all over the place.  Eventually we'll be able to do this
-    // once, at loading time, and keep this immutable.
-    pub defs: RefCell<Defs>,
-
     ids: HashMap<String, RsvgNode>,
+
+    // This requires interior mutability because we load the extern
+    // resources all over the place.  Eventually we'll be able to do this
+    // once, at loading time, and keep this immutable.
+    externs: RefCell<Resources>,
 
     pub css_styles: CssStyles,
 }
@@ -41,7 +43,7 @@ impl Svg {
         Svg {
             handle,
             tree,
-            defs: RefCell::new(Defs::new()),
+            externs: RefCell::new(Resources::new()),
             ids,
             css_styles,
         }
@@ -69,7 +71,7 @@ impl Svg {
 
     pub fn lookup(&self, fragment: &Fragment) -> Option<RsvgNode> {
         if fragment.uri().is_some() {
-            self.defs
+            self.externs
                 .borrow_mut()
                 .lookup(&handle::get_load_options(self.handle), fragment)
         } else {
@@ -79,5 +81,57 @@ impl Svg {
 
     pub fn lookup_node_by_id(&self, id: &str) -> Option<RsvgNode> {
         self.ids.get(id).map(|n| (*n).clone())
+    }
+}
+
+struct Resources {
+    resources: HashMap<AllowedUrl, *mut RsvgHandle>,
+}
+
+impl Resources {
+    pub fn new() -> Resources {
+        Resources {
+            resources: Default::default(),
+        }
+    }
+
+    /// Returns a node referenced by a fragment ID, from an
+    /// externally-loaded SVG file.
+    pub fn lookup(&mut self, load_options: &LoadOptions, fragment: &Fragment) -> Option<RsvgNode> {
+        if let Some(ref href) = fragment.uri() {
+            match self.get_extern_handle(load_options, href) {
+                Ok(extern_handle) => handle::lookup_fragment_id(extern_handle, fragment.fragment()),
+                Err(()) => None,
+            }
+        } else {
+            unreachable!();
+        }
+    }
+
+    fn get_extern_handle(
+        &mut self,
+        load_options: &LoadOptions,
+        href: &str,
+    ) -> Result<*const RsvgHandle, ()> {
+        let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref()).map_err(|_| ())?;
+
+        match self.resources.entry(aurl) {
+            Entry::Occupied(e) => Ok(*(e.get())),
+            Entry::Vacant(e) => {
+                let extern_handle = handle::load_extern(load_options, e.key())?;
+                e.insert(extern_handle);
+                Ok(extern_handle)
+            }
+        }
+    }
+}
+
+impl Drop for Resources {
+    fn drop(&mut self) {
+        for (_, handle) in self.resources.iter() {
+            unsafe {
+                gobject_sys::g_object_unref(*handle as *mut _);
+            }
+        }
     }
 }

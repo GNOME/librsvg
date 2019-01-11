@@ -2,10 +2,10 @@ use cairo;
 use cairo::{MatrixTrait, PatternTrait};
 use std::cell::{Cell, RefCell};
 
+use allowed_url::Href;
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use bbox::BoundingBox;
-use defs::Href;
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
 use float_eq_cairo::ApproxEqCairo;

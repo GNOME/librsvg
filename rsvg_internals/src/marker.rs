@@ -5,10 +5,10 @@ use std::ops::Deref;
 use cairo::MatrixTrait;
 use cssparser::{CowRcStr, Parser, Token};
 
+use allowed_url::Fragment;
 use angle::Angle;
 use aspect_ratio::*;
 use attributes::Attribute;
-use defs::Fragment;
 use drawing_ctx::DrawingCtx;
 use error::*;
 use float_eq_cairo::ApproxEqCairo;

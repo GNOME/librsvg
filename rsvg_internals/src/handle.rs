@@ -19,8 +19,7 @@ use gobject_sys;
 use libc;
 use url::Url;
 
-use allowed_url::AllowedUrl;
-use defs::Href;
+use allowed_url::{AllowedUrl, Href};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};

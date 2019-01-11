@@ -1,7 +1,7 @@
 use cssparser::{self, Parser};
 
+use allowed_url::Fragment;
 use bbox::BoundingBox;
-use defs::Fragment;
 use drawing_ctx::DrawingCtx;
 use error::*;
 use node::RsvgNode;

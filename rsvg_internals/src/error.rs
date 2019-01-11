@@ -10,7 +10,6 @@ use glib_sys;
 use libc;
 
 use attributes::Attribute;
-use defs::HrefError;
 use parsers::ParseError;
 
 /// A simple error which refers to an attribute's value
@@ -144,6 +143,38 @@ impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O, E> for Result<O, E> {
     fn attribute(self, attr: Attribute) -> Result<O, NodeError> {
         self.map_err(|e| e.into())
             .map_err(|e| NodeError::attribute_error(attr, e))
+    }
+}
+
+/// Errors returned when creating an `Href` out of a string
+#[derive(Debug, Clone, PartialEq)]
+pub enum HrefError {
+    /// The href is an invalid URI or has empty components.
+    ParseError,
+
+    /// A fragment identifier ("`#foo`") is not allowed here
+    ///
+    /// For example, the SVG `<image>` element only allows referencing
+    /// resources without fragment identifiers like
+    /// `xlink:href="foo.png"`.
+    FragmentForbidden,
+
+    /// A fragment identifier ("`#foo`") was required but not found.  For example,
+    /// the SVG `<use>` element requires one, as in `<use xlink:href="foo.svg#bar">`.
+    FragmentRequired,
+}
+
+impl From<HrefError> for ValueErrorKind {
+    fn from(e: HrefError) -> ValueErrorKind {
+        match e {
+            HrefError::ParseError => ValueErrorKind::Parse(ParseError::new("url parse error")),
+            HrefError::FragmentForbidden => {
+                ValueErrorKind::Value("fragment identifier not allowed".to_string())
+            }
+            HrefError::FragmentRequired => {
+                ValueErrorKind::Value("fragment identifier required".to_string())
+            }
+        }
     }
 }
 
