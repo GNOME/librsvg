@@ -140,7 +140,7 @@ impl Drop for SizeCallback {
 }
 
 pub struct Handle {
-    dpi: Dpi,
+    dpi: Cell<Dpi>,
     base_url: RefCell<Option<Url>>,
     base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     svg: RefCell<Option<Rc<Svg>>>,
@@ -155,7 +155,7 @@ pub struct Handle {
 impl Handle {
     fn new() -> Handle {
         Handle {
-            dpi: Dpi::default(),
+            dpi: Cell::new(Dpi::default()),
             base_url: RefCell::new(None),
             base_url_cstring: RefCell::new(None),
             svg: RefCell::new(None),
@@ -309,7 +309,7 @@ impl Handle {
             f64::from(dimensions.height),
             dimensions.em,
             dimensions.ex,
-            self.dpi.clone(),
+            self.dpi.get(),
             self.is_testing.get(),
         );
 
@@ -439,7 +439,7 @@ impl Handle {
 
         if is_root {
             if let Some((root_width, root_height)) =
-                node.with_impl(|svg: &NodeSvg| svg.get_size(&self.dpi))
+                node.with_impl(|svg: &NodeSvg| svg.get_size(self.dpi.get()))
             {
                 let ink_r = RsvgRectangle {
                     x: 0.0,
@@ -821,28 +821,28 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_url(
 pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_x(raw_handle: *const Handle, dpi_x: f64) {
     let handle = &*(raw_handle as *const Handle);
 
-    handle.dpi.set_x(dpi_x);
+    handle.dpi.set(Dpi::new(dpi_x, handle.dpi.get().y()));
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_x(raw_handle: *const Handle) -> f64 {
     let handle = &*(raw_handle as *const Handle);
 
-    handle.dpi.x()
+    handle.dpi.get().x()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_y(raw_handle: *const Handle, dpi_y: f64) {
     let handle = &*(raw_handle as *const Handle);
 
-    handle.dpi.set_y(dpi_y);
+    handle.dpi.set(Dpi::new(handle.dpi.get().x(), dpi_y));
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_y(raw_handle: *const Handle) -> f64 {
     let handle = &*(raw_handle as *const Handle);
 
-    handle.dpi.y()
+    handle.dpi.get().y()
 }
 
 #[no_mangle]
