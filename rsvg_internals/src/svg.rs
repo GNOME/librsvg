@@ -35,14 +35,13 @@ impl Svg {
     pub fn new(
         handle: *mut RsvgHandle,
         tree: Tree,
-        defs: Defs,
         ids: HashMap<String, RsvgNode>,
         css_styles: CssStyles,
     ) -> Svg {
         Svg {
             handle,
             tree,
-            defs: RefCell::new(defs),
+            defs: RefCell::new(Defs::new()),
             ids,
             css_styles,
         }
