@@ -39,8 +39,8 @@ impl Svg {
         Svg {
             handle,
             tree,
-            externs: RefCell::new(Resources::new()),
             ids,
+            externs: RefCell::new(Resources::new()),
         }
     }
 
