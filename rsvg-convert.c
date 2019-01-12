@@ -32,6 +32,7 @@
 
 #include "config.h"
 
+#include <math.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +57,6 @@
 
 #include "librsvg/rsvg-css.h"
 #include "librsvg/rsvg.h"
-#include "librsvg/rsvg-size-callback.h"
 
 #ifdef CAIRO_HAS_PS_SURFACE
 #include <cairo-ps.h>
@@ -73,6 +73,98 @@
 #ifdef CAIRO_HAS_XML_SURFACE
 #include <cairo-xml.h>
 #endif
+
+typedef enum {
+    SIZE_KIND_ZOOM,
+    SIZE_KIND_WH,
+    SIZE_KIND_WH_MAX,
+    SIZE_KIND_ZOOM_MAX
+} SizeKind;
+
+typedef struct {
+    SizeKind kind;
+    double x_zoom;
+    double y_zoom;
+    gint width;
+    gint height;
+
+    gboolean keep_aspect_ratio;
+} SizeMode;
+
+static void
+get_final_size (int *width, int *height, SizeMode *real_data)
+{
+    double zoomx, zoomy, zoom;
+
+    int in_width, in_height;
+
+    in_width = *width;
+    in_height = *height;
+
+    switch (real_data->kind) {
+    case SIZE_KIND_ZOOM:
+        if (*width < 0 || *height < 0)
+            return;
+
+        *width = floor (real_data->x_zoom * *width + 0.5);
+        *height = floor (real_data->y_zoom * *height + 0.5);
+        break;
+
+    case SIZE_KIND_ZOOM_MAX:
+        if (*width < 0 || *height < 0)
+            return;
+
+        *width = floor (real_data->x_zoom * *width + 0.5);
+        *height = floor (real_data->y_zoom * *height + 0.5);
+
+        if (*width > real_data->width || *height > real_data->height) {
+            zoomx = (double) real_data->width / *width;
+            zoomy = (double) real_data->height / *height;
+            zoom = MIN (zoomx, zoomy);
+
+            *width = floor (zoom * *width + 0.5);
+            *height = floor (zoom * *height + 0.5);
+        }
+        break;
+
+    case SIZE_KIND_WH_MAX:
+        if (*width < 0 || *height < 0)
+            return;
+
+        zoomx = (double) real_data->width / *width;
+        zoomy = (double) real_data->height / *height;
+        if (zoomx < 0)
+            zoom = zoomy;
+        else if (zoomy < 0)
+            zoom = zoomx;
+        else
+            zoom = MIN (zoomx, zoomy);
+
+        *width = floor (zoom * *width + 0.5);
+        *height = floor (zoom * *height + 0.5);
+        break;
+
+    case SIZE_KIND_WH:
+        if (real_data->width != -1)
+            *width = real_data->width;
+        if (real_data->height != -1)
+            *height = real_data->height;
+        break;
+
+    default:
+        g_assert_not_reached ();
+    }
+
+    if (real_data->keep_aspect_ratio) {
+        int out_min = MIN (*width, *height);
+
+        if (out_min == *width) {
+            *height = in_height * ((double) *width / (double) in_width);
+        } else {
+            *width = in_width * ((double) *height / (double) in_height);
+        }
+    }
+}
 
 static void
 display_error (GError * err)
@@ -318,7 +410,7 @@ main (int argc, char **argv)
         }
 
         if (i == 0) {
-            struct RsvgSizeCallbackData size_data;
+            SizeMode size_data;
 
             if (!rsvg_handle_get_dimensions_sub (rsvg, &dimensions, export_lookup_id)) {
                 g_printerr ("Could not get dimensions for file %s\n", args[i]);
@@ -330,26 +422,26 @@ main (int argc, char **argv)
 
             /* if both are unspecified, assume user wants to zoom the image in at least 1 dimension */
             if (width == -1 && height == -1) {
-                size_data.type = RSVG_SIZE_ZOOM;
+                size_data.kind = SIZE_KIND_ZOOM;
                 size_data.x_zoom = x_zoom;
                 size_data.y_zoom = y_zoom;
                 size_data.keep_aspect_ratio = keep_aspect_ratio;
             } else if (x_zoom == 1.0 && y_zoom == 1.0) {
                 /* if one parameter is unspecified, assume user wants to keep the aspect ratio */
                 if (width == -1 || height == -1) {
-                    size_data.type = RSVG_SIZE_WH_MAX;
+                    size_data.kind = SIZE_KIND_WH_MAX;
                     size_data.width = width;
                     size_data.height = height;
                     size_data.keep_aspect_ratio = keep_aspect_ratio;
                 } else {
-                    size_data.type = RSVG_SIZE_WH;
+                    size_data.kind = SIZE_KIND_WH;
                     size_data.width = width;
                     size_data.height = height;
                     size_data.keep_aspect_ratio = keep_aspect_ratio;
                 }
             } else {
                 /* assume the user wants to zoom the image, but cap the maximum size */
-                size_data.type = RSVG_SIZE_ZOOM_MAX;
+                size_data.kind = SIZE_KIND_ZOOM_MAX;
                 size_data.x_zoom = x_zoom;
                 size_data.y_zoom = y_zoom;
                 size_data.width = width;
@@ -359,7 +451,7 @@ main (int argc, char **argv)
 
             scaled_width = dimensions.width;
             scaled_height = dimensions.height;
-            _rsvg_size_callback (&scaled_width, &scaled_height, &size_data);
+            get_final_size (&scaled_width, &scaled_height, &size_data);
 
             if (!format || !strcmp (format, "png"))
                 surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,

@@ -216,8 +216,6 @@ dist_man_MANS = rsvg-convert.1
 
 rsvg_convert_SOURCES =			\
 	rsvg-convert.c			\
-	librsvg/rsvg-size-callback.c	\
-	librsvg/rsvg-size-callback.h	\
 	$(NULL)
 
 rsvg_convert_CPPFLAGS = \
