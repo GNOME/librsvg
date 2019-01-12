@@ -239,8 +239,7 @@ rsvg_convert_LDADD = \
 	$(LIBM)
 
 rsvg_view_3_SOURCES =			\
-	rsvg-view.c			\
-	librsvg/rsvg-size-callback.h
+	rsvg-view.c
 
 rsvg_view_3_CPPFLAGS = \
 	-I$(top_srcdir) 			\
