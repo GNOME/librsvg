@@ -69,13 +69,13 @@ struct Span {
     text: String,
     dx: Option<Length>,
     dy: Option<Length>,
-    depth: usize,
+    _depth: usize,
 }
 
 struct MeasuredSpan {
     values: ComputedValues,
     layout: pango::Layout,
-    layout_size: (f64, f64),
+    _layout_size: (f64, f64),
     advance: (f64, f64),
     dx: Option<Length>,
     dy: Option<Length>,
@@ -84,7 +84,7 @@ struct MeasuredSpan {
 struct PositionedSpan {
     layout: pango::Layout,
     values: ComputedValues,
-    position: (f64, f64),
+    _position: (f64, f64),
     rendered_position: (f64, f64),
 }
 
@@ -191,7 +191,7 @@ impl Span {
             text: text.to_string(),
             dx,
             dy,
-            depth,
+            _depth: depth,
         }
     }
 }
@@ -215,7 +215,7 @@ impl MeasuredSpan {
         MeasuredSpan {
             values,
             layout,
-            layout_size: (w, h),
+            _layout_size: (w, h),
             advance,
             dx: span.dx,
             dy: span.dy,
@@ -257,7 +257,7 @@ impl PositionedSpan {
         PositionedSpan {
             layout: measured.layout.clone(),
             values,
-            position: (x, y),
+            _position: (x, y),
             rendered_position: (render_x, render_y),
         }
     }
