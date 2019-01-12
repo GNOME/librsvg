@@ -40,37 +40,33 @@
 #include <stdlib.h>
 
 #include "rsvg.h"
-#include "rsvg-size-callback.h"
 
-static GdkPixbuf *
-rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
-                                      struct RsvgSizeCallbackData *cb_data, 
-                                      GError ** error)
-{
-    GFile *file;
-    RsvgHandle *handle;
-    GdkPixbuf *pixbuf = NULL;
-
-    file = g_file_new_for_path (file_name);
-    handle = rsvg_handle_new_from_gfile_sync (file, 0, NULL, error);
-
-    if (handle) {
-        rsvg_handle_set_size_callback (handle, _rsvg_size_callback, cb_data, NULL);
-        pixbuf = rsvg_handle_get_pixbuf (handle);
-    }
-
-    g_object_unref (handle);
-    g_object_unref (file);
-
-    return pixbuf;
-}
+/* Defined in rsvg_internals/src/pixbuf_utils.rs */
+extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_size (const char *filename,
+                                                      int width,
+                                                      int height,
+                                                      GError **error);
+extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_zoom (const char *filename,
+                                                      double x_zoom,
+                                                      double y_zoom,
+                                                      GError **error);
+extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_zoom_with_max (const char *filename,
+                                                               double x_zoom,
+                                                               double y_zoom,
+                                                               int width,
+                                                               int height,
+                                                               GError **error);
+extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_max_size (const char *filename,
+                                                          int width,
+                                                          int height,
+                                                          GError **error);
 
 /**
  * rsvg_pixbuf_from_file:
- * @file_name: A file name
+ * @filename: A file name
  * @error: return location for errors
  * 
- * Loads a new #GdkPixbuf from @file_name and returns it.  The caller must
+ * Loads a new #GdkPixbuf from @filename and returns it.  The caller must
  * assume the reference to the reurned pixbuf. If an error occurred, @error is
  * set and %NULL is returned.
  * 
@@ -78,19 +74,22 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file (const gchar * file_name, GError ** error)
+rsvg_pixbuf_from_file (const gchar *filename, GError **error)
 {
-    return rsvg_pixbuf_from_file_at_size (file_name, -1, -1, error);
+    g_return_val_if_fail (filename != NULL, NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
+    return rsvg_rust_pixbuf_from_file_at_size (filename, -1, -1, error);
 }
 
 /**
  * rsvg_pixbuf_from_file_at_zoom:
- * @file_name: A file name
+ * @filename: A file name
  * @x_zoom: The horizontal zoom factor
  * @y_zoom: The vertical zoom factor
  * @error: return location for errors
  * 
- * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
+ * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is scaled
  * from the size indicated by the file by a factor of @x_zoom and @y_zoom.  The
  * caller must assume the reference to the returned pixbuf. If an error
  * occurred, @error is set and %NULL is returned.
@@ -99,32 +98,26 @@ rsvg_pixbuf_from_file (const gchar * file_name, GError ** error)
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file_at_zoom (const gchar * file_name,
-                               double x_zoom, double y_zoom, GError ** error)
+rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
+                               double x_zoom, double y_zoom, GError **error)
 {
-    struct RsvgSizeCallbackData data;
-
-    g_return_val_if_fail (file_name != NULL, NULL);
+    g_return_val_if_fail (filename != NULL, NULL);
     g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-    data.type = RSVG_SIZE_ZOOM;
-    data.x_zoom = x_zoom;
-    data.y_zoom = y_zoom;
-    data.keep_aspect_ratio = FALSE;
-
-    return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
+    return rsvg_rust_pixbuf_from_file_at_zoom (filename, x_zoom, y_zoom, error);
 }
 
 /**
  * rsvg_pixbuf_from_file_at_zoom_with_max:
- * @file_name: A file name
+ * @filename: A file name
  * @x_zoom: The horizontal zoom factor
  * @y_zoom: The vertical zoom factor
  * @max_width: The requested max width
  * @max_height: The requested max heigh
  * @error: return location for errors
  * 
- * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
+ * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is scaled
  * from the size indicated by the file by a factor of @x_zoom and @y_zoom. If the
  * resulting pixbuf would be larger than max_width/max_heigh it is uniformly scaled
  * down to fit in that rectangle. The caller must assume the reference to the
@@ -134,34 +127,27 @@ rsvg_pixbuf_from_file_at_zoom (const gchar * file_name,
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file_at_zoom_with_max (const gchar * file_name,
+rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
                                         double x_zoom,
                                         double y_zoom,
-                                        gint max_width, gint max_height, GError ** error)
+                                        gint max_width, gint max_height, GError **error)
 {
-    struct RsvgSizeCallbackData data;
-
-    g_return_val_if_fail (file_name != NULL, NULL);
+    g_return_val_if_fail (filename != NULL, NULL);
     g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
+    g_return_val_if_fail (max_width >= 1 && max_height >= 1, NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-    data.type = RSVG_SIZE_ZOOM_MAX;
-    data.x_zoom = x_zoom;
-    data.y_zoom = y_zoom;
-    data.width = max_width;
-    data.height = max_height;
-    data.keep_aspect_ratio = FALSE;
-
-    return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
+    return rsvg_rust_pixbuf_from_file_at_zoom_with_max (filename, x_zoom, y_zoom, max_width, max_height, error);
 }
 
 /**
  * rsvg_pixbuf_from_file_at_size:
- * @file_name: A file name
+ * @filename: A file name
  * @width: The new width, or -1
  * @height: The new height, or -1
  * @error: return location for errors
  * 
- * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
+ * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is scaled
  * from the size indicated to the new size indicated by @width and @height.  If
  * either of these are -1, then the default size of the image being loaded is
  * used.  The caller must assume the reference to the returned pixbuf. If an
@@ -171,26 +157,23 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar * file_name,
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file_at_size (const gchar * file_name, gint width, gint height, GError ** error)
+rsvg_pixbuf_from_file_at_size (const gchar *filename, gint width, gint height, GError **error)
 {
-    struct RsvgSizeCallbackData data;
+    g_return_val_if_fail (filename != NULL, NULL);
+    g_return_val_if_fail ((width >= 1 && height >= 1) || (width == -1 && height == -1), NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-    data.type = RSVG_SIZE_WH;
-    data.width = width;
-    data.height = height;
-    data.keep_aspect_ratio = FALSE;
-
-    return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
+    return rsvg_rust_pixbuf_from_file_at_size (filename, width, height, error);
 }
 
 /**
  * rsvg_pixbuf_from_file_at_max_size:
- * @file_name: A file name
+ * @filename: A file name
  * @max_width: The requested max width
  * @max_height: The requested max heigh
  * @error: return location for errors
  * 
- * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is uniformly
+ * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is uniformly
  * scaled so that the it fits into a rectangle of size max_width * max_height. The
  * caller must assume the reference to the returned pixbuf. If an error occurred,
  * @error is set and %NULL is returned.
@@ -199,15 +182,12 @@ rsvg_pixbuf_from_file_at_size (const gchar * file_name, gint width, gint height,
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file_at_max_size (const gchar * file_name,
-                                   gint max_width, gint max_height, GError ** error)
+rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
+                                   gint max_width, gint max_height, GError **error)
 {
-    struct RsvgSizeCallbackData data;
+    g_return_val_if_fail (filename != NULL, NULL);
+    g_return_val_if_fail (max_width >= 1 && max_height >= 1, NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-    data.type = RSVG_SIZE_WH_MAX;
-    data.width = max_width;
-    data.height = max_height;
-    data.keep_aspect_ratio = FALSE;
-
-    return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
+    return rsvg_rust_pixbuf_from_file_at_max_size(filename, max_width, max_height, error);
 }

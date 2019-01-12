@@ -42,17 +42,17 @@ pub struct RsvgHandle {
 // Keep in sync with rsvg.h:RsvgDimensionData
 #[repr(C)]
 pub struct RsvgDimensionData {
-    width: libc::c_int,
-    height: libc::c_int,
-    em: f64,
-    ex: f64,
+    pub width: libc::c_int,
+    pub height: libc::c_int,
+    pub em: f64,
+    pub ex: f64,
 }
 
 // Keep in sync with rsvg.h:RsvgPositionData
 #[repr(C)]
 pub struct RsvgPositionData {
-    x: libc::c_int,
-    y: libc::c_int,
+    pub x: libc::c_int,
+    pub y: libc::c_int,
 }
 
 /// Flags used during loading
@@ -319,7 +319,7 @@ impl Handle {
         draw_ctx
     }
 
-    fn get_dimensions(&mut self) -> Result<RsvgDimensionData, RenderingError> {
+    pub fn get_dimensions(&mut self) -> Result<RsvgDimensionData, RenderingError> {
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
         // To prevent an infinite loop we are saving the state, and
@@ -499,7 +499,7 @@ impl Handle {
         self.lookup_node(name).is_ok()
     }
 
-    fn render_cairo_sub(
+    pub fn render_cairo_sub(
         &mut self,
         cr: &cairo::Context,
         id: Option<&str>,
@@ -717,7 +717,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut Handle) {
     Box::from_raw(raw_handle);
 }
 
-fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
+pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
     unsafe { &mut *(rsvg_handle_get_rust(handle) as *mut Handle) }
 }
 

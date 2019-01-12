@@ -29,8 +29,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-css.h 			\
 	librsvg/rsvg-handle.c			\
 	librsvg/rsvg-pixbuf.c			\
-	librsvg/rsvg-size-callback.c		\
-	librsvg/rsvg-size-callback.h		\
 	librsvg/rsvg.h				\
 	$(NULL)
 

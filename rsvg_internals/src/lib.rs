@@ -69,6 +69,13 @@ pub use handle::{
     rsvg_handle_rust_write,
 };
 
+pub use pixbuf_utils::{
+    rsvg_rust_pixbuf_from_file_at_max_size,
+    rsvg_rust_pixbuf_from_file_at_size,
+    rsvg_rust_pixbuf_from_file_at_zoom,
+    rsvg_rust_pixbuf_from_file_at_zoom_with_max,
+};
+
 pub use xml::rsvg_xml_state_error;
 
 #[macro_use]
