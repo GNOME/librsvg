@@ -1,7 +1,7 @@
 use gio;
 use glib::{Bytes, Cast};
 
-use handle::{LoadOptions, RsvgHandle};
+use handle::{LoadFlags, LoadOptions};
 use xml::XmlState;
 use xml2_load::{xml_state_load_from_possibly_compressed_stream, ParseFromStreamError};
 
@@ -14,7 +14,7 @@ use xml2_load::{xml_state_load_from_possibly_compressed_stream, ParseFromStreamE
 // This struct maintains the loading context while an RsvgHandle is being
 // populated with data, in case the caller is using write()/close().
 pub struct LoadContext {
-    load_options: LoadOptions,
+    load_flags: LoadFlags,
 
     state: LoadState,
 
@@ -31,12 +31,12 @@ enum LoadState {
 }
 
 impl LoadContext {
-    pub fn new(handle: *mut RsvgHandle, load_options: LoadOptions) -> LoadContext {
+    pub fn new(load_options: LoadOptions) -> LoadContext {
         LoadContext {
-            load_options,
+            load_flags: load_options.flags,
             state: LoadState::Start,
             buffer: Vec::new(),
-            xml: Some(XmlState::new(handle)),
+            xml: Some(XmlState::new(load_options)),
         }
     }
 
@@ -70,7 +70,7 @@ impl LoadContext {
 
                 xml_state_load_from_possibly_compressed_stream(
                     self.xml.as_mut().unwrap(),
-                    &self.load_options,
+                    self.load_flags,
                     &stream.upcast(),
                     None,
                 )

@@ -12,7 +12,7 @@ use attributes::Attribute;
 use create_node::create_node_and_register_id;
 use css::CssStyles;
 use error::LoadingError;
-use handle::{self, RsvgHandle};
+use handle::LoadOptions;
 use io;
 use node::{node_new, Node, NodeType, RsvgNode};
 use property_bag::PropertyBag;
@@ -77,7 +77,7 @@ pub struct XmlState {
 
     entities: HashMap<String, XmlEntityPtr>,
 
-    handle: *mut RsvgHandle,
+    load_options: LoadOptions,
 }
 
 /// Errors returned from XmlState::acquire()
@@ -93,7 +93,7 @@ enum AcquireError {
 }
 
 impl XmlState {
-    pub fn new(handle: *mut RsvgHandle) -> XmlState {
+    pub fn new(load_options: LoadOptions) -> XmlState {
         XmlState {
             tree: None,
             ids: Some(HashMap::new()),
@@ -101,7 +101,7 @@ impl XmlState {
             context_stack: vec![Context::Start],
             current_node: None,
             entities: HashMap::new(),
-            handle,
+            load_options,
         }
     }
 
@@ -129,7 +129,7 @@ impl XmlState {
         Svg::new(
             self.tree.take().unwrap(),
             self.ids.take().unwrap(),
-            handle::get_load_options(self.handle),
+            self.load_options.clone(),
         )
     }
 
@@ -215,10 +215,9 @@ impl XmlState {
                 && type_.as_ref().map(String::as_str) == Some("text/css")
                 && href.is_some()
             {
-                if let Ok(aurl) = AllowedUrl::from_href(
-                    &href.unwrap(),
-                    handle::get_base_url(self.handle).as_ref(),
-                ) {
+                if let Ok(aurl) =
+                    AllowedUrl::from_href(&href.unwrap(), self.load_options.base_url.as_ref())
+                {
                     // FIXME: handle CSS errors
                     let css_styles = self.css_styles.as_mut().unwrap();
                     let _ = css_styles.load_css(&aurl);
@@ -285,7 +284,7 @@ impl XmlState {
 
             let css_styles = self.css_styles.as_mut().unwrap();
 
-            css_styles.parse(handle::get_base_url(self.handle).clone(), &css_data);
+            css_styles.parse(self.load_options.base_url.clone(), &css_data);
         }
 
         self.current_node = node.get_parent();
@@ -341,7 +340,7 @@ impl XmlState {
 
         // For now we load resources directly when parsing, but probably we should
         // move this to a trasversal of the tree once we finished parsing
-        new_node.resolve_resources(&handle::get_load_options(self.handle));
+        new_node.resolve_resources(&self.load_options);
 
         new_node
     }
@@ -417,8 +416,8 @@ impl XmlState {
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
         if let Some(href) = href {
-            let aurl = AllowedUrl::from_href(href, handle::get_base_url(self.handle).as_ref())
-                .map_err(|e| {
+            let aurl =
+                AllowedUrl::from_href(href, self.load_options.base_url.as_ref()).map_err(|e| {
                     // FIXME: should AlloweUrlError::HrefParseError be a fatal error,
                     // not a resource error?
                     rsvg_log!("could not acquire \"{}\": {}", href, e);
@@ -488,10 +487,10 @@ impl XmlState {
             _ => AcquireError::ResourceError,
         })?;
 
-        let load_options = handle::get_load_options(self.handle);
+        let flags = self.load_options.flags;
 
         // FIXME: pass a cancellable
-        xml_state_parse_from_stream(self, &load_options, stream, None).map_err(|e| match e {
+        xml_state_parse_from_stream(self, flags, stream, None).map_err(|e| match e {
             ParseFromStreamError::CouldNotCreateXmlParser => AcquireError::FatalError,
             ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
             ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,

@@ -1,5 +1,5 @@
 use std;
-use std::cell::{Cell, Ref, RefCell};
+use std::cell::{Cell, RefCell};
 use std::ffi::CString;
 use std::mem;
 use std::ptr;
@@ -201,17 +201,15 @@ impl Handle {
 
     pub fn read_stream_sync(
         &mut self,
-        handle: *mut RsvgHandle,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         self.load_state.set(LoadState::Loading);
 
-        let svg = Svg::load_from_stream(&self.load_options(), handle, stream, cancellable)
-            .map_err(|e| {
-                self.load_state.set(LoadState::ClosedError);
-                e
-            })?;
+        let svg = Svg::load_from_stream(self.load_options(), stream, cancellable).map_err(|e| {
+            self.load_state.set(LoadState::ClosedError);
+            e
+        })?;
 
         *self.svg.borrow_mut() = Some(Rc::new(svg));
         self.load_state.set(LoadState::ClosedOk);
@@ -222,7 +220,7 @@ impl Handle {
         LoadOptions::new(self.load_flags.get(), self.base_url.borrow().clone())
     }
 
-    pub fn write(&mut self, handle: *mut RsvgHandle, buf: &[u8]) {
+    pub fn write(&mut self, buf: &[u8]) {
         assert!(
             self.load_state.get() == LoadState::Start
                 || self.load_state.get() == LoadState::Loading
@@ -231,7 +229,7 @@ impl Handle {
         if self.load_state.get() == LoadState::Start {
             self.load_state.set(LoadState::Loading);
 
-            self.load = RefCell::new(Some(LoadContext::new(handle, self.load_options())));
+            self.load = RefCell::new(Some(LoadContext::new(self.load_options())));
         }
 
         assert!(self.load_state.get() == LoadState::Loading);
@@ -539,17 +537,15 @@ impl Handle {
 
     fn construct_new_from_gfile_sync(
         &mut self,
-        handle: *mut RsvgHandle,
         file: &gio::File,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         let stream = file.read(cancellable)?;
-        self.construct_read_stream_sync(handle, &stream.upcast(), Some(file), cancellable)
+        self.construct_read_stream_sync(&stream.upcast(), Some(file), cancellable)
     }
 
     fn construct_read_stream_sync(
         &mut self,
-        handle: *mut RsvgHandle,
         stream: &gio::InputStream,
         base_file: Option<&gio::File>,
         cancellable: Option<&gio::Cancellable>,
@@ -558,19 +554,13 @@ impl Handle {
             self.set_base_gfile(file);
         }
 
-        self.read_stream_sync(handle, stream, cancellable)
+        self.read_stream_sync(stream, cancellable)
     }
 }
 
 // Keep these in sync with rsvg.h:RsvgHandleFlags
 const RSVG_HANDLE_FLAG_UNLIMITED: u32 = 1 << 0;
 const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: u32 = 1 << 1;
-
-pub fn get_load_options(handle: *const RsvgHandle) -> LoadOptions {
-    let rhandle = get_rust_handle(handle);
-
-    rhandle.load_options()
-}
 
 impl LoadFlags {
     pub fn from_flags(flags: u32) -> Self {
@@ -636,12 +626,6 @@ pub fn load_extern(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<*mut
             Ok(res)
         }
     }
-}
-
-pub fn get_base_url<'a>(handle: *const RsvgHandle) -> Ref<'a, Option<Url>> {
-    let rhandle = get_rust_handle(handle);
-
-    rhandle.base_url.borrow()
 }
 
 pub fn load_image_to_surface(
@@ -882,7 +866,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
     let stream = from_glib_none(stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.read_stream_sync(handle, &stream, cancellable.as_ref()) {
+    match rhandle.read_stream_sync(&stream, cancellable.as_ref()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -909,7 +893,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_write(
 
     let buffer = slice::from_raw_parts(buf, count);
 
-    rhandle.write(handle, buffer);
+    rhandle.write(buffer);
 }
 
 #[no_mangle]
@@ -1157,7 +1141,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_gfile_sync(
     let file = from_glib_none(file);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.construct_new_from_gfile_sync(raw_handle, &file, cancellable.as_ref()) {
+    match rhandle.construct_new_from_gfile_sync(&file, cancellable.as_ref()) {
         Ok(()) => raw_handle,
 
         Err(e) => {
@@ -1184,12 +1168,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_stream_sync(
     let stream = from_glib_none(input_stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.construct_read_stream_sync(
-        raw_handle,
-        &stream,
-        base_file.as_ref(),
-        cancellable.as_ref(),
-    ) {
+    match rhandle.construct_read_stream_sync(&stream, base_file.as_ref(), cancellable.as_ref()) {
         Ok(()) => raw_handle,
 
         Err(e) => {

@@ -13,7 +13,7 @@ use std::str;
 use glib::translate::*;
 
 use error::LoadingError;
-use handle::LoadOptions;
+use handle::LoadFlags;
 use io::get_input_stream_for_loading;
 use property_bag::PropertyBag;
 use util::utf8_cstr;
@@ -188,10 +188,10 @@ unsafe extern "C" fn sax_get_parameter_entity_cb(
     sax_get_entity_cb(ctx, name)
 }
 
-fn set_xml_parse_options(parser: xmlParserCtxtPtr, load_options: &LoadOptions) {
+fn set_xml_parse_options(parser: xmlParserCtxtPtr, load_flags: LoadFlags) {
     let mut options: libc::c_int = XML_PARSE_NONET | XML_PARSE_BIG_LINES;
 
-    if load_options.flags.unlimited_size {
+    if load_flags.unlimited_size {
         options |= XML_PARSE_HUGE;
     }
 
@@ -285,7 +285,7 @@ struct Xml2Parser {
 impl Xml2Parser {
     fn from_stream(
         xml: &mut XmlState,
-        load_options: &LoadOptions,
+        load_flags: LoadFlags,
         stream: gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Xml2Parser, ParseFromStreamError> {
@@ -321,7 +321,7 @@ impl Xml2Parser {
                 // stream_ctx_close function
                 Err(ParseFromStreamError::CouldNotCreateXmlParser)
             } else {
-                set_xml_parse_options(parser, load_options);
+                set_xml_parse_options(parser, load_flags);
                 Ok(Xml2Parser { parser, gio_error })
             }
         }
@@ -411,22 +411,21 @@ impl From<ParseFromStreamError> for LoadingError {
 // for example, when including another XML file via xi:include.
 pub fn xml_state_parse_from_stream(
     xml: &mut XmlState,
-    load_options: &LoadOptions,
+    load_flags: LoadFlags,
     stream: gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<(), ParseFromStreamError> {
-    Xml2Parser::from_stream(xml, load_options, stream, cancellable)
-        .and_then(|parser| parser.parse())
+    Xml2Parser::from_stream(xml, load_flags, stream, cancellable).and_then(|parser| parser.parse())
 }
 
 pub fn xml_state_load_from_possibly_compressed_stream(
     xml: &mut XmlState,
-    load_options: &LoadOptions,
+    load_flags: LoadFlags,
     stream: &gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<(), ParseFromStreamError> {
     let stream = get_input_stream_for_loading(stream, cancellable)
         .map_err(|e| ParseFromStreamError::IoError(e))?;
 
-    xml_state_parse_from_stream(xml, load_options, stream, cancellable)
+    xml_state_parse_from_stream(xml, load_flags, stream, cancellable)
 }

@@ -42,19 +42,14 @@ impl Svg {
     }
 
     pub fn load_from_stream(
-        load_options: &LoadOptions,
-        handle: *mut RsvgHandle,
+        load_options: LoadOptions,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Svg, LoadingError> {
-        let mut xml = XmlState::new(handle);
+        let load_flags = load_options.flags;
+        let mut xml = XmlState::new(load_options);
 
-        xml_state_load_from_possibly_compressed_stream(
-            &mut xml,
-            &load_options,
-            stream,
-            cancellable,
-        )?;
+        xml_state_load_from_possibly_compressed_stream(&mut xml, load_flags, stream, cancellable)?;
 
         xml.validate_tree()?;
 
