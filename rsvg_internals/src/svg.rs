@@ -18,8 +18,6 @@ use xml2_load::xml_state_load_from_possibly_compressed_stream;
 /// This contains the tree of nodes (SVG elements), the mapping
 /// of id to node, and the CSS styles defined for this SVG.
 pub struct Svg {
-    handle: *mut RsvgHandle,
-
     pub tree: Tree,
 
     ids: HashMap<String, RsvgNode>,
@@ -28,19 +26,18 @@ pub struct Svg {
     // resources all over the place.  Eventually we'll be able to do this
     // once, at loading time, and keep this immutable.
     externs: RefCell<Resources>,
+
+    // Once we do not need to load externs, we can drop this as well
+    load_options: LoadOptions,
 }
 
 impl Svg {
-    pub fn new(
-        handle: *mut RsvgHandle,
-        tree: Tree,
-        ids: HashMap<String, RsvgNode>,
-    ) -> Svg {
+    pub fn new(tree: Tree, ids: HashMap<String, RsvgNode>, load_options: LoadOptions) -> Svg {
         Svg {
-            handle,
             tree,
             ids,
             externs: RefCell::new(Resources::new()),
+            load_options,
         }
     }
 
@@ -68,7 +65,7 @@ impl Svg {
         if fragment.uri().is_some() {
             self.externs
                 .borrow_mut()
-                .lookup(&handle::get_load_options(self.handle), fragment)
+                .lookup(&self.load_options, fragment)
         } else {
             self.lookup_node_by_id(fragment.fragment())
         }
