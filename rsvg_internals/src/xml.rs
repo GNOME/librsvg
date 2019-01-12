@@ -11,7 +11,6 @@ use allowed_url::AllowedUrl;
 use attributes::Attribute;
 use create_node::create_node_and_register_id;
 use css::CssStyles;
-use defs::Defs;
 use error::LoadingError;
 use handle::{self, RsvgHandle};
 use io;
@@ -71,7 +70,6 @@ extern "C" {
 /// what creates normal graphical elements.
 pub struct XmlState {
     tree: Option<Tree>,
-    defs: Option<Defs>,
     ids: Option<HashMap<String, RsvgNode>>,
     css_styles: Option<CssStyles>,
     context_stack: Vec<Context>,
@@ -98,7 +96,6 @@ impl XmlState {
     pub fn new(handle: *mut RsvgHandle) -> XmlState {
         XmlState {
             tree: None,
-            defs: Some(Defs::new()),
             ids: Some(HashMap::new()),
             css_styles: Some(CssStyles::new()),
             context_stack: vec![Context::Start],
@@ -132,7 +129,6 @@ impl XmlState {
         Svg::new(
             self.handle,
             self.tree.take().unwrap(),
-            self.defs.take().unwrap(),
             self.ids.take().unwrap(),
             self.css_styles.take().unwrap(),
         )

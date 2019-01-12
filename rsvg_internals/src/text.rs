@@ -4,9 +4,9 @@ use pango_sys;
 use pangocairo;
 use std::cell::{Cell, RefCell};
 
+use allowed_url::Fragment;
 use attributes::Attribute;
 use bbox::BoundingBox;
-use defs::Fragment;
 use drawing_ctx::DrawingCtx;
 use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;

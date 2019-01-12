@@ -1,10 +1,10 @@
 use std::cell::Cell;
 use std::cell::RefCell;
 
+use allowed_url::Fragment;
 use aspect_ratio::*;
 use attributes::Attribute;
 use css::CssStyles;
-use defs::Fragment;
 use dpi::Dpi;
 use drawing_ctx::DrawingCtx;
 use error::{AttributeResultExt, RenderingError};
@@ -125,19 +125,16 @@ impl NodeSvg {
         }
     }
 
-    pub fn get_size(&self, dpi: &Dpi) -> Option<(i32, i32)> {
-        let dpi_x = dpi.x();
-        let dpi_y = dpi.y();
-
+    pub fn get_size(&self, dpi: Dpi) -> Option<(i32, i32)> {
         match (self.w.get(), self.h.get(), self.vbox.get()) {
             (w, h, Some(vb)) => Some((
-                w.hand_normalize(dpi_x, vb.0.width, 12.0).round() as i32,
-                h.hand_normalize(dpi_y, vb.0.height, 12.0).round() as i32,
+                w.hand_normalize(dpi.x(), vb.0.width, 12.0).round() as i32,
+                h.hand_normalize(dpi.y(), vb.0.height, 12.0).round() as i32,
             )),
             (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
                 Some((
-                    w.hand_normalize(dpi_x, 0.0, 12.0).round() as i32,
-                    h.hand_normalize(dpi_y, 0.0, 12.0).round() as i32,
+                    w.hand_normalize(dpi.x(), 0.0, 12.0).round() as i32,
+                    h.hand_normalize(dpi.y(), 0.0, 12.0).round() as i32,
                 ))
             }
             (_, _, _) => None,

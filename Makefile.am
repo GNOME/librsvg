@@ -48,7 +48,6 @@ RUST_SRC =							\
 	rsvg_internals/src/create_node.rs			\
 	rsvg_internals/src/croco.rs				\
 	rsvg_internals/src/css.rs				\
-	rsvg_internals/src/defs.rs				\
 	rsvg_internals/src/dpi.rs				\
 	rsvg_internals/src/drawing_ctx.rs			\
 	rsvg_internals/src/filters/bounds.rs			\

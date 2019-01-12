@@ -5,10 +5,10 @@ use glib::translate::*;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
+use allowed_url::Fragment;
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
-use defs::Fragment;
 use dpi::Dpi;
 use error::RenderingError;
 use filters;

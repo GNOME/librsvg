@@ -2,9 +2,9 @@ use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface, MatrixTrait, PatternTrait};
 
+use allowed_url::{Fragment, Href};
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
-use defs::{Fragment, Href};
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
 use handle::{self, LoadOptions};

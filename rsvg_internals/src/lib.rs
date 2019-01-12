@@ -101,7 +101,6 @@ mod cond;
 mod create_node;
 mod croco;
 mod css;
-mod defs;
 mod dpi;
 mod drawing_ctx;
 mod error;

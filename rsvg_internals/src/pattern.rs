@@ -5,11 +5,11 @@ use std::cell::RefCell;
 use std::f64;
 use std::rc::*;
 
+use allowed_url::Fragment;
 use aspect_ratio::*;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use defs::Fragment;
 use drawing_ctx::{DrawingCtx, NodeStack};
 use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;

@@ -1,6 +1,6 @@
 use cssparser::Parser;
 
-use defs::{Fragment, Href};
+use allowed_url::{Fragment, Href};
 use parsers::Parse;
 use parsers::ParseError;
 
