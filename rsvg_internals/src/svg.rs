@@ -6,7 +6,6 @@ use gio;
 use gobject_sys;
 
 use allowed_url::{AllowedUrl, Fragment};
-use css::CssStyles;
 use error::LoadingError;
 use handle::{self, LoadOptions, RsvgHandle};
 use node::RsvgNode;
@@ -29,8 +28,6 @@ pub struct Svg {
     // resources all over the place.  Eventually we'll be able to do this
     // once, at loading time, and keep this immutable.
     externs: RefCell<Resources>,
-
-    pub css_styles: CssStyles,
 }
 
 impl Svg {
@@ -38,14 +35,12 @@ impl Svg {
         handle: *mut RsvgHandle,
         tree: Tree,
         ids: HashMap<String, RsvgNode>,
-        css_styles: CssStyles,
     ) -> Svg {
         Svg {
             handle,
             tree,
             externs: RefCell::new(Resources::new()),
             ids,
-            css_styles,
         }
     }
 

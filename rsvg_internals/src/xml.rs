@@ -130,7 +130,6 @@ impl XmlState {
             self.handle,
             self.tree.take().unwrap(),
             self.ids.take().unwrap(),
-            self.css_styles.take().unwrap(),
         )
     }
 
