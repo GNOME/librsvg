@@ -91,14 +91,14 @@ impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum DefsLookupErrorKind {
     HrefError(HrefError),
     CannotLookupExternalReferences,
     NotFound,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum RenderingError {
     Cairo(cairo::Status),
     CircularReference,
@@ -199,6 +199,32 @@ impl fmt::Display for LoadingError {
             | LoadingError::RootElementIsNotSvg
             | LoadingError::Glib(_)
             | LoadingError::Unknown => write!(f, "{}", self.description()),
+        }
+    }
+}
+
+impl error::Error for RenderingError {
+    fn description(&self) -> &str {
+        match *self {
+            RenderingError::Cairo(_) => "cairo error",
+            RenderingError::CircularReference => "circular reference",
+            RenderingError::InstancingLimit => "instancing limit",
+            RenderingError::InvalidId(_) => "invalid id",
+            RenderingError::SvgHasNoSize => "svg has no size",
+            RenderingError::OutOfMemory => "out of memory",
+        }
+    }
+}
+
+impl fmt::Display for RenderingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            RenderingError::Cairo(ref status) => write!(f, "cairo error: {:?}", status),
+            RenderingError::InvalidId(ref id) => write!(f, "invalid id: {:?}", id),
+            RenderingError::CircularReference
+            | RenderingError::InstancingLimit
+            | RenderingError::SvgHasNoSize
+            | RenderingError::OutOfMemory => write!(f, "{}", self.description()),
         }
     }
 }
