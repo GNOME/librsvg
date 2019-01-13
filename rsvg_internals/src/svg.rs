@@ -33,6 +33,8 @@ pub struct Svg {
 
 impl Svg {
     pub fn new(tree: Tree, ids: HashMap<String, RsvgNode>, load_options: LoadOptions) -> Svg {
+        tree.cascade();
+
         Svg {
             tree,
             ids,
@@ -70,10 +72,6 @@ impl Svg {
 
     pub fn lookup_node_by_id(&self, id: &str) -> Option<RsvgNode> {
         self.ids.get(id).map(|n| (*n).clone())
-    }
-
-    pub fn cascade(&self) {
-        self.tree.cascade();
     }
 }
 

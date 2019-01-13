@@ -300,10 +300,6 @@ impl Handle {
             draw_ctx.add_node_and_ancestors_to_stack(node);
         }
 
-        let svg_ref = self.svg.borrow();
-        let svg = svg_ref.as_ref().unwrap();
-        svg.cascade();
-
         draw_ctx
     }
 
