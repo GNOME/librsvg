@@ -274,12 +274,8 @@ impl Handle {
     fn close_internal(&mut self) -> Result<(), LoadingError> {
         let mut r = self.load.borrow_mut();
         let mut load = r.take().unwrap();
-
         let mut xml = load.close()?;
-
-        xml.validate_tree()?;
-
-        *self.svg.borrow_mut() = Some(Rc::new(xml.steal_result()));
+        *self.svg.borrow_mut() = Some(Rc::new(xml.steal_result()?));
         Ok(())
     }
 

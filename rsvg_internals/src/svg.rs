@@ -51,9 +51,7 @@ impl Svg {
 
         xml_state_load_from_possibly_compressed_stream(&mut xml, load_flags, stream, cancellable)?;
 
-        xml.validate_tree()?;
-
-        Ok(xml.steal_result())
+        xml.steal_result()
     }
 
     pub fn lookup(&self, fragment: &Fragment) -> Option<RsvgNode> {

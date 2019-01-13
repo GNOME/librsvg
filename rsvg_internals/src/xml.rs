@@ -113,24 +113,18 @@ impl XmlState {
         self.tree = Some(Tree::new(root));
     }
 
-    pub fn validate_tree(&self) -> Result<(), LoadingError> {
-        if let Some(ref tree) = self.tree {
-            if tree.root_is_svg() {
-                Ok(())
-            } else {
+    pub fn steal_result(&mut self) -> Result<Svg, LoadingError> {
+        match self.tree {
+            None => Err(LoadingError::SvgHasNoElements),
+            Some(ref tree) if !tree.root_is_svg() => {
                 Err(LoadingError::RootElementIsNotSvg)
             }
-        } else {
-            Err(LoadingError::SvgHasNoElements)
+            _ => Ok(Svg::new(
+                self.tree.take().unwrap(),
+                self.ids.take().unwrap(),
+                self.load_options.clone(),
+            )),
         }
-    }
-
-    pub fn steal_result(&mut self) -> Svg {
-        Svg::new(
-            self.tree.take().unwrap(),
-            self.ids.take().unwrap(),
-            self.load_options.clone(),
-        )
     }
 
     fn context(&self) -> Context {
