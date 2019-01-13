@@ -751,33 +751,26 @@ impl DrawingCtx {
         node: &RsvgNode,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let mut draw = true;
-        let mut res = Ok(());
-
         let stack_top = self.drawsub_stack.pop();
 
-        if let Some(ref top) = stack_top {
-            if !Rc::ptr_eq(top, node) {
-                draw = false;
-            }
-        }
+        let draw = if let Some(ref top) = stack_top {
+            Rc::ptr_eq(top, node)
+        } else {
+            true
+        };
 
-        if draw {
-            let values = cascaded.get();
-            if values.is_visible() {
-                res = node.draw(node, cascaded, self, clipping);
-            }
-        }
+        let values = cascaded.get();
+        let res = if draw && values.is_visible() {
+            node.draw(node, cascaded, self, clipping)
+        } else {
+            Ok(())
+        };
 
         if let Some(top) = stack_top {
             self.drawsub_stack.push(top);
         }
 
-        if res.is_ok() {
-            res = self.check_limits();
-        }
-
-        res
+        res.and_then(|_| self.check_limits())
     }
 
     pub fn mask_surface(&mut self, mask: &cairo::ImageSurface) {
