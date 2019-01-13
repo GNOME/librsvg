@@ -279,13 +279,6 @@ impl Handle {
         Ok(())
     }
 
-    fn cascade(&mut self) {
-        let svg_ref = self.svg.borrow();
-        let svg = svg_ref.as_ref().unwrap();
-
-        svg.tree.cascade();
-    }
-
     fn create_drawing_ctx_for_node(
         &mut self,
         cr: &cairo::Context,
@@ -307,7 +300,9 @@ impl Handle {
             draw_ctx.add_node_and_ancestors_to_stack(node);
         }
 
-        self.cascade();
+        let svg_ref = self.svg.borrow();
+        let svg = svg_ref.as_ref().unwrap();
+        svg.cascade();
 
         draw_ctx
     }
@@ -378,6 +373,12 @@ impl Handle {
         })
     }
 
+    fn get_root(&self) -> RsvgNode {
+        let svg_ref = self.svg.borrow();
+        let svg = svg_ref.as_ref().unwrap();
+        svg.root()
+    }
+
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry(
         &mut self,
@@ -387,9 +388,7 @@ impl Handle {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
         let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, &dimensions, Some(node));
-        let svg_ref = self.svg.borrow();
-        let svg = svg_ref.as_ref().unwrap();
-        let root = svg.tree.root();
+        let root = self.get_root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
 
@@ -412,12 +411,7 @@ impl Handle {
         &mut self,
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
-        let root = {
-            let svg_ref = self.svg.borrow();
-            let svg = svg_ref.as_ref().unwrap();
-
-            svg.tree.root()
-        };
+        let root = self.get_root();
 
         let (node, is_root) = if let Some(id) = id {
             let n = self.lookup_node(id).map_err(RenderingError::InvalidId)?;
@@ -515,17 +509,11 @@ impl Handle {
         };
 
         let dimensions = self.get_dimensions()?;
+        let root = self.get_root();
 
         cr.save();
-
         let mut draw_ctx = self.create_drawing_ctx_for_node(cr, &dimensions, node.as_ref());
-
-        let svg_ref = self.svg.borrow();
-        let svg = svg_ref.as_ref().unwrap();
-        let root = svg.tree.root();
-
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
-
         cr.restore();
 
         res

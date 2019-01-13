@@ -18,7 +18,7 @@ use xml2_load::xml_state_load_from_possibly_compressed_stream;
 /// This contains the tree of nodes (SVG elements), the mapping
 /// of id to node, and the CSS styles defined for this SVG.
 pub struct Svg {
-    pub tree: Tree,
+    tree: Tree,
 
     ids: HashMap<String, RsvgNode>,
 
@@ -54,6 +54,10 @@ impl Svg {
         xml.steal_result()
     }
 
+    pub fn root(&self) -> RsvgNode {
+        self.tree.root()
+    }
+
     pub fn lookup(&self, fragment: &Fragment) -> Option<RsvgNode> {
         if fragment.uri().is_some() {
             self.externs
@@ -66,6 +70,10 @@ impl Svg {
 
     pub fn lookup_node_by_id(&self, id: &str) -> Option<RsvgNode> {
         self.ids.get(id).map(|n| (*n).clone())
+    }
+
+    pub fn cascade(&self) {
+        self.tree.cascade();
     }
 }
 
