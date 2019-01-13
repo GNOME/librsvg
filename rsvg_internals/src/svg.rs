@@ -9,7 +9,7 @@ use allowed_url::{AllowedUrl, Fragment};
 use error::LoadingError;
 use handle::{self, LoadOptions, RsvgHandle};
 use node::RsvgNode;
-use tree::Tree;
+use state::ComputedValues;
 use xml::XmlState;
 use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
@@ -18,7 +18,7 @@ use xml2_load::xml_state_load_from_possibly_compressed_stream;
 /// This contains the tree of nodes (SVG elements), the mapping
 /// of id to node, and the CSS styles defined for this SVG.
 pub struct Svg {
-    tree: Tree,
+    tree: RsvgNode,
 
     ids: HashMap<String, RsvgNode>,
 
@@ -32,8 +32,9 @@ pub struct Svg {
 }
 
 impl Svg {
-    pub fn new(tree: Tree, ids: HashMap<String, RsvgNode>, load_options: LoadOptions) -> Svg {
-        tree.cascade();
+    pub fn new(tree: RsvgNode, ids: HashMap<String, RsvgNode>, load_options: LoadOptions) -> Svg {
+        let values = ComputedValues::default();
+        tree.cascade(&values);
 
         Svg {
             tree,
@@ -57,7 +58,7 @@ impl Svg {
     }
 
     pub fn root(&self) -> RsvgNode {
-        self.tree.root()
+        self.tree.clone()
     }
 
     pub fn lookup(&self, fragment: &Fragment) -> Option<RsvgNode> {

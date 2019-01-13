@@ -136,7 +136,6 @@ pub mod surface_utils;
 mod svg;
 mod text;
 mod transform;
-mod tree;
 pub mod tree_utils;
 mod unit_interval;
 mod util;

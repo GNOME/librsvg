@@ -20,7 +20,6 @@ use structure::NodeSvg;
 use style::NodeStyle;
 use svg::Svg;
 use text::NodeChars;
-use tree::Tree;
 use xml2_load::{xml_state_parse_from_stream, ParseFromStreamError};
 
 #[derive(Clone)]
@@ -69,7 +68,7 @@ extern "C" {
 /// trait objects. Normally the context refers to a `NodeCreationContext` implementation which is
 /// what creates normal graphical elements.
 pub struct XmlState {
-    tree: Option<Tree>,
+    tree_root: Option<Rc<Node>>,
     ids: Option<HashMap<String, RsvgNode>>,
     css_styles: Option<CssStyles>,
     context_stack: Vec<Context>,
@@ -95,7 +94,7 @@ enum AcquireError {
 impl XmlState {
     pub fn new(load_options: LoadOptions) -> XmlState {
         XmlState {
-            tree: None,
+            tree_root: None,
             ids: Some(HashMap::new()),
             css_styles: Some(CssStyles::new()),
             context_stack: vec![Context::Start],
@@ -106,21 +105,21 @@ impl XmlState {
     }
 
     fn set_root(&mut self, root: &Rc<Node>) {
-        if self.tree.is_some() {
+        if self.tree_root.is_some() {
             panic!("The tree root has already been set");
         }
 
-        self.tree = Some(Tree::new(root));
+        self.tree_root = Some(root.clone());
     }
 
     pub fn steal_result(&mut self) -> Result<Svg, LoadingError> {
-        match self.tree {
+        match self.tree_root {
             None => Err(LoadingError::SvgHasNoElements),
-            Some(ref tree) if !tree.root_is_svg() => {
+            Some(ref root) if root.get_type() != NodeType::Svg => {
                 Err(LoadingError::RootElementIsNotSvg)
             }
             _ => Ok(Svg::new(
-                self.tree.take().unwrap(),
+                self.tree_root.take().unwrap(),
                 self.ids.take().unwrap(),
                 self.load_options.clone(),
             )),
