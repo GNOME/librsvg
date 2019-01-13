@@ -1,9 +1,10 @@
 use gio;
 use glib::{Bytes, Cast};
 
+use error::LoadingError;
 use handle::{LoadFlags, LoadOptions};
 use xml::XmlState;
-use xml2_load::{xml_state_load_from_possibly_compressed_stream, ParseFromStreamError};
+use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 // Long-lived loading context for the deprecated I/O API
 //
@@ -53,7 +54,7 @@ impl LoadContext {
         self.buffer.extend_from_slice(buf);
     }
 
-    pub fn close(&mut self) -> Result<XmlState, ParseFromStreamError> {
+    pub fn close(&mut self) -> Result<XmlState, LoadingError> {
         let state = self.state;
 
         match state {
@@ -73,8 +74,9 @@ impl LoadContext {
                     self.load_flags,
                     &stream.upcast(),
                     None,
-                )
-                .and_then(|_| Ok(self.xml.take().unwrap()))
+                )?;
+
+                Ok(self.xml.take().unwrap())
             }
 
             LoadState::Closed => unreachable!(),
