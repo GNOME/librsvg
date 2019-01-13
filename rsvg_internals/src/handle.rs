@@ -247,9 +247,14 @@ impl Handle {
             }
 
             LoadState::Loading => self
-                .close_internal()
-                .and_then(|_| {
+                .load
+                .borrow_mut()
+                .as_mut()
+                .unwrap()
+                .close()
+                .and_then(|mut xml| {
                     self.load_state.set(LoadState::ClosedOk);
+                    *self.svg.borrow_mut() = Some(Rc::new(xml.steal_result()?));
                     Ok(())
                 })
                 .map_err(|e| {
@@ -269,14 +274,6 @@ impl Handle {
         );
 
         res
-    }
-
-    fn close_internal(&mut self) -> Result<(), LoadingError> {
-        let mut r = self.load.borrow_mut();
-        let mut load = r.take().unwrap();
-        let mut xml = load.close()?;
-        *self.svg.borrow_mut() = Some(Rc::new(xml.steal_result()?));
-        Ok(())
     }
 
     fn create_drawing_ctx_for_node(
