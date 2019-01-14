@@ -81,7 +81,7 @@ impl LoadOptions {
     pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> LoadOptions {
         LoadOptions {
             flags: self.flags,
-            base_url: Some(base_url.url().clone()),
+            base_url: Some((*base_url).clone()),
         }
     }
 }

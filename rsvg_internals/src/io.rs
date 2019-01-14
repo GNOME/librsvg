@@ -80,7 +80,7 @@ pub fn acquire_stream(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
 ) -> Result<InputStream, LoadingError> {
-    let uri = aurl.url().as_str();
+    let uri = aurl.as_str();
 
     if uri.starts_with("data:") {
         let BinaryData { data, .. } = decode_data_uri(uri)?;
@@ -100,7 +100,7 @@ pub fn acquire_data(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
 ) -> Result<BinaryData, LoadingError> {
-    let uri = aurl.url().as_str();
+    let uri = aurl.as_str();
 
     if uri.starts_with("data:") {
         Ok(decode_data_uri(uri)?)

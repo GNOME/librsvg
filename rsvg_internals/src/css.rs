@@ -36,7 +36,7 @@ impl CssStyles {
         }
     }
 
-    pub fn parse(&mut self, base_url: Option<Url>, buf: &str) {
+    pub fn parse(&mut self, base_url: Option<&Url>, buf: &str) {
         if buf.len() == 0 {
             return; // libcroco doesn't like empty strings :(
         }
@@ -97,7 +97,7 @@ impl CssStyles {
                 })
             })
             .and_then(|utf8| {
-                self.parse(Some(aurl.url().clone()), &utf8);
+                self.parse(Some(&aurl), &utf8);
                 Ok(()) // FIXME: return CSS parsing errors
             })
     }
@@ -148,7 +148,7 @@ impl CssStyles {
 }
 
 struct DocHandlerData<'a> {
-    base_url: Option<Url>,
+    base_url: Option<&'a Url>,
     css_styles: &'a mut CssStyles,
     selector: *mut CRSelector,
 }
@@ -184,7 +184,7 @@ unsafe extern "C" fn css_import_style(
     let raw_uri = cr_string_peek_raw_str(a_uri);
     let uri = utf8_cstr(raw_uri);
 
-    if let Ok(aurl) = AllowedUrl::from_href(uri, handler_data.base_url.as_ref()) {
+    if let Ok(aurl) = AllowedUrl::from_href(uri, handler_data.base_url) {
         // FIXME: handle CSS errors
         let _ = handler_data.css_styles.load_css(&aurl);
     } else {
