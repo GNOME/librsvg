@@ -161,7 +161,7 @@ fn canonicalize<P: AsRef<Path>>(path: P) -> Result<PathBuf, io::Error> {
 /// processed.  This enum makes that distinction.
 #[derive(Debug, PartialEq)]
 pub enum Href {
-    PlainUri(String),
+    PlainUrl(String),
     WithFragment(Fragment),
 }
 
@@ -225,7 +225,7 @@ impl Href {
             (None, Some(f)) if f.len() == 0 => Err(HrefError::ParseError),
             (None, Some(f)) => Ok(Href::WithFragment(Fragment(None, f.to_string()))),
             (Some(u), _) if u.len() == 0 => Err(HrefError::ParseError),
-            (Some(u), None) => Ok(Href::PlainUri(u.to_string())),
+            (Some(u), None) => Ok(Href::PlainUrl(u.to_string())),
             (Some(_u), Some(f)) if f.len() == 0 => Err(HrefError::ParseError),
             (Some(u), Some(f)) => Ok(Href::WithFragment(Fragment(
                 Some(u.to_string()),
@@ -239,7 +239,7 @@ impl Href {
         use self::Href::*;
 
         match Href::parse(href)? {
-            r @ PlainUri(_) => Ok(r),
+            r @ PlainUrl(_) => Ok(r),
             WithFragment(_) => Err(HrefError::FragmentForbidden),
         }
     }
@@ -248,7 +248,7 @@ impl Href {
         use self::Href::*;
 
         match Href::parse(href)? {
-            PlainUri(_) => Err(HrefError::FragmentRequired),
+            PlainUrl(_) => Err(HrefError::FragmentRequired),
             r @ WithFragment(_) => Ok(r),
         }
     }
@@ -362,7 +362,7 @@ mod tests {
     fn parses_href() {
         assert_eq!(
             Href::parse("uri").unwrap(),
-            Href::PlainUri("uri".to_string())
+            Href::PlainUrl("uri".to_string())
         );
         assert_eq!(
             Href::parse("#fragment").unwrap(),
@@ -385,7 +385,7 @@ mod tests {
     fn href_without_fragment() {
         assert_eq!(
             Href::without_fragment("uri").unwrap(),
-            Href::PlainUri("uri".to_string())
+            Href::PlainUrl("uri".to_string())
         );
 
         assert_eq!(

@@ -81,7 +81,7 @@ impl NodeTrait for NodeImage {
     fn resolve_resources(&self, load_options: &LoadOptions) -> NodeResult {
         match *self.href.borrow() {
             None => (),
-            Some(Href::PlainUri(ref url)) => {
+            Some(Href::PlainUrl(ref url)) => {
                 *self.surface.borrow_mut() = Some(
                     // FIXME: translate the error better here
                     handle::load_image_to_surface(load_options, &url).map_err(|e| {

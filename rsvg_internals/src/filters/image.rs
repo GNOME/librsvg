@@ -119,7 +119,7 @@ impl Image {
         bounds_builder: BoundsBuilder<'_>,
         href: &Href,
     ) -> Result<ImageSurface, FilterError> {
-        let url = if let Href::PlainUri(ref url) = *href {
+        let url = if let Href::PlainUrl(ref url) = *href {
             url
         } else {
             unreachable!();
@@ -219,7 +219,7 @@ impl Filter for Image {
 
         if let Some(href) = href_opt {
             let output_surface = match *href {
-                Href::PlainUri(_) => {
+                Href::PlainUrl(_) => {
                     self.render_external_image(ctx, draw_ctx, bounds_builder, href)?
                 }
                 Href::WithFragment(ref frag) => self.render_node(ctx, draw_ctx, bounds, frag)?,
