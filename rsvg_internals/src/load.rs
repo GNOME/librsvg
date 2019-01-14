@@ -32,7 +32,7 @@ enum LoadState {
 }
 
 impl LoadContext {
-    pub fn new(load_options: LoadOptions) -> LoadContext {
+    pub fn new(load_options: &LoadOptions) -> LoadContext {
         LoadContext {
             load_flags: load_options.flags,
             state: LoadState::Start,

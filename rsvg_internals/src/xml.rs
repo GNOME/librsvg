@@ -92,7 +92,7 @@ enum AcquireError {
 }
 
 impl XmlState {
-    pub fn new(load_options: LoadOptions) -> XmlState {
+    pub fn new(load_options: &LoadOptions) -> XmlState {
         XmlState {
             tree_root: None,
             ids: Some(HashMap::new()),
@@ -100,7 +100,7 @@ impl XmlState {
             context_stack: vec![Context::Start],
             current_node: None,
             entities: HashMap::new(),
-            load_options,
+            load_options: load_options.clone(),
         }
     }
 

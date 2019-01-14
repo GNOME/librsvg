@@ -1,13 +1,13 @@
+use gio;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-
-use gio;
-use gobject_sys;
+use std::rc::Rc;
 
 use allowed_url::{AllowedUrl, Fragment};
 use error::LoadingError;
-use handle::{self, LoadOptions, RsvgHandle};
+use handle::LoadOptions;
+use io;
 use node::RsvgNode;
 use state::ComputedValues;
 use xml::XmlState;
@@ -45,7 +45,7 @@ impl Svg {
     }
 
     pub fn load_from_stream(
-        load_options: LoadOptions,
+        load_options: &LoadOptions,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Svg, LoadingError> {
@@ -77,7 +77,7 @@ impl Svg {
 }
 
 struct Resources {
-    resources: HashMap<AllowedUrl, *mut RsvgHandle>,
+    resources: HashMap<AllowedUrl, Rc<Svg>>,
 }
 
 impl Resources {
@@ -91,8 +91,10 @@ impl Resources {
     /// externally-loaded SVG file.
     pub fn lookup(&mut self, load_options: &LoadOptions, fragment: &Fragment) -> Option<RsvgNode> {
         if let Some(ref href) = fragment.uri() {
-            match self.get_extern_handle(load_options, href) {
-                Ok(extern_handle) => handle::lookup_fragment_id(extern_handle, fragment.fragment()),
+            // FIXME: propagate errors from the loader
+            match self.get_extern_svg(load_options, href) {
+                Ok(svg) => svg.lookup_node_by_id(fragment.fragment()),
+
                 Err(()) => None,
             }
         } else {
@@ -100,30 +102,24 @@ impl Resources {
         }
     }
 
-    fn get_extern_handle(
-        &mut self,
-        load_options: &LoadOptions,
-        href: &str,
-    ) -> Result<*const RsvgHandle, ()> {
+    fn get_extern_svg(&mut self, load_options: &LoadOptions, href: &str) -> Result<Rc<Svg>, ()> {
         let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref()).map_err(|_| ())?;
 
         match self.resources.entry(aurl) {
-            Entry::Occupied(e) => Ok(*(e.get())),
+            Entry::Occupied(e) => Ok(e.get().clone()),
             Entry::Vacant(e) => {
-                let extern_handle = handle::load_extern(load_options, e.key())?;
-                e.insert(extern_handle);
-                Ok(extern_handle)
+                // FIXME: propagate errors
+                let svg = load_svg(load_options, e.key()).map_err(|_| ())?;
+                let rc_svg = e.insert(Rc::new(svg));
+                Ok(rc_svg.clone())
             }
         }
     }
 }
 
-impl Drop for Resources {
-    fn drop(&mut self) {
-        for (_, handle) in self.resources.iter() {
-            unsafe {
-                gobject_sys::g_object_unref(*handle as *mut _);
-            }
-        }
-    }
+fn load_svg(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<Svg, LoadingError> {
+    // FIXME: pass a cancellable to these
+    io::acquire_stream(aurl, None).and_then(|stream| {
+        Svg::load_from_stream(&load_options.copy_with_base_url(aurl), &stream, None)
+    })
 }

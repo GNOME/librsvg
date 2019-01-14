@@ -25,7 +25,7 @@ use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
 use io;
 use load::LoadContext;
-use node::{Node, RsvgNode};
+use node::RsvgNode;
 use pixbuf_utils::pixbuf_from_surface;
 use structure::NodeSvg;
 use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
@@ -76,6 +76,13 @@ pub struct LoadOptions {
 impl LoadOptions {
     fn new(flags: LoadFlags, base_url: Option<Url>) -> LoadOptions {
         LoadOptions { flags, base_url }
+    }
+
+    pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> LoadOptions {
+        LoadOptions {
+            flags: self.flags,
+            base_url: Some(base_url.url().clone()),
+        }
     }
 }
 
@@ -206,10 +213,11 @@ impl Handle {
     ) -> Result<(), LoadingError> {
         self.load_state.set(LoadState::Loading);
 
-        let svg = Svg::load_from_stream(self.load_options(), stream, cancellable).map_err(|e| {
-            self.load_state.set(LoadState::ClosedError);
-            e
-        })?;
+        let svg =
+            Svg::load_from_stream(&self.load_options(), stream, cancellable).map_err(|e| {
+                self.load_state.set(LoadState::ClosedError);
+                e
+            })?;
 
         *self.svg.borrow_mut() = Some(Rc::new(svg));
         self.load_state.set(LoadState::ClosedOk);
@@ -229,7 +237,7 @@ impl Handle {
         if self.load_state.get() == LoadState::Start {
             self.load_state.set(LoadState::Loading);
 
-            self.load = RefCell::new(Some(LoadContext::new(self.load_options())));
+            self.load = RefCell::new(Some(LoadContext::new(&self.load_options())));
         }
 
         assert!(self.load_state.get() == LoadState::Loading);
@@ -566,43 +574,7 @@ impl LoadFlags {
 extern "C" {
     fn rsvg_handle_new_with_flags(flags: u32) -> *mut RsvgHandle;
 
-    fn rsvg_handle_new_from_gfile_sync(
-        file: *const gio_sys::GFile,
-        flags: u32,
-        cancellable: *const gio_sys::GCancellable,
-        error: *mut *mut glib_sys::GError,
-    ) -> *mut RsvgHandle;
-
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
-}
-
-// Looks up a node by its id.
-pub fn lookup_fragment_id(handle: *const RsvgHandle, id: &str) -> Option<Rc<Node>> {
-    let rhandle = get_rust_handle(handle);
-
-    let svg_ref = rhandle.svg.borrow();
-    let svg = svg_ref.as_ref().unwrap();
-
-    svg.lookup_node_by_id(id)
-}
-
-pub fn load_extern(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<*mut RsvgHandle, ()> {
-    unsafe {
-        let file = gio::File::new_for_uri(aurl.url().as_str());
-
-        let res = rsvg_handle_new_from_gfile_sync(
-            file.to_glib_none().0,
-            load_options.flags.to_flags(),
-            ptr::null(),
-            ptr::null_mut(),
-        );
-
-        if res.is_null() {
-            Err(())
-        } else {
-            Ok(res)
-        }
-    }
 }
 
 pub fn load_image_to_surface(
