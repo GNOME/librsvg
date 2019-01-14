@@ -353,35 +353,41 @@ impl DrawingCtx {
 
             let affine = original_cr.get_matrix();
 
-            let (acquired_clip, clip_units) = {
-                if let Some(acquired) = self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
+            let (clip_in_user_space, clip_in_object_space) = {
+                if let Some(clip_node) =
+                    self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
                 {
-                    let ClipPathUnits(units) = acquired
-                        .get()
-                        .with_impl(|clip_path: &NodeClipPath| clip_path.get_units());
+                    let clip_node = clip_node.get().clone();
 
-                    (Some(acquired), Some(units))
+                    let ClipPathUnits(units) =
+                        clip_node.with_impl(|clip_path: &NodeClipPath| clip_path.get_units());
+
+                    if units == CoordUnits::UserSpaceOnUse {
+                        (Some(clip_node), None)
+                    } else {
+                        assert!(units == CoordUnits::ObjectBoundingBox);
+                        (None, Some(clip_node))
+                    }
                 } else {
                     (None, None)
                 }
             };
 
-            if clip_units == Some(CoordUnits::UserSpaceOnUse) {
-                let clip_node = acquired_clip.as_ref().unwrap().get();
-                let res = clip_node.with_impl(|clip_path: &NodeClipPath| {
-                    clip_path.to_cairo_context(clip_node, &affine, self)
-                });
-
-                if let Err(e) = res {
-                    original_cr.restore();
-                    return Err(e);
-                }
+            if let Some(clip_node) = clip_in_user_space {
+                clip_node
+                    .with_impl(|clip_path: &NodeClipPath| {
+                        clip_path.to_cairo_context(&clip_node, &affine, self)
+                    })
+                    .map_err(|e| {
+                        original_cr.restore();
+                        e
+                    })?;
             }
 
             let needs_temporary_surface = !(opacity == 1.0
                 && filter.is_none()
                 && mask.is_none()
-                && (clip_units == None || clip_units == Some(CoordUnits::UserSpaceOnUse))
+                && clip_in_object_space.is_none()
                 && comp_op == CompOp::SrcOver
                 && enable_background == EnableBackground::Accumulate);
 
@@ -424,16 +430,15 @@ impl DrawingCtx {
                 original_cr.identity_matrix();
                 original_cr.set_source_surface(&filter_result_surface, xofs, yofs);
 
-                if clip_units == Some(CoordUnits::ObjectBoundingBox) {
-                    let clip_node = acquired_clip.as_ref().unwrap().get();
-                    let res = clip_node.with_impl(|clip_path: &NodeClipPath| {
-                        clip_path.to_cairo_context(clip_node, &affine, self)
-                    });
-
-                    if let Err(e) = res {
-                        original_cr.restore();
-                        return Err(e);
-                    }
+                if let Some(clip_node) = clip_in_object_space {
+                    clip_node
+                        .with_impl(|clip_path: &NodeClipPath| {
+                            clip_path.to_cairo_context(&clip_node, &affine, self)
+                        })
+                        .map_err(|e| {
+                            original_cr.restore();
+                            e
+                        })?;
                 }
 
                 original_cr.set_operator(cairo::Operator::from(comp_op));
