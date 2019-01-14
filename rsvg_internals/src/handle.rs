@@ -588,7 +588,7 @@ pub fn lookup_fragment_id(handle: *const RsvgHandle, id: &str) -> Option<Rc<Node
 
 pub fn load_extern(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<*mut RsvgHandle, ()> {
     unsafe {
-        let file = gio::File::new_for_uri(aurl.url().as_str());
+        let file = gio::File::new_for_uri(aurl.as_str());
 
         let res = rsvg_handle_new_from_gfile_sync(
             file.to_glib_none().0,

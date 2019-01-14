@@ -277,7 +277,7 @@ impl XmlState {
 
             let css_styles = self.css_styles.as_mut().unwrap();
 
-            css_styles.parse(self.load_options.base_url.clone(), &css_data);
+            css_styles.parse(self.load_options.base_url.as_ref(), &css_data);
         }
 
         self.current_node = node.get_parent();
@@ -445,14 +445,14 @@ impl XmlState {
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
         let binary = io::acquire_data(aurl, None).map_err(|e| {
-            rsvg_log!("could not acquire \"{}\": {}", aurl.url(), e);
+            rsvg_log!("could not acquire \"{}\": {}", aurl, e);
             AcquireError::ResourceError
         })?;
 
         let encoding = encoding.unwrap_or("utf-8");
 
         let encoder = encoding_from_whatwg_label(encoding).ok_or_else(|| {
-            rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, aurl.url());
+            rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, aurl);
             AcquireError::FatalError
         })?;
 
@@ -461,7 +461,7 @@ impl XmlState {
             .map_err(|e| {
                 rsvg_log!(
                     "could not convert contents of \"{}\" from character encoding \"{}\": {}",
-                    aurl.url(),
+                    aurl,
                     encoding,
                     e
                 );

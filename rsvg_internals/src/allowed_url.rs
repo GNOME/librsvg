@@ -1,6 +1,7 @@
 use std::error::{self, Error};
 use std::fmt;
 use std::io;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use url::{self, Url};
 
@@ -106,8 +107,12 @@ impl AllowedUrl {
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         }
     }
+}
 
-    pub fn url(&self) -> &Url {
+impl Deref for AllowedUrl {
+    type Target = Url;
+
+    fn deref(&self) -> &Url {
         &self.0
     }
 }
@@ -303,8 +308,8 @@ mod tests {
         assert_eq!(
             AllowedUrl::from_href("data:image/jpeg;base64,xxyyzz", None)
                 .unwrap()
-                .url(),
-            &Url::parse("data:image/jpeg;base64,xxyyzz").unwrap(),
+                .as_ref(),
+            "data:image/jpeg;base64,xxyyzz",
         );
     }
 
@@ -316,8 +321,8 @@ mod tests {
                 Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
             )
             .unwrap()
-            .url(),
-            &Url::parse("file:///example/foo.svg").unwrap(),
+            .as_ref(),
+            "file:///example/foo.svg",
         );
     }
 
@@ -329,8 +334,8 @@ mod tests {
                 Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
             )
             .unwrap()
-            .url(),
-            &Url::parse("file:///example/foo.svg").unwrap(),
+            .as_ref(),
+            "file:///example/foo.svg",
         );
     }
 
@@ -342,8 +347,8 @@ mod tests {
                 Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
             )
             .unwrap()
-            .url(),
-            &Url::parse("file:///example/subdir/foo.svg").unwrap(),
+            .as_ref(),
+            "file:///example/subdir/foo.svg",
         );
     }
 
