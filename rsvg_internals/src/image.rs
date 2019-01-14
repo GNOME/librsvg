@@ -157,8 +157,6 @@ impl NodeTrait for NodeImage {
                 let x = x * width / w;
                 let y = y * height / h;
 
-                cr.set_operator(cairo::Operator::from(values.comp_op));
-
                 // We need to set extend appropriately, so can't use cr.set_source_surface().
                 //
                 // If extend is left at its default value (None), then bilinear scaling uses

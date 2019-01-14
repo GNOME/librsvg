@@ -21,7 +21,6 @@ use pattern::NodePattern;
 use rect::RectangleExt;
 use state::{
     ClipRule,
-    CompOp,
     ComputedValues,
     EnableBackground,
     FillRule,
@@ -348,7 +347,6 @@ impl DrawingCtx {
             };
 
             let UnitInterval(opacity) = values.opacity.0;
-            let comp_op = values.comp_op;
             let enable_background = values.enable_background;
 
             let affine = original_cr.get_matrix();
@@ -388,7 +386,6 @@ impl DrawingCtx {
                 && filter.is_none()
                 && mask.is_none()
                 && clip_in_object_space.is_none()
-                && comp_op == CompOp::SrcOver
                 && enable_background == EnableBackground::Accumulate);
 
             if needs_temporary_surface {
@@ -440,8 +437,6 @@ impl DrawingCtx {
                             e
                         })?;
                 }
-
-                original_cr.set_operator(cairo::Operator::from(comp_op));
 
                 if let Some(mask) = mask {
                     if let Some(acquired) =
@@ -877,37 +872,6 @@ impl From<StrokeLinecap> for cairo::LineCap {
             StrokeLinecap::Butt => cairo::LineCap::Butt,
             StrokeLinecap::Round => cairo::LineCap::Round,
             StrokeLinecap::Square => cairo::LineCap::Square,
-        }
-    }
-}
-
-impl From<CompOp> for cairo::Operator {
-    fn from(op: CompOp) -> cairo::Operator {
-        match op {
-            CompOp::Clear => cairo::Operator::Clear,
-            CompOp::Src => cairo::Operator::Source,
-            CompOp::Dst => cairo::Operator::Dest,
-            CompOp::SrcOver => cairo::Operator::Over,
-            CompOp::DstOver => cairo::Operator::DestOver,
-            CompOp::SrcIn => cairo::Operator::In,
-            CompOp::DstIn => cairo::Operator::DestIn,
-            CompOp::SrcOut => cairo::Operator::Out,
-            CompOp::DstOut => cairo::Operator::DestOut,
-            CompOp::SrcAtop => cairo::Operator::Atop,
-            CompOp::DstAtop => cairo::Operator::DestAtop,
-            CompOp::Xor => cairo::Operator::Xor,
-            CompOp::Plus => cairo::Operator::Add,
-            CompOp::Multiply => cairo::Operator::Multiply,
-            CompOp::Screen => cairo::Operator::Screen,
-            CompOp::Overlay => cairo::Operator::Overlay,
-            CompOp::Darken => cairo::Operator::Darken,
-            CompOp::Lighten => cairo::Operator::Lighten,
-            CompOp::ColorDodge => cairo::Operator::ColorDodge,
-            CompOp::ColorBurn => cairo::Operator::ColorBurn,
-            CompOp::HardLight => cairo::Operator::HardLight,
-            CompOp::SoftLight => cairo::Operator::SoftLight,
-            CompOp::Difference => cairo::Operator::Difference,
-            CompOp::Exclusion => cairo::Operator::Exclusion,
         }
     }
 }

@@ -90,7 +90,6 @@ pub struct SpecifiedValues {
     pub baseline_shift: SpecifiedValue<BaselineShift>,
     pub clip_path: SpecifiedValue<ClipPath>,
     pub clip_rule: SpecifiedValue<ClipRule>,
-    pub comp_op: SpecifiedValue<CompOp>,
     pub color: SpecifiedValue<Color>,
     pub color_interpolation_filters: SpecifiedValue<ColorInterpolationFilters>,
     pub direction: SpecifiedValue<Direction>,
@@ -142,7 +141,6 @@ pub struct ComputedValues {
     pub baseline_shift: BaselineShift,
     pub clip_path: ClipPath,
     pub clip_rule: ClipRule,
-    pub comp_op: CompOp,
     pub color: Color,
     pub color_interpolation_filters: ColorInterpolationFilters,
     pub direction: Direction,
@@ -217,7 +215,6 @@ impl SpecifiedValues {
         compute_value!(self, computed, baseline_shift);
         compute_value!(self, computed, clip_path);
         compute_value!(self, computed, clip_rule);
-        compute_value!(self, computed, comp_op);
         compute_value!(self, computed, color);
         compute_value!(self, computed, color_interpolation_filters);
         compute_value!(self, computed, direction);
@@ -309,10 +306,6 @@ impl State {
 
                 Attribute::ColorInterpolationFilters => {
                     self.values.color_interpolation_filters = parse_property(value, ())?;
-                }
-
-                Attribute::CompOp => {
-                    self.values.comp_op = parse_property(value, ())?;
                 }
 
                 Attribute::Direction => {
@@ -735,40 +728,6 @@ make_property!(
     "auto" => Auto,
     "linearRGB" => LinearRgb,
     "sRGB" => Srgb,
-);
-
-// https://gitlab.gnome.org/GNOME/librsvg/issues/268 - can we remove this property?
-make_property!(
-    ComputedValues,
-    CompOp,
-    default: SrcOver,
-    inherits_automatically: false,
-
-    identifiers:
-    "clear" => Clear,
-    "src" => Src,
-    "dst" => Dst,
-    "src-over" => SrcOver,
-    "dst-over" => DstOver,
-    "src-in" => SrcIn,
-    "dst-in" => DstIn,
-    "src-out" => SrcOut,
-    "dst-out" => DstOut,
-    "src-atop" => SrcAtop,
-    "dst-atop" => DstAtop,
-    "xor" => Xor,
-    "plus" => Plus,
-    "multiply" => Multiply,
-    "screen" => Screen,
-    "overlay" => Overlay,
-    "darken" => Darken,
-    "lighten" => Lighten,
-    "color-dodge" => ColorDodge,
-    "color-burn" => ColorBurn,
-    "hard-light" => HardLight,
-    "soft-light" => SoftLight,
-    "difference" => Difference,
-    "exclusion" => Exclusion,
 );
 
 // https://www.w3.org/TR/SVG/text.html#DirectionProperty

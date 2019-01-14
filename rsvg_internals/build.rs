@@ -27,7 +27,6 @@ fn generate_phf_of_svg_attributes() {
         ( "clipPathUnits",      "ClipPathUnits" ),
         ( "color",              "Color" ),
         ( "color-interpolation-filters", "ColorInterpolationFilters" ),
-        ( "comp-op",            "CompOp" ),
         ( "cx",                 "Cx" ),
         ( "cy",                 "Cy" ),
         ( "d",                  "D" ),
