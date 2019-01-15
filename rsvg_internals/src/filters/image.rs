@@ -7,6 +7,7 @@ use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
+use float_eq_cairo::ApproxEqCairo;
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
@@ -143,31 +144,33 @@ impl Image {
             f64::from(render_bounds.y1 - render_bounds.y0),
         );
 
-        if w != 0f64 && h != 0f64 {
-            let ptn = surface.to_cairo_pattern();
-            let mut matrix = cairo::Matrix::new(
-                w / f64::from(surface.width()),
-                0f64,
-                0f64,
-                h / f64::from(surface.height()),
-                x,
-                y,
-            );
-            matrix.invert();
-            ptn.set_matrix(matrix);
-
-            let bounds = bounds_builder.into_irect(draw_ctx);
-            let cr = cairo::Context::new(&output_surface);
-            cr.rectangle(
-                f64::from(bounds.x0),
-                f64::from(bounds.y0),
-                f64::from(bounds.x1 - bounds.x0),
-                f64::from(bounds.y1 - bounds.y0),
-            );
-            cr.clip();
-            cr.set_source(&ptn);
-            cr.paint();
+        if w.approx_eq_cairo(&0.0) || h.approx_eq_cairo(&0.0) {
+            return Ok(output_surface);
         }
+
+        let ptn = surface.to_cairo_pattern();
+        let mut matrix = cairo::Matrix::new(
+            w / f64::from(surface.width()),
+            0f64,
+            0f64,
+            h / f64::from(surface.height()),
+            x,
+            y,
+        );
+        matrix.invert();
+        ptn.set_matrix(matrix);
+
+        let bounds = bounds_builder.into_irect(draw_ctx);
+        let cr = cairo::Context::new(&output_surface);
+        cr.rectangle(
+            f64::from(bounds.x0),
+            f64::from(bounds.y0),
+            f64::from(bounds.x1 - bounds.x0),
+            f64::from(bounds.y1 - bounds.y0),
+        );
+        cr.clip();
+        cr.set_source(&ptn);
+        cr.paint();
 
         Ok(output_surface)
     }
