@@ -83,89 +83,85 @@ impl NodeTrait for NodeImage {
         clipping: bool,
     ) -> Result<(), RenderingError> {
         let surface = if let Some(Href::PlainUrl(ref url)) = *self.href.borrow() {
-            draw_ctx.lookup_image(&url)
+            draw_ctx.lookup_image(&url)?
         } else {
-            None
+            return Ok(());
         };
 
-        if let Some(ref surface) = surface {
-            let values = cascaded.get();
-            let params = draw_ctx.get_view_params();
+        let values = cascaded.get();
+        let params = draw_ctx.get_view_params();
 
-            let x = self.x.get().normalize(values, &params);
-            let y = self.y.get().normalize(values, &params);
-            let w = self.w.get().normalize(values, &params);
-            let h = self.h.get().normalize(values, &params);
+        let x = self.x.get().normalize(values, &params);
+        let y = self.y.get().normalize(values, &params);
+        let w = self.w.get().normalize(values, &params);
+        let h = self.h.get().normalize(values, &params);
 
-            if w.approx_eq_cairo(&0.0) || h.approx_eq_cairo(&0.0) {
+        if w.approx_eq_cairo(&0.0) || h.approx_eq_cairo(&0.0) {
+            return Ok(());
+        }
+
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            let aspect = self.aspect.get();
+
+            if !values.is_overflow() && aspect.is_slice() {
+                dc.clip(x, y, w, h);
+            }
+
+            let width = surface.width();
+            let height = surface.height();
+            if clipping || width == 0 || height == 0 {
                 return Ok(());
             }
 
-            draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-                let aspect = self.aspect.get();
+            // The bounding box for <image> is decided by the values of x, y, w, h and not by
+            // the final computed image bounds.
+            let bbox = BoundingBox::new(&dc.get_cairo_context().get_matrix()).with_rect(Some(
+                cairo::Rectangle {
+                    x,
+                    y,
+                    width: w,
+                    height: h,
+                },
+            ));
 
-                if !values.is_overflow() && aspect.is_slice() {
-                    dc.clip(x, y, w, h);
-                }
+            let width = f64::from(width);
+            let height = f64::from(height);
 
-                let width = surface.width();
-                let height = surface.height();
-                if clipping || width == 0 || height == 0 {
-                    return Ok(());
-                }
+            let (x, y, w, h) = aspect.compute(width, height, x, y, w, h);
 
-                // The bounding box for <image> is decided by the values of x, y, w, h and not by
-                // the final computed image bounds.
-                let bbox = BoundingBox::new(&dc.get_cairo_context().get_matrix()).with_rect(Some(
-                    cairo::Rectangle {
-                        x,
-                        y,
-                        width: w,
-                        height: h,
-                    },
-                ));
+            let cr = dc.get_cairo_context();
 
-                let width = f64::from(width);
-                let height = f64::from(height);
+            cr.save();
 
-                let (x, y, w, h) = aspect.compute(width, height, x, y, w, h);
+            dc.set_affine_on_cr(&cr);
+            cr.scale(w / width, h / height);
+            let x = x * width / w;
+            let y = y * height / h;
 
-                let cr = dc.get_cairo_context();
+            // We need to set extend appropriately, so can't use cr.set_source_surface().
+            //
+            // If extend is left at its default value (None), then bilinear scaling uses
+            // transparency outside of the image producing incorrect results.
+            // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
+            // opaque 100×1 image of a gradient scaled to 100×98 which ends up
+            // transparent almost everywhere without this fix (which it shouldn't).
+            let ptn = surface.to_cairo_pattern();
+            let mut matrix = cairo::Matrix::identity();
+            matrix.translate(-x, -y);
+            ptn.set_matrix(matrix);
+            ptn.set_extend(cairo::Extend::Pad);
+            cr.set_source(&ptn);
 
-                cr.save();
+            // Clip is needed due to extend being set to pad.
+            cr.rectangle(x, y, width, height);
+            cr.clip();
 
-                dc.set_affine_on_cr(&cr);
-                cr.scale(w / width, h / height);
-                let x = x * width / w;
-                let y = y * height / h;
+            cr.paint();
 
-                // We need to set extend appropriately, so can't use cr.set_source_surface().
-                //
-                // If extend is left at its default value (None), then bilinear scaling uses
-                // transparency outside of the image producing incorrect results.
-                // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
-                // opaque 100×1 image of a gradient scaled to 100×98 which ends up
-                // transparent almost everywhere without this fix (which it shouldn't).
-                let ptn = surface.to_cairo_pattern();
-                let mut matrix = cairo::Matrix::identity();
-                matrix.translate(-x, -y);
-                ptn.set_matrix(matrix);
-                ptn.set_extend(cairo::Extend::Pad);
-                cr.set_source(&ptn);
+            cr.restore();
 
-                // Clip is needed due to extend being set to pad.
-                cr.rectangle(x, y, width, height);
-                cr.clip();
-
-                cr.paint();
-
-                cr.restore();
-
-                dc.insert_bbox(&bbox);
-                Ok(())
-            })
-        } else {
+            dc.insert_bbox(&bbox);
             Ok(())
-        }
+        })
     }
 }

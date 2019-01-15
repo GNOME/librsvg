@@ -117,17 +117,13 @@ impl Image {
         href: &Href,
     ) -> Result<ImageSurface, FilterError> {
         let surface = if let Href::PlainUrl(ref url) = *href {
-            draw_ctx.lookup_image(&url)
+            // FIXME: translate the error better here
+            draw_ctx
+                .lookup_image(&url)
+                .map_err(|_| FilterError::InvalidInput)?
         } else {
             unreachable!();
         };
-
-        // FIXME: translate the error better here
-        if surface.is_none() {
-            return Err(FilterError::InvalidInput);
-        }
-
-        let surface = surface.unwrap();
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,

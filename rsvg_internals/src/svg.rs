@@ -67,13 +67,14 @@ impl Svg {
         self.tree.clone()
     }
 
-    pub fn lookup(&self, fragment: &Fragment) -> Option<RsvgNode> {
+    pub fn lookup(&self, fragment: &Fragment) -> Result<RsvgNode, LoadingError> {
         if fragment.uri().is_some() {
             self.externs
                 .borrow_mut()
                 .lookup(&self.load_options, fragment)
         } else {
             self.lookup_node_by_id(fragment.fragment())
+                .ok_or(LoadingError::BadUrl)
         }
     }
 
@@ -81,13 +82,13 @@ impl Svg {
         self.ids.get(id).map(|n| (*n).clone())
     }
 
-    pub fn lookup_image(&self, href: &str) -> Option<SharedImageSurface> {
+    pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
         self.images.borrow_mut().lookup(&self.load_options, href)
     }
 }
 
 struct Resources {
-    resources: HashMap<AllowedUrl, Rc<Svg>>,
+    resources: HashMap<AllowedUrl, Result<Rc<Svg>, LoadingError>>,
 }
 
 impl Resources {
@@ -97,36 +98,42 @@ impl Resources {
         }
     }
 
-    pub fn lookup(&mut self, load_options: &LoadOptions, fragment: &Fragment) -> Option<RsvgNode> {
+    pub fn lookup(
+        &mut self,
+        load_options: &LoadOptions,
+        fragment: &Fragment,
+    ) -> Result<RsvgNode, LoadingError> {
         if let Some(ref href) = fragment.uri() {
-            // FIXME: propagate errors from the loader
-            match self.get_extern_svg(load_options, href) {
-                Ok(svg) => svg.lookup_node_by_id(fragment.fragment()),
-
-                Err(()) => None,
-            }
+            self.get_extern_svg(load_options, href).and_then(|svg| {
+                svg.lookup_node_by_id(fragment.fragment())
+                    .ok_or(LoadingError::BadUrl)
+            })
         } else {
             unreachable!();
         }
     }
 
-    fn get_extern_svg(&mut self, load_options: &LoadOptions, href: &str) -> Result<Rc<Svg>, ()> {
-        let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref()).map_err(|_| ())?;
+    fn get_extern_svg(
+        &mut self,
+        load_options: &LoadOptions,
+        href: &str,
+    ) -> Result<Rc<Svg>, LoadingError> {
+        let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref())
+            .map_err(|_| LoadingError::BadUrl)?;
 
         match self.resources.entry(aurl) {
-            Entry::Occupied(e) => Ok(e.get().clone()),
+            Entry::Occupied(e) => e.get().clone(),
             Entry::Vacant(e) => {
-                // FIXME: propagate errors
-                let svg = load_svg(load_options, e.key()).map_err(|_| ())?;
-                let rc_svg = e.insert(Rc::new(svg));
-                Ok(rc_svg.clone())
+                let svg = load_svg(load_options, e.key()).map(|s| Rc::new(s));
+                let res = e.insert(svg);
+                res.clone()
             }
         }
     }
 }
 
 struct Images {
-    images: HashMap<AllowedUrl, SharedImageSurface>,
+    images: HashMap<AllowedUrl, Result<SharedImageSurface, LoadingError>>,
 }
 
 impl Images {
@@ -136,17 +143,20 @@ impl Images {
         }
     }
 
-    pub fn lookup(&mut self, load_options: &LoadOptions, href: &str) -> Option<SharedImageSurface> {
-        // FIXME: propagate errors
-        let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref()).ok()?;
+    pub fn lookup(
+        &mut self,
+        load_options: &LoadOptions,
+        href: &str,
+    ) -> Result<SharedImageSurface, LoadingError> {
+        let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref())
+            .map_err(|_| LoadingError::BadUrl)?;
 
         match self.images.entry(aurl) {
-            Entry::Occupied(e) => Some(e.get().clone()),
+            Entry::Occupied(e) => e.get().clone(),
             Entry::Vacant(e) => {
-                // FIXME: propagate errors
-                let surface = load_image(load_options, e.key()).ok()?;
+                let surface = load_image(load_options, e.key());
                 let res = e.insert(surface);
-                Some(res.clone())
+                res.clone()
             }
         }
     }
