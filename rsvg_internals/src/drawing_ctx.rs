@@ -29,6 +29,7 @@ use state::{
     StrokeLinecap,
     StrokeLinejoin,
 };
+use surface_utils::shared_surface::SharedImageSurface;
 use svg::Svg;
 use unit_interval::UnitInterval;
 use viewbox::ViewBox;
@@ -713,7 +714,7 @@ impl DrawingCtx {
         }
     }
 
-    pub fn lookup_image(&self, href: &str) -> Option<cairo::ImageSurface> {
+    pub fn lookup_image(&self, href: &str) -> Option<SharedImageSurface> {
         self.svg.lookup_image(href)
     }
 

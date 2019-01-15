@@ -108,8 +108,8 @@ impl NodeTrait for NodeImage {
                     dc.clip(x, y, w, h);
                 }
 
-                let width = surface.get_width();
-                let height = surface.get_height();
+                let width = surface.width();
+                let height = surface.height();
                 if clipping || width == 0 || height == 0 {
                     return Ok(());
                 }
@@ -146,12 +146,12 @@ impl NodeTrait for NodeImage {
                 // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
                 // opaque 100×1 image of a gradient scaled to 100×98 which ends up
                 // transparent almost everywhere without this fix (which it shouldn't).
-                let ptn = cairo::SurfacePattern::create(&surface);
+                let ptn = surface.to_cairo_pattern();
                 let mut matrix = cairo::Matrix::identity();
                 matrix.translate(-x, -y);
                 ptn.set_matrix(matrix);
                 ptn.set_extend(cairo::Extend::Pad);
-                cr.set_source(&cairo::Pattern::SurfacePattern(ptn));
+                cr.set_source(&ptn);
 
                 // Clip is needed due to extend being set to pad.
                 cr.rectangle(x, y, width, height);

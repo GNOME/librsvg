@@ -295,6 +295,11 @@ impl SharedImageSurface {
         cr.set_source_surface(&self.surface, x, y);
     }
 
+    /// Creates a Cairo surface pattern from the surface
+    pub fn to_cairo_pattern(&self) -> cairo::Pattern {
+        cairo::Pattern::SurfacePattern(cairo::SurfacePattern::create(&self.surface))
+    }
+
     /// Returns a new `ImageSurface` with the same contents as the one stored in this
     /// `SharedImageSurface` within the given bounds.
     pub fn copy_surface(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {

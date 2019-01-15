@@ -139,8 +139,8 @@ impl Image {
         let render_bounds = bounds_builder.into_irect_without_clipping(draw_ctx);
         let aspect = self.aspect.get();
         let (x, y, w, h) = aspect.compute(
-            f64::from(surface.get_width()),
-            f64::from(surface.get_height()),
+            f64::from(surface.width()),
+            f64::from(surface.height()),
             f64::from(render_bounds.x0),
             f64::from(render_bounds.y0),
             f64::from(render_bounds.x1 - render_bounds.x0),
@@ -148,12 +148,12 @@ impl Image {
         );
 
         if w != 0f64 && h != 0f64 {
-            let ptn = cairo::SurfacePattern::create(&surface);
+            let ptn = surface.to_cairo_pattern();
             let mut matrix = cairo::Matrix::new(
-                w / f64::from(surface.get_width()),
+                w / f64::from(surface.width()),
                 0f64,
                 0f64,
-                h / f64::from(surface.get_height()),
+                h / f64::from(surface.height()),
                 x,
                 y,
             );
@@ -169,7 +169,7 @@ impl Image {
                 f64::from(bounds.y1 - bounds.y0),
             );
             cr.clip();
-            cr.set_source(&cairo::Pattern::SurfacePattern(ptn));
+            cr.set_source(&ptn);
             cr.paint();
         }
 

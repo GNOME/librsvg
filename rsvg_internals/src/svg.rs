@@ -1,4 +1,4 @@
-use cairo::{ImageSurface, Status};
+use cairo::Status;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
 use glib::translate::*;
@@ -81,11 +81,8 @@ impl Svg {
         self.ids.get(id).map(|n| (*n).clone())
     }
 
-    pub fn lookup_image(&self, href: &str) -> Option<ImageSurface> {
-        self.images
-            .borrow_mut()
-            .lookup(&self.load_options, href)
-            .and_then(|s| s.into_image_surface().ok())
+    pub fn lookup_image(&self, href: &str) -> Option<SharedImageSurface> {
+        self.images.borrow_mut().lookup(&self.load_options, href)
     }
 }
 
