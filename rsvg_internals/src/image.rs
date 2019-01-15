@@ -9,7 +9,6 @@ use bbox::BoundingBox;
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
-use handle::{self, LoadOptions};
 use length::*;
 use node::*;
 use parsers::ParseValue;
@@ -22,7 +21,6 @@ pub struct NodeImage {
     w: Cell<Length>,
     h: Cell<Length>,
     href: RefCell<Option<Href>>,
-    surface: RefCell<Option<cairo::ImageSurface>>,
 }
 
 impl NodeImage {
@@ -34,7 +32,6 @@ impl NodeImage {
             w: Cell::new(Length::default()),
             h: Cell::new(Length::default()),
             href: RefCell::new(None),
-            surface: RefCell::new(None),
         }
     }
 }
@@ -78,26 +75,6 @@ impl NodeTrait for NodeImage {
         Ok(())
     }
 
-    fn resolve_resources(&self, load_options: &LoadOptions) -> NodeResult {
-        match *self.href.borrow() {
-            None => (),
-            Some(Href::PlainUrl(ref url)) => {
-                *self.surface.borrow_mut() = Some(
-                    // FIXME: translate the error better here
-                    handle::load_image_to_surface(load_options, &url).map_err(|e| {
-                        NodeError::value_error(
-                            Attribute::XlinkHref,
-                            &format!("could not load image: {}", e),
-                        )
-                    })?,
-                );
-            }
-            _ => unreachable!(),
-        };
-
-        Ok(())
-    }
-
     fn draw(
         &self,
         node: &RsvgNode,
@@ -105,9 +82,14 @@ impl NodeTrait for NodeImage {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let values = cascaded.get();
+        let surface = if let Some(Href::PlainUrl(ref url)) = *self.href.borrow() {
+            draw_ctx.lookup_image(&url)
+        } else {
+            None
+        };
 
-        if let Some(ref surface) = *self.surface.borrow() {
+        if let Some(ref surface) = surface {
+            let values = cascaded.get();
             let params = draw_ctx.get_view_params();
 
             let x = self.x.get().normalize(values, &params);

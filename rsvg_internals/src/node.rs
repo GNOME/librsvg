@@ -8,7 +8,6 @@ use cond::{locale_from_environment, RequiredExtensions, RequiredFeatures, System
 use css::CssStyles;
 use drawing_ctx::DrawingCtx;
 use error::*;
-use handle::LoadOptions;
 use parsers::Parse;
 use property_bag::PropertyBag;
 use state::{ComputedValues, Overflow, SpecifiedValue, State};
@@ -102,12 +101,6 @@ pub trait NodeTrait: Downcast {
     /// Sets any special-cased properties that the node may have, that are different
     /// from defaults in the node's `State`.
     fn set_overridden_properties(&self, _state: &mut State) {}
-
-    /// Load resources specified in the attributes.
-    fn resolve_resources(&self, _load_options: &LoadOptions) -> NodeResult {
-        // Most of the nodes do not need to load resources
-        Ok(())
-    }
 
     fn draw(
         &self,
@@ -441,15 +434,6 @@ impl Node {
                 //   return;
 
                 rsvg_log!("(attribute error: {})", e);
-            }
-        }
-    }
-
-    pub fn resolve_resources(&self, load_options: &LoadOptions) {
-        match self.data.node_impl.resolve_resources(load_options) {
-            Ok(_) => (),
-            Err(e) => {
-                self.set_error(e);
             }
         }
     }
