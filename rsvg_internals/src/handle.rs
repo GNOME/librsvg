@@ -483,11 +483,6 @@ impl Handle {
         }
     }
 
-    fn has_sub(&mut self, name: &str) -> bool {
-        // FIXME: return a proper error; only NotFound should map to false
-        self.lookup_node(name).is_ok()
-    }
-
     pub fn render_cairo_sub(
         &mut self,
         cr: &cairo::Context,
@@ -861,7 +856,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
     }
 
     let id: String = from_glib_none(id);
-    rhandle.has_sub(&id).to_glib()
+    rhandle.lookup_node(&id).is_ok().to_glib()
 }
 
 #[no_mangle]
