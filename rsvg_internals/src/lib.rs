@@ -113,7 +113,6 @@ mod io;
 mod iri;
 mod length;
 mod link;
-mod load;
 mod marker;
 mod mask;
 mod node;

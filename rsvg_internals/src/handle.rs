@@ -13,7 +13,7 @@ use gdk_pixbuf_sys;
 use gio::{self, FileExt};
 use gio_sys;
 use glib::translate::*;
-use glib::Cast;
+use glib::{Bytes, Cast};
 use glib_sys;
 use gobject_sys;
 use libc;
@@ -23,13 +23,14 @@ use allowed_url::{AllowedUrl, Href};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
-use load::LoadContext;
 use node::RsvgNode;
 use pixbuf_utils::pixbuf_from_surface;
 use structure::NodeSvg;
 use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use svg::Svg;
 use util::rsvg_g_warning;
+use xml::XmlState;
+use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 // A *const RsvgHandle is just an opaque pointer we get from C
 #[repr(C)]
@@ -148,7 +149,7 @@ pub struct Handle {
     svg: RefCell<Option<Rc<Svg>>>,
     load_flags: Cell<LoadFlags>,
     load_state: Cell<LoadState>,
-    load: RefCell<Option<LoadContext>>,
+    buffer: Vec<u8>, // used by the legacy write() api
     size_callback: RefCell<SizeCallback>,
     in_loop: Cell<bool>,
     is_testing: Cell<bool>,
@@ -163,7 +164,7 @@ impl Handle {
             svg: RefCell::new(None),
             load_flags: Cell::new(LoadFlags::default()),
             load_state: Cell::new(LoadState::Start),
-            load: RefCell::new(None),
+            buffer: Vec::new(),
             size_callback: RefCell::new(SizeCallback::new()),
             in_loop: Cell::new(false),
             is_testing: Cell::new(false),
@@ -228,46 +229,47 @@ impl Handle {
     }
 
     pub fn write(&mut self, buf: &[u8]) {
-        assert!(
-            self.load_state.get() == LoadState::Start
-                || self.load_state.get() == LoadState::Loading
-        );
+        match self.load_state.get() {
+            LoadState::Start => self.load_state.set(LoadState::Loading),
+            LoadState::Loading => (),
+            _ => unreachable!(),
+        };
 
-        if self.load_state.get() == LoadState::Start {
-            self.load_state.set(LoadState::Loading);
-
-            self.load = RefCell::new(Some(LoadContext::new(&self.load_options())));
-        }
-
-        assert!(self.load_state.get() == LoadState::Loading);
-
-        self.load.borrow_mut().as_mut().unwrap().write(buf);
+        self.buffer.extend_from_slice(buf);
     }
 
     pub fn close(&mut self) -> Result<(), LoadingError> {
-        let load_state = self.load_state.get();
-
-        let res = match load_state {
+        let res = match self.load_state.get() {
             LoadState::Start => {
                 self.load_state.set(LoadState::ClosedError);
                 Err(LoadingError::NoDataPassedToParser)
             }
 
-            LoadState::Loading => self
-                .load
-                .borrow_mut()
-                .as_mut()
-                .unwrap()
-                .close()
-                .and_then(|mut xml| {
-                    self.load_state.set(LoadState::ClosedOk);
-                    *self.svg.borrow_mut() = Some(Rc::new(xml.steal_result()?));
-                    Ok(())
-                })
+            LoadState::Loading => {
+                let bytes = Bytes::from(&self.buffer);
+                let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+                let mut xml = XmlState::new(&self.load_options());
+
+                xml_state_load_from_possibly_compressed_stream(
+                    &mut xml,
+                    self.load_flags.get(),
+                    &stream.upcast(),
+                    None,
+                )
                 .map_err(|e| {
                     self.load_state.set(LoadState::ClosedError);
                     e
-                }),
+                })?;
+
+                let svg = xml.steal_result().map_err(|e| {
+                    self.load_state.set(LoadState::ClosedError);
+                    e
+                })?;
+
+                self.load_state.set(LoadState::ClosedOk);
+                *self.svg.borrow_mut() = Some(Rc::new(svg));
+                Ok(())
+            }
 
             LoadState::ClosedOk | LoadState::ClosedError => {
                 // closing is idempotent
