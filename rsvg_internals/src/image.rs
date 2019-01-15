@@ -82,12 +82,6 @@ impl NodeTrait for NodeImage {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let surface = if let Some(Href::PlainUrl(ref url)) = *self.href.borrow() {
-            draw_ctx.lookup_image(&url)?
-        } else {
-            return Ok(());
-        };
-
         let values = cascaded.get();
         let params = draw_ctx.get_view_params();
 
@@ -101,6 +95,12 @@ impl NodeTrait for NodeImage {
         }
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            let surface = if let Some(Href::PlainUrl(ref url)) = *self.href.borrow() {
+                dc.lookup_image(&url)?
+            } else {
+                return Ok(());
+            };
+
             let aspect = self.aspect.get();
 
             if !values.is_overflow() && aspect.is_slice() {
