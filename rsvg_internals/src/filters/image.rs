@@ -7,7 +7,6 @@ use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
-use handle::{self, LoadOptions};
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
@@ -23,7 +22,6 @@ pub struct Image {
     base: Primitive,
     aspect: Cell<AspectRatio>,
     href: RefCell<Option<Href>>,
-    load_options: RefCell<Option<LoadOptions>>,
 }
 
 impl Image {
@@ -34,7 +32,6 @@ impl Image {
             base: Primitive::new::<Self>(),
             aspect: Cell::new(AspectRatio::default()),
             href: RefCell::new(None),
-            load_options: RefCell::new(None),
         }
     }
 
@@ -119,17 +116,18 @@ impl Image {
         bounds_builder: BoundsBuilder<'_>,
         href: &Href,
     ) -> Result<ImageSurface, FilterError> {
-        let url = if let Href::PlainUrl(ref url) = *href {
-            url
+        let surface = if let Href::PlainUrl(ref url) = *href {
+            draw_ctx.lookup_image(&url)
         } else {
             unreachable!();
         };
 
-        let load_options_ref = self.load_options.borrow();
-
         // FIXME: translate the error better here
-        let surface = handle::load_image_to_surface(load_options_ref.as_ref().unwrap(), &url)
-            .map_err(|_| FilterError::InvalidInput)?;
+        if surface.is_none() {
+            return Err(FilterError::InvalidInput);
+        }
+
+        let surface = surface.unwrap();
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
@@ -193,12 +191,6 @@ impl NodeTrait for Image {
                 _ => (),
             }
         }
-
-        Ok(())
-    }
-
-    fn resolve_resources(&self, load_options: &LoadOptions) -> NodeResult {
-        *self.load_options.borrow_mut() = Some(load_options.clone());
 
         Ok(())
     }

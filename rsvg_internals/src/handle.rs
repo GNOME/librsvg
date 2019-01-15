@@ -8,7 +8,7 @@ use std::slice;
 
 use cairo::{self, ImageSurface, Status};
 use cairo_sys;
-use gdk_pixbuf::{Pixbuf, PixbufLoader, PixbufLoaderExt};
+use gdk_pixbuf::Pixbuf;
 use gdk_pixbuf_sys;
 use gio::{self, FileExt};
 use gio_sys;
@@ -23,7 +23,6 @@ use allowed_url::{AllowedUrl, Href};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
-use io;
 use load::LoadContext;
 use node::RsvgNode;
 use pixbuf_utils::pixbuf_from_surface;
@@ -575,67 +574,6 @@ extern "C" {
     fn rsvg_handle_new_with_flags(flags: u32) -> *mut RsvgHandle;
 
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
-}
-
-pub fn load_image_to_surface(
-    load_options: &LoadOptions,
-    url: &str,
-) -> Result<ImageSurface, LoadingError> {
-    let aurl = AllowedUrl::from_href(url, load_options.base_url.as_ref())
-        .map_err(|_| LoadingError::BadUrl)?;
-
-    let data = io::acquire_data(&aurl, None)?;
-
-    if data.data.len() == 0 {
-        return Err(LoadingError::EmptyData);
-    }
-
-    let loader = if let Some(ref content_type) = data.content_type {
-        PixbufLoader::new_with_mime_type(content_type)?
-    } else {
-        PixbufLoader::new()
-    };
-
-    loader.write(&data.data)?;
-    loader.close()?;
-
-    let pixbuf = loader.get_pixbuf().ok_or(LoadingError::Unknown)?;
-
-    let surface = SharedImageSurface::from_pixbuf(&pixbuf)?.into_image_surface()?;
-
-    if load_options.flags.keep_image_data {
-        if let Some(mime_type) = data.content_type {
-            extern "C" {
-                fn cairo_surface_set_mime_data(
-                    surface: *mut cairo_sys::cairo_surface_t,
-                    mime_type: *const libc::c_char,
-                    data: *mut libc::c_char,
-                    length: libc::c_ulong,
-                    destroy: cairo_sys::cairo_destroy_func_t,
-                    closure: *mut libc::c_void,
-                ) -> Status;
-            }
-
-            let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&data.data);
-
-            unsafe {
-                let status = cairo_surface_set_mime_data(
-                    surface.to_glib_none().0,
-                    mime_type.to_glib_none().0,
-                    data_ptr as *mut _,
-                    data.data.len() as libc::c_ulong,
-                    Some(glib_sys::g_free),
-                    data_ptr as *mut _,
-                );
-
-                if status != Status::Success {
-                    return Err(LoadingError::Cairo(status));
-                }
-            }
-        }
-    }
-
-    Ok(surface)
 }
 
 #[no_mangle]

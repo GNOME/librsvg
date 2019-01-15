@@ -331,10 +331,6 @@ impl XmlState {
 
         new_node.set_overridden_properties();
 
-        // For now we load resources directly when parsing, but probably we should
-        // move this to a trasversal of the tree once we finished parsing
-        new_node.resolve_resources(&self.load_options);
-
         new_node
     }
 

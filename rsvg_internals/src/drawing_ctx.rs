@@ -713,6 +713,10 @@ impl DrawingCtx {
         }
     }
 
+    pub fn lookup_image(&self, href: &str) -> Option<cairo::ImageSurface> {
+        self.svg.lookup_image(href)
+    }
+
     pub fn draw_node_on_surface(
         &mut self,
         node: &RsvgNode,
