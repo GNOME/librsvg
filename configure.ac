@@ -73,11 +73,11 @@ AC_SUBST(DLOPEN_LIBS)
 
 dnl ===========================================================================
 
-AC_CHECK_PROG(CARGO, [cargo], [yes], [no])
+AC_CHECK_PROGS(CARGO, [cargo], [no])
 AS_IF(test x$CARGO = xno,
     AC_MSG_ERROR([cargo is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
 )
-AC_CHECK_PROG(RUSTC, [rustc], [yes], [no])
+AC_CHECK_PROGS(RUSTC, [rustc], [no])
 AS_IF(test x$RUSTC = xno,
     AC_MSG_ERROR([rustc is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
 )
@@ -87,7 +87,7 @@ dnl If you change this, please update COMPILING.md
 MINIMUM_RUST_MAJOR=1
 MINIMUM_RUST_MINOR=27
 
-rust_version=`rustc --version`
+rust_version=`$RUSTC --version`
 version=`echo "$rust_version" | sed -e 's/^rustc //g'`
 major=`echo "$version" | cut -d. -f1`
 minor=`echo "$version" | cut -d. -f2`
