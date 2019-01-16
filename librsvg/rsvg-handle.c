@@ -181,6 +181,7 @@ extern void rsvg_handle_rust_set_size_callback (RsvgHandleRust *raw_handle,
                                                 RsvgSizeFunc size_func,
                                                 gpointer user_data,
                                                 GDestroyNotify destroy_notify);
+extern RsvgHandle *rsvg_handle_rust_new_with_flags (RsvgHandleFlags flags);
 extern RsvgHandle *rsvg_handle_rust_new_from_file (const char *filename,
                                                    GError **error);
 extern RsvgHandle *rsvg_handle_rust_new_from_gfile_sync (GFile *file,
@@ -520,9 +521,7 @@ rsvg_handle_new_from_file (const gchar *filename, GError **error)
 RsvgHandle *
 rsvg_handle_new_with_flags (RsvgHandleFlags flags)
 {
-    return g_object_new (RSVG_TYPE_HANDLE,
-                         "flags", flags,
-                         NULL);
+    return rsvg_handle_rust_new_with_flags (flags);
 }
 
 /**

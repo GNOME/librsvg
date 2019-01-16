@@ -14,7 +14,7 @@ use gdk_pixbuf_sys;
 use gio::{self, FileExt};
 use gio_sys;
 use glib::translate::*;
-use glib::{Bytes, Cast};
+use glib::{self, Bytes, Cast};
 use glib_sys;
 use gobject_sys;
 use libc;
@@ -569,7 +569,7 @@ impl LoadFlags {
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn rsvg_handle_new_with_flags(flags: u32) -> *mut RsvgHandle;
+    fn rsvg_handle_get_type() -> glib_sys::GType;
 
     fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
 }
@@ -1013,6 +1013,16 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_new_with_flags(flags: u32) -> *mut RsvgHandle {
+    let obj: *mut gobject_sys::GObject =
+        glib::Object::new(from_glib(rsvg_handle_get_type()), &[("flags", &flags)])
+            .unwrap()
+            .to_glib_full();
+
+    obj as *mut _
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_new_from_file(
     filename: *const libc::c_char,
     error: *mut *mut glib_sys::GError,
@@ -1040,7 +1050,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_gfile_sync(
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
 ) -> *mut RsvgHandle {
-    let raw_handle = rsvg_handle_new_with_flags(flags);
+    let raw_handle = rsvg_handle_rust_new_with_flags(flags);
 
     let rhandle = get_rust_handle(raw_handle);
 
@@ -1066,7 +1076,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_stream_sync(
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
 ) -> *mut RsvgHandle {
-    let raw_handle = rsvg_handle_new_with_flags(flags);
+    let raw_handle = rsvg_handle_rust_new_with_flags(flags);
 
     let rhandle = get_rust_handle(raw_handle);
 
