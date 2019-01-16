@@ -55,6 +55,7 @@ pub use handle::{
     rsvg_handle_rust_has_sub,
     rsvg_handle_rust_new,
     rsvg_handle_rust_new_from_data,
+    rsvg_handle_rust_new_from_file,
     rsvg_handle_rust_new_from_gfile_sync,
     rsvg_handle_rust_new_from_stream_sync,
     rsvg_handle_rust_read_stream_sync,

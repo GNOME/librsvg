@@ -1,7 +1,8 @@
 use std;
 use std::cell::{Cell, RefCell};
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::mem;
+use std::path::PathBuf;
 use std::ptr;
 use std::rc::Rc;
 use std::slice;
@@ -1009,6 +1010,27 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
             false.to_glib()
         }
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_new_from_file(
+    filename: *const libc::c_char,
+    error: *mut *mut glib_sys::GError,
+) -> *mut RsvgHandle {
+    // This API lets the caller pass a URI, or a file name in the operating system's
+    // encoding.  So, first we'll see if it's UTF-8, and in that case, try the URL version.
+    // Otherwise, we'll try building a path name.
+
+    let cstr = CStr::from_ptr(filename);
+
+    let file = cstr
+        .to_str()
+        .map_err(|_| ())
+        .and_then(|utf8| Url::parse(utf8).map_err(|_| ()))
+        .and_then(|url| Ok(gio::File::new_for_uri(url.as_str())))
+        .unwrap_or_else(|_| gio::File::new_for_path(PathBuf::from_glib_none(filename)));
+
+    rsvg_handle_rust_new_from_gfile_sync(file.to_glib_none().0, 0, ptr::null_mut(), error)
 }
 
 #[no_mangle]

@@ -181,6 +181,8 @@ extern void rsvg_handle_rust_set_size_callback (RsvgHandleRust *raw_handle,
                                                 RsvgSizeFunc size_func,
                                                 gpointer user_data,
                                                 GDestroyNotify destroy_notify);
+extern RsvgHandle *rsvg_handle_rust_new_from_file (const char *filename,
+                                                   GError **error);
 extern RsvgHandle *rsvg_handle_rust_new_from_gfile_sync (GFile *file,
                                                          RsvgHandleFlags flags,
                                                          GCancellable *cancellable,
@@ -488,7 +490,7 @@ rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
 
 /**
  * rsvg_handle_new_from_file:
- * @file_name: The file name to load. If built with gnome-vfs, can be a URI.
+ * @filename: The file name to load, or a URI.
  * @error: return location for errors
  *
  * Loads the SVG specified by @file_name.
@@ -497,39 +499,12 @@ rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
  * Since: 2.14
  */
 RsvgHandle *
-rsvg_handle_new_from_file (const gchar *file_name, GError **error)
+rsvg_handle_new_from_file (const gchar *filename, GError **error)
 {
-    gchar *base_uri;
-    RsvgHandle *handle;
-    GFile *file;
-    char *scheme;
-
-    g_return_val_if_fail (file_name != NULL, NULL);
+    g_return_val_if_fail (filename != NULL, NULL);
     g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-    scheme = g_uri_parse_scheme (file_name);
-    if (scheme) {
-        file = g_file_new_for_uri (file_name);
-        g_free (scheme);
-    } else {
-        file = g_file_new_for_path (file_name);
-    }
-
-    base_uri = g_file_get_uri (file);
-    if (!base_uri) {
-        g_set_error (error,
-                     G_IO_ERROR,
-                     G_IO_ERROR_FAILED,
-                     _("Cannot obtain URI from '%s'"), file_name);
-        g_object_unref (file);
-        return NULL;
-    }
-    g_free (base_uri);
-
-    handle = rsvg_handle_new_from_gfile_sync (file, 0, NULL, error);
-    g_object_unref (file);
-
-    return handle;
+    return rsvg_handle_rust_new_from_file (filename, error);
 }
 
 /**
