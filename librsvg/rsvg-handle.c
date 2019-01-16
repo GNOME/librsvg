@@ -143,17 +143,17 @@ RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
 /* Implemented in rsvg_internals/src/handle.rs */
 extern RsvgHandleRust *rsvg_handle_rust_new (void);
 extern void rsvg_handle_rust_free (RsvgHandleRust *raw_handle);
-extern double rsvg_handle_rust_get_dpi_x (RsvgHandleRust *raw_handle);
-extern double rsvg_handle_rust_get_dpi_y (RsvgHandleRust *raw_handle);
-extern void rsvg_handle_rust_set_dpi_x (RsvgHandleRust *raw_handle, double dpi_x);
-extern void rsvg_handle_rust_set_dpi_y (RsvgHandleRust *raw_handle, double dpi_y);
-extern void rsvg_handle_rust_set_base_url (RsvgHandleRust *raw_handle, const char *uri);
-extern void rsvg_handle_rust_set_base_gfile (RsvgHandleRust *raw_handle, GFile *file);
-extern const char *rsvg_handle_rust_get_base_url (RsvgHandleRust *raw_handle);
-extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandleRust *raw_handle);
-extern guint rsvg_handle_rust_get_flags (RsvgHandleRust *raw_handle);
-extern void rsvg_handle_rust_set_flags (RsvgHandleRust *raw_handle, guint flags);
-extern guint rsvg_handle_rust_set_testing (RsvgHandleRust *raw_handle, gboolean testing);
+extern double rsvg_handle_rust_get_dpi_x (RsvgHandle *raw_handle);
+extern double rsvg_handle_rust_get_dpi_y (RsvgHandle *raw_handle);
+extern void rsvg_handle_rust_set_dpi_x (RsvgHandle *raw_handle, double dpi_x);
+extern void rsvg_handle_rust_set_dpi_y (RsvgHandle *raw_handle, double dpi_y);
+extern void rsvg_handle_rust_set_base_url (RsvgHandle *raw_handle, const char *uri);
+extern void rsvg_handle_rust_set_base_gfile (RsvgHandle *raw_handle, GFile *file);
+extern const char *rsvg_handle_rust_get_base_url (RsvgHandle *raw_handle);
+extern GFile *rsvg_handle_rust_get_base_gfile (RsvgHandle *raw_handle);
+extern guint rsvg_handle_rust_get_flags (RsvgHandle *raw_handle);
+extern void rsvg_handle_rust_set_flags (RsvgHandle *raw_handle, guint flags);
+extern guint rsvg_handle_rust_set_testing (RsvgHandle *raw_handle, gboolean testing);
 extern gboolean rsvg_handle_rust_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,
                                                    GCancellable *cancellable,
@@ -177,7 +177,7 @@ extern gboolean rsvg_handle_rust_get_dimensions_sub (RsvgHandle *handle,
 extern gboolean rsvg_handle_rust_get_position_sub (RsvgHandle *handle,
                                                    RsvgPositionData *dimension_data,
                                                    const char *id);
-extern void rsvg_handle_rust_set_size_callback (RsvgHandleRust *raw_handle,
+extern void rsvg_handle_rust_set_size_callback (RsvgHandle *raw_handle,
                                                 RsvgSizeFunc size_func,
                                                 gpointer user_data,
                                                 GDestroyNotify destroy_notify);
@@ -242,17 +242,16 @@ static void
 rsvg_handle_set_property (GObject * instance, guint prop_id, GValue const *value, GParamSpec * pspec)
 {
     RsvgHandle *self = RSVG_HANDLE (instance);
-    RsvgHandlePrivate *priv = rsvg_handle_get_instance_private (self);
 
     switch (prop_id) {
     case PROP_FLAGS:
-        rsvg_handle_rust_set_flags (priv->rust_handle, g_value_get_flags (value));
+        rsvg_handle_rust_set_flags (self, g_value_get_flags (value));
         break;
     case PROP_DPI_X:
-        rsvg_handle_rust_set_dpi_x (priv->rust_handle, g_value_get_double (value));
+        rsvg_handle_rust_set_dpi_x (self, g_value_get_double (value));
         break;
     case PROP_DPI_Y:
-        rsvg_handle_rust_set_dpi_y (priv->rust_handle, g_value_get_double (value));
+        rsvg_handle_rust_set_dpi_y (self, g_value_get_double (value));
         break;
     case PROP_BASE_URI: {
         const char *str = g_value_get_string (value);
@@ -272,18 +271,17 @@ static void
 rsvg_handle_get_property (GObject * instance, guint prop_id, GValue * value, GParamSpec * pspec)
 {
     RsvgHandle *self = RSVG_HANDLE (instance);
-    RsvgHandlePrivate *priv = rsvg_handle_get_instance_private (self);
     RsvgDimensionData dim;
 
     switch (prop_id) {
     case PROP_FLAGS:
-        g_value_set_flags (value, rsvg_handle_rust_get_flags (priv->rust_handle));
+        g_value_set_flags (value, rsvg_handle_rust_get_flags (self));
         break;
     case PROP_DPI_X:
-        g_value_set_double (value, rsvg_handle_rust_get_dpi_x (priv->rust_handle));
+        g_value_set_double (value, rsvg_handle_rust_get_dpi_x (self));
         break;
     case PROP_DPI_Y:
-        g_value_set_double (value, rsvg_handle_rust_get_dpi_y (priv->rust_handle));
+        g_value_set_double (value, rsvg_handle_rust_get_dpi_y (self));
         break;
     case PROP_BASE_URI:
         g_value_set_string (value, rsvg_handle_get_base_uri (self));
@@ -697,14 +695,10 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 void
 rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
 {
-    RsvgHandlePrivate *priv;
-
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (base_uri != NULL);
 
-    priv = rsvg_handle_get_instance_private (handle);
-
-    rsvg_handle_rust_set_base_url (priv->rust_handle, base_uri);
+    rsvg_handle_rust_set_base_url (handle, base_uri);
 }
 
 /**
@@ -722,14 +716,10 @@ void
 rsvg_handle_set_base_gfile (RsvgHandle *handle,
                             GFile      *base_file)
 {
-    RsvgHandlePrivate *priv;
-
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (G_IS_FILE (base_file));
 
-    priv = rsvg_handle_get_instance_private (handle);
-
-    rsvg_handle_rust_set_base_gfile (priv->rust_handle, base_file);
+    rsvg_handle_rust_set_base_gfile (handle, base_file);
 }
 
 /**
@@ -744,13 +734,9 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
 const char *
 rsvg_handle_get_base_uri (RsvgHandle *handle)
 {
-    RsvgHandlePrivate *priv;
-
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), NULL);
 
-    priv = rsvg_handle_get_instance_private (handle);
-
-    return rsvg_handle_rust_get_base_url (priv->rust_handle);
+    return rsvg_handle_rust_get_base_url (handle);
 }
 
 /**
@@ -1048,14 +1034,10 @@ rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
 void
 rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
 {
-    RsvgHandlePrivate *priv;
-
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    priv = rsvg_handle_get_instance_private (handle);
-
-    rsvg_handle_rust_set_dpi_x (priv->rust_handle, dpi_x);
-    rsvg_handle_rust_set_dpi_y (priv->rust_handle, dpi_y);
+    rsvg_handle_rust_set_dpi_x (handle, dpi_x);
+    rsvg_handle_rust_set_dpi_y (handle, dpi_y);
 }
 
 /**
@@ -1104,13 +1086,9 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
                                gpointer user_data,
                                GDestroyNotify user_data_destroy)
 {
-    RsvgHandlePrivate *priv;
-
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    priv = rsvg_handle_get_instance_private (handle);
-
-    rsvg_handle_rust_set_size_callback (priv->rust_handle,
+    rsvg_handle_rust_set_size_callback (handle,
                                         size_func,
                                         user_data,
                                         user_data_destroy);
@@ -1127,13 +1105,9 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
 void
 rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
 {
-    RsvgHandlePrivate *priv;
-
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
-    priv = rsvg_handle_get_instance_private (handle);
-
-    rsvg_handle_rust_set_testing (priv->rust_handle, testing);
+    rsvg_handle_rust_set_testing (handle, testing);
 }
 
 /* This one is defined in the C code, because the prototype has varargs

@@ -591,15 +591,15 @@ pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
-    raw_handle: *const Handle,
+    raw_handle: *mut RsvgHandle,
     uri: *const libc::c_char,
 ) {
-    let handle = &*raw_handle;
+    let rhandle = get_rust_handle(raw_handle);
 
     assert!(!uri.is_null());
     let uri: String = from_glib_none(uri);
 
-    handle.set_base_url(&uri);
+    rhandle.set_base_url(&uri);
 }
 
 #[no_mangle]
@@ -616,80 +616,80 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_base_gfile(
-    raw_handle: *const Handle,
+    raw_handle: *mut RsvgHandle,
     raw_gfile: *mut gio_sys::GFile,
 ) {
-    let handle = &*raw_handle;
+    let rhandle = get_rust_handle(raw_handle);
 
     assert!(!raw_gfile.is_null());
 
     let file: gio::File = from_glib_none(raw_gfile);
 
-    handle.set_base_gfile(&file);
+    rhandle.set_base_gfile(&file);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_base_url(
-    raw_handle: *const Handle,
+    raw_handle: *const RsvgHandle,
 ) -> *const libc::c_char {
-    let handle = &*raw_handle;
+    let rhandle = get_rust_handle(raw_handle);
 
-    match *handle.base_url_cstring.borrow() {
+    match *rhandle.base_url_cstring.borrow() {
         None => ptr::null(),
         Some(ref url) => url.as_ptr(),
     }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_x(raw_handle: *const Handle, dpi_x: f64) {
-    let handle = &*(raw_handle as *const Handle);
+pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_x(raw_handle: *mut RsvgHandle, dpi_x: f64) {
+    let rhandle = get_rust_handle(raw_handle);
 
-    handle.dpi.set(Dpi::new(dpi_x, handle.dpi.get().y()));
+    rhandle.dpi.set(Dpi::new(dpi_x, rhandle.dpi.get().y()));
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_x(raw_handle: *const Handle) -> f64 {
-    let handle = &*(raw_handle as *const Handle);
+pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_x(raw_handle: *const RsvgHandle) -> f64 {
+    let rhandle = get_rust_handle(raw_handle);
 
-    handle.dpi.get().x()
+    rhandle.dpi.get().x()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_y(raw_handle: *const Handle, dpi_y: f64) {
-    let handle = &*(raw_handle as *const Handle);
+pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_y(raw_handle: *mut RsvgHandle, dpi_y: f64) {
+    let rhandle = get_rust_handle(raw_handle);
 
-    handle.dpi.set(Dpi::new(handle.dpi.get().x(), dpi_y));
+    rhandle.dpi.set(Dpi::new(rhandle.dpi.get().x(), dpi_y));
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_y(raw_handle: *const Handle) -> f64 {
-    let handle = &*(raw_handle as *const Handle);
+pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_y(raw_handle: *const RsvgHandle) -> f64 {
+    let rhandle = get_rust_handle(raw_handle);
 
-    handle.dpi.get().y()
+    rhandle.dpi.get().y()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_flags(raw_handle: *const Handle) -> u32 {
-    let rhandle = &*raw_handle;
+pub unsafe extern "C" fn rsvg_handle_rust_get_flags(raw_handle: *const RsvgHandle) -> u32 {
+    let rhandle = get_rust_handle(raw_handle);
 
     rhandle.load_flags.get().to_flags()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const Handle, flags: u32) {
-    let rhandle = &*raw_handle;
+pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const RsvgHandle, flags: u32) {
+    let rhandle = get_rust_handle(raw_handle);
 
     rhandle.load_flags.set(LoadFlags::from_flags(flags));
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_size_callback(
-    raw_handle: *mut Handle,
+    raw_handle: *mut RsvgHandle,
     size_func: RsvgSizeFunc,
     user_data: glib_sys::gpointer,
     destroy_notify: glib_sys::GDestroyNotify,
 ) {
-    let rhandle = &mut *raw_handle;
+    let rhandle = get_rust_handle(raw_handle);
 
     *rhandle.size_callback.borrow_mut() = SizeCallback {
         size_func,
@@ -700,10 +700,10 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_size_callback(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
-    raw_handle: *const Handle,
+    raw_handle: *mut RsvgHandle,
     testing: glib_sys::gboolean,
 ) {
-    let rhandle = &*raw_handle;
+    let rhandle = get_rust_handle(raw_handle);
 
     rhandle.is_testing.set(from_glib(testing));
 }
