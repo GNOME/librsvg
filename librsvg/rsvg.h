@@ -67,7 +67,6 @@ typedef enum {
 GQuark rsvg_error_quark (void) G_GNUC_CONST;
 
 typedef struct _RsvgHandle RsvgHandle;
-typedef struct RsvgHandlePrivate RsvgHandlePrivate;
 typedef struct _RsvgHandleClass RsvgHandleClass;
 typedef struct _RsvgDimensionData RsvgDimensionData;
 typedef struct _RsvgPositionData RsvgPositionData;
@@ -97,9 +96,7 @@ struct _RsvgHandle {
 
     /*< private >*/
 
-    RsvgHandlePrivate *priv;
-
-    gpointer _abi_padding[15];
+    gpointer _abi_padding[16];
 };
 
 /**
