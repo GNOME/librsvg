@@ -148,11 +148,11 @@ CARGO_TARGET_DIR=@abs_top_builddir@/target
 
 check-local:
 	cd $(srcdir) && \
-	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) cargo test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) $(CARGO) test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
 
 clean-local:
 	cd $(top_srcdir) && \
-	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) cargo clean
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) $(CARGO) clean
 
 distcheck-hook:
 	if test -z "${DESTDIR}";						\
@@ -163,7 +163,7 @@ distcheck-hook:
 
 dist-hook:
 	(cd $(distdir) &&							\
-	cargo vendor -q &&							\
+	$(CARGO) vendor -q &&							\
 	mkdir .cargo &&								\
 	cp cargo-vendor-config .cargo/config)
 
@@ -172,7 +172,7 @@ $(RUST_LIB): $(RUST_SRC)
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
-	cargo build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+	$(CARGO) build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
