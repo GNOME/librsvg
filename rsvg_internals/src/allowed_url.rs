@@ -240,15 +240,6 @@ impl Href {
         }
     }
 
-    pub fn without_fragment(href: &str) -> Result<Href, HrefError> {
-        use self::Href::*;
-
-        match Href::parse(href)? {
-            r @ PlainUrl(_) => Ok(r),
-            WithFragment(_) => Err(HrefError::FragmentForbidden),
-        }
-    }
-
     pub fn with_fragment(href: &str) -> Result<Href, HrefError> {
         use self::Href::*;
 
@@ -384,24 +375,6 @@ mod tests {
         assert_eq!(Href::parse(""), Err(HrefError::ParseError));
         assert_eq!(Href::parse("#"), Err(HrefError::ParseError));
         assert_eq!(Href::parse("uri#"), Err(HrefError::ParseError));
-    }
-
-    #[test]
-    fn href_without_fragment() {
-        assert_eq!(
-            Href::without_fragment("uri").unwrap(),
-            Href::PlainUrl("uri".to_string())
-        );
-
-        assert_eq!(
-            Href::without_fragment("#foo"),
-            Err(HrefError::FragmentForbidden)
-        );
-
-        assert_eq!(
-            Href::without_fragment("uri#foo"),
-            Err(HrefError::FragmentForbidden)
-        );
     }
 
     #[test]
