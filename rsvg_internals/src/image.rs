@@ -11,7 +11,7 @@ use error::{NodeError, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
 use length::*;
 use node::*;
-use parsers::ParseValue;
+use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
 
 pub struct NodeImage {
@@ -61,11 +61,11 @@ impl NodeTrait for NodeImage {
 
                 // "path" is used by some older Adobe Illustrator versions
                 Attribute::XlinkHref | Attribute::Path => {
-                    // FIXME: use better errors here; these should be loading errors
-                    *self.href.borrow_mut() =
-                        Some(Href::without_fragment(value).map_err(|_| {
-                            NodeError::value_error(attr, "fragment not allowed here")
-                        })?);
+                    let href = Href::parse(value).map_err(|_| {
+                        NodeError::parse_error(attr, ParseError::new("could not parse href"))
+                    })?;
+
+                    *self.href.borrow_mut() = Some(href);
                 }
 
                 _ => (),

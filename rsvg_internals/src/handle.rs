@@ -448,9 +448,8 @@ impl Handle {
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
 
-        let href = Href::with_fragment(id).map_err(DefsLookupErrorKind::HrefError)?;
-
-        match href {
+        match Href::parse(&id).map_err(DefsLookupErrorKind::HrefError)? {
+            Href::PlainUrl(_) => Err(DefsLookupErrorKind::CannotLookupExternalReferences),
             Href::WithFragment(fragment) => {
                 if let Some(uri) = fragment.uri() {
                     // The public APIs to get geometries of individual elements, or to render
@@ -479,8 +478,6 @@ impl Handle {
                     None => Err(DefsLookupErrorKind::NotFound),
                 }
             }
-
-            _ => unreachable!(), // we explicitly requested a with_fragment after all
         }
     }
 

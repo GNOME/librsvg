@@ -36,15 +36,6 @@ impl Image {
         }
     }
 
-    fn set_href(&self, attr: Attribute, href_str: &str) -> NodeResult {
-        let href = Href::parse(href_str)
-            .map_err(|_| NodeError::parse_error(attr, ParseError::new("could not parse href")))?;
-
-        *self.href.borrow_mut() = Some(href);
-
-        Ok(())
-    }
-
     /// Renders the filter if the source is an existing node.
     fn render_node(
         &self,
@@ -185,7 +176,13 @@ impl NodeTrait for Image {
                 Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value, ())?),
 
                 // "path" is used by some older Adobe Illustrator versions
-                Attribute::XlinkHref | Attribute::Path => self.set_href(attr, value)?,
+                Attribute::XlinkHref | Attribute::Path => {
+                    let href = Href::parse(value).map_err(|_| {
+                        NodeError::parse_error(attr, ParseError::new("could not parse href"))
+                    })?;
+
+                    *self.href.borrow_mut() = Some(href);
+                }
 
                 _ => (),
             }
