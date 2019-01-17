@@ -183,12 +183,9 @@ impl Fragment {
     }
 
     pub fn parse(href: &str) -> Result<Fragment, HrefError> {
-        let href = Href::with_fragment(href)?;
-
-        if let Href::WithFragment(f) = href {
-            Ok(f)
-        } else {
-            unreachable!();
+        match Href::parse(&href)? {
+            Href::PlainUrl(_) => Err(HrefError::FragmentRequired),
+            Href::WithFragment(f) => Ok(f),
         }
     }
 
@@ -237,15 +234,6 @@ impl Href {
                 f.to_string(),
             ))),
             (_, _) => Err(HrefError::ParseError),
-        }
-    }
-
-    pub fn with_fragment(href: &str) -> Result<Href, HrefError> {
-        use self::Href::*;
-
-        match Href::parse(href)? {
-            PlainUrl(_) => Err(HrefError::FragmentRequired),
-            r @ WithFragment(_) => Ok(r),
         }
     }
 }
@@ -375,21 +363,6 @@ mod tests {
         assert_eq!(Href::parse(""), Err(HrefError::ParseError));
         assert_eq!(Href::parse("#"), Err(HrefError::ParseError));
         assert_eq!(Href::parse("uri#"), Err(HrefError::ParseError));
-    }
-
-    #[test]
-    fn href_with_fragment() {
-        assert_eq!(
-            Href::with_fragment("#foo").unwrap(),
-            Href::WithFragment(Fragment::new(None, "foo".to_string()))
-        );
-
-        assert_eq!(
-            Href::with_fragment("uri#foo").unwrap(),
-            Href::WithFragment(Fragment::new(Some("uri".to_string()), "foo".to_string()))
-        );
-
-        assert_eq!(Href::with_fragment("uri"), Err(HrefError::FragmentRequired));
     }
 
     #[test]

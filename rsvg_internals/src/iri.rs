@@ -48,13 +48,9 @@ impl Parse for IRI {
                 .expect_exhausted()
                 .map_err(|_| ParseError::new("expected url"))?;
 
-            let href =
-                Href::with_fragment(&url).map_err(|_| ParseError::new("could not parse href"))?;
-
-            if let Href::WithFragment(fragment) = href {
-                Ok(IRI::Resource(fragment))
-            } else {
-                Err(ParseError::new("href requires a fragment identifier"))
+            match Href::parse(&url).map_err(|_| ParseError::new("could not parse href"))? {
+                Href::PlainUrl(_) => Err(ParseError::new("href requires a fragment identifier")),
+                Href::WithFragment(f) => Ok(IRI::Resource(f)),
             }
         }
     }
