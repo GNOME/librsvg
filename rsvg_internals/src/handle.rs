@@ -157,7 +157,7 @@ pub struct Handle {
 }
 
 impl Handle {
-    fn new() -> Handle {
+    pub fn new() -> Handle {
         Handle {
             dpi: Cell::new(Dpi::default()),
             base_url: RefCell::new(None),
