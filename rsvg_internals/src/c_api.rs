@@ -182,7 +182,7 @@ impl ObjectImpl for Handle {
                 self.set_base_url(value.get().expect("base-uri should be a non-NULL string"));
             }
 
-            _ => unimplemented!("invalid property id {}", id),
+            _ => unreachable!("invalid property id {}", id),
         }
     }
 
