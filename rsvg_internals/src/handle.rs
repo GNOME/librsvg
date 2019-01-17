@@ -172,7 +172,8 @@ impl Handle {
         }
     }
 
-    fn set_base_url(&self, url: &str) {
+    // from the public API
+    pub fn set_base_url(&self, url: &str) {
         if self.load_state.get() != LoadState::Start {
             rsvg_g_warning(
                 "Please set the base file or URI before loading any data into RsvgHandle",
@@ -534,6 +535,21 @@ impl Handle {
         }
 
         self.read_stream_sync(stream, cancellable)
+    }
+
+    // from the public API
+    pub fn set_load_flags(&self, flags: u32) {
+        self.load_flags.set(LoadFlags::from_flags(flags));
+    }
+
+    // from the public API
+    pub fn set_dpi_x(&self, dpi_x: f64) {
+        self.dpi.set(Dpi::new(dpi_x, self.dpi.get().y()));
+    }
+
+    // from the public API
+    pub fn set_dpi_y(&self, dpi_y: f64) {
+        self.dpi.set(Dpi::new(self.dpi.get().x(), dpi_y));
     }
 }
 

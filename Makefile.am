@@ -41,6 +41,7 @@ RUST_SRC =							\
 	rsvg_internals/src/aspect_ratio.rs			\
 	rsvg_internals/src/attributes.rs			\
 	rsvg_internals/src/bbox.rs				\
+	rsvg_internals/src/c_api.rs				\
 	rsvg_internals/src/clip_path.rs				\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
