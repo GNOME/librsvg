@@ -7,7 +7,8 @@ use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{self, ListLength, NumberListError, ParseError};
+use number_list::{NumberList, NumberListError, NumberListLength};
+use parsers::{self, Parse, ParseError};
 use property_bag::PropertyBag;
 use surface_utils::{
     iterators::Pixels,
@@ -74,24 +75,22 @@ impl NodeTrait for ColorMatrix {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
-                        let matrix = Matrix4x5::from_row_slice(
-                            &parsers::number_list_from_str(value, ListLength::Exact(20)).map_err(
-                                |err| {
-                                    NodeError::parse_error(
-                                        attr,
-                                        match err {
-                                            NumberListError::IncorrectNumberOfElements => {
-                                                ParseError::new(
-                                                    "incorrect number of elements: expected 20",
-                                                )
-                                            }
-                                            NumberListError::Parse(err) => err,
-                                        },
-                                    )
+                        let NumberList(v) = NumberList::parse_str(
+                            value,
+                            NumberListLength::Exact(20),
+                        )
+                        .map_err(|err| {
+                            NodeError::parse_error(
+                                attr,
+                                match err {
+                                    NumberListError::IncorrectNumberOfElements => {
+                                        ParseError::new("incorrect number of elements: expected 20")
+                                    }
+                                    NumberListError::Parse(err) => err,
                                 },
-                            )?,
-                        );
-
+                            )
+                        })?;
+                        let matrix = Matrix4x5::from_row_slice(&v);
                         let mut matrix = matrix.fixed_resize(0.0);
                         matrix[(4, 4)] = 1.0;
                         matrix

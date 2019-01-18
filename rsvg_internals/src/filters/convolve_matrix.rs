@@ -7,7 +7,8 @@ use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{self, ListLength, NumberListError, ParseError};
+use number_list::{NumberList, NumberListError, NumberListLength};
+use parsers::{self, Parse, ParseError};
 use property_bag::PropertyBag;
 use rect::IRect;
 use surface_utils::{
@@ -171,7 +172,7 @@ impl NodeTrait for ConvolveMatrix {
 
                 // #352: Parse as an unbounded list rather than exact length to prevent aborts due
                 //       to huge allocation attempts by underlying Vec::with_capacity().
-                let elements = parsers::number_list_from_str(value, ListLength::Unbounded)
+                let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
                     .map_err(|err| {
                         NodeError::parse_error(
                             attr,
@@ -182,7 +183,7 @@ impl NodeTrait for ConvolveMatrix {
                         )
                     })?;
 
-                if elements.len() != number_of_elements {
+                if v.len() != number_of_elements {
                     return Err(NodeError::value_error(
                         attr,
                         &format!(
@@ -195,7 +196,7 @@ impl NodeTrait for ConvolveMatrix {
                 DMatrix::from_data(MatrixVec::new(
                     Dynamic::new(self.order.get().1 as usize),
                     Dynamic::new(self.order.get().0 as usize),
-                    elements,
+                    v,
                 ))
             }));
         }

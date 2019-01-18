@@ -1,9 +1,8 @@
 use cssparser::Parser;
 
 use error::*;
-use parsers;
-use parsers::Parse;
-use parsers::{ListLength, ParseError};
+use number_list::{NumberList, NumberListLength};
+use parsers::{Parse, ParseError};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ViewBox {
@@ -42,17 +41,17 @@ impl Parse for ViewBox {
     //
     // Where w and h must be nonnegative.
     fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<ViewBox, ValueErrorKind> {
-        let v = parsers::number_list(parser, ListLength::Exact(4))
+        let NumberList(v) = NumberList::parse(parser, NumberListLength::Exact(4))
             .map_err(|_| ParseError::new("string does not match 'x [,] y [,] w [,] h'"))?;
 
-        let (x, y, w, h) = (v[0], v[1], v[2], v[3]);
+        let (x, y, width, height) = (v[0], v[1], v[2], v[3]);
 
-        if w >= 0.0 && h >= 0.0 {
+        if width >= 0.0 && height >= 0.0 {
             Ok(ViewBox {
                 x,
                 y,
-                width: w,
-                height: h,
+                width,
+                height,
             })
         } else {
             Err(ValueErrorKind::Value(

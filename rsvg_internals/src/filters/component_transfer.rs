@@ -7,7 +7,8 @@ use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
-use parsers::{self, ListLength, NumberListError, ParseError};
+use number_list::{NumberList, NumberListError, NumberListLength};
+use parsers::{self, Parse, ParseError};
 use property_bag::PropertyBag;
 use surface_utils::{
     iterators::Pixels,
@@ -214,17 +215,15 @@ impl NodeTrait for FuncX {
             match attr {
                 Attribute::Type => self.function_type.set(FunctionType::parse(attr, value)?),
                 Attribute::TableValues => {
-                    self.table_values.replace(
-                        parsers::number_list_from_str(value, ListLength::Unbounded).map_err(
-                            |err| {
-                                if let NumberListError::Parse(err) = err {
-                                    NodeError::parse_error(attr, err)
-                                } else {
-                                    panic!("unexpected number list error");
-                                }
-                            },
-                        )?,
-                    );
+                    let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
+                        .map_err(|err| {
+                        if let NumberListError::Parse(err) = err {
+                            NodeError::parse_error(attr, err)
+                        } else {
+                            panic!("unexpected number list error");
+                        }
+                    })?;
+                    self.table_values.replace(v);
                 }
                 Attribute::Slope => self.slope.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
