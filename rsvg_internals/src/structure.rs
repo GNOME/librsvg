@@ -127,9 +127,9 @@ impl NodeSvg {
 
     pub fn get_size(&self, dpi: Dpi) -> Option<(i32, i32)> {
         match (self.w.get(), self.h.get(), self.vbox.get()) {
-            (w, h, Some(vb)) => Some((
-                w.hand_normalize(dpi.x(), vb.0.width, 12.0).round() as i32,
-                h.hand_normalize(dpi.y(), vb.0.height, 12.0).round() as i32,
+            (w, h, Some(vbox)) => Some((
+                w.hand_normalize(dpi.x(), vbox.width, 12.0).round() as i32,
+                h.hand_normalize(dpi.y(), vbox.height, 12.0).round() as i32,
             )),
             (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
                 Some((

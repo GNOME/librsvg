@@ -1,4 +1,3 @@
-use cairo;
 use cssparser::Parser;
 
 use error::*;
@@ -7,7 +6,12 @@ use parsers::Parse;
 use parsers::{ListLength, ParseError};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ViewBox(pub cairo::Rectangle);
+pub struct ViewBox {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
 
 impl ViewBox {
     pub fn new(x: f64, y: f64, w: f64, h: f64) -> ViewBox {
@@ -16,12 +20,12 @@ impl ViewBox {
             "width and height must not be negative"
         );
 
-        ViewBox(cairo::Rectangle {
+        ViewBox {
             x,
             y,
             width: w,
             height: h,
-        })
+        }
     }
 }
 
@@ -44,12 +48,12 @@ impl Parse for ViewBox {
         let (x, y, w, h) = (v[0], v[1], v[2], v[3]);
 
         if w >= 0.0 && h >= 0.0 {
-            Ok(ViewBox(cairo::Rectangle {
+            Ok(ViewBox {
                 x,
                 y,
                 width: w,
                 height: h,
-            }))
+            })
         } else {
             Err(ValueErrorKind::Value(
                 "width and height must not be negative".to_string(),
