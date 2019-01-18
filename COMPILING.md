@@ -19,6 +19,7 @@ explains librsvg's peculiarities.
 * [Basic compilation instructions](#basic-compilation-instructions)
 * [Verbosity](#verbosity)
 * [Debug or release builds](#debug-or-release-builds)
+* [Selecting a Rust toolchain](#selecting-a-rust-toolchain)
 * [Cross-compilation](#cross-compilation)
 * [Building with no network access](#building-with-no-network-access)
 * [Running `make distcheck`](#running-make-distcheck)
@@ -184,6 +185,24 @@ build the Rust sub-library in debug mode.
 
 In case both the environment variable and the command-line option are
 specified, the command-line option overrides the env var.
+
+# Selecting a Rust toolchain
+
+By default, the configure/make steps will use the `cargo` binary that
+is found in your `$PATH`.  If you have a system installation of Rust
+and one in your home directory, or for special build systems, you may
+need to override the locations of `cargo` and/or `rustc`.  In this
+case, you can set any of these environment variables before running
+`configure` or `autogen.sh`:
+
+* `RUSTC` - path to the `rustc` compiler
+* `CARGO` - path to `cargo`
+
+Note that `$RUSTC` only gets used in the `configure` script to ensure
+that there is a Rust compiler installed with an appropriate version.
+The actual compilation process just uses `$CARGO`, and assumes that
+that `cargo` binary will use the same Rust compiler as the other
+variable.
 
 # Cross-compilation
 
