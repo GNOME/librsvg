@@ -11,7 +11,7 @@ use drawing_ctx::DrawingCtx;
 use error::*;
 use parsers::Parse;
 use property_bag::PropertyBag;
-use state::{ComputedValues, Overflow, SpecifiedValue, State};
+use state::{ComputedValues, Overflow, SpecifiedValue, SpecifiedValues};
 use tree_utils;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
@@ -71,9 +71,11 @@ impl<'a> CascadedValues<'a> {
     /// This is for the `<use>` element, which draws the element which it references with the
     /// `<use>`'s own cascade, not wih the element's original cascade.
     pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
-        let state = node.data.state.borrow();
         let mut v = values.clone();
-        state.get_specified_values().to_computed_values(&mut v);
+        node.data
+            .specified_values
+            .borrow()
+            .to_computed_values(&mut v);
 
         CascadedValues {
             inner: CascadedInner::FromValues(v),
@@ -100,8 +102,8 @@ pub trait NodeTrait: Downcast {
     fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult;
 
     /// Sets any special-cased properties that the node may have, that are different
-    /// from defaults in the node's `State`.
-    fn set_overridden_properties(&self, _state: &mut State) {}
+    /// from defaults in the node's `SpecifiedValues`.
+    fn set_overridden_properties(&self, _values: &mut SpecifiedValues) {}
 
     fn draw(
         &self,
@@ -143,7 +145,7 @@ pub struct NodeData {
     node_type: NodeType,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
-    state: RefCell<State>,
+    specified_values: RefCell<SpecifiedValues>,
     important_styles: RefCell<HashSet<Attribute>>,
     result: RefCell<NodeResult>,
     transform: Cell<Matrix>,
@@ -283,7 +285,7 @@ impl Node {
             node_type,
             id: id.map(str::to_string),
             class: class.map(str::to_string),
-            state: RefCell::new(State::new()),
+            specified_values: RefCell::new(Default::default()),
             important_styles: Default::default(),
             transform: Cell::new(Matrix::identity()),
             result: RefCell::new(Ok(())),
@@ -331,9 +333,11 @@ impl Node {
     }
 
     pub fn cascade(&self, values: &ComputedValues) {
-        let state = self.data.state.borrow();
         let mut values = values.clone();
-        state.get_specified_values().to_computed_values(&mut values);
+        self.data
+            .specified_values
+            .borrow()
+            .to_computed_values(&mut values);
         *self.data.values.borrow_mut() = values.clone();
 
         for child in self.children() {
@@ -421,8 +425,12 @@ impl Node {
 
     /// Hands the pbag to the node's state, to apply the presentation attributes
     fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) {
-        let mut state = self.data.state.borrow_mut();
-        match state.parse_presentation_attributes(pbag) {
+        match self
+            .data
+            .specified_values
+            .borrow_mut()
+            .parse_presentation_attributes(pbag)
+        {
             Ok(_) => (),
             Err(e) => {
                 // FIXME: we'll ignore errors here for now.
@@ -454,14 +462,14 @@ impl Node {
         // This is basically a semi-compliant CSS2 selection engine
 
         let element_name = self.get_type().element_name();
-        let mut state = self.data.state.borrow_mut();
+        let mut specified_values = self.data.specified_values.borrow_mut();
         let mut important_styles = self.data.important_styles.borrow_mut();
 
         // *
-        css_styles.lookup_apply("*", &mut state, &mut important_styles);
+        css_styles.lookup_apply("*", &mut specified_values, &mut important_styles);
 
         // tag
-        css_styles.lookup_apply(element_name, &mut state, &mut important_styles);
+        css_styles.lookup_apply(element_name, &mut specified_values, &mut important_styles);
 
         if let Some(klazz) = self.get_class() {
             for cls in klazz.split_whitespace() {
@@ -472,25 +480,41 @@ impl Node {
                     if let Some(id) = self.get_id() {
                         let target = format!("{}.{}#{}", element_name, cls, id);
                         found = found
-                            || css_styles.lookup_apply(&target, &mut state, &mut important_styles);
+                            || css_styles.lookup_apply(
+                                &target,
+                                &mut specified_values,
+                                &mut important_styles,
+                            );
                     }
 
                     // .class#id
                     if let Some(id) = self.get_id() {
                         let target = format!(".{}#{}", cls, id);
                         found = found
-                            || css_styles.lookup_apply(&target, &mut state, &mut important_styles);
+                            || css_styles.lookup_apply(
+                                &target,
+                                &mut specified_values,
+                                &mut important_styles,
+                            );
                     }
 
                     // tag.class
                     let target = format!("{}.{}", element_name, cls);
                     found = found
-                        || css_styles.lookup_apply(&target, &mut state, &mut important_styles);
+                        || css_styles.lookup_apply(
+                            &target,
+                            &mut specified_values,
+                            &mut important_styles,
+                        );
 
                     if !found {
                         // didn't find anything more specific, just apply the class style
                         let target = format!(".{}", cls);
-                        css_styles.lookup_apply(&target, &mut state, &mut important_styles);
+                        css_styles.lookup_apply(
+                            &target,
+                            &mut specified_values,
+                            &mut important_styles,
+                        );
                     }
                 }
             }
@@ -499,11 +523,11 @@ impl Node {
         if let Some(id) = self.get_id() {
             // id
             let target = format!("#{}", id);
-            css_styles.lookup_apply(&target, &mut state, &mut important_styles);
+            css_styles.lookup_apply(&target, &mut specified_values, &mut important_styles);
 
             // tag#id
             let target = format!("{}#{}", element_name, id);
-            css_styles.lookup_apply(&target, &mut state, &mut important_styles);
+            css_styles.lookup_apply(&target, &mut specified_values, &mut important_styles);
         }
     }
 
@@ -514,8 +538,12 @@ impl Node {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Style => {
-                    let mut state = self.data.state.borrow_mut();
-                    if let Err(e) = state.parse_style_declarations(value, &mut important_styles) {
+                    if let Err(e) = self
+                        .data
+                        .specified_values
+                        .borrow_mut()
+                        .parse_style_declarations(value, &mut important_styles)
+                    {
                         self.set_error(e);
                         break;
                     }
@@ -526,8 +554,8 @@ impl Node {
         }
     }
 
-    // Sets the node's state from the style-related attributes in the pbag.  Also applies
-    // CSS rules in our limited way based on the node's tag/class/id.
+    // Sets the node's specified values from the style-related attributes in the pbag.
+    // Also applies CSS rules in our limited way based on the node's tag/class/id.
     pub fn set_style(&self, css_styles: &CssStyles, pbag: &PropertyBag<'_>) {
         self.set_presentation_attributes(pbag);
         self.set_css_styles(css_styles);
@@ -535,8 +563,10 @@ impl Node {
     }
 
     pub fn set_overridden_properties(&self) {
-        let mut state = self.data.state.borrow_mut();
-        self.data.node_impl.set_overridden_properties(&mut state);
+        let mut specified_values = self.data.specified_values.borrow_mut();
+        self.data
+            .node_impl
+            .set_overridden_properties(&mut specified_values);
     }
 
     pub fn draw(
@@ -615,13 +645,12 @@ impl Node {
     }
 
     pub fn is_overflow(&self) -> bool {
-        let state = self.data.state.borrow();
-        state.get_specified_values().is_overflow()
+        self.data.specified_values.borrow().is_overflow()
     }
 
     pub fn set_overflow_hidden(&self) {
-        let mut state = self.data.state.borrow_mut();
-        state.values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
+        let mut specified_values = self.data.specified_values.borrow_mut();
+        specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
 
     // find the last Chars node so that we can coalesce

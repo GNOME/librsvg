@@ -18,7 +18,7 @@ use node::*;
 use parsers::{Parse, ParseError, ParseValue};
 use path_builder::*;
 use property_bag::PropertyBag;
-use state::{ComputedValues, SpecifiedValue, State};
+use state::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -244,9 +244,9 @@ impl NodeTrait for NodeMarker {
         Ok(())
     }
 
-    fn set_overridden_properties(&self, state: &mut State) {
+    fn set_overridden_properties(&self, values: &mut SpecifiedValues) {
         // markers are always displayed, even if <marker> or its ancestors are display:none
-        state.values.display = SpecifiedValue::Specified(Default::default());
+        values.display = SpecifiedValue::Specified(Default::default());
     }
 }
 

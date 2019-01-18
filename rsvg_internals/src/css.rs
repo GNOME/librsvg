@@ -14,7 +14,7 @@ use attributes::Attribute;
 use croco::*;
 use error::LoadingError;
 use io::{self, BinaryData};
-use state::State;
+use state::SpecifiedValues;
 use util::utf8_cstr;
 
 struct Declaration {
@@ -130,14 +130,14 @@ impl CssStyles {
     pub fn lookup_apply(
         &self,
         selector: &str,
-        state: &mut State,
+        values: &mut SpecifiedValues,
         important_styles: &mut HashSet<Attribute>,
     ) -> bool {
         if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
             for (prop_name, declaration) in decl_list.iter() {
                 if let Ok(attr) = Attribute::from_str(prop_name) {
                     // FIXME: this is ignoring errors
-                    let _ = state.parse_style_pair(
+                    let _ = values.parse_style_pair(
                         attr,
                         &declaration.prop_value,
                         declaration.important,
