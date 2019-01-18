@@ -1,6 +1,7 @@
 use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
 use std::cell::{Cell, Ref, RefCell};
+use std::collections::HashSet;
 use std::rc::{Rc, Weak};
 
 use attributes::Attribute;
@@ -143,6 +144,7 @@ pub struct NodeData {
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
     state: RefCell<State>,
+    important_styles: RefCell<HashSet<Attribute>>,
     result: RefCell<NodeResult>,
     transform: Cell<Matrix>,
     values: RefCell<ComputedValues>,
@@ -282,6 +284,7 @@ impl Node {
             id: id.map(str::to_string),
             class: class.map(str::to_string),
             state: RefCell::new(State::new()),
+            important_styles: Default::default(),
             transform: Cell::new(Matrix::identity()),
             result: RefCell::new(Ok(())),
             values: RefCell::new(ComputedValues::default()),
@@ -452,12 +455,13 @@ impl Node {
 
         let element_name = self.get_type().element_name();
         let mut state = self.data.state.borrow_mut();
+        let mut important_styles = self.data.important_styles.borrow_mut();
 
         // *
-        css_styles.lookup_apply("*", &mut state);
+        css_styles.lookup_apply("*", &mut state, &mut important_styles);
 
         // tag
-        css_styles.lookup_apply(element_name, &mut state);
+        css_styles.lookup_apply(element_name, &mut state, &mut important_styles);
 
         if let Some(klazz) = self.get_class() {
             for cls in klazz.split_whitespace() {
@@ -467,23 +471,26 @@ impl Node {
                     // tag.class#id
                     if let Some(id) = self.get_id() {
                         let target = format!("{}.{}#{}", element_name, cls, id);
-                        found = found || css_styles.lookup_apply(&target, &mut state);
+                        found = found
+                            || css_styles.lookup_apply(&target, &mut state, &mut important_styles);
                     }
 
                     // .class#id
                     if let Some(id) = self.get_id() {
                         let target = format!(".{}#{}", cls, id);
-                        found = found || css_styles.lookup_apply(&target, &mut state);
+                        found = found
+                            || css_styles.lookup_apply(&target, &mut state, &mut important_styles);
                     }
 
                     // tag.class
                     let target = format!("{}.{}", element_name, cls);
-                    found = found || css_styles.lookup_apply(&target, &mut state);
+                    found = found
+                        || css_styles.lookup_apply(&target, &mut state, &mut important_styles);
 
                     if !found {
                         // didn't find anything more specific, just apply the class style
                         let target = format!(".{}", cls);
-                        css_styles.lookup_apply(&target, &mut state);
+                        css_styles.lookup_apply(&target, &mut state, &mut important_styles);
                     }
                 }
             }
@@ -492,21 +499,23 @@ impl Node {
         if let Some(id) = self.get_id() {
             // id
             let target = format!("#{}", id);
-            css_styles.lookup_apply(&target, &mut state);
+            css_styles.lookup_apply(&target, &mut state, &mut important_styles);
 
             // tag#id
             let target = format!("{}#{}", element_name, id);
-            css_styles.lookup_apply(&target, &mut state);
+            css_styles.lookup_apply(&target, &mut state, &mut important_styles);
         }
     }
 
     /// Looks for the "style" attribute in the pbag, and applies CSS styles from it
     fn set_style_attribute(&self, pbag: &PropertyBag<'_>) {
+        let mut important_styles = self.data.important_styles.borrow_mut();
+
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Style => {
                     let mut state = self.data.state.borrow_mut();
-                    if let Err(e) = state.parse_style_declarations(value) {
+                    if let Err(e) = state.parse_style_declarations(value, &mut important_styles) {
                         self.set_error(e);
                         break;
                     }

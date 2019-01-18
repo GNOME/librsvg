@@ -1,5 +1,5 @@
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ptr;
 use std::str::{self, FromStr};
 
@@ -127,7 +127,12 @@ impl CssStyles {
         }
     }
 
-    pub fn lookup_apply(&self, selector: &str, state: &mut State) -> bool {
+    pub fn lookup_apply(
+        &self,
+        selector: &str,
+        state: &mut State,
+        important_styles: &mut HashSet<Attribute>,
+    ) -> bool {
         if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
             for (prop_name, declaration) in decl_list.iter() {
                 if let Ok(attr) = Attribute::from_str(prop_name) {
@@ -136,6 +141,7 @@ impl CssStyles {
                         attr,
                         &declaration.prop_value,
                         declaration.important,
+                        important_styles,
                     );
                 }
             }

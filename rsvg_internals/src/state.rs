@@ -1,5 +1,4 @@
 use cssparser::{self, Parser, Token};
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::str::FromStr;
 
@@ -82,7 +81,6 @@ where
 
 pub struct State {
     pub values: SpecifiedValues,
-    important_styles: RefCell<HashSet<Attribute>>,
 }
 
 #[derive(Default, Clone)]
@@ -274,7 +272,6 @@ impl State {
     pub fn new() -> State {
         State {
             values: Default::default(),
-            important_styles: Default::default(),
         }
     }
 
@@ -534,19 +531,24 @@ impl State {
         attr: Attribute,
         value: &str,
         important: bool,
+        important_styles: &mut HashSet<Attribute>,
     ) -> Result<(), NodeError> {
-        if !important && self.important_styles.borrow().contains(&attr) {
+        if !important && important_styles.contains(&attr) {
             return Ok(());
         }
 
         if important {
-            self.important_styles.borrow_mut().insert(attr);
+            important_styles.insert(attr);
         }
 
         self.parse_attribute_pair(attr, value, true)
     }
 
-    pub fn parse_style_declarations(&mut self, declarations: &str) -> Result<(), NodeError> {
+    pub fn parse_style_declarations(
+        &mut self,
+        declarations: &str,
+        important_styles: &mut HashSet<Attribute>,
+    ) -> Result<(), NodeError> {
         // Split an attribute value like style="foo: bar; baz: beep;" into
         // individual CSS declarations ("foo: bar" and "baz: beep") and
         // set them onto the state struct.
@@ -577,7 +579,7 @@ impl State {
                     };
 
                     if let Ok(attr) = Attribute::from_str(prop_name) {
-                        self.parse_style_pair(attr, value, important)?;
+                        self.parse_style_pair(attr, value, important, important_styles)?;
                     }
                     // else unknown property name; ignore
                 }
