@@ -7,8 +7,8 @@ use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{self, ParseError};
+use properties::ColorInterpolationFilters;
 use property_bag::PropertyBag;
-use state::ColorInterpolationFilters;
 use surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,

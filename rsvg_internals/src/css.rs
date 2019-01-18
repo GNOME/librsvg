@@ -14,7 +14,7 @@ use attributes::Attribute;
 use croco::*;
 use error::LoadingError;
 use io::{self, BinaryData};
-use state::SpecifiedValues;
+use properties::SpecifiedValues;
 use util::utf8_cstr;
 
 struct Declaration {

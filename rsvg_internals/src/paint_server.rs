@@ -6,7 +6,7 @@ use drawing_ctx::DrawingCtx;
 use error::*;
 use node::RsvgNode;
 use parsers::Parse;
-use state::ComputedValues;
+use properties::ComputedValues;
 use unit_interval::UnitInterval;
 
 #[derive(Debug, Clone, PartialEq)]

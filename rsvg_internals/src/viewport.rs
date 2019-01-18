@@ -6,7 +6,7 @@ use drawing_ctx::DrawingCtx;
 use error::RenderingError;
 use float_eq_cairo::ApproxEqCairo;
 use node::RsvgNode;
-use state::ComputedValues;
+use properties::ComputedValues;
 use viewbox::*;
 
 #[derive(Debug, Copy, Clone, PartialEq)]

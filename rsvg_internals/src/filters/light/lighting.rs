@@ -31,8 +31,8 @@ use filters::{
 };
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers;
+use properties::ColorInterpolationFilters;
 use property_bag::PropertyBag;
-use state::ColorInterpolationFilters;
 use surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,

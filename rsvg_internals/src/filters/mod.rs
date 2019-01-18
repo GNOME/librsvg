@@ -12,8 +12,8 @@ use error::{RenderingError, ValueErrorKind};
 use length::{Length, LengthDir, LengthUnit};
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{ParseError, ParseValue};
+use properties::{ColorInterpolationFilters, ComputedValues};
 use property_bag::PropertyBag;
-use state::{ColorInterpolationFilters, ComputedValues};
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 mod bounds;

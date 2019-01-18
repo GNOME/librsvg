@@ -14,9 +14,7 @@ use font_props::FontWeightSpec;
 use length::*;
 use node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::ParseValue;
-use property_bag::PropertyBag;
-use space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
-use state::{
+use properties::{
     ComputedValues,
     Direction,
     FontStretch,
@@ -29,6 +27,8 @@ use state::{
     XmlLang,
     XmlSpace,
 };
+use property_bag::PropertyBag;
+use space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 
 /// An absolutely-positioned array of `Span`s
 ///

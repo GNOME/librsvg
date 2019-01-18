@@ -18,8 +18,7 @@ use mask::NodeMask;
 use node::{CascadedValues, NodeType, RsvgNode};
 use paint_server::{PaintServer, PaintSource};
 use pattern::NodePattern;
-use rect::RectangleExt;
-use state::{
+use properties::{
     ClipRule,
     ComputedValues,
     EnableBackground,
@@ -29,6 +28,7 @@ use state::{
     StrokeLinecap,
     StrokeLinejoin,
 };
+use rect::RectangleExt;
 use surface_utils::shared_surface::SharedImageSurface;
 use svg::Svg;
 use unit_interval::UnitInterval;

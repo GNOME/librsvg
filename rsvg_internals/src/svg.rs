@@ -12,7 +12,7 @@ use error::LoadingError;
 use handle::LoadOptions;
 use io;
 use node::RsvgNode;
-use state::ComputedValues;
+use properties::ComputedValues;
 use surface_utils::shared_surface::SharedImageSurface;
 use xml::XmlState;
 use xml2_load::xml_state_load_from_possibly_compressed_stream;

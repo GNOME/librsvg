@@ -17,8 +17,8 @@ use length::*;
 use node::*;
 use paint_server::PaintSource;
 use parsers::ParseValue;
+use properties::ComputedValues;
 use property_bag::PropertyBag;
-use state::ComputedValues;
 use unit_interval::UnitInterval;
 use viewbox::*;
 

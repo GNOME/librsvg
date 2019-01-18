@@ -4,7 +4,7 @@ use drawing_ctx::ViewParams;
 use error::*;
 use length::{Length, LengthDir, LengthUnit, POINTS_PER_INCH};
 use parsers::{Parse, ParseError};
-use state::ComputedValues;
+use properties::ComputedValues;
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
 #[derive(Debug, Copy, Clone, PartialEq)]

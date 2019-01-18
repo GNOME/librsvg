@@ -12,8 +12,8 @@ use float_eq_cairo::ApproxEqCairo;
 use length::*;
 use node::*;
 use parsers::{Parse, ParseValue};
+use properties::Overflow;
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use state::Overflow;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 

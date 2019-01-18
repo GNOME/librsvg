@@ -17,8 +17,8 @@ use length::{Length, LengthDir};
 use node::*;
 use parsers::{Parse, ParseError, ParseValue};
 use path_builder::*;
+use properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use property_bag::PropertyBag;
-use state::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement

@@ -10,8 +10,8 @@ use css::CssStyles;
 use drawing_ctx::DrawingCtx;
 use error::*;
 use parsers::Parse;
+use properties::{ComputedValues, Overflow, SpecifiedValue, SpecifiedValues};
 use property_bag::PropertyBag;
-use state::{ComputedValues, Overflow, SpecifiedValue, SpecifiedValues};
 use tree_utils;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it

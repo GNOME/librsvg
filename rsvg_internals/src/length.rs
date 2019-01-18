@@ -5,7 +5,7 @@ use drawing_ctx::ViewParams;
 use error::*;
 use parsers::Parse;
 use parsers::ParseError;
-use state::ComputedValues;
+use properties::ComputedValues;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {

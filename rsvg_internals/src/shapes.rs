@@ -13,8 +13,8 @@ use node::*;
 use parsers::{CssParserExt, Parse, ParseValue};
 use path_builder::*;
 use path_parser;
+use properties::ComputedValues;
 use property_bag::PropertyBag;
-use state::ComputedValues;
 
 fn render_path_builder(
     builder: &PathBuilder,

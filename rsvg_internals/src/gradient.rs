@@ -13,9 +13,9 @@ use length::*;
 use node::*;
 use paint_server::PaintSource;
 use parsers::{Parse, ParseError, ParseValue};
+use properties::{ComputedValues, StopColor};
 use property_bag::PropertyBag;
 use rect::RectangleExt;
-use state::{ComputedValues, StopColor};
 use stop::*;
 use unit_interval::UnitInterval;
 

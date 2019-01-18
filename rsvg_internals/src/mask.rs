@@ -8,9 +8,9 @@ use error::RenderingError;
 use length::{Length, LengthDir};
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{Parse, ParseValue};
+use properties::Opacity;
 use property_bag::PropertyBag;
 use rect::IRect;
-use state::Opacity;
 use surface_utils::{
     iterators::Pixels,
     shared_surface::SharedImageSurface,

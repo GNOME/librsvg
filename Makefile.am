@@ -94,6 +94,7 @@ RUST_SRC =							\
 	rsvg_internals/src/path_parser.rs			\
 	rsvg_internals/src/pattern.rs				\
 	rsvg_internals/src/pixbuf_utils.rs			\
+	rsvg_internals/src/properties.rs			\
 	rsvg_internals/src/property_bag.rs			\
 	rsvg_internals/src/property_macros.rs			\
 	rsvg_internals/src/rect.rs				\
@@ -103,7 +104,6 @@ RUST_SRC =							\
 	rsvg_internals/src/surface_utils/shared_surface.rs	\
 	rsvg_internals/src/space.rs				\
 	rsvg_internals/src/srgb.rs				\
-	rsvg_internals/src/state.rs				\
 	rsvg_internals/src/stop.rs				\
 	rsvg_internals/src/structure.rs				\
 	rsvg_internals/src/style.rs				\

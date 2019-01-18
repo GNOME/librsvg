@@ -10,8 +10,8 @@ use drawing_ctx::DrawingCtx;
 use length::Length;
 use node::RsvgNode;
 use paint_server::PaintServer;
+use properties::ComputedValues;
 use rect::IRect;
-use state::ComputedValues;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use unit_interval::UnitInterval;
 
