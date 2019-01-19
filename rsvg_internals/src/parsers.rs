@@ -200,83 +200,6 @@ pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ValueErrorKind> {
     }
 }
 
-// Lists of number values
-
-#[derive(Eq, PartialEq)]
-pub enum ListLength {
-    Exact(usize),
-    Unbounded,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum NumberListError {
-    IncorrectNumberOfElements,
-    Parse(ParseError),
-}
-
-pub fn number_list(
-    parser: &mut Parser<'_, '_>,
-    length: ListLength,
-) -> Result<Vec<f64>, NumberListError> {
-    let n;
-
-    match length {
-        ListLength::Exact(l) => {
-            assert!(l > 0);
-            n = Some(l);
-        }
-        ListLength::Unbounded => {
-            n = None;
-        }
-    }
-
-    let mut v = Vec::<f64>::with_capacity(n.unwrap_or(0));
-
-    if parser.is_exhausted() && length == ListLength::Unbounded {
-        return Ok(v);
-    }
-
-    for i in 0.. {
-        if i != 0 {
-            parser.optional_comma();
-        }
-
-        v.push(f64::from(parser.expect_finite_number().map_err(|_| {
-            NumberListError::Parse(ParseError::new("expected number"))
-        })?));
-
-        if let ListLength::Exact(l) = length {
-            if i + 1 == l {
-                break;
-            }
-        }
-
-        if parser.is_exhausted() {
-            match length {
-                ListLength::Exact(l) => {
-                    if i + 1 == l {
-                        break;
-                    }
-                }
-                _ => break,
-            }
-        }
-    }
-
-    parser
-        .expect_exhausted()
-        .map_err(|_| NumberListError::IncorrectNumberOfElements)?;
-
-    Ok(v)
-}
-
-pub fn number_list_from_str(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListError> {
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
-
-    number_list(&mut parser, length)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -301,50 +224,6 @@ mod tests {
         assert!(number_optional_number("1 , x").is_err());
         assert!(number_optional_number("1 , 2x").is_err());
         assert!(number_optional_number("1 2 x").is_err());
-    }
-
-    #[test]
-    fn parses_number_list() {
-        assert_eq!(
-            number_list_from_str("5", ListLength::Exact(1)),
-            Ok(vec![5.0])
-        );
-
-        assert_eq!(
-            number_list_from_str("1 2 3 4", ListLength::Exact(4)),
-            Ok(vec![1.0, 2.0, 3.0, 4.0])
-        );
-
-        assert_eq!(number_list_from_str("", ListLength::Unbounded), Ok(vec![]));
-        assert_eq!(
-            number_list_from_str("1, 2, 3.0, 4, 5", ListLength::Unbounded),
-            Ok(vec![1.0, 2.0, 3.0, 4.0, 5.0])
-        );
-    }
-
-    #[test]
-    fn errors_on_invalid_number_list() {
-        // empty
-        assert!(number_list_from_str("", ListLength::Exact(1)).is_err());
-
-        // garbage
-        assert!(number_list_from_str("foo", ListLength::Exact(1)).is_err());
-        assert!(number_list_from_str("1foo", ListLength::Exact(2)).is_err());
-        assert!(number_list_from_str("1 foo", ListLength::Exact(2)).is_err());
-        assert!(number_list_from_str("1 foo 2", ListLength::Exact(2)).is_err());
-        assert!(number_list_from_str("1,foo", ListLength::Exact(2)).is_err());
-
-        // too many
-        assert!(number_list_from_str("1 2", ListLength::Exact(1)).is_err());
-
-        // extra token
-        assert!(number_list_from_str("1,", ListLength::Exact(1)).is_err());
-        assert!(number_list_from_str("1,", ListLength::Exact(1)).is_err());
-        assert!(number_list_from_str("1,", ListLength::Unbounded).is_err());
-
-        // too few
-        assert!(number_list_from_str("1", ListLength::Exact(2)).is_err());
-        assert!(number_list_from_str("1 2", ListLength::Exact(3)).is_err());
     }
 
     #[test]

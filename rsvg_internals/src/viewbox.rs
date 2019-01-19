@@ -1,13 +1,16 @@
-use cairo;
 use cssparser::Parser;
 
 use error::*;
-use parsers;
-use parsers::Parse;
-use parsers::{ListLength, ParseError};
+use number_list::{NumberList, NumberListLength};
+use parsers::{Parse, ParseError};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ViewBox(pub cairo::Rectangle);
+pub struct ViewBox {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
 
 impl ViewBox {
     pub fn new(x: f64, y: f64, w: f64, h: f64) -> ViewBox {
@@ -16,12 +19,12 @@ impl ViewBox {
             "width and height must not be negative"
         );
 
-        ViewBox(cairo::Rectangle {
+        ViewBox {
             x,
             y,
             width: w,
             height: h,
-        })
+        }
     }
 }
 
@@ -38,18 +41,18 @@ impl Parse for ViewBox {
     //
     // Where w and h must be nonnegative.
     fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<ViewBox, ValueErrorKind> {
-        let v = parsers::number_list(parser, ListLength::Exact(4))
+        let NumberList(v) = NumberList::parse(parser, NumberListLength::Exact(4))
             .map_err(|_| ParseError::new("string does not match 'x [,] y [,] w [,] h'"))?;
 
-        let (x, y, w, h) = (v[0], v[1], v[2], v[3]);
+        let (x, y, width, height) = (v[0], v[1], v[2], v[3]);
 
-        if w >= 0.0 && h >= 0.0 {
-            Ok(ViewBox(cairo::Rectangle {
+        if width >= 0.0 && height >= 0.0 {
+            Ok(ViewBox {
                 x,
                 y,
-                width: w,
-                height: h,
-            }))
+                width,
+                height,
+            })
         } else {
             Err(ValueErrorKind::Value(
                 "width and height must not be negative".to_string(),

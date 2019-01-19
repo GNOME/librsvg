@@ -159,21 +159,21 @@ impl NodeMarker {
 
         let params = if let Some(vbox) = self.vbox.get() {
             let (_, _, w, h) = self.aspect.get().compute(
-                vbox.0.width,
-                vbox.0.height,
+                vbox.width,
+                vbox.height,
                 0.0,
                 0.0,
                 marker_width,
                 marker_height,
             );
 
-            if vbox.0.width.approx_eq_cairo(&0.0) || vbox.0.height.approx_eq_cairo(&0.0) {
+            if vbox.width.approx_eq_cairo(&0.0) || vbox.height.approx_eq_cairo(&0.0) {
                 return Ok(());
             }
 
-            affine.scale(w / vbox.0.width, h / vbox.0.height);
+            affine.scale(w / vbox.width, h / vbox.height);
 
-            draw_ctx.push_view_box(vbox.0.width, vbox.0.height)
+            draw_ctx.push_view_box(vbox.width, vbox.height)
         } else {
             draw_ctx.push_view_box(marker_width, marker_height)
         };
@@ -189,7 +189,7 @@ impl NodeMarker {
 
         if !values.is_overflow() {
             if let Some(vbox) = self.vbox.get() {
-                draw_ctx.clip(vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
+                draw_ctx.clip(vbox.x, vbox.y, vbox.width, vbox.height);
             } else {
                 draw_ctx.clip(0.0, 0.0, marker_width, marker_height);
             }

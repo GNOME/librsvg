@@ -214,8 +214,8 @@ impl DrawingCtx {
         ViewParams {
             dpi_x: self.dpi.x(),
             dpi_y: self.dpi.y(),
-            view_box_width: stack_top.0.width,
-            view_box_height: stack_top.0.height,
+            view_box_width: stack_top.width,
+            view_box_height: stack_top.height,
             view_box_stack: None,
         }
     }

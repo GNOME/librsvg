@@ -373,20 +373,20 @@ impl PaintSource for NodePattern {
         let _params = if let Some(vbox) = vbox {
             // If there is a vbox, use that
             let (mut x, mut y, w, h) = preserve_aspect_ratio.compute(
-                vbox.0.width,
-                vbox.0.height,
+                vbox.width,
+                vbox.height,
                 0.0,
                 0.0,
                 pattern_width * bbwscale,
                 pattern_height * bbhscale,
             );
 
-            x -= vbox.0.x * w / vbox.0.width;
-            y -= vbox.0.y * h / vbox.0.height;
+            x -= vbox.x * w / vbox.width;
+            y -= vbox.y * h / vbox.height;
 
-            caffine = cairo::Matrix::new(w / vbox.0.width, 0.0, 0.0, h / vbox.0.height, x, y);
+            caffine = cairo::Matrix::new(w / vbox.width, 0.0, 0.0, h / vbox.height, x, y);
 
-            draw_ctx.push_view_box(vbox.0.width, vbox.0.height)
+            draw_ctx.push_view_box(vbox.width, vbox.height)
         } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
             // If coords are in terms of the bounding box, use them
             let bbrect = bbox.rect.unwrap();
