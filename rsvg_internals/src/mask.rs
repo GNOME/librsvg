@@ -35,23 +35,35 @@ pub struct NodeMask {
 impl NodeMask {
     pub fn new() -> NodeMask {
         NodeMask {
-            x: Cell::new(NodeMask::get_default_pos(LengthDir::Horizontal)),
-            y: Cell::new(NodeMask::get_default_pos(LengthDir::Vertical)),
+            x: Cell::new(Self::default_x()),
+            y: Cell::new(Self::default_y()),
 
-            width: Cell::new(NodeMask::get_default_size(LengthDir::Horizontal)),
-            height: Cell::new(NodeMask::get_default_size(LengthDir::Vertical)),
+            width: Cell::new(Self::default_width()),
+            height: Cell::new(Self::default_height()),
 
             units: Cell::new(MaskUnits::default()),
             content_units: Cell::new(MaskContentUnits::default()),
         }
     }
 
-    fn get_default_pos(dir: LengthDir) -> Length {
-        Length::parse_str("-10%", dir).unwrap()
+    fn default_x() -> Length {
+        // per the spec
+        Length::parse_str("-10%", LengthDir::Horizontal).unwrap()
     }
 
-    fn get_default_size(dir: LengthDir) -> Length {
-        Length::parse_str("120%", dir).unwrap()
+    fn default_y() -> Length {
+        // per the spec
+        Length::parse_str("-10%", LengthDir::Vertical).unwrap()
+    }
+
+    fn default_width() -> Length {
+        // per the spec
+        Length::parse_str("120%", LengthDir::Horizontal).unwrap()
+    }
+
+    fn default_height() -> Length {
+        // per the spec
+        Length::parse_str("120%", LengthDir::Vertical).unwrap()
     }
 
     pub fn generate_cairo_mask(
