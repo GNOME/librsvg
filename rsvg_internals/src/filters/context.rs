@@ -6,8 +6,7 @@ use cairo::{self, MatrixTrait};
 
 use bbox::BoundingBox;
 use coord_units::CoordUnits;
-use drawing_ctx::DrawingCtx;
-use length::Length;
+use drawing_ctx::{DrawingCtx, ViewParams};
 use node::RsvgNode;
 use paint_server::PaintServer;
 use properties::ComputedValues;
@@ -366,28 +365,19 @@ impl FilterContext {
         self.effects_region
     }
 
-    /// Calls the given function with correct behavior for the value of `primitiveUnits`.
-    pub fn with_primitive_units<F, T>(&self, draw_ctx: &mut DrawingCtx, f: F) -> T
-    // TODO: Get rid of this Box? Can't just impl Trait because Rust cannot do higher-ranked types.
-    where
-        for<'b> F: FnOnce(Box<Fn(&Length) -> f64 + 'b>) -> T,
-    {
+    pub fn get_computed_from_node_being_filtered(&self) -> &ComputedValues {
+        &self.computed_from_node_being_filtered
+    }
+
+    /// Pushes the viewport size based on the value of `primitiveUnits`.
+    pub fn get_view_params(&self, draw_ctx: &mut DrawingCtx) -> ViewParams {
         let filter = self.node.get_impl::<NodeFilter>().unwrap();
 
         // See comments in compute_effects_region() for how this works.
         if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
-            let _params = draw_ctx.push_view_box(1.0, 1.0);
-            let rv = f(Box::new(Length::get_unitless));
-
-            rv
+            draw_ctx.push_view_box(1.0, 1.0)
         } else {
-            f(Box::new(|length: &Length| {
-                // Filters use the properties of the target node.
-                length.normalize(
-                    &self.computed_from_node_being_filtered,
-                    &draw_ctx.get_view_params(),
-                )
-            }))
+            draw_ctx.get_view_params()
         }
     }
 

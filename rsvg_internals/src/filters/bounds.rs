@@ -115,24 +115,25 @@ impl<'a> BoundsBuilder<'a> {
 
         // If any of the properties were specified, we need to respect them.
         if self.x.is_some() || self.y.is_some() || self.width.is_some() || self.height.is_some() {
-            self.ctx.with_primitive_units(draw_ctx, |normalize| {
-                // These replacements are correct only because self.bbox is used with the paffine
-                // matrix.
-                let rect = self.bbox.rect.as_mut().unwrap();
+            let params = self.ctx.get_view_params(draw_ctx);
+            let values = self.ctx.get_computed_values_from_node_being_filtered();
 
-                if let Some(x) = self.x {
-                    rect.x = normalize(&x);
-                }
-                if let Some(y) = self.y {
-                    rect.y = normalize(&y);
-                }
-                if let Some(width) = self.width {
-                    rect.width = normalize(&width);
-                }
-                if let Some(height) = self.height {
-                    rect.height = normalize(&height);
-                }
-            });
+            // These replacements are correct only because self.bbox is used with the paffine
+            // matrix.
+            let rect = self.bbox.rect.as_mut().unwrap();
+
+            if let Some(x) = self.x {
+                rect.x = x.normalize(values, &params);
+            }
+            if let Some(y) = self.y {
+                rect.y = y.normalize(values, &params);
+            }
+            if let Some(width) = self.width {
+                rect.width = width.normalize(values, &params);
+            }
+            if let Some(height) = self.height {
+                rect.height = height.normalize(values, &params);
+            }
         }
 
         // Convert into the surface coordinate system.
