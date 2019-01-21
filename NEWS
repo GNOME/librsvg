@@ -1,3 +1,11 @@
+Version 2.44.12
+- At build time, you can now pass $CARGO and $RUSTC environment
+  variables if you need to override the default Rust toolchain.
+  Please see COMPILING.md for details.  (Tobias Kortkamp)
+- Fix #405 - In the gdk-pixbuf loader, don't crash the write()
+  function doesn't receive a GError.
+- Fix #398 - Detect circular references in gradients.
+
 Version 2.44.11
 - Fix crash when a linear RGB filter is followed by an SRGB filter
   (Ivan Molodetskikh).
