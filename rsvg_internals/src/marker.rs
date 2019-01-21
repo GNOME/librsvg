@@ -103,17 +103,22 @@ impl NodeMarker {
             units: Cell::new(MarkerUnits::default()),
             ref_x: Cell::new(Length::default()),
             ref_y: Cell::new(Length::default()),
-            width: Cell::new(NodeMarker::get_default_size(LengthDir::Horizontal)),
-            height: Cell::new(NodeMarker::get_default_size(LengthDir::Vertical)),
+            width: Cell::new(Self::default_width()),
+            height: Cell::new(Self::default_height()),
             orient: Cell::new(MarkerOrient::default()),
             aspect: Cell::new(AspectRatio::default()),
             vbox: Cell::new(None),
         }
     }
 
-    fn get_default_size(dir: LengthDir) -> Length {
+    fn default_width() -> Length {
         // per the spec
-        Length::parse_str("3", dir).unwrap()
+        Length::parse_str("3", LengthDir::Horizontal).unwrap()
+    }
+
+    fn default_height() -> Length {
+        // per the spec
+        Length::parse_str("3", LengthDir::Vertical).unwrap()
     }
 
     fn render(
