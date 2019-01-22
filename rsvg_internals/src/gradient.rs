@@ -91,18 +91,18 @@ pub struct GradientCommon {
 #[derive(Copy, Clone)]
 pub enum GradientVariant {
     Linear {
-        x1: Option<Length>,
-        y1: Option<Length>,
-        x2: Option<Length>,
-        y2: Option<Length>,
+        x1: Option<LengthHorizontal>,
+        y1: Option<LengthVertical>,
+        x2: Option<LengthHorizontal>,
+        y2: Option<LengthVertical>,
     },
 
     Radial {
-        cx: Option<Length>,
-        cy: Option<Length>,
-        r: Option<Length>,
-        fx: Option<Length>,
-        fy: Option<Length>,
+        cx: Option<LengthHorizontal>,
+        cy: Option<LengthVertical>,
+        r: Option<LengthBoth>,
+        fx: Option<LengthHorizontal>,
+        fy: Option<LengthVertical>,
     },
 }
 
@@ -256,10 +256,10 @@ impl GradientVariant {
         // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
 
         GradientVariant::Linear {
-            x1: Some(Length::parse_str("0%", LengthDir::Horizontal).unwrap()),
-            y1: Some(Length::parse_str("0%", LengthDir::Vertical).unwrap()),
-            x2: Some(Length::parse_str("100%", LengthDir::Horizontal).unwrap()),
-            y2: Some(Length::parse_str("0%", LengthDir::Vertical).unwrap()),
+            x1: Some(LengthHorizontal::parse_str("0%", ()).unwrap()),
+            y1: Some(LengthVertical::parse_str("0%", ()).unwrap()),
+            x2: Some(LengthHorizontal::parse_str("100%", ()).unwrap()),
+            y2: Some(LengthVertical::parse_str("0%", ()).unwrap()),
         }
     }
 
@@ -267,9 +267,9 @@ impl GradientVariant {
         // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
 
         GradientVariant::Radial {
-            cx: Some(Length::parse_str("50%", LengthDir::Horizontal).unwrap()),
-            cy: Some(Length::parse_str("50%", LengthDir::Vertical).unwrap()),
-            r: Some(Length::parse_str("50%", LengthDir::Both).unwrap()),
+            cx: Some(LengthHorizontal::parse_str("50%", ()).unwrap()),
+            cy: Some(LengthVertical::parse_str("50%", ()).unwrap()),
+            r: Some(LengthBoth::parse_str("50%", ()).unwrap()),
 
             fx: None,
             fy: None,
@@ -684,16 +684,16 @@ impl NodeTrait for NodeGradient {
 
                 // Attributes specific to each gradient type.  The defaults mandated by the spec
                 // are in GradientVariant::resolve_from_defaults()
-                Attribute::X1 => x1 = Some(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Y1 => y1 = Some(attr.parse(value, LengthDir::Vertical)?),
-                Attribute::X2 => x2 = Some(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Y2 => y2 = Some(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::X1 => x1 = Some(attr.parse(value, ())?),
+                Attribute::Y1 => y1 = Some(attr.parse(value, ())?),
+                Attribute::X2 => x2 = Some(attr.parse(value, ())?),
+                Attribute::Y2 => y2 = Some(attr.parse(value, ())?),
 
-                Attribute::Cx => cx = Some(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Cy => cy = Some(attr.parse(value, LengthDir::Vertical)?),
-                Attribute::R => r = Some(attr.parse(value, LengthDir::Both)?),
-                Attribute::Fx => fx = Some(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Fy => fy = Some(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::Cx => cx = Some(attr.parse(value, ())?),
+                Attribute::Cy => cy = Some(attr.parse(value, ())?),
+                Attribute::R => r = Some(attr.parse(value, ())?),
+                Attribute::Fx => fx = Some(attr.parse(value, ())?),
+                Attribute::Fy => fy = Some(attr.parse(value, ())?),
 
                 _ => (),
             }

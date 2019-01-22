@@ -37,10 +37,10 @@ pub struct Pattern {
     pub preserve_aspect_ratio: Option<AspectRatio>,
     pub affine: Option<cairo::Matrix>,
     pub fallback: Option<Fragment>,
-    pub x: Option<Length>,
-    pub y: Option<Length>,
-    pub width: Option<Length>,
-    pub height: Option<Length>,
+    pub x: Option<LengthHorizontal>,
+    pub y: Option<LengthVertical>,
+    pub width: Option<LengthHorizontal>,
+    pub height: Option<LengthVertical>,
 
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
@@ -59,10 +59,10 @@ impl Default for Pattern {
             preserve_aspect_ratio: Some(AspectRatio::default()),
             affine: Some(cairo::Matrix::identity()),
             fallback: None,
-            x: Some(Length::default()),
-            y: Some(Length::default()),
-            width: Some(Length::default()),
-            height: Some(Length::default()),
+            x: Some(Default::default()),
+            y: Some(Default::default()),
+            width: Some(Default::default()),
+            height: Some(Default::default()),
             node: None,
         }
     }
@@ -199,23 +199,23 @@ impl NodeTrait for NodePattern {
                     p.fallback = Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?);
                 }
 
-                Attribute::X => p.x = Some(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::X => p.x = Some(attr.parse(value, ())?),
 
-                Attribute::Y => p.y = Some(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::Y => p.y = Some(attr.parse(value, ())?),
 
                 Attribute::Width => {
                     p.width = Some(attr.parse_and_validate(
                         value,
-                        LengthDir::Horizontal,
-                        Length::check_nonnegative,
+                        (),
+                        LengthHorizontal::check_nonnegative,
                     )?)
                 }
 
                 Attribute::Height => {
                     p.height = Some(attr.parse_and_validate(
                         value,
-                        LengthDir::Vertical,
-                        Length::check_nonnegative,
+                        (),
+                        LengthVertical::check_nonnegative,
                     )?)
                 }
 

@@ -9,7 +9,7 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use error::{RenderingError, ValueErrorKind};
-use length::{Length, LengthDir, LengthUnit};
+use length::{LengthHorizontal, LengthUnit, LengthVertical};
 use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use parsers::{ParseError, ParseValue};
 use properties::{ColorInterpolationFilters, ComputedValues};
@@ -70,10 +70,10 @@ trait Filter: NodeTrait {
 
 /// The base filter primitive node containing common properties.
 struct Primitive {
-    x: Cell<Option<Length>>,
-    y: Cell<Option<Length>>,
-    width: Cell<Option<Length>>,
-    height: Cell<Option<Length>>,
+    x: Cell<Option<LengthHorizontal>>,
+    y: Cell<Option<LengthVertical>>,
+    width: Cell<Option<LengthHorizontal>>,
+    height: Cell<Option<LengthVertical>>,
     result: RefCell<Option<String>>,
 }
 
@@ -124,42 +124,62 @@ impl NodeTrait for Primitive {
             .unwrap_or(CoordUnits::UserSpaceOnUse);
 
         let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
-        let check_units = |length: Length| {
+
+        let check_units_horizontal = |length: LengthHorizontal| {
             if !no_units_allowed {
                 return Ok(length);
             }
 
-            match length.unit {
+            match length.unit() {
                 LengthUnit::Default | LengthUnit::Percent => Ok(length),
                 _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
                 ))),
             }
         };
-        let check_units_and_ensure_nonnegative =
-            |length: Length| check_units(length).and_then(Length::check_nonnegative);
+
+        let check_units_vertical = |length: LengthVertical| {
+            if !no_units_allowed {
+                return Ok(length);
+            }
+
+            match length.unit() {
+                LengthUnit::Default | LengthUnit::Percent => Ok(length),
+                _ => Err(ValueErrorKind::Parse(ParseError::new(
+                    "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
+                ))),
+            }
+        };
+
+        let check_units_horizontal_and_ensure_nonnegative = |length: LengthHorizontal| {
+            check_units_horizontal(length).and_then(LengthHorizontal::check_nonnegative)
+        };
+
+        let check_units_vertical_and_ensure_nonnegative = |length: LengthVertical| {
+            check_units_vertical(length).and_then(LengthVertical::check_nonnegative)
+        };
 
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::X => self.x.set(Some(attr.parse_and_validate(
                     value,
-                    LengthDir::Horizontal,
-                    check_units,
+                    (),
+                    check_units_horizontal,
                 )?)),
                 Attribute::Y => self.y.set(Some(attr.parse_and_validate(
                     value,
-                    LengthDir::Vertical,
-                    check_units,
+                    (),
+                    check_units_vertical,
                 )?)),
                 Attribute::Width => self.width.set(Some(attr.parse_and_validate(
                     value,
-                    LengthDir::Horizontal,
-                    check_units_and_ensure_nonnegative,
+                    (),
+                    check_units_horizontal_and_ensure_nonnegative,
                 )?)),
                 Attribute::Height => self.height.set(Some(attr.parse_and_validate(
                     value,
-                    LengthDir::Vertical,
-                    check_units_and_ensure_nonnegative,
+                    (),
+                    check_units_vertical_and_ensure_nonnegative,
                 )?)),
                 Attribute::Result => *self.result.borrow_mut() = Some(value.to_string()),
                 _ => (),

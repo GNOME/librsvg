@@ -24,8 +24,8 @@ impl NodeStop {
     }
 }
 
-fn validate_offset(length: Length) -> Result<Length, ValueErrorKind> {
-    match length.unit {
+fn validate_offset(length: LengthBoth) -> Result<LengthBoth, ValueErrorKind> {
+    match length.unit() {
         LengthUnit::Default | LengthUnit::Percent => Ok(length),
         _ => Err(ValueErrorKind::Value(
             "stop offset must be in default or percent units".to_string(),
@@ -39,8 +39,8 @@ impl NodeTrait for NodeStop {
             match attr {
                 Attribute::Offset => {
                     self.offset.set(
-                        attr.parse_and_validate(value, LengthDir::Both, validate_offset)
-                            .map(|l| UnitInterval::clamp(l.length))?,
+                        attr.parse_and_validate(value, (), validate_offset)
+                            .map(|l| UnitInterval::clamp(l.length()))?,
                     );
                 }
                 _ => (),

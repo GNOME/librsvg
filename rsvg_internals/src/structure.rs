@@ -97,10 +97,10 @@ impl NodeTrait for NodeSwitch {
 
 pub struct NodeSvg {
     preserve_aspect_ratio: Cell<AspectRatio>,
-    x: Cell<Length>,
-    y: Cell<Length>,
-    w: Cell<Length>,
-    h: Cell<Length>,
+    x: Cell<LengthHorizontal>,
+    y: Cell<LengthVertical>,
+    w: Cell<LengthHorizontal>,
+    h: Cell<LengthVertical>,
     vbox: Cell<Option<ViewBox>>,
     pbag: RefCell<Option<OwnedPropertyBag>>,
 }
@@ -109,10 +109,10 @@ impl NodeSvg {
     pub fn new() -> NodeSvg {
         NodeSvg {
             preserve_aspect_ratio: Cell::new(AspectRatio::default()),
-            x: Cell::new(Length::parse_str("0", LengthDir::Horizontal).unwrap()),
-            y: Cell::new(Length::parse_str("0", LengthDir::Vertical).unwrap()),
-            w: Cell::new(Length::parse_str("100%", LengthDir::Horizontal).unwrap()),
-            h: Cell::new(Length::parse_str("100%", LengthDir::Vertical).unwrap()),
+            x: Cell::new(LengthHorizontal::parse_str("0", ()).unwrap()),
+            y: Cell::new(LengthVertical::parse_str("0", ()).unwrap()),
+            w: Cell::new(LengthHorizontal::parse_str("100%", ()).unwrap()),
+            h: Cell::new(LengthVertical::parse_str("100%", ()).unwrap()),
             vbox: Cell::new(None),
             pbag: RefCell::new(None),
         }
@@ -131,7 +131,7 @@ impl NodeSvg {
                 w.hand_normalize(dpi.x(), vbox.width, 12.0).round() as i32,
                 h.hand_normalize(dpi.y(), vbox.height, 12.0).round() as i32,
             )),
-            (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
+            (w, h, None) if w.unit() != LengthUnit::Percent && h.unit() != LengthUnit::Percent => {
                 Some((
                     w.hand_normalize(dpi.x(), 0.0, 12.0).round() as i32,
                     h.hand_normalize(dpi.y(), 0.0, 12.0).round() as i32,
@@ -160,26 +160,26 @@ impl NodeTrait for NodeSvg {
 
                 Attribute::X => {
                     if is_inner_svg {
-                        self.x.set(attr.parse(value, LengthDir::Horizontal)?);
+                        self.x.set(attr.parse(value, ())?);
                     }
                 }
 
                 Attribute::Y => {
                     if is_inner_svg {
-                        self.y.set(attr.parse(value, LengthDir::Vertical)?);
+                        self.y.set(attr.parse(value, ())?);
                     }
                 }
 
                 Attribute::Width => self.w.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Horizontal,
-                    Length::check_nonnegative,
+                    (),
+                    LengthHorizontal::check_nonnegative,
                 )?),
 
                 Attribute::Height => self.h.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Vertical,
-                    Length::check_nonnegative,
+                    (),
+                    LengthVertical::check_nonnegative,
                 )?),
 
                 Attribute::ViewBox => self.vbox.set(attr.parse(value, ()).map(Some)?),
@@ -237,18 +237,18 @@ impl NodeTrait for NodeSvg {
 
 pub struct NodeUse {
     link: RefCell<Option<Fragment>>,
-    x: Cell<Length>,
-    y: Cell<Length>,
-    w: Cell<Option<Length>>,
-    h: Cell<Option<Length>>,
+    x: Cell<LengthHorizontal>,
+    y: Cell<LengthVertical>,
+    w: Cell<Option<LengthHorizontal>>,
+    h: Cell<Option<LengthVertical>>,
 }
 
 impl NodeUse {
     pub fn new() -> NodeUse {
         NodeUse {
             link: RefCell::new(None),
-            x: Cell::new(Length::default()),
-            y: Cell::new(Length::default()),
+            x: Cell::new(Default::default()),
+            y: Cell::new(Default::default()),
             w: Cell::new(None),
             h: Cell::new(None),
         }
@@ -264,19 +264,15 @@ impl NodeTrait for NodeUse {
                         Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
                 }
 
-                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::X => self.x.set(attr.parse(value, ())?),
+                Attribute::Y => self.y.set(attr.parse(value, ())?),
 
                 Attribute::Width => self.w.set(
-                    attr.parse_and_validate(
-                        value,
-                        LengthDir::Horizontal,
-                        Length::check_nonnegative,
-                    )
-                    .map(Some)?,
+                    attr.parse_and_validate(value, (), LengthHorizontal::check_nonnegative)
+                        .map(Some)?,
                 ),
                 Attribute::Height => self.h.set(
-                    attr.parse_and_validate(value, LengthDir::Vertical, Length::check_nonnegative)
+                    attr.parse_and_validate(value, (), LengthVertical::check_nonnegative)
                         .map(Some)?,
                 ),
 
@@ -338,12 +334,12 @@ impl NodeTrait for NodeUse {
         let nw = self
             .w
             .get()
-            .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Horizontal).unwrap())
+            .unwrap_or_else(|| LengthHorizontal::parse_str("100%", ()).unwrap())
             .normalize(values, &params);
         let nh = self
             .h
             .get()
-            .unwrap_or_else(|| Length::parse_str("100%", LengthDir::Vertical).unwrap())
+            .unwrap_or_else(|| LengthVertical::parse_str("100%", ()).unwrap())
             .normalize(values, &params);
 
         // width or height set to 0 disables rendering of the element

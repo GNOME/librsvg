@@ -276,19 +276,19 @@ impl NodeTrait for NodePoly {
 }
 
 pub struct NodeLine {
-    x1: Cell<Length>,
-    y1: Cell<Length>,
-    x2: Cell<Length>,
-    y2: Cell<Length>,
+    x1: Cell<LengthHorizontal>,
+    y1: Cell<LengthVertical>,
+    x2: Cell<LengthHorizontal>,
+    y2: Cell<LengthVertical>,
 }
 
 impl NodeLine {
     pub fn new() -> NodeLine {
         NodeLine {
-            x1: Cell::new(Length::default()),
-            y1: Cell::new(Length::default()),
-            x2: Cell::new(Length::default()),
-            y2: Cell::new(Length::default()),
+            x1: Cell::new(Default::default()),
+            y1: Cell::new(Default::default()),
+            x2: Cell::new(Default::default()),
+            y2: Cell::new(Default::default()),
         }
     }
 }
@@ -297,10 +297,10 @@ impl NodeTrait for NodeLine {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X1 => self.x1.set(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Y1 => self.y1.set(attr.parse(value, LengthDir::Vertical)?),
-                Attribute::X2 => self.x2.set(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Y2 => self.y2.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::X1 => self.x1.set(attr.parse(value, ())?),
+                Attribute::Y1 => self.y1.set(attr.parse(value, ())?),
+                Attribute::X2 => self.x2.set(attr.parse(value, ())?),
+                Attribute::Y2 => self.y2.set(attr.parse(value, ())?),
                 _ => (),
             }
         }
@@ -335,23 +335,23 @@ impl NodeTrait for NodeLine {
 
 pub struct NodeRect {
     // x, y, width, height
-    x: Cell<Length>,
-    y: Cell<Length>,
-    w: Cell<Length>,
-    h: Cell<Length>,
+    x: Cell<LengthHorizontal>,
+    y: Cell<LengthVertical>,
+    w: Cell<LengthHorizontal>,
+    h: Cell<LengthVertical>,
 
     // Radiuses for rounded corners
-    rx: Cell<Option<Length>>,
-    ry: Cell<Option<Length>>,
+    rx: Cell<Option<LengthHorizontal>>,
+    ry: Cell<Option<LengthVertical>>,
 }
 
 impl NodeRect {
     pub fn new() -> NodeRect {
         NodeRect {
-            x: Cell::new(Length::default()),
-            y: Cell::new(Length::default()),
-            w: Cell::new(Length::default()),
-            h: Cell::new(Length::default()),
+            x: Cell::new(Default::default()),
+            y: Cell::new(Default::default()),
+            w: Cell::new(Default::default()),
+            h: Cell::new(Default::default()),
 
             rx: Cell::new(None),
             ry: Cell::new(None),
@@ -363,28 +363,24 @@ impl NodeTrait for NodeRect {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::X => self.x.set(attr.parse(value, ())?),
+                Attribute::Y => self.y.set(attr.parse(value, ())?),
                 Attribute::Width => self.w.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Horizontal,
-                    Length::check_nonnegative,
+                    (),
+                    LengthHorizontal::check_nonnegative,
                 )?),
                 Attribute::Height => self.h.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Vertical,
-                    Length::check_nonnegative,
+                    (),
+                    LengthVertical::check_nonnegative,
                 )?),
                 Attribute::Rx => self.rx.set(
-                    attr.parse_and_validate(
-                        value,
-                        LengthDir::Horizontal,
-                        Length::check_nonnegative,
-                    )
-                    .map(Some)?,
+                    attr.parse_and_validate(value, (), LengthHorizontal::check_nonnegative)
+                        .map(Some)?,
                 ),
                 Attribute::Ry => self.ry.set(
-                    attr.parse_and_validate(value, LengthDir::Vertical, Length::check_nonnegative)
+                    attr.parse_and_validate(value, (), LengthVertical::check_nonnegative)
                         .map(Some)?,
                 ),
 
@@ -544,17 +540,17 @@ impl NodeTrait for NodeRect {
 }
 
 pub struct NodeCircle {
-    cx: Cell<Length>,
-    cy: Cell<Length>,
-    r: Cell<Length>,
+    cx: Cell<LengthHorizontal>,
+    cy: Cell<LengthVertical>,
+    r: Cell<LengthBoth>,
 }
 
 impl NodeCircle {
     pub fn new() -> NodeCircle {
         NodeCircle {
-            cx: Cell::new(Length::default()),
-            cy: Cell::new(Length::default()),
-            r: Cell::new(Length::default()),
+            cx: Cell::new(Default::default()),
+            cy: Cell::new(Default::default()),
+            r: Cell::new(Default::default()),
         }
     }
 }
@@ -563,13 +559,12 @@ impl NodeTrait for NodeCircle {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Cy => self.cy.set(attr.parse(value, LengthDir::Vertical)?),
-                Attribute::R => self.r.set(attr.parse_and_validate(
-                    value,
-                    LengthDir::Both,
-                    Length::check_nonnegative,
-                )?),
+                Attribute::Cx => self.cx.set(attr.parse(value, ())?),
+                Attribute::Cy => self.cy.set(attr.parse(value, ())?),
+                Attribute::R => {
+                    self.r
+                        .set(attr.parse_and_validate(value, (), LengthBoth::check_nonnegative)?)
+                }
 
                 _ => (),
             }
@@ -598,19 +593,19 @@ impl NodeTrait for NodeCircle {
 }
 
 pub struct NodeEllipse {
-    cx: Cell<Length>,
-    cy: Cell<Length>,
-    rx: Cell<Length>,
-    ry: Cell<Length>,
+    cx: Cell<LengthHorizontal>,
+    cy: Cell<LengthVertical>,
+    rx: Cell<LengthHorizontal>,
+    ry: Cell<LengthVertical>,
 }
 
 impl NodeEllipse {
     pub fn new() -> NodeEllipse {
         NodeEllipse {
-            cx: Cell::new(Length::default()),
-            cy: Cell::new(Length::default()),
-            rx: Cell::new(Length::default()),
-            ry: Cell::new(Length::default()),
+            cx: Cell::new(Default::default()),
+            cy: Cell::new(Default::default()),
+            rx: Cell::new(Default::default()),
+            ry: Cell::new(Default::default()),
         }
     }
 }
@@ -619,17 +614,17 @@ impl NodeTrait for NodeEllipse {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Cy => self.cy.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::Cx => self.cx.set(attr.parse(value, ())?),
+                Attribute::Cy => self.cy.set(attr.parse(value, ())?),
                 Attribute::Rx => self.rx.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Horizontal,
-                    Length::check_nonnegative,
+                    (),
+                    LengthHorizontal::check_nonnegative,
                 )?),
                 Attribute::Ry => self.ry.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Vertical,
-                    Length::check_nonnegative,
+                    (),
+                    LengthVertical::check_nonnegative,
                 )?),
 
                 _ => (),

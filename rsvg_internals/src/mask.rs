@@ -5,7 +5,7 @@ use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::DrawingCtx;
 use error::RenderingError;
-use length::{Length, LengthDir};
+use length::{LengthHorizontal, LengthVertical};
 use node::{NodeResult, NodeTrait, RsvgNode};
 use parsers::{Parse, ParseValue};
 use properties::Opacity;
@@ -23,10 +23,10 @@ coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
 
 pub struct NodeMask {
-    x: Cell<Length>,
-    y: Cell<Length>,
-    width: Cell<Length>,
-    height: Cell<Length>,
+    x: Cell<LengthHorizontal>,
+    y: Cell<LengthVertical>,
+    width: Cell<LengthHorizontal>,
+    height: Cell<LengthVertical>,
 
     units: Cell<MaskUnits>,
     content_units: Cell<MaskContentUnits>,
@@ -35,35 +35,16 @@ pub struct NodeMask {
 impl NodeMask {
     pub fn new() -> NodeMask {
         NodeMask {
-            x: Cell::new(Self::default_x()),
-            y: Cell::new(Self::default_y()),
+            // these values are per the spec
+            x: Cell::new(LengthHorizontal::parse_str("-10%", ()).unwrap()),
+            y: Cell::new(LengthVertical::parse_str("-10%", ()).unwrap()),
 
-            width: Cell::new(Self::default_width()),
-            height: Cell::new(Self::default_height()),
+            width: Cell::new(LengthHorizontal::parse_str("120%", ()).unwrap()),
+            height: Cell::new(LengthVertical::parse_str("120%", ()).unwrap()),
 
             units: Cell::new(MaskUnits::default()),
             content_units: Cell::new(MaskContentUnits::default()),
         }
-    }
-
-    fn default_x() -> Length {
-        // per the spec
-        Length::parse_str("-10%", LengthDir::Horizontal).unwrap()
-    }
-
-    fn default_y() -> Length {
-        // per the spec
-        Length::parse_str("-10%", LengthDir::Vertical).unwrap()
-    }
-
-    fn default_width() -> Length {
-        // per the spec
-        Length::parse_str("120%", LengthDir::Horizontal).unwrap()
-    }
-
-    fn default_height() -> Length {
-        // per the spec
-        Length::parse_str("120%", LengthDir::Vertical).unwrap()
     }
 
     pub fn generate_cairo_mask(
@@ -207,17 +188,17 @@ impl NodeTrait for NodeMask {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::X => self.x.set(attr.parse(value, ())?),
+                Attribute::Y => self.y.set(attr.parse(value, ())?),
                 Attribute::Width => self.width.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Horizontal,
-                    Length::check_nonnegative,
+                    (),
+                    LengthHorizontal::check_nonnegative,
                 )?),
                 Attribute::Height => self.height.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Vertical,
-                    Length::check_nonnegative,
+                    (),
+                    LengthVertical::check_nonnegative,
                 )?),
                 Attribute::MaskUnits => self.units.set(attr.parse(value, ())?),
                 Attribute::MaskContentUnits => self.content_units.set(attr.parse(value, ())?),

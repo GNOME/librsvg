@@ -9,17 +9,17 @@ use bbox::BoundingBox;
 use drawing_ctx::DrawingCtx;
 use error::{NodeError, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
-use length::*;
+use length::{LengthHorizontal, LengthVertical};
 use node::*;
 use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
 
 pub struct NodeImage {
     aspect: Cell<AspectRatio>,
-    x: Cell<Length>,
-    y: Cell<Length>,
-    w: Cell<Length>,
-    h: Cell<Length>,
+    x: Cell<LengthHorizontal>,
+    y: Cell<LengthVertical>,
+    w: Cell<LengthHorizontal>,
+    h: Cell<LengthVertical>,
     href: RefCell<Option<Href>>,
 }
 
@@ -27,10 +27,10 @@ impl NodeImage {
     pub fn new() -> NodeImage {
         NodeImage {
             aspect: Cell::new(AspectRatio::default()),
-            x: Cell::new(Length::default()),
-            y: Cell::new(Length::default()),
-            w: Cell::new(Length::default()),
-            h: Cell::new(Length::default()),
+            x: Cell::new(Default::default()),
+            y: Cell::new(Default::default()),
+            w: Cell::new(Default::default()),
+            h: Cell::new(Default::default()),
             href: RefCell::new(None),
         }
     }
@@ -44,17 +44,17 @@ impl NodeTrait for NodeImage {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::X => self.x.set(attr.parse(value, ())?),
+                Attribute::Y => self.y.set(attr.parse(value, ())?),
                 Attribute::Width => self.w.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Horizontal,
-                    Length::check_nonnegative,
+                    (),
+                    LengthHorizontal::check_nonnegative,
                 )?),
                 Attribute::Height => self.h.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Vertical,
-                    Length::check_nonnegative,
+                    (),
+                    LengthVertical::check_nonnegative,
                 )?),
 
                 Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value, ())?),

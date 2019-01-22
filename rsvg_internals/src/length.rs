@@ -17,27 +17,103 @@ pub enum LengthUnit {
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub enum LengthDir {
+enum LengthDir {
     Horizontal,
     Vertical,
     Both,
 }
 
+macro_rules! define_length_type {
+    ($name:ident, $dir:expr) => {
+        #[derive(Debug, PartialEq, Copy, Clone)]
+        pub struct $name(Length);
+
+        impl $name {
+            pub fn new(length: f64, unit: LengthUnit) -> Self {
+                $name(Length::new(length, unit, $dir))
+            }
+
+            pub fn length(&self) -> f64 {
+                self.0.length
+            }
+
+            pub fn unit(&self) -> LengthUnit {
+                self.0.unit
+            }
+
+            pub fn get_unitless(&self) -> f64 {
+                self.0.get_unitless()
+            }
+
+            pub fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
+                if self.length() >= 0.0 {
+                    Ok(self)
+                } else {
+                    Err(ValueErrorKind::Value(
+                        "value must be non-negative".to_string(),
+                    ))
+                }
+            }
+
+            pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
+                self.0.normalize(values, params)
+            }
+
+            pub fn hand_normalize(
+                &self,
+                pixels_per_inch: f64,
+                width_or_height: f64,
+                font_size: f64,
+            ) -> f64 {
+                self.0
+                    .hand_normalize(pixels_per_inch, width_or_height, font_size)
+            }
+
+            pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+                Ok($name(Length::from_cssparser(parser, $dir)?))
+            }
+        }
+
+        impl Default for $name {
+            fn default() -> Self {
+                $name(Length::new(0.0, LengthUnit::Default, $dir))
+            }
+        }
+
+        impl Parse for $name {
+            type Data = ();
+            type Err = ValueErrorKind;
+
+            fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<$name, ValueErrorKind> {
+                Ok($name(Length::parse(parser, $dir)?))
+            }
+        }
+    };
+}
+
+/// Horizontal length
+///
+/// When this is specified as a percent value, it will get resolved
+/// against the current viewport's width.
+define_length_type!(LengthHorizontal, LengthDir::Horizontal);
+
+/// Vertical length
+///
+/// When this is specified as a percent value, it will get resolved
+/// against the current viewport's height.
+define_length_type!(LengthVertical, LengthDir::Vertical);
+
+/// "Both" length
+///
+/// When this is specified as a percent value, it will get resolved
+/// against the current viewport's width and height.
+define_length_type!(LengthBoth, LengthDir::Both);
+
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub struct Length {
+struct Length {
     pub length: f64,
     pub unit: LengthUnit,
     dir: LengthDir,
-}
-
-impl Default for Length {
-    fn default() -> Length {
-        Length {
-            length: 0.0,
-            unit: LengthUnit::Default,
-            dir: LengthDir::Both,
-        }
-    }
 }
 
 pub const POINTS_PER_INCH: f64 = 72.0;
@@ -76,21 +152,11 @@ impl Parse for Length {
 }
 
 impl Length {
-    pub fn new(l: f64, unit: LengthUnit, dir: LengthDir) -> Length {
+    fn new(l: f64, unit: LengthUnit, dir: LengthDir) -> Length {
         Length {
             length: l,
             unit,
             dir,
-        }
-    }
-
-    pub fn check_nonnegative(self) -> Result<Length, ValueErrorKind> {
-        if self.length >= 0.0 {
-            Ok(self)
-        } else {
-            Err(ValueErrorKind::Value(
-                "value must be non-negative".to_string(),
-            ))
         }
     }
 
@@ -236,7 +302,7 @@ fn font_size_from_inch(length: f64, dir: LengthDir, params: &ViewParams) -> f64 
 }
 
 fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
-    let v = &values.font_size.0.value();
+    let v = &values.font_size.0.value().0;
 
     match v.unit {
         LengthUnit::Default => v.length,
@@ -263,7 +329,7 @@ fn viewport_percentage(x: f64, y: f64) -> f64 {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Dasharray {
     None,
-    Array(Vec<Length>),
+    Array(Vec<LengthBoth>),
 }
 
 impl Default for Dasharray {
@@ -286,13 +352,11 @@ impl Parse for Dasharray {
 }
 
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
-fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<Length>, ValueErrorKind> {
+fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<LengthBoth>, ValueErrorKind> {
     let mut dasharray = Vec::new();
 
     loop {
-        dasharray.push(
-            Length::from_cssparser(parser, LengthDir::Both).and_then(Length::check_nonnegative)?,
-        );
+        dasharray.push(LengthBoth::from_cssparser(parser).and_then(LengthBoth::check_nonnegative)?);
 
         if parser.is_exhausted() {
             break;
@@ -398,10 +462,10 @@ mod tests {
 
     #[test]
     fn check_nonnegative_works() {
-        assert!(Length::parse_str("0", LengthDir::Both)
+        assert!(LengthBoth::parse_str("0", ())
             .and_then(|l| l.check_nonnegative())
             .is_ok());
-        assert!(Length::parse_str("-10", LengthDir::Both)
+        assert!(LengthBoth::parse_str("-10", ())
             .and_then(|l| l.check_nonnegative())
             .is_err());
     }
@@ -478,7 +542,7 @@ mod tests {
     #[test]
     fn parses_dash_array() {
         // helper to cut down boilderplate
-        let length_parse = |s| Length::parse_str(s, LengthDir::Both).unwrap();
+        let length_parse = |s| LengthBoth::parse_str(s, ()).unwrap();
 
         let expected = Dasharray::Array(vec![
             length_parse("1"),

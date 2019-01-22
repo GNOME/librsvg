@@ -13,7 +13,7 @@ use drawing_ctx::DrawingCtx;
 use error::*;
 use float_eq_cairo::ApproxEqCairo;
 use iri::IRI;
-use length::{Length, LengthDir};
+use length::{LengthHorizontal, LengthVertical};
 use node::*;
 use parsers::{Parse, ParseError, ParseValue};
 use path_builder::*;
@@ -88,10 +88,10 @@ impl Parse for MarkerOrient {
 
 pub struct NodeMarker {
     units: Cell<MarkerUnits>,
-    ref_x: Cell<Length>,
-    ref_y: Cell<Length>,
-    width: Cell<Length>,
-    height: Cell<Length>,
+    ref_x: Cell<LengthHorizontal>,
+    ref_y: Cell<LengthVertical>,
+    width: Cell<LengthHorizontal>,
+    height: Cell<LengthVertical>,
     orient: Cell<MarkerOrient>,
     aspect: Cell<AspectRatio>,
     vbox: Cell<Option<ViewBox>>,
@@ -101,24 +101,15 @@ impl NodeMarker {
     pub fn new() -> NodeMarker {
         NodeMarker {
             units: Cell::new(MarkerUnits::default()),
-            ref_x: Cell::new(Length::default()),
-            ref_y: Cell::new(Length::default()),
-            width: Cell::new(Self::default_width()),
-            height: Cell::new(Self::default_height()),
+            ref_x: Cell::new(Default::default()),
+            ref_y: Cell::new(Default::default()),
+            // the following two are per the spec
+            width: Cell::new(LengthHorizontal::parse_str("3", ()).unwrap()),
+            height: Cell::new(LengthVertical::parse_str("3", ()).unwrap()),
             orient: Cell::new(MarkerOrient::default()),
             aspect: Cell::new(AspectRatio::default()),
             vbox: Cell::new(None),
         }
-    }
-
-    fn default_width() -> Length {
-        // per the spec
-        Length::parse_str("3", LengthDir::Horizontal).unwrap()
-    }
-
-    fn default_height() -> Length {
-        // per the spec
-        Length::parse_str("3", LengthDir::Vertical).unwrap()
     }
 
     fn render(
@@ -220,20 +211,20 @@ impl NodeTrait for NodeMarker {
             match attr {
                 Attribute::MarkerUnits => self.units.set(attr.parse(value, ())?),
 
-                Attribute::RefX => self.ref_x.set(attr.parse(value, LengthDir::Horizontal)?),
+                Attribute::RefX => self.ref_x.set(attr.parse(value, ())?),
 
-                Attribute::RefY => self.ref_y.set(attr.parse(value, LengthDir::Vertical)?),
+                Attribute::RefY => self.ref_y.set(attr.parse(value, ())?),
 
                 Attribute::MarkerWidth => self.width.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Horizontal,
-                    Length::check_nonnegative,
+                    (),
+                    LengthHorizontal::check_nonnegative,
                 )?),
 
                 Attribute::MarkerHeight => self.height.set(attr.parse_and_validate(
                     value,
-                    LengthDir::Vertical,
-                    Length::check_nonnegative,
+                    (),
+                    LengthVertical::check_nonnegative,
                 )?),
 
                 Attribute::Orient => self.orient.set(attr.parse(value, ())?),

@@ -6,7 +6,7 @@ use attributes::Attribute;
 use error::*;
 use font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
 use iri::IRI;
-use length::{Dasharray, Length, LengthDir, LengthUnit};
+use length::{Dasharray, LengthBoth, LengthUnit};
 use paint_server::PaintServer;
 use parsers::{Parse, ParseError};
 use property_bag::PropertyBag;
@@ -407,7 +407,7 @@ impl SpecifiedValues {
                 }
 
                 Attribute::StrokeDashoffset => {
-                    self.stroke_dashoffset = parse_property(value, LengthDir::Both)?;
+                    self.stroke_dashoffset = parse_property(value, ())?;
                 }
 
                 Attribute::StrokeLinecap => {
@@ -427,7 +427,7 @@ impl SpecifiedValues {
                 }
 
                 Attribute::StrokeWidth => {
-                    self.stroke_width = parse_property(value, LengthDir::Both)?;
+                    self.stroke_width = parse_property(value, ())?;
                 }
 
                 Attribute::TextAnchor => {
@@ -593,8 +593,8 @@ where
 make_property!(
     ComputedValues,
     BaselineShift,
-    default: Length::parse_str("0.0", LengthDir::Both).unwrap(),
-    newtype: Length,
+    default: LengthBoth::parse_str("0.0", ()).unwrap(),
+    newtype: LengthBoth,
     property_impl: {
         impl Property<ComputedValues> for BaselineShift {
             fn inherits_automatically() -> bool {
@@ -608,11 +608,11 @@ make_property!(
                 // 1) we only handle 'percent' shifts, but it could also be an absolute offset
                 // 2) we should be able to normalize the lengths and add even if they have
                 //    different units, but at the moment that requires access to the draw_ctx
-                if self.0.unit != LengthUnit::Percent || v.baseline_shift.0.unit != font_size.unit {
-                    return BaselineShift(Length::new(v.baseline_shift.0.length, v.baseline_shift.0.unit, LengthDir::Both));
+                if self.0.unit() != LengthUnit::Percent || v.baseline_shift.0.unit() != font_size.unit() {
+                    return BaselineShift(LengthBoth::new(v.baseline_shift.0.length(), v.baseline_shift.0.unit()));
                 }
 
-                BaselineShift(Length::new(self.0.length * font_size.length + v.baseline_shift.0.length, font_size.unit, LengthDir::Both))
+                BaselineShift(LengthBoth::new(self.0.length() * font_size.length() + v.baseline_shift.0.length(), font_size.unit()))
             }
         }
     },
@@ -634,15 +634,15 @@ make_property!(
                     if let Token::Ident(ref cow) = token {
                         match cow.as_ref() {
                             "baseline" => return Ok(BaselineShift(
-                                Length::new(0.0, LengthUnit::Percent, LengthDir::Both)
+                                LengthBoth::new(0.0, LengthUnit::Percent)
                             )),
 
                             "sub" => return Ok(BaselineShift(
-                                Length::new(-0.2, LengthUnit::Percent, LengthDir::Both)
+                                LengthBoth::new(-0.2, LengthUnit::Percent)
                             )),
 
                             "super" => return Ok(BaselineShift(
-                                Length::new(0.4, LengthUnit::Percent, LengthDir::Both),
+                                LengthBoth::new(0.4, LengthUnit::Percent),
                             )),
 
                             _ => (),
@@ -652,7 +652,7 @@ make_property!(
 
                 parser.reset(&parser_state);
 
-                Ok(BaselineShift(Length::from_cssparser(parser, LengthDir::Both)?))
+                Ok(BaselineShift(LengthBoth::from_cssparser(parser)?))
             }
         }
     }
@@ -836,7 +836,7 @@ make_property!(
 make_property!(
     ComputedValues,
     FontSize,
-    default: FontSizeSpec::Value(Length::parse_str("12.0", LengthDir::Both).unwrap()),
+    default: FontSizeSpec::Value(LengthBoth::parse_str("12.0", ()).unwrap()),
     newtype_parse: FontSizeSpec,
     parse_data_type: (),
     property_impl: {
@@ -1060,10 +1060,10 @@ make_property!(
 make_property!(
     ComputedValues,
     StrokeDashoffset,
-    default: Length::default(),
+    default: LengthBoth::default(),
     inherits_automatically: true,
-    newtype_parse: Length,
-    parse_data_type: LengthDir
+    newtype_parse: LengthBoth,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeLinecapProperty
@@ -1116,10 +1116,10 @@ make_property!(
 make_property!(
     ComputedValues,
     StrokeWidth,
-    default: Length::parse_str("1.0", LengthDir::Both).unwrap(),
+    default: LengthBoth::parse_str("1.0", ()).unwrap(),
     inherits_automatically: true,
-    newtype_parse: Length,
-    parse_data_type: LengthDir
+    newtype_parse: LengthBoth,
+    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/text.html#TextAnchorProperty

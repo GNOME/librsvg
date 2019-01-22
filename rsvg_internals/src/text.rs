@@ -45,15 +45,15 @@ use space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 /// [text chunk]: https://www.w3.org/TR/SVG11/text.html#TextLayoutIntroduction
 struct Chunk {
     values: ComputedValues,
-    x: Option<Length>,
-    y: Option<Length>,
+    x: Option<LengthHorizontal>,
+    y: Option<LengthVertical>,
     spans: Vec<Span>,
 }
 
 struct MeasuredChunk {
     values: ComputedValues,
-    x: Option<Length>,
-    y: Option<Length>,
+    x: Option<LengthHorizontal>,
+    y: Option<LengthVertical>,
     advance: (f64, f64),
     spans: Vec<MeasuredSpan>,
 }
@@ -67,8 +67,8 @@ struct PositionedChunk {
 struct Span {
     values: ComputedValues,
     text: String,
-    dx: Option<Length>,
-    dy: Option<Length>,
+    dx: Option<LengthHorizontal>,
+    dy: Option<LengthVertical>,
     _depth: usize,
 }
 
@@ -77,8 +77,8 @@ struct MeasuredSpan {
     layout: pango::Layout,
     _layout_size: (f64, f64),
     advance: (f64, f64),
-    dx: Option<Length>,
-    dy: Option<Length>,
+    dx: Option<LengthHorizontal>,
+    dy: Option<LengthVertical>,
 }
 
 struct PositionedSpan {
@@ -89,7 +89,11 @@ struct PositionedSpan {
 }
 
 impl Chunk {
-    fn new(values: &ComputedValues, x: Option<Length>, y: Option<Length>) -> Chunk {
+    fn new(
+        values: &ComputedValues,
+        x: Option<LengthHorizontal>,
+        y: Option<LengthVertical>,
+    ) -> Chunk {
         Chunk {
             values: values.clone(),
             x,
@@ -182,8 +186,8 @@ impl Span {
     fn new(
         text: &str,
         values: ComputedValues,
-        dx: Option<Length>,
-        dy: Option<Length>,
+        dx: Option<LengthHorizontal>,
+        dy: Option<LengthVertical>,
         depth: usize,
     ) -> Span {
         Span {
@@ -415,8 +419,8 @@ fn children_to_chunks(
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
     draw_ctx: &mut DrawingCtx,
-    dx: Option<Length>,
-    dy: Option<Length>,
+    dx: Option<LengthHorizontal>,
+    dy: Option<LengthVertical>,
     depth: usize,
 ) {
     for child in node.children() {
@@ -507,8 +511,8 @@ impl NodeChars {
         &self,
         node: &RsvgNode,
         values: &ComputedValues,
-        dx: Option<Length>,
-        dy: Option<Length>,
+        dx: Option<LengthHorizontal>,
+        dy: Option<LengthVertical>,
         depth: usize,
     ) -> Span {
         self.ensure_normalized_string(node, values);
@@ -527,8 +531,8 @@ impl NodeChars {
         node: &RsvgNode,
         values: &ComputedValues,
         chunks: &mut Vec<Chunk>,
-        dx: Option<Length>,
-        dy: Option<Length>,
+        dx: Option<LengthHorizontal>,
+        dy: Option<LengthVertical>,
         depth: usize,
     ) {
         let span = self.make_span(&node, values, dx, dy, depth);
@@ -547,17 +551,17 @@ impl NodeTrait for NodeChars {
 }
 
 pub struct NodeText {
-    x: Cell<Length>,
-    y: Cell<Length>,
-    dx: Cell<Option<Length>>,
-    dy: Cell<Option<Length>>,
+    x: Cell<LengthHorizontal>,
+    y: Cell<LengthVertical>,
+    dx: Cell<Option<LengthHorizontal>>,
+    dy: Cell<Option<LengthVertical>>,
 }
 
 impl NodeText {
     pub fn new() -> NodeText {
         NodeText {
-            x: Cell::new(Length::default()),
-            y: Cell::new(Length::default()),
+            x: Cell::new(Default::default()),
+            y: Cell::new(Default::default()),
             dx: Cell::new(None),
             dy: Cell::new(None),
         }
@@ -587,14 +591,10 @@ impl NodeTrait for NodeText {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value, LengthDir::Horizontal)?),
-                Attribute::Y => self.y.set(attr.parse(value, LengthDir::Vertical)?),
-                Attribute::Dx => self
-                    .dx
-                    .set(attr.parse(value, LengthDir::Horizontal).map(Some)?),
-                Attribute::Dy => self
-                    .dy
-                    .set(attr.parse(value, LengthDir::Vertical).map(Some)?),
+                Attribute::X => self.x.set(attr.parse(value, ())?),
+                Attribute::Y => self.y.set(attr.parse(value, ())?),
+                Attribute::Dx => self.dx.set(attr.parse(value, ()).map(Some)?),
+                Attribute::Dy => self.dy.set(attr.parse(value, ()).map(Some)?),
                 _ => (),
             }
         }
@@ -624,10 +624,12 @@ impl NodeTrait for NodeText {
 
         let mut positioned_chunks = Vec::new();
         for chunk in &measured_chunks {
-            let normalize = |l: Length| l.normalize(&chunk.values, &params);
-
-            let chunk_x = chunk.x.map_or(x, normalize);
-            let chunk_y = chunk.y.map_or(y, normalize);
+            let chunk_x = chunk
+                .x
+                .map_or_else(|| x, |l| l.normalize(&chunk.values, &params));
+            let chunk_y = chunk
+                .y
+                .map_or_else(|| y, |l| l.normalize(&chunk.values, &params));
 
             let positioned = PositionedChunk::from_measured(&chunk, draw_ctx, chunk_x, chunk_y);
 
@@ -725,10 +727,10 @@ impl NodeTrait for NodeTRef {
 }
 
 pub struct NodeTSpan {
-    x: Cell<Option<Length>>,
-    y: Cell<Option<Length>>,
-    dx: Cell<Option<Length>>,
-    dy: Cell<Option<Length>>,
+    x: Cell<Option<LengthHorizontal>>,
+    y: Cell<Option<LengthVertical>>,
+    dx: Cell<Option<LengthHorizontal>>,
+    dy: Cell<Option<LengthVertical>>,
 }
 
 impl NodeTSpan {
@@ -768,18 +770,10 @@ impl NodeTrait for NodeTSpan {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self
-                    .x
-                    .set(attr.parse(value, LengthDir::Horizontal).map(Some)?),
-                Attribute::Y => self
-                    .y
-                    .set(attr.parse(value, LengthDir::Vertical).map(Some)?),
-                Attribute::Dx => self
-                    .dx
-                    .set(attr.parse(value, LengthDir::Horizontal).map(Some)?),
-                Attribute::Dy => self
-                    .dy
-                    .set(attr.parse(value, LengthDir::Vertical).map(Some)?),
+                Attribute::X => self.x.set(attr.parse(value, ()).map(Some)?),
+                Attribute::Y => self.y.set(attr.parse(value, ()).map(Some)?),
+                Attribute::Dx => self.dx.set(attr.parse(value, ()).map(Some)?),
+                Attribute::Dy => self.dy.set(attr.parse(value, ()).map(Some)?),
                 _ => (),
             }
         }
