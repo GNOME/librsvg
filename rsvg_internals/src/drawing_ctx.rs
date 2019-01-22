@@ -44,10 +44,10 @@ use viewbox::ViewBox;
 /// returned `ViewParams` is dropped; at that point, the `DrawingCtx` will resume using its
 /// previous viewport.
 pub struct ViewParams {
-    dpi_x: f64,
-    dpi_y: f64,
-    view_box_width: f64,
-    view_box_height: f64,
+    pub dpi_x: f64,
+    pub dpi_y: f64,
+    pub view_box_width: f64,
+    pub view_box_height: f64,
     view_box_stack: Option<Weak<RefCell<Vec<ViewBox>>>>,
 }
 
@@ -61,22 +61,6 @@ impl ViewParams {
             view_box_height,
             view_box_stack: None,
         }
-    }
-
-    pub fn dpi_x(&self) -> f64 {
-        self.dpi_x
-    }
-
-    pub fn dpi_y(&self) -> f64 {
-        self.dpi_y
-    }
-
-    pub fn view_box_width(&self) -> f64 {
-        self.view_box_width
-    }
-
-    pub fn view_box_height(&self) -> f64 {
-        self.view_box_height
     }
 }
 
