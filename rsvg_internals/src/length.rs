@@ -377,87 +377,116 @@ mod tests {
     #[test]
     fn parses_default() {
         assert_eq!(
-            Length::parse_str("42", LengthDir::Horizontal),
-            Ok(Length::new(
+            LengthHorizontal::parse_str("42", ()),
+            Ok(LengthHorizontal(Length::new(
                 42.0,
                 LengthUnit::Default,
                 LengthDir::Horizontal
-            ))
+            )))
         );
 
         assert_eq!(
-            Length::parse_str("-42px", LengthDir::Horizontal),
-            Ok(Length::new(
+            LengthHorizontal::parse_str("-42px", ()),
+            Ok(LengthHorizontal(Length::new(
                 -42.0,
                 LengthUnit::Default,
                 LengthDir::Horizontal
-            ))
+            )))
         );
     }
 
     #[test]
     fn parses_percent() {
         assert_eq!(
-            Length::parse_str("50.0%", LengthDir::Horizontal),
-            Ok(Length::new(0.5, LengthUnit::Percent, LengthDir::Horizontal))
+            LengthHorizontal::parse_str("50.0%", ()),
+            Ok(LengthHorizontal(Length::new(
+                0.5,
+                LengthUnit::Percent,
+                LengthDir::Horizontal
+            )))
         );
     }
 
     #[test]
     fn parses_font_em() {
         assert_eq!(
-            Length::parse_str("22.5em", LengthDir::Vertical),
-            Ok(Length::new(22.5, LengthUnit::FontEm, LengthDir::Vertical))
+            LengthVertical::parse_str("22.5em", ()),
+            Ok(LengthVertical(Length::new(
+                22.5,
+                LengthUnit::FontEm,
+                LengthDir::Vertical
+            )))
         );
     }
 
     #[test]
     fn parses_font_ex() {
         assert_eq!(
-            Length::parse_str("22.5ex", LengthDir::Vertical),
-            Ok(Length::new(22.5, LengthUnit::FontEx, LengthDir::Vertical))
+            LengthVertical::parse_str("22.5ex", ()),
+            Ok(LengthVertical(Length::new(
+                22.5,
+                LengthUnit::FontEx,
+                LengthDir::Vertical
+            )))
         );
     }
 
     #[test]
     fn parses_physical_units() {
         assert_eq!(
-            Length::parse_str("72pt", LengthDir::Both),
-            Ok(Length::new(1.0, LengthUnit::Inch, LengthDir::Both))
+            LengthBoth::parse_str("72pt", ()),
+            Ok(LengthBoth(Length::new(
+                1.0,
+                LengthUnit::Inch,
+                LengthDir::Both
+            )))
         );
 
         assert_eq!(
-            Length::parse_str("-22.5in", LengthDir::Both),
-            Ok(Length::new(-22.5, LengthUnit::Inch, LengthDir::Both))
+            LengthBoth::parse_str("-22.5in", ()),
+            Ok(LengthBoth(Length::new(
+                -22.5,
+                LengthUnit::Inch,
+                LengthDir::Both
+            )))
         );
 
         assert_eq!(
-            Length::parse_str("-254cm", LengthDir::Both),
-            Ok(Length::new(-100.0, LengthUnit::Inch, LengthDir::Both))
+            LengthBoth::parse_str("-254cm", ()),
+            Ok(LengthBoth(Length::new(
+                -100.0,
+                LengthUnit::Inch,
+                LengthDir::Both
+            )))
         );
 
         assert_eq!(
-            Length::parse_str("254mm", LengthDir::Both),
-            Ok(Length::new(10.0, LengthUnit::Inch, LengthDir::Both))
+            LengthBoth::parse_str("254mm", ()),
+            Ok(LengthBoth(Length::new(
+                10.0,
+                LengthUnit::Inch,
+                LengthDir::Both
+            )))
         );
 
         assert_eq!(
-            Length::parse_str("60pc", LengthDir::Both),
-            Ok(Length::new(10.0, LengthUnit::Inch, LengthDir::Both))
+            LengthBoth::parse_str("60pc", ()),
+            Ok(LengthBoth(Length::new(
+                10.0,
+                LengthUnit::Inch,
+                LengthDir::Both
+            )))
         );
     }
 
     #[test]
     fn empty_length_yields_error() {
-        assert!(is_parse_error(&Length::parse_str("", LengthDir::Both)));
+        assert!(is_parse_error(&LengthBoth::parse_str("", ())));
     }
 
     #[test]
     fn invalid_unit_yields_error() {
-        assert!(is_parse_error(&Length::parse_str(
-            "8furlong",
-            LengthDir::Both
-        )));
+        assert!(is_parse_error(&LengthBoth::parse_str("8furlong", ())));
     }
 
     #[test]
@@ -477,7 +506,7 @@ mod tests {
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
-            Length::new(10.0, LengthUnit::Default, LengthDir::Both).normalize(&values, &params),
+            LengthBoth::new(10.0, LengthUnit::Default).normalize(&values, &params),
             10.0
         );
     }
@@ -489,11 +518,11 @@ mod tests {
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
-            Length::new(10.0, LengthUnit::Inch, LengthDir::Horizontal).normalize(&values, &params),
+            LengthHorizontal::new(10.0, LengthUnit::Inch).normalize(&values, &params),
             400.0
         );
         assert_approx_eq_cairo!(
-            Length::new(10.0, LengthUnit::Inch, LengthDir::Vertical).normalize(&values, &params),
+            LengthVertical::new(10.0, LengthUnit::Inch).normalize(&values, &params),
             500.0
         );
     }
@@ -505,12 +534,11 @@ mod tests {
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
-            Length::new(0.05, LengthUnit::Percent, LengthDir::Horizontal)
-                .normalize(&values, &params),
+            LengthHorizontal::new(0.05, LengthUnit::Percent).normalize(&values, &params),
             5.0
         );
         assert_approx_eq_cairo!(
-            Length::new(0.05, LengthUnit::Percent, LengthDir::Vertical).normalize(&values, &params),
+            LengthVertical::new(0.05, LengthUnit::Percent).normalize(&values, &params),
             10.0
         );
     }
@@ -525,12 +553,12 @@ mod tests {
         // property and the way we compute FontEx from that.
 
         assert_approx_eq_cairo!(
-            Length::new(1.0, LengthUnit::FontEm, LengthDir::Vertical).normalize(&values, &params),
+            LengthVertical::new(1.0, LengthUnit::FontEm).normalize(&values, &params),
             12.0
         );
 
         assert_approx_eq_cairo!(
-            Length::new(1.0, LengthUnit::FontEx, LengthDir::Vertical).normalize(&values, &params),
+            LengthVertical::new(1.0, LengthUnit::FontEx).normalize(&values, &params),
             6.0
         );
     }
