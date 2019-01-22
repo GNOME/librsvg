@@ -721,26 +721,26 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
     rhandle.is_testing.set(from_glib(testing));
 }
 
-fn is_loaded(handle: &Handle) -> bool {
+fn check_is_loaded(handle: &Handle) -> Result<(), RenderingError> {
     match handle.load_state.get() {
         LoadState::Start => {
             rsvg_g_warning("RsvgHandle has not been loaded");
-            false
+            Err(RenderingError::HandleIsNotLoaded)
         }
 
         LoadState::Loading => {
             rsvg_g_warning("RsvgHandle is still loading; call rsvg_handle_close() first");
-            false
+            Err(RenderingError::HandleIsNotLoaded)
         }
 
-        LoadState::ClosedOk => true,
+        LoadState::ClosedOk => Ok(()),
 
         LoadState::ClosedError => {
             rsvg_g_warning(
                 "RsvgHandle could not read or parse the SVG; did you check for errors during the \
                  loading stage?",
             );
-            false
+            Err(RenderingError::HandleIsNotLoaded)
         }
     }
 }
@@ -820,7 +820,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if !is_loaded(rhandle) {
+    if check_is_loaded(rhandle).is_err() {
         return false.to_glib();
     }
 
@@ -861,7 +861,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if !is_loaded(rhandle) {
+    if check_is_loaded(rhandle).is_err() {
         return false.to_glib();
     }
 
@@ -883,7 +883,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    if !is_loaded(rhandle) {
+    if check_is_loaded(rhandle).is_err() {
         return false.to_glib();
     }
 
@@ -920,7 +920,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
     let rhandle = get_rust_handle(handle);
     let id: Option<String> = from_glib_none(id);
 
-    if !is_loaded(rhandle) {
+    if check_is_loaded(rhandle).is_err() {
         return ptr::null_mut();
     }
 
@@ -937,7 +937,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    if !is_loaded(rhandle) {
+    if check_is_loaded(rhandle).is_err() {
         return;
     }
 
@@ -967,7 +967,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if !is_loaded(rhandle) {
+    if check_is_loaded(rhandle).is_err() {
         return false.to_glib();
     }
 
@@ -1001,7 +1001,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if !is_loaded(rhandle) {
+    if check_is_loaded(rhandle).is_err() {
         return false.to_glib();
     }
 
