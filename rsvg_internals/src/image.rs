@@ -44,20 +44,16 @@ impl NodeTrait for NodeImage {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value, ())?),
-                Attribute::Y => self.y.set(attr.parse(value, ())?),
-                Attribute::Width => self.w.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthHorizontal::check_nonnegative,
-                )?),
-                Attribute::Height => self.h.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthVertical::check_nonnegative,
-                )?),
+                Attribute::X => self.x.set(attr.parse(value)?),
+                Attribute::Y => self.y.set(attr.parse(value)?),
+                Attribute::Width => self
+                    .w
+                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
+                Attribute::Height => self
+                    .h
+                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
 
-                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value, ())?),
+                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value)?),
 
                 // "path" is used by some older Adobe Illustrator versions
                 Attribute::XlinkHref | Attribute::Path => {

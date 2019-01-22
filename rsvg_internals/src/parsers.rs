@@ -25,16 +25,15 @@ impl<'a> From<BasicParseError<'a>> for ParseError {
 }
 
 pub trait Parse: Sized {
-    type Data;
     type Err;
 
-    fn parse(parser: &mut Parser<'_, '_>, data: Self::Data) -> Result<Self, Self::Err>;
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, Self::Err>;
 
-    fn parse_str(s: &str, data: Self::Data) -> Result<Self, Self::Err> {
+    fn parse_str(s: &str) -> Result<Self, Self::Err> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
-        Self::parse(&mut parser, data).and_then(|r| {
+        Self::parse(&mut parser).and_then(|r| {
             // FIXME: parser.expect_exhausted()?;
             Ok(r)
         })
@@ -68,57 +67,42 @@ pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
 
 pub trait ParseValue<T: Parse<Err = ValueErrorKind>> {
     /// Parses a `value` string into a type `T`.
-    ///
-    /// Some value types need some extra `data` to be parsed.  This
-    /// corresponds to the `<T as Parse>::Data` associated type.  For
-    /// example, an `Length` has an associated `type Data =
-    /// LengthDir`, so to parse a length value, you could specify
-    /// `LengthDir::Horizontal` for `data`, for example.
-    fn parse(&self, value: &str, data: <T as Parse>::Data) -> Result<T, NodeError>;
+    fn parse(&self, value: &str) -> Result<T, NodeError>;
 
     /// Parses a `value` string into a type `T` with an optional validation function.
-    ///
-    /// Some value types need some extra `data` to be parsed.  This
-    /// corresponds to the `<T as Parse>::Data` associated type.  For
-    /// example, an `Length` has an associated `type Data =
-    /// LengthDir`, so to parse a length value, you could specify
-    /// `LengthDir::Horizontal` for `data`, for example.
     fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
         &self,
         value: &str,
-        data: <T as Parse>::Data,
         validate: F,
     ) -> Result<T, NodeError>;
 }
 
 impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for Attribute {
-    fn parse(&self, value: &str, data: <T as Parse>::Data) -> Result<T, NodeError> {
+    fn parse(&self, value: &str) -> Result<T, NodeError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser, data).map_err(|e| NodeError::attribute_error(*self, e))
+        T::parse(&mut parser).map_err(|e| NodeError::attribute_error(*self, e))
     }
 
     fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
         &self,
         value: &str,
-        data: <T as Parse>::Data,
         validate: F,
     ) -> Result<T, NodeError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser, data)
+        T::parse(&mut parser)
             .and_then(validate)
             .map_err(|e| NodeError::attribute_error(*self, e))
     }
 }
 
 impl Parse for f64 {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<f64, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<f64, ValueErrorKind> {
         Ok(f64::from(parser.expect_finite_number().map_err(|_| {
             ValueErrorKind::Parse(ParseError::new("expected number"))
         })?))

@@ -173,7 +173,7 @@ impl NodeTrait for Image {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value, ())?),
+                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value)?),
 
                 // "path" is used by some older Adobe Illustrator versions
                 Attribute::XlinkHref | Attribute::Path => {

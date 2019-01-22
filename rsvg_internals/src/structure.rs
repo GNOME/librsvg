@@ -109,10 +109,10 @@ impl NodeSvg {
     pub fn new() -> NodeSvg {
         NodeSvg {
             preserve_aspect_ratio: Cell::new(AspectRatio::default()),
-            x: Cell::new(LengthHorizontal::parse_str("0", ()).unwrap()),
-            y: Cell::new(LengthVertical::parse_str("0", ()).unwrap()),
-            w: Cell::new(LengthHorizontal::parse_str("100%", ()).unwrap()),
-            h: Cell::new(LengthVertical::parse_str("100%", ()).unwrap()),
+            x: Cell::new(LengthHorizontal::parse_str("0").unwrap()),
+            y: Cell::new(LengthVertical::parse_str("0").unwrap()),
+            w: Cell::new(LengthHorizontal::parse_str("100%").unwrap()),
+            h: Cell::new(LengthVertical::parse_str("100%").unwrap()),
             vbox: Cell::new(None),
             pbag: RefCell::new(None),
         }
@@ -155,34 +155,30 @@ impl NodeTrait for NodeSvg {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
-                    self.preserve_aspect_ratio.set(attr.parse(value, ())?)
+                    self.preserve_aspect_ratio.set(attr.parse(value)?)
                 }
 
                 Attribute::X => {
                     if is_inner_svg {
-                        self.x.set(attr.parse(value, ())?);
+                        self.x.set(attr.parse(value)?);
                     }
                 }
 
                 Attribute::Y => {
                     if is_inner_svg {
-                        self.y.set(attr.parse(value, ())?);
+                        self.y.set(attr.parse(value)?);
                     }
                 }
 
-                Attribute::Width => self.w.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthHorizontal::check_nonnegative,
-                )?),
+                Attribute::Width => self
+                    .w
+                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
 
-                Attribute::Height => self.h.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthVertical::check_nonnegative,
-                )?),
+                Attribute::Height => self
+                    .h
+                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
 
-                Attribute::ViewBox => self.vbox.set(attr.parse(value, ()).map(Some)?),
+                Attribute::ViewBox => self.vbox.set(attr.parse(value).map(Some)?),
 
                 _ => (),
             }
@@ -264,15 +260,15 @@ impl NodeTrait for NodeUse {
                         Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
                 }
 
-                Attribute::X => self.x.set(attr.parse(value, ())?),
-                Attribute::Y => self.y.set(attr.parse(value, ())?),
+                Attribute::X => self.x.set(attr.parse(value)?),
+                Attribute::Y => self.y.set(attr.parse(value)?),
 
                 Attribute::Width => self.w.set(
-                    attr.parse_and_validate(value, (), LengthHorizontal::check_nonnegative)
+                    attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)
                         .map(Some)?,
                 ),
                 Attribute::Height => self.h.set(
-                    attr.parse_and_validate(value, (), LengthVertical::check_nonnegative)
+                    attr.parse_and_validate(value, LengthVertical::check_nonnegative)
                         .map(Some)?,
                 ),
 
@@ -334,12 +330,12 @@ impl NodeTrait for NodeUse {
         let nw = self
             .w
             .get()
-            .unwrap_or_else(|| LengthHorizontal::parse_str("100%", ()).unwrap())
+            .unwrap_or_else(|| LengthHorizontal::parse_str("100%").unwrap())
             .normalize(values, &params);
         let nh = self
             .h
             .get()
-            .unwrap_or_else(|| LengthVertical::parse_str("100%", ()).unwrap())
+            .unwrap_or_else(|| LengthVertical::parse_str("100%").unwrap())
             .normalize(values, &params);
 
         // width or height set to 0 disables rendering of the element
@@ -415,10 +411,10 @@ impl NodeTrait for NodeSymbol {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
-                    self.preserve_aspect_ratio.set(attr.parse(value, ())?)
+                    self.preserve_aspect_ratio.set(attr.parse(value)?)
                 }
 
-                Attribute::ViewBox => self.vbox.set(attr.parse(value, ()).map(Some)?),
+                Attribute::ViewBox => self.vbox.set(attr.parse(value).map(Some)?),
 
                 _ => (),
             }

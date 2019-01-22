@@ -269,203 +269,203 @@ impl SpecifiedValues {
             // please keep these sorted
             match attr {
                 Attribute::BaselineShift => {
-                    self.baseline_shift = parse_property(value, ())?;
+                    self.baseline_shift = parse_property(value)?;
                 }
 
                 Attribute::ClipPath => {
-                    self.clip_path = parse_property(value, ())?;
+                    self.clip_path = parse_property(value)?;
                 }
 
                 Attribute::ClipRule => {
-                    self.clip_rule = parse_property(value, ())?;
+                    self.clip_rule = parse_property(value)?;
                 }
 
                 Attribute::Color => {
-                    self.color = parse_property(value, ())?;
+                    self.color = parse_property(value)?;
                 }
 
                 Attribute::ColorInterpolationFilters => {
-                    self.color_interpolation_filters = parse_property(value, ())?;
+                    self.color_interpolation_filters = parse_property(value)?;
                 }
 
                 Attribute::Direction => {
-                    self.direction = parse_property(value, ())?;
+                    self.direction = parse_property(value)?;
                 }
 
                 Attribute::Display => {
-                    self.display = parse_property(value, ())?;
+                    self.display = parse_property(value)?;
                 }
 
                 Attribute::EnableBackground => {
-                    self.enable_background = parse_property(value, ())?;
+                    self.enable_background = parse_property(value)?;
                 }
 
                 Attribute::Fill => {
-                    self.fill = parse_property(value, ())?;
+                    self.fill = parse_property(value)?;
                 }
 
                 Attribute::FillOpacity => {
-                    self.fill_opacity = parse_property(value, ())?;
+                    self.fill_opacity = parse_property(value)?;
                 }
 
                 Attribute::FillRule => {
-                    self.fill_rule = parse_property(value, ())?;
+                    self.fill_rule = parse_property(value)?;
                 }
 
                 Attribute::Filter => {
-                    self.filter = parse_property(value, ())?;
+                    self.filter = parse_property(value)?;
                 }
 
                 Attribute::FloodColor => {
-                    self.flood_color = parse_property(value, ())?;
+                    self.flood_color = parse_property(value)?;
                 }
 
                 Attribute::FloodOpacity => {
-                    self.flood_opacity = parse_property(value, ())?;
+                    self.flood_opacity = parse_property(value)?;
                 }
 
                 Attribute::FontFamily => {
-                    self.font_family = parse_property(value, ())?;
+                    self.font_family = parse_property(value)?;
                 }
 
                 Attribute::FontSize => {
-                    self.font_size = parse_property(value, ())?;
+                    self.font_size = parse_property(value)?;
                 }
 
                 Attribute::FontStretch => {
-                    self.font_stretch = parse_property(value, ())?;
+                    self.font_stretch = parse_property(value)?;
                 }
 
                 Attribute::FontStyle => {
-                    self.font_style = parse_property(value, ())?;
+                    self.font_style = parse_property(value)?;
                 }
 
                 Attribute::FontVariant => {
-                    self.font_variant = parse_property(value, ())?;
+                    self.font_variant = parse_property(value)?;
                 }
 
                 Attribute::FontWeight => {
-                    self.font_weight = parse_property(value, ())?;
+                    self.font_weight = parse_property(value)?;
                 }
 
                 Attribute::LetterSpacing => {
-                    self.letter_spacing = parse_property(value, ())?;
+                    self.letter_spacing = parse_property(value)?;
                 }
 
                 Attribute::LightingColor => {
-                    self.lighting_color = parse_property(value, ())?;
+                    self.lighting_color = parse_property(value)?;
                 }
 
                 Attribute::MarkerEnd => {
-                    self.marker_end = parse_property(value, ())?;
+                    self.marker_end = parse_property(value)?;
                 }
 
                 Attribute::MarkerMid => {
-                    self.marker_mid = parse_property(value, ())?;
+                    self.marker_mid = parse_property(value)?;
                 }
 
                 Attribute::MarkerStart => {
-                    self.marker_start = parse_property(value, ())?;
+                    self.marker_start = parse_property(value)?;
                 }
 
                 Attribute::Marker if accept_shorthands => {
-                    self.marker_end = parse_property(value, ())?;
-                    self.marker_mid = parse_property(value, ())?;
-                    self.marker_start = parse_property(value, ())?;
+                    self.marker_end = parse_property(value)?;
+                    self.marker_mid = parse_property(value)?;
+                    self.marker_start = parse_property(value)?;
                 }
 
                 Attribute::Mask => {
-                    self.mask = parse_property(value, ())?;
+                    self.mask = parse_property(value)?;
                 }
 
                 Attribute::Opacity => {
-                    self.opacity = parse_property(value, ())?;
+                    self.opacity = parse_property(value)?;
                 }
 
                 Attribute::Overflow => {
-                    self.overflow = parse_property(value, ())?;
+                    self.overflow = parse_property(value)?;
                 }
 
                 Attribute::ShapeRendering => {
-                    self.shape_rendering = parse_property(value, ())?;
+                    self.shape_rendering = parse_property(value)?;
                 }
 
                 Attribute::StopColor => {
-                    self.stop_color = parse_property(value, ())?;
+                    self.stop_color = parse_property(value)?;
                 }
 
                 Attribute::StopOpacity => {
-                    self.stop_opacity = parse_property(value, ())?;
+                    self.stop_opacity = parse_property(value)?;
                 }
 
                 Attribute::Stroke => {
-                    self.stroke = parse_property(value, ())?;
+                    self.stroke = parse_property(value)?;
                 }
 
                 Attribute::StrokeDasharray => {
-                    self.stroke_dasharray = parse_property(value, ())?;
+                    self.stroke_dasharray = parse_property(value)?;
                 }
 
                 Attribute::StrokeDashoffset => {
-                    self.stroke_dashoffset = parse_property(value, ())?;
+                    self.stroke_dashoffset = parse_property(value)?;
                 }
 
                 Attribute::StrokeLinecap => {
-                    self.stroke_line_cap = parse_property(value, ())?;
+                    self.stroke_line_cap = parse_property(value)?;
                 }
 
                 Attribute::StrokeLinejoin => {
-                    self.stroke_line_join = parse_property(value, ())?;
+                    self.stroke_line_join = parse_property(value)?;
                 }
 
                 Attribute::StrokeOpacity => {
-                    self.stroke_opacity = parse_property(value, ())?;
+                    self.stroke_opacity = parse_property(value)?;
                 }
 
                 Attribute::StrokeMiterlimit => {
-                    self.stroke_miterlimit = parse_property(value, ())?;
+                    self.stroke_miterlimit = parse_property(value)?;
                 }
 
                 Attribute::StrokeWidth => {
-                    self.stroke_width = parse_property(value, ())?;
+                    self.stroke_width = parse_property(value)?;
                 }
 
                 Attribute::TextAnchor => {
-                    self.text_anchor = parse_property(value, ())?;
+                    self.text_anchor = parse_property(value)?;
                 }
 
                 Attribute::TextDecoration => {
-                    self.text_decoration = parse_property(value, ())?;
+                    self.text_decoration = parse_property(value)?;
                 }
 
                 Attribute::TextRendering => {
-                    self.text_rendering = parse_property(value, ())?;
+                    self.text_rendering = parse_property(value)?;
                 }
 
                 Attribute::UnicodeBidi => {
-                    self.unicode_bidi = parse_property(value, ())?;
+                    self.unicode_bidi = parse_property(value)?;
                 }
 
                 Attribute::Visibility => {
-                    self.visibility = parse_property(value, ())?;
+                    self.visibility = parse_property(value)?;
                 }
 
                 Attribute::WritingMode => {
-                    self.writing_mode = parse_property(value, ())?;
+                    self.writing_mode = parse_property(value)?;
                 }
 
                 Attribute::XmlLang => {
                     // xml:lang is not a property; it is a non-presentation attribute and as such
                     // cannot have the "inherit" value.  So, we don't call parse_property() for it,
                     // but rather call its parser directly.
-                    self.xml_lang = SpecifiedValue::Specified(XmlLang::parse_str(value, ())?);
+                    self.xml_lang = SpecifiedValue::Specified(XmlLang::parse_str(value)?);
                 }
 
                 Attribute::XmlSpace => {
                     // xml:space is not a property; it is a non-presentation attribute and as such
                     // cannot have the "inherit" value.  So, we don't call parse_property() for it,
                     // but rather call its parser directly.
-                    self.xml_space = SpecifiedValue::Specified(XmlSpace::parse_str(value, ())?);
+                    self.xml_space = SpecifiedValue::Specified(XmlSpace::parse_str(value)?);
                 }
 
                 _ => {
@@ -575,17 +575,14 @@ impl SpecifiedValues {
 //
 // If the `value` is `inherit`, returns `Ok(None)`; otherwise returns
 // `Ok(Some(T))`.
-fn parse_property<T>(
-    value: &str,
-    data: <T as Parse>::Data,
-) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
+fn parse_property<T>(value: &str) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
 where
     T: Property<ComputedValues> + Clone + Default + Parse,
 {
     if value.trim() == "inherit" {
         Ok(SpecifiedValue::Inherit)
     } else {
-        Parse::parse_str(value, data).map(SpecifiedValue::Specified)
+        Parse::parse_str(value).map(SpecifiedValue::Specified)
     }
 }
 
@@ -593,7 +590,7 @@ where
 make_property!(
     ComputedValues,
     BaselineShift,
-    default: LengthBoth::parse_str("0.0", ()).unwrap(),
+    default: LengthBoth::parse_str("0.0").unwrap(),
     newtype: LengthBoth,
     property_impl: {
         impl Property<ComputedValues> for BaselineShift {
@@ -618,12 +615,11 @@ make_property!(
     },
     parse_impl: {
         impl Parse for BaselineShift {
-            type Data = ();
             type Err = ValueErrorKind;
 
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
-            fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<BaselineShift, ::error::ValueErrorKind> {
+            fn parse(parser: &mut Parser<'_, '_>) -> Result<BaselineShift, ::error::ValueErrorKind> {
                 let parser_state = parser.state();
 
                 {
@@ -665,7 +661,6 @@ make_property!(
     default: IRI::None,
     inherits_automatically: false,
     newtype_parse: IRI,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/masking.html#ClipRuleProperty
@@ -693,7 +688,6 @@ make_property!(
     default: cssparser::RGBA::new(0, 0, 0, 0xff),
     inherits_automatically: true,
     newtype_parse: cssparser::RGBA,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG11/painting.html#ColorInterpolationProperty
@@ -764,10 +758,9 @@ make_property!(
 make_property!(
     ComputedValues,
     Fill,
-    default: PaintServer::parse_str("#000", ()).unwrap(),
+    default: PaintServer::parse_str("#000").unwrap(),
     inherits_automatically: true,
     newtype_parse: PaintServer,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#FillOpacityProperty
@@ -777,7 +770,6 @@ make_property!(
     default: UnitInterval(1.0),
     inherits_automatically: true,
     newtype_parse: UnitInterval,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#FillRuleProperty
@@ -799,7 +791,6 @@ make_property!(
     default: IRI::None,
     inherits_automatically: false,
     newtype_parse: IRI,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
@@ -809,7 +800,6 @@ make_property!(
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/filters.html#FloodOpacityProperty
@@ -819,7 +809,6 @@ make_property!(
     default: UnitInterval(1.0),
     inherits_automatically: false,
     newtype_parse: UnitInterval,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
@@ -829,16 +818,14 @@ make_property!(
     default: SingleFontFamily("Times New Roman".to_string()),
     inherits_automatically: true,
     newtype_parse: SingleFontFamily,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontSizeProperty
 make_property!(
     ComputedValues,
     FontSize,
-    default: FontSizeSpec::Value(LengthBoth::parse_str("12.0", ()).unwrap()),
+    default: FontSizeSpec::Value(LengthBoth::parse_str("12.0").unwrap()),
     newtype_parse: FontSizeSpec,
-    parse_data_type: (),
     property_impl: {
         impl Property<ComputedValues> for FontSize {
             fn inherits_automatically() -> bool {
@@ -905,7 +892,6 @@ make_property!(
     default: FontWeightSpec::Normal,
     inherits_automatically: true,
     newtype_parse: FontWeightSpec,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty
@@ -914,7 +900,6 @@ make_property!(
     LetterSpacing,
     default: LetterSpacingSpec::Normal,
     newtype_parse: LetterSpacingSpec,
-    parse_data_type: (),
     property_impl: {
         impl Property<ComputedValues> for LetterSpacing {
             fn inherits_automatically() -> bool {
@@ -935,7 +920,6 @@ make_property!(
     default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerEndProperty
@@ -945,7 +929,6 @@ make_property!(
     default: IRI::None,
     inherits_automatically: true,
     newtype_parse: IRI,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerMidProperty
@@ -955,7 +938,6 @@ make_property!(
     default: IRI::None,
     inherits_automatically: true,
     newtype_parse: IRI,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerStartProperty
@@ -965,7 +947,6 @@ make_property!(
     default: IRI::None,
     inherits_automatically: true,
     newtype_parse: IRI,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/masking.html#MaskProperty
@@ -975,7 +956,6 @@ make_property!(
     default: IRI::None,
     inherits_automatically: false,
     newtype_parse: IRI,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/masking.html#OpacityProperty
@@ -985,7 +965,6 @@ make_property!(
     default: UnitInterval(1.0),
     inherits_automatically: false,
     newtype_parse: UnitInterval,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/masking.html#OverflowProperty
@@ -1023,7 +1002,6 @@ make_property!(
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/pservers.html#StopOpacityProperty
@@ -1033,7 +1011,6 @@ make_property!(
     default: UnitInterval(1.0),
     inherits_automatically: false,
     newtype_parse: UnitInterval,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeProperty
@@ -1043,7 +1020,6 @@ make_property!(
     default: PaintServer::None,
     inherits_automatically: true,
     newtype_parse: PaintServer,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeDasharrayProperty
@@ -1053,7 +1029,6 @@ make_property!(
     default: Dasharray::default(),
     inherits_automatically: true,
     newtype_parse: Dasharray,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeDashoffsetProperty
@@ -1063,7 +1038,6 @@ make_property!(
     default: LengthBoth::default(),
     inherits_automatically: true,
     newtype_parse: LengthBoth,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeLinecapProperty
@@ -1099,7 +1073,6 @@ make_property!(
     default: 4f64,
     inherits_automatically: true,
     newtype_parse: f64,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeOpacityProperty
@@ -1109,17 +1082,15 @@ make_property!(
     default: UnitInterval(1.0),
     inherits_automatically: true,
     newtype_parse: UnitInterval,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeWidthProperty
 make_property!(
     ComputedValues,
     StrokeWidth,
-    default: LengthBoth::parse_str("1.0", ()).unwrap(),
+    default: LengthBoth::parse_str("1.0").unwrap(),
     inherits_automatically: true,
     newtype_parse: LengthBoth,
-    parse_data_type: ()
 );
 
 // https://www.w3.org/TR/SVG/text.html#TextAnchorProperty
@@ -1149,10 +1120,9 @@ make_property!(
 
     parse_impl: {
         impl Parse for TextDecoration {
-            type Data = ();
             type Err = ValueErrorKind;
 
-            fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<TextDecoration, ValueErrorKind> {
+            fn parse(parser: &mut Parser<'_, '_>) -> Result<TextDecoration, ValueErrorKind> {
                 let mut overline = false;
                 let mut underline = false;
                 let mut strike = false;
@@ -1188,7 +1158,7 @@ make_property!(
 #[test]
 fn parses_text_decoration() {
     assert_eq!(
-        TextDecoration::parse_str("none", ()).unwrap(),
+        TextDecoration::parse_str("none").unwrap(),
         TextDecoration {
             overline: false,
             underline: false,
@@ -1197,7 +1167,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str("overline", ()).unwrap(),
+        TextDecoration::parse_str("overline").unwrap(),
         TextDecoration {
             overline: true,
             underline: false,
@@ -1206,7 +1176,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str("underline", ()).unwrap(),
+        TextDecoration::parse_str("underline").unwrap(),
         TextDecoration {
             overline: false,
             underline: true,
@@ -1215,7 +1185,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str("line-through", ()).unwrap(),
+        TextDecoration::parse_str("line-through").unwrap(),
         TextDecoration {
             overline: false,
             underline: false,
@@ -1224,7 +1194,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str("underline overline", ()).unwrap(),
+        TextDecoration::parse_str("underline overline").unwrap(),
         TextDecoration {
             overline: true,
             underline: true,
@@ -1232,7 +1202,7 @@ fn parses_text_decoration() {
         }
     );
 
-    assert!(TextDecoration::parse_str("airline", ()).is_err())
+    assert!(TextDecoration::parse_str("airline").is_err())
 }
 
 // https://www.w3.org/TR/SVG/painting.html#TextRenderingProperty
@@ -1308,29 +1278,26 @@ make_property!(
     newtype: String,
     parse_impl: {
         impl Parse for XmlLang {
-            type Data = ();
             type Err = ValueErrorKind;
 
             fn parse(
                 parser: &mut Parser<'_, '_>,
-                _: Self::Data
             ) -> Result<XmlLang, ValueErrorKind> {
                 Ok(XmlLang(parser.expect_ident()?.to_string()))
             }
         }
     },
-    parse_data_type: ()
 );
 
 #[cfg(test)]
 #[test]
 fn parses_xml_lang() {
     assert_eq!(
-        XmlLang::parse_str("es-MX", ()).unwrap(),
+        XmlLang::parse_str("es-MX").unwrap(),
         XmlLang("es-MX".to_string())
     );
 
-    assert!(XmlLang::parse_str("", ()).is_err());
+    assert!(XmlLang::parse_str("").is_err());
 }
 
 make_property!(

@@ -9,10 +9,9 @@ use error::*;
 use parsers::{finite_f32, CssParserExt, Parse, ParseError};
 
 impl Parse for cairo::Matrix {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<cairo::Matrix, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
         let matrix = parse_transform_list(parser)?;
 
         matrix
@@ -251,7 +250,7 @@ mod tests {
     use std::f64;
 
     fn parse_transform(s: &str) -> Result<cairo::Matrix, ValueErrorKind> {
-        cairo::Matrix::parse_str(s, ())
+        cairo::Matrix::parse_str(s)
     }
 
     fn assert_matrix_eq(a: &cairo::Matrix, b: &cairo::Matrix) {

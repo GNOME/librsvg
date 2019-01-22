@@ -183,40 +183,34 @@ impl NodeTrait for NodePattern {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::PatternUnits => p.units = Some(attr.parse(value, ())?),
+                Attribute::PatternUnits => p.units = Some(attr.parse(value)?),
 
-                Attribute::PatternContentUnits => p.content_units = Some(attr.parse(value, ())?),
+                Attribute::PatternContentUnits => p.content_units = Some(attr.parse(value)?),
 
-                Attribute::ViewBox => p.vbox = Some(Some(attr.parse(value, ())?)),
+                Attribute::ViewBox => p.vbox = Some(Some(attr.parse(value)?)),
 
                 Attribute::PreserveAspectRatio => {
-                    p.preserve_aspect_ratio = Some(attr.parse(value, ())?)
+                    p.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
 
-                Attribute::PatternTransform => p.affine = Some(attr.parse(value, ())?),
+                Attribute::PatternTransform => p.affine = Some(attr.parse(value)?),
 
                 Attribute::XlinkHref => {
                     p.fallback = Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?);
                 }
 
-                Attribute::X => p.x = Some(attr.parse(value, ())?),
+                Attribute::X => p.x = Some(attr.parse(value)?),
 
-                Attribute::Y => p.y = Some(attr.parse(value, ())?),
+                Attribute::Y => p.y = Some(attr.parse(value)?),
 
                 Attribute::Width => {
-                    p.width = Some(attr.parse_and_validate(
-                        value,
-                        (),
-                        LengthHorizontal::check_nonnegative,
-                    )?)
+                    p.width =
+                        Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
                 }
 
                 Attribute::Height => {
-                    p.height = Some(attr.parse_and_validate(
-                        value,
-                        (),
-                        LengthVertical::check_nonnegative,
-                    )?)
+                    p.height =
+                        Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
                 }
 
                 _ => (),

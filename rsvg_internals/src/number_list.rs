@@ -1,6 +1,6 @@
 use cssparser::{Parser, ParserInput};
 
-use parsers::{CssParserExt, Parse, ParseError};
+use parsers::{CssParserExt, ParseError};
 
 #[derive(Eq, PartialEq)]
 pub enum NumberListLength {

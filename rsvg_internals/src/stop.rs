@@ -39,7 +39,7 @@ impl NodeTrait for NodeStop {
             match attr {
                 Attribute::Offset => {
                     self.offset.set(
-                        attr.parse_and_validate(value, (), validate_offset)
+                        attr.parse_and_validate(value, validate_offset)
                             .map(|l| UnitInterval::clamp(l.length()))?,
                     );
                 }

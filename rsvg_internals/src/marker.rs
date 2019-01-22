@@ -35,10 +35,9 @@ impl Default for MarkerUnits {
 }
 
 impl Parse for MarkerUnits {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<MarkerUnits, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerUnits, ValueErrorKind> {
         let loc = parser.current_source_location();
 
         parser
@@ -74,14 +73,13 @@ impl Default for MarkerOrient {
 }
 
 impl Parse for MarkerOrient {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<MarkerOrient, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerOrient, ValueErrorKind> {
         if parser.try(|p| p.expect_ident_matching("auto")).is_ok() {
             Ok(MarkerOrient::Auto)
         } else {
-            Angle::parse(parser, ()).map(MarkerOrient::Angle)
+            Angle::parse(parser).map(MarkerOrient::Angle)
         }
     }
 }
@@ -104,8 +102,8 @@ impl NodeMarker {
             ref_x: Cell::new(Default::default()),
             ref_y: Cell::new(Default::default()),
             // the following two are per the spec
-            width: Cell::new(LengthHorizontal::parse_str("3", ()).unwrap()),
-            height: Cell::new(LengthVertical::parse_str("3", ()).unwrap()),
+            width: Cell::new(LengthHorizontal::parse_str("3").unwrap()),
+            height: Cell::new(LengthVertical::parse_str("3").unwrap()),
             orient: Cell::new(MarkerOrient::default()),
             aspect: Cell::new(AspectRatio::default()),
             vbox: Cell::new(None),
@@ -209,29 +207,25 @@ impl NodeTrait for NodeMarker {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::MarkerUnits => self.units.set(attr.parse(value, ())?),
+                Attribute::MarkerUnits => self.units.set(attr.parse(value)?),
 
-                Attribute::RefX => self.ref_x.set(attr.parse(value, ())?),
+                Attribute::RefX => self.ref_x.set(attr.parse(value)?),
 
-                Attribute::RefY => self.ref_y.set(attr.parse(value, ())?),
+                Attribute::RefY => self.ref_y.set(attr.parse(value)?),
 
-                Attribute::MarkerWidth => self.width.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthHorizontal::check_nonnegative,
-                )?),
+                Attribute::MarkerWidth => self
+                    .width
+                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
 
-                Attribute::MarkerHeight => self.height.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthVertical::check_nonnegative,
-                )?),
+                Attribute::MarkerHeight => self
+                    .height
+                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
 
-                Attribute::Orient => self.orient.set(attr.parse(value, ())?),
+                Attribute::Orient => self.orient.set(attr.parse(value)?),
 
-                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value, ())?),
+                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value)?),
 
-                Attribute::ViewBox => self.vbox.set(Some(attr.parse(value, ())?)),
+                Attribute::ViewBox => self.vbox.set(Some(attr.parse(value)?)),
 
                 _ => (),
             }
@@ -833,21 +827,21 @@ mod parser_tests {
     #[test]
     fn parsing_invalid_marker_units_yields_error() {
         assert!(is_parse_error(
-            &MarkerUnits::parse_str("", ()).map_err(|e| ValueErrorKind::from(e))
+            &MarkerUnits::parse_str("").map_err(|e| ValueErrorKind::from(e))
         ));
         assert!(is_parse_error(
-            &MarkerUnits::parse_str("foo", ()).map_err(|e| ValueErrorKind::from(e))
+            &MarkerUnits::parse_str("foo").map_err(|e| ValueErrorKind::from(e))
         ));
     }
 
     #[test]
     fn parses_marker_units() {
         assert_eq!(
-            MarkerUnits::parse_str("userSpaceOnUse", ()),
+            MarkerUnits::parse_str("userSpaceOnUse"),
             Ok(MarkerUnits::UserSpaceOnUse)
         );
         assert_eq!(
-            MarkerUnits::parse_str("strokeWidth", ()),
+            MarkerUnits::parse_str("strokeWidth"),
             Ok(MarkerUnits::StrokeWidth)
         );
     }
@@ -855,38 +849,38 @@ mod parser_tests {
     #[test]
     fn parsing_invalid_marker_orient_yields_error() {
         assert!(is_parse_error(
-            &MarkerOrient::parse_str("", ()).map_err(|e| ValueErrorKind::from(e))
+            &MarkerOrient::parse_str("").map_err(|e| ValueErrorKind::from(e))
         ));
         assert!(is_parse_error(
-            &MarkerOrient::parse_str("blah", ()).map_err(|e| ValueErrorKind::from(e))
+            &MarkerOrient::parse_str("blah").map_err(|e| ValueErrorKind::from(e))
         ));
         assert!(is_parse_error(
-            &MarkerOrient::parse_str("45blah", ()).map_err(|e| ValueErrorKind::from(e))
+            &MarkerOrient::parse_str("45blah").map_err(|e| ValueErrorKind::from(e))
         ));
     }
 
     #[test]
     fn parses_marker_orient() {
-        assert_eq!(MarkerOrient::parse_str("auto", ()), Ok(MarkerOrient::Auto));
+        assert_eq!(MarkerOrient::parse_str("auto"), Ok(MarkerOrient::Auto));
 
         assert_eq!(
-            MarkerOrient::parse_str("0", ()),
+            MarkerOrient::parse_str("0"),
             Ok(MarkerOrient::Angle(Angle::new(0.0)))
         );
         assert_eq!(
-            MarkerOrient::parse_str("180", ()),
+            MarkerOrient::parse_str("180"),
             Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
         );
         assert_eq!(
-            MarkerOrient::parse_str("180deg", ()),
+            MarkerOrient::parse_str("180deg"),
             Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
         );
         assert_eq!(
-            MarkerOrient::parse_str("-400grad", ()),
+            MarkerOrient::parse_str("-400grad"),
             Ok(MarkerOrient::Angle(Angle::from_degrees(-360.0)))
         );
         assert_eq!(
-            MarkerOrient::parse_str("1rad", ()),
+            MarkerOrient::parse_str("1rad"),
             Ok(MarkerOrient::Angle(Angle::new(1.0)))
         );
     }

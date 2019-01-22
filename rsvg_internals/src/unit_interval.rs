@@ -14,10 +14,9 @@ impl UnitInterval {
 }
 
 impl Parse for UnitInterval {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<UnitInterval, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<UnitInterval, ValueErrorKind> {
         let x = f64::from(
             parser
                 .expect_finite_number()
@@ -50,23 +49,23 @@ mod tests {
 
     #[test]
     fn parses_number() {
-        assert_eq!(UnitInterval::parse_str("0", ()), Ok(UnitInterval(0.0)));
-        assert_eq!(UnitInterval::parse_str("1", ()), Ok(UnitInterval(1.0)));
-        assert_eq!(UnitInterval::parse_str("0.5", ()), Ok(UnitInterval(0.5)));
+        assert_eq!(UnitInterval::parse_str("0"), Ok(UnitInterval(0.0)));
+        assert_eq!(UnitInterval::parse_str("1"), Ok(UnitInterval(1.0)));
+        assert_eq!(UnitInterval::parse_str("0.5"), Ok(UnitInterval(0.5)));
     }
 
     #[test]
     fn parses_out_of_range_number() {
-        assert_eq!(UnitInterval::parse_str("-10", ()), Ok(UnitInterval(0.0)));
-        assert_eq!(UnitInterval::parse_str("10", ()), Ok(UnitInterval(1.0)));
+        assert_eq!(UnitInterval::parse_str("-10"), Ok(UnitInterval(0.0)));
+        assert_eq!(UnitInterval::parse_str("10"), Ok(UnitInterval(1.0)));
     }
 
     #[test]
     fn errors_on_invalid_input() {
-        assert!(is_parse_error(&UnitInterval::parse_str("", ())));
-        assert!(is_parse_error(&UnitInterval::parse_str("foo", ())));
-        assert!(is_parse_error(&UnitInterval::parse_str("-x", ())));
-        assert!(is_parse_error(&UnitInterval::parse_str("0.0foo", ())));
+        assert!(is_parse_error(&UnitInterval::parse_str("")));
+        assert!(is_parse_error(&UnitInterval::parse_str("foo")));
+        assert!(is_parse_error(&UnitInterval::parse_str("-x")));
+        assert!(is_parse_error(&UnitInterval::parse_str("0.0foo")));
     }
 
     #[test]

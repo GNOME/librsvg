@@ -59,16 +59,12 @@ impl FontSizeSpec {
 }
 
 impl Parse for FontSizeSpec {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(
-        parser: &mut Parser<'_, '_>,
-        _: Self::Data,
-    ) -> Result<FontSizeSpec, ::error::ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, ::error::ValueErrorKind> {
         let parser_state = parser.state();
 
-        LengthBoth::parse(parser, ())
+        LengthBoth::parse(parser)
             .and_then(|s| Ok(FontSizeSpec::Value(s)))
             .or_else(|e| {
                 parser.reset(&parser_state);
@@ -120,13 +116,9 @@ pub enum FontWeightSpec {
 }
 
 impl Parse for FontWeightSpec {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(
-        parser: &mut Parser<'_, '_>,
-        _: Self::Data,
-    ) -> Result<FontWeightSpec, ::error::ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, ::error::ValueErrorKind> {
         if let Ok(r) = parser.try(|p| {
             p.expect_ident()
                 .map_err(|_| ())
@@ -196,16 +188,12 @@ impl LetterSpacingSpec {
 }
 
 impl Parse for LetterSpacingSpec {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(
-        parser: &mut Parser<'_, '_>,
-        _: Self::Data,
-    ) -> Result<LetterSpacingSpec, ::error::ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<LetterSpacingSpec, ::error::ValueErrorKind> {
         let parser_state = parser.state();
 
-        LengthHorizontal::parse(parser, ())
+        LengthHorizontal::parse(parser)
             .and_then(|s| Ok(LetterSpacingSpec::Value(s)))
             .or_else(|e| {
                 parser.reset(&parser_state);
@@ -235,13 +223,9 @@ impl Parse for LetterSpacingSpec {
 pub struct SingleFontFamily(pub String);
 
 impl Parse for SingleFontFamily {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(
-        parser: &mut Parser<'_, '_>,
-        _: Self::Data,
-    ) -> Result<SingleFontFamily, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<SingleFontFamily, ValueErrorKind> {
         parse_single_font_family(parser)
             .map_err(|_| ValueErrorKind::from(ParseError::new("expected font family")))
     }
@@ -272,41 +256,41 @@ mod tests {
 
     #[test]
     fn detects_invalid_invalid_font_size() {
-        assert!(is_parse_error(&FontSizeSpec::parse_str("furlong", ())));
+        assert!(is_parse_error(&FontSizeSpec::parse_str("furlong")));
     }
 
     #[test]
     fn parses_font_weight() {
         assert_eq!(
-            <FontWeightSpec as Parse>::parse_str("normal", ()),
+            <FontWeightSpec as Parse>::parse_str("normal"),
             Ok(FontWeightSpec::Normal)
         );
         assert_eq!(
-            <FontWeightSpec as Parse>::parse_str("bold", ()),
+            <FontWeightSpec as Parse>::parse_str("bold"),
             Ok(FontWeightSpec::Bold)
         );
         assert_eq!(
-            <FontWeightSpec as Parse>::parse_str("100", ()),
+            <FontWeightSpec as Parse>::parse_str("100"),
             Ok(FontWeightSpec::W100)
         );
     }
 
     #[test]
     fn detects_invalid_font_weight() {
-        assert!(<FontWeightSpec as Parse>::parse_str("", ()).is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("strange", ()).is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("314", ()).is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("3.14", ()).is_err());
+        assert!(<FontWeightSpec as Parse>::parse_str("").is_err());
+        assert!(<FontWeightSpec as Parse>::parse_str("strange").is_err());
+        assert!(<FontWeightSpec as Parse>::parse_str("314").is_err());
+        assert!(<FontWeightSpec as Parse>::parse_str("3.14").is_err());
     }
 
     #[test]
     fn parses_letter_spacing() {
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("normal", ()),
+            <LetterSpacingSpec as Parse>::parse_str("normal"),
             Ok(LetterSpacingSpec::Normal)
         );
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("10em", ()),
+            <LetterSpacingSpec as Parse>::parse_str("10em"),
             Ok(LetterSpacingSpec::Value(LengthHorizontal::new(
                 10.0,
                 LengthUnit::FontEm,
@@ -317,14 +301,14 @@ mod tests {
     #[test]
     fn computes_letter_spacing() {
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("normal", ()).map(|s| s.compute()),
+            <LetterSpacingSpec as Parse>::parse_str("normal").map(|s| s.compute()),
             Ok(LetterSpacingSpec::Value(LengthHorizontal::new(
                 0.0,
                 LengthUnit::Default,
             )))
         );
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("10em", ()).map(|s| s.compute()),
+            <LetterSpacingSpec as Parse>::parse_str("10em").map(|s| s.compute()),
             Ok(LetterSpacingSpec::Value(LengthHorizontal::new(
                 10.0,
                 LengthUnit::FontEm,
@@ -334,38 +318,38 @@ mod tests {
 
     #[test]
     fn detects_invalid_invalid_letter_spacing() {
-        assert!(is_parse_error(&LetterSpacingSpec::parse_str("furlong", ())));
+        assert!(is_parse_error(&LetterSpacingSpec::parse_str("furlong")));
     }
 
     #[test]
     fn parses_font_family() {
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("'Hello world'", ()),
+            <SingleFontFamily as Parse>::parse_str("'Hello world'"),
             Ok(SingleFontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("\"Hello world\"", ()),
+            <SingleFontFamily as Parse>::parse_str("\"Hello world\""),
             Ok(SingleFontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("  Hello  world  ", ()),
+            <SingleFontFamily as Parse>::parse_str("  Hello  world  "),
             Ok(SingleFontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("Plonk", ()),
+            <SingleFontFamily as Parse>::parse_str("Plonk"),
             Ok(SingleFontFamily("Plonk".to_owned()))
         );
     }
 
     #[test]
     fn detects_invalid_font_family() {
-        assert!(<SingleFontFamily as Parse>::parse_str("", ()).is_err());
+        assert!(<SingleFontFamily as Parse>::parse_str("").is_err());
 
-        // assert!(<SingleFontFamily as Parse>::parse_str("''", ()).is_err());
+        // assert!(<SingleFontFamily as Parse>::parse_str("''").is_err());
 
-        assert!(<SingleFontFamily as Parse>::parse_str("42", ()).is_err());
+        assert!(<SingleFontFamily as Parse>::parse_str("42").is_err());
     }
 }

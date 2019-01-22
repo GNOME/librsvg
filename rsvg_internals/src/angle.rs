@@ -58,10 +58,9 @@ impl Angle {
 // angle ::= number ("deg" | "grad" | "rad")?
 //
 impl Parse for Angle {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<Angle, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Angle, ValueErrorKind> {
         let angle = {
             let token = parser
                 .next()
@@ -107,21 +106,18 @@ mod tests {
 
     #[test]
     fn parses_angle() {
-        assert_eq!(Angle::parse_str("0", ()), Ok(Angle::new(0.0)));
-        assert_eq!(Angle::parse_str("15", ()), Ok(Angle::from_degrees(15.0)));
+        assert_eq!(Angle::parse_str("0"), Ok(Angle::new(0.0)));
+        assert_eq!(Angle::parse_str("15"), Ok(Angle::from_degrees(15.0)));
+        assert_eq!(Angle::parse_str("180.5deg"), Ok(Angle::from_degrees(180.5)));
+        assert_eq!(Angle::parse_str("1rad"), Ok(Angle::new(1.0)));
         assert_eq!(
-            Angle::parse_str("180.5deg", ()),
-            Ok(Angle::from_degrees(180.5))
-        );
-        assert_eq!(Angle::parse_str("1rad", ()), Ok(Angle::new(1.0)));
-        assert_eq!(
-            Angle::parse_str("-400grad", ()),
+            Angle::parse_str("-400grad"),
             Ok(Angle::from_degrees(-360.0))
         );
 
-        assert!(Angle::parse_str("", ()).is_err());
-        assert!(Angle::parse_str("foo", ()).is_err());
-        assert!(Angle::parse_str("300foo", ()).is_err());
+        assert!(Angle::parse_str("").is_err());
+        assert!(Angle::parse_str("foo").is_err());
+        assert!(Angle::parse_str("300foo").is_err());
     }
 
     fn test_bisection_angle(

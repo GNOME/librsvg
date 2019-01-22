@@ -591,10 +591,10 @@ impl NodeTrait for NodeText {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value, ())?),
-                Attribute::Y => self.y.set(attr.parse(value, ())?),
-                Attribute::Dx => self.dx.set(attr.parse(value, ()).map(Some)?),
-                Attribute::Dy => self.dy.set(attr.parse(value, ()).map(Some)?),
+                Attribute::X => self.x.set(attr.parse(value)?),
+                Attribute::Y => self.y.set(attr.parse(value)?),
+                Attribute::Dx => self.dx.set(attr.parse(value).map(Some)?),
+                Attribute::Dy => self.dy.set(attr.parse(value).map(Some)?),
                 _ => (),
             }
         }
@@ -770,10 +770,10 @@ impl NodeTrait for NodeTSpan {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value, ()).map(Some)?),
-                Attribute::Y => self.y.set(attr.parse(value, ()).map(Some)?),
-                Attribute::Dx => self.dx.set(attr.parse(value, ()).map(Some)?),
-                Attribute::Dy => self.dy.set(attr.parse(value, ()).map(Some)?),
+                Attribute::X => self.x.set(attr.parse(value).map(Some)?),
+                Attribute::Y => self.y.set(attr.parse(value).map(Some)?),
+                Attribute::Dx => self.dx.set(attr.parse(value).map(Some)?),
+                Attribute::Dy => self.dy.set(attr.parse(value).map(Some)?),
                 _ => (),
             }
         }

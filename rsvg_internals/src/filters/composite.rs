@@ -69,7 +69,7 @@ impl NodeTrait for Composite {
                 Attribute::In2 => {
                     self.in2.replace(Some(Input::parse(Attribute::In2, value)?));
                 }
-                Attribute::Operator => self.operator.set(attr.parse(value, ())?),
+                Attribute::Operator => self.operator.set(attr.parse(value)?),
                 Attribute::K1 => self.k1.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
@@ -231,10 +231,9 @@ impl Filter for Composite {
 }
 
 impl Parse for Operator {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _data: Self::Data) -> Result<Self, Self::Err> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, Self::Err> {
         let loc = parser.current_source_location();
 
         parser

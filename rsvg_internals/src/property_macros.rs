@@ -44,10 +44,9 @@ macro_rules! make_property {
         impl_property!($computed_values_type, $name, $inherits_automatically);
 
         impl ::parsers::Parse for $name {
-            type Data = ();
             type Err = ::error::ValueErrorKind;
 
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, _: Self::Data) -> Result<$name, ::error::ValueErrorKind> {
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, ::error::ValueErrorKind> {
                 let loc = parser.current_source_location();
 
                 parser
@@ -76,7 +75,6 @@ macro_rules! make_property {
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype_parse: $type: ty,
-     parse_data_type: $parse_data_type: ty
     ) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
@@ -94,11 +92,10 @@ macro_rules! make_property {
         }
 
         impl ::parsers::Parse for $name {
-            type Data = $parse_data_type;
             type Err = ::error::ValueErrorKind;
 
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, d: Self::Data) -> Result<$name, ::error::ValueErrorKind> {
-                Ok($name(<$type as ::parsers::Parse>::parse(parser, d)?))
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, ::error::ValueErrorKind> {
+                Ok($name(<$type as ::parsers::Parse>::parse(parser)?))
             }
         }
     };
@@ -107,7 +104,6 @@ macro_rules! make_property {
      $name: ident,
      default: $default: expr,
      newtype_parse: $type: ty,
-     parse_data_type: $parse_data_type: ty,
      property_impl: { $prop: item }
     ) => {
         #[derive(Debug, Clone, PartialEq)]
@@ -118,11 +114,10 @@ macro_rules! make_property {
         $prop
 
         impl ::parsers::Parse for $name {
-            type Data = $parse_data_type;
             type Err = ::error::ValueErrorKind;
 
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>, d: Self::Data) -> Result<$name, ::error::ValueErrorKind> {
-                Ok($name(<$type as ::parsers::Parse>::parse(parser, d)?))
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, ::error::ValueErrorKind> {
+                Ok($name(<$type as ::parsers::Parse>::parse(parser)?))
             }
         }
     };
@@ -150,7 +145,6 @@ macro_rules! make_property {
      inherits_automatically: $inherits_automatically: expr,
      newtype: $type: ty,
      parse_impl: { $parse: item },
-     parse_data_type: $parse_data_type: ty
     ) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
@@ -228,8 +222,8 @@ mod tests {
 
         assert_eq!(<Foo as Default>::default(), Foo::Def);
         assert_eq!(<Foo as Property<()>>::inherits_automatically(), true);
-        assert!(<Foo as Parse>::parse_str("blargh", ()).is_err());
-        assert_eq!(<Foo as Parse>::parse_str("bar", ()), Ok(Foo::Bar));
+        assert!(<Foo as Parse>::parse_str("blargh").is_err());
+        assert_eq!(<Foo as Parse>::parse_str("bar"), Ok(Foo::Bar));
     }
 
     #[test]
@@ -239,7 +233,6 @@ mod tests {
             AddColor,
             default: RGBA::new(1, 1, 1, 1),
             newtype_parse: RGBA,
-            parse_data_type: (),
             property_impl: {
                 impl Property<RGBA> for AddColor {
                     fn inherits_automatically() -> bool {
@@ -259,7 +252,7 @@ mod tests {
         }
 
         let color = RGBA::new(1, 1, 1, 1);
-        let a = <AddColor as Parse>::parse_str("#02030405", ()).unwrap();
+        let a = <AddColor as Parse>::parse_str("#02030405").unwrap();
         let b = a.compute(&color);
 
         assert_eq!(b, AddColor(RGBA::new(3, 4, 5, 6)));

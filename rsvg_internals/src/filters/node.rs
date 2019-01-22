@@ -24,10 +24,10 @@ impl NodeFilter {
     #[inline]
     pub fn new() -> Self {
         Self {
-            x: Cell::new(LengthHorizontal::parse_str("-10%", ()).unwrap()),
-            y: Cell::new(LengthVertical::parse_str("-10%", ()).unwrap()),
-            width: Cell::new(LengthHorizontal::parse_str("120%", ()).unwrap()),
-            height: Cell::new(LengthVertical::parse_str("120%", ()).unwrap()),
+            x: Cell::new(LengthHorizontal::parse_str("-10%").unwrap()),
+            y: Cell::new(LengthVertical::parse_str("-10%").unwrap()),
+            width: Cell::new(LengthHorizontal::parse_str("120%").unwrap()),
+            height: Cell::new(LengthVertical::parse_str("120%").unwrap()),
             filterunits: Cell::new(CoordUnits::ObjectBoundingBox),
             primitiveunits: Cell::new(CoordUnits::UserSpaceOnUse),
         }
@@ -39,7 +39,7 @@ impl NodeTrait for NodeFilter {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::FilterUnits => self.filterunits.set(attr.parse(value, ())?),
+                Attribute::FilterUnits => self.filterunits.set(attr.parse(value)?),
                 _ => (),
             }
         }
@@ -84,25 +84,19 @@ impl NodeTrait for NodeFilter {
         // Parse the rest of the attributes.
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => {
-                    self.x
-                        .set(attr.parse_and_validate(value, (), check_units_horizontal)?)
-                }
-                Attribute::Y => {
-                    self.y
-                        .set(attr.parse_and_validate(value, (), check_units_vertical)?)
-                }
-                Attribute::Width => self.width.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    check_units_horizontal_and_ensure_nonnegative,
-                )?),
-                Attribute::Height => self.height.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    check_units_vertical_and_ensure_nonnegative,
-                )?),
-                Attribute::PrimitiveUnits => self.primitiveunits.set(attr.parse(value, ())?),
+                Attribute::X => self
+                    .x
+                    .set(attr.parse_and_validate(value, check_units_horizontal)?),
+                Attribute::Y => self
+                    .y
+                    .set(attr.parse_and_validate(value, check_units_vertical)?),
+                Attribute::Width => self.width.set(
+                    attr.parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?,
+                ),
+                Attribute::Height => self.height.set(
+                    attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?,
+                ),
+                Attribute::PrimitiveUnits => self.primitiveunits.set(attr.parse(value)?),
                 _ => (),
             }
         }

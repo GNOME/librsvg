@@ -20,10 +20,9 @@ pub enum PaintServer {
 }
 
 impl Parse for PaintServer {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<PaintServer, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<PaintServer, ValueErrorKind> {
         if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
             Ok(PaintServer::None)
         } else if let Ok(url) = parser.try(|i| i.expect_url()) {
@@ -91,27 +90,27 @@ mod tests {
 
     #[test]
     fn catches_invalid_syntax() {
-        assert!(PaintServer::parse_str("", ()).is_err());
-        assert!(PaintServer::parse_str("42", ()).is_err());
-        assert!(PaintServer::parse_str("invalid", ()).is_err());
+        assert!(PaintServer::parse_str("").is_err());
+        assert!(PaintServer::parse_str("42").is_err());
+        assert!(PaintServer::parse_str("invalid").is_err());
     }
 
     #[test]
     fn parses_none() {
-        assert_eq!(PaintServer::parse_str("none", ()), Ok(PaintServer::None));
+        assert_eq!(PaintServer::parse_str("none"), Ok(PaintServer::None));
     }
 
     #[test]
     fn parses_solid_color() {
         assert_eq!(
-            PaintServer::parse_str("rgb(255, 128, 64, 0.5)", ()),
+            PaintServer::parse_str("rgb(255, 128, 64, 0.5)"),
             Ok(PaintServer::SolidColor(cssparser::Color::RGBA(
                 cssparser::RGBA::new(255, 128, 64, 128)
             )))
         );
 
         assert_eq!(
-            PaintServer::parse_str("currentColor", ()),
+            PaintServer::parse_str("currentColor"),
             Ok(PaintServer::SolidColor(cssparser::Color::CurrentColor))
         );
     }
@@ -119,7 +118,7 @@ mod tests {
     #[test]
     fn parses_iri() {
         assert_eq!(
-            PaintServer::parse_str("url(#link)", ()),
+            PaintServer::parse_str("url(#link)"),
             Ok(PaintServer::Iri {
                 iri: Fragment::new(None, "link".to_string()),
                 alternate: None,
@@ -127,7 +126,7 @@ mod tests {
         );
 
         assert_eq!(
-            PaintServer::parse_str("url(foo#link) none", ()),
+            PaintServer::parse_str("url(foo#link) none"),
             Ok(PaintServer::Iri {
                 iri: Fragment::new(Some("foo".to_string()), "link".to_string()),
                 alternate: None,
@@ -135,7 +134,7 @@ mod tests {
         );
 
         assert_eq!(
-            PaintServer::parse_str("url(#link) #ff8040", ()),
+            PaintServer::parse_str("url(#link) #ff8040"),
             Ok(PaintServer::Iri {
                 iri: Fragment::new(None, "link".to_string()),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
@@ -145,7 +144,7 @@ mod tests {
         );
 
         assert_eq!(
-            PaintServer::parse_str("url(#link) rgb(255, 128, 64, 0.5)", ()),
+            PaintServer::parse_str("url(#link) rgb(255, 128, 64, 0.5)"),
             Ok(PaintServer::Iri {
                 iri: Fragment::new(None, "link".to_string()),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
@@ -155,13 +154,13 @@ mod tests {
         );
 
         assert_eq!(
-            PaintServer::parse_str("url(#link) currentColor", ()),
+            PaintServer::parse_str("url(#link) currentColor"),
             Ok(PaintServer::Iri {
                 iri: Fragment::new(None, "link".to_string()),
                 alternate: Some(cssparser::Color::CurrentColor),
             },)
         );
 
-        assert!(PaintServer::parse_str("url(#link) invalid", ()).is_err());
+        assert!(PaintServer::parse_str("url(#link) invalid").is_err());
     }
 }

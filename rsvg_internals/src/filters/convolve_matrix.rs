@@ -8,7 +8,7 @@ use drawing_ctx::DrawingCtx;
 use error::NodeError;
 use node::{NodeResult, NodeTrait, RsvgNode};
 use number_list::{NumberList, NumberListError, NumberListLength};
-use parsers::{self, Parse, ParseError};
+use parsers::{self, ParseError};
 use property_bag::PropertyBag;
 use rect::IRect;
 use surface_utils::{

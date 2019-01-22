@@ -108,11 +108,10 @@ macro_rules! define_length_type {
         }
 
         impl Parse for $name {
-            type Data = ();
             type Err = ValueErrorKind;
 
-            fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<$name, ValueErrorKind> {
-                Ok($name(Length::parse(parser, ())?))
+            fn parse(parser: &mut Parser<'_, '_>) -> Result<$name, ValueErrorKind> {
+                Ok($name(Length::parse(parser)?))
             }
         }
     };
@@ -165,10 +164,9 @@ fn make_err() -> ValueErrorKind {
 }
 
 impl Parse for Length {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<Length, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {
         let length = Length::from_cssparser(parser)?;
 
         parser.expect_exhausted().map_err(|_| make_err())?;
@@ -320,10 +318,9 @@ impl Default for Dasharray {
 }
 
 impl Parse for Dasharray {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: Self::Data) -> Result<Dasharray, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Dasharray, ValueErrorKind> {
         if parser.try(|p| p.expect_ident_matching("none")).is_ok() {
             Ok(Dasharray::None)
         } else {
@@ -358,12 +355,12 @@ mod tests {
     #[test]
     fn parses_default() {
         assert_eq!(
-            LengthHorizontal::parse_str("42", ()),
+            LengthHorizontal::parse_str("42"),
             Ok(LengthHorizontal(Length::new(42.0, LengthUnit::Default,)))
         );
 
         assert_eq!(
-            LengthHorizontal::parse_str("-42px", ()),
+            LengthHorizontal::parse_str("-42px"),
             Ok(LengthHorizontal(Length::new(-42.0, LengthUnit::Default,)))
         );
     }
@@ -371,7 +368,7 @@ mod tests {
     #[test]
     fn parses_percent() {
         assert_eq!(
-            LengthHorizontal::parse_str("50.0%", ()),
+            LengthHorizontal::parse_str("50.0%"),
             Ok(LengthHorizontal(Length::new(0.5, LengthUnit::Percent,)))
         );
     }
@@ -379,7 +376,7 @@ mod tests {
     #[test]
     fn parses_font_em() {
         assert_eq!(
-            LengthVertical::parse_str("22.5em", ()),
+            LengthVertical::parse_str("22.5em"),
             Ok(LengthVertical(Length::new(22.5, LengthUnit::FontEm,)))
         );
     }
@@ -387,7 +384,7 @@ mod tests {
     #[test]
     fn parses_font_ex() {
         assert_eq!(
-            LengthVertical::parse_str("22.5ex", ()),
+            LengthVertical::parse_str("22.5ex"),
             Ok(LengthVertical(Length::new(22.5, LengthUnit::FontEx,)))
         );
     }
@@ -395,47 +392,47 @@ mod tests {
     #[test]
     fn parses_physical_units() {
         assert_eq!(
-            LengthBoth::parse_str("72pt", ()),
+            LengthBoth::parse_str("72pt"),
             Ok(LengthBoth(Length::new(1.0, LengthUnit::Inch,)))
         );
 
         assert_eq!(
-            LengthBoth::parse_str("-22.5in", ()),
+            LengthBoth::parse_str("-22.5in"),
             Ok(LengthBoth(Length::new(-22.5, LengthUnit::Inch,)))
         );
 
         assert_eq!(
-            LengthBoth::parse_str("-254cm", ()),
+            LengthBoth::parse_str("-254cm"),
             Ok(LengthBoth(Length::new(-100.0, LengthUnit::Inch,)))
         );
 
         assert_eq!(
-            LengthBoth::parse_str("254mm", ()),
+            LengthBoth::parse_str("254mm"),
             Ok(LengthBoth(Length::new(10.0, LengthUnit::Inch,)))
         );
 
         assert_eq!(
-            LengthBoth::parse_str("60pc", ()),
+            LengthBoth::parse_str("60pc"),
             Ok(LengthBoth(Length::new(10.0, LengthUnit::Inch,)))
         );
     }
 
     #[test]
     fn empty_length_yields_error() {
-        assert!(is_parse_error(&LengthBoth::parse_str("", ())));
+        assert!(is_parse_error(&LengthBoth::parse_str("")));
     }
 
     #[test]
     fn invalid_unit_yields_error() {
-        assert!(is_parse_error(&LengthBoth::parse_str("8furlong", ())));
+        assert!(is_parse_error(&LengthBoth::parse_str("8furlong")));
     }
 
     #[test]
     fn check_nonnegative_works() {
-        assert!(LengthBoth::parse_str("0", ())
+        assert!(LengthBoth::parse_str("0")
             .and_then(|l| l.check_nonnegative())
             .is_ok());
-        assert!(LengthBoth::parse_str("-10", ())
+        assert!(LengthBoth::parse_str("-10")
             .and_then(|l| l.check_nonnegative())
             .is_err());
     }
@@ -505,13 +502,13 @@ mod tests {
     }
 
     fn parse_dash_array_str(s: &str) -> Result<Dasharray, ValueErrorKind> {
-        Dasharray::parse_str(s, ())
+        Dasharray::parse_str(s)
     }
 
     #[test]
     fn parses_dash_array() {
         // helper to cut down boilderplate
-        let length_parse = |s| LengthBoth::parse_str(s, ()).unwrap();
+        let length_parse = |s| LengthBoth::parse_str(s).unwrap();
 
         let expected = Dasharray::Array(vec![
             length_parse("1"),

@@ -161,26 +161,18 @@ impl NodeTrait for Primitive {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(Some(attr.parse_and_validate(
-                    value,
-                    (),
-                    check_units_horizontal,
-                )?)),
-                Attribute::Y => self.y.set(Some(attr.parse_and_validate(
-                    value,
-                    (),
-                    check_units_vertical,
-                )?)),
-                Attribute::Width => self.width.set(Some(attr.parse_and_validate(
-                    value,
-                    (),
-                    check_units_horizontal_and_ensure_nonnegative,
-                )?)),
-                Attribute::Height => self.height.set(Some(attr.parse_and_validate(
-                    value,
-                    (),
-                    check_units_vertical_and_ensure_nonnegative,
-                )?)),
+                Attribute::X => self.x.set(Some(
+                    attr.parse_and_validate(value, check_units_horizontal)?,
+                )),
+                Attribute::Y => self
+                    .y
+                    .set(Some(attr.parse_and_validate(value, check_units_vertical)?)),
+                Attribute::Width => self.width.set(Some(
+                    attr.parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?,
+                )),
+                Attribute::Height => self.height.set(Some(
+                    attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?,
+                )),
                 Attribute::Result => *self.result.borrow_mut() = Some(value.to_string()),
                 _ => (),
             }

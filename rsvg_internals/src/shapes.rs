@@ -184,10 +184,9 @@ impl Deref for Points {
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
 impl Parse for Points {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<Points, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Points, ValueErrorKind> {
         let mut v = Vec::new();
 
         loop {
@@ -237,7 +236,7 @@ impl NodeTrait for NodePoly {
         for (attr, value) in pbag.iter() {
             // support for svg < 1.0 which used verts
             if attr == Attribute::Points || attr == Attribute::Verts {
-                *self.points.borrow_mut() = attr.parse(value.trim(), ()).map(Some)?;
+                *self.points.borrow_mut() = attr.parse(value.trim()).map(Some)?;
             }
         }
 
@@ -297,10 +296,10 @@ impl NodeTrait for NodeLine {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X1 => self.x1.set(attr.parse(value, ())?),
-                Attribute::Y1 => self.y1.set(attr.parse(value, ())?),
-                Attribute::X2 => self.x2.set(attr.parse(value, ())?),
-                Attribute::Y2 => self.y2.set(attr.parse(value, ())?),
+                Attribute::X1 => self.x1.set(attr.parse(value)?),
+                Attribute::Y1 => self.y1.set(attr.parse(value)?),
+                Attribute::X2 => self.x2.set(attr.parse(value)?),
+                Attribute::Y2 => self.y2.set(attr.parse(value)?),
                 _ => (),
             }
         }
@@ -363,24 +362,20 @@ impl NodeTrait for NodeRect {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value, ())?),
-                Attribute::Y => self.y.set(attr.parse(value, ())?),
-                Attribute::Width => self.w.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthHorizontal::check_nonnegative,
-                )?),
-                Attribute::Height => self.h.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthVertical::check_nonnegative,
-                )?),
+                Attribute::X => self.x.set(attr.parse(value)?),
+                Attribute::Y => self.y.set(attr.parse(value)?),
+                Attribute::Width => self
+                    .w
+                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
+                Attribute::Height => self
+                    .h
+                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
                 Attribute::Rx => self.rx.set(
-                    attr.parse_and_validate(value, (), LengthHorizontal::check_nonnegative)
+                    attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)
                         .map(Some)?,
                 ),
                 Attribute::Ry => self.ry.set(
-                    attr.parse_and_validate(value, (), LengthVertical::check_nonnegative)
+                    attr.parse_and_validate(value, LengthVertical::check_nonnegative)
                         .map(Some)?,
                 ),
 
@@ -559,12 +554,11 @@ impl NodeTrait for NodeCircle {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(attr.parse(value, ())?),
-                Attribute::Cy => self.cy.set(attr.parse(value, ())?),
-                Attribute::R => {
-                    self.r
-                        .set(attr.parse_and_validate(value, (), LengthBoth::check_nonnegative)?)
-                }
+                Attribute::Cx => self.cx.set(attr.parse(value)?),
+                Attribute::Cy => self.cy.set(attr.parse(value)?),
+                Attribute::R => self
+                    .r
+                    .set(attr.parse_and_validate(value, LengthBoth::check_nonnegative)?),
 
                 _ => (),
             }
@@ -614,18 +608,14 @@ impl NodeTrait for NodeEllipse {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(attr.parse(value, ())?),
-                Attribute::Cy => self.cy.set(attr.parse(value, ())?),
-                Attribute::Rx => self.rx.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthHorizontal::check_nonnegative,
-                )?),
-                Attribute::Ry => self.ry.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthVertical::check_nonnegative,
-                )?),
+                Attribute::Cx => self.cx.set(attr.parse(value)?),
+                Attribute::Cy => self.cy.set(attr.parse(value)?),
+                Attribute::Rx => self
+                    .rx
+                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
+                Attribute::Ry => self
+                    .ry
+                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
 
                 _ => (),
             }
@@ -660,32 +650,32 @@ mod tests {
 
     #[test]
     fn parses_points() {
-        assert_eq!(Points::parse_str(" 1 2 ", ()), Ok(Points(vec![(1.0, 2.0)])));
+        assert_eq!(Points::parse_str(" 1 2 "), Ok(Points(vec![(1.0, 2.0)])));
         assert_eq!(
-            Points::parse_str("1 2 3 4", ()),
+            Points::parse_str("1 2 3 4"),
             Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str("1,2,3,4", ()),
+            Points::parse_str("1,2,3,4"),
             Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str("1,2 3,4", ()),
+            Points::parse_str("1,2 3,4"),
             Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str("1,2 -3,4", ()),
+            Points::parse_str("1,2 -3,4"),
             Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str("1,2,-3,4", ()),
+            Points::parse_str("1,2,-3,4"),
             Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
         );
     }
 
     #[test]
     fn errors_on_invalid_points() {
-        assert!(Points::parse_str("-1-2-3-4", ()).is_err());
-        assert!(Points::parse_str("1 2-3,-4", ()).is_err());
+        assert!(Points::parse_str("-1-2-3-4").is_err());
+        assert!(Points::parse_str("1 2-3,-4").is_err());
     }
 }

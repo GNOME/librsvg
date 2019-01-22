@@ -13,10 +13,9 @@ pub enum CoordUnits {
 }
 
 impl Parse for CoordUnits {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<CoordUnits, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<CoordUnits, ValueErrorKind> {
         let loc = parser.current_source_location();
 
         parser
@@ -65,14 +64,12 @@ macro_rules! coord_units {
         }
 
         impl $crate::parsers::Parse for $name {
-            type Data = ();
             type Err = $crate::error::ValueErrorKind;
 
             fn parse(
                 parser: &mut ::cssparser::Parser<'_, '_>,
-                _: (),
             ) -> Result<Self, $crate::error::ValueErrorKind> {
-                Ok($name($crate::coord_units::CoordUnits::parse(parser, ())?))
+                Ok($name($crate::coord_units::CoordUnits::parse(parser)?))
             }
         }
     };
@@ -86,18 +83,18 @@ mod tests {
 
     #[test]
     fn parsing_invalid_strings_yields_error() {
-        assert!(MyUnits::parse_str("", ()).is_err());
-        assert!(MyUnits::parse_str("foo", ()).is_err());
+        assert!(MyUnits::parse_str("").is_err());
+        assert!(MyUnits::parse_str("foo").is_err());
     }
 
     #[test]
     fn parses_paint_server_units() {
         assert_eq!(
-            MyUnits::parse_str("userSpaceOnUse", ()),
+            MyUnits::parse_str("userSpaceOnUse"),
             Ok(MyUnits(CoordUnits::UserSpaceOnUse))
         );
         assert_eq!(
-            MyUnits::parse_str("objectBoundingBox", ()),
+            MyUnits::parse_str("objectBoundingBox"),
             Ok(MyUnits(CoordUnits::ObjectBoundingBox))
         );
     }

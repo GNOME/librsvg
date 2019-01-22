@@ -183,10 +183,9 @@ fn parse_fit_mode(s: &str) -> Result<FitMode, ValueErrorKind> {
 }
 
 impl Parse for AspectRatio {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<AspectRatio, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<AspectRatio, ValueErrorKind> {
         let defer = parser.try(|p| p.expect_ident_matching("defer")).is_ok();
 
         let align_xy = parser.try(|p| {
@@ -220,20 +219,20 @@ mod tests {
 
     #[test]
     fn parsing_invalid_strings_yields_error() {
-        assert!(AspectRatio::parse_str("", ()).is_err());
-        assert!(AspectRatio::parse_str("defer", ()).is_err());
-        assert!(AspectRatio::parse_str("defer foo", ()).is_err());
-        assert!(AspectRatio::parse_str("defer xmidymid", ()).is_err());
-        assert!(AspectRatio::parse_str("defer xMidYMid foo", ()).is_err());
-        assert!(AspectRatio::parse_str("xmidymid", ()).is_err());
-        assert!(AspectRatio::parse_str("xMidYMid foo", ()).is_err());
-        assert!(AspectRatio::parse_str("defer xMidYMid meet foo", ()).is_err());
+        assert!(AspectRatio::parse_str("").is_err());
+        assert!(AspectRatio::parse_str("defer").is_err());
+        assert!(AspectRatio::parse_str("defer foo").is_err());
+        assert!(AspectRatio::parse_str("defer xmidymid").is_err());
+        assert!(AspectRatio::parse_str("defer xMidYMid foo").is_err());
+        assert!(AspectRatio::parse_str("xmidymid").is_err());
+        assert!(AspectRatio::parse_str("xMidYMid foo").is_err());
+        assert!(AspectRatio::parse_str("defer xMidYMid meet foo").is_err());
     }
 
     #[test]
     fn parses_valid_strings() {
         assert_eq!(
-            AspectRatio::parse_str("defer none", ()),
+            AspectRatio::parse_str("defer none"),
             Ok(AspectRatio {
                 defer: true,
                 align: None,
@@ -241,7 +240,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str("xMidYMid", ()),
+            AspectRatio::parse_str("xMidYMid"),
             Ok(AspectRatio {
                 defer: false,
                 align: Some(Align {
@@ -253,7 +252,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str("defer xMidYMid", ()),
+            AspectRatio::parse_str("defer xMidYMid"),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -265,7 +264,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str("defer xMinYMax", ()),
+            AspectRatio::parse_str("defer xMinYMax"),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -277,7 +276,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str("defer xMaxYMid meet", ()),
+            AspectRatio::parse_str("defer xMaxYMid meet"),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -289,7 +288,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str("defer xMinYMax slice", ()),
+            AspectRatio::parse_str("defer xMinYMax slice"),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -310,75 +309,75 @@ mod tests {
 
     #[test]
     fn aligns() {
-        let foo = AspectRatio::parse_str("xMinYMin meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMin meet").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str("xMinYMin slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMin slice").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, 0.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse_str("xMinYMid meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMid meet").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str("xMinYMid slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMid slice").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, -49.5, 10.0, 100.0));
 
-        let foo = AspectRatio::parse_str("xMinYMax meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMax meet").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str("xMinYMax slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMinYMax slice").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, -99.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse_str("xMidYMin meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMin meet").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(4.95, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str("xMidYMin slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMin slice").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, 0.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse_str("xMidYMid meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMid meet").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(4.95, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str("xMidYMid slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMid slice").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, -49.5, 10.0, 100.0));
 
-        let foo = AspectRatio::parse_str("xMidYMax meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMax meet").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(4.95, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str("xMidYMax slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMidYMax slice").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, -99.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse_str("xMaxYMin meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMin meet").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(9.9, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str("xMaxYMin slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMin slice").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, 0.0, 10.0, 100.0));
 
-        let foo = AspectRatio::parse_str("xMaxYMid meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMid meet").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(9.9, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str("xMaxYMid slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMid slice").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, -49.5, 10.0, 100.0));
 
-        let foo = AspectRatio::parse_str("xMaxYMax meet", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMax meet").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(9.9, 0.0, 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str("xMaxYMax slice", ()).unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMax slice").unwrap();
         let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
         assert_quadruples_equal(&foo, &(0.0, -99.0, 10.0, 100.0));
     }

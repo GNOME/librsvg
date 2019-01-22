@@ -36,10 +36,9 @@ pub enum SpreadMethod {
 }
 
 impl Parse for SpreadMethod {
-    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<SpreadMethod, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<SpreadMethod, ValueErrorKind> {
         let loc = parser.current_source_location();
 
         parser
@@ -256,10 +255,10 @@ impl GradientVariant {
         // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
 
         GradientVariant::Linear {
-            x1: Some(LengthHorizontal::parse_str("0%", ()).unwrap()),
-            y1: Some(LengthVertical::parse_str("0%", ()).unwrap()),
-            x2: Some(LengthHorizontal::parse_str("100%", ()).unwrap()),
-            y2: Some(LengthVertical::parse_str("0%", ()).unwrap()),
+            x1: Some(LengthHorizontal::parse_str("0%").unwrap()),
+            y1: Some(LengthVertical::parse_str("0%").unwrap()),
+            x2: Some(LengthHorizontal::parse_str("100%").unwrap()),
+            y2: Some(LengthVertical::parse_str("0%").unwrap()),
         }
     }
 
@@ -267,9 +266,9 @@ impl GradientVariant {
         // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
 
         GradientVariant::Radial {
-            cx: Some(LengthHorizontal::parse_str("50%", ()).unwrap()),
-            cy: Some(LengthVertical::parse_str("50%", ()).unwrap()),
-            r: Some(LengthBoth::parse_str("50%", ()).unwrap()),
+            cx: Some(LengthHorizontal::parse_str("50%").unwrap()),
+            cy: Some(LengthVertical::parse_str("50%").unwrap()),
+            r: Some(LengthBoth::parse_str("50%").unwrap()),
 
             fx: None,
             fy: None,
@@ -674,9 +673,9 @@ impl NodeTrait for NodeGradient {
         for (attr, value) in pbag.iter() {
             match attr {
                 // Attributes common to linear and radial gradients
-                Attribute::GradientUnits => g.common.units = Some(attr.parse(value, ())?),
-                Attribute::GradientTransform => g.common.affine = Some(attr.parse(value, ())?),
-                Attribute::SpreadMethod => g.common.spread = Some(attr.parse(value, ())?),
+                Attribute::GradientUnits => g.common.units = Some(attr.parse(value)?),
+                Attribute::GradientTransform => g.common.affine = Some(attr.parse(value)?),
+                Attribute::SpreadMethod => g.common.spread = Some(attr.parse(value)?),
                 Attribute::XlinkHref => {
                     g.common.fallback =
                         Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
@@ -684,16 +683,16 @@ impl NodeTrait for NodeGradient {
 
                 // Attributes specific to each gradient type.  The defaults mandated by the spec
                 // are in GradientVariant::resolve_from_defaults()
-                Attribute::X1 => x1 = Some(attr.parse(value, ())?),
-                Attribute::Y1 => y1 = Some(attr.parse(value, ())?),
-                Attribute::X2 => x2 = Some(attr.parse(value, ())?),
-                Attribute::Y2 => y2 = Some(attr.parse(value, ())?),
+                Attribute::X1 => x1 = Some(attr.parse(value)?),
+                Attribute::Y1 => y1 = Some(attr.parse(value)?),
+                Attribute::X2 => x2 = Some(attr.parse(value)?),
+                Attribute::Y2 => y2 = Some(attr.parse(value)?),
 
-                Attribute::Cx => cx = Some(attr.parse(value, ())?),
-                Attribute::Cy => cy = Some(attr.parse(value, ())?),
-                Attribute::R => r = Some(attr.parse(value, ())?),
-                Attribute::Fx => fx = Some(attr.parse(value, ())?),
-                Attribute::Fy => fy = Some(attr.parse(value, ())?),
+                Attribute::Cx => cx = Some(attr.parse(value)?),
+                Attribute::Cy => cy = Some(attr.parse(value)?),
+                Attribute::R => r = Some(attr.parse(value)?),
+                Attribute::Fx => fx = Some(attr.parse(value)?),
+                Attribute::Fy => fy = Some(attr.parse(value)?),
 
                 _ => (),
             }
@@ -722,16 +721,13 @@ mod tests {
 
     #[test]
     fn parses_spread_method() {
-        assert_eq!(SpreadMethod::parse_str("pad", ()), Ok(SpreadMethod::Pad));
+        assert_eq!(SpreadMethod::parse_str("pad"), Ok(SpreadMethod::Pad));
         assert_eq!(
-            SpreadMethod::parse_str("reflect", ()),
+            SpreadMethod::parse_str("reflect"),
             Ok(SpreadMethod::Reflect)
         );
-        assert_eq!(
-            SpreadMethod::parse_str("repeat", ()),
-            Ok(SpreadMethod::Repeat)
-        );
-        assert!(SpreadMethod::parse_str("foobar", ()).is_err());
+        assert_eq!(SpreadMethod::parse_str("repeat"), Ok(SpreadMethod::Repeat));
+        assert!(SpreadMethod::parse_str("foobar").is_err());
     }
 
     fn assert_tuples_equal(a: &(f64, f64), b: &(f64, f64)) {

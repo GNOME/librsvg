@@ -36,11 +36,11 @@ impl NodeMask {
     pub fn new() -> NodeMask {
         NodeMask {
             // these values are per the spec
-            x: Cell::new(LengthHorizontal::parse_str("-10%", ()).unwrap()),
-            y: Cell::new(LengthVertical::parse_str("-10%", ()).unwrap()),
+            x: Cell::new(LengthHorizontal::parse_str("-10%").unwrap()),
+            y: Cell::new(LengthVertical::parse_str("-10%").unwrap()),
 
-            width: Cell::new(LengthHorizontal::parse_str("120%", ()).unwrap()),
-            height: Cell::new(LengthVertical::parse_str("120%", ()).unwrap()),
+            width: Cell::new(LengthHorizontal::parse_str("120%").unwrap()),
+            height: Cell::new(LengthVertical::parse_str("120%").unwrap()),
 
             units: Cell::new(MaskUnits::default()),
             content_units: Cell::new(MaskContentUnits::default()),
@@ -188,20 +188,16 @@ impl NodeTrait for NodeMask {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value, ())?),
-                Attribute::Y => self.y.set(attr.parse(value, ())?),
-                Attribute::Width => self.width.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthHorizontal::check_nonnegative,
-                )?),
-                Attribute::Height => self.height.set(attr.parse_and_validate(
-                    value,
-                    (),
-                    LengthVertical::check_nonnegative,
-                )?),
-                Attribute::MaskUnits => self.units.set(attr.parse(value, ())?),
-                Attribute::MaskContentUnits => self.content_units.set(attr.parse(value, ())?),
+                Attribute::X => self.x.set(attr.parse(value)?),
+                Attribute::Y => self.y.set(attr.parse(value)?),
+                Attribute::Width => self
+                    .width
+                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
+                Attribute::Height => self
+                    .height
+                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
+                Attribute::MaskUnits => self.units.set(attr.parse(value)?),
+                Attribute::MaskContentUnits => self.content_units.set(attr.parse(value)?),
                 _ => (),
             }
         }
