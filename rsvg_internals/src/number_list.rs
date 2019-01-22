@@ -1,4 +1,4 @@
-use cssparser::Parser;
+use cssparser::{Parser, ParserInput};
 
 use parsers::{CssParserExt, Parse, ParseError};
 
@@ -17,11 +17,8 @@ pub enum NumberListError {
 #[derive(Debug, PartialEq)]
 pub struct NumberList(pub Vec<f64>);
 
-impl Parse for NumberList {
-    type Data = NumberListLength;
-    type Err = NumberListError;
-
-    fn parse(
+impl NumberList {
+    pub fn parse(
         parser: &mut Parser<'_, '_>,
         length: NumberListLength,
     ) -> Result<NumberList, NumberListError> {
@@ -67,6 +64,16 @@ impl Parse for NumberList {
             .map_err(|_| NumberListError::IncorrectNumberOfElements)?;
 
         Ok(NumberList(v))
+    }
+
+    pub fn parse_str(s: &str, length: NumberListLength) -> Result<NumberList, NumberListError> {
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
+        Self::parse(&mut parser, length).and_then(|r| {
+            // FIXME: parser.expect_exhausted()?;
+            Ok(r)
+        })
     }
 }
 
