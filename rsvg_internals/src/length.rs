@@ -305,7 +305,8 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
     match v.unit {
         LengthUnit::Default => v.length,
 
-        LengthUnit::Inch => v.length * v.dir.scaling_factor(params.dpi_x, params.dpi_y),
+        // FontSize always is a LengthDir::Both, per properties.rs
+        LengthUnit::Inch => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y),
 
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
 
