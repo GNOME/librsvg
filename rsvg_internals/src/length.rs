@@ -40,7 +40,7 @@ macro_rules! define_length_type {
 
         impl $name {
             pub fn new(length: f64, unit: LengthUnit) -> Self {
-                $name(Length::new(length, unit, $dir))
+                $name(Length::new(length, unit))
             }
 
             pub fn length(&self) -> f64 {
@@ -97,13 +97,13 @@ macro_rules! define_length_type {
             }
 
             pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-                Ok($name(Length::from_cssparser(parser, $dir)?))
+                Ok($name(Length::from_cssparser(parser)?))
             }
         }
 
         impl Default for $name {
             fn default() -> Self {
-                $name(Length::new(0.0, LengthUnit::Default, $dir))
+                $name(Length::new(0.0, LengthUnit::Default))
             }
         }
 
@@ -112,7 +112,7 @@ macro_rules! define_length_type {
             type Err = ValueErrorKind;
 
             fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<$name, ValueErrorKind> {
-                Ok($name(Length::parse(parser, $dir)?))
+                Ok($name(Length::parse(parser, ())?))
             }
         }
     };
@@ -140,7 +140,6 @@ define_length_type!(LengthBoth, LengthDir::Both);
 struct Length {
     pub length: f64,
     pub unit: LengthUnit,
-    dir: LengthDir,
 }
 
 pub const POINTS_PER_INCH: f64 = 72.0;
@@ -166,11 +165,11 @@ fn make_err() -> ValueErrorKind {
 }
 
 impl Parse for Length {
-    type Data = LengthDir;
+    type Data = ();
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>, dir: LengthDir) -> Result<Length, ValueErrorKind> {
-        let length = Length::from_cssparser(parser, dir)?;
+    fn parse(parser: &mut Parser<'_, '_>, _: ()) -> Result<Length, ValueErrorKind> {
+        let length = Length::from_cssparser(parser)?;
 
         parser.expect_exhausted().map_err(|_| make_err())?;
 
@@ -179,12 +178,8 @@ impl Parse for Length {
 }
 
 impl Length {
-    fn new(l: f64, unit: LengthUnit, dir: LengthDir) -> Length {
-        Length {
-            length: l,
-            unit,
-            dir,
-        }
+    fn new(l: f64, unit: LengthUnit) -> Length {
+        Length { length: l, unit }
     }
 
     /// Returns the raw length after asserting units are either default or percent.
@@ -209,10 +204,7 @@ impl Length {
         }
     }
 
-    pub fn from_cssparser(
-        parser: &mut Parser<'_, '_>,
-        dir: LengthDir,
-    ) -> Result<Length, ValueErrorKind> {
+    pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {
         let length = {
             let token = parser.next().map_err(|_| {
                 ValueErrorKind::Parse(ParseError::new(
@@ -224,13 +216,11 @@ impl Length {
                 Token::Number { value, .. } => Length {
                     length: f64::from(value),
                     unit: LengthUnit::Default,
-                    dir,
                 },
 
                 Token::Percentage { unit_value, .. } => Length {
                     length: f64::from(unit_value),
                     unit: LengthUnit::Percent,
-                    dir,
                 },
 
                 Token::Dimension {
@@ -242,49 +232,41 @@ impl Length {
                         "em" => Length {
                             length: value,
                             unit: LengthUnit::FontEm,
-                            dir,
                         },
 
                         "ex" => Length {
                             length: value,
                             unit: LengthUnit::FontEx,
-                            dir,
                         },
 
                         "pt" => Length {
                             length: value / POINTS_PER_INCH,
                             unit: LengthUnit::Inch,
-                            dir,
                         },
 
                         "in" => Length {
                             length: value,
                             unit: LengthUnit::Inch,
-                            dir,
                         },
 
                         "cm" => Length {
                             length: value / CM_PER_INCH,
                             unit: LengthUnit::Inch,
-                            dir,
                         },
 
                         "mm" => Length {
                             length: value / MM_PER_INCH,
                             unit: LengthUnit::Inch,
-                            dir,
                         },
 
                         "pc" => Length {
                             length: value / PICA_PER_INCH,
                             unit: LengthUnit::Inch,
-                            dir,
                         },
 
                         "px" => Length {
                             length: value,
                             unit: LengthUnit::Default,
-                            dir,
                         },
 
                         _ => return Err(make_err()),
@@ -377,20 +359,12 @@ mod tests {
     fn parses_default() {
         assert_eq!(
             LengthHorizontal::parse_str("42", ()),
-            Ok(LengthHorizontal(Length::new(
-                42.0,
-                LengthUnit::Default,
-                LengthDir::Horizontal
-            )))
+            Ok(LengthHorizontal(Length::new(42.0, LengthUnit::Default,)))
         );
 
         assert_eq!(
             LengthHorizontal::parse_str("-42px", ()),
-            Ok(LengthHorizontal(Length::new(
-                -42.0,
-                LengthUnit::Default,
-                LengthDir::Horizontal
-            )))
+            Ok(LengthHorizontal(Length::new(-42.0, LengthUnit::Default,)))
         );
     }
 
@@ -398,11 +372,7 @@ mod tests {
     fn parses_percent() {
         assert_eq!(
             LengthHorizontal::parse_str("50.0%", ()),
-            Ok(LengthHorizontal(Length::new(
-                0.5,
-                LengthUnit::Percent,
-                LengthDir::Horizontal
-            )))
+            Ok(LengthHorizontal(Length::new(0.5, LengthUnit::Percent,)))
         );
     }
 
@@ -410,11 +380,7 @@ mod tests {
     fn parses_font_em() {
         assert_eq!(
             LengthVertical::parse_str("22.5em", ()),
-            Ok(LengthVertical(Length::new(
-                22.5,
-                LengthUnit::FontEm,
-                LengthDir::Vertical
-            )))
+            Ok(LengthVertical(Length::new(22.5, LengthUnit::FontEm,)))
         );
     }
 
@@ -422,11 +388,7 @@ mod tests {
     fn parses_font_ex() {
         assert_eq!(
             LengthVertical::parse_str("22.5ex", ()),
-            Ok(LengthVertical(Length::new(
-                22.5,
-                LengthUnit::FontEx,
-                LengthDir::Vertical
-            )))
+            Ok(LengthVertical(Length::new(22.5, LengthUnit::FontEx,)))
         );
     }
 
@@ -434,47 +396,27 @@ mod tests {
     fn parses_physical_units() {
         assert_eq!(
             LengthBoth::parse_str("72pt", ()),
-            Ok(LengthBoth(Length::new(
-                1.0,
-                LengthUnit::Inch,
-                LengthDir::Both
-            )))
+            Ok(LengthBoth(Length::new(1.0, LengthUnit::Inch,)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("-22.5in", ()),
-            Ok(LengthBoth(Length::new(
-                -22.5,
-                LengthUnit::Inch,
-                LengthDir::Both
-            )))
+            Ok(LengthBoth(Length::new(-22.5, LengthUnit::Inch,)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("-254cm", ()),
-            Ok(LengthBoth(Length::new(
-                -100.0,
-                LengthUnit::Inch,
-                LengthDir::Both
-            )))
+            Ok(LengthBoth(Length::new(-100.0, LengthUnit::Inch,)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("254mm", ()),
-            Ok(LengthBoth(Length::new(
-                10.0,
-                LengthUnit::Inch,
-                LengthDir::Both
-            )))
+            Ok(LengthBoth(Length::new(10.0, LengthUnit::Inch,)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("60pc", ()),
-            Ok(LengthBoth(Length::new(
-                10.0,
-                LengthUnit::Inch,
-                LengthDir::Both
-            )))
+            Ok(LengthBoth(Length::new(10.0, LengthUnit::Inch,)))
         );
     }
 
