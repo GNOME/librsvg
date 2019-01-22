@@ -177,7 +177,13 @@ impl Length {
 
             LengthUnit::FontEx => self.length * font_size_from_values(values, params) / 2.0,
 
-            LengthUnit::Inch => inches_to_pixels(self.length, self.dir, params),
+            LengthUnit::Inch => match self.dir {
+                LengthDir::Horizontal => self.length * params.dpi_x(),
+                LengthDir::Vertical => self.length * params.dpi_y(),
+                LengthDir::Both => {
+                    self.length * viewport_percentage(params.dpi_x(), params.dpi_y())
+                }
+            },
         }
     }
 
