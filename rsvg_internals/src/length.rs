@@ -23,6 +23,20 @@ enum LengthDir {
     Both,
 }
 
+impl LengthDir {
+    fn scaling_factor<XF, YF>(&self, x: XF, y: YF) -> f64
+    where
+        XF: FnOnce() -> f64,
+        YF: FnOnce() -> f64,
+    {
+        match *self {
+            LengthDir::Horizontal => x(),
+            LengthDir::Vertical => y(),
+            LengthDir::Both => viewport_percentage(x(), y()),
+        }
+    }
+}
+
 macro_rules! define_length_type {
     ($name:ident, $dir:expr) => {
         #[derive(Debug, PartialEq, Copy, Clone)]
@@ -164,26 +178,23 @@ impl Length {
         match self.unit {
             LengthUnit::Default => self.length,
 
-            LengthUnit::Percent => match self.dir {
-                LengthDir::Horizontal => self.length * params.view_box_width(),
-                LengthDir::Vertical => self.length * params.view_box_height(),
-                LengthDir::Both => {
-                    self.length
-                        * viewport_percentage(params.view_box_width(), params.view_box_height())
-                }
-            },
+            LengthUnit::Percent => {
+                self.length
+                    * self
+                        .dir
+                        .scaling_factor(|| params.view_box_width(), || params.view_box_height())
+            }
 
             LengthUnit::FontEm => self.length * font_size_from_values(values, params),
 
             LengthUnit::FontEx => self.length * font_size_from_values(values, params) / 2.0,
 
-            LengthUnit::Inch => match self.dir {
-                LengthDir::Horizontal => self.length * params.dpi_x(),
-                LengthDir::Vertical => self.length * params.dpi_y(),
-                LengthDir::Both => {
-                    self.length * viewport_percentage(params.dpi_x(), params.dpi_y())
-                }
-            },
+            LengthUnit::Inch => {
+                self.length
+                    * self
+                        .dir
+                        .scaling_factor(|| params.dpi_x(), || params.dpi_y())
+            }
         }
     }
 
@@ -300,11 +311,7 @@ impl Length {
 }
 
 fn inches_to_pixels(length: f64, dir: LengthDir, params: &ViewParams) -> f64 {
-    match dir {
-        LengthDir::Horizontal => length * params.dpi_x(),
-        LengthDir::Vertical => length * params.dpi_y(),
-        LengthDir::Both => length * viewport_percentage(params.dpi_x(), params.dpi_y()),
-    }
+    length * dir.scaling_factor(|| params.dpi_x(), || params.dpi_y())
 }
 
 fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
