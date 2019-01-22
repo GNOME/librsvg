@@ -310,17 +310,13 @@ impl Length {
     }
 }
 
-fn inches_to_pixels(length: f64, dir: LengthDir, params: &ViewParams) -> f64 {
-    length * dir.scaling_factor(|| params.dpi_x(), || params.dpi_y())
-}
-
 fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
     let v = &values.font_size.0.value().0;
 
     match v.unit {
         LengthUnit::Default => v.length,
 
-        LengthUnit::Inch => inches_to_pixels(v.length, v.dir, params),
+        LengthUnit::Inch => v.length * v.dir.scaling_factor(|| params.dpi_x(), || params.dpi_y()),
 
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
 
