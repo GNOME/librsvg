@@ -177,7 +177,7 @@ impl Length {
 
             LengthUnit::FontEx => self.length * font_size_from_values(values, params) / 2.0,
 
-            LengthUnit::Inch => font_size_from_inch(self.length, self.dir, params),
+            LengthUnit::Inch => inches_to_pixels(self.length, self.dir, params),
         }
     }
 
@@ -293,7 +293,7 @@ impl Length {
     }
 }
 
-fn font_size_from_inch(length: f64, dir: LengthDir, params: &ViewParams) -> f64 {
+fn inches_to_pixels(length: f64, dir: LengthDir, params: &ViewParams) -> f64 {
     match dir {
         LengthDir::Horizontal => length * params.dpi_x(),
         LengthDir::Vertical => length * params.dpi_y(),
@@ -307,7 +307,7 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
     match v.unit {
         LengthUnit::Default => v.length,
 
-        LengthUnit::Inch => font_size_from_inch(v.length, v.dir, params),
+        LengthUnit::Inch => inches_to_pixels(v.length, v.dir, params),
 
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
 
