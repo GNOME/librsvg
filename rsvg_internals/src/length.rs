@@ -24,15 +24,11 @@ enum LengthDir {
 }
 
 impl LengthDir {
-    fn scaling_factor<XF, YF>(&self, x: XF, y: YF) -> f64
-    where
-        XF: FnOnce() -> f64,
-        YF: FnOnce() -> f64,
-    {
+    fn scaling_factor(&self, x: f64, y: f64) -> f64 {
         match *self {
-            LengthDir::Horizontal => x(),
-            LengthDir::Vertical => y(),
-            LengthDir::Both => viewport_percentage(x(), y()),
+            LengthDir::Horizontal => x,
+            LengthDir::Vertical => y,
+            LengthDir::Both => viewport_percentage(x, y),
         }
     }
 }
@@ -182,16 +178,14 @@ impl Length {
                 self.length
                     * self
                         .dir
-                        .scaling_factor(|| params.view_box_width, || params.view_box_height)
+                        .scaling_factor(params.view_box_width, params.view_box_height)
             }
 
             LengthUnit::FontEm => self.length * font_size_from_values(values, params),
 
             LengthUnit::FontEx => self.length * font_size_from_values(values, params) / 2.0,
 
-            LengthUnit::Inch => {
-                self.length * self.dir.scaling_factor(|| params.dpi_x, || params.dpi_y)
-            }
+            LengthUnit::Inch => self.length * self.dir.scaling_factor(params.dpi_x, params.dpi_y),
         }
     }
 
@@ -313,7 +307,7 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
     match v.unit {
         LengthUnit::Default => v.length,
 
-        LengthUnit::Inch => v.length * v.dir.scaling_factor(|| params.dpi_x, || params.dpi_y),
+        LengthUnit::Inch => v.length * v.dir.scaling_factor(params.dpi_x, params.dpi_y),
 
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
 
