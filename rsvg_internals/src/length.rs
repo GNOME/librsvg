@@ -66,7 +66,24 @@ macro_rules! define_length_type {
             }
 
             pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
-                self.0.normalize(values, params)
+                match self.unit() {
+                    LengthUnit::Default => self.length(),
+
+                    LengthUnit::Percent => {
+                        self.length()
+                            * $dir.scaling_factor(params.view_box_width, params.view_box_height)
+                    }
+
+                    LengthUnit::FontEm => self.length() * font_size_from_values(values, params),
+
+                    LengthUnit::FontEx => {
+                        self.length() * font_size_from_values(values, params) / 2.0
+                    }
+
+                    LengthUnit::Inch => {
+                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
+                    }
+                }
             }
 
             pub fn hand_normalize(
@@ -167,25 +184,6 @@ impl Length {
             length: l,
             unit,
             dir,
-        }
-    }
-
-    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
-        match self.unit {
-            LengthUnit::Default => self.length,
-
-            LengthUnit::Percent => {
-                self.length
-                    * self
-                        .dir
-                        .scaling_factor(params.view_box_width, params.view_box_height)
-            }
-
-            LengthUnit::FontEm => self.length * font_size_from_values(values, params),
-
-            LengthUnit::FontEx => self.length * font_size_from_values(values, params) / 2.0,
-
-            LengthUnit::Inch => self.length * self.dir.scaling_factor(params.dpi_x, params.dpi_y),
         }
     }
 
