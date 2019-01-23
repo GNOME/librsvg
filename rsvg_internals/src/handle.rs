@@ -378,6 +378,25 @@ impl Handle {
         })
     }
 
+    pub fn get_dimensions_no_error(&mut self) -> RsvgDimensionData {
+        match self.get_dimensions() {
+            Ok(dimensions) => {
+                dimensions
+            }
+
+            Err(_) => {
+                RsvgDimensionData {
+                    width: 0,
+                    height: 0,
+                    em: 0.0,
+                    ex: 0.0,
+                }
+
+                // This old API doesn't even let us return an error, sigh.
+            }
+        }
+    }
+
     fn get_dimensions_sub(
         &mut self,
         id: Option<&str>,
@@ -947,22 +966,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    match rhandle.get_dimensions() {
-        Ok(dimensions) => {
-            *dimension_data = dimensions;
-        }
-
-        Err(_) => {
-            let d = &mut *dimension_data;
-
-            d.width = 0;
-            d.height = 0;
-            d.em = 0.0;
-            d.ex = 0.0;
-
-            // This old API doesn't even let us return an error, sigh.
-        }
-    }
+    *dimension_data = rhandle.get_dimensions_no_error();
 }
 
 #[no_mangle]
