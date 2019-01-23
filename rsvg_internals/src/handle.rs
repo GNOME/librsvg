@@ -242,8 +242,8 @@ impl Handle {
 
             LoadState::ClosedError => {
                 rsvg_g_warning(
-                    "RsvgHandle could not read or parse the SVG; did you check for errors during the \
-                     loading stage?",
+                    "RsvgHandle could not read or parse the SVG; did you check for errors during \
+                     the loading stage?",
                 );
                 Err(RenderingError::HandleIsNotLoaded)
             }
@@ -336,6 +336,8 @@ impl Handle {
     }
 
     pub fn get_dimensions(&mut self) -> Result<RsvgDimensionData, RenderingError> {
+        self.check_is_loaded()?;
+
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
         // To prevent an infinite loop we are saving the state, and
@@ -368,6 +370,8 @@ impl Handle {
         &mut self,
         id: Option<&str>,
     ) -> Result<RsvgDimensionData, RenderingError> {
+        self.check_is_loaded()?;
+
         let (ink_r, _) = self.get_geometry_sub(id)?;
 
         let (w, h) = self
@@ -384,6 +388,8 @@ impl Handle {
     }
 
     fn get_position_sub(&mut self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
+        self.check_is_loaded()?;
+
         if let None = id {
             return Ok(RsvgPositionData { x: 0, y: 0 });
         }
@@ -439,6 +445,8 @@ impl Handle {
         &mut self,
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+        self.check_is_loaded()?;
+
         let root = self.get_root();
 
         let (node, is_root) = if let Some(id) = id {
@@ -511,6 +519,8 @@ impl Handle {
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
+        self.check_is_loaded()?;
+
         let status = cr.status();
         if status != Status::Success {
             let msg = format!(
@@ -820,10 +830,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if rhandle.check_is_loaded().is_err() {
-        return false.to_glib();
-    }
-
     let id: Option<String> = from_glib_none(id);
 
     match rhandle.get_geometry_sub(id.as_ref().map(String::as_str)) {
@@ -883,10 +889,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    if rhandle.check_is_loaded().is_err() {
-        return false.to_glib();
-    }
-
     match rhandle.render_cairo_sub(&cr, id.as_ref().map(String::as_str)) {
         Ok(()) => true.to_glib(),
 
@@ -937,10 +939,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    if rhandle.check_is_loaded().is_err() {
-        return;
-    }
-
     match rhandle.get_dimensions() {
         Ok(dimensions) => {
             *dimension_data = dimensions;
@@ -966,10 +964,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
-
-    if rhandle.check_is_loaded().is_err() {
-        return false.to_glib();
-    }
 
     let id: Option<String> = from_glib_none(id);
 
@@ -1000,10 +994,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
-
-    if rhandle.check_is_loaded().is_err() {
-        return false.to_glib();
-    }
 
     let id: Option<String> = from_glib_none(id);
 
