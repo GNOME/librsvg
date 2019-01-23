@@ -128,21 +128,13 @@
 
 #include "rsvg.h"
 
-/* Defined in rsvg_internals/src/handle.rs */
-typedef struct RsvgHandleRust RsvgHandleRust;
-
 /* Implemented in rsvg_internals/src/xml.rs */
 typedef struct RsvgXmlState RsvgXmlState;
 
 /* Implemented in rsvg_internals/src/xml.rs */
 extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
 
-G_GNUC_INTERNAL
-RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
-
 /* Implemented in rsvg_internals/src/handle.rs */
-extern RsvgHandleRust *rsvg_handle_rust_new (void);
-extern void rsvg_handle_rust_free (RsvgHandleRust *raw_handle);
 extern double rsvg_handle_rust_get_dpi_x (RsvgHandle *raw_handle);
 extern double rsvg_handle_rust_get_dpi_y (RsvgHandle *raw_handle);
 extern void rsvg_handle_rust_set_dpi_x (RsvgHandle *raw_handle, double dpi_x);
