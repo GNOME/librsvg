@@ -209,7 +209,7 @@ impl Handle {
     }
 
     pub fn read_stream_sync(
-        &mut self,
+        &self,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
