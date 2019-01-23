@@ -909,6 +909,8 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
 }
 
 fn get_pixbuf_sub(handle: &mut Handle, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
+    handle.check_is_loaded()?;
+
     let dimensions = handle.get_dimensions()?;
 
     let surface = ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
@@ -930,10 +932,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
     let rhandle = get_rust_handle(handle);
     let id: Option<String> = from_glib_none(id);
-
-    if rhandle.check_is_loaded().is_err() {
-        return ptr::null_mut();
-    }
 
     match get_pixbuf_sub(rhandle, id.as_ref().map(String::as_str)) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
