@@ -134,7 +134,7 @@ fn get_final_size(dimensions: &RsvgDimensionData, size_mode: &SizeMode) -> (i32,
 }
 
 fn render_to_pixbuf_at_size(
-    handle: &mut Handle,
+    handle: &Handle,
     dimensions: &RsvgDimensionData,
     width: i32,
     height: i32,

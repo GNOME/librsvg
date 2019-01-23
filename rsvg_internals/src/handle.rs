@@ -663,7 +663,7 @@ impl LoadFlags {
 extern "C" {
     fn rsvg_handle_get_type() -> glib_sys::GType;
 
-    fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *mut Handle;
+    fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *const Handle;
 }
 
 #[no_mangle]
@@ -677,8 +677,8 @@ pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut Handle) {
     Box::from_raw(raw_handle);
 }
 
-pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
-    unsafe { &mut *(rsvg_handle_get_rust(handle) as *mut Handle) }
+pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a Handle {
+    unsafe { &*rsvg_handle_get_rust(handle) }
 }
 
 #[no_mangle]
