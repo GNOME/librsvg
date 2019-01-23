@@ -335,6 +335,18 @@ impl Handle {
         draw_ctx
     }
 
+    pub fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
+        self.check_is_loaded()?;
+
+        match self.lookup_node(id) {
+            Ok(_) => Ok(true),
+
+            Err(DefsLookupErrorKind::NotFound) => Ok(false),
+
+            Err(e) => Err(RenderingError::InvalidId(e)),
+        }
+    }
+
     pub fn get_dimensions(&mut self) -> Result<RsvgDimensionData, RenderingError> {
         self.check_is_loaded()?;
 
@@ -477,7 +489,7 @@ impl Handle {
         self.get_node_geometry(&node)
     }
 
-    fn lookup_node(&mut self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
+    fn lookup_node(&self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
 
@@ -867,16 +879,13 @@ pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if rhandle.check_is_loaded().is_err() {
-        return false.to_glib();
-    }
-
     if id.is_null() {
         return false.to_glib();
     }
 
     let id: String = from_glib_none(id);
-    rhandle.lookup_node(&id).is_ok().to_glib()
+    // FIXME: return a proper error code to the public API
+    rhandle.has_sub(&id).unwrap_or(false).to_glib()
 }
 
 #[no_mangle]
