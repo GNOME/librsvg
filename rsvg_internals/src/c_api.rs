@@ -216,13 +216,4 @@ impl ObjectImpl for Handle {
             _ => unreachable!("invalid property id={} for RsvgHandle", id),
         }
     }
-
-    fn constructed(&self, obj: &glib::Object) {
-        //         // Chain up to the parent type's implementation of this virtual
-        //         // method.
-        //         self.parent_constructed(obj);
-        //
-        //         // And here we could do our own initialization.
-        unimplemented!();
-    }
 }
