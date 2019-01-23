@@ -683,7 +683,7 @@ pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a mut Handle {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
-    raw_handle: *mut RsvgHandle,
+    raw_handle: *const RsvgHandle,
     uri: *const libc::c_char,
 ) {
     let rhandle = get_rust_handle(raw_handle);
@@ -708,7 +708,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_base_gfile(
-    raw_handle: *mut RsvgHandle,
+    raw_handle: *const RsvgHandle,
     raw_gfile: *mut gio_sys::GFile,
 ) {
     let rhandle = get_rust_handle(raw_handle);
@@ -733,7 +733,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_base_url(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_x(raw_handle: *mut RsvgHandle, dpi_x: f64) {
+pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_x(raw_handle: *const RsvgHandle, dpi_x: f64) {
     let rhandle = get_rust_handle(raw_handle);
 
     rhandle.dpi.set(Dpi::new(dpi_x, rhandle.dpi.get().y()));
@@ -747,7 +747,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_x(raw_handle: *const RsvgHandl
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_y(raw_handle: *mut RsvgHandle, dpi_y: f64) {
+pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_y(raw_handle: *const RsvgHandle, dpi_y: f64) {
     let rhandle = get_rust_handle(raw_handle);
 
     rhandle.dpi.set(Dpi::new(rhandle.dpi.get().x(), dpi_y));
@@ -776,7 +776,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const RsvgHandl
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_size_callback(
-    raw_handle: *mut RsvgHandle,
+    raw_handle: *const RsvgHandle,
     size_func: RsvgSizeFunc,
     user_data: glib_sys::gpointer,
     destroy_notify: glib_sys::GDestroyNotify,
@@ -792,7 +792,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_size_callback(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
-    raw_handle: *mut RsvgHandle,
+    raw_handle: *const RsvgHandle,
     testing: glib_sys::gboolean,
 ) {
     let rhandle = get_rust_handle(raw_handle);
@@ -802,7 +802,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     stream: *mut gio_sys::GInputStream,
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
@@ -831,7 +831,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_write(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     buf: *const u8,
     count: usize,
 ) {
@@ -851,7 +851,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_write(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_close(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
@@ -868,7 +868,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_close(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     out_ink_rect: *mut RsvgRectangle,
     out_logical_rect: *mut RsvgRectangle,
     id: *const libc::c_char,
@@ -907,7 +907,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
@@ -923,7 +923,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     cr: *mut cairo_sys::cairo_t,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
@@ -943,7 +943,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     id: *const libc::c_char,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
     let rhandle = get_rust_handle(handle);
@@ -957,7 +957,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     dimension_data: *mut RsvgDimensionData,
 ) {
     let rhandle = get_rust_handle(handle);
@@ -967,7 +967,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     dimension_data: *mut RsvgDimensionData,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
@@ -997,7 +997,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
-    handle: *mut RsvgHandle,
+    handle: *const RsvgHandle,
     position_data: *mut RsvgPositionData,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
@@ -1024,7 +1024,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_new_with_flags(flags: u32) -> *mut RsvgHandle {
+pub unsafe extern "C" fn rsvg_handle_rust_new_with_flags(flags: u32) -> *const RsvgHandle {
     let obj: *mut gobject_sys::GObject =
         glib::Object::new(from_glib(rsvg_handle_get_type()), &[("flags", &flags)])
             .unwrap()
@@ -1037,7 +1037,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_with_flags(flags: u32) -> *mut Rsv
 pub unsafe extern "C" fn rsvg_handle_rust_new_from_file(
     filename: *const libc::c_char,
     error: *mut *mut glib_sys::GError,
-) -> *mut RsvgHandle {
+) -> *const RsvgHandle {
     // This API lets the caller pass a URI, or a file name in the operating system's
     // encoding.  So, first we'll see if it's UTF-8, and in that case, try the URL version.
     // Otherwise, we'll try building a path name.
@@ -1060,7 +1060,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_gfile_sync(
     flags: u32,
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
-) -> *mut RsvgHandle {
+) -> *const RsvgHandle {
     let raw_handle = rsvg_handle_rust_new_with_flags(flags);
 
     let rhandle = get_rust_handle(raw_handle);
@@ -1086,7 +1086,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_stream_sync(
     flags: u32,
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
-) -> *mut RsvgHandle {
+) -> *const RsvgHandle {
     let raw_handle = rsvg_handle_rust_new_with_flags(flags);
 
     let rhandle = get_rust_handle(raw_handle);
@@ -1111,7 +1111,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_data(
     data: *mut u8,
     len: usize,
     error: *mut *mut glib_sys::GError,
-) -> *mut RsvgHandle {
+) -> *const RsvgHandle {
     // We create the MemoryInputStream without the gtk-rs binding because of this:
     //
     // - The binding doesn't provide _new_from_data().  All of the binding's ways to
