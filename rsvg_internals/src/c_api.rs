@@ -1,12 +1,15 @@
 use std::ops;
 use std::{f64, i32};
 
+use libc;
+
 use glib::object::ObjectClass;
 use glib::subclass;
 use glib::subclass::object::ObjectClassSubclassExt;
 use glib::subclass::prelude::*;
 use glib::translate::*;
-use glib::{ParamFlags, ParamSpec, ToValue};
+use glib::value::{FromValue, FromValueOptional, SetValue};
+use glib::{ParamFlags, ParamSpec, StaticType, ToValue, Type, Value};
 
 use glib_sys;
 use gobject_sys;
@@ -16,6 +19,65 @@ use handle::Handle;
 extern "C" {
     fn rsvg_handle_flags_get_type() -> glib_sys::GType;
 }
+
+mod handle_flags {
+    // The following is entirely stolen from the auto-generated code
+    // for GBindingFlags, from gtk-rs/glib/src/gobject/auto/flags.rs
+
+    use super::*;
+
+    // Keep these in sync with rsvg.h:RsvgHandleFlags
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    bitflags! {
+        pub struct HandleFlags: u32 {
+            const NONE            = 0;
+            const UNLIMITED       = 1 << 0;
+            const KEEP_IMAGE_DATA = 1 << 1;
+        }
+    }
+
+    pub type RsvgHandleFlags = libc::c_uint;
+
+    impl ToGlib for HandleFlags {
+        type GlibType = RsvgHandleFlags;
+
+        fn to_glib(&self) -> RsvgHandleFlags {
+            self.bits()
+        }
+    }
+
+    impl FromGlib<RsvgHandleFlags> for HandleFlags {
+        fn from_glib(value: RsvgHandleFlags) -> HandleFlags {
+            HandleFlags::from_bits_truncate(value)
+        }
+    }
+
+    impl StaticType for HandleFlags {
+        fn static_type() -> Type {
+            unsafe { from_glib(rsvg_handle_flags_get_type()) }
+        }
+    }
+
+    impl<'a> FromValueOptional<'a> for HandleFlags {
+        unsafe fn from_value_optional(value: &Value) -> Option<Self> {
+            Some(FromValue::from_value(value))
+        }
+    }
+
+    impl<'a> FromValue<'a> for HandleFlags {
+        unsafe fn from_value(value: &Value) -> Self {
+            from_glib(gobject_sys::g_value_get_flags(value.to_glib_none().0))
+        }
+    }
+
+    impl SetValue for HandleFlags {
+        unsafe fn set_value(value: &mut Value, this: &Self) {
+            gobject_sys::g_value_set_flags(value.to_glib_none_mut().0, this.to_glib())
+        }
+    }
+}
+
+pub use self::handle_flags::*;
 
 // Keep this in sync with rsvg.h:RsvgHandleClass
 #[repr(C)]
@@ -61,7 +123,7 @@ static PROPERTIES: [subclass::Property; 11] = [
             name,
             "Flags",
             "Loading flags",
-            from_glib(unsafe { rsvg_handle_flags_get_type() }),
+            HandleFlags::static_type(),
             0,
             ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
         )
@@ -167,7 +229,9 @@ impl ObjectImpl for Handle {
 
         match *prop {
             subclass::Property("flags", ..) => {
-                self.set_load_flags(value.get().expect("flags value has incorrect type"));
+                let v: HandleFlags = value.get().expect("flags value has incorrect type");
+
+                self.set_load_flags(v);
             }
 
             subclass::Property("dpi-x", ..) => {
@@ -196,7 +260,7 @@ impl ObjectImpl for Handle {
 
             subclass::Property("base-uri", ..) => Ok(self
                 .base_url
-               .borrow()
+                .borrow()
                 .as_ref()
                 .map(|url| url.as_str())
                 .to_value()),

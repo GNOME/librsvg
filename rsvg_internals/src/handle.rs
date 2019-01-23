@@ -21,6 +21,7 @@ use libc;
 use url::Url;
 
 use allowed_url::{AllowedUrl, Href};
+use c_api::{HandleFlags, RsvgHandle, RsvgHandleFlags};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
@@ -57,7 +58,7 @@ pub struct RsvgPositionData {
 
 /// Flags used during loading
 ///
-/// We communicate these to/from the C code with a guint <-> u32,
+/// We communicate these to/from the C code with a HandleFlags
 /// and this struct provides to_flags() and from_flags() methods.
 #[derive(Default, Copy, Clone)]
 pub struct LoadFlags {
@@ -617,7 +618,7 @@ impl Handle {
     }
 
     // from the public API
-    pub fn set_load_flags(&self, flags: u32) {
+    pub fn set_load_flags(&self, flags: HandleFlags) {
         self.load_flags.set(LoadFlags::from_flags(flags));
     }
 
@@ -632,27 +633,23 @@ impl Handle {
     }
 }
 
-// Keep these in sync with rsvg.h:RsvgHandleFlags
-const RSVG_HANDLE_FLAG_UNLIMITED: u32 = 1 << 0;
-const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: u32 = 1 << 1;
-
 impl LoadFlags {
-    pub fn from_flags(flags: u32) -> Self {
+    pub fn from_flags(flags: HandleFlags) -> Self {
         LoadFlags {
-            unlimited_size: (flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0,
-            keep_image_data: (flags & RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA) != 0,
+            unlimited_size: flags.contains(HandleFlags::UNLIMITED),
+            keep_image_data: flags.contains(HandleFlags::KEEP_IMAGE_DATA),
         }
     }
 
-    pub fn to_flags(&self) -> u32 {
-        let mut flags = 0;
+    pub fn to_flags(&self) -> HandleFlags {
+        let mut flags = HandleFlags::empty();
 
         if self.unlimited_size {
-            flags |= RSVG_HANDLE_FLAG_UNLIMITED;
+            flags.insert(HandleFlags::UNLIMITED);
         }
 
         if self.keep_image_data {
-            flags |= RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA;
+            flags.insert(HandleFlags::KEEP_IMAGE_DATA);
         }
 
         flags
@@ -761,17 +758,24 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_y(raw_handle: *const RsvgHandl
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_flags(raw_handle: *const RsvgHandle) -> u32 {
+pub unsafe extern "C" fn rsvg_handle_rust_get_flags(
+    raw_handle: *const RsvgHandle,
+) -> RsvgHandleFlags {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.load_flags.get().to_flags()
+    rhandle.load_flags.get().to_flags().to_glib()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_flags(raw_handle: *const RsvgHandle, flags: u32) {
+pub unsafe extern "C" fn rsvg_handle_rust_set_flags(
+    raw_handle: *const RsvgHandle,
+    flags: RsvgHandleFlags,
+) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.load_flags.set(LoadFlags::from_flags(flags));
+    rhandle
+        .load_flags
+        .set(LoadFlags::from_flags(from_glib(flags)));
 }
 
 #[no_mangle]

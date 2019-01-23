@@ -35,6 +35,9 @@ extern crate xml as xml_rs;
 extern crate lazy_static;
 
 #[macro_use]
+extern crate bitflags;
+
+#[macro_use]
 extern crate glib;
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
