@@ -348,7 +348,7 @@ impl Handle {
         }
     }
 
-    pub fn get_dimensions(&mut self) -> Result<RsvgDimensionData, RenderingError> {
+    pub fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
         self.check_is_loaded()?;
 
         // This function is probably called from the cairo_render functions,
@@ -379,7 +379,7 @@ impl Handle {
         })
     }
 
-    pub fn get_dimensions_no_error(&mut self) -> RsvgDimensionData {
+    pub fn get_dimensions_no_error(&self) -> RsvgDimensionData {
         match self.get_dimensions() {
             Ok(dimensions) => dimensions,
 
@@ -396,10 +396,7 @@ impl Handle {
         }
     }
 
-    fn get_dimensions_sub(
-        &mut self,
-        id: Option<&str>,
-    ) -> Result<RsvgDimensionData, RenderingError> {
+    fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
         self.check_is_loaded()?;
 
         let (ink_r, _) = self.get_geometry_sub(id)?;
@@ -417,7 +414,7 @@ impl Handle {
         })
     }
 
-    fn get_position_sub(&mut self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
+    fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
         self.check_is_loaded()?;
 
         if let None = id {
@@ -445,7 +442,7 @@ impl Handle {
 
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry(
-        &mut self,
+        &self,
         node: &RsvgNode,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let dimensions = self.get_dimensions()?;
@@ -472,7 +469,7 @@ impl Handle {
 
     /// Returns (ink_rect, logical_rect)
     fn get_geometry_sub(
-        &mut self,
+        &self,
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         self.check_is_loaded()?;
@@ -545,7 +542,7 @@ impl Handle {
     }
 
     pub fn render_cairo_sub(
-        &mut self,
+        &self,
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
@@ -579,7 +576,7 @@ impl Handle {
         res
     }
 
-    fn get_pixbuf_sub(&mut self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
+    fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
         self.check_is_loaded()?;
 
         let dimensions = self.get_dimensions()?;
@@ -598,7 +595,7 @@ impl Handle {
     }
 
     fn construct_new_from_gfile_sync(
-        &mut self,
+        &self,
         file: &gio::File,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
@@ -607,7 +604,7 @@ impl Handle {
     }
 
     fn construct_read_stream_sync(
-        &mut self,
+        &self,
         stream: &gio::InputStream,
         base_file: Option<&gio::File>,
         cancellable: Option<&gio::Cancellable>,
