@@ -6,7 +6,7 @@ use glib::subclass;
 use glib::subclass::object::ObjectClassSubclassExt;
 use glib::subclass::prelude::*;
 use glib::translate::*;
-use glib::{ParamFlags, ParamSpec};
+use glib::{ParamFlags, ParamSpec, ToValue};
 
 use glib_sys;
 use gobject_sys;
@@ -187,13 +187,34 @@ impl ObjectImpl for Handle {
     }
 
     fn get_property(&self, _obj: &glib::Object, id: usize) -> Result<glib::Value, ()> {
-        //         let prop = &PROPERTIES[id];
-        //
-        //         match *prop {
-        //             subclass::Property("name", ..) => Ok(self.name.borrow().to_value()),
-        //             _ => unimplemented!(),
-        //         }
-        unimplemented!();
+        let prop = &PROPERTIES[id];
+
+        match *prop {
+            subclass::Property("flags", ..) => Ok(self.load_flags.get().to_flags().to_value()),
+            subclass::Property("dpi-x", ..) => Ok(self.dpi.get().x().to_value()),
+            subclass::Property("dpi-y", ..) => Ok(self.dpi.get().y().to_value()),
+
+            subclass::Property("base-uri", ..) => Ok(self
+                .base_url
+               .borrow()
+                .as_ref()
+                .map(|url| url.as_str())
+                .to_value()),
+
+            subclass::Property("width", ..) => Ok(self.get_dimensions_no_error().width.to_value()),
+            subclass::Property("height", ..) => {
+                Ok(self.get_dimensions_no_error().height.to_value())
+            }
+
+            subclass::Property("em", ..) => Ok(self.get_dimensions_no_error().em.to_value()),
+            subclass::Property("ex", ..) => Ok(self.get_dimensions_no_error().ex.to_value()),
+
+            subclass::Property("title", ..) => Ok("".to_value()), // deprecated
+            subclass::Property("desc", ..) => Ok("".to_value()),  // deprecated
+            subclass::Property("metadata", ..) => Ok("".to_value()), // deprecated
+
+            _ => unreachable!("invalid property id={} for RsvgHandle", id),
+        }
     }
 
     fn constructed(&self, obj: &glib::Object) {
