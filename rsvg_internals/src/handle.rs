@@ -313,7 +313,7 @@ impl Handle {
     }
 
     fn create_drawing_ctx_for_node(
-        &mut self,
+        &self,
         cr: &cairo::Context,
         dimensions: &RsvgDimensionData,
         node: Option<&RsvgNode>,
