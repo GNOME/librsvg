@@ -150,7 +150,7 @@ pub struct Handle {
     svg: RefCell<Option<Rc<Svg>>>,
     pub load_flags: Cell<LoadFlags>,
     load_state: Cell<LoadState>,
-    buffer: Vec<u8>, // used by the legacy write() api
+    buffer: RefCell<Vec<u8>>, // used by the legacy write() api
     size_callback: RefCell<SizeCallback>,
     in_loop: Cell<bool>,
     is_testing: Cell<bool>,
@@ -165,7 +165,7 @@ impl Handle {
             svg: RefCell::new(None),
             load_flags: Cell::new(LoadFlags::default()),
             load_state: Cell::new(LoadState::Start),
-            buffer: Vec::new(),
+            buffer: RefCell::new(Vec::new()),
             size_callback: RefCell::new(SizeCallback::new()),
             in_loop: Cell::new(false),
             is_testing: Cell::new(false),
@@ -254,17 +254,17 @@ impl Handle {
         LoadOptions::new(self.load_flags.get(), self.base_url.borrow().clone())
     }
 
-    pub fn write(&mut self, buf: &[u8]) {
+    pub fn write(&self, buf: &[u8]) {
         match self.load_state.get() {
             LoadState::Start => self.load_state.set(LoadState::Loading),
             LoadState::Loading => (),
             _ => unreachable!(),
         };
 
-        self.buffer.extend_from_slice(buf);
+        self.buffer.borrow_mut().extend_from_slice(buf);
     }
 
-    pub fn close(&mut self) -> Result<(), LoadingError> {
+    pub fn close(&self) -> Result<(), LoadingError> {
         let res = match self.load_state.get() {
             LoadState::Start => {
                 self.load_state.set(LoadState::ClosedError);
@@ -272,7 +272,8 @@ impl Handle {
             }
 
             LoadState::Loading => {
-                let bytes = Bytes::from(&self.buffer);
+                let buffer = self.buffer.borrow();
+                let bytes = Bytes::from(&*buffer);
                 let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
                 let mut xml = XmlState::new(&self.load_options());
 
@@ -380,9 +381,7 @@ impl Handle {
 
     pub fn get_dimensions_no_error(&mut self) -> RsvgDimensionData {
         match self.get_dimensions() {
-            Ok(dimensions) => {
-                dimensions
-            }
+            Ok(dimensions) => dimensions,
 
             Err(_) => {
                 RsvgDimensionData {
