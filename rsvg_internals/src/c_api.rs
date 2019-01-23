@@ -243,7 +243,7 @@ impl ObjectImpl for Handle {
             }
 
             subclass::Property("base-uri", ..) => {
-                let v: Option<String> = value.get();;
+                let v: Option<String> = value.get();
 
                 // rsvg_handle_set_base_uri() expects non-NULL URI strings,
                 // but the "base-uri" property can be set to NULL due to a missing
