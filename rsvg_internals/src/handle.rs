@@ -144,11 +144,11 @@ impl Drop for SizeCallback {
 }
 
 pub struct Handle {
-    dpi: Cell<Dpi>,
-    base_url: RefCell<Option<Url>>,
+    pub dpi: Cell<Dpi>,
+    pub base_url: RefCell<Option<Url>>,
     base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     svg: RefCell<Option<Rc<Svg>>>,
-    load_flags: Cell<LoadFlags>,
+    pub load_flags: Cell<LoadFlags>,
     load_state: Cell<LoadState>,
     buffer: Vec<u8>, // used by the legacy write() api
     size_callback: RefCell<SizeCallback>,
@@ -648,7 +648,7 @@ impl LoadFlags {
         }
     }
 
-    fn to_flags(&self) -> u32 {
+    pub fn to_flags(&self) -> u32 {
         let mut flags = 0;
 
         if self.unlimited_size {
