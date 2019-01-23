@@ -561,6 +561,24 @@ impl Handle {
         res
     }
 
+    fn get_pixbuf_sub(&mut self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
+        self.check_is_loaded()?;
+
+        let dimensions = self.get_dimensions()?;
+
+        let surface =
+            ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
+
+        {
+            let cr = cairo::Context::new(&surface);
+            self.render_cairo_sub(&cr, id)?;
+        }
+
+        let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
+
+        pixbuf_from_surface(&surface)
+    }
+
     fn construct_new_from_gfile_sync(
         &mut self,
         file: &gio::File,
@@ -908,23 +926,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
     }
 }
 
-fn get_pixbuf_sub(handle: &mut Handle, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
-    handle.check_is_loaded()?;
-
-    let dimensions = handle.get_dimensions()?;
-
-    let surface = ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
-
-    {
-        let cr = cairo::Context::new(&surface);
-        handle.render_cairo_sub(&cr, id)?;
-    }
-
-    let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
-
-    pixbuf_from_surface(&surface)
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
     handle: *mut RsvgHandle,
@@ -933,7 +934,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
     let rhandle = get_rust_handle(handle);
     let id: Option<String> = from_glib_none(id);
 
-    match get_pixbuf_sub(rhandle, id.as_ref().map(String::as_str)) {
+    match rhandle.get_pixbuf_sub(id.as_ref().map(String::as_str)) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(_) => ptr::null_mut(),
     }
