@@ -7,8 +7,9 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 
+use c_api::get_rust_handle;
 use error::{set_gerror, RenderingError};
-use handle::{get_rust_handle, rsvg_handle_rust_new_from_gfile_sync, Handle, RsvgDimensionData};
+use handle::{rsvg_handle_rust_new_from_gfile_sync, Handle, RsvgDimensionData};
 use rect::IRect;
 use surface_utils::{
     iterators::Pixels,

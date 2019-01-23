@@ -13,6 +13,7 @@ use gdk_pixbuf::Pixbuf;
 use gdk_pixbuf_sys;
 use gio::{self, FileExt};
 use gio_sys;
+use glib::subclass::types::ObjectSubclass;
 use glib::translate::*;
 use glib::{self, Bytes, Cast};
 use glib_sys;
@@ -21,7 +22,7 @@ use libc;
 use url::Url;
 
 use allowed_url::{AllowedUrl, Href};
-use c_api::{HandleFlags, RsvgHandle, RsvgHandleFlags};
+use c_api::{get_rust_handle, HandleFlags, RsvgHandle, RsvgHandleFlags};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
@@ -35,10 +36,10 @@ use xml::XmlState;
 use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 // A *const RsvgHandle is just an opaque pointer we get from C
-#[repr(C)]
-pub struct RsvgHandle {
-    _private: [u8; 0],
-}
+// #[repr(C)]
+// pub struct RsvgHandle {
+//    _private: [u8; 0],
+// }
 
 // Keep in sync with rsvg.h:RsvgDimensionData
 #[repr(C)]
@@ -656,13 +657,6 @@ impl LoadFlags {
     }
 }
 
-#[allow(improper_ctypes)]
-extern "C" {
-    fn rsvg_handle_get_type() -> glib_sys::GType;
-
-    fn rsvg_handle_get_rust(handle: *const RsvgHandle) -> *const Handle;
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_new() -> *mut Handle {
     Box::into_raw(Box::new(Handle::new()))
@@ -672,10 +666,6 @@ pub unsafe extern "C" fn rsvg_handle_rust_new() -> *mut Handle {
 pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut Handle) {
     assert!(!raw_handle.is_null());
     Box::from_raw(raw_handle);
-}
-
-pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a Handle {
-    unsafe { &*rsvg_handle_get_rust(handle) }
 }
 
 #[no_mangle]
@@ -1030,7 +1020,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_new_with_flags(flags: u32) -> *const RsvgHandle {
     let obj: *mut gobject_sys::GObject =
-        glib::Object::new(from_glib(rsvg_handle_get_type()), &[("flags", &flags)])
+        glib::Object::new(Handle::get_type(), &[("flags", &flags)])
             .unwrap()
             .to_glib_full();
 

@@ -243,7 +243,15 @@ impl ObjectImpl for Handle {
             }
 
             subclass::Property("base-uri", ..) => {
-                self.set_base_url(value.get().expect("base-uri should be a non-NULL string"));
+                let v: Option<String> = value.get();;
+
+                // rsvg_handle_set_base_uri() expects non-NULL URI strings,
+                // but the "base-uri" property can be set to NULL due to a missing
+                // construct-time property.
+
+                if let Some(s) = v {
+                    self.set_base_url(&s);
+                }
             }
 
             _ => unreachable!("invalid property id {}", id),
@@ -273,11 +281,22 @@ impl ObjectImpl for Handle {
             subclass::Property("em", ..) => Ok(self.get_dimensions_no_error().em.to_value()),
             subclass::Property("ex", ..) => Ok(self.get_dimensions_no_error().ex.to_value()),
 
-            subclass::Property("title", ..) => Ok("".to_value()), // deprecated
-            subclass::Property("desc", ..) => Ok("".to_value()),  // deprecated
-            subclass::Property("metadata", ..) => Ok("".to_value()), // deprecated
+            // the following three are deprecated
+            subclass::Property("title", ..) => Ok((None as Option<String>).to_value()),
+            subclass::Property("desc", ..) => Ok((None as Option<String>).to_value()),
+            subclass::Property("metadata", ..) => Ok((None as Option<String>).to_value()),
 
             _ => unreachable!("invalid property id={} for RsvgHandle", id),
         }
     }
+}
+
+pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a Handle {
+    let handle = unsafe { &*handle };
+    handle.get_impl()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_type() -> glib_sys::GType {
+    Handle::get_type().to_glib()
 }
