@@ -4,10 +4,13 @@ Librsvg test suite
 Librsvg's test harness is built upon [Glib's GTest utility
 functions][gtest].  These let you define tests in the C language.
 
-There are several different styles of tests:
+The test suite has the following test binaries:
 
 * `rsvg-test` - The main test suite; loads, parses, and renders SVGs and
   compares the results against reference PNG images.
+  
+* `api` - Tests the full C API of librsvg: all the public functions,
+  the RsvgHandle class and its methods, and its GObject properties.
 
 * `loading` - Tests that compressed and uncompressed SVGs are loaded
   correctly even if read one or two bytes at a time.  This is
@@ -21,10 +24,14 @@ There are several different styles of tests:
 * `dimensions` - Loads an SVG, and tests that librsvg computes the
   correct dimensions for the toplevel SVG element, or one of the
   individual sub-elements.
+  
+* `errors` - Tests that errors are reported from the API when SVG
+  files have deliberate errors in them.
 
-* `styles` - Loads and parses an SVG, and checks that a particular SVG
-  object has a certain style.  These tests are currently disabled,
-  since they depend on internal APIs of librsvg.
+* `infinite-loop` - Some invalid SVG files may cause infinite loops,
+  for example, those that have circular references across SVG
+  elements. These tests ensure that librsvg can detect those errors
+  and not go spinning endlessly.
 
 These are all "black box tests": they run the library with its public
 API, and test the results.  They do not test the library's internals;
@@ -81,6 +88,11 @@ see `rsvg-test.log`, `crash.log`, etc., respectively.
 
 # Tests and test fixtures
 
+Each of the test binaries mentioned above has its own set of fixtures,
+or SVG files that they will try to process.  The fixtures are in
+`librsvg/tests/fixtures/*`, where each of the `*` subdirectories
+provides the fixtures for a particular test binary.
+
 ## Image-based reference tests for `rsvg-test.c`
 
 These will load, parse, and render an SVG, and compare the results
@@ -92,7 +104,7 @@ results to `foo-ref.png`.  Currently we assume a pixel-perfect match.
 If there are differences in the output, the test will fail; see
 "[Examining failed reference tests](#examining-failed-reference-tests)" below.
 
-These files can go anywhere under the `fixtures/reftests`
+The test files can go anywhere under the `fixtures/reftests`
 directory; the `rsvg-test` program will recursively look inside
 `fixtures/reftests` for all SVG files, render them to `tests/output`, and
 compare them to the `-ref.png` reference images. The rendered files can
@@ -120,6 +132,10 @@ As of 2016/Nov/03 we have an informal organization of these files:
 
 * `fixtures/reftests/*.svg` - Tests for special situations
   that arose during development.
+  
+* `fixtures/reftests/adwaita/*.svg` - A snapshot of the Adwaita icon
+  theme (GNOME's default icon theme), to ensure that librsvg renders
+  it correctly.
 
 ### Examining failed reference tests
 
@@ -175,25 +191,21 @@ It is up to you to decide what to do next:
 
 ### Regenerating reference images
 
-Let's continue with the example above, where the test
-`/rsvg-test/reftests/svg1.1/paths-data-18-f.svg` failed.  Let's say
-you fix the bug, or determine that the output image is in fact
-correct, and just differs from the reference image due to antialiasing
+Let's say the test `/rsvg-test/reftests/.../foo.svg` failed.  Then you
+fix the bug, or determine that the output image is in fact correct,
+and it just differs from the reference image due to antialiasing
 artifacts.  In this case, your next step is to regenerate the
 reference image so the test passes again.
 
-If you want to regenerate the reference image
-`fixtures/reftests/foo/bar-ref.png` from the corresponding `bar.svg`, you can run
+**You should not just use rsvg-convert to render test files!**  The
+test machinery sets up conditions for [reproducible font
+rendering][#reproducible-font-rendering], which are not available to
+rsvg-convert.
 
-```
-rsvg-convert -o fixtures/reftests/foo/bar-ref.png fixtures/reftests/foo/bar.svg
-```
-
-This is just the normal rsvg-convert program doing its job; it will
-just render the SVG image and output it to the specified PNG file.
+Run `make check`, and copy the resulting `tests/output/foo.png` to the
+`tests/fixtures/.../foo-ref.png` that corresponds to `foo.svg`.
 
 You can then run `make check` again and ensure that the tests pass.
-
 
 ### Issues with the official SVG test suite
 
@@ -246,6 +258,28 @@ correct.  Follow the procedure as in
 "[Regenerating reference images](#regenerating-reference-images)"
 listed above in order to have a reference image suitable for librsvg.
 
+### Reproducible font rendering
+
+The test runners set up special conditions so that font rendering is
+reproducible across systems.  Normally, font rendering can vary quite
+a bit depending on various factors:
+
+* Versions of fontconfig, freetype, cairo, and pango.
+* Installed fonts.
+* The system's font mappings.
+* The user's settings for font antialiasing, hinting, etc.
+
+The test suite includes part of the **Roboto** fonts in
+`librsvg/tests/resources`, and creates a configuration font map with
+just those fonts.  In addition, the Pango context used for rendering
+is set up with a hardcoded mode for antialiasing, hinting, and hint
+metrics.
+
+## API tests for `api.c`
+
+These test the full C API of librsvg: all the public functions, the
+RsvgHandle class and its methods, and its GObject properties.  Any new
+public APIs should get tested here.
 
 ## Loading tests for `loading.c`
 
@@ -276,19 +310,19 @@ in an SVG file.  The test files are in the `fixtures/dimensions`
 directory.  The expected dimensions are declared in the test fixtures
 in `dimensions.c`.
 
-## Style tests for `styles.c`
+## Error tests for `errors.c`
 
-These tests are currently disabled, since they depend on internal APIs
-that are not visible to the test suite.
+These test conditions which should produce errors during rendering,
+that is, SVG files which should cause `rsvg_handle_render*()` to
+return a `GError`.  The test files are in the `fixtures/errors`
+directory.
 
-These load and parse an SVG, ask librsvg to fetch an SVG object by its
-id, and ensure that the object has certain style properties with
-particular values.
+## Loop detection tests for `infinite-loop.c`
 
-The SVG images live in the `fixtures/styles` directory.  The
-corresponding object IDs and values to be tested for are in the
-`styles.c` source code.
-
+Some invalid SVG files may cause infinite loops, for example, those
+that have circular references across SVG elements.  These tests ensure
+that librsvg can detect those errors and not go spinning endlessly.
+The test files are in the `fixtures/infinite-loop` directory.
 
 [gtest]: https://developer.gnome.org/glib/stable/glib-Testing.html
 [bug]: ../CONTRIBUTING.md#reporting-bugs
