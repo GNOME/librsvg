@@ -190,13 +190,23 @@ gboolean rsvg_handle_has_sub (RsvgHandle * handle, const char *id);
 
 /**
  * RsvgHandleFlags:
- * @RSVG_HANDLE_FLAGS_NONE: none
- * @RSVG_HANDLE_FLAG_UNLIMITED: Allow any SVG XML without size limitations.
- *   For security reasons, this should only be used for trusted input!
+ * @RSVG_HANDLE_FLAGS_NONE: No flags are set.
+ * @RSVG_HANDLE_FLAG_UNLIMITED: Disable safety limits in the XML parser.
+ *   Libxml2 has <link
+ *   xlink:href="https://gitlab.gnome.org/GNOME/libxml2/blob/master/include/libxml/parserInternals.h">several
+ *   limits</link> designed to keep malicious XML content from consuming too
+ *   much memory while parsing.  For security reasons, this should only be used
+ *   for trusted input!
  *   Since: 2.40.3
- * @RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: Keeps the image data when loading images,
- *  for use by cairo when painting to e.g. a PDF surface. This will make the
- *  resulting PDF file smaller and faster.
+ * @RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: Use this if the Cairo surface to which you
+ *  are rendering is a PDF, PostScript, SVG, or Win32 Printing surface.  This
+ *  will make librsvg and Cairo use the original, compressed data for images in
+ *  the final output, instead of passing uncompressed images.  This will make a
+ *  Keeps the image data when loading images, for use by cairo when painting to
+ *  e.g. a PDF surface.  For example, this will make the a resulting PDF file
+ *  smaller and faster.  Please see <link
+ *  xlink:href="https://www.cairographics.org/manual/cairo-cairo-surface-t.html#cairo-surface-set-mime-data">the
+ *  Cairo documentation</link> for details.
  *  Since: 2.40.3
  */
 typedef enum /*< flags >*/ 
@@ -252,8 +262,9 @@ void rsvg_handle_free (RsvgHandle * handle);
  *
  * Function to let a user of the library specify the SVG's dimensions
  *
- * Deprecated: Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
- * See the documentation for rsvg_handle_set_size_callback() for an example.
+ * Deprecated: 2.14.  Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
+ * See the documentation for rsvg_handle_set_size_callback() for an example, and
+ * for the reasons for deprecation.
  */
 /* RSVG_DEPRECATED */ typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
 

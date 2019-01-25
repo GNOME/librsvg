@@ -1045,15 +1045,26 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
  * @handle: An #RsvgHandle
  * @size_func: (nullable): A sizing function, or %NULL
  * @user_data: User data to pass to @size_func, or %NULL
- * @user_data_destroy: Destroy function for @user_data, or %NULL
+ * @user_data_destroy: Function to be called to destroy the data passed in @user_data,
+ *   or %NULL.
  *
- * Sets the sizing function for the @handle.  This function is called right
- * after the size of the image has been loaded.  The size of the image is passed
- * in to the function, which may then modify these values to set the real size
- * of the generated pixbuf.  If the image has no associated size, then the size
- * arguments are set to -1.
+ * Sets the sizing function for the @handle, which can be used to override the
+ * size that librsvg computes for SVG images.  The @size_func is called from the
+ * following functions:
  *
- * Deprecated: Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
+ * <itemizedlist>
+ *   <listitem>rsvg_handle_get_dimensions()</listitem>
+ *   <listitem>rsvg_handle_get_dimensions_sub()</listitem>
+ *   <listitem>rsvg_handle_get_position_sub()</listitem>
+ *   <listitem>rsvg_handle_render_cairo()</listitem>
+ *   <listitem>rsvg_handle_render_cairo_sub()</listitem>
+ * </itemizedlist>
+ *
+ * Librsvg computes the size of the SVG being rendered, and passes it to the
+ * @size_func, which may then modify these values to set the final size of the
+ * generated image.
+ *
+ * Deprecated: 2.14.  Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
  * You can call rsvg_handle_get_dimensions() to figure out the size of your SVG,
  * and then scale it to the desired size via Cairo.  For example, the following
  * code renders an SVG at a specified size, scaled proportionally from whatever
@@ -1079,6 +1090,12 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
  *     rsvg_handle_render_cairo (handle, cr);
  * }
  * ]|
+ *
+ * This function was deprecated because when the @size_func is used, it makes it
+ * unclear when the librsvg functions which call the @size_func will use the
+ * size computed originally, or the callback-specified size, or whether it
+ * refers to the whole SVG or to just a sub-element of it.  It is easier, and
+ * unambiguous, to use code similar to the example above.
  **/
 void
 rsvg_handle_set_size_callback (RsvgHandle * handle,
