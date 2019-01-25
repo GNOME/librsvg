@@ -809,6 +809,129 @@ cannot_request_external_elements (void)
     g_test_trap_assert_stderr ("*WARNING*the public API is not allowed to look up external references*");
 }
 
+static void
+test_flags (RsvgHandleFlags flags)
+{
+    guint read_flags;
+
+    RsvgHandle *handle = g_object_new (RSVG_TYPE_HANDLE,
+                                       "flags", flags,
+                                       NULL);
+    g_object_get (handle, "flags", &read_flags, NULL);
+    g_assert (read_flags == flags);
+
+    g_object_unref (handle);
+}
+
+static void
+property_flags (void)
+{
+    test_flags (RSVG_HANDLE_FLAGS_NONE);
+    test_flags (RSVG_HANDLE_FLAG_UNLIMITED);
+    test_flags (RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA);
+    test_flags (RSVG_HANDLE_FLAG_UNLIMITED | RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA);
+}
+
+static void
+property_dpi (void)
+{
+    RsvgHandle *handle = g_object_new (RSVG_TYPE_HANDLE,
+                                       "dpi-x", 42.0,
+                                       "dpi-y", 43.0,
+                                       NULL);
+    double x, y;
+
+    g_object_get (handle,
+                  "dpi-x", &x,
+                  "dpi-y", &y,
+                  NULL);
+
+    g_assert (x == 42.0);
+    g_assert (y == 43.0);
+
+    g_object_unref (handle);
+}
+
+static void
+property_base_uri (void)
+{
+    RsvgHandle *handle = g_object_new (RSVG_TYPE_HANDLE,
+                                       "base-uri", "file:///foo/bar.svg",
+                                       NULL);
+    char *uri;
+
+    g_object_get (handle,
+                  "base-uri", &uri,
+                  NULL);
+
+    g_assert (strcmp (uri, "file:///foo/bar.svg") == 0);
+    g_free (uri);
+
+    g_object_unref (handle);
+}
+
+static void
+property_dimensions (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    int width;
+    int height;
+    double em;
+    double ex;
+
+    g_object_get (handle,
+                  "width", &width,
+                  "height", &height,
+                  "em", &em,
+                  "ex", &ex,
+                  NULL);
+
+    g_assert_cmpint (width,  ==, EXAMPLE_WIDTH);
+    g_assert_cmpint (height, ==, EXAMPLE_HEIGHT);
+
+    g_assert_cmpfloat (em, ==, (double) EXAMPLE_WIDTH);
+    g_assert_cmpfloat (ex, ==, (double) EXAMPLE_HEIGHT);
+
+    g_object_unref (handle);
+}
+
+static void
+property_deprecated (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    char *title;
+    char *desc;
+    char *metadata;
+
+    g_object_get (handle,
+                  "title", &title,
+                  "desc", &desc,
+                  "metadata", &metadata,
+                  NULL);
+
+    g_assert (title == NULL);
+    g_assert (desc == NULL);
+    g_assert (metadata == NULL);
+
+    g_object_unref (handle);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -845,6 +968,11 @@ main (int argc, char **argv)
     g_test_add_func ("/api/no_write_before_close", no_write_before_close);
     g_test_add_func ("/api/empty_write_close", empty_write_close);
     g_test_add_func ("/api/cannot_request_external_elements", cannot_request_external_elements);
+    g_test_add_func ("/api/property_flags", property_flags);
+    g_test_add_func ("/api/property_dpi", property_dpi);
+    g_test_add_func ("/api/property_base_uri", property_base_uri);
+    g_test_add_func ("/api/property_dimensions", property_dimensions);
+    g_test_add_func ("/api/property_deprecated", property_deprecated);
 
     return g_test_run ();
 }

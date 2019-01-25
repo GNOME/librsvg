@@ -14,7 +14,6 @@ extern crate gdk_pixbuf;
 extern crate gdk_pixbuf_sys;
 extern crate gio;
 extern crate gio_sys;
-extern crate glib;
 extern crate glib_sys;
 extern crate gobject_sys;
 extern crate itertools;
@@ -34,6 +33,12 @@ extern crate xml as xml_rs;
 
 #[macro_use]
 extern crate lazy_static;
+
+#[macro_use]
+extern crate bitflags;
+
+#[macro_use]
+extern crate glib;
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
@@ -97,6 +102,7 @@ mod angle;
 mod aspect_ratio;
 mod attributes;
 mod bbox;
+mod c_api;
 mod clip_path;
 mod color;
 mod cond;
