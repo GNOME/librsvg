@@ -99,7 +99,9 @@ rsvg_pixbuf_from_file (const gchar *filename, GError **error)
  **/
 GdkPixbuf *
 rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
-                               double x_zoom, double y_zoom, GError **error)
+                               double x_zoom,
+                               double y_zoom,
+                               GError **error)
 {
     g_return_val_if_fail (filename != NULL, NULL);
     g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
@@ -130,7 +132,9 @@ GdkPixbuf *
 rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
                                         double x_zoom,
                                         double y_zoom,
-                                        gint max_width, gint max_height, GError **error)
+                                        gint max_width,
+                                        gint max_height,
+                                        GError **error)
 {
     g_return_val_if_fail (filename != NULL, NULL);
     g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
@@ -157,7 +161,10 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file_at_size (const gchar *filename, gint width, gint height, GError **error)
+rsvg_pixbuf_from_file_at_size (const gchar *filename,
+                               gint width,
+                               gint height,
+                               GError **error)
 {
     g_return_val_if_fail (filename != NULL, NULL);
     g_return_val_if_fail ((width >= 1 && height >= 1) || (width == -1 && height == -1), NULL);
@@ -183,7 +190,9 @@ rsvg_pixbuf_from_file_at_size (const gchar *filename, gint width, gint height, G
  **/
 GdkPixbuf *
 rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
-                                   gint max_width, gint max_height, GError **error)
+                                   gint max_width,
+                                   gint max_height,
+                                   GError **error)
 {
     g_return_val_if_fail (filename != NULL, NULL);
     g_return_val_if_fail (max_width >= 1 && max_height >= 1, NULL);

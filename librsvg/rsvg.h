@@ -166,34 +166,43 @@ void rsvg_set_default_dpi	(double dpi);
 RSVG_DEPRECATED
 void rsvg_set_default_dpi_x_y	(double dpi_x, double dpi_y);
 
-void rsvg_handle_set_dpi	(RsvgHandle * handle, double dpi);
-void rsvg_handle_set_dpi_x_y	(RsvgHandle * handle, double dpi_x, double dpi_y);
+void rsvg_handle_set_dpi	(RsvgHandle *handle, double dpi);
+void rsvg_handle_set_dpi_x_y	(RsvgHandle *handle, double dpi_x, double dpi_y);
 
 RsvgHandle  *rsvg_handle_new		(void);
 
 RSVG_DEPRECATED_FOR(rsvg_handle_read_stream_sync)
-gboolean     rsvg_handle_write		(RsvgHandle * handle, const guchar * buf, 
-                                         gsize count, GError ** error);
+gboolean     rsvg_handle_write		(RsvgHandle   *handle,
+                                         const guchar *buf, 
+                                         gsize         count,
+                                         GError      **error);
 RSVG_DEPRECATED_FOR(rsvg_handle_read_stream_sync)
-gboolean     rsvg_handle_close		(RsvgHandle * handle, GError ** error);
+gboolean     rsvg_handle_close		(RsvgHandle *handle, GError **error);
 
-GdkPixbuf   *rsvg_handle_get_pixbuf	(RsvgHandle * handle);
-GdkPixbuf   *rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id);
+GdkPixbuf   *rsvg_handle_get_pixbuf	(RsvgHandle *handle);
+GdkPixbuf   *rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id);
 
-const char  *rsvg_handle_get_base_uri (RsvgHandle * handle);
-void         rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri);
+const char  *rsvg_handle_get_base_uri (RsvgHandle *handle);
+void         rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri);
 
-void rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_data);
-
-RSVG_DEPRECATED_FOR(rsvg_handle_get_geometry_sub)
-gboolean rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id);
+void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_data);
 
 RSVG_DEPRECATED_FOR(rsvg_handle_get_geometry_sub)
-gboolean rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id);
+gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
+                                         RsvgDimensionData *dimension_data,
+                                         const char        *id);
 
-gboolean rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, RsvgRectangle * logical_rect, const char *id);
+RSVG_DEPRECATED_FOR(rsvg_handle_get_geometry_sub)
+gboolean rsvg_handle_get_position_sub (RsvgHandle       *handle,
+                                       RsvgPositionData *position_data,
+                                       const char       *id);
 
-gboolean rsvg_handle_has_sub (RsvgHandle * handle, const char *id);
+gboolean rsvg_handle_get_geometry_sub (RsvgHandle    *handle,
+                                       RsvgRectangle *ink_rect,
+                                       RsvgRectangle *logical_rect,
+                                       const char    *id);
+
+gboolean rsvg_handle_has_sub (RsvgHandle *handle, const char *id);
 
 /* GIO APIs */
 
@@ -246,8 +255,8 @@ RsvgHandle *rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
                                               GCancellable   *cancellable,
                                               GError        **error);
 
-RsvgHandle *rsvg_handle_new_from_data (const guint8 * data, gsize data_len, GError ** error);
-RsvgHandle *rsvg_handle_new_from_file (const gchar * file_name, GError ** error);
+RsvgHandle *rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error);
+RsvgHandle *rsvg_handle_new_from_file (const gchar *filename, GError **error);
 
 #ifndef __GTK_DOC_IGNORE__
 void rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing);
@@ -263,7 +272,7 @@ RSVG_DEPRECATED
 void rsvg_term (void);
 
 RSVG_DEPRECATED_FOR(g_object_unref)
-void rsvg_handle_free (RsvgHandle * handle);
+void rsvg_handle_free (RsvgHandle *handle);
 
 /**
  * RsvgSizeFunc:
@@ -280,35 +289,45 @@ void rsvg_handle_free (RsvgHandle * handle);
 typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
 
 RSVG_DEPRECATED
-void rsvg_handle_set_size_callback (RsvgHandle * handle,
-                                    RsvgSizeFunc size_func,
-                                    gpointer user_data, GDestroyNotify user_data_destroy);
+void rsvg_handle_set_size_callback (RsvgHandle    *handle,
+                                    RsvgSizeFunc   size_func,
+                                    gpointer       user_data,
+                                    GDestroyNotify user_data_destroy);
 
 /* GdkPixbuf convenience API */
 
 RSVG_DEPRECATED
-GdkPixbuf *rsvg_pixbuf_from_file            (const gchar * file_name, GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_file            (const gchar *filename,
+                                             GError     **error);
 RSVG_DEPRECATED
-GdkPixbuf *rsvg_pixbuf_from_file_at_zoom    (const gchar * file_name,
-                                             double x_zoom, double y_zoom, GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_file_at_zoom    (const gchar *filename,
+                                             double       x_zoom,
+                                             double       y_zoom,
+                                             GError     **error);
 RSVG_DEPRECATED
-GdkPixbuf *rsvg_pixbuf_from_file_at_size    (const gchar * file_name, gint width, gint height,
-                                             GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_file_at_size    (const gchar *filename,
+                                             gint         width,
+                                             gint         height,
+                                             GError     **error);
 RSVG_DEPRECATED
-GdkPixbuf *rsvg_pixbuf_from_file_at_max_size    (const gchar * file_name,
-                                                 gint max_width, gint max_height, GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_file_at_max_size    (const gchar *filename,
+                                                 gint         max_width,
+                                                 gint         max_height,
+                                                 GError     **error);
 RSVG_DEPRECATED
-GdkPixbuf *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar * file_name,
-                                                   double x_zoom,
-                                                   double y_zoom,
-                                                   gint max_width, gint max_height, GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
+                                                   double       x_zoom,
+                                                   double       y_zoom,
+                                                   gint         max_width,
+                                                   gint         max_height,
+                                                   GError     **error);
 
 RSVG_DEPRECATED
-const char *rsvg_handle_get_title       (RsvgHandle * handle);
+const char *rsvg_handle_get_title       (RsvgHandle *handle);
 RSVG_DEPRECATED
-const char *rsvg_handle_get_desc        (RsvgHandle * handle);
+const char *rsvg_handle_get_desc        (RsvgHandle *handle);
 RSVG_DEPRECATED
-const char *rsvg_handle_get_metadata    (RsvgHandle * handle);
+const char *rsvg_handle_get_metadata    (RsvgHandle *handle);
 
 #endif /* !__GI_SCANNER__ */
 

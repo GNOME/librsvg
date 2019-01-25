@@ -347,7 +347,7 @@ rsvg_handle_get_type (void)
  * Deprecated: Use g_object_unref() instead.
  **/
 void
-rsvg_handle_free (RsvgHandle * handle)
+rsvg_handle_free (RsvgHandle *handle)
 {
     g_object_unref (handle);
 }
@@ -493,9 +493,9 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
  * Since: 2.32
  */
 RsvgHandle *
-rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
-                                  GFile          *base_file,
-                                  RsvgHandleFlags flags,
+rsvg_handle_new_from_stream_sync (GInputStream    *input_stream,
+                                  GFile           *base_file,
+                                  RsvgHandleFlags  flags,
                                   GCancellable    *cancellable,
                                   GError         **error)
 {
@@ -610,7 +610,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
  * Since: 2.9
  */
 void
-rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
+rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (base_uri != NULL);
@@ -687,7 +687,7 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
  * this function always returns #NULL.
  */
 const char *
-rsvg_handle_get_title (RsvgHandle * handle)
+rsvg_handle_get_title (RsvgHandle *handle)
 {
     g_return_val_if_fail (handle, NULL);
 
@@ -706,7 +706,7 @@ rsvg_handle_get_title (RsvgHandle * handle)
  * this function always returns #NULL.
  */
 const char *
-rsvg_handle_get_desc (RsvgHandle * handle)
+rsvg_handle_get_desc (RsvgHandle *handle)
 {
     g_return_val_if_fail (handle, NULL);
 
@@ -730,7 +730,7 @@ rsvg_handle_get_desc (RsvgHandle * handle)
  * Since: 2.14
  */
 gboolean
-rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
+rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (cr != NULL, FALSE);
@@ -752,7 +752,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
  * Since: 2.14
  */
 gboolean
-rsvg_handle_render_cairo (RsvgHandle * handle, cairo_t * cr)
+rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr)
 {
     return rsvg_handle_render_cairo_sub (handle, cr, NULL);
 }
@@ -767,7 +767,7 @@ rsvg_handle_render_cairo (RsvgHandle * handle, cairo_t * cr)
  * Since: 2.14
  */
 void
-rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_data)
+rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_data)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
     g_return_if_fail (dimension_data != NULL);
@@ -790,7 +790,9 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
  * Since: 2.22
  */
 gboolean
-rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id)
+rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
+                                RsvgDimensionData *dimension_data,
+                                const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (dimension_data, FALSE);
@@ -814,7 +816,10 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
  * Since: 2.46
  */
 gboolean
-rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, RsvgRectangle * logical_rect, const char *id)
+rsvg_handle_get_geometry_sub (RsvgHandle *handle,
+                              RsvgRectangle *ink_rect,
+                              RsvgRectangle *logical_rect,
+                              const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
@@ -836,7 +841,9 @@ rsvg_handle_get_geometry_sub (RsvgHandle * handle, RsvgRectangle * ink_rect, Rsv
  * Since: 2.22
  */
 gboolean
-rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
+rsvg_handle_get_position_sub (RsvgHandle *handle,
+                              RsvgPositionData *position_data,
+                              const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (position_data != NULL, FALSE);
@@ -856,8 +863,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
  * Since: 2.22
  */
 gboolean
-rsvg_handle_has_sub (RsvgHandle *handle,
-                     const char *id)
+rsvg_handle_has_sub (RsvgHandle *handle, const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
 
@@ -887,7 +893,7 @@ rsvg_handle_has_sub (RsvgHandle *handle,
  * Since: 2.14
  **/
 GdkPixbuf *
-rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
+rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), NULL);
 
@@ -907,7 +913,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
  * Returns: (transfer full) (nullable): the pixbuf loaded by @handle, or %NULL.
  **/
 GdkPixbuf *
-rsvg_handle_get_pixbuf (RsvgHandle * handle)
+rsvg_handle_get_pixbuf (RsvgHandle *handle)
 {
     return rsvg_handle_get_pixbuf_sub (handle, NULL);
 }
@@ -924,7 +930,7 @@ rsvg_handle_get_pixbuf (RsvgHandle * handle)
  * Since: 2.8
  */
 void
-rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
+rsvg_handle_set_dpi (RsvgHandle *handle, double dpi)
 {
     rsvg_handle_set_dpi_x_y (handle, dpi, dpi);
 }
@@ -942,7 +948,7 @@ rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
  * Since: 2.8
  */
 void
-rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
+rsvg_handle_set_dpi_x_y (RsvgHandle *handle, double dpi_x, double dpi_y)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
@@ -1008,7 +1014,7 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
  * unambiguous, to use code similar to the example above.
  **/
 void
-rsvg_handle_set_size_callback (RsvgHandle * handle,
+rsvg_handle_set_size_callback (RsvgHandle *handle,
                                RsvgSizeFunc size_func,
                                gpointer user_data,
                                GDestroyNotify user_data_destroy)
