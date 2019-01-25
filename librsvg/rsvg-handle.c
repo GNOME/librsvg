@@ -31,9 +31,10 @@
  * or in the most general form, from a #GInputStream that will provide SVG data.
  *
  * Librsvg supports reading <link
- * xlink:href="https://www.w3.org/TR/SVG/">SVG 1.1</link> data.  It also
- * supports SVGZ files, which is just an SVG stream compressed with the GZIP
- * algorithm.
+ * xlink:href="https://www.w3.org/TR/SVG11/">SVG 1.1</link> data, and is
+ * gradually adding support for features in <link
+ * xlink:href="https://www.w3.org/TR/SVG2/">SVG 2</link>.  Librsvg also supports
+ * SVGZ files, which is just an SVG stream compressed with the GZIP algorithm.
  *
  * # The "base file" and resolving references to external files
  *
