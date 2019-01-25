@@ -103,8 +103,12 @@ struct _RsvgHandle {
  * RsvgDimensionData:
  * @width: SVG's width, in pixels
  * @height: SVG's height, in pixels
- * @em: em
- * @ex: ex
+ * @em: SVG's original width, unmodified by #RsvgSizeFunc
+ * @ex: SVG's original height, unmodified by #RsvgSizeFunc
+ *
+ * Dimensions of an SVG image from rsvg_handle_get_dimensions(), or an
+ * individual element from rsvg_handle_get_dimensions_sub().  Please see
+ * the deprecation documentation for those functions.
  *
  * Deprecated: 2.46.  Please use rsvg_handle_get_geometry_sub().
  */
@@ -120,7 +124,8 @@ struct _RsvgHandle {
  * @x: position on the x axis
  * @y: position on the y axis
  *
- * Position of an SVG fragment.
+ * Position of an SVG fragment from rsvg_handle_get_position_sub().  Please
+ * the deprecation documentation for that function.
  *
  * Deprecated: 2.46.  Please use rsvg_handle_get_geometry_sub().
  */
