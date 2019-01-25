@@ -31,9 +31,9 @@
  * or in the most general form, from a #GInputStream that will provide SVG data.
  *
  * Librsvg supports reading <link
- * xlink:href="https://www.w3.org/TR/SVG11/">SVG 1.1</link> data, and is
+ * href="https://www.w3.org/TR/SVG11/">SVG 1.1</link> data, and is
  * gradually adding support for features in <link
- * xlink:href="https://www.w3.org/TR/SVG2/">SVG 2</link>.  Librsvg also supports
+ * href="https://www.w3.org/TR/SVG2/">SVG 2</link>.  Librsvg also supports
  * SVGZ files, which is just an SVG stream compressed with the GZIP algorithm.
  *
  * # The "base file" and resolving references to external files
@@ -44,7 +44,7 @@
  * and that it has an image element like this:
  *
  * |[
- * <image xlink:href="resources/foo.png" .../>
+ * <image href="resources/foo.png" .../>
  * ]|
  *
  * In this case, librsvg needs to know the location of the toplevel
@@ -89,7 +89,7 @@
  *   </listitem>
  *
  *   <listitem>
- *     If referenced URLs have a "<literal>resource<literal>" scheme, that is,
+ *     If referenced URLs have a "<literal>resource</literal>" scheme, that is,
  *     if they are included into your binary program with GLib's resource
  *     mechanism, they are allowed to be loaded (provided that the base URL is
  *     also a "<literal>resource</literal>", per the previous rule).
@@ -104,8 +104,7 @@
  *   <listitem>
  *     A relative URL must resolve to the same directory as the base URL, or to
  *     one of its subdirectories.  Librsvg will canonicalize filenames, by
- *     removing ".." path components, and resolving symbolic links, Filenames
- *     are canonicalized (".." is removed in path components, to decide whether
+ *     removing ".." path components and resolving symbolic links, to decide whether
  *     files meet these conditions.
  *   </listitem>
  * </orderedlist>
