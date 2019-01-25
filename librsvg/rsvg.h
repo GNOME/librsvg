@@ -68,8 +68,8 @@ GQuark rsvg_error_quark (void) G_GNUC_CONST;
 
 typedef struct _RsvgHandle RsvgHandle;
 typedef struct _RsvgHandleClass RsvgHandleClass;
-typedef struct _RsvgDimensionData RsvgDimensionData;
-typedef struct _RsvgPositionData RsvgPositionData;
+/* RSVG_DEPRECATED */ typedef struct _RsvgDimensionData RsvgDimensionData;
+/* RSVG_DEPRECATED */ typedef struct _RsvgPositionData RsvgPositionData;
 typedef struct _RsvgRectangle RsvgRectangle;
 
 /**
@@ -108,7 +108,7 @@ struct _RsvgHandle {
  *
  * Deprecated: 2.46.  Please use rsvg_handle_get_geometry_sub().
  */
-struct _RsvgDimensionData {
+/* RSVG_DEPRECATED */ struct _RsvgDimensionData {
     int width;
     int height;
     gdouble em;
@@ -124,7 +124,7 @@ struct _RsvgDimensionData {
  *
  * Deprecated: 2.46.  Please use rsvg_handle_get_geometry_sub().
  */
-struct _RsvgPositionData {
+/* RSVG_DEPRECATED */ struct _RsvgPositionData {
     int x;
     int y;
 };
