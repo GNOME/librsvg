@@ -112,6 +112,9 @@
  *
  * # Loading an SVG with GIO
  *
+ * This is the easiest and most resource-efficient way of loading SVG data into
+ * an #RsvgHandle.
+ *
  * If you have a #GFile that stands for an SVG file, you can simply call
  * rsvg_handle_new_from_gfile_sync() to load an RsvgHandle from it.
  *
@@ -123,11 +126,9 @@
  *
  * ## Loading an SVG from memory
  *
- * If you already have SVG data in memory, you can create a memory input stream
- * with g_memory_input_stream_new_from_data() and feed that to
- * rsvg_handle_new_from_stream_sync().  This lets you specify the appropriate
- * flags, for example #RSVG_HANDLE_FLAG_UNLIMITED if your input data is very
- * large.
+ * If you already have SVG data in a byte buffer in memory, you can create a
+ * memory input stream with g_memory_input_stream_new_from_data() and feed that
+ * to rsvg_handle_new_from_stream_sync().
  *
  * Note that in this case, it is important that you specify the base_file for
  * the in-memory SVG data.  Librsvg uses the base_file to resolve links to
@@ -137,13 +138,15 @@
  *
  * You can load an RsvgHandle from a simple filename or URI with
  * rsvg_handle_new_from_file().  Note that this is a blocking operation; there
- * is no way to cancel it if loading a remote URI takes a long time.
+ * is no way to cancel it if loading a remote URI takes a long time.  Also, note that
+ * this method does not let you specify #RsvgHandleFlags.
  *
- * Alternatively, you can create an empty RsvgHandle with rsvg_handle_new() or
- * rsvg_handle_new_with_flags().  The first function is equivalent to using
- * #RSVG_HANDLE_FLAGS_NONE on the second one.  These functions give you back an
- * empty RsvgHandle, which is ready for you to feed it SVG data.  You can do
- * this with rsvg_handle_write() and rsvg_handle_close().
+ * Otherwise, loading an SVG without GIO is not recommended, since librsvg will
+ * need to buffer your entire data internally before actually being able to
+ * parse it.  The deprecated way of doing this is by creating a handle with
+ * rsvg_handle_new() or rsvg_handle_new_with_flags(), and then using
+ * rsvg_handle_write() and rsvg_handle_close() to feed the handle with SVG data.
+ * Still, please try to use the GIO stream functions instead.
  *
  * # Resolution of the rendered image (dots per inch, or DPI)
  *
@@ -501,13 +504,20 @@ rsvg_handle_free (RsvgHandle * handle)
  * rsvg_handle_read_stream_sync().
  *
  * The deprecated way of loading SVG data is with rsvg_handle_write() and
- * rsvg_handle_close().
+ * rsvg_handle_close(); note that these require buffering the entire file
+ * internally, and for this reason it is better to use the stream functions:
+ * rsvg_handle_new_from_stream_sync(), rsvg_handle_read_stream_sync(), or
+ * rsvg_handle_new_from_gfile_sync().
  *
- * After loading the #RsvgHandl with data, you can render it using Cairo or get
- * a GdkPixbuf from it. When finished, free with g_object_unref(). No more than
- * one image can be loaded with one handle.
+ * After loading the #RsvgHandle with data, you can render it using Cairo or get
+ * a GdkPixbuf from it. When finished, free the handle with g_object_unref(). No
+ * more than one image can be loaded with one handle.
  *
- * Returns: A new #RsvgHandle
+ * Note that this function creates an #RsvgHandle with no flags set.  If you require
+ * any of #RsvgHandleFlags to be set, use rsvg_handle_new_with_flags() or the stream
+ * functions listed above.
+ *
+ * Returns: A new #RsvgHandle with no flags set.
  **/
 RsvgHandle *
 rsvg_handle_new (void)
@@ -522,7 +532,7 @@ rsvg_handle_new (void)
  * @error: return location for errors
  *
  * Loads the SVG specified by @data.  Note that this function creates an
- * #RsvgHandle without a base file, and without any special flags.  If you
+ * #RsvgHandle without a base URL, and without any #RsvgHandleFlags.  If you
  * need these, use rsvg_handle_new_from_stream_sync() instead by creating
  * a #GMemoryInputStream from your data.
  *
