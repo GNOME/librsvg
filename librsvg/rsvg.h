@@ -68,8 +68,8 @@ GQuark rsvg_error_quark (void) G_GNUC_CONST;
 
 typedef struct _RsvgHandle RsvgHandle;
 typedef struct _RsvgHandleClass RsvgHandleClass;
-/* RSVG_DEPRECATED */ typedef struct _RsvgDimensionData RsvgDimensionData;
-/* RSVG_DEPRECATED */ typedef struct _RsvgPositionData RsvgPositionData;
+typedef struct _RsvgDimensionData RsvgDimensionData;
+typedef struct _RsvgPositionData RsvgPositionData;
 typedef struct _RsvgRectangle RsvgRectangle;
 
 /**
@@ -112,7 +112,7 @@ struct _RsvgHandle {
  *
  * Deprecated: 2.46.  Please use rsvg_handle_get_geometry_sub().
  */
-/* RSVG_DEPRECATED */ struct _RsvgDimensionData {
+struct _RsvgDimensionData {
     int width;
     int height;
     gdouble em;
@@ -129,7 +129,7 @@ struct _RsvgHandle {
  *
  * Deprecated: 2.46.  Please use rsvg_handle_get_geometry_sub().
  */
-/* RSVG_DEPRECATED */ struct _RsvgPositionData {
+struct _RsvgPositionData {
     int x;
     int y;
 };
@@ -271,7 +271,7 @@ void rsvg_handle_free (RsvgHandle * handle);
  * See the documentation for rsvg_handle_set_size_callback() for an example, and
  * for the reasons for deprecation.
  */
-/* RSVG_DEPRECATED */ typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
+typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
 
 RSVG_DEPRECATED
 void rsvg_handle_set_size_callback (RsvgHandle * handle,
