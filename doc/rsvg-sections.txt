@@ -93,5 +93,8 @@ LIBRSVG_CHECK_VERSION
 LIBRSVG_HAVE_SVGZ
 LIBRSVG_HAVE_CSS
 LIBRSVG_CHECK_FEATURE
+librsvg_major_version
+librsvg_minor_version
+librsvg_micro_version
 librsvg_version
 </SECTION>
