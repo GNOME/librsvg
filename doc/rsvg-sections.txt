@@ -5,7 +5,6 @@ RsvgError
 RSVG_ERROR
 rsvg_error_quark
 RsvgHandle
-RsvgHandlePrivate
 RsvgHandleClass
 RsvgDimensionData
 RsvgPositionData
