@@ -6,6 +6,7 @@ RSVG_ERROR
 rsvg_error_quark
 RsvgHandle
 RsvgHandleClass
+RsvgRectangle
 RsvgDimensionData
 RsvgPositionData
 rsvg_cleanup
