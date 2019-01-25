@@ -169,6 +169,96 @@
  * the dimensions that librsvg is able to compute from the SVG data.
  */
 
+/***** Begin documentation for RsvgHandle properties *****/
+
+/**
+ * RsvgHandle:flags:
+ *
+ * Flags from #RsvgHandleFlags.
+ *
+ * Since: 2.36
+ */
+
+/**
+ * RsvgHandle::dpi-x:
+ *
+ * Horizontal resolution in dots per inch.
+ */
+
+/**
+ * RsvgHandle::dpi-y:
+ *
+ * Horizontal resolution in dots per inch.
+ */
+
+/**
+ * RsvgHandle::base-uri:
+ *
+ * Base URI, to be used to resolve relative references for resources.  See the section
+ */
+
+/**
+ * RsvgHandle:width:
+ *
+ * Width, in pixels, of the rendered SVG after calling the size callback
+ * as specified by rsvg_handle_set_size_callback().
+ *
+ * Deprecated: 2.46. Please use rsvg_handle_get_geometry_sub() instead.
+ */
+
+/**
+ * RsvgHandle:height:
+ *
+ * Height, in pixels, of the rendered SVG after calling the size callback
+ * as specified by rsvg_handle_set_size_callback().
+ *
+ * Deprecated: 2.46. Please use rsvg_handle_get_geometry_sub() instead.
+ */
+
+/**
+ * RsvgHandle:em:
+ *
+ * Exact width, in pixels, of the rendered SVG before calling the size callback
+ * as specified by rsvg_handle_set_size_callback().
+ *
+ * Deprecated: 2.46. Please use rsvg_handle_get_geometry_sub() instead.
+ */
+
+/**
+ * RsvgHandle:ex:
+ *
+ * Exact height, in pixels, of the rendered SVG before calling the size callback
+ * as specified by rsvg_handle_set_size_callback().
+ *
+ * Deprecated: 2.46. Please use rsvg_handle_get_geometry_sub() instead.
+ */
+
+/**
+ * RsvgHandle:title:
+ *
+ * SVG's title.
+ *
+ * Deprecated: 2.36.  Reading this property always returns #NULL.
+ */
+
+/**
+ * RsvgHandle:desc:
+ *
+ * SVG's description.
+ *
+ * Deprecated: 2.36.  Reading this property always returns #NULL.
+ */
+
+/**
+ * RsvgHandle:metadata:
+ *
+ * SVG's metadata
+ *
+ * Deprecated: 2.36.  Reading this property always returns #NULL.
+ */
+
+/***** End documentation for RsvgHandle properties *****/
+
 #include "config.h"
 #define _GNU_SOURCE 1
 
