@@ -62,6 +62,54 @@
  * <filename>/foo/bar/<!-- -->*<!-- -->/.../<!-- -->*</filename>.  This is so that malicious
  * SVG files cannot include files that are in a directory above.
  *
+ * The full set of rules for deciding which URLs may be loaded is as follows;
+ * they are applied in order.  A referenced URL will not be loaded as soon as
+ * one of these rules fails:
+ *
+ * <orderedlist>
+ *   <listitem>
+ *     All <literal>data:</literal> URLs may be loaded.  These are sometimes used
+ *     to include raster image data, encoded as base-64, directly in an SVG file.
+ *   </listitem>
+ *
+ *   <listitem>
+ *     All other URL schemes in references require a base URL.  For
+ *     example, this means that if you load an SVG with
+ *     rsvg_handle_new_from_data() without calling rsvg_handle_set_base_uri(),
+ *     then any referenced files will not be allowed (e.g. raster images to be
+ *     loaded from other files will not work).
+ *   </listitem>
+ *
+ *   <listitem>
+ *     If referenced URLs are absolute, rathen than relative, then they must
+ *     have the same scheme as the base URL.  For example, if the base URL has a
+ *     "<literal>file</literal>" scheme, then all URL references inside the SVG must
+ *     also have the "<literal>file</literal>" scheme, or be relative references which
+ *     will be resolved against the base URL.
+ *   </listitem>
+ *
+ *   <listitem>
+ *     If referenced URLs have a "<literal>resource<literal>" scheme, that is,
+ *     if they are included into your binary program with GLib's resource
+ *     mechanism, they are allowed to be loaded (provided that the base URL is
+ *     also a "<literal>resource</literal>", per the previous rule).
+ *   </listitem>
+ *
+ *   <listitem>
+ *     Otherwise, non-<literal>file</literal> schemes are not allowed.  For
+ *     example, librsvg will not load <literal>http</literal> resources, to keep
+ *     malicious SVG data from "phoning home".
+ *   </listitem>
+ *
+ *   <listitem>
+ *     A relative URL must resolve to the same directory as the base URL, or to
+ *     one of its subdirectories.  Librsvg will canonicalize filenames, by
+ *     removing ".." path components, and resolving symbolic links, Filenames
+ *     are canonicalized (".." is removed in path components, to decide whether
+ *     files meet these conditions.
+ *   </listitem>
+ * </orderedlist>
+ *
  * # Loading an SVG with GIO
  *
  * If you have a #GFile that stands for an SVG file, you can simply call
