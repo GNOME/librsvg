@@ -22,6 +22,8 @@
 #define LIBRSVG_CHECK_FEATURE(FEATURE) (defined(LIBRSVG_HAVE_##FEATURE) && LIBRSVG_HAVE_##FEATURE)
 #endif
 
+#ifndef __GTK_DOC_IGNORE__
+
 /*
  * On Windows builds, we need to decorate variables that are exposed in the public API
  * so that they can be properly exported and linked to, for DLL builds
@@ -41,6 +43,9 @@
 #  define RSVG_VAR extern
 # endif /* !G_PLATFORM_WIN32 */
 #endif
+
+#endif /* __GTK_DOC_IGNORE__ */
+
 
 RSVG_VAR const guint librsvg_major_version;
 RSVG_VAR const guint librsvg_minor_version;

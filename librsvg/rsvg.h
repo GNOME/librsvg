@@ -36,6 +36,8 @@
 
 G_BEGIN_DECLS
 
+#ifndef __GTK_DOC_IGNORE__
+
 #if defined(RSVG_DISABLE_DEPRECATION_WARNINGS) || !GLIB_CHECK_VERSION (2, 31, 0)
 #define RSVG_DEPRECATED
 #define RSVG_DEPRECATED_FOR(f)
@@ -43,6 +45,8 @@ G_BEGIN_DECLS
 #define RSVG_DEPRECATED G_DEPRECATED
 #define RSVG_DEPRECATED_FOR(f) G_DEPRECATED_FOR(f)
 #endif
+
+#endif /* __GTK_DOC_IGNORE__ */
 
 #define RSVG_TYPE_HANDLE                  (rsvg_handle_get_type ())
 #define RSVG_HANDLE(obj)                  (G_TYPE_CHECK_INSTANCE_CAST ((obj), RSVG_TYPE_HANDLE, RsvgHandle))
@@ -245,7 +249,9 @@ RsvgHandle *rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
 RsvgHandle *rsvg_handle_new_from_data (const guint8 * data, gsize data_len, GError ** error);
 RsvgHandle *rsvg_handle_new_from_file (const gchar * file_name, GError ** error);
 
+#ifndef __GTK_DOC_IGNORE__
 void rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing);
+#endif /* __GTK_DOC_IGNORE__ */
 
 /* BEGIN deprecated APIs. Do not use! */
 
