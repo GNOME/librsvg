@@ -109,7 +109,7 @@ pub fn acquire_data(
         let (contents, _etag) = file.load_contents(cancellable)?;
 
         let (content_type, _uncertain) = gio::content_type_guess(uri, &contents);
-        let mime_type = gio::content_type_get_mime_type(&content_type).map(String::from);
+        let mime_type = gio::content_type_get_mime_type(&content_type);
 
         Ok(BinaryData {
             data: contents,
