@@ -97,8 +97,6 @@ pub struct DrawingCtx {
     cr: cairo::Context,
     initial_cr: cairo::Context,
 
-    surfaces_stack: Vec<cairo::ImageSurface>,
-
     view_box_stack: Rc<RefCell<Vec<ViewBox>>>,
 
     bbox: BoundingBox,
@@ -154,7 +152,6 @@ impl DrawingCtx {
             cr_stack: Vec::new(),
             cr: cr.clone(),
             initial_cr: cr.clone(),
-            surfaces_stack: Vec::new(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
             bbox: BoundingBox::new(&affine),
             bbox_stack: Vec::new(),
@@ -380,10 +377,6 @@ impl DrawingCtx {
                     self.rect.height as i32,
                 )?;
 
-                if filter.is_some() {
-                    self.surfaces_stack.push(surface.clone());
-                }
-
                 let cr = cairo::Context::new(&surface);
                 cr.set_matrix(affine);
 
@@ -465,15 +458,13 @@ impl DrawingCtx {
         values: &ComputedValues,
         child_surface: &cairo::ImageSurface,
     ) -> Result<cairo::ImageSurface, RenderingError> {
-        let output = self.surfaces_stack.pop().unwrap();
-
         match self.get_acquired_node_of_type(Some(filter_uri), NodeType::Filter) {
             Some(acquired) => {
                 let filter_node = acquired.get();
 
                 if !filter_node.is_in_error() {
                     // FIXME: deal with out of memory here
-                    filters::render(&filter_node, values, &output, self)
+                    filters::render(&filter_node, values, child_surface, self)
                 } else {
                     Ok(child_surface.clone())
                 }
