@@ -7,9 +7,8 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 
-use c_api::get_rust_handle;
 use error::{set_gerror, RenderingError};
-use handle::{rsvg_handle_rust_new_from_gfile_sync, Handle, RsvgDimensionData};
+use handle::{get_rust_handle, rsvg_handle_rust_new_from_gfile_sync, Handle, RsvgDimensionData};
 use rect::IRect;
 use surface_utils::{
     iterators::Pixels,
@@ -135,7 +134,7 @@ fn get_final_size(dimensions: &RsvgDimensionData, size_mode: &SizeMode) -> (i32,
 }
 
 fn render_to_pixbuf_at_size(
-    handle: &Handle,
+    handle: &mut Handle,
     dimensions: &RsvgDimensionData,
     width: i32,
     height: i32,

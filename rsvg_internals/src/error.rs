@@ -106,7 +106,6 @@ pub enum RenderingError {
     InvalidHref,
     SvgHasNoSize,
     OutOfMemory,
-    HandleIsNotLoaded,
 }
 
 impl From<cairo::Status> for RenderingError {
@@ -246,7 +245,6 @@ impl error::Error for RenderingError {
             RenderingError::InvalidHref => "invalid href",
             RenderingError::SvgHasNoSize => "svg has no size",
             RenderingError::OutOfMemory => "out of memory",
-            RenderingError::HandleIsNotLoaded => "SVG data is not loaded into handle",
         }
     }
 }
@@ -260,8 +258,7 @@ impl fmt::Display for RenderingError {
             | RenderingError::InstancingLimit
             | RenderingError::InvalidHref
             | RenderingError::SvgHasNoSize
-            | RenderingError::OutOfMemory
-            | RenderingError::HandleIsNotLoaded => write!(f, "{}", self.description()),
+            | RenderingError::OutOfMemory => write!(f, "{}", self.description()),
         }
     }
 }
