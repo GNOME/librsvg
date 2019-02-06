@@ -10,7 +10,7 @@ use properties::ComputedValues;
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
     Percent,
-    Default,
+    Px,
     FontEm,
     FontEx,
     Inch,
@@ -67,7 +67,7 @@ macro_rules! define_length_type {
 
             pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
                 match self.unit() {
-                    LengthUnit::Default => self.length(),
+                    LengthUnit::Px => self.length(),
 
                     LengthUnit::Percent => {
                         self.length()
@@ -103,7 +103,7 @@ macro_rules! define_length_type {
 
         impl Default for $name {
             fn default() -> Self {
-                $name(Length::new(0.0, LengthUnit::Default))
+                $name(Length::new(0.0, LengthUnit::Px))
             }
         }
 
@@ -183,7 +183,7 @@ impl Length {
     /// Returns the raw length after asserting units are either default or percent.
     #[inline]
     pub fn get_unitless(&self) -> f64 {
-        assert!(self.unit == LengthUnit::Default || self.unit == LengthUnit::Percent);
+        assert!(self.unit == LengthUnit::Px || self.unit == LengthUnit::Percent);
         self.length
     }
 
@@ -194,7 +194,7 @@ impl Length {
         font_size: f64,
     ) -> f64 {
         match self.unit {
-            LengthUnit::Default => self.length,
+            LengthUnit::Px => self.length,
             LengthUnit::Percent => self.length * width_or_height,
             LengthUnit::FontEm => self.length * font_size,
             LengthUnit::FontEx => self.length * font_size / 2.0,
@@ -213,7 +213,7 @@ impl Length {
             match *token {
                 Token::Number { value, .. } => Length {
                     length: f64::from(value),
-                    unit: LengthUnit::Default,
+                    unit: LengthUnit::Px,
                 },
 
                 Token::Percentage { unit_value, .. } => Length {
@@ -264,7 +264,7 @@ impl Length {
 
                         "px" => Length {
                             length: value,
-                            unit: LengthUnit::Default,
+                            unit: LengthUnit::Px,
                         },
 
                         _ => return Err(make_err()),
@@ -283,7 +283,7 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
     let v = &values.font_size.0.value().0;
 
     match v.unit {
-        LengthUnit::Default => v.length,
+        LengthUnit::Px => v.length,
 
         // FontSize always is a LengthDir::Both, per properties.rs
         LengthUnit::Inch => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y),
@@ -356,12 +356,12 @@ mod tests {
     fn parses_default() {
         assert_eq!(
             LengthHorizontal::parse_str("42"),
-            Ok(LengthHorizontal(Length::new(42.0, LengthUnit::Default,)))
+            Ok(LengthHorizontal(Length::new(42.0, LengthUnit::Px)))
         );
 
         assert_eq!(
             LengthHorizontal::parse_str("-42px"),
-            Ok(LengthHorizontal(Length::new(-42.0, LengthUnit::Default,)))
+            Ok(LengthHorizontal(Length::new(-42.0, LengthUnit::Px)))
         );
     }
 
@@ -369,7 +369,7 @@ mod tests {
     fn parses_percent() {
         assert_eq!(
             LengthHorizontal::parse_str("50.0%"),
-            Ok(LengthHorizontal(Length::new(0.5, LengthUnit::Percent,)))
+            Ok(LengthHorizontal(Length::new(0.5, LengthUnit::Percent)))
         );
     }
 
@@ -444,7 +444,7 @@ mod tests {
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
-            LengthBoth::new(10.0, LengthUnit::Default).normalize(&values, &params),
+            LengthBoth::new(10.0, LengthUnit::Px).normalize(&values, &params),
             10.0
         );
     }

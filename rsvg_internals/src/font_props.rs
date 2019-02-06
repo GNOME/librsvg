@@ -175,7 +175,7 @@ impl LetterSpacingSpec {
 
     pub fn compute(&self) -> Self {
         let spacing = match self {
-            LetterSpacingSpec::Normal => LengthHorizontal::new(0.0, LengthUnit::Default),
+            LetterSpacingSpec::Normal => LengthHorizontal::new(0.0, LengthUnit::Px),
             LetterSpacingSpec::Value(s) => s.clone(),
         };
 
@@ -304,7 +304,7 @@ mod tests {
             <LetterSpacingSpec as Parse>::parse_str("normal").map(|s| s.compute()),
             Ok(LetterSpacingSpec::Value(LengthHorizontal::new(
                 0.0,
-                LengthUnit::Default,
+                LengthUnit::Px,
             )))
         );
         assert_eq!(

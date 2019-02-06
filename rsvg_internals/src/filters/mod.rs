@@ -131,7 +131,7 @@ impl NodeTrait for Primitive {
             }
 
             match length.unit() {
-                LengthUnit::Default | LengthUnit::Percent => Ok(length),
+                LengthUnit::Px | LengthUnit::Percent => Ok(length),
                 _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
                 ))),
@@ -144,7 +144,7 @@ impl NodeTrait for Primitive {
             }
 
             match length.unit() {
-                LengthUnit::Default | LengthUnit::Percent => Ok(length),
+                LengthUnit::Px | LengthUnit::Percent => Ok(length),
                 _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
                 ))),

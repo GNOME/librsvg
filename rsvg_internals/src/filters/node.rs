@@ -53,7 +53,7 @@ impl NodeTrait for NodeFilter {
             }
 
             match length.unit() {
-                LengthUnit::Default | LengthUnit::Percent => Ok(length),
+                LengthUnit::Px | LengthUnit::Percent => Ok(length),
                 _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
                 ))),
@@ -66,7 +66,7 @@ impl NodeTrait for NodeFilter {
             }
 
             match length.unit() {
-                LengthUnit::Default | LengthUnit::Percent => Ok(length),
+                LengthUnit::Px | LengthUnit::Percent => Ok(length),
                 _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
                 ))),

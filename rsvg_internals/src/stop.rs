@@ -26,7 +26,7 @@ impl NodeStop {
 
 fn validate_offset(length: LengthBoth) -> Result<LengthBoth, ValueErrorKind> {
     match length.unit() {
-        LengthUnit::Default | LengthUnit::Percent => Ok(length),
+        LengthUnit::Px | LengthUnit::Percent => Ok(length),
         _ => Err(ValueErrorKind::Value(
             "stop offset must be in default or percent units".to_string(),
         )),
