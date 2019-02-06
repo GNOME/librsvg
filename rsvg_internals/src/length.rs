@@ -7,12 +7,22 @@ use parsers::Parse;
 use parsers::ParseError;
 use properties::ComputedValues;
 
+/// Units for length values
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
+    /// `1.0` means 100%
     Percent,
+
+    /// Pixels, or the CSS default unit
     Px,
+
+    /// Size of the current font
     Em,
+
+    /// x-height of the current font
     Ex,
+
+    /// Inches
     In,
 }
 
