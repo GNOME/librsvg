@@ -22,8 +22,20 @@ pub enum LengthUnit {
     /// x-height of the current font
     Ex,
 
-    /// Inches
+    /// Inches (25.4 mm)
     In,
+
+    /// Centimeters
+    Cm,
+
+    /// Millimeters
+    Mm,
+
+    /// Points (1/72 inch)
+    Pt,
+
+    /// Picas (12 points)
+    Pc,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -92,6 +104,22 @@ macro_rules! define_length_type {
 
                     LengthUnit::In => {
                         self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
+                    }
+
+                    LengthUnit::Cm => {
+                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y) / CM_PER_INCH
+                    }
+
+                    LengthUnit::Mm => {
+                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y) / MM_PER_INCH
+                    }
+
+                    LengthUnit::Pt => {
+                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y) / POINTS_PER_INCH
+                    }
+
+                    LengthUnit::Pc => {
+                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y) / PICA_PER_INCH
                     }
                 }
             }
@@ -204,11 +232,15 @@ impl Length {
         font_size: f64,
     ) -> f64 {
         match self.unit {
-            LengthUnit::Px => self.length,
             LengthUnit::Percent => self.length * width_or_height,
+            LengthUnit::Px => self.length,
             LengthUnit::Em => self.length * font_size,
             LengthUnit::Ex => self.length * font_size / 2.0,
             LengthUnit::In => self.length * pixels_per_inch,
+            LengthUnit::Cm => self.length * pixels_per_inch / CM_PER_INCH,
+            LengthUnit::Mm => self.length * pixels_per_inch / MM_PER_INCH,
+            LengthUnit::Pt => self.length * pixels_per_inch / POINTS_PER_INCH,
+            LengthUnit::Pc => self.length * pixels_per_inch / PICA_PER_INCH,
         }
     }
 
@@ -237,6 +269,11 @@ impl Length {
                     let value = f64::from(value);
 
                     match unit.as_ref() {
+                        "px" => Length {
+                            length: value,
+                            unit: LengthUnit::Px,
+                        },
+
                         "em" => Length {
                             length: value,
                             unit: LengthUnit::Em,
@@ -247,34 +284,29 @@ impl Length {
                             unit: LengthUnit::Ex,
                         },
 
-                        "pt" => Length {
-                            length: value / POINTS_PER_INCH,
-                            unit: LengthUnit::In,
-                        },
-
                         "in" => Length {
                             length: value,
                             unit: LengthUnit::In,
                         },
 
                         "cm" => Length {
-                            length: value / CM_PER_INCH,
-                            unit: LengthUnit::In,
+                            length: value,
+                            unit: LengthUnit::Cm,
                         },
 
                         "mm" => Length {
-                            length: value / MM_PER_INCH,
-                            unit: LengthUnit::In,
+                            length: value,
+                            unit: LengthUnit::Mm,
+                        },
+
+                        "pt" => Length {
+                            length: value,
+                            unit: LengthUnit::Pt,
                         },
 
                         "pc" => Length {
-                            length: value / PICA_PER_INCH,
-                            unit: LengthUnit::In,
-                        },
-
-                        "px" => Length {
                             length: value,
-                            unit: LengthUnit::Px,
+                            unit: LengthUnit::Pc,
                         },
 
                         _ => return Err(make_err()),
@@ -293,17 +325,21 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
     let v = &values.font_size.0.value().0;
 
     match v.unit {
-        LengthUnit::Px => v.length,
-
-        // FontSize always is a LengthDir::Both, per properties.rs
-        LengthUnit::In => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y),
-
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
+
+        LengthUnit::Px => v.length,
 
         LengthUnit::Em | LengthUnit::Ex => {
             // This is the same default as used in rsvg_node_svg_get_size()
             v.hand_normalize(0.0, 0.0, 12.0)
         }
+
+        // FontSize always is a LengthDir::Both, per properties.rs
+        LengthUnit::In => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y),
+        LengthUnit::Cm => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / CM_PER_INCH,
+        LengthUnit::Mm => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / MM_PER_INCH,
+        LengthUnit::Pt => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / POINTS_PER_INCH,
+        LengthUnit::Pc => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / PICA_PER_INCH,
     }
 }
 
@@ -403,7 +439,7 @@ mod tests {
     fn parses_physical_units() {
         assert_eq!(
             LengthBoth::parse_str("72pt"),
-            Ok(LengthBoth(Length::new(1.0, LengthUnit::In)))
+            Ok(LengthBoth(Length::new(72.0, LengthUnit::Pt)))
         );
 
         assert_eq!(
@@ -413,17 +449,17 @@ mod tests {
 
         assert_eq!(
             LengthBoth::parse_str("-254cm"),
-            Ok(LengthBoth(Length::new(-100.0, LengthUnit::In)))
+            Ok(LengthBoth(Length::new(-254.0, LengthUnit::Cm)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("254mm"),
-            Ok(LengthBoth(Length::new(10.0, LengthUnit::In)))
+            Ok(LengthBoth(Length::new(254.0, LengthUnit::Mm)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("60pc"),
-            Ok(LengthBoth(Length::new(10.0, LengthUnit::In)))
+            Ok(LengthBoth(Length::new(60.0, LengthUnit::Pc)))
         );
     }
 
