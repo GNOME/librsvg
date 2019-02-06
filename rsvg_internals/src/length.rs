@@ -9,8 +9,8 @@ use properties::ComputedValues;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
-    Default,
     Percent,
+    Default,
     FontEm,
     FontEx,
     Inch,
