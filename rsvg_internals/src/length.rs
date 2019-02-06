@@ -13,7 +13,7 @@ pub enum LengthUnit {
     Px,
     Em,
     Ex,
-    Inch,
+    In,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -80,7 +80,7 @@ macro_rules! define_length_type {
                         self.length() * font_size_from_values(values, params) / 2.0
                     }
 
-                    LengthUnit::Inch => {
+                    LengthUnit::In => {
                         self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
                     }
                 }
@@ -198,7 +198,7 @@ impl Length {
             LengthUnit::Percent => self.length * width_or_height,
             LengthUnit::Em => self.length * font_size,
             LengthUnit::Ex => self.length * font_size / 2.0,
-            LengthUnit::Inch => self.length * pixels_per_inch,
+            LengthUnit::In => self.length * pixels_per_inch,
         }
     }
 
@@ -239,27 +239,27 @@ impl Length {
 
                         "pt" => Length {
                             length: value / POINTS_PER_INCH,
-                            unit: LengthUnit::Inch,
+                            unit: LengthUnit::In,
                         },
 
                         "in" => Length {
                             length: value,
-                            unit: LengthUnit::Inch,
+                            unit: LengthUnit::In,
                         },
 
                         "cm" => Length {
                             length: value / CM_PER_INCH,
-                            unit: LengthUnit::Inch,
+                            unit: LengthUnit::In,
                         },
 
                         "mm" => Length {
                             length: value / MM_PER_INCH,
-                            unit: LengthUnit::Inch,
+                            unit: LengthUnit::In,
                         },
 
                         "pc" => Length {
                             length: value / PICA_PER_INCH,
-                            unit: LengthUnit::Inch,
+                            unit: LengthUnit::In,
                         },
 
                         "px" => Length {
@@ -286,7 +286,7 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
         LengthUnit::Px => v.length,
 
         // FontSize always is a LengthDir::Both, per properties.rs
-        LengthUnit::Inch => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y),
+        LengthUnit::In => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y),
 
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
 
@@ -393,27 +393,27 @@ mod tests {
     fn parses_physical_units() {
         assert_eq!(
             LengthBoth::parse_str("72pt"),
-            Ok(LengthBoth(Length::new(1.0, LengthUnit::Inch,)))
+            Ok(LengthBoth(Length::new(1.0, LengthUnit::In)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("-22.5in"),
-            Ok(LengthBoth(Length::new(-22.5, LengthUnit::Inch,)))
+            Ok(LengthBoth(Length::new(-22.5, LengthUnit::In)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("-254cm"),
-            Ok(LengthBoth(Length::new(-100.0, LengthUnit::Inch,)))
+            Ok(LengthBoth(Length::new(-100.0, LengthUnit::In)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("254mm"),
-            Ok(LengthBoth(Length::new(10.0, LengthUnit::Inch,)))
+            Ok(LengthBoth(Length::new(10.0, LengthUnit::In)))
         );
 
         assert_eq!(
             LengthBoth::parse_str("60pc"),
-            Ok(LengthBoth(Length::new(10.0, LengthUnit::Inch,)))
+            Ok(LengthBoth(Length::new(10.0, LengthUnit::In)))
         );
     }
 
@@ -456,11 +456,11 @@ mod tests {
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
-            LengthHorizontal::new(10.0, LengthUnit::Inch).normalize(&values, &params),
+            LengthHorizontal::new(10.0, LengthUnit::In).normalize(&values, &params),
             400.0
         );
         assert_approx_eq_cairo!(
-            LengthVertical::new(10.0, LengthUnit::Inch).normalize(&values, &params),
+            LengthVertical::new(10.0, LengthUnit::In).normalize(&values, &params),
             500.0
         );
     }

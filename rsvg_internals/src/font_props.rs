@@ -37,13 +37,13 @@ impl FontSizeSpec {
         let new_size = match self {
             FontSizeSpec::Smaller => LengthBoth::new(size.length() / 1.2, size.unit()),
             FontSizeSpec::Larger => LengthBoth::new(size.length() * 1.2, size.unit()),
-            FontSizeSpec::XXSmall => LengthBoth::new(compute_points(-3.0), LengthUnit::Inch),
-            FontSizeSpec::XSmall => LengthBoth::new(compute_points(-2.0), LengthUnit::Inch),
-            FontSizeSpec::Small => LengthBoth::new(compute_points(-1.0), LengthUnit::Inch),
-            FontSizeSpec::Medium => LengthBoth::new(compute_points(0.0), LengthUnit::Inch),
-            FontSizeSpec::Large => LengthBoth::new(compute_points(1.0), LengthUnit::Inch),
-            FontSizeSpec::XLarge => LengthBoth::new(compute_points(2.0), LengthUnit::Inch),
-            FontSizeSpec::XXLarge => LengthBoth::new(compute_points(3.0), LengthUnit::Inch),
+            FontSizeSpec::XXSmall => LengthBoth::new(compute_points(-3.0), LengthUnit::In),
+            FontSizeSpec::XSmall => LengthBoth::new(compute_points(-2.0), LengthUnit::In),
+            FontSizeSpec::Small => LengthBoth::new(compute_points(-1.0), LengthUnit::In),
+            FontSizeSpec::Medium => LengthBoth::new(compute_points(0.0), LengthUnit::In),
+            FontSizeSpec::Large => LengthBoth::new(compute_points(1.0), LengthUnit::In),
+            FontSizeSpec::XLarge => LengthBoth::new(compute_points(2.0), LengthUnit::In),
+            FontSizeSpec::XXLarge => LengthBoth::new(compute_points(3.0), LengthUnit::In),
             FontSizeSpec::Value(s) if s.unit() == LengthUnit::Percent => {
                 LengthBoth::new(size.length() * s.length(), size.unit())
             }
