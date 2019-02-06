@@ -293,7 +293,7 @@ mod tests {
             <LetterSpacingSpec as Parse>::parse_str("10em"),
             Ok(LetterSpacingSpec::Value(LengthHorizontal::new(
                 10.0,
-                LengthUnit::FontEm,
+                LengthUnit::Em,
             )))
         );
     }
@@ -311,7 +311,7 @@ mod tests {
             <LetterSpacingSpec as Parse>::parse_str("10em").map(|s| s.compute()),
             Ok(LetterSpacingSpec::Value(LengthHorizontal::new(
                 10.0,
-                LengthUnit::FontEm,
+                LengthUnit::Em,
             )))
         );
     }

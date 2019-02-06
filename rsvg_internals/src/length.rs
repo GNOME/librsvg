@@ -11,8 +11,8 @@ use properties::ComputedValues;
 pub enum LengthUnit {
     Percent,
     Px,
-    FontEm,
-    FontEx,
+    Em,
+    Ex,
     Inch,
 }
 
@@ -74,9 +74,9 @@ macro_rules! define_length_type {
                             * $dir.scaling_factor(params.view_box_width, params.view_box_height)
                     }
 
-                    LengthUnit::FontEm => self.length() * font_size_from_values(values, params),
+                    LengthUnit::Em => self.length() * font_size_from_values(values, params),
 
-                    LengthUnit::FontEx => {
+                    LengthUnit::Ex => {
                         self.length() * font_size_from_values(values, params) / 2.0
                     }
 
@@ -196,8 +196,8 @@ impl Length {
         match self.unit {
             LengthUnit::Px => self.length,
             LengthUnit::Percent => self.length * width_or_height,
-            LengthUnit::FontEm => self.length * font_size,
-            LengthUnit::FontEx => self.length * font_size / 2.0,
+            LengthUnit::Em => self.length * font_size,
+            LengthUnit::Ex => self.length * font_size / 2.0,
             LengthUnit::Inch => self.length * pixels_per_inch,
         }
     }
@@ -229,12 +229,12 @@ impl Length {
                     match unit.as_ref() {
                         "em" => Length {
                             length: value,
-                            unit: LengthUnit::FontEm,
+                            unit: LengthUnit::Em,
                         },
 
                         "ex" => Length {
                             length: value,
-                            unit: LengthUnit::FontEx,
+                            unit: LengthUnit::Ex,
                         },
 
                         "pt" => Length {
@@ -290,7 +290,7 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
 
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
 
-        LengthUnit::FontEm | LengthUnit::FontEx => {
+        LengthUnit::Em | LengthUnit::Ex => {
             // This is the same default as used in rsvg_node_svg_get_size()
             v.hand_normalize(0.0, 0.0, 12.0)
         }
@@ -377,7 +377,7 @@ mod tests {
     fn parses_font_em() {
         assert_eq!(
             LengthVertical::parse_str("22.5em"),
-            Ok(LengthVertical(Length::new(22.5, LengthUnit::FontEm,)))
+            Ok(LengthVertical(Length::new(22.5, LengthUnit::Em)))
         );
     }
 
@@ -385,7 +385,7 @@ mod tests {
     fn parses_font_ex() {
         assert_eq!(
             LengthVertical::parse_str("22.5ex"),
-            Ok(LengthVertical(Length::new(22.5, LengthUnit::FontEx,)))
+            Ok(LengthVertical(Length::new(22.5, LengthUnit::Ex)))
         );
     }
 
@@ -488,15 +488,15 @@ mod tests {
         let values = ComputedValues::default();
 
         // These correspond to the default size for the font-size
-        // property and the way we compute FontEx from that.
+        // property and the way we compute Em/Ex from that.
 
         assert_approx_eq_cairo!(
-            LengthVertical::new(1.0, LengthUnit::FontEm).normalize(&values, &params),
+            LengthVertical::new(1.0, LengthUnit::Em).normalize(&values, &params),
             12.0
         );
 
         assert_approx_eq_cairo!(
-            LengthVertical::new(1.0, LengthUnit::FontEx).normalize(&values, &params),
+            LengthVertical::new(1.0, LengthUnit::Ex).normalize(&values, &params),
             6.0
         );
     }
