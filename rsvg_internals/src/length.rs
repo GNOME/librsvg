@@ -509,6 +509,23 @@ mod tests {
             LengthVertical::new(10.0, LengthUnit::In).normalize(&values, &params),
             500.0
         );
+
+        assert_approx_eq_cairo!(
+            LengthHorizontal::new(10.0, LengthUnit::Cm).normalize(&values, &params),
+            400.0 / CM_PER_INCH
+        );
+        assert_approx_eq_cairo!(
+            LengthHorizontal::new(10.0, LengthUnit::Mm).normalize(&values, &params),
+            400.0 / MM_PER_INCH
+        );
+        assert_approx_eq_cairo!(
+            LengthHorizontal::new(10.0, LengthUnit::Pt).normalize(&values, &params),
+            400.0 / POINTS_PER_INCH
+        );
+        assert_approx_eq_cairo!(
+            LengthHorizontal::new(10.0, LengthUnit::Pc).normalize(&values, &params),
+            400.0 / PICA_PER_INCH
+        );
     }
 
     #[test]
