@@ -204,6 +204,23 @@ gboolean rsvg_handle_get_geometry_sub (RsvgHandle    *handle,
 
 gboolean rsvg_handle_has_sub (RsvgHandle *handle, const char *id);
 
+typedef enum {
+    RSVG_UNIT_PERCENT,
+    RSVG_UNIT_PX,
+    RSVG_UNIT_EM,
+    RSVG_UNIT_EX,
+    RSVG_UNIT_IN,
+    RSVG_UNIT_CM,
+    RSVG_UNIT_MM,
+    RSVG_UNIT_PT,
+    RSVG_UNIT_PC
+} RsvgUnit;
+
+typedef struct {
+    double   length;
+    RsvgUnit unit;
+} RsvgLength;
+
 /* GIO APIs */
 
 /**

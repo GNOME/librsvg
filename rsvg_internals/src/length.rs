@@ -7,7 +7,10 @@ use parsers::Parse;
 use parsers::ParseError;
 use properties::ComputedValues;
 
+// Keep this in sync with rsvg.h:RsvgUnit
+
 /// Units for length values
+#[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
     /// `1.0` means 100%
@@ -173,6 +176,8 @@ define_length_type!(LengthVertical, LengthDir::Vertical);
 /// against the current viewport's width and height.
 define_length_type!(LengthBoth, LengthDir::Both);
 
+// Keep this in sync with rsvg.h:RsvgLength
+#[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 struct Length {
     pub length: f64,
