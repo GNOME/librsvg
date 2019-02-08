@@ -337,6 +337,13 @@ extern RsvgHandle *rsvg_handle_rust_new_from_stream_sync (GInputStream *input_st
 extern RsvgHandle *rsvg_handle_rust_new_from_data (const guint8 *data,
                                                    gsize data_len,
                                                    GError **error);
+extern void rsvg_handle_rust_get_intrinsic_dimensions (RsvgHandle *handle,
+                                                       gboolean   *out_has_width,
+                                                       RsvgLength *out_width,
+                                                       gboolean   *out_has_height,
+                                                       RsvgLength *out_height,
+                                                       gboolean   *out_has_viewbox,
+                                                       RsvgRectangle *out_viewbox);
 
 typedef struct {
     RsvgHandleRust *rust_handle;
@@ -1263,6 +1270,26 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
                                         size_func,
                                         user_data,
                                         user_data_destroy);
+}
+
+void
+rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
+                                      gboolean   *out_has_width,
+                                      RsvgLength *out_width,
+                                      gboolean   *out_has_height,
+                                      RsvgLength *out_height,
+                                      gboolean   *out_has_viewbox,
+                                      RsvgRectangle *out_viewbox)
+{
+    g_return_if_fail (RSVG_IS_HANDLE (handle));
+
+    rsvg_handle_rust_get_intrinsic_dimensions (handle,
+                                               out_has_width,
+                                               out_width,
+                                               out_has_height,
+                                               out_height,
+                                               out_has_viewbox,
+                                               out_viewbox);
 }
 
 /**

@@ -7,6 +7,8 @@ use parsers::Parse;
 use parsers::ParseError;
 use properties::ComputedValues;
 
+pub type RsvgLength = Length;
+
 // Keep this in sync with rsvg.h:RsvgUnit
 
 /// Units for length values
@@ -78,6 +80,10 @@ macro_rules! define_length_type {
 
             pub fn get_unitless(&self) -> f64 {
                 self.0.get_unitless()
+            }
+
+            pub fn to_length(&self) -> Length {
+                self.0
             }
 
             pub fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
@@ -179,7 +185,7 @@ define_length_type!(LengthBoth, LengthDir::Both);
 // Keep this in sync with rsvg.h:RsvgLength
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
-struct Length {
+pub struct Length {
     pub length: f64,
     pub unit: LengthUnit,
 }

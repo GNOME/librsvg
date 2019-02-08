@@ -24,9 +24,10 @@ use allowed_url::{AllowedUrl, Href};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
+use length::RsvgLength;
 use node::RsvgNode;
 use pixbuf_utils::pixbuf_from_surface;
-use structure::NodeSvg;
+use structure::{IntrinsicDimensions, NodeSvg};
 use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use svg::Svg;
 use util::rsvg_g_warning;
@@ -534,6 +535,13 @@ impl Handle {
         }
 
         self.read_stream_sync(stream, cancellable)
+    }
+
+    fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        let svg_ref = self.svg.borrow();
+        let svg = svg_ref.as_ref().unwrap();
+
+        svg.get_intrinsic_dimensions()
     }
 }
 
@@ -1123,4 +1131,47 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_data(
 
     gobject_sys::g_object_unref(raw_stream as *mut _);
     ret
+}
+
+unsafe fn set_out_param<T: Copy>(out_has_param: *mut glib_sys::gboolean, out_param: *mut T, value: &Option<T>) {
+    let has_value = if let Some(ref v) = *value {
+        if !out_param.is_null() {
+            *out_param = *v;
+        }
+
+        true
+    } else {
+        false
+    };
+
+    if !out_has_param.is_null() {
+        *out_has_param = has_value.to_glib();
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_rust_get_intrinsic_dimensions(
+    handle: *mut RsvgHandle,
+    out_has_width: *mut glib_sys::gboolean,
+    out_width: *mut RsvgLength,
+    out_has_height: *mut glib_sys::gboolean,
+    out_height: *mut RsvgLength,
+    out_has_viewbox: *mut glib_sys::gboolean,
+    out_viewbox: *mut RsvgRectangle,
+) {
+    let rhandle = get_rust_handle(handle);
+
+    if !is_loaded(rhandle) {
+        return;
+    }
+
+    let d = rhandle.get_intrinsic_dimensions();
+
+    let w = d.width.map(|l| l.to_length());
+    let h = d.width.map(|l| l.to_length());
+    let r = d.vbox.map(RsvgRectangle::from);
+
+    set_out_param (out_has_width, out_width, &w);
+    set_out_param (out_has_height, out_height, &h);
+    set_out_param (out_has_viewbox, out_viewbox, &r);
 }

@@ -914,6 +914,17 @@ impl From<cairo::Rectangle> for RsvgRectangle {
     }
 }
 
+impl From<ViewBox> for RsvgRectangle {
+    fn from(vb: ViewBox) -> RsvgRectangle {
+        RsvgRectangle {
+            x: vb.x,
+            y: vb.y,
+            width: vb.width,
+            height: vb.height,
+        }
+    }
+}
+
 pub struct AcquiredNode(Rc<RefCell<Vec<RsvgNode>>>, RsvgNode);
 
 impl Drop for AcquiredNode {

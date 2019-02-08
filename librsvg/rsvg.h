@@ -221,6 +221,14 @@ typedef struct {
     RsvgUnit unit;
 } RsvgLength;
 
+void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
+                                           gboolean   *out_has_width,
+                                           RsvgLength *out_width,
+                                           gboolean   *out_has_height,
+                                           RsvgLength *out_height,
+                                           gboolean   *out_has_viewbox,
+                                           RsvgRectangle *out_viewbox);
+
 /* GIO APIs */
 
 /**

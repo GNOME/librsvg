@@ -50,6 +50,7 @@ pub use handle::{
     rsvg_handle_rust_get_dpi_y,
     rsvg_handle_rust_get_flags,
     rsvg_handle_rust_get_geometry_sub,
+    rsvg_handle_rust_get_intrinsic_dimensions,
     rsvg_handle_rust_get_pixbuf_sub,
     rsvg_handle_rust_get_position_sub,
     rsvg_handle_rust_has_sub,
