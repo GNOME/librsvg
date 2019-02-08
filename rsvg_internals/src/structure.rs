@@ -95,6 +95,14 @@ impl NodeTrait for NodeSwitch {
     }
 }
 
+/// Intrinsic dimensions of an SVG document fragment
+#[derive(Copy, Clone)]
+pub struct IntrinsicDimensions {
+    width: Option<LengthHorizontal>,
+    height: Option<LengthVertical>,
+    vbox: Option<ViewBox>,
+}
+
 pub struct NodeSvg {
     preserve_aspect_ratio: Cell<AspectRatio>,
     x: Cell<LengthHorizontal>,
@@ -138,6 +146,16 @@ impl NodeSvg {
                 ))
             }
             (_, _, _) => None,
+        }
+    }
+
+    pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        // FIXME: width/height are Option<>, and we don't store that yet;
+        // we resolve to 100% for default values at parsing time.
+        IntrinsicDimensions {
+            width: Some(self.w.get()),
+            height: Some(self.h.get()),
+            vbox: self.vbox.get(),
         }
     }
 }

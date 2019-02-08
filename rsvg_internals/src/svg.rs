@@ -11,8 +11,9 @@ use allowed_url::{AllowedUrl, Fragment};
 use error::LoadingError;
 use handle::LoadOptions;
 use io;
-use node::RsvgNode;
+use node::{NodeType, RsvgNode};
 use properties::ComputedValues;
+use structure::{IntrinsicDimensions, NodeSvg};
 use surface_utils::shared_surface::SharedImageSurface;
 use xml::XmlState;
 use xml2_load::xml_state_load_from_possibly_compressed_stream;
@@ -84,6 +85,14 @@ impl Svg {
 
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
         self.images.borrow_mut().lookup(&self.load_options, href)
+    }
+
+    pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        let root = self.root();
+
+        assert!(root.get_type() == NodeType::Svg);
+
+        root.with_impl(|svg: &NodeSvg| svg.get_intrinsic_dimensions())
     }
 }
 
