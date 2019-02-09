@@ -1133,7 +1133,11 @@ pub unsafe extern "C" fn rsvg_handle_rust_new_from_data(
     ret
 }
 
-unsafe fn set_out_param<T: Copy>(out_has_param: *mut glib_sys::gboolean, out_param: *mut T, value: &Option<T>) {
+unsafe fn set_out_param<T: Copy>(
+    out_has_param: *mut glib_sys::gboolean,
+    out_param: *mut T,
+    value: &Option<T>,
+) {
     let has_value = if let Some(ref v) = *value {
         if !out_param.is_null() {
             *out_param = *v;
@@ -1171,7 +1175,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_intrinsic_dimensions(
     let h = d.width.map(|l| l.to_length());
     let r = d.vbox.map(RsvgRectangle::from);
 
-    set_out_param (out_has_width, out_width, &w);
-    set_out_param (out_has_height, out_height, &h);
-    set_out_param (out_has_viewbox, out_viewbox, &r);
+    set_out_param(out_has_width, out_width, &w);
+    set_out_param(out_has_height, out_height, &h);
+    set_out_param(out_has_viewbox, out_viewbox, &r);
 }

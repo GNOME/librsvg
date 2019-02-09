@@ -13,6 +13,7 @@ use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
 use rect::IRect;
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use viewbox::ViewBox;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -127,8 +128,12 @@ impl Image {
         let render_bounds = bounds_builder.into_irect_without_clipping(draw_ctx);
         let aspect = self.aspect.get();
         let (x, y, w, h) = aspect.compute(
-            f64::from(surface.width()),
-            f64::from(surface.height()),
+            &ViewBox::new(
+                0.0,
+                0.0,
+                f64::from(surface.width()),
+                f64::from(surface.height()),
+            ),
             f64::from(render_bounds.x0),
             f64::from(render_bounds.y0),
             f64::from(render_bounds.x1 - render_bounds.x0),

@@ -152,14 +152,10 @@ impl NodeMarker {
         }
 
         let params = if let Some(vbox) = self.vbox.get() {
-            let (_, _, w, h) = self.aspect.get().compute(
-                vbox.width,
-                vbox.height,
-                0.0,
-                0.0,
-                marker_width,
-                marker_height,
-            );
+            let (_, _, w, h) =
+                self.aspect
+                    .get()
+                    .compute(&vbox, 0.0, 0.0, marker_width, marker_height);
 
             if vbox.width.approx_eq_cairo(&0.0) || vbox.height.approx_eq_cairo(&0.0) {
                 return Ok(());

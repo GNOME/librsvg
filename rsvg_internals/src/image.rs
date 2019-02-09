@@ -13,6 +13,7 @@ use length::{LengthHorizontal, LengthVertical};
 use node::*;
 use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
+use viewbox::ViewBox;
 
 pub struct NodeImage {
     aspect: Cell<AspectRatio>,
@@ -123,7 +124,7 @@ impl NodeTrait for NodeImage {
             let width = f64::from(width);
             let height = f64::from(height);
 
-            let (x, y, w, h) = aspect.compute(width, height, x, y, w, h);
+            let (x, y, w, h) = aspect.compute(&ViewBox::new(0.0, 0.0, width, height), x, y, w, h);
 
             let cr = dc.get_cairo_context();
 

@@ -107,28 +107,30 @@ macro_rules! define_length_type {
 
                     LengthUnit::Em => self.length() * font_size_from_values(values, params),
 
-                    LengthUnit::Ex => {
-                        self.length() * font_size_from_values(values, params) / 2.0
-                    }
+                    LengthUnit::Ex => self.length() * font_size_from_values(values, params) / 2.0,
 
                     LengthUnit::In => {
                         self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
                     }
 
                     LengthUnit::Cm => {
-                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y) / CM_PER_INCH
+                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
+                            / CM_PER_INCH
                     }
 
                     LengthUnit::Mm => {
-                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y) / MM_PER_INCH
+                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
+                            / MM_PER_INCH
                     }
 
                     LengthUnit::Pt => {
-                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y) / POINTS_PER_INCH
+                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
+                            / POINTS_PER_INCH
                     }
 
                     LengthUnit::Pc => {
-                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y) / PICA_PER_INCH
+                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
+                            / PICA_PER_INCH
                     }
                 }
             }
@@ -347,10 +349,18 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
 
         // FontSize always is a LengthDir::Both, per properties.rs
         LengthUnit::In => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y),
-        LengthUnit::Cm => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / CM_PER_INCH,
-        LengthUnit::Mm => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / MM_PER_INCH,
-        LengthUnit::Pt => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / POINTS_PER_INCH,
-        LengthUnit::Pc => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / PICA_PER_INCH,
+        LengthUnit::Cm => {
+            v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / CM_PER_INCH
+        }
+        LengthUnit::Mm => {
+            v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / MM_PER_INCH
+        }
+        LengthUnit::Pt => {
+            v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / POINTS_PER_INCH
+        }
+        LengthUnit::Pc => {
+            v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / PICA_PER_INCH
+        }
     }
 }
 

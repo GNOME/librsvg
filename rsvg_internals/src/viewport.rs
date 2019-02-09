@@ -59,8 +59,7 @@ pub fn draw_in_viewport(
 
             let params = dc.push_view_box(vbox.width, vbox.height);
 
-            let (x, y, w, h) =
-                preserve_aspect_ratio.compute(vbox.width, vbox.height, vx, vy, vw, vh);
+            let (x, y, w, h) = preserve_aspect_ratio.compute(&vbox, vx, vy, vw, vh);
 
             affine.translate(x, y);
             affine.scale(w / vbox.width, h / vbox.height);
