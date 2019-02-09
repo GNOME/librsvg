@@ -1,5 +1,5 @@
 use cairo;
-use cairo::MatrixTrait;
+use cairo::{MatrixTrait, Rectangle};
 
 use aspect_ratio::AspectRatio;
 use drawing_ctx::DrawingCtx;
@@ -7,6 +7,7 @@ use error::RenderingError;
 use float_eq_cairo::ApproxEqCairo;
 use node::RsvgNode;
 use properties::ComputedValues;
+use rect::RectangleExt;
 use viewbox::*;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -59,7 +60,8 @@ pub fn draw_in_viewport(
 
             let params = dc.push_view_box(vbox.width, vbox.height);
 
-            let (x, y, w, h) = preserve_aspect_ratio.compute(&vbox, vx, vy, vw, vh);
+            let (x, y, w, h) =
+                preserve_aspect_ratio.compute(&vbox, &Rectangle::new(vx, vy, vw, vh));
 
             affine.translate(x, y);
             affine.scale(w / vbox.width, h / vbox.height);

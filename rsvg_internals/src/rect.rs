@@ -4,6 +4,7 @@ use cairo::MatrixTrait;
 use float_eq_cairo::ApproxEqCairo;
 
 pub trait RectangleExt {
+    fn new(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle;
     fn is_empty(&self) -> bool;
     fn intersect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
     fn union(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
@@ -12,6 +13,15 @@ pub trait RectangleExt {
 }
 
 impl RectangleExt for cairo::Rectangle {
+    fn new(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle {
+        cairo::Rectangle {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+
     fn is_empty(&self) -> bool {
         self.width.approx_eq_cairo(&0.0) || self.height.approx_eq_cairo(&0.0)
     }

@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::f64::consts::*;
 use std::ops::Deref;
 
-use cairo::MatrixTrait;
+use cairo::{MatrixTrait, Rectangle};
 use cssparser::{CowRcStr, Parser, Token};
 
 use allowed_url::Fragment;
@@ -19,6 +19,7 @@ use parsers::{Parse, ParseError, ParseValue};
 use path_builder::*;
 use properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use property_bag::PropertyBag;
+use rect::RectangleExt;
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -152,10 +153,10 @@ impl NodeMarker {
         }
 
         let params = if let Some(vbox) = self.vbox.get() {
-            let (_, _, w, h) =
-                self.aspect
-                    .get()
-                    .compute(&vbox, 0.0, 0.0, marker_width, marker_height);
+            let (_, _, w, h) = self.aspect.get().compute(
+                &vbox,
+                &Rectangle::new(0.0, 0.0, marker_width, marker_height),
+            );
 
             if vbox.width.approx_eq_cairo(&0.0) || vbox.height.approx_eq_cairo(&0.0) {
                 return Ok(());

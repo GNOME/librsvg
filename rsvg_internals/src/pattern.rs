@@ -1,6 +1,5 @@
 use cairo;
-use cairo::MatrixTrait;
-use cairo::PatternTrait;
+use cairo::{MatrixTrait, PatternTrait};
 use std::cell::RefCell;
 use std::f64;
 use std::rc::*;
@@ -19,6 +18,7 @@ use paint_server::PaintSource;
 use parsers::ParseValue;
 use properties::ComputedValues;
 use property_bag::PropertyBag;
+use rect::RectangleExt;
 use unit_interval::UnitInterval;
 use viewbox::*;
 
@@ -368,10 +368,12 @@ impl PaintSource for NodePattern {
             // If there is a vbox, use that
             let (mut x, mut y, w, h) = preserve_aspect_ratio.compute(
                 &vbox,
-                0.0,
-                0.0,
-                pattern_width * bbwscale,
-                pattern_height * bbhscale,
+                &cairo::Rectangle::new(
+                    0.0,
+                    0.0,
+                    pattern_width * bbwscale,
+                    pattern_height * bbhscale,
+                ),
             );
 
             x -= vbox.x * w / vbox.width;

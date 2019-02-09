@@ -1,6 +1,6 @@
 use std::cell::{Cell, RefCell};
 
-use cairo::{self, ImageSurface, MatrixTrait, PatternTrait};
+use cairo::{self, ImageSurface, MatrixTrait, PatternTrait, Rectangle};
 
 use allowed_url::{Fragment, Href};
 use aspect_ratio::AspectRatio;
@@ -11,7 +11,7 @@ use float_eq_cairo::ApproxEqCairo;
 use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
-use rect::IRect;
+use rect::{IRect, RectangleExt};
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use viewbox::ViewBox;
 
@@ -134,10 +134,12 @@ impl Image {
                 f64::from(surface.width()),
                 f64::from(surface.height()),
             ),
-            f64::from(render_bounds.x0),
-            f64::from(render_bounds.y0),
-            f64::from(render_bounds.x1 - render_bounds.x0),
-            f64::from(render_bounds.y1 - render_bounds.y0),
+            &Rectangle::new(
+                f64::from(render_bounds.x0),
+                f64::from(render_bounds.y0),
+                f64::from(render_bounds.x1 - render_bounds.x0),
+                f64::from(render_bounds.y1 - render_bounds.y0),
+            ),
         );
 
         if w.approx_eq_cairo(&0.0) || h.approx_eq_cairo(&0.0) {
