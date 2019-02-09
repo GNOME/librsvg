@@ -17,8 +17,7 @@ pub enum ClipMode {
 
 pub fn draw_in_viewport(
     viewport: &Rectangle,
-    clip_mode: ClipMode,
-    do_clip: bool,
+    clip_mode: Option<ClipMode>,
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
     node: &RsvgNode,
@@ -39,9 +38,11 @@ pub fn draw_in_viewport(
     }
 
     draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-        if do_clip && clip_mode == ClipMode::ClipToViewport {
-            dc.get_cairo_context().set_matrix(affine);
-            dc.clip(viewport.x, viewport.y, viewport.width, viewport.height);
+        if let Some(ref clip) = clip_mode {
+            if *clip == ClipMode::ClipToViewport {
+                dc.get_cairo_context().set_matrix(affine);
+                dc.clip(viewport.x, viewport.y, viewport.width, viewport.height);
+            }
         }
 
         let _params = if let Some(vbox) = vbox {
@@ -64,8 +65,10 @@ pub fn draw_in_viewport(
 
             dc.get_cairo_context().set_matrix(affine);
 
-            if do_clip && clip_mode == ClipMode::ClipToVbox {
-                dc.clip(vbox.x, vbox.y, vbox.width, vbox.height);
+            if let Some(ref clip) = clip_mode {
+                if *clip == ClipMode::ClipToVbox {
+                    dc.clip(vbox.x, vbox.y, vbox.width, vbox.height);
+                }
             }
 
             params

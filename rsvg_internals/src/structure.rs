@@ -230,12 +230,15 @@ impl NodeTrait for NodeSvg {
             self.h.get().normalize(values, &params),
         );
 
-        let do_clip = !values.is_overflow() && node.get_parent().is_some();
+        let clip_mode = if !values.is_overflow() && node.get_parent().is_some() {
+            Some(ClipMode::ClipToViewport)
+        } else {
+            None
+        };
 
         draw_in_viewport(
             &viewport,
-            ClipMode::ClipToViewport,
-            do_clip,
+            clip_mode,
             self.vbox.get(),
             self.preserve_aspect_ratio.get(),
             node,
@@ -379,13 +382,17 @@ impl NodeTrait for NodeUse {
             })
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
-                let do_clip = !values.is_overflow()
-                    || (values.overflow == Overflow::Visible && child.is_overflow());
+                let clip_mode = if !values.is_overflow()
+                    || (values.overflow == Overflow::Visible && child.is_overflow())
+                {
+                    Some(ClipMode::ClipToVbox)
+                } else {
+                    None
+                };
 
                 draw_in_viewport(
                     &viewport,
-                    ClipMode::ClipToVbox,
-                    do_clip,
+                    clip_mode,
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
                     node,
