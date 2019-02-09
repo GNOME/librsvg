@@ -1,3 +1,6 @@
+Version 2.45.6
+- Librsvg now requires Rust 1.30.0 or later.
+
 Version 2.45.5
 - At build time, you can now pass $CARGO and $RUSTC environment
   variables if you need to override the default Rust toolchain.

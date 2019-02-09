@@ -113,7 +113,7 @@ AS_IF(test x$RUSTC = xno,
 dnl Minimum version of rustc that we support
 dnl If you change this, please update COMPILING.md
 MINIMUM_RUST_MAJOR=1
-MINIMUM_RUST_MINOR=27
+MINIMUM_RUST_MINOR=30
 
 rust_version=`$RUSTC --version`
 version=`echo "$rust_version" | sed -e 's/^rustc //g'`

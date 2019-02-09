@@ -34,11 +34,11 @@ fn normalize_default(elements: NormalizeDefault, s: &str) -> String {
     let mut s = s;
 
     if !elements.has_element_before {
-        s = s.trim_left();
+        s = s.trim_start();
     }
 
     if !elements.has_element_after {
-        s = s.trim_right();
+        s = s.trim_end();
     }
 
     s.chars()
