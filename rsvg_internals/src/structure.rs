@@ -1,6 +1,8 @@
 use std::cell::Cell;
 use std::cell::RefCell;
 
+use cairo::Rectangle;
+
 use allowed_url::Fragment;
 use aspect_ratio::*;
 use attributes::Attribute;
@@ -14,6 +16,7 @@ use node::*;
 use parsers::{Parse, ParseValue};
 use properties::Overflow;
 use property_bag::{OwnedPropertyBag, PropertyBag};
+use rect::RectangleExt;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -220,18 +223,17 @@ impl NodeTrait for NodeSvg {
 
         let params = draw_ctx.get_view_params();
 
-        let nx = self.x.get().normalize(values, &params);
-        let ny = self.y.get().normalize(values, &params);
-        let nw = self.w.get().normalize(values, &params);
-        let nh = self.h.get().normalize(values, &params);
+        let viewport = Rectangle::new(
+            self.x.get().normalize(values, &params),
+            self.y.get().normalize(values, &params),
+            self.w.get().normalize(values, &params),
+            self.h.get().normalize(values, &params),
+        );
 
         let do_clip = !values.is_overflow() && node.get_parent().is_some();
 
         draw_in_viewport(
-            nx,
-            ny,
-            nw,
-            nh,
+            &viewport,
             ClipMode::ClipToViewport,
             do_clip,
             self.vbox.get(),
@@ -362,9 +364,11 @@ impl NodeTrait for NodeUse {
             return Ok(());
         }
 
+        let viewport = Rectangle::new(nx, ny, nw, nh);
+
         if child.get_type() != NodeType::Symbol {
             let cr = draw_ctx.get_cairo_context();
-            cr.translate(nx, ny);
+            cr.translate(viewport.x, viewport.y);
 
             draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
                 dc.draw_node_from_stack(
@@ -379,10 +383,7 @@ impl NodeTrait for NodeUse {
                     || (values.overflow == Overflow::Visible && child.is_overflow());
 
                 draw_in_viewport(
-                    nx,
-                    ny,
-                    nw,
-                    nh,
+                    &viewport,
                     ClipMode::ClipToVbox,
                     do_clip,
                     symbol.vbox.get(),
