@@ -40,7 +40,6 @@ pub fn draw_in_viewport(
     draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
         if let Some(ref clip) = clip_mode {
             if *clip == ClipMode::ClipToViewport {
-                dc.get_cairo_context().set_matrix(affine);
                 dc.clip(viewport.x, viewport.y, viewport.width, viewport.height);
             }
         }
