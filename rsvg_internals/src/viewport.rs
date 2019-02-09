@@ -1,5 +1,4 @@
-use cairo;
-use cairo::{MatrixTrait, Rectangle};
+use cairo::Rectangle;
 
 use aspect_ratio::AspectRatio;
 use drawing_ctx::DrawingCtx;
@@ -22,7 +21,6 @@ pub fn draw_in_viewport(
     preserve_aspect_ratio: AspectRatio,
     node: &RsvgNode,
     values: &ComputedValues,
-    mut affine: cairo::Matrix,
     draw_ctx: &mut DrawingCtx,
     clipping: bool,
     draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
@@ -38,6 +36,8 @@ pub fn draw_in_viewport(
     }
 
     draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+        let cr = dc.get_cairo_context();
+
         if let Some(ref clip) = clip_mode {
             if *clip == ClipMode::ClipToViewport {
                 dc.clip(viewport.x, viewport.y, viewport.width, viewport.height);
@@ -58,11 +58,9 @@ pub fn draw_in_viewport(
 
             let (x, y, w, h) = preserve_aspect_ratio.compute(&vbox, viewport);
 
-            affine.translate(x, y);
-            affine.scale(w / vbox.width, h / vbox.height);
-            affine.translate(-vbox.x, -vbox.y);
-
-            dc.get_cairo_context().set_matrix(affine);
+            cr.translate(x, y);
+            cr.scale(w / vbox.width, h / vbox.height);
+            cr.translate(-vbox.x, -vbox.y);
 
             if let Some(ref clip) = clip_mode {
                 if *clip == ClipMode::ClipToVbox {
@@ -73,8 +71,7 @@ pub fn draw_in_viewport(
             params
         } else {
             let params = dc.push_view_box(viewport.width, viewport.height);
-            affine.translate(viewport.x, viewport.y);
-            dc.get_cairo_context().set_matrix(affine);
+            cr.translate(viewport.x, viewport.y);
             params
         };
 

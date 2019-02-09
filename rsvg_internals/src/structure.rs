@@ -243,7 +243,6 @@ impl NodeTrait for NodeSvg {
             self.preserve_aspect_ratio.get(),
             node,
             values,
-            draw_ctx.get_cairo_context().get_matrix(),
             draw_ctx,
             clipping,
             &mut |dc| {
@@ -397,7 +396,6 @@ impl NodeTrait for NodeUse {
                     symbol.preserve_aspect_ratio.get(),
                     node,
                     values,
-                    draw_ctx.get_cairo_context().get_matrix(),
                     draw_ctx,
                     clipping,
                     &mut |dc| {
