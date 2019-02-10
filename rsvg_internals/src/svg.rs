@@ -194,6 +194,8 @@ fn load_image(
 
     if load_options.flags.keep_image_data {
         if let Some(mime_type) = data.content_type {
+            let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&data.data);
+
             extern "C" {
                 fn cairo_surface_set_mime_data(
                     surface: *mut cairo_sys::cairo_surface_t,
@@ -205,8 +207,6 @@ fn load_image(
                 ) -> Status;
             }
 
-            let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&data.data);
-
             unsafe {
                 let status = cairo_surface_set_mime_data(
                     surface.to_glib_none().0,
@@ -215,7 +215,7 @@ fn load_image(
                     data.data.len() as libc::c_ulong,
                     Some(glib_sys::g_free),
                     data_ptr as *mut _,
-                );
+                ).into();
 
                 if status != Status::Success {
                     return Err(LoadingError::Cairo(status));
