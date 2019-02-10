@@ -1,3 +1,5 @@
+use cairo_sys::cairo_surface_set_mime_data;
+use cairo::Status;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
 use glib::translate::*;
@@ -193,17 +195,6 @@ fn load_image(
 
     if load_options.flags.keep_image_data {
         if let Some(mime_type) = data.content_type {
-            extern "C" {
-                fn cairo_surface_set_mime_data(
-                    surface: *mut cairo_sys::cairo_surface_t,
-                    mime_type: *const libc::c_char,
-                    data: *mut libc::c_char,
-                    length: libc::c_ulong,
-                    destroy: cairo_sys::cairo_destroy_func_t,
-                    closure: *mut libc::c_void,
-                ) -> cairo_sys::cairo_status_t;
-            }
-
             let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&data.data);
 
             unsafe {
@@ -214,10 +205,10 @@ fn load_image(
                     data.data.len() as libc::c_ulong,
                     Some(glib_sys::g_free),
                     data_ptr as *mut _,
-                );
+                ).into();
 
-                if status != cairo_sys::STATUS_SUCCESS {
-                    return Err(LoadingError::Cairo(status.into()));
+                if status != Status::Success {
+                    return Err(LoadingError::Cairo(status));
                 }
             }
         }
