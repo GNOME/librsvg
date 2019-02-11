@@ -68,7 +68,7 @@ gtk-doc-tools git libgtk-3-dev \
 libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
 ```
 
-Additionally, as of September 2018 you need to add `gdk-pixbufl` utilities to your path, see #331 for more.
+Additionally, as of September 2018 you need to add `gdk-pixbuf` utilities to your path, see #331 for more.
 
 ```sh
 PATH="$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0"
