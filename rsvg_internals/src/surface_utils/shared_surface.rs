@@ -11,6 +11,7 @@ use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
 use rayon;
 
+use io::BinaryData;
 use rect::IRect;
 use srgb;
 use util::clamp;
@@ -167,7 +168,12 @@ impl SharedImageSurface {
         }
     }
 
-    pub fn from_pixbuf(pixbuf: &Pixbuf) -> Result<SharedImageSurface, cairo::Status> {
+    /// Creates a surface from the pixbuf, and optionally attaches the
+    /// original MIME data to the Cairo surface.
+    pub fn from_pixbuf(
+        pixbuf: &Pixbuf,
+        data: Option<BinaryData>,
+    ) -> Result<SharedImageSurface, cairo::Status> {
         assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
 
         let n_channels = pixbuf.get_n_channels();
@@ -228,6 +234,17 @@ impl SharedImageSurface {
                         surf_data.set_pixel(surf_stride, pixel, x as u32, y as u32);
                     }
                 }
+            }
+        }
+
+        if let Some(data) = data {
+            let BinaryData {
+                data: bytes,
+                content_type,
+            } = data;
+
+            if let Some(mime_type) = content_type {
+                surf.set_mime_data(&mime_type, bytes)?;
             }
         }
 

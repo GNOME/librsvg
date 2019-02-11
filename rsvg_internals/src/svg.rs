@@ -1,8 +1,5 @@
-use cairo::Status;
-use cairo_sys::cairo_surface_set_mime_data;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
-use glib::translate::*;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -191,29 +188,13 @@ fn load_image(
 
     let pixbuf = loader.get_pixbuf().ok_or(LoadingError::Unknown)?;
 
-    let surface = SharedImageSurface::from_pixbuf(&pixbuf)?;
+    let data = if load_options.flags.keep_image_data {
+        Some(data)
+    } else {
+        None
+    };
 
-    if load_options.flags.keep_image_data {
-        if let Some(mime_type) = data.content_type {
-            let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&data.data);
-
-            unsafe {
-                let status = cairo_surface_set_mime_data(
-                    surface.to_glib_none().0,
-                    mime_type.to_glib_none().0,
-                    data_ptr as *mut _,
-                    data.data.len() as libc::c_ulong,
-                    Some(glib_sys::g_free),
-                    data_ptr as *mut _,
-                )
-                .into();
-
-                if status != Status::Success {
-                    return Err(LoadingError::Cairo(status));
-                }
-            }
-        }
-    }
+    let surface = SharedImageSurface::from_pixbuf(&pixbuf, data)?;
 
     Ok(surface)
 }
