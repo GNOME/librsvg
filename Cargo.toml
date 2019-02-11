@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "rsvg_internals",
+    "librsvg",
 ]
 
 [profile.release]

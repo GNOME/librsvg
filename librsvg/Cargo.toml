@@ -1,0 +1,15 @@
+[package]
+name = "rsvg_c"
+version = "0.1.0"
+authors = ["Federico Mena Quintero <federico@gnome.org>", "Kornel Lesiński <kornel@geekhood.net>"]
+workspace = "../"
+build = "build.rs"
+
+[dependencies]
+glib-sys = "0.7.0"
+cairo-sys-rs = "0.7.0"
+gdk-pixbuf-sys = "0.7.0"
+pango-sys = "0.7.0"
+
+[build-dependencies]
+cc = "1.0.25"
