@@ -6,6 +6,7 @@ use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
 use allowed_url::Fragment;
+use aspect_ratio::AspectRatio;
 use bbox::BoundingBox;
 use clip_path::{ClipPathUnits, NodeClipPath};
 use coord_units::CoordUnits;
@@ -33,6 +34,7 @@ use surface_utils::shared_surface::SharedImageSurface;
 use svg::Svg;
 use unit_interval::UnitInterval;
 use viewbox::ViewBox;
+use viewport::ClipMode;
 
 /// Holds values that are required to normalize `Length` values to a current viewport.
 ///
@@ -222,6 +224,49 @@ impl DrawingCtx {
             view_box_width: width,
             view_box_height: height,
             view_box_stack: Some(Rc::downgrade(&self.view_box_stack)),
+        }
+    }
+
+    pub fn push_new_viewport(
+        &self,
+        vbox: Option<ViewBox>,
+        viewport: &cairo::Rectangle,
+        preserve_aspect_ratio: AspectRatio,
+        clip_mode: Option<ClipMode>,
+    ) -> Option<ViewParams> {
+        if let Some(ref clip) = clip_mode {
+            if *clip == ClipMode::ClipToViewport {
+                self.clip(viewport.x, viewport.y, viewport.width, viewport.height);
+            }
+        }
+
+        if let Some(vbox) = vbox {
+            // the preserveAspectRatio attribute is only used if viewBox is specified
+            // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
+
+            if let Some(matrix) =
+                preserve_aspect_ratio.viewport_to_viewbox_transform(Some(vbox), viewport)
+            {
+                let params = self.push_view_box(vbox.width, vbox.height);
+
+                self.cr.transform(matrix);
+
+                if let Some(ref clip) = clip_mode {
+                    if *clip == ClipMode::ClipToVbox {
+                        self.clip(vbox.x, vbox.y, vbox.width, vbox.height);
+                    }
+                }
+
+                Some(params)
+            } else {
+                // Width or height of 0 for the viewBox disables rendering of the element
+                // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
+                return None;
+            }
+        } else {
+            let params = self.push_view_box(viewport.width, viewport.height);
+            self.cr.translate(viewport.x, viewport.y);
+            Some(params)
         }
     }
 

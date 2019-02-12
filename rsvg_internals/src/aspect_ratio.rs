@@ -22,10 +22,11 @@
 
 use std::ops::Deref;
 
-use cairo;
+use cairo::{self, MatrixTrait};
 
 use cssparser::{CowRcStr, Parser};
 use error::ValueErrorKind;
+use float_eq_cairo::ApproxEqCairo;
 use parsers::Parse;
 use parsers::ParseError;
 use viewbox::ViewBox;
@@ -144,6 +145,33 @@ impl AspectRatio {
 
                 (xpos, ypos, w, h)
             }
+        }
+    }
+
+    // Computes the viewport to viewbox transformation, or returns None
+    // if the vbox has 0 width or height.
+    pub fn viewport_to_viewbox_transform(
+        &self,
+        vbox: Option<ViewBox>,
+        viewport: &cairo::Rectangle,
+    ) -> Option<cairo::Matrix> {
+        if let Some(vbox) = vbox {
+            if vbox.width.approx_eq_cairo(&0.0) || vbox.height.approx_eq_cairo(&0.0) {
+                // Width or height of 0 for the viewBox disables rendering of the element
+                // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
+                None
+            } else {
+                let (x, y, w, h) = self.compute(&vbox, viewport);
+                let mut matrix = cairo::Matrix::identity();
+                matrix.translate(x, y);
+                matrix.scale(w / vbox.width, h / vbox.height);
+                matrix.translate(-vbox.x, -vbox.y);
+                Some(matrix)
+            }
+        } else {
+            let mut matrix = cairo::Matrix::identity();
+            matrix.translate(viewport.x, viewport.y);
+            Some(matrix)
         }
     }
 }
