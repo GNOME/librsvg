@@ -5,11 +5,6 @@
 #ifndef LIBRSVG_FEATURES_H
 #define LIBRSVG_FEATURES_H
 
-#define LIBRSVG_MAJOR_VERSION (@LIBRSVG_MAJOR_VERSION@)
-#define LIBRSVG_MINOR_VERSION (@LIBRSVG_MINOR_VERSION@)
-#define LIBRSVG_MICRO_VERSION (@LIBRSVG_MICRO_VERSION@)
-#define LIBRSVG_VERSION "@PACKAGE_VERSION@"
-
 #define LIBRSVG_CHECK_VERSION(major,minor,micro) \
   (LIBRSVG_MAJOR_VERSION > (major) || \
    (LIBRSVG_MAJOR_VERSION == (major) && LIBRSVG_MINOR_VERSION > (minor)) || \
@@ -21,6 +16,8 @@
 
 #define LIBRSVG_CHECK_FEATURE(FEATURE) (defined(LIBRSVG_HAVE_##FEATURE) && LIBRSVG_HAVE_##FEATURE)
 #endif
+
+#ifndef __GTK_DOC_IGNORE__
 
 /*
  * On Windows builds, we need to decorate variables that are exposed in the public API
@@ -41,6 +38,9 @@
 #  define RSVG_VAR extern
 # endif /* !G_PLATFORM_WIN32 */
 #endif
+
+#endif /* __GTK_DOC_IGNORE__ */
+
 
 RSVG_VAR const guint librsvg_major_version;
 RSVG_VAR const guint librsvg_minor_version;
