@@ -7,6 +7,7 @@ use std::path::Path;
 
 fn main() {
     generate_phf_of_svg_attributes();
+    generate_srgb_tables();
 }
 
 /// Creates a perfect hash function (PHF) to map SVG attribute names to enum values.
@@ -195,8 +196,6 @@ fn generate_phf_of_svg_attributes() {
 
     map.build(&mut file).unwrap();
     writeln!(&mut file, ";").unwrap();
-
-    output_srgb_tables();
 }
 
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
@@ -245,7 +244,7 @@ fn print_table<W: Write>(w: &mut W, name: &str, table: &[u8]) {
     writeln!(w, "];").unwrap();
 }
 
-fn output_srgb_tables() {
+fn generate_srgb_tables() {
     let linearize_table = compute_table(linearize);
     let unlinearize_table = compute_table(unlinearize);
 
