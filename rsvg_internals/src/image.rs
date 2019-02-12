@@ -1,5 +1,5 @@
 use cairo;
-use cairo::{MatrixTrait, PatternTrait, Rectangle};
+use cairo::{PatternTrait, Rectangle};
 use std::cell::{Cell, RefCell};
 
 use allowed_url::Href;
@@ -15,6 +15,7 @@ use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
 use rect::RectangleExt;
 use viewbox::ViewBox;
+use viewport::ClipMode;
 
 pub struct NodeImage {
     aspect: Cell<AspectRatio>,
@@ -101,13 +102,15 @@ impl NodeTrait for NodeImage {
 
             let aspect = self.aspect.get();
 
-            if !values.is_overflow() && aspect.is_slice() {
-                dc.clip(x, y, w, h);
-            }
+            let clip_mode = if !values.is_overflow() && aspect.is_slice() {
+                Some(ClipMode::ClipToViewport)
+            } else {
+                None
+            };
 
-            let width = surface.width();
-            let height = surface.height();
-            if clipping || width == 0 || height == 0 {
+            let image_width = surface.width();
+            let image_height = surface.height();
+            if clipping || image_width == 0 || image_height == 0 {
                 return Ok(());
             }
 
@@ -122,45 +125,39 @@ impl NodeTrait for NodeImage {
                 },
             ));
 
-            let width = f64::from(width);
-            let height = f64::from(height);
-
-            let (x, y, w, h) = aspect.compute(
-                &ViewBox::new(0.0, 0.0, width, height),
-                &Rectangle::new(x, y, w, h),
-            );
-
             let cr = dc.get_cairo_context();
-
             cr.save();
 
-            dc.set_affine_on_cr(&cr);
-            cr.scale(w / width, h / height);
-            let x = x * width / w;
-            let y = y * height / h;
+            let image_width = f64::from(image_width);
+            let image_height = f64::from(image_height);
 
-            // We need to set extend appropriately, so can't use cr.set_source_surface().
-            //
-            // If extend is left at its default value (None), then bilinear scaling uses
-            // transparency outside of the image producing incorrect results.
-            // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
-            // opaque 100×1 image of a gradient scaled to 100×98 which ends up
-            // transparent almost everywhere without this fix (which it shouldn't).
-            let ptn = surface.to_cairo_pattern();
-            let mut matrix = cairo::Matrix::identity();
-            matrix.translate(-x, -y);
-            ptn.set_matrix(matrix);
-            ptn.set_extend(cairo::Extend::Pad);
-            cr.set_source(&ptn);
+            if let Some(_params) = dc.push_new_viewport(
+                Some(ViewBox::new(0.0, 0.0, image_width, image_height)),
+                &Rectangle::new(x, y, w, h),
+                aspect,
+                clip_mode,
+            ) {
+                dc.set_affine_on_cr(&cr);
 
-            // Clip is needed due to extend being set to pad.
-            cr.rectangle(x, y, width, height);
-            cr.clip();
+                // We need to set extend appropriately, so can't use cr.set_source_surface().
+                //
+                // If extend is left at its default value (None), then bilinear scaling uses
+                // transparency outside of the image producing incorrect results.
+                // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
+                // opaque 100×1 image of a gradient scaled to 100×98 which ends up
+                // transparent almost everywhere without this fix (which it shouldn't).
+                let ptn = surface.to_cairo_pattern();
+                ptn.set_extend(cairo::Extend::Pad);
+                cr.set_source(&ptn);
 
-            cr.paint();
+                // Clip is needed due to extend being set to pad.
+                cr.rectangle(0.0, 0.0, image_width, image_height);
+                cr.clip();
+
+                cr.paint();
+            }
 
             cr.restore();
-
             dc.insert_bbox(&bbox);
             Ok(())
         })
