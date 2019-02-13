@@ -293,7 +293,7 @@ impl Handle {
     }
 
     fn create_drawing_ctx_for_node(
-        &mut self,
+        &self,
         cr: &cairo::Context,
         dimensions: &RsvgDimensionData,
         node: Option<&RsvgNode>,
@@ -316,7 +316,7 @@ impl Handle {
         draw_ctx
     }
 
-    pub fn get_dimensions(&mut self) -> Result<RsvgDimensionData, RenderingError> {
+    pub fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
         // To prevent an infinite loop we are saving the state, and
@@ -345,10 +345,7 @@ impl Handle {
         })
     }
 
-    fn get_dimensions_sub(
-        &mut self,
-        id: Option<&str>,
-    ) -> Result<RsvgDimensionData, RenderingError> {
+    fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
         let (ink_r, _) = self.get_geometry_sub(id)?;
 
         let (w, h) = self
@@ -390,7 +387,7 @@ impl Handle {
 
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry(
-        &mut self,
+        &self,
         node: &RsvgNode,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let dimensions = self.get_dimensions()?;
@@ -417,7 +414,7 @@ impl Handle {
 
     /// Returns (ink_rect, logical_rect)
     fn get_geometry_sub(
-        &mut self,
+        &self,
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let root = self.get_root();
@@ -450,7 +447,7 @@ impl Handle {
         self.get_node_geometry(&node)
     }
 
-    fn lookup_node(&mut self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
+    fn lookup_node(&self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
 
@@ -488,7 +485,7 @@ impl Handle {
     }
 
     pub fn render_cairo_sub(
-        &mut self,
+        &self,
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
