@@ -114,6 +114,11 @@ impl<'a> CairoRenderer<'a> {
         self.dpi = Dpi::new(dpi_x, dpi_y);
     }
 
+    pub fn get_dimensions(&self) -> Result<(i32, i32), RenderingError> {
+        self.handle.0.get_dimensions()
+            .map(|dimensions| (dimensions.width, dimensions.height))
+    }
+
     pub fn render(&self, cr: &cairo::Context) -> Result<(), RenderingError> {
         self.handle.0.render_cairo_sub(cr, None)
     }
