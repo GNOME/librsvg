@@ -172,6 +172,12 @@ impl Handle {
         }
     }
 
+    pub fn new_with_flags(load_flags: LoadFlags) -> Handle {
+        let handle = Handle::new();
+        handle.load_flags.set(load_flags);
+        handle
+    }
+
     fn set_base_url(&self, url: &str) {
         if self.load_state.get() != LoadState::Start {
             rsvg_g_warning(
@@ -523,7 +529,7 @@ impl Handle {
         self.construct_read_stream_sync(&stream.upcast(), Some(file), cancellable)
     }
 
-    fn construct_read_stream_sync(
+    pub fn construct_read_stream_sync(
         &mut self,
         stream: &gio::InputStream,
         base_file: Option<&gio::File>,

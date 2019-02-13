@@ -44,6 +44,8 @@ pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use dpi::rsvg_rust_set_default_dpi_x_y;
 
+pub use error::{LoadingError, RenderingError};
+
 pub use handle::{
     rsvg_handle_rust_close,
     rsvg_handle_rust_free,
@@ -74,6 +76,9 @@ pub use handle::{
     rsvg_handle_rust_set_size_callback,
     rsvg_handle_rust_set_testing,
     rsvg_handle_rust_write,
+
+    Handle,
+    LoadFlags,
 };
 
 pub use pixbuf_utils::{
