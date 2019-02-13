@@ -1,4 +1,5 @@
 use std::ops;
+use std::sync::Once;
 use std::{f64, i32};
 
 use libc;
@@ -12,8 +13,9 @@ use glib::value::{FromValue, FromValueOptional, SetValue};
 use glib::{ParamFlags, ParamSpec, StaticType, ToValue, Type, Value};
 
 use glib_sys;
-use gobject_sys;
+use gobject_sys::{self, GEnumValue};
 
+use error::RSVG_ERROR_FAILED;
 use handle::Handle;
 
 extern "C" {
@@ -299,4 +301,37 @@ pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a Handle {
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_get_type() -> glib_sys::GType {
     Handle::get_type().to_glib()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_error_get_type() -> glib_sys::GType {
+    static ONCE: Once = Once::new();
+    static mut etype: glib_sys::GType = gobject_sys::G_TYPE_INVALID;
+
+    static values: [GEnumValue; 2] = [
+        GEnumValue {
+            value: RSVG_ERROR_FAILED,
+            value_name: b"RSVG_ERROR_FAILED\0" as *const u8 as *const i8,
+            value_nick: b"failed\0" as *const u8 as *const i8,
+        },
+        GEnumValue {
+            value: 0,
+            value_name: 0 as *const _,
+            value_nick: 0 as *const _,
+        },
+    ];
+
+    ONCE.call_once(|| {
+        etype = gobject_sys::g_enum_register_static(
+            b"RsvgError\0" as *const u8 as *const _,
+            &values as *const _,
+        );
+    });
+
+    etype
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_flags_get_type() -> glib_sys::GType {
+    unimplemented!();
 }

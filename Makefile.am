@@ -208,8 +208,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
 librsvginc_HEADERS =			\
 	$(headers)			\
-	librsvg/librsvg-features.h	\
-	librsvg/librsvg-enum-types.h
+	librsvg/librsvg-features.h
 
 dist_man_MANS = rsvg-convert.1
 

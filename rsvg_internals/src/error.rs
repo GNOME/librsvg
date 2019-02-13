@@ -324,7 +324,7 @@ pub fn is_value_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
 pub struct RsvgError;
 
 // Keep in sync with rsvg.h:RsvgError
-const RSVG_ERROR_FAILED: i32 = 0;
+pub const RSVG_ERROR_FAILED: i32 = 0;
 
 impl ErrorDomain for RsvgError {
     fn domain() -> glib::Quark {

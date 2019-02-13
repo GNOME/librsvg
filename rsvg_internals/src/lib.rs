@@ -40,6 +40,12 @@ extern crate bitflags;
 #[macro_use]
 extern crate glib;
 
+pub use c_api::{
+    rsvg_handle_rust_get_type,
+    rsvg_rust_error_get_type,
+    rsvg_rust_handle_flags_get_type,
+};
+
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use dpi::rsvg_rust_set_default_dpi_x_y;
