@@ -114,6 +114,10 @@ RUST_SRC =							\
 	rsvg_internals/src/xml2.rs				\
 	rsvg_internals/src/xml2_load.rs
 
+LIBRSVG_CRATE_SOURCES = 					\
+	librsvg_crate/Cargo.toml				\
+	librsvg_crate/src/lib.rs
+
 RUST_EXTRA = 						\
 	Cargo.lock					\
 	cargo-vendor-config				\
@@ -263,6 +267,7 @@ dist_doc_DATA =				\
 EXTRA_DIST =				\
 	$(RUST_SRC)			\
 	$(RUST_EXTRA)			\
+	$(LIBRSVG_CRATE_SOURCES)	\
 	librsvg.doap			\
 	AUTHORS				\
 	NEWS				\

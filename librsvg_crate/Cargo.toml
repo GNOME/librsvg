@@ -1,0 +1,14 @@
+[package]
+name = "librsvg"
+version = "0.0.1"
+authors = ["Federico Mena Quintero <federico@gnome.org>"]
+workspace = "../"
+
+[lib]
+name = "librsvg"
+
+[dependencies]
+cairo-rs = "0.5.0"
+gio = { version="0.5.1", features=["v2_48"] } # per configure.ac
+rsvg_internals = { path = "../rsvg_internals" }
+url = "1.7.2"
