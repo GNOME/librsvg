@@ -1,4 +1,5 @@
 #![warn(unused)]
+extern crate cairo;
 extern crate gio;
 extern crate glib;
 extern crate rsvg_internals;
@@ -9,7 +10,7 @@ use std::path::Path;
 use gio::FileExt;
 use glib::object::Cast;
 
-use rsvg_internals::{Handle, LoadFlags};
+use rsvg_internals::{Dpi, Handle, LoadFlags};
 use url::Url;
 
 pub use rsvg_internals::{LoadingError, RenderingError};
@@ -86,3 +87,34 @@ impl LoadOptions {
 }
 
 pub struct SvgHandle(Handle);
+
+pub struct CairoRenderer<'a> {
+    handle: &'a SvgHandle,
+    dpi: Dpi,
+}
+
+// Note that these are different than the C API's default, which is 90.
+const DEFAULT_DPI_X: f64 = 96.0;
+const DEFAULT_DPI_Y: f64 = 96.0;
+
+impl SvgHandle {
+    pub fn get_cairo_renderer(&self) -> CairoRenderer {
+        CairoRenderer {
+            handle: self,
+            dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
+        }
+    }
+}
+
+impl<'a> CairoRenderer<'a> {
+    pub fn set_dpi(&mut self, dpi_x: f64, dpi_y: f64) {
+        assert!(dpi_x > 0.0);
+        assert!(dpi_y > 0.0);
+
+        self.dpi = Dpi::new(dpi_x, dpi_y);
+    }
+
+    pub fn render(&self, cr: &cairo::Context) -> Result<(), RenderingError> {
+        self.handle.0.render_cairo_sub(cr, None)
+    }
+}
