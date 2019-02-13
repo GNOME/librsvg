@@ -306,29 +306,37 @@ pub unsafe extern "C" fn rsvg_handle_rust_get_type() -> glib_sys::GType {
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_error_get_type() -> glib_sys::GType {
     static ONCE: Once = Once::new();
-    static mut etype: glib_sys::GType = gobject_sys::G_TYPE_INVALID;
+    static mut ETYPE: glib_sys::GType = gobject_sys::G_TYPE_INVALID;
 
-    static values: [GEnumValue; 2] = [
-        GEnumValue {
+    // We have to store the GEnumValue in a static variable but
+    // that requires it to be Sync. It is not Sync by default
+    // because it contains pointers, so we have define a custom
+    // wrapper type here on which we can implement Sync.
+    #[repr(C)]
+    struct GEnumValueWrapper(GEnumValue);
+    unsafe impl Sync for GEnumValueWrapper {}
+
+    static VALUES: [GEnumValueWrapper; 2] = [
+        GEnumValueWrapper(GEnumValue {
             value: RSVG_ERROR_FAILED,
-            value_name: b"RSVG_ERROR_FAILED\0" as *const u8 as *const i8,
-            value_nick: b"failed\0" as *const u8 as *const i8,
-        },
-        GEnumValue {
+            value_name: b"RSVG_ERROR_FAILED\0" as *const u8 as *const _,
+            value_nick: b"failed\0" as *const u8 as *const _,
+        }),
+        GEnumValueWrapper(GEnumValue {
             value: 0,
             value_name: 0 as *const _,
             value_nick: 0 as *const _,
-        },
+        }),
     ];
 
     ONCE.call_once(|| {
-        etype = gobject_sys::g_enum_register_static(
+        ETYPE = gobject_sys::g_enum_register_static(
             b"RsvgError\0" as *const u8 as *const _,
-            &values as *const _,
+            &VALUES as *const GEnumValueWrapper as *const GEnumValue,
         );
     });
 
-    etype
+    ETYPE
 }
 
 #[no_mangle]
