@@ -180,10 +180,7 @@ impl Handle {
 
     fn set_base_url(&self, url: &str) {
         if self.load_state.get() != LoadState::Start {
-            rsvg_g_warning(
-                "Please set the base file or URI before loading any data into RsvgHandle",
-            );
-            return;
+            panic!("Please set the base file or URI before loading any data into RsvgHandle",);
         }
 
         match Url::parse(&url) {
@@ -209,7 +206,7 @@ impl Handle {
         if let Some(uri) = file.get_uri() {
             self.set_base_url(&uri);
         } else {
-            rsvg_g_warning("file has no URI; will not set the base URI");
+            panic!("file has no URI; will not set the base URI");
         }
     }
 
@@ -711,23 +708,20 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
 fn is_loaded(handle: &Handle) -> bool {
     match handle.load_state.get() {
         LoadState::Start => {
-            rsvg_g_warning("RsvgHandle has not been loaded");
-            false
+            panic!("RsvgHandle has not been loaded");
         }
 
         LoadState::Loading => {
-            rsvg_g_warning("RsvgHandle is still loading; call rsvg_handle_close() first");
-            false
+            panic!("RsvgHandle is still loading; call rsvg_handle_close() first");
         }
 
         LoadState::ClosedOk => true,
 
         LoadState::ClosedError => {
-            rsvg_g_warning(
+            panic!(
                 "RsvgHandle could not read or parse the SVG; did you check for errors during the \
                  loading stage?",
             );
-            false
         }
     }
 }
@@ -742,10 +736,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
     let rhandle = get_rust_handle(handle);
 
     if rhandle.load_state.get() != LoadState::Start {
-        rsvg_g_warning(
-            "handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",
-        );
-        return false.to_glib();
+        panic!("handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",);
     }
 
     let stream = from_glib_none(stream);
@@ -772,8 +763,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_write(
     let load_state = rhandle.load_state.get();
 
     if !(load_state == LoadState::Start || load_state == LoadState::Loading) {
-        rsvg_g_warning("handle must not be closed in order to write to it");
-        return;
+        panic!("handle must not be closed in order to write to it");
     }
 
     let buffer = slice::from_raw_parts(buf, count);
