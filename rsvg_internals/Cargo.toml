@@ -21,20 +21,20 @@ phf_codegen = "0.7.21"
 
 [dependencies]
 bitflags = "1.0"
-cairo-rs = { git="https://github.com/gtk-rs/cairo", branch="master" }
-cairo-sys-rs = { git="https://github.com/gtk-rs/cairo", branch="master" }
+cairo-rs = "0.5.0"
+cairo-sys-rs = "0.7.0"
 cssparser = "0.25.1"
 data-url = "0.1"
 downcast-rs = "^1.0.0"
 encoding = "0.2.33"
 float-cmp = "0.4.0"
-gdk-pixbuf = { git="https://github.com/gtk-rs/gdk-pixbuf", branch="master" }
-gdk-pixbuf-sys = { git="https://github.com/gtk-rs/sys", branch="master" }
-gio = { git="https://github.com/gtk-rs/gio", branch="master", features=["v2_48"] } # per configure.ac
-gio-sys = { git="https://github.com/gtk-rs/sys", branch="master" }
-glib = { git="https://github.com/gtk-rs/glib", branch="master", features=["subclassing"] }
-glib-sys = { git="https://github.com/gtk-rs/sys", branch="master" }
-gobject-sys = { git="https://github.com/gtk-rs/sys", branch="master" }
+gdk-pixbuf = "0.5.0"
+gdk-pixbuf-sys = "0.7.0"
+gio = { version="0.5.1", features=["v2_48"] } # per configure.ac
+gio-sys = "0.7.0"
+glib = { version = "0.6.0", features=["subclassing"] }
+glib-sys = "0.7.0"
+gobject-sys = "0.7.0"
 itertools = "0.7.4"
 language-tags = "0.2.2"
 lazy_static = "1.0.0"
@@ -43,9 +43,9 @@ locale_config = "*" # recommended explicitly by locale_config's README.md
 nalgebra = "0.16"
 num-traits = "0.2"
 owning_ref = "0.4.0"
-pango = { git="https://github.com/gtk-rs/pango", branch="master" }
-pango-sys = { git="https://github.com/gtk-rs/sys", branch="master" }
-pangocairo = { git="https://github.com/gtk-rs/pangocairo", branch="master" }
+pango = "0.5.0"
+pango-sys = "0.7.0"
+pangocairo = "0.6.0"
 phf = "0.7.21"
 rayon = "1"
 regex = "1"
