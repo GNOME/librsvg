@@ -20,8 +20,16 @@ use util::utf8_cstr;
 use xml::XmlState;
 use xml2::*;
 
+#[cfg(feature = "c-library")]
 extern "C" {
-    fn rsvg_sax_error_cb(data: *mut libc::c_void);
+    fn rsvg_sax_error_cb(ctx: *mut libc::c_void);
+}
+
+#[cfg(not(feature = "c-library"))]
+extern "C" fn rsvg_sax_error_cb(ctx: *mut libc::c_void) {
+    let xml = unsafe { &mut *(ctx as *mut XmlState) };
+
+    xml.error("FIXME: need to take a varargs to format libxml2's error message");
 }
 
 fn get_xml2_sax_handler() -> xmlSAXHandler {
