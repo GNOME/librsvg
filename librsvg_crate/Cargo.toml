@@ -3,6 +3,7 @@ name = "librsvg"
 version = "0.0.1"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 workspace = "../"
+build = "build.rs"
 
 [lib]
 name = "librsvg"
@@ -16,3 +17,6 @@ url = "1.7.2"
 
 [dev-dependencies]
 cairo-rs = { version = "0.5.0", features = ["png"] }
+
+[build-dependencies]
+pkg-config = "0.3.14"
