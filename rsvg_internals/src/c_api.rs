@@ -13,14 +13,10 @@ use glib::value::{FromValue, FromValueOptional, SetValue};
 use glib::{ParamFlags, ParamSpec, StaticType, ToValue, Type, Value};
 
 use glib_sys;
-use gobject_sys::{self, GEnumValue};
+use gobject_sys::{self, GEnumValue, GFlagsValue};
 
 use error::RSVG_ERROR_FAILED;
 use handle::Handle;
-
-extern "C" {
-    fn rsvg_handle_flags_get_type() -> glib_sys::GType;
-}
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -56,7 +52,7 @@ mod handle_flags {
 
     impl StaticType for HandleFlags {
         fn static_type() -> Type {
-            unsafe { from_glib(rsvg_handle_flags_get_type()) }
+            unsafe { from_glib(rsvg_rust_handle_flags_get_type()) }
         }
     }
 
@@ -312,7 +308,7 @@ pub unsafe extern "C" fn rsvg_rust_error_get_type() -> glib_sys::GType {
     // that requires it to be Sync. It is not Sync by default
     // because it contains pointers, so we have define a custom
     // wrapper type here on which we can implement Sync.
-    #[repr(C)]
+    #[repr(transparent)]
     struct GEnumValueWrapper(GEnumValue);
     unsafe impl Sync for GEnumValueWrapper {}
 
@@ -341,5 +337,46 @@ pub unsafe extern "C" fn rsvg_rust_error_get_type() -> glib_sys::GType {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_flags_get_type() -> glib_sys::GType {
-    unimplemented!();
+    static ONCE: Once = Once::new();
+    static mut FTYPE: glib_sys::GType = gobject_sys::G_TYPE_INVALID;
+
+    // We have to store the GFlagsValue in a static variable but
+    // that requires it to be Sync. It is not Sync by default
+    // because it contains pointers, so we have define a custom
+    // wrapper type here on which we can implement Sync.
+    #[repr(transparent)]
+    struct GFlagsValueWrapper(GFlagsValue);
+    unsafe impl Sync for GFlagsValueWrapper {}
+
+    static VALUES: [GFlagsValueWrapper; 4] = [
+        GFlagsValueWrapper(GFlagsValue {
+            value: 0, // handle_flags::HandleFlags::NONE.bits(),
+            value_name: b"RSVG_HANDLE_FLAGS_NONE\0" as *const u8 as *const _,
+            value_nick: b"flags-none\0" as *const u8 as *const _,
+        }),
+        GFlagsValueWrapper(GFlagsValue {
+            value: 1 << 0, // HandleFlags::UNLIMITED.to_glib(),
+            value_name: b"RSVG_HANDLE_FLAG_UNLIMITED\0" as *const u8 as *const _,
+            value_nick: b"flag-unlimited\0" as *const u8 as *const _,
+        }),
+        GFlagsValueWrapper(GFlagsValue {
+            value: 1 << 1, // HandleFlags::KEEP_IMAGE_DATA.to_glib(),
+            value_name: b"RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA\0" as *const u8 as *const _,
+            value_nick: b"flag-keep-image-data\0" as *const u8 as *const _,
+        }),
+        GFlagsValueWrapper(GFlagsValue {
+            value: 0,
+            value_name: 0 as *const _,
+            value_nick: 0 as *const _,
+        }),
+    ];
+
+    ONCE.call_once(|| {
+        FTYPE = gobject_sys::g_flags_register_static(
+            b"RsvgHandleFlags\0" as *const u8 as *const _,
+            &VALUES as *const GFlagsValueWrapper as *const GFlagsValue,
+        );
+    });
+
+    FTYPE
 }
