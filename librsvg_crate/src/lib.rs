@@ -115,7 +115,9 @@ impl<'a> CairoRenderer<'a> {
     }
 
     pub fn get_dimensions(&self) -> Result<(i32, i32), RenderingError> {
-        self.handle.0.get_dimensions()
+        self.handle
+            .0
+            .get_dimensions()
             .map(|dimensions| (dimensions.width, dimensions.height))
     }
 

@@ -31,6 +31,9 @@
 /* Implemented in rsvg_internals/src/dpi.rs */
 extern void rsvg_rust_set_default_dpi_x_y(double dpi_x, double dpi_y);
 
+/* Implemented in rsvg_internals/src/error.rs */
+extern GQuark rsvg_rust_error_quark (void);
+
 /**
  * rsvg_error_quark:
  *
@@ -41,9 +44,7 @@ extern void rsvg_rust_set_default_dpi_x_y(double dpi_x, double dpi_y);
 GQuark
 rsvg_error_quark (void)
 {
-    /* don't use from_static_string(), since librsvg might be used in a module
-       that's ultimately unloaded */
-    return g_quark_from_string ("rsvg-error-quark");
+    return rsvg_rust_error_quark ();
 }
 
 /**
