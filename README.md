@@ -128,9 +128,15 @@ Presentations on librsvg
 ------------------------
 
 "[Replacing C library code with Rust: What I learned with
-librsvg][guadec-presentation]" was presented at GUADEC 2017.  It gives
+librsvg][guadec-presentation-1]" was presented at GUADEC 2017.  It gives
 a little history of librsvg, and how/why it is being ported to Rust
 from C.
+
+"[Patterns of refactoring C to Rust: the case of
+librsvg][guadec-presentation-2]" was presented at GUADEC 2018.  It
+describes ways in which librsvg's C code was refactored to allow
+porting it to Rust.
+
 
 Maintainers
 -----------
@@ -163,4 +169,5 @@ ways:
 [d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
 [federico]: https://people.gnome.org/~federico/
 [platform]: https://developer.gnome.org/
-[guadec-presentation]: https://people.gnome.org/~federico/blog/docs/fmq-porting-c-to-rust.pdf
+[guadec-presentation-1]: https://people.gnome.org/~federico/blog/docs/fmq-porting-c-to-rust.pdf
+[guadec-presentation-2]: https://people.gnome.org/~federico/blog/docs/fmq-refactoring-c-to-rust.pdf
