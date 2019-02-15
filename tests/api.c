@@ -12,7 +12,9 @@
 #include "test-utils.h"
 
 /*
-rsvg_handle_internal_set_testing
+  Untested:
+  rsvg_handle_internal_set_testing
+  rsvg_error_get_type() and the error enum
 */
 
 static void
@@ -23,6 +25,59 @@ handle_has_gtype (void)
     handle = rsvg_handle_new();
     g_assert (G_OBJECT_TYPE (handle) == rsvg_handle_get_type ());
     g_object_unref (handle);
+}
+
+static gboolean
+flags_value_matches (GFlagsValue *v,
+                     guint value,
+                     const char *value_name,
+                     const char *value_nick)
+{
+    return (v->value == value
+            && strcmp (v->value_name, value_name) == 0
+            && strcmp (v->value_nick, value_nick) == 0);
+}
+
+static void
+flags_registration (void)
+{
+    GType ty;
+    GTypeQuery q;
+    GTypeClass *type_class;
+    GFlagsClass *flags_class;
+
+    ty = RSVG_TYPE_HANDLE_FLAGS;
+
+    g_assert (ty != G_TYPE_INVALID);
+
+    g_type_query (RSVG_TYPE_HANDLE_FLAGS, &q);
+    g_assert (q.type == ty);
+    g_assert (G_TYPE_IS_FLAGS (q.type));
+    g_assert_cmpstr (q.type_name, ==, "RsvgHandleFlags");
+
+    type_class = g_type_class_ref (ty);
+    g_assert (G_IS_FLAGS_CLASS (type_class));
+    g_assert (G_FLAGS_CLASS_TYPE (type_class) == ty);
+
+    flags_class = G_FLAGS_CLASS (type_class);
+    g_assert (flags_class->n_values == 3);
+
+    g_assert (flags_value_matches(&flags_class->values[0],
+                                  RSVG_HANDLE_FLAGS_NONE,
+                                  "RSVG_HANDLE_FLAGS_NONE",
+                                  "flags-none"));
+
+    g_assert (flags_value_matches(&flags_class->values[1],
+                                  RSVG_HANDLE_FLAG_UNLIMITED,
+                                  "RSVG_HANDLE_FLAG_UNLIMITED",
+                                  "flag-unlimited"));
+
+    g_assert (flags_value_matches(&flags_class->values[2],
+                                  RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA,
+                                  "RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA",
+                                  "flag-keep-image-data"));
+
+    g_type_class_unref (type_class);
 }
 
 static char *
@@ -218,10 +273,6 @@ auto_generated (void)
     g_type_query (RSVG_TYPE_ERROR, &q);
     g_assert (G_TYPE_IS_ENUM (q.type));
     g_assert_cmpstr (q.type_name, ==, "RsvgError");
-
-    g_type_query (RSVG_TYPE_HANDLE_FLAGS, &q);
-    g_assert (G_TYPE_IS_FLAGS (q.type));
-    g_assert_cmpstr (q.type_name, ==, "RsvgHandleFlags");
 }
 
 static void
@@ -821,6 +872,7 @@ main (int argc, char **argv)
     }
 
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
+    g_test_add_func ("/api/flags_registration", flags_registration);
     g_test_add_func ("/api/noops", noops);
     g_test_add_func ("/api/set_dpi", set_dpi);
     g_test_add_func ("/api/error_quark", error_quark);
