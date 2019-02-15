@@ -338,6 +338,10 @@ extern RsvgHandle *rsvg_handle_rust_new_from_data (const guint8 *data,
                                                    gsize data_len,
                                                    GError **error);
 
+/* Implemented in rsvg_internals/src/c_api.rs */
+extern GType rsvg_rust_error_get_type (void);
+extern GType rsvg_rust_handle_flags_get_type (void);
+
 typedef struct {
     RsvgHandleRust *rust_handle;
 } RsvgHandlePrivate;
@@ -1300,4 +1304,16 @@ rsvg_sax_error_cb (void *data, const char *msg, ...)
     rsvg_xml_state_error (xml, buf);
 
     g_free (buf);
+}
+
+GType
+rsvg_error_get_type(void)
+{
+    return rsvg_rust_error_get_type();
+}
+
+GType
+rsvg_handle_flags_get_type(void)
+{
+    return rsvg_rust_handle_flags_get_type();
 }

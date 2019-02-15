@@ -14,14 +14,7 @@ headers =			\
 	librsvg/rsvg.h		\
 	librsvg/rsvg-cairo.h
 
-enum_sources = 				\
-	librsvg/librsvg-enum-types.h	\
-	librsvg/librsvg-enum-types.c
-BUILT_SOURCES += $(enum_sources)
-
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
-	librsvg/librsvg-enum-types.c		\
-	librsvg/librsvg-enum-types.h		\
 	librsvg/librsvg-features.c 		\
 	librsvg/librsvg-features.h 		\
 	librsvg/rsvg-base.c			\
@@ -41,6 +34,7 @@ RUST_SRC =							\
 	rsvg_internals/src/aspect_ratio.rs			\
 	rsvg_internals/src/attributes.rs			\
 	rsvg_internals/src/bbox.rs				\
+	rsvg_internals/src/c_api.rs				\
 	rsvg_internals/src/clip_path.rs				\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
@@ -207,8 +201,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
 librsvginc_HEADERS =			\
 	$(headers)			\
-	librsvg/librsvg-features.h	\
-	librsvg/librsvg-enum-types.h
+	librsvg/librsvg-features.h
 
 dist_man_MANS = rsvg-convert.1
 
@@ -285,44 +278,11 @@ EXTRA_DIST =				\
 	tap-driver.sh			\
 	tap-test
 
-CLEANFILES = \
-	$(enum_sources) \
-	librsvg/s-enum-types-h librsvg/s-enum-types-c
-
 ## Put `exec' in the name because this should be installed by
 ## `install-exec', not `install-data'.
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librsvg-$(RSVG_API_VERSION).pc
-
-librsvg/librsvg-enum-types.h: librsvg/s-enum-types-h
-	@true
-
-librsvg/s-enum-types-h: $(headers) Makefile
-	$(AM_V_GEN) ( cd $(srcdir) && $(GLIB_MKENUMS) \
-			--fhead "#if !defined (__RSVG_RSVG_H_INSIDE__) && !defined (RSVG_COMPILATION)\n#warning \"Including <librsvg/librsvg-enum-types.h> directly is deprecated.\"\n#endif\n\n#ifndef __LIBRSVG_ENUM_TYPES_H__\n#define __LIBRSVG_ENUM_TYPES_H__\n\n#include <glib-object.h>\n\nG_BEGIN_DECLS\n" \
-			--fprod "/* enumerations from \"@filename@\" */\n" \
-			--vhead "GType @enum_name@_get_type (void);\n#define RSVG_TYPE_@ENUMSHORT@ (@enum_name@_get_type())\n" 	\
-			--ftail "G_END_DECLS\n\n#endif /* __LIBRSVG_ENUM_TYPES_H__ */" \
-		$(headers) ) > librsvg/tmp-librsvg-enum-types.h \
-	&& (cmp -s librsvg/tmp-librsvg-enum-types.h librsvg/librsvg-enum-types.h || cp librsvg/tmp-librsvg-enum-types.h librsvg/librsvg-enum-types.h ) \
-	&& rm -f librsvg/tmp-librsvg-enum-types.h	\
-	&& echo timestamp > $@
-
-librsvg/librsvg-enum-types.c: librsvg/s-enum-types-c librsvg/librsvg-enum-types.h
-	@true
-
-librsvg/s-enum-types-c: $(headers) Makefile
-	$(AM_V_GEN) ( cd $(srcdir) && $(GLIB_MKENUMS) \
-			--fhead "#include \"librsvg/rsvg.h\"" \
-			--fprod "\n/* enumerations from \"@filename@\" */" \
-			--vhead "GType\n@enum_name@_get_type (void)\n{\n  static GType etype = 0;\n  if (etype == 0) {\n    static const G@Type@Value values[] = {" 	\
-			--vprod "      { @VALUENAME@, \"@VALUENAME@\", \"@valuenick@\" }," \
-			--vtail "      { 0, NULL, NULL }\n    };\n    etype = g_@type@_register_static (\"@EnumName@\", values);\n  }\n  return etype;\n}\n" \
-		$(headers) ) > librsvg/tmp-librsvg-enum-types.c \
-	&& (cmp -s librsvg/tmp-librsvg-enum-types.c librsvg/librsvg-enum-types.c || cp librsvg/tmp-librsvg-enum-types.c librsvg/librsvg-enum-types.c ) \
-	&& rm -f librsvg/tmp-librsvg-enum-types.c \
-	&& echo timestamp > $@
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 
@@ -362,7 +322,7 @@ nodist_gir_DATA = $(INTROSPECTION_GIRS)
 typelibsdir = $(libdir)/girepository-1.0
 nodist_typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
 
-CLEANFILES += $(nodist_gir_DATA) $(nodist_typelibs_DATA)
+CLEANFILES = $(nodist_gir_DATA) $(nodist_typelibs_DATA)
 
 if ENABLE_VAPIGEN
 include $(VAPIGEN_MAKEFILE)
