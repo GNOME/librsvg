@@ -138,3 +138,6 @@ pub fn is_value_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
         _ => false,
     }
 }
+
+// Keep in sync with rsvg.h:RsvgError
+pub const RSVG_ERROR_FAILED: i32 = 0;

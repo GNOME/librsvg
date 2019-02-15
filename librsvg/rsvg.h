@@ -65,6 +65,9 @@ typedef enum {
 #define RSVG_ERROR (rsvg_error_quark ())
 GQuark rsvg_error_quark (void) G_GNUC_CONST;
 
+GType rsvg_error_get_type (void);
+#define RSVG_TYPE_ERROR (rsvg_error_get_type())
+
 typedef struct _RsvgHandle RsvgHandle;
 typedef struct RsvgHandlePrivate RsvgHandlePrivate;
 typedef struct _RsvgHandleClass RsvgHandleClass;
@@ -174,6 +177,9 @@ typedef enum /*< flags >*/
     RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA = 1 << 1
 } RsvgHandleFlags;
 
+GType rsvg_handle_flags_get_type (void);
+#define RSVG_TYPE_HANDLE_FLAGS (rsvg_handle_flags_get_type())
+
 RsvgHandle *rsvg_handle_new_with_flags (RsvgHandleFlags flags);
 
 void        rsvg_handle_set_base_gfile (RsvgHandle *handle,
@@ -262,7 +268,6 @@ const char *rsvg_handle_get_metadata    (RsvgHandle * handle);
 
 G_END_DECLS
 
-#include "librsvg-enum-types.h"
 #include "librsvg-features.h"
 #include "rsvg-cairo.h"
 

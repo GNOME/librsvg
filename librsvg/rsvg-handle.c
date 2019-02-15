@@ -128,6 +128,10 @@
 #include "rsvg-load.h"
 #include "rsvg-private.h"
 
+/* Implemented in rsvg_internals/src/c_api.rs */
+extern GType rsvg_rust_error_get_type (void);
+extern GType rsvg_rust_handle_flags_get_type (void);
+
 enum {
     PROP_0,
     PROP_FLAGS,
@@ -1875,4 +1879,16 @@ rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
     handle->priv->is_testing = testing ? TRUE : FALSE;
 
     rsvg_handle_update_font_map_for_testing (handle);
+}
+
+GType
+rsvg_error_get_type(void)
+{
+    return rsvg_rust_error_get_type();
+}
+
+GType
+rsvg_handle_flags_get_type(void)
+{
+    return rsvg_rust_handle_flags_get_type();
 }

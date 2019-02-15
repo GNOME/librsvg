@@ -9,6 +9,7 @@ extern crate float_cmp;
 extern crate gdk_pixbuf;
 extern crate glib;
 extern crate glib_sys;
+extern crate gobject_sys;
 extern crate itertools;
 extern crate language_tags;
 extern crate libc;
@@ -27,6 +28,11 @@ extern crate regex;
 extern crate lazy_static;
 
 extern crate downcast_rs;
+
+pub use c_api::{
+    rsvg_rust_error_get_type,
+    rsvg_rust_handle_flags_get_type,
+};
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
@@ -91,6 +97,7 @@ mod property_macros;
 mod aspect_ratio;
 mod attributes;
 mod bbox;
+mod c_api;
 mod clip_path;
 mod color;
 mod cond;
