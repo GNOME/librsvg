@@ -1,3 +1,8 @@
+Version 2.44.13
+- Updated compilation docs for Debian (Jordan Petridis)
+- Fix #415 - register RsvgHandleFlags and the RsvgError enum values in
+  a thread-safe fashion (Sebastian Dröge).
+
 Version 2.44.12
 - At build time, you can now pass $CARGO and $RUSTC environment
   variables if you need to override the default Rust toolchain.
