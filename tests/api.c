@@ -14,7 +14,6 @@
 /*
   Untested:
   rsvg_handle_internal_set_testing
-  rsvg_error_get_type() and the error enum
 */
 
 static void
@@ -76,6 +75,51 @@ flags_registration (void)
                                   RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA,
                                   "RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA",
                                   "flag-keep-image-data"));
+
+    g_type_class_unref (type_class);
+}
+
+static gboolean
+enum_value_matches (GEnumValue *v,
+                    gint value,
+                    const char *value_name,
+                    const char *value_nick)
+{
+    return (v->value == value
+            && strcmp (v->value_name, value_name) == 0
+            && strcmp (v->value_nick, value_nick) == 0);
+}
+
+static void
+error_registration (void)
+{
+    GType ty;
+    GTypeQuery q;
+    GTypeClass *type_class;
+    GEnumClass *enum_class;
+
+    g_assert_cmpint (RSVG_ERROR, !=, 0);
+
+    ty = RSVG_TYPE_ERROR;
+
+    g_assert (ty != G_TYPE_INVALID);
+
+    g_type_query (ty, &q);
+    g_assert (q.type == ty);
+    g_assert (G_TYPE_IS_ENUM (q.type));
+    g_assert_cmpstr (q.type_name, ==, "RsvgError");
+
+    type_class = g_type_class_ref (ty);
+    g_assert (G_IS_ENUM_CLASS (type_class));
+    g_assert (G_ENUM_CLASS_TYPE (type_class) == ty);
+
+    enum_class = G_ENUM_CLASS (type_class);
+    g_assert (enum_class->n_values == 1);
+
+    g_assert (enum_value_matches (&enum_class->values[0],
+                                  RSVG_ERROR_FAILED,
+                                  "RSVG_ERROR_FAILED",
+                                  "failed"));
 
     g_type_class_unref (type_class);
 }
@@ -257,22 +301,6 @@ set_dpi (void)
     g_object_unref (handle);
 
     g_free (filename);
-}
-
-static void
-error_quark (void)
-{
-    g_assert_cmpint (rsvg_error_quark(), !=, 0);
-}
-
-static void
-auto_generated (void)
-{
-    GTypeQuery q;
-
-    g_type_query (RSVG_TYPE_ERROR, &q);
-    g_assert (G_TYPE_IS_ENUM (q.type));
-    g_assert_cmpstr (q.type_name, ==, "RsvgError");
 }
 
 static void
@@ -996,10 +1024,9 @@ main (int argc, char **argv)
 
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
     g_test_add_func ("/api/flags_registration", flags_registration);
+    g_test_add_func ("/api/error_registration", error_registration);
     g_test_add_func ("/api/noops", noops);
     g_test_add_func ("/api/set_dpi", set_dpi);
-    g_test_add_func ("/api/error_quark", error_quark);
-    g_test_add_func ("/api/auto_generated", auto_generated);
     g_test_add_func ("/api/base_uri", base_uri);
     g_test_add_func ("/api/base_gfile", base_gfile);
     g_test_add_func ("/api/handle_write_close_free", handle_write_close_free);
