@@ -1,5 +1,5 @@
-use cairo_sys::cairo_surface_set_mime_data;
 use cairo::Status;
+use cairo_sys::cairo_surface_set_mime_data;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
 use glib::translate::*;
@@ -205,7 +205,8 @@ fn load_image(
                     data.data.len() as libc::c_ulong,
                     Some(glib_sys::g_free),
                     data_ptr as *mut _,
-                ).into();
+                )
+                .into();
 
                 if status != Status::Success {
                     return Err(LoadingError::Cairo(status));
