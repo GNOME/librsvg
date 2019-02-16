@@ -11,5 +11,4 @@ format_strings = true
 normalize_comments = true
 reorder_imports = true
 use_field_init_shorthand = true
-imports_indent = "Block"
 imports_layout = "HorizontalVertical"

@@ -488,46 +488,78 @@ impl NodeTrait for NodeRect {
 
             let top_x1 = x + rx;
             let top_x2 = x + w - rx;
-            let top_y  = y;
+            let top_y = y;
 
             let bottom_x1 = top_x1;
             let bottom_x2 = top_x2;
-            let bottom_y  = y + h;
+            let bottom_y = y + h;
 
-            let left_x  = x;
+            let left_x = x;
             let left_y1 = y + ry;
             let left_y2 = y + h - ry;
 
-            let right_x  = x + w;
+            let right_x = x + w;
             let right_y1 = left_y1;
             let right_y2 = left_y2;
 
-            builder.move_to (top_x1, top_y);
-            builder.line_to (top_x2, top_y);
+            builder.move_to(top_x1, top_y);
+            builder.line_to(top_x2, top_y);
 
-            builder.arc (top_x2, top_y,
-                         rx, ry, 0.0, LargeArc (false), Sweep::Positive,
-                         right_x, right_y1);
+            builder.arc(
+                top_x2,
+                top_y,
+                rx,
+                ry,
+                0.0,
+                LargeArc(false),
+                Sweep::Positive,
+                right_x,
+                right_y1,
+            );
 
-            builder.line_to (right_x, right_y2);
+            builder.line_to(right_x, right_y2);
 
-            builder.arc (right_x, right_y2,
-                         rx, ry, 0.0, LargeArc (false), Sweep::Positive,
-                         bottom_x2, bottom_y);
+            builder.arc(
+                right_x,
+                right_y2,
+                rx,
+                ry,
+                0.0,
+                LargeArc(false),
+                Sweep::Positive,
+                bottom_x2,
+                bottom_y,
+            );
 
-            builder.line_to (bottom_x1, bottom_y);
+            builder.line_to(bottom_x1, bottom_y);
 
-            builder.arc (bottom_x1, bottom_y,
-                         rx, ry, 0.0, LargeArc (false), Sweep::Positive,
-                         left_x, left_y2);
+            builder.arc(
+                bottom_x1,
+                bottom_y,
+                rx,
+                ry,
+                0.0,
+                LargeArc(false),
+                Sweep::Positive,
+                left_x,
+                left_y2,
+            );
 
-            builder.line_to (left_x, left_y1);
+            builder.line_to(left_x, left_y1);
 
-            builder.arc (left_x, left_y1,
-                         rx, ry, 0.0, LargeArc (false), Sweep::Positive,
-                         top_x1, top_y);
+            builder.arc(
+                left_x,
+                left_y1,
+                rx,
+                ry,
+                0.0,
+                LargeArc(false),
+                Sweep::Positive,
+                top_x1,
+                top_y,
+            );
 
-            builder.close_path ();
+            builder.close_path();
         }
 
         render_path_builder(&builder, draw_ctx, node, values, false, clipping)

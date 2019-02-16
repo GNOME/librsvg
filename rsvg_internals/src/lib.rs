@@ -35,10 +35,7 @@ extern crate xml as xml_rs;
 #[macro_use]
 extern crate lazy_static;
 
-pub use c_api::{
-    rsvg_rust_error_get_type,
-    rsvg_rust_handle_flags_get_type,
-};
+pub use c_api::{rsvg_rust_error_get_type, rsvg_rust_handle_flags_get_type};
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
