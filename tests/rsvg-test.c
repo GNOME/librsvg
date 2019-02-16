@@ -30,7 +30,6 @@
  *	    Carl Worth <cworth@cworth.org>
  */
 
-#include "config.h"
 
 #include <stdlib.h>
 #include <string.h>

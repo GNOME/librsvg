@@ -1,7 +1,6 @@
 /* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* vim: set ts=4 nowrap ai expandtab sw=4: */
 
-#include "config.h"
 
 #include <stdio.h>
 #include <glib.h>

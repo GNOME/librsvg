@@ -17,7 +17,6 @@
  * Simple utility to view a SVG file inside of a GtkWindow
  */
 
-#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -19,7 +19,6 @@
 
 */
 
-#include "config.h"
 #include <glib.h>
 
 #include "rsvg-tools-main.h"
