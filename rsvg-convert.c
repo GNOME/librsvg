@@ -30,7 +30,6 @@
 
 #define RSVG_DISABLE_DEPRECATION_WARNINGS
 
-#include "config.h"
 
 #include <math.h>
 #include <errno.h>

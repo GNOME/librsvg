@@ -13,6 +13,7 @@ fn main() {
     cc.define("LIBRSVG_MINOR_VERSION", Some(env::var("CARGO_PKG_VERSION_MINOR").unwrap().as_str()));
     cc.define("LIBRSVG_MICRO_VERSION", Some(env::var("CARGO_PKG_VERSION_PATCH").unwrap().as_str()));
     cc.define("LIBRSVG_VERSION", Some(format!("\"{}\"", env::var("CARGO_PKG_VERSION").unwrap()).as_str()));
+    cc.define("VERSION", Some(format!("\"{}\"", env::var("CARGO_PKG_VERSION").unwrap()).as_str()));
 
     for var_name in ["DEP_GLIB_INCLUDE", "DEP_CAIRO_INCLUDE", "DEP_PANGO_INCLUDE", "DEP_GDK_PIXBUF_INCLUDE"].iter() {
         let var = env::var_os(var_name).expect(var_name);
