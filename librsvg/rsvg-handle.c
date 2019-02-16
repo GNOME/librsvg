@@ -117,7 +117,6 @@
  * the dimensions that librsvg is able to compute from the SVG data.
  */
 
-#include "config.h"
 #define _GNU_SOURCE 1
 
 #include <string.h>
