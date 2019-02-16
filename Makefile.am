@@ -15,14 +15,6 @@ headers =			\
 	librsvg/rsvg-cairo.h
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
-	librsvg/librsvg-features.c 		\
-	librsvg/librsvg-features.h 		\
-	librsvg/rsvg-base.c			\
-	librsvg/rsvg-cairo.h			\
-	librsvg/rsvg-css.h 			\
-	librsvg/rsvg-handle.c			\
-	librsvg/rsvg-pixbuf.c			\
-	librsvg/rsvg.h				\
 	$(NULL)
 
 RUST_SRC =							\
@@ -121,7 +113,16 @@ RUST_EXTRA = 						\
 	rsvg_internals/benches/composite.rs		\
 	rsvg_internals/benches/lighting.rs		\
 	rsvg_internals/benches/pixel_iterators.rs	\
-	rsvg_internals/benches/srgb.rs
+	rsvg_internals/benches/srgb.rs \
+	librsvg/Cargo.toml				\
+	librsvg/librsvg-features.c 		\
+	librsvg/librsvg-features.h 		\
+	librsvg/rsvg-base.c			\
+	librsvg/rsvg-cairo.h			\
+	librsvg/rsvg-css.h 			\
+	librsvg/rsvg-handle.c			\
+	librsvg/rsvg-pixbuf.c			\
+	librsvg/rsvg.h
 
 if DEBUG_RELEASE
 CARGO_RELEASE_ARGS=
@@ -168,21 +169,6 @@ $(RUST_LIB): $(RUST_SRC)
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
 	$(CARGO) build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
-
-librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
-	-I$(top_srcdir) 			\
-	-I$(top_builddir) 			\
-	-I$(top_builddir)/librsvg 		\
-	-DG_LOG_DOMAIN=\"librsvg\" 		\
-	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
-	-DSRCDIR=\""${abs_top_srcdir}"\"	\
-	-DRSVG_DISABLE_DEPRECATION_WARNINGS	\
-	$(AM_CPPFLAGS)
-
-librsvg_@RSVG_API_MAJOR_VERSION@_la_CFLAGS = \
-	-DRSVG_COMPILATION	\
-	$(LIBRSVG_CFLAGS) 	\
-	$(AM_CFLAGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
 	$(BSYMBOLIC_LDFLAG) \
