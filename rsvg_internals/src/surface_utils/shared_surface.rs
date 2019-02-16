@@ -6,7 +6,7 @@ use std::ptr::NonNull;
 use cairo::prelude::SurfaceExt;
 use cairo::{self, ImageSurface};
 use cairo_sys;
-use gdk_pixbuf::{Colorspace, Pixbuf, PixbufExt};
+use gdk_pixbuf::{Colorspace, Pixbuf};
 use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
 use rayon;

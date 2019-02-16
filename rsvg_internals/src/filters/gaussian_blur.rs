@@ -3,7 +3,7 @@ use std::cmp::min;
 use std::f64;
 
 use cairo::MatrixTrait;
-use nalgebra::{DMatrix, Dynamic, MatrixVec};
+use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -182,7 +182,7 @@ fn gaussian_blur(
     } else {
         (1, kernel.len())
     };
-    let kernel = DMatrix::from_data(MatrixVec::new(
+    let kernel = DMatrix::from_data(VecStorage::new(
         Dynamic::new(rows),
         Dynamic::new(cols),
         kernel,

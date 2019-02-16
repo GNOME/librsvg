@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface, MatrixTrait};
-use nalgebra::{DMatrix, Dynamic, MatrixVec};
+use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use attributes::Attribute;
 use drawing_ctx::DrawingCtx;
@@ -193,7 +193,7 @@ impl NodeTrait for ConvolveMatrix {
                     ));
                 }
 
-                DMatrix::from_data(MatrixVec::new(
+                DMatrix::from_data(VecStorage::new(
                     Dynamic::new(self.order.get().1 as usize),
                     Dynamic::new(self.order.get().0 as usize),
                     v,
