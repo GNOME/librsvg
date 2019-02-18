@@ -80,8 +80,6 @@ pub use pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_zoom_with_max,
 };
 
-pub use xml::rsvg_xml_state_error;
-
 #[macro_use]
 mod log;
 

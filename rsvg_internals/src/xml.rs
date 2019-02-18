@@ -542,19 +542,6 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
     unreachable!();
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_xml_state_error(xml: *mut XmlState, msg: *const libc::c_char) {
-    assert!(!xml.is_null());
-    let xml = &mut *xml;
-
-    assert!(!msg.is_null());
-    // Unlike the functions that take UTF-8 validated strings from
-    // libxml2, I don't trust error messages to be validated.
-    let msg: String = from_glib_none(msg);
-
-    xml.error(&msg);
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
