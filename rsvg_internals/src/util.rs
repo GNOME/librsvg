@@ -1,6 +1,7 @@
 use libc;
 
 use std::ffi::CStr;
+use std::borrow::Cow;
 use std::str;
 
 use glib::translate::*;
@@ -15,6 +16,14 @@ pub unsafe fn utf8_cstr<'a>(s: *const libc::c_char) -> &'a str {
     assert!(!s.is_null());
 
     str::from_utf8_unchecked(CStr::from_ptr(s).to_bytes())
+}
+
+/// Error-tolerant C string import
+pub unsafe fn cstr<'a>(s: *const libc::c_char) -> Cow<'a, str> {
+    if s.is_null() {
+        return Cow::Borrowed("(null)");
+    }
+    CStr::from_ptr(s).to_string_lossy()
 }
 
 pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {

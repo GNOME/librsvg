@@ -131,9 +131,6 @@
 /* Implemented in rsvg_internals/src/xml.rs */
 typedef struct RsvgXmlState RsvgXmlState;
 
-/* Implemented in rsvg_internals/src/xml.rs */
-extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
-
 /* Implemented in rsvg_internals/src/handle.rs */
 extern double rsvg_handle_rust_get_dpi_x (RsvgHandle *raw_handle);
 extern double rsvg_handle_rust_get_dpi_y (RsvgHandle *raw_handle);
@@ -872,27 +869,6 @@ rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
     g_return_if_fail (RSVG_IS_HANDLE (handle));
 
     rsvg_handle_rust_set_testing (handle, testing);
-}
-
-/* This one is defined in the C code, because the prototype has varargs
- * and we can't handle those from Rust :(
- */
-G_GNUC_INTERNAL void rsvg_sax_error_cb (void *data, const char *msg, ...);
-
-void
-rsvg_sax_error_cb (void *data, const char *msg, ...)
-{
-    RsvgXmlState *xml = data;
-    va_list args;
-    char *buf;
-
-    va_start (args, msg);
-    g_vasprintf (&buf, msg, args);
-    va_end (args);
-
-    rsvg_xml_state_error (xml, buf);
-
-    g_free (buf);
 }
 
 GType

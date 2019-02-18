@@ -107,7 +107,7 @@ pub struct xmlSAXHandler {
     pub _private: gpointer,
     pub startElementNs: gpointer,
     pub endElementNs: gpointer,
-    pub serror: gpointer,
+    pub serror: Option<unsafe extern "C" fn(user_data: *mut libc::c_void, error: xmlErrorPtr)>,
 }
 
 pub type xmlSAXHandlerPtr = *mut xmlSAXHandler;
