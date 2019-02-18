@@ -92,8 +92,17 @@ impl LoadOptions {
     ) -> Result<SvgHandle, LoadingError> {
         let stream = file.read(None)?;
 
+        self.read_stream(&stream.upcast(), Some(&file), cancellable.into())
+    }
+
+    pub fn read_stream<'a, P: Into<Option<&'a Cancellable>>>(
+        self,
+        stream: &gio::InputStream,
+        base_file: Option<&gio::File>,
+        cancellable: P,
+    ) -> Result<SvgHandle, LoadingError> {
         let mut handle = Handle::new_with_flags(self.load_flags());
-        handle.construct_read_stream_sync(&stream.upcast(), Some(&file), cancellable.into())?;
+        handle.construct_read_stream_sync(stream, base_file, cancellable.into())?;
 
         Ok(SvgHandle(handle))
     }
