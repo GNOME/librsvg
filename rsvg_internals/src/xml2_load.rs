@@ -3,6 +3,7 @@
 
 use gio;
 use gio::prelude::*;
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::mem;
 use std::ptr;
@@ -16,13 +17,10 @@ use error::LoadingError;
 use handle::LoadFlags;
 use io::get_input_stream_for_loading;
 use property_bag::PropertyBag;
+use util::cstr;
 use util::utf8_cstr;
 use xml::XmlState;
 use xml2::*;
-
-extern "C" {
-    fn rsvg_sax_error_cb(data: *mut libc::c_void);
-}
 
 fn get_xml2_sax_handler() -> xmlSAXHandler {
     let mut h: xmlSAXHandler = unsafe { mem::zeroed() };
@@ -36,12 +34,40 @@ fn get_xml2_sax_handler() -> xmlSAXHandler {
     h.startElement = Some(sax_start_element_cb);
     h.endElement = Some(sax_end_element_cb);
     h.processingInstruction = Some(sax_processing_instruction_cb);
-
-    // This one is defined in the C code, because the prototype has varargs
-    // and we can't handle those from Rust :(
-    h.error = rsvg_sax_error_cb as *mut _;
+    h.serror = Some(rsvg_sax_serror_cb);
 
     h
+}
+
+unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xmlErrorPtr) {
+    let state = (user_data as *mut XmlState).as_mut().unwrap();
+    let error = error.as_ref().unwrap();
+
+    let level_name = match error.level {
+        1 => "warning",
+        2 => "error",
+        3 => "fatal error",
+        _ => "unknown error",
+    };
+
+    // "int2" is the column number
+    let column = if error.int2 > 0 {
+        Cow::Owned(format!(":{}", error.int2))
+    } else {
+        Cow::Borrowed("")
+    };
+
+    let full_error_message = format!(
+        "{} code={} ({}) in {}:{}{}: {}",
+        level_name,
+        error.code,
+        error.domain,
+        cstr(error.file),
+        error.line,
+        column,
+        cstr(error.message)
+    );
+    state.error(&full_error_message);
 }
 
 fn free_xml_parser_and_doc(parser: xmlParserCtxtPtr) {
