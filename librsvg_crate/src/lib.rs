@@ -8,7 +8,7 @@ extern crate url;
 use std::io::Read;
 use std::path::Path;
 
-use gio::FileExt;
+use gio::{Cancellable, FileExt};
 use glib::object::Cast;
 
 use rsvg_internals::{Dpi, Handle, LoadFlags};
@@ -77,18 +77,25 @@ impl LoadOptions {
 
     pub fn read_path<P: AsRef<Path>>(self, path: P) -> Result<SvgHandle, LoadingError> {
         let file = gio::File::new_for_path(path);
-
-        let stream = file.read(None)?;
-
-        let mut handle = Handle::new_with_flags(self.load_flags());
-        handle.construct_read_stream_sync(&stream.upcast(), Some(&file), None)?;
-
-        Ok(SvgHandle(handle))
+        self.read_file(&file, None)
     }
 
     pub fn read(self, _r: &dyn Read, _base_url: Option<&Url>) -> Result<SvgHandle, LoadingError> {
         // This requires wrapping a Read with a GInputStream
         unimplemented!();
+    }
+
+    pub fn read_file<'a, P: Into<Option<&'a Cancellable>>>(
+        self,
+        file: &gio::File,
+        cancellable: P,
+    ) -> Result<SvgHandle, LoadingError> {
+        let stream = file.read(None)?;
+
+        let mut handle = Handle::new_with_flags(self.load_flags());
+        handle.construct_read_stream_sync(&stream.upcast(), Some(&file), cancellable.into())?;
+
+        Ok(SvgHandle(handle))
     }
 }
 
