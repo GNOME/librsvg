@@ -157,4 +157,12 @@ impl<'a> CairoRenderer<'a> {
     pub fn render(&self, cr: &cairo::Context) -> Result<(), RenderingError> {
         self.handle.0.render_cairo_sub(cr, None)
     }
+
+    pub fn render_element(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+    ) -> Result<(), RenderingError> {
+        self.handle.0.render_cairo_sub(cr, id)
+    }
 }
