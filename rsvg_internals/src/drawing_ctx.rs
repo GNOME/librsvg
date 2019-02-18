@@ -905,6 +905,17 @@ impl From<cairo::Rectangle> for RsvgRectangle {
     }
 }
 
+impl From<RsvgRectangle> for cairo::Rectangle {
+    fn from(r: RsvgRectangle) -> cairo::Rectangle {
+        cairo::Rectangle {
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+        }
+    }
+}
+
 pub struct AcquiredNode(Rc<RefCell<Vec<RsvgNode>>>, RsvgNode);
 
 impl Drop for AcquiredNode {

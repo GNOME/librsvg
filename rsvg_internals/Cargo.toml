@@ -77,3 +77,7 @@ harness = false
 [[bench]]
 name = "srgb"
 harness = false
+
+[features]
+# Enables calling g_warning() when built as part of librsvg.so
+c-library = []

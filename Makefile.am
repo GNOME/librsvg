@@ -114,6 +114,10 @@ RUST_SRC =							\
 	rsvg_internals/src/xml2.rs				\
 	rsvg_internals/src/xml2_load.rs
 
+LIBRSVG_CRATE_SOURCES = 					\
+	librsvg_crate/Cargo.toml				\
+	librsvg_crate/src/lib.rs
+
 RUST_EXTRA = 						\
 	Cargo.lock					\
 	cargo-vendor-config				\
@@ -167,7 +171,7 @@ $(RUST_LIB): $(RUST_SRC)
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
-	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --features "c-library"
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
@@ -263,6 +267,7 @@ dist_doc_DATA =				\
 EXTRA_DIST =				\
 	$(RUST_SRC)			\
 	$(RUST_EXTRA)			\
+	$(LIBRSVG_CRATE_SOURCES)	\
 	librsvg.doap			\
 	AUTHORS				\
 	NEWS				\
