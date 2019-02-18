@@ -143,6 +143,17 @@ impl<'a> CairoRenderer<'a> {
             .map(|dimensions| (dimensions.width, dimensions.height))
     }
 
+    /// Returns (ink_rect, logical_rect)
+    pub fn get_geometry_for_element(
+        &self,
+        id: Option<&str>,
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+        self.handle
+            .0
+            .get_geometry_sub(id)
+            .map(|(i, l)| (i.into(), l.into()))
+    }
+
     pub fn render(&self, cr: &cairo::Context) -> Result<(), RenderingError> {
         self.handle.0.render_cairo_sub(cr, None)
     }

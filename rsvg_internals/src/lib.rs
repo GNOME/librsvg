@@ -44,6 +44,8 @@ pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use dpi::{rsvg_rust_set_default_dpi_x_y, Dpi};
 
+pub use drawing_ctx::RsvgRectangle;
+
 pub use error::{rsvg_rust_error_quark, LoadingError, RenderingError};
 
 pub use handle::{
