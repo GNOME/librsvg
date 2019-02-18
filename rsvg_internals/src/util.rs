@@ -1,7 +1,7 @@
 use libc;
 
-use std::ffi::CStr;
 use std::borrow::Cow;
+use std::ffi::CStr;
 use std::str;
 
 use glib::translate::*;

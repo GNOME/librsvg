@@ -3,13 +3,13 @@
 
 use gio;
 use gio::prelude::*;
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::mem;
 use std::ptr;
 use std::rc::Rc;
 use std::slice;
 use std::str;
-use std::borrow::Cow;
 
 use glib::translate::*;
 
@@ -17,8 +17,8 @@ use error::LoadingError;
 use handle::LoadFlags;
 use io::get_input_stream_for_loading;
 use property_bag::PropertyBag;
-use util::utf8_cstr;
 use util::cstr;
+use util::utf8_cstr;
 use xml::XmlState;
 use xml2::*;
 
@@ -57,8 +57,16 @@ unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xml
         Cow::Borrowed("")
     };
 
-    let full_error_message = format!("{} code={} ({}) in {}:{}{}: {}", level_name, error.code, error.domain,
-        cstr(error.file), error.line, column, cstr(error.message));
+    let full_error_message = format!(
+        "{} code={} ({}) in {}:{}{}: {}",
+        level_name,
+        error.code,
+        error.domain,
+        cstr(error.file),
+        error.line,
+        column,
+        cstr(error.message)
+    );
     state.error(&full_error_message);
 }
 
