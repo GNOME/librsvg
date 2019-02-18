@@ -41,7 +41,6 @@ pub use rsvg_internals::{LoadingError, RenderingError};
 pub struct LoadOptions {
     unlimited_size: bool,
     keep_image_data: bool,
-    base_url: Option<Url>,
 }
 
 impl LoadOptions {
@@ -49,13 +48,7 @@ impl LoadOptions {
         LoadOptions {
             unlimited_size: false,
             keep_image_data: false,
-            base_url: None,
         }
-    }
-
-    pub fn base_url(mut self, url: Option<&Url>) -> Self {
-        self.base_url = url.map(|u| u.clone());
-        self
     }
 
     pub fn unlimited_size(mut self, unlimited: bool) -> Self {
