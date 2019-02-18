@@ -1,6 +1,5 @@
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
-use glib::translate::*;
 use libc;
 use std::collections::HashMap;
 use std::rc::Rc;
