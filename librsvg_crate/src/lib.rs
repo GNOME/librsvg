@@ -1,3 +1,91 @@
+//! Load and render SVG images into Cairo surfaces.
+//!
+//! This crate can load SVG images and render them to Cairo surfaces,
+//! using a mixture of SVG's [static mode] and [secure static mode].
+//! Librsvg does not do animation nor scripting, and can load
+//! references to external data only in some situations; see below.
+//!
+//! Librsvg supports reading [SVG 1.1] data, and is gradually adding
+//! support for features in [SVG 2].  Librsvg also supports SVGZ
+//! files, which are just an SVG stream compressed with the GZIP
+//! algorithm.
+//!
+//! # Basic usage
+//!
+//! * Create a [`LoadOptions`] struct.
+//! * Get an [`SvgHandle`] from the [`LoadOptions`].
+//! * Get a [`CairoRenderer`] from the [`SvgHandle`] and render to a Cairo context.
+//!
+//! [`LoadOptions`]: struct.LoadOptions.html
+//! [`SvgHandle`]: struct.SvgHandle.html
+//! [`CairoRenderer`]: struct.CairoRenderer.html
+//!
+//! # The "base file" and resolving references to external files
+//!
+//! When you load an SVG, librsvg needs to know the location of the "base file"
+//! for it.  This is so that librsvg can determine the location of referenced
+//! entities.  For example, say you have an SVG in <filename>/foo/bar/foo.svg</filename>
+//! and that it has an image element like this:
+//!
+//! ```ignore
+//! <image href="resources/foo.png" .../>
+//! ```
+//!
+//! In this case, librsvg needs to know the location of the toplevel
+//! `/foo/bar/foo.svg` so that it can generate the appropriate
+//! reference to `/foo/bar/resources/foo.png`.
+//!
+//! ## Security and locations of referenced files
+//!
+//! When processing an SVG, librsvg will only load referenced files if
+//! they are in the same directory as the base file, or in a
+//! subdirectory of it.  That is, if the base file is
+//! `/foo/bar/baz.svg`, then librsvg will only try to load referenced
+//! files (from SVG's `<image>` element, for example, or from content
+//! included through XML entities) if those files are in `/foo/bar/*`
+//! or in `/foo/bar/*/.../*`.  This is so that malicious SVG files
+//! cannot include files that are in a directory above.
+//!
+//! The full set of rules for deciding which URLs may be loaded is as follows;
+//! they are applied in order.  A referenced URL will not be loaded as soon as
+//! one of these rules fails:
+//!
+//! 1. All `data:` URLs may be loaded.  These are sometimes used to
+//! include raster image data, encoded as base-64, directly in an SVG
+//! file.
+//!
+//! 2. All other URL schemes in references require a base URL.  For
+//! example, this means that if you load an SVG with
+//! [`LoadOptions.read`](struct.LoadOptions.html#method.read) without
+//! providing a `base_url`, then any referenced files will not be
+//! allowed (e.g. raster images to be loaded from other files will not
+//! work).
+//!
+//! 3. If referenced URLs are absolute, rather than relative, then
+//! they must have the same scheme as the base URL.  For example, if
+//! the base URL has a "`file`" scheme, then all URL references inside
+//! the SVG must also have the "`file`" scheme, or be relative
+//! references which will be resolved against the base URL.
+//!
+//! 4. If referenced URLs have a "`resource`" scheme, that is, if they
+//! are included into your binary program with GLib's resource
+//! mechanism, they are allowed to be loaded (provided that the base
+//! URL is also a "`resource`", per the previous rule).
+//!
+//! 5. Otherwise, non-`file` schemes are not allowed.  For example,
+//! librsvg will not load `http` resources, to keep malicious SVG data
+//! from "phoning home".
+//!
+//! 6. A relative URL must resolve to the same directory as the base
+//! URL, or to one of its subdirectories.  Librsvg will canonicalize
+//! filenames, by removing "`..`" path components and resolving symbolic
+//! links, to decide whether files meet these conditions.
+//!
+//! [static mode]: https://www.w3.org/TR/SVG2/conform.html#static-mode
+//! [secure static mode]: https://www.w3.org/TR/SVG2/conform.html#secure-static-mode
+//! [SVG 1.1]: https://www.w3.org/TR/SVG11/
+//! [SVG 2]: https://www.w3.org/TR/SVG2/
+
 #![warn(unused)]
 extern crate cairo;
 extern crate gio;
