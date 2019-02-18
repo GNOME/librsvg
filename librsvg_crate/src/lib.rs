@@ -5,6 +5,7 @@ extern crate glib;
 extern crate rsvg_internals;
 extern crate url;
 
+use std::io::Read;
 use std::path::Path;
 
 use gio::FileExt;
@@ -83,6 +84,11 @@ impl LoadOptions {
         handle.construct_read_stream_sync(&stream.upcast(), Some(&file), None)?;
 
         Ok(SvgHandle(handle))
+    }
+
+    pub fn read(self, _r: &dyn Read, _base_url: Option<&Url>) -> Result<SvgHandle, LoadingError> {
+        // This requires wrapping a Read with a GInputStream
+        unimplemented!();
     }
 }
 
