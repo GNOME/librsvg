@@ -99,7 +99,7 @@ impl NodeTrait for NodeSwitch {
 }
 
 /// Intrinsic dimensions of an SVG document fragment
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IntrinsicDimensions {
     pub width: Option<LengthHorizontal>,
     pub height: Option<LengthVertical>,
