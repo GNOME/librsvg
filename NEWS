@@ -5,8 +5,17 @@ Version 2.45.5
 - At build time, you can now pass $CARGO and $RUSTC environment
   variables if you need to override the default Rust toolchain.
   Please see COMPILING.md for details.  (Tobias Kortkamp)
-- Fix #405 - In the gdk-pixbuf loader, don't crash the write()
+- Fix #405 - In the gdk-pixbuf loader, don't crash if the write()
   function doesn't receive a GError.
+- Fix #268 - Remove the comp-op property; it's not in SVG 1.1 nor SVG 2.
+- Fix #415 - register RsvgHandleFlags and the RsvgError enum values in
+  a thread-safe fashion (Sebastian Dröge).
+- All of the library's non-GObject functionality is implemented in
+  Rust now.
+- Update the cairo crate (Kornel Lesiński).
+- Clean up the loading code paths (Paolo Borelli).
+- Updated compilation docs for Debian (Jordan Petridis)
+- Updated parts of the reference documentation.
 
 Version 2.45.4
 - Brown paper bag release, my apologies.

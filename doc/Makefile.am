@@ -58,8 +58,7 @@ HFILE_GLOB = \
 	$(top_builddir)/librsvg/*.h
 
 CFILE_GLOB = \
-	$(top_srcdir)/librsvg/*.c \
-	$(top_builddir)/librsvg/*.c
+	$(top_srcdir)/librsvg/*.c
 
 # Extra header to include when scanning, which are not under DOC_SOURCE_DIR
 # e.g. EXTRA_HFILES=$(top_srcdir}/contrib/extra.h

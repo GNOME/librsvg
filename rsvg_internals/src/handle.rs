@@ -173,12 +173,15 @@ impl Handle {
         }
     }
 
+    pub fn new_with_flags(load_flags: LoadFlags) -> Handle {
+        let handle = Handle::new();
+        handle.load_flags.set(load_flags);
+        handle
+    }
+
     fn set_base_url(&self, url: &str) {
         if self.load_state.get() != LoadState::Start {
-            rsvg_g_warning(
-                "Please set the base file or URI before loading any data into RsvgHandle",
-            );
-            return;
+            panic!("Please set the base file or URI before loading any data into RsvgHandle",);
         }
 
         match Url::parse(&url) {
@@ -204,7 +207,7 @@ impl Handle {
         if let Some(uri) = file.get_uri() {
             self.set_base_url(&uri);
         } else {
-            rsvg_g_warning("file has no URI; will not set the base URI");
+            panic!("file has no URI; will not set the base URI");
         }
     }
 
@@ -288,7 +291,7 @@ impl Handle {
     }
 
     fn create_drawing_ctx_for_node(
-        &mut self,
+        &self,
         cr: &cairo::Context,
         dimensions: &RsvgDimensionData,
         node: Option<&RsvgNode>,
@@ -311,7 +314,7 @@ impl Handle {
         draw_ctx
     }
 
-    pub fn get_dimensions(&mut self) -> Result<RsvgDimensionData, RenderingError> {
+    pub fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
         // To prevent an infinite loop we are saving the state, and
@@ -340,10 +343,7 @@ impl Handle {
         })
     }
 
-    fn get_dimensions_sub(
-        &mut self,
-        id: Option<&str>,
-    ) -> Result<RsvgDimensionData, RenderingError> {
+    fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
         let (ink_r, _) = self.get_geometry_sub(id)?;
 
         let (w, h) = self
@@ -385,7 +385,7 @@ impl Handle {
 
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry(
-        &mut self,
+        &self,
         node: &RsvgNode,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let dimensions = self.get_dimensions()?;
@@ -411,8 +411,8 @@ impl Handle {
     }
 
     /// Returns (ink_rect, logical_rect)
-    fn get_geometry_sub(
-        &mut self,
+    pub fn get_geometry_sub(
+        &self,
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let root = self.get_root();
@@ -445,7 +445,7 @@ impl Handle {
         self.get_node_geometry(&node)
     }
 
-    fn lookup_node(&mut self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
+    fn lookup_node(&self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
 
@@ -483,7 +483,7 @@ impl Handle {
     }
 
     pub fn render_cairo_sub(
-        &mut self,
+        &self,
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
@@ -524,7 +524,7 @@ impl Handle {
         self.construct_read_stream_sync(&stream.upcast(), Some(file), cancellable)
     }
 
-    fn construct_read_stream_sync(
+    pub fn construct_read_stream_sync(
         &mut self,
         stream: &gio::InputStream,
         base_file: Option<&gio::File>,
@@ -716,23 +716,20 @@ pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
 fn is_loaded(handle: &Handle) -> bool {
     match handle.load_state.get() {
         LoadState::Start => {
-            rsvg_g_warning("RsvgHandle has not been loaded");
-            false
+            panic!("RsvgHandle has not been loaded");
         }
 
         LoadState::Loading => {
-            rsvg_g_warning("RsvgHandle is still loading; call rsvg_handle_close() first");
-            false
+            panic!("RsvgHandle is still loading; call rsvg_handle_close() first");
         }
 
         LoadState::ClosedOk => true,
 
         LoadState::ClosedError => {
-            rsvg_g_warning(
+            panic!(
                 "RsvgHandle could not read or parse the SVG; did you check for errors during the \
                  loading stage?",
             );
-            false
         }
     }
 }
@@ -747,10 +744,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
     let rhandle = get_rust_handle(handle);
 
     if rhandle.load_state.get() != LoadState::Start {
-        rsvg_g_warning(
-            "handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",
-        );
-        return false.to_glib();
+        panic!("handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",);
     }
 
     let stream = from_glib_none(stream);
@@ -777,8 +771,7 @@ pub unsafe extern "C" fn rsvg_handle_rust_write(
     let load_state = rhandle.load_state.get();
 
     if !(load_state == LoadState::Start || load_state == LoadState::Loading) {
-        rsvg_g_warning("handle must not be closed in order to write to it");
-        return;
+        panic!("handle must not be closed in order to write to it");
     }
 
     let buffer = slice::from_raw_parts(buf, count);

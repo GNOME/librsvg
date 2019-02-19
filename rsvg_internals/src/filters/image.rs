@@ -15,7 +15,6 @@ use rect::{IRect, RectangleExt};
 use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use viewbox::ViewBox;
 
-use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, Primitive};
 
@@ -105,8 +104,9 @@ impl Image {
     fn render_external_image(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &mut DrawingCtx,
-        bounds_builder: BoundsBuilder<'_>,
+        draw_ctx: &DrawingCtx,
+        bounds: &IRect,
+        unclipped_bounds: &IRect,
         href: &Href,
     ) -> Result<ImageSurface, FilterError> {
         let surface = if let Href::PlainUrl(ref url) = *href {
@@ -125,7 +125,6 @@ impl Image {
         )?;
 
         // TODO: this goes through a f64->i32->f64 conversion.
-        let render_bounds = bounds_builder.into_irect_without_clipping(draw_ctx);
         let aspect = self.aspect.get();
         let (x, y, w, h) = aspect.compute(
             &ViewBox::new(
@@ -135,10 +134,10 @@ impl Image {
                 f64::from(surface.height()),
             ),
             &Rectangle::new(
-                f64::from(render_bounds.x0),
-                f64::from(render_bounds.y0),
-                f64::from(render_bounds.x1 - render_bounds.x0),
-                f64::from(render_bounds.y1 - render_bounds.y0),
+                f64::from(unclipped_bounds.x0),
+                f64::from(unclipped_bounds.y0),
+                f64::from(unclipped_bounds.x1 - unclipped_bounds.x0),
+                f64::from(unclipped_bounds.y1 - unclipped_bounds.y0),
             ),
         );
 
@@ -158,7 +157,6 @@ impl Image {
         matrix.invert();
         ptn.set_matrix(matrix);
 
-        let bounds = bounds_builder.into_irect(draw_ctx);
         let cr = cairo::Context::new(&output_surface);
         cr.rectangle(
             f64::from(bounds.x0),
@@ -215,7 +213,8 @@ impl Filter for Image {
         if let Some(href) = href_opt {
             let output_surface = match *href {
                 Href::PlainUrl(_) => {
-                    self.render_external_image(ctx, draw_ctx, bounds_builder, href)?
+                    let unclipped_bounds = bounds_builder.into_irect_without_clipping(draw_ctx);
+                    self.render_external_image(ctx, draw_ctx, &bounds, &unclipped_bounds, href)?
                 }
                 Href::WithFragment(ref frag) => self.render_node(ctx, draw_ctx, bounds, frag)?,
             };

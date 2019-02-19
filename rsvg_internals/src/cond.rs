@@ -4,7 +4,6 @@ use std::ascii::AsciiExt;
 use std::str::FromStr;
 
 use glib;
-use itertools::{FoldWhile, Itertools};
 use language_tags::LanguageTag;
 use locale_config::{LanguageRange, Locale};
 
@@ -89,28 +88,26 @@ impl SystemLanguage {
     pub fn from_attribute(s: &str, locale: &Locale) -> Result<SystemLanguage, ValueErrorKind> {
         s.split(',')
             .map(LanguageTag::from_str)
-            .fold_while(
+            .try_fold(
                 // start with no match
-                Ok(SystemLanguage(false)),
+                SystemLanguage(false),
                 // The accumulator is Result<SystemLanguage, ValueErrorKind>
                 |acc, tag_result| match tag_result {
                     Ok(language_tag) => {
-                        let have_match = acc.unwrap().0;
+                        let have_match = acc.0;
                         if have_match {
-                            FoldWhile::Continue(Ok(SystemLanguage(have_match)))
+                            Ok(SystemLanguage(have_match))
                         } else {
                             locale_accepts_language_tag(locale, &language_tag)
-                                .map(|matches| FoldWhile::Continue(Ok(SystemLanguage(matches))))
-                                .unwrap_or_else(|e| FoldWhile::Done(Err(e)))
+                                .map(|matches| SystemLanguage(matches))
                         }
                     }
 
-                    Err(e) => FoldWhile::Done(Err(ValueErrorKind::Parse(ParseError::new(
+                    Err(e) => Err(ValueErrorKind::Parse(ParseError::new(
                         &format!("invalid language tag: \"{}\"", e),
-                    )))),
+                    ))),
                 },
             )
-            .into_inner()
     }
 }
 

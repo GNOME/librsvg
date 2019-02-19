@@ -35,9 +35,15 @@ extern crate xml as xml_rs;
 #[macro_use]
 extern crate lazy_static;
 
+pub use c_api::{rsvg_rust_error_get_type, rsvg_rust_handle_flags_get_type};
+
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
-pub use dpi::rsvg_rust_set_default_dpi_x_y;
+pub use dpi::{rsvg_rust_set_default_dpi_x_y, Dpi};
+
+pub use drawing_ctx::RsvgRectangle;
+
+pub use error::{rsvg_rust_error_quark, LoadingError, RenderingError};
 
 pub use handle::{
     rsvg_handle_rust_close,
@@ -70,6 +76,9 @@ pub use handle::{
     rsvg_handle_rust_set_size_callback,
     rsvg_handle_rust_set_testing,
     rsvg_handle_rust_write,
+
+    Handle,
+    LoadFlags,
 };
 
 pub use pixbuf_utils::{
@@ -78,8 +87,6 @@ pub use pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_zoom,
     rsvg_rust_pixbuf_from_file_at_zoom_with_max,
 };
-
-pub use xml::rsvg_xml_state_error;
 
 #[macro_use]
 mod log;
@@ -98,6 +105,7 @@ mod angle;
 mod aspect_ratio;
 mod attributes;
 mod bbox;
+mod c_api;
 mod clip_path;
 mod color;
 mod cond;

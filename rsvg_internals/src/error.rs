@@ -277,10 +277,6 @@ impl From<glib::Error> for LoadingError {
     }
 }
 
-extern "C" {
-    fn rsvg_error_quark() -> glib_sys::GQuark;
-}
-
 pub fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) {
     unsafe {
         // this is RSVG_ERROR_FAILED, the only error code available in RsvgError
@@ -288,7 +284,7 @@ pub fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) {
 
         glib_sys::g_set_error_literal(
             err,
-            rsvg_error_quark(),
+            rsvg_rust_error_quark(),
             code as libc::c_int,
             msg.to_glib_none().0,
         );
@@ -321,11 +317,11 @@ pub fn is_value_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
 pub struct RsvgError;
 
 // Keep in sync with rsvg.h:RsvgError
-const RSVG_ERROR_FAILED: i32 = 0;
+pub const RSVG_ERROR_FAILED: i32 = 0;
 
 impl ErrorDomain for RsvgError {
     fn domain() -> glib::Quark {
-        from_glib(unsafe { rsvg_error_quark() })
+        glib::Quark::from_string("rsvg-error-quark")
     }
 
     fn code(self) -> i32 {
@@ -338,4 +334,9 @@ impl ErrorDomain for RsvgError {
             _ => Some(RsvgError),
         }
     }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_rust_error_quark() -> glib_sys::GQuark {
+    RsvgError::domain().to_glib()
 }

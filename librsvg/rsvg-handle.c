@@ -30,11 +30,16 @@
  * RsvgHandle from an SVG file, or from a memory buffer that contains SVG data,
  * or in the most general form, from a #GInputStream that will provide SVG data.
  *
+ * Librsvg can load SVG images and render them to Cairo surfaces,
+ * using a mixture of SVG's [static mode] and [secure static mode].
+ * Librsvg does not do animation nor scripting, and can load
+ * references to external data only in some situations; see below.
+ *
  * Librsvg supports reading <link
  * href="https://www.w3.org/TR/SVG11/">SVG 1.1</link> data, and is
  * gradually adding support for features in <link
  * href="https://www.w3.org/TR/SVG2/">SVG 2</link>.  Librsvg also supports
- * SVGZ files, which is just an SVG stream compressed with the GZIP algorithm.
+ * SVGZ files, which are just an SVG stream compressed with the GZIP algorithm.
  *
  * # The "base file" and resolving references to external files
  *
@@ -56,11 +61,12 @@
  * When processing an SVG, librsvg will only load referenced files if they are
  * in the same directory as the base file, or in a subdirectory of it.  That is,
  * if the base file is <filename>/foo/bar/baz.svg</filename>, then librsvg will
- * only try to load referenced files (from SVG's "image" element, for example,
- * or from content included through XML entities) if those files are in
- * <filename>/foo/bar/<!-- -->*</filename> or in
- * <filename>/foo/bar/<!-- -->*<!-- -->/.../<!-- -->*</filename>.  This is so that malicious
- * SVG files cannot include files that are in a directory above.
+ * only try to load referenced files (from SVG's
+ * <literal>&lt;image&gt;</literal> element, for example, or from content
+ * included through XML entities) if those files are in <filename>/foo/bar/<!--
+ * -->*</filename> or in <filename>/foo/bar/<!-- -->*<!-- -->/.../<!--
+ * -->*</filename>.  This is so that malicious SVG files cannot include files
+ * that are in a directory above.
  *
  * The full set of rules for deciding which URLs may be loaded is as follows;
  * they are applied in order.  A referenced URL will not be loaded as soon as
@@ -81,7 +87,7 @@
  *   </listitem>
  *
  *   <listitem>
- *     If referenced URLs are absolute, rathen than relative, then they must
+ *     If referenced URLs are absolute, rather than relative, then they must
  *     have the same scheme as the base URL.  For example, if the base URL has a
  *     "<literal>file</literal>" scheme, then all URL references inside the SVG must
  *     also have the "<literal>file</literal>" scheme, or be relative references which
@@ -275,9 +281,6 @@ typedef struct RsvgHandleRust RsvgHandleRust;
 /* Implemented in rsvg_internals/src/xml.rs */
 typedef struct RsvgXmlState RsvgXmlState;
 
-/* Implemented in rsvg_internals/src/xml.rs */
-extern void rsvg_xml_state_error(RsvgXmlState *xml, const char *msg);
-
 G_GNUC_INTERNAL
 RsvgHandleRust *rsvg_handle_get_rust (RsvgHandle *handle);
 
@@ -344,6 +347,10 @@ extern void rsvg_handle_rust_get_intrinsic_dimensions (RsvgHandle *handle,
                                                        RsvgLength *out_height,
                                                        gboolean   *out_has_viewbox,
                                                        RsvgRectangle *out_viewbox);
+
+/* Implemented in rsvg_internals/src/c_api.rs */
+extern GType rsvg_rust_error_get_type (void);
+extern GType rsvg_rust_handle_flags_get_type (void);
 
 typedef struct {
     RsvgHandleRust *rust_handle;
@@ -1308,23 +1315,14 @@ rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
     rsvg_handle_rust_set_testing (handle, testing);
 }
 
-/* This one is defined in the C code, because the prototype has varargs
- * and we can't handle those from Rust :(
- */
-G_GNUC_INTERNAL void rsvg_sax_error_cb (void *data, const char *msg, ...);
-
-void
-rsvg_sax_error_cb (void *data, const char *msg, ...)
+GType
+rsvg_error_get_type(void)
 {
-    RsvgXmlState *xml = data;
-    va_list args;
-    char *buf;
+    return rsvg_rust_error_get_type();
+}
 
-    va_start (args, msg);
-    g_vasprintf (&buf, msg, args);
-    va_end (args);
-
-    rsvg_xml_state_error (xml, buf);
-
-    g_free (buf);
+GType
+rsvg_handle_flags_get_type(void)
+{
+    return rsvg_rust_handle_flags_get_type();
 }

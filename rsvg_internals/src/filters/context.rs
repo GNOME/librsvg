@@ -92,74 +92,6 @@ pub struct FilterContext {
     paffine: cairo::Matrix,
 }
 
-/// Computes and returns the filter effects region.
-fn compute_effects_region(
-    filter_node: &RsvgNode,
-    computed_from_target_node: &ComputedValues,
-    draw_ctx: &mut DrawingCtx,
-    affine: cairo::Matrix,
-    width: f64,
-    height: f64,
-) -> BoundingBox {
-    // Filters use the properties of the target node.
-    let values = computed_from_target_node;
-
-    let filter = filter_node.get_impl::<NodeFilter>().unwrap();
-
-    let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
-
-    // affine is set up in FilterContext::new() in such a way that for
-    // filterunits == ObjectBoundingBox affine includes scaling to correct width, height and this
-    // is why width and height are set to 1, 1 (and for filterunits == UserSpaceOnUse affine
-    // doesn't include scaling because in this case the correct width, height already happens to be
-    // the viewbox width, height).
-    //
-    // It's done this way because with ObjectBoundingBox, non-percentage values are supposed to
-    // represent the fractions of the referenced node, and with width and height = 1, 1 this
-    // works out exactly like that.
-    let params = if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
-        draw_ctx.push_view_box(1.0, 1.0)
-    } else {
-        draw_ctx.get_view_params()
-    };
-
-    // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
-    // referencing node. No units are allowed (it's checked during attribute parsing).
-    let rect = if filter.filterunits.get() == CoordUnits::ObjectBoundingBox {
-        cairo::Rectangle {
-            x: filter.x.get().get_unitless(),
-            y: filter.y.get().get_unitless(),
-            width: filter.width.get().get_unitless(),
-            height: filter.height.get().get_unitless(),
-        }
-    } else {
-        cairo::Rectangle {
-            x: filter.x.get().normalize(values, &params),
-            y: filter.y.get().normalize(values, &params),
-            width: filter.width.get().normalize(values, &params),
-            height: filter.height.get().normalize(values, &params),
-        }
-    };
-
-    let other_bbox = BoundingBox::new(&affine).with_rect(Some(rect));
-
-    // At this point all of the previous viewbox and matrix business gets converted to pixel
-    // coordinates in the final surface, because bbox is created with an identity affine.
-    bbox.insert(&other_bbox);
-
-    // Finally, clip to the width and height of our surface.
-    let rect = cairo::Rectangle {
-        x: 0f64,
-        y: 0f64,
-        width,
-        height,
-    };
-    let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(Some(rect));
-    bbox.clip(&other_bbox);
-
-    bbox
-}
-
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
@@ -222,8 +154,7 @@ impl FilterContext {
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: UnsafeCell::new(None),
-            effects_region: compute_effects_region(
-                filter_node,
+            effects_region: filter.compute_effects_region(
                 computed_from_node_being_filtered,
                 draw_ctx,
                 affine,

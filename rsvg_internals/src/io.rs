@@ -113,7 +113,7 @@ pub fn acquire_data(
 
         Ok(BinaryData {
             data: contents,
-            content_type: mime_type,
+            content_type: mime_type.map(From::from),
         })
     }
 }

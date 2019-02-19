@@ -1,8 +1,10 @@
 use libc;
 
+use std::borrow::Cow;
 use std::ffi::CStr;
 use std::str;
 
+#[cfg(feature = "c-library")]
 use glib::translate::*;
 
 /// Converts a `char *` which is known to be valid UTF-8 into a `&str`
@@ -17,6 +19,14 @@ pub unsafe fn utf8_cstr<'a>(s: *const libc::c_char) -> &'a str {
     str::from_utf8_unchecked(CStr::from_ptr(s).to_bytes())
 }
 
+/// Error-tolerant C string import
+pub unsafe fn cstr<'a>(s: *const libc::c_char) -> Cow<'a, str> {
+    if s.is_null() {
+        return Cow::Borrowed("(null)");
+    }
+    CStr::from_ptr(s).to_string_lossy()
+}
+
 pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {
     if val < low {
         low
@@ -27,12 +37,21 @@ pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {
     }
 }
 
-extern "C" {
-    fn rsvg_g_warning_from_c(msg: *const libc::c_char);
-}
-
+#[cfg(feature = "c-library")]
 pub fn rsvg_g_warning(msg: &str) {
     unsafe {
+        extern "C" {
+            fn rsvg_g_warning_from_c(msg: *const libc::c_char);
+        }
+
         rsvg_g_warning_from_c(msg.to_glib_none().0);
     }
+}
+
+#[cfg(not(feature = "c-library"))]
+pub fn rsvg_g_warning(_msg: &str) {
+    // The only callers of this are in handle.rs. When those functions
+    // are called from the Rust API, they are able to return a
+    // meaningful error code, but the C API isn't - so they issues a
+    // g_warning() instead.
 }
