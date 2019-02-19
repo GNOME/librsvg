@@ -135,16 +135,6 @@ macro_rules! define_length_type {
                 }
             }
 
-            pub fn hand_normalize(
-                &self,
-                pixels_per_inch: f64,
-                width_or_height: f64,
-                font_size: f64,
-            ) -> f64 {
-                self.0
-                    .hand_normalize(pixels_per_inch, width_or_height, font_size)
-            }
-
             pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
                 Ok($name(Length::from_cssparser(parser)?))
             }
@@ -236,25 +226,6 @@ impl Length {
     pub fn get_unitless(&self) -> f64 {
         assert!(self.unit == LengthUnit::Px || self.unit == LengthUnit::Percent);
         self.length
-    }
-
-    pub fn hand_normalize(
-        &self,
-        pixels_per_inch: f64,
-        width_or_height: f64,
-        font_size: f64,
-    ) -> f64 {
-        match self.unit {
-            LengthUnit::Percent => self.length * width_or_height,
-            LengthUnit::Px => self.length,
-            LengthUnit::Em => self.length * font_size,
-            LengthUnit::Ex => self.length * font_size / 2.0,
-            LengthUnit::In => self.length * pixels_per_inch,
-            LengthUnit::Cm => self.length * pixels_per_inch / CM_PER_INCH,
-            LengthUnit::Mm => self.length * pixels_per_inch / MM_PER_INCH,
-            LengthUnit::Pt => self.length * pixels_per_inch / POINTS_PER_INCH,
-            LengthUnit::Pc => self.length * pixels_per_inch / PICA_PER_INCH,
-        }
     }
 
     pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {
