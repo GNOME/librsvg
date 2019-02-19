@@ -31,6 +31,7 @@ use structure::{IntrinsicDimensions, NodeSvg};
 use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use svg::Svg;
 use util::rsvg_g_warning;
+use viewbox::ViewBox;
 use xml::XmlState;
 use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
@@ -299,10 +300,13 @@ impl Handle {
         let mut draw_ctx = DrawingCtx::new(
             self.svg.borrow().as_ref().unwrap().clone(),
             cr,
-            f64::from(dimensions.width),
-            f64::from(dimensions.height),
-            dimensions.em,
-            dimensions.ex,
+            &cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: f64::from(dimensions.width),
+                height: f64::from(dimensions.height),
+            },
+            &ViewBox::new(0.0, 0.0, dimensions.em, dimensions.ex),
             self.dpi.get(),
             self.is_testing.get(),
         );

@@ -114,26 +114,17 @@ impl DrawingCtx {
     pub fn new(
         svg: Rc<Svg>,
         cr: &cairo::Context,
-        width: f64,
-        height: f64,
-        vb_width: f64,
-        vb_height: f64,
+        viewport: &cairo::Rectangle,
+        vbox: &ViewBox,
         dpi: Dpi,
         testing: bool,
     ) -> DrawingCtx {
         let mut affine = cr.get_matrix();
-        let rect = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width,
-            height,
-        }
-        .transform(&affine)
-        .outer();
+        let rect = viewport.transform(&affine).outer();
 
         // scale according to size set by size_func callback
         let mut scale = cairo::Matrix::identity();
-        scale.scale(width / vb_width, height / vb_height);
+        scale.scale(viewport.width / vbox.width, viewport.height / vbox.height);
         affine = cairo::Matrix::multiply(&affine, &scale);
 
         // adjust transform so that the corner of the
@@ -143,7 +134,7 @@ impl DrawingCtx {
         cr.set_matrix(affine);
 
         let mut view_box_stack = Vec::new();
-        view_box_stack.push(ViewBox::new(0.0, 0.0, vb_width, vb_height));
+        view_box_stack.push(*vbox);
 
         DrawingCtx {
             svg: svg.clone(),
