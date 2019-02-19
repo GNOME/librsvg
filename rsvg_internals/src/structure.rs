@@ -108,10 +108,10 @@ pub struct IntrinsicDimensions {
 
 pub struct NodeSvg {
     preserve_aspect_ratio: Cell<AspectRatio>,
-    x: Cell<LengthHorizontal>,
-    y: Cell<LengthVertical>,
-    w: Cell<LengthHorizontal>,
-    h: Cell<LengthVertical>,
+    x: Cell<Option<LengthHorizontal>>,
+    y: Cell<Option<LengthVertical>>,
+    w: Cell<Option<LengthHorizontal>>,
+    h: Cell<Option<LengthVertical>>,
     vbox: Cell<Option<ViewBox>>,
     pbag: RefCell<Option<OwnedPropertyBag>>,
 }
@@ -120,10 +120,10 @@ impl NodeSvg {
     pub fn new() -> NodeSvg {
         NodeSvg {
             preserve_aspect_ratio: Cell::new(AspectRatio::default()),
-            x: Cell::new(LengthHorizontal::parse_str("0").unwrap()),
-            y: Cell::new(LengthVertical::parse_str("0").unwrap()),
-            w: Cell::new(LengthHorizontal::parse_str("100%").unwrap()),
-            h: Cell::new(LengthVertical::parse_str("100%").unwrap()),
+            x: Cell::new(None),
+            y: Cell::new(None),
+            w: Cell::new(None),
+            h: Cell::new(None),
             vbox: Cell::new(None),
             pbag: RefCell::new(None),
         }
@@ -137,7 +137,9 @@ impl NodeSvg {
     }
 
     pub fn get_size(&self, dpi: Dpi) -> Option<(i32, i32)> {
-        match (self.w.get(), self.h.get(), self.vbox.get()) {
+        let (_, _, w, h) = self.get_unnormalized_viewport();
+
+        match (w, h, self.vbox.get()) {
             (w, h, Some(vbox)) => Some((
                 w.hand_normalize(dpi.x(), vbox.width, 12.0).round() as i32,
                 h.hand_normalize(dpi.y(), vbox.height, 12.0).round() as i32,
@@ -153,20 +155,45 @@ impl NodeSvg {
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        // FIXME: width/height are Option<>, and we don't store that yet;
-        // we resolve to 100% for default values at parsing time.
         IntrinsicDimensions {
-            width: Some(self.w.get()),
-            height: Some(self.h.get()),
+            width: self.w.get(),
+            height: self.h.get(),
             vbox: self.vbox.get(),
         }
     }
 
+    // returns (x, y, w, h)
+    fn get_unnormalized_viewport(
+        &self,
+    ) -> (
+        LengthHorizontal,
+        LengthVertical,
+        LengthHorizontal,
+        LengthVertical,
+    ) {
+        // these defaults are per the spec
+        let x = self
+            .x
+            .get()
+            .unwrap_or_else(|| LengthHorizontal::parse_str("0").unwrap());
+        let y = self
+            .y
+            .get()
+            .unwrap_or_else(|| LengthVertical::parse_str("0").unwrap());
+        let w = self
+            .w
+            .get()
+            .unwrap_or_else(|| LengthHorizontal::parse_str("100%").unwrap());
+        let h = self
+            .h
+            .get()
+            .unwrap_or_else(|| LengthVertical::parse_str("100%").unwrap());
+
+        (x, y, w, h)
+    }
+
     fn get_viewport(&self, values: &ComputedValues, params: &ViewParams) -> Rectangle {
-        let x = self.x.get();
-        let y = self.y.get();
-        let w = self.w.get();
-        let h = self.h.get();
+        let (x, y, w, h) = self.get_unnormalized_viewport();
 
         Rectangle::new(
             x.normalize(values, &params),
@@ -195,23 +222,23 @@ impl NodeTrait for NodeSvg {
 
                 Attribute::X => {
                     if is_inner_svg {
-                        self.x.set(attr.parse(value)?);
+                        self.x.set(Some(attr.parse(value)?));
                     }
                 }
 
                 Attribute::Y => {
                     if is_inner_svg {
-                        self.y.set(attr.parse(value)?);
+                        self.y.set(Some(attr.parse(value)?));
                     }
                 }
 
-                Attribute::Width => self
-                    .w
-                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
+                Attribute::Width => self.w.set(Some(
+                    attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?,
+                )),
 
-                Attribute::Height => self
-                    .h
-                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
+                Attribute::Height => self.h.set(Some(
+                    attr.parse_and_validate(value, LengthVertical::check_nonnegative)?,
+                )),
 
                 Attribute::ViewBox => self.vbox.set(attr.parse(value).map(Some)?),
 
