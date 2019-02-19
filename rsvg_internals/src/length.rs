@@ -342,10 +342,11 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
 
         LengthUnit::Px => v.length,
 
-        LengthUnit::Em | LengthUnit::Ex => {
-            // This is the same default as used in NodeSvg::get_size()
-            v.hand_normalize(0.0, 0.0, 12.0)
-        }
+        // This is the same default as used in NodeSvg::get_size()
+        LengthUnit::Em => v.length * 12.0,
+
+        // This is the same default as used in NodeSvg::get_size()
+        LengthUnit::Ex => v.length * 12.0 / 2.0,
 
         // FontSize always is a LengthDir::Both, per properties.rs
         LengthUnit::In => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y),
