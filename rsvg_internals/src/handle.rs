@@ -420,15 +420,9 @@ impl Handle {
         &self,
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+        let node = self.get_node_or_root(id)?;
         let root = self.get_root();
-
-        let (node, is_root) = if let Some(id) = id {
-            let n = self.lookup_node(id).map_err(RenderingError::InvalidId)?;
-            let is_root = Rc::ptr_eq(&n, &root);
-            (n, is_root)
-        } else {
-            (root, true)
-        };
+        let is_root = Rc::ptr_eq(&node, &root);
 
         if is_root {
             let cascaded = node.get_cascaded_values();
@@ -450,6 +444,22 @@ impl Handle {
             }
         }
 
+        self.get_node_geometry(&node)
+    }
+
+    fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
+        if let Some(id) = id {
+            self.lookup_node(id).map_err(RenderingError::InvalidId)
+        } else {
+            Ok(self.get_root())
+        }
+    }
+
+    pub fn get_geometry_for_element(
+        &self,
+        id: Option<&str>,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+        let node = self.get_node_or_root(id)?;
         self.get_node_geometry(&node)
     }
 

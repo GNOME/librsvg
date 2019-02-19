@@ -376,7 +376,7 @@ impl<'a> CairoRenderer<'a> {
         }
     }
 
-    /// Returns (ink_rect, logical_rect) of an SVG element.
+    /// Computes the (ink_rect, logical_rect) of an SVG element.
     ///
     /// Element IDs should look like an URL fragment identifier; for
     /// example, pass `Some("#foo")` to get the geometry of the
@@ -405,7 +405,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_sub(id)
+            .get_geometry_for_element(id)
             .map(|(i, l)| (i.into(), l.into()))
     }
 
