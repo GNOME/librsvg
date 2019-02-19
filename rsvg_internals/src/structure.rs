@@ -8,13 +8,13 @@ use aspect_ratio::*;
 use attributes::Attribute;
 use css::CssStyles;
 use dpi::Dpi;
-use drawing_ctx::DrawingCtx;
+use drawing_ctx::{DrawingCtx, ViewParams};
 use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
 use length::*;
 use node::*;
 use parsers::{Parse, ParseValue};
-use properties::Overflow;
+use properties::{ComputedValues, Overflow};
 use property_bag::{OwnedPropertyBag, PropertyBag};
 use rect::RectangleExt;
 use viewbox::*;
@@ -161,6 +161,20 @@ impl NodeSvg {
             vbox: self.vbox.get(),
         }
     }
+
+    fn get_viewport(&self, values: &ComputedValues, params: &ViewParams) -> Rectangle {
+        let x = self.x.get();
+        let y = self.y.get();
+        let w = self.w.get();
+        let h = self.h.get();
+
+        Rectangle::new(
+            x.normalize(values, &params),
+            y.normalize(values, &params),
+            w.normalize(values, &params),
+            h.normalize(values, &params),
+        )
+    }
 }
 
 impl NodeTrait for NodeSvg {
@@ -223,13 +237,6 @@ impl NodeTrait for NodeSvg {
 
         let params = draw_ctx.get_view_params();
 
-        let viewport = Rectangle::new(
-            self.x.get().normalize(values, &params),
-            self.y.get().normalize(values, &params),
-            self.w.get().normalize(values, &params),
-            self.h.get().normalize(values, &params),
-        );
-
         let clip_mode = if !values.is_overflow() && node.get_parent().is_some() {
             Some(ClipMode::ClipToViewport)
         } else {
@@ -237,7 +244,7 @@ impl NodeTrait for NodeSvg {
         };
 
         draw_in_viewport(
-            &viewport,
+            &self.get_viewport(values, &params),
             clip_mode,
             self.vbox.get(),
             self.preserve_aspect_ratio.get(),
