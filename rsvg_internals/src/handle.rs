@@ -334,13 +334,7 @@ impl Handle {
 
         self.in_loop.set(false);
 
-        res.and_then(|dimensions| {
-            if dimensions.width == 0 || dimensions.height == 0 {
-                Err(RenderingError::SvgHasNoSize)
-            } else {
-                Ok(dimensions)
-            }
-        })
+        res
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
@@ -388,7 +382,14 @@ impl Handle {
         &self,
         node: &RsvgNode,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
-        let dimensions = self.get_dimensions()?; // replace by 1,1,1,1
+        // This is just to start with an unknown viewport size
+        let dimensions = RsvgDimensionData {
+            width: 1,
+            height: 1,
+            em: 1.0,
+            ex: 1.0,
+        };
+
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
         let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, &dimensions, Some(node));
@@ -506,6 +507,11 @@ impl Handle {
 
         let dimensions = self.get_dimensions()?;
         let root = self.get_root();
+
+        if dimensions.width == 0 || dimensions.height == 0 {
+            // nothing to render
+            return Ok(())
+        }
 
         cr.save();
         let mut draw_ctx = self.create_drawing_ctx_for_node(cr, &dimensions, node.as_ref());

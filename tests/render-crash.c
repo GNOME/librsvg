@@ -1,4 +1,5 @@
-/* vim: set ts=4 nowrap ai expandtab sw=4: */
+/* vim: set sw=4 sts=4: -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 8 -*-
+ */
 
 #define RSVG_DISABLE_DEPRECATION_WARNINGS
 
@@ -12,7 +13,6 @@ test_render_crash (gconstpointer data)
     GFile *file = G_FILE (data);
     RsvgHandle *handle;
     GError *error = NULL;
-    RsvgDimensionData dimensions;
     cairo_surface_t *surface;
     cairo_t *cr;
 
@@ -20,27 +20,18 @@ test_render_crash (gconstpointer data)
     g_assert_no_error (error);
     g_assert (handle != NULL);
 
-    /* rsvg_handle_get_dimensions_sub has a return value we can check */
-    if (rsvg_handle_get_dimensions_sub (handle, &dimensions, NULL)) {
-        RsvgDimensionData dimensions2;
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 100, 100);
+    cr = cairo_create (surface);
 
-        g_assert_cmpint (dimensions.width, >, 0);
-        g_assert_cmpint (dimensions.height, >, 0);
+    g_assert (cairo_status (cr) == CAIRO_STATUS_SUCCESS);
 
-        rsvg_handle_get_dimensions (handle, &dimensions2);
-        g_assert_cmpint (dimensions2.width, ==, dimensions.width);
-        g_assert_cmpint (dimensions2.height, ==, dimensions.height);
+    /* We don't even check the return value of the following function; we are just
+     * trying to check that there are no crashes in the rendering code.
+     */
+    rsvg_handle_render_cairo (handle, cr);
 
-        surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, dimensions.width, dimensions.height);
-        cr = cairo_create (surface);
-        g_assert (rsvg_handle_render_cairo (handle, cr));
-
-        cairo_surface_destroy (surface);
-        cairo_destroy (cr);
-    } else {
-        g_assert_cmpint (dimensions.width, ==, 0);
-        g_assert_cmpint (dimensions.height, ==, 0);
-    }
+    cairo_destroy (cr);
+    cairo_surface_destroy (surface);
 
     g_object_unref (handle);
 }

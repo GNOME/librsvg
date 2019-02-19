@@ -104,7 +104,6 @@ pub enum RenderingError {
     InstancingLimit,
     InvalidId(DefsLookupErrorKind),
     InvalidHref,
-    SvgHasNoSize,
     OutOfMemory,
 }
 
@@ -243,7 +242,6 @@ impl error::Error for RenderingError {
             RenderingError::InstancingLimit => "instancing limit",
             RenderingError::InvalidId(_) => "invalid id",
             RenderingError::InvalidHref => "invalid href",
-            RenderingError::SvgHasNoSize => "svg has no size",
             RenderingError::OutOfMemory => "out of memory",
         }
     }
@@ -257,7 +255,6 @@ impl fmt::Display for RenderingError {
             RenderingError::CircularReference
             | RenderingError::InstancingLimit
             | RenderingError::InvalidHref
-            | RenderingError::SvgHasNoSize
             | RenderingError::OutOfMemory => write!(f, "{}", self.description()),
         }
     }
