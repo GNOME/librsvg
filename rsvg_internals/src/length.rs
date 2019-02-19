@@ -343,7 +343,7 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
         LengthUnit::Px => v.length,
 
         LengthUnit::Em | LengthUnit::Ex => {
-            // This is the same default as used in rsvg_node_svg_get_size()
+            // This is the same default as used in NodeSvg::get_size()
             v.hand_normalize(0.0, 0.0, 12.0)
         }
 
