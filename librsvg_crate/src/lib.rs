@@ -102,7 +102,7 @@ use glib::object::Cast;
 use rsvg_internals::{Dpi, Handle, LoadFlags};
 use url::Url;
 
-pub use rsvg_internals::{LoadingError, RenderingError};
+pub use rsvg_internals::{Length, LengthUnit, LoadingError, RenderingError};
 
 /// Full configuration for loading an [`SvgHandle`][SvgHandle].
 ///
@@ -327,6 +327,13 @@ impl SvgHandle {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct IntrinsicDimensions {
+    pub width: Option<Length>,
+    pub height: Option<Length>,
+    pub vbox: Option<cairo::Rectangle>,
+}
+
 impl<'a> CairoRenderer<'a> {
     /// Configures the dots-per-inch for resolving physical lengths.
     ///
@@ -345,6 +352,23 @@ impl<'a> CairoRenderer<'a> {
             .0
             .get_dimensions()
             .map(|dimensions| (dimensions.width, dimensions.height))
+    }
+
+    pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        let d = self.handle
+            .0
+            .get_intrinsic_dimensions();
+
+        IntrinsicDimensions {
+            width: d.width.map(|l| l.to_length()),
+            height: d.height.map(|l| l.to_length()),
+            vbox: d.vbox.map(|v| cairo::Rectangle {
+                x: v.x,
+                y: v.y,
+                width: v.width,
+                height: v.height,
+            }),
+        }
     }
 
     /// Returns (ink_rect, logical_rect) of an SVG element.

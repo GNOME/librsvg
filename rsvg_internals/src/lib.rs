@@ -81,6 +81,8 @@ pub use handle::{
     LoadFlags,
 };
 
+pub use length::{Length, LengthUnit};
+
 pub use pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_max_size,
     rsvg_rust_pixbuf_from_file_at_size,

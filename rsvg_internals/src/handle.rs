@@ -537,7 +537,7 @@ impl Handle {
         self.read_stream_sync(stream, cancellable)
     }
 
-    fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+    pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let svg_ref = self.svg.borrow();
         let svg = svg_ref.as_ref().unwrap();
 

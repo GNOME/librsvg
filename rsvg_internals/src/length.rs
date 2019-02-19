@@ -227,7 +227,7 @@ impl Parse for Length {
 }
 
 impl Length {
-    fn new(l: f64, unit: LengthUnit) -> Length {
+    pub fn new(l: f64, unit: LengthUnit) -> Length {
         Length { length: l, unit }
     }
 
