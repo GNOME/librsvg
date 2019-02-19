@@ -6,7 +6,16 @@ extern crate librsvg;
 use gio::MemoryInputStreamExt;
 use glib::Cast;
 
-use librsvg::{IntrinsicDimensions, Length, LengthUnit, LoadOptions, SvgHandle};
+use librsvg::{
+    DefsLookupErrorKind,
+    HrefError,
+    IntrinsicDimensions,
+    Length,
+    LengthUnit,
+    LoadOptions,
+    RenderingError,
+    SvgHandle,
+};
 
 fn load_svg(input: &'static [u8]) -> SvgHandle {
     let stream = gio::MemoryInputStream::new();
@@ -102,4 +111,44 @@ fn element_geometry_with_percent_viewport() {
     };
 
     assert_eq!((ink_r, logical_r), (rect, rect));
+}
+
+#[test]
+fn element_geometry_for_nonexistent_element() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"/>
+"#,
+    );
+
+    let renderer = svg.get_cairo_renderer();
+    match renderer.get_geometry_for_element(Some("#foo")) {
+        Err(RenderingError::InvalidId(DefsLookupErrorKind::NotFound)) => (),
+        _ => panic!(),
+    }
+}
+
+#[test]
+fn element_geometry_for_invalid_id() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"/>
+"#,
+    );
+
+    let renderer = svg.get_cairo_renderer();
+    match renderer.get_geometry_for_element(Some("foo")) {
+        Err(RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences)) => (),
+        _ => panic!(),
+    }
+
+    match renderer.get_geometry_for_element(Some("foo.svg#foo")) {
+        Err(RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences)) => (),
+        _ => panic!(),
+    }
+
+    match renderer.get_geometry_for_element(Some("")) {
+        Err(RenderingError::InvalidId(DefsLookupErrorKind::HrefError(HrefError::ParseError))) => (),
+        _ => panic!(),
+    }
 }

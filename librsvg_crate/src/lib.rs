@@ -102,7 +102,14 @@ use glib::object::Cast;
 use rsvg_internals::{Dpi, Handle, LoadFlags};
 use url::Url;
 
-pub use rsvg_internals::{Length, LengthUnit, LoadingError, RenderingError};
+pub use rsvg_internals::{
+    DefsLookupErrorKind,
+    HrefError,
+    Length,
+    LengthUnit,
+    LoadingError,
+    RenderingError,
+};
 
 /// Full configuration for loading an [`SvgHandle`][SvgHandle].
 ///
@@ -355,9 +362,7 @@ impl<'a> CairoRenderer<'a> {
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let d = self.handle
-            .0
-            .get_intrinsic_dimensions();
+        let d = self.handle.0.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
             width: d.width.map(|l| l.to_length()),

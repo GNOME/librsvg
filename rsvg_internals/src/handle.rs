@@ -388,7 +388,7 @@ impl Handle {
         &self,
         node: &RsvgNode,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
-        let dimensions = self.get_dimensions()?;
+        let dimensions = self.get_dimensions()?; // replace by 1,1,1,1
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
         let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, &dimensions, Some(node));
