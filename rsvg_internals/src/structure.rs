@@ -140,14 +140,21 @@ impl NodeSvg {
         let (_, _, w, h) = self.get_unnormalized_viewport();
 
         match (w, h, self.vbox.get()) {
-            (w, h, Some(vbox)) => Some((
-                w.hand_normalize(dpi.x(), vbox.width, 12.0).round() as i32,
-                h.hand_normalize(dpi.y(), vbox.height, 12.0).round() as i32,
-            )),
-            (w, h, None) if w.unit() != LengthUnit::Percent && h.unit() != LengthUnit::Percent => {
+            (w, h, Some(vbox)) => {
+                let params = ViewParams::new(dpi.x(), dpi.y(), vbox.width, vbox.height);
+
                 Some((
-                    w.hand_normalize(dpi.x(), 0.0, 12.0).round() as i32,
-                    h.hand_normalize(dpi.y(), 0.0, 12.0).round() as i32,
+                    w.normalize(values, &params).round() as i32,
+                    h.normalize(values, &params).round() as i32,
+                ))
+            }
+
+            (w, h, None) if w.unit() != LengthUnit::Percent && h.unit() != LengthUnit::Percent => {
+                let params = ViewParams::new(dpi.x(), dpi.y(), 0.0, 0.0);
+
+                Some((
+                    w.normalize(values, &params).round() as i32,
+                    h.normalize(values, &params).round() as i32,
                 ))
             }
             (_, _, _) => None,

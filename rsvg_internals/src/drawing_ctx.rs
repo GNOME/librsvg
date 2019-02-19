@@ -54,7 +54,6 @@ pub struct ViewParams {
 }
 
 impl ViewParams {
-    #[cfg(test)]
     pub fn new(dpi_x: f64, dpi_y: f64, view_box_width: f64, view_box_height: f64) -> ViewParams {
         ViewParams {
             dpi_x,
