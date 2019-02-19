@@ -57,3 +57,26 @@ fn has_intrinsic_dimensions() {
         }
     );
 }
+
+#[test]
+fn root_geometry_with_percent_viewport() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+  <rect x="10" y="20" width="30" height="40"/>
+</svg>
+"#,
+    );
+
+    let renderer = svg.get_cairo_renderer();
+    let (ink_r, logical_r) = renderer.get_geometry_for_element(None).unwrap();
+
+    let rect = cairo::Rectangle {
+        x: 10.0,
+        y: 20.0,
+        width: 30.0,
+        height: 40.0,
+    };
+
+    assert_eq!((ink_r, logical_r), (rect, rect));
+}
