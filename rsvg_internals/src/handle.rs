@@ -427,8 +427,11 @@ impl Handle {
         };
 
         if is_root {
+            let cascaded = node.get_cascaded_values();
+            let values = cascaded.get();
+
             if let Some((root_width, root_height)) =
-                node.with_impl(|svg: &NodeSvg| svg.get_size(self.dpi.get()))
+                node.with_impl(|svg: &NodeSvg| svg.get_size(&values, self.dpi.get()))
             {
                 let ink_r = RsvgRectangle {
                     x: 0.0,
@@ -510,7 +513,7 @@ impl Handle {
 
         if dimensions.width == 0 || dimensions.height == 0 {
             // nothing to render
-            return Ok(())
+            return Ok(());
         }
 
         cr.save();

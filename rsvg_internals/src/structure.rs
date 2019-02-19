@@ -136,7 +136,7 @@ impl NodeSvg {
         }
     }
 
-    pub fn get_size(&self, dpi: Dpi) -> Option<(i32, i32)> {
+    pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(i32, i32)> {
         let (_, _, w, h) = self.get_unnormalized_viewport();
 
         match (w, h, self.vbox.get()) {
