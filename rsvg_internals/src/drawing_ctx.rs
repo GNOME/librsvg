@@ -115,17 +115,11 @@ impl DrawingCtx {
         svg: Rc<Svg>,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
-        vbox: &ViewBox,
         dpi: Dpi,
         testing: bool,
     ) -> DrawingCtx {
         let mut affine = cr.get_matrix();
         let rect = viewport.transform(&affine).outer();
-
-        // scale according to size set by size_func callback
-        let mut scale = cairo::Matrix::identity();
-        scale.scale(viewport.width / vbox.width, viewport.height / vbox.height);
-        affine = cairo::Matrix::multiply(&affine, &scale);
 
         // adjust transform so that the corner of the
         // bounding box above is at (0,0)
@@ -134,7 +128,25 @@ impl DrawingCtx {
         cr.set_matrix(affine);
 
         let mut view_box_stack = Vec::new();
-        view_box_stack.push(*vbox);
+
+        // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
+        //
+        // "For the outermost svg element, the SVG user agent must
+        // determine an initial viewport coordinate system and an
+        // initial user coordinate system such that the two
+        // coordinates systems are identical. The origin of both
+        // coordinate systems must be at the origin of the SVG
+        // viewport."
+        //
+        // "... the initial viewport coordinate system (and therefore
+        // the initial user coordinate system) must have its origin at
+        // the top/left of the viewport"
+        view_box_stack.push(ViewBox {
+            x: 0.0,
+            y: 0.0,
+            width: viewport.width,
+            height: viewport.height,
+        });
 
         DrawingCtx {
             svg: svg.clone(),

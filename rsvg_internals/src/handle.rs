@@ -31,7 +31,6 @@ use structure::{IntrinsicDimensions, NodeSvg};
 use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use svg::Svg;
 use util::rsvg_g_warning;
-use viewbox::ViewBox;
 use xml::XmlState;
 use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
@@ -295,14 +294,12 @@ impl Handle {
         &self,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
-        vbox: &ViewBox,
         node: Option<&RsvgNode>,
     ) -> DrawingCtx {
         let mut draw_ctx = DrawingCtx::new(
             self.svg.borrow().as_ref().unwrap().clone(),
             cr,
             viewport,
-            vbox,
             self.dpi.get(),
             self.is_testing.get(),
         );
@@ -400,7 +397,6 @@ impl Handle {
                 width: f64::from(dimensions.width),
                 height: f64::from(dimensions.height),
             },
-            &ViewBox::new(0.0, 0.0, dimensions.em, dimensions.ex),
             Some(node),
         );
         let root = self.get_root();
@@ -536,7 +532,6 @@ impl Handle {
                 width: f64::from(dimensions.width),
                 height: f64::from(dimensions.height),
             },
-            &ViewBox::new(0.0, 0.0, dimensions.em, dimensions.ex),
             node.as_ref(),
         );
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
@@ -561,20 +556,8 @@ impl Handle {
 
         let root = self.get_root();
 
-        let svg_ref = self.svg.borrow();
-        let svg = svg_ref.as_ref().unwrap();
-
-        let dimensions = svg.get_intrinsic_dimensions();
-
-        let vbox = dimensions.vbox.unwrap_or_else(|| ViewBox {
-            x: 0.0,
-            y: 0.0,
-            width: viewport.width,
-            height: viewport.height,
-        });
-
         cr.save();
-        let mut draw_ctx = self.create_drawing_ctx_for_node(cr, viewport, &vbox, node.as_ref());
+        let mut draw_ctx = self.create_drawing_ctx_for_node(cr, viewport, node.as_ref());
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
         cr.restore();
 
