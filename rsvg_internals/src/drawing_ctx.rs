@@ -245,15 +245,13 @@ impl DrawingCtx {
                 self.cr.transform(matrix);
 
                 if let Some(vbox) = vbox {
-                    let params = self.push_view_box(vbox.width, vbox.height);
-
                     if let Some(ref clip) = clip_mode {
                         if *clip == ClipMode::ClipToVbox {
                             self.clip(vbox.x, vbox.y, vbox.width, vbox.height);
                         }
                     }
 
-                    Some(params)
+                    Some(self.push_view_box(vbox.width, vbox.height))
                 } else {
                     Some(self.get_view_params())
                 }
