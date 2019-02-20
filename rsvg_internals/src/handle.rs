@@ -505,16 +505,7 @@ impl Handle {
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
-        let status = cr.status();
-        if status != Status::Success {
-            let msg = format!(
-                "cannot render on a cairo_t with a failure status (status={:?})",
-                status,
-            );
-
-            rsvg_g_warning(&msg);
-            return Err(RenderingError::Cairo(status));
-        }
+        check_cairo_context(cr)?;
 
         let node = if let Some(id) = id {
             Some(self.lookup_node(id).map_err(RenderingError::InvalidId)?)
@@ -565,6 +556,21 @@ impl Handle {
         let svg = svg_ref.as_ref().unwrap();
 
         svg.get_intrinsic_dimensions()
+    }
+}
+
+fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
+    let status = cr.status();
+    if status == Status::Success {
+        Ok(())
+    } else {
+        let msg = format!(
+            "cannot render on a cairo_t with a failure status (status={:?})",
+            status,
+        );
+
+        rsvg_g_warning(&msg);
+        Err(RenderingError::Cairo(status))
     }
 }
 
