@@ -239,25 +239,25 @@ impl DrawingCtx {
             }
         }
 
-        preserve_aspect_ratio.viewport_to_viewbox_transform(vbox, viewport).and_then(|matrix| {
-            let params = if let Some(ref vbox) = vbox {
-                self.push_view_box(vbox.width, vbox.height)
-            } else {
-                self.get_view_params()
-            };
+        preserve_aspect_ratio
+            .viewport_to_viewbox_transform(vbox, viewport)
+            .and_then(|matrix| {
+                self.cr.transform(matrix);
 
-            self.cr.transform(matrix);
+                if let Some(vbox) = vbox {
+                    let params = self.push_view_box(vbox.width, vbox.height);
 
-            if let Some(ref vbox) = vbox {
-                if let Some(ref clip) = clip_mode {
-                    if *clip == ClipMode::ClipToVbox {
-                        self.clip(vbox.x, vbox.y, vbox.width, vbox.height);
+                    if let Some(ref clip) = clip_mode {
+                        if *clip == ClipMode::ClipToVbox {
+                            self.clip(vbox.x, vbox.y, vbox.width, vbox.height);
+                        }
                     }
-                }
-            }
 
-            Some(params)
-        })
+                    Some(params)
+                } else {
+                    Some(self.get_view_params())
+                }
+            })
     }
 
     pub fn insert_bbox(&mut self, bbox: &BoundingBox) {
