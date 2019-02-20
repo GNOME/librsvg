@@ -426,4 +426,13 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(), RenderingError> {
         self.handle.0.render_cairo_sub(cr, id)
     }
+
+    pub fn render_element_to_viewport(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        self.handle.0.render_element_to_viewport(cr, id, viewport)
+    }
 }

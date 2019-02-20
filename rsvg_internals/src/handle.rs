@@ -545,6 +545,42 @@ impl Handle {
         res
     }
 
+    pub fn render_element_to_viewport(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
+        let node = if let Some(id) = id {
+            Some(self.lookup_node(id).map_err(RenderingError::InvalidId)?)
+        } else {
+            None
+        };
+
+        let root = self.get_root();
+
+        let svg_ref = self.svg.borrow();
+        let svg = svg_ref.as_ref().unwrap();
+
+        let dimensions = svg.get_intrinsic_dimensions();
+
+        let vbox = dimensions.vbox.unwrap_or_else(|| ViewBox {
+            x: viewport.x,
+            y: viewport.y,
+            width: viewport.width,
+            height: viewport.height,
+        });
+
+        cr.save();
+        let mut draw_ctx = self.create_drawing_ctx_for_node(cr, viewport, &vbox, node.as_ref());
+        let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
+        cr.restore();
+
+        res
+    }
+
     fn construct_new_from_gfile_sync(
         &mut self,
         file: &gio::File,
