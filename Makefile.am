@@ -116,7 +116,11 @@ RUST_SRC =							\
 
 LIBRSVG_CRATE_SOURCES = 					\
 	librsvg_crate/Cargo.toml				\
-	librsvg_crate/src/lib.rs
+	librsvg_crate/build.rs					\
+	librsvg_crate/examples/proportional.rs			\
+	librsvg_crate/examples/render.rs			\
+	librsvg_crate/src/lib.rs				\
+	librsvg_crate/tests/intrinsic-dimensions.rs
 
 RUST_EXTRA = 						\
 	Cargo.lock					\
