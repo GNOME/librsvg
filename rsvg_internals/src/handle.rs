@@ -567,8 +567,8 @@ impl Handle {
         let dimensions = svg.get_intrinsic_dimensions();
 
         let vbox = dimensions.vbox.unwrap_or_else(|| ViewBox {
-            x: viewport.x,
-            y: viewport.y,
+            x: 0.0,
+            y: 0.0,
             width: viewport.width,
             height: viewport.height,
         });
