@@ -239,7 +239,7 @@ impl DrawingCtx {
             }
         }
 
-        if let Some(matrix) = preserve_aspect_ratio.viewport_to_viewbox_transform(vbox, viewport) {
+        preserve_aspect_ratio.viewport_to_viewbox_transform(vbox, viewport).and_then(|matrix| {
             let params = if let Some(ref vbox) = vbox {
                 self.push_view_box(vbox.width, vbox.height)
             } else {
@@ -257,11 +257,7 @@ impl DrawingCtx {
             }
 
             Some(params)
-        } else {
-            // Width or height of 0 for the viewBox disables rendering of the element
-            // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
-            None
-        }
+        })
     }
 
     pub fn insert_bbox(&mut self, bbox: &BoundingBox) {
