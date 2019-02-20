@@ -239,33 +239,28 @@ impl DrawingCtx {
             }
         }
 
-        if let Some(vbox) = vbox {
-            // the preserveAspectRatio attribute is only used if viewBox is specified
-            // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
+        if let Some(matrix) = preserve_aspect_ratio.viewport_to_viewbox_transform(vbox, viewport) {
+            let params = if let Some(ref vbox) = vbox {
+                self.push_view_box(vbox.width, vbox.height)
+            } else {
+                self.get_view_params()
+            };
 
-            if let Some(matrix) =
-                preserve_aspect_ratio.viewport_to_viewbox_transform(Some(vbox), viewport)
-            {
-                let params = self.push_view_box(vbox.width, vbox.height);
+            self.cr.transform(matrix);
 
-                self.cr.transform(matrix);
-
+            if let Some(ref vbox) = vbox {
                 if let Some(ref clip) = clip_mode {
                     if *clip == ClipMode::ClipToVbox {
                         self.clip(vbox.x, vbox.y, vbox.width, vbox.height);
                     }
                 }
-
-                Some(params)
-            } else {
-                // Width or height of 0 for the viewBox disables rendering of the element
-                // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
-                return None;
             }
-        } else {
-            let params = self.push_view_box(viewport.width, viewport.height);
-            self.cr.translate(viewport.x, viewport.y);
+
             Some(params)
+        } else {
+            // Width or height of 0 for the viewBox disables rendering of the element
+            // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
+            None
         }
     }
 

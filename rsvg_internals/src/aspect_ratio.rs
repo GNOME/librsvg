@@ -155,6 +155,8 @@ impl AspectRatio {
         vbox: Option<ViewBox>,
         viewport: &cairo::Rectangle,
     ) -> Option<cairo::Matrix> {
+        // the preserveAspectRatio attribute is only used if viewBox is specified
+        // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
         if let Some(vbox) = vbox {
             if vbox.width.approx_eq_cairo(&0.0) || vbox.height.approx_eq_cairo(&0.0) {
                 // Width or height of 0 for the viewBox disables rendering of the element
