@@ -294,19 +294,15 @@ impl Handle {
     fn create_drawing_ctx_for_node(
         &self,
         cr: &cairo::Context,
-        dimensions: &RsvgDimensionData,
+        viewport: &cairo::Rectangle,
+        vbox: &ViewBox,
         node: Option<&RsvgNode>,
     ) -> DrawingCtx {
         let mut draw_ctx = DrawingCtx::new(
             self.svg.borrow().as_ref().unwrap().clone(),
             cr,
-            &cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: f64::from(dimensions.width),
-                height: f64::from(dimensions.height),
-            },
-            &ViewBox::new(0.0, 0.0, dimensions.em, dimensions.ex),
+            viewport,
+            vbox,
             self.dpi.get(),
             self.is_testing.get(),
         );
@@ -396,7 +392,17 @@ impl Handle {
 
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, &dimensions, Some(node));
+        let mut draw_ctx = self.create_drawing_ctx_for_node(
+            &cr,
+            &cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: f64::from(dimensions.width),
+                height: f64::from(dimensions.height),
+            },
+            &ViewBox::new(0.0, 0.0, dimensions.em, dimensions.ex),
+            Some(node),
+        );
         let root = self.get_root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
@@ -522,7 +528,17 @@ impl Handle {
         }
 
         cr.save();
-        let mut draw_ctx = self.create_drawing_ctx_for_node(cr, &dimensions, node.as_ref());
+        let mut draw_ctx = self.create_drawing_ctx_for_node(
+            cr,
+            &cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: f64::from(dimensions.width),
+                height: f64::from(dimensions.height),
+            },
+            &ViewBox::new(0.0, 0.0, dimensions.em, dimensions.ex),
+            node.as_ref(),
+        );
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
         cr.restore();
 
