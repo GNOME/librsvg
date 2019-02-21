@@ -86,28 +86,27 @@ impl SystemLanguage {
     /// [`systemLanguage`]: https://www.w3.org/TR/SVG/struct.html#ConditionalProcessingSystemLanguageAttribute
     /// [BCP47]: http://www.ietf.org/rfc/bcp/bcp47.txt
     pub fn from_attribute(s: &str, locale: &Locale) -> Result<SystemLanguage, ValueErrorKind> {
-        s.split(',')
-            .map(LanguageTag::from_str)
-            .try_fold(
-                // start with no match
-                SystemLanguage(false),
-                // The accumulator is Result<SystemLanguage, ValueErrorKind>
-                |acc, tag_result| match tag_result {
-                    Ok(language_tag) => {
-                        let have_match = acc.0;
-                        if have_match {
-                            Ok(SystemLanguage(have_match))
-                        } else {
-                            locale_accepts_language_tag(locale, &language_tag)
-                                .map(|matches| SystemLanguage(matches))
-                        }
+        s.split(',').map(LanguageTag::from_str).try_fold(
+            // start with no match
+            SystemLanguage(false),
+            // The accumulator is Result<SystemLanguage, ValueErrorKind>
+            |acc, tag_result| match tag_result {
+                Ok(language_tag) => {
+                    let have_match = acc.0;
+                    if have_match {
+                        Ok(SystemLanguage(have_match))
+                    } else {
+                        locale_accepts_language_tag(locale, &language_tag)
+                            .map(|matches| SystemLanguage(matches))
                     }
+                }
 
-                    Err(e) => Err(ValueErrorKind::Parse(ParseError::new(
-                        &format!("invalid language tag: \"{}\"", e),
-                    ))),
-                },
-            )
+                Err(e) => Err(ValueErrorKind::Parse(ParseError::new(&format!(
+                    "invalid language tag: \"{}\"",
+                    e
+                )))),
+            },
+        )
     }
 }
 

@@ -34,16 +34,18 @@ fn main() {
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();
     let cr = cairo::Context::new(&surface);
-    renderer.render_element_to_viewport(
-        &cr,
-        None,
-        &cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: f64::from(width),
-            height: f64::from(height),
-        }
-    ).unwrap();
+    renderer
+        .render_element_to_viewport(
+            &cr,
+            None,
+            &cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: f64::from(width),
+                height: f64::from(height),
+            },
+        )
+        .unwrap();
 
     let mut file = BufWriter::new(File::create(output).unwrap());
 

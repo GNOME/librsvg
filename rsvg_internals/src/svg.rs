@@ -224,7 +224,8 @@ fn load_image(
                     data.data.len() as libc::c_ulong,
                     Some(glib_sys::g_free),
                     data_ptr as *mut _,
-                ).into();
+                )
+                .into();
 
                 if status != Status::Success {
                     return Err(LoadingError::Cairo(status));
