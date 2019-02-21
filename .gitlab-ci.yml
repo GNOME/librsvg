@@ -129,6 +129,7 @@ rustfmt:
     - rustc --version && cargo --version
     - cargo fmt --version
     - cargo fmt --all -- --check
+  when: manual
 
 # Configure and run clippy on nightly
 # Only fails on errors atm.
