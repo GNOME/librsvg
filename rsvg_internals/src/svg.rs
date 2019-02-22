@@ -1,4 +1,3 @@
-use cairo::Status;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
 use glib::translate::*;
@@ -213,7 +212,7 @@ fn load_image(
                     length: libc::c_ulong,
                     destroy: cairo_sys::cairo_destroy_func_t,
                     closure: *mut libc::c_void,
-                ) -> Status;
+                ) -> cairo_sys::cairo_status_t;
             }
 
             unsafe {
@@ -224,11 +223,10 @@ fn load_image(
                     data.data.len() as libc::c_ulong,
                     Some(glib_sys::g_free),
                     data_ptr as *mut _,
-                )
-                .into();
+                );
 
-                if status != Status::Success {
-                    return Err(LoadingError::Cairo(status));
+                if status != cairo_sys::STATUS_SUCCESS {
+                    return Err(LoadingError::Cairo(status.into()));
                 }
             }
         }

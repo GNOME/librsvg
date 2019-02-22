@@ -105,6 +105,7 @@ pub enum RenderingError {
     InvalidId(DefsLookupErrorKind),
     InvalidHref,
     OutOfMemory,
+    HandleIsNotLoaded,
 }
 
 impl From<cairo::Status> for RenderingError {
@@ -243,6 +244,7 @@ impl error::Error for RenderingError {
             RenderingError::InvalidId(_) => "invalid id",
             RenderingError::InvalidHref => "invalid href",
             RenderingError::OutOfMemory => "out of memory",
+            RenderingError::HandleIsNotLoaded => "SVG data is not loaded into handle",
         }
     }
 }
@@ -255,7 +257,8 @@ impl fmt::Display for RenderingError {
             RenderingError::CircularReference
             | RenderingError::InstancingLimit
             | RenderingError::InvalidHref
-            | RenderingError::OutOfMemory => write!(f, "{}", self.description()),
+            | RenderingError::OutOfMemory
+            | RenderingError::HandleIsNotLoaded => write!(f, "{}", self.description()),
         }
     }
 }

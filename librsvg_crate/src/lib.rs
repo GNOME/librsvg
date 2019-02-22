@@ -274,9 +274,13 @@ impl LoadOptions {
         file: &gio::File,
         cancellable: P,
     ) -> Result<SvgHandle, LoadingError> {
-        let stream = file.read(None)?;
+        let cancellable = cancellable.into();
 
-        self.read_stream(&stream.upcast(), Some(&file), cancellable.into())
+        let cancellable_clone = cancellable.clone();
+
+        let stream = file.read(cancellable)?;
+
+        self.read_stream(&stream.upcast(), Some(&file), cancellable_clone)
     }
 
     /// Reads an SVG stream from a `gio::InputStream`.
@@ -297,7 +301,7 @@ impl LoadOptions {
         base_file: Option<&gio::File>,
         cancellable: P,
     ) -> Result<SvgHandle, LoadingError> {
-        let mut handle = Handle::new_with_flags(self.load_flags());
+        let handle = Handle::new_with_flags(self.load_flags());
         handle.construct_read_stream_sync(stream, base_file, cancellable.into())?;
 
         Ok(SvgHandle(handle))
