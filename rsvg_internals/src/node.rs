@@ -402,11 +402,9 @@ impl Node {
                     }
 
                     Attribute::SystemLanguage if cond => {
-                        cond = SystemLanguage::from_attribute(
-                            value,
-                            &(locale_from_environment().map_err(|e| ValueErrorKind::Value(e))?),
-                        )
-                        .map(|SystemLanguage(res)| res)?;
+                        let locale = locale_from_environment();
+                        cond = SystemLanguage::from_attribute(value, &locale)
+                            .map(|SystemLanguage(res)| res)?;
                     }
 
                     _ => {}
