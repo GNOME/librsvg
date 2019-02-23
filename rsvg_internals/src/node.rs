@@ -5,10 +5,11 @@ use std::collections::HashSet;
 use std::rc::{Rc, Weak};
 
 use attributes::Attribute;
-use cond::{locale_from_environment, RequiredExtensions, RequiredFeatures, SystemLanguage};
+use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use css::CssStyles;
 use drawing_ctx::DrawingCtx;
 use error::*;
+use locale_config::Locale;
 use parsers::Parse;
 use properties::{ComputedValues, Overflow, SpecifiedValue, SpecifiedValues};
 use property_bag::PropertyBag;
@@ -349,7 +350,7 @@ impl Node {
         self.data.cond.get()
     }
 
-    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) {
+    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Transform => match Matrix::parse_str(value) {
@@ -364,7 +365,7 @@ impl Node {
             }
         }
 
-        match self.parse_conditional_processing_attributes(pbag) {
+        match self.parse_conditional_processing_attributes(pbag, locale) {
             Ok(_) => (),
             Err(e) => {
                 self.set_error(e);
@@ -384,6 +385,7 @@ impl Node {
     fn parse_conditional_processing_attributes(
         &self,
         pbag: &PropertyBag<'_>,
+        locale: &Locale,
     ) -> Result<(), NodeError> {
         let mut cond = self.get_cond();
 
@@ -402,8 +404,7 @@ impl Node {
                     }
 
                     Attribute::SystemLanguage if cond => {
-                        let locale = locale_from_environment();
-                        cond = SystemLanguage::from_attribute(value, &locale)
+                        cond = SystemLanguage::from_attribute(value, locale)
                             .map(|SystemLanguage(res)| res)?;
                     }
 

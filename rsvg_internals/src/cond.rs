@@ -3,7 +3,6 @@ use std::ascii::AsciiExt;
 
 use std::str::FromStr;
 
-use glib;
 use language_tags::LanguageTag;
 use locale_config::{LanguageRange, Locale};
 
@@ -108,27 +107,6 @@ impl SystemLanguage {
             },
         )
     }
-}
-
-/// Gets the user's preferred locale from the environment and
-/// translates it to a `Locale` with `LanguageRange` fallbacks.
-///
-/// The `Locale::current()` call only contemplates a single language,
-/// but glib is smarter, and `g_get_langauge_names()` can provide
-/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
-/// English and German).  This function converts the output of
-/// `g_get_language_names()` into a `Locale` with appropriate
-/// fallbacks.
-pub fn locale_from_environment() -> Locale {
-    let mut locale = Locale::invariant();
-
-    for name in glib::get_language_names() {
-        if let Ok(range) = LanguageRange::from_unix(&name) {
-            locale.add(&range);
-        }
-    }
-
-    locale
 }
 
 fn locale_accepts_language_tag(

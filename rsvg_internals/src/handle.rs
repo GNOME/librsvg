@@ -19,7 +19,7 @@ use glib::{self, Bytes, Cast};
 use glib_sys;
 use gobject_sys;
 use libc;
-use url::Url;
+use locale_config::{LanguageRange, Locale};
 
 use allowed_url::{AllowedUrl, Href};
 use c_api::{get_rust_handle, HandleFlags, RsvgHandle, RsvgHandleFlags};
@@ -32,6 +32,7 @@ use pixbuf_utils::pixbuf_from_surface;
 use structure::{IntrinsicDimensions, NodeSvg};
 use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use svg::Svg;
+use url::Url;
 use util::rsvg_g_warning;
 use xml::XmlState;
 use xml2_load::xml_state_load_from_possibly_compressed_stream;
@@ -75,17 +76,23 @@ pub struct LoadFlags {
 pub struct LoadOptions {
     pub flags: LoadFlags,
     pub base_url: Option<Url>,
+    pub locale: Locale,
 }
 
 impl LoadOptions {
-    fn new(flags: LoadFlags, base_url: Option<Url>) -> LoadOptions {
-        LoadOptions { flags, base_url }
+    fn new(flags: LoadFlags, base_url: Option<Url>, locale: Locale) -> LoadOptions {
+        LoadOptions {
+            flags,
+            base_url,
+            locale,
+        }
     }
 
     pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> LoadOptions {
         LoadOptions {
             flags: self.flags,
             base_url: Some((*base_url).clone()),
+            locale: self.locale.clone(),
         }
     }
 }
@@ -257,7 +264,11 @@ impl Handle {
     }
 
     fn load_options(&self) -> LoadOptions {
-        LoadOptions::new(self.load_flags.get(), self.base_url.borrow().clone())
+        LoadOptions::new(
+            self.load_flags.get(),
+            self.base_url.borrow().clone(),
+            locale_from_environment(),
+        )
     }
 
     pub fn write(&self, buf: &[u8]) {
@@ -728,6 +739,27 @@ impl LoadFlags {
 
         flags
     }
+}
+
+/// Gets the user's preferred locale from the environment and
+/// translates it to a `Locale` with `LanguageRange` fallbacks.
+///
+/// The `Locale::current()` call only contemplates a single language,
+/// but glib is smarter, and `g_get_langauge_names()` can provide
+/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
+/// English and German).  This function converts the output of
+/// `g_get_language_names()` into a `Locale` with appropriate
+/// fallbacks.
+fn locale_from_environment() -> Locale {
+    let mut locale = Locale::invariant();
+
+    for name in glib::get_language_names() {
+        if let Ok(range) = LanguageRange::from_unix(&name) {
+            locale.add(&range);
+        }
+    }
+
+    locale
 }
 
 #[no_mangle]
