@@ -12,11 +12,11 @@
 //!
 //! # Basic usage
 //!
-//! * Create a [`LoadOptions`] struct.
-//! * Get an [`SvgHandle`] from the [`LoadOptions`].
+//! * Create a [`Loader`] struct.
+//! * Get an [`SvgHandle`] from the [`Loader`].
 //! * Get a [`CairoRenderer`] from the [`SvgHandle`] and render to a Cairo context.
 //!
-//! [`LoadOptions`]: struct.LoadOptions.html
+//! [`Loader`]: struct.Loader.html
 //! [`SvgHandle`]: struct.SvgHandle.html
 //! [`CairoRenderer`]: struct.CairoRenderer.html
 //!
@@ -56,7 +56,7 @@
 //!
 //! 2. All other URL schemes in references require a base URL.  For
 //! example, this means that if you load an SVG with
-//! [`LoadOptions.read`](struct.LoadOptions.html#method.read) without
+//! [`Loader.read`](struct.Loader.html#method.read) without
 //! providing a `base_url`, then any referenced files will not be
 //! allowed (e.g. raster images to be loaded from other files will not
 //! work).
@@ -111,23 +111,23 @@ pub use rsvg_internals::{
     RenderingError,
 };
 
-/// Full configuration for loading an [`SvgHandle`][SvgHandle].
+/// Struct for loading an [`SvgHandle`][SvgHandle].
 ///
 /// This is the starting point for using librsvg.  This struct
 /// implements a builder pattern for configuring an
 /// [`SvgHandle`][SvgHandle]'s options, and then loading the SVG data.
-/// You can call the methods of `LoadOptions` in sequence to configure
+/// You can call the methods of `Loader` in sequence to configure
 /// how SVG data should be loaded, and finally use one of the loading
 /// functions to load an [`SvgHandle`][SvgHandle].
 ///
 /// [SvgHandle]: struct.SvgHandle.html
-pub struct LoadOptions {
+pub struct Loader {
     unlimited_size: bool,
     keep_image_data: bool,
 }
 
-impl LoadOptions {
-    /// Creates a `LoadOptions` with the default flags.
+impl Loader {
+    /// Creates a `Loader` with the default flags.
     ///
     /// * [`unlimited_size`](#method.unlimited_size) defaults to `false`, as malicious
     /// SVG files could cause the XML parser to consume very large amounts of memory.
@@ -142,14 +142,14 @@ impl LoadOptions {
     /// ```ignore
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
+    /// let svg_handle = Loader::new()
     ///     .read_path("example.svg")
     ///     .unwrap();
     /// ```
     pub fn new() -> Self {
-        LoadOptions {
+        Loader {
             unlimited_size: false,
             keep_image_data: false,
         }
@@ -168,9 +168,9 @@ impl LoadOptions {
     /// ```ignore
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
+    /// let svg_handle = Loader::new()
     ///     .unlimited_size(true)
     ///     .read_path("trusted-huge-file.svg")
     ///     .unwrap();
@@ -197,9 +197,9 @@ impl LoadOptions {
     /// extern crate cairo;
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
+    /// let svg_handle = Loader::new()
     ///     .keep_image_data(true)
     ///     .read_path("svg-with-embedded-images.svg")
     ///     .unwrap();
@@ -228,9 +228,9 @@ impl LoadOptions {
     /// ```ignore
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
+    /// let svg_handle = Loader::new()
     ///     .read_path("hello.svg")
     ///     .unwrap();
     /// ```
@@ -263,9 +263,9 @@ impl LoadOptions {
     /// extern crate gio;
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
+    /// let svg_handle = Loader::new()
     ///     .read_file(&gio::File::new_for_path("hello.svg"), None)
     ///     .unwrap();
     /// ```
@@ -311,7 +311,7 @@ impl LoadOptions {
 /// Handle used to hold SVG data in memory.
 ///
 /// You can create this from one of the `read` methods in
-/// [`LoadOptions`](#struct.LoadOptions.html).
+/// [`Loader`](#struct.Loader.html).
 pub struct SvgHandle(Handle);
 
 /// Can render an `SvgHandle` to a Cairo context.
