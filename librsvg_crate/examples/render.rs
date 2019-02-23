@@ -19,7 +19,7 @@ fn main() {
     let output = args.next().unwrap();
 
     let handle = librsvg::Loader::new().read_path(input).unwrap();
-    let renderer = handle.get_cairo_renderer();
+    let renderer = librsvg::CairoRenderer::new(&handle);
 
     let (w, h) = renderer.get_dimensions().unwrap();
 

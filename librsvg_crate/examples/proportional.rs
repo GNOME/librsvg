@@ -29,7 +29,7 @@ fn main() {
     assert!(width > 0 && height > 0);
 
     let handle = librsvg::Loader::new().read_path(input).unwrap();
-    let renderer = handle.get_cairo_renderer();
+    let renderer = librsvg::CairoRenderer::new(&handle);
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();
     let cr = cairo::Context::new(&surface);
