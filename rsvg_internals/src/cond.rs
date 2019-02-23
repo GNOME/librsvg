@@ -119,15 +119,16 @@ impl SystemLanguage {
 /// English and German).  This function converts the output of
 /// `g_get_language_names()` into a `Locale` with appropriate
 /// fallbacks.
-pub fn locale_from_environment() -> Result<Locale, String> {
+pub fn locale_from_environment() -> Locale {
     let mut locale = Locale::invariant();
 
     for name in glib::get_language_names() {
-        let range = LanguageRange::from_unix(&name).map_err(|e| format!("{}", e))?;
-        locale.add(&range);
+        if let Ok(range) = LanguageRange::from_unix(&name) {
+            locale.add(&range);
+        }
     }
 
-    Ok(locale)
+    locale
 }
 
 fn locale_accepts_language_tag(
