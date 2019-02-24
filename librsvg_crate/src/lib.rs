@@ -129,7 +129,7 @@ pub struct Loader {
 impl Loader {
     /// Creates a `Loader` with the default flags.
     ///
-    /// * [`unlimited_size`](#method.unlimited_size) defaults to `false`, as malicious
+    /// * [`unlimited_size`](#method.with_unlimited_size) defaults to `false`, as malicious
     /// SVG files could cause the XML parser to consume very large amounts of memory.
     ///
     /// * [`keep_image_data`](#method.keep_image_data) defaults to
@@ -171,12 +171,12 @@ impl Loader {
     /// use librsvg::Loader;
     ///
     /// let svg_handle = Loader::new()
-    ///     .unlimited_size(true)
+    ///     .with_unlimited_size()
     ///     .read_path("trusted-huge-file.svg")
     ///     .unwrap();
     /// ```
-    pub fn unlimited_size(mut self, unlimited: bool) -> Self {
-        self.unlimited_size = unlimited;
+    pub fn with_unlimited_size(mut self) -> Self {
+        self.unlimited_size = true;
         self
     }
 
@@ -200,7 +200,7 @@ impl Loader {
     /// use librsvg::Loader;
     ///
     /// let svg_handle = Loader::new()
-    ///     .keep_image_data(true)
+    ///     .keep_image_data()
     ///     .read_path("svg-with-embedded-images.svg")
     ///     .unwrap();
     ///
@@ -210,8 +210,8 @@ impl Loader {
     /// let renderer = CairoRenderer::new(&svg_handle);
     /// renderer.render(&cr).unwrap();
     /// ```
-    pub fn keep_image_data(mut self, keep: bool) -> Self {
-        self.keep_image_data = keep;
+    pub fn keep_image_data(mut self) -> Self {
+        self.keep_image_data = true;
         self
     }
 
