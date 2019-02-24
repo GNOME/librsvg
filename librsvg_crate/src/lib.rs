@@ -355,14 +355,14 @@ impl<'a> CairoRenderer<'a> {
         }
     }
 
-    pub fn get_dimensions(&self) -> Result<(i32, i32), RenderingError> {
+    pub fn dimensions(&self) -> Result<(i32, i32), RenderingError> {
         self.handle
             .0
             .get_dimensions()
             .map(|dimensions| (dimensions.width, dimensions.height))
     }
 
-    pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+    pub fn intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let d = self.handle.0.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
@@ -400,7 +400,7 @@ impl<'a> CairoRenderer<'a> {
     /// the child elements.
     ///
     /// FIXME: example
-    pub fn get_geometry_for_element(
+    pub fn geometry_for_element(
         &self,
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
