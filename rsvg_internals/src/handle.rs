@@ -42,6 +42,7 @@ pub struct RsvgHandle {
 
 // Keep in sync with rsvg.h:RsvgDimensionData
 #[repr(C)]
+#[derive(Debug)]
 pub struct RsvgDimensionData {
     pub width: libc::c_int,
     pub height: libc::c_int,
@@ -890,6 +891,9 @@ pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
 
 fn get_pixbuf_sub(handle: &mut Handle, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
     let dimensions = handle.get_dimensions()?;
+    dbg!(&dimensions);
+    dbg!(&dimensions.width);
+    dbg!(&dimensions.height);
 
     let surface = ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
 
