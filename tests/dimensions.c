@@ -153,6 +153,8 @@ main (int argc, char *argv[])
 
     g_test_init (&argc, &argv, NULL);
 
+    test_utils_setup_font_map ();
+
     for (i = 0; i < n_fixtures; i++)
         g_test_add_data_func (fixtures[i].test_name, &fixtures[i], (void*)test_dimensions);
 
