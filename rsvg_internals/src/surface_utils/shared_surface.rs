@@ -61,7 +61,7 @@ pub enum SurfaceType {
 pub struct SharedImageSurface {
     surface: ImageSurface,
 
-    data_ptr: NonNull<u8>, // *const.
+    data_ptr: *const u8,
     width: i32,
     height: i32,
     stride: isize,
@@ -128,9 +128,7 @@ impl SharedImageSurface {
             return Err(surface.status());
         }
 
-        let data_ptr =
-            NonNull::new(unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) })
-                .unwrap();
+        let data_ptr = unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) };
 
         let width = surface.get_width();
         let height = surface.get_height();
@@ -273,7 +271,6 @@ impl SharedImageSurface {
         let value = unsafe {
             *(self
                 .data_ptr
-                .as_ptr()
                 .offset(y as isize * self.stride + x as isize * 4) as *const u32)
         };
 
@@ -285,7 +282,7 @@ impl SharedImageSurface {
     pub fn get_pixel_by_offset(&self, offset: isize) -> Pixel {
         assert!(offset < self.stride as isize * self.height as isize);
 
-        let value = unsafe { *(self.data_ptr.as_ptr().offset(offset) as *const u32) };
+        let value = unsafe { *(self.data_ptr.offset(offset) as *const u32) };
         Pixel::from_u32(value)
     }
 
@@ -869,4 +866,10 @@ impl SharedImageSurface {
     pub unsafe fn to_glib_none(&self) -> Stash<'_, *mut cairo_sys::cairo_surface_t, ImageSurface> {
         self.surface.to_glib_none()
     }
+}
+
+#[test]
+fn zero_sized_surface() {
+    let surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 0, 0).unwrap();
+    let _shared_surface = SharedImageSurface::new(surf, SurfaceType::SRgb).unwrap();
 }
