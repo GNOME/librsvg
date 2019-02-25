@@ -123,6 +123,13 @@ impl SharedImageSurface {
             unsafe { cairo_sys::cairo_surface_get_reference_count(surface.to_raw_none()) };
         assert_eq!(reference_count, 1);
 
+        let width = surface.get_width();
+        let height = surface.get_height();
+        // Cairo allows zero-sized surfaces, but it does malloc(0), whose result
+        // is implementation-defined.  So, we can't assume NonNull below.  This is
+        // why we disallow zero-sized surfaces here.
+        assert!(width > 0 && height > 0);
+
         surface.flush();
         if surface.status() != cairo::Status::Success {
             return Err(surface.status());
@@ -132,8 +139,6 @@ impl SharedImageSurface {
             NonNull::new(unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) })
                 .unwrap();
 
-        let width = surface.get_width();
-        let height = surface.get_height();
         let stride = surface.get_stride() as isize;
 
         Ok(Self {

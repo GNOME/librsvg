@@ -623,6 +623,7 @@ dimensions_and_position (void)
 struct size_func_data {
     gboolean called;
     gboolean destroyed;
+    gboolean testing_size_func_calls;
 };
 
 static void
@@ -630,10 +631,12 @@ size_func (gint *width, gint *height, gpointer user_data)
 {
     struct size_func_data *data = user_data;
 
-    g_assert (!data->called);
-    data->called = TRUE;
+    if (data->testing_size_func_calls) {
+        g_assert (!data->called);
+        data->called = TRUE;
 
-    g_assert (!data->destroyed);
+        g_assert (!data->destroyed);
+    }
 
     *width = 42;
     *height = 43;
@@ -644,8 +647,10 @@ size_func_destroy (gpointer user_data)
 {
     struct size_func_data *data = user_data;
 
-    g_assert (!data->destroyed);
-    data->destroyed = TRUE;
+    if (data->testing_size_func_calls) {
+        g_assert (!data->destroyed);
+        data->destroyed = TRUE;
+    }
 }
 
 static void
@@ -665,6 +670,7 @@ set_size_callback (void)
 
     data.called = FALSE;
     data.destroyed = FALSE;
+    data.testing_size_func_calls = TRUE;
 
     rsvg_handle_set_size_callback (handle, size_func, &data, size_func_destroy);
 
@@ -695,11 +701,13 @@ reset_size_callback (void)
 
     data_1.called = FALSE;
     data_1.destroyed = FALSE;
+    data_1.testing_size_func_calls = TRUE;
 
     rsvg_handle_set_size_callback (handle, size_func, &data_1, size_func_destroy);
 
     data_2.called = FALSE;
     data_2.destroyed = FALSE;
+    data_2.testing_size_func_calls = TRUE;
 
     rsvg_handle_set_size_callback (handle, size_func, &data_2, size_func_destroy);
     g_assert (data_1.destroyed);
@@ -707,6 +715,48 @@ reset_size_callback (void)
     g_object_unref (handle);
 
     g_assert (data_2.destroyed);
+}
+
+static void
+zero_size_func (gint *width, gint *height, gpointer user_data)
+{
+    *width = 0;
+    *height = 0;
+}
+
+static void
+render_with_zero_size_callback (void)
+{
+    /* gdk_pixbuf_get_file_info() uses a GdkPixbufLoader, but in its
+     * "size-prepared" callback it saves the computed size, and then calls
+     * gdk_pixbuf_loader_set_size(loader, 0, 0).  Presumably it does to tell
+     * loaders that it only wanted to know the size, but that they shouldn't
+     * decode or render the image to a pixbuf buffer.
+     *
+     * Librsvg used to panic when getting (0, 0) from the size_callback; this
+     * test is to check that there is no such crash now.  Instead, librsvg
+     * will return a 1x1 transparent pixbuf.
+     */
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+    RsvgHandle *handle;
+    GdkPixbuf *pixbuf;
+
+    handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    rsvg_handle_set_size_callback (handle, zero_size_func, NULL, NULL);
+
+    pixbuf = rsvg_handle_get_pixbuf (handle);
+    g_assert (pixbuf != NULL);
+    g_assert (gdk_pixbuf_get_width (pixbuf) == 1);
+    g_assert (gdk_pixbuf_get_height (pixbuf) == 1);
+
+    g_object_unref (pixbuf);
+    g_object_unref (handle);
 }
 
 static void
@@ -1041,6 +1091,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
     g_test_add_func ("/api/set_size_callback", set_size_callback);
     g_test_add_func ("/api/reset_size_callback", reset_size_callback);
+    g_test_add_func ("/api/render_with_zero_size_callback", render_with_zero_size_callback);
     g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);

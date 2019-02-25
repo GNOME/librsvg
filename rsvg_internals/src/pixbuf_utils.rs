@@ -20,6 +20,8 @@ use surface_utils::{
 // Pixbuf::new() doesn't return out-of-memory errors properly
 // See https://github.com/gtk-rs/gdk-pixbuf/issues/96
 fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {
+    assert!(width > 0 && height > 0);
+
     unsafe {
         let raw_pixbuf = gdk_pixbuf_sys::gdk_pixbuf_new(
             Colorspace::Rgb.to_glib(),
@@ -34,6 +36,25 @@ fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {
         }
 
         Ok(from_glib_full(raw_pixbuf))
+    }
+}
+
+fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
+    // GdkPixbuf does not allow zero-sized pixbufs, but Cairo allows zero-sized
+    // surfaces.  In this case, return a 1-pixel transparent pixbuf.
+
+    unsafe {
+        let raw_pixbuf =
+            gdk_pixbuf_sys::gdk_pixbuf_new(Colorspace::Rgb.to_glib(), true.to_glib(), 8, 1, 1);
+
+        if raw_pixbuf.is_null() {
+            return Err(RenderingError::OutOfMemory);
+        }
+
+        let pixbuf: Pixbuf = from_glib_full(raw_pixbuf);
+        pixbuf.put_pixel(0, 0, 0, 0, 0, 0);
+
+        Ok(pixbuf)
     }
 }
 
@@ -140,6 +161,10 @@ fn render_to_pixbuf_at_size(
     width: i32,
     height: i32,
 ) -> Result<Pixbuf, RenderingError> {
+    if width == 0 || height == 0 {
+        return empty_pixbuf();
+    }
+
     let surface = ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
     {
