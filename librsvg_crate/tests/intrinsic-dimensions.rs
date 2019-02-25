@@ -7,12 +7,13 @@ use gio::MemoryInputStreamExt;
 use glib::Cast;
 
 use librsvg::{
+    CairoRenderer,
     DefsLookupErrorKind,
     HrefError,
     IntrinsicDimensions,
     Length,
     LengthUnit,
-    LoadOptions,
+    Loader,
     RenderingError,
     SvgHandle,
 };
@@ -21,7 +22,7 @@ fn load_svg(input: &'static [u8]) -> SvgHandle {
     let stream = gio::MemoryInputStream::new();
     stream.add_bytes(&glib::Bytes::from_static(input));
 
-    LoadOptions::new()
+    Loader::new()
         .read_stream(&stream.upcast(), None, None)
         .unwrap()
 }
@@ -35,7 +36,7 @@ fn no_intrinsic_dimensions() {
     );
 
     assert_eq!(
-        svg.get_cairo_renderer().get_intrinsic_dimensions(),
+        CairoRenderer::new(&svg).intrinsic_dimensions(),
         IntrinsicDimensions {
             width: None,
             height: None,
@@ -53,7 +54,7 @@ fn has_intrinsic_dimensions() {
     );
 
     assert_eq!(
-        svg.get_cairo_renderer().get_intrinsic_dimensions(),
+        CairoRenderer::new(&svg).intrinsic_dimensions(),
         IntrinsicDimensions {
             width: Some(Length::new(10.0, LengthUnit::Cm)),
             height: Some(Length::new(20.0, LengthUnit::Px)),
@@ -77,8 +78,8 @@ fn root_geometry_with_percent_viewport() {
 "#,
     );
 
-    let renderer = svg.get_cairo_renderer();
-    let (ink_r, logical_r) = renderer.get_geometry_for_element(None).unwrap();
+    let renderer = CairoRenderer::new(&svg);
+    let (ink_r, logical_r) = renderer.geometry_for_element(None).unwrap();
 
     let rect = cairo::Rectangle {
         x: 10.0,
@@ -100,8 +101,8 @@ fn element_geometry_with_percent_viewport() {
 "#,
     );
 
-    let renderer = svg.get_cairo_renderer();
-    let (ink_r, logical_r) = renderer.get_geometry_for_element(Some("#foo")).unwrap();
+    let renderer = CairoRenderer::new(&svg);
+    let (ink_r, logical_r) = renderer.geometry_for_element(Some("#foo")).unwrap();
 
     let rect = cairo::Rectangle {
         x: 10.0,
@@ -121,8 +122,8 @@ fn element_geometry_for_nonexistent_element() {
 "#,
     );
 
-    let renderer = svg.get_cairo_renderer();
-    match renderer.get_geometry_for_element(Some("#foo")) {
+    let renderer = CairoRenderer::new(&svg);
+    match renderer.geometry_for_element(Some("#foo")) {
         Err(RenderingError::InvalidId(DefsLookupErrorKind::NotFound)) => (),
         _ => panic!(),
     }
@@ -136,18 +137,18 @@ fn element_geometry_for_invalid_id() {
 "#,
     );
 
-    let renderer = svg.get_cairo_renderer();
-    match renderer.get_geometry_for_element(Some("foo")) {
+    let renderer = CairoRenderer::new(&svg);
+    match renderer.geometry_for_element(Some("foo")) {
         Err(RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences)) => (),
         _ => panic!(),
     }
 
-    match renderer.get_geometry_for_element(Some("foo.svg#foo")) {
+    match renderer.geometry_for_element(Some("foo.svg#foo")) {
         Err(RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences)) => (),
         _ => panic!(),
     }
 
-    match renderer.get_geometry_for_element(Some("")) {
+    match renderer.geometry_for_element(Some("")) {
         Err(RenderingError::InvalidId(DefsLookupErrorKind::HrefError(HrefError::ParseError))) => (),
         _ => panic!(),
     }

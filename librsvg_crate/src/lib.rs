@@ -12,11 +12,11 @@
 //!
 //! # Basic usage
 //!
-//! * Create a [`LoadOptions`] struct.
-//! * Get an [`SvgHandle`] from the [`LoadOptions`].
-//! * Get a [`CairoRenderer`] from the [`SvgHandle`] and render to a Cairo context.
+//! * Create a [`Loader`] struct.
+//! * Get an [`SvgHandle`] from the [`Loader`].
+//! * Create a [`CairoRenderer`] for the [`SvgHandle`] and render to a Cairo context.
 //!
-//! [`LoadOptions`]: struct.LoadOptions.html
+//! [`Loader`]: struct.Loader.html
 //! [`SvgHandle`]: struct.SvgHandle.html
 //! [`CairoRenderer`]: struct.CairoRenderer.html
 //!
@@ -56,7 +56,7 @@
 //!
 //! 2. All other URL schemes in references require a base URL.  For
 //! example, this means that if you load an SVG with
-//! [`LoadOptions.read`](struct.LoadOptions.html#method.read) without
+//! [`Loader.read`](struct.Loader.html#method.read) without
 //! providing a `base_url`, then any referenced files will not be
 //! allowed (e.g. raster images to be loaded from other files will not
 //! work).
@@ -111,25 +111,25 @@ pub use rsvg_internals::{
     RenderingError,
 };
 
-/// Full configuration for loading an [`SvgHandle`][SvgHandle].
+/// Struct for loading an [`SvgHandle`][SvgHandle].
 ///
 /// This is the starting point for using librsvg.  This struct
 /// implements a builder pattern for configuring an
 /// [`SvgHandle`][SvgHandle]'s options, and then loading the SVG data.
-/// You can call the methods of `LoadOptions` in sequence to configure
+/// You can call the methods of `Loader` in sequence to configure
 /// how SVG data should be loaded, and finally use one of the loading
 /// functions to load an [`SvgHandle`][SvgHandle].
 ///
 /// [SvgHandle]: struct.SvgHandle.html
-pub struct LoadOptions {
+pub struct Loader {
     unlimited_size: bool,
     keep_image_data: bool,
 }
 
-impl LoadOptions {
-    /// Creates a `LoadOptions` with the default flags.
+impl Loader {
+    /// Creates a `Loader` with the default flags.
     ///
-    /// * [`unlimited_size`](#method.unlimited_size) defaults to `false`, as malicious
+    /// * [`unlimited_size`](#method.with_unlimited_size) defaults to `false`, as malicious
     /// SVG files could cause the XML parser to consume very large amounts of memory.
     ///
     /// * [`keep_image_data`](#method.keep_image_data) defaults to
@@ -142,14 +142,14 @@ impl LoadOptions {
     /// ```ignore
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
+    /// let svg_handle = Loader::new()
     ///     .read_path("example.svg")
     ///     .unwrap();
     /// ```
     pub fn new() -> Self {
-        LoadOptions {
+        Loader {
             unlimited_size: false,
             keep_image_data: false,
         }
@@ -168,15 +168,15 @@ impl LoadOptions {
     /// ```ignore
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
-    ///     .unlimited_size(true)
+    /// let svg_handle = Loader::new()
+    ///     .with_unlimited_size()
     ///     .read_path("trusted-huge-file.svg")
     ///     .unwrap();
     /// ```
-    pub fn unlimited_size(mut self, unlimited: bool) -> Self {
-        self.unlimited_size = unlimited;
+    pub fn with_unlimited_size(mut self) -> Self {
+        self.unlimited_size = true;
         self
     }
 
@@ -197,21 +197,21 @@ impl LoadOptions {
     /// extern crate cairo;
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
-    ///     .keep_image_data(true)
+    /// let svg_handle = Loader::new()
+    ///     .keep_image_data()
     ///     .read_path("svg-with-embedded-images.svg")
     ///     .unwrap();
     ///
     /// let surface = cairo::pdf::File::new(..., "hello.pdf");
     /// let cr = cairo::Context::new(&surface);
     ///
-    /// let renderer = svg_handle.get_cairo_renderer();
+    /// let renderer = CairoRenderer::new(&svg_handle);
     /// renderer.render(&cr).unwrap();
     /// ```
-    pub fn keep_image_data(mut self, keep: bool) -> Self {
-        self.keep_image_data = keep;
+    pub fn keep_image_data(mut self) -> Self {
+        self.keep_image_data = true;
         self
     }
 
@@ -228,9 +228,9 @@ impl LoadOptions {
     /// ```ignore
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
+    /// let svg_handle = Loader::new()
     ///     .read_path("hello.svg")
     ///     .unwrap();
     /// ```
@@ -263,9 +263,9 @@ impl LoadOptions {
     /// extern crate gio;
     /// extern crate librsvg;
     ///
-    /// use librsvg::LoadOptions;
+    /// use librsvg::Loader;
     ///
-    /// let svg_handle = LoadOptions::new()
+    /// let svg_handle = Loader::new()
     ///     .read_file(&gio::File::new_for_path("hello.svg"), None)
     ///     .unwrap();
     /// ```
@@ -311,14 +311,10 @@ impl LoadOptions {
 /// Handle used to hold SVG data in memory.
 ///
 /// You can create this from one of the `read` methods in
-/// [`LoadOptions`](#struct.LoadOptions.html).
+/// [`Loader`](#struct.Loader.html).
 pub struct SvgHandle(Handle);
 
 /// Can render an `SvgHandle` to a Cairo context.
-///
-/// Use the
-/// [`get_cairo_renderer`](struct.SvgHandle.html#method.get_cairo_renderer)
-/// method to create this structure.
 pub struct CairoRenderer<'a> {
     handle: &'a SvgHandle,
     dpi: Dpi,
@@ -328,16 +324,6 @@ pub struct CairoRenderer<'a> {
 const DEFAULT_DPI_X: f64 = 96.0;
 const DEFAULT_DPI_Y: f64 = 96.0;
 
-impl SvgHandle {
-    /// Creates a Cairo rendering context for the SVG handle.
-    pub fn get_cairo_renderer(&self) -> CairoRenderer {
-        CairoRenderer {
-            handle: self,
-            dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
-        }
-    }
-}
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IntrinsicDimensions {
     pub width: Option<Length>,
@@ -346,26 +332,37 @@ pub struct IntrinsicDimensions {
 }
 
 impl<'a> CairoRenderer<'a> {
-    /// Configures the dots-per-inch for resolving physical lengths.
+    /// Creates a `CairoRenderer` for the specified `SvgHandle`.
     ///
     /// If an SVG file has physical units like `5cm`, they must be resolved
-    /// to pixel-based values.  Use this function to configure the pixel density
-    /// of your output; the defaults are `96.0` DPI in both dimensions.
-    pub fn set_dpi(&mut self, dpi_x: f64, dpi_y: f64) {
+    /// to pixel-based values.  The default pixel density is `96.0` DPI in
+    /// both dimensions.
+    pub fn new(handle: &'a SvgHandle) -> Self {
+        CairoRenderer {
+            handle,
+            dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
+        }
+    }
+
+    /// Configures the dots-per-inch for resolving physical lengths.
+    pub fn with_dpi(self, dpi_x: f64, dpi_y: f64) -> Self {
         assert!(dpi_x > 0.0);
         assert!(dpi_y > 0.0);
 
-        self.dpi = Dpi::new(dpi_x, dpi_y);
+        CairoRenderer {
+            handle: self.handle,
+            dpi: Dpi::new(dpi_x, dpi_y),
+        }
     }
 
-    pub fn get_dimensions(&self) -> Result<(i32, i32), RenderingError> {
+    pub fn dimensions(&self) -> Result<(i32, i32), RenderingError> {
         self.handle
             .0
             .get_dimensions()
             .map(|dimensions| (dimensions.width, dimensions.height))
     }
 
-    pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+    pub fn intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let d = self.handle.0.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
@@ -403,7 +400,7 @@ impl<'a> CairoRenderer<'a> {
     /// the child elements.
     ///
     /// FIXME: example
-    pub fn get_geometry_for_element(
+    pub fn geometry_for_element(
         &self,
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {

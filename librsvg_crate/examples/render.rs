@@ -18,11 +18,10 @@ fn main() {
     let input = args.next().unwrap();
     let output = args.next().unwrap();
 
-    let handle = librsvg::LoadOptions::new().read_path(input).unwrap();
+    let handle = librsvg::Loader::new().read_path(input).unwrap();
+    let renderer = librsvg::CairoRenderer::new(&handle);
 
-    let renderer = handle.get_cairo_renderer();
-
-    let (w, h) = renderer.get_dimensions().unwrap();
+    let (w, h) = renderer.dimensions().unwrap();
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h).unwrap();
     let cr = cairo::Context::new(&surface);
