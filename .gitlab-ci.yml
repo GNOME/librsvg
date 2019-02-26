@@ -91,6 +91,7 @@ fedora test:
 
 fedora:rawhide:
   image: $AMD64_FEDORA_RAWHIDE
+  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
@@ -103,6 +104,7 @@ fedora:rawhide:
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
+  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "yes"
   before_script:
