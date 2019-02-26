@@ -28,7 +28,7 @@ use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
 use length::RsvgLength;
 use node::RsvgNode;
-use pixbuf_utils::pixbuf_from_surface;
+use pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
 use structure::{IntrinsicDimensions, NodeSvg};
 use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use svg::Svg;
@@ -644,6 +644,10 @@ impl Handle {
         self.check_is_loaded()?;
 
         let dimensions = self.get_dimensions()?;
+
+        if dimensions.width == 0 || dimensions.height == 0 {
+            return empty_pixbuf();
+        }
 
         let surface =
             ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
