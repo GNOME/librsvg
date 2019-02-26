@@ -39,7 +39,7 @@ fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {
     }
 }
 
-fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
+pub fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
     // GdkPixbuf does not allow zero-sized pixbufs, but Cairo allows zero-sized
     // surfaces.  In this case, return a 1-pixel transparent pixbuf.
 
