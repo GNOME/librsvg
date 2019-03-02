@@ -271,16 +271,25 @@ impl NodeTrait for NodeSvg {
 
         let params = draw_ctx.get_view_params();
 
-        let clip_mode = if !values.is_overflow() && node.get_parent().is_some() {
+        let has_parent = node.get_parent().is_some();
+
+        let clip_mode = if !values.is_overflow() && has_parent {
             Some(ClipMode::ClipToViewport)
         } else {
             None
         };
 
+        let (viewport, vbox) = {
+            let viewport = self.get_viewport(values, &params);
+            let vbox = self.vbox.get();
+
+            (viewport, vbox)
+        };
+
         draw_in_viewport(
-            &self.get_viewport(values, &params),
+            &viewport,
             clip_mode,
-            self.vbox.get(),
+            vbox,
             self.preserve_aspect_ratio.get(),
             node,
             values,
