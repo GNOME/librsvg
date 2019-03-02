@@ -17,6 +17,7 @@ url = "1.7.2"
 
 [dev-dependencies]
 cairo-rs = { version = "0.6.0", features = ["png"] }
+rsvg_internals = { path = "../rsvg_internals" }
 
 [build-dependencies]
 pkg-config = "0.3.14"

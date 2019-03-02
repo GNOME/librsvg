@@ -125,6 +125,26 @@ impl Pixel {
             a: (((r * 14042 + g * 47240 + b * 4769) * o) >> 24) as u8,
         }
     }
+
+    #[inline]
+    pub fn diff(self, p: &Pixel) -> Pixel {
+        let a_r = self.r as i32;
+        let a_g = self.g as i32;
+        let a_b = self.b as i32;
+        let a_a = self.a as i32;
+
+        let b_r = p.r as i32;
+        let b_g = p.g as i32;
+        let b_b = p.b as i32;
+        let b_a = p.a as i32;
+
+        let r = (a_r - b_r).abs() as u8;
+        let g = (a_g - b_g).abs() as u8;
+        let b = (a_b - b_b).abs() as u8;
+        let a = (a_a - b_a).abs() as u8;
+
+        Pixel { r, g, b, a }
+    }
 }
 
 impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {}

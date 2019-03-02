@@ -101,6 +101,8 @@ pub use pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_zoom_with_max,
 };
 
+pub use rect::IRect;
+
 #[macro_use]
 mod log;
 
