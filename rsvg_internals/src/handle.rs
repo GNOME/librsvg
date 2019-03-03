@@ -121,14 +121,6 @@ struct SizeCallback {
 }
 
 impl SizeCallback {
-    fn new() -> SizeCallback {
-        SizeCallback {
-            size_func: None,
-            user_data: ptr::null_mut(),
-            destroy_notify: None,
-        }
-    }
-
     fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
         unsafe {
             let mut w = width;
@@ -139,6 +131,16 @@ impl SizeCallback {
             };
 
             (w, h)
+        }
+    }
+}
+
+impl Default for SizeCallback {
+    fn default() -> SizeCallback {
+        SizeCallback {
+            size_func: None,
+            user_data: ptr::null_mut(),
+            destroy_notify: None,
         }
     }
 }
@@ -176,7 +178,7 @@ impl Handle {
             load_flags: Cell::new(LoadFlags::default()),
             load_state: Cell::new(LoadState::Start),
             buffer: RefCell::new(Vec::new()),
-            size_callback: RefCell::new(SizeCallback::new()),
+            size_callback: RefCell::new(SizeCallback::default()),
             in_loop: Cell::new(false),
             is_testing: Cell::new(false),
         }
