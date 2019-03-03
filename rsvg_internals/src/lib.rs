@@ -13,7 +13,6 @@ extern crate float_cmp;
 extern crate gdk_pixbuf;
 extern crate gdk_pixbuf_sys;
 extern crate gio;
-extern crate gio_sys;
 extern crate glib_sys;
 extern crate gobject_sys;
 extern crate itertools;
@@ -40,7 +39,38 @@ extern crate glib;
 #[macro_use]
 extern crate lazy_static;
 
-pub use c_api::{rsvg_rust_error_get_type, rsvg_rust_handle_flags_get_type};
+pub use c_api::{
+    rsvg_rust_error_get_type,
+    rsvg_rust_handle_close,
+    rsvg_rust_handle_flags_get_type,
+    rsvg_rust_handle_get_base_gfile,
+    rsvg_rust_handle_get_base_url,
+    rsvg_rust_handle_get_dimensions,
+    rsvg_rust_handle_get_dimensions_sub,
+    rsvg_rust_handle_get_dpi_x,
+    rsvg_rust_handle_get_dpi_y,
+    rsvg_rust_handle_get_flags,
+    rsvg_rust_handle_get_geometry_sub,
+    rsvg_rust_handle_get_intrinsic_dimensions,
+    rsvg_rust_handle_get_pixbuf_sub,
+    rsvg_rust_handle_get_position_sub,
+    rsvg_rust_handle_has_sub,
+    rsvg_rust_handle_new_from_data,
+    rsvg_rust_handle_new_from_file,
+    rsvg_rust_handle_new_from_gfile_sync,
+    rsvg_rust_handle_new_from_stream_sync,
+    rsvg_rust_handle_new_with_flags,
+    rsvg_rust_handle_read_stream_sync,
+    rsvg_rust_handle_render_cairo_sub,
+    rsvg_rust_handle_set_base_gfile,
+    rsvg_rust_handle_set_base_url,
+    rsvg_rust_handle_set_dpi_x,
+    rsvg_rust_handle_set_dpi_y,
+    rsvg_rust_handle_set_flags,
+    rsvg_rust_handle_set_size_callback,
+    rsvg_rust_handle_set_testing,
+    rsvg_rust_handle_write,
+};
 
 pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
@@ -56,39 +86,7 @@ pub use error::{
     RenderingError,
 };
 
-pub use handle::{
-    rsvg_handle_rust_close,
-    rsvg_handle_rust_get_base_gfile,
-    rsvg_handle_rust_get_base_url,
-    rsvg_handle_rust_get_dimensions,
-    rsvg_handle_rust_get_dimensions_sub,
-    rsvg_handle_rust_get_dpi_x,
-    rsvg_handle_rust_get_dpi_y,
-    rsvg_handle_rust_get_flags,
-    rsvg_handle_rust_get_geometry_sub,
-    rsvg_handle_rust_get_intrinsic_dimensions,
-    rsvg_handle_rust_get_pixbuf_sub,
-    rsvg_handle_rust_get_position_sub,
-    rsvg_handle_rust_has_sub,
-    rsvg_handle_rust_new_from_data,
-    rsvg_handle_rust_new_from_file,
-    rsvg_handle_rust_new_from_gfile_sync,
-    rsvg_handle_rust_new_from_stream_sync,
-    rsvg_handle_rust_new_with_flags,
-    rsvg_handle_rust_read_stream_sync,
-    rsvg_handle_rust_render_cairo_sub,
-    rsvg_handle_rust_set_base_gfile,
-    rsvg_handle_rust_set_base_url,
-    rsvg_handle_rust_set_dpi_x,
-    rsvg_handle_rust_set_dpi_y,
-    rsvg_handle_rust_set_flags,
-    rsvg_handle_rust_set_size_callback,
-    rsvg_handle_rust_set_testing,
-    rsvg_handle_rust_write,
-
-    Handle,
-    LoadFlags,
-};
+pub use handle::{Handle, LoadFlags};
 
 pub use length::{Length, LengthUnit};
 

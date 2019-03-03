@@ -1,32 +1,21 @@
-use std;
 use std::cell::{Cell, RefCell};
-use std::ffi::{CStr, CString};
-use std::mem;
-use std::path::PathBuf;
+use std::ffi::CString;
 use std::ptr;
 use std::rc::Rc;
-use std::slice;
 
 use cairo::{self, ImageSurface, Status};
-use cairo_sys;
 use gdk_pixbuf::Pixbuf;
-use gdk_pixbuf_sys;
 use gio::{self, FileExt};
-use gio_sys;
-use glib::subclass::types::ObjectSubclass;
-use glib::translate::*;
 use glib::{self, Bytes, Cast};
 use glib_sys;
-use gobject_sys;
 use libc;
 use locale_config::{LanguageRange, Locale};
 
 use allowed_url::{AllowedUrl, Href};
-use c_api::{get_rust_handle, HandleFlags, RsvgHandle, RsvgHandleFlags};
+use c_api::{HandleFlags, RsvgDimensionData, RsvgPositionData, RsvgSizeFunc};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
-use error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError};
-use length::RsvgLength;
+use error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use node::RsvgNode;
 use pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
 use structure::{IntrinsicDimensions, NodeSvg};
@@ -36,28 +25,6 @@ use url::Url;
 use util::rsvg_g_warning;
 use xml::XmlState;
 use xml2_load::xml_state_load_from_possibly_compressed_stream;
-
-// A *const RsvgHandle is just an opaque pointer we get from C
-// #[repr(C)]
-// pub struct RsvgHandle {
-//    _private: [u8; 0],
-// }
-
-// Keep in sync with rsvg.h:RsvgDimensionData
-#[repr(C)]
-pub struct RsvgDimensionData {
-    pub width: libc::c_int,
-    pub height: libc::c_int,
-    pub em: f64,
-    pub ex: f64,
-}
-
-// Keep in sync with rsvg.h:RsvgPositionData
-#[repr(C)]
-pub struct RsvgPositionData {
-    pub x: libc::c_int,
-    pub y: libc::c_int,
-}
 
 /// Flags used during loading
 ///
@@ -104,15 +71,6 @@ pub enum LoadState {
     ClosedOk,
     ClosedError,
 }
-
-// Keep in sync with rsvg.h:RsvgSizeFunc
-type RsvgSizeFunc = Option<
-    unsafe extern "C" fn(
-        inout_width: *mut libc::c_int,
-        inout_height: *mut libc::c_int,
-        user_data: glib_sys::gpointer,
-    ),
->;
 
 struct SizeCallback {
     size_func: RsvgSizeFunc,
@@ -215,12 +173,32 @@ impl Handle {
         }
     }
 
-    fn set_base_gfile(&self, file: &gio::File) {
+    pub fn set_base_gfile(&self, file: &gio::File) {
         if let Some(uri) = file.get_uri() {
             self.set_base_url(&uri);
         } else {
             panic!("file has no URI; will not set the base URI");
         }
+    }
+
+    pub fn get_base_url_as_ptr(&self) -> *const libc::c_char {
+        match *self.base_url_cstring.borrow() {
+            None => ptr::null(),
+            Some(ref url) => url.as_ptr(),
+        }
+    }
+
+    pub fn set_size_callback(
+        &self,
+        size_func: RsvgSizeFunc,
+        user_data: glib_sys::gpointer,
+        destroy_notify: glib_sys::GDestroyNotify,
+    ) {
+        *self.size_callback.borrow_mut() = SizeCallback {
+            size_func,
+            user_data,
+            destroy_notify,
+        };
     }
 
     pub fn read_stream_sync(
@@ -241,7 +219,7 @@ impl Handle {
         Ok(())
     }
 
-    fn check_is_loaded(self: &Handle) -> Result<(), RenderingError> {
+    pub fn check_is_loaded(self: &Handle) -> Result<(), RenderingError> {
         match self.load_state.get() {
             LoadState::Start => {
                 rsvg_g_warning("RsvgHandle has not been loaded");
@@ -263,6 +241,10 @@ impl Handle {
                 Err(RenderingError::HandleIsNotLoaded)
             }
         }
+    }
+
+    pub fn load_state(&self) -> LoadState {
+        self.load_state.get()
     }
 
     fn load_options(&self) -> LoadOptions {
@@ -406,7 +388,10 @@ impl Handle {
         }
     }
 
-    fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
+    pub fn get_dimensions_sub(
+        &self,
+        id: Option<&str>,
+    ) -> Result<RsvgDimensionData, RenderingError> {
         self.check_is_loaded()?;
 
         let (ink_r, _) = self.get_geometry_sub(id)?;
@@ -424,7 +409,7 @@ impl Handle {
         })
     }
 
-    fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
+    pub fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
         self.check_is_loaded()?;
 
         if let None = id {
@@ -494,7 +479,7 @@ impl Handle {
     }
 
     /// Returns (ink_rect, logical_rect)
-    fn get_geometry_sub(
+    pub fn get_geometry_sub(
         &self,
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
@@ -642,7 +627,7 @@ impl Handle {
         res
     }
 
-    fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
+    pub fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
         self.check_is_loaded()?;
 
         let dimensions = self.get_dimensions()?;
@@ -664,7 +649,7 @@ impl Handle {
         pixbuf_from_surface(&surface)
     }
 
-    fn construct_new_from_gfile_sync(
+    pub fn construct_new_from_gfile_sync(
         &self,
         file: &gio::File,
         cancellable: Option<&gio::Cancellable>,
@@ -706,6 +691,10 @@ impl Handle {
     // from the public API
     pub fn set_dpi_y(&self, dpi_y: f64) {
         self.dpi.set(Dpi::new(self.dpi.get().x(), dpi_y));
+    }
+
+    pub fn set_testing(&self, testing: bool) {
+        self.is_testing.set(testing);
     }
 }
 
@@ -766,512 +755,4 @@ fn locale_from_environment() -> Locale {
     }
 
     locale
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
-    raw_handle: *const RsvgHandle,
-    uri: *const libc::c_char,
-) {
-    let rhandle = get_rust_handle(raw_handle);
-
-    assert!(!uri.is_null());
-    let uri: String = from_glib_none(uri);
-
-    rhandle.set_base_url(&uri);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_base_gfile(
-    raw_handle: *const Handle,
-) -> *mut gio_sys::GFile {
-    let handle = &*raw_handle;
-
-    match *handle.base_url.borrow() {
-        None => ptr::null_mut(),
-        Some(ref url) => gio::File::new_for_uri(url.as_str()).to_glib_full(),
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_base_gfile(
-    raw_handle: *const RsvgHandle,
-    raw_gfile: *mut gio_sys::GFile,
-) {
-    let rhandle = get_rust_handle(raw_handle);
-
-    assert!(!raw_gfile.is_null());
-
-    let file: gio::File = from_glib_none(raw_gfile);
-
-    rhandle.set_base_gfile(&file);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_base_url(
-    raw_handle: *const RsvgHandle,
-) -> *const libc::c_char {
-    let rhandle = get_rust_handle(raw_handle);
-
-    match *rhandle.base_url_cstring.borrow() {
-        None => ptr::null(),
-        Some(ref url) => url.as_ptr(),
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_x(raw_handle: *const RsvgHandle, dpi_x: f64) {
-    let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.set(Dpi::new(dpi_x, rhandle.dpi.get().y()));
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_x(raw_handle: *const RsvgHandle) -> f64 {
-    let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.get().x()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_dpi_y(raw_handle: *const RsvgHandle, dpi_y: f64) {
-    let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.set(Dpi::new(rhandle.dpi.get().x(), dpi_y));
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_dpi_y(raw_handle: *const RsvgHandle) -> f64 {
-    let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.get().y()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_flags(
-    raw_handle: *const RsvgHandle,
-) -> RsvgHandleFlags {
-    let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.load_flags.get().to_flags().to_glib()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_flags(
-    raw_handle: *const RsvgHandle,
-    flags: RsvgHandleFlags,
-) {
-    let rhandle = get_rust_handle(raw_handle);
-
-    rhandle
-        .load_flags
-        .set(LoadFlags::from_flags(from_glib(flags)));
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_size_callback(
-    raw_handle: *const RsvgHandle,
-    size_func: RsvgSizeFunc,
-    user_data: glib_sys::gpointer,
-    destroy_notify: glib_sys::GDestroyNotify,
-) {
-    let rhandle = get_rust_handle(raw_handle);
-
-    *rhandle.size_callback.borrow_mut() = SizeCallback {
-        size_func,
-        user_data,
-        destroy_notify,
-    };
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_set_testing(
-    raw_handle: *const RsvgHandle,
-    testing: glib_sys::gboolean,
-) {
-    let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.is_testing.set(from_glib(testing));
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_read_stream_sync(
-    handle: *const RsvgHandle,
-    stream: *mut gio_sys::GInputStream,
-    cancellable: *mut gio_sys::GCancellable,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    if rhandle.load_state.get() != LoadState::Start {
-        panic!("handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",);
-    }
-
-    let stream = from_glib_none(stream);
-    let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
-
-    match rhandle.read_stream_sync(&stream, cancellable.as_ref()) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_write(
-    handle: *const RsvgHandle,
-    buf: *const u8,
-    count: usize,
-) {
-    let rhandle = get_rust_handle(handle);
-
-    let load_state = rhandle.load_state.get();
-
-    if !(load_state == LoadState::Start || load_state == LoadState::Loading) {
-        panic!("handle must not be closed in order to write to it");
-    }
-
-    let buffer = slice::from_raw_parts(buf, count);
-
-    rhandle.write(buffer);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_close(
-    handle: *const RsvgHandle,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    match rhandle.close() {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_geometry_sub(
-    handle: *const RsvgHandle,
-    out_ink_rect: *mut RsvgRectangle,
-    out_logical_rect: *mut RsvgRectangle,
-    id: *const libc::c_char,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    let id: Option<String> = from_glib_none(id);
-
-    match rhandle.get_geometry_sub(id.as_ref().map(String::as_str)) {
-        Ok((ink_r, logical_r)) => {
-            if !out_ink_rect.is_null() {
-                *out_ink_rect = ink_r;
-            }
-
-            if !out_logical_rect.is_null() {
-                *out_logical_rect = logical_r;
-            }
-
-            true.to_glib()
-        }
-
-        Err(_) => {
-            if !out_ink_rect.is_null() {
-                *out_ink_rect = mem::zeroed();
-            }
-
-            if !out_logical_rect.is_null() {
-                *out_logical_rect = mem::zeroed();
-            }
-
-            // FIXME: return a proper error code to the public API
-            false.to_glib()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_has_sub(
-    handle: *const RsvgHandle,
-    id: *const libc::c_char,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    if id.is_null() {
-        return false.to_glib();
-    }
-
-    let id: String = from_glib_none(id);
-    // FIXME: return a proper error code to the public API
-    rhandle.has_sub(&id).unwrap_or(false).to_glib()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_render_cairo_sub(
-    handle: *const RsvgHandle,
-    cr: *mut cairo_sys::cairo_t,
-    id: *const libc::c_char,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
-    let id: Option<String> = from_glib_none(id);
-
-    match rhandle.render_cairo_sub(&cr, id.as_ref().map(String::as_str)) {
-        Ok(()) => true.to_glib(),
-
-        Err(_) => {
-            // FIXME: return a proper error code to the public API
-            false.to_glib()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_pixbuf_sub(
-    handle: *const RsvgHandle,
-    id: *const libc::c_char,
-) -> *mut gdk_pixbuf_sys::GdkPixbuf {
-    let rhandle = get_rust_handle(handle);
-    let id: Option<String> = from_glib_none(id);
-
-    match rhandle.get_pixbuf_sub(id.as_ref().map(String::as_str)) {
-        Ok(pixbuf) => pixbuf.to_glib_full(),
-        Err(_) => ptr::null_mut(),
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions(
-    handle: *const RsvgHandle,
-    dimension_data: *mut RsvgDimensionData,
-) {
-    let rhandle = get_rust_handle(handle);
-
-    *dimension_data = rhandle.get_dimensions_no_error();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_dimensions_sub(
-    handle: *const RsvgHandle,
-    dimension_data: *mut RsvgDimensionData,
-    id: *const libc::c_char,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    let id: Option<String> = from_glib_none(id);
-
-    match rhandle.get_dimensions_sub(id.as_ref().map(String::as_str)) {
-        Ok(dimensions) => {
-            *dimension_data = dimensions;
-            true.to_glib()
-        }
-
-        Err(_) => {
-            let d = &mut *dimension_data;
-
-            d.width = 0;
-            d.height = 0;
-            d.em = 0.0;
-            d.ex = 0.0;
-
-            // FIXME: return a proper error code to the public API
-            false.to_glib()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_position_sub(
-    handle: *const RsvgHandle,
-    position_data: *mut RsvgPositionData,
-    id: *const libc::c_char,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    let id: Option<String> = from_glib_none(id);
-
-    match rhandle.get_position_sub(id.as_ref().map(String::as_str)) {
-        Ok(position) => {
-            *position_data = position;
-            true.to_glib()
-        }
-
-        Err(_) => {
-            let p = &mut *position_data;
-
-            p.x = 0;
-            p.y = 0;
-
-            // FIXME: return a proper error code to the public API
-            false.to_glib()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_new_with_flags(flags: u32) -> *const RsvgHandle {
-    let obj: *mut gobject_sys::GObject =
-        glib::Object::new(Handle::get_type(), &[("flags", &flags)])
-            .unwrap()
-            .to_glib_full();
-
-    obj as *mut _
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_new_from_file(
-    filename: *const libc::c_char,
-    error: *mut *mut glib_sys::GError,
-) -> *const RsvgHandle {
-    // This API lets the caller pass a URI, or a file name in the operating system's
-    // encoding.  So, first we'll see if it's UTF-8, and in that case, try the URL version.
-    // Otherwise, we'll try building a path name.
-
-    let cstr = CStr::from_ptr(filename);
-
-    let file = cstr
-        .to_str()
-        .map_err(|_| ())
-        .and_then(|utf8| Url::parse(utf8).map_err(|_| ()))
-        .and_then(|url| Ok(gio::File::new_for_uri(url.as_str())))
-        .unwrap_or_else(|_| gio::File::new_for_path(PathBuf::from_glib_none(filename)));
-
-    rsvg_handle_rust_new_from_gfile_sync(file.to_glib_none().0, 0, ptr::null_mut(), error)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_new_from_gfile_sync(
-    file: *mut gio_sys::GFile,
-    flags: u32,
-    cancellable: *mut gio_sys::GCancellable,
-    error: *mut *mut glib_sys::GError,
-) -> *const RsvgHandle {
-    let raw_handle = rsvg_handle_rust_new_with_flags(flags);
-
-    let rhandle = get_rust_handle(raw_handle);
-
-    let file = from_glib_none(file);
-    let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
-
-    match rhandle.construct_new_from_gfile_sync(&file, cancellable.as_ref()) {
-        Ok(()) => raw_handle,
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            gobject_sys::g_object_unref(raw_handle as *mut _);
-            ptr::null_mut()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_new_from_stream_sync(
-    input_stream: *mut gio_sys::GInputStream,
-    base_file: *mut gio_sys::GFile,
-    flags: u32,
-    cancellable: *mut gio_sys::GCancellable,
-    error: *mut *mut glib_sys::GError,
-) -> *const RsvgHandle {
-    let raw_handle = rsvg_handle_rust_new_with_flags(flags);
-
-    let rhandle = get_rust_handle(raw_handle);
-
-    let base_file: Option<gio::File> = from_glib_none(base_file);
-    let stream = from_glib_none(input_stream);
-    let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
-
-    match rhandle.construct_read_stream_sync(&stream, base_file.as_ref(), cancellable.as_ref()) {
-        Ok(()) => raw_handle,
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            gobject_sys::g_object_unref(raw_handle as *mut _);
-            ptr::null_mut()
-        }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_new_from_data(
-    data: *mut u8,
-    len: usize,
-    error: *mut *mut glib_sys::GError,
-) -> *const RsvgHandle {
-    // We create the MemoryInputStream without the gtk-rs binding because of this:
-    //
-    // - The binding doesn't provide _new_from_data().  All of the binding's ways to
-    // put data into a MemoryInputStream involve copying the data buffer.
-    //
-    // - We can't use glib::Bytes from the binding either, for the same reason.
-    //
-    // - For now, we are using the other C-visible constructor, so we need a raw pointer to the
-    //   stream, anyway.
-
-    assert!(len <= std::isize::MAX as usize);
-    let len = len as isize;
-
-    let raw_stream = gio_sys::g_memory_input_stream_new_from_data(data, len, None);
-
-    let ret = rsvg_handle_rust_new_from_stream_sync(
-        raw_stream as *mut _,
-        ptr::null_mut(), // base_file
-        0,               // flags
-        ptr::null_mut(), // cancellable
-        error,
-    );
-
-    gobject_sys::g_object_unref(raw_stream as *mut _);
-    ret
-}
-
-unsafe fn set_out_param<T: Copy>(
-    out_has_param: *mut glib_sys::gboolean,
-    out_param: *mut T,
-    value: &Option<T>,
-) {
-    let has_value = if let Some(ref v) = *value {
-        if !out_param.is_null() {
-            *out_param = *v;
-        }
-
-        true
-    } else {
-        false
-    };
-
-    if !out_has_param.is_null() {
-        *out_has_param = has_value.to_glib();
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_get_intrinsic_dimensions(
-    handle: *mut RsvgHandle,
-    out_has_width: *mut glib_sys::gboolean,
-    out_width: *mut RsvgLength,
-    out_has_height: *mut glib_sys::gboolean,
-    out_height: *mut RsvgLength,
-    out_has_viewbox: *mut glib_sys::gboolean,
-    out_viewbox: *mut RsvgRectangle,
-) {
-    let rhandle = get_rust_handle(handle);
-
-    if rhandle.check_is_loaded().is_err() {
-        return;
-    }
-
-    let d = rhandle.get_intrinsic_dimensions();
-
-    let w = d.width.map(|l| l.to_length());
-    let h = d.width.map(|l| l.to_length());
-    let r = d.vbox.map(RsvgRectangle::from);
-
-    set_out_param(out_has_width, out_width, &w);
-    set_out_param(out_has_height, out_height, &h);
-    set_out_param(out_has_viewbox, out_viewbox, &r);
 }
