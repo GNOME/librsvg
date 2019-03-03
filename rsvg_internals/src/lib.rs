@@ -58,7 +58,6 @@ pub use error::{
 
 pub use handle::{
     rsvg_handle_rust_close,
-    rsvg_handle_rust_free,
     rsvg_handle_rust_get_base_gfile,
     rsvg_handle_rust_get_base_url,
     rsvg_handle_rust_get_dimensions,
@@ -71,7 +70,6 @@ pub use handle::{
     rsvg_handle_rust_get_pixbuf_sub,
     rsvg_handle_rust_get_position_sub,
     rsvg_handle_rust_has_sub,
-    rsvg_handle_rust_new,
     rsvg_handle_rust_new_from_data,
     rsvg_handle_rust_new_from_file,
     rsvg_handle_rust_new_from_gfile_sync,

@@ -767,17 +767,6 @@ fn locale_from_environment() -> Locale {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_new() -> *mut Handle {
-    Box::into_raw(Box::new(Handle::new()))
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_rust_free(raw_handle: *mut Handle) {
-    assert!(!raw_handle.is_null());
-    Box::from_raw(raw_handle);
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_rust_set_base_url(
     raw_handle: *const RsvgHandle,
     uri: *const libc::c_char,
