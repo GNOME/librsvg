@@ -12,7 +12,7 @@ use libc;
 use locale_config::{LanguageRange, Locale};
 
 use allowed_url::{AllowedUrl, Href};
-use c_api::{HandleFlags, RsvgDimensionData, RsvgPositionData, RsvgSizeFunc};
+use c_api::{RsvgDimensionData, RsvgPositionData, RsvgSizeFunc};
 use dpi::Dpi;
 use drawing_ctx::{DrawingCtx, RsvgRectangle};
 use error::{DefsLookupErrorKind, LoadingError, RenderingError};
@@ -679,11 +679,6 @@ impl Handle {
     }
 
     // from the public API
-    pub fn set_load_flags(&self, flags: HandleFlags) {
-        self.load_flags.set(LoadFlags::from_flags(flags));
-    }
-
-    // from the public API
     pub fn set_dpi_x(&self, dpi_x: f64) {
         self.dpi.set(Dpi::new(dpi_x, self.dpi.get().y()));
     }
@@ -710,29 +705,6 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
 
         rsvg_g_warning(&msg);
         Err(RenderingError::Cairo(status))
-    }
-}
-
-impl LoadFlags {
-    pub fn from_flags(flags: HandleFlags) -> Self {
-        LoadFlags {
-            unlimited_size: flags.contains(HandleFlags::UNLIMITED),
-            keep_image_data: flags.contains(HandleFlags::KEEP_IMAGE_DATA),
-        }
-    }
-
-    pub fn to_flags(&self) -> HandleFlags {
-        let mut flags = HandleFlags::empty();
-
-        if self.unlimited_size {
-            flags.insert(HandleFlags::UNLIMITED);
-        }
-
-        if self.keep_image_data {
-            flags.insert(HandleFlags::KEEP_IMAGE_DATA);
-        }
-
-        flags
     }
 }
 
