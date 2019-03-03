@@ -86,6 +86,31 @@ mod handle_flags {
 
 pub use self::handle_flags::*;
 
+impl From<HandleFlags> for LoadFlags {
+    fn from(hflags: HandleFlags) -> LoadFlags {
+        LoadFlags {
+            unlimited_size: hflags.contains(HandleFlags::UNLIMITED),
+            keep_image_data: hflags.contains(HandleFlags::KEEP_IMAGE_DATA),
+        }
+    }
+}
+
+impl From<LoadFlags> for HandleFlags {
+    fn from(lflags: LoadFlags) -> HandleFlags {
+        let mut hflags = HandleFlags::empty();
+
+        if lflags.unlimited_size {
+            hflags.insert(HandleFlags::UNLIMITED);
+        }
+
+        if lflags.keep_image_data {
+            hflags.insert(HandleFlags::KEEP_IMAGE_DATA);
+        }
+
+        hflags
+    }
+}
+
 // Keep in sync with rsvg.h:RsvgDimensionData
 #[repr(C)]
 pub struct RsvgDimensionData {
@@ -262,8 +287,7 @@ impl ObjectImpl for Handle {
         match *prop {
             subclass::Property("flags", ..) => {
                 let v: HandleFlags = value.get().expect("flags value has incorrect type");
-
-                self.set_load_flags(v);
+                self.load_flags.set(LoadFlags::from(v));
             }
 
             subclass::Property("dpi-x", ..) => {
@@ -294,7 +318,11 @@ impl ObjectImpl for Handle {
         let prop = &PROPERTIES[id];
 
         match *prop {
-            subclass::Property("flags", ..) => Ok(self.load_flags.get().to_flags().to_value()),
+            subclass::Property("flags", ..) => {
+                let flags = HandleFlags::from(self.load_flags.get());
+                Ok(flags.to_value())
+            }
+
             subclass::Property("dpi-x", ..) => Ok(self.dpi.get().x().to_value()),
             subclass::Property("dpi-y", ..) => Ok(self.dpi.get().y().to_value()),
 
@@ -485,7 +513,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_flags(
 ) -> RsvgHandleFlags {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.load_flags.get().to_flags().to_glib()
+    HandleFlags::from(rhandle.load_flags.get()).to_glib()
 }
 
 #[no_mangle]
@@ -495,9 +523,8 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_flags(
 ) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle
-        .load_flags
-        .set(LoadFlags::from_flags(from_glib(flags)));
+    let flags: HandleFlags = from_glib(flags);
+    rhandle.load_flags.set(LoadFlags::from(flags));
 }
 
 #[no_mangle]
