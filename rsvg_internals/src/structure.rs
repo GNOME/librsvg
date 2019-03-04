@@ -18,7 +18,7 @@ use properties::{ComputedValues, Overflow};
 use property_bag::{OwnedPropertyBag, PropertyBag};
 use rect::RectangleExt;
 use viewbox::*;
-use viewport::{draw_in_viewport, ClipMode};
+use viewport::ClipMode;
 
 pub struct NodeGroup();
 
@@ -286,20 +286,12 @@ impl NodeTrait for NodeSvg {
             (viewport, vbox)
         };
 
-        draw_in_viewport(
-            &viewport,
-            clip_mode,
-            vbox,
-            self.preserve_aspect_ratio.get(),
-            node,
-            values,
-            draw_ctx,
-            clipping,
-            &mut |dc| {
-                // we don't push a layer because draw_in_viewport() already does it
-                node.draw_children(cascaded, dc, clipping)
-            },
-        )
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            let _params =
+                dc.push_new_viewport(vbox, &viewport, self.preserve_aspect_ratio.get(), clip_mode);
+
+            node.draw_children(cascaded, dc, clipping)
+        })
     }
 }
 
@@ -439,24 +431,20 @@ impl NodeTrait for NodeUse {
                     None
                 };
 
-                draw_in_viewport(
-                    &viewport,
-                    clip_mode,
-                    symbol.vbox.get(),
-                    symbol.preserve_aspect_ratio.get(),
-                    node,
-                    values,
-                    draw_ctx,
-                    clipping,
-                    &mut |dc| {
-                        // We don't push a layer because draw_in_viewport() already does it
-                        child.draw_children(
-                            &CascadedValues::new_from_values(&child, values),
-                            dc,
-                            clipping,
-                        )
-                    },
-                )
+                draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+                    let _params = dc.push_new_viewport(
+                        symbol.vbox.get(),
+                        &viewport,
+                        symbol.preserve_aspect_ratio.get(),
+                        clip_mode,
+                    );
+
+                    child.draw_children(
+                        &CascadedValues::new_from_values(&child, values),
+                        dc,
+                        clipping,
+                    )
+                })
             })
         }
     }
