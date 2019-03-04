@@ -7,9 +7,9 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 
-use c_api::get_rust_handle;
+use c_api::{get_rust_handle, rsvg_rust_handle_new_from_gfile_sync, RsvgDimensionData};
 use error::{set_gerror, RenderingError};
-use handle::{rsvg_handle_rust_new_from_gfile_sync, Handle, RsvgDimensionData};
+use handle::Handle;
 use rect::IRect;
 use surface_utils::{
     iterators::Pixels,
@@ -189,7 +189,7 @@ fn pixbuf_from_file_with_size_mode(
     unsafe {
         let file = gio_sys::g_file_new_for_path(filename);
 
-        let handle = rsvg_handle_rust_new_from_gfile_sync(file, 0, ptr::null_mut(), error);
+        let handle = rsvg_rust_handle_new_from_gfile_sync(file, 0, ptr::null_mut(), error);
 
         gobject_sys::g_object_unref(file as *mut _);
 
