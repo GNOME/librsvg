@@ -8,7 +8,7 @@ use aspect_ratio::*;
 use attributes::Attribute;
 use css::CssStyles;
 use dpi::Dpi;
-use drawing_ctx::{DrawingCtx, ViewParams};
+use drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use error::{AttributeResultExt, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
 use length::*;
@@ -18,7 +18,6 @@ use properties::{ComputedValues, Overflow};
 use property_bag::{OwnedPropertyBag, PropertyBag};
 use rect::RectangleExt;
 use viewbox::*;
-use viewport::ClipMode;
 
 pub struct NodeGroup();
 

@@ -6,7 +6,7 @@ use allowed_url::Href;
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
 use bbox::BoundingBox;
-use drawing_ctx::DrawingCtx;
+use drawing_ctx::{ClipMode, DrawingCtx};
 use error::{NodeError, RenderingError};
 use float_eq_cairo::ApproxEqCairo;
 use length::{LengthHorizontal, LengthVertical};
@@ -15,7 +15,6 @@ use parsers::{ParseError, ParseValue};
 use property_bag::PropertyBag;
 use rect::RectangleExt;
 use viewbox::ViewBox;
-use viewport::ClipMode;
 
 pub struct NodeImage {
     aspect: Cell<AspectRatio>,

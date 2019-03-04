@@ -161,7 +161,6 @@ pub mod tree_utils;
 mod unit_interval;
 mod util;
 mod viewbox;
-mod viewport;
 mod xml;
 mod xml2;
 mod xml2_load;

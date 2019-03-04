@@ -34,7 +34,6 @@ use surface_utils::shared_surface::SharedImageSurface;
 use svg::Svg;
 use unit_interval::UnitInterval;
 use viewbox::ViewBox;
-use viewport::ClipMode;
 
 /// Holds values that are required to normalize `Length` values to a current viewport.
 ///
@@ -74,6 +73,12 @@ impl Drop for ViewParams {
             stack.borrow_mut().pop();
         }
     }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum ClipMode {
+    ClipToViewport,
+    ClipToVbox,
 }
 
 pub struct DrawingCtx {
