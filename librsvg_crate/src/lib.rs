@@ -377,7 +377,8 @@ impl<'a> CairoRenderer<'a> {
         }
     }
 
-    /// Computes the (ink_rect, logical_rect) of an SVG element.
+    /// Computes the (ink_rect, logical_rect) of an SVG element, as if
+    /// it were rendered to a specific viewport.
     ///
     /// Element IDs should look like an URL fragment identifier; for
     /// example, pass `Some("#foo")` to get the geometry of the
@@ -403,10 +404,11 @@ impl<'a> CairoRenderer<'a> {
     pub fn geometry_for_element(
         &self,
         id: Option<&str>,
+        viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_for_element(id)
+            .get_geometry_for_element(id, viewport)
             .map(|(i, l)| (i.into(), l.into()))
     }
 

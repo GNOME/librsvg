@@ -79,7 +79,15 @@ fn root_geometry_with_percent_viewport() {
     );
 
     let renderer = CairoRenderer::new(&svg);
-    let (ink_r, logical_r) = renderer.geometry_for_element(None).unwrap();
+
+    let viewport = cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 100.0,
+        height: 100.0,
+    };
+
+    let (ink_r, logical_r) = renderer.geometry_for_element(None, &viewport).unwrap();
 
     let rect = cairo::Rectangle {
         x: 10.0,
@@ -102,7 +110,15 @@ fn element_geometry_with_percent_viewport() {
     );
 
     let renderer = CairoRenderer::new(&svg);
-    let (ink_r, logical_r) = renderer.geometry_for_element(Some("#foo")).unwrap();
+
+    let viewport = cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 100.0,
+        height: 100.0,
+    };
+
+    let (ink_r, logical_r) = renderer.geometry_for_element(Some("#foo"), &viewport).unwrap();
 
     let rect = cairo::Rectangle {
         x: 10.0,
@@ -126,7 +142,15 @@ fn element_geometry_viewport_viewbox() {
     );
 
     let renderer = CairoRenderer::new(&svg);
-    let (ink_r, logical_r) = renderer.geometry_for_element(Some("#two")).unwrap();
+
+    let viewport = cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 100.0,
+        height: 400.0,
+    };
+
+    let (ink_r, logical_r) = renderer.geometry_for_element(Some("#two"), &viewport).unwrap();
 
     let rect = cairo::Rectangle {
         x: 0.0,
@@ -146,8 +170,16 @@ fn element_geometry_for_nonexistent_element() {
 "#,
     );
 
+    let viewport = cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 100.0,
+        height: 100.0,
+    };
+
     let renderer = CairoRenderer::new(&svg);
-    match renderer.geometry_for_element(Some("#foo")) {
+
+    match renderer.geometry_for_element(Some("#foo"), &viewport) {
         Err(RenderingError::InvalidId(DefsLookupErrorKind::NotFound)) => (),
         _ => panic!(),
     }
@@ -161,18 +193,25 @@ fn element_geometry_for_invalid_id() {
 "#,
     );
 
+    let viewport = cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 100.0,
+        height: 100.0,
+    };
+
     let renderer = CairoRenderer::new(&svg);
-    match renderer.geometry_for_element(Some("foo")) {
+    match renderer.geometry_for_element(Some("foo"), &viewport) {
         Err(RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences)) => (),
         _ => panic!(),
     }
 
-    match renderer.geometry_for_element(Some("foo.svg#foo")) {
+    match renderer.geometry_for_element(Some("foo.svg#foo"), &viewport) {
         Err(RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences)) => (),
         _ => panic!(),
     }
 
-    match renderer.geometry_for_element(Some("")) {
+    match renderer.geometry_for_element(Some(""), &viewport) {
         Err(RenderingError::InvalidId(DefsLookupErrorKind::HrefError(HrefError::ParseError))) => (),
         _ => panic!(),
     }

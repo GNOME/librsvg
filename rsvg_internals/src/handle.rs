@@ -448,9 +448,17 @@ impl Handle {
             height: 1.0,
         };
 
+        self.get_node_geometry_with_viewport(node, &viewport)
+    }
+
+    fn get_node_geometry_with_viewport(
+        &self,
+        node: &RsvgNode,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, &viewport, Some(node));
+        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, viewport, Some(node));
         let root = self.get_root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
@@ -513,9 +521,10 @@ impl Handle {
     pub fn get_geometry_for_element(
         &self,
         id: Option<&str>,
+        viewport: &cairo::Rectangle,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
-        self.get_node_geometry(&node)
+        self.get_node_geometry_with_viewport(&node, viewport)
     }
 
     fn lookup_node(&self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
