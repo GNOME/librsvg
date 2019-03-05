@@ -275,15 +275,7 @@ impl Handle {
                 let bytes = Bytes::from(&*buffer);
                 let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
 
-                let svg = Svg::load_from_stream(&self.load_options(), &stream.upcast(), None)
-                    .map_err(|e| {
-                        self.load_state.set(LoadState::ClosedError);
-                        e
-                    })?;
-
-                self.load_state.set(LoadState::ClosedOk);
-                *self.svg.borrow_mut() = Some(Rc::new(svg));
-                Ok(())
+                self.read_stream_sync(&stream.upcast(), None)
             }
 
             LoadState::ClosedOk | LoadState::ClosedError => {
