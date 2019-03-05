@@ -23,8 +23,6 @@ use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceT
 use svg::Svg;
 use url::Url;
 use util::rsvg_g_warning;
-use xml::XmlState;
-use xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 /// Flags used during loading
 ///
@@ -276,23 +274,12 @@ impl Handle {
                 let buffer = self.buffer.borrow();
                 let bytes = Bytes::from(&*buffer);
                 let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
-                let mut xml = XmlState::new(&self.load_options());
 
-                xml_state_load_from_possibly_compressed_stream(
-                    &mut xml,
-                    self.load_flags.get(),
-                    &stream.upcast(),
-                    None,
-                )
-                .map_err(|e| {
-                    self.load_state.set(LoadState::ClosedError);
-                    e
-                })?;
-
-                let svg = xml.steal_result().map_err(|e| {
-                    self.load_state.set(LoadState::ClosedError);
-                    e
-                })?;
+                let svg = Svg::load_from_stream(&self.load_options(), &stream.upcast(), None)
+                    .map_err(|e| {
+                        self.load_state.set(LoadState::ClosedError);
+                        e
+                    })?;
 
                 self.load_state.set(LoadState::ClosedOk);
                 *self.svg.borrow_mut() = Some(Rc::new(svg));
