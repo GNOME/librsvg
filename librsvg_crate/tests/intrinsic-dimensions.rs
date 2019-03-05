@@ -115,6 +115,30 @@ fn element_geometry_with_percent_viewport() {
 }
 
 #[test]
+fn element_geometry_viewport_viewbox() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="400" viewBox="0 0 100 400">
+  <rect id="one" x="0" y="0" width="100" height="200" fill="rgb(0,255,0)"/>
+  <rect id="two" x="0" y="200" width="100" height="200" fill="rgb(0,0,255)"/>
+</svg>
+"#,
+    );
+
+    let renderer = CairoRenderer::new(&svg);
+    let (ink_r, logical_r) = renderer.geometry_for_element(Some("#two")).unwrap();
+
+    let rect = cairo::Rectangle {
+        x: 0.0,
+        y: 200.0,
+        width: 100.0,
+        height: 200.0,
+    };
+
+    assert_eq!((ink_r, logical_r), (rect, rect));
+}
+
+#[test]
 fn element_geometry_for_nonexistent_element() {
     let svg = load_svg(
         br#"<?xml version="1.0" encoding="UTF-8"?>
