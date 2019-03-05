@@ -441,25 +441,16 @@ impl Handle {
         node: &RsvgNode,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         // This is just to start with an unknown viewport size
-        let dimensions = RsvgDimensionData {
-            width: 1,
-            height: 1,
-            em: 1.0,
-            ex: 1.0,
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 1.0,
+            height: 1.0,
         };
 
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = self.create_drawing_ctx_for_node(
-            &cr,
-            &cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: f64::from(dimensions.width),
-                height: f64::from(dimensions.height),
-            },
-            Some(node),
-        );
+        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, &viewport, Some(node));
         let root = self.get_root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
