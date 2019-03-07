@@ -170,7 +170,7 @@ impl DrawingCtx {
         view_box_stack.push(vbox);
 
         DrawingCtx {
-            svg: svg.clone(),
+            svg,
             rect,
             dpi,
             num_elements_rendered_through_use: 0,
