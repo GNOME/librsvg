@@ -172,7 +172,11 @@ impl SharedImageSurface {
         }
     }
 
-    pub fn from_pixbuf(pixbuf: &Pixbuf) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn from_pixbuf(
+        pixbuf: &Pixbuf,
+        data: Option<Vec<u8>>,
+        content_type: Option<&str>,
+    ) -> Result<SharedImageSurface, cairo::Status> {
         assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
 
         let n_channels = pixbuf.get_n_channels();
@@ -234,6 +238,14 @@ impl SharedImageSurface {
                     }
                 }
             }
+        }
+
+        match (data, content_type) {
+            (Some(bytes), Some(content_type)) => {
+                surf.set_mime_data(content_type, bytes)?;
+            }
+
+            (_, _) => (),
         }
 
         Self::new(surf, SurfaceType::SRgb)

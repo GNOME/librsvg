@@ -1,8 +1,3 @@
-use cairo;
-use cairo_sys;
-use glib::translate::*;
-use libc;
-
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -50,24 +45,23 @@ impl NodeTrait for NodeLink {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-            if link.is_some() && link.as_ref().unwrap() != "" {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| match link.as_ref() {
+            Some(l) if !l.is_empty() => {
                 const CAIRO_TAG_LINK: &str = "Link";
 
-                let attributes = link.as_ref().map(|i| format!("uri='{}'", escape_value(i)));
+                let attributes = format!("uri='{}'", escape_value(l));
 
                 let cr = dc.get_cairo_context();
 
-                cr.tag_begin(CAIRO_TAG_LINK, attributes.as_ref().map(|i| i.as_str()));
+                cr.tag_begin(CAIRO_TAG_LINK, &attributes);
 
                 let res = node.draw_children(&cascaded, dc, clipping);
 
                 cr.tag_end(CAIRO_TAG_LINK);
 
                 res
-            } else {
-                node.draw_children(&cascaded, dc, clipping)
             }
+            _ => node.draw_children(&cascaded, dc, clipping),
         })
     }
 }
@@ -85,37 +79,4 @@ fn escape_value(value: &str) -> Cow<'_, str> {
             _ => unreachable!(),
         }
     })
-}
-
-extern "C" {
-    fn cairo_tag_begin(
-        cr: *mut cairo_sys::cairo_t,
-        tag_name: *const libc::c_char,
-        attibutes: *const libc::c_char,
-    );
-    fn cairo_tag_end(cr: *mut cairo_sys::cairo_t, tag_name: *const libc::c_char);
-}
-
-/// Bindings that aren't supported by `cairo-rs` for now
-trait CairoTagging {
-    fn tag_begin(&self, tag_name: &str, attributes: Option<&str>);
-    fn tag_end(&self, tag_name: &str);
-}
-
-impl CairoTagging for cairo::Context {
-    fn tag_begin(&self, tag_name: &str, attributes: Option<&str>) {
-        unsafe {
-            cairo_tag_begin(
-                self.to_glib_none().0,
-                tag_name.to_glib_none().0,
-                attributes.to_glib_none().0,
-            );
-        }
-    }
-
-    fn tag_end(&self, tag_name: &str) {
-        unsafe {
-            cairo_tag_end(self.to_glib_none().0, tag_name.to_glib_none().0);
-        }
-    }
 }

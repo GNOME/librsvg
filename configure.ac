@@ -66,7 +66,7 @@ AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], "$GETTEXT_PACKAGE", [Define to the gettext
 
 dnl ===========================================================================
 dnl Please update COMPILING.md with version numbers if these change
-CAIRO_REQUIRED=1.15.12
+CAIRO_REQUIRED=1.16.0
 CROCO_REQUIRED=0.6.1
 dnl This corresponds to Freetype2 2.8
 FREETYPE2_REQUIRED=20.0.14

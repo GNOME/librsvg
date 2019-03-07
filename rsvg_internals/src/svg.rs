@@ -1,6 +1,5 @@
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
-use glib::translate::*;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -9,7 +8,7 @@ use std::rc::Rc;
 use allowed_url::{AllowedUrl, Fragment};
 use error::LoadingError;
 use handle::LoadOptions;
-use io;
+use io::{self, BinaryData};
 use node::{NodeType, RsvgNode};
 use properties::ComputedValues;
 use structure::{IntrinsicDimensions, NodeSvg};
@@ -181,56 +180,34 @@ fn load_image(
     load_options: &LoadOptions,
     aurl: &AllowedUrl,
 ) -> Result<SharedImageSurface, LoadingError> {
-    let data = io::acquire_data(&aurl, None)?;
+    let BinaryData {
+        data: bytes,
+        content_type,
+    } = io::acquire_data(&aurl, None)?;
 
-    if data.data.len() == 0 {
+    if bytes.len() == 0 {
         return Err(LoadingError::EmptyData);
     }
 
-    let loader = if let Some(ref content_type) = data.content_type {
+    let loader = if let Some(ref content_type) = content_type {
         PixbufLoader::new_with_mime_type(content_type)?
     } else {
         PixbufLoader::new()
     };
 
-    loader.write(&data.data)?;
+    loader.write(&bytes)?;
     loader.close()?;
 
     let pixbuf = loader.get_pixbuf().ok_or(LoadingError::Unknown)?;
 
-    let surface = SharedImageSurface::from_pixbuf(&pixbuf)?;
+    let bytes = if load_options.flags.keep_image_data {
+        Some(bytes)
+    } else {
+        None
+    };
 
-    if load_options.flags.keep_image_data {
-        if let Some(mime_type) = data.content_type {
-            let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&data.data);
-
-            extern "C" {
-                fn cairo_surface_set_mime_data(
-                    surface: *mut cairo_sys::cairo_surface_t,
-                    mime_type: *const libc::c_char,
-                    data: *mut libc::c_char,
-                    length: libc::c_ulong,
-                    destroy: cairo_sys::cairo_destroy_func_t,
-                    closure: *mut libc::c_void,
-                ) -> cairo_sys::cairo_status_t;
-            }
-
-            unsafe {
-                let status = cairo_surface_set_mime_data(
-                    surface.to_glib_none().0,
-                    mime_type.to_glib_none().0,
-                    data_ptr as *mut _,
-                    data.data.len() as libc::c_ulong,
-                    Some(glib_sys::g_free),
-                    data_ptr as *mut _,
-                );
-
-                if status != cairo_sys::STATUS_SUCCESS {
-                    return Err(LoadingError::Cairo(status.into()));
-                }
-            }
-        }
-    }
+    let surface =
+        SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_ref().map(String::as_str))?;
 
     Ok(surface)
 }
