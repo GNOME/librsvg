@@ -3,8 +3,8 @@ extern crate rsvg_internals;
 
 use cairo::ImageSurface;
 
-use rsvg_internals::{IRect, RenderingError};
-use rsvg_internals::surface_utils::{
+use self::rsvg_internals::{IRect, RenderingError};
+use self::rsvg_internals::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
@@ -17,9 +17,9 @@ pub enum BufferDiff {
 }
 
 pub struct Diff {
-    num_pixels_changed: usize,
-    max_diff: u8,
-    surface: SharedImageSurface,
+    pub num_pixels_changed: usize,
+    pub max_diff: u8,
+    pub surface: SharedImageSurface,
 }
 
 #[inline]
