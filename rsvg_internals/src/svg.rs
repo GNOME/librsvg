@@ -9,7 +9,7 @@ use std::rc::Rc;
 use allowed_url::{AllowedUrl, Fragment};
 use error::LoadingError;
 use handle::LoadOptions;
-use io;
+use io::{self, BinaryData};
 use node::{NodeType, RsvgNode};
 use properties::ComputedValues;
 use structure::{IntrinsicDimensions, NodeSvg};
@@ -181,19 +181,22 @@ fn load_image(
     load_options: &LoadOptions,
     aurl: &AllowedUrl,
 ) -> Result<SharedImageSurface, LoadingError> {
-    let data = io::acquire_data(&aurl, None)?;
+    let BinaryData {
+        data: bytes,
+        content_type,
+    } = io::acquire_data(&aurl, None)?;
 
-    if data.data.len() == 0 {
+    if bytes.len() == 0 {
         return Err(LoadingError::EmptyData);
     }
 
-    let loader = if let Some(ref content_type) = data.content_type {
+    let loader = if let Some(ref content_type) = content_type {
         PixbufLoader::new_with_mime_type(content_type)?
     } else {
         PixbufLoader::new()
     };
 
-    loader.write(&data.data)?;
+    loader.write(&bytes)?;
     loader.close()?;
 
     let pixbuf = loader.get_pixbuf().ok_or(LoadingError::Unknown)?;
@@ -201,8 +204,8 @@ fn load_image(
     let surface = SharedImageSurface::from_pixbuf(&pixbuf)?;
 
     if load_options.flags.keep_image_data {
-        if let Some(mime_type) = data.content_type {
-            let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&data.data);
+        if let Some(mime_type) = content_type {
+            let data_ptr = ToGlibContainerFromSlice::to_glib_full_from_slice(&bytes);
 
             extern "C" {
                 fn cairo_surface_set_mime_data(
@@ -220,7 +223,7 @@ fn load_image(
                     surface.to_glib_none().0,
                     mime_type.to_glib_none().0,
                     data_ptr as *mut _,
-                    data.data.len() as libc::c_ulong,
+                    bytes.len() as libc::c_ulong,
                     Some(glib_sys::g_free),
                     data_ptr as *mut _,
                 );
