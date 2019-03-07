@@ -981,6 +981,7 @@ fn create_pango_layout(
     ));
 
     let layout = pango::Layout::new(&pango_context);
+    layout.set_auto_dir(false);
     layout.set_font_description(&font_desc);
 
     let attr_list = pango::AttrList::new();
