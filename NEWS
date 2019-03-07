@@ -1,5 +1,7 @@
 Version 2.45.6
 - Librsvg now requires Rust 1.30.0 or later.
+- Librsvg now requires Cairo 1.16.0 or later.  Thanks to
+  Julian Sparber for keeping up with cairo-rs API changes.
 
 Version 2.45.5
 - At build time, you can now pass $CARGO and $RUSTC environment

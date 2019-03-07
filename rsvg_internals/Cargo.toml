@@ -21,7 +21,7 @@ phf_codegen = "0.7.21"
 
 [dependencies]
 bitflags = "1.0"
-cairo-rs = "0.6.0"
+cairo-rs = { version="0.6.0", features=["v1_16"] }
 cairo-sys-rs = "0.8.0"
 cssparser = "0.25.1"
 data-url = "0.1"

@@ -37,7 +37,7 @@ minimum version is listed here; you may use a newer version instead.
 
 **Mandatory dependencies:**
 
-* Cairo 1.15.12 with PNG support
+* Cairo 1.16.0 with PNG support
 * Freetype2 2.8.0
 * Libcroco 0.6.1
 * Gdk-pixbuf 2.20.0

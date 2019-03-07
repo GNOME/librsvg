@@ -1,8 +1,3 @@
-use cairo;
-use cairo_sys;
-use glib::translate::*;
-use libc;
-
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -84,40 +79,4 @@ fn escape_value(value: &str) -> Cow<'_, str> {
             _ => unreachable!(),
         }
     })
-}
-
-#[cfg(not(feature = "v1_16"))]
-extern "C" {
-    fn cairo_tag_begin(
-        cr: *mut cairo_sys::cairo_t,
-        tag_name: *const libc::c_char,
-        attibutes: *const libc::c_char,
-    );
-    fn cairo_tag_end(cr: *mut cairo_sys::cairo_t, tag_name: *const libc::c_char);
-}
-
-/// Bindings that aren't supported by `cairo-rs` for now
-#[cfg(not(feature = "v1_16"))]
-trait CairoTagging {
-    fn tag_begin(&self, tag_name: &str, attributes: &str);
-    fn tag_end(&self, tag_name: &str);
-}
-
-#[cfg(not(feature = "v1_16"))]
-impl CairoTagging for cairo::Context {
-    fn tag_begin(&self, tag_name: &str, attributes: &str) {
-        unsafe {
-            cairo_tag_begin(
-                self.to_glib_none().0,
-                tag_name.to_glib_none().0,
-                attributes.to_glib_none().0,
-            );
-        }
-    }
-
-    fn tag_end(&self, tag_name: &str) {
-        unsafe {
-            cairo_tag_end(self.to_glib_none().0, tag_name.to_glib_none().0);
-        }
-    }
 }
