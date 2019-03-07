@@ -50,24 +50,23 @@ impl NodeTrait for NodeLink {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-            if link.is_some() && link.as_ref().unwrap() != "" {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| match link.as_ref() {
+            Some(l) if !l.is_empty() => {
                 const CAIRO_TAG_LINK: &str = "Link";
 
-                let attributes = link.as_ref().map(|i| format!("uri='{}'", escape_value(i)));
+                let attributes = format!("uri='{}'", escape_value(l));
 
                 let cr = dc.get_cairo_context();
 
-                cr.tag_begin(CAIRO_TAG_LINK, attributes.as_ref().map(|i| i.as_str()));
+                cr.tag_begin(CAIRO_TAG_LINK, &attributes);
 
                 let res = node.draw_children(&cascaded, dc, clipping);
 
                 cr.tag_end(CAIRO_TAG_LINK);
 
                 res
-            } else {
-                node.draw_children(&cascaded, dc, clipping)
             }
+            _ => node.draw_children(&cascaded, dc, clipping),
         })
     }
 }
@@ -87,6 +86,7 @@ fn escape_value(value: &str) -> Cow<'_, str> {
     })
 }
 
+#[cfg(not(feature = "v1_16"))]
 extern "C" {
     fn cairo_tag_begin(
         cr: *mut cairo_sys::cairo_t,
@@ -97,13 +97,15 @@ extern "C" {
 }
 
 /// Bindings that aren't supported by `cairo-rs` for now
+#[cfg(not(feature = "v1_16"))]
 trait CairoTagging {
-    fn tag_begin(&self, tag_name: &str, attributes: Option<&str>);
+    fn tag_begin(&self, tag_name: &str, attributes: &str);
     fn tag_end(&self, tag_name: &str);
 }
 
+#[cfg(not(feature = "v1_16"))]
 impl CairoTagging for cairo::Context {
-    fn tag_begin(&self, tag_name: &str, attributes: Option<&str>) {
+    fn tag_begin(&self, tag_name: &str, attributes: &str) {
         unsafe {
             cairo_tag_begin(
                 self.to_glib_none().0,
