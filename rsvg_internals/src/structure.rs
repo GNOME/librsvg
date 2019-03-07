@@ -280,28 +280,34 @@ impl NodeTrait for NodeSvg {
 
         let svg_viewport = self.get_viewport(values, &params);
 
-        let viewport = if has_parent {
-            svg_viewport
+        let (viewport, vbox) = if !has_parent && draw_ctx.is_measuring() {
+            (svg_viewport, self.vbox.get())
         } else {
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: params.view_box_width,
-                height: params.view_box_height,
-            }
-        };
-
-        let vbox = if has_parent {
-            self.vbox.get()
-        } else {
-            self.vbox.get().or_else(|| {
-                Some(ViewBox {
+            let viewport = if has_parent {
+                svg_viewport
+            } else {
+                cairo::Rectangle {
                     x: 0.0,
                     y: 0.0,
-                    width: svg_viewport.width,
-                    height: svg_viewport.height,
+                    width: params.view_box_width,
+                    height: params.view_box_height,
+                }
+            };
+
+            let vbox = if has_parent {
+                self.vbox.get()
+            } else {
+                self.vbox.get().or_else(|| {
+                    Some(ViewBox {
+                        x: 0.0,
+                        y: 0.0,
+                        width: svg_viewport.width,
+                        height: svg_viewport.height,
+                    })
                 })
-            })
+            };
+
+            (viewport, vbox)
         };
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {

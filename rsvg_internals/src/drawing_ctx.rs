@@ -112,6 +112,7 @@ pub struct DrawingCtx {
 
     acquired_nodes: Rc<RefCell<Vec<RsvgNode>>>,
 
+    measuring: bool,
     testing: bool,
 }
 
@@ -121,37 +122,52 @@ impl DrawingCtx {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
         dpi: Dpi,
+        measuring: bool,
         testing: bool,
     ) -> DrawingCtx {
-        let mut affine = cr.get_matrix();
-        let rect = viewport.transform(&affine).outer();
+        // This is more or less a hack to make measuring geometries possible,
+        // while the code gets refactored not to need special cases for that.
 
-        // adjust transform so that the corner of the
-        // bounding box above is at (0,0)
-        affine.x0 -= rect.x;
-        affine.y0 -= rect.y;
-        cr.set_matrix(affine);
+        let (rect, vbox, affine) = if measuring {
+            (
+                cairo::Rectangle::new(0.0, 0.0, 1.0, 1.0),
+                ViewBox::new(0.0, 0.0, 1.0, 1.0),
+                cairo::Matrix::identity()
+            )
+        } else {
+            let mut affine = cr.get_matrix();
+            let rect = viewport.transform(&affine).outer();
+
+            // adjust transform so that the corner of the
+            // bounding box above is at (0,0)
+            affine.x0 -= rect.x;
+            affine.y0 -= rect.y;
+            cr.set_matrix(affine);
+
+            // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
+            //
+            // "For the outermost svg element, the SVG user agent must
+            // determine an initial viewport coordinate system and an
+            // initial user coordinate system such that the two
+            // coordinates systems are identical. The origin of both
+            // coordinate systems must be at the origin of the SVG
+            // viewport."
+            //
+            // "... the initial viewport coordinate system (and therefore
+            // the initial user coordinate system) must have its origin at
+            // the top/left of the viewport"
+            let vbox = ViewBox {
+                x: 0.0,
+                y: 0.0,
+                width: viewport.width,
+                height: viewport.height,
+            };
+
+            (rect, vbox, affine)
+        };
 
         let mut view_box_stack = Vec::new();
-
-        // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
-        //
-        // "For the outermost svg element, the SVG user agent must
-        // determine an initial viewport coordinate system and an
-        // initial user coordinate system such that the two
-        // coordinates systems are identical. The origin of both
-        // coordinate systems must be at the origin of the SVG
-        // viewport."
-        //
-        // "... the initial viewport coordinate system (and therefore
-        // the initial user coordinate system) must have its origin at
-        // the top/left of the viewport"
-        view_box_stack.push(ViewBox {
-            x: 0.0,
-            y: 0.0,
-            width: viewport.width,
-            height: viewport.height,
-        });
+        view_box_stack.push(vbox);
 
         DrawingCtx {
             svg: svg.clone(),
@@ -166,8 +182,13 @@ impl DrawingCtx {
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
+            measuring,
             testing,
         }
+    }
+
+    pub fn is_measuring(&self) -> bool {
+        self.measuring
     }
 
     pub fn is_testing(&self) -> bool {

@@ -297,12 +297,14 @@ impl Handle {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
         node: Option<&RsvgNode>,
+        measuring: bool,
     ) -> DrawingCtx {
         let mut draw_ctx = DrawingCtx::new(
             self.svg.borrow().as_ref().unwrap().clone(),
             cr,
             viewport,
             self.dpi.get(),
+            measuring,
             self.is_testing.get(),
         );
 
@@ -437,7 +439,7 @@ impl Handle {
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, viewport, Some(node));
+        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, viewport, Some(node), true);
         let root = self.get_root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
@@ -575,6 +577,7 @@ impl Handle {
                 height: f64::from(dimensions.height),
             },
             node.as_ref(),
+            false,
         );
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
         cr.restore();
@@ -599,7 +602,7 @@ impl Handle {
         let root = self.get_root();
 
         cr.save();
-        let mut draw_ctx = self.create_drawing_ctx_for_node(cr, viewport, node.as_ref());
+        let mut draw_ctx = self.create_drawing_ctx_for_node(cr, viewport, node.as_ref(), false);
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
         cr.restore();
 
