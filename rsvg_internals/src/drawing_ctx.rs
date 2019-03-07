@@ -154,7 +154,7 @@ impl DrawingCtx {
         });
 
         DrawingCtx {
-            svg: svg.clone(),
+            svg,
             rect,
             dpi,
             num_elements_rendered_through_use: 0,
