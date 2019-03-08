@@ -91,16 +91,13 @@ extern crate cairo;
 extern crate gio;
 extern crate glib;
 extern crate rsvg_internals;
-extern crate url;
 
-use std::io::Read;
 use std::path::Path;
 
 use gio::{Cancellable, FileExt};
 use glib::object::Cast;
 
 use rsvg_internals::{Dpi, Handle, LoadFlags};
-use url::Url;
 
 pub use rsvg_internals::{
     DefsLookupErrorKind,
@@ -395,13 +392,6 @@ impl<'a> CairoRenderer<'a> {
             .0
             .get_geometry_for_element(id, viewport)
             .map(|(i, l)| (i.into(), l.into()))
-    }
-
-    /// Renders the whole SVG to a Cairo context.
-    ///
-    /// FIXME: expand docs
-    pub fn render(&self, cr: &cairo::Context) -> Result<(), RenderingError> {
-        self.handle.0.render_cairo_sub(cr, None)
     }
 
     /// Renders a single element's subtree to a Cairo context.
