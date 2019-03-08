@@ -137,16 +137,6 @@ impl DrawingCtx {
         } else {
             let rect = *viewport;
             let affine = cairo::Matrix::identity();
-            /*
-            let mut affine = cr.get_matrix();
-            let rect = viewport.transform(&affine).outer();
-
-            // adjust transform so that the corner of the
-            // bounding box above is at (0,0)
-            affine.x0 -= rect.x;
-            affine.y0 -= rect.y;
-            cr.set_matrix(affine);
-             */
 
             // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
             //
@@ -367,17 +357,6 @@ impl DrawingCtx {
         cr.to_raw_none() != self.initial_cr.to_raw_none()
     }
 
-    fn get_offset(&self) -> (f64, f64) {
-        /*
-        if self.is_cairo_context_nested(&self.get_cairo_context()) {
-            (0.0, 0.0)
-        } else {
-            (self.rect.x, self.rect.y)
-        }
-         */
-        (0.0, 0.0)
-    }
-
     pub fn with_discrete_layer(
         &mut self,
         node: &RsvgNode,
@@ -484,10 +463,8 @@ impl DrawingCtx {
 
                 self.cr = self.cr_stack.pop().unwrap();
 
-                let (xofs, yofs) = self.get_offset();
-
                 original_cr.identity_matrix();
-                original_cr.set_source_surface(&filter_result_surface, xofs, yofs);
+                original_cr.set_source_surface(&filter_result_surface, 0.0, 0.0);
 
                 if let Some(clip_node) = clip_in_object_space {
                     clip_node
@@ -731,15 +708,14 @@ impl DrawingCtx {
     }
 
     pub fn set_affine_on_cr(&self, cr: &cairo::Context) {
-        let (x0, y0) = self.get_offset();
         let affine = cr.get_matrix();
         let matrix = cairo::Matrix::new(
             affine.xx,
             affine.yx,
             affine.xy,
             affine.yy,
-            affine.x0 + x0,
-            affine.y0 + y0,
+            affine.x0 + 0.0,
+            affine.y0 + 0.0,
         );
         cr.set_matrix(matrix);
     }
@@ -847,8 +823,7 @@ impl DrawingCtx {
 
         cr.identity_matrix();
 
-        let (xofs, yofs) = self.get_offset();
-        cr.mask_surface(&mask, xofs, yofs);
+        cr.mask_surface(&mask, 0.0, 0.0);
     }
 
     pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {
