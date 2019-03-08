@@ -1,7 +1,7 @@
-use attributes::Attribute;
-use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
-use property_bag::PropertyBag;
-use text::NodeChars;
+use crate::attributes::Attribute;
+use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::property_bag::PropertyBag;
+use crate::text::NodeChars;
 
 use std::cell::RefCell;
 

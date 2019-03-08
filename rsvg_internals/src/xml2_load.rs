@@ -13,14 +13,14 @@ use std::str;
 
 use glib::translate::*;
 
-use error::LoadingError;
-use handle::LoadFlags;
-use io::get_input_stream_for_loading;
-use property_bag::PropertyBag;
-use util::cstr;
-use util::utf8_cstr;
-use xml::XmlState;
-use xml2::*;
+use crate::error::LoadingError;
+use crate::handle::LoadFlags;
+use crate::io::get_input_stream_for_loading;
+use crate::property_bag::PropertyBag;
+use crate::util::cstr;
+use crate::util::utf8_cstr;
+use crate::xml::XmlState;
+use crate::xml2::*;
 
 fn get_xml2_sax_handler() -> xmlSAXHandler {
     let mut h: xmlSAXHandler = unsafe { mem::zeroed() };

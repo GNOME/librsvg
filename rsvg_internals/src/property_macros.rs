@@ -1,6 +1,6 @@
 pub trait Property<T> {
     fn inherits_automatically() -> bool;
-    fn compute(&self, &T) -> Self;
+    fn compute(&self, _: &T) -> Self;
 }
 
 /// Generates a property definition that simply parses strings to enum variants
@@ -43,10 +43,10 @@ macro_rules! make_property {
         impl_default!($name, $name::$default);
         impl_property!($computed_values_type, $name, $inherits_automatically);
 
-        impl ::parsers::Parse for $name {
-            type Err = ::error::ValueErrorKind;
+        impl crate::parsers::Parse for $name {
+            type Err = crate::error::ValueErrorKind;
 
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, ::error::ValueErrorKind> {
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
                 let loc = parser.current_source_location();
 
                 parser
@@ -62,7 +62,7 @@ macro_rules! make_property {
                             ),
                     })
                     .map_err(|_| {
-                        ::error::ValueErrorKind::Parse(::parsers::ParseError::new(
+                        crate::error::ValueErrorKind::Parse(crate::parsers::ParseError::new(
                             "unexpected value",
                         ))
                     })
@@ -81,7 +81,7 @@ macro_rules! make_property {
 
         impl_default!($name, $name($default));
 
-        impl ::property_macros::Property<$computed_values_type> for $name {
+        impl crate::property_macros::Property<$computed_values_type> for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically
             }
@@ -91,11 +91,11 @@ macro_rules! make_property {
             }
         }
 
-        impl ::parsers::Parse for $name {
-            type Err = ::error::ValueErrorKind;
+        impl crate::parsers::Parse for $name {
+            type Err = crate::error::ValueErrorKind;
 
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, ::error::ValueErrorKind> {
-                Ok($name(<$type as ::parsers::Parse>::parse(parser)?))
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
+                Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
             }
         }
     };
@@ -113,11 +113,11 @@ macro_rules! make_property {
 
         $prop
 
-        impl ::parsers::Parse for $name {
-            type Err = ::error::ValueErrorKind;
+        impl crate::parsers::Parse for $name {
+            type Err = crate::error::ValueErrorKind;
 
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, ::error::ValueErrorKind> {
-                Ok($name(<$type as ::parsers::Parse>::parse(parser)?))
+            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
+                Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
             }
         }
     };
@@ -187,7 +187,7 @@ macro_rules! impl_default {
 
 macro_rules! impl_property {
     ($computed_values_type:ty, $name:ident, $inherits_automatically:expr) => {
-        impl ::property_macros::Property<$computed_values_type> for $name {
+        impl crate::property_macros::Property<$computed_values_type> for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically
             }
@@ -203,8 +203,8 @@ macro_rules! impl_property {
 mod tests {
     use super::*;
 
+    use crate::parsers::Parse;
     use cssparser::RGBA;
-    use parsers::Parse;
 
     #[test]
     fn check_generated_property() {

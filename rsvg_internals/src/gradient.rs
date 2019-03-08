@@ -3,21 +3,21 @@ use cssparser::{self, CowRcStr, Parser, Token};
 
 use std::cell::RefCell;
 
-use allowed_url::Fragment;
-use attributes::Attribute;
-use bbox::*;
-use coord_units::CoordUnits;
-use drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
-use error::*;
-use length::*;
-use node::*;
-use paint_server::PaintSource;
-use parsers::{Parse, ParseError, ParseValue};
-use properties::{ComputedValues, StopColor};
-use property_bag::PropertyBag;
-use rect::RectangleExt;
-use stop::*;
-use unit_interval::UnitInterval;
+use crate::allowed_url::Fragment;
+use crate::attributes::Attribute;
+use crate::bbox::*;
+use crate::coord_units::CoordUnits;
+use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
+use crate::error::*;
+use crate::length::*;
+use crate::node::*;
+use crate::paint_server::PaintSource;
+use crate::parsers::{Parse, ParseError, ParseValue};
+use crate::properties::{ComputedValues, StopColor};
+use crate::property_bag::PropertyBag;
+use crate::rect::RectangleExt;
+use crate::stop::*;
+use crate::unit_interval::UnitInterval;
 
 #[derive(Copy, Clone)]
 pub struct ColorStop {
@@ -717,7 +717,7 @@ impl NodeTrait for NodeGradient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use float_eq_cairo::ApproxEqCairo;
+    use crate::float_eq_cairo::ApproxEqCairo;
 
     #[test]
     fn parses_spread_method() {

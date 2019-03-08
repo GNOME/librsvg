@@ -2,13 +2,13 @@ use std::cell::{Cell, RefCell};
 
 use cairo;
 
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::NodeError;
-use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::ParseError;
-use property_bag::PropertyBag;
-use surface_utils::shared_surface::SharedImageSurface;
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::NodeError;
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::parsers::ParseError;
+use crate::property_bag::PropertyBag;
+use crate::surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;

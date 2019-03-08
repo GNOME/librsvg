@@ -2,12 +2,12 @@ use std::cell::RefCell;
 
 use cairo::{self, ImageSurface};
 
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
-use property_bag::PropertyBag;
-use rect::IRect;
-use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::property_bag::PropertyBag;
+use crate::rect::IRect;
+use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;

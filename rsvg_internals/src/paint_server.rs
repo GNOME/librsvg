@@ -1,13 +1,13 @@
 use cssparser::{self, Parser};
 
-use allowed_url::Fragment;
-use bbox::BoundingBox;
-use drawing_ctx::DrawingCtx;
-use error::*;
-use node::RsvgNode;
-use parsers::Parse;
-use properties::ComputedValues;
-use unit_interval::UnitInterval;
+use crate::allowed_url::Fragment;
+use crate::bbox::BoundingBox;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::*;
+use crate::node::RsvgNode;
+use crate::parsers::Parse;
+use crate::properties::ComputedValues;
+use crate::unit_interval::UnitInterval;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {
@@ -23,14 +23,14 @@ impl Parse for PaintServer {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<PaintServer, ValueErrorKind> {
-        if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
+        if parser.r#try(|i| i.expect_ident_matching("none")).is_ok() {
             Ok(PaintServer::None)
-        } else if let Ok(url) = parser.try(|i| i.expect_url()) {
+        } else if let Ok(url) = parser.r#try(|i| i.expect_url()) {
             let alternate = if !parser.is_exhausted() {
-                if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
+                if parser.r#try(|i| i.expect_ident_matching("none")).is_ok() {
                     None
                 } else {
-                    Some(parser.try(|i| cssparser::Color::parse(i))?)
+                    Some(parser.r#try(|i| cssparser::Color::parse(i))?)
                 }
             } else {
                 None

@@ -4,15 +4,15 @@ use std::f64;
 
 use cairo::{self, MatrixTrait};
 
-use bbox::BoundingBox;
-use coord_units::CoordUnits;
-use drawing_ctx::{DrawingCtx, ViewParams};
-use node::RsvgNode;
-use paint_server::PaintServer;
-use properties::ComputedValues;
-use rect::IRect;
-use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use unit_interval::UnitInterval;
+use crate::bbox::BoundingBox;
+use crate::coord_units::CoordUnits;
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::node::RsvgNode;
+use crate::paint_server::PaintServer;
+use crate::properties::ComputedValues;
+use crate::rect::IRect;
+use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::unit_interval::UnitInterval;
 
 use super::error::FilterError;
 use super::input::Input;
@@ -473,7 +473,7 @@ impl FilterInput {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use surface_utils::iterators::Pixels;
+    use crate::surface_utils::iterators::Pixels;
 
     #[test]
     fn test_extract_alpha() {

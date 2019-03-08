@@ -2,19 +2,19 @@ use cairo;
 use cairo::{PatternTrait, Rectangle};
 use std::cell::{Cell, RefCell};
 
-use allowed_url::Href;
-use aspect_ratio::AspectRatio;
-use attributes::Attribute;
-use bbox::BoundingBox;
-use drawing_ctx::{ClipMode, DrawingCtx};
-use error::{NodeError, RenderingError};
-use float_eq_cairo::ApproxEqCairo;
-use length::{LengthHorizontal, LengthVertical};
-use node::*;
-use parsers::{ParseError, ParseValue};
-use property_bag::PropertyBag;
-use rect::RectangleExt;
-use viewbox::ViewBox;
+use crate::allowed_url::Href;
+use crate::aspect_ratio::AspectRatio;
+use crate::attributes::Attribute;
+use crate::bbox::BoundingBox;
+use crate::drawing_ctx::{ClipMode, DrawingCtx};
+use crate::error::{NodeError, RenderingError};
+use crate::float_eq_cairo::ApproxEqCairo;
+use crate::length::{LengthHorizontal, LengthVertical};
+use crate::node::*;
+use crate::parsers::{ParseError, ParseValue};
+use crate::property_bag::PropertyBag;
+use crate::rect::RectangleExt;
+use crate::viewbox::ViewBox;
 
 pub struct NodeImage {
     aspect: Cell<AspectRatio>,

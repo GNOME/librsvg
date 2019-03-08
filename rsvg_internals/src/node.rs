@@ -4,16 +4,16 @@ use std::cell::{Cell, Ref, RefCell};
 use std::collections::HashSet;
 use std::rc::{Rc, Weak};
 
-use attributes::Attribute;
-use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
-use css::CssStyles;
-use drawing_ctx::DrawingCtx;
-use error::*;
+use crate::attributes::Attribute;
+use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
+use crate::css::CssStyles;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::*;
+use crate::parsers::Parse;
+use crate::properties::{ComputedValues, Overflow, SpecifiedValue, SpecifiedValues};
+use crate::property_bag::PropertyBag;
+use crate::tree_utils;
 use locale_config::Locale;
-use parsers::Parse;
-use properties::{ComputedValues, Overflow, SpecifiedValue, SpecifiedValues};
-use property_bag::PropertyBag;
-use tree_utils;
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
 // points to an  Rc<Node>, which is our refcounted Rust representation
@@ -390,7 +390,7 @@ impl Node {
         let mut cond = self.get_cond();
 
         for (attr, value) in pbag.iter() {
-            // FIXME: move this to "do catch" when we can bump the rustc version dependency
+            // FIXME: move this to "try {}" when we can bump the rustc version dependency
             let mut parse = || {
                 match attr {
                     Attribute::RequiredExtensions if cond => {

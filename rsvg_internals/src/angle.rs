@@ -2,8 +2,8 @@ use std::f64::consts::*;
 
 use cssparser::{Parser, Token};
 
-use error::ValueErrorKind;
-use parsers::{Parse, ParseError};
+use crate::error::ValueErrorKind;
+use crate::parsers::{Parse, ParseError};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Angle(f64);

@@ -1,25 +1,25 @@
+use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use libc;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::str;
-use xml_rs::{reader::XmlEvent, ParserConfig};
 
-use allowed_url::AllowedUrl;
-use attributes::Attribute;
-use create_node::create_node_and_register_id;
-use css::CssStyles;
-use error::LoadingError;
-use handle::LoadOptions;
-use io;
-use node::{node_new, Node, NodeType, RsvgNode};
-use property_bag::PropertyBag;
-use structure::NodeSvg;
-use style::NodeStyle;
-use svg::Svg;
-use text::NodeChars;
-use xml2_load::{xml_state_parse_from_stream, ParseFromStreamError};
+use crate::allowed_url::AllowedUrl;
+use crate::attributes::Attribute;
+use crate::create_node::create_node_and_register_id;
+use crate::css::CssStyles;
+use crate::error::LoadingError;
+use crate::handle::LoadOptions;
+use crate::io;
+use crate::node::{node_new, Node, NodeType, RsvgNode};
+use crate::property_bag::PropertyBag;
+use crate::structure::NodeSvg;
+use crate::style::NodeStyle;
+use crate::svg::Svg;
+use crate::text::NodeChars;
+use crate::xml2_load::{xml_state_parse_from_stream, ParseFromStreamError};
 
 #[derive(Clone)]
 enum Context {

@@ -1,4 +1,4 @@
-use path_builder::*;
+use crate::path_builder::*;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::iter::Enumerate;

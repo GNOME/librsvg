@@ -3,21 +3,21 @@ use std::cell::RefCell;
 
 use cairo::Rectangle;
 
-use allowed_url::Fragment;
-use aspect_ratio::*;
-use attributes::Attribute;
-use css::CssStyles;
-use dpi::Dpi;
-use drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use error::{AttributeResultExt, RenderingError};
-use float_eq_cairo::ApproxEqCairo;
-use length::*;
-use node::*;
-use parsers::{Parse, ParseValue};
-use properties::{ComputedValues, Overflow};
-use property_bag::{OwnedPropertyBag, PropertyBag};
-use rect::RectangleExt;
-use viewbox::*;
+use crate::allowed_url::Fragment;
+use crate::aspect_ratio::*;
+use crate::attributes::Attribute;
+use crate::css::CssStyles;
+use crate::dpi::Dpi;
+use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
+use crate::error::{AttributeResultExt, RenderingError};
+use crate::float_eq_cairo::ApproxEqCairo;
+use crate::length::*;
+use crate::node::*;
+use crate::parsers::{Parse, ParseValue};
+use crate::properties::{ComputedValues, Overflow};
+use crate::property_bag::{OwnedPropertyBag, PropertyBag};
+use crate::rect::RectangleExt;
+use crate::viewbox::*;
 
 pub struct NodeGroup();
 

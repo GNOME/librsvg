@@ -5,21 +5,21 @@ use glib::translate::*;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
-use allowed_url::Fragment;
-use aspect_ratio::AspectRatio;
-use bbox::BoundingBox;
-use clip_path::{ClipPathUnits, NodeClipPath};
-use coord_units::CoordUnits;
-use dpi::Dpi;
-use error::RenderingError;
-use filters;
-use gradient::NodeGradient;
-use length::Dasharray;
-use mask::NodeMask;
-use node::{CascadedValues, NodeType, RsvgNode};
-use paint_server::{PaintServer, PaintSource};
-use pattern::NodePattern;
-use properties::{
+use crate::allowed_url::Fragment;
+use crate::aspect_ratio::AspectRatio;
+use crate::bbox::BoundingBox;
+use crate::clip_path::{ClipPathUnits, NodeClipPath};
+use crate::coord_units::CoordUnits;
+use crate::dpi::Dpi;
+use crate::error::RenderingError;
+use crate::filters;
+use crate::gradient::NodeGradient;
+use crate::length::Dasharray;
+use crate::mask::NodeMask;
+use crate::node::{CascadedValues, NodeType, RsvgNode};
+use crate::paint_server::{PaintServer, PaintSource};
+use crate::pattern::NodePattern;
+use crate::properties::{
     ClipRule,
     ComputedValues,
     EnableBackground,
@@ -29,11 +29,11 @@ use properties::{
     StrokeLinecap,
     StrokeLinejoin,
 };
-use rect::RectangleExt;
-use surface_utils::shared_surface::SharedImageSurface;
-use svg::Svg;
-use unit_interval::UnitInterval;
-use viewbox::ViewBox;
+use crate::rect::RectangleExt;
+use crate::surface_utils::shared_surface::SharedImageSurface;
+use crate::svg::Svg;
+use crate::unit_interval::UnitInterval;
+use crate::viewbox::ViewBox;
 
 /// Holds values that are required to normalize `Length` values to a current viewport.
 ///
@@ -132,7 +132,7 @@ impl DrawingCtx {
             (
                 cairo::Rectangle::new(0.0, 0.0, 1.0, 1.0),
                 ViewBox::new(0.0, 0.0, 1.0, 1.0),
-                cairo::Matrix::identity()
+                cairo::Matrix::identity(),
             )
         } else {
             let mut affine = cr.get_matrix();

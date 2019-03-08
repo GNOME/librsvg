@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use attributes::Attribute;
-use clip_path::NodeClipPath;
-use filters::{
+use crate::attributes::Attribute;
+use crate::clip_path::NodeClipPath;
+use crate::filters::{
     blend::Blend,
     color_matrix::ColorMatrix,
     component_transfer::{ComponentTransfer, FuncX},
@@ -20,19 +20,19 @@ use filters::{
     tile::Tile,
     turbulence::Turbulence,
 };
-use gradient::NodeGradient;
-use image::NodeImage;
-use link::NodeLink;
-use marker::NodeMarker;
-use mask::NodeMask;
-use node::*;
-use pattern::NodePattern;
-use property_bag::PropertyBag;
-use shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
-use stop::NodeStop;
-use structure::{NodeDefs, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
-use style::NodeStyle;
-use text::{NodeTRef, NodeTSpan, NodeText};
+use crate::gradient::NodeGradient;
+use crate::image::NodeImage;
+use crate::link::NodeLink;
+use crate::marker::NodeMarker;
+use crate::mask::NodeMask;
+use crate::node::*;
+use crate::pattern::NodePattern;
+use crate::property_bag::PropertyBag;
+use crate::shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
+use crate::stop::NodeStop;
+use crate::structure::{NodeDefs, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
+use crate::style::NodeStyle;
+use crate::text::{NodeTRef, NodeTSpan, NodeText};
 
 macro_rules! node_create_fn {
     ($name:ident, $node_type:ident, $new_fn:expr) => {

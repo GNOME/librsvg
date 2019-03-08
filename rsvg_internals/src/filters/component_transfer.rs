@@ -3,20 +3,20 @@ use std::cmp::min;
 
 use cairo::{self, ImageSurface};
 
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::NodeError;
-use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
-use number_list::{NumberList, NumberListError, NumberListLength};
-use parsers::{self, ParseError};
-use property_bag::PropertyBag;
-use surface_utils::{
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::NodeError;
+use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::number_list::{NumberList, NumberListError, NumberListLength};
+use crate::parsers::{self, ParseError};
+use crate::property_bag::PropertyBag;
+use crate::surface_utils::{
     iterators::Pixels,
     shared_surface::SharedImageSurface,
     ImageSurfaceDataExt,
     Pixel,
 };
-use util::clamp;
+use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, PrimitiveWithInput};

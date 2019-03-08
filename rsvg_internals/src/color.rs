@@ -1,10 +1,10 @@
 use cssparser::{self, Parser};
 use libc;
 
-use error::*;
-use parsers::Parse;
-use parsers::ParseError;
-use util::utf8_cstr;
+use crate::error::*;
+use crate::parsers::Parse;
+use crate::parsers::ParseError;
+use crate::util::utf8_cstr;
 
 pub use cssparser::Color;
 

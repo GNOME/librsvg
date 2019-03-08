@@ -1,8 +1,8 @@
 use cssparser::Parser;
 
-use error::*;
-use number_list::{NumberList, NumberListLength};
-use parsers::{Parse, ParseError};
+use crate::error::*;
+use crate::number_list::{NumberList, NumberListLength};
+use crate::parsers::{Parse, ParseError};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ViewBox {

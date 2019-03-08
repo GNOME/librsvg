@@ -1,10 +1,10 @@
 use cssparser::{BasicParseError, Parser, Token};
 
-use drawing_ctx::ViewParams;
-use error::*;
-use length::{LengthBoth, LengthHorizontal, LengthUnit, POINTS_PER_INCH};
-use parsers::{Parse, ParseError};
-use properties::ComputedValues;
+use crate::drawing_ctx::ViewParams;
+use crate::error::*;
+use crate::length::{LengthBoth, LengthHorizontal, LengthUnit, POINTS_PER_INCH};
+use crate::parsers::{Parse, ParseError};
+use crate::properties::ComputedValues;
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -61,7 +61,7 @@ impl FontSizeSpec {
 impl Parse for FontSizeSpec {
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, ::error::ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, crate::error::ValueErrorKind> {
         let parser_state = parser.state();
 
         LengthBoth::parse(parser)
@@ -71,7 +71,9 @@ impl Parse for FontSizeSpec {
 
                 {
                     let token = parser.next().map_err(|_| {
-                        ::error::ValueErrorKind::Parse(::parsers::ParseError::new("expected token"))
+                        crate::error::ValueErrorKind::Parse(crate::parsers::ParseError::new(
+                            "expected token",
+                        ))
                     })?;
 
                     if let Token::Ident(ref cow) = token {
@@ -118,8 +120,8 @@ pub enum FontWeightSpec {
 impl Parse for FontWeightSpec {
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, ::error::ValueErrorKind> {
-        if let Ok(r) = parser.try(|p| {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, crate::error::ValueErrorKind> {
+        if let Ok(r) = parser.r#try(|p| {
             p.expect_ident()
                 .map_err(|_| ())
                 .and_then(|cow| match cow.as_ref() {
@@ -190,7 +192,9 @@ impl LetterSpacingSpec {
 impl Parse for LetterSpacingSpec {
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<LetterSpacingSpec, ::error::ValueErrorKind> {
+    fn parse(
+        parser: &mut Parser<'_, '_>,
+    ) -> Result<LetterSpacingSpec, crate::error::ValueErrorKind> {
         let parser_state = parser.state();
 
         LengthHorizontal::parse(parser)
@@ -200,7 +204,9 @@ impl Parse for LetterSpacingSpec {
 
                 {
                     let token = parser.next().map_err(|_| {
-                        ::error::ValueErrorKind::Parse(::parsers::ParseError::new("expected token"))
+                        crate::error::ValueErrorKind::Parse(crate::parsers::ParseError::new(
+                            "expected token",
+                        ))
                     })?;
 
                     if let Token::Ident(ref cow) = token {
@@ -234,7 +240,7 @@ impl Parse for SingleFontFamily {
 fn parse_single_font_family<'i>(
     parser: &'i mut Parser<'_, '_>,
 ) -> Result<SingleFontFamily, BasicParseError<'i>> {
-    if let Ok(cow) = parser.try(|p| p.expect_string_cloned()) {
+    if let Ok(cow) = parser.r#try(|p| p.expect_string_cloned()) {
         return Ok(SingleFontFamily((*cow).to_owned()));
     }
 
@@ -242,7 +248,7 @@ fn parse_single_font_family<'i>(
 
     let mut value = first_ident.as_ref().to_owned();
 
-    while let Ok(cow) = parser.try(|p| p.expect_ident_cloned()) {
+    while let Ok(cow) = parser.r#try(|p| p.expect_ident_cloned()) {
         value.push(' ');
         value.push_str(&cow);
     }

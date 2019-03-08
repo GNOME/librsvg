@@ -3,20 +3,20 @@ use std::cell::{Cell, RefCell};
 use cairo::{self, ImageSurface};
 use cssparser::{CowRcStr, Parser, Token};
 
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::{NodeError, ValueErrorKind};
-use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{self, Parse, ParseValue};
-use property_bag::PropertyBag;
-use rect::IRect;
-use surface_utils::{
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::{NodeError, ValueErrorKind};
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::parsers::{self, Parse, ParseValue};
+use crate::property_bag::PropertyBag;
+use crate::rect::IRect;
+use crate::surface_utils::{
     iterators::Pixels,
     shared_surface::SharedImageSurface,
     ImageSurfaceDataExt,
     Pixel,
 };
-use util::clamp;
+use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;

@@ -1,9 +1,9 @@
 use cairo::{self, ImageSurface, Matrix, MatrixTrait, PatternTrait};
 
-use drawing_ctx::DrawingCtx;
-use node::{NodeResult, NodeTrait, RsvgNode};
-use property_bag::PropertyBag;
-use surface_utils::shared_surface::SharedImageSurface;
+use crate::drawing_ctx::DrawingCtx;
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::property_bag::PropertyBag;
+use crate::surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
 use super::{Filter, FilterError, PrimitiveWithInput};

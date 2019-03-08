@@ -7,10 +7,10 @@ use nalgebra::Vector3;
 use num_traits::identities::Zero;
 use rayon::prelude::*;
 
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::NodeError;
-use filters::{
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::NodeError;
+use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
     light::{
         bottom_left_normal,
@@ -29,16 +29,16 @@ use filters::{
     FilterError,
     PrimitiveWithInput,
 };
-use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
-use parsers;
-use properties::ColorInterpolationFilters;
-use property_bag::PropertyBag;
-use surface_utils::{
+use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::parsers;
+use crate::properties::ColorInterpolationFilters;
+use crate::property_bag::PropertyBag;
+use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
     Pixel,
 };
-use util::clamp;
+use crate::util::clamp;
 
 /// Properties specific to either diffuse or specular lighting.
 enum Data {

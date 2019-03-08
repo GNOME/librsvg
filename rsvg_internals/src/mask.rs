@@ -1,23 +1,23 @@
 use cairo::{self, MatrixTrait};
 use std::cell::Cell;
 
-use attributes::Attribute;
-use coord_units::CoordUnits;
-use drawing_ctx::DrawingCtx;
-use error::RenderingError;
-use length::{LengthHorizontal, LengthVertical};
-use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{Parse, ParseValue};
-use properties::Opacity;
-use property_bag::PropertyBag;
-use rect::IRect;
-use surface_utils::{
+use crate::attributes::Attribute;
+use crate::coord_units::CoordUnits;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::RenderingError;
+use crate::length::{LengthHorizontal, LengthVertical};
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::parsers::{Parse, ParseValue};
+use crate::properties::Opacity;
+use crate::property_bag::PropertyBag;
+use crate::rect::IRect;
+use crate::surface_utils::{
     iterators::Pixels,
     shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
     ImageSurfaceDataExt,
 };
-use unit_interval::UnitInterval;
+use crate::unit_interval::UnitInterval;
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);

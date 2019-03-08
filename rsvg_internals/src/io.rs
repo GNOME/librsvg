@@ -15,8 +15,8 @@ use gio::{
 };
 use glib::{self, Bytes as GBytes, Cast};
 
-use allowed_url::AllowedUrl;
-use error::{LoadingError, RsvgError};
+use crate::allowed_url::AllowedUrl;
+use crate::error::{LoadingError, RsvgError};
 
 pub struct BinaryData {
     pub data: Vec<u8>,

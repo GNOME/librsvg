@@ -24,12 +24,12 @@ use std::ops::Deref;
 
 use cairo::{self, MatrixTrait};
 
+use crate::error::ValueErrorKind;
+use crate::float_eq_cairo::ApproxEqCairo;
+use crate::parsers::Parse;
+use crate::parsers::ParseError;
+use crate::viewbox::ViewBox;
 use cssparser::{CowRcStr, Parser};
-use error::ValueErrorKind;
-use float_eq_cairo::ApproxEqCairo;
-use parsers::Parse;
-use parsers::ParseError;
-use viewbox::ViewBox;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
@@ -222,16 +222,16 @@ impl Parse for AspectRatio {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<AspectRatio, ValueErrorKind> {
-        let defer = parser.try(|p| p.expect_ident_matching("defer")).is_ok();
+        let defer = parser.r#try(|p| p.expect_ident_matching("defer")).is_ok();
 
-        let align_xy = parser.try(|p| {
+        let align_xy = parser.r#try(|p| {
             p.expect_ident()
                 .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
                 .and_then(|ident| parse_align_xy(ident))
         })?;
 
         let fit = parser
-            .try(|p| {
+            .r#try(|p| {
                 p.expect_ident()
                     .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
                     .and_then(|ident| parse_fit_mode(ident))
@@ -251,9 +251,9 @@ impl Parse for AspectRatio {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::float_eq_cairo::ApproxEqCairo;
+    use crate::rect::RectangleExt;
     use cairo::Rectangle;
-    use float_eq_cairo::ApproxEqCairo;
-    use rect::RectangleExt;
 
     #[test]
     fn parsing_invalid_strings_yields_error() {

@@ -1,6 +1,6 @@
 //! Pixel iterators for `SharedImageSurface`.
-use rect::IRect;
-use util::clamp;
+use crate::rect::IRect;
+use crate::util::clamp;
 
 use super::shared_surface::SharedImageSurface;
 use super::{EdgeMode, Pixel};
@@ -185,8 +185,8 @@ impl<'a> Iterator for PixelRectangle<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::surface_utils::shared_surface::SurfaceType;
     use cairo::{self, ImageSurface};
-    use surface_utils::shared_surface::SurfaceType;
 
     #[test]
     fn pixels_count() {
