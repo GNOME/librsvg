@@ -204,12 +204,16 @@ impl DrawingCtx {
         self.cr = cr.clone();
     }
 
-    pub fn get_width(&self) -> f64 {
-        self.rect.width
-    }
+    pub fn create_surface_for_toplevel_viewport(
+        &self,
+    ) -> Result<cairo::ImageSurface, RenderingError> {
+        // This truncation may mean that we clip off the rightmost/bottommost row of pixels.
+        // See https://gitlab.gnome.org/GNOME/librsvg/issues/295
 
-    pub fn get_height(&self) -> f64 {
-        self.rect.height
+        let width = self.rect.width as i32;
+        let height = self.rect.height as i32;
+
+        Ok(cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?)
     }
 
     /// Gets the viewport that was last pushed with `push_view_box()`.
@@ -424,12 +428,7 @@ impl DrawingCtx {
                 && enable_background == EnableBackground::Accumulate);
 
             if needs_temporary_surface {
-                let surface = cairo::ImageSurface::create(
-                    cairo::Format::ARgb32,
-                    self.rect.width as i32,
-                    self.rect.height as i32,
-                )
-                .map_err(|e| {
+                let surface = self.create_surface_for_toplevel_viewport().map_err(|e| {
                     original_cr.restore();
                     e
                 })?;
@@ -713,9 +712,7 @@ impl DrawingCtx {
     }
 
     pub fn get_snapshot(&self, surface: &cairo::ImageSurface) {
-        /*
-        let (x, y) = (self.rect.x, self.rect.y);
-         */
+        // let (x, y) = (self.rect.x, self.rect.y);
         let (x, y) = (0.0, 0.0);
 
         // TODO: as far as I can tell this should not render elements past the last (topmost) one

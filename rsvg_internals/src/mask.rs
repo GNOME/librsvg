@@ -56,10 +56,7 @@ impl NodeMask {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
-        let width = draw_ctx.get_width() as i32;
-        let height = draw_ctx.get_height() as i32;
-
-        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+        let surface = draw_ctx.create_surface_for_toplevel_viewport()?;
 
         let mask_units = CoordUnits::from(self.units.get());
         let content_units = CoordUnits::from(self.content_units.get());
