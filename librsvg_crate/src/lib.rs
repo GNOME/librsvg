@@ -239,21 +239,6 @@ impl Loader {
         self.read_file(&file, None)
     }
 
-    /// Reads an SVG stream from something implementing [`Read`][Read].
-    ///
-    /// Reading an SVG file may involve resolving relative URLs if the
-    /// SVG references things like raster images, or other SVG files.
-    /// In this case, pass the `base_url` that represents the URL
-    /// where this SVG got loaded from.
-    ///
-    /// FIXME: example
-    ///
-    /// [Read]: https://doc.rust-lang.org/stable/std/io/trait.Read.html
-    pub fn read(self, _r: &dyn Read, _base_url: Option<&Url>) -> Result<SvgHandle, LoadingError> {
-        // This requires wrapping a Read with a GInputStream
-        unimplemented!();
-    }
-
     /// Reads an SVG file from a `gio::File`.
     ///
     /// The `cancellable` can be used to cancel loading from another thread.
