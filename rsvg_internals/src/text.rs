@@ -270,8 +270,6 @@ impl PositionedSpan {
         let cr = draw_ctx.get_cairo_context();
         cr.save();
 
-        draw_ctx.set_affine_on_cr(&cr);
-
         let affine = cr.get_matrix();
 
         let gravity = self.layout.get_context().unwrap().get_gravity();
