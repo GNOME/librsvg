@@ -435,6 +435,9 @@ impl DrawingCtx {
                         original_cr.restore();
                         e
                     })?;
+                // FIXME: the .map_err() above is repeated below
+                // whenever this function uses "?".  This should be
+                // replaced by "do catch".
             }
 
             let needs_temporary_surface = !(opacity == 1.0
@@ -448,7 +451,11 @@ impl DrawingCtx {
                     cairo::Format::ARgb32,
                     self.rect.width as i32,
                     self.rect.height as i32,
-                )?;
+                )
+                .map_err(|e| {
+                    original_cr.restore();
+                    e
+                })?;
 
                 let cr = cairo::Context::new(&surface);
                 cr.set_matrix(affine);
@@ -466,7 +473,11 @@ impl DrawingCtx {
                 let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
 
                 let filter_result_surface = if let Some(filter_uri) = filter {
-                    self.run_filter(filter_uri, node, values, &child_surface)?
+                    self.run_filter(filter_uri, node, values, &child_surface)
+                        .map_err(|e| {
+                            original_cr.restore();
+                            e
+                        })?
                 } else {
                     child_surface
                 };
