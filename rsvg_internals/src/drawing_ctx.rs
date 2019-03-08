@@ -135,6 +135,9 @@ impl DrawingCtx {
                 cairo::Matrix::identity(),
             )
         } else {
+            let rect = *viewport;
+            let affine = cairo::Matrix::identity();
+            /*
             let mut affine = cr.get_matrix();
             let rect = viewport.transform(&affine).outer();
 
@@ -143,6 +146,7 @@ impl DrawingCtx {
             affine.x0 -= rect.x;
             affine.y0 -= rect.y;
             cr.set_matrix(affine);
+             */
 
             // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
             //
@@ -360,11 +364,14 @@ impl DrawingCtx {
     }
 
     fn get_offset(&self) -> (f64, f64) {
+        /*
         if self.is_cairo_context_nested(&self.get_cairo_context()) {
             (0.0, 0.0)
         } else {
             (self.rect.x, self.rect.y)
         }
+         */
+        (0.0, 0.0)
     }
 
     pub fn with_discrete_layer(
@@ -734,7 +741,10 @@ impl DrawingCtx {
     }
 
     pub fn get_snapshot(&self, surface: &cairo::ImageSurface) {
+        /*
         let (x, y) = (self.rect.x, self.rect.y);
+         */
+        let (x, y) = (0.0, 0.0);
 
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
