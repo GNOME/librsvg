@@ -128,15 +128,13 @@ impl DrawingCtx {
         // This is more or less a hack to make measuring geometries possible,
         // while the code gets refactored not to need special cases for that.
 
-        let (rect, vbox, affine) = if measuring {
+        let (rect, vbox) = if measuring {
             (
                 cairo::Rectangle::new(0.0, 0.0, 1.0, 1.0),
                 ViewBox::new(0.0, 0.0, 1.0, 1.0),
-                cairo::Matrix::identity(),
             )
         } else {
             let rect = *viewport;
-            let affine = cairo::Matrix::identity();
 
             // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
             //
@@ -157,7 +155,7 @@ impl DrawingCtx {
                 height: viewport.height,
             };
 
-            (rect, vbox, affine)
+            (rect, vbox)
         };
 
         let mut view_box_stack = Vec::new();
@@ -172,7 +170,7 @@ impl DrawingCtx {
             cr: cr.clone(),
             initial_cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
-            bbox: BoundingBox::new(&affine),
+            bbox: BoundingBox::new(&cairo::Matrix::identity()),
             bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
