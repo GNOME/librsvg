@@ -1,7 +1,7 @@
-extern crate cairo;
-extern crate gio;
-extern crate glib;
-extern crate librsvg;
+use cairo;
+use gio;
+use glib;
+use librsvg;
 
 use gio::MemoryInputStreamExt;
 use glib::Cast;

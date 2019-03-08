@@ -2,9 +2,9 @@
 extern crate criterion;
 use criterion::Criterion;
 
-extern crate cairo;
-extern crate cairo_sys;
-extern crate rsvg_internals;
+use cairo;
+use cairo_sys;
+use rsvg_internals;
 
 use rsvg_internals::rect::IRect;
 use rsvg_internals::surface_utils::shared_surface::{

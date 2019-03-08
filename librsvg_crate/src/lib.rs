@@ -87,10 +87,10 @@
 //! [SVG 2]: https://www.w3.org/TR/SVG2/
 
 #![warn(unused)]
-extern crate cairo;
-extern crate gio;
-extern crate glib;
-extern crate rsvg_internals;
+use cairo;
+use gio;
+use glib;
+use rsvg_internals;
 
 use std::path::Path;
 
@@ -137,7 +137,7 @@ impl Loader {
     /// # Example:
     ///
     /// ```ignore
-    /// extern crate librsvg;
+    /// use librsvg;
     ///
     /// use librsvg::Loader;
     ///
@@ -163,7 +163,7 @@ impl Loader {
     ///
     /// # Example:
     /// ```ignore
-    /// extern crate librsvg;
+    /// use librsvg;
     ///
     /// use librsvg::Loader;
     ///
@@ -191,8 +191,8 @@ impl Loader {
     ///
     /// # Example:
     /// ```ignore
-    /// extern crate cairo;
-    /// extern crate librsvg;
+    /// use cairo;
+    /// use librsvg;
     ///
     /// use librsvg::Loader;
     ///
@@ -223,7 +223,7 @@ impl Loader {
     ///
     /// # Example:
     /// ```ignore
-    /// extern crate librsvg;
+    /// use librsvg;
     ///
     /// use librsvg::Loader;
     ///
@@ -242,8 +242,8 @@ impl Loader {
     ///
     /// # Example:
     /// ```ignore
-    /// extern crate gio;
-    /// extern crate librsvg;
+    /// use gio;
+    /// use librsvg;
     ///
     /// use librsvg::Loader;
     ///

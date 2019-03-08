@@ -1,5 +1,5 @@
-extern crate cairo;
-extern crate librsvg;
+use cairo;
+use librsvg;
 
 use std::fs::File;
 use std::io::BufWriter;

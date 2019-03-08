@@ -1,5 +1,5 @@
-extern crate cairo;
-extern crate rsvg_internals;
+use cairo;
+use rsvg_internals;
 
 use cairo::ImageSurface;
 
