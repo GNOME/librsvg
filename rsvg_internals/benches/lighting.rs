@@ -2,10 +2,10 @@
 extern crate criterion;
 use criterion::Criterion;
 
-extern crate cairo;
-extern crate cairo_sys;
-extern crate nalgebra;
-extern crate rsvg_internals;
+use cairo;
+use cairo_sys;
+use nalgebra;
+use rsvg_internals;
 
 use nalgebra::{Matrix3, Vector2};
 

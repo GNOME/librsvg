@@ -2,9 +2,9 @@
 extern crate criterion;
 use criterion::{black_box, Criterion};
 
-extern crate cairo;
-extern crate cairo_sys;
-extern crate rsvg_internals;
+use cairo;
+use cairo_sys;
+use rsvg_internals;
 
 use rsvg_internals::filters::composite::composite_arithmetic;
 use rsvg_internals::rect::IRect;
