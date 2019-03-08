@@ -3,7 +3,7 @@
 #![allow(clippy::too_many_arguments)]
 #![warn(unused)]
 
-extern crate xml as xml_rs;
+use ::xml as xml_rs;
 
 #[macro_use]
 extern crate bitflags;
