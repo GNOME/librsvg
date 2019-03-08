@@ -5,7 +5,7 @@ use std::ops::Deref;
 use std::slice;
 use std::str::{self, FromStr};
 
-use attributes::Attribute;
+use crate::attributes::Attribute;
 
 pub struct PropertyBag<'a>(Vec<(Attribute, &'a CStr)>);
 

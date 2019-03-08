@@ -4,13 +4,13 @@ use cairo::MatrixTrait;
 use cssparser;
 use nalgebra::Vector3;
 
-use attributes::Attribute;
-use error::NodeError;
-use filters::context::FilterContext;
-use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers;
-use property_bag::PropertyBag;
-use util::clamp;
+use crate::attributes::Attribute;
+use crate::error::NodeError;
+use crate::filters::context::FilterContext;
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::parsers;
+use crate::property_bag::PropertyBag;
+use crate::util::clamp;
 
 /// A light source node (`feDistantLight`, `fePointLight` or `feSpotLight`).
 #[derive(Clone)]

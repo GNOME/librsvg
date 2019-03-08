@@ -1,12 +1,12 @@
 use std::cell::Cell;
 
-use attributes::Attribute;
-use error::*;
-use length::*;
-use node::*;
-use parsers::ParseValue;
-use property_bag::PropertyBag;
-use unit_interval::UnitInterval;
+use crate::attributes::Attribute;
+use crate::error::*;
+use crate::length::*;
+use crate::node::*;
+use crate::parsers::ParseValue;
+use crate::property_bag::PropertyBag;
+use crate::unit_interval::UnitInterval;
 
 pub struct NodeStop {
     offset: Cell<UnitInterval>,

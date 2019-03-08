@@ -3,8 +3,8 @@ use cairo;
 use std::f64;
 use std::f64::consts::*;
 
-use float_eq_cairo::ApproxEqCairo;
-use util::clamp;
+use crate::float_eq_cairo::ApproxEqCairo;
+use crate::util::clamp;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct LargeArc(pub bool);

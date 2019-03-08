@@ -9,8 +9,8 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 
-use attributes::Attribute;
-use parsers::ParseError;
+use crate::attributes::Attribute;
+use crate::parsers::ParseError;
 
 /// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]

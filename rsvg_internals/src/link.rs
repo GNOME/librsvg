@@ -2,11 +2,11 @@ use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
 
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::RenderingError;
-use node::*;
-use property_bag::PropertyBag;
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::RenderingError;
+use crate::node::*;
+use crate::property_bag::PropertyBag;
 
 pub struct NodeLink {
     link: RefCell<Option<String>>,

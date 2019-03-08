@@ -7,11 +7,11 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 
-use c_api::{get_rust_handle, rsvg_rust_handle_new_from_gfile_sync, RsvgDimensionData};
-use error::{set_gerror, RenderingError};
-use handle::Handle;
-use rect::IRect;
-use surface_utils::{
+use crate::c_api::{get_rust_handle, rsvg_rust_handle_new_from_gfile_sync, RsvgDimensionData};
+use crate::error::{set_gerror, RenderingError};
+use crate::handle::Handle;
+use crate::rect::IRect;
+use crate::surface_utils::{
     iterators::Pixels,
     shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,

@@ -20,11 +20,11 @@ use glib::{ParamFlags, ParamSpec, StaticType, ToValue, Type, Value};
 use glib_sys;
 use gobject_sys::{self, GEnumValue, GFlagsValue};
 
-use dpi::Dpi;
-use drawing_ctx::RsvgRectangle;
-use error::{set_gerror, RSVG_ERROR_FAILED};
-use handle::{Handle, LoadFlags, LoadState};
-use length::RsvgLength;
+use crate::dpi::Dpi;
+use crate::drawing_ctx::RsvgRectangle;
+use crate::error::{set_gerror, RSVG_ERROR_FAILED};
+use crate::handle::{Handle, LoadFlags, LoadState};
+use crate::length::RsvgLength;
 use url::Url;
 
 mod handle_flags {

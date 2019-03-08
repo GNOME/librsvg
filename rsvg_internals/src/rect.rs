@@ -1,7 +1,7 @@
 use cairo;
 use cairo::MatrixTrait;
 
-use float_eq_cairo::ApproxEqCairo;
+use crate::float_eq_cairo::ApproxEqCairo;
 
 pub trait RectangleExt {
     fn new(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle;

@@ -1,7 +1,7 @@
 use cssparser::{CowRcStr, Parser, Token};
 
-use error::ValueErrorKind;
-use parsers::{Parse, ParseError};
+use crate::error::ValueErrorKind;
+use crate::parsers::{Parse, ParseError};
 
 /// Defines the units to be used for things that can consider a
 /// coordinate system in terms of the current transformation, or in

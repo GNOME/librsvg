@@ -11,9 +11,9 @@ use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
 use rayon;
 
-use rect::IRect;
-use srgb;
-use util::clamp;
+use crate::rect::IRect;
+use crate::srgb;
+use crate::util::clamp;
 
 use super::{
     iterators::{PixelRectangle, Pixels},

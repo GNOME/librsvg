@@ -1,11 +1,11 @@
 use cssparser::{Parser, Token};
 use std::f64::consts::*;
 
-use drawing_ctx::ViewParams;
-use error::*;
-use parsers::Parse;
-use parsers::ParseError;
-use properties::ComputedValues;
+use crate::drawing_ctx::ViewParams;
+use crate::error::*;
+use crate::parsers::Parse;
+use crate::parsers::ParseError;
+use crate::properties::ComputedValues;
 
 pub type RsvgLength = Length;
 
@@ -360,7 +360,7 @@ impl Parse for Dasharray {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Dasharray, ValueErrorKind> {
-        if parser.try(|p| p.expect_ident_matching("none")).is_ok() {
+        if parser.r#try(|p| p.expect_ident_matching("none")).is_ok() {
             Ok(Dasharray::None)
         } else {
             Ok(Dasharray::Array(parse_dash_array(parser)?))
@@ -377,7 +377,7 @@ fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<LengthBoth>, Valu
 
         if parser.is_exhausted() {
             break;
-        } else if parser.try(|p| p.expect_comma()).is_ok() {
+        } else if parser.r#try(|p| p.expect_comma()).is_ok() {
             continue;
         }
     }
@@ -389,7 +389,7 @@ fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<LengthBoth>, Valu
 mod tests {
     use super::*;
 
-    use float_eq_cairo::ApproxEqCairo;
+    use crate::float_eq_cairo::ApproxEqCairo;
 
     #[test]
     fn parses_default() {

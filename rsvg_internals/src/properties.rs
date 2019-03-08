@@ -2,16 +2,16 @@ use cssparser::{self, Parser, Token};
 use std::collections::HashSet;
 use std::str::FromStr;
 
-use attributes::Attribute;
-use error::*;
-use font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
-use iri::IRI;
-use length::{Dasharray, LengthBoth, LengthUnit};
-use paint_server::PaintServer;
-use parsers::{Parse, ParseError};
-use property_bag::PropertyBag;
-use property_macros::Property;
-use unit_interval::UnitInterval;
+use crate::attributes::Attribute;
+use crate::error::*;
+use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
+use crate::iri::IRI;
+use crate::length::{Dasharray, LengthBoth, LengthUnit};
+use crate::paint_server::PaintServer;
+use crate::parsers::{Parse, ParseError};
+use crate::property_bag::PropertyBag;
+use crate::property_macros::Property;
+use crate::unit_interval::UnitInterval;
 
 /// Representation of a single CSS property value.
 ///
@@ -264,7 +264,7 @@ impl SpecifiedValues {
         value: &str,
         accept_shorthands: bool,
     ) -> Result<(), NodeError> {
-        // FIXME: move this to "do catch" when we can bump the rustc version dependency
+        // FIXME: move this to "try {}" when we can bump the rustc version dependency
         let mut parse = || -> Result<(), ValueErrorKind> {
             // please keep these sorted
             match attr {
@@ -619,12 +619,12 @@ make_property!(
 
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
-            fn parse(parser: &mut Parser<'_, '_>) -> Result<BaselineShift, ::error::ValueErrorKind> {
+            fn parse(parser: &mut Parser<'_, '_>) -> Result<BaselineShift, crate::error::ValueErrorKind> {
                 let parser_state = parser.state();
 
                 {
-                    let token = parser.next().map_err(|_| ::error::ValueErrorKind::Parse(
-                        ::parsers::ParseError::new("expected token"),
+                    let token = parser.next().map_err(|_| crate::error::ValueErrorKind::Parse(
+                        crate::parsers::ParseError::new("expected token"),
                     ))?;
 
                     if let Token::Ident(ref cow) = token {
@@ -1127,13 +1127,13 @@ make_property!(
                 let mut underline = false;
                 let mut strike = false;
 
-                if parser.try(|p| p.expect_ident_matching("none")).is_ok() {
+                if parser.r#try(|p| p.expect_ident_matching("none")).is_ok() {
                     return Ok(TextDecoration::default());
                 }
 
                 while !parser.is_exhausted() {
-                    let cow = parser.expect_ident().map_err(|_| ::error::ValueErrorKind::Parse(
-                        ::parsers::ParseError::new("expected identifier"),
+                    let cow = parser.expect_ident().map_err(|_| crate::error::ValueErrorKind::Parse(
+                        crate::parsers::ParseError::new("expected identifier"),
                     ))?;
 
                     match cow.as_ref() {

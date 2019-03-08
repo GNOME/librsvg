@@ -4,6 +4,7 @@ version = "0.0.1"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 workspace = "../"
 build = "build.rs"
+edition = "2018"
 
 # IMPORTANT: If you add/remove/update dependencies here, please also
 # update Cargo.toml in https://gitlab.com/BuildStream/cargo-fetcher

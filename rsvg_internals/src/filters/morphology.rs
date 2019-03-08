@@ -3,14 +3,14 @@ use std::cmp::{max, min};
 
 use cairo::{self, ImageSurface, MatrixTrait};
 
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::NodeError;
-use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{self, ParseError};
-use property_bag::PropertyBag;
-use rect::IRect;
-use surface_utils::{
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::NodeError;
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::parsers::{self, ParseError};
+use crate::property_bag::PropertyBag;
+use crate::rect::IRect;
+use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::SharedImageSurface,
     EdgeMode,

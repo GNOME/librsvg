@@ -12,3 +12,4 @@ normalize_comments = true
 reorder_imports = true
 use_field_init_shorthand = true
 imports_layout = "HorizontalVertical"
+edition = "2018"

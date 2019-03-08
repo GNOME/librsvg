@@ -4,17 +4,17 @@ use pango_sys;
 use pangocairo;
 use std::cell::{Cell, RefCell};
 
-use allowed_url::Fragment;
-use attributes::Attribute;
-use bbox::BoundingBox;
-use drawing_ctx::DrawingCtx;
-use error::{AttributeResultExt, RenderingError};
-use float_eq_cairo::ApproxEqCairo;
-use font_props::FontWeightSpec;
-use length::*;
-use node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use parsers::ParseValue;
-use properties::{
+use crate::allowed_url::Fragment;
+use crate::attributes::Attribute;
+use crate::bbox::BoundingBox;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::{AttributeResultExt, RenderingError};
+use crate::float_eq_cairo::ApproxEqCairo;
+use crate::font_props::FontWeightSpec;
+use crate::length::*;
+use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::parsers::ParseValue;
+use crate::properties::{
     ComputedValues,
     Direction,
     FontStretch,
@@ -27,8 +27,8 @@ use properties::{
     XmlLang,
     XmlSpace,
 };
-use property_bag::PropertyBag;
-use space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
+use crate::property_bag::PropertyBag;
+use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 
 /// An absolutely-positioned array of `Span`s
 ///

@@ -3,18 +3,18 @@ use std::cell::Cell;
 use std::cell::RefCell;
 use std::ops::Deref;
 
-use attributes::Attribute;
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::*;
+use crate::length::*;
+use crate::marker;
+use crate::node::*;
+use crate::parsers::{CssParserExt, Parse, ParseValue};
+use crate::path_builder::*;
+use crate::path_parser;
+use crate::properties::ComputedValues;
+use crate::property_bag::PropertyBag;
 use cssparser::{Parser, Token};
-use drawing_ctx::DrawingCtx;
-use error::*;
-use length::*;
-use marker;
-use node::*;
-use parsers::{CssParserExt, Parse, ParseValue};
-use path_builder::*;
-use path_parser;
-use properties::ComputedValues;
-use property_bag::PropertyBag;
 
 fn render_path_builder(
     builder: &PathBuilder,

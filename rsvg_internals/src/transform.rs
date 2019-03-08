@@ -5,8 +5,8 @@ use std::f64::consts::*;
 use cairo::MatrixTrait;
 use cssparser::{ParseError as CssParseError, Parser, Token};
 
-use error::*;
-use parsers::{finite_f32, CssParserExt, Parse, ParseError};
+use crate::error::*;
+use crate::parsers::{finite_f32, CssParserExt, Parse, ParseError};
 
 impl Parse for cairo::Matrix {
     type Err = ValueErrorKind;
@@ -118,7 +118,7 @@ fn parse_translate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Va
             let tx = p.expect_number()?;
 
             let ty = p
-                .try(|p| -> Result<f32, CssParseError<'_, ()>> {
+                .r#try(|p| -> Result<f32, CssParseError<'_, ()>> {
                     p.optional_comma();
                     Ok(p.expect_number()?)
                 })
@@ -142,7 +142,7 @@ fn parse_scale_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueE
             let x = p.expect_number()?;
 
             let y = p
-                .try(|p| -> Result<f32, CssParseError<'_, ()>> {
+                .r#try(|p| -> Result<f32, CssParseError<'_, ()>> {
                     p.optional_comma();
                     Ok(p.expect_number()?)
                 })
@@ -166,7 +166,7 @@ fn parse_rotate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Value
             let angle = p.expect_number()?;
 
             let (tx, ty) = p
-                .try(|p| -> Result<_, CssParseError<'_, ()>> {
+                .r#try(|p| -> Result<_, CssParseError<'_, ()>> {
                     p.optional_comma();
                     let tx = p.expect_number()?;
 

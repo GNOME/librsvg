@@ -2,18 +2,18 @@ use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface, MatrixTrait, PatternTrait, Rectangle};
 
-use allowed_url::{Fragment, Href};
-use aspect_ratio::AspectRatio;
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::{NodeError, RenderingError};
-use float_eq_cairo::ApproxEqCairo;
-use node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use parsers::{ParseError, ParseValue};
-use property_bag::PropertyBag;
-use rect::{IRect, RectangleExt};
-use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use viewbox::ViewBox;
+use crate::allowed_url::{Fragment, Href};
+use crate::aspect_ratio::AspectRatio;
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::{NodeError, RenderingError};
+use crate::float_eq_cairo::ApproxEqCairo;
+use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
+use crate::parsers::{ParseError, ParseValue};
+use crate::property_bag::PropertyBag;
+use crate::rect::{IRect, RectangleExt};
+use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::viewbox::ViewBox;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, Primitive};

@@ -1,33 +1,8 @@
-#![cfg_attr(feature = "cargo-clippy", allow(clone_on_ref_ptr))]
-#![cfg_attr(feature = "cargo-clippy", allow(not_unsafe_ptr_arg_deref))]
-#![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#![allow(clippy::clone_on_ref_ptr)]
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+#![allow(clippy::too_many_arguments)]
 #![warn(unused)]
 
-extern crate cairo;
-extern crate cairo_sys;
-extern crate cssparser;
-extern crate data_url;
-extern crate downcast_rs;
-extern crate encoding;
-extern crate float_cmp;
-extern crate gdk_pixbuf;
-extern crate gdk_pixbuf_sys;
-extern crate gio;
-extern crate glib_sys;
-extern crate gobject_sys;
-extern crate itertools;
-extern crate language_tags;
-extern crate libc;
-extern crate locale_config;
-extern crate nalgebra;
-extern crate num_traits;
-extern crate owning_ref;
-extern crate pango;
-extern crate pango_sys;
-extern crate pangocairo;
-extern crate rayon;
-extern crate regex;
-extern crate url;
 extern crate xml as xml_rs;
 
 #[macro_use]
@@ -39,7 +14,7 @@ extern crate glib;
 #[macro_use]
 extern crate lazy_static;
 
-pub use c_api::{
+pub use crate::c_api::{
     rsvg_rust_error_get_type,
     rsvg_rust_handle_close,
     rsvg_rust_handle_flags_get_type,
@@ -71,13 +46,13 @@ pub use c_api::{
     rsvg_rust_handle_write,
 };
 
-pub use color::{rsvg_css_parse_color, ColorKind, ColorSpec};
+pub use crate::color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
-pub use dpi::{rsvg_rust_set_default_dpi_x_y, Dpi};
+pub use crate::dpi::{rsvg_rust_set_default_dpi_x_y, Dpi};
 
-pub use drawing_ctx::RsvgRectangle;
+pub use crate::drawing_ctx::RsvgRectangle;
 
-pub use error::{
+pub use crate::error::{
     rsvg_rust_error_quark,
     DefsLookupErrorKind,
     HrefError,
@@ -85,18 +60,18 @@ pub use error::{
     RenderingError,
 };
 
-pub use handle::{Handle, LoadFlags};
+pub use crate::handle::{Handle, LoadFlags};
 
-pub use length::{Length, LengthUnit};
+pub use crate::length::{Length, LengthUnit};
 
-pub use pixbuf_utils::{
+pub use crate::pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_max_size,
     rsvg_rust_pixbuf_from_file_at_size,
     rsvg_rust_pixbuf_from_file_at_zoom,
     rsvg_rust_pixbuf_from_file_at_zoom_with_max,
 };
 
-pub use rect::IRect;
+pub use crate::rect::IRect;
 
 #[macro_use]
 mod log;

@@ -1,4 +1,4 @@
-extern crate phf;
+use phf;
 
 use std::fmt;
 use std::str::FromStr;

@@ -2,13 +2,13 @@ use std::cell::Cell;
 
 use cairo::{self, MatrixTrait};
 
-use attributes::Attribute;
-use coord_units::CoordUnits;
-use drawing_ctx::DrawingCtx;
-use error::RenderingError;
-use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::ParseValue;
-use property_bag::PropertyBag;
+use crate::attributes::Attribute;
+use crate::coord_units::CoordUnits;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::RenderingError;
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::parsers::ParseValue;
+use crate::property_bag::PropertyBag;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
@@ -48,8 +48,7 @@ impl NodeClipPath {
 
             let rect = orig_bbox.rect.unwrap();
 
-            let mut bbtransform =
-                cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
+            let bbtransform = cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
             cairo::Matrix::multiply(&bbtransform, affine_before_clip)
         } else {
             *affine_before_clip

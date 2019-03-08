@@ -1,8 +1,8 @@
 use cssparser::Parser;
 
-use error::*;
-use parsers::{CssParserExt, Parse, ParseError};
-use util;
+use crate::error::*;
+use crate::parsers::{CssParserExt, Parse, ParseError};
+use crate::util;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct UnitInterval(pub f64);
