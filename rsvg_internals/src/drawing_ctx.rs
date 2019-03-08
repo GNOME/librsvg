@@ -191,6 +191,10 @@ impl DrawingCtx {
         }
     }
 
+    pub fn toplevel_viewport(&self) -> cairo::Rectangle {
+        self.rect
+    }
+
     pub fn is_measuring(&self) -> bool {
         self.measuring
     }

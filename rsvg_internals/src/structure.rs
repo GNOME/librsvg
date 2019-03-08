@@ -286,12 +286,15 @@ impl NodeTrait for NodeSvg {
             let viewport = if has_parent {
                 svg_viewport
             } else {
+                /*
                 cairo::Rectangle {
                     x: 0.0,
                     y: 0.0,
                     width: params.view_box_width,
                     height: params.view_box_height,
                 }
+                 */
+                draw_ctx.toplevel_viewport()
             };
 
             let vbox = if has_parent {
