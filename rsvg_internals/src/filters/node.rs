@@ -3,16 +3,16 @@ use std::cell::Cell;
 
 use cairo::{self, MatrixTrait};
 
-use attributes::Attribute;
-use bbox::BoundingBox;
-use coord_units::CoordUnits;
-use drawing_ctx::DrawingCtx;
-use error::ValueErrorKind;
-use length::{LengthHorizontal, LengthUnit, LengthVertical};
-use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{Parse, ParseError, ParseValue};
-use properties::ComputedValues;
-use property_bag::PropertyBag;
+use crate::attributes::Attribute;
+use crate::bbox::BoundingBox;
+use crate::coord_units::CoordUnits;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::ValueErrorKind;
+use crate::length::{LengthHorizontal, LengthUnit, LengthVertical};
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::parsers::{Parse, ParseError, ParseValue};
+use crate::properties::ComputedValues;
+use crate::property_bag::PropertyBag;
 
 /// The <filter> node.
 pub struct NodeFilter {

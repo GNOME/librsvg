@@ -1,8 +1,8 @@
 //! Light filters and nodes.
 use nalgebra::Vector2;
 
-use rect::IRect;
-use surface_utils::shared_surface::SharedImageSurface;
+use crate::rect::IRect;
+use crate::surface_utils::shared_surface::SharedImageSurface;
 
 pub mod light_source;
 pub mod lighting;

@@ -1,10 +1,10 @@
 //! Filter primitive subregion computation.
 use cairo::{self, MatrixTrait};
 
-use bbox::BoundingBox;
-use drawing_ctx::DrawingCtx;
-use length::{LengthHorizontal, LengthVertical};
-use rect::IRect;
+use crate::bbox::BoundingBox;
+use crate::drawing_ctx::DrawingCtx;
+use crate::length::{LengthHorizontal, LengthVertical};
+use crate::rect::IRect;
 
 use super::context::{FilterContext, FilterInput, FilterOutput};
 

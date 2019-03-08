@@ -1,8 +1,8 @@
 use cssparser::Parser;
 
-use allowed_url::{Fragment, Href};
-use parsers::Parse;
-use parsers::ParseError;
+use crate::allowed_url::{Fragment, Href};
+use crate::parsers::Parse;
+use crate::parsers::ParseError;
 
 /// Used where style properties take a funciri or "none"
 ///
@@ -36,7 +36,7 @@ impl Parse for IRI {
     type Err = ParseError;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<IRI, ParseError> {
-        if parser.try(|i| i.expect_ident_matching("none")).is_ok() {
+        if parser.r#try(|i| i.expect_ident_matching("none")).is_ok() {
             Ok(IRI::None)
         } else {
             let url = parser

@@ -9,13 +9,13 @@ use url::Url;
 use glib::translate::*;
 use glib_sys::{gboolean, gpointer, GList};
 
-use allowed_url::AllowedUrl;
-use attributes::Attribute;
-use croco::*;
-use error::LoadingError;
-use io::{self, BinaryData};
-use properties::SpecifiedValues;
-use util::utf8_cstr;
+use crate::allowed_url::AllowedUrl;
+use crate::attributes::Attribute;
+use crate::croco::*;
+use crate::error::LoadingError;
+use crate::io::{self, BinaryData};
+use crate::properties::SpecifiedValues;
+use crate::util::utf8_cstr;
 
 struct Declaration {
     prop_value: String,

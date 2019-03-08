@@ -2,8 +2,8 @@ use cssparser::{BasicParseError, Parser, ParserInput, Token};
 
 use std::str;
 
-use attributes::Attribute;
-use error::{NodeError, ValueErrorKind};
+use crate::attributes::Attribute;
+use crate::error::{NodeError, ValueErrorKind};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParseError {
@@ -53,7 +53,7 @@ impl<'i, 't> CssParserExt for Parser<'i, 't> {
     }
 
     fn optional_comma(&mut self) {
-        let _ = self.try(|p| p.expect_comma());
+        let _ = self.r#try(|p| p.expect_comma());
     }
 }
 

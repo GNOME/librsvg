@@ -5,16 +5,16 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use allowed_url::{AllowedUrl, Fragment};
-use error::LoadingError;
-use handle::LoadOptions;
-use io::{self, BinaryData};
-use node::{NodeType, RsvgNode};
-use properties::ComputedValues;
-use structure::{IntrinsicDimensions, NodeSvg};
-use surface_utils::shared_surface::SharedImageSurface;
-use xml::XmlState;
-use xml2_load::xml_state_load_from_possibly_compressed_stream;
+use crate::allowed_url::{AllowedUrl, Fragment};
+use crate::error::LoadingError;
+use crate::handle::LoadOptions;
+use crate::io::{self, BinaryData};
+use crate::node::{NodeType, RsvgNode};
+use crate::properties::ComputedValues;
+use crate::structure::{IntrinsicDimensions, NodeSvg};
+use crate::surface_utils::shared_surface::SharedImageSurface;
+use crate::xml::XmlState;
+use crate::xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 /// A loaded SVG file and its derived data
 ///

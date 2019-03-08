@@ -3,8 +3,8 @@
 //! The constant values in this module are taken from http://www.color.org/chardata/rgb/srgb.xalter
 use cairo;
 
-use rect::IRect;
-use surface_utils::{
+use crate::rect::IRect;
+use crate::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,

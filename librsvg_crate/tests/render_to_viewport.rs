@@ -7,11 +7,7 @@ extern crate rsvg_internals;
 use gio::MemoryInputStreamExt;
 use glib::Cast;
 
-use librsvg::{
-    CairoRenderer,
-    Loader,
-    SvgHandle,
-};
+use librsvg::{CairoRenderer, Loader, SvgHandle};
 
 use std::fs::File;
 use std::io::BufReader;
@@ -21,7 +17,7 @@ use self::rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, Su
 
 mod compare_surfaces;
 
-use compare_surfaces::{compare_surfaces, BufferDiff};
+use crate::compare_surfaces::{compare_surfaces, BufferDiff};
 
 fn load_svg(input: &'static [u8]) -> SvgHandle {
     let stream = gio::MemoryInputStream::new();

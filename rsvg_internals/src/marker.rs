@@ -5,22 +5,22 @@ use std::ops::Deref;
 use cairo::{MatrixTrait, Rectangle};
 use cssparser::{CowRcStr, Parser, Token};
 
-use allowed_url::Fragment;
-use angle::Angle;
-use aspect_ratio::*;
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::*;
-use float_eq_cairo::ApproxEqCairo;
-use iri::IRI;
-use length::{LengthHorizontal, LengthVertical};
-use node::*;
-use parsers::{Parse, ParseError, ParseValue};
-use path_builder::*;
-use properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
-use property_bag::PropertyBag;
-use rect::RectangleExt;
-use viewbox::*;
+use crate::allowed_url::Fragment;
+use crate::angle::Angle;
+use crate::aspect_ratio::*;
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::*;
+use crate::float_eq_cairo::ApproxEqCairo;
+use crate::iri::IRI;
+use crate::length::{LengthHorizontal, LengthVertical};
+use crate::node::*;
+use crate::parsers::{Parse, ParseError, ParseValue};
+use crate::path_builder::*;
+use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
+use crate::property_bag::PropertyBag;
+use crate::rect::RectangleExt;
+use crate::viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -77,7 +77,7 @@ impl Parse for MarkerOrient {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerOrient, ValueErrorKind> {
-        if parser.try(|p| p.expect_ident_matching("auto")).is_ok() {
+        if parser.r#try(|p| p.expect_ident_matching("auto")).is_ok() {
             Ok(MarkerOrient::Auto)
         } else {
             Angle::parse(parser).map(MarkerOrient::Angle)

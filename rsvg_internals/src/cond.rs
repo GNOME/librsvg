@@ -6,8 +6,8 @@ use std::str::FromStr;
 use language_tags::LanguageTag;
 use locale_config::{LanguageRange, Locale};
 
-use error::*;
-use parsers::ParseError;
+use crate::error::*;
+use crate::parsers::ParseError;
 
 // No extensions at the moment.
 static IMPLEMENTED_EXTENSIONS: &[&str] = &[];

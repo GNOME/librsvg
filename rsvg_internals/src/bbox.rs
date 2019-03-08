@@ -1,7 +1,7 @@
 use cairo;
 use cairo::MatrixTrait;
 
-use rect::RectangleExt;
+use crate::rect::RectangleExt;
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {

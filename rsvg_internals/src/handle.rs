@@ -11,18 +11,18 @@ use glib_sys;
 use libc;
 use locale_config::{LanguageRange, Locale};
 
-use allowed_url::{AllowedUrl, Href};
-use c_api::{RsvgDimensionData, RsvgPositionData, RsvgSizeFunc};
-use dpi::Dpi;
-use drawing_ctx::{DrawingCtx, RsvgRectangle};
-use error::{DefsLookupErrorKind, LoadingError, RenderingError};
-use node::RsvgNode;
-use pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
-use structure::{IntrinsicDimensions, NodeSvg};
-use surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
-use svg::Svg;
+use crate::allowed_url::{AllowedUrl, Href};
+use crate::c_api::{RsvgDimensionData, RsvgPositionData, RsvgSizeFunc};
+use crate::dpi::Dpi;
+use crate::drawing_ctx::{DrawingCtx, RsvgRectangle};
+use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
+use crate::node::RsvgNode;
+use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
+use crate::structure::{IntrinsicDimensions, NodeSvg};
+use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
+use crate::svg::Svg;
+use crate::util::rsvg_g_warning;
 use url::Url;
-use util::rsvg_g_warning;
 
 /// Flags used during loading
 ///

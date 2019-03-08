@@ -3,13 +3,13 @@ extern crate rsvg_internals;
 
 use cairo::ImageSurface;
 
-use self::rsvg_internals::{IRect, RenderingError};
 use self::rsvg_internals::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
     Pixel,
 };
+use self::rsvg_internals::{IRect, RenderingError};
 
 pub enum BufferDiff {
     DifferentSizes,

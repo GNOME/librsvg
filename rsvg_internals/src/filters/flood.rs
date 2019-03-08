@@ -1,10 +1,10 @@
 use cairo::{self, ImageSurface};
 use cssparser;
 
-use drawing_ctx::DrawingCtx;
-use node::{NodeResult, NodeTrait, RsvgNode};
-use property_bag::PropertyBag;
-use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::drawing_ctx::DrawingCtx;
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::property_bag::PropertyBag;
+use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, Primitive};

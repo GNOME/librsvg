@@ -2,19 +2,19 @@ use std::cell::Cell;
 
 use cairo::{self, ImageSurface, MatrixTrait};
 
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::NodeError;
-use node::{NodeResult, NodeTrait, RsvgNode};
-use parsers::{self, ParseError};
-use properties::ColorInterpolationFilters;
-use property_bag::PropertyBag;
-use surface_utils::{
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::NodeError;
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::parsers::{self, ParseError};
+use crate::properties::ColorInterpolationFilters;
+use crate::property_bag::PropertyBag;
+use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
     Pixel,
 };
-use util::clamp;
+use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, Primitive};

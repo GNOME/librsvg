@@ -3,22 +3,22 @@ use std::cell::{Cell, RefCell};
 use cairo::{self, ImageSurface, MatrixTrait};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
-use attributes::Attribute;
-use drawing_ctx::DrawingCtx;
-use error::NodeError;
-use node::{NodeResult, NodeTrait, RsvgNode};
-use number_list::{NumberList, NumberListError, NumberListLength};
-use parsers::{self, ParseError};
-use property_bag::PropertyBag;
-use rect::IRect;
-use surface_utils::{
+use crate::attributes::Attribute;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::NodeError;
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::number_list::{NumberList, NumberListError, NumberListLength};
+use crate::parsers::{self, ParseError};
+use crate::property_bag::PropertyBag;
+use crate::rect::IRect;
+use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::SharedImageSurface,
     EdgeMode,
     ImageSurfaceDataExt,
     Pixel,
 };
-use util::clamp;
+use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{Filter, FilterError, PrimitiveWithInput};

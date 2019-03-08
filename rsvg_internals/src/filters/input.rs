@@ -1,6 +1,6 @@
-use attributes::Attribute;
-use error::NodeError;
-use parsers::ParseError;
+use crate::attributes::Attribute;
+use crate::error::NodeError;
+use crate::parsers::ParseError;
 
 /// An enumeration of possible inputs for a filter primitive.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

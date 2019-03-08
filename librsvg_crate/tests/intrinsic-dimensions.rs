@@ -118,7 +118,9 @@ fn element_geometry_with_percent_viewport() {
         height: 100.0,
     };
 
-    let (ink_r, logical_r) = renderer.geometry_for_element(Some("#foo"), &viewport).unwrap();
+    let (ink_r, logical_r) = renderer
+        .geometry_for_element(Some("#foo"), &viewport)
+        .unwrap();
 
     let rect = cairo::Rectangle {
         x: 10.0,
@@ -150,7 +152,9 @@ fn element_geometry_viewport_viewbox() {
         height: 400.0,
     };
 
-    let (ink_r, logical_r) = renderer.geometry_for_element(Some("#two"), &viewport).unwrap();
+    let (ink_r, logical_r) = renderer
+        .geometry_for_element(Some("#two"), &viewport)
+        .unwrap();
 
     let rect = cairo::Rectangle {
         x: 0.0,

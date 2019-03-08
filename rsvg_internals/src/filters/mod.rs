@@ -5,16 +5,16 @@ use std::time::Instant;
 use cairo::{self, MatrixTrait};
 use owning_ref::RcRef;
 
-use attributes::Attribute;
-use coord_units::CoordUnits;
-use drawing_ctx::DrawingCtx;
-use error::{RenderingError, ValueErrorKind};
-use length::{LengthHorizontal, LengthUnit, LengthVertical};
-use node::{NodeResult, NodeTrait, NodeType, RsvgNode};
-use parsers::{ParseError, ParseValue};
-use properties::{ColorInterpolationFilters, ComputedValues};
-use property_bag::PropertyBag;
-use surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::attributes::Attribute;
+use crate::coord_units::CoordUnits;
+use crate::drawing_ctx::DrawingCtx;
+use crate::error::{RenderingError, ValueErrorKind};
+use crate::length::{LengthHorizontal, LengthUnit, LengthVertical};
+use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::parsers::{ParseError, ParseValue};
+use crate::properties::{ColorInterpolationFilters, ComputedValues};
+use crate::property_bag::PropertyBag;
+use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 mod bounds;
 use self::bounds::BoundsBuilder;

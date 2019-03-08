@@ -5,7 +5,7 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use url::{self, Url};
 
-use error::HrefError;
+use crate::error::HrefError;
 
 /// Wrapper for URLs which are allowed to be loaded
 ///
