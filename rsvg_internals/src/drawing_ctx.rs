@@ -500,7 +500,8 @@ impl DrawingCtx {
 
                         res = res.and_then(|_| {
                             node.with_impl(|mask: &NodeMask| {
-                                mask.generate_cairo_mask(&node, &affine, self)
+                                let bbox = self.bbox;
+                                mask.generate_cairo_mask(&node, &affine, self, &bbox)
                             })
                         });
                     } else {

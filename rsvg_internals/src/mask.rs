@@ -2,6 +2,7 @@ use cairo::{self, MatrixTrait};
 use std::cell::Cell;
 
 use crate::attributes::Attribute;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::RenderingError;
@@ -52,6 +53,7 @@ impl NodeMask {
         node: &RsvgNode,
         affine_before_mask: &cairo::Matrix,
         draw_ctx: &mut DrawingCtx,
+        bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
@@ -80,7 +82,7 @@ impl NodeMask {
         // reference to the surface before we access the pixels
         {
             let bbox_rect = {
-                if let Some(ref rect) = draw_ctx.get_bbox().rect {
+                if let Some(ref rect) = bbox.rect {
                     *rect
                 } else {
                     // The node being masked is empty / doesn't have a
