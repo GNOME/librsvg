@@ -3,6 +3,7 @@ use std::cell::Cell;
 use cairo::{self, MatrixTrait};
 
 use crate::attributes::Attribute;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::RenderingError;
@@ -32,21 +33,20 @@ impl NodeClipPath {
         node: &RsvgNode,
         affine_before_clip: &cairo::Matrix,
         draw_ctx: &mut DrawingCtx,
+        bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
         let cascaded = node.get_cascaded_values();
 
         let clip_units = self.units.get();
 
-        let orig_bbox = draw_ctx.get_bbox().clone();
-
         let child_matrix = if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
-            if orig_bbox.rect.is_none() {
+            if bbox.rect.is_none() {
                 // The node being clipped is empty / doesn't have a
                 // bounding box, so there's nothing to clip!
                 return Ok(());
             }
 
-            let rect = orig_bbox.rect.unwrap();
+            let rect = bbox.rect.as_ref().unwrap();
 
             let bbtransform = cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
             cairo::Matrix::multiply(&bbtransform, affine_before_clip)
@@ -62,12 +62,6 @@ impl NodeClipPath {
         let res = node.draw_children(&cascaded, draw_ctx, true);
 
         cr.set_matrix(save_affine);
-
-        // FIXME: this is an EPIC HACK to keep the clipping context from
-        // accumulating bounding boxes.  We'll remove this later, when we
-        // are able to extract bounding boxes from outside the
-        // general drawing loop.
-        draw_ctx.set_bbox(&orig_bbox);
 
         let cr = draw_ctx.get_cairo_context();
         cr.clip();

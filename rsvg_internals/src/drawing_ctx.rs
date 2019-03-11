@@ -292,10 +292,6 @@ impl DrawingCtx {
         self.bbox.insert(bbox);
     }
 
-    pub fn set_bbox(&mut self, bbox: &BoundingBox) {
-        self.bbox = *bbox;
-    }
-
     pub fn get_bbox(&self) -> &BoundingBox {
         &self.bbox
     }
@@ -391,9 +387,19 @@ impl DrawingCtx {
         clip_node: Option<RsvgNode>,
     ) -> Result<(), RenderingError> {
         if let Some(clip_node) = clip_node {
-            clip_node.with_impl(|clip_path: &NodeClipPath| {
-                clip_path.to_cairo_context(&clip_node, affine, self)
-            })
+            let orig_bbox = self.bbox;
+
+            let res = clip_node.with_impl(|clip_path: &NodeClipPath| {
+                clip_path.to_cairo_context(&clip_node, affine, self, &orig_bbox)
+            });
+
+            // FIXME: this is an EPIC HACK to keep the clipping context from
+            // accumulating bounding boxes.  We'll remove this later, when we
+            // are able to extract bounding boxes from outside the
+            // general drawing loop.
+            self.bbox = orig_bbox;
+
+            res
         } else {
             Ok(())
         }
