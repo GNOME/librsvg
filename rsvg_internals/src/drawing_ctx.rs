@@ -472,7 +472,7 @@ impl DrawingCtx {
                 let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
 
                 let filter_result_surface = if let Some(filter_uri) = filter {
-                    self.run_filter(filter_uri, node, values, &child_surface)
+                    self.run_filter(filter_uri, node, values, &child_surface, self.bbox)
                         .map_err(|e| {
                             self.cr.restore();
                             e
@@ -536,6 +536,7 @@ impl DrawingCtx {
         node: &RsvgNode,
         values: &ComputedValues,
         child_surface: &cairo::ImageSurface,
+        node_bbox: BoundingBox,
     ) -> Result<cairo::ImageSurface, RenderingError> {
         match self.get_acquired_node_of_type(Some(filter_uri), NodeType::Filter) {
             Some(acquired) => {
@@ -543,7 +544,7 @@ impl DrawingCtx {
 
                 if !filter_node.is_in_error() {
                     // FIXME: deal with out of memory here
-                    filters::render(&filter_node, values, child_surface, self, self.bbox)
+                    filters::render(&filter_node, values, child_surface, self, node_bbox)
                 } else {
                     Ok(child_surface.clone())
                 }
