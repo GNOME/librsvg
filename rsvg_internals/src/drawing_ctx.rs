@@ -505,10 +505,12 @@ impl DrawingCtx {
                             mask,
                         );
                     }
-                } else if opacity < 1.0 {
-                    original_cr.paint_with_alpha(opacity);
                 } else {
-                    original_cr.paint();
+                    if opacity < 1.0 {
+                        original_cr.paint_with_alpha(opacity);
+                    } else {
+                        original_cr.paint();
+                    }
                 }
 
                 let bbox = self.bbox;
