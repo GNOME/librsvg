@@ -106,7 +106,6 @@ pub struct DrawingCtx {
     view_box_stack: Rc<RefCell<Vec<ViewBox>>>,
 
     bbox: BoundingBox,
-    bbox_stack: Vec<BoundingBox>,
 
     drawsub_stack: Vec<RsvgNode>,
 
@@ -171,7 +170,6 @@ impl DrawingCtx {
             initial_cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
             bbox: BoundingBox::new(&cairo::Matrix::identity()),
-            bbox_stack: Vec::new(),
             drawsub_stack: Vec::new(),
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
             measuring,
@@ -450,7 +448,7 @@ impl DrawingCtx {
                 && clip_in_object_space.is_none()
                 && enable_background == EnableBackground::Accumulate);
 
-            if needs_temporary_surface {
+            let prev_bbox = if needs_temporary_surface {
                 let surface = self.create_surface_for_toplevel_viewport().map_err(|e| {
                     self.cr.restore();
                     e
@@ -462,9 +460,13 @@ impl DrawingCtx {
                 self.cr_stack.push(self.cr.clone());
                 self.cr = cr.clone();
 
-                self.bbox_stack.push(self.bbox);
+                let prev_bbox = self.bbox;
                 self.bbox = BoundingBox::new(&affine);
-            }
+
+                prev_bbox
+            } else {
+                self.bbox
+            };
 
             let mut res = draw_fn(self);
 
@@ -520,7 +522,7 @@ impl DrawingCtx {
                 }
 
                 let bbox = self.bbox;
-                self.bbox = self.bbox_stack.pop().unwrap();
+                self.bbox = prev_bbox;
                 self.bbox.insert(&bbox);
             }
 
