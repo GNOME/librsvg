@@ -448,7 +448,6 @@ impl DrawingCtx {
                 && clip_in_object_space.is_none()
                 && enable_background == EnableBackground::Accumulate);
 
-
             let res = if needs_temporary_surface {
                 let surface = self.create_surface_for_toplevel_viewport().map_err(|e| {
                     self.cr.restore();
@@ -466,16 +465,14 @@ impl DrawingCtx {
 
                 let mut res = draw_fn(self);
 
-                let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
-
                 let filter_result_surface = if let Some(filter_uri) = filter {
-                    self.run_filter(filter_uri, node, values, &child_surface, self.bbox)
+                    self.run_filter(filter_uri, node, values, &surface, self.bbox)
                         .map_err(|e| {
                             self.cr.restore();
                             e
                         })?
                 } else {
-                    child_surface
+                    surface
                 };
 
                 self.cr = self.cr_stack.pop().unwrap();
