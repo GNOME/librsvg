@@ -543,7 +543,7 @@ impl DrawingCtx {
 
                 if !filter_node.is_in_error() {
                     // FIXME: deal with out of memory here
-                    filters::render(&filter_node, values, child_surface, self)
+                    filters::render(&filter_node, values, child_surface, self, self.bbox)
                 } else {
                     Ok(child_surface.clone())
                 }

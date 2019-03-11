@@ -101,13 +101,13 @@ impl FilterContext {
         computed_from_node_being_filtered: &ComputedValues,
         source_surface: SharedImageSurface,
         draw_ctx: &mut DrawingCtx,
+        node_bbox: BoundingBox,
     ) -> Self {
         let cr_affine = draw_ctx.get_cairo_context().get_matrix();
-        let bbox = draw_ctx.get_bbox().clone();
 
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
-        let bbox_rect = bbox.rect.unwrap_or(cairo::Rectangle {
+        let bbox_rect = node_bbox.rect.unwrap_or(cairo::Rectangle {
             x: 0.0,
             y: 0.0,
             width: 0.0,
@@ -151,7 +151,7 @@ impl FilterContext {
 
         Self {
             node: filter_node.clone(),
-            node_bbox: bbox,
+            node_bbox,
             computed_from_node_being_filtered: computed_from_node_being_filtered.clone(),
             source_surface,
             last_result: None,
@@ -332,15 +332,12 @@ impl FilterContext {
         let cr = cairo::Context::new(&surface);
         draw_ctx.set_cairo_context(&cr);
 
-        let bbox = draw_ctx.get_bbox().clone();
-        assert!(bbox == self.node_bbox);
-
         // FIXME: we are ignoring the following error; propagate it upstream
         let _ = draw_ctx
             .set_source_paint_server(
                 paint_server,
                 &opacity,
-                &bbox,
+                &self.node_bbox,
                 &self.computed_from_node_being_filtered.color.0,
             )
             .and_then(|had_paint_server| {

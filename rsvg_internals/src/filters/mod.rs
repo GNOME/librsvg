@@ -6,6 +6,7 @@ use cairo::{self, MatrixTrait};
 use owning_ref::RcRef;
 
 use crate::attributes::Attribute;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
@@ -233,6 +234,7 @@ pub fn render(
     computed_from_node_being_filtered: &ComputedValues,
     source: &cairo::ImageSurface,
     draw_ctx: &mut DrawingCtx,
+    node_bbox: BoundingBox,
 ) -> Result<cairo::ImageSurface, RenderingError> {
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);
@@ -257,6 +259,7 @@ pub fn render(
         computed_from_node_being_filtered,
         source_surface,
         draw_ctx,
+        node_bbox,
     );
 
     // If paffine is non-invertible, we won't draw anything. Also bbox combining in bounds

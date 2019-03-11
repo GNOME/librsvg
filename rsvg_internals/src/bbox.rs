@@ -3,7 +3,7 @@ use cairo::MatrixTrait;
 
 use crate::rect::RectangleExt;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {
     pub affine: cairo::Matrix,
     pub rect: Option<cairo::Rectangle>,     // without stroke
