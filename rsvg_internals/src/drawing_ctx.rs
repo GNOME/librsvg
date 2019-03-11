@@ -213,7 +213,11 @@ impl DrawingCtx {
         let width = self.rect.width as i32;
         let height = self.rect.height as i32;
 
-        Ok(cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?)
+        Ok(cairo::ImageSurface::create(
+            cairo::Format::ARgb32,
+            width,
+            height,
+        )?)
     }
 
     /// Gets the viewport that was last pushed with `push_view_box()`.
@@ -359,6 +363,28 @@ impl DrawingCtx {
         cr.to_raw_none() != self.initial_cr.to_raw_none()
     }
 
+    // Returns (clip_in_user_space, clip_in_object_space), both Option<RsvgNode>
+    fn get_clip_in_user_and_object_space(
+        &mut self,
+        clip_uri: Option<&Fragment>,
+    ) -> (Option<RsvgNode>, Option<RsvgNode>) {
+        if let Some(clip_node) = self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath) {
+            let clip_node = clip_node.get().clone();
+
+            let ClipPathUnits(units) =
+                clip_node.with_impl(|clip_path: &NodeClipPath| clip_path.get_units());
+
+            if units == CoordUnits::UserSpaceOnUse {
+                (Some(clip_node), None)
+            } else {
+                assert!(units == CoordUnits::ObjectBoundingBox);
+                (None, Some(clip_node))
+            }
+        } else {
+            (None, None)
+        }
+    }
+
     pub fn with_discrete_layer(
         &mut self,
         node: &RsvgNode,
@@ -387,25 +413,8 @@ impl DrawingCtx {
 
             let affine = original_cr.get_matrix();
 
-            let (clip_in_user_space, clip_in_object_space) = {
-                if let Some(clip_node) =
-                    self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
-                {
-                    let clip_node = clip_node.get().clone();
-
-                    let ClipPathUnits(units) =
-                        clip_node.with_impl(|clip_path: &NodeClipPath| clip_path.get_units());
-
-                    if units == CoordUnits::UserSpaceOnUse {
-                        (Some(clip_node), None)
-                    } else {
-                        assert!(units == CoordUnits::ObjectBoundingBox);
-                        (None, Some(clip_node))
-                    }
-                } else {
-                    (None, None)
-                }
-            };
+            let (clip_in_user_space, clip_in_object_space) =
+                self.get_clip_in_user_and_object_space(clip_uri);
 
             if let Some(clip_node) = clip_in_user_space {
                 clip_node
