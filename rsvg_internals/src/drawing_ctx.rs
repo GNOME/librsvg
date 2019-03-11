@@ -385,6 +385,20 @@ impl DrawingCtx {
         }
     }
 
+    fn clip_to_node(
+        &mut self,
+        affine: &cairo::Matrix,
+        clip_node: Option<RsvgNode>,
+    ) -> Result<(), RenderingError> {
+        if let Some(clip_node) = clip_node {
+            clip_node.with_impl(|clip_path: &NodeClipPath| {
+                clip_path.to_cairo_context(&clip_node, affine, self)
+            })
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn with_discrete_layer(
         &mut self,
         node: &RsvgNode,
@@ -416,19 +430,14 @@ impl DrawingCtx {
             let (clip_in_user_space, clip_in_object_space) =
                 self.get_clip_in_user_and_object_space(clip_uri);
 
-            if let Some(clip_node) = clip_in_user_space {
-                clip_node
-                    .with_impl(|clip_path: &NodeClipPath| {
-                        clip_path.to_cairo_context(&clip_node, &affine, self)
-                    })
-                    .map_err(|e| {
-                        original_cr.restore();
-                        e
-                    })?;
-                // FIXME: the .map_err() above is repeated below
-                // whenever this function uses "?".  This should be
-                // replaced by "do catch".
-            }
+            self.clip_to_node(&affine, clip_in_user_space)
+                .map_err(|e| {
+                    original_cr.restore();
+                    e
+                })?;
+            // FIXME: the .map_err() above is repeated below
+            // whenever this function uses "?".  This should be
+            // replaced by "do catch".
 
             let needs_temporary_surface = !(opacity == 1.0
                 && filter.is_none()
@@ -472,16 +481,11 @@ impl DrawingCtx {
                 original_cr.identity_matrix();
                 original_cr.set_source_surface(&filter_result_surface, 0.0, 0.0);
 
-                if let Some(clip_node) = clip_in_object_space {
-                    clip_node
-                        .with_impl(|clip_path: &NodeClipPath| {
-                            clip_path.to_cairo_context(&clip_node, &affine, self)
-                        })
-                        .map_err(|e| {
-                            original_cr.restore();
-                            e
-                        })?;
-                }
+                self.clip_to_node(&affine, clip_in_object_space)
+                    .map_err(|e| {
+                        original_cr.restore();
+                        e
+                    })?;
 
                 if let Some(mask) = mask {
                     if let Some(acquired) =
