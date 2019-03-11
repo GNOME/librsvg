@@ -409,8 +409,7 @@ impl DrawingCtx {
         if clipping {
             draw_fn(self)
         } else {
-            let original_cr = self.cr.clone();
-            original_cr.save();
+            self.cr.save();
 
             let clip_uri = values.clip_path.0.get();
             let mask = values.mask.0.get();
@@ -425,14 +424,14 @@ impl DrawingCtx {
             let UnitInterval(opacity) = values.opacity.0;
             let enable_background = values.enable_background;
 
-            let affine = original_cr.get_matrix();
+            let affine = self.cr.get_matrix();
 
             let (clip_in_user_space, clip_in_object_space) =
                 self.get_clip_in_user_and_object_space(clip_uri);
 
             self.clip_to_node(&affine, clip_in_user_space)
                 .map_err(|e| {
-                    original_cr.restore();
+                    self.cr.restore();
                     e
                 })?;
             // FIXME: the .map_err() above is repeated below
@@ -447,7 +446,7 @@ impl DrawingCtx {
 
             if needs_temporary_surface {
                 let surface = self.create_surface_for_toplevel_viewport().map_err(|e| {
-                    original_cr.restore();
+                    self.cr.restore();
                     e
                 })?;
 
@@ -469,7 +468,7 @@ impl DrawingCtx {
                 let filter_result_surface = if let Some(filter_uri) = filter {
                     self.run_filter(filter_uri, node, values, &child_surface)
                         .map_err(|e| {
-                            original_cr.restore();
+                            self.cr.restore();
                             e
                         })?
                 } else {
@@ -478,12 +477,12 @@ impl DrawingCtx {
 
                 self.cr = self.cr_stack.pop().unwrap();
 
-                original_cr.identity_matrix();
-                original_cr.set_source_surface(&filter_result_surface, 0.0, 0.0);
+                self.cr.identity_matrix();
+                self.cr.set_source_surface(&filter_result_surface, 0.0, 0.0);
 
                 self.clip_to_node(&affine, clip_in_object_space)
                     .map_err(|e| {
-                        original_cr.restore();
+                        self.cr.restore();
                         e
                     })?;
 
@@ -507,9 +506,9 @@ impl DrawingCtx {
                     }
                 } else {
                     if opacity < 1.0 {
-                        original_cr.paint_with_alpha(opacity);
+                        self.cr.paint_with_alpha(opacity);
                     } else {
-                        original_cr.paint();
+                        self.cr.paint();
                     }
                 }
 
@@ -518,7 +517,7 @@ impl DrawingCtx {
                 self.bbox.insert(&bbox);
             }
 
-            original_cr.restore();
+            self.cr.restore();
 
             res
         }
