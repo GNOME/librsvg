@@ -51,6 +51,8 @@ pub enum FilterInput {
 pub struct FilterContext {
     /// The <filter> node.
     node: RsvgNode,
+    /// Bounding box of node being filtered
+    node_bbox: BoundingBox,
     /// Values from the node which referenced this filter.
     computed_from_node_being_filtered: ComputedValues,
     /// The source graphic surface.
@@ -149,6 +151,7 @@ impl FilterContext {
 
         Self {
             node: filter_node.clone(),
+            node_bbox: bbox,
             computed_from_node_being_filtered: computed_from_node_being_filtered.clone(),
             source_surface,
             last_result: None,
@@ -330,6 +333,7 @@ impl FilterContext {
         draw_ctx.set_cairo_context(&cr);
 
         let bbox = draw_ctx.get_bbox().clone();
+        assert!(bbox == self.node_bbox);
 
         // FIXME: we are ignoring the following error; propagate it upstream
         let _ = draw_ctx
