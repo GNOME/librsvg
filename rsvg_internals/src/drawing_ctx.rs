@@ -528,6 +528,22 @@ impl DrawingCtx {
         }
     }
 
+    /// Saves the current Cairo matrix, runs the draw_fn, and restores the matrix
+    ///
+    /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
+    /// pair, but more importantly, it does not reset the whole
+    /// graphics state, i.e. it leaves a clipping path in place if it
+    /// was set by the `draw_fn`.
+    pub fn with_saved_matrix(
+        &mut self,
+        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+    ) -> Result<(), RenderingError> {
+        let matrix = self.cr.get_matrix();
+        let res = draw_fn(self);
+        self.cr.set_matrix(matrix);
+        res
+    }
+
     fn run_filter(
         &mut self,
         filter_uri: &Fragment,
