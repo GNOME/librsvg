@@ -467,6 +467,7 @@ impl DrawingCtx {
                 let filter_result_surface = if let Some(filter_uri) = filter {
                     self.run_filter(filter_uri, node, values, &surface, self.bbox)
                         .map_err(|e| {
+                            self.cr = self.cr_stack.pop().unwrap();
                             self.cr.restore();
                             e
                         })?
