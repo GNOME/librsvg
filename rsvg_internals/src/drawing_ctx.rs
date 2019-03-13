@@ -84,6 +84,8 @@ pub enum ClipMode {
 pub struct DrawingCtx {
     svg: Rc<Svg>,
 
+    initial_affine: cairo::Matrix,
+
     rect: cairo::Rectangle,
     dpi: Dpi,
 
@@ -123,6 +125,8 @@ impl DrawingCtx {
         measuring: bool,
         testing: bool,
     ) -> DrawingCtx {
+        let initial_affine = cr.get_matrix();
+
         // This is more or less a hack to make measuring geometries possible,
         // while the code gets refactored not to need special cases for that.
 
@@ -161,6 +165,7 @@ impl DrawingCtx {
 
         DrawingCtx {
             svg,
+            initial_affine,
             rect,
             dpi,
             num_elements_rendered_through_use: 0,
