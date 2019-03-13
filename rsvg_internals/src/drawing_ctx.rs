@@ -101,7 +101,6 @@ pub struct DrawingCtx {
 
     cr_stack: Vec<cairo::Context>,
     cr: cairo::Context,
-    initial_cr: cairo::Context,
 
     view_box_stack: Rc<RefCell<Vec<ViewBox>>>,
 
@@ -167,7 +166,6 @@ impl DrawingCtx {
             num_elements_rendered_through_use: 0,
             cr_stack: Vec::new(),
             cr: cr.clone(),
-            initial_cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
             bbox: BoundingBox::new(&cairo::Matrix::identity()),
             drawsub_stack: Vec::new(),
@@ -753,7 +751,6 @@ impl DrawingCtx {
         height: f64,
     ) -> Result<(), RenderingError> {
         let save_cr = self.cr.clone();
-        let save_initial_cr = self.initial_cr.clone();
         let save_rect = self.rect;
         let save_affine = self.get_cairo_context().get_matrix();
 
@@ -761,7 +758,6 @@ impl DrawingCtx {
         cr.set_matrix(save_affine);
 
         self.cr = cr;
-        self.initial_cr = self.cr.clone();
         self.rect.x = 0.0;
         self.rect.y = 0.0;
         self.rect.width = width;
@@ -770,7 +766,6 @@ impl DrawingCtx {
         let res = self.draw_node_from_stack(cascaded, node, false);
 
         self.cr = save_cr;
-        self.initial_cr = save_initial_cr;
         self.rect = save_rect;
 
         res
