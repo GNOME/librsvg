@@ -42,7 +42,9 @@ impl NodeClipPath {
         let cr = draw_ctx.get_cairo_context();
         let save_affine = cr.get_matrix();
 
-        let child_matrix = if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+        cr.set_matrix(*affine_before_clip);
+
+        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
             if bbox.rect.is_none() {
                 // The node being clipped is empty / doesn't have a
                 // bounding box, so there's nothing to clip!
@@ -51,13 +53,8 @@ impl NodeClipPath {
 
             let rect = bbox.rect.as_ref().unwrap();
 
-            let bbtransform = cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
-            cairo::Matrix::multiply(&bbtransform, affine_before_clip)
-        } else {
-            *affine_before_clip
-        };
-
-        cr.set_matrix(child_matrix);
+            cr.transform(cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y))
+        }
 
         // here we don't push a layer because we are clipping
         let res = node.draw_children(&cascaded, draw_ctx, true);
