@@ -353,10 +353,6 @@ impl DrawingCtx {
             })
     }
 
-    fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
-        cr.to_raw_none() != self.initial_cr.to_raw_none()
-    }
-
     // Returns (clip_in_user_space, clip_in_object_space), both Option<RsvgNode>
     fn get_clip_in_user_and_object_space(
         &mut self,
@@ -732,20 +728,12 @@ impl DrawingCtx {
     }
 
     pub fn get_snapshot(&self, surface: &cairo::ImageSurface) {
-        // let (x, y) = (self.rect.x, self.rect.y);
-        let (x, y) = (0.0, 0.0);
-
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.
         let cr = cairo::Context::new(&surface);
         for draw in self.cr_stack.iter() {
-            let nested = self.is_cairo_context_nested(&draw);
-            cr.set_source_surface(
-                &draw.get_target(),
-                if nested { 0f64 } else { -x },
-                if nested { 0f64 } else { -y },
-            );
+            cr.set_source_surface(&draw.get_target(), 0.0, 0.0);
             cr.paint();
         }
     }
