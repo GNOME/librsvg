@@ -39,6 +39,9 @@ impl NodeClipPath {
 
         let clip_units = self.units.get();
 
+        let cr = draw_ctx.get_cairo_context();
+        let save_affine = cr.get_matrix();
+
         let child_matrix = if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
             if bbox.rect.is_none() {
                 // The node being clipped is empty / doesn't have a
@@ -54,8 +57,6 @@ impl NodeClipPath {
             *affine_before_clip
         };
 
-        let cr = draw_ctx.get_cairo_context();
-        let save_affine = cr.get_matrix();
         cr.set_matrix(child_matrix);
 
         // here we don't push a layer because we are clipping
