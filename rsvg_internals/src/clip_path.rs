@@ -63,7 +63,6 @@ impl NodeClipPath {
 
         cr.set_matrix(save_affine);
 
-        let cr = draw_ctx.get_cairo_context();
         cr.clip();
 
         res
