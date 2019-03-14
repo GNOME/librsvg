@@ -27,7 +27,7 @@ fn render_path_builder(
     draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
         let cr = dc.get_cairo_context();
 
-        builder.to_cairo(&cr);
+        builder.to_cairo(&cr)?;
 
         if clipping {
             cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
