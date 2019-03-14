@@ -1,5 +1,5 @@
 use cairo;
-use cairo::MatrixTrait;
+use cairo::prelude::*;
 use cairo_sys;
 use glib::translate::*;
 use std::cell::RefCell;
@@ -30,7 +30,7 @@ use crate::properties::{
     StrokeLinejoin,
 };
 use crate::rect::RectangleExt;
-use crate::surface_utils::{shared_surface::SharedImageSurface, SurfaceExt};
+use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::svg::Svg;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
