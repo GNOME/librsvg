@@ -124,39 +124,41 @@ impl NodeTrait for NodeImage {
                 },
             ));
 
-            let cr = dc.get_cairo_context();
-            cr.save();
+            dc.with_saved_cr(&mut |dc| {
+                let cr = dc.get_cairo_context();
 
-            let image_width = f64::from(image_width);
-            let image_height = f64::from(image_height);
+                let image_width = f64::from(image_width);
+                let image_height = f64::from(image_height);
 
-            if let Some(_params) = dc.push_new_viewport(
-                Some(ViewBox::new(0.0, 0.0, image_width, image_height)),
-                &Rectangle::new(x, y, w, h),
-                aspect,
-                clip_mode,
-            ) {
-                // We need to set extend appropriately, so can't use cr.set_source_surface().
-                //
-                // If extend is left at its default value (None), then bilinear scaling uses
-                // transparency outside of the image producing incorrect results.
-                // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
-                // opaque 100×1 image of a gradient scaled to 100×98 which ends up
-                // transparent almost everywhere without this fix (which it shouldn't).
-                let ptn = surface.to_cairo_pattern();
-                ptn.set_extend(cairo::Extend::Pad);
-                cr.set_source(&ptn);
+                if let Some(_params) = dc.push_new_viewport(
+                    Some(ViewBox::new(0.0, 0.0, image_width, image_height)),
+                    &Rectangle::new(x, y, w, h),
+                    aspect,
+                    clip_mode,
+                ) {
+                    // We need to set extend appropriately, so can't use cr.set_source_surface().
+                    //
+                    // If extend is left at its default value (None), then bilinear scaling uses
+                    // transparency outside of the image producing incorrect results.
+                    // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
+                    // opaque 100×1 image of a gradient scaled to 100×98 which ends up
+                    // transparent almost everywhere without this fix (which it shouldn't).
+                    let ptn = surface.to_cairo_pattern();
+                    ptn.set_extend(cairo::Extend::Pad);
+                    cr.set_source(&ptn);
 
-                // Clip is needed due to extend being set to pad.
-                cr.rectangle(0.0, 0.0, image_width, image_height);
-                cr.clip();
+                    // Clip is needed due to extend being set to pad.
+                    cr.rectangle(0.0, 0.0, image_width, image_height);
+                    cr.clip();
 
-                cr.paint();
-            }
+                    cr.paint();
+                }
 
-            cr.restore();
-            dc.insert_bbox(&bbox);
-            Ok(())
+                Ok(())
+            }).and_then(|()| {
+                dc.insert_bbox(&bbox);
+                Ok(())
+            })
         })
     }
 }
