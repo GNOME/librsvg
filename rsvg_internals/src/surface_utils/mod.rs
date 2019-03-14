@@ -2,8 +2,6 @@
 use std::ops::DerefMut;
 
 use cairo;
-use cairo_sys;
-use glib::translate::*;
 
 pub mod iterators;
 pub mod shared_surface;
@@ -98,21 +96,3 @@ impl Pixel {
 
 impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {}
 impl<'a> ImageSurfaceDataExt for &'a mut [u8] {}
-
-// FIXME: cairo-rs forgot to export its own SurfaceExt with the status() method
-// and others: https://github.com/gtk-rs/cairo/issues/252
-//
-// Remove the following when cairo-rs gets fixed.
-pub trait SurfaceExt {
-    fn status(&self) -> cairo::Status;
-}
-
-impl SurfaceExt for cairo::Surface {
-    fn status(&self) -> cairo::Status {
-        unsafe {
-            let raw_surface = self.to_glib_none();
-
-            cairo_sys::cairo_surface_status(raw_surface.0).into()
-        }
-    }
-}
