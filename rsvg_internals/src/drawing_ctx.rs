@@ -35,7 +35,6 @@ use state::{
     StrokeLinejoin,
     TextRendering,
 };
-use surface_utils::SurfaceExt;
 use tree::Tree;
 use unitinterval::UnitInterval;
 use viewbox::ViewBox;
