@@ -35,6 +35,7 @@ use state::{
     StrokeLinejoin,
     TextRendering,
 };
+use surface_utils::SurfaceExt;
 use tree::Tree;
 use unitinterval::UnitInterval;
 use viewbox::ViewBox;
@@ -393,13 +394,31 @@ impl<'a> DrawingCtx<'a> {
                 && enable_background == EnableBackground::Accumulate);
 
             if needs_temporary_surface {
-                let surface = cairo::ImageSurface::create(
-                    cairo::Format::ARgb32,
-                    self.rect.width as i32,
-                    self.rect.height as i32,
-                )?;
+                let cr = if filter.is_some() {
+                    cairo::Context::new(&cairo::ImageSurface::create(
+                        cairo::Format::ARgb32,
+                        self.rect.width as i32,
+                        self.rect.height as i32,
+                    )?)
+                } else {
+                    // FIXME: cairo-rs should return a Result from create_similar()!
+                    // Since it doesn't, we need to check its status by hand...
 
-                let cr = cairo::Context::new(&surface);
+                    let surface = cairo::Surface::create_similar(
+                        &self.cr.get_target(),
+                        cairo::Content::ColorAlpha,
+                        self.rect.width as i32,
+                        self.rect.height as i32,
+                    );
+
+                    let status = surface.status();
+                    if status != cairo::Status::Success {
+                        return Err(RenderingError::Cairo(status));
+                    }
+
+                    cairo::Context::new(&surface)
+                };
+
                 cr.set_matrix(affine);
 
                 self.cr_stack.push(self.cr.clone());
@@ -412,12 +431,13 @@ impl<'a> DrawingCtx<'a> {
             let mut res = draw_fn(self);
 
             if needs_temporary_surface {
-                let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
-
-                let filter_result_surface = if let Some(filter_uri) = filter {
-                    self.run_filter(filter_uri, node, values, &child_surface)?
+                let source_surface = if let Some(filter_uri) = filter {
+                    let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
+                    let img_surface = self.run_filter(filter_uri, node, values, &child_surface)?;
+                    // turn into a Surface
+                    img_surface.as_ref().clone()
                 } else {
-                    child_surface
+                    self.cr.get_target()
                 };
 
                 self.cr = self.cr_stack.pop().unwrap();
@@ -425,7 +445,7 @@ impl<'a> DrawingCtx<'a> {
                 let (xofs, yofs) = self.get_offset();
 
                 original_cr.identity_matrix();
-                original_cr.set_source_surface(&filter_result_surface, xofs, yofs);
+                original_cr.set_source_surface(&source_surface, xofs, yofs);
 
                 if clip_units == Some(CoordUnits::ObjectBoundingBox) {
                     let clip_node = acquired_clip.as_ref().unwrap().get();
