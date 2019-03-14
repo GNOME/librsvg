@@ -544,6 +544,17 @@ impl DrawingCtx {
         res
     }
 
+    /// Saves the current Cairo context, runs the draw_fn, and restores the context
+    pub fn with_saved_cr(
+        &mut self,
+        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+    ) -> Result<(), RenderingError> {
+        self.cr.save();
+        let res = draw_fn(self);
+        self.cr.restore();
+        res
+    }
+
     fn run_filter(
         &mut self,
         filter_uri: &Fragment,
