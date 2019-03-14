@@ -30,7 +30,7 @@ use crate::properties::{
     StrokeLinejoin,
 };
 use crate::rect::RectangleExt;
-use crate::surface_utils::shared_surface::SharedImageSurface;
+use crate::surface_utils::{shared_surface::SharedImageSurface, SurfaceExt};
 use crate::svg::Svg;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
@@ -219,6 +219,30 @@ impl DrawingCtx {
             width,
             height,
         )?)
+    }
+
+    fn create_similar_surface_for_toplevel_viewport(
+        &self,
+        surface: &cairo::Surface,
+    ) -> Result<cairo::Surface, RenderingError> {
+        // This truncation may mean that we clip off the rightmost/bottommost row of pixels.
+        // See https://gitlab.gnome.org/GNOME/librsvg/issues/295
+
+        let width = self.rect.width as i32;
+        let height = self.rect.height as i32;
+
+        let surface =
+            cairo::Surface::create_similar(surface, cairo::Content::ColorAlpha, width, height);
+
+        // FIXME: cairo-rs should return a Result from create_similar()!
+        // Since it doesn't, we need to check its status by hand...
+
+        let status = surface.status();
+        if status == cairo::Status::Success {
+            Ok(surface)
+        } else {
+            Err(RenderingError::Cairo(status))
+        }
     }
 
     /// Gets the viewport that was last pushed with `push_view_box()`.
@@ -440,9 +464,14 @@ impl DrawingCtx {
                     && enable_background == EnableBackground::Accumulate);
 
                 if needs_temporary_surface {
-                    let surface = dc.create_surface_for_toplevel_viewport()?;
+                    let cr = if filter.is_some() {
+                        cairo::Context::new(&dc.create_surface_for_toplevel_viewport()?)
+                    } else {
+                        cairo::Context::new(
+                            &dc.create_similar_surface_for_toplevel_viewport(&dc.cr.get_target())?,
+                        )
+                    };
 
-                    let cr = cairo::Context::new(&surface);
                     cr.set_matrix(affine);
 
                     dc.cr_stack.push(dc.cr.clone());
@@ -453,20 +482,21 @@ impl DrawingCtx {
 
                     let mut res = draw_fn(dc);
 
-                    let filter_result_surface = if let Some(filter_uri) = filter {
-                        dc.run_filter(filter_uri, node, values, &surface, dc.bbox)
-                            .map_err(|e| {
-                                dc.cr = dc.cr_stack.pop().unwrap();
-                                e
-                            })?
+                    let source_surface = if let Some(filter_uri) = filter {
+                        let child_surface =
+                            cairo::ImageSurface::from(dc.cr.get_target()).unwrap();
+                        let img_surface =
+                            dc.run_filter(filter_uri, node, values, &child_surface, dc.bbox)?;
+                        // turn into a Surface
+                        img_surface.as_ref().clone()
                     } else {
-                        surface
+                        dc.cr.get_target()
                     };
 
                     dc.cr = dc.cr_stack.pop().unwrap();
 
                     dc.cr.identity_matrix();
-                    dc.cr.set_source_surface(&filter_result_surface, 0.0, 0.0);
+                    dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
 
                     dc.clip_to_node(&affine, clip_in_object_space)?;
 
