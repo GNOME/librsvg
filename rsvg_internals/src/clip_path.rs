@@ -39,31 +39,35 @@ impl NodeClipPath {
 
         let clip_units = self.units.get();
 
-        let cr = draw_ctx.get_cairo_context();
-        let save_affine = cr.get_matrix();
+        draw_ctx.with_saved_matrix(&mut |dc| {
+            let cr = dc.get_cairo_context();
+            cr.set_matrix(*affine_before_clip);
 
-        cr.set_matrix(*affine_before_clip);
+            if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+                if bbox.rect.is_none() {
+                    // The node being clipped is empty / doesn't have a
+                    // bounding box, so there's nothing to clip!
+                    return Ok(());
+                }
 
-        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
-            if bbox.rect.is_none() {
-                // The node being clipped is empty / doesn't have a
-                // bounding box, so there's nothing to clip!
-                return Ok(());
+                let rect = bbox.rect.as_ref().unwrap();
+
+                cr.transform(cairo::Matrix::new(
+                    rect.width,
+                    0.0,
+                    0.0,
+                    rect.height,
+                    rect.x,
+                    rect.y,
+                ))
             }
 
-            let rect = bbox.rect.as_ref().unwrap();
+            // here we don't push a layer because we are clipping
+            let res = node.draw_children(&cascaded, dc, true);
 
-            cr.transform(cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y))
-        }
-
-        // here we don't push a layer because we are clipping
-        let res = node.draw_children(&cascaded, draw_ctx, true);
-
-        cr.set_matrix(save_affine);
-
-        cr.clip();
-
-        res
+            cr.clip();
+            res
+        })
     }
 }
 
