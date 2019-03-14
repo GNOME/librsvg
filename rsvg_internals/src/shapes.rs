@@ -28,7 +28,7 @@ fn render_path_builder(
         let cr = dc.get_cairo_context();
 
         dc.set_affine_on_cr(&cr);
-        builder.to_cairo(&cr);
+        builder.to_cairo(&cr)?;
 
         if clipping {
             cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
