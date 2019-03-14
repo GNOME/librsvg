@@ -576,16 +576,12 @@ impl Node {
         clipping: bool,
     ) -> Result<(), RenderingError> {
         if !self.is_in_error() {
-            let cr = draw_ctx.get_cairo_context();
-            let save_affine = cr.get_matrix();
+            draw_ctx.with_saved_matrix(&mut |dc| {
+                let cr = dc.get_cairo_context();
+                cr.transform(self.get_transform());
 
-            cr.transform(self.get_transform());
-
-            let res = self.data.node_impl.draw(node, cascaded, draw_ctx, clipping);
-
-            cr.set_matrix(save_affine);
-
-            res
+                self.data.node_impl.draw(node, cascaded, dc, clipping)
+            })
         } else {
             rsvg_log!(
                 "(not rendering element {} because it is in error)",
