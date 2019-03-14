@@ -174,25 +174,23 @@ impl NodeMarker {
             -self.ref_y.get().normalize(&values, &params),
         );
 
-        cr.save();
+        draw_ctx.with_saved_cr(&mut |dc| {
+            let cr = dc.get_cairo_context();
 
-        cr.set_matrix(affine);
+            cr.set_matrix(affine);
 
-        if !values.is_overflow() {
-            if let Some(vbox) = self.vbox.get() {
-                draw_ctx.clip(vbox.x, vbox.y, vbox.width, vbox.height);
-            } else {
-                draw_ctx.clip(0.0, 0.0, marker_width, marker_height);
+            if !values.is_overflow() {
+                if let Some(vbox) = self.vbox.get() {
+                    dc.clip(vbox.x, vbox.y, vbox.width, vbox.height);
+                } else {
+                    dc.clip(0.0, 0.0, marker_width, marker_height);
+                }
             }
-        }
 
-        let res = draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-            node.draw_children(&cascaded, dc, clipping)
-        });
-
-        cr.restore();
-
-        res
+            dc.with_discrete_layer(node, values, clipping, &mut |dc| {
+                node.draw_children(&cascaded, dc, clipping)
+            })
+        })
     }
 }
 
