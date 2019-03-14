@@ -355,9 +355,25 @@ impl PathBuilder {
         &self.path_commands
     }
 
-    pub fn to_cairo(&self, cr: &cairo::Context) {
+    pub fn to_cairo(&self, cr: &cairo::Context) -> Result<(), cairo::Status> {
         for s in &self.path_commands {
             s.to_cairo(cr);
+        }
+
+        // We check the cr's status right after feeding it a new path for a few reasons:
+        //
+        // * Any of the individual path commands may cause the cr to enter an error state,
+        //   for example, if they come with coordinates outside of Cairo's supported range.
+        //
+        // * The *next* call to the cr will probably be something that actually checks
+        //   the status (i.e. in cairo-rs), and we don't want to panic there.
+
+        let status = cr.status();
+
+        if status == cairo::Status::Success {
+            Ok(())
+        } else {
+            Err(status)
         }
     }
 }
