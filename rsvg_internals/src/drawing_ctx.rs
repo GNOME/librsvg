@@ -412,119 +412,102 @@ impl DrawingCtx {
         if clipping {
             draw_fn(self)
         } else {
-            self.cr.save();
+            self.with_saved_cr(&mut |dc| {
+                let clip_uri = values.clip_path.0.get();
+                let mask = values.mask.0.get();
 
-            let clip_uri = values.clip_path.0.get();
-            let mask = values.mask.0.get();
-
-            // The `filter` property does not apply to masks.
-            let filter = if node.get_type() == NodeType::Mask {
-                None
-            } else {
-                values.filter.0.get()
-            };
-
-            let UnitInterval(opacity) = values.opacity.0;
-            let enable_background = values.enable_background;
-
-            let affine = self.cr.get_matrix();
-
-            let (clip_in_user_space, clip_in_object_space) =
-                self.get_clip_in_user_and_object_space(clip_uri);
-
-            self.clip_to_node(&affine, clip_in_user_space)
-                .map_err(|e| {
-                    self.cr.restore();
-                    e
-                })?;
-            // FIXME: the .map_err() above is repeated below
-            // whenever this function uses "?".  This should be
-            // replaced by "do catch".
-
-            let needs_temporary_surface = !(opacity == 1.0
-                && filter.is_none()
-                && mask.is_none()
-                && clip_in_object_space.is_none()
-                && enable_background == EnableBackground::Accumulate);
-
-            let res = if needs_temporary_surface {
-                let surface = self.create_surface_for_toplevel_viewport().map_err(|e| {
-                    self.cr.restore();
-                    e
-                })?;
-
-                let cr = cairo::Context::new(&surface);
-                cr.set_matrix(affine);
-
-                self.cr_stack.push(self.cr.clone());
-                self.cr = cr.clone();
-
-                let prev_bbox = self.bbox;
-                self.bbox = BoundingBox::new(&affine);
-
-                let mut res = draw_fn(self);
-
-                let filter_result_surface = if let Some(filter_uri) = filter {
-                    self.run_filter(filter_uri, node, values, &surface, self.bbox)
-                        .map_err(|e| {
-                            self.cr = self.cr_stack.pop().unwrap();
-                            self.cr.restore();
-                            e
-                        })?
+                // The `filter` property does not apply to masks.
+                let filter = if node.get_type() == NodeType::Mask {
+                    None
                 } else {
-                    surface
+                    values.filter.0.get()
                 };
 
-                self.cr = self.cr_stack.pop().unwrap();
+                let UnitInterval(opacity) = values.opacity.0;
+                let enable_background = values.enable_background;
 
-                self.cr.identity_matrix();
-                self.cr.set_source_surface(&filter_result_surface, 0.0, 0.0);
+                let affine = dc.cr.get_matrix();
 
-                self.clip_to_node(&affine, clip_in_object_space)
-                    .map_err(|e| {
-                        self.cr.restore();
-                        e
-                    })?;
+                let (clip_in_user_space, clip_in_object_space) =
+                    dc.get_clip_in_user_and_object_space(clip_uri);
 
-                if let Some(mask) = mask {
-                    if let Some(acquired) =
-                        self.get_acquired_node_of_type(Some(mask), NodeType::Mask)
-                    {
-                        let node = acquired.get();
+                dc.clip_to_node(&affine, clip_in_user_space)?;
 
-                        res = res.and_then(|_| {
-                            node.with_impl(|mask: &NodeMask| {
-                                let bbox = self.bbox;
-                                mask.generate_cairo_mask(&node, &affine, self, &bbox)
-                            })
-                        });
+                let needs_temporary_surface = !(opacity == 1.0
+                    && filter.is_none()
+                    && mask.is_none()
+                    && clip_in_object_space.is_none()
+                    && enable_background == EnableBackground::Accumulate);
+
+                let res = if needs_temporary_surface {
+                    let surface = dc.create_surface_for_toplevel_viewport()?;
+
+                    let cr = cairo::Context::new(&surface);
+                    cr.set_matrix(affine);
+
+                    dc.cr_stack.push(dc.cr.clone());
+                    dc.cr = cr.clone();
+
+                    let prev_bbox = dc.bbox;
+                    dc.bbox = BoundingBox::new(&affine);
+
+                    let mut res = draw_fn(dc);
+
+                    let filter_result_surface = if let Some(filter_uri) = filter {
+                        dc.run_filter(filter_uri, node, values, &surface, dc.bbox)
+                            .map_err(|e| {
+                                dc.cr = dc.cr_stack.pop().unwrap();
+                                e
+                            })?
                     } else {
-                        rsvg_log!(
-                            "element {} references nonexistent mask \"{}\"",
-                            node.get_human_readable_name(),
-                            mask,
-                        );
+                        surface
+                    };
+
+                    dc.cr = dc.cr_stack.pop().unwrap();
+
+                    dc.cr.identity_matrix();
+                    dc.cr.set_source_surface(&filter_result_surface, 0.0, 0.0);
+
+                    dc.clip_to_node(&affine, clip_in_object_space)?;
+
+                    if let Some(mask) = mask {
+                        if let Some(acquired) =
+                            dc.get_acquired_node_of_type(Some(mask), NodeType::Mask)
+                        {
+                            let node = acquired.get();
+
+                            res = res.and_then(|_| {
+                                node.with_impl(|mask: &NodeMask| {
+                                    let bbox = dc.bbox;
+                                    mask.generate_cairo_mask(&node, &affine, dc, &bbox)
+                                })
+                            });
+                        } else {
+                            rsvg_log!(
+                                "element {} references nonexistent mask \"{}\"",
+                                node.get_human_readable_name(),
+                                mask,
+                            );
+                        }
+                    } else {
+                        if opacity < 1.0 {
+                            dc.cr.paint_with_alpha(opacity);
+                        } else {
+                            dc.cr.paint();
+                        }
                     }
+
+                    let bbox = dc.bbox;
+                    dc.bbox = prev_bbox;
+                    dc.bbox.insert(&bbox);
+
+                    res
                 } else {
-                    if opacity < 1.0 {
-                        self.cr.paint_with_alpha(opacity);
-                    } else {
-                        self.cr.paint();
-                    }
-                }
-
-                let bbox = self.bbox;
-                self.bbox = prev_bbox;
-                self.bbox.insert(&bbox);
+                    draw_fn(dc)
+                };
 
                 res
-            } else {
-                draw_fn(self)
-            };
-
-            self.cr.restore();
-
-            res
+            })
         }
     }
 
