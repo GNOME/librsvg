@@ -439,7 +439,7 @@ impl DrawingCtx {
                     && clip_in_object_space.is_none()
                     && enable_background == EnableBackground::Accumulate);
 
-                let res = if needs_temporary_surface {
+                if needs_temporary_surface {
                     let surface = dc.create_surface_for_toplevel_viewport()?;
 
                     let cr = cairo::Context::new(&surface);
@@ -504,9 +504,7 @@ impl DrawingCtx {
                     res
                 } else {
                     draw_fn(dc)
-                };
-
-                res
+                }
             })
         }
     }
