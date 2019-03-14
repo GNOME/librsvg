@@ -267,61 +267,58 @@ impl PositionedSpan {
     }
 
     fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<(), RenderingError> {
-        let cr = draw_ctx.get_cairo_context();
-        cr.save();
+        draw_ctx.with_saved_cr(&mut |dc| {
+            let cr = dc.get_cairo_context();
 
-        let affine = cr.get_matrix();
+            let affine = cr.get_matrix();
 
-        let gravity = self.layout.get_context().unwrap().get_gravity();
-        let bbox = self.compute_text_bbox(&affine, gravity);
-        if bbox.is_none() {
-            cr.restore();
-            return Ok(());
-        }
+            let gravity = self.layout.get_context().unwrap().get_gravity();
+            let bbox = self.compute_text_bbox(&affine, gravity);
+            if bbox.is_none() {
+                return Ok(());
+            }
 
-        let bbox = bbox.unwrap();
+            let bbox = bbox.unwrap();
 
-        if !clipping {
-            draw_ctx.insert_bbox(&bbox);
-        }
+            if !clipping {
+                dc.insert_bbox(&bbox);
+            }
 
-        cr.set_antialias(cairo::Antialias::from(self.values.text_rendering));
+            cr.set_antialias(cairo::Antialias::from(self.values.text_rendering));
 
-        draw_ctx.setup_cr_for_stroke(&cr, &self.values);
+            dc.setup_cr_for_stroke(&cr, &self.values);
 
-        cr.move_to(self.rendered_position.0, self.rendered_position.1);
+            cr.move_to(self.rendered_position.0, self.rendered_position.1);
 
-        let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
-        if !rotation.approx_eq_cairo(&0.0) {
-            cr.rotate(-rotation);
-        }
+            let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
+            if !rotation.approx_eq_cairo(&0.0) {
+                cr.rotate(-rotation);
+            }
 
-        let current_color = &self.values.color.0;
+            let current_color = &self.values.color.0;
 
-        let fill_opacity = &self.values.fill_opacity.0;
-
-        let res = if !clipping {
-            draw_ctx
-                .set_source_paint_server(&self.values.fill.0, fill_opacity, &bbox, current_color)
-                .and_then(|had_paint_server| {
-                    if had_paint_server {
-                        pangocairo::functions::update_layout(&cr, &self.layout);
-                        pangocairo::functions::show_layout(&cr, &self.layout);
-                    };
-                    Ok(())
-                })
-        } else {
-            Ok(())
-        };
-
-        if res.is_ok() {
-            let stroke_opacity = &self.values.stroke_opacity.0;
-
-            let mut need_layout_path = clipping;
+            let fill_opacity = &self.values.fill_opacity.0;
 
             let res = if !clipping {
-                draw_ctx
-                    .set_source_paint_server(
+                dc.set_source_paint_server(&self.values.fill.0, fill_opacity, &bbox, current_color)
+                    .and_then(|had_paint_server| {
+                        if had_paint_server {
+                            pangocairo::functions::update_layout(&cr, &self.layout);
+                            pangocairo::functions::show_layout(&cr, &self.layout);
+                        };
+                        Ok(())
+                    })
+            } else {
+                Ok(())
+            };
+
+            if res.is_ok() {
+                let stroke_opacity = &self.values.stroke_opacity.0;
+
+                let mut need_layout_path = clipping;
+
+                let res = if !clipping {
+                    dc.set_source_paint_server(
                         &self.values.stroke.0,
                         stroke_opacity,
                         &bbox,
@@ -333,27 +330,27 @@ impl PositionedSpan {
                         }
                         Ok(())
                     })
-            } else {
-                Ok(())
-            };
+                } else {
+                    Ok(())
+                };
 
-            if res.is_ok() {
-                if need_layout_path {
-                    pangocairo::functions::update_layout(&cr, &self.layout);
-                    pangocairo::functions::layout_path(&cr, &self.layout);
+                if res.is_ok() {
+                    if need_layout_path {
+                        pangocairo::functions::update_layout(&cr, &self.layout);
+                        pangocairo::functions::layout_path(&cr, &self.layout);
 
-                    if !clipping {
-                        let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
-                        cr.stroke();
-                        draw_ctx.insert_bbox(&ib);
+                        if !clipping {
+                            let ib =
+                                BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
+                            cr.stroke();
+                            dc.insert_bbox(&ib);
+                        }
                     }
                 }
             }
-        }
 
-        cr.restore();
-
-        res
+            res
+        })
     }
 
     fn compute_text_bbox(
