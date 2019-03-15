@@ -288,32 +288,25 @@ impl NodeTrait for NodeSvg {
             // it wants to extend.
             (svg_viewport, self.vbox.get())
         } else {
-            let viewport = if has_parent {
-                svg_viewport
+            if has_parent {
+                (svg_viewport, self.vbox.get())
             } else {
-                // cairo::Rectangle {
-                // x: 0.0,
-                // y: 0.0,
-                // width: params.view_box_width,
-                // height: params.view_box_height,
-                // }
-                draw_ctx.toplevel_viewport()
-            };
+                (
+                    // The client's viewport overrides the toplevel's x/y/w/h viewport
+                    draw_ctx.toplevel_viewport(),
 
-            let vbox = if has_parent {
-                self.vbox.get()
-            } else {
-                self.vbox.get().or_else(|| {
-                    Some(ViewBox {
-                        x: 0.0,
-                        y: 0.0,
-                        width: svg_viewport.width,
-                        height: svg_viewport.height,
-                    })
-                })
-            };
-
-            (viewport, vbox)
+                    // Use our viewBox if available, or try to derive one from
+                    // the intrinsic dimensions.
+                    self.vbox.get().or_else(|| {
+                        Some(ViewBox {
+                            x: 0.0,
+                            y: 0.0,
+                            width: svg_viewport.width,
+                            height: svg_viewport.height,
+                        })
+                    }),
+                )
+            }
         };
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
