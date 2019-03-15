@@ -137,7 +137,11 @@ impl NodeMask {
         }?;
 
         let Opacity(opacity) = values.opacity;
-        let mask_surface = compute_luminance_to_alpha(mask_content_surface, opacity)?;
+
+        let mask_content_surface =
+            SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?;
+
+        let mask_surface = compute_luminance_to_alpha(&mask_content_surface, opacity)?;
 
         let cr = draw_ctx.get_cairo_context();
 
@@ -156,11 +160,9 @@ impl NodeMask {
 //
 // This is to get a mask suitable for use with cairo_mask_surface().
 fn compute_luminance_to_alpha(
-    surface: cairo::ImageSurface,
+    surface: &SharedImageSurface,
     opacity: UnitInterval,
 ) -> Result<cairo::ImageSurface, cairo::Status> {
-    let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
-
     let width = surface.width();
     let height = surface.height();
 
@@ -178,7 +180,7 @@ fn compute_luminance_to_alpha(
     {
         let mut output_data = output.get_data().unwrap();
 
-        for (x, y, pixel) in Pixels::new(&surface, bounds) {
+        for (x, y, pixel) in Pixels::new(surface, bounds) {
             output_data.set_pixel(output_stride, pixel.to_mask(opacity), x, y);
         }
     }
