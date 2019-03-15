@@ -843,14 +843,6 @@ impl DrawingCtx {
         res.and_then(|_| self.check_limits())
     }
 
-    pub fn mask_surface(&mut self, mask: &cairo::ImageSurface) {
-        let cr = self.get_cairo_context();
-
-        cr.identity_matrix();
-
-        cr.mask_surface(&mask, 0.0, 0.0);
-    }
-
     pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {
         self.drawsub_stack.push(node.clone());
         if let Some(ref parent) = node.get_parent() {
