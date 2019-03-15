@@ -66,7 +66,7 @@ impl NodeMask {
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
-        let surface = draw_ctx.create_surface_for_toplevel_viewport()?;
+        let mask_content_surface = draw_ctx.create_surface_for_toplevel_viewport()?;
 
         let mask_units = CoordUnits::from(self.units.get());
         let content_units = CoordUnits::from(self.content_units.get());
@@ -91,7 +91,7 @@ impl NodeMask {
         {
             let save_cr = draw_ctx.get_cairo_context();
 
-            let mask_cr = cairo::Context::new(&surface);
+            let mask_cr = cairo::Context::new(&mask_content_surface);
             mask_cr.set_matrix(*affine_before_mask);
             mask_cr.transform(node.get_transform());
 
@@ -137,7 +137,7 @@ impl NodeMask {
         }?;
 
         let Opacity(opacity) = values.opacity;
-        let mask_surface = compute_luminance_to_alpha(surface, opacity)?;
+        let mask_surface = compute_luminance_to_alpha(mask_content_surface, opacity)?;
 
         let cr = draw_ctx.get_cairo_context();
 
