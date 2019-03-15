@@ -31,7 +31,6 @@ impl NodeClipPath {
     pub fn to_cairo_context(
         &self,
         node: &RsvgNode,
-        affine_before_clip: &cairo::Matrix,
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
@@ -41,7 +40,6 @@ impl NodeClipPath {
 
         draw_ctx.with_saved_matrix(&mut |dc| {
             let cr = dc.get_cairo_context();
-            cr.set_matrix(*affine_before_clip);
 
             if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
                 if bbox.rect.is_none() {

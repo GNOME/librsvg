@@ -404,14 +404,13 @@ impl DrawingCtx {
 
     fn clip_to_node(
         &mut self,
-        affine: &cairo::Matrix,
         clip_node: Option<RsvgNode>,
     ) -> Result<(), RenderingError> {
         if let Some(clip_node) = clip_node {
             let orig_bbox = self.bbox;
 
             let res = clip_node.with_impl(|clip_path: &NodeClipPath| {
-                clip_path.to_cairo_context(&clip_node, affine, self, &orig_bbox)
+                clip_path.to_cairo_context(&clip_node, self, &orig_bbox)
             });
 
             // FIXME: this is an EPIC HACK to keep the clipping context from
@@ -455,7 +454,7 @@ impl DrawingCtx {
                 let (clip_in_user_space, clip_in_object_space) =
                     dc.get_clip_in_user_and_object_space(clip_uri);
 
-                dc.clip_to_node(&affine, clip_in_user_space)?;
+                dc.clip_to_node(clip_in_user_space)?;
 
                 let needs_temporary_surface = !(opacity == 1.0
                     && filter.is_none()
@@ -475,7 +474,7 @@ impl DrawingCtx {
                     cr.set_matrix(affine);
 
                     dc.cr_stack.push(dc.cr.clone());
-                    dc.cr = cr.clone();
+                    dc.cr = cr;
 
                     let prev_bbox = dc.bbox;
                     dc.bbox = BoundingBox::new(&affine);
@@ -498,7 +497,8 @@ impl DrawingCtx {
                     dc.cr.identity_matrix();
                     dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
 
-                    dc.clip_to_node(&affine, clip_in_object_space)?;
+                    dc.cr.set_matrix(affine);
+                    dc.clip_to_node(clip_in_object_space)?;
 
                     if let Some(mask) = mask {
                         if let Some(acquired) =
