@@ -55,6 +55,14 @@ impl NodeMask {
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
+        if bbox.rect.is_none() {
+            // The node being masked is empty / doesn't have a
+            // bounding box, so there's nothing to mask!
+            return Ok(());
+        }
+
+        let bbox_rect = bbox.rect.as_ref().unwrap();
+
         let cascaded = node.get_cascaded_values();
         let values = cascaded.get();
 
@@ -81,16 +89,6 @@ impl NodeMask {
         // Use a scope because mask_cr needs to release the
         // reference to the surface before we access the pixels
         {
-            let bbox_rect = {
-                if let Some(ref rect) = bbox.rect {
-                    *rect
-                } else {
-                    // The node being masked is empty / doesn't have a
-                    // bounding box, so there's nothing to mask!
-                    return Ok(());
-                }
-            };
-
             let save_cr = draw_ctx.get_cairo_context();
 
             let mask_cr = cairo::Context::new(&surface);
