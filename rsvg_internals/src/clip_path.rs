@@ -48,15 +48,15 @@ impl NodeClipPath {
             let cr = dc.get_cairo_context();
 
             if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
-                let rect = bbox.rect.as_ref().unwrap();
+                let bbox_rect = bbox.rect.as_ref().unwrap();
 
                 cr.transform(cairo::Matrix::new(
-                    rect.width,
+                    bbox_rect.width,
                     0.0,
                     0.0,
-                    rect.height,
-                    rect.x,
-                    rect.y,
+                    bbox_rect.height,
+                    bbox_rect.x,
+                    bbox_rect.y,
                 ))
             }
 
