@@ -34,20 +34,20 @@ impl NodeClipPath {
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
-        let cascaded = node.get_cascaded_values();
-
         let clip_units = self.units.get();
+
+        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) && bbox.rect.is_none() {
+            // The node being clipped is empty / doesn't have a
+            // bounding box, so there's nothing to clip!
+            return Ok(());
+        }
+
+        let cascaded = node.get_cascaded_values();
 
         draw_ctx.with_saved_matrix(&mut |dc| {
             let cr = dc.get_cairo_context();
 
             if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
-                if bbox.rect.is_none() {
-                    // The node being clipped is empty / doesn't have a
-                    // bounding box, so there's nothing to clip!
-                    return Ok(());
-                }
-
                 let rect = bbox.rect.as_ref().unwrap();
 
                 cr.transform(cairo::Matrix::new(
