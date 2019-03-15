@@ -280,20 +280,23 @@ impl NodeTrait for NodeSvg {
 
         let svg_viewport = self.get_viewport(values, &params);
 
-        let (viewport, vbox) = if !has_parent && draw_ctx.is_measuring() {
+        let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
+
+        let (viewport, vbox) = if is_measuring_toplevel_svg {
+            // We are obtaining the toplevel SVG's geometry.  This means, don't care about the
+            // DrawingCtx's viewport, just use the SVG's intrinsic dimensions and see how far
+            // it wants to extend.
             (svg_viewport, self.vbox.get())
         } else {
             let viewport = if has_parent {
                 svg_viewport
             } else {
-                /*
-                cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: params.view_box_width,
-                    height: params.view_box_height,
-                }
-                 */
+                // cairo::Rectangle {
+                // x: 0.0,
+                // y: 0.0,
+                // width: params.view_box_width,
+                // height: params.view_box_height,
+                // }
                 draw_ctx.toplevel_viewport()
             };
 
