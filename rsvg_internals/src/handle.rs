@@ -6,7 +6,7 @@ use std::rc::Rc;
 use cairo::{self, ImageSurface, Status};
 use gdk_pixbuf::Pixbuf;
 use gio::{self, FileExt};
-use glib::{self, Bytes, Cast};
+use glib::{self, Bytes, IsA};
 use glib_sys;
 use libc;
 use locale_config::{LanguageRange, Locale};
@@ -199,9 +199,9 @@ impl Handle {
         };
     }
 
-    pub fn read_stream_sync(
+    pub fn read_stream_sync<S: IsA<gio::InputStream>>(
         &self,
-        stream: &gio::InputStream,
+        stream: S,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         self.load_state.set(LoadState::Loading);
@@ -275,7 +275,7 @@ impl Handle {
                 let bytes = Bytes::from(&*buffer);
                 let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
 
-                self.read_stream_sync(&stream.upcast(), None)
+                self.read_stream_sync(stream, None)
             }
 
             LoadState::ClosedOk | LoadState::ClosedError => {
@@ -637,12 +637,12 @@ impl Handle {
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         let stream = file.read(cancellable)?;
-        self.construct_read_stream_sync(&stream.upcast(), Some(file), cancellable)
+        self.construct_read_stream_sync(stream, Some(file), cancellable)
     }
 
-    pub fn construct_read_stream_sync(
+    pub fn construct_read_stream_sync<S: IsA<gio::InputStream>>(
         &self,
-        stream: &gio::InputStream,
+        stream: S,
         base_file: Option<&gio::File>,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {

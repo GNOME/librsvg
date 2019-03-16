@@ -562,10 +562,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_read_stream_sync(
         panic!("handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",);
     }
 
-    let stream = from_glib_none(stream);
+    let stream: gio::InputStream = from_glib_none(stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.read_stream_sync(&stream, cancellable.as_ref()) {
+    match rhandle.read_stream_sync(stream, cancellable.as_ref()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -835,10 +835,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_stream_sync(
     let rhandle = get_rust_handle(raw_handle);
 
     let base_file: Option<gio::File> = from_glib_none(base_file);
-    let stream = from_glib_none(input_stream);
+    let stream: gio::InputStream = from_glib_none(input_stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.construct_read_stream_sync(&stream, base_file.as_ref(), cancellable.as_ref()) {
+    match rhandle.construct_read_stream_sync(stream, base_file.as_ref(), cancellable.as_ref()) {
         Ok(()) => raw_handle,
 
         Err(e) => {
