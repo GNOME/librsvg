@@ -478,7 +478,7 @@ impl XmlState {
         let flags = self.load_options.flags;
 
         // FIXME: pass a cancellable
-        xml_state_parse_from_stream(self, flags, stream, None).map_err(|e| match e {
+        xml_state_parse_from_stream(self, flags, &stream, None).map_err(|e| match e {
             ParseFromStreamError::CouldNotCreateXmlParser => AcquireError::FatalError,
             ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
             ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,

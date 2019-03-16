@@ -3,6 +3,7 @@
 
 use gio;
 use gio::prelude::*;
+use glib::prelude::*;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::mem;
@@ -245,8 +246,8 @@ fn set_xml_parse_options(parser: xmlParserCtxtPtr, load_flags: LoadFlags) {
 // is set; if it is, it means that there was an I/O error.  Otherwise,
 // there were no I/O errors but the caller must then ask libxml2 for
 // XML parsing errors.
-struct StreamCtx {
-    stream: gio::InputStream,
+struct StreamCtx<'a> {
+    stream: &'a gio::InputStream,
     cancellable: Option<gio::Cancellable>,
     gio_error: Rc<RefCell<Option<glib::Error>>>,
 }
@@ -309,10 +310,10 @@ struct Xml2Parser {
 }
 
 impl Xml2Parser {
-    fn from_stream(
+    fn from_stream<S: IsA<gio::InputStream>>(
         xml: &mut XmlState,
         load_flags: LoadFlags,
-        stream: gio::InputStream,
+        stream: &S,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Xml2Parser, ParseFromStreamError> {
         // The Xml2Parser we end up creating, if
@@ -325,7 +326,7 @@ impl Xml2Parser {
         let gio_error = Rc::new(RefCell::new(None));
 
         let ctx = Box::new(StreamCtx {
-            stream,
+            stream: stream.as_ref(),
             cancellable: cancellable.map(|c| c.clone()),
             gio_error: gio_error.clone(),
         });
@@ -435,23 +436,23 @@ impl From<ParseFromStreamError> for LoadingError {
 //
 // This can be called "in the middle" of an XmlState's processing status,
 // for example, when including another XML file via xi:include.
-pub fn xml_state_parse_from_stream(
+pub fn xml_state_parse_from_stream<S: IsA<gio::InputStream>>(
     xml: &mut XmlState,
     load_flags: LoadFlags,
-    stream: gio::InputStream,
+    stream: &S,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<(), ParseFromStreamError> {
     Xml2Parser::from_stream(xml, load_flags, stream, cancellable).and_then(|parser| parser.parse())
 }
 
-pub fn xml_state_load_from_possibly_compressed_stream(
+pub fn xml_state_load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
     xml: &mut XmlState,
     load_flags: LoadFlags,
-    stream: &gio::InputStream,
+    stream: &S,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<(), ParseFromStreamError> {
-    let stream = get_input_stream_for_loading(stream, cancellable)
+    let stream = get_input_stream_for_loading(stream.as_ref(), cancellable)
         .map_err(|e| ParseFromStreamError::IoError(e))?;
 
-    xml_state_parse_from_stream(xml, load_flags, stream, cancellable)
+    xml_state_parse_from_stream(xml, load_flags, &stream, cancellable)
 }

@@ -16,7 +16,7 @@ gio = { version="0.6.0", features=["v2_48"] } # per configure.ac
 rsvg_internals = { path = "../rsvg_internals" }
 
 [dev-dependencies]
-cairo-rs = { version = "0.6.0", features = ["png"] }
+cairo-rs = { version = "0.6.0", features = ["png", "svg"] }
 rsvg_internals = { path = "../rsvg_internals" }
 
 [build-dependencies]
