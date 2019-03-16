@@ -3,9 +3,6 @@ use gio;
 use glib;
 use librsvg;
 
-use gio::MemoryInputStreamExt;
-use glib::Cast;
-
 use librsvg::{
     CairoRenderer,
     DefsLookupErrorKind,
@@ -19,11 +16,11 @@ use librsvg::{
 };
 
 fn load_svg(input: &'static [u8]) -> SvgHandle {
-    let stream = gio::MemoryInputStream::new();
-    stream.add_bytes(&glib::Bytes::from_static(input));
+    let bytes = glib::Bytes::from_static(input);
+    let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
 
     Loader::new()
-        .read_stream(&stream.upcast(), None, None)
+        .read_stream(stream, None, None)
         .unwrap()
 }
 
