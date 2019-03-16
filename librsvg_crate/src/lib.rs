@@ -89,13 +89,12 @@
 #![warn(unused)]
 use cairo;
 use gio;
-use glib;
+use glib::{self, prelude::*};
 use rsvg_internals;
 
 use std::path::Path;
 
 use gio::{Cancellable, FileExt};
-use glib::object::Cast;
 
 use rsvg_internals::{Dpi, Handle, LoadFlags};
 
@@ -262,7 +261,7 @@ impl Loader {
 
         let stream = file.read(cancellable)?;
 
-        self.read_stream(&stream.upcast(), Some(&file), cancellable_clone)
+        self.read_stream(stream, Some(&file), cancellable_clone)
     }
 
     /// Reads an SVG stream from a `gio::InputStream`.
@@ -277,9 +276,9 @@ impl Loader {
     /// URL where this SVG got loaded from.
     ///
     /// The `cancellable` can be used to cancel loading from another thread.
-    pub fn read_stream<'a, P: Into<Option<&'a Cancellable>>>(
+    pub fn read_stream<'a, P: Into<Option<&'a Cancellable>>, S: IsA<gio::InputStream>>(
         self,
-        stream: &gio::InputStream,
+        stream: S,
         base_file: Option<&gio::File>,
         cancellable: P,
     ) -> Result<SvgHandle, LoadingError> {

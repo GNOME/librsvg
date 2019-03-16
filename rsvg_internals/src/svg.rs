@@ -1,5 +1,6 @@
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
+use glib::IsA;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -49,9 +50,9 @@ impl Svg {
         }
     }
 
-    pub fn load_from_stream(
+    pub fn load_from_stream<S: IsA<gio::InputStream>>(
         load_options: &LoadOptions,
-        stream: &gio::InputStream,
+        stream: S,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Svg, LoadingError> {
         let load_flags = load_options.flags;
@@ -172,7 +173,7 @@ impl Images {
 fn load_svg(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<Svg, LoadingError> {
     // FIXME: pass a cancellable to these
     io::acquire_stream(aurl, None).and_then(|stream| {
-        Svg::load_from_stream(&load_options.copy_with_base_url(aurl), &stream, None)
+        Svg::load_from_stream(&load_options.copy_with_base_url(aurl), stream, None)
     })
 }
 
