@@ -7,7 +7,7 @@ use rsvg_internals;
 use gio::MemoryInputStreamExt;
 use glib::Cast;
 
-use librsvg::{CairoRenderer, Loader, SvgHandle};
+use librsvg::{CairoRenderer, Loader, RenderingError, SvgHandle};
 
 use std::fs::File;
 use std::io::BufReader;
@@ -28,6 +28,30 @@ fn load_svg(input: &'static [u8]) -> SvgHandle {
         .unwrap()
 }
 
+#[derive(Copy, Clone)]
+struct SurfaceSize(i32, i32);
+
+fn render_to_viewport<F: FnOnce(&cairo::Context)>(
+    svg: &SvgHandle,
+    surface_size: SurfaceSize,
+    cr_transform: F,
+    viewport: cairo::Rectangle,
+) -> Result<SharedImageSurface, RenderingError> {
+    let renderer = CairoRenderer::new(svg);
+
+    let SurfaceSize(width, height) = surface_size;
+
+    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();
+
+    let res = {
+        let cr = cairo::Context::new(&output);
+        cr_transform(&cr);
+        Ok(renderer.render_element_to_viewport(&cr, None, &viewport)?)
+    };
+
+    res.and_then(|_| Ok(SharedImageSurface::new(output, SurfaceType::SRgb)?))
+}
+
 #[test]
 fn render_to_viewport_with_different_size() {
     let svg = load_svg(
@@ -38,27 +62,17 @@ fn render_to_viewport_with_different_size() {
 "#,
     );
 
-    let renderer = CairoRenderer::new(&svg);
-
-    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 128, 128).unwrap();
-
-    {
-        let cr = cairo::Context::new(&output);
-        renderer
-            .render_element_to_viewport(
-                &cr,
-                None,
-                &cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 128.0,
-                    height: 128.0,
-                },
-            )
-            .unwrap();
-    }
-
-    let output_surf = SharedImageSurface::new(output, SurfaceType::SRgb).unwrap();
+    let output_surf = render_to_viewport(
+        &svg,
+        SurfaceSize(128, 128),
+        |_cr| (),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 128.0,
+            height: 128.0,
+        },
+    ).unwrap();
 
     let fixture_path = Path::new("tests/fixtures/rect-48x48-rendered-128x128.png");
     let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
@@ -87,30 +101,20 @@ fn render_to_offsetted_viewport() {
 "#,
     );
 
-    let renderer = CairoRenderer::new(&svg);
-
-    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
-
-    {
-        let cr = cairo::Context::new(&output);
-        renderer
-            .render_element_to_viewport(
-                &cr,
-                None,
-                &cairo::Rectangle {
-                    x: 10.0,
-                    y: 20.0,
-                    width: 48.0,
-                    height: 48.0,
-                },
-            )
-            .unwrap();
-    }
+    let output_surf = render_to_viewport(
+        &svg,
+        SurfaceSize(100, 100),
+        |_cr| (),
+        cairo::Rectangle {
+            x: 10.0,
+            y: 20.0,
+            width: 48.0,
+            height: 48.0,
+        },
+    ).unwrap();
 
     let mut output_file = File::create(Path::new("output.png")).unwrap();
-    output.write_to_png(&mut output_file).unwrap();
-
-    let output_surf = SharedImageSurface::new(output, SurfaceType::SRgb).unwrap();
+    output_surf.clone().into_image_surface().unwrap().write_to_png(&mut output_file).unwrap();
 
     let fixture_path = Path::new("tests/fixtures/rect-48x48-offsetted-100x100-10x20.png");
     let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
@@ -145,31 +149,20 @@ fn render_to_viewport_with_transform() {
 "#,
     );
 
-    let renderer = CairoRenderer::new(&svg);
-
-    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
-
-    {
-        let cr = cairo::Context::new(&output);
-        cr.translate(10.0, 20.0);
-        renderer
-            .render_element_to_viewport(
-                &cr,
-                None,
-                &cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 48.0,
-                    height: 48.0,
-                },
-            )
-            .unwrap();
-    }
+    let output_surf = render_to_viewport(
+        &svg,
+        SurfaceSize(100, 100),
+        |cr| cr.translate(10.0, 20.0),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 48.0,
+            height: 48.0,
+        },
+    ).unwrap();
 
     let mut output_file = File::create(Path::new("output.png")).unwrap();
-    output.write_to_png(&mut output_file).unwrap();
-
-    let output_surf = SharedImageSurface::new(output, SurfaceType::SRgb).unwrap();
+    output_surf.clone().into_image_surface().unwrap().write_to_png(&mut output_file).unwrap();
 
     let fixture_path = Path::new("tests/fixtures/rect-48x48-offsetted-100x100-10x20.png");
     let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
@@ -210,31 +203,20 @@ fn clip_on_transformed_viewport() {
 "##,
     );
 
-    let renderer = CairoRenderer::new(&svg);
-
-    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 200, 200).unwrap();
-
-    {
-        let cr = cairo::Context::new(&output);
-        cr.translate(50.0, 50.0);
-        renderer
-            .render_element_to_viewport(
-                &cr,
-                None,
-                &cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 100.0,
-                    height: 100.0,
-                },
-            )
-            .unwrap();
-    }
+    let output_surf = render_to_viewport(
+        &svg,
+        SurfaceSize(200, 200),
+        |cr| cr.translate(50.0, 50.0),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 100.0,
+        },
+    ).unwrap();
 
     let mut output_file = File::create(Path::new("output.png")).unwrap();
-    output.write_to_png(&mut output_file).unwrap();
-
-    let output_surf = SharedImageSurface::new(output, SurfaceType::SRgb).unwrap();
+    output_surf.clone().into_image_surface().unwrap().write_to_png(&mut output_file).unwrap();
 
     let fixture_path = Path::new("tests/fixtures/clip-on-transformed-viewport-200x200.png");
     let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
@@ -275,31 +257,20 @@ fn mask_on_transformed_viewport() {
 "##,
     );
 
-    let renderer = CairoRenderer::new(&svg);
-
-    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 200, 200).unwrap();
-
-    {
-        let cr = cairo::Context::new(&output);
-        cr.translate(50.0, 50.0);
-        renderer
-            .render_element_to_viewport(
-                &cr,
-                None,
-                &cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 100.0,
-                    height: 100.0,
-                },
-            )
-            .unwrap();
-    }
+    let output_surf = render_to_viewport(
+        &svg,
+        SurfaceSize(200, 200),
+        |cr| cr.translate(50.0, 50.0),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 100.0,
+        },
+    ).unwrap();
 
     let mut output_file = File::create(Path::new("output.png")).unwrap();
-    output.write_to_png(&mut output_file).unwrap();
-
-    let output_surf = SharedImageSurface::new(output, SurfaceType::SRgb).unwrap();
+    output_surf.clone().into_image_surface().unwrap().write_to_png(&mut output_file).unwrap();
 
     let fixture_path = Path::new("tests/fixtures/mask-on-transformed-viewport-200x200.png");
     let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
