@@ -129,7 +129,6 @@ fn render_to_offsetted_viewport() {
             surf.write_to_png(&mut output_file).unwrap();
 
             assert_eq!(diff.num_pixels_changed, 0);
-            
         }
     }
 }
@@ -189,7 +188,71 @@ fn render_to_viewport_with_transform() {
             surf.write_to_png(&mut output_file).unwrap();
 
             assert_eq!(diff.num_pixels_changed, 0);
-            
+        }
+    }
+}
+
+#[test]
+fn clip_on_transformed_viewport() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <defs>
+    <clipPath id="one" clipPathUnits="objectBoundingBox">
+      <circle cx="0.5" cy="0.5" r="0.5"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#one)">
+    <rect x="10" y="10" width="40" height="40" fill="blue"/>
+    <rect x="50" y="50" width="40" height="40" fill="limegreen"/>
+  </g>
+</svg>
+"##,
+    );
+
+    let renderer = CairoRenderer::new(&svg);
+
+    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 200, 200).unwrap();
+
+    {
+        let cr = cairo::Context::new(&output);
+        cr.translate(50.0, 50.0);
+        renderer
+            .render_element_to_viewport(
+                &cr,
+                None,
+                &cairo::Rectangle {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 100.0,
+                    height: 100.0,
+                },
+            )
+            .unwrap();
+    }
+
+    let mut output_file = File::create(Path::new("output.png")).unwrap();
+    output.write_to_png(&mut output_file).unwrap();
+
+    let output_surf = SharedImageSurface::new(output, SurfaceType::SRgb).unwrap();
+
+    let fixture_path = Path::new("tests/fixtures/clip-on-transformed-viewport-200x200.png");
+    let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
+
+    let expected = cairo::ImageSurface::create_from_png(&mut fixture_file).unwrap();
+    let expected_surf = SharedImageSurface::new(expected, SurfaceType::SRgb).unwrap();
+
+    let diff = compare_surfaces(&output_surf, &expected_surf).unwrap();
+
+    match diff {
+        BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
+
+        BufferDiff::Diff(diff) => {
+            let surf = diff.surface.into_image_surface().unwrap();
+            let mut output_file = File::create(Path::new("diff.png")).unwrap();
+            surf.write_to_png(&mut output_file).unwrap();
+
+            assert_eq!(diff.num_pixels_changed, 0);
         }
     }
 }

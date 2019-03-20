@@ -473,14 +473,13 @@ impl DrawingCtx {
 
                     let initial_inverse = dc.initial_affine.try_invert().unwrap();
                     let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
-                    println!("untransformed: {:?}", untransformed);
                     cr.set_matrix(untransformed);
 
                     dc.cr_stack.push(dc.cr.clone());
                     dc.cr = cr;
 
                     let prev_bbox = dc.bbox;
-                    dc.bbox = BoundingBox::new(&affine);
+                    dc.bbox = BoundingBox::new(&untransformed);
 
                     let mut res = draw_fn(dc);
 
@@ -497,12 +496,8 @@ impl DrawingCtx {
 
                     dc.cr = dc.cr_stack.pop().unwrap();
 
-                    dc.cr.set_matrix(dc.initial_affine);
                     dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
 
-                    dc.cr.set_matrix(untransformed);
-//                    dc.cr.set_matrix(affine);
-                    dc.clip_to_node(clip_in_object_space)?;
                     dc.clip_to_node(&clip_in_object_space)?;
 
                     if let Some(mask) = mask {
@@ -525,12 +520,16 @@ impl DrawingCtx {
                             );
                         }
                     } else {
+                        dc.cr.set_matrix(dc.initial_affine);
+
                         if opacity < 1.0 {
                             dc.cr.paint_with_alpha(opacity);
                         } else {
                             dc.cr.paint();
                         }
                     }
+
+                    dc.cr.set_matrix(affine);
 
                     let bbox = dc.bbox;
                     dc.bbox = prev_bbox;
