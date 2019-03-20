@@ -209,7 +209,7 @@ test_tolerate (const gchar *message)
 //
 // The frame size is meant to be a ridiculous number to simulate an arbitrary
 // offset.
-#define FRAME_SIZE 0
+#define FRAME_SIZE 47
 
 static void
 rsvg_cairo_check (gconstpointer data)
