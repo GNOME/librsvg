@@ -404,7 +404,7 @@ impl DrawingCtx {
 
     fn clip_to_node(
         &mut self,
-        clip_node: Option<RsvgNode>,
+        clip_node: &Option<RsvgNode>,
     ) -> Result<(), RenderingError> {
         if let Some(clip_node) = clip_node {
             let orig_bbox = self.bbox;
@@ -454,7 +454,7 @@ impl DrawingCtx {
                 let (clip_in_user_space, clip_in_object_space) =
                     dc.get_clip_in_user_and_object_space(clip_uri);
 
-                dc.clip_to_node(clip_in_user_space)?;
+                dc.clip_to_node(&clip_in_user_space)?;
 
                 let needs_temporary_surface = !(opacity == 1.0
                     && filter.is_none()
@@ -503,6 +503,7 @@ impl DrawingCtx {
                     dc.cr.set_matrix(untransformed);
 //                    dc.cr.set_matrix(affine);
                     dc.clip_to_node(clip_in_object_space)?;
+                    dc.clip_to_node(&clip_in_object_space)?;
 
                     if let Some(mask) = mask {
                         if let Some(acquired) =
