@@ -494,7 +494,7 @@ impl DrawingCtx {
 
                     dc.cr = dc.cr_stack.pop().unwrap();
 
-                    dc.cr.identity_matrix();
+                    dc.cr.set_matrix(dc.initial_affine);
                     dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
 
                     dc.cr.set_matrix(affine);
