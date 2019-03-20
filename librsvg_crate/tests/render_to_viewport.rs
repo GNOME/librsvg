@@ -11,7 +11,7 @@ use librsvg::{CairoRenderer, Loader, RenderingError, SvgHandle};
 
 use std::fs::File;
 use std::io::BufReader;
-use std::path::Path;
+use std::path::PathBuf;
 
 use self::rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
@@ -52,6 +52,42 @@ fn render_to_viewport<F: FnOnce(&cairo::Context)>(
     res.and_then(|_| Ok(SharedImageSurface::new(output, SurfaceType::SRgb)?))
 }
 
+fn test_result(output_surf: &SharedImageSurface, output_base_name: &str, fixture_filename: &str) {
+    let output_path = PathBuf::from(&format!("{}-out.png", output_base_name));
+    let fixture_path = PathBuf::from(&format!("tests/fixtures/{}", fixture_filename));
+
+    let mut output_file = File::create(output_path).unwrap();
+    output_surf
+        .clone()
+        .into_image_surface()
+        .unwrap()
+        .write_to_png(&mut output_file)
+        .unwrap();
+
+    let file =
+        File::open(fixture_path).expect("cannot find {} - are you in the librsvg_crate directory?");
+
+    let mut fixture_file = BufReader::new(file);
+
+    let expected = cairo::ImageSurface::create_from_png(&mut fixture_file).unwrap();
+    let expected_surf = SharedImageSurface::new(expected, SurfaceType::SRgb).unwrap();
+
+    let diff = compare_surfaces(output_surf, &expected_surf).unwrap();
+
+    match diff {
+        BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
+
+        BufferDiff::Diff(diff) => {
+            let surf = diff.surface.into_image_surface().unwrap();
+            let diff_path = PathBuf::from(format!("{}-diff.png", output_base_name));
+            let mut output_file = File::create(diff_path).unwrap();
+            surf.write_to_png(&mut output_file).unwrap();
+
+            assert_eq!(diff.num_pixels_changed, 0);
+        }
+    }
+}
+
 #[test]
 fn render_to_viewport_with_different_size() {
     let svg = load_svg(
@@ -72,23 +108,14 @@ fn render_to_viewport_with_different_size() {
             width: 128.0,
             height: 128.0,
         },
-    ).unwrap();
+    )
+    .unwrap();
 
-    let fixture_path = Path::new("tests/fixtures/rect-48x48-rendered-128x128.png");
-    let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
-
-    let expected = cairo::ImageSurface::create_from_png(&mut fixture_file).unwrap();
-    let expected_surf = SharedImageSurface::new(expected, SurfaceType::SRgb).unwrap();
-
-    let diff = compare_surfaces(&output_surf, &expected_surf).unwrap();
-
-    match diff {
-        BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
-
-        BufferDiff::Diff(diff) => {
-            assert_eq!(diff.num_pixels_changed, 0);
-        }
-    }
+    test_result(
+        &output_surf,
+        "render_to_viewport_with_different_size",
+        "rect-48x48-rendered-128x128.png",
+    );
 }
 
 #[test]
@@ -111,30 +138,14 @@ fn render_to_offsetted_viewport() {
             width: 48.0,
             height: 48.0,
         },
-    ).unwrap();
+    )
+    .unwrap();
 
-    let mut output_file = File::create(Path::new("output.png")).unwrap();
-    output_surf.clone().into_image_surface().unwrap().write_to_png(&mut output_file).unwrap();
-
-    let fixture_path = Path::new("tests/fixtures/rect-48x48-offsetted-100x100-10x20.png");
-    let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
-
-    let expected = cairo::ImageSurface::create_from_png(&mut fixture_file).unwrap();
-    let expected_surf = SharedImageSurface::new(expected, SurfaceType::SRgb).unwrap();
-
-    let diff = compare_surfaces(&output_surf, &expected_surf).unwrap();
-
-    match diff {
-        BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
-
-        BufferDiff::Diff(diff) => {
-            let surf = diff.surface.into_image_surface().unwrap();
-            let mut output_file = File::create(Path::new("diff.png")).unwrap();
-            surf.write_to_png(&mut output_file).unwrap();
-
-            assert_eq!(diff.num_pixels_changed, 0);
-        }
-    }
+    test_result(
+        &output_surf,
+        "render_to_offseted_viewport",
+        "rect-48x48-offsetted-100x100-10x20.png",
+    );
 }
 
 #[test]
@@ -159,30 +170,14 @@ fn render_to_viewport_with_transform() {
             width: 48.0,
             height: 48.0,
         },
-    ).unwrap();
+    )
+    .unwrap();
 
-    let mut output_file = File::create(Path::new("output.png")).unwrap();
-    output_surf.clone().into_image_surface().unwrap().write_to_png(&mut output_file).unwrap();
-
-    let fixture_path = Path::new("tests/fixtures/rect-48x48-offsetted-100x100-10x20.png");
-    let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
-
-    let expected = cairo::ImageSurface::create_from_png(&mut fixture_file).unwrap();
-    let expected_surf = SharedImageSurface::new(expected, SurfaceType::SRgb).unwrap();
-
-    let diff = compare_surfaces(&output_surf, &expected_surf).unwrap();
-
-    match diff {
-        BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
-
-        BufferDiff::Diff(diff) => {
-            let surf = diff.surface.into_image_surface().unwrap();
-            let mut output_file = File::create(Path::new("diff.png")).unwrap();
-            surf.write_to_png(&mut output_file).unwrap();
-
-            assert_eq!(diff.num_pixels_changed, 0);
-        }
-    }
+    test_result(
+        &output_surf,
+        "render_to_viewport_with_transform",
+        "rect-48x48-offsetted-100x100-10x20.png",
+    );
 }
 
 #[test]
@@ -213,30 +208,14 @@ fn clip_on_transformed_viewport() {
             width: 100.0,
             height: 100.0,
         },
-    ).unwrap();
+    )
+    .unwrap();
 
-    let mut output_file = File::create(Path::new("output.png")).unwrap();
-    output_surf.clone().into_image_surface().unwrap().write_to_png(&mut output_file).unwrap();
-
-    let fixture_path = Path::new("tests/fixtures/clip-on-transformed-viewport-200x200.png");
-    let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
-
-    let expected = cairo::ImageSurface::create_from_png(&mut fixture_file).unwrap();
-    let expected_surf = SharedImageSurface::new(expected, SurfaceType::SRgb).unwrap();
-
-    let diff = compare_surfaces(&output_surf, &expected_surf).unwrap();
-
-    match diff {
-        BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
-
-        BufferDiff::Diff(diff) => {
-            let surf = diff.surface.into_image_surface().unwrap();
-            let mut output_file = File::create(Path::new("diff.png")).unwrap();
-            surf.write_to_png(&mut output_file).unwrap();
-
-            assert_eq!(diff.num_pixels_changed, 0);
-        }
-    }
+    test_result(
+        &output_surf,
+        "clip_on_transformed_viewport",
+        "clip-on-transformed-viewport-200x200.png",
+    );
 }
 
 #[test]
@@ -267,28 +246,12 @@ fn mask_on_transformed_viewport() {
             width: 100.0,
             height: 100.0,
         },
-    ).unwrap();
+    )
+    .unwrap();
 
-    let mut output_file = File::create(Path::new("output.png")).unwrap();
-    output_surf.clone().into_image_surface().unwrap().write_to_png(&mut output_file).unwrap();
-
-    let fixture_path = Path::new("tests/fixtures/mask-on-transformed-viewport-200x200.png");
-    let mut fixture_file = BufReader::new(File::open(fixture_path).unwrap());
-
-    let expected = cairo::ImageSurface::create_from_png(&mut fixture_file).unwrap();
-    let expected_surf = SharedImageSurface::new(expected, SurfaceType::SRgb).unwrap();
-
-    let diff = compare_surfaces(&output_surf, &expected_surf).unwrap();
-
-    match diff {
-        BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
-
-        BufferDiff::Diff(diff) => {
-            let surf = diff.surface.into_image_surface().unwrap();
-            let mut output_file = File::create(Path::new("diff.png")).unwrap();
-            surf.write_to_png(&mut output_file).unwrap();
-
-            assert_eq!(diff.num_pixels_changed, 0);
-        }
-    }
+    test_result(
+        &output_surf,
+        "mask_on_transformed_viewport",
+        "mask-on-transformed-viewport-200x200.png",
+    );
 }
