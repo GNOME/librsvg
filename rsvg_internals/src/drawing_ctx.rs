@@ -471,15 +471,24 @@ impl DrawingCtx {
                         )
                     };
 
-                    let initial_inverse = dc.initial_affine.try_invert().unwrap();
-                    let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
-                    cr.set_matrix(untransformed);
+                    let stack_was_empty = dc.cr_stack.len() == 0;
+
+                    let temporary_affine = if stack_was_empty {
+                        let initial_inverse = dc.initial_affine.try_invert().unwrap();
+                        let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
+                        untransformed
+                    } else {
+                        cr.get_matrix()
+                    };
+
+                    cr.set_matrix(temporary_affine);
 
                     dc.cr_stack.push(dc.cr.clone());
                     dc.cr = cr;
 
                     let prev_bbox = dc.bbox;
-                    dc.bbox = BoundingBox::new(&untransformed);
+
+                    dc.bbox = BoundingBox::new(&temporary_affine);
 
                     let mut res = draw_fn(dc);
 
@@ -509,7 +518,7 @@ impl DrawingCtx {
                             res = res.and_then(|_| {
                                 node.with_impl(|mask: &NodeMask| {
                                     let bbox = dc.bbox;
-                                    mask.generate_cairo_mask(&node, &untransformed, dc, &bbox)
+                                    mask.generate_cairo_mask(&node, &temporary_affine, dc, &bbox)
                                 })
                             });
                         } else {
