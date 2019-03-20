@@ -539,6 +539,10 @@ impl DrawingCtx {
         }
     }
 
+    pub fn set_initial_affine(&self, cr: &cairo::Context) {
+        cr.set_matrix(self.initial_affine);
+    }
+
     /// Saves the current Cairo matrix, runs the draw_fn, and restores the matrix
     ///
     /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
