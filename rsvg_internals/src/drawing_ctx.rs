@@ -474,7 +474,7 @@ impl DrawingCtx {
                     let stack_was_empty = dc.cr_stack.len() == 0;
 
                     let temporary_affine = if stack_was_empty {
-                        let initial_inverse = dc.initial_affine.try_invert().unwrap();
+                        let initial_inverse = dc.initial_affine_with_offset().try_invert().unwrap();
                         let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
                         untransformed
                     } else {
@@ -529,7 +529,7 @@ impl DrawingCtx {
                             );
                         }
                     } else {
-                        dc.cr.set_matrix(dc.initial_affine);
+                        dc.cr.set_matrix(dc.initial_affine_with_offset());
 
                         if opacity < 1.0 {
                             dc.cr.paint_with_alpha(opacity);
@@ -552,8 +552,14 @@ impl DrawingCtx {
         }
     }
 
+    fn initial_affine_with_offset(&self) -> cairo::Matrix {
+        let mut initial_with_offset = self.initial_affine;
+        initial_with_offset.translate(self.rect.x, self.rect.y);
+        initial_with_offset
+    }
+
     pub fn set_initial_affine(&self, cr: &cairo::Context) {
-        cr.set_matrix(self.initial_affine);
+        cr.set_matrix(self.initial_affine_with_offset());
     }
 
     /// Saves the current Cairo matrix, runs the draw_fn, and restores the matrix
