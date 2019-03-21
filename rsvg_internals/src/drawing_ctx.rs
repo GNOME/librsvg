@@ -172,7 +172,7 @@ impl DrawingCtx {
             cr_stack: Vec::new(),
             cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
-            bbox: BoundingBox::new(&cairo::Matrix::identity()),
+            bbox: BoundingBox::new(&initial_affine),
             drawsub_stack: Vec::new(),
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
             measuring,
