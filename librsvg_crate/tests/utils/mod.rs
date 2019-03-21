@@ -54,10 +54,14 @@ pub fn render_to_viewport<F: FnOnce(&cairo::Context)>(
 }
 
 pub fn output_dir() -> PathBuf {
-    PathBuf::from(
+    let path = PathBuf::from(
         env::var_os("OUT_DIR")
             .expect(r#"OUT_DIR is not set, please set it or run under "cargo test""#),
-    )
+    );
+
+    println!("outputting to {}", path.to_string_lossy());
+
+    path
 }
 
 pub fn compare_to_file(
