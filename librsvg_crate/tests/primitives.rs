@@ -91,3 +91,44 @@ fn simple_opacity_with_offset_viewport() {
 
     compare_to_surface(&output_surf, &reference_surf, "simple_opacity_with_offset_viewport");
 }
+
+#[test]
+fn opacity_inside_transformed_group() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <g transform="translate(20, 20)">
+    <rect x="0" y="0" width="60" height="60" style="fill:blue; opacity:0.5;"/>
+  </g>
+</svg>
+"#,
+    );
+
+    let output_surf = render_to_viewport(
+        &svg,
+        SurfaceSize(140, 140),
+        |cr| cr.translate(20.0, 20.0),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 100.0,
+        },
+    )
+    .unwrap();
+
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 140, 140).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.translate(20.0, 20.0);
+        cr.rectangle(20.0, 20.0, 60.0, 60.0);
+        cr.set_source_rgba(0.0, 0.0, 1.0, 0.5);
+        cr.fill();
+    }
+
+    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(&output_surf, &reference_surf, "opacity_inside_transformed_group");
+}

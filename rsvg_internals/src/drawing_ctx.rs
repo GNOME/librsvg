@@ -505,8 +505,14 @@ impl DrawingCtx {
 
                     dc.cr = dc.cr_stack.pop().unwrap();
 
+                    let save_matrix = dc.cr.get_matrix();
+
+                    dc.cr.set_matrix(dc.initial_affine_with_offset());
                     dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
 
+                    assert!(affine == save_matrix);
+
+                    dc.cr.set_matrix(affine);
                     dc.clip_to_node(&clip_in_object_space)?;
 
                     if let Some(mask) = mask {
@@ -529,7 +535,8 @@ impl DrawingCtx {
                             );
                         }
                     } else {
-                        dc.cr.set_matrix(dc.initial_affine_with_offset());
+                        let paint_affine = dc.initial_affine_with_offset();
+                        dc.cr.set_matrix(paint_affine);
 
                         if opacity < 1.0 {
                             dc.cr.paint_with_alpha(opacity);
