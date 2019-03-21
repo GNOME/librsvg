@@ -463,6 +463,15 @@ impl DrawingCtx {
                     && enable_background == EnableBackground::Accumulate);
 
                 if needs_temporary_surface {
+                    let stack_was_empty = dc.cr_stack.len() == 0;
+
+                    let affine = if stack_was_empty {
+                        affine
+                    } else {
+                        let initial_inverse = dc.initial_affine_with_offset().try_invert().unwrap();
+                        cairo::Matrix::multiply(&affine, &initial_inverse)
+                    };
+
                     let cr = if filter.is_some() {
                         cairo::Context::new(&dc.create_surface_for_toplevel_viewport()?)
                     } else {
@@ -470,8 +479,6 @@ impl DrawingCtx {
                             &dc.create_similar_surface_for_toplevel_viewport(&dc.cr.get_target())?,
                         )
                     };
-
-                    let stack_was_empty = dc.cr_stack.len() == 0;
 
                     let temporary_affine = if stack_was_empty {
                         let initial_inverse = dc.initial_affine_with_offset().try_invert().unwrap();
@@ -505,12 +512,14 @@ impl DrawingCtx {
 
                     dc.cr = dc.cr_stack.pop().unwrap();
 
-                    let save_matrix = dc.cr.get_matrix();
+                    let paint_affine = if stack_was_empty {
+                        dc.initial_affine_with_offset()
+                    } else {
+                        cairo::Matrix::identity()
+                    };
 
-                    dc.cr.set_matrix(dc.initial_affine_with_offset());
+                    dc.cr.set_matrix(paint_affine);
                     dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
-
-                    assert!(affine == save_matrix);
 
                     dc.cr.set_matrix(affine);
                     dc.clip_to_node(&clip_in_object_space)?;
@@ -535,7 +544,6 @@ impl DrawingCtx {
                             );
                         }
                     } else {
-                        let paint_affine = dc.initial_affine_with_offset();
                         dc.cr.set_matrix(paint_affine);
 
                         if opacity < 1.0 {
