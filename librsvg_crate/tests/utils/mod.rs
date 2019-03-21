@@ -99,3 +99,34 @@ pub fn compare_to_file(
         }
     }
 }
+
+pub fn compare_to_surface(
+    output_surf: &SharedImageSurface,
+    reference_surf: &SharedImageSurface,
+    output_base_name: &str,
+) {
+    let output_path = output_dir().join(&format!("{}-out.png", output_base_name));
+
+    let mut output_file = File::create(output_path).unwrap();
+    output_surf
+        .clone()
+        .into_image_surface()
+        .unwrap()
+        .write_to_png(&mut output_file)
+        .unwrap();
+
+    let diff = compare_surfaces(output_surf, reference_surf).unwrap();
+
+    match diff {
+        BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
+
+        BufferDiff::Diff(diff) => {
+            let surf = diff.surface.into_image_surface().unwrap();
+            let diff_path = output_dir().join(&format!("{}-diff.png", output_base_name));
+            let mut output_file = File::create(diff_path).unwrap();
+            surf.write_to_png(&mut output_file).unwrap();
+
+            assert_eq!(diff.num_pixels_changed, 0);
+        }
+    }
+}
