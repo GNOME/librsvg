@@ -60,7 +60,11 @@ pub fn output_dir() -> PathBuf {
     )
 }
 
-pub fn test_result(output_surf: &SharedImageSurface, output_base_name: &str, fixture_filename: &str) {
+pub fn compare_to_file(
+    output_surf: &SharedImageSurface,
+    output_base_name: &str,
+    fixture_filename: &str,
+) {
     let output_path = output_dir().join(&format!("{}-out.png", output_base_name));
     let fixture_path = PathBuf::from(&format!("tests/fixtures/{}", fixture_filename));
 

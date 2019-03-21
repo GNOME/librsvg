@@ -8,7 +8,7 @@ mod utils;
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use self::utils::{load_svg, render_to_viewport, test_result, SurfaceSize};
+use self::utils::{load_svg, render_to_viewport, compare_to_file, SurfaceSize};
 
 #[test]
 fn render_to_viewport_with_different_size() {
@@ -33,7 +33,7 @@ fn render_to_viewport_with_different_size() {
     )
     .unwrap();
 
-    test_result(
+    compare_to_file(
         &output_surf,
         "render_to_viewport_with_different_size",
         "rect-48x48-rendered-128x128.png",
@@ -63,7 +63,7 @@ fn render_to_offsetted_viewport() {
     )
     .unwrap();
 
-    test_result(
+    compare_to_file(
         &output_surf,
         "render_to_offseted_viewport",
         "rect-48x48-offsetted-100x100-10x20.png",
@@ -95,7 +95,7 @@ fn render_to_viewport_with_transform() {
     )
     .unwrap();
 
-    test_result(
+    compare_to_file(
         &output_surf,
         "render_to_viewport_with_transform",
         "rect-48x48-offsetted-100x100-10x20.png",
@@ -133,7 +133,7 @@ fn clip_on_transformed_viewport() {
     )
     .unwrap();
 
-    test_result(
+    compare_to_file(
         &output_surf,
         "clip_on_transformed_viewport",
         "clip-on-transformed-viewport-200x200.png",
@@ -171,7 +171,7 @@ fn mask_on_transformed_viewport() {
     )
     .unwrap();
 
-    test_result(
+    compare_to_file(
         &output_surf,
         "mask_on_transformed_viewport",
         "mask-on-transformed-viewport-200x200.png",
