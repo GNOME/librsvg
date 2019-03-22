@@ -467,26 +467,11 @@ impl DrawingCtx {
 
                     let is_topmost_temporary_surface = dc.cr_stack.len() == 0;
 
-                    let initial_inverse = dc.initial_affine_with_offset().try_invert().unwrap();
-
-                    let affine = if is_topmost_temporary_surface {
-                        affine_at_start
-                    } else {
-                        cairo::Matrix::multiply(&affine_at_start, &initial_inverse)
-                    };
-
-                    let temporary_affine = if is_topmost_temporary_surface {
-                        let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
-                        untransformed
-                    } else {
-                        affine_at_start
-                    };
-
-                    let paint_affine = if is_topmost_temporary_surface {
-                        dc.initial_affine_with_offset()
-                    } else {
-                        cairo::Matrix::identity()
-                    };
+                    let affines = CompositingAffines::new(
+                        affine_at_start,
+                        dc.initial_affine_with_offset(),
+                        is_topmost_temporary_surface,
+                    );
 
                     // Create temporary surface and its cr
 
@@ -498,7 +483,7 @@ impl DrawingCtx {
                         )
                     };
 
-                    cr.set_matrix(temporary_affine);
+                    cr.set_matrix(affines.temporary);
 
                     dc.cr_stack.push(dc.cr.clone());
                     dc.cr = cr;
@@ -507,7 +492,7 @@ impl DrawingCtx {
 
                     let prev_bbox = dc.bbox;
 
-                    dc.bbox = BoundingBox::new(&temporary_affine);
+                    dc.bbox = BoundingBox::new(&affines.temporary);
 
                     // Draw!
 
@@ -516,8 +501,7 @@ impl DrawingCtx {
                     // Filter
 
                     let source_surface = if let Some(filter_uri) = filter {
-                        let child_surface =
-                            cairo::ImageSurface::from(dc.cr.get_target()).unwrap();
+                        let child_surface = cairo::ImageSurface::from(dc.cr.get_target()).unwrap();
                         let img_surface =
                             dc.run_filter(filter_uri, node, values, &child_surface, dc.bbox)?;
                         // turn into a Surface
@@ -530,12 +514,12 @@ impl DrawingCtx {
 
                     // Set temporary surface as source
 
-                    dc.cr.set_matrix(paint_affine);
+                    dc.cr.set_matrix(affines.compositing);
                     dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
 
                     // Clip
 
-                    dc.cr.set_matrix(affine);
+                    dc.cr.set_matrix(affines.affine);
                     dc.clip_to_node(&clip_in_object_space)?;
 
                     // Mask
@@ -549,7 +533,7 @@ impl DrawingCtx {
                             res = res.and_then(|_| {
                                 node.with_impl(|mask: &NodeMask| {
                                     let bbox = dc.bbox;
-                                    mask.generate_cairo_mask(&node, &temporary_affine, dc, &bbox)
+                                    mask.generate_cairo_mask(&node, &affines.temporary, dc, &bbox)
                                 })
                             });
                         } else {
@@ -562,7 +546,7 @@ impl DrawingCtx {
                     } else {
                         // No mask, so composite the temporary surface
 
-                        dc.cr.set_matrix(paint_affine);
+                        dc.cr.set_matrix(affines.compositing);
 
                         if opacity < 1.0 {
                             dc.cr.paint_with_alpha(opacity);
@@ -915,6 +899,47 @@ impl DrawingCtx {
             Err(RenderingError::InstancingLimit)
         } else {
             Ok(())
+        }
+    }
+}
+
+struct CompositingAffines {
+    affine: cairo::Matrix,
+    temporary: cairo::Matrix,
+    compositing: cairo::Matrix,
+}
+
+impl CompositingAffines {
+    fn new(
+        current: cairo::Matrix,
+        initial: cairo::Matrix,
+        is_topmost_temporary_surface: bool,
+    ) -> CompositingAffines {
+        let initial_inverse = initial.try_invert().unwrap();
+
+        let affine = if is_topmost_temporary_surface {
+            current
+        } else {
+            cairo::Matrix::multiply(&current, &initial_inverse)
+        };
+
+        let temporary = if is_topmost_temporary_surface {
+            let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
+            untransformed
+        } else {
+            current
+        };
+
+        let compositing = if is_topmost_temporary_surface {
+            initial
+        } else {
+            cairo::Matrix::identity()
+        };
+
+        CompositingAffines {
+            affine,
+            temporary,
+            compositing,
         }
     }
 }
