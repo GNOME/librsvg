@@ -142,7 +142,7 @@ impl NodeMask {
         let mask_surface = compute_luminance_to_alpha(&mask_content_surface, opacity)?;
 
         let cr = draw_ctx.get_cairo_context();
-        cr.set_matrix(affines.initial);
+        cr.set_matrix(affines.compositing);
 
         cr.mask_surface(&mask_surface, 0.0, 0.0);
 
