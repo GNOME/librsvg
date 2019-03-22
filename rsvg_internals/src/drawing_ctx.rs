@@ -463,6 +463,8 @@ impl DrawingCtx {
                     && enable_background == EnableBackground::Accumulate);
 
                 if needs_temporary_surface {
+                    // Compute our assortment of affines
+
                     let stack_was_empty = dc.cr_stack.len() == 0;
 
                     let affine = if stack_was_empty {
@@ -470,14 +472,6 @@ impl DrawingCtx {
                     } else {
                         let initial_inverse = dc.initial_affine_with_offset().try_invert().unwrap();
                         cairo::Matrix::multiply(&affine_at_start, &initial_inverse)
-                    };
-
-                    let cr = if filter.is_some() {
-                        cairo::Context::new(&dc.create_surface_for_toplevel_viewport()?)
-                    } else {
-                        cairo::Context::new(
-                            &dc.create_similar_surface_for_toplevel_viewport(&dc.cr.get_target())?,
-                        )
                     };
 
                     let temporary_affine = if stack_was_empty {
@@ -488,16 +482,36 @@ impl DrawingCtx {
                         affine_at_start
                     };
 
+                    let paint_affine = if stack_was_empty {
+                        dc.initial_affine_with_offset()
+                    } else {
+                        cairo::Matrix::identity()
+                    };
+
+                    // Create temporary surface and its cr
+
+                    let cr = if filter.is_some() {
+                        cairo::Context::new(&dc.create_surface_for_toplevel_viewport()?)
+                    } else {
+                        cairo::Context::new(
+                            &dc.create_similar_surface_for_toplevel_viewport(&dc.cr.get_target())?,
+                        )
+                    };
+
                     cr.set_matrix(temporary_affine);
 
                     dc.cr_stack.push(dc.cr.clone());
                     dc.cr = cr;
+
+                    // Create temporary bbox with the cr's affine
 
                     let prev_bbox = dc.bbox;
 
                     dc.bbox = BoundingBox::new(&temporary_affine);
 
                     let mut res = draw_fn(dc);
+
+                    // Filter
 
                     let source_surface = if let Some(filter_uri) = filter {
                         let child_surface =
@@ -512,17 +526,17 @@ impl DrawingCtx {
 
                     dc.cr = dc.cr_stack.pop().unwrap();
 
-                    let paint_affine = if stack_was_empty {
-                        dc.initial_affine_with_offset()
-                    } else {
-                        cairo::Matrix::identity()
-                    };
+                    // Set temporary surface as source
 
                     dc.cr.set_matrix(paint_affine);
                     dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
 
+                    // Clip
+
                     dc.cr.set_matrix(affine);
                     dc.clip_to_node(&clip_in_object_space)?;
+
+                    // Mask
 
                     if let Some(mask) = mask {
                         if let Some(acquired) =
@@ -544,6 +558,8 @@ impl DrawingCtx {
                             );
                         }
                     } else {
+                        // No mask, so composite the temporary surface
+
                         dc.cr.set_matrix(paint_affine);
 
                         if opacity < 1.0 {
