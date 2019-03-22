@@ -205,6 +205,17 @@ impl DrawingCtx {
         self.cr = cr.clone();
     }
 
+    // Temporary hack while we unify surface/cr/affine creation
+    pub fn push_cairo_context(&mut self, cr: cairo::Context) {
+        self.cr_stack.push(self.cr.clone());
+        self.cr = cr;
+    }
+
+    // Temporary hack while we unify surface/cr/affine creation
+    pub fn pop_cairo_context(&mut self) {
+        self.cr = self.cr_stack.pop().unwrap();
+    }
+
     pub fn create_surface_for_toplevel_viewport(
         &self,
     ) -> Result<cairo::ImageSurface, RenderingError> {
@@ -483,8 +494,7 @@ impl DrawingCtx {
 
                     cr.set_matrix(affines.for_temporary_surface);
 
-                    dc.cr_stack.push(dc.cr.clone());
-                    dc.cr = cr;
+                    dc.push_cairo_context(cr);
 
                     // Create temporary bbox with the cr's affine
 
@@ -508,7 +518,7 @@ impl DrawingCtx {
                         dc.cr.get_target()
                     };
 
-                    dc.cr = dc.cr_stack.pop().unwrap();
+                    dc.pop_cairo_context();
 
                     // Set temporary surface as source
 

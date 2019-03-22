@@ -87,13 +87,11 @@ impl NodeMask {
         // Use a scope because mask_cr needs to release the
         // reference to the surface before we access the pixels
         {
-            let save_cr = draw_ctx.get_cairo_context();
-
             let mask_cr = cairo::Context::new(&mask_content_surface);
             mask_cr.set_matrix(affines.for_temporary_surface);
             mask_cr.transform(mask_node.get_transform());
 
-            draw_ctx.set_cairo_context(&mask_cr);
+            draw_ctx.push_cairo_context(mask_cr);
 
             if mask_units == CoordUnits::ObjectBoundingBox {
                 draw_ctx.clip(
@@ -117,7 +115,7 @@ impl NodeMask {
                         bbox_rect.y,
                     );
 
-                    mask_cr.transform(bbtransform);
+                    draw_ctx.get_cairo_context().transform(bbtransform);
 
                     draw_ctx.push_view_box(1.0, 1.0)
                 } else {
@@ -128,7 +126,7 @@ impl NodeMask {
                     mask_node.draw_children(&cascaded, dc, false)
                 });
 
-                draw_ctx.set_cairo_context(&save_cr);
+                draw_ctx.pop_cairo_context();
 
                 res
             }

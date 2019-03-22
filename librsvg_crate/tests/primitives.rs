@@ -186,10 +186,74 @@ fn compound_opacity() {
         cr.paint_with_alpha(0.5);
     }
 
-    let mut file = File::create("/tmp/reference.png").unwrap();
-    reference_surf.write_to_png(&mut file).unwrap();
-
     let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(&output_surf, &reference_surf, "compound_opacity");
+}
+
+#[test]
+fn nested_masks() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="321.00" height="27.00" viewBox="0 0 6420 540">
+  <defs>
+    <mask id="Mask_big_ex_small" maskUnits="userSpaceOnUse" x="0" y="0" width="6420" height="540">
+      <g>
+	<use xlink:href="#big" fill="white"/>
+	<use xlink:href="#small" fill="black"/>
+      </g>
+    </mask>
+    <g id="big_ex_small">
+      <use xlink:href="#big" mask="url(#Mask_big_ex_small)"/>
+    </g>
+    <mask id="Region0" maskUnits="userSpaceOnUse" x="0" y="0" width="6420" height="540" fill-rule="nonzero">
+      <use xlink:href="#big_ex_small" fill="white"/>
+    </mask>
+    <rect id="big" x="0" y="0" width="6420" height="540"/>
+    <rect id="small" x="2760" y="20" width="900" height="480"/>
+  </defs>
+  <g mask="url(#Region0)">
+    <g transform="matrix(1.66667 0 0 1.66667 0 0)">
+      <rect x="0" y="0" width="6420" height="540" fill="black"/>
+    </g>
+  </g>
+</svg>
+
+"##,
+    );
+
+    let output_surf = render_to_viewport(
+        &svg,
+        SurfaceSize(321 + 20, 27 + 20),
+        |cr| cr.translate(10.0, 10.0),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 321.0,
+            height: 27.0,
+        },
+    )
+    .unwrap();
+
+    let reference_surf =
+        cairo::ImageSurface::create(cairo::Format::ARgb32, 321 + 20, 27 + 20).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.translate(10.0, 10.0);
+        cr.scale(321.0 / 6420.0, 27.0 / 540.0);
+
+        cr.set_source_rgba(0.0, 0.0, 0.0, 1.0);
+        cr.rectangle(0.0, 0.0, 6420.0, 540.0);
+        cr.fill();
+
+        cr.set_operator(cairo::Operator::Clear);
+        cr.rectangle(2760.0, 20.0, 900.0, 480.0);
+        cr.fill();
+    }
+
+    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(&output_surf, &reference_surf, "nested_masks");
 }
