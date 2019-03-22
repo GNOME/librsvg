@@ -465,12 +465,10 @@ impl DrawingCtx {
                 if needs_temporary_surface {
                     // Compute our assortment of affines
 
-                    let is_topmost_temporary_surface = dc.cr_stack.len() == 0;
-
                     let affines = CompositingAffines::new(
                         affine_at_start,
                         dc.initial_affine_with_offset(),
-                        is_topmost_temporary_surface,
+                        dc.cr_stack.len(),
                     );
 
                     // Create temporary surface and its cr
@@ -910,8 +908,10 @@ impl CompositingAffines {
     fn new(
         current: cairo::Matrix,
         initial: cairo::Matrix,
-        is_topmost_temporary_surface: bool,
+        cr_stack_depth: usize,
     ) -> CompositingAffines {
+        let is_topmost_temporary_surface = cr_stack_depth == 0;
+
         let initial_inverse = initial.try_invert().unwrap();
 
         let affine = if is_topmost_temporary_surface {
