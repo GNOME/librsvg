@@ -526,12 +526,12 @@ impl DrawingCtx {
                         if let Some(acquired) =
                             dc.get_acquired_node_of_type(Some(mask), NodeType::Mask)
                         {
-                            let node = acquired.get();
+                            let mask_node = acquired.get();
 
                             res = res.and_then(|_| {
-                                node.with_impl(|mask: &NodeMask| {
+                                mask_node.with_impl(|mask: &NodeMask| {
                                     let bbox = dc.bbox;
-                                    mask.generate_cairo_mask(&node, &affines, dc, &bbox)
+                                    mask.generate_cairo_mask(&mask_node, &affines, dc, &bbox)
                                 })
                             });
                         } else {

@@ -48,7 +48,7 @@ impl NodeMask {
 
     pub fn generate_cairo_mask(
         &self,
-        node: &RsvgNode,
+        mask_node: &RsvgNode,
         affines: &CompositingAffines,
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
@@ -61,7 +61,7 @@ impl NodeMask {
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
 
-        let cascaded = node.get_cascaded_values();
+        let cascaded = mask_node.get_cascaded_values();
         let values = cascaded.get();
 
         let mask_content_surface = draw_ctx.create_surface_for_toplevel_viewport()?;
@@ -91,7 +91,7 @@ impl NodeMask {
 
             let mask_cr = cairo::Context::new(&mask_content_surface);
             mask_cr.set_matrix(affines.for_temporary_surface);
-            mask_cr.transform(node.get_transform());
+            mask_cr.transform(mask_node.get_transform());
 
             draw_ctx.set_cairo_context(&mask_cr);
 
@@ -124,8 +124,8 @@ impl NodeMask {
                     draw_ctx.get_view_params()
                 };
 
-                let res = draw_ctx.with_discrete_layer(node, values, false, &mut |dc| {
-                    node.draw_children(&cascaded, dc, false)
+                let res = draw_ctx.with_discrete_layer(mask_node, values, false, &mut |dc| {
+                    mask_node.draw_children(&cascaded, dc, false)
                 });
 
                 draw_ctx.set_cairo_context(&save_cr);
