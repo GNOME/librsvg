@@ -575,10 +575,6 @@ impl DrawingCtx {
         initial_with_offset
     }
 
-    pub fn set_initial_affine(&self, cr: &cairo::Context) {
-        cr.set_matrix(self.initial_affine_with_offset());
-    }
-
     /// Saves the current Cairo matrix, runs the draw_fn, and restores the matrix
     ///
     /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
@@ -905,6 +901,7 @@ impl DrawingCtx {
 
 pub struct CompositingAffines {
     pub affine: cairo::Matrix,
+    pub initial: cairo::Matrix,
     pub for_temporary_surface: cairo::Matrix,
     pub compositing: cairo::Matrix,
 }
@@ -938,6 +935,7 @@ impl CompositingAffines {
 
         CompositingAffines {
             affine,
+            initial,
             for_temporary_surface,
             compositing,
         }
