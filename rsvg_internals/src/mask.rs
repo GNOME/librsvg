@@ -4,7 +4,7 @@ use std::cell::Cell;
 use crate::attributes::Attribute;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{CompositingAffines, DrawingCtx};
 use crate::error::RenderingError;
 use crate::length::{LengthHorizontal, LengthVertical};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -13,9 +13,7 @@ use crate::properties::Opacity;
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    shared_surface::SurfaceType,
+    iterators::Pixels, shared_surface::SharedImageSurface, shared_surface::SurfaceType,
     ImageSurfaceDataExt,
 };
 use crate::unit_interval::UnitInterval;
@@ -51,7 +49,7 @@ impl NodeMask {
     pub fn generate_cairo_mask(
         &self,
         node: &RsvgNode,
-        affine_before_mask: &cairo::Matrix,
+        affines: &CompositingAffines,
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
@@ -92,7 +90,7 @@ impl NodeMask {
             let save_cr = draw_ctx.get_cairo_context();
 
             let mask_cr = cairo::Context::new(&mask_content_surface);
-            mask_cr.set_matrix(*affine_before_mask);
+            mask_cr.set_matrix(affines.for_temporary_surface);
             mask_cr.transform(node.get_transform());
 
             draw_ctx.set_cairo_context(&mask_cr);

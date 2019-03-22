@@ -533,12 +533,7 @@ impl DrawingCtx {
                             res = res.and_then(|_| {
                                 node.with_impl(|mask: &NodeMask| {
                                     let bbox = dc.bbox;
-                                    mask.generate_cairo_mask(
-                                        &node,
-                                        &affines.for_temporary_surface,
-                                        dc,
-                                        &bbox,
-                                    )
+                                    mask.generate_cairo_mask(&node, &affines, dc, &bbox)
                                 })
                             });
                         } else {
@@ -908,10 +903,10 @@ impl DrawingCtx {
     }
 }
 
-struct CompositingAffines {
-    affine: cairo::Matrix,
-    for_temporary_surface: cairo::Matrix,
-    compositing: cairo::Matrix,
+pub struct CompositingAffines {
+    pub affine: cairo::Matrix,
+    pub for_temporary_surface: cairo::Matrix,
+    pub compositing: cairo::Matrix,
 }
 
 impl CompositingAffines {
