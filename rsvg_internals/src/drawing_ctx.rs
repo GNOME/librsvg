@@ -449,7 +449,7 @@ impl DrawingCtx {
                 let UnitInterval(opacity) = values.opacity.0;
                 let enable_background = values.enable_background;
 
-                let affine = dc.cr.get_matrix();
+                let affine_at_start = dc.cr.get_matrix();
 
                 let (clip_in_user_space, clip_in_object_space) =
                     dc.get_clip_in_user_and_object_space(clip_uri);
@@ -466,10 +466,10 @@ impl DrawingCtx {
                     let stack_was_empty = dc.cr_stack.len() == 0;
 
                     let affine = if stack_was_empty {
-                        affine
+                        affine_at_start
                     } else {
                         let initial_inverse = dc.initial_affine_with_offset().try_invert().unwrap();
-                        cairo::Matrix::multiply(&affine, &initial_inverse)
+                        cairo::Matrix::multiply(&affine_at_start, &initial_inverse)
                     };
 
                     let cr = if filter.is_some() {
@@ -485,7 +485,7 @@ impl DrawingCtx {
                         let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
                         untransformed
                     } else {
-                        cr.get_matrix()
+                        affine_at_start
                     };
 
                     cr.set_matrix(temporary_affine);
@@ -553,7 +553,7 @@ impl DrawingCtx {
                         }
                     }
 
-                    dc.cr.set_matrix(affine);
+                    dc.cr.set_matrix(affine_at_start);
 
                     let bbox = dc.bbox;
                     dc.bbox = prev_bbox;
