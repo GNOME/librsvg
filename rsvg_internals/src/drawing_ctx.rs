@@ -517,7 +517,7 @@ impl DrawingCtx {
 
                     // Clip
 
-                    dc.cr.set_matrix(affines.affine);
+                    dc.cr.set_matrix(affines.outside_temporary_surface);
                     dc.clip_to_node(&clip_in_object_space)?;
 
                     // Mask
@@ -898,7 +898,7 @@ impl DrawingCtx {
 }
 
 pub struct CompositingAffines {
-    pub affine: cairo::Matrix,
+    pub outside_temporary_surface: cairo::Matrix,
     pub initial: cairo::Matrix,
     pub for_temporary_surface: cairo::Matrix,
     pub compositing: cairo::Matrix,
@@ -914,14 +914,15 @@ impl CompositingAffines {
 
         let initial_inverse = initial.try_invert().unwrap();
 
-        let affine = if is_topmost_temporary_surface {
+        let outside_temporary_surface = if is_topmost_temporary_surface {
             current
         } else {
             cairo::Matrix::multiply(&current, &initial_inverse)
         };
 
         let for_temporary_surface = if is_topmost_temporary_surface {
-            let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
+            let untransformed =
+                cairo::Matrix::multiply(&outside_temporary_surface, &initial_inverse);
             untransformed
         } else {
             current
@@ -934,7 +935,7 @@ impl CompositingAffines {
         };
 
         CompositingAffines {
-            affine,
+            outside_temporary_surface,
             initial,
             for_temporary_surface,
             compositing,
