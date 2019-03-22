@@ -483,7 +483,7 @@ impl DrawingCtx {
                         )
                     };
 
-                    cr.set_matrix(affines.temporary);
+                    cr.set_matrix(affines.for_temporary_surface);
 
                     dc.cr_stack.push(dc.cr.clone());
                     dc.cr = cr;
@@ -492,7 +492,7 @@ impl DrawingCtx {
 
                     let prev_bbox = dc.bbox;
 
-                    dc.bbox = BoundingBox::new(&affines.temporary);
+                    dc.bbox = BoundingBox::new(&affines.for_temporary_surface);
 
                     // Draw!
 
@@ -533,7 +533,12 @@ impl DrawingCtx {
                             res = res.and_then(|_| {
                                 node.with_impl(|mask: &NodeMask| {
                                     let bbox = dc.bbox;
-                                    mask.generate_cairo_mask(&node, &affines.temporary, dc, &bbox)
+                                    mask.generate_cairo_mask(
+                                        &node,
+                                        &affines.for_temporary_surface,
+                                        dc,
+                                        &bbox,
+                                    )
                                 })
                             });
                         } else {
@@ -905,7 +910,7 @@ impl DrawingCtx {
 
 struct CompositingAffines {
     affine: cairo::Matrix,
-    temporary: cairo::Matrix,
+    for_temporary_surface: cairo::Matrix,
     compositing: cairo::Matrix,
 }
 
@@ -923,7 +928,7 @@ impl CompositingAffines {
             cairo::Matrix::multiply(&current, &initial_inverse)
         };
 
-        let temporary = if is_topmost_temporary_surface {
+        let for_temporary_surface = if is_topmost_temporary_surface {
             let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
             untransformed
         } else {
@@ -938,7 +943,7 @@ impl CompositingAffines {
 
         CompositingAffines {
             affine,
-            temporary,
+            for_temporary_surface,
             compositing,
         }
     }
