@@ -467,15 +467,15 @@ impl DrawingCtx {
 
                     let is_topmost_temporary_surface = dc.cr_stack.len() == 0;
 
+                    let initial_inverse = dc.initial_affine_with_offset().try_invert().unwrap();
+
                     let affine = if is_topmost_temporary_surface {
                         affine_at_start
                     } else {
-                        let initial_inverse = dc.initial_affine_with_offset().try_invert().unwrap();
                         cairo::Matrix::multiply(&affine_at_start, &initial_inverse)
                     };
 
                     let temporary_affine = if is_topmost_temporary_surface {
-                        let initial_inverse = dc.initial_affine_with_offset().try_invert().unwrap();
                         let untransformed = cairo::Matrix::multiply(&affine, &initial_inverse);
                         untransformed
                     } else {
