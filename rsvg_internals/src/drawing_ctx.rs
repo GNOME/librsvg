@@ -921,8 +921,7 @@ impl CompositingAffines {
         };
 
         let for_temporary_surface = if is_topmost_temporary_surface {
-            let untransformed =
-                cairo::Matrix::multiply(&outside_temporary_surface, &initial_inverse);
+            let untransformed = cairo::Matrix::multiply(&current, &initial_inverse);
             untransformed
         } else {
             current
