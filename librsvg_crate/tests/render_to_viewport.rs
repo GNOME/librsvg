@@ -221,12 +221,12 @@ fn mask_on_transformed_viewport() {
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
   <defs>
     <mask id="one" maskContentUnits="objectBoundingBox">
-      <circle cx="0.5" cy="0.5" r="0.5" fill="white"/>
+      <path d="M 0.5 0.0 L 1.0 0.5 L 0.5 1.0 L 0.0 0.5 Z" fill="white"/>
     </mask>
   </defs>
   <g mask="url(#one)">
     <rect x="10" y="10" width="40" height="40" fill="blue"/>
-    <rect x="50" y="50" width="40" height="40" fill="limegreen"/>
+    <rect x="50" y="50" width="40" height="40" fill="#00ff00"/>
   </g>
 </svg>
 "##,
@@ -245,9 +245,40 @@ fn mask_on_transformed_viewport() {
     )
     .unwrap();
 
-    compare_to_file(
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 200, 200).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.translate(50.0, 50.0);
+
+        cr.push_group();
+
+        cr.rectangle(10.0, 10.0, 40.0, 40.0);
+        cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
+        cr.fill();
+
+        cr.rectangle(50.0, 50.0, 40.0, 40.0);
+        cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
+        cr.fill();
+
+        cr.pop_group_to_source();
+
+        cr.move_to(50.0, 10.0);
+        cr.line_to(90.0, 50.0);
+        cr.line_to(50.0, 90.0);
+        cr.line_to(10.0, 50.0);
+        cr.close_path();
+
+        cr.clip();
+        cr.paint();
+    }
+
+    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(
         &output_surf,
+        &reference_surf,
         "mask_on_transformed_viewport",
-        "mask-on-transformed-viewport-200x200.png",
     );
 }
