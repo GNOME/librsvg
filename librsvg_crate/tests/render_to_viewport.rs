@@ -1,14 +1,10 @@
 use cairo;
-use gio;
-use glib;
-use librsvg;
-use rsvg_internals;
 
 mod utils;
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use self::utils::{compare_to_file, compare_to_surface, load_svg, render_to_viewport, SurfaceSize};
+use self::utils::{compare_to_surface, load_svg, render_to_viewport, SurfaceSize};
 
 #[test]
 fn render_to_viewport_with_different_size() {

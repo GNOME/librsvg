@@ -1,7 +1,4 @@
 use cairo;
-use gio;
-use glib;
-use librsvg;
 
 use librsvg::{
     CairoRenderer,

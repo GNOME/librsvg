@@ -1,16 +1,10 @@
 use cairo;
-use gio;
-use glib;
-use librsvg;
-use rsvg_internals;
 
 mod utils;
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use self::utils::{load_svg, render_to_viewport, compare_to_surface, SurfaceSize};
-
-use std::fs::File;
 
 #[test]
 fn simple_opacity_with_transform() {
