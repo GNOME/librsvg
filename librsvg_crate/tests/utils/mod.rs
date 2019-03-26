@@ -64,13 +64,26 @@ pub fn output_dir() -> PathBuf {
     path
 }
 
+pub fn fixture_dir() -> PathBuf {
+    let path = PathBuf::from(
+        env::var_os("CARGO_MANIFEST_DIR")
+            .expect(r#"CARGO_MANIFEST_DIR" is not set, please set it or run under "cargo test""#),
+    )
+    .join("tests")
+    .join("fixtures");
+
+    println!("looking for fixtures at {}", path.to_string_lossy());
+
+    path
+}
+
 pub fn compare_to_file(
     output_surf: &SharedImageSurface,
     output_base_name: &str,
     fixture_filename: &str,
 ) {
     let output_path = output_dir().join(&format!("{}-out.png", output_base_name));
-    let fixture_path = PathBuf::from(&format!("tests/fixtures/{}", fixture_filename));
+    let fixture_path = fixture_dir().join(fixture_filename);
 
     let mut output_file = File::create(output_path).unwrap();
     output_surf
