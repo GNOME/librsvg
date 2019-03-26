@@ -216,34 +216,31 @@ impl DrawingCtx {
         self.cr = self.cr_stack.pop().unwrap();
     }
 
-    pub fn create_surface_for_toplevel_viewport(
-        &self,
-    ) -> Result<cairo::ImageSurface, RenderingError> {
+    fn size_for_temporary_surface(&self) -> (i32, i32) {
         // This truncation may mean that we clip off the rightmost/bottommost row of pixels.
         // See https://gitlab.gnome.org/GNOME/librsvg/issues/295
 
         let width = self.rect.width as i32;
         let height = self.rect.height as i32;
 
-        Ok(cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            width,
-            height,
-        )?)
+        (width, height)
+    }
+
+    pub fn create_surface_for_toplevel_viewport(
+        &self,
+    ) -> Result<cairo::ImageSurface, RenderingError> {
+        let (w, h) = self.size_for_temporary_surface();
+
+        Ok(cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?)
     }
 
     fn create_similar_surface_for_toplevel_viewport(
         &self,
         surface: &cairo::Surface,
     ) -> Result<cairo::Surface, RenderingError> {
-        // This truncation may mean that we clip off the rightmost/bottommost row of pixels.
-        // See https://gitlab.gnome.org/GNOME/librsvg/issues/295
+        let (w, h) = self.size_for_temporary_surface();
 
-        let width = self.rect.width as i32;
-        let height = self.rect.height as i32;
-
-        let surface =
-            cairo::Surface::create_similar(surface, cairo::Content::ColorAlpha, width, height);
+        let surface = cairo::Surface::create_similar(surface, cairo::Content::ColorAlpha, w, h);
 
         // FIXME: cairo-rs should return a Result from create_similar()!
         // Since it doesn't, we need to check its status by hand...
