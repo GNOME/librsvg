@@ -8,7 +8,7 @@ mod utils;
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use self::utils::{load_svg, render_to_viewport, compare_to_file, SurfaceSize};
+use self::utils::{compare_to_file, compare_to_surface, load_svg, render_to_viewport, SurfaceSize};
 
 #[test]
 fn render_to_viewport_with_different_size() {
@@ -33,10 +33,24 @@ fn render_to_viewport_with_different_size() {
     )
     .unwrap();
 
-    compare_to_file(
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 128, 128).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.scale(128.0 / 48.0, 128.0 / 48.0);
+
+        cr.rectangle(8.0, 8.0, 32.0, 32.0);
+        cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
+        cr.fill();
+    }
+
+    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(
         &output_surf,
+        &reference_surf,
         "render_to_viewport_with_different_size",
-        "rect-48x48-rendered-128x128.png",
     );
 }
 
