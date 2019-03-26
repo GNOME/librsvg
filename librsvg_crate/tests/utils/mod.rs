@@ -117,6 +117,8 @@ pub fn compare_to_file(
     }
 }
 
+const MAX_DIFF: u8 = 2;
+
 pub fn compare_to_surface(
     output_surf: &SharedImageSurface,
     reference_surf: &SharedImageSurface,
@@ -143,7 +145,15 @@ pub fn compare_to_surface(
             let mut output_file = File::create(diff_path).unwrap();
             surf.write_to_png(&mut output_file).unwrap();
 
-            assert_eq!(diff.num_pixels_changed, 0);
+            if diff.num_pixels_changed != 0 && diff.max_diff > MAX_DIFF {
+                println!(
+                    "{}: {} pixels changed with maximum difference of {}",
+                    output_base_name,
+                    diff.num_pixels_changed,
+                    diff.max_diff,
+                );
+                unreachable!("surfaces are too different");
+            }
         }
     }
 }
