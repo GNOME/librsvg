@@ -553,36 +553,20 @@ impl Handle {
         check_cairo_context(cr)?;
         self.check_is_loaded()?;
 
-        let node = if let Some(id) = id {
-            Some(self.lookup_node(id).map_err(RenderingError::InvalidId)?)
-        } else {
-            None
-        };
-
         let dimensions = self.get_dimensions()?;
-        let root = self.get_root();
-
         if dimensions.width == 0 || dimensions.height == 0 {
             // nothing to render
             return Ok(());
         }
 
-        cr.save();
-        let mut draw_ctx = self.create_drawing_ctx_for_node(
-            cr,
-            &cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: f64::from(dimensions.width),
-                height: f64::from(dimensions.height),
-            },
-            node.as_ref(),
-            false,
-        );
-        let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
-        cr.restore();
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: f64::from(dimensions.width),
+            height: f64::from(dimensions.height),
+        };
 
-        res
+        self.render_element_to_viewport(cr, id, &viewport)
     }
 
     pub fn render_element_to_viewport(
