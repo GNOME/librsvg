@@ -122,8 +122,7 @@ LIBRSVG_CRATE_SOURCES = 					\
 	librsvg_crate/tests/render_to_viewport.rs		\
 	librsvg_crate/tests/primitives.rs			\
 	librsvg_crate/tests/utils/mod.rs			\
-	librsvg_crate/tests/utils/compare_surfaces.rs		\
-	$(wildcard librsvg_crate/tests/fixtures/*)
+	librsvg_crate/tests/utils/compare_surfaces.rs
 
 RUST_EXTRA = 						\
 	Cargo.lock					\
