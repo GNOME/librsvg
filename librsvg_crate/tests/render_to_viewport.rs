@@ -77,10 +77,24 @@ fn render_to_offsetted_viewport() {
     )
     .unwrap();
 
-    compare_to_file(
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.translate(10.0, 20.0);
+
+        cr.rectangle(8.0, 8.0, 32.0, 32.0);
+        cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
+        cr.fill();
+    }
+
+    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(
         &output_surf,
+        &reference_surf,
         "render_to_offseted_viewport",
-        "rect-48x48-offsetted-100x100-10x20.png",
     );
 }
 
