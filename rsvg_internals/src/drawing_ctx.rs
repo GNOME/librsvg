@@ -1,6 +1,5 @@
 use cairo;
 use cairo::prelude::*;
-use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
 use std::cell::RefCell;
@@ -85,6 +84,8 @@ pub enum ClipMode {
 pub struct DrawingCtx {
     svg: Rc<Svg>,
 
+    initial_affine: cairo::Matrix,
+
     rect: cairo::Rectangle,
     dpi: Dpi,
 
@@ -102,12 +103,10 @@ pub struct DrawingCtx {
 
     cr_stack: Vec<cairo::Context>,
     cr: cairo::Context,
-    initial_cr: cairo::Context,
 
     view_box_stack: Rc<RefCell<Vec<ViewBox>>>,
 
     bbox: BoundingBox,
-    bbox_stack: Vec<BoundingBox>,
 
     drawsub_stack: Vec<RsvgNode>,
 
@@ -126,24 +125,18 @@ impl DrawingCtx {
         measuring: bool,
         testing: bool,
     ) -> DrawingCtx {
+        let initial_affine = cr.get_matrix();
+
         // This is more or less a hack to make measuring geometries possible,
         // while the code gets refactored not to need special cases for that.
 
-        let (rect, vbox, affine) = if measuring {
+        let (rect, vbox) = if measuring {
             (
                 cairo::Rectangle::new(0.0, 0.0, 1.0, 1.0),
                 ViewBox::new(0.0, 0.0, 1.0, 1.0),
-                cairo::Matrix::identity(),
             )
         } else {
-            let mut affine = cr.get_matrix();
-            let rect = viewport.transform(&affine).outer();
-
-            // adjust transform so that the corner of the
-            // bounding box above is at (0,0)
-            affine.x0 -= rect.x;
-            affine.y0 -= rect.y;
-            cr.set_matrix(affine);
+            let rect = *viewport;
 
             // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
             //
@@ -164,7 +157,7 @@ impl DrawingCtx {
                 height: viewport.height,
             };
 
-            (rect, vbox, affine)
+            (rect, vbox)
         };
 
         let mut view_box_stack = Vec::new();
@@ -172,20 +165,23 @@ impl DrawingCtx {
 
         DrawingCtx {
             svg,
+            initial_affine,
             rect,
             dpi,
             num_elements_rendered_through_use: 0,
             cr_stack: Vec::new(),
             cr: cr.clone(),
-            initial_cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
-            bbox: BoundingBox::new(&affine),
-            bbox_stack: Vec::new(),
+            bbox: BoundingBox::new(&initial_affine),
             drawsub_stack: Vec::new(),
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
             measuring,
             testing,
         }
+    }
+
+    pub fn toplevel_viewport(&self) -> cairo::Rectangle {
+        self.rect
     }
 
     pub fn is_measuring(&self) -> bool {
@@ -209,12 +205,51 @@ impl DrawingCtx {
         self.cr = cr.clone();
     }
 
-    pub fn get_width(&self) -> f64 {
-        self.rect.width
+    // Temporary hack while we unify surface/cr/affine creation
+    pub fn push_cairo_context(&mut self, cr: cairo::Context) {
+        self.cr_stack.push(self.cr.clone());
+        self.cr = cr;
     }
 
-    pub fn get_height(&self) -> f64 {
-        self.rect.height
+    // Temporary hack while we unify surface/cr/affine creation
+    pub fn pop_cairo_context(&mut self) {
+        self.cr = self.cr_stack.pop().unwrap();
+    }
+
+    fn size_for_temporary_surface(&self) -> (i32, i32) {
+        // We need a size in whole pixels, so use ceil() to ensure the whole viewport fits
+        // into the temporary surface.
+        let width = self.rect.width.ceil() as i32;
+        let height = self.rect.height.ceil() as i32;
+
+        (width, height)
+    }
+
+    pub fn create_surface_for_toplevel_viewport(
+        &self,
+    ) -> Result<cairo::ImageSurface, RenderingError> {
+        let (w, h) = self.size_for_temporary_surface();
+
+        Ok(cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?)
+    }
+
+    fn create_similar_surface_for_toplevel_viewport(
+        &self,
+        surface: &cairo::Surface,
+    ) -> Result<cairo::Surface, RenderingError> {
+        let (w, h) = self.size_for_temporary_surface();
+
+        let surface = cairo::Surface::create_similar(surface, cairo::Content::ColorAlpha, w, h);
+
+        // FIXME: cairo-rs should return a Result from create_similar()!
+        // Since it doesn't, we need to check its status by hand...
+
+        let status = surface.status();
+        if status == cairo::Status::Success {
+            Ok(surface)
+        } else {
+            Err(RenderingError::Cairo(status))
+        }
     }
 
     /// Gets the viewport that was last pushed with `push_view_box()`.
@@ -289,10 +324,6 @@ impl DrawingCtx {
         self.bbox.insert(bbox);
     }
 
-    pub fn set_bbox(&mut self, bbox: &BoundingBox) {
-        self.bbox = *bbox;
-    }
-
     pub fn get_bbox(&self) -> &BoundingBox {
         &self.bbox
     }
@@ -356,15 +387,48 @@ impl DrawingCtx {
             })
     }
 
-    fn is_cairo_context_nested(&self, cr: &cairo::Context) -> bool {
-        cr.to_raw_none() != self.initial_cr.to_raw_none()
+    // Returns (clip_in_user_space, clip_in_object_space), both Option<RsvgNode>
+    fn get_clip_in_user_and_object_space(
+        &mut self,
+        clip_uri: Option<&Fragment>,
+    ) -> (Option<RsvgNode>, Option<RsvgNode>) {
+        if let Some(clip_node) = self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath) {
+            let clip_node = clip_node.get().clone();
+
+            let ClipPathUnits(units) =
+                clip_node.with_impl(|clip_path: &NodeClipPath| clip_path.get_units());
+
+            if units == CoordUnits::UserSpaceOnUse {
+                (Some(clip_node), None)
+            } else {
+                assert!(units == CoordUnits::ObjectBoundingBox);
+                (None, Some(clip_node))
+            }
+        } else {
+            (None, None)
+        }
     }
 
-    fn get_offset(&self) -> (f64, f64) {
-        if self.is_cairo_context_nested(&self.get_cairo_context()) {
-            (0.0, 0.0)
+    fn clip_to_node(
+        &mut self,
+        clip_node: &Option<RsvgNode>,
+    ) -> Result<(), RenderingError> {
+        if let Some(clip_node) = clip_node {
+            let orig_bbox = self.bbox;
+
+            let res = clip_node.with_impl(|clip_path: &NodeClipPath| {
+                clip_path.to_cairo_context(&clip_node, self, &orig_bbox)
+            });
+
+            // FIXME: this is an EPIC HACK to keep the clipping context from
+            // accumulating bounding boxes.  We'll remove this later, when we
+            // are able to extract bounding boxes from outside the
+            // general drawing loop.
+            self.bbox = orig_bbox;
+
+            res
         } else {
-            (self.rect.x, self.rect.y)
+            Ok(())
         }
     }
 
@@ -378,159 +442,168 @@ impl DrawingCtx {
         if clipping {
             draw_fn(self)
         } else {
-            let original_cr = self.cr.clone();
-            original_cr.save();
+            self.with_saved_cr(&mut |dc| {
+                let clip_uri = values.clip_path.0.get();
+                let mask = values.mask.0.get();
 
-            let clip_uri = values.clip_path.0.get();
-            let mask = values.mask.0.get();
-
-            // The `filter` property does not apply to masks.
-            let filter = if node.get_type() == NodeType::Mask {
-                None
-            } else {
-                values.filter.0.get()
-            };
-
-            let UnitInterval(opacity) = values.opacity.0;
-            let enable_background = values.enable_background;
-
-            let affine = original_cr.get_matrix();
-
-            let (clip_in_user_space, clip_in_object_space) = {
-                if let Some(clip_node) =
-                    self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath)
-                {
-                    let clip_node = clip_node.get().clone();
-
-                    let ClipPathUnits(units) =
-                        clip_node.with_impl(|clip_path: &NodeClipPath| clip_path.get_units());
-
-                    if units == CoordUnits::UserSpaceOnUse {
-                        (Some(clip_node), None)
-                    } else {
-                        assert!(units == CoordUnits::ObjectBoundingBox);
-                        (None, Some(clip_node))
-                    }
+                // The `filter` property does not apply to masks.
+                let filter = if node.get_type() == NodeType::Mask {
+                    None
                 } else {
-                    (None, None)
-                }
-            };
+                    values.filter.0.get()
+                };
 
-            if let Some(clip_node) = clip_in_user_space {
-                clip_node
-                    .with_impl(|clip_path: &NodeClipPath| {
-                        clip_path.to_cairo_context(&clip_node, &affine, self)
-                    })
-                    .map_err(|e| {
-                        original_cr.restore();
-                        e
-                    })?;
-            }
+                let UnitInterval(opacity) = values.opacity.0;
+                let enable_background = values.enable_background;
 
-            let needs_temporary_surface = !(opacity == 1.0
-                && filter.is_none()
-                && mask.is_none()
-                && clip_in_object_space.is_none()
-                && enable_background == EnableBackground::Accumulate);
+                let affine_at_start = dc.cr.get_matrix();
 
-            if needs_temporary_surface {
-                let cr = if filter.is_some() {
-                    cairo::Context::new(&cairo::ImageSurface::create(
-                        cairo::Format::ARgb32,
-                        self.rect.width as i32,
-                        self.rect.height as i32,
-                    )?)
-                } else {
-                    // FIXME: cairo-rs should return a Result from create_similar()!
-                    // Since it doesn't, we need to check its status by hand...
+                let (clip_in_user_space, clip_in_object_space) =
+                    dc.get_clip_in_user_and_object_space(clip_uri);
 
-                    let surface = cairo::Surface::create_similar(
-                        &self.cr.get_target(),
-                        cairo::Content::ColorAlpha,
-                        self.rect.width as i32,
-                        self.rect.height as i32,
+                dc.clip_to_node(&clip_in_user_space)?;
+
+                let needs_temporary_surface = !(opacity == 1.0
+                    && filter.is_none()
+                    && mask.is_none()
+                    && clip_in_object_space.is_none()
+                    && enable_background == EnableBackground::Accumulate);
+
+                if needs_temporary_surface {
+                    // Compute our assortment of affines
+
+                    let affines = CompositingAffines::new(
+                        affine_at_start,
+                        dc.initial_affine_with_offset(),
+                        dc.cr_stack.len(),
                     );
 
-                    let status = surface.status();
-                    if status != cairo::Status::Success {
-                        return Err(RenderingError::Cairo(status));
-                    }
+                    // Create temporary surface and its cr
 
-                    cairo::Context::new(&surface)
-                };
-
-                cr.set_matrix(affine);
-
-                self.cr_stack.push(self.cr.clone());
-                self.cr = cr.clone();
-
-                self.bbox_stack.push(self.bbox);
-                self.bbox = BoundingBox::new(&affine);
-            }
-
-            let mut res = draw_fn(self);
-
-            if needs_temporary_surface {
-                let source_surface = if let Some(filter_uri) = filter {
-                    let child_surface = cairo::ImageSurface::from(self.cr.get_target()).unwrap();
-                    let img_surface = self.run_filter(filter_uri, node, values, &child_surface)?;
-                    // turn into a Surface
-                    img_surface.as_ref().clone()
-                } else {
-                    self.cr.get_target()
-                };
-
-                self.cr = self.cr_stack.pop().unwrap();
-
-                let (xofs, yofs) = self.get_offset();
-
-                original_cr.identity_matrix();
-                original_cr.set_source_surface(&source_surface, xofs, yofs);
-
-                if let Some(clip_node) = clip_in_object_space {
-                    clip_node
-                        .with_impl(|clip_path: &NodeClipPath| {
-                            clip_path.to_cairo_context(&clip_node, &affine, self)
-                        })
-                        .map_err(|e| {
-                            original_cr.restore();
-                            e
-                        })?;
-                }
-
-                if let Some(mask) = mask {
-                    if let Some(acquired) =
-                        self.get_acquired_node_of_type(Some(mask), NodeType::Mask)
-                    {
-                        let node = acquired.get();
-
-                        res = res.and_then(|_| {
-                            node.with_impl(|mask: &NodeMask| {
-                                mask.generate_cairo_mask(&node, &affine, self)
-                            })
-                        });
+                    let cr = if filter.is_some() {
+                        cairo::Context::new(&dc.create_surface_for_toplevel_viewport()?)
                     } else {
-                        rsvg_log!(
-                            "element {} references nonexistent mask \"{}\"",
-                            node.get_human_readable_name(),
-                            mask,
-                        );
+                        cairo::Context::new(
+                            &dc.create_similar_surface_for_toplevel_viewport(&dc.cr.get_target())?,
+                        )
+                    };
+
+                    cr.set_matrix(affines.for_temporary_surface);
+
+                    dc.push_cairo_context(cr);
+
+                    // Create temporary bbox with the cr's affine
+
+                    let prev_bbox = dc.bbox;
+
+                    dc.bbox = BoundingBox::new(&affines.for_temporary_surface);
+
+                    // Draw!
+
+                    let mut res = draw_fn(dc);
+
+                    // Filter
+
+                    let source_surface = if let Some(filter_uri) = filter {
+                        let child_surface = cairo::ImageSurface::from(dc.cr.get_target()).unwrap();
+                        let img_surface =
+                            dc.run_filter(filter_uri, node, values, &child_surface, dc.bbox)?;
+                        // turn into a Surface
+                        img_surface.as_ref().clone()
+                    } else {
+                        dc.cr.get_target()
+                    };
+
+                    dc.pop_cairo_context();
+
+                    // Set temporary surface as source
+
+                    dc.cr.set_matrix(affines.compositing);
+                    dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
+
+                    // Clip
+
+                    dc.cr.set_matrix(affines.outside_temporary_surface);
+                    dc.clip_to_node(&clip_in_object_space)?;
+
+                    // Mask
+
+                    if let Some(mask) = mask {
+                        if let Some(acquired) =
+                            dc.get_acquired_node_of_type(Some(mask), NodeType::Mask)
+                        {
+                            let mask_node = acquired.get();
+
+                            res = res.and_then(|_| {
+                                mask_node.with_impl(|mask: &NodeMask| {
+                                    let bbox = dc.bbox;
+                                    mask.generate_cairo_mask(&mask_node, &affines, dc, &bbox)
+                                })
+                            });
+                        } else {
+                            rsvg_log!(
+                                "element {} references nonexistent mask \"{}\"",
+                                node.get_human_readable_name(),
+                                mask,
+                            );
+                        }
+                    } else {
+                        // No mask, so composite the temporary surface
+
+                        dc.cr.set_matrix(affines.compositing);
+
+                        if opacity < 1.0 {
+                            dc.cr.paint_with_alpha(opacity);
+                        } else {
+                            dc.cr.paint();
+                        }
                     }
-                } else if opacity < 1.0 {
-                    original_cr.paint_with_alpha(opacity);
+
+                    dc.cr.set_matrix(affine_at_start);
+
+                    let bbox = dc.bbox;
+                    dc.bbox = prev_bbox;
+                    dc.bbox.insert(&bbox);
+
+                    res
                 } else {
-                    original_cr.paint();
+                    draw_fn(dc)
                 }
-
-                let bbox = self.bbox;
-                self.bbox = self.bbox_stack.pop().unwrap();
-                self.bbox.insert(&bbox);
-            }
-
-            original_cr.restore();
-
-            res
+            })
         }
+    }
+
+    fn initial_affine_with_offset(&self) -> cairo::Matrix {
+        let mut initial_with_offset = self.initial_affine;
+        initial_with_offset.translate(self.rect.x, self.rect.y);
+        initial_with_offset
+    }
+
+    /// Saves the current Cairo matrix, runs the draw_fn, and restores the matrix
+    ///
+    /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
+    /// pair, but more importantly, it does not reset the whole
+    /// graphics state, i.e. it leaves a clipping path in place if it
+    /// was set by the `draw_fn`.
+    pub fn with_saved_matrix(
+        &mut self,
+        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+    ) -> Result<(), RenderingError> {
+        let matrix = self.cr.get_matrix();
+        let res = draw_fn(self);
+        self.cr.set_matrix(matrix);
+        res
+    }
+
+    /// Saves the current Cairo context, runs the draw_fn, and restores the context
+    pub fn with_saved_cr(
+        &mut self,
+        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+    ) -> Result<(), RenderingError> {
+        self.cr.save();
+        let res = draw_fn(self);
+        self.cr.restore();
+        res
     }
 
     fn run_filter(
@@ -539,6 +612,7 @@ impl DrawingCtx {
         node: &RsvgNode,
         values: &ComputedValues,
         child_surface: &cairo::ImageSurface,
+        node_bbox: BoundingBox,
     ) -> Result<cairo::ImageSurface, RenderingError> {
         match self.get_acquired_node_of_type(Some(filter_uri), NodeType::Filter) {
             Some(acquired) => {
@@ -546,7 +620,7 @@ impl DrawingCtx {
 
                 if !filter_node.is_in_error() {
                     // FIXME: deal with out of memory here
-                    filters::render(&filter_node, values, child_surface, self)
+                    filters::render(&filter_node, values, child_surface, self, node_bbox)
                 } else {
                     Ok(child_surface.clone())
                 }
@@ -728,45 +802,27 @@ impl DrawingCtx {
         res
     }
 
-    pub fn set_affine_on_cr(&self, cr: &cairo::Context) {
-        let (x0, y0) = self.get_offset();
-        let affine = cr.get_matrix();
-        let matrix = cairo::Matrix::new(
-            affine.xx,
-            affine.yx,
-            affine.xy,
-            affine.yy,
-            affine.x0 + x0,
-            affine.y0 + y0,
-        );
-        cr.set_matrix(matrix);
-    }
-
     pub fn clip(&self, x: f64, y: f64, w: f64, h: f64) {
         let cr = self.get_cairo_context();
-        let save_affine = cr.get_matrix();
-
-        self.set_affine_on_cr(&cr);
 
         cr.rectangle(x, y, w, h);
         cr.clip();
-        cr.set_matrix(save_affine);
     }
 
     pub fn get_snapshot(&self, surface: &cairo::ImageSurface) {
-        let (x, y) = (self.rect.x, self.rect.y);
-
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.
         let cr = cairo::Context::new(&surface);
-        for draw in self.cr_stack.iter() {
-            let nested = self.is_cairo_context_nested(&draw);
-            cr.set_source_surface(
-                &draw.get_target(),
-                if nested { 0f64 } else { -x },
-                if nested { 0f64 } else { -y },
+        for (depth, draw) in self.cr_stack.iter().enumerate() {
+            let affines = CompositingAffines::new(
+                draw.get_matrix(),
+                self.initial_affine_with_offset(),
+                depth,
             );
+
+            cr.set_matrix(affines.for_snapshot);
+            cr.set_source_surface(&draw.get_target(), 0.0, 0.0);
             cr.paint();
         }
     }
@@ -786,7 +842,6 @@ impl DrawingCtx {
         height: f64,
     ) -> Result<(), RenderingError> {
         let save_cr = self.cr.clone();
-        let save_initial_cr = self.initial_cr.clone();
         let save_rect = self.rect;
         let save_affine = self.get_cairo_context().get_matrix();
 
@@ -794,7 +849,6 @@ impl DrawingCtx {
         cr.set_matrix(save_affine);
 
         self.cr = cr;
-        self.initial_cr = self.cr.clone();
         self.rect.x = 0.0;
         self.rect.y = 0.0;
         self.rect.width = width;
@@ -803,7 +857,6 @@ impl DrawingCtx {
         let res = self.draw_node_from_stack(cascaded, node, false);
 
         self.cr = save_cr;
-        self.initial_cr = save_initial_cr;
         self.rect = save_rect;
 
         res
@@ -837,15 +890,6 @@ impl DrawingCtx {
         res.and_then(|_| self.check_limits())
     }
 
-    pub fn mask_surface(&mut self, mask: &cairo::ImageSurface) {
-        let cr = self.get_cairo_context();
-
-        cr.identity_matrix();
-
-        let (xofs, yofs) = self.get_offset();
-        cr.mask_surface(&mask, xofs, yofs);
-    }
-
     pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {
         self.drawsub_stack.push(node.clone());
         if let Some(ref parent) = node.get_parent() {
@@ -862,6 +906,61 @@ impl DrawingCtx {
             Err(RenderingError::InstancingLimit)
         } else {
             Ok(())
+        }
+    }
+}
+
+pub struct CompositingAffines {
+    pub outside_temporary_surface: cairo::Matrix,
+    pub initial: cairo::Matrix,
+    pub for_temporary_surface: cairo::Matrix,
+    pub compositing: cairo::Matrix,
+    pub for_snapshot: cairo::Matrix,
+}
+
+impl CompositingAffines {
+    fn new(
+        current: cairo::Matrix,
+        initial: cairo::Matrix,
+        cr_stack_depth: usize,
+    ) -> CompositingAffines {
+        let is_topmost_temporary_surface = cr_stack_depth == 0;
+
+        let initial_inverse = initial.try_invert().unwrap();
+
+        let outside_temporary_surface = if is_topmost_temporary_surface {
+            current
+        } else {
+            cairo::Matrix::multiply(&current, &initial_inverse)
+        };
+
+        let for_temporary_surface = if is_topmost_temporary_surface {
+            let untransformed = cairo::Matrix::multiply(&current, &initial_inverse);
+            untransformed
+        } else {
+            current
+        };
+
+        let compositing = if is_topmost_temporary_surface {
+            initial
+        } else {
+            cairo::Matrix::identity()
+        };
+
+        // This is the inverse of "compositing"; we do it this way
+        // instead of inverting that one to preserve accuracy.
+        let for_snapshot = if is_topmost_temporary_surface {
+            initial_inverse
+        } else {
+            cairo::Matrix::identity()
+        };
+
+        CompositingAffines {
+            outside_temporary_surface,
+            initial,
+            for_temporary_surface,
+            compositing,
+            for_snapshot,
         }
     }
 }

@@ -6,6 +6,7 @@ use cairo::{self, MatrixTrait};
 use owning_ref::RcRef;
 
 use crate::attributes::Attribute;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
@@ -227,12 +228,31 @@ impl Deref for PrimitiveWithInput {
     }
 }
 
+/// Creates a `SharedImageSurface` from an `ImageSurface`, even if the former
+/// does not have a reference count of 1.
+fn copy_to_shared_surface(
+    surface: &cairo::ImageSurface,
+) -> Result<SharedImageSurface, cairo::Status> {
+    let copy = cairo::ImageSurface::create(
+        cairo::Format::ARgb32,
+        surface.get_width(),
+        surface.get_height(),
+    )?;
+    {
+        let cr = cairo::Context::new(&copy);
+        cr.set_source_surface(surface, 0f64, 0f64);
+        cr.paint();
+    }
+    SharedImageSurface::new(copy, SurfaceType::SRgb)
+}
+
 /// Applies a filter and returns the resulting surface.
 pub fn render(
     filter_node: &RsvgNode,
     computed_from_node_being_filtered: &ComputedValues,
     source: &cairo::ImageSurface,
     draw_ctx: &mut DrawingCtx,
+    node_bbox: BoundingBox,
 ) -> Result<cairo::ImageSurface, RenderingError> {
     let filter_node = &*filter_node;
     assert_eq!(filter_node.get_type(), NodeType::Filter);
@@ -240,23 +260,14 @@ pub fn render(
 
     // The source surface has multiple references. We need to copy it to a new surface to have a
     // unique reference to be able to safely access the pixel data.
-    let source_surface = cairo::ImageSurface::create(
-        cairo::Format::ARgb32,
-        source.get_width(),
-        source.get_height(),
-    )?;
-    {
-        let cr = cairo::Context::new(&source_surface);
-        cr.set_source_surface(source, 0f64, 0f64);
-        cr.paint();
-    }
-    let source_surface = SharedImageSurface::new(source_surface, SurfaceType::SRgb)?;
+    let source_surface = copy_to_shared_surface(source)?;
 
     let mut filter_ctx = FilterContext::new(
         filter_node,
         computed_from_node_being_filtered,
         source_surface,
         draw_ctx,
+        node_bbox,
     );
 
     // If paffine is non-invertible, we won't draw anything. Also bbox combining in bounds

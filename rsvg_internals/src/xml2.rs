@@ -163,6 +163,8 @@ pub type xmlInputCloseCallback = Option<unsafe extern "C" fn(
 pub type xmlCharEncoding = libc::c_int;
 
 extern "C" {
+    pub fn xmlInitParser();
+
     pub fn xmlCreateIOParserCtxt(
         sax: xmlSAXHandlerPtr,
         user_data: *mut libc::c_void,

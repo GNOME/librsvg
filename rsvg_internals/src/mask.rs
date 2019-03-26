@@ -2,8 +2,9 @@ use cairo::{self, MatrixTrait};
 use std::cell::Cell;
 
 use crate::attributes::Attribute;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{CompositingAffines, DrawingCtx};
 use crate::error::RenderingError;
 use crate::length::{LengthHorizontal, LengthVertical};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -12,9 +13,7 @@ use crate::properties::Opacity;
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    shared_surface::SurfaceType,
+    iterators::Pixels, shared_surface::SharedImageSurface, shared_surface::SurfaceType,
     ImageSurfaceDataExt,
 };
 use crate::unit_interval::UnitInterval;
@@ -49,17 +48,23 @@ impl NodeMask {
 
     pub fn generate_cairo_mask(
         &self,
-        node: &RsvgNode,
-        affine_before_mask: &cairo::Matrix,
+        mask_node: &RsvgNode,
+        affines: &CompositingAffines,
         draw_ctx: &mut DrawingCtx,
+        bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
-        let cascaded = node.get_cascaded_values();
+        if bbox.rect.is_none() {
+            // The node being masked is empty / doesn't have a
+            // bounding box, so there's nothing to mask!
+            return Ok(());
+        }
+
+        let bbox_rect = bbox.rect.as_ref().unwrap();
+
+        let cascaded = mask_node.get_cascaded_values();
         let values = cascaded.get();
 
-        let width = draw_ctx.get_width() as i32;
-        let height = draw_ctx.get_height() as i32;
-
-        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+        let mask_content_surface = draw_ctx.create_surface_for_toplevel_viewport()?;
 
         let mask_units = CoordUnits::from(self.units.get());
         let content_units = CoordUnits::from(self.content_units.get());
@@ -82,23 +87,11 @@ impl NodeMask {
         // Use a scope because mask_cr needs to release the
         // reference to the surface before we access the pixels
         {
-            let bbox_rect = {
-                if let Some(ref rect) = draw_ctx.get_bbox().rect {
-                    *rect
-                } else {
-                    // The node being masked is empty / doesn't have a
-                    // bounding box, so there's nothing to mask!
-                    return Ok(());
-                }
-            };
+            let mask_cr = cairo::Context::new(&mask_content_surface);
+            mask_cr.set_matrix(affines.for_temporary_surface);
+            mask_cr.transform(mask_node.get_transform());
 
-            let save_cr = draw_ctx.get_cairo_context();
-
-            let mask_cr = cairo::Context::new(&surface);
-            mask_cr.set_matrix(*affine_before_mask);
-            mask_cr.transform(node.get_transform());
-
-            draw_ctx.set_cairo_context(&mask_cr);
+            draw_ctx.push_cairo_context(mask_cr);
 
             if mask_units == CoordUnits::ObjectBoundingBox {
                 draw_ctx.clip(
@@ -122,26 +115,34 @@ impl NodeMask {
                         bbox_rect.y,
                     );
 
-                    mask_cr.transform(bbtransform);
+                    draw_ctx.get_cairo_context().transform(bbtransform);
 
                     draw_ctx.push_view_box(1.0, 1.0)
                 } else {
                     draw_ctx.get_view_params()
                 };
 
-                let res = draw_ctx.with_discrete_layer(node, values, false, &mut |dc| {
-                    node.draw_children(&cascaded, dc, false)
+                let res = draw_ctx.with_discrete_layer(mask_node, values, false, &mut |dc| {
+                    mask_node.draw_children(&cascaded, dc, false)
                 });
 
-                draw_ctx.set_cairo_context(&save_cr);
+                draw_ctx.pop_cairo_context();
 
                 res
             }
         }?;
 
         let Opacity(opacity) = values.opacity;
-        let mask_surface = compute_luminance_to_alpha(surface, opacity)?;
-        draw_ctx.mask_surface(&mask_surface);
+
+        let mask_content_surface =
+            SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?;
+
+        let mask_surface = compute_luminance_to_alpha(&mask_content_surface, opacity)?;
+
+        let cr = draw_ctx.get_cairo_context();
+        cr.set_matrix(affines.compositing);
+
+        cr.mask_surface(&mask_surface, 0.0, 0.0);
 
         Ok(())
     }
@@ -154,11 +155,9 @@ impl NodeMask {
 //
 // This is to get a mask suitable for use with cairo_mask_surface().
 fn compute_luminance_to_alpha(
-    surface: cairo::ImageSurface,
+    surface: &SharedImageSurface,
     opacity: UnitInterval,
 ) -> Result<cairo::ImageSurface, cairo::Status> {
-    let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
-
     let width = surface.width();
     let height = surface.height();
 
@@ -176,7 +175,7 @@ fn compute_luminance_to_alpha(
     {
         let mut output_data = output.get_data().unwrap();
 
-        for (x, y, pixel) in Pixels::new(&surface, bounds) {
+        for (x, y, pixel) in Pixels::new(surface, bounds) {
             output_data.set_pixel(output_stride, pixel.to_mask(opacity), x, y);
         }
     }

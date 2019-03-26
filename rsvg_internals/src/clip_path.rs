@@ -3,6 +3,7 @@ use std::cell::Cell;
 use cairo::{self, MatrixTrait};
 
 use crate::attributes::Attribute;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::RenderingError;
@@ -30,49 +31,41 @@ impl NodeClipPath {
     pub fn to_cairo_context(
         &self,
         node: &RsvgNode,
-        affine_before_clip: &cairo::Matrix,
         draw_ctx: &mut DrawingCtx,
+        bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
-        let cascaded = node.get_cascaded_values();
-
         let clip_units = self.units.get();
 
-        let orig_bbox = draw_ctx.get_bbox().clone();
+        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) && bbox.rect.is_none() {
+            // The node being clipped is empty / doesn't have a
+            // bounding box, so there's nothing to clip!
+            return Ok(());
+        }
 
-        let child_matrix = if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
-            if orig_bbox.rect.is_none() {
-                // The node being clipped is empty / doesn't have a
-                // bounding box, so there's nothing to clip!
-                return Ok(());
+        let cascaded = node.get_cascaded_values();
+
+        draw_ctx.with_saved_matrix(&mut |dc| {
+            let cr = dc.get_cairo_context();
+
+            if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+                let bbox_rect = bbox.rect.as_ref().unwrap();
+
+                cr.transform(cairo::Matrix::new(
+                    bbox_rect.width,
+                    0.0,
+                    0.0,
+                    bbox_rect.height,
+                    bbox_rect.x,
+                    bbox_rect.y,
+                ))
             }
 
-            let rect = orig_bbox.rect.unwrap();
+            // here we don't push a layer because we are clipping
+            let res = node.draw_children(&cascaded, dc, true);
 
-            let bbtransform = cairo::Matrix::new(rect.width, 0.0, 0.0, rect.height, rect.x, rect.y);
-            cairo::Matrix::multiply(&bbtransform, affine_before_clip)
-        } else {
-            *affine_before_clip
-        };
-
-        let cr = draw_ctx.get_cairo_context();
-        let save_affine = cr.get_matrix();
-        cr.set_matrix(child_matrix);
-
-        // here we don't push a layer because we are clipping
-        let res = node.draw_children(&cascaded, draw_ctx, true);
-
-        cr.set_matrix(save_affine);
-
-        // FIXME: this is an EPIC HACK to keep the clipping context from
-        // accumulating bounding boxes.  We'll remove this later, when we
-        // are able to extract bounding boxes from outside the
-        // general drawing loop.
-        draw_ctx.set_bbox(&orig_bbox);
-
-        let cr = draw_ctx.get_cairo_context();
-        cr.clip();
-
-        res
+            cr.clip();
+            res
+        })
     }
 }
 

@@ -10,6 +10,7 @@ use std::ptr;
 use std::rc::Rc;
 use std::slice;
 use std::str;
+use std::sync::Once;
 
 use glib::translate::*;
 
@@ -303,6 +304,14 @@ unsafe extern "C" fn stream_ctx_close(context: *mut libc::c_void) -> libc::c_int
     ret
 }
 
+fn init_libxml2() {
+    static ONCE: Once = Once::new();
+
+    ONCE.call_once(|| unsafe {
+        xmlInitParser();
+    });
+}
+
 struct Xml2Parser {
     parser: xmlParserCtxtPtr,
     gio_error: Rc<RefCell<Option<glib::Error>>>,
@@ -315,6 +324,8 @@ impl Xml2Parser {
         stream: gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Xml2Parser, ParseFromStreamError> {
+        init_libxml2();
+
         // The Xml2Parser we end up creating, if
         // xmlCreateIOParserCtxt() is successful, needs to hold a
         // location to place a GError from within the I/O callbacks
