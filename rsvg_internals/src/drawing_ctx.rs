@@ -217,11 +217,10 @@ impl DrawingCtx {
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
-        // This truncation may mean that we clip off the rightmost/bottommost row of pixels.
-        // See https://gitlab.gnome.org/GNOME/librsvg/issues/295
-
-        let width = self.rect.width as i32;
-        let height = self.rect.height as i32;
+        // We need a size in whole pixels, so use ceil() to ensure the whole viewport fits
+        // into the temporary surface.
+        let width = self.rect.width.ceil() as i32;
+        let height = self.rect.height.ceil() as i32;
 
         (width, height)
     }
