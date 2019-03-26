@@ -818,7 +818,14 @@ impl DrawingCtx {
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.
         let cr = cairo::Context::new(&surface);
-        for draw in self.cr_stack.iter() {
+        for (depth, draw) in self.cr_stack.iter().enumerate() {
+            let affines = CompositingAffines::new(
+                draw.get_matrix(),
+                self.initial_affine_with_offset(),
+                depth,
+            );
+
+            cr.set_matrix(affines.for_snapshot);
             cr.set_source_surface(&draw.get_target(), 0.0, 0.0);
             cr.paint();
         }
@@ -912,6 +919,7 @@ pub struct CompositingAffines {
     pub initial: cairo::Matrix,
     pub for_temporary_surface: cairo::Matrix,
     pub compositing: cairo::Matrix,
+    pub for_snapshot: cairo::Matrix,
 }
 
 impl CompositingAffines {
@@ -943,11 +951,20 @@ impl CompositingAffines {
             cairo::Matrix::identity()
         };
 
+        // This is the inverse of "compositing"; we do it this way
+        // instead of inverting that one to preserve accuracy.
+        let for_snapshot = if is_topmost_temporary_surface {
+            initial_inverse
+        } else {
+            cairo::Matrix::identity()
+        };
+
         CompositingAffines {
             outside_temporary_surface,
             initial,
             for_temporary_surface,
             compositing,
+            for_snapshot,
         }
     }
 }
