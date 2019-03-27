@@ -604,18 +604,8 @@ dimensions_and_position (void)
     g_assert_cmpint (pos.x, ==, EXAMPLE_TWO_X);
     g_assert_cmpint (pos.y, ==, EXAMPLE_TWO_Y);
 
-    /* TODO: test logical_rect */
-    RsvgRectangle ink_rect;
-    RsvgRectangle logical_rect;
-    g_assert (rsvg_handle_get_geometry_sub (handle, &ink_rect, &logical_rect, EXAMPLE_TWO_ID));
-    g_assert_cmpint (ink_rect.x, ==, EXAMPLE_TWO_X);
-    g_assert_cmpint (ink_rect.y, ==, EXAMPLE_TWO_Y);
-    g_assert_cmpint (ink_rect.width,  ==, EXAMPLE_TWO_W);
-    g_assert_cmpint (ink_rect.height, ==, EXAMPLE_TWO_H);
-
     g_assert (!rsvg_handle_get_position_sub (handle, &pos, EXAMPLE_NONEXISTENT_ID));
     g_assert (!rsvg_handle_get_dimensions_sub (handle, &dim, EXAMPLE_NONEXISTENT_ID));
-    g_assert (!rsvg_handle_get_geometry_sub (handle, &ink_rect, &logical_rect, EXAMPLE_NONEXISTENT_ID));
 
     g_object_unref (handle);
 }

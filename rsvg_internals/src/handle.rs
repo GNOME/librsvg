@@ -459,7 +459,7 @@ impl Handle {
     }
 
     /// Returns (ink_rect, logical_rect)
-    pub fn get_geometry_sub(
+    fn get_geometry_sub(
         &self,
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {

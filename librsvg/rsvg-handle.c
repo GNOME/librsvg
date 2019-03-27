@@ -208,7 +208,7 @@
  * Width, in pixels, of the rendered SVG after calling the size callback
  * as specified by rsvg_handle_set_size_callback().
  *
- * Deprecated: 2.46. Please use rsvg_handle_get_geometry_sub() instead.
+ * Deprecated: 2.46.  FIXME: point to deprecation documentation.
  */
 
 /**
@@ -217,7 +217,7 @@
  * Height, in pixels, of the rendered SVG after calling the size callback
  * as specified by rsvg_handle_set_size_callback().
  *
- * Deprecated: 2.46. Please use rsvg_handle_get_geometry_sub() instead.
+ * Deprecated: 2.46.  FIXME: point to deprecation documentation.
  */
 
 /**
@@ -226,7 +226,7 @@
  * Exact width, in pixels, of the rendered SVG before calling the size callback
  * as specified by rsvg_handle_set_size_callback().
  *
- * Deprecated: 2.46. Please use rsvg_handle_get_geometry_sub() instead.
+ * Deprecated: 2.46.  FIXME: point to deprecation documentation.
  */
 
 /**
@@ -235,7 +235,7 @@
  * Exact height, in pixels, of the rendered SVG before calling the size callback
  * as specified by rsvg_handle_set_size_callback().
  *
- * Deprecated: 2.46. Please use rsvg_handle_get_geometry_sub() instead.
+ * Deprecated: 2.46.  FIXME: point to deprecation documentation.
  */
 
 /**
@@ -295,10 +295,6 @@ extern gboolean rsvg_rust_handle_read_stream_sync (RsvgHandle *handle,
                                                    GError **error);
 extern void rsvg_rust_handle_write (RsvgHandle *handle, const guchar *buf, gsize count);
 extern gboolean rsvg_rust_handle_close (RsvgHandle *handle, GError **error);
-extern gboolean rsvg_rust_handle_get_geometry_sub (RsvgHandle *handle,
-                                                   RsvgRectangle *out_ink_rect,
-                                                   RsvgRectangle *out_logical_rect,
-                                                   const char *id);
 extern gboolean rsvg_rust_handle_has_sub (RsvgHandle *handle, const char *id);
 extern gboolean rsvg_rust_handle_render_cairo_sub (RsvgHandle *handle,
                                                    cairo_t *cr,
@@ -805,7 +801,7 @@ rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_dat
  * Get the size of a subelement of the SVG file. Do not call from within the
  * size_func callback, because an infinite loop will occur.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_sub() instead.
+ * Deprecated: 2.46.  FIXME: point to deprecation documentation.
  *
  * Since: 2.22
  */
@@ -821,32 +817,6 @@ rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
 }
 
 /**
- * rsvg_handle_get_geometry_sub:
- * @handle: A #RsvgHandle
- * @ink_rect: (out)(allow-none): A place to store the SVG fragment's geometry.
- * @logical_rect: (out)(allow-none): A place to store the SVG fragment's logical geometry.
- * @id: (nullable): An element's id within the SVG, starting with "##", for
- * example, "##layer1"; or %NULL to use the whole SVG.
- *
- * Get the geometry of a subelement of the SVG file.
- *
- * Note that unlike rsvg_handle_get_position_sub() and
- * rsvg_handle_get_dimensions_sub(), this function does not call the size_func.
- *
- * Since: 2.46
- */
-gboolean
-rsvg_handle_get_geometry_sub (RsvgHandle *handle,
-                              RsvgRectangle *ink_rect,
-                              RsvgRectangle *logical_rect,
-                              const char *id)
-{
-    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-
-    return rsvg_rust_handle_get_geometry_sub(handle, ink_rect, logical_rect, id);
-}
-
-/**
  * rsvg_handle_get_position_sub:
  * @handle: A #RsvgHandle
  * @position_data: (out): A place to store the SVG fragment's position.
@@ -856,7 +826,7 @@ rsvg_handle_get_geometry_sub (RsvgHandle *handle,
  * Get the position of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_sub() instead.
+ * Deprecated: 2.46.  FIXME: point to deprecation documentation.
  *
  * Since: 2.22
  */

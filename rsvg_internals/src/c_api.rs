@@ -1,5 +1,4 @@
 use std::ffi::CStr;
-use std::mem;
 use std::ops;
 use std::path::PathBuf;
 use std::ptr;
@@ -610,46 +609,6 @@ pub unsafe extern "C" fn rsvg_rust_handle_close(
         }
     }
 }
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_sub(
-    handle: *const RsvgHandle,
-    out_ink_rect: *mut RsvgRectangle,
-    out_logical_rect: *mut RsvgRectangle,
-    id: *const libc::c_char,
-) -> glib_sys::gboolean {
-    let rhandle = get_rust_handle(handle);
-
-    let id: Option<String> = from_glib_none(id);
-
-    match rhandle.get_geometry_sub(id.as_ref().map(String::as_str)) {
-        Ok((ink_r, logical_r)) => {
-            if !out_ink_rect.is_null() {
-                *out_ink_rect = ink_r;
-            }
-
-            if !out_logical_rect.is_null() {
-                *out_logical_rect = logical_r;
-            }
-
-            true.to_glib()
-        }
-
-        Err(_) => {
-            if !out_ink_rect.is_null() {
-                *out_ink_rect = mem::zeroed();
-            }
-
-            if !out_logical_rect.is_null() {
-                *out_logical_rect = mem::zeroed();
-            }
-
-            // FIXME: return a proper error code to the public API
-            false.to_glib()
-        }
-    }
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_has_sub(
     handle: *const RsvgHandle,
