@@ -232,6 +232,13 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                            gboolean   *out_has_viewbox,
                                            RsvgRectangle *out_viewbox);
 
+gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
+                                               const char     *id,
+                                               RsvgRectangle   viewport,
+                                               RsvgRectangle  *out_ink_rect,
+                                               RsvgRectangle  *out_logical_rect,
+                                               GError        **error);
+
 /* GIO APIs */
 
 /**
