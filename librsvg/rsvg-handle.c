@@ -1017,6 +1017,43 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
                                         user_data_destroy);
 }
 
+/**
+ * rsvg_handle_get_intrinsic_dimensions:
+ * @handle: An #RsvgHandle
+ * @out_has_width: (out)(optional) Will be set to #TRUE if the toplevel SVG has a <literal>width</literal> attribute
+ * @out_width: (out)(optional) Will be set to the value of the <literal>width</literal> attribute in the toplevel SVG
+ * @out_has_height: (out)(optional) Will be set to #TRUE if the toplevel SVG has a <literal>height</literal> attribute
+ * @out_height: (out)(optional) Will be set to the value of the <literal>height</literal> attribute in the toplevel SVG
+ * @out_has_viewbox: (out)(optional) Will be set to #TRUE if the toplevel SVG has a <literal>viewBox</literal> attribute
+ * @out_viewbox: (out)(optional) Will be set to the value of the <literal>viewBox</literal> attribute in the toplevel SVG
+ *
+ * Queries the <literal>width</literal>, <literal>height</literal>, and
+ * <literal>viewBox</literal> attributes in an SVG document.
+ *
+ * If you are calling this function to compute a scaling factor to render the SVG,
+ * consider simply using rsvg_handle_render_to_viewport() instead; it will do the
+ * scaling computations automatically.
+ *
+ * As an example, the following SVG element has a <literal>width</literal> of 100 pixels and a <literal>height</literal> of 400 pixels, but no <literal>viewBox</literal>:
+ *
+ * |[
+ * <svg xmlns="http://www.w3.org/2000/svg" width="100" height="400">
+ * ]|
+ *
+ * Conversely, the following element has a <literal>viewBox</literal>, but no <literal>width</literal> or <literal>height</literal>:
+ *
+ * |[
+ * <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 400">
+ * ]|
+ *
+ * Note that the #RsvgLength return values have #RsvgUnits in them; you should
+ * not assume that they are always in pixels.  For example, the following SVG element
+ * will return a width value whose <literal>units</literal> field is RSVG_UNIT_MM.
+ *
+ * |[
+ * <svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm">
+ * ]|
+ */
 void
 rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                       gboolean   *out_has_width,

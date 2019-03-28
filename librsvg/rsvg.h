@@ -1,25 +1,25 @@
 /* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* vim: set sw=4 sts=4 expandtab: */
-/* 
+/*
    rsvg.h: SAX-based renderer for SVG files into a GdkPixbuf.
- 
+
    Copyright (C) 2000 Eazel, Inc.
-  
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
    published by the Free Software Foundation; either version 2 of the
    License, or (at your option) any later version.
-  
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-  
+
    You should have received a copy of the GNU Library General Public
    License along with this program; if not, write to the
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
-  
+
    Author: Raph Levien <raph@artofcode.com>
 */
 
@@ -176,7 +176,7 @@ RsvgHandle  *rsvg_handle_new		(void);
 
 RSVG_DEPRECATED_FOR(rsvg_handle_read_stream_sync)
 gboolean     rsvg_handle_write		(RsvgHandle   *handle,
-                                         const guchar *buf, 
+                                         const guchar *buf,
                                          gsize         count,
                                          GError      **error);
 RSVG_DEPRECATED_FOR(rsvg_handle_read_stream_sync)
@@ -202,6 +202,22 @@ gboolean rsvg_handle_get_position_sub (RsvgHandle       *handle,
 
 gboolean rsvg_handle_has_sub (RsvgHandle *handle, const char *id);
 
+/**
+ * RsvgUnit:
+ * @RSVG_UNIT_PERCENT: percentage values; where <literal>1.0</literal> means 100%.
+ * @RSVG_UNIT_PX: pixels
+ * @RSVG_UNIT_EM: em, or the current font size
+ * @RSVG_UNIT_EX: x-height of the current font
+ * @RSVG_UNIT_IN: inches
+ * @RSVG_UNIT_CM: centimeters
+ * @RSVG_UNIT_MM: millimeters
+ * @RSVG_UNIT_PT: points, or 1/72 inch
+ * @RSVG_UNIT_PC: picas, or 1/6 inch (12 points)
+ *
+ * Units for the #RsvgLength struct.  These have the same meaning as <link
+ * href="https://www.w3.org/TR/CSS21/syndata.html#length-units">CSS length
+ * units</link>.
+ */
 typedef enum {
     RSVG_UNIT_PERCENT,
     RSVG_UNIT_PX,
@@ -214,6 +230,25 @@ typedef enum {
     RSVG_UNIT_PC
 } RsvgUnit;
 
+/**
+ * RsvgLength:
+ * @length: numeric part of the length
+ * @unit: unit part of the length
+ *
+ * #RsvgLength values are used in rsvg_handle_get_intrinsic_dimensions(), for
+ * example, to return the CSS length values of the <literal>width</literal> and
+ * <literal>height</literal> attributes of an <literal>&lt;svg&gt;</literal>
+ * element.
+ *
+ * This is equivalent to <link
+ * href="https://www.w3.org/TR/CSS21/syndata.html#length-units">CSS lengths</link>.
+ *
+ * It is up to the calling application to convert lengths in non-pixel units
+ * (i.e. those where the @unit field is not #RSVG_UNIT_PX) into something
+ * meaningful to the application.  For example, if your application knows the
+ * dots-per-inch (DPI) it is using, it can convert lengths with @unit in
+ * #RSVG_UNIT_IN or other physical units.
+ */
 typedef struct {
     double   length;
     RsvgUnit unit;
@@ -257,7 +292,7 @@ gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
  *  Cairo documentation</link> for details.
  *  Since: 2.40.3
  */
-typedef enum /*< flags >*/ 
+typedef enum /*< flags >*/
 {
     RSVG_HANDLE_FLAGS_NONE           = 0,
     RSVG_HANDLE_FLAG_UNLIMITED       = 1 << 0,

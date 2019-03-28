@@ -7,6 +7,8 @@ rsvg_error_quark
 RsvgHandle
 RsvgHandleClass
 RsvgRectangle
+RsvgLength
+RsvgUnit
 RsvgDimensionData
 RsvgPositionData
 rsvg_cleanup
@@ -23,6 +25,7 @@ rsvg_handle_set_base_uri
 rsvg_handle_get_dimensions
 rsvg_handle_get_dimensions_sub
 rsvg_handle_get_position_sub
+rsvg_handle_get_intrinsic_dimensions
 rsvg_handle_get_geometry_for_element
 rsvg_handle_has_sub
 rsvg_handle_get_title
