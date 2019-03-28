@@ -801,7 +801,7 @@ rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_dat
  * Get the size of a subelement of the SVG file. Do not call from within the
  * size_func callback, because an infinite loop will occur.
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
  *
  * Since: 2.22
  */
@@ -826,7 +826,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
  * Get the position of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
  *
  * Since: 2.22
  */

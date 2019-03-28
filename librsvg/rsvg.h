@@ -190,12 +190,12 @@ void         rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri)
 
 void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_data);
 
-RSVG_DEPRECATED
+RSVG_DEPRECATED_FOR(rsvg_handle_get_geometry_for_element)
 gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
                                          RsvgDimensionData *dimension_data,
                                          const char        *id);
 
-RSVG_DEPRECATED
+RSVG_DEPRECATED_FOR(rsvg_handle_get_geometry_for_element)
 gboolean rsvg_handle_get_position_sub (RsvgHandle       *handle,
                                        RsvgPositionData *position_data,
                                        const char       *id);
