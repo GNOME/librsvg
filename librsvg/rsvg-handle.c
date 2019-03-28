@@ -1020,12 +1020,12 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
 /**
  * rsvg_handle_get_intrinsic_dimensions:
  * @handle: An #RsvgHandle
- * @out_has_width: (out)(optional) Will be set to #TRUE if the toplevel SVG has a <literal>width</literal> attribute
- * @out_width: (out)(optional) Will be set to the value of the <literal>width</literal> attribute in the toplevel SVG
- * @out_has_height: (out)(optional) Will be set to #TRUE if the toplevel SVG has a <literal>height</literal> attribute
- * @out_height: (out)(optional) Will be set to the value of the <literal>height</literal> attribute in the toplevel SVG
- * @out_has_viewbox: (out)(optional) Will be set to #TRUE if the toplevel SVG has a <literal>viewBox</literal> attribute
- * @out_viewbox: (out)(optional) Will be set to the value of the <literal>viewBox</literal> attribute in the toplevel SVG
+ * @out_has_width: (out)(optional): Will be set to #TRUE if the toplevel SVG has a <literal>width</literal> attribute
+ * @out_width: (out)(optional): Will be set to the value of the <literal>width</literal> attribute in the toplevel SVG
+ * @out_has_height: (out)(optional): Will be set to #TRUE if the toplevel SVG has a <literal>height</literal> attribute
+ * @out_height: (out)(optional): Will be set to the value of the <literal>height</literal> attribute in the toplevel SVG
+ * @out_has_viewbox: (out)(optional): Will be set to #TRUE if the toplevel SVG has a <literal>viewBox</literal> attribute
+ * @out_viewbox: (out)(optional): Will be set to the value of the <literal>viewBox</literal> attribute in the toplevel SVG
  *
  * Queries the <literal>width</literal>, <literal>height</literal>, and
  * <literal>viewBox</literal> attributes in an SVG document.
