@@ -906,6 +906,44 @@ render_cairo_sub (void)
 }
 
 static void
+get_intrinsic_dimensions (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    gboolean has_width;
+    RsvgLength width;
+    gboolean has_height;
+    RsvgLength height;
+    gboolean has_viewbox;
+    RsvgRectangle viewbox;
+
+    rsvg_handle_get_intrinsic_dimensions (handle, &has_width, &width, &has_height, &height, &has_viewbox, &viewbox);
+
+    g_assert (has_width);
+    g_assert_cmpfloat (width.length, ==, 100.0);
+    g_assert (width.unit == RSVG_UNIT_PX);
+
+    g_assert (has_height);
+    g_assert_cmpfloat (height.length, ==, 400.0);
+    g_assert (height.unit == RSVG_UNIT_PX);
+
+    g_assert (has_viewbox);
+    g_assert_cmpfloat (viewbox.x, ==, 0.0);
+    g_assert_cmpfloat (viewbox.y, ==, 0.0);
+    g_assert_cmpfloat (viewbox.width, ==, 100.0);
+    g_assert_cmpfloat (viewbox.height, ==, 400.0);
+
+    g_object_unref (handle);
+}
+
+static void
 get_geometry_for_element (void)
 {
     char *filename = get_test_filename ("geometry.svg");
@@ -1166,6 +1204,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
+    g_test_add_func ("/api/get_intrinsic_dimensions", get_intrinsic_dimensions);
     g_test_add_func ("/api/get_geometry_for_element", get_geometry_for_element);
     g_test_add_func ("/api/no_write_before_close", no_write_before_close);
     g_test_add_func ("/api/empty_write_close", empty_write_close);

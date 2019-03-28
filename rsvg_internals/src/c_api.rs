@@ -880,7 +880,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
     let d = rhandle.get_intrinsic_dimensions();
 
     let w = d.width.map(|l| l.to_length());
-    let h = d.width.map(|l| l.to_length());
+    let h = d.height.map(|l| l.to_length());
     let r = d.vbox.map(RsvgRectangle::from);
 
     set_out_param(out_has_width, out_width, &w);
