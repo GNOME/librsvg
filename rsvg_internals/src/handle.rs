@@ -323,6 +323,16 @@ impl Handle {
         self.render_element_to_viewport(cr, id, &viewport, dpi, is_testing)
     }
 
+    pub fn render_to_viewport(
+        &self,
+        cr: &cairo::Context,
+        viewport: &cairo::Rectangle,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<(), RenderingError> {
+        self.render_element_to_viewport(cr, None, viewport, dpi, is_testing)
+    }
+
     pub fn render_element_to_viewport(
         &self,
         cr: &cairo::Context,

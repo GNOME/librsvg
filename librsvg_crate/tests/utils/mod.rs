@@ -43,7 +43,7 @@ pub fn render_to_viewport<F: FnOnce(&cairo::Context)>(
     let res = {
         let cr = cairo::Context::new(&output);
         cr_transform(&cr);
-        Ok(renderer.render_element_to_viewport(&cr, None, &viewport)?)
+        Ok(renderer.render_to_viewport(&cr, &viewport)?)
     };
 
     res.and_then(|_| Ok(SharedImageSurface::new(output, SurfaceType::SRgb)?))
