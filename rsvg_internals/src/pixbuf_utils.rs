@@ -7,7 +7,6 @@ use gdk_pixbuf_sys;
 use gio;
 use gio::prelude::*;
 use glib::translate::*;
-use glib::Cast;
 use glib_sys;
 use libc;
 use url::Url;
@@ -229,7 +228,7 @@ fn pixbuf_from_file_with_size_mode(
         let handle = match file
             .read(cancellable)
             .map_err(|e| LoadingError::from(e))
-            .and_then(|stream| Handle::from_stream(&load_options, &stream.upcast(), None))
+            .and_then(|stream| Handle::from_stream(&load_options, &stream, None))
         {
             Ok(handle) => handle,
             Err(e) => {

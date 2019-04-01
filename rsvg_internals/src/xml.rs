@@ -1,6 +1,7 @@
 use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
+use glib::IsA;
 use libc;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -487,18 +488,18 @@ impl XmlState {
     //
     // This can be called "in the middle" of an XmlState's processing status,
     // for example, when including another XML file via xi:include.
-    fn parse_from_stream(
+    fn parse_from_stream<S: IsA<gio::InputStream>>(
         &mut self,
-        stream: gio::InputStream,
+        stream: S,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), ParseFromStreamError> {
         Xml2Parser::from_stream(self, self.load_options.flags, stream, cancellable)
             .and_then(|parser| parser.parse())
     }
 
-    pub fn load_from_possibly_compressed_stream(
+    pub fn load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
         &mut self,
-        stream: &gio::InputStream,
+        stream: &S,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), ParseFromStreamError> {
         let stream = get_input_stream_for_loading(stream, cancellable)

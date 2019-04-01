@@ -905,7 +905,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_read_stream_sync(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    let stream = from_glib_none(stream);
+    let stream = gio::InputStream::from_glib_none(stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
     match rhandle.read_stream_sync(&stream, cancellable.as_ref()) {
@@ -1140,7 +1140,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_stream_sync(
         rhandle.set_base_gfile(&base_file);
     }
 
-    let stream = from_glib_none(input_stream);
+    let stream: gio::InputStream = from_glib_none(input_stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
     match rhandle.read_stream_sync(&stream, cancellable.as_ref()) {
