@@ -17,7 +17,7 @@ rsvg_internals = { path = "../rsvg_internals" }
 url = "1.7.2"
 
 [dev-dependencies]
-cairo-rs = { version = "0.6.0", features = ["png"] }
+cairo-rs = { version = "0.6.0", features = ["png", "svg"] }
 rsvg_internals = { path = "../rsvg_internals" }
 
 [build-dependencies]
