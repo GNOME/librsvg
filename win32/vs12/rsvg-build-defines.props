@@ -6,7 +6,7 @@
   <PropertyGroup Label="UserMacros">
     <LibRsvgCFlags>G_LOG_DOMAIN="librsvg";RSVG_DISABLE_DEPRECATION_WARNINGS;RSVG_COMPILATION;SRCDIR="../../../../.."</LibRsvgCFlags>
     <LibRsvgIncPath>$(GlibEtcInstallRoot)\include\pango-1.0;$(GlibEtcInstallRoot)\include\libcroco-0.6;$(GlibEtcInstallRoot)\include\libxml2</LibRsvgIncPath>
-    <LibRsvgLibs>pangocairo-1.0.lib;pango-1.0.lib;croco-0.6.lib;libxml2.lib;userenv.lib;ws2_32.lib</LibRsvgLibs>
+    <LibRsvgLibs>pangocairo-1.0.lib;pango-1.0.lib;croco-0.6.lib;cairo-gobject.lib;libxml2.lib;userenv.lib;ws2_32.lib</LibRsvgLibs>
     <PangoFT2Libs>pangoft2-1.0.lib;fontconfig.lib</PangoFT2Libs>
     <IntlLib>intl.lib</IntlLib>
     <Gtk3IncPath>$(GlibEtcInstallRoot)\include\gtk-3.0;$(GlibEtcInstallRoot)\include\atk-1.0;$(LibRsvgIncPath)</Gtk3IncPath>
