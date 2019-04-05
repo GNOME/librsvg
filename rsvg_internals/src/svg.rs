@@ -14,7 +14,6 @@ use crate::properties::ComputedValues;
 use crate::structure::{IntrinsicDimensions, NodeSvg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::xml::XmlState;
-use crate::xml2_load::xml_state_load_from_possibly_compressed_stream;
 
 /// A loaded SVG file and its derived data
 ///
@@ -56,7 +55,7 @@ impl Svg {
     ) -> Result<Svg, LoadingError> {
         let mut xml = XmlState::new(load_options);
 
-        xml_state_load_from_possibly_compressed_stream(&mut xml, stream, cancellable)?;
+        xml.load_from_possibly_compressed_stream(stream, cancellable)?;
 
         xml.steal_result()
     }

@@ -16,7 +16,6 @@ use glib::translate::*;
 
 use crate::error::LoadingError;
 use crate::handle::LoadFlags;
-use crate::io::get_input_stream_for_loading;
 use crate::property_bag::PropertyBag;
 use crate::util::cstr;
 use crate::util::utf8_cstr;
@@ -440,15 +439,4 @@ impl From<ParseFromStreamError> for LoadingError {
             ParseFromStreamError::XmlParseError(s) => LoadingError::XmlParseError(s),
         }
     }
-}
-
-pub fn xml_state_load_from_possibly_compressed_stream(
-    xml: &mut XmlState,
-    stream: &gio::InputStream,
-    cancellable: Option<&gio::Cancellable>,
-) -> Result<(), ParseFromStreamError> {
-    let stream = get_input_stream_for_loading(stream, cancellable)
-        .map_err(|e| ParseFromStreamError::IoError(e))?;
-
-    xml.parse_from_stream(stream, cancellable)
 }

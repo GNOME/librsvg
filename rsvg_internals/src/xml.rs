@@ -12,7 +12,7 @@ use crate::create_node::create_node_and_register_id;
 use crate::css::CssStyles;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
-use crate::io;
+use crate::io::{self, get_input_stream_for_loading};
 use crate::node::{node_new, Node, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::structure::NodeSvg;
@@ -487,13 +487,24 @@ impl XmlState {
     //
     // This can be called "in the middle" of an XmlState's processing status,
     // for example, when including another XML file via xi:include.
-    pub fn parse_from_stream(
+    fn parse_from_stream(
         &mut self,
         stream: gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), ParseFromStreamError> {
         Xml2Parser::from_stream(self, self.load_options.flags, stream, cancellable)
             .and_then(|parser| parser.parse())
+    }
+
+    pub fn load_from_possibly_compressed_stream(
+        &mut self,
+        stream: &gio::InputStream,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<(), ParseFromStreamError> {
+        let stream = get_input_stream_for_loading(stream, cancellable)
+            .map_err(|e| ParseFromStreamError::IoError(e))?;
+
+        self.parse_from_stream(stream, cancellable)
     }
 
     fn unsupported_xinclude_start_element(&self, _name: &str) -> Context {
