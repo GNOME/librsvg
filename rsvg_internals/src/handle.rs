@@ -116,7 +116,7 @@ pub struct Handle {
     pub base_url: RefCell<Option<Url>>,
     base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     svg: RefCell<Option<Rc<Svg>>>,
-    pub load_flags: Cell<LoadFlags>,
+    load_flags: Cell<LoadFlags>,
     load_state: Cell<LoadState>,
     buffer: RefCell<Vec<u8>>, // used by the legacy write() api
     size_callback: RefCell<SizeCallback>,
@@ -144,6 +144,14 @@ impl Handle {
         let handle = Handle::new();
         handle.load_flags.set(load_flags);
         handle
+    }
+
+    pub fn set_load_flags(&self, load_flags: LoadFlags) {
+        self.load_flags.set(load_flags);
+    }
+
+    pub fn get_load_flags(&self) -> LoadFlags {
+        self.load_flags.get()
     }
 
     // from the public API

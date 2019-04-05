@@ -286,7 +286,7 @@ impl ObjectImpl for Handle {
         match *prop {
             subclass::Property("flags", ..) => {
                 let v: HandleFlags = value.get().expect("flags value has incorrect type");
-                self.load_flags.set(LoadFlags::from(v));
+                self.set_load_flags(LoadFlags::from(v));
             }
 
             subclass::Property("dpi-x", ..) => {
@@ -318,7 +318,7 @@ impl ObjectImpl for Handle {
 
         match *prop {
             subclass::Property("flags", ..) => {
-                let flags = HandleFlags::from(self.load_flags.get());
+                let flags = HandleFlags::from(self.get_load_flags());
                 Ok(flags.to_value())
             }
 
@@ -512,7 +512,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_flags(
 ) -> RsvgHandleFlags {
     let rhandle = get_rust_handle(raw_handle);
 
-    HandleFlags::from(rhandle.load_flags.get()).to_glib()
+    HandleFlags::from(rhandle.get_load_flags()).to_glib()
 }
 
 #[no_mangle]
@@ -523,7 +523,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_flags(
     let rhandle = get_rust_handle(raw_handle);
 
     let flags: HandleFlags = from_glib(flags);
-    rhandle.load_flags.set(LoadFlags::from(flags));
+    rhandle.set_load_flags(LoadFlags::from(flags));
 }
 
 #[no_mangle]
