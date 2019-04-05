@@ -199,6 +199,11 @@ impl Handle {
         };
     }
 
+    fn get_svg(&self) -> Rc<Svg> {
+        // This assumes that the Svg is already loaded, or unwrap() will panic
+        self.svg.borrow().as_ref().unwrap().clone()
+    }
+
     pub fn read_stream_sync(
         &self,
         stream: &gio::InputStream,
@@ -301,7 +306,7 @@ impl Handle {
         measuring: bool,
     ) -> DrawingCtx {
         let mut draw_ctx = DrawingCtx::new(
-            self.svg.borrow().as_ref().unwrap().clone(),
+            self.get_svg(),
             cr,
             viewport,
             dpi,
@@ -412,9 +417,7 @@ impl Handle {
     }
 
     fn get_root(&self) -> RsvgNode {
-        let svg_ref = self.svg.borrow();
-        let svg = svg_ref.as_ref().unwrap();
-        svg.root()
+        self.get_svg().root()
     }
 
     /// Returns (ink_rect, logical_rect)
@@ -513,9 +516,6 @@ impl Handle {
     }
 
     fn lookup_node(&self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
-        let svg_ref = self.svg.borrow();
-        let svg = svg_ref.as_ref().unwrap();
-
         match Href::parse(&id).map_err(DefsLookupErrorKind::HrefError)? {
             Href::PlainUrl(_) => Err(DefsLookupErrorKind::CannotLookupExternalReferences),
             Href::WithFragment(fragment) => {
@@ -541,7 +541,7 @@ impl Handle {
                     return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
                 }
 
-                match svg.lookup_node_by_id(fragment.fragment()) {
+                match self.get_svg().lookup_node_by_id(fragment.fragment()) {
                     Some(n) => Ok(n),
                     None => Err(DefsLookupErrorKind::NotFound),
                 }
@@ -644,10 +644,7 @@ impl Handle {
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let svg_ref = self.svg.borrow();
-        let svg = svg_ref.as_ref().unwrap();
-
-        svg.get_intrinsic_dimensions()
+        self.get_svg().get_intrinsic_dimensions()
     }
 
     // from the public API
