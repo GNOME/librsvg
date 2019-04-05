@@ -41,7 +41,7 @@ pub struct LoadFlags {
 pub struct LoadOptions {
     pub flags: LoadFlags,
     pub base_url: Option<Url>,
-    pub locale: Locale,
+    locale: Locale,
 }
 
 impl LoadOptions {
@@ -59,6 +59,10 @@ impl LoadOptions {
             base_url: Some((*base_url).clone()),
             locale: self.locale.clone(),
         }
+    }
+
+    pub fn locale(&self) -> &Locale {
+        &self.locale
     }
 }
 
