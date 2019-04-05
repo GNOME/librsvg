@@ -1,17 +1,15 @@
 use std::cell::{Cell, RefCell};
-use std::ptr;
 use std::rc::Rc;
 
 use cairo::{self, ImageSurface, Status};
 use gdk_pixbuf::Pixbuf;
 use gio;
 use glib::{self, Bytes, Cast};
-use glib_sys;
 use libc;
 use locale_config::{LanguageRange, Locale};
 
 use crate::allowed_url::{AllowedUrl, Href};
-use crate::c_api::{RsvgDimensionData, RsvgPositionData, RsvgSizeFunc};
+use crate::c_api::{RsvgDimensionData, RsvgPositionData, SizeCallback};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{DrawingCtx, RsvgRectangle};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
@@ -73,52 +71,10 @@ pub enum LoadState {
     ClosedError,
 }
 
-struct SizeCallback {
-    size_func: RsvgSizeFunc,
-    user_data: glib_sys::gpointer,
-    destroy_notify: glib_sys::GDestroyNotify,
-}
-
-impl SizeCallback {
-    fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
-        unsafe {
-            let mut w = width;
-            let mut h = height;
-
-            if let Some(ref f) = self.size_func {
-                f(&mut w, &mut h, self.user_data);
-            };
-
-            (w, h)
-        }
-    }
-}
-
-impl Default for SizeCallback {
-    fn default() -> SizeCallback {
-        SizeCallback {
-            size_func: None,
-            user_data: ptr::null_mut(),
-            destroy_notify: None,
-        }
-    }
-}
-
-impl Drop for SizeCallback {
-    fn drop(&mut self) {
-        unsafe {
-            if let Some(ref f) = self.destroy_notify {
-                f(self.user_data);
-            };
-        }
-    }
-}
-
 pub struct Handle {
     svg: RefCell<Option<Rc<Svg>>>,
     load_state: Cell<LoadState>,
     buffer: RefCell<Vec<u8>>, // used by the legacy write() api
-    size_callback: RefCell<SizeCallback>,
     in_loop: Cell<bool>,
     is_testing: Cell<bool>,
 }
@@ -129,23 +85,9 @@ impl Handle {
             svg: RefCell::new(None),
             load_state: Cell::new(LoadState::Start),
             buffer: RefCell::new(Vec::new()),
-            size_callback: RefCell::new(SizeCallback::default()),
             in_loop: Cell::new(false),
             is_testing: Cell::new(false),
         }
-    }
-
-    pub fn set_size_callback(
-        &self,
-        size_func: RsvgSizeFunc,
-        user_data: glib_sys::gpointer,
-        destroy_notify: glib_sys::GDestroyNotify,
-    ) {
-        *self.size_callback.borrow_mut() = SizeCallback {
-            size_func,
-            user_data,
-            destroy_notify,
-        };
     }
 
     fn get_svg(&self) -> Rc<Svg> {
@@ -250,7 +192,7 @@ impl Handle {
         }
     }
 
-    pub fn get_dimensions(&self, dpi: Dpi) -> Result<RsvgDimensionData, RenderingError> {
+    pub fn get_dimensions(&self, dpi: Dpi, size_callback: &SizeCallback) -> Result<RsvgDimensionData, RenderingError> {
         self.check_is_loaded()?;
 
         // This function is probably called from the cairo_render functions,
@@ -268,15 +210,15 @@ impl Handle {
 
         self.in_loop.set(true);
 
-        let res = self.get_dimensions_sub(None, dpi);
+        let res = self.get_dimensions_sub(None, dpi, size_callback);
 
         self.in_loop.set(false);
 
         res
     }
 
-    pub fn get_dimensions_no_error(&self, dpi: Dpi) -> RsvgDimensionData {
-        match self.get_dimensions(dpi) {
+    pub fn get_dimensions_no_error(&self, dpi: Dpi, size_callback: &SizeCallback) -> RsvgDimensionData {
+        match self.get_dimensions(dpi, size_callback) {
             Ok(dimensions) => dimensions,
 
             Err(_) => {
@@ -296,15 +238,13 @@ impl Handle {
         &self,
         id: Option<&str>,
         dpi: Dpi,
+        size_callback: &SizeCallback,
     ) -> Result<RsvgDimensionData, RenderingError> {
         self.check_is_loaded()?;
 
         let (ink_r, _) = self.get_geometry_sub(id, dpi)?;
 
-        let (w, h) = self
-            .size_callback
-            .borrow()
-            .call(ink_r.width as libc::c_int, ink_r.height as libc::c_int);
+        let (w, h) = size_callback.call(ink_r.width as libc::c_int, ink_r.height as libc::c_int);
 
         Ok(RsvgDimensionData {
             width: w,
@@ -318,6 +258,7 @@ impl Handle {
         &self,
         id: Option<&str>,
         dpi: Dpi,
+        size_callback: &SizeCallback,
     ) -> Result<RsvgPositionData, RenderingError> {
         self.check_is_loaded()?;
 
@@ -330,7 +271,7 @@ impl Handle {
         let width = ink_r.width as libc::c_int;
         let height = ink_r.height as libc::c_int;
 
-        self.size_callback.borrow().call(width, height);
+        size_callback.call(width, height);
 
         Ok(RsvgPositionData {
             x: ink_r.x as libc::c_int,
@@ -477,11 +418,12 @@ impl Handle {
         cr: &cairo::Context,
         id: Option<&str>,
         dpi: Dpi,
+        size_callback: &SizeCallback,
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
         self.check_is_loaded()?;
 
-        let dimensions = self.get_dimensions(dpi)?;
+        let dimensions = self.get_dimensions(dpi, size_callback)?;
         if dimensions.width == 0 || dimensions.height == 0 {
             // nothing to render
             return Ok(());
@@ -530,10 +472,10 @@ impl Handle {
         res
     }
 
-    pub fn get_pixbuf_sub(&self, id: Option<&str>, dpi: Dpi) -> Result<Pixbuf, RenderingError> {
+    pub fn get_pixbuf_sub(&self, id: Option<&str>, dpi: Dpi, size_callback: &SizeCallback) -> Result<Pixbuf, RenderingError> {
         self.check_is_loaded()?;
 
-        let dimensions = self.get_dimensions(dpi)?;
+        let dimensions = self.get_dimensions(dpi, size_callback)?;
 
         if dimensions.width == 0 || dimensions.height == 0 {
             return empty_pixbuf();
@@ -544,7 +486,7 @@ impl Handle {
 
         {
             let cr = cairo::Context::new(&surface);
-            self.render_cairo_sub(&cr, id, dpi)?;
+            self.render_cairo_sub(&cr, id, dpi, size_callback)?;
         }
 
         let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;

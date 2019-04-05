@@ -12,7 +12,7 @@ use glib_sys;
 use libc;
 use url::Url;
 
-use crate::c_api::RsvgDimensionData;
+use crate::c_api::{RsvgDimensionData, SizeCallback};
 use crate::dpi::Dpi;
 use crate::error::{set_gerror, LoadingError, RenderingError};
 use crate::handle::{Handle, LoadFlags, LoadOptions};
@@ -178,7 +178,7 @@ fn render_to_pixbuf_at_size(
             f64::from(width) / f64::from(dimensions.width),
             f64::from(height) / f64::from(dimensions.height),
         );
-        handle.render_cairo_sub(&cr, None, dpi)?;
+        handle.render_cairo_sub(&cr, None, dpi, &SizeCallback::default())?;
     }
 
     let shared_surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
@@ -243,7 +243,7 @@ fn pixbuf_from_file_with_size_mode(
         }
 
         handle
-            .get_dimensions(dpi)
+            .get_dimensions(dpi, &SizeCallback::default())
             .and_then(|dimensions| {
                 let (width, height) = get_final_size(&dimensions, size_mode);
 

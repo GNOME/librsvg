@@ -154,6 +154,47 @@ pub struct RsvgHandle {
     _abi_padding: [glib_sys::gpointer; 16],
 }
 
+pub struct SizeCallback {
+    size_func: RsvgSizeFunc,
+    user_data: glib_sys::gpointer,
+    destroy_notify: glib_sys::GDestroyNotify,
+}
+
+impl SizeCallback {
+    pub fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
+        unsafe {
+            let mut w = width;
+            let mut h = height;
+
+            if let Some(ref f) = self.size_func {
+                f(&mut w, &mut h, self.user_data);
+            };
+
+            (w, h)
+        }
+    }
+}
+
+impl Default for SizeCallback {
+    fn default() -> SizeCallback {
+        SizeCallback {
+            size_func: None,
+            user_data: ptr::null_mut(),
+            destroy_notify: None,
+        }
+    }
+}
+
+impl Drop for SizeCallback {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(ref f) = self.destroy_notify {
+                f(self.user_data);
+            };
+        }
+    }
+}
+
 /// Contains all the interior mutability for a RsvgHandle to be called
 /// from the C API.
 pub struct CHandle {
@@ -161,6 +202,7 @@ pub struct CHandle {
     load_flags: Cell<LoadFlags>,
     base_url: RefCell<Option<Url>>,
     base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
+    size_callback: RefCell<SizeCallback>,
     handle: Handle,
 }
 
@@ -291,6 +333,7 @@ impl ObjectSubclass for CHandle {
             load_flags: Cell::new(LoadFlags::default()),
             base_url: RefCell::new(None),
             base_url_cstring: RefCell::new(None),
+            size_callback: RefCell::new(SizeCallback::default()),
             handle: Handle::new(),
         }
     }
@@ -337,6 +380,8 @@ impl ObjectImpl for CHandle {
     fn get_property(&self, _obj: &glib::Object, id: usize) -> Result<glib::Value, ()> {
         let prop = &PROPERTIES[id];
 
+        let size_callback = self.size_callback.borrow();
+
         match *prop {
             subclass::Property("flags", ..) => {
                 let flags = HandleFlags::from(self.load_flags.get());
@@ -355,23 +400,23 @@ impl ObjectImpl for CHandle {
 
             subclass::Property("width", ..) => Ok(self
                 .handle
-                .get_dimensions_no_error(self.dpi.get())
+                .get_dimensions_no_error(self.dpi.get(), &*size_callback)
                 .width
                 .to_value()),
             subclass::Property("height", ..) => Ok(self
                 .handle
-                .get_dimensions_no_error(self.dpi.get())
+                .get_dimensions_no_error(self.dpi.get(), &*size_callback)
                 .height
                 .to_value()),
 
             subclass::Property("em", ..) => Ok(self
                 .handle
-                .get_dimensions_no_error(self.dpi.get())
+                .get_dimensions_no_error(self.dpi.get(), &*size_callback)
                 .em
                 .to_value()),
             subclass::Property("ex", ..) => Ok(self
                 .handle
-                .get_dimensions_no_error(self.dpi.get())
+                .get_dimensions_no_error(self.dpi.get(), &*size_callback)
                 .ex
                 .to_value()),
 
@@ -428,6 +473,20 @@ impl CHandle {
     fn load_options(&self) -> LoadOptions {
         LoadOptions::new(self.load_flags.get(), self.base_url.borrow().clone())
     }
+
+    pub fn set_size_callback(
+        &self,
+        size_func: RsvgSizeFunc,
+        user_data: glib_sys::gpointer,
+        destroy_notify: glib_sys::GDestroyNotify,
+    ) {
+        *self.size_callback.borrow_mut() = SizeCallback {
+            size_func,
+            user_data,
+            destroy_notify,
+        };
+    }
+
 }
 
 pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
@@ -616,7 +675,6 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_size_callback(
     let rhandle = get_rust_handle(raw_handle);
 
     rhandle
-        .handle
         .set_size_callback(size_func, user_data, destroy_notify);
 }
 
@@ -720,9 +778,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
+    let size_callback = rhandle.size_callback.borrow();
+
     match rhandle
         .handle
-        .render_cairo_sub(&cr, id.as_ref().map(String::as_str), rhandle.dpi.get())
+        .render_cairo_sub(&cr, id.as_ref().map(String::as_str), rhandle.dpi.get(), &*size_callback)
     {
         Ok(()) => true.to_glib(),
 
@@ -741,9 +801,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf_sub(
     let rhandle = get_rust_handle(handle);
     let id: Option<String> = from_glib_none(id);
 
+    let size_callback = rhandle.size_callback.borrow();
+
     match rhandle
         .handle
-        .get_pixbuf_sub(id.as_ref().map(String::as_str), rhandle.dpi.get())
+        .get_pixbuf_sub(id.as_ref().map(String::as_str), rhandle.dpi.get(), &*size_callback)
     {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(_) => ptr::null_mut(),
@@ -757,7 +819,9 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    *dimension_data = rhandle.handle.get_dimensions_no_error(rhandle.dpi.get());
+    let size_callback = rhandle.size_callback.borrow();
+
+    *dimension_data = rhandle.handle.get_dimensions_no_error(rhandle.dpi.get(), &*size_callback);
 }
 
 #[no_mangle]
@@ -770,9 +834,15 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
 
     let id: Option<String> = from_glib_none(id);
 
+    let size_callback = rhandle.size_callback.borrow();
+
     match rhandle
         .handle
-        .get_dimensions_sub(id.as_ref().map(String::as_str), rhandle.dpi.get())
+        .get_dimensions_sub(
+            id.as_ref().map(String::as_str),
+            rhandle.dpi.get(),
+            &*size_callback,
+        )
     {
         Ok(dimensions) => {
             *dimension_data = dimensions;
@@ -803,9 +873,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
 
     let id: Option<String> = from_glib_none(id);
 
+    let size_callback = rhandle.size_callback.borrow();
+
     match rhandle
         .handle
-        .get_position_sub(id.as_ref().map(String::as_str), rhandle.dpi.get())
+        .get_position_sub(id.as_ref().map(String::as_str), rhandle.dpi.get(), &*size_callback)
     {
         Ok(position) => {
             *position_data = position;
