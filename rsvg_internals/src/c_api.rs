@@ -158,6 +158,7 @@ pub struct RsvgHandle {
 /// from the C API.
 pub struct CHandle {
     dpi: Cell<Dpi>,
+    load_flags: Cell<LoadFlags>,
     handle: Handle,
 }
 
@@ -285,7 +286,8 @@ impl ObjectSubclass for CHandle {
     fn new() -> Self {
         CHandle {
             dpi: Cell::new(Dpi::default()),
-            handle: Handle::new(LoadFlags::default()),
+            load_flags: Cell::new(LoadFlags::default()),
+            handle: Handle::new(),
         }
     }
 }
@@ -299,7 +301,7 @@ impl ObjectImpl for CHandle {
         match *prop {
             subclass::Property("flags", ..) => {
                 let v: HandleFlags = value.get().expect("flags value has incorrect type");
-                self.handle.set_load_flags(LoadFlags::from(v));
+                self.load_flags.set(LoadFlags::from(v));
             }
 
             subclass::Property("dpi-x", ..) => {
@@ -333,7 +335,7 @@ impl ObjectImpl for CHandle {
 
         match *prop {
             subclass::Property("flags", ..) => {
-                let flags = HandleFlags::from(self.handle.get_load_flags());
+                let flags = HandleFlags::from(self.load_flags.get());
                 Ok(flags.to_value())
             }
 
@@ -542,7 +544,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_flags(
 ) -> RsvgHandleFlags {
     let rhandle = get_rust_handle(raw_handle);
 
-    HandleFlags::from(rhandle.handle.get_load_flags()).to_glib()
+    HandleFlags::from(rhandle.load_flags.get()).to_glib()
 }
 
 #[no_mangle]
@@ -553,7 +555,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_flags(
     let rhandle = get_rust_handle(raw_handle);
 
     let flags: HandleFlags = from_glib(flags);
-    rhandle.handle.set_load_flags(LoadFlags::from(flags));
+    rhandle.load_flags.set(LoadFlags::from(flags));
 }
 
 #[no_mangle]
@@ -598,7 +600,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_read_stream_sync(
 
     match rhandle
         .handle
-        .read_stream_sync(&stream, cancellable.as_ref())
+        .read_stream_sync(rhandle.load_flags.get(), &stream, cancellable.as_ref())
     {
         Ok(()) => true.to_glib(),
 
@@ -635,7 +637,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_close(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    match rhandle.handle.close() {
+    match rhandle.handle.close(rhandle.load_flags.get()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -822,6 +824,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
         .map_err(|e| LoadingError::from(e))
         .and_then(|stream| {
             rhandle.handle.construct_read_stream_sync(
+                rhandle.load_flags.get(),
                 &stream.upcast(),
                 Some(&file),
                 cancellable.as_ref(),
@@ -856,6 +859,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_stream_sync(
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
     match rhandle.handle.construct_read_stream_sync(
+        rhandle.load_flags.get(),
         &stream,
         base_file.as_ref(),
         cancellable.as_ref(),

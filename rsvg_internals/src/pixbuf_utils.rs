@@ -206,13 +206,18 @@ fn pixbuf_from_file_with_size_mode(
         let path = PathBuf::from_glib_none(filename);
         let file = gio::File::new_for_path(path);
 
-        let handle = Handle::new(LoadFlags::default());
+        let handle = Handle::new();
         let cancellable: Option<&gio::Cancellable> = None;
         if let Err(e) = file
             .read(cancellable)
             .map_err(|e| LoadingError::from(e))
             .and_then(|stream| {
-                handle.construct_read_stream_sync(&stream.upcast(), Some(&file), None)
+                handle.construct_read_stream_sync(
+                    LoadFlags::default(),
+                    &stream.upcast(),
+                    Some(&file),
+                    None,
+                )
             })
         {
             set_gerror(error, 0, &format!("{}", e));

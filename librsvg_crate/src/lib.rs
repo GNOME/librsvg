@@ -278,8 +278,13 @@ impl Loader {
         base_file: Option<&gio::File>,
         cancellable: P,
     ) -> Result<SvgHandle, LoadingError> {
-        let handle = Handle::new(self.load_flags());
-        handle.construct_read_stream_sync(stream, base_file, cancellable.into())?;
+        let handle = Handle::new();
+        handle.construct_read_stream_sync(
+            self.load_flags(),
+            stream,
+            base_file,
+            cancellable.into(),
+        )?;
 
         Ok(SvgHandle(handle))
     }
