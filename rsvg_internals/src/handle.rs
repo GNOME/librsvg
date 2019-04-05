@@ -45,11 +45,11 @@ pub struct LoadOptions {
 }
 
 impl LoadOptions {
-    fn new(flags: LoadFlags, base_url: Option<Url>, locale: Locale) -> LoadOptions {
+    fn new(flags: LoadFlags, base_url: Option<Url>) -> LoadOptions {
         LoadOptions {
             flags,
             base_url,
-            locale,
+            locale: locale_from_environment(),
         }
     }
 
@@ -249,7 +249,6 @@ impl Handle {
         LoadOptions::new(
             load_flags,
             self.base_url.borrow().clone(),
-            locale_from_environment(),
         )
     }
 
