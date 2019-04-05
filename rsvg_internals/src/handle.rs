@@ -125,25 +125,19 @@ pub struct Handle {
 }
 
 impl Handle {
-    pub fn new() -> Handle {
+    pub fn new(load_flags: LoadFlags) -> Handle {
         Handle {
             dpi: Cell::new(Dpi::default()),
             base_url: RefCell::new(None),
             base_url_cstring: RefCell::new(None),
             svg: RefCell::new(None),
-            load_flags: Cell::new(LoadFlags::default()),
+            load_flags: Cell::new(load_flags),
             load_state: Cell::new(LoadState::Start),
             buffer: RefCell::new(Vec::new()),
             size_callback: RefCell::new(SizeCallback::default()),
             in_loop: Cell::new(false),
             is_testing: Cell::new(false),
         }
-    }
-
-    pub fn new_with_flags(load_flags: LoadFlags) -> Handle {
-        let handle = Handle::new();
-        handle.load_flags.set(load_flags);
-        handle
     }
 
     pub fn set_load_flags(&self, load_flags: LoadFlags) {

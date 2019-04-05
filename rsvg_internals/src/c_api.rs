@@ -273,7 +273,7 @@ impl ObjectSubclass for Handle {
     }
 
     fn new() -> Self {
-        Handle::new()
+        Handle::new(LoadFlags::default())
     }
 }
 
