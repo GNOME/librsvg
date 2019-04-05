@@ -332,23 +332,6 @@ impl<'a> CairoRenderer<'a> {
         }
     }
 
-    #[cfg(test)]
-    pub fn dimensions(&self) -> Result<(i32, i32), RenderingError> {
-        self.handle
-            .0
-            .get_dimensions()
-            .map(|dimensions| (dimensions.width, dimensions.height))
-    }
-
-    #[cfg(test)]
-    pub fn render_cairo_sub(
-        &self,
-        cr: &cairo::Context,
-        id: Option<&str>,
-    ) -> Result<(), RenderingError> {
-        self.handle.0.render_cairo_sub(cr, id)
-    }
-
     pub fn intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let d = self.handle.0.get_intrinsic_dimensions();
 
