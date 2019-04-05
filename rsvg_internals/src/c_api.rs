@@ -1,5 +1,5 @@
-use std::cell::Cell;
-use std::ffi::CStr;
+use std::cell::{Cell, RefCell};
+use std::ffi::{CStr, CString};
 use std::ops;
 use std::path::PathBuf;
 use std::ptr;
@@ -25,7 +25,7 @@ use gobject_sys::{self, GEnumValue, GFlagsValue};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::RsvgRectangle;
 use crate::error::{set_gerror, LoadingError, RSVG_ERROR_FAILED};
-use crate::handle::{Handle, LoadFlags, LoadState};
+use crate::handle::{Handle, LoadFlags, LoadOptions, LoadState};
 use crate::length::RsvgLength;
 use url::Url;
 
@@ -159,6 +159,8 @@ pub struct RsvgHandle {
 pub struct CHandle {
     dpi: Cell<Dpi>,
     load_flags: Cell<LoadFlags>,
+    base_url: RefCell<Option<Url>>,
+    base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     handle: Handle,
 }
 
@@ -287,6 +289,8 @@ impl ObjectSubclass for CHandle {
         CHandle {
             dpi: Cell::new(Dpi::default()),
             load_flags: Cell::new(LoadFlags::default()),
+            base_url: RefCell::new(None),
+            base_url_cstring: RefCell::new(None),
             handle: Handle::new(),
         }
     }
@@ -322,7 +326,7 @@ impl ObjectImpl for CHandle {
                 // construct-time property.
 
                 if let Some(s) = v {
-                    self.handle.set_base_url(&s);
+                    self.set_base_url(&s);
                 }
             }
 
@@ -343,7 +347,6 @@ impl ObjectImpl for CHandle {
             subclass::Property("dpi-y", ..) => Ok(self.dpi.get().y().to_value()),
 
             subclass::Property("base-uri", ..) => Ok(self
-                .handle
                 .base_url
                 .borrow()
                 .as_ref()
@@ -379,6 +382,51 @@ impl ObjectImpl for CHandle {
 
             _ => unreachable!("invalid property id={} for RsvgHandle", id),
         }
+    }
+}
+
+impl CHandle {
+    fn set_base_url(&self, url: &str) {
+        //        if self.load_state.get() != LoadState::Start {
+        //            panic!("Please set the base file or URI before loading any data into RsvgHandle",);
+        //        }
+
+        match Url::parse(&url) {
+            Ok(u) => {
+                let url_cstring = CString::new(u.as_str()).unwrap();
+
+                rsvg_log!("setting base_uri to \"{}\"", u.as_str());
+                *self.base_url.borrow_mut() = Some(u);
+                *self.base_url_cstring.borrow_mut() = Some(url_cstring);
+            }
+
+            Err(e) => {
+                rsvg_log!(
+                    "not setting base_uri to \"{}\" since it is invalid: {}",
+                    url,
+                    e
+                );
+            }
+        }
+    }
+
+    pub fn set_base_gfile(&self, file: &gio::File) {
+        if let Some(uri) = file.get_uri() {
+            self.set_base_url(&uri);
+        } else {
+            panic!("file has no URI; will not set the base URI");
+        }
+    }
+
+    pub fn get_base_url_as_ptr(&self) -> *const libc::c_char {
+        match *self.base_url_cstring.borrow() {
+            None => ptr::null(),
+            Some(ref url) => url.as_ptr(),
+        }
+    }
+
+    fn load_options(&self) -> LoadOptions {
+        LoadOptions::new(self.load_flags.get(), self.base_url.borrow().clone())
     }
 }
 
@@ -484,7 +532,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_base_url(
     assert!(!uri.is_null());
     let uri: String = from_glib_none(uri);
 
-    rhandle.handle.set_base_url(&uri);
+    rhandle.set_base_url(&uri);
 }
 
 #[no_mangle]
@@ -498,7 +546,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_base_gfile(
 
     let file: gio::File = from_glib_none(raw_gfile);
 
-    rhandle.handle.set_base_gfile(&file);
+    rhandle.set_base_gfile(&file);
 }
 
 #[no_mangle]
@@ -507,7 +555,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_base_url(
 ) -> *const libc::c_char {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.handle.get_base_url_as_ptr()
+    rhandle.get_base_url_as_ptr()
 }
 
 #[no_mangle]
@@ -600,7 +648,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_read_stream_sync(
 
     match rhandle
         .handle
-        .read_stream_sync(rhandle.load_flags.get(), &stream, cancellable.as_ref())
+        .read_stream_sync(&rhandle.load_options(), &stream, cancellable.as_ref())
     {
         Ok(()) => true.to_glib(),
 
@@ -637,7 +685,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_close(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    match rhandle.handle.close(rhandle.load_flags.get()) {
+    match rhandle.handle.close(&rhandle.load_options()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -817,6 +865,8 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
     let rhandle = get_rust_handle(raw_handle);
 
     let file = gio::File::from_glib_none(file);
+    rhandle.set_base_gfile(&file);
+
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
     let res = file
@@ -824,9 +874,8 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
         .map_err(|e| LoadingError::from(e))
         .and_then(|stream| {
             rhandle.handle.construct_read_stream_sync(
-                rhandle.load_flags.get(),
+                &rhandle.load_options(),
                 &stream.upcast(),
-                Some(&file),
                 cancellable.as_ref(),
             )
         });
@@ -855,13 +904,16 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_stream_sync(
     let rhandle = get_rust_handle(raw_handle);
 
     let base_file: Option<gio::File> = from_glib_none(base_file);
+    if let Some(base_file) = base_file {
+        rhandle.set_base_gfile(&base_file);
+    }
+
     let stream = from_glib_none(input_stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
     match rhandle.handle.construct_read_stream_sync(
-        rhandle.load_flags.get(),
+        &rhandle.load_options(),
         &stream,
-        base_file.as_ref(),
         cancellable.as_ref(),
     ) {
         Ok(()) => raw_handle,

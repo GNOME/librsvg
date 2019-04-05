@@ -75,7 +75,7 @@ pub struct XmlState {
 
     entities: HashMap<String, XmlEntityPtr>,
 
-    load_options: LoadOptions,
+    pub load_options: LoadOptions,
 }
 
 /// Errors returned from XmlState::acquire()
@@ -475,10 +475,8 @@ impl XmlState {
             _ => AcquireError::ResourceError,
         })?;
 
-        let flags = self.load_options.flags;
-
         // FIXME: pass a cancellable
-        xml_state_parse_from_stream(self, flags, stream, None).map_err(|e| match e {
+        xml_state_parse_from_stream(self, stream, None).map_err(|e| match e {
             ParseFromStreamError::CouldNotCreateXmlParser => AcquireError::FatalError,
             ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
             ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,

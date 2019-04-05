@@ -10,11 +10,12 @@ use glib::translate::*;
 use glib::Cast;
 use glib_sys;
 use libc;
+use url::Url;
 
 use crate::c_api::RsvgDimensionData;
 use crate::dpi::Dpi;
 use crate::error::{set_gerror, LoadingError, RenderingError};
-use crate::handle::{Handle, LoadFlags};
+use crate::handle::{Handle, LoadFlags, LoadOptions};
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::SharedImageSurface, shared_surface::SurfaceType,
@@ -195,6 +196,14 @@ fn get_default_dpi() -> Dpi {
     Dpi::new(-1.0, -1.0)
 }
 
+fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
+    if let Some(uri) = file.get_uri() {
+        Ok(Url::parse(&uri).map_err(|_| LoadingError::BadUrl)?)
+    } else {
+        Err(LoadingError::BadUrl)
+    }
+}
+
 fn pixbuf_from_file_with_size_mode(
     filename: *const libc::c_char,
     size_mode: &SizeMode,
@@ -206,6 +215,16 @@ fn pixbuf_from_file_with_size_mode(
         let path = PathBuf::from_glib_none(filename);
         let file = gio::File::new_for_path(path);
 
+        let base_url = match url_from_file(&file) {
+            Ok(url) => url,
+            Err(e) => {
+                set_gerror(error, 0, &format!("{}", e));
+                return ptr::null_mut();
+            }
+        };
+
+        let load_options = LoadOptions::new(LoadFlags::default(), Some(base_url));
+
         let handle = Handle::new();
         let cancellable: Option<&gio::Cancellable> = None;
         if let Err(e) = file
@@ -213,9 +232,8 @@ fn pixbuf_from_file_with_size_mode(
             .map_err(|e| LoadingError::from(e))
             .and_then(|stream| {
                 handle.construct_read_stream_sync(
-                    LoadFlags::default(),
+                    &load_options,
                     &stream.upcast(),
-                    Some(&file),
                     None,
                 )
             })

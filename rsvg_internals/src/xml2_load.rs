@@ -448,21 +448,19 @@ impl From<ParseFromStreamError> for LoadingError {
 // for example, when including another XML file via xi:include.
 pub fn xml_state_parse_from_stream(
     xml: &mut XmlState,
-    load_flags: LoadFlags,
     stream: gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<(), ParseFromStreamError> {
-    Xml2Parser::from_stream(xml, load_flags, stream, cancellable).and_then(|parser| parser.parse())
+    Xml2Parser::from_stream(xml, xml.load_options.flags, stream, cancellable).and_then(|parser| parser.parse())
 }
 
 pub fn xml_state_load_from_possibly_compressed_stream(
     xml: &mut XmlState,
-    load_flags: LoadFlags,
     stream: &gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<(), ParseFromStreamError> {
     let stream = get_input_stream_for_loading(stream, cancellable)
         .map_err(|e| ParseFromStreamError::IoError(e))?;
 
-    xml_state_parse_from_stream(xml, load_flags, stream, cancellable)
+    xml_state_parse_from_stream(xml, stream, cancellable)
 }

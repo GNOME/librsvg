@@ -91,6 +91,7 @@ use cairo;
 use gio;
 use glib;
 use rsvg_internals;
+use url::Url;
 
 use std::path::Path;
 
@@ -100,7 +101,7 @@ use glib::object::Cast;
 use rsvg_internals::{Dpi, Handle, LoadFlags};
 
 pub use rsvg_internals::{
-    DefsLookupErrorKind, HrefError, Length, LengthUnit, LoadingError, RenderingError,
+    DefsLookupErrorKind, HrefError, Length, LengthUnit, LoadOptions, LoadingError, RenderingError,
 };
 
 /// Struct for loading an [`SvgHandle`][SvgHandle].
@@ -279,14 +280,26 @@ impl Loader {
         cancellable: P,
     ) -> Result<SvgHandle, LoadingError> {
         let handle = Handle::new();
-        handle.construct_read_stream_sync(
-            self.load_flags(),
-            stream,
-            base_file,
-            cancellable.into(),
-        )?;
+
+        let base_url = if let Some(base_file) = base_file {
+            Some(url_from_file(&base_file)?)
+        } else {
+            None
+        };
+
+        let load_options = LoadOptions::new(self.load_flags(), base_url);
+
+        handle.construct_read_stream_sync(&load_options, stream, cancellable.into())?;
 
         Ok(SvgHandle(handle))
+    }
+}
+
+fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
+    if let Some(uri) = file.get_uri() {
+        Ok(Url::parse(&uri).map_err(|_| LoadingError::BadUrl)?)
+    } else {
+        Err(LoadingError::BadUrl)
     }
 }
 

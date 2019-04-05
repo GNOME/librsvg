@@ -54,10 +54,9 @@ impl Svg {
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Svg, LoadingError> {
-        let load_flags = load_options.flags;
         let mut xml = XmlState::new(load_options);
 
-        xml_state_load_from_possibly_compressed_stream(&mut xml, load_flags, stream, cancellable)?;
+        xml_state_load_from_possibly_compressed_stream(&mut xml, stream, cancellable)?;
 
         xml.steal_result()
     }
@@ -82,6 +81,7 @@ impl Svg {
     }
 
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
+        dbg!(&self.load_options.base_url);
         self.images.borrow_mut().lookup(&self.load_options, href)
     }
 

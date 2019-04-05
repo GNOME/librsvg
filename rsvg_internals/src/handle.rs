@@ -1,11 +1,10 @@
 use std::cell::{Cell, RefCell};
-use std::ffi::CString;
 use std::ptr;
 use std::rc::Rc;
 
 use cairo::{self, ImageSurface, Status};
 use gdk_pixbuf::Pixbuf;
-use gio::{self, FileExt};
+use gio;
 use glib::{self, Bytes, Cast};
 use glib_sys;
 use libc;
@@ -45,7 +44,7 @@ pub struct LoadOptions {
 }
 
 impl LoadOptions {
-    fn new(flags: LoadFlags, base_url: Option<Url>) -> LoadOptions {
+    pub fn new(flags: LoadFlags, base_url: Option<Url>) -> LoadOptions {
         LoadOptions {
             flags,
             base_url,
@@ -116,8 +115,6 @@ impl Drop for SizeCallback {
 }
 
 pub struct Handle {
-    pub base_url: RefCell<Option<Url>>,
-    base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     svg: RefCell<Option<Rc<Svg>>>,
     load_state: Cell<LoadState>,
     buffer: RefCell<Vec<u8>>, // used by the legacy write() api
@@ -129,54 +126,12 @@ pub struct Handle {
 impl Handle {
     pub fn new() -> Handle {
         Handle {
-            base_url: RefCell::new(None),
-            base_url_cstring: RefCell::new(None),
             svg: RefCell::new(None),
             load_state: Cell::new(LoadState::Start),
             buffer: RefCell::new(Vec::new()),
             size_callback: RefCell::new(SizeCallback::default()),
             in_loop: Cell::new(false),
             is_testing: Cell::new(false),
-        }
-    }
-
-    // from the public API
-    pub fn set_base_url(&self, url: &str) {
-        if self.load_state.get() != LoadState::Start {
-            panic!("Please set the base file or URI before loading any data into RsvgHandle",);
-        }
-
-        match Url::parse(&url) {
-            Ok(u) => {
-                let url_cstring = CString::new(u.as_str()).unwrap();
-
-                rsvg_log!("setting base_uri to \"{}\"", u.as_str());
-                *self.base_url.borrow_mut() = Some(u);
-                *self.base_url_cstring.borrow_mut() = Some(url_cstring);
-            }
-
-            Err(e) => {
-                rsvg_log!(
-                    "not setting base_uri to \"{}\" since it is invalid: {}",
-                    url,
-                    e
-                );
-            }
-        }
-    }
-
-    pub fn set_base_gfile(&self, file: &gio::File) {
-        if let Some(uri) = file.get_uri() {
-            self.set_base_url(&uri);
-        } else {
-            panic!("file has no URI; will not set the base URI");
-        }
-    }
-
-    pub fn get_base_url_as_ptr(&self) -> *const libc::c_char {
-        match *self.base_url_cstring.borrow() {
-            None => ptr::null(),
-            Some(ref url) => url.as_ptr(),
         }
     }
 
@@ -200,17 +155,16 @@ impl Handle {
 
     pub fn read_stream_sync(
         &self,
-        load_flags: LoadFlags,
+        load_options: &LoadOptions,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         self.load_state.set(LoadState::Loading);
 
-        let svg =
-            Svg::load_from_stream(&self.load_options(load_flags), stream, cancellable).map_err(|e| {
-                self.load_state.set(LoadState::ClosedError);
-                e
-            })?;
+        let svg = Svg::load_from_stream(load_options, stream, cancellable).map_err(|e| {
+            self.load_state.set(LoadState::ClosedError);
+            e
+        })?;
 
         *self.svg.borrow_mut() = Some(Rc::new(svg));
         self.load_state.set(LoadState::ClosedOk);
@@ -245,13 +199,6 @@ impl Handle {
         self.load_state.get()
     }
 
-    fn load_options(&self, load_flags: LoadFlags) -> LoadOptions {
-        LoadOptions::new(
-            load_flags,
-            self.base_url.borrow().clone(),
-        )
-    }
-
     pub fn write(&self, buf: &[u8]) {
         match self.load_state.get() {
             LoadState::Start => self.load_state.set(LoadState::Loading),
@@ -262,7 +209,7 @@ impl Handle {
         self.buffer.borrow_mut().extend_from_slice(buf);
     }
 
-    pub fn close(&self, load_flags: LoadFlags) -> Result<(), LoadingError> {
+    pub fn close(&self, load_options: &LoadOptions) -> Result<(), LoadingError> {
         let res = match self.load_state.get() {
             LoadState::Start => {
                 self.load_state.set(LoadState::ClosedError);
@@ -274,7 +221,7 @@ impl Handle {
                 let bytes = Bytes::from(&*buffer);
                 let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
 
-                self.read_stream_sync(load_flags, &stream.upcast(), None)
+                self.read_stream_sync(load_options, &stream.upcast(), None)
             }
 
             LoadState::ClosedOk | LoadState::ClosedError => {
@@ -615,16 +562,11 @@ impl Handle {
 
     pub fn construct_read_stream_sync(
         &self,
-        load_flags: LoadFlags,
+        load_options: &LoadOptions,
         stream: &gio::InputStream,
-        base_file: Option<&gio::File>,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
-        if let Some(file) = base_file {
-            self.set_base_gfile(file);
-        }
-
-        self.read_stream_sync(load_flags, stream, cancellable)
+        self.read_stream_sync(load_options, stream, cancellable)
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
