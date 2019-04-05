@@ -151,12 +151,18 @@ pub struct RsvgHandle {
     _abi_padding: [glib_sys::gpointer; 16],
 }
 
+/// Contains all the interior mutability for a RsvgHandle to be called
+/// from the C API.
+pub struct CHandle {
+    handle: Handle,
+}
+
 unsafe impl ClassStruct for RsvgHandleClass {
-    type Type = Handle;
+    type Type = CHandle;
 }
 
 unsafe impl InstanceStruct for RsvgHandle {
-    type Type = Handle;
+    type Type = CHandle;
 }
 
 impl ops::Deref for RsvgHandleClass {
@@ -254,7 +260,7 @@ static PROPERTIES: [subclass::Property; 11] = [
     }),
 ];
 
-impl ObjectSubclass for Handle {
+impl ObjectSubclass for CHandle {
     const NAME: &'static str = "RsvgHandle";
 
     type ParentType = glib::Object;
@@ -273,11 +279,13 @@ impl ObjectSubclass for Handle {
     }
 
     fn new() -> Self {
-        Handle::new(LoadFlags::default())
+        CHandle {
+            handle: Handle::new(LoadFlags::default()),
+        }
     }
 }
 
-impl ObjectImpl for Handle {
+impl ObjectImpl for CHandle {
     glib_object_impl!();
 
     fn set_property(&self, _obj: &glib::Object, id: usize, value: &glib::Value) {
@@ -286,15 +294,17 @@ impl ObjectImpl for Handle {
         match *prop {
             subclass::Property("flags", ..) => {
                 let v: HandleFlags = value.get().expect("flags value has incorrect type");
-                self.set_load_flags(LoadFlags::from(v));
+                self.handle.set_load_flags(LoadFlags::from(v));
             }
 
             subclass::Property("dpi-x", ..) => {
-                self.set_dpi_x(value.get().expect("dpi-x value has incorrect type"));
+                self.handle
+                    .set_dpi_x(value.get().expect("dpi-x value has incorrect type"));
             }
 
             subclass::Property("dpi-y", ..) => {
-                self.set_dpi_y(value.get().expect("dpi-y value has incorrect type"));
+                self.handle
+                    .set_dpi_y(value.get().expect("dpi-y value has incorrect type"));
             }
 
             subclass::Property("base-uri", ..) => {
@@ -305,7 +315,7 @@ impl ObjectImpl for Handle {
                 // construct-time property.
 
                 if let Some(s) = v {
-                    self.set_base_url(&s);
+                    self.handle.set_base_url(&s);
                 }
             }
 
@@ -318,27 +328,30 @@ impl ObjectImpl for Handle {
 
         match *prop {
             subclass::Property("flags", ..) => {
-                let flags = HandleFlags::from(self.get_load_flags());
+                let flags = HandleFlags::from(self.handle.get_load_flags());
                 Ok(flags.to_value())
             }
 
-            subclass::Property("dpi-x", ..) => Ok(self.dpi.get().x().to_value()),
-            subclass::Property("dpi-y", ..) => Ok(self.dpi.get().y().to_value()),
+            subclass::Property("dpi-x", ..) => Ok(self.handle.dpi.get().x().to_value()),
+            subclass::Property("dpi-y", ..) => Ok(self.handle.dpi.get().y().to_value()),
 
             subclass::Property("base-uri", ..) => Ok(self
+                .handle
                 .base_url
                 .borrow()
                 .as_ref()
                 .map(|url| url.as_str())
                 .to_value()),
 
-            subclass::Property("width", ..) => Ok(self.get_dimensions_no_error().width.to_value()),
+            subclass::Property("width", ..) => {
+                Ok(self.handle.get_dimensions_no_error().width.to_value())
+            }
             subclass::Property("height", ..) => {
-                Ok(self.get_dimensions_no_error().height.to_value())
+                Ok(self.handle.get_dimensions_no_error().height.to_value())
             }
 
-            subclass::Property("em", ..) => Ok(self.get_dimensions_no_error().em.to_value()),
-            subclass::Property("ex", ..) => Ok(self.get_dimensions_no_error().ex.to_value()),
+            subclass::Property("em", ..) => Ok(self.handle.get_dimensions_no_error().em.to_value()),
+            subclass::Property("ex", ..) => Ok(self.handle.get_dimensions_no_error().ex.to_value()),
 
             // the following three are deprecated
             subclass::Property("title", ..) => Ok((None as Option<String>).to_value()),
@@ -350,14 +363,14 @@ impl ObjectImpl for Handle {
     }
 }
 
-fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a Handle {
+pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
     let handle = unsafe { &*handle };
     handle.get_impl()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_type() -> glib_sys::GType {
-    Handle::get_type().to_glib()
+    CHandle::get_type().to_glib()
 }
 
 #[no_mangle]
@@ -452,7 +465,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_base_url(
     assert!(!uri.is_null());
     let uri: String = from_glib_none(uri);
 
-    rhandle.set_base_url(&uri);
+    rhandle.handle.set_base_url(&uri);
 }
 
 #[no_mangle]
@@ -466,7 +479,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_base_gfile(
 
     let file: gio::File = from_glib_none(raw_gfile);
 
-    rhandle.set_base_gfile(&file);
+    rhandle.handle.set_base_gfile(&file);
 }
 
 #[no_mangle]
@@ -475,35 +488,41 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_base_url(
 ) -> *const libc::c_char {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.get_base_url_as_ptr()
+    rhandle.handle.get_base_url_as_ptr()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_x(raw_handle: *const RsvgHandle, dpi_x: f64) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.dpi.set(Dpi::new(dpi_x, rhandle.dpi.get().y()));
+    rhandle
+        .handle
+        .dpi
+        .set(Dpi::new(dpi_x, rhandle.handle.dpi.get().y()));
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_x(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.dpi.get().x()
+    rhandle.handle.dpi.get().x()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_y(raw_handle: *const RsvgHandle, dpi_y: f64) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.dpi.set(Dpi::new(rhandle.dpi.get().x(), dpi_y));
+    rhandle
+        .handle
+        .dpi
+        .set(Dpi::new(rhandle.handle.dpi.get().x(), dpi_y));
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_y(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.dpi.get().y()
+    rhandle.handle.dpi.get().y()
 }
 
 #[no_mangle]
@@ -512,7 +531,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_flags(
 ) -> RsvgHandleFlags {
     let rhandle = get_rust_handle(raw_handle);
 
-    HandleFlags::from(rhandle.get_load_flags()).to_glib()
+    HandleFlags::from(rhandle.handle.get_load_flags()).to_glib()
 }
 
 #[no_mangle]
@@ -523,7 +542,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_flags(
     let rhandle = get_rust_handle(raw_handle);
 
     let flags: HandleFlags = from_glib(flags);
-    rhandle.set_load_flags(LoadFlags::from(flags));
+    rhandle.handle.set_load_flags(LoadFlags::from(flags));
 }
 
 #[no_mangle]
@@ -535,7 +554,9 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_size_callback(
 ) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.set_size_callback(size_func, user_data, destroy_notify);
+    rhandle
+        .handle
+        .set_size_callback(size_func, user_data, destroy_notify);
 }
 
 #[no_mangle]
@@ -545,7 +566,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_testing(
 ) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.set_testing(from_glib(testing));
+    rhandle.handle.set_testing(from_glib(testing));
 }
 
 #[no_mangle]
@@ -557,14 +578,17 @@ pub unsafe extern "C" fn rsvg_rust_handle_read_stream_sync(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if rhandle.load_state() != LoadState::Start {
+    if rhandle.handle.load_state() != LoadState::Start {
         panic!("handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",);
     }
 
     let stream = from_glib_none(stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.read_stream_sync(&stream, cancellable.as_ref()) {
+    match rhandle
+        .handle
+        .read_stream_sync(&stream, cancellable.as_ref())
+    {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -582,7 +606,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_write(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    let load_state = rhandle.load_state();
+    let load_state = rhandle.handle.load_state();
 
     if !(load_state == LoadState::Start || load_state == LoadState::Loading) {
         panic!("handle must not be closed in order to write to it");
@@ -590,7 +614,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_write(
 
     let buffer = slice::from_raw_parts(buf, count);
 
-    rhandle.write(buffer);
+    rhandle.handle.write(buffer);
 }
 
 #[no_mangle]
@@ -600,7 +624,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_close(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    match rhandle.close() {
+    match rhandle.handle.close() {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -622,7 +646,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_has_sub(
 
     let id: String = from_glib_none(id);
     // FIXME: return a proper error code to the public API
-    rhandle.has_sub(&id).unwrap_or(false).to_glib()
+    rhandle.handle.has_sub(&id).unwrap_or(false).to_glib()
 }
 
 #[no_mangle]
@@ -635,7 +659,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_cairo_sub(&cr, id.as_ref().map(String::as_str)) {
+    match rhandle
+        .handle
+        .render_cairo_sub(&cr, id.as_ref().map(String::as_str))
+    {
         Ok(()) => true.to_glib(),
 
         Err(_) => {
@@ -653,7 +680,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf_sub(
     let rhandle = get_rust_handle(handle);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_pixbuf_sub(id.as_ref().map(String::as_str)) {
+    match rhandle
+        .handle
+        .get_pixbuf_sub(id.as_ref().map(String::as_str))
+    {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(_) => ptr::null_mut(),
     }
@@ -666,7 +696,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    *dimension_data = rhandle.get_dimensions_no_error();
+    *dimension_data = rhandle.handle.get_dimensions_no_error();
 }
 
 #[no_mangle]
@@ -679,7 +709,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_dimensions_sub(id.as_ref().map(String::as_str)) {
+    match rhandle
+        .handle
+        .get_dimensions_sub(id.as_ref().map(String::as_str))
+    {
         Ok(dimensions) => {
             *dimension_data = dimensions;
             true.to_glib()
@@ -709,7 +742,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_position_sub(id.as_ref().map(String::as_str)) {
+    match rhandle
+        .handle
+        .get_position_sub(id.as_ref().map(String::as_str))
+    {
         Ok(position) => {
             *position_data = position;
             true.to_glib()
@@ -730,7 +766,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_new_with_flags(flags: u32) -> *const RsvgHandle {
     let obj: *mut gobject_sys::GObject =
-        glib::Object::new(Handle::get_type(), &[("flags", &flags)])
+        glib::Object::new(CHandle::get_type(), &[("flags", &flags)])
             .unwrap()
             .to_glib_full();
 
@@ -770,7 +806,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
     let file = from_glib_none(file);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.construct_new_from_gfile_sync(&file, cancellable.as_ref()) {
+    match rhandle
+        .handle
+        .construct_new_from_gfile_sync(&file, cancellable.as_ref())
+    {
         Ok(()) => raw_handle,
 
         Err(e) => {
@@ -797,7 +836,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_stream_sync(
     let stream = from_glib_none(input_stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.construct_read_stream_sync(&stream, base_file.as_ref(), cancellable.as_ref()) {
+    match rhandle.handle.construct_read_stream_sync(
+        &stream,
+        base_file.as_ref(),
+        cancellable.as_ref(),
+    ) {
         Ok(()) => raw_handle,
 
         Err(e) => {
@@ -873,11 +916,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    if rhandle.check_is_loaded().is_err() {
+    if rhandle.handle.check_is_loaded().is_err() {
         return;
     }
 
-    let d = rhandle.get_intrinsic_dimensions();
+    let d = rhandle.handle.get_intrinsic_dimensions();
 
     let w = d.width.map(|l| l.to_length());
     let h = d.height.map(|l| l.to_length());
@@ -899,16 +942,16 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if rhandle.check_is_loaded().is_err() {
+    if rhandle.handle.check_is_loaded().is_err() {
         return false.to_glib();
     }
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_element(
+    match rhandle.handle.get_geometry_for_element(
         id.as_ref().map(String::as_str),
         &viewport.into(),
-        rhandle.dpi.get(),
+        rhandle.handle.dpi.get(),
     ) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {
