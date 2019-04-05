@@ -350,7 +350,7 @@ impl ObjectImpl for Handle {
     }
 }
 
-pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a Handle {
+fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a Handle {
     let handle = unsafe { &*handle };
     handle.get_impl()
 }

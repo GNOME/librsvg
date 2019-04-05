@@ -1,20 +1,20 @@
+use std::path::PathBuf;
 use std::ptr;
 
 use cairo::{self, ImageSurface};
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gdk_pixbuf_sys;
+use gio;
 use glib::translate::*;
 use glib_sys;
 use libc;
 
-use crate::c_api::{get_rust_handle, rsvg_rust_handle_new_from_gfile_sync, RsvgDimensionData};
+use crate::c_api::RsvgDimensionData;
 use crate::error::{set_gerror, RenderingError};
-use crate::handle::Handle;
+use crate::handle::{Handle, LoadFlags};
 use crate::rect::IRect;
 use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    shared_surface::SurfaceType,
+    iterators::Pixels, shared_surface::SharedImageSurface, shared_surface::SurfaceType,
 };
 
 // Pixbuf::new() doesn't return out-of-memory errors properly
@@ -187,32 +187,27 @@ fn pixbuf_from_file_with_size_mode(
     error: *mut *mut glib_sys::GError,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
     unsafe {
-        let file = gio_sys::g_file_new_for_path(filename);
+        let path = PathBuf::from_glib_none(filename);
+        let file = gio::File::new_for_path(path);
 
-        let handle = rsvg_rust_handle_new_from_gfile_sync(file, 0, ptr::null_mut(), error);
-
-        gobject_sys::g_object_unref(file as *mut _);
-
-        if handle.is_null() {
+        let handle = Handle::new(LoadFlags::default());
+        if let Err(e) = handle.construct_new_from_gfile_sync(&file, None) {
+            set_gerror(error, 0, &format!("{}", e));
             return ptr::null_mut();
         }
 
-        let rhandle = get_rust_handle(handle);
-
-        let raw_pixbuf = rhandle
+        handle
             .get_dimensions()
             .and_then(|dimensions| {
                 let (width, height) = get_final_size(&dimensions, size_mode);
 
-                render_to_pixbuf_at_size(rhandle, &dimensions, width, height)
+                render_to_pixbuf_at_size(&handle, &dimensions, width, height)
             })
             .and_then(|pixbuf| Ok(pixbuf.to_glib_full()))
-            .map_err(|e| set_gerror(error, 0, &format!("{}", e)))
-            .unwrap_or(ptr::null_mut());
-
-        gobject_sys::g_object_unref(handle as *mut _);
-
-        raw_pixbuf
+            .unwrap_or_else(|e| {
+                set_gerror(error, 0, &format!("{}", e));
+                ptr::null_mut()
+            })
     }
 }
 
