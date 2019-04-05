@@ -343,22 +343,6 @@ impl Handle {
     }
 
     /// Returns (ink_rect, logical_rect)
-    fn get_node_geometry(
-        &self,
-        node: &RsvgNode,
-        dpi: Dpi,
-    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
-        // This is just to start with an unknown viewport size
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 1.0,
-            height: 1.0,
-        };
-
-        self.get_node_geometry_with_viewport(node, &viewport, dpi)
-    }
-
     fn get_node_geometry_with_viewport(
         &self,
         node: &RsvgNode,
@@ -425,7 +409,15 @@ impl Handle {
             }
         }
 
-        self.get_node_geometry(&node, dpi)
+        // This is just to start with an unknown viewport size
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 1.0,
+            height: 1.0,
+        };
+
+        self.get_node_geometry_with_viewport(&node, &viewport, dpi)
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
