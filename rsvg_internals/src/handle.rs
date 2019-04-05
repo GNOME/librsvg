@@ -297,30 +297,6 @@ impl Handle {
         res
     }
 
-    fn create_drawing_ctx_for_node(
-        &self,
-        cr: &cairo::Context,
-        viewport: &cairo::Rectangle,
-        dpi: Dpi,
-        node: Option<&RsvgNode>,
-        measuring: bool,
-    ) -> DrawingCtx {
-        let mut draw_ctx = DrawingCtx::new(
-            self.get_svg(),
-            cr,
-            viewport,
-            dpi,
-            measuring,
-            self.is_testing.get(),
-        );
-
-        if let Some(node) = node {
-            draw_ctx.add_node_and_ancestors_to_stack(node);
-        }
-
-        draw_ctx
-    }
-
     pub fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
         self.check_is_loaded()?;
 
@@ -445,7 +421,15 @@ impl Handle {
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, viewport, dpi, Some(node), true);
+        let mut draw_ctx = DrawingCtx::new(
+            self.get_svg(),
+            Some(node),
+            &cr,
+            viewport,
+            dpi,
+            true,
+            self.is_testing.get(),
+        );
         let root = self.get_root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
@@ -591,8 +575,15 @@ impl Handle {
         let root = self.get_root();
 
         cr.save();
-        let mut draw_ctx =
-            self.create_drawing_ctx_for_node(cr, viewport, dpi, node.as_ref(), false);
+        let mut draw_ctx = DrawingCtx::new(
+            self.get_svg(),
+            node.as_ref(),
+            cr,
+            viewport,
+            dpi,
+            false,
+            self.is_testing.get(),
+        );
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
         cr.restore();
 

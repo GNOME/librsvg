@@ -20,14 +20,8 @@ use crate::node::{CascadedValues, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::NodePattern;
 use crate::properties::{
-    ClipRule,
-    ComputedValues,
-    EnableBackground,
-    FillRule,
-    ShapeRendering,
-    StrokeDasharray,
-    StrokeLinecap,
-    StrokeLinejoin,
+    ClipRule, ComputedValues, EnableBackground, FillRule, ShapeRendering, StrokeDasharray,
+    StrokeLinecap, StrokeLinejoin,
 };
 use crate::rect::RectangleExt;
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -119,6 +113,7 @@ pub struct DrawingCtx {
 impl DrawingCtx {
     pub fn new(
         svg: Rc<Svg>,
+        node: Option<&RsvgNode>,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
         dpi: Dpi,
@@ -163,7 +158,7 @@ impl DrawingCtx {
         let mut view_box_stack = Vec::new();
         view_box_stack.push(vbox);
 
-        DrawingCtx {
+        let mut draw_ctx = DrawingCtx {
             svg,
             initial_affine,
             rect,
@@ -177,7 +172,13 @@ impl DrawingCtx {
             acquired_nodes: Rc::new(RefCell::new(Vec::new())),
             measuring,
             testing,
+        };
+
+        if let Some(node) = node {
+            draw_ctx.add_node_and_ancestors_to_stack(node);
         }
+
+        draw_ctx
     }
 
     pub fn toplevel_viewport(&self) -> cairo::Rectangle {
@@ -409,10 +410,7 @@ impl DrawingCtx {
         }
     }
 
-    fn clip_to_node(
-        &mut self,
-        clip_node: &Option<RsvgNode>,
-    ) -> Result<(), RenderingError> {
+    fn clip_to_node(&mut self, clip_node: &Option<RsvgNode>) -> Result<(), RenderingError> {
         if let Some(clip_node) = clip_node {
             let orig_bbox = self.bbox;
 
