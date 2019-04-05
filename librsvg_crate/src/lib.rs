@@ -100,12 +100,7 @@ use glib::object::Cast;
 use rsvg_internals::{Dpi, Handle, LoadFlags};
 
 pub use rsvg_internals::{
-    DefsLookupErrorKind,
-    HrefError,
-    Length,
-    LengthUnit,
-    LoadingError,
-    RenderingError,
+    DefsLookupErrorKind, HrefError, Length, LengthUnit, LoadingError, RenderingError,
 };
 
 /// Struct for loading an [`SvgHandle`][SvgHandle].
@@ -400,7 +395,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_for_element(id, viewport)
+            .get_geometry_for_element(id, viewport, self.dpi)
             .map(|(i, l)| (i.into(), l.into()))
     }
 
@@ -410,6 +405,8 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.0.render_element_to_viewport(cr, id, viewport)
+        self.handle
+            .0
+            .render_element_to_viewport(cr, id, viewport, self.dpi)
     }
 }

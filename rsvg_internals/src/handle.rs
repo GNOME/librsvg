@@ -296,6 +296,7 @@ impl Handle {
         &self,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
+        dpi: Dpi,
         node: Option<&RsvgNode>,
         measuring: bool,
     ) -> DrawingCtx {
@@ -303,7 +304,7 @@ impl Handle {
             self.svg.borrow().as_ref().unwrap().clone(),
             cr,
             viewport,
-            self.dpi.get(),
+            dpi,
             measuring,
             self.is_testing.get(),
         );
@@ -420,6 +421,7 @@ impl Handle {
     fn get_node_geometry(
         &self,
         node: &RsvgNode,
+        dpi: Dpi,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         // This is just to start with an unknown viewport size
         let viewport = cairo::Rectangle {
@@ -429,17 +431,18 @@ impl Handle {
             height: 1.0,
         };
 
-        self.get_node_geometry_with_viewport(node, &viewport)
+        self.get_node_geometry_with_viewport(node, &viewport, dpi)
     }
 
     fn get_node_geometry_with_viewport(
         &self,
         node: &RsvgNode,
         viewport: &cairo::Rectangle,
+        dpi: Dpi,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, viewport, Some(node), true);
+        let mut draw_ctx = self.create_drawing_ctx_for_node(&cr, viewport, dpi, Some(node), true);
         let root = self.get_root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
@@ -488,7 +491,7 @@ impl Handle {
             }
         }
 
-        self.get_node_geometry(&node)
+        self.get_node_geometry(&node, self.dpi.get())
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
@@ -503,9 +506,10 @@ impl Handle {
         &self,
         id: Option<&str>,
         viewport: &cairo::Rectangle,
+        dpi: Dpi,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
-        self.get_node_geometry_with_viewport(&node, viewport)
+        self.get_node_geometry_with_viewport(&node, viewport, dpi)
     }
 
     fn lookup_node(&self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
@@ -566,7 +570,7 @@ impl Handle {
             height: f64::from(dimensions.height),
         };
 
-        self.render_element_to_viewport(cr, id, &viewport)
+        self.render_element_to_viewport(cr, id, &viewport, self.dpi.get())
     }
 
     pub fn render_element_to_viewport(
@@ -574,6 +578,7 @@ impl Handle {
         cr: &cairo::Context,
         id: Option<&str>,
         viewport: &cairo::Rectangle,
+        dpi: Dpi,
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
 
@@ -586,7 +591,8 @@ impl Handle {
         let root = self.get_root();
 
         cr.save();
-        let mut draw_ctx = self.create_drawing_ctx_for_node(cr, viewport, node.as_ref(), false);
+        let mut draw_ctx =
+            self.create_drawing_ctx_for_node(cr, viewport, dpi, node.as_ref(), false);
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
         cr.restore();
 

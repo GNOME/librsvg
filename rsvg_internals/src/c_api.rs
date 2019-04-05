@@ -905,7 +905,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_element(id.as_ref().map(String::as_str), &viewport.into()) {
+    match rhandle.get_geometry_for_element(
+        id.as_ref().map(String::as_str),
+        &viewport.into(),
+        rhandle.dpi.get(),
+    ) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
@@ -916,7 +920,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
             }
 
             true.to_glib()
-        },
+        }
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));
