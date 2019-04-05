@@ -312,13 +312,13 @@ fn init_libxml2() {
     });
 }
 
-struct Xml2Parser {
+pub struct Xml2Parser {
     parser: xmlParserCtxtPtr,
     gio_error: Rc<RefCell<Option<glib::Error>>>,
 }
 
 impl Xml2Parser {
-    fn from_stream(
+    pub fn from_stream(
         xml: &mut XmlState,
         load_flags: LoadFlags,
         stream: gio::InputStream,
@@ -364,7 +364,7 @@ impl Xml2Parser {
         }
     }
 
-    fn parse(&self) -> Result<(), ParseFromStreamError> {
+    pub fn parse(&self) -> Result<(), ParseFromStreamError> {
         unsafe {
             let xml_parse_success = xmlParseDocument(self.parser) == 0;
 
@@ -442,18 +442,6 @@ impl From<ParseFromStreamError> for LoadingError {
     }
 }
 
-// Parses XML from a stream into an XmlState.
-//
-// This can be called "in the middle" of an XmlState's processing status,
-// for example, when including another XML file via xi:include.
-pub fn xml_state_parse_from_stream(
-    xml: &mut XmlState,
-    stream: gio::InputStream,
-    cancellable: Option<&gio::Cancellable>,
-) -> Result<(), ParseFromStreamError> {
-    Xml2Parser::from_stream(xml, xml.load_options.flags, stream, cancellable).and_then(|parser| parser.parse())
-}
-
 pub fn xml_state_load_from_possibly_compressed_stream(
     xml: &mut XmlState,
     stream: &gio::InputStream,
@@ -462,5 +450,5 @@ pub fn xml_state_load_from_possibly_compressed_stream(
     let stream = get_input_stream_for_loading(stream, cancellable)
         .map_err(|e| ParseFromStreamError::IoError(e))?;
 
-    xml_state_parse_from_stream(xml, stream, cancellable)
+    xml.parse_from_stream(stream, cancellable)
 }

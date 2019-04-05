@@ -19,7 +19,7 @@ use crate::structure::NodeSvg;
 use crate::style::NodeStyle;
 use crate::svg::Svg;
 use crate::text::NodeChars;
-use crate::xml2_load::{xml_state_parse_from_stream, ParseFromStreamError};
+use crate::xml2_load::{Xml2Parser, ParseFromStreamError};
 
 #[derive(Clone)]
 enum Context {
@@ -476,11 +476,24 @@ impl XmlState {
         })?;
 
         // FIXME: pass a cancellable
-        xml_state_parse_from_stream(self, stream, None).map_err(|e| match e {
+        self.parse_from_stream(stream, None).map_err(|e| match e {
             ParseFromStreamError::CouldNotCreateXmlParser => AcquireError::FatalError,
             ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
             ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,
         })
+    }
+
+    // Parses XML from a stream into an XmlState.
+    //
+    // This can be called "in the middle" of an XmlState's processing status,
+    // for example, when including another XML file via xi:include.
+    pub fn parse_from_stream(
+        &mut self,
+        stream: gio::InputStream,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<(), ParseFromStreamError> {
+        Xml2Parser::from_stream(self, self.load_options.flags, stream, cancellable)
+            .and_then(|parser| parser.parse())
     }
 
     fn unsupported_xinclude_start_element(&self, _name: &str) -> Context {
