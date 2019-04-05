@@ -12,6 +12,7 @@ use glib_sys;
 use libc;
 
 use crate::c_api::RsvgDimensionData;
+use crate::dpi::Dpi;
 use crate::error::{set_gerror, LoadingError, RenderingError};
 use crate::handle::{Handle, LoadFlags};
 use crate::rect::IRect;
@@ -162,6 +163,7 @@ fn render_to_pixbuf_at_size(
     dimensions: &RsvgDimensionData,
     width: i32,
     height: i32,
+    dpi: Dpi,
 ) -> Result<Pixbuf, RenderingError> {
     if width == 0 || height == 0 {
         return empty_pixbuf();
@@ -175,7 +177,7 @@ fn render_to_pixbuf_at_size(
             f64::from(width) / f64::from(dimensions.width),
             f64::from(height) / f64::from(dimensions.height),
         );
-        handle.render_cairo_sub(&cr, None)?;
+        handle.render_cairo_sub(&cr, None, dpi)?;
     }
 
     let shared_surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
@@ -183,11 +185,23 @@ fn render_to_pixbuf_at_size(
     pixbuf_from_surface(&shared_surface)
 }
 
+fn get_default_dpi() -> Dpi {
+    // This is ugly, but it preserves the C API semantics of
+    //
+    //   rsvg_set_default_dpi(...);
+    //   pixbuf = rsvg_pixbuf_from_file(...);
+    //
+    // Passing negative numbers here means that the global default DPI will be used.
+    Dpi::new(-1.0, -1.0)
+}
+
 fn pixbuf_from_file_with_size_mode(
     filename: *const libc::c_char,
     size_mode: &SizeMode,
     error: *mut *mut glib_sys::GError,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    let dpi = get_default_dpi();
+
     unsafe {
         let path = PathBuf::from_glib_none(filename);
         let file = gio::File::new_for_path(path);
@@ -206,11 +220,11 @@ fn pixbuf_from_file_with_size_mode(
         }
 
         handle
-            .get_dimensions()
+            .get_dimensions(dpi)
             .and_then(|dimensions| {
                 let (width, height) = get_final_size(&dimensions, size_mode);
 
-                render_to_pixbuf_at_size(&handle, &dimensions, width, height)
+                render_to_pixbuf_at_size(&handle, &dimensions, width, height, dpi)
             })
             .and_then(|pixbuf| Ok(pixbuf.to_glib_full()))
             .unwrap_or_else(|e| {

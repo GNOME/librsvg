@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::ffi::CStr;
 use std::ops;
 use std::path::PathBuf;
@@ -156,6 +157,7 @@ pub struct RsvgHandle {
 /// Contains all the interior mutability for a RsvgHandle to be called
 /// from the C API.
 pub struct CHandle {
+    dpi: Cell<Dpi>,
     handle: Handle,
 }
 
@@ -282,6 +284,7 @@ impl ObjectSubclass for CHandle {
 
     fn new() -> Self {
         CHandle {
+            dpi: Cell::new(Dpi::default()),
             handle: Handle::new(LoadFlags::default()),
         }
     }
@@ -300,13 +303,13 @@ impl ObjectImpl for CHandle {
             }
 
             subclass::Property("dpi-x", ..) => {
-                self.handle
-                    .set_dpi_x(value.get().expect("dpi-x value has incorrect type"));
+                let dpi_x: f64 = value.get().expect("dpi-x value has incorrect type");
+                self.dpi.set(Dpi::new(dpi_x, self.dpi.get().y()));
             }
 
             subclass::Property("dpi-y", ..) => {
-                self.handle
-                    .set_dpi_y(value.get().expect("dpi-y value has incorrect type"));
+                let dpi_y: f64 = value.get().expect("dpi-y value has incorrect type");
+                self.dpi.set(Dpi::new(self.dpi.get().x(), dpi_y));
             }
 
             subclass::Property("base-uri", ..) => {
@@ -334,8 +337,8 @@ impl ObjectImpl for CHandle {
                 Ok(flags.to_value())
             }
 
-            subclass::Property("dpi-x", ..) => Ok(self.handle.dpi.get().x().to_value()),
-            subclass::Property("dpi-y", ..) => Ok(self.handle.dpi.get().y().to_value()),
+            subclass::Property("dpi-x", ..) => Ok(self.dpi.get().x().to_value()),
+            subclass::Property("dpi-y", ..) => Ok(self.dpi.get().y().to_value()),
 
             subclass::Property("base-uri", ..) => Ok(self
                 .handle
@@ -345,15 +348,27 @@ impl ObjectImpl for CHandle {
                 .map(|url| url.as_str())
                 .to_value()),
 
-            subclass::Property("width", ..) => {
-                Ok(self.handle.get_dimensions_no_error().width.to_value())
-            }
-            subclass::Property("height", ..) => {
-                Ok(self.handle.get_dimensions_no_error().height.to_value())
-            }
+            subclass::Property("width", ..) => Ok(self
+                .handle
+                .get_dimensions_no_error(self.dpi.get())
+                .width
+                .to_value()),
+            subclass::Property("height", ..) => Ok(self
+                .handle
+                .get_dimensions_no_error(self.dpi.get())
+                .height
+                .to_value()),
 
-            subclass::Property("em", ..) => Ok(self.handle.get_dimensions_no_error().em.to_value()),
-            subclass::Property("ex", ..) => Ok(self.handle.get_dimensions_no_error().ex.to_value()),
+            subclass::Property("em", ..) => Ok(self
+                .handle
+                .get_dimensions_no_error(self.dpi.get())
+                .em
+                .to_value()),
+            subclass::Property("ex", ..) => Ok(self
+                .handle
+                .get_dimensions_no_error(self.dpi.get())
+                .ex
+                .to_value()),
 
             // the following three are deprecated
             subclass::Property("title", ..) => Ok((None as Option<String>).to_value()),
@@ -497,34 +512,28 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_base_url(
 pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_x(raw_handle: *const RsvgHandle, dpi_x: f64) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle
-        .handle
-        .dpi
-        .set(Dpi::new(dpi_x, rhandle.handle.dpi.get().y()));
+    rhandle.dpi.set(Dpi::new(dpi_x, rhandle.dpi.get().y()));
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_x(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.handle.dpi.get().x()
+    rhandle.dpi.get().x()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_y(raw_handle: *const RsvgHandle, dpi_y: f64) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle
-        .handle
-        .dpi
-        .set(Dpi::new(rhandle.handle.dpi.get().x(), dpi_y));
+    rhandle.dpi.set(Dpi::new(rhandle.dpi.get().x(), dpi_y));
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_y(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.handle.dpi.get().y()
+    rhandle.dpi.get().y()
 }
 
 #[no_mangle]
@@ -663,7 +672,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
 
     match rhandle
         .handle
-        .render_cairo_sub(&cr, id.as_ref().map(String::as_str))
+        .render_cairo_sub(&cr, id.as_ref().map(String::as_str), rhandle.dpi.get())
     {
         Ok(()) => true.to_glib(),
 
@@ -684,7 +693,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf_sub(
 
     match rhandle
         .handle
-        .get_pixbuf_sub(id.as_ref().map(String::as_str))
+        .get_pixbuf_sub(id.as_ref().map(String::as_str), rhandle.dpi.get())
     {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(_) => ptr::null_mut(),
@@ -698,7 +707,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    *dimension_data = rhandle.handle.get_dimensions_no_error();
+    *dimension_data = rhandle.handle.get_dimensions_no_error(rhandle.dpi.get());
 }
 
 #[no_mangle]
@@ -713,7 +722,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
 
     match rhandle
         .handle
-        .get_dimensions_sub(id.as_ref().map(String::as_str))
+        .get_dimensions_sub(id.as_ref().map(String::as_str), rhandle.dpi.get())
     {
         Ok(dimensions) => {
             *dimension_data = dimensions;
@@ -746,7 +755,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
 
     match rhandle
         .handle
-        .get_position_sub(id.as_ref().map(String::as_str))
+        .get_position_sub(id.as_ref().map(String::as_str), rhandle.dpi.get())
     {
         Ok(position) => {
             *position_data = position;
@@ -812,9 +821,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
         .read(cancellable.as_ref())
         .map_err(|e| LoadingError::from(e))
         .and_then(|stream| {
-            rhandle
-                .handle
-                .construct_read_stream_sync(&stream.upcast(), Some(&file), cancellable.as_ref())
+            rhandle.handle.construct_read_stream_sync(
+                &stream.upcast(),
+                Some(&file),
+                cancellable.as_ref(),
+            )
         });
 
     match res {
@@ -959,7 +970,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
     match rhandle.handle.get_geometry_for_element(
         id.as_ref().map(String::as_str),
         &viewport.into(),
-        rhandle.handle.dpi.get(),
+        rhandle.dpi.get(),
     ) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {

@@ -112,7 +112,6 @@ impl Drop for SizeCallback {
 }
 
 pub struct Handle {
-    pub dpi: Cell<Dpi>,
     pub base_url: RefCell<Option<Url>>,
     base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     svg: RefCell<Option<Rc<Svg>>>,
@@ -127,7 +126,6 @@ pub struct Handle {
 impl Handle {
     pub fn new(load_flags: LoadFlags) -> Handle {
         Handle {
-            dpi: Cell::new(Dpi::default()),
             base_url: RefCell::new(None),
             base_url_cstring: RefCell::new(None),
             svg: RefCell::new(None),
@@ -311,7 +309,7 @@ impl Handle {
         }
     }
 
-    pub fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
+    pub fn get_dimensions(&self, dpi: Dpi) -> Result<RsvgDimensionData, RenderingError> {
         self.check_is_loaded()?;
 
         // This function is probably called from the cairo_render functions,
@@ -329,15 +327,15 @@ impl Handle {
 
         self.in_loop.set(true);
 
-        let res = self.get_dimensions_sub(None);
+        let res = self.get_dimensions_sub(None, dpi);
 
         self.in_loop.set(false);
 
         res
     }
 
-    pub fn get_dimensions_no_error(&self) -> RsvgDimensionData {
-        match self.get_dimensions() {
+    pub fn get_dimensions_no_error(&self, dpi: Dpi) -> RsvgDimensionData {
+        match self.get_dimensions(dpi) {
             Ok(dimensions) => dimensions,
 
             Err(_) => {
@@ -356,10 +354,11 @@ impl Handle {
     pub fn get_dimensions_sub(
         &self,
         id: Option<&str>,
+        dpi: Dpi,
     ) -> Result<RsvgDimensionData, RenderingError> {
         self.check_is_loaded()?;
 
-        let (ink_r, _) = self.get_geometry_sub(id)?;
+        let (ink_r, _) = self.get_geometry_sub(id, dpi)?;
 
         let (w, h) = self
             .size_callback
@@ -374,14 +373,18 @@ impl Handle {
         })
     }
 
-    pub fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
+    pub fn get_position_sub(
+        &self,
+        id: Option<&str>,
+        dpi: Dpi,
+    ) -> Result<RsvgPositionData, RenderingError> {
         self.check_is_loaded()?;
 
         if let None = id {
             return Ok(RsvgPositionData { x: 0, y: 0 });
         }
 
-        let (ink_r, _) = self.get_geometry_sub(id)?;
+        let (ink_r, _) = self.get_geometry_sub(id, dpi)?;
 
         let width = ink_r.width as libc::c_int;
         let height = ink_r.height as libc::c_int;
@@ -454,6 +457,7 @@ impl Handle {
     fn get_geometry_sub(
         &self,
         id: Option<&str>,
+        dpi: Dpi,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
 
@@ -465,7 +469,7 @@ impl Handle {
             let values = cascaded.get();
 
             if let Some((root_width, root_height)) =
-                node.with_impl(|svg: &NodeSvg| svg.get_size(&values, self.dpi.get()))
+                node.with_impl(|svg: &NodeSvg| svg.get_size(&values, dpi))
             {
                 let ink_r = RsvgRectangle {
                     x: 0.0,
@@ -480,7 +484,7 @@ impl Handle {
             }
         }
 
-        self.get_node_geometry(&node, self.dpi.get())
+        self.get_node_geometry(&node, dpi)
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
@@ -539,11 +543,12 @@ impl Handle {
         &self,
         cr: &cairo::Context,
         id: Option<&str>,
+        dpi: Dpi,
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
         self.check_is_loaded()?;
 
-        let dimensions = self.get_dimensions()?;
+        let dimensions = self.get_dimensions(dpi)?;
         if dimensions.width == 0 || dimensions.height == 0 {
             // nothing to render
             return Ok(());
@@ -556,7 +561,7 @@ impl Handle {
             height: f64::from(dimensions.height),
         };
 
-        self.render_element_to_viewport(cr, id, &viewport, self.dpi.get())
+        self.render_element_to_viewport(cr, id, &viewport, dpi)
     }
 
     pub fn render_element_to_viewport(
@@ -592,10 +597,10 @@ impl Handle {
         res
     }
 
-    pub fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
+    pub fn get_pixbuf_sub(&self, id: Option<&str>, dpi: Dpi) -> Result<Pixbuf, RenderingError> {
         self.check_is_loaded()?;
 
-        let dimensions = self.get_dimensions()?;
+        let dimensions = self.get_dimensions(dpi)?;
 
         if dimensions.width == 0 || dimensions.height == 0 {
             return empty_pixbuf();
@@ -606,7 +611,7 @@ impl Handle {
 
         {
             let cr = cairo::Context::new(&surface);
-            self.render_cairo_sub(&cr, id)?;
+            self.render_cairo_sub(&cr, id, dpi)?;
         }
 
         let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
@@ -629,16 +634,6 @@ impl Handle {
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         self.get_svg().get_intrinsic_dimensions()
-    }
-
-    // from the public API
-    pub fn set_dpi_x(&self, dpi_x: f64) {
-        self.dpi.set(Dpi::new(dpi_x, self.dpi.get().y()));
-    }
-
-    // from the public API
-    pub fn set_dpi_y(&self, dpi_y: f64) {
-        self.dpi.set(Dpi::new(self.dpi.get().x(), dpi_y));
     }
 
     pub fn set_testing(&self, testing: bool) {
