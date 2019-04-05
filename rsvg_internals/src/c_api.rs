@@ -8,13 +8,15 @@ use std::{f64, i32};
 
 use libc;
 
+use gio::prelude::*;
+
 use glib::object::ObjectClass;
 use glib::subclass;
 use glib::subclass::object::ObjectClassSubclassExt;
 use glib::subclass::prelude::*;
 use glib::translate::*;
 use glib::value::{FromValue, FromValueOptional, SetValue};
-use glib::{ParamFlags, ParamSpec, StaticType, ToValue, Type, Value};
+use glib::{Cast, ParamFlags, ParamSpec, StaticType, ToValue, Type, Value};
 
 use glib_sys;
 use gobject_sys::{self, GEnumValue, GFlagsValue};
@@ -803,13 +805,19 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
 
     let rhandle = get_rust_handle(raw_handle);
 
-    let file = from_glib_none(file);
+    let file = gio::File::from_glib_none(file);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle
-        .handle
-        .construct_new_from_gfile_sync(&file, cancellable.as_ref())
-    {
+    let res = file
+        .read(cancellable.as_ref())
+        .map_err(|e| LoadingError::from(e))
+        .and_then(|stream| {
+            rhandle
+                .handle
+                .construct_read_stream_sync(&stream.upcast(), Some(&file), cancellable.as_ref())
+        });
+
+    match res {
         Ok(()) => raw_handle,
 
         Err(e) => {

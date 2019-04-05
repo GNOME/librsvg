@@ -5,12 +5,14 @@ use cairo::{self, ImageSurface};
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gdk_pixbuf_sys;
 use gio;
+use gio::prelude::*;
 use glib::translate::*;
+use glib::Cast;
 use glib_sys;
 use libc;
 
 use crate::c_api::RsvgDimensionData;
-use crate::error::{set_gerror, RenderingError};
+use crate::error::{set_gerror, LoadingError, RenderingError};
 use crate::handle::{Handle, LoadFlags};
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -191,7 +193,14 @@ fn pixbuf_from_file_with_size_mode(
         let file = gio::File::new_for_path(path);
 
         let handle = Handle::new(LoadFlags::default());
-        if let Err(e) = handle.construct_new_from_gfile_sync(&file, None) {
+        let cancellable: Option<&gio::Cancellable> = None;
+        if let Err(e) = file
+            .read(cancellable)
+            .map_err(|e| LoadingError::from(e))
+            .and_then(|stream| {
+                handle.construct_read_stream_sync(&stream.upcast(), Some(&file), None)
+            })
+        {
             set_gerror(error, 0, &format!("{}", e));
             return ptr::null_mut();
         }

@@ -614,15 +614,6 @@ impl Handle {
         pixbuf_from_surface(&surface)
     }
 
-    pub fn construct_new_from_gfile_sync(
-        &self,
-        file: &gio::File,
-        cancellable: Option<&gio::Cancellable>,
-    ) -> Result<(), LoadingError> {
-        let stream = file.read(cancellable)?;
-        self.construct_read_stream_sync(&stream.upcast(), Some(file), cancellable)
-    }
-
     pub fn construct_read_stream_sync(
         &self,
         stream: &gio::InputStream,
