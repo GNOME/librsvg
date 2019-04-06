@@ -289,7 +289,7 @@ impl Loader {
 
         let load_options = LoadOptions::new(self.load_flags(), base_url);
 
-        handle.construct_read_stream_sync(&load_options, stream, cancellable.into())?;
+        handle.read_stream_sync(&load_options, stream, cancellable.into())?;
 
         Ok(SvgHandle(handle))
     }

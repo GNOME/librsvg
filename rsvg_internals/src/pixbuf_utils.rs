@@ -231,7 +231,7 @@ fn pixbuf_from_file_with_size_mode(
             .read(cancellable)
             .map_err(|e| LoadingError::from(e))
             .and_then(|stream| {
-                handle.construct_read_stream_sync(
+                handle.read_stream_sync(
                     &load_options,
                     &stream.upcast(),
                     None,

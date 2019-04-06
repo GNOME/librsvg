@@ -505,15 +505,6 @@ impl Handle {
         pixbuf_from_surface(&surface)
     }
 
-    pub fn construct_read_stream_sync(
-        &self,
-        load_options: &LoadOptions,
-        stream: &gio::InputStream,
-        cancellable: Option<&gio::Cancellable>,
-    ) -> Result<(), LoadingError> {
-        self.read_stream_sync(load_options, stream, cancellable)
-    }
-
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         self.get_svg().get_intrinsic_dimensions()
     }

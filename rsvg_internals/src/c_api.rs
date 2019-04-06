@@ -963,7 +963,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
         .read(cancellable.as_ref())
         .map_err(|e| LoadingError::from(e))
         .and_then(|stream| {
-            rhandle.handle.construct_read_stream_sync(
+            rhandle.handle.read_stream_sync(
                 &rhandle.load_options(),
                 &stream.upcast(),
                 cancellable.as_ref(),
@@ -1001,7 +1001,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_stream_sync(
     let stream = from_glib_none(input_stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.handle.construct_read_stream_sync(
+    match rhandle.handle.read_stream_sync(
         &rhandle.load_options(),
         &stream,
         cancellable.as_ref(),
