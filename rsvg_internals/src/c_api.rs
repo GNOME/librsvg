@@ -158,6 +158,7 @@ pub struct SizeCallback {
     size_func: RsvgSizeFunc,
     user_data: glib_sys::gpointer,
     destroy_notify: glib_sys::GDestroyNotify,
+    in_loop: Cell<bool>,
 }
 
 impl SizeCallback {
@@ -173,6 +174,20 @@ impl SizeCallback {
             (w, h)
         }
     }
+
+    pub fn start_loop(&self) {
+        assert!(!self.in_loop.get());
+        self.in_loop.set(true);
+    }
+
+    pub fn end_loop(&self) {
+        assert!(self.in_loop.get());
+        self.in_loop.set(false);
+    }
+
+    pub fn get_in_loop(&self) -> bool {
+        self.in_loop.get()
+    }
 }
 
 impl Default for SizeCallback {
@@ -181,6 +196,7 @@ impl Default for SizeCallback {
             size_func: None,
             user_data: ptr::null_mut(),
             destroy_notify: None,
+            in_loop: Cell::new(false),
         }
     }
 }
@@ -484,9 +500,9 @@ impl CHandle {
             size_func,
             user_data,
             destroy_notify,
+            in_loop: Cell::new(false),
         };
     }
-
 }
 
 pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
@@ -674,8 +690,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_size_callback(
 ) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle
-        .set_size_callback(size_func, user_data, destroy_notify);
+    rhandle.set_size_callback(size_func, user_data, destroy_notify);
 }
 
 #[no_mangle]
@@ -780,10 +795,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
 
     let size_callback = rhandle.size_callback.borrow();
 
-    match rhandle
-        .handle
-        .render_cairo_sub(&cr, id.as_ref().map(String::as_str), rhandle.dpi.get(), &*size_callback)
-    {
+    match rhandle.handle.render_cairo_sub(
+        &cr,
+        id.as_ref().map(String::as_str),
+        rhandle.dpi.get(),
+        &*size_callback,
+    ) {
         Ok(()) => true.to_glib(),
 
         Err(_) => {
@@ -803,10 +820,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf_sub(
 
     let size_callback = rhandle.size_callback.borrow();
 
-    match rhandle
-        .handle
-        .get_pixbuf_sub(id.as_ref().map(String::as_str), rhandle.dpi.get(), &*size_callback)
-    {
+    match rhandle.handle.get_pixbuf_sub(
+        id.as_ref().map(String::as_str),
+        rhandle.dpi.get(),
+        &*size_callback,
+    ) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(_) => ptr::null_mut(),
     }
@@ -821,7 +839,9 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
 
     let size_callback = rhandle.size_callback.borrow();
 
-    *dimension_data = rhandle.handle.get_dimensions_no_error(rhandle.dpi.get(), &*size_callback);
+    *dimension_data = rhandle
+        .handle
+        .get_dimensions_no_error(rhandle.dpi.get(), &*size_callback);
 }
 
 #[no_mangle]
@@ -836,14 +856,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
 
     let size_callback = rhandle.size_callback.borrow();
 
-    match rhandle
-        .handle
-        .get_dimensions_sub(
-            id.as_ref().map(String::as_str),
-            rhandle.dpi.get(),
-            &*size_callback,
-        )
-    {
+    match rhandle.handle.get_dimensions_sub(
+        id.as_ref().map(String::as_str),
+        rhandle.dpi.get(),
+        &*size_callback,
+    ) {
         Ok(dimensions) => {
             *dimension_data = dimensions;
             true.to_glib()
@@ -875,10 +892,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
 
     let size_callback = rhandle.size_callback.borrow();
 
-    match rhandle
-        .handle
-        .get_position_sub(id.as_ref().map(String::as_str), rhandle.dpi.get(), &*size_callback)
-    {
+    match rhandle.handle.get_position_sub(
+        id.as_ref().map(String::as_str),
+        rhandle.dpi.get(),
+        &*size_callback,
+    ) {
         Ok(position) => {
             *position_data = position;
             true.to_glib()

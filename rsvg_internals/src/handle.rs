@@ -75,7 +75,6 @@ pub struct Handle {
     svg: RefCell<Option<Rc<Svg>>>,
     load_state: Cell<LoadState>,
     buffer: RefCell<Vec<u8>>, // used by the legacy write() api
-    in_loop: Cell<bool>,
     is_testing: Cell<bool>,
 }
 
@@ -85,7 +84,6 @@ impl Handle {
             svg: RefCell::new(None),
             load_state: Cell::new(LoadState::Start),
             buffer: RefCell::new(Vec::new()),
-            in_loop: Cell::new(false),
             is_testing: Cell::new(false),
         }
     }
@@ -192,14 +190,18 @@ impl Handle {
         }
     }
 
-    pub fn get_dimensions(&self, dpi: Dpi, size_callback: &SizeCallback) -> Result<RsvgDimensionData, RenderingError> {
+    pub fn get_dimensions(
+        &self,
+        dpi: Dpi,
+        size_callback: &SizeCallback,
+    ) -> Result<RsvgDimensionData, RenderingError> {
         self.check_is_loaded()?;
 
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
         // To prevent an infinite loop we are saving the state, and
         // returning a meaningless size.
-        if self.in_loop.get() {
+        if size_callback.get_in_loop() {
             return Ok(RsvgDimensionData {
                 width: 1,
                 height: 1,
@@ -208,16 +210,20 @@ impl Handle {
             });
         }
 
-        self.in_loop.set(true);
+        size_callback.start_loop();
 
         let res = self.get_dimensions_sub(None, dpi, size_callback);
 
-        self.in_loop.set(false);
+        size_callback.end_loop();
 
         res
     }
 
-    pub fn get_dimensions_no_error(&self, dpi: Dpi, size_callback: &SizeCallback) -> RsvgDimensionData {
+    pub fn get_dimensions_no_error(
+        &self,
+        dpi: Dpi,
+        size_callback: &SizeCallback,
+    ) -> RsvgDimensionData {
         match self.get_dimensions(dpi, size_callback) {
             Ok(dimensions) => dimensions,
 
@@ -472,7 +478,12 @@ impl Handle {
         res
     }
 
-    pub fn get_pixbuf_sub(&self, id: Option<&str>, dpi: Dpi, size_callback: &SizeCallback) -> Result<Pixbuf, RenderingError> {
+    pub fn get_pixbuf_sub(
+        &self,
+        id: Option<&str>,
+        dpi: Dpi,
+        size_callback: &SizeCallback,
+    ) -> Result<Pixbuf, RenderingError> {
         self.check_is_loaded()?;
 
         let dimensions = self.get_dimensions(dpi, size_callback)?;
