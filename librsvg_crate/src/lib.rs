@@ -97,7 +97,7 @@ use std::path::Path;
 
 use gio::{Cancellable, FileExt};
 
-use rsvg_internals::{Dpi, Handle, LoadFlags};
+use rsvg_internals::{Dpi, Handle};
 
 pub use rsvg_internals::{
     DefsLookupErrorKind, HrefError, Length, LengthUnit, LoadOptions, LoadingError, RenderingError,
@@ -207,13 +207,6 @@ impl Loader {
         self
     }
 
-    fn load_flags(&self) -> LoadFlags {
-        LoadFlags {
-            unlimited_size: self.unlimited_size,
-            keep_image_data: self.keep_image_data,
-        }
-    }
-
     /// Reads an SVG file from `path`.
     ///
     /// # Example:
@@ -284,7 +277,9 @@ impl Loader {
             None
         };
 
-        let load_options = LoadOptions::new(self.load_flags(), base_url);
+        let load_options = LoadOptions::new(base_url)
+            .with_unlimited_size(self.unlimited_size)
+            .keep_image_data(self.keep_image_data);
 
         Ok(SvgHandle(Handle::from_stream(
             &load_options,

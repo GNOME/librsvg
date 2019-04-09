@@ -493,7 +493,7 @@ impl XmlState {
         stream: S,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), ParseFromStreamError> {
-        Xml2Parser::from_stream(self, self.load_options.flags, stream, cancellable)
+        Xml2Parser::from_stream(self, self.load_options.unlimited_size, stream, cancellable)
             .and_then(|parser| parser.parse())
     }
 

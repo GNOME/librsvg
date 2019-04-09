@@ -60,7 +60,7 @@ pub use crate::error::{
     RenderingError,
 };
 
-pub use crate::handle::{Handle, LoadFlags, LoadOptions};
+pub use crate::handle::{Handle, LoadOptions};
 
 pub use crate::length::{Length, LengthUnit};
 

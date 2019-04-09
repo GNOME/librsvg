@@ -16,7 +16,6 @@ use std::sync::Once;
 use glib::translate::*;
 
 use crate::error::LoadingError;
-use crate::handle::LoadFlags;
 use crate::property_bag::PropertyBag;
 use crate::util::cstr;
 use crate::util::utf8_cstr;
@@ -215,10 +214,10 @@ unsafe extern "C" fn sax_get_parameter_entity_cb(
     sax_get_entity_cb(ctx, name)
 }
 
-fn set_xml_parse_options(parser: xmlParserCtxtPtr, load_flags: LoadFlags) {
+fn set_xml_parse_options(parser: xmlParserCtxtPtr, unlimited_size: bool) {
     let mut options: libc::c_int = XML_PARSE_NONET | XML_PARSE_BIG_LINES;
 
-    if load_flags.unlimited_size {
+    if unlimited_size {
         options |= XML_PARSE_HUGE;
     }
 
@@ -320,7 +319,7 @@ pub struct Xml2Parser {
 impl Xml2Parser {
     pub fn from_stream<S: IsA<gio::InputStream>>(
         xml: &mut XmlState,
-        load_flags: LoadFlags,
+        unlimited_size: bool,
         stream: S,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Xml2Parser, ParseFromStreamError> {
@@ -358,7 +357,7 @@ impl Xml2Parser {
                 // stream_ctx_close function
                 Err(ParseFromStreamError::CouldNotCreateXmlParser)
             } else {
-                set_xml_parse_options(parser, load_flags);
+                set_xml_parse_options(parser, unlimited_size);
                 Ok(Xml2Parser { parser, gio_error })
             }
         }

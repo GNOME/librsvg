@@ -14,7 +14,7 @@ use url::Url;
 use crate::c_api::{RsvgDimensionData, SizeCallback};
 use crate::dpi::Dpi;
 use crate::error::{set_gerror, LoadingError, RenderingError};
-use crate::handle::{Handle, LoadFlags, LoadOptions};
+use crate::handle::{Handle, LoadOptions};
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::SharedImageSurface, shared_surface::SurfaceType,
@@ -222,7 +222,7 @@ fn pixbuf_from_file_with_size_mode(
             }
         };
 
-        let load_options = LoadOptions::new(LoadFlags::default(), Some(base_url));
+        let load_options = LoadOptions::new(Some(base_url));
 
         let cancellable: Option<&gio::Cancellable> = None;
         let handle = match file

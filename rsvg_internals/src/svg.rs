@@ -200,7 +200,7 @@ fn load_image(
 
     let pixbuf = loader.get_pixbuf().ok_or(LoadingError::Unknown)?;
 
-    let bytes = if load_options.flags.keep_image_data {
+    let bytes = if load_options.keep_image_data {
         Some(bytes)
     } else {
         None
