@@ -186,12 +186,8 @@ impl Handle {
         })
     }
 
-    fn get_svg(&self) -> Rc<Svg> {
-        self.svg.clone()
-    }
-
     fn get_root(&self) -> RsvgNode {
-        self.get_svg().root()
+        self.svg.root()
     }
 
     /// Returns (ink_rect, logical_rect)
@@ -205,7 +201,7 @@ impl Handle {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
         let mut draw_ctx = DrawingCtx::new(
-            self.get_svg(),
+            self.svg.clone(),
             Some(node),
             &cr,
             viewport,
@@ -319,7 +315,7 @@ impl Handle {
                     return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
                 }
 
-                match self.get_svg().lookup_node_by_id(fragment.fragment()) {
+                match self.svg.lookup_node_by_id(fragment.fragment()) {
                     Some(n) => Ok(n),
                     None => Err(DefsLookupErrorKind::NotFound),
                 }
@@ -373,7 +369,7 @@ impl Handle {
 
         cr.save();
         let mut draw_ctx = DrawingCtx::new(
-            self.get_svg(),
+            self.svg.clone(),
             node.as_ref(),
             cr,
             viewport,
@@ -414,7 +410,7 @@ impl Handle {
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        self.get_svg().get_intrinsic_dimensions()
+        self.svg.get_intrinsic_dimensions()
     }
 }
 
