@@ -186,10 +186,6 @@ impl Handle {
         })
     }
 
-    fn get_root(&self) -> RsvgNode {
-        self.svg.root()
-    }
-
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry_with_viewport(
         &self,
@@ -209,7 +205,7 @@ impl Handle {
             true,
             is_testing,
         );
-        let root = self.get_root();
+        let root = self.svg.root();
 
         draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
 
@@ -236,7 +232,7 @@ impl Handle {
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
 
-        let root = self.get_root();
+        let root = self.svg.root();
         let is_root = Rc::ptr_eq(&node, &root);
 
         if is_root {
@@ -274,7 +270,7 @@ impl Handle {
         if let Some(id) = id {
             self.lookup_node(id).map_err(RenderingError::InvalidId)
         } else {
-            Ok(self.get_root())
+            Ok(self.svg.root())
         }
     }
 
@@ -365,7 +361,7 @@ impl Handle {
             None
         };
 
-        let root = self.get_root();
+        let root = self.svg.root();
 
         cr.save();
         let mut draw_ctx = DrawingCtx::new(
