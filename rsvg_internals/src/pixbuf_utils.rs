@@ -178,7 +178,7 @@ fn render_to_pixbuf_at_size(
             f64::from(width) / f64::from(dimensions.width),
             f64::from(height) / f64::from(dimensions.height),
         );
-        handle.render_cairo_sub(&cr, None, dpi, &SizeCallback::default())?;
+        handle.render_cairo_sub(&cr, None, dpi, &SizeCallback::default(), false)?;
     }
 
     let shared_surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
@@ -225,25 +225,21 @@ fn pixbuf_from_file_with_size_mode(
 
         let load_options = LoadOptions::new(LoadFlags::default(), Some(base_url));
 
-        let handle = Handle::new();
         let cancellable: Option<&gio::Cancellable> = None;
-        if let Err(e) = file
+        let handle = match file
             .read(cancellable)
             .map_err(|e| LoadingError::from(e))
-            .and_then(|stream| {
-                handle.read_stream_sync(
-                    &load_options,
-                    &stream.upcast(),
-                    None,
-                )
-            })
+            .and_then(|stream| Handle::from_stream(&load_options, &stream.upcast(), None))
         {
-            set_gerror(error, 0, &format!("{}", e));
-            return ptr::null_mut();
-        }
+            Ok(handle) => handle,
+            Err(e) => {
+                set_gerror(error, 0, &format!("{}", e));
+                return ptr::null_mut();
+            }
+        };
 
         handle
-            .get_dimensions(dpi, &SizeCallback::default())
+            .get_dimensions(dpi, &SizeCallback::default(), false)
             .and_then(|dimensions| {
                 let (width, height) = get_final_size(&dimensions, size_mode);
 

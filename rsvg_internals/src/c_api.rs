@@ -1,4 +1,4 @@
-use std::cell::{Cell, RefCell};
+use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::ffi::{CStr, CString};
 use std::ops;
 use std::path::PathBuf;
@@ -7,7 +7,9 @@ use std::slice;
 use std::sync::Once;
 use std::{f64, i32};
 
+use gdk_pixbuf::Pixbuf;
 use libc;
+use url::Url;
 
 use gio::prelude::*;
 
@@ -17,17 +19,18 @@ use glib::subclass::object::ObjectClassSubclassExt;
 use glib::subclass::prelude::*;
 use glib::translate::*;
 use glib::value::{FromValue, FromValueOptional, SetValue};
-use glib::{Cast, ParamFlags, ParamSpec, StaticType, ToValue, Type, Value};
+use glib::{Bytes, Cast, ParamFlags, ParamSpec, StaticType, ToValue, Type, Value};
 
 use glib_sys;
 use gobject_sys::{self, GEnumValue, GFlagsValue};
 
 use crate::dpi::Dpi;
 use crate::drawing_ctx::RsvgRectangle;
-use crate::error::{set_gerror, LoadingError, RSVG_ERROR_FAILED};
-use crate::handle::{Handle, LoadFlags, LoadOptions, LoadState};
+use crate::error::{set_gerror, LoadingError, RenderingError, RSVG_ERROR_FAILED};
+use crate::handle::{Handle, LoadFlags, LoadOptions};
 use crate::length::RsvgLength;
-use url::Url;
+use crate::structure::IntrinsicDimensions;
+use crate::util::rsvg_g_warning;
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -211,6 +214,18 @@ impl Drop for SizeCallback {
     }
 }
 
+enum LoadState {
+    // Just created the CHandle
+    Start,
+
+    // Being loaded using the legacy write()/close() API
+    Loading { buffer: Vec<u8> },
+
+    ClosedOk { handle: Handle },
+
+    ClosedError,
+}
+
 /// Contains all the interior mutability for a RsvgHandle to be called
 /// from the C API.
 pub struct CHandle {
@@ -219,7 +234,8 @@ pub struct CHandle {
     base_url: RefCell<Option<Url>>,
     base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
     size_callback: RefCell<SizeCallback>,
-    handle: Handle,
+    is_testing: Cell<bool>,
+    load_state: RefCell<LoadState>,
 }
 
 unsafe impl ClassStruct for RsvgHandleClass {
@@ -350,7 +366,8 @@ impl ObjectSubclass for CHandle {
             base_url: RefCell::new(None),
             base_url_cstring: RefCell::new(None),
             size_callback: RefCell::new(SizeCallback::default()),
-            handle: Handle::new(),
+            is_testing: Cell::new(false),
+            load_state: RefCell::new(LoadState::Start),
         }
     }
 }
@@ -415,24 +432,29 @@ impl ObjectImpl for CHandle {
                 .to_value()),
 
             subclass::Property("width", ..) => Ok(self
-                .handle
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback)
+                .get_handle_ref()
+                .unwrap()
+                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
                 .width
                 .to_value()),
+
             subclass::Property("height", ..) => Ok(self
-                .handle
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback)
+                .get_handle_ref()
+                .unwrap()
+                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
                 .height
                 .to_value()),
 
             subclass::Property("em", ..) => Ok(self
-                .handle
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback)
+                .get_handle_ref()
+                .unwrap()
+                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
                 .em
                 .to_value()),
             subclass::Property("ex", ..) => Ok(self
-                .handle
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback)
+                .get_handle_ref()
+                .unwrap()
+                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
                 .ex
                 .to_value()),
 
@@ -502,6 +524,177 @@ impl CHandle {
             destroy_notify,
             in_loop: Cell::new(false),
         };
+    }
+
+    fn write(&self, buf: &[u8]) {
+        let mut state = self.load_state.borrow_mut();
+
+        match *state {
+            LoadState::Start => {
+                *state = LoadState::Loading {
+                    buffer: Vec::from(buf),
+                }
+            }
+
+            LoadState::Loading { ref mut buffer } => {
+                buffer.extend_from_slice(buf);
+            }
+
+            _ => panic!("Handle must not be closed in order to write to it"),
+        }
+    }
+
+    fn close(&self) -> Result<(), LoadingError> {
+        let mut state = self.load_state.borrow_mut();
+
+        match *state {
+            LoadState::Start => {
+                *state = LoadState::ClosedError;
+                Err(LoadingError::NoDataPassedToParser)
+            }
+
+            LoadState::Loading { ref buffer } => {
+                let bytes = Bytes::from(&*buffer);
+                let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+
+                self.read_stream(state, &stream.upcast(), None)
+            }
+
+            // Closing is idempotent
+            LoadState::ClosedOk { .. } => Ok(()),
+            LoadState::ClosedError => Ok(()),
+        }
+    }
+
+    fn read_stream_sync(
+        &self,
+        stream: &gio::InputStream,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<(), LoadingError> {
+        let state = self.load_state.borrow_mut();
+
+        match *state {
+            LoadState::Start => self.read_stream(state, stream, cancellable),
+            LoadState::Loading { .. } | LoadState::ClosedOk { .. } | LoadState::ClosedError => {
+                panic!(
+                "handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",
+            )
+            }
+        }
+    }
+
+    fn read_stream(
+        &self,
+        mut load_state: RefMut<LoadState>,
+        stream: &gio::InputStream,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<(), LoadingError> {
+        match Handle::from_stream(&self.load_options(), stream, cancellable) {
+            Ok(handle) => {
+                *load_state = LoadState::ClosedOk { handle };
+                Ok(())
+            }
+
+            Err(e) => {
+                *load_state = LoadState::ClosedError;
+                Err(e)
+            }
+        }
+    }
+
+    fn get_handle_ref(&self) -> Result<Ref<Handle>, RenderingError> {
+        let state = self.load_state.borrow();
+
+        match *state {
+            LoadState::Start => {
+                rsvg_g_warning("Handle has not been loaded");
+                Err(RenderingError::HandleIsNotLoaded)
+            }
+
+            LoadState::Loading { .. } => {
+                rsvg_g_warning("Handle is still loading; call rsvg_handle_close() first");
+                Err(RenderingError::HandleIsNotLoaded)
+            }
+
+            LoadState::ClosedError => {
+                rsvg_g_warning(
+                    "Handle could not read or parse the SVG; did you check for errors during \
+                     the loading stage?",
+                );
+                Err(RenderingError::HandleIsNotLoaded)
+            }
+
+            LoadState::ClosedOk { .. } => Ok(Ref::map(state, |s| match *s {
+                LoadState::ClosedOk { ref handle } => handle,
+                _ => unreachable!(),
+            })),
+        }
+    }
+
+    fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        handle.has_sub(id)
+    }
+
+    fn get_dimensions(&self) -> RsvgDimensionData {
+        if let Ok(handle) = self.get_handle_ref() {
+            let size_callback = self.size_callback.borrow();
+            handle.get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
+        } else {
+            panic!("Handle is not loaded");
+        }
+    }
+
+    fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let size_callback = self.size_callback.borrow();
+        handle.get_dimensions_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+    }
+
+    fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let size_callback = self.size_callback.borrow();
+        handle.get_position_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+    }
+
+    fn render_cairo_sub(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+    ) -> Result<(), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let size_callback = self.size_callback.borrow();
+        handle.render_cairo_sub(
+            cr,
+            id,
+            self.dpi.get(),
+            &*size_callback,
+            self.is_testing.get(),
+        )
+    }
+
+    fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let size_callback = self.size_callback.borrow();
+        handle.get_pixbuf_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+    }
+
+    fn get_geometry_for_element(
+        &self,
+        id: Option<&str>,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        handle.get_geometry_for_element(id, viewport, self.dpi.get(), self.is_testing.get())
+    }
+
+    fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        let handle = self.get_handle_ref().unwrap();
+        handle.get_intrinsic_dimensions()
+    }
+
+    fn set_testing(&self, is_testing: bool) {
+        self.is_testing.set(is_testing);
     }
 }
 
@@ -700,7 +893,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_testing(
 ) {
     let rhandle = get_rust_handle(raw_handle);
 
-    rhandle.handle.set_testing(from_glib(testing));
+    rhandle.set_testing(from_glib(testing));
 }
 
 #[no_mangle]
@@ -712,17 +905,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_read_stream_sync(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if rhandle.handle.load_state() != LoadState::Start {
-        panic!("handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",);
-    }
-
     let stream = from_glib_none(stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle
-        .handle
-        .read_stream_sync(&rhandle.load_options(), &stream, cancellable.as_ref())
-    {
+    match rhandle.read_stream_sync(&stream, cancellable.as_ref()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -739,16 +925,8 @@ pub unsafe extern "C" fn rsvg_rust_handle_write(
     count: usize,
 ) {
     let rhandle = get_rust_handle(handle);
-
-    let load_state = rhandle.handle.load_state();
-
-    if !(load_state == LoadState::Start || load_state == LoadState::Loading) {
-        panic!("handle must not be closed in order to write to it");
-    }
-
     let buffer = slice::from_raw_parts(buf, count);
-
-    rhandle.handle.write(buffer);
+    rhandle.write(buffer);
 }
 
 #[no_mangle]
@@ -758,7 +936,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_close(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    match rhandle.handle.close(&rhandle.load_options()) {
+    match rhandle.close() {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -780,7 +958,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_has_sub(
 
     let id: String = from_glib_none(id);
     // FIXME: return a proper error code to the public API
-    rhandle.handle.has_sub(&id).unwrap_or(false).to_glib()
+    rhandle.has_sub(&id).unwrap_or(false).to_glib()
 }
 
 #[no_mangle]
@@ -793,14 +971,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    let size_callback = rhandle.size_callback.borrow();
-
-    match rhandle.handle.render_cairo_sub(
-        &cr,
-        id.as_ref().map(String::as_str),
-        rhandle.dpi.get(),
-        &*size_callback,
-    ) {
+    match rhandle.render_cairo_sub(&cr, id.as_ref().map(String::as_str)) {
         Ok(()) => true.to_glib(),
 
         Err(_) => {
@@ -818,13 +989,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf_sub(
     let rhandle = get_rust_handle(handle);
     let id: Option<String> = from_glib_none(id);
 
-    let size_callback = rhandle.size_callback.borrow();
-
-    match rhandle.handle.get_pixbuf_sub(
-        id.as_ref().map(String::as_str),
-        rhandle.dpi.get(),
-        &*size_callback,
-    ) {
+    match rhandle.get_pixbuf_sub(id.as_ref().map(String::as_str)) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(_) => ptr::null_mut(),
     }
@@ -836,12 +1001,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
     dimension_data: *mut RsvgDimensionData,
 ) {
     let rhandle = get_rust_handle(handle);
-
-    let size_callback = rhandle.size_callback.borrow();
-
-    *dimension_data = rhandle
-        .handle
-        .get_dimensions_no_error(rhandle.dpi.get(), &*size_callback);
+    *dimension_data = rhandle.get_dimensions();
 }
 
 #[no_mangle]
@@ -854,13 +1014,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    let size_callback = rhandle.size_callback.borrow();
-
-    match rhandle.handle.get_dimensions_sub(
-        id.as_ref().map(String::as_str),
-        rhandle.dpi.get(),
-        &*size_callback,
-    ) {
+    match rhandle.get_dimensions_sub(id.as_ref().map(String::as_str)) {
         Ok(dimensions) => {
             *dimension_data = dimensions;
             true.to_glib()
@@ -890,13 +1044,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    let size_callback = rhandle.size_callback.borrow();
-
-    match rhandle.handle.get_position_sub(
-        id.as_ref().map(String::as_str),
-        rhandle.dpi.get(),
-        &*size_callback,
-    ) {
+    match rhandle.get_position_sub(id.as_ref().map(String::as_str)) {
         Ok(position) => {
             *position_data = position;
             true.to_glib()
@@ -962,13 +1110,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
     let res = file
         .read(cancellable.as_ref())
         .map_err(|e| LoadingError::from(e))
-        .and_then(|stream| {
-            rhandle.handle.read_stream_sync(
-                &rhandle.load_options(),
-                &stream.upcast(),
-                cancellable.as_ref(),
-            )
-        });
+        .and_then(|stream| rhandle.read_stream_sync(&stream.upcast(), cancellable.as_ref()));
 
     match res {
         Ok(()) => raw_handle,
@@ -1001,11 +1143,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_stream_sync(
     let stream = from_glib_none(input_stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.handle.read_stream_sync(
-        &rhandle.load_options(),
-        &stream,
-        cancellable.as_ref(),
-    ) {
+    match rhandle.read_stream_sync(&stream, cancellable.as_ref()) {
         Ok(()) => raw_handle,
 
         Err(e) => {
@@ -1081,11 +1219,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    if rhandle.handle.check_is_loaded().is_err() {
-        return;
-    }
-
-    let d = rhandle.handle.get_intrinsic_dimensions();
+    let d = rhandle.get_intrinsic_dimensions();
 
     let w = d.width.map(|l| l.to_length());
     let h = d.height.map(|l| l.to_length());
@@ -1107,17 +1241,9 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
 ) -> glib_sys::gboolean {
     let rhandle = get_rust_handle(handle);
 
-    if rhandle.handle.check_is_loaded().is_err() {
-        return false.to_glib();
-    }
-
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.handle.get_geometry_for_element(
-        id.as_ref().map(String::as_str),
-        &viewport.into(),
-        rhandle.dpi.get(),
-    ) {
+    match rhandle.get_geometry_for_element(id.as_ref().map(String::as_str), &viewport.into()) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;

@@ -1,10 +1,9 @@
-use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use cairo::{self, ImageSurface, Status};
 use gdk_pixbuf::Pixbuf;
 use gio;
-use glib::{self, Bytes, Cast};
+use glib;
 use libc;
 use locale_config::{LanguageRange, Locale};
 
@@ -63,124 +62,22 @@ impl LoadOptions {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
-pub enum LoadState {
-    Start,
-    Loading,
-    ClosedOk,
-    ClosedError,
-}
-
 pub struct Handle {
-    svg: RefCell<Option<Rc<Svg>>>,
-    load_state: Cell<LoadState>,
-    buffer: RefCell<Vec<u8>>, // used by the legacy write() api
-    is_testing: Cell<bool>,
+    svg: Rc<Svg>,
 }
 
 impl Handle {
-    pub fn new() -> Handle {
-        Handle {
-            svg: RefCell::new(None),
-            load_state: Cell::new(LoadState::Start),
-            buffer: RefCell::new(Vec::new()),
-            is_testing: Cell::new(false),
-        }
-    }
-
-    fn get_svg(&self) -> Rc<Svg> {
-        // This assumes that the Svg is already loaded, or unwrap() will panic
-        self.svg.borrow().as_ref().unwrap().clone()
-    }
-
-    pub fn read_stream_sync(
-        &self,
+    pub fn from_stream(
         load_options: &LoadOptions,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
-    ) -> Result<(), LoadingError> {
-        self.load_state.set(LoadState::Loading);
-
-        let svg = Svg::load_from_stream(load_options, stream, cancellable).map_err(|e| {
-            self.load_state.set(LoadState::ClosedError);
-            e
-        })?;
-
-        *self.svg.borrow_mut() = Some(Rc::new(svg));
-        self.load_state.set(LoadState::ClosedOk);
-        Ok(())
-    }
-
-    pub fn check_is_loaded(self: &Handle) -> Result<(), RenderingError> {
-        match self.load_state.get() {
-            LoadState::Start => {
-                rsvg_g_warning("RsvgHandle has not been loaded");
-                Err(RenderingError::HandleIsNotLoaded)
-            }
-
-            LoadState::Loading => {
-                rsvg_g_warning("RsvgHandle is still loading; call rsvg_handle_close() first");
-                Err(RenderingError::HandleIsNotLoaded)
-            }
-
-            LoadState::ClosedOk => Ok(()),
-
-            LoadState::ClosedError => {
-                rsvg_g_warning(
-                    "RsvgHandle could not read or parse the SVG; did you check for errors during \
-                     the loading stage?",
-                );
-                Err(RenderingError::HandleIsNotLoaded)
-            }
-        }
-    }
-
-    pub fn load_state(&self) -> LoadState {
-        self.load_state.get()
-    }
-
-    pub fn write(&self, buf: &[u8]) {
-        match self.load_state.get() {
-            LoadState::Start => self.load_state.set(LoadState::Loading),
-            LoadState::Loading => (),
-            _ => unreachable!(),
-        };
-
-        self.buffer.borrow_mut().extend_from_slice(buf);
-    }
-
-    pub fn close(&self, load_options: &LoadOptions) -> Result<(), LoadingError> {
-        let res = match self.load_state.get() {
-            LoadState::Start => {
-                self.load_state.set(LoadState::ClosedError);
-                Err(LoadingError::NoDataPassedToParser)
-            }
-
-            LoadState::Loading => {
-                let buffer = self.buffer.borrow();
-                let bytes = Bytes::from(&*buffer);
-                let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
-
-                self.read_stream_sync(load_options, &stream.upcast(), None)
-            }
-
-            LoadState::ClosedOk | LoadState::ClosedError => {
-                // closing is idempotent
-                Ok(())
-            }
-        };
-
-        assert!(
-            self.load_state.get() == LoadState::ClosedOk
-                || self.load_state.get() == LoadState::ClosedError
-        );
-
-        res
+    ) -> Result<Handle, LoadingError> {
+        Ok(Handle {
+            svg: Rc::new(Svg::load_from_stream(load_options, stream, cancellable)?),
+        })
     }
 
     pub fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
-        self.check_is_loaded()?;
-
         match self.lookup_node(id) {
             Ok(_) => Ok(true),
 
@@ -194,9 +91,8 @@ impl Handle {
         &self,
         dpi: Dpi,
         size_callback: &SizeCallback,
+        is_testing: bool,
     ) -> Result<RsvgDimensionData, RenderingError> {
-        self.check_is_loaded()?;
-
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
         // To prevent an infinite loop we are saving the state, and
@@ -212,7 +108,7 @@ impl Handle {
 
         size_callback.start_loop();
 
-        let res = self.get_dimensions_sub(None, dpi, size_callback);
+        let res = self.get_dimensions_sub(None, dpi, size_callback, is_testing);
 
         size_callback.end_loop();
 
@@ -223,8 +119,9 @@ impl Handle {
         &self,
         dpi: Dpi,
         size_callback: &SizeCallback,
+        is_testing: bool,
     ) -> RsvgDimensionData {
-        match self.get_dimensions(dpi, size_callback) {
+        match self.get_dimensions(dpi, size_callback, is_testing) {
             Ok(dimensions) => dimensions,
 
             Err(_) => {
@@ -245,10 +142,9 @@ impl Handle {
         id: Option<&str>,
         dpi: Dpi,
         size_callback: &SizeCallback,
+        is_testing: bool,
     ) -> Result<RsvgDimensionData, RenderingError> {
-        self.check_is_loaded()?;
-
-        let (ink_r, _) = self.get_geometry_sub(id, dpi)?;
+        let (ink_r, _) = self.get_geometry_sub(id, dpi, is_testing)?;
 
         let (w, h) = size_callback.call(ink_r.width as libc::c_int, ink_r.height as libc::c_int);
 
@@ -265,14 +161,13 @@ impl Handle {
         id: Option<&str>,
         dpi: Dpi,
         size_callback: &SizeCallback,
+        is_testing: bool,
     ) -> Result<RsvgPositionData, RenderingError> {
-        self.check_is_loaded()?;
-
         if let None = id {
             return Ok(RsvgPositionData { x: 0, y: 0 });
         }
 
-        let (ink_r, _) = self.get_geometry_sub(id, dpi)?;
+        let (ink_r, _) = self.get_geometry_sub(id, dpi, is_testing)?;
 
         let width = ink_r.width as libc::c_int;
         let height = ink_r.height as libc::c_int;
@@ -285,6 +180,10 @@ impl Handle {
         })
     }
 
+    fn get_svg(&self) -> Rc<Svg> {
+        self.svg.clone()
+    }
+
     fn get_root(&self) -> RsvgNode {
         self.get_svg().root()
     }
@@ -295,6 +194,7 @@ impl Handle {
         node: &RsvgNode,
         viewport: &cairo::Rectangle,
         dpi: Dpi,
+        is_testing: bool,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
@@ -305,7 +205,7 @@ impl Handle {
             viewport,
             dpi,
             true,
-            self.is_testing.get(),
+            is_testing,
         );
         let root = self.get_root();
 
@@ -330,6 +230,7 @@ impl Handle {
         &self,
         id: Option<&str>,
         dpi: Dpi,
+        is_testing: bool,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
 
@@ -364,7 +265,7 @@ impl Handle {
             height: 1.0,
         };
 
-        self.get_node_geometry_with_viewport(&node, &viewport, dpi)
+        self.get_node_geometry_with_viewport(&node, &viewport, dpi, is_testing)
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
@@ -380,9 +281,10 @@ impl Handle {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
         dpi: Dpi,
+        is_testing: bool,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
-        self.get_node_geometry_with_viewport(&node, viewport, dpi)
+        self.get_node_geometry_with_viewport(&node, viewport, dpi, is_testing)
     }
 
     fn lookup_node(&self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
@@ -425,11 +327,11 @@ impl Handle {
         id: Option<&str>,
         dpi: Dpi,
         size_callback: &SizeCallback,
+        is_testing: bool,
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
-        self.check_is_loaded()?;
 
-        let dimensions = self.get_dimensions(dpi, size_callback)?;
+        let dimensions = self.get_dimensions(dpi, size_callback, is_testing)?;
         if dimensions.width == 0 || dimensions.height == 0 {
             // nothing to render
             return Ok(());
@@ -442,7 +344,7 @@ impl Handle {
             height: f64::from(dimensions.height),
         };
 
-        self.render_element_to_viewport(cr, id, &viewport, dpi)
+        self.render_element_to_viewport(cr, id, &viewport, dpi, is_testing)
     }
 
     pub fn render_element_to_viewport(
@@ -451,6 +353,7 @@ impl Handle {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
         dpi: Dpi,
+        is_testing: bool,
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
 
@@ -470,7 +373,7 @@ impl Handle {
             viewport,
             dpi,
             false,
-            self.is_testing.get(),
+            is_testing,
         );
         let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
         cr.restore();
@@ -483,10 +386,9 @@ impl Handle {
         id: Option<&str>,
         dpi: Dpi,
         size_callback: &SizeCallback,
+        is_testing: bool,
     ) -> Result<Pixbuf, RenderingError> {
-        self.check_is_loaded()?;
-
-        let dimensions = self.get_dimensions(dpi, size_callback)?;
+        let dimensions = self.get_dimensions(dpi, size_callback, is_testing)?;
 
         if dimensions.width == 0 || dimensions.height == 0 {
             return empty_pixbuf();
@@ -497,7 +399,7 @@ impl Handle {
 
         {
             let cr = cairo::Context::new(&surface);
-            self.render_cairo_sub(&cr, id, dpi, size_callback)?;
+            self.render_cairo_sub(&cr, id, dpi, size_callback, is_testing)?;
         }
 
         let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
@@ -507,10 +409,6 @@ impl Handle {
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         self.get_svg().get_intrinsic_dimensions()
-    }
-
-    pub fn set_testing(&self, testing: bool) {
-        self.is_testing.set(testing);
     }
 }
 

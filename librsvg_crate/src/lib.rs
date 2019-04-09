@@ -279,8 +279,6 @@ impl Loader {
         base_file: Option<&gio::File>,
         cancellable: P,
     ) -> Result<SvgHandle, LoadingError> {
-        let handle = Handle::new();
-
         let base_url = if let Some(base_file) = base_file {
             Some(url_from_file(&base_file)?)
         } else {
@@ -289,9 +287,11 @@ impl Loader {
 
         let load_options = LoadOptions::new(self.load_flags(), base_url);
 
-        handle.read_stream_sync(&load_options, stream, cancellable.into())?;
-
-        Ok(SvgHandle(handle))
+        Ok(SvgHandle(Handle::from_stream(
+            &load_options,
+            stream,
+            cancellable.into(),
+        )?))
     }
 }
 
@@ -396,7 +396,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_for_element(id, viewport, self.dpi)
+            .get_geometry_for_element(id, viewport, self.dpi, false)
             .map(|(i, l)| (i.into(), l.into()))
     }
 
@@ -408,6 +408,6 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(), RenderingError> {
         self.handle
             .0
-            .render_element_to_viewport(cr, id, viewport, self.dpi)
+            .render_element_to_viewport(cr, id, viewport, self.dpi, false)
     }
 }
