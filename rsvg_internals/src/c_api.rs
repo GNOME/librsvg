@@ -27,7 +27,7 @@ use gobject_sys::{self, GEnumValue, GFlagsValue};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::RsvgRectangle;
 use crate::error::{set_gerror, LoadingError, RenderingError, RSVG_ERROR_FAILED};
-use crate::handle::{Handle, LoadFlags, LoadOptions};
+use crate::handle::{Handle, LoadOptions};
 use crate::length::RsvgLength;
 use crate::structure::IntrinsicDimensions;
 use crate::util::rsvg_g_warning;
@@ -87,6 +87,12 @@ mod handle_flags {
             gobject_sys::g_value_set_flags(value.to_glib_none_mut().0, this.to_glib())
         }
     }
+}
+
+#[derive(Default, Copy, Clone)]
+struct LoadFlags {
+    pub unlimited_size: bool,
+    pub keep_image_data: bool,
 }
 
 pub use self::handle_flags::*;
@@ -509,7 +515,10 @@ impl CHandle {
     }
 
     fn load_options(&self) -> LoadOptions {
-        LoadOptions::new(self.load_flags.get(), self.base_url.borrow().clone())
+        let flags = self.load_flags.get();
+        LoadOptions::new(self.base_url.borrow().clone())
+            .with_unlimited_size(flags.unlimited_size)
+            .keep_image_data(flags.keep_image_data)
     }
 
     pub fn set_size_callback(

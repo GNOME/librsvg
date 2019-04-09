@@ -20,39 +20,45 @@ use crate::svg::Svg;
 use crate::util::rsvg_g_warning;
 use url::Url;
 
-/// Flags used during loading
-///
-/// We communicate these to/from the C code with a HandleFlags
-/// and this struct provides to_flags() and from_flags() methods.
-#[derive(Default, Copy, Clone)]
-pub struct LoadFlags {
+#[derive(Clone)]
+pub struct LoadOptions {
+    /// Base URL
+    pub base_url: Option<Url>,
+
     /// Whether to turn off size limits in libxml2
     pub unlimited_size: bool,
 
     /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces
     pub keep_image_data: bool,
-}
 
-#[derive(Clone)]
-pub struct LoadOptions {
-    pub flags: LoadFlags,
-    pub base_url: Option<Url>,
     locale: Locale,
 }
 
 impl LoadOptions {
-    pub fn new(flags: LoadFlags, base_url: Option<Url>) -> LoadOptions {
+    pub fn new(base_url: Option<Url>) -> Self {
         LoadOptions {
-            flags,
             base_url,
+            unlimited_size: false,
+            keep_image_data: false,
             locale: locale_from_environment(),
         }
     }
 
-    pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> LoadOptions {
+    pub fn with_unlimited_size(mut self, unlimited: bool) -> Self {
+        self.unlimited_size = unlimited;
+        self
+    }
+
+    pub fn keep_image_data(mut self, keep: bool) -> Self {
+        self.keep_image_data = keep;
+        self
+    }
+
+    pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> Self {
         LoadOptions {
-            flags: self.flags,
             base_url: Some((*base_url).clone()),
+            unlimited_size: self.unlimited_size,
+            keep_image_data: self.keep_image_data,
             locale: self.locale.clone(),
         }
     }
