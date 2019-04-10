@@ -44,7 +44,9 @@ impl Angle {
     // Normalizes an angle to [0.0, 2*PI)
     fn normalize(rad: f64) -> f64 {
         let res = rad % (PI * 2.0);
-        if res < 0.0 {
+        if res.abs() < std::f64::EPSILON {
+            res.abs()
+        } else if res < 0.0 {
             res + PI * 2.0
         } else {
             res
