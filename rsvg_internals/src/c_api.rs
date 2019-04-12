@@ -476,9 +476,12 @@ impl ObjectImpl for CHandle {
 
 impl CHandle {
     fn set_base_url(&self, url: &str) {
-        //        if self.load_state.get() != LoadState::Start {
-        //            panic!("Please set the base file or URI before loading any data into RsvgHandle",);
-        //        }
+        let mut state = self.load_state.borrow();
+
+        match *state {
+            LoadState::Start => (),
+            _ => panic!("Please set the base file or URI before loading any data into RsvgHandle",),
+        }
 
         match Url::parse(&url) {
             Ok(u) => {
