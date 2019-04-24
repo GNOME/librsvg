@@ -70,6 +70,10 @@
 #include <cairo-svg.h>
 #endif
 
+#ifdef CAIRO_HAS_SCRIPT_SURFACE
+#include <cairo-script.h>
+#endif
+
 #ifdef CAIRO_HAS_XML_SURFACE
 #include <cairo-xml.h>
 #endif
@@ -269,7 +273,7 @@ main (int argc, char **argv)
         {"height", 'h', 0, G_OPTION_ARG_INT, &height,
          N_("height [optional; defaults to the SVG's height]"), N_("<int>")},
         {"format", 'f', 0, G_OPTION_ARG_STRING, &format,
-         N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, eps, svg, xml, recording]")},
+         N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, eps, svg, xml, recording, script, recording-script]")},
         {"output", 'o', 0, G_OPTION_ARG_STRING, &output,
          N_("output filename [optional; defaults to stdout]"), NULL},
         {"export-id", 'i', 0, G_OPTION_ARG_STRING, &export_id,
@@ -516,10 +520,24 @@ main (int argc, char **argv)
                                                     scaled_width, scaled_height);
                 cairo_device_destroy (device);
             }
-#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE (1, 10, 0)
-            else if (!strcmp (format, "recording"))
-                surface = cairo_recording_surface_create (CAIRO_CONTENT_COLOR_ALPHA, NULL);
 #endif
+#ifdef CAIRO_HAS_SCRIPT_SURFACE
+            else if (!strcmp (format, "script")) {
+                cairo_device_t *device = cairo_script_create_for_stream (rsvg_cairo_write_func, output_file);
+                surface = cairo_script_surface_create (device, CAIRO_CONTENT_COLOR_ALPHA,
+                                                       scaled_width, scaled_height);
+                cairo_device_destroy (device);
+            }
+#endif
+#if defined( CAIRO_HAS_SCRIPT_SURFACE ) && CAIRO_VERSION >= CAIRO_VERSION_ENCODE (1, 10, 0)
+            else if (!strcmp (format, "recording")) {
+                surface = cairo_recording_surface_create (CAIRO_CONTENT_COLOR_ALPHA, NULL);
+            }
+            else if (!strcmp (format, "recording-script")) {
+                // if the size of surface is not declared, CairoScript interpreter refuses as invalid script.
+                cairo_rectangle_t extents = {0, 0, scaled_width, scaled_height};
+                surface = cairo_recording_surface_create (CAIRO_CONTENT_COLOR_ALPHA, &extents);
+            }
 #endif
             else {
                 g_printerr (_("Unknown output format."));
@@ -582,6 +600,15 @@ main (int argc, char **argv)
             cairo_device_destroy (device);
         }
 #endif
+#if CAIRO_HAS_SCRIPT_SURFACE && CAIRO_VERSION >= CAIRO_VERSION_ENCODE (1, 10, 0)
+        else if (!strcmp (format, "recording-script")) {
+            cairo_device_t *device = cairo_script_create_for_stream (rsvg_cairo_write_func, output_file);
+            cairo_script_from_recording_surface (device, surface);
+            cairo_device_destroy (device);
+        }
+#endif
+        else if (!strcmp (format, "script"))
+          ;
         else if (!strcmp (format, "xml"))
           ;
         else if (!strcmp (format, "svg") || !strcmp (format, "pdf") || !strcmp (format, "ps") || !strcmp (format, "eps"))
