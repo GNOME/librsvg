@@ -222,16 +222,16 @@ impl Parse for AspectRatio {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<AspectRatio, ValueErrorKind> {
-        let defer = parser.r#try(|p| p.expect_ident_matching("defer")).is_ok();
+        let defer = parser.try_parse(|p| p.expect_ident_matching("defer")).is_ok();
 
-        let align_xy = parser.r#try(|p| {
+        let align_xy = parser.try_parse(|p| {
             p.expect_ident()
                 .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
                 .and_then(|ident| parse_align_xy(ident))
         })?;
 
         let fit = parser
-            .r#try(|p| {
+            .try_parse(|p| {
                 p.expect_ident()
                     .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
                     .and_then(|ident| parse_fit_mode(ident))

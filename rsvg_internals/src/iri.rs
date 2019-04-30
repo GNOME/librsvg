@@ -36,7 +36,7 @@ impl Parse for IRI {
     type Err = ParseError;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<IRI, ParseError> {
-        if parser.r#try(|i| i.expect_ident_matching("none")).is_ok() {
+        if parser.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
             Ok(IRI::None)
         } else {
             let url = parser

@@ -121,7 +121,7 @@ impl Parse for FontWeightSpec {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, crate::error::ValueErrorKind> {
-        if let Ok(r) = parser.r#try(|p| {
+        if let Ok(r) = parser.try_parse(|p| {
             p.expect_ident()
                 .map_err(|_| ())
                 .and_then(|cow| match cow.as_ref() {
@@ -240,7 +240,7 @@ impl Parse for SingleFontFamily {
 fn parse_single_font_family<'i>(
     parser: &'i mut Parser<'_, '_>,
 ) -> Result<SingleFontFamily, BasicParseError<'i>> {
-    if let Ok(cow) = parser.r#try(|p| p.expect_string_cloned()) {
+    if let Ok(cow) = parser.try_parse(|p| p.expect_string_cloned()) {
         return Ok(SingleFontFamily((*cow).to_owned()));
     }
 
@@ -248,7 +248,7 @@ fn parse_single_font_family<'i>(
 
     let mut value = first_ident.as_ref().to_owned();
 
-    while let Ok(cow) = parser.r#try(|p| p.expect_ident_cloned()) {
+    while let Ok(cow) = parser.try_parse(|p| p.expect_ident_cloned()) {
         value.push(' ');
         value.push_str(&cow);
     }

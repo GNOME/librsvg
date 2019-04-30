@@ -1127,7 +1127,7 @@ make_property!(
                 let mut underline = false;
                 let mut strike = false;
 
-                if parser.r#try(|p| p.expect_ident_matching("none")).is_ok() {
+                if parser.try_parse(|p| p.expect_ident_matching("none")).is_ok() {
                     return Ok(TextDecoration::default());
                 }
 

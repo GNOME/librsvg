@@ -23,14 +23,14 @@ impl Parse for PaintServer {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<PaintServer, ValueErrorKind> {
-        if parser.r#try(|i| i.expect_ident_matching("none")).is_ok() {
+        if parser.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
             Ok(PaintServer::None)
-        } else if let Ok(url) = parser.r#try(|i| i.expect_url()) {
+        } else if let Ok(url) = parser.try_parse(|i| i.expect_url()) {
             let alternate = if !parser.is_exhausted() {
-                if parser.r#try(|i| i.expect_ident_matching("none")).is_ok() {
+                if parser.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
                     None
                 } else {
-                    Some(parser.r#try(|i| cssparser::Color::parse(i))?)
+                    Some(parser.try_parse(|i| cssparser::Color::parse(i))?)
                 }
             } else {
                 None

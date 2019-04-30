@@ -53,7 +53,7 @@ impl<'i, 't> CssParserExt for Parser<'i, 't> {
     }
 
     fn optional_comma(&mut self) {
-        let _ = self.r#try(|p| p.expect_comma());
+        let _ = self.try_parse(|p| p.expect_comma());
     }
 }
 

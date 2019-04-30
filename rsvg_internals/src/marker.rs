@@ -77,7 +77,7 @@ impl Parse for MarkerOrient {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerOrient, ValueErrorKind> {
-        if parser.r#try(|p| p.expect_ident_matching("auto")).is_ok() {
+        if parser.try_parse(|p| p.expect_ident_matching("auto")).is_ok() {
             Ok(MarkerOrient::Auto)
         } else {
             Angle::parse(parser).map(MarkerOrient::Angle)
