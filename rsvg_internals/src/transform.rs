@@ -118,7 +118,7 @@ fn parse_translate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Va
             let tx = p.expect_number()?;
 
             let ty = p
-                .r#try(|p| -> Result<f32, CssParseError<'_, ()>> {
+                .try_parse(|p| -> Result<f32, CssParseError<'_, ()>> {
                     p.optional_comma();
                     Ok(p.expect_number()?)
                 })
@@ -142,7 +142,7 @@ fn parse_scale_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueE
             let x = p.expect_number()?;
 
             let y = p
-                .r#try(|p| -> Result<f32, CssParseError<'_, ()>> {
+                .try_parse(|p| -> Result<f32, CssParseError<'_, ()>> {
                     p.optional_comma();
                     Ok(p.expect_number()?)
                 })
@@ -166,7 +166,7 @@ fn parse_rotate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Value
             let angle = p.expect_number()?;
 
             let (tx, ty) = p
-                .r#try(|p| -> Result<_, CssParseError<'_, ()>> {
+                .try_parse(|p| -> Result<_, CssParseError<'_, ()>> {
                     p.optional_comma();
                     let tx = p.expect_number()?;
 

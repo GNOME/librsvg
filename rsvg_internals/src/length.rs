@@ -360,7 +360,7 @@ impl Parse for Dasharray {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Dasharray, ValueErrorKind> {
-        if parser.r#try(|p| p.expect_ident_matching("none")).is_ok() {
+        if parser.try_parse(|p| p.expect_ident_matching("none")).is_ok() {
             Ok(Dasharray::None)
         } else {
             Ok(Dasharray::Array(parse_dash_array(parser)?))
@@ -377,7 +377,7 @@ fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<LengthBoth>, Valu
 
         if parser.is_exhausted() {
             break;
-        } else if parser.r#try(|p| p.expect_comma()).is_ok() {
+        } else if parser.try_parse(|p| p.expect_comma()).is_ok() {
             continue;
         }
     }
