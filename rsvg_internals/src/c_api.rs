@@ -476,7 +476,7 @@ impl ObjectImpl for CHandle {
 
 impl CHandle {
     fn set_base_url(&self, url: &str) {
-        let mut state = self.load_state.borrow();
+        let state = self.load_state.borrow();
 
         match *state {
             LoadState::Start => (),
