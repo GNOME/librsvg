@@ -10,7 +10,7 @@ use std::str;
 use crate::allowed_url::AllowedUrl;
 use crate::attributes::Attribute;
 use crate::create_node::create_node_and_register_id;
-use crate::css::CssStyles;
+use crate::css::CssRules;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, get_input_stream_for_loading};
@@ -70,7 +70,7 @@ extern "C" {
 pub struct XmlState {
     tree_root: Option<Rc<Node>>,
     ids: Option<HashMap<String, RsvgNode>>,
-    css_styles: Option<CssStyles>,
+    css_rules: Option<CssRules>,
     context_stack: Vec<Context>,
     current_node: Option<Rc<Node>>,
 
@@ -96,7 +96,7 @@ impl XmlState {
         XmlState {
             tree_root: None,
             ids: Some(HashMap::new()),
-            css_styles: Some(CssStyles::new()),
+            css_rules: Some(CssRules::new()),
             context_stack: vec![Context::Start],
             current_node: None,
             entities: HashMap::new(),
@@ -212,8 +212,8 @@ impl XmlState {
                     AllowedUrl::from_href(&href.unwrap(), self.load_options.base_url.as_ref())
                 {
                     // FIXME: handle CSS errors
-                    let css_styles = self.css_styles.as_mut().unwrap();
-                    let _ = css_styles.load_css(&aurl);
+                    let css_rules = self.css_rules.as_mut().unwrap();
+                    let _ = css_rules.load_css(&aurl);
                 } else {
                     self.error("disallowed URL in xml-stylesheet");
                 }
@@ -268,16 +268,16 @@ impl XmlState {
         // here, not during element creation.
         if node.get_type() == NodeType::Svg {
             node.with_impl(|svg: &NodeSvg| {
-                svg.set_delayed_style(&node, self.css_styles.as_ref().unwrap());
+                svg.set_delayed_style(&node, self.css_rules.as_ref().unwrap());
             });
         }
 
         if node.get_type() == NodeType::Style {
             let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
 
-            let css_styles = self.css_styles.as_mut().unwrap();
+            let css_rules = self.css_rules.as_mut().unwrap();
 
-            css_styles.parse(self.load_options.base_url.as_ref(), &css_data);
+            css_rules.parse(self.load_options.base_url.as_ref(), &css_data);
         }
 
         self.current_node = node.get_parent();
@@ -326,7 +326,7 @@ impl XmlState {
         // The "svg" node is special; it will parse its style attributes
         // until the end, in standard_element_end().
         if new_node.get_type() != NodeType::Svg {
-            new_node.set_style(self.css_styles.as_ref().unwrap(), pbag);
+            new_node.set_style(self.css_rules.as_ref().unwrap(), pbag);
         }
 
         new_node.set_overridden_properties();

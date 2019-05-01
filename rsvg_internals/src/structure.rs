@@ -6,7 +6,7 @@ use cairo::Rectangle;
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::attributes::Attribute;
-use crate::css::CssStyles;
+use crate::css::CssRules;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::{AttributeResultExt, RenderingError};
@@ -128,10 +128,10 @@ impl NodeSvg {
         }
     }
 
-    pub fn set_delayed_style(&self, node: &RsvgNode, css_styles: &CssStyles) {
+    pub fn set_delayed_style(&self, node: &RsvgNode, css_rules: &CssRules) {
         if let Some(owned_pbag) = self.pbag.borrow().as_ref() {
             let pbag = PropertyBag::from_owned(owned_pbag);
-            node.set_style(css_styles, &pbag);
+            node.set_style(css_rules, &pbag);
         }
     }
 

@@ -25,13 +25,15 @@ struct Declaration {
 // Maps property_name -> Declaration
 type DeclarationList = HashMap<String, Declaration>;
 
-pub struct CssStyles {
+/// Contains all the mappings of selectors to style declarations
+/// that result from loading an SVG document.
+pub struct CssRules {
     selectors_to_declarations: HashMap<String, DeclarationList>,
 }
 
-impl CssStyles {
-    pub fn new() -> CssStyles {
-        CssStyles {
+impl CssRules {
+    pub fn new() -> CssRules {
+        CssRules {
             selectors_to_declarations: HashMap::new(),
         }
     }
@@ -44,7 +46,7 @@ impl CssStyles {
         unsafe {
             let mut handler_data = DocHandlerData {
                 base_url,
-                css_styles: self,
+                css_rules: self,
                 selector: ptr::null_mut(),
             };
 
@@ -155,7 +157,7 @@ impl CssStyles {
 
 struct DocHandlerData<'a> {
     base_url: Option<&'a Url>,
-    css_styles: &'a mut CssStyles,
+    css_rules: &'a mut CssRules,
     selector: *mut CRSelector,
 }
 
@@ -192,7 +194,7 @@ unsafe extern "C" fn css_import_style(
 
     if let Ok(aurl) = AllowedUrl::from_href(uri, handler_data.base_url) {
         // FIXME: handle CSS errors
-        let _ = handler_data.css_styles.load_css(&aurl);
+        let _ = handler_data.css_rules.load_css(&aurl);
     } else {
         rsvg_log!("disallowed URL \"{}\" for importing CSS", uri);
     }
@@ -250,7 +252,7 @@ unsafe extern "C" fn css_property(
                 let important = from_glib(a_is_important);
 
                 handler_data
-                    .css_styles
+                    .css_rules
                     .define(&selector_name, prop_name, &prop_value, important);
             }
         }
