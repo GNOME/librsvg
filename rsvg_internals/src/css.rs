@@ -25,10 +25,12 @@ struct Declaration {
 // Maps property_name -> Declaration
 type DeclarationList = HashMap<String, Declaration>;
 
+type Selector = String;
+
 /// Contains all the mappings of selectors to style declarations
 /// that result from loading an SVG document.
 pub struct CssRules {
-    selectors_to_declarations: HashMap<String, DeclarationList>,
+    selectors_to_declarations: HashMap<Selector, DeclarationList>,
 }
 
 impl CssRules {
