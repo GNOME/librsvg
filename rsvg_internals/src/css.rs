@@ -129,6 +129,8 @@ impl CssRules {
         }
     }
 
+    /// Takes CSS rules which match the given `selector` name and applies them
+    /// to the `values`.
     pub fn lookup_apply(
         &self,
         selector: &str,
