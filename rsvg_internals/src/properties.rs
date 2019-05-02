@@ -1,4 +1,4 @@
-use cssparser::{self, Parser, Token};
+use cssparser::{self, Parser, ParserInput, Token};
 use std::collections::HashSet;
 use std::str::FromStr;
 
@@ -656,17 +656,26 @@ impl SpecifiedValues {
 }
 
 // Parses the `value` for the type `T` of the property, including `inherit` values.
-//
-// If the `value` is `inherit`, returns `Ok(None)`; otherwise returns
-// `Ok(Some(T))`.
 fn parse_property<T>(value: &str) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
 where
     T: Property<ComputedValues> + Clone + Default + Parse,
 {
-    if value.trim() == "inherit" {
+    let mut input = ParserInput::new(value);
+    let mut parser = Parser::new(&mut input);
+
+    parse_input(&mut parser)
+}
+
+pub fn parse_input<T>(
+    input: &mut Parser,
+) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
+where
+    T: Property<ComputedValues> + Clone + Default + Parse,
+{
+    if input.try_parse(|p| p.expect_ident_matching("inherit")).is_ok() {
         Ok(SpecifiedValue::Inherit)
     } else {
-        Parse::parse_str(value).map(SpecifiedValue::Specified)
+        Parse::parse(input).map(SpecifiedValue::Specified)
     }
 }
 
