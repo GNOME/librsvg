@@ -89,6 +89,7 @@ pub enum ParsedProperty {
     FontWeight(SpecifiedValue<FontWeight>),
     LetterSpacing(SpecifiedValue<LetterSpacing>),
     LightingColor(SpecifiedValue<LightingColor>),
+    Marker(SpecifiedValue<Marker>), // this is a shorthand property
     MarkerEnd(SpecifiedValue<MarkerEnd>),
     MarkerMid(SpecifiedValue<MarkerMid>),
     MarkerStart(SpecifiedValue<MarkerStart>),
@@ -225,6 +226,161 @@ pub struct ComputedValues {
     pub xml_space: XmlSpace, // not a property, but a non-presentation attribute
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
+fn parse_attribute_value_into_parsed_property(attr: Attribute, value: &str, accept_shorthands: bool) -> Result<Option<ParsedProperty>, ValueErrorKind> {
+    // please keep these sorted
+    match attr {
+        Attribute::BaselineShift =>
+            Ok(Some(ParsedProperty::BaselineShift(parse_property(value)?))),
+
+        Attribute::ClipPath =>
+            Ok(Some(ParsedProperty::ClipPath(parse_property(value)?))),
+
+        Attribute::ClipRule =>
+            Ok(Some(ParsedProperty::ClipRule(parse_property(value)?))),
+
+        Attribute::Color =>
+            Ok(Some(ParsedProperty::Color(parse_property(value)?))),
+
+        Attribute::ColorInterpolationFilters =>
+            Ok(Some(ParsedProperty::ColorInterpolationFilters(parse_property(value)?))),
+
+        Attribute::Direction =>
+            Ok(Some(ParsedProperty::Direction(parse_property(value)?))),
+
+        Attribute::Display =>
+            Ok(Some(ParsedProperty::Display(parse_property(value)?))),
+
+        Attribute::EnableBackground =>
+            Ok(Some(ParsedProperty::EnableBackground(parse_property(value)?))),
+
+        Attribute::Fill =>
+            Ok(Some(ParsedProperty::Fill(parse_property(value)?))),
+
+        Attribute::FillOpacity =>
+            Ok(Some(ParsedProperty::FillOpacity(parse_property(value)?))),
+
+        Attribute::FillRule =>
+            Ok(Some(ParsedProperty::FillRule(parse_property(value)?))),
+
+        Attribute::Filter =>
+            Ok(Some(ParsedProperty::Filter(parse_property(value)?))),
+
+        Attribute::FloodColor =>
+            Ok(Some(ParsedProperty::FloodColor(parse_property(value)?))),
+
+        Attribute::FloodOpacity =>
+            Ok(Some(ParsedProperty::FloodOpacity(parse_property(value)?))),
+
+        Attribute::FontFamily =>
+            Ok(Some(ParsedProperty::FontFamily(parse_property(value)?))),
+
+        Attribute::FontSize =>
+            Ok(Some(ParsedProperty::FontSize(parse_property(value)?))),
+
+        Attribute::FontStretch =>
+            Ok(Some(ParsedProperty::FontStretch(parse_property(value)?))),
+
+        Attribute::FontStyle =>
+            Ok(Some(ParsedProperty::FontStyle(parse_property(value)?))),
+
+        Attribute::FontVariant =>
+            Ok(Some(ParsedProperty::FontVariant(parse_property(value)?))),
+
+        Attribute::FontWeight =>
+            Ok(Some(ParsedProperty::FontWeight(parse_property(value)?))),
+
+        Attribute::LetterSpacing =>
+            Ok(Some(ParsedProperty::LetterSpacing(parse_property(value)?))),
+
+        Attribute::LightingColor =>
+            Ok(Some(ParsedProperty::LightingColor(parse_property(value)?))),
+
+        Attribute::Marker => {
+            if accept_shorthands {
+                Ok(Some(ParsedProperty::Marker(parse_property(value)?)))
+            } else {
+                Ok(None)
+            }
+        }
+
+        Attribute::MarkerEnd =>
+            Ok(Some(ParsedProperty::MarkerEnd(parse_property(value)?))),
+
+        Attribute::MarkerMid =>
+            Ok(Some(ParsedProperty::MarkerMid(parse_property(value)?))),
+
+        Attribute::MarkerStart =>
+            Ok(Some(ParsedProperty::MarkerStart(parse_property(value)?))),
+
+        Attribute::Mask =>
+            Ok(Some(ParsedProperty::Mask(parse_property(value)?))),
+
+        Attribute::Opacity =>
+            Ok(Some(ParsedProperty::Opacity(parse_property(value)?))),
+
+        Attribute::Overflow =>
+            Ok(Some(ParsedProperty::Overflow(parse_property(value)?))),
+
+        Attribute::ShapeRendering =>
+            Ok(Some(ParsedProperty::ShapeRendering(parse_property(value)?))),
+
+        Attribute::StopColor =>
+            Ok(Some(ParsedProperty::StopColor(parse_property(value)?))),
+
+        Attribute::StopOpacity =>
+            Ok(Some(ParsedProperty::StopOpacity(parse_property(value)?))),
+
+        Attribute::Stroke =>
+            Ok(Some(ParsedProperty::Stroke(parse_property(value)?))),
+
+        Attribute::StrokeDasharray =>
+            Ok(Some(ParsedProperty::StrokeDasharray(parse_property(value)?))),
+
+        Attribute::StrokeDashoffset =>
+            Ok(Some(ParsedProperty::StrokeDashoffset(parse_property(value)?))),
+
+        Attribute::StrokeLinecap =>
+            Ok(Some(ParsedProperty::StrokeLinecap(parse_property(value)?))),
+
+        Attribute::StrokeLinejoin =>
+            Ok(Some(ParsedProperty::StrokeLinejoin(parse_property(value)?))),
+
+        Attribute::StrokeOpacity =>
+            Ok(Some(ParsedProperty::StrokeOpacity(parse_property(value)?))),
+
+        Attribute::StrokeMiterlimit =>
+            Ok(Some(ParsedProperty::StrokeMiterlimit(parse_property(value)?))),
+
+        Attribute::StrokeWidth =>
+            Ok(Some(ParsedProperty::StrokeWidth(parse_property(value)?))),
+
+        Attribute::TextAnchor =>
+            Ok(Some(ParsedProperty::TextAnchor(parse_property(value)?))),
+
+        Attribute::TextDecoration =>
+            Ok(Some(ParsedProperty::TextDecoration(parse_property(value)?))),
+
+        Attribute::TextRendering =>
+            Ok(Some(ParsedProperty::TextRendering(parse_property(value)?))),
+
+        Attribute::UnicodeBidi =>
+            Ok(Some(ParsedProperty::UnicodeBidi(parse_property(value)?))),
+
+        Attribute::Visibility =>
+            Ok(Some(ParsedProperty::Visibility(parse_property(value)?))),
+
+        Attribute::WritingMode =>
+            Ok(Some(ParsedProperty::WritingMode(parse_property(value)?))),
+
+        _ => {
+            // Maybe it's an attribute not parsed here, but in the
+            // node implementations.
+            Ok(None)
+        }
+    }
+}
+
 impl ComputedValues {
     pub fn is_overflow(&self) -> bool {
         match self.overflow {
@@ -253,6 +409,8 @@ impl SpecifiedValues {
     pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
         use ParsedProperty::*;
 
+        use crate::properties as p;
+
         match *prop {
             BaselineShift(ref x)             => self.baseline_shift               = x.clone(),
             ClipPath(ref x)                  => self.clip_path                    = x.clone(),
@@ -276,6 +434,19 @@ impl SpecifiedValues {
             FontWeight(ref x)                => self.font_weight                  = x.clone(),
             LetterSpacing(ref x)             => self.letter_spacing               = x.clone(),
             LightingColor(ref x)             => self.lighting_color               = x.clone(),
+
+            Marker(ref x) => match *x {
+                SpecifiedValue::Specified(p::Marker(ref v)) => {
+
+                    // Since "marker" is a shorthand property, we'll just expand it here
+                    self.marker_end = SpecifiedValue::Specified(p::MarkerEnd(v.clone()));
+                    self.marker_mid = SpecifiedValue::Specified(p::MarkerMid(v.clone()));
+                    self.marker_start = SpecifiedValue::Specified(p::MarkerStart(v.clone()));
+                },
+
+                _ => (),
+            },
+
             MarkerEnd(ref x)                 => self.marker_end                   = x.clone(),
             MarkerMid(ref x)                 => self.marker_mid                   = x.clone(),
             MarkerStart(ref x)               => self.marker_start                 = x.clone(),
@@ -366,221 +537,26 @@ impl SpecifiedValues {
         value: &str,
         accept_shorthands: bool,
     ) -> Result<(), NodeError> {
-        // FIXME: move this to "try {}" when we can bump the rustc version dependency
-        let mut parse = || -> Result<(), ValueErrorKind> {
-            // please keep these sorted
-            match attr {
-                Attribute::BaselineShift => {
-                    self.baseline_shift = parse_property(value)?;
-                }
+        match parse_attribute_value_into_parsed_property(attr, value, accept_shorthands).attribute(attr) {
+            Ok(Some(prop)) => self.set_parsed_property(&prop),
+            Ok(None) => (),
+            Err(e) => {
+                // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
+                // Ignore unsupported / illegal values; don't set the whole
+                // node to be in error in that case.
 
-                Attribute::ClipPath => {
-                    self.clip_path = parse_property(value)?;
-                }
-
-                Attribute::ClipRule => {
-                    self.clip_rule = parse_property(value)?;
-                }
-
-                Attribute::Color => {
-                    self.color = parse_property(value)?;
-                }
-
-                Attribute::ColorInterpolationFilters => {
-                    self.color_interpolation_filters = parse_property(value)?;
-                }
-
-                Attribute::Direction => {
-                    self.direction = parse_property(value)?;
-                }
-
-                Attribute::Display => {
-                    self.display = parse_property(value)?;
-                }
-
-                Attribute::EnableBackground => {
-                    self.enable_background = parse_property(value)?;
-                }
-
-                Attribute::Fill => {
-                    self.fill = parse_property(value)?;
-                }
-
-                Attribute::FillOpacity => {
-                    self.fill_opacity = parse_property(value)?;
-                }
-
-                Attribute::FillRule => {
-                    self.fill_rule = parse_property(value)?;
-                }
-
-                Attribute::Filter => {
-                    self.filter = parse_property(value)?;
-                }
-
-                Attribute::FloodColor => {
-                    self.flood_color = parse_property(value)?;
-                }
-
-                Attribute::FloodOpacity => {
-                    self.flood_opacity = parse_property(value)?;
-                }
-
-                Attribute::FontFamily => {
-                    self.font_family = parse_property(value)?;
-                }
-
-                Attribute::FontSize => {
-                    self.font_size = parse_property(value)?;
-                }
-
-                Attribute::FontStretch => {
-                    self.font_stretch = parse_property(value)?;
-                }
-
-                Attribute::FontStyle => {
-                    self.font_style = parse_property(value)?;
-                }
-
-                Attribute::FontVariant => {
-                    self.font_variant = parse_property(value)?;
-                }
-
-                Attribute::FontWeight => {
-                    self.font_weight = parse_property(value)?;
-                }
-
-                Attribute::LetterSpacing => {
-                    self.letter_spacing = parse_property(value)?;
-                }
-
-                Attribute::LightingColor => {
-                    self.lighting_color = parse_property(value)?;
-                }
-
-                Attribute::MarkerEnd => {
-                    self.marker_end = parse_property(value)?;
-                }
-
-                Attribute::MarkerMid => {
-                    self.marker_mid = parse_property(value)?;
-                }
-
-                Attribute::MarkerStart => {
-                    self.marker_start = parse_property(value)?;
-                }
-
-                Attribute::Marker if accept_shorthands => {
-                    self.marker_end = parse_property(value)?;
-                    self.marker_mid = parse_property(value)?;
-                    self.marker_start = parse_property(value)?;
-                }
-
-                Attribute::Mask => {
-                    self.mask = parse_property(value)?;
-                }
-
-                Attribute::Opacity => {
-                    self.opacity = parse_property(value)?;
-                }
-
-                Attribute::Overflow => {
-                    self.overflow = parse_property(value)?;
-                }
-
-                Attribute::ShapeRendering => {
-                    self.shape_rendering = parse_property(value)?;
-                }
-
-                Attribute::StopColor => {
-                    self.stop_color = parse_property(value)?;
-                }
-
-                Attribute::StopOpacity => {
-                    self.stop_opacity = parse_property(value)?;
-                }
-
-                Attribute::Stroke => {
-                    self.stroke = parse_property(value)?;
-                }
-
-                Attribute::StrokeDasharray => {
-                    self.stroke_dasharray = parse_property(value)?;
-                }
-
-                Attribute::StrokeDashoffset => {
-                    self.stroke_dashoffset = parse_property(value)?;
-                }
-
-                Attribute::StrokeLinecap => {
-                    self.stroke_line_cap = parse_property(value)?;
-                }
-
-                Attribute::StrokeLinejoin => {
-                    self.stroke_line_join = parse_property(value)?;
-                }
-
-                Attribute::StrokeOpacity => {
-                    self.stroke_opacity = parse_property(value)?;
-                }
-
-                Attribute::StrokeMiterlimit => {
-                    self.stroke_miterlimit = parse_property(value)?;
-                }
-
-                Attribute::StrokeWidth => {
-                    self.stroke_width = parse_property(value)?;
-                }
-
-                Attribute::TextAnchor => {
-                    self.text_anchor = parse_property(value)?;
-                }
-
-                Attribute::TextDecoration => {
-                    self.text_decoration = parse_property(value)?;
-                }
-
-                Attribute::TextRendering => {
-                    self.text_rendering = parse_property(value)?;
-                }
-
-                Attribute::UnicodeBidi => {
-                    self.unicode_bidi = parse_property(value)?;
-                }
-
-                Attribute::Visibility => {
-                    self.visibility = parse_property(value)?;
-                }
-
-                Attribute::WritingMode => {
-                    self.writing_mode = parse_property(value)?;
-                }
-
-                _ => {
-                    // Maybe it's an attribute not parsed here, but in the
-                    // node implementations.
-                }
+                rsvg_log!(
+                    "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    property \
+                     will be ignored)",
+                    attr,
+                    value,
+                    e
+                );
             }
-
-            Ok(())
-        };
-
-        // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
-        // Ignore unsupported / illegal values; don't set the whole
-        // node to be in error in that case.
-
-        if let Err(e) = parse().attribute(attr) {
-            rsvg_log!(
-                "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    property \
-                 will be ignored)",
-                attr,
-                value,
-                e
-            );
         }
 
         // If we didn't ignore property errors, we could just return this:
-        // parse().map_err(|e| NodeError::attribute_error(attr, e))
+        // ParsedProperty::parse().attribute(attr)
         Ok(())
     }
 
@@ -1028,6 +1004,14 @@ make_property!(
     default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
+);
+
+make_property!(
+    ComputedValues,
+    Marker,
+    default: IRI::None,
+    inherits_automatically: true,
+    newtype_parse: IRI,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerEndProperty
