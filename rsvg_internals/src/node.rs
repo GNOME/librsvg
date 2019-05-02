@@ -6,7 +6,7 @@ use std::rc::{Rc, Weak};
 
 use crate::attributes::Attribute;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
-use crate::css::CssStyles;
+use crate::css::CssRules;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::parsers::Parse;
@@ -350,35 +350,30 @@ impl Node {
         self.data.cond.get()
     }
 
-    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
+    fn set_transform_attribute(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Transform => match Matrix::parse_str(value) {
-                    Ok(affine) => self.data.transform.set(affine),
-                    Err(e) => {
-                        self.set_error(NodeError::attribute_error(Attribute::Transform, e));
-                        return;
-                    }
-                },
+                Attribute::Transform => {
+                    return Matrix::parse_str(value)
+                        .attribute(Attribute::Transform)
+                        .and_then(|affine| Ok(self.data.transform.set(affine)));
+                }
 
                 _ => (),
             }
         }
 
-        match self.parse_conditional_processing_attributes(pbag, locale) {
-            Ok(_) => (),
-            Err(e) => {
-                self.set_error(e);
-                return;
-            }
-        }
+        Ok(())
+    }
 
-        match self.data.node_impl.set_atts(node, pbag) {
-            Ok(_) => (),
-            Err(e) => {
-                self.set_error(e);
-                return;
-            }
+    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
+        if let Err(e) = self
+            .set_transform_attribute(pbag)
+            .and_then(|_| self.parse_conditional_processing_attributes(pbag, locale))
+            .and_then(|_| self.data.node_impl.set_atts(node, pbag))
+            .and_then(|_| self.set_presentation_attributes(pbag))
+        {
+            self.set_error(e);
         }
     }
 
@@ -423,14 +418,14 @@ impl Node {
     }
 
     /// Hands the pbag to the node's state, to apply the presentation attributes
-    fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) {
+    fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         match self
             .data
             .specified_values
             .borrow_mut()
             .parse_presentation_attributes(pbag)
         {
-            Ok(_) => (),
+            Ok(_) => Ok(()),
             Err(e) => {
                 // FIXME: we'll ignore errors here for now.
                 //
@@ -444,12 +439,13 @@ impl Node {
                 //   return;
 
                 rsvg_log!("(attribute error: {})", e);
+                Ok(())
             }
         }
     }
 
     /// Implements a very limited CSS selection engine
-    fn set_css_styles(&self, css_styles: &CssStyles) {
+    fn set_css_styles(&self, css_rules: &CssRules) {
         // Try to properly support all of the following, including inheritance:
         // *
         // #id
@@ -465,10 +461,10 @@ impl Node {
         let mut important_styles = self.data.important_styles.borrow_mut();
 
         // *
-        css_styles.lookup_apply("*", &mut specified_values, &mut important_styles);
+        css_rules.lookup_apply("*", &mut specified_values, &mut important_styles);
 
         // tag
-        css_styles.lookup_apply(element_name, &mut specified_values, &mut important_styles);
+        css_rules.lookup_apply(element_name, &mut specified_values, &mut important_styles);
 
         if let Some(klazz) = self.get_class() {
             for cls in klazz.split_whitespace() {
@@ -479,7 +475,7 @@ impl Node {
                     if let Some(id) = self.get_id() {
                         let target = format!("{}.{}#{}", element_name, cls, id);
                         found = found
-                            || css_styles.lookup_apply(
+                            || css_rules.lookup_apply(
                                 &target,
                                 &mut specified_values,
                                 &mut important_styles,
@@ -490,7 +486,7 @@ impl Node {
                     if let Some(id) = self.get_id() {
                         let target = format!(".{}#{}", cls, id);
                         found = found
-                            || css_styles.lookup_apply(
+                            || css_rules.lookup_apply(
                                 &target,
                                 &mut specified_values,
                                 &mut important_styles,
@@ -500,7 +496,7 @@ impl Node {
                     // tag.class
                     let target = format!("{}.{}", element_name, cls);
                     found = found
-                        || css_styles.lookup_apply(
+                        || css_rules.lookup_apply(
                             &target,
                             &mut specified_values,
                             &mut important_styles,
@@ -509,7 +505,7 @@ impl Node {
                     if !found {
                         // didn't find anything more specific, just apply the class style
                         let target = format!(".{}", cls);
-                        css_styles.lookup_apply(
+                        css_rules.lookup_apply(
                             &target,
                             &mut specified_values,
                             &mut important_styles,
@@ -522,11 +518,11 @@ impl Node {
         if let Some(id) = self.get_id() {
             // id
             let target = format!("#{}", id);
-            css_styles.lookup_apply(&target, &mut specified_values, &mut important_styles);
+            css_rules.lookup_apply(&target, &mut specified_values, &mut important_styles);
 
             // tag#id
             let target = format!("{}#{}", element_name, id);
-            css_styles.lookup_apply(&target, &mut specified_values, &mut important_styles);
+            css_rules.lookup_apply(&target, &mut specified_values, &mut important_styles);
         }
     }
 
@@ -555,9 +551,8 @@ impl Node {
 
     // Sets the node's specified values from the style-related attributes in the pbag.
     // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&self, css_styles: &CssStyles, pbag: &PropertyBag<'_>) {
-        self.set_presentation_attributes(pbag);
-        self.set_css_styles(css_styles);
+    pub fn set_style(&self, css_rules: &CssRules, pbag: &PropertyBag<'_>) {
+        self.set_css_styles(css_rules);
         self.set_style_attribute(pbag);
     }
 
