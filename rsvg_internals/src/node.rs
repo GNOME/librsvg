@@ -350,19 +350,25 @@ impl Node {
         self.data.cond.get()
     }
 
-    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
+    fn set_transform_attribute(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
             match attr {
                 Attribute::Transform => match Matrix::parse_str(value) {
                     Ok(affine) => self.data.transform.set(affine),
-                    Err(e) => {
-                        self.set_error(NodeError::attribute_error(Attribute::Transform, e));
-                        return;
-                    }
+                    Err(e) => return Err(NodeError::attribute_error(Attribute::Transform, e)),
                 },
 
                 _ => (),
             }
+        }
+
+        Ok(())
+    }
+
+    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
+        if let Err(e) = self.set_transform_attribute(pbag) {
+            self.set_error(e);
+            return;
         }
 
         match self.parse_conditional_processing_attributes(pbag, locale) {
