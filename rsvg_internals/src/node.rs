@@ -371,6 +371,7 @@ impl Node {
             .set_transform_attribute(pbag)
             .and_then(|_| self.parse_conditional_processing_attributes(pbag, locale))
             .and_then(|_| self.data.node_impl.set_atts(node, pbag))
+            .and_then(|_| self.set_presentation_attributes(pbag))
         {
             self.set_error(e);
         }
@@ -417,14 +418,14 @@ impl Node {
     }
 
     /// Hands the pbag to the node's state, to apply the presentation attributes
-    fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) {
+    fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         match self
             .data
             .specified_values
             .borrow_mut()
             .parse_presentation_attributes(pbag)
         {
-            Ok(_) => (),
+            Ok(_) => Ok(()),
             Err(e) => {
                 // FIXME: we'll ignore errors here for now.
                 //
@@ -438,6 +439,7 @@ impl Node {
                 //   return;
 
                 rsvg_log!("(attribute error: {})", e);
+                Ok(())
             }
         }
     }
@@ -550,7 +552,6 @@ impl Node {
     // Sets the node's specified values from the style-related attributes in the pbag.
     // Also applies CSS rules in our limited way based on the node's tag/class/id.
     pub fn set_style(&self, css_rules: &CssRules, pbag: &PropertyBag<'_>) {
-        self.set_presentation_attributes(pbag);
         self.set_css_styles(css_rules);
         self.set_style_attribute(pbag);
     }
