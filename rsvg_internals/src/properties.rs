@@ -593,24 +593,6 @@ impl SpecifiedValues {
         Ok(())
     }
 
-    fn parse_style_pair(
-        &mut self,
-        attr: Attribute,
-        value: &str,
-        important: bool,
-        important_styles: &mut HashSet<Attribute>,
-    ) -> Result<(), NodeError> {
-        if !important && important_styles.contains(&attr) {
-            return Ok(());
-        }
-
-        if important {
-            important_styles.insert(attr);
-        }
-
-        self.parse_attribute_pair(attr, value, true)
-    }
-
     pub fn set_style_pair_from_parsed_property(
         &mut self,
         attr: Attribute,
@@ -664,7 +646,16 @@ impl SpecifiedValues {
                     };
 
                     if let Ok(attr) = Attribute::from_str(prop_name) {
-                        self.parse_style_pair(attr, value, important, important_styles)?;
+                        if let Ok(Some(prop)) =
+                            parse_attribute_value_into_parsed_property(attr, value, true)
+                        {
+                            self.set_style_pair_from_parsed_property(
+                                attr,
+                                &prop,
+                                important,
+                                important_styles,
+                            );
+                        }
                     }
                     // else unknown property name; ignore
                 }
