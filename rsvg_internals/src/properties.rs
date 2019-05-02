@@ -556,20 +556,6 @@ impl SpecifiedValues {
                     self.writing_mode = parse_property(value)?;
                 }
 
-                Attribute::XmlLang => {
-                    // xml:lang is not a property; it is a non-presentation attribute and as such
-                    // cannot have the "inherit" value.  So, we don't call parse_property() for it,
-                    // but rather call its parser directly.
-                    self.xml_lang = SpecifiedValue::Specified(XmlLang::parse_str(value)?);
-                }
-
-                Attribute::XmlSpace => {
-                    // xml:space is not a property; it is a non-presentation attribute and as such
-                    // cannot have the "inherit" value.  So, we don't call parse_property() for it,
-                    // but rather call its parser directly.
-                    self.xml_space = SpecifiedValue::Specified(XmlSpace::parse_str(value)?);
-                }
-
                 _ => {
                     // Maybe it's an attribute not parsed here, but in the
                     // node implementations.
@@ -603,7 +589,27 @@ impl SpecifiedValues {
         pbag: &PropertyBag<'_>,
     ) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
-            self.parse_attribute_pair(attr, value, false)?;
+            match attr {
+                Attribute::XmlLang => {
+                    // xml:lang is a non-presentation attribute and as such cannot have the
+                    // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
+                    // rather call its parser directly.
+                    self.xml_lang = SpecifiedValue::Specified(
+                        XmlLang::parse_str(value).attribute(Attribute::XmlLang)?,
+                    );
+                }
+
+                Attribute::XmlSpace => {
+                    // xml:space is a non-presentation attribute and as such cannot have the
+                    // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
+                    // rather call its parser directly.
+                    self.xml_space = SpecifiedValue::Specified(
+                        XmlSpace::parse_str(value).attribute(Attribute::XmlSpace)?,
+                    );
+                }
+
+                _ => self.parse_attribute_pair(attr, value, false)?,
+            }
         }
 
         Ok(())
