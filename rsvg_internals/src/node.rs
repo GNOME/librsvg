@@ -353,9 +353,9 @@ impl Node {
     fn set_transform_attribute(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Transform => match Matrix::parse_str(value) {
+                Attribute::Transform => match Matrix::parse_str(value).attribute(Attribute::Transform) {
                     Ok(affine) => self.data.transform.set(affine),
-                    Err(e) => return Err(NodeError::attribute_error(Attribute::Transform, e)),
+                    Err(e) => return Err(e),
                 },
 
                 _ => (),
