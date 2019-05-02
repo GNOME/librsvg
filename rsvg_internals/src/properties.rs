@@ -227,7 +227,7 @@ pub struct ComputedValues {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-fn parse_attribute_value_into_parsed_property(attr: Attribute, value: &str, accept_shorthands: bool) -> Result<Option<ParsedProperty>, ValueErrorKind> {
+pub fn parse_attribute_value_into_parsed_property(attr: Attribute, value: &str, accept_shorthands: bool) -> Result<Option<ParsedProperty>, ValueErrorKind> {
     // please keep these sorted
     match attr {
         Attribute::BaselineShift =>
@@ -537,7 +537,9 @@ impl SpecifiedValues {
         value: &str,
         accept_shorthands: bool,
     ) -> Result<(), NodeError> {
-        match parse_attribute_value_into_parsed_property(attr, value, accept_shorthands).attribute(attr) {
+        match parse_attribute_value_into_parsed_property(attr, value, accept_shorthands)
+            .attribute(attr)
+        {
             Ok(Some(prop)) => self.set_parsed_property(&prop),
             Ok(None) => (),
             Err(e) => {
@@ -591,7 +593,7 @@ impl SpecifiedValues {
         Ok(())
     }
 
-    pub fn parse_style_pair(
+    fn parse_style_pair(
         &mut self,
         attr: Attribute,
         value: &str,
@@ -607,6 +609,24 @@ impl SpecifiedValues {
         }
 
         self.parse_attribute_pair(attr, value, true)
+    }
+
+    pub fn set_style_pair_from_parsed_property(
+        &mut self,
+        attr: Attribute,
+        prop: &ParsedProperty,
+        important: bool,
+        important_styles: &mut HashSet<Attribute>,
+    ) {
+        if !important && important_styles.contains(&attr) {
+            return;
+        }
+
+        if important {
+            important_styles.insert(attr);
+        }
+
+        self.set_parsed_property(prop);
     }
 
     pub fn parse_style_declarations(
@@ -666,13 +686,14 @@ where
     parse_input(&mut parser)
 }
 
-pub fn parse_input<T>(
-    input: &mut Parser,
-) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
+pub fn parse_input<T>(input: &mut Parser) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
 where
     T: Property<ComputedValues> + Clone + Default + Parse,
 {
-    if input.try_parse(|p| p.expect_ident_matching("inherit")).is_ok() {
+    if input
+        .try_parse(|p| p.expect_ident_matching("inherit"))
+        .is_ok()
+    {
         Ok(SpecifiedValue::Inherit)
     } else {
         Parse::parse(input).map(SpecifiedValue::Specified)
