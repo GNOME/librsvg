@@ -65,6 +65,55 @@ where
     }
 }
 
+/// Embodies "which property is this" plus the property's value
+pub enum ParsedProperty {
+    BaselineShift(SpecifiedValue<BaselineShift>),
+    ClipPath(SpecifiedValue<ClipPath>),
+    ClipRule(SpecifiedValue<ClipRule>),
+    Color(SpecifiedValue<Color>),
+    ColorInterpolationFilters(SpecifiedValue<ColorInterpolationFilters>),
+    Direction(SpecifiedValue<Direction>),
+    Display(SpecifiedValue<Display>),
+    EnableBackground(SpecifiedValue<EnableBackground>),
+    Fill(SpecifiedValue<Fill>),
+    FillOpacity(SpecifiedValue<FillOpacity>),
+    FillRule(SpecifiedValue<FillRule>),
+    Filter(SpecifiedValue<Filter>),
+    FloodColor(SpecifiedValue<FloodColor>),
+    FloodOpacity(SpecifiedValue<FloodOpacity>),
+    FontFamily(SpecifiedValue<FontFamily>),
+    FontSize(SpecifiedValue<FontSize>),
+    FontStretch(SpecifiedValue<FontStretch>),
+    FontStyle(SpecifiedValue<FontStyle>),
+    FontVariant(SpecifiedValue<FontVariant>),
+    FontWeight(SpecifiedValue<FontWeight>),
+    LetterSpacing(SpecifiedValue<LetterSpacing>),
+    LightingColor(SpecifiedValue<LightingColor>),
+    MarkerEnd(SpecifiedValue<MarkerEnd>),
+    MarkerMid(SpecifiedValue<MarkerMid>),
+    MarkerStart(SpecifiedValue<MarkerStart>),
+    Mask(SpecifiedValue<Mask>),
+    Opacity(SpecifiedValue<Opacity>),
+    Overflow(SpecifiedValue<Overflow>),
+    ShapeRendering(SpecifiedValue<ShapeRendering>),
+    StopColor(SpecifiedValue<StopColor>),
+    StopOpacity(SpecifiedValue<StopOpacity>),
+    Stroke(SpecifiedValue<Stroke>),
+    StrokeDasharray(SpecifiedValue<StrokeDasharray>),
+    StrokeDashoffset(SpecifiedValue<StrokeDashoffset>),
+    StrokeLinecap(SpecifiedValue<StrokeLinecap>),
+    StrokeLinejoin(SpecifiedValue<StrokeLinejoin>),
+    StrokeOpacity(SpecifiedValue<StrokeOpacity>),
+    StrokeMiterlimit(SpecifiedValue<StrokeMiterlimit>),
+    StrokeWidth(SpecifiedValue<StrokeWidth>),
+    TextAnchor(SpecifiedValue<TextAnchor>),
+    TextDecoration(SpecifiedValue<TextDecoration>),
+    TextRendering(SpecifiedValue<TextRendering>),
+    UnicodeBidi(SpecifiedValue<UnicodeBidi>),
+    Visibility(SpecifiedValue<Visibility>),
+    WritingMode(SpecifiedValue<WritingMode>),
+}
+
 /// Holds the specified CSS properties
 ///
 /// This is used for various purposes:
@@ -200,6 +249,59 @@ macro_rules! compute_value {
 }
 
 impl SpecifiedValues {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
+        use ParsedProperty::*;
+
+        match *prop {
+            BaselineShift(ref x)             => self.baseline_shift               = x.clone(),
+            ClipPath(ref x)                  => self.clip_path                    = x.clone(),
+            ClipRule(ref x)                  => self.clip_rule                    = x.clone(),
+            Color(ref x)                     => self.color                        = x.clone(),
+            ColorInterpolationFilters(ref x) => self.color_interpolation_filters  = x.clone(),
+            Direction(ref x)                 => self.direction                    = x.clone(),
+            Display(ref x)                   => self.display                      = x.clone(),
+            EnableBackground(ref x)          => self.enable_background            = x.clone(),
+            Fill(ref x)                      => self.fill                         = x.clone(),
+            FillOpacity(ref x)               => self.fill_opacity                 = x.clone(),
+            FillRule(ref x)                  => self.fill_rule                    = x.clone(),
+            Filter(ref x)                    => self.filter                       = x.clone(),
+            FloodColor(ref x)                => self.flood_color                  = x.clone(),
+            FloodOpacity(ref x)              => self.flood_opacity                = x.clone(),
+            FontFamily(ref x)                => self.font_family                  = x.clone(),
+            FontSize(ref x)                  => self.font_size                    = x.clone(),
+            FontStretch(ref x)               => self.font_stretch                 = x.clone(),
+            FontStyle(ref x)                 => self.font_style                   = x.clone(),
+            FontVariant(ref x)               => self.font_variant                 = x.clone(),
+            FontWeight(ref x)                => self.font_weight                  = x.clone(),
+            LetterSpacing(ref x)             => self.letter_spacing               = x.clone(),
+            LightingColor(ref x)             => self.lighting_color               = x.clone(),
+            MarkerEnd(ref x)                 => self.marker_end                   = x.clone(),
+            MarkerMid(ref x)                 => self.marker_mid                   = x.clone(),
+            MarkerStart(ref x)               => self.marker_start                 = x.clone(),
+            Mask(ref x)                      => self.mask                         = x.clone(),
+            Opacity(ref x)                   => self.opacity                      = x.clone(),
+            Overflow(ref x)                  => self.overflow                     = x.clone(),
+            ShapeRendering(ref x)            => self.shape_rendering              = x.clone(),
+            StopColor(ref x)                 => self.stop_color                   = x.clone(),
+            StopOpacity(ref x)               => self.stop_opacity                 = x.clone(),
+            Stroke(ref x)                    => self.stroke                       = x.clone(),
+            StrokeDasharray(ref x)           => self.stroke_dasharray             = x.clone(),
+            StrokeDashoffset(ref x)          => self.stroke_dashoffset            = x.clone(),
+            StrokeLinecap(ref x)             => self.stroke_line_cap              = x.clone(),
+            StrokeLinejoin(ref x)            => self.stroke_line_join             = x.clone(),
+            StrokeOpacity(ref x)             => self.stroke_opacity               = x.clone(),
+            StrokeMiterlimit(ref x)          => self.stroke_miterlimit            = x.clone(),
+            StrokeWidth(ref x)               => self.stroke_width                 = x.clone(),
+            TextAnchor(ref x)                => self.text_anchor                  = x.clone(),
+            TextDecoration(ref x)            => self.text_decoration              = x.clone(),
+            TextRendering(ref x)             => self.text_rendering               = x.clone(),
+            UnicodeBidi(ref x)               => self.unicode_bidi                 = x.clone(),
+            Visibility(ref x)                => self.visibility                   = x.clone(),
+            WritingMode(ref x)               => self.writing_mode                 = x.clone(),
+        }
+    }
+
     pub fn to_computed_values(&self, computed: &mut ComputedValues) {
         compute_value!(self, computed, baseline_shift);
         compute_value!(self, computed, clip_path);
