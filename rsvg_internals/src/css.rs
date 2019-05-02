@@ -109,34 +109,23 @@ impl CssRules {
             })
     }
 
-    fn define(
-        &mut self,
-        selector: &str,
-        attr: Attribute,
-        property: ParsedProperty,
-        important: bool,
-    ) {
+    fn add_declaration(&mut self, selector: &str, declaration: Declaration) {
         let decl_list = self
             .selectors_to_declarations
             .entry(selector.to_string())
             .or_insert_with(|| DeclarationList::new());
 
-        match decl_list.entry(attr) {
+        match decl_list.entry(declaration.attribute) {
             Entry::Occupied(mut e) => {
                 let decl = e.get_mut();
 
                 if !decl.important {
-                    decl.property = property;
-                    decl.important = important;
+                    *decl = declaration;
                 }
             }
 
             Entry::Vacant(v) => {
-                v.insert(Declaration {
-                    attribute: attr,
-                    property,
-                    important,
-                });
+                v.insert(declaration);
             }
         }
     }
@@ -262,13 +251,19 @@ unsafe extern "C" fn css_property(
 
                 let important = from_glib(a_is_important);
 
-                if let Ok(attr) = Attribute::from_str(prop_name) {
-                    if let Ok(Some(prop)) =
-                        parse_attribute_value_into_parsed_property(attr, &prop_value, true)
+                if let Ok(attribute) = Attribute::from_str(prop_name) {
+                    if let Ok(Some(property)) =
+                        parse_attribute_value_into_parsed_property(attribute, &prop_value, true)
                     {
+                        let declaration = Declaration {
+                            attribute,
+                            property,
+                            important,
+                        };
+
                         handler_data
                             .css_rules
-                            .define(&selector_name, attr, prop, important);
+                            .add_declaration(&selector_name, declaration);
                     }
                 }
             }
