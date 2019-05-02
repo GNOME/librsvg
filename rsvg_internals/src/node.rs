@@ -367,25 +367,12 @@ impl Node {
     }
 
     pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
-        if let Err(e) = self.set_transform_attribute(pbag) {
+        if let Err(e) = self
+            .set_transform_attribute(pbag)
+            .and_then(|_| self.parse_conditional_processing_attributes(pbag, locale))
+            .and_then(|_| self.data.node_impl.set_atts(node, pbag))
+        {
             self.set_error(e);
-            return;
-        }
-
-        match self.parse_conditional_processing_attributes(pbag, locale) {
-            Ok(_) => (),
-            Err(e) => {
-                self.set_error(e);
-                return;
-            }
-        }
-
-        match self.data.node_impl.set_atts(node, pbag) {
-            Ok(_) => (),
-            Err(e) => {
-                self.set_error(e);
-                return;
-            }
         }
     }
 
