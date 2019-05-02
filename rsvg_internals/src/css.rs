@@ -23,7 +23,7 @@ struct Declaration {
 }
 
 // Maps property_name -> Declaration
-type DeclarationList = HashMap<String, Declaration>;
+type DeclarationList = HashMap<Attribute, Declaration>;
 
 type Selector = String;
 
@@ -112,21 +112,23 @@ impl CssRules {
             .entry(selector.to_string())
             .or_insert_with(|| DeclarationList::new());
 
-        match decl_list.entry(prop_name.to_string()) {
-            Entry::Occupied(mut e) => {
-                let decl = e.get_mut();
+        if let Ok(attr) = Attribute::from_str(prop_name) {
+            match decl_list.entry(attr) {
+                Entry::Occupied(mut e) => {
+                    let decl = e.get_mut();
 
-                if !decl.important {
-                    decl.prop_value = prop_value.to_string();
-                    decl.important = important;
+                    if !decl.important {
+                        decl.prop_value = prop_value.to_string();
+                        decl.important = important;
+                    }
                 }
-            }
 
-            Entry::Vacant(v) => {
-                v.insert(Declaration {
-                    prop_value: prop_value.to_string(),
-                    important,
-                });
+                Entry::Vacant(v) => {
+                    v.insert(Declaration {
+                        prop_value: prop_value.to_string(),
+                        important,
+                    });
+                }
             }
         }
     }
@@ -140,16 +142,14 @@ impl CssRules {
         important_styles: &mut HashSet<Attribute>,
     ) -> bool {
         if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
-            for (prop_name, declaration) in decl_list.iter() {
-                if let Ok(attr) = Attribute::from_str(prop_name) {
-                    // FIXME: this is ignoring errors
-                    let _ = values.parse_style_pair(
-                        attr,
-                        &declaration.prop_value,
-                        declaration.important,
-                        important_styles,
-                    );
-                }
+            for (attr, declaration) in decl_list.iter() {
+                // FIXME: this is ignoring errors
+                let _ = values.parse_style_pair(
+                    *attr,
+                    &declaration.prop_value,
+                    declaration.important,
+                    important_styles,
+                );
             }
 
             true
