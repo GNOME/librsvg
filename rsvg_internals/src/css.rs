@@ -20,6 +20,7 @@ use crate::properties::{
 use crate::util::utf8_cstr;
 
 struct Declaration {
+    attribute: Attribute,
     property: ParsedProperty,
     important: bool,
 }
@@ -132,6 +133,7 @@ impl CssRules {
 
             Entry::Vacant(v) => {
                 v.insert(Declaration {
+                    attribute: attr,
                     property,
                     important,
                 });
@@ -148,9 +150,9 @@ impl CssRules {
         important_styles: &mut HashSet<Attribute>,
     ) -> bool {
         if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
-            for (attr, declaration) in decl_list.iter() {
+            for (_, declaration) in decl_list.iter() {
                 values.set_style_pair_from_parsed_property(
-                    *attr,
+                    declaration.attribute,
                     &declaration.property,
                     declaration.important,
                     important_styles,
