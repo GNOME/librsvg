@@ -1,5 +1,5 @@
 use cssparser::{Parser, ParserInput};
-use std::collections::hash_map::Entry;
+use std::collections::hash_map::{Entry, Iter as HashMapIter};
 use std::collections::{HashMap, HashSet};
 use std::ptr;
 use std::str::{self, FromStr};
@@ -52,6 +52,20 @@ impl DeclarationList {
                 v.insert(declaration);
             }
         }
+    }
+
+    pub fn iter(&self) -> DeclarationListIter {
+        DeclarationListIter(self.declarations.iter())
+    }
+}
+
+pub struct DeclarationListIter<'a>(HashMapIter<'a, Attribute, Declaration>);
+
+impl<'a> Iterator for DeclarationListIter<'a> {
+    type Item = &'a Declaration;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(_attribute, declaration)| declaration)
     }
 }
 
@@ -146,7 +160,7 @@ impl CssRules {
         important_styles: &mut HashSet<Attribute>,
     ) -> bool {
         if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
-            for (_, declaration) in decl_list.declarations.iter() {
+            for declaration in decl_list.iter() {
                 values.set_property_from_declaration(declaration, important_styles);
             }
 
