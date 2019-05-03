@@ -1,6 +1,8 @@
-use cssparser::{Parser, ParserInput};
-use std::collections::hash_map::Entry;
-use std::collections::{HashMap, HashSet};
+use cssparser::{
+    self, parse_important, AtRuleParser, CowRcStr, DeclarationParser, Parser, ParserInput,
+};
+use std::collections::hash_map::{Entry, Iter as HashMapIter};
+use std::collections::HashMap;
 use std::ptr;
 use std::str::{self, FromStr};
 
@@ -13,13 +15,57 @@ use glib_sys::{gboolean, gpointer, GList};
 use crate::allowed_url::AllowedUrl;
 use crate::attributes::Attribute;
 use crate::croco::*;
-use crate::error::LoadingError;
+use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::properties::{parse_attribute_value_into_parsed_property, Declaration, SpecifiedValues};
+use crate::properties::{parse_attribute_value_into_parsed_property, ParsedProperty};
 use crate::util::utf8_cstr;
 
-// Maps property_name -> Declaration
-type DeclarationList = HashMap<Attribute, Declaration>;
+/// A parsed CSS declaration (`name: value [!important]`)
+pub struct Declaration {
+    pub attribute: Attribute,
+    pub property: ParsedProperty,
+    pub important: bool,
+}
+
+pub struct DeclarationList {
+    // Maps property_name -> Declaration
+    declarations: HashMap<Attribute, Declaration>,
+}
+
+pub struct DeclParser;
+
+impl<'i> DeclarationParser<'i> for DeclParser {
+    type Declaration = Declaration;
+    type Error = ValueErrorKind;
+
+    fn parse_value<'t>(
+        &mut self,
+        name: CowRcStr<'i>,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Declaration, cssparser::ParseError<'i, ValueErrorKind>> {
+        if let Ok(attribute) = Attribute::from_str(name.as_ref()) {
+            let property = parse_attribute_value_into_parsed_property(attribute, input, true)
+                .map_err(|e| input.new_custom_error(e))?;
+
+            let important = input.try_parse(parse_important).is_ok();
+
+            Ok(Declaration {
+                attribute,
+                property,
+                important,
+            })
+        } else {
+            Err(input.new_custom_error(ValueErrorKind::UnknownProperty))
+        }
+    }
+}
+
+impl<'i> AtRuleParser<'i> for DeclParser {
+    type PreludeNoBlock = ();
+    type PreludeBlock = ();
+    type AtRule = Declaration;
+    type Error = ValueErrorKind;
+}
 
 type Selector = String;
 
@@ -27,6 +73,44 @@ type Selector = String;
 /// that result from loading an SVG document.
 pub struct CssRules {
     selectors_to_declarations: HashMap<Selector, DeclarationList>,
+}
+
+impl DeclarationList {
+    fn new() -> DeclarationList {
+        DeclarationList {
+            declarations: HashMap::new(),
+        }
+    }
+
+    fn add_declaration(&mut self, declaration: Declaration) {
+        match self.declarations.entry(declaration.attribute) {
+            Entry::Occupied(mut e) => {
+                let decl = e.get_mut();
+
+                if !decl.important {
+                    *decl = declaration;
+                }
+            }
+
+            Entry::Vacant(v) => {
+                v.insert(declaration);
+            }
+        }
+    }
+
+    pub fn iter(&self) -> DeclarationListIter {
+        DeclarationListIter(self.declarations.iter())
+    }
+}
+
+pub struct DeclarationListIter<'a>(HashMapIter<'a, Attribute, Declaration>);
+
+impl<'a> Iterator for DeclarationListIter<'a> {
+    type Item = &'a Declaration;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(_attribute, declaration)| declaration)
+    }
 }
 
 impl CssRules {
@@ -108,38 +192,11 @@ impl CssRules {
             .entry(selector.to_string())
             .or_insert_with(|| DeclarationList::new());
 
-        match decl_list.entry(declaration.attribute) {
-            Entry::Occupied(mut e) => {
-                let decl = e.get_mut();
-
-                if !decl.important {
-                    *decl = declaration;
-                }
-            }
-
-            Entry::Vacant(v) => {
-                v.insert(declaration);
-            }
-        }
+        decl_list.add_declaration(declaration);
     }
 
-    /// Takes CSS rules which match the given `selector` name and applies them
-    /// to the `values`.
-    pub fn lookup_apply(
-        &self,
-        selector: &str,
-        values: &mut SpecifiedValues,
-        important_styles: &mut HashSet<Attribute>,
-    ) -> bool {
-        if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
-            for (_, declaration) in decl_list.iter() {
-                values.set_property_from_declaration(declaration, important_styles);
-            }
-
-            true
-        } else {
-            false
-        }
+    pub fn lookup(&self, selector: &str) -> Option<&DeclarationList> {
+        self.selectors_to_declarations.get(selector)
     }
 }
 

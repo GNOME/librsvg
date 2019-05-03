@@ -19,8 +19,9 @@ use crate::mask::NodeMask;
 use crate::node::{CascadedValues, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::NodePattern;
-use crate::properties::{
-    ClipRule, ComputedValues, EnableBackground, FillRule, ShapeRendering, StrokeDasharray,
+use crate::properties::ComputedValues;
+use crate::property_defs::{
+    ClipRule, EnableBackground, FillRule, ShapeRendering, StrokeDasharray,
     StrokeLinecap, StrokeLinejoin,
 };
 use crate::rect::RectangleExt;

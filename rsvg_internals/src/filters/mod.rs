@@ -13,8 +13,9 @@ use crate::error::{RenderingError, ValueErrorKind};
 use crate::length::{LengthHorizontal, LengthUnit, LengthVertical};
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{ParseError, ParseValue};
-use crate::properties::{ColorInterpolationFilters, ComputedValues};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::property_bag::PropertyBag;
+use crate::properties::ComputedValues;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 mod bounds;

@@ -91,6 +91,7 @@ RUST_SRC =							\
 	rsvg_internals/src/pixbuf_utils.rs			\
 	rsvg_internals/src/properties.rs			\
 	rsvg_internals/src/property_bag.rs			\
+	rsvg_internals/src/property_defs.rs			\
 	rsvg_internals/src/property_macros.rs			\
 	rsvg_internals/src/rect.rs				\
 	rsvg_internals/src/shapes.rs				\

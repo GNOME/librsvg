@@ -121,6 +121,7 @@ mod pattern;
 mod pixbuf_utils;
 mod properties;
 mod property_bag;
+mod property_defs;
 pub mod rect;
 mod shapes;
 mod space;

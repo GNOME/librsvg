@@ -14,8 +14,8 @@ use crate::font_props::FontWeightSpec;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::ParseValue;
-use crate::properties::{
-    ComputedValues,
+use crate::properties::ComputedValues;
+use crate::property_defs::{
     Direction,
     FontStretch,
     FontStyle,

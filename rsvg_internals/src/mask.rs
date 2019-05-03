@@ -9,8 +9,8 @@ use crate::error::RenderingError;
 use crate::length::{LengthHorizontal, LengthVertical};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
-use crate::properties::Opacity;
 use crate::property_bag::PropertyBag;
+use crate::property_defs::Opacity;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::SharedImageSurface, shared_surface::SurfaceType,
