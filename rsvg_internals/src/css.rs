@@ -254,7 +254,7 @@ unsafe extern "C" fn css_property(
                             handler_data
                                 .css_rules
                                 .add_declaration(&selector_name, declaration);
-                        },
+                        }
                         Err(_) => (), // invalid property name or invalid value; ignore
                     }
                 }

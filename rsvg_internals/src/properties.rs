@@ -1,4 +1,7 @@
-use cssparser::{self, parse_important, AtRuleParser, CowRcStr, DeclarationParser, Parser, ParserInput, Token};
+use cssparser::{
+    self, parse_important, AtRuleParser, CowRcStr, DeclarationListParser, DeclarationParser,
+    Parser, ParserInput, Token,
+};
 use std::collections::HashSet;
 use std::str::FromStr;
 
@@ -619,54 +622,17 @@ impl SpecifiedValues {
         declarations: &str,
         important_styles: &mut HashSet<Attribute>,
     ) -> Result<(), NodeError> {
-        // Split an attribute value like style="foo: bar; baz: beep;" into
-        // individual CSS declarations ("foo: bar" and "baz: beep") and
-        // set them onto the state struct.
-        //
-        // FIXME: It's known that this is _way_ out of spec. A more complete
-        // CSS2 implementation will happen later.
+        let mut input = ParserInput::new(declarations);
+        let mut parser = Parser::new(&mut input);
 
-        for decl in declarations.split(';') {
-            if let Some(colon_pos) = decl.find(':') {
-                let (prop_name, value) = decl.split_at(colon_pos);
+        let decl_parser = DeclarationListParser::new(&mut parser, DeclParser);
 
-                let prop_name = prop_name.trim();
-                let value = value[1..].trim();
-
-                if !prop_name.is_empty() && !value.is_empty() {
-                    let mut important = false;
-
-                    let value = if let Some(bang_pos) = value.find('!') {
-                        let (before_bang, bang_and_after) = value.split_at(bang_pos);
-
-                        if bang_and_after[1..].trim() == "important" {
-                            important = true;
-                        }
-
-                        before_bang.trim()
-                    } else {
-                        &value
-                    };
-
-                    if let Ok(attribute) = Attribute::from_str(prop_name) {
-                        let mut input = ParserInput::new(value);
-                        let mut parser = Parser::new(&mut input);
-
-                        match parse_attribute_value_into_parsed_property(attribute, &mut parser, true) {
-                            Ok(property) => {
-                                let declaration = Declaration {
-                                    attribute,
-                                    property,
-                                    important,
-                                };
-                            
-                                self.set_property_from_declaration(&declaration, important_styles);
-                            },
-                            Err(_) => (), // invalid property name or invalid value; ignore
-                        }
-                    }
-                    // else unknown property name; ignore
+        for decl_result in decl_parser {
+            match decl_result {
+                Ok(declaration) => {
+                    self.set_property_from_declaration(&declaration, important_styles)
                 }
+                Err(_) => (), // invalid property name or invalid value; ignore
             }
         }
 
@@ -705,8 +671,8 @@ impl<'i> DeclarationParser<'i> for DeclParser {
 impl<'i> AtRuleParser<'i> for DeclParser {
     type PreludeNoBlock = ();
     type PreludeBlock = ();
-    type AtRule = ();
-    type Error = ();
+    type AtRule = Declaration;
+    type Error = ValueErrorKind;
 }
 
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
