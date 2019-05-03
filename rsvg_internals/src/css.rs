@@ -1,3 +1,4 @@
+use cssparser::{Parser, ParserInput};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::ptr;
@@ -14,16 +15,11 @@ use crate::attributes::Attribute;
 use crate::croco::*;
 use crate::error::LoadingError;
 use crate::io::{self, BinaryData};
-use crate::properties::SpecifiedValues;
+use crate::properties::{parse_attribute_value_into_parsed_property, Declaration, SpecifiedValues};
 use crate::util::utf8_cstr;
 
-struct Declaration {
-    prop_value: String,
-    important: bool,
-}
-
 // Maps property_name -> Declaration
-type DeclarationList = HashMap<String, Declaration>;
+type DeclarationList = HashMap<Attribute, Declaration>;
 
 type Selector = String;
 
@@ -106,27 +102,23 @@ impl CssRules {
             })
     }
 
-    fn define(&mut self, selector: &str, prop_name: &str, prop_value: &str, important: bool) {
+    fn add_declaration(&mut self, selector: &str, declaration: Declaration) {
         let decl_list = self
             .selectors_to_declarations
             .entry(selector.to_string())
             .or_insert_with(|| DeclarationList::new());
 
-        match decl_list.entry(prop_name.to_string()) {
+        match decl_list.entry(declaration.attribute) {
             Entry::Occupied(mut e) => {
                 let decl = e.get_mut();
 
                 if !decl.important {
-                    decl.prop_value = prop_value.to_string();
-                    decl.important = important;
+                    *decl = declaration;
                 }
             }
 
             Entry::Vacant(v) => {
-                v.insert(Declaration {
-                    prop_value: prop_value.to_string(),
-                    important,
-                });
+                v.insert(declaration);
             }
         }
     }
@@ -140,16 +132,8 @@ impl CssRules {
         important_styles: &mut HashSet<Attribute>,
     ) -> bool {
         if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
-            for (prop_name, declaration) in decl_list.iter() {
-                if let Ok(attr) = Attribute::from_str(prop_name) {
-                    // FIXME: this is ignoring errors
-                    let _ = values.parse_style_pair(
-                        attr,
-                        &declaration.prop_value,
-                        declaration.important,
-                        important_styles,
-                    );
-                }
+            for (_, declaration) in decl_list.iter() {
+                values.set_property_from_declaration(declaration, important_styles);
             }
 
             true
@@ -255,9 +239,26 @@ unsafe extern "C" fn css_property(
 
                 let important = from_glib(a_is_important);
 
-                handler_data
-                    .css_rules
-                    .define(&selector_name, prop_name, &prop_value, important);
+                if let Ok(attribute) = Attribute::from_str(prop_name) {
+                    let mut input = ParserInput::new(&prop_value);
+                    let mut parser = Parser::new(&mut input);
+
+                    match parse_attribute_value_into_parsed_property(attribute, &mut parser, true) {
+                        Ok(property) => {
+                            let declaration = Declaration {
+                                attribute,
+                                property,
+                                important,
+                            };
+
+                            handler_data
+                                .css_rules
+                                .add_declaration(&selector_name, declaration);
+                        }
+                        Err(_) => (), // invalid property name or invalid value; ignore
+                    }
+                }
+                // else unknown property name; ignore
             }
         }
 

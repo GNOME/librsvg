@@ -1,4 +1,7 @@
-use cssparser::{self, Parser, Token};
+use cssparser::{
+    self, parse_important, AtRuleParser, CowRcStr, DeclarationListParser, DeclarationParser,
+    Parser, ParserInput, Token,
+};
 use std::collections::HashSet;
 use std::str::FromStr;
 
@@ -12,6 +15,13 @@ use crate::parsers::{Parse, ParseError};
 use crate::property_bag::PropertyBag;
 use crate::property_macros::Property;
 use crate::unit_interval::UnitInterval;
+
+/// A parsed CSS declaration (`name: value [!important]`)
+pub struct Declaration {
+    pub attribute: Attribute,
+    pub property: ParsedProperty,
+    pub important: bool,
+}
 
 /// Representation of a single CSS property value.
 ///
@@ -63,6 +73,56 @@ where
     fn default() -> SpecifiedValue<T> {
         SpecifiedValue::Unspecified
     }
+}
+
+/// Embodies "which property is this" plus the property's value
+pub enum ParsedProperty {
+    BaselineShift(SpecifiedValue<BaselineShift>),
+    ClipPath(SpecifiedValue<ClipPath>),
+    ClipRule(SpecifiedValue<ClipRule>),
+    Color(SpecifiedValue<Color>),
+    ColorInterpolationFilters(SpecifiedValue<ColorInterpolationFilters>),
+    Direction(SpecifiedValue<Direction>),
+    Display(SpecifiedValue<Display>),
+    EnableBackground(SpecifiedValue<EnableBackground>),
+    Fill(SpecifiedValue<Fill>),
+    FillOpacity(SpecifiedValue<FillOpacity>),
+    FillRule(SpecifiedValue<FillRule>),
+    Filter(SpecifiedValue<Filter>),
+    FloodColor(SpecifiedValue<FloodColor>),
+    FloodOpacity(SpecifiedValue<FloodOpacity>),
+    FontFamily(SpecifiedValue<FontFamily>),
+    FontSize(SpecifiedValue<FontSize>),
+    FontStretch(SpecifiedValue<FontStretch>),
+    FontStyle(SpecifiedValue<FontStyle>),
+    FontVariant(SpecifiedValue<FontVariant>),
+    FontWeight(SpecifiedValue<FontWeight>),
+    LetterSpacing(SpecifiedValue<LetterSpacing>),
+    LightingColor(SpecifiedValue<LightingColor>),
+    Marker(SpecifiedValue<Marker>), // this is a shorthand property
+    MarkerEnd(SpecifiedValue<MarkerEnd>),
+    MarkerMid(SpecifiedValue<MarkerMid>),
+    MarkerStart(SpecifiedValue<MarkerStart>),
+    Mask(SpecifiedValue<Mask>),
+    Opacity(SpecifiedValue<Opacity>),
+    Overflow(SpecifiedValue<Overflow>),
+    ShapeRendering(SpecifiedValue<ShapeRendering>),
+    StopColor(SpecifiedValue<StopColor>),
+    StopOpacity(SpecifiedValue<StopOpacity>),
+    Stroke(SpecifiedValue<Stroke>),
+    StrokeDasharray(SpecifiedValue<StrokeDasharray>),
+    StrokeDashoffset(SpecifiedValue<StrokeDashoffset>),
+    StrokeLinecap(SpecifiedValue<StrokeLinecap>),
+    StrokeLinejoin(SpecifiedValue<StrokeLinejoin>),
+    StrokeOpacity(SpecifiedValue<StrokeOpacity>),
+    StrokeMiterlimit(SpecifiedValue<StrokeMiterlimit>),
+    StrokeWidth(SpecifiedValue<StrokeWidth>),
+    TextAnchor(SpecifiedValue<TextAnchor>),
+    TextDecoration(SpecifiedValue<TextDecoration>),
+    TextRendering(SpecifiedValue<TextRendering>),
+    UnicodeBidi(SpecifiedValue<UnicodeBidi>),
+    Visibility(SpecifiedValue<Visibility>),
+    WritingMode(SpecifiedValue<WritingMode>),
 }
 
 /// Holds the specified CSS properties
@@ -176,6 +236,157 @@ pub struct ComputedValues {
     pub xml_space: XmlSpace, // not a property, but a non-presentation attribute
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
+pub fn parse_attribute_value_into_parsed_property(attr: Attribute, input: &mut Parser, accept_shorthands: bool) -> Result<ParsedProperty, ValueErrorKind> {
+    // please keep these sorted
+    match attr {
+        Attribute::BaselineShift =>
+            Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
+
+        Attribute::ClipPath =>
+            Ok(ParsedProperty::ClipPath(parse_input(input)?)),
+
+        Attribute::ClipRule =>
+            Ok(ParsedProperty::ClipRule(parse_input(input)?)),
+
+        Attribute::Color =>
+            Ok(ParsedProperty::Color(parse_input(input)?)),
+
+        Attribute::ColorInterpolationFilters =>
+            Ok(ParsedProperty::ColorInterpolationFilters(parse_input(input)?)),
+
+        Attribute::Direction =>
+            Ok(ParsedProperty::Direction(parse_input(input)?)),
+
+        Attribute::Display =>
+            Ok(ParsedProperty::Display(parse_input(input)?)),
+
+        Attribute::EnableBackground =>
+            Ok(ParsedProperty::EnableBackground(parse_input(input)?)),
+
+        Attribute::Fill =>
+            Ok(ParsedProperty::Fill(parse_input(input)?)),
+
+        Attribute::FillOpacity =>
+            Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
+
+        Attribute::FillRule =>
+            Ok(ParsedProperty::FillRule(parse_input(input)?)),
+
+        Attribute::Filter =>
+            Ok(ParsedProperty::Filter(parse_input(input)?)),
+
+        Attribute::FloodColor =>
+            Ok(ParsedProperty::FloodColor(parse_input(input)?)),
+
+        Attribute::FloodOpacity =>
+            Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
+
+        Attribute::FontFamily =>
+            Ok(ParsedProperty::FontFamily(parse_input(input)?)),
+
+        Attribute::FontSize =>
+            Ok(ParsedProperty::FontSize(parse_input(input)?)),
+
+        Attribute::FontStretch =>
+            Ok(ParsedProperty::FontStretch(parse_input(input)?)),
+
+        Attribute::FontStyle =>
+            Ok(ParsedProperty::FontStyle(parse_input(input)?)),
+
+        Attribute::FontVariant =>
+            Ok(ParsedProperty::FontVariant(parse_input(input)?)),
+
+        Attribute::FontWeight =>
+            Ok(ParsedProperty::FontWeight(parse_input(input)?)),
+
+        Attribute::LetterSpacing =>
+            Ok(ParsedProperty::LetterSpacing(parse_input(input)?)),
+
+        Attribute::LightingColor =>
+            Ok(ParsedProperty::LightingColor(parse_input(input)?)),
+
+        Attribute::Marker => {
+            if accept_shorthands {
+                Ok(ParsedProperty::Marker(parse_input(input)?))
+            } else {
+                Err(ValueErrorKind::UnknownProperty)
+            }
+        }
+
+        Attribute::MarkerEnd =>
+            Ok(ParsedProperty::MarkerEnd(parse_input(input)?)),
+
+        Attribute::MarkerMid =>
+            Ok(ParsedProperty::MarkerMid(parse_input(input)?)),
+
+        Attribute::MarkerStart =>
+            Ok(ParsedProperty::MarkerStart(parse_input(input)?)),
+
+        Attribute::Mask =>
+            Ok(ParsedProperty::Mask(parse_input(input)?)),
+
+        Attribute::Opacity =>
+            Ok(ParsedProperty::Opacity(parse_input(input)?)),
+
+        Attribute::Overflow =>
+            Ok(ParsedProperty::Overflow(parse_input(input)?)),
+
+        Attribute::ShapeRendering =>
+            Ok(ParsedProperty::ShapeRendering(parse_input(input)?)),
+
+        Attribute::StopColor =>
+            Ok(ParsedProperty::StopColor(parse_input(input)?)),
+
+        Attribute::StopOpacity =>
+            Ok(ParsedProperty::StopOpacity(parse_input(input)?)),
+
+        Attribute::Stroke =>
+            Ok(ParsedProperty::Stroke(parse_input(input)?)),
+
+        Attribute::StrokeDasharray =>
+            Ok(ParsedProperty::StrokeDasharray(parse_input(input)?)),
+
+        Attribute::StrokeDashoffset =>
+            Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
+
+        Attribute::StrokeLinecap =>
+            Ok(ParsedProperty::StrokeLinecap(parse_input(input)?)),
+
+        Attribute::StrokeLinejoin =>
+            Ok(ParsedProperty::StrokeLinejoin(parse_input(input)?)),
+
+        Attribute::StrokeOpacity =>
+            Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
+
+        Attribute::StrokeMiterlimit =>
+            Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
+
+        Attribute::StrokeWidth =>
+            Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
+
+        Attribute::TextAnchor =>
+            Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
+
+        Attribute::TextDecoration =>
+            Ok(ParsedProperty::TextDecoration(parse_input(input)?)),
+
+        Attribute::TextRendering =>
+            Ok(ParsedProperty::TextRendering(parse_input(input)?)),
+
+        Attribute::UnicodeBidi =>
+            Ok(ParsedProperty::UnicodeBidi(parse_input(input)?)),
+
+        Attribute::Visibility =>
+            Ok(ParsedProperty::Visibility(parse_input(input)?)),
+
+        Attribute::WritingMode =>
+            Ok(ParsedProperty::WritingMode(parse_input(input)?)),
+
+        _ => Err(ValueErrorKind::UnknownProperty)
+    }
+}
+
 impl ComputedValues {
     pub fn is_overflow(&self) -> bool {
         match self.overflow {
@@ -200,6 +411,74 @@ macro_rules! compute_value {
 }
 
 impl SpecifiedValues {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
+        use ParsedProperty::*;
+
+        use crate::properties as p;
+
+        match *prop {
+            BaselineShift(ref x)             => self.baseline_shift               = x.clone(),
+            ClipPath(ref x)                  => self.clip_path                    = x.clone(),
+            ClipRule(ref x)                  => self.clip_rule                    = x.clone(),
+            Color(ref x)                     => self.color                        = x.clone(),
+            ColorInterpolationFilters(ref x) => self.color_interpolation_filters  = x.clone(),
+            Direction(ref x)                 => self.direction                    = x.clone(),
+            Display(ref x)                   => self.display                      = x.clone(),
+            EnableBackground(ref x)          => self.enable_background            = x.clone(),
+            Fill(ref x)                      => self.fill                         = x.clone(),
+            FillOpacity(ref x)               => self.fill_opacity                 = x.clone(),
+            FillRule(ref x)                  => self.fill_rule                    = x.clone(),
+            Filter(ref x)                    => self.filter                       = x.clone(),
+            FloodColor(ref x)                => self.flood_color                  = x.clone(),
+            FloodOpacity(ref x)              => self.flood_opacity                = x.clone(),
+            FontFamily(ref x)                => self.font_family                  = x.clone(),
+            FontSize(ref x)                  => self.font_size                    = x.clone(),
+            FontStretch(ref x)               => self.font_stretch                 = x.clone(),
+            FontStyle(ref x)                 => self.font_style                   = x.clone(),
+            FontVariant(ref x)               => self.font_variant                 = x.clone(),
+            FontWeight(ref x)                => self.font_weight                  = x.clone(),
+            LetterSpacing(ref x)             => self.letter_spacing               = x.clone(),
+            LightingColor(ref x)             => self.lighting_color               = x.clone(),
+
+            Marker(ref x) => match *x {
+                SpecifiedValue::Specified(p::Marker(ref v)) => {
+
+                    // Since "marker" is a shorthand property, we'll just expand it here
+                    self.marker_end = SpecifiedValue::Specified(p::MarkerEnd(v.clone()));
+                    self.marker_mid = SpecifiedValue::Specified(p::MarkerMid(v.clone()));
+                    self.marker_start = SpecifiedValue::Specified(p::MarkerStart(v.clone()));
+                },
+
+                _ => (),
+            },
+
+            MarkerEnd(ref x)                 => self.marker_end                   = x.clone(),
+            MarkerMid(ref x)                 => self.marker_mid                   = x.clone(),
+            MarkerStart(ref x)               => self.marker_start                 = x.clone(),
+            Mask(ref x)                      => self.mask                         = x.clone(),
+            Opacity(ref x)                   => self.opacity                      = x.clone(),
+            Overflow(ref x)                  => self.overflow                     = x.clone(),
+            ShapeRendering(ref x)            => self.shape_rendering              = x.clone(),
+            StopColor(ref x)                 => self.stop_color                   = x.clone(),
+            StopOpacity(ref x)               => self.stop_opacity                 = x.clone(),
+            Stroke(ref x)                    => self.stroke                       = x.clone(),
+            StrokeDasharray(ref x)           => self.stroke_dasharray             = x.clone(),
+            StrokeDashoffset(ref x)          => self.stroke_dashoffset            = x.clone(),
+            StrokeLinecap(ref x)             => self.stroke_line_cap              = x.clone(),
+            StrokeLinejoin(ref x)            => self.stroke_line_join             = x.clone(),
+            StrokeOpacity(ref x)             => self.stroke_opacity               = x.clone(),
+            StrokeMiterlimit(ref x)          => self.stroke_miterlimit            = x.clone(),
+            StrokeWidth(ref x)               => self.stroke_width                 = x.clone(),
+            TextAnchor(ref x)                => self.text_anchor                  = x.clone(),
+            TextDecoration(ref x)            => self.text_decoration              = x.clone(),
+            TextRendering(ref x)             => self.text_rendering               = x.clone(),
+            UnicodeBidi(ref x)               => self.unicode_bidi                 = x.clone(),
+            Visibility(ref x)                => self.visibility                   = x.clone(),
+            WritingMode(ref x)               => self.writing_mode                 = x.clone(),
+        }
+    }
+
     pub fn to_computed_values(&self, computed: &mut ComputedValues) {
         compute_value!(self, computed, baseline_shift);
         compute_value!(self, computed, clip_path);
@@ -264,235 +543,30 @@ impl SpecifiedValues {
         value: &str,
         accept_shorthands: bool,
     ) -> Result<(), NodeError> {
-        // FIXME: move this to "try {}" when we can bump the rustc version dependency
-        let mut parse = || -> Result<(), ValueErrorKind> {
-            // please keep these sorted
-            match attr {
-                Attribute::BaselineShift => {
-                    self.baseline_shift = parse_property(value)?;
-                }
+        let mut input = ParserInput::new(value);
+        let mut parser = Parser::new(&mut input);
 
-                Attribute::ClipPath => {
-                    self.clip_path = parse_property(value)?;
-                }
+        match parse_attribute_value_into_parsed_property(attr, &mut parser, accept_shorthands)
+            .attribute(attr)
+        {
+            Ok(prop) => self.set_parsed_property(&prop),
+            Err(e) => {
+                // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
+                // Ignore unsupported / illegal values; don't set the whole
+                // node to be in error in that case.
 
-                Attribute::ClipRule => {
-                    self.clip_rule = parse_property(value)?;
-                }
-
-                Attribute::Color => {
-                    self.color = parse_property(value)?;
-                }
-
-                Attribute::ColorInterpolationFilters => {
-                    self.color_interpolation_filters = parse_property(value)?;
-                }
-
-                Attribute::Direction => {
-                    self.direction = parse_property(value)?;
-                }
-
-                Attribute::Display => {
-                    self.display = parse_property(value)?;
-                }
-
-                Attribute::EnableBackground => {
-                    self.enable_background = parse_property(value)?;
-                }
-
-                Attribute::Fill => {
-                    self.fill = parse_property(value)?;
-                }
-
-                Attribute::FillOpacity => {
-                    self.fill_opacity = parse_property(value)?;
-                }
-
-                Attribute::FillRule => {
-                    self.fill_rule = parse_property(value)?;
-                }
-
-                Attribute::Filter => {
-                    self.filter = parse_property(value)?;
-                }
-
-                Attribute::FloodColor => {
-                    self.flood_color = parse_property(value)?;
-                }
-
-                Attribute::FloodOpacity => {
-                    self.flood_opacity = parse_property(value)?;
-                }
-
-                Attribute::FontFamily => {
-                    self.font_family = parse_property(value)?;
-                }
-
-                Attribute::FontSize => {
-                    self.font_size = parse_property(value)?;
-                }
-
-                Attribute::FontStretch => {
-                    self.font_stretch = parse_property(value)?;
-                }
-
-                Attribute::FontStyle => {
-                    self.font_style = parse_property(value)?;
-                }
-
-                Attribute::FontVariant => {
-                    self.font_variant = parse_property(value)?;
-                }
-
-                Attribute::FontWeight => {
-                    self.font_weight = parse_property(value)?;
-                }
-
-                Attribute::LetterSpacing => {
-                    self.letter_spacing = parse_property(value)?;
-                }
-
-                Attribute::LightingColor => {
-                    self.lighting_color = parse_property(value)?;
-                }
-
-                Attribute::MarkerEnd => {
-                    self.marker_end = parse_property(value)?;
-                }
-
-                Attribute::MarkerMid => {
-                    self.marker_mid = parse_property(value)?;
-                }
-
-                Attribute::MarkerStart => {
-                    self.marker_start = parse_property(value)?;
-                }
-
-                Attribute::Marker if accept_shorthands => {
-                    self.marker_end = parse_property(value)?;
-                    self.marker_mid = parse_property(value)?;
-                    self.marker_start = parse_property(value)?;
-                }
-
-                Attribute::Mask => {
-                    self.mask = parse_property(value)?;
-                }
-
-                Attribute::Opacity => {
-                    self.opacity = parse_property(value)?;
-                }
-
-                Attribute::Overflow => {
-                    self.overflow = parse_property(value)?;
-                }
-
-                Attribute::ShapeRendering => {
-                    self.shape_rendering = parse_property(value)?;
-                }
-
-                Attribute::StopColor => {
-                    self.stop_color = parse_property(value)?;
-                }
-
-                Attribute::StopOpacity => {
-                    self.stop_opacity = parse_property(value)?;
-                }
-
-                Attribute::Stroke => {
-                    self.stroke = parse_property(value)?;
-                }
-
-                Attribute::StrokeDasharray => {
-                    self.stroke_dasharray = parse_property(value)?;
-                }
-
-                Attribute::StrokeDashoffset => {
-                    self.stroke_dashoffset = parse_property(value)?;
-                }
-
-                Attribute::StrokeLinecap => {
-                    self.stroke_line_cap = parse_property(value)?;
-                }
-
-                Attribute::StrokeLinejoin => {
-                    self.stroke_line_join = parse_property(value)?;
-                }
-
-                Attribute::StrokeOpacity => {
-                    self.stroke_opacity = parse_property(value)?;
-                }
-
-                Attribute::StrokeMiterlimit => {
-                    self.stroke_miterlimit = parse_property(value)?;
-                }
-
-                Attribute::StrokeWidth => {
-                    self.stroke_width = parse_property(value)?;
-                }
-
-                Attribute::TextAnchor => {
-                    self.text_anchor = parse_property(value)?;
-                }
-
-                Attribute::TextDecoration => {
-                    self.text_decoration = parse_property(value)?;
-                }
-
-                Attribute::TextRendering => {
-                    self.text_rendering = parse_property(value)?;
-                }
-
-                Attribute::UnicodeBidi => {
-                    self.unicode_bidi = parse_property(value)?;
-                }
-
-                Attribute::Visibility => {
-                    self.visibility = parse_property(value)?;
-                }
-
-                Attribute::WritingMode => {
-                    self.writing_mode = parse_property(value)?;
-                }
-
-                Attribute::XmlLang => {
-                    // xml:lang is not a property; it is a non-presentation attribute and as such
-                    // cannot have the "inherit" value.  So, we don't call parse_property() for it,
-                    // but rather call its parser directly.
-                    self.xml_lang = SpecifiedValue::Specified(XmlLang::parse_str(value)?);
-                }
-
-                Attribute::XmlSpace => {
-                    // xml:space is not a property; it is a non-presentation attribute and as such
-                    // cannot have the "inherit" value.  So, we don't call parse_property() for it,
-                    // but rather call its parser directly.
-                    self.xml_space = SpecifiedValue::Specified(XmlSpace::parse_str(value)?);
-                }
-
-                _ => {
-                    // Maybe it's an attribute not parsed here, but in the
-                    // node implementations.
-                }
+                rsvg_log!(
+                    "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    property \
+                     will be ignored)",
+                    attr,
+                    value,
+                    e
+                );
             }
-
-            Ok(())
-        };
-
-        // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
-        // Ignore unsupported / illegal values; don't set the whole
-        // node to be in error in that case.
-
-        if let Err(e) = parse().map_err(|e| NodeError::attribute_error(attr, e)) {
-            rsvg_log!(
-                "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    property \
-                 will be ignored)",
-                attr,
-                value,
-                e
-            );
         }
 
         // If we didn't ignore property errors, we could just return this:
-        // parse().map_err(|e| NodeError::attribute_error(attr, e))
+        // ParsedProperty::parse().attribute(attr)
         Ok(())
     }
 
@@ -501,28 +575,46 @@ impl SpecifiedValues {
         pbag: &PropertyBag<'_>,
     ) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
-            self.parse_attribute_pair(attr, value, false)?;
+            match attr {
+                Attribute::XmlLang => {
+                    // xml:lang is a non-presentation attribute and as such cannot have the
+                    // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
+                    // rather call its parser directly.
+                    self.xml_lang = SpecifiedValue::Specified(
+                        XmlLang::parse_str(value).attribute(Attribute::XmlLang)?,
+                    );
+                }
+
+                Attribute::XmlSpace => {
+                    // xml:space is a non-presentation attribute and as such cannot have the
+                    // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
+                    // rather call its parser directly.
+                    self.xml_space = SpecifiedValue::Specified(
+                        XmlSpace::parse_str(value).attribute(Attribute::XmlSpace)?,
+                    );
+                }
+
+                _ => self.parse_attribute_pair(attr, value, false)?,
+            }
         }
 
         Ok(())
     }
 
-    pub fn parse_style_pair(
+    pub fn set_property_from_declaration(
         &mut self,
-        attr: Attribute,
-        value: &str,
-        important: bool,
+        declaration: &Declaration,
         important_styles: &mut HashSet<Attribute>,
-    ) -> Result<(), NodeError> {
-        if !important && important_styles.contains(&attr) {
-            return Ok(());
+    ) {
+        if !declaration.important && important_styles.contains(&declaration.attribute) {
+            return;
         }
 
-        if important {
-            important_styles.insert(attr);
+        if declaration.important {
+            important_styles.insert(declaration.attribute);
         }
 
-        self.parse_attribute_pair(attr, value, true)
+        self.set_parsed_property(&declaration.property);
     }
 
     pub fn parse_style_declarations(
@@ -530,40 +622,17 @@ impl SpecifiedValues {
         declarations: &str,
         important_styles: &mut HashSet<Attribute>,
     ) -> Result<(), NodeError> {
-        // Split an attribute value like style="foo: bar; baz: beep;" into
-        // individual CSS declarations ("foo: bar" and "baz: beep") and
-        // set them onto the state struct.
-        //
-        // FIXME: It's known that this is _way_ out of spec. A more complete
-        // CSS2 implementation will happen later.
+        let mut input = ParserInput::new(declarations);
+        let mut parser = Parser::new(&mut input);
 
-        for decl in declarations.split(';') {
-            if let Some(colon_pos) = decl.find(':') {
-                let (prop_name, value) = decl.split_at(colon_pos);
+        let decl_parser = DeclarationListParser::new(&mut parser, DeclParser);
 
-                let prop_name = prop_name.trim();
-                let value = value[1..].trim();
-
-                if !prop_name.is_empty() && !value.is_empty() {
-                    let mut important = false;
-
-                    let value = if let Some(bang_pos) = value.find('!') {
-                        let (before_bang, bang_and_after) = value.split_at(bang_pos);
-
-                        if bang_and_after[1..].trim() == "important" {
-                            important = true;
-                        }
-
-                        before_bang.trim()
-                    } else {
-                        &value
-                    };
-
-                    if let Ok(attr) = Attribute::from_str(prop_name) {
-                        self.parse_style_pair(attr, value, important, important_styles)?;
-                    }
-                    // else unknown property name; ignore
+        for decl_result in decl_parser {
+            match decl_result {
+                Ok(declaration) => {
+                    self.set_property_from_declaration(&declaration, important_styles)
                 }
+                Err(_) => (), // invalid property name or invalid value; ignore
             }
         }
 
@@ -571,18 +640,53 @@ impl SpecifiedValues {
     }
 }
 
-// Parses the `value` for the type `T` of the property, including `inherit` values.
-//
-// If the `value` is `inherit`, returns `Ok(None)`; otherwise returns
-// `Ok(Some(T))`.
-fn parse_property<T>(value: &str) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
+struct DeclParser;
+
+impl<'i> DeclarationParser<'i> for DeclParser {
+    type Declaration = Declaration;
+    type Error = ValueErrorKind;
+
+    fn parse_value<'t>(
+        &mut self,
+        name: CowRcStr<'i>,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Declaration, cssparser::ParseError<'i, ValueErrorKind>> {
+        if let Ok(attribute) = Attribute::from_str(name.as_ref()) {
+            let property = parse_attribute_value_into_parsed_property(attribute, input, true)
+                .map_err(|e| input.new_custom_error(e))?;
+
+            let important = input.try_parse(parse_important).is_ok();
+
+            Ok(Declaration {
+                attribute,
+                property,
+                important,
+            })
+        } else {
+            Err(input.new_custom_error(ValueErrorKind::UnknownProperty))
+        }
+    }
+}
+
+impl<'i> AtRuleParser<'i> for DeclParser {
+    type PreludeNoBlock = ();
+    type PreludeBlock = ();
+    type AtRule = Declaration;
+    type Error = ValueErrorKind;
+}
+
+// Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
+pub fn parse_input<T>(input: &mut Parser) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
 where
     T: Property<ComputedValues> + Clone + Default + Parse,
 {
-    if value.trim() == "inherit" {
+    if input
+        .try_parse(|p| p.expect_ident_matching("inherit"))
+        .is_ok()
+    {
         Ok(SpecifiedValue::Inherit)
     } else {
-        Parse::parse_str(value).map(SpecifiedValue::Specified)
+        Parse::parse(input).map(SpecifiedValue::Specified)
     }
 }
 
@@ -920,6 +1024,14 @@ make_property!(
     default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
+);
+
+make_property!(
+    ComputedValues,
+    Marker,
+    default: IRI::None,
+    inherits_automatically: true,
+    newtype_parse: IRI,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerEndProperty
