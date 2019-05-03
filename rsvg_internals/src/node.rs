@@ -10,8 +10,9 @@ use crate::css::CssRules;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::parsers::Parse;
-use crate::properties::{ComputedValues, Overflow, SpecifiedValue, SpecifiedValues};
+use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
+use crate::property_defs::Overflow;
 use crate::tree_utils;
 use locale_config::Locale;
 

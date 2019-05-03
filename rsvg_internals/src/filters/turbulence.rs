@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{self, ParseError};
-use crate::properties::ColorInterpolationFilters;
+use crate::property_defs::ColorInterpolationFilters;
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
