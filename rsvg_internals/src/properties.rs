@@ -234,151 +234,151 @@ pub struct ComputedValues {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-pub fn parse_attribute_value_into_parsed_property(attr: Attribute, value: &str, accept_shorthands: bool) -> Result<ParsedProperty, ValueErrorKind> {
+pub fn parse_attribute_value_into_parsed_property(attr: Attribute, input: &mut Parser, accept_shorthands: bool) -> Result<ParsedProperty, ValueErrorKind> {
     // please keep these sorted
     match attr {
         Attribute::BaselineShift =>
-            Ok(ParsedProperty::BaselineShift(parse_property(value)?)),
+            Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
 
         Attribute::ClipPath =>
-            Ok(ParsedProperty::ClipPath(parse_property(value)?)),
+            Ok(ParsedProperty::ClipPath(parse_input(input)?)),
 
         Attribute::ClipRule =>
-            Ok(ParsedProperty::ClipRule(parse_property(value)?)),
+            Ok(ParsedProperty::ClipRule(parse_input(input)?)),
 
         Attribute::Color =>
-            Ok(ParsedProperty::Color(parse_property(value)?)),
+            Ok(ParsedProperty::Color(parse_input(input)?)),
 
         Attribute::ColorInterpolationFilters =>
-            Ok(ParsedProperty::ColorInterpolationFilters(parse_property(value)?)),
+            Ok(ParsedProperty::ColorInterpolationFilters(parse_input(input)?)),
 
         Attribute::Direction =>
-            Ok(ParsedProperty::Direction(parse_property(value)?)),
+            Ok(ParsedProperty::Direction(parse_input(input)?)),
 
         Attribute::Display =>
-            Ok(ParsedProperty::Display(parse_property(value)?)),
+            Ok(ParsedProperty::Display(parse_input(input)?)),
 
         Attribute::EnableBackground =>
-            Ok(ParsedProperty::EnableBackground(parse_property(value)?)),
+            Ok(ParsedProperty::EnableBackground(parse_input(input)?)),
 
         Attribute::Fill =>
-            Ok(ParsedProperty::Fill(parse_property(value)?)),
+            Ok(ParsedProperty::Fill(parse_input(input)?)),
 
         Attribute::FillOpacity =>
-            Ok(ParsedProperty::FillOpacity(parse_property(value)?)),
+            Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
 
         Attribute::FillRule =>
-            Ok(ParsedProperty::FillRule(parse_property(value)?)),
+            Ok(ParsedProperty::FillRule(parse_input(input)?)),
 
         Attribute::Filter =>
-            Ok(ParsedProperty::Filter(parse_property(value)?)),
+            Ok(ParsedProperty::Filter(parse_input(input)?)),
 
         Attribute::FloodColor =>
-            Ok(ParsedProperty::FloodColor(parse_property(value)?)),
+            Ok(ParsedProperty::FloodColor(parse_input(input)?)),
 
         Attribute::FloodOpacity =>
-            Ok(ParsedProperty::FloodOpacity(parse_property(value)?)),
+            Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
 
         Attribute::FontFamily =>
-            Ok(ParsedProperty::FontFamily(parse_property(value)?)),
+            Ok(ParsedProperty::FontFamily(parse_input(input)?)),
 
         Attribute::FontSize =>
-            Ok(ParsedProperty::FontSize(parse_property(value)?)),
+            Ok(ParsedProperty::FontSize(parse_input(input)?)),
 
         Attribute::FontStretch =>
-            Ok(ParsedProperty::FontStretch(parse_property(value)?)),
+            Ok(ParsedProperty::FontStretch(parse_input(input)?)),
 
         Attribute::FontStyle =>
-            Ok(ParsedProperty::FontStyle(parse_property(value)?)),
+            Ok(ParsedProperty::FontStyle(parse_input(input)?)),
 
         Attribute::FontVariant =>
-            Ok(ParsedProperty::FontVariant(parse_property(value)?)),
+            Ok(ParsedProperty::FontVariant(parse_input(input)?)),
 
         Attribute::FontWeight =>
-            Ok(ParsedProperty::FontWeight(parse_property(value)?)),
+            Ok(ParsedProperty::FontWeight(parse_input(input)?)),
 
         Attribute::LetterSpacing =>
-            Ok(ParsedProperty::LetterSpacing(parse_property(value)?)),
+            Ok(ParsedProperty::LetterSpacing(parse_input(input)?)),
 
         Attribute::LightingColor =>
-            Ok(ParsedProperty::LightingColor(parse_property(value)?)),
+            Ok(ParsedProperty::LightingColor(parse_input(input)?)),
 
         Attribute::Marker => {
             if accept_shorthands {
-                Ok(ParsedProperty::Marker(parse_property(value)?))
+                Ok(ParsedProperty::Marker(parse_input(input)?))
             } else {
                 Err(ValueErrorKind::UnknownProperty)
             }
         }
 
         Attribute::MarkerEnd =>
-            Ok(ParsedProperty::MarkerEnd(parse_property(value)?)),
+            Ok(ParsedProperty::MarkerEnd(parse_input(input)?)),
 
         Attribute::MarkerMid =>
-            Ok(ParsedProperty::MarkerMid(parse_property(value)?)),
+            Ok(ParsedProperty::MarkerMid(parse_input(input)?)),
 
         Attribute::MarkerStart =>
-            Ok(ParsedProperty::MarkerStart(parse_property(value)?)),
+            Ok(ParsedProperty::MarkerStart(parse_input(input)?)),
 
         Attribute::Mask =>
-            Ok(ParsedProperty::Mask(parse_property(value)?)),
+            Ok(ParsedProperty::Mask(parse_input(input)?)),
 
         Attribute::Opacity =>
-            Ok(ParsedProperty::Opacity(parse_property(value)?)),
+            Ok(ParsedProperty::Opacity(parse_input(input)?)),
 
         Attribute::Overflow =>
-            Ok(ParsedProperty::Overflow(parse_property(value)?)),
+            Ok(ParsedProperty::Overflow(parse_input(input)?)),
 
         Attribute::ShapeRendering =>
-            Ok(ParsedProperty::ShapeRendering(parse_property(value)?)),
+            Ok(ParsedProperty::ShapeRendering(parse_input(input)?)),
 
         Attribute::StopColor =>
-            Ok(ParsedProperty::StopColor(parse_property(value)?)),
+            Ok(ParsedProperty::StopColor(parse_input(input)?)),
 
         Attribute::StopOpacity =>
-            Ok(ParsedProperty::StopOpacity(parse_property(value)?)),
+            Ok(ParsedProperty::StopOpacity(parse_input(input)?)),
 
         Attribute::Stroke =>
-            Ok(ParsedProperty::Stroke(parse_property(value)?)),
+            Ok(ParsedProperty::Stroke(parse_input(input)?)),
 
         Attribute::StrokeDasharray =>
-            Ok(ParsedProperty::StrokeDasharray(parse_property(value)?)),
+            Ok(ParsedProperty::StrokeDasharray(parse_input(input)?)),
 
         Attribute::StrokeDashoffset =>
-            Ok(ParsedProperty::StrokeDashoffset(parse_property(value)?)),
+            Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
 
         Attribute::StrokeLinecap =>
-            Ok(ParsedProperty::StrokeLinecap(parse_property(value)?)),
+            Ok(ParsedProperty::StrokeLinecap(parse_input(input)?)),
 
         Attribute::StrokeLinejoin =>
-            Ok(ParsedProperty::StrokeLinejoin(parse_property(value)?)),
+            Ok(ParsedProperty::StrokeLinejoin(parse_input(input)?)),
 
         Attribute::StrokeOpacity =>
-            Ok(ParsedProperty::StrokeOpacity(parse_property(value)?)),
+            Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
 
         Attribute::StrokeMiterlimit =>
-            Ok(ParsedProperty::StrokeMiterlimit(parse_property(value)?)),
+            Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
 
         Attribute::StrokeWidth =>
-            Ok(ParsedProperty::StrokeWidth(parse_property(value)?)),
+            Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
 
         Attribute::TextAnchor =>
-            Ok(ParsedProperty::TextAnchor(parse_property(value)?)),
+            Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
 
         Attribute::TextDecoration =>
-            Ok(ParsedProperty::TextDecoration(parse_property(value)?)),
+            Ok(ParsedProperty::TextDecoration(parse_input(input)?)),
 
         Attribute::TextRendering =>
-            Ok(ParsedProperty::TextRendering(parse_property(value)?)),
+            Ok(ParsedProperty::TextRendering(parse_input(input)?)),
 
         Attribute::UnicodeBidi =>
-            Ok(ParsedProperty::UnicodeBidi(parse_property(value)?)),
+            Ok(ParsedProperty::UnicodeBidi(parse_input(input)?)),
 
         Attribute::Visibility =>
-            Ok(ParsedProperty::Visibility(parse_property(value)?)),
+            Ok(ParsedProperty::Visibility(parse_input(input)?)),
 
         Attribute::WritingMode =>
-            Ok(ParsedProperty::WritingMode(parse_property(value)?)),
+            Ok(ParsedProperty::WritingMode(parse_input(input)?)),
 
         _ => Err(ValueErrorKind::UnknownProperty)
     }
@@ -540,7 +540,10 @@ impl SpecifiedValues {
         value: &str,
         accept_shorthands: bool,
     ) -> Result<(), NodeError> {
-        match parse_attribute_value_into_parsed_property(attr, value, accept_shorthands)
+        let mut input = ParserInput::new(value);
+        let mut parser = Parser::new(&mut input);
+
+        match parse_attribute_value_into_parsed_property(attr, &mut parser, accept_shorthands)
             .attribute(attr)
         {
             Ok(prop) => self.set_parsed_property(&prop),
@@ -646,7 +649,10 @@ impl SpecifiedValues {
                     };
 
                     if let Ok(attribute) = Attribute::from_str(prop_name) {
-                        match parse_attribute_value_into_parsed_property(attribute, value, true) {
+                        let mut input = ParserInput::new(value);
+                        let mut parser = Parser::new(&mut input);
+
+                        match parse_attribute_value_into_parsed_property(attribute, &mut parser, true) {
                             Ok(property) => {
                                 let declaration = Declaration {
                                     attribute,
@@ -668,17 +674,7 @@ impl SpecifiedValues {
     }
 }
 
-// Parses the `value` for the type `T` of the property, including `inherit` values.
-fn parse_property<T>(value: &str) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
-where
-    T: Property<ComputedValues> + Clone + Default + Parse,
-{
-    let mut input = ParserInput::new(value);
-    let mut parser = Parser::new(&mut input);
-
-    parse_input(&mut parser)
-}
-
+// Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
 pub fn parse_input<T>(input: &mut Parser) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
 where
     T: Property<ComputedValues> + Clone + Default + Parse,

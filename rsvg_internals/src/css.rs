@@ -1,3 +1,4 @@
+use cssparser::{Parser, ParserInput};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::ptr;
@@ -239,7 +240,10 @@ unsafe extern "C" fn css_property(
                 let important = from_glib(a_is_important);
 
                 if let Ok(attribute) = Attribute::from_str(prop_name) {
-                    match parse_attribute_value_into_parsed_property(attribute, &prop_value, true) {
+                    let mut input = ParserInput::new(&prop_value);
+                    let mut parser = Parser::new(&mut input);
+
+                    match parse_attribute_value_into_parsed_property(attribute, &mut parser, true) {
                         Ok(property) => {
                             let declaration = Declaration {
                                 attribute,
