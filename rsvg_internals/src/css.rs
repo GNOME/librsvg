@@ -1,6 +1,6 @@
 use cssparser::{Parser, ParserInput};
 use std::collections::hash_map::{Entry, Iter as HashMapIter};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ptr;
 use std::str::{self, FromStr};
 
@@ -15,7 +15,7 @@ use crate::attributes::Attribute;
 use crate::croco::*;
 use crate::error::LoadingError;
 use crate::io::{self, BinaryData};
-use crate::properties::{parse_attribute_value_into_parsed_property, Declaration, SpecifiedValues};
+use crate::properties::{parse_attribute_value_into_parsed_property, Declaration};
 use crate::util::utf8_cstr;
 
 pub struct DeclarationList {
@@ -153,25 +153,6 @@ impl CssRules {
 
     pub fn lookup(&self, selector: &str) -> Option<&DeclarationList> {
         self.selectors_to_declarations.get(selector)
-    }
-
-    /// takes CSS rules which match the given `selector` name and applies them
-    /// to the `values`.
-    pub fn lookup_apply(
-        &self,
-        selector: &str,
-        values: &mut SpecifiedValues,
-        important_styles: &mut HashSet<Attribute>,
-    ) -> bool {
-        if let Some(decl_list) = self.lookup(selector) {
-            for declaration in decl_list.iter() {
-                values.set_property_from_declaration(declaration, important_styles);
-            }
-
-            true
-        } else {
-            false
-        }
     }
 }
 

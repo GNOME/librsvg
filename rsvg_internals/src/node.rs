@@ -461,10 +461,10 @@ impl Node {
         let mut important_styles = self.data.important_styles.borrow_mut();
 
         // *
-        css_rules.lookup_apply("*", &mut specified_values, &mut important_styles);
+        try_apply_by_selector(css_rules, "*", &mut specified_values, &mut important_styles);
 
         // tag
-        css_rules.lookup_apply(element_name, &mut specified_values, &mut important_styles);
+        try_apply_by_selector(css_rules, element_name, &mut specified_values, &mut important_styles);
 
         if let Some(klazz) = self.get_class() {
             for cls in klazz.split_whitespace() {
@@ -475,7 +475,8 @@ impl Node {
                     if let Some(id) = self.get_id() {
                         let target = format!("{}.{}#{}", element_name, cls, id);
                         found = found
-                            || css_rules.lookup_apply(
+                            || try_apply_by_selector(
+                                css_rules,
                                 &target,
                                 &mut specified_values,
                                 &mut important_styles,
@@ -486,7 +487,8 @@ impl Node {
                     if let Some(id) = self.get_id() {
                         let target = format!(".{}#{}", cls, id);
                         found = found
-                            || css_rules.lookup_apply(
+                            || try_apply_by_selector(
+                                css_rules,
                                 &target,
                                 &mut specified_values,
                                 &mut important_styles,
@@ -496,7 +498,8 @@ impl Node {
                     // tag.class
                     let target = format!("{}.{}", element_name, cls);
                     found = found
-                        || css_rules.lookup_apply(
+                        || try_apply_by_selector(
+                            css_rules,
                             &target,
                             &mut specified_values,
                             &mut important_styles,
@@ -505,7 +508,8 @@ impl Node {
                     if !found {
                         // didn't find anything more specific, just apply the class style
                         let target = format!(".{}", cls);
-                        css_rules.lookup_apply(
+                        try_apply_by_selector(
+                            css_rules,
                             &target,
                             &mut specified_values,
                             &mut important_styles,
@@ -518,11 +522,11 @@ impl Node {
         if let Some(id) = self.get_id() {
             // id
             let target = format!("#{}", id);
-            css_rules.lookup_apply(&target, &mut specified_values, &mut important_styles);
+            try_apply_by_selector(css_rules, &target, &mut specified_values, &mut important_styles);
 
             // tag#id
             let target = format!("{}#{}", element_name, id);
-            css_rules.lookup_apply(&target, &mut specified_values, &mut important_styles);
+            try_apply_by_selector(css_rules, &target, &mut specified_values, &mut important_styles);
         }
     }
 
@@ -676,4 +680,23 @@ pub fn node_new(
         class,
         node_impl,
     ))
+}
+
+/// takes CSS rules which match the given `selector` name and applies them
+/// to the `values`.
+pub fn try_apply_by_selector(
+    css_rules: &CssRules,
+    selector: &str,
+    values: &mut SpecifiedValues,
+    important_styles: &mut HashSet<Attribute>,
+) -> bool {
+    if let Some(decl_list) = css_rules.lookup(selector) {
+        for declaration in decl_list.iter() {
+            values.set_property_from_declaration(declaration, important_styles);
+        }
+
+        true
+    } else {
+        false
+    }
 }
