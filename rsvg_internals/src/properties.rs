@@ -1,11 +1,8 @@
-use cssparser::{
-    self, parse_important, AtRuleParser, CowRcStr, DeclarationListParser, DeclarationParser,
-    Parser, ParserInput, Token,
-};
+use cssparser::{self, DeclarationListParser, Parser, ParserInput, Token};
 use std::collections::HashSet;
-use std::str::FromStr;
 
 use crate::attributes::Attribute;
+use crate::css::{Declaration, DeclParser};
 use crate::error::*;
 use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
 use crate::iri::IRI;
@@ -15,13 +12,6 @@ use crate::parsers::{Parse, ParseError};
 use crate::property_bag::PropertyBag;
 use crate::property_macros::Property;
 use crate::unit_interval::UnitInterval;
-
-/// A parsed CSS declaration (`name: value [!important]`)
-pub struct Declaration {
-    pub attribute: Attribute,
-    pub property: ParsedProperty,
-    pub important: bool,
-}
 
 /// Representation of a single CSS property value.
 ///
@@ -638,41 +628,6 @@ impl SpecifiedValues {
 
         Ok(())
     }
-}
-
-struct DeclParser;
-
-impl<'i> DeclarationParser<'i> for DeclParser {
-    type Declaration = Declaration;
-    type Error = ValueErrorKind;
-
-    fn parse_value<'t>(
-        &mut self,
-        name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Declaration, cssparser::ParseError<'i, ValueErrorKind>> {
-        if let Ok(attribute) = Attribute::from_str(name.as_ref()) {
-            let property = parse_attribute_value_into_parsed_property(attribute, input, true)
-                .map_err(|e| input.new_custom_error(e))?;
-
-            let important = input.try_parse(parse_important).is_ok();
-
-            Ok(Declaration {
-                attribute,
-                property,
-                important,
-            })
-        } else {
-            Err(input.new_custom_error(ValueErrorKind::UnknownProperty))
-        }
-    }
-}
-
-impl<'i> AtRuleParser<'i> for DeclParser {
-    type PreludeNoBlock = ();
-    type PreludeBlock = ();
-    type AtRule = Declaration;
-    type Error = ValueErrorKind;
 }
 
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.

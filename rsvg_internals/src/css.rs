@@ -1,4 +1,6 @@
-use cssparser::{Parser, ParserInput};
+use cssparser::{
+    self, parse_important, AtRuleParser, CowRcStr, DeclarationParser, Parser, ParserInput,
+};
 use std::collections::hash_map::{Entry, Iter as HashMapIter};
 use std::collections::HashMap;
 use std::ptr;
@@ -13,14 +15,56 @@ use glib_sys::{gboolean, gpointer, GList};
 use crate::allowed_url::AllowedUrl;
 use crate::attributes::Attribute;
 use crate::croco::*;
-use crate::error::LoadingError;
+use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::properties::{parse_attribute_value_into_parsed_property, Declaration};
+use crate::properties::{parse_attribute_value_into_parsed_property, ParsedProperty};
 use crate::util::utf8_cstr;
+
+/// A parsed CSS declaration (`name: value [!important]`)
+pub struct Declaration {
+    pub attribute: Attribute,
+    pub property: ParsedProperty,
+    pub important: bool,
+}
 
 pub struct DeclarationList {
     // Maps property_name -> Declaration
     declarations: HashMap<Attribute, Declaration>,
+}
+
+pub struct DeclParser;
+
+impl<'i> DeclarationParser<'i> for DeclParser {
+    type Declaration = Declaration;
+    type Error = ValueErrorKind;
+
+    fn parse_value<'t>(
+        &mut self,
+        name: CowRcStr<'i>,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Declaration, cssparser::ParseError<'i, ValueErrorKind>> {
+        if let Ok(attribute) = Attribute::from_str(name.as_ref()) {
+            let property = parse_attribute_value_into_parsed_property(attribute, input, true)
+                .map_err(|e| input.new_custom_error(e))?;
+
+            let important = input.try_parse(parse_important).is_ok();
+
+            Ok(Declaration {
+                attribute,
+                property,
+                important,
+            })
+        } else {
+            Err(input.new_custom_error(ValueErrorKind::UnknownProperty))
+        }
+    }
+}
+
+impl<'i> AtRuleParser<'i> for DeclParser {
+    type PreludeNoBlock = ();
+    type PreludeBlock = ();
+    type AtRule = Declaration;
+    type Error = ValueErrorKind;
 }
 
 type Selector = String;
