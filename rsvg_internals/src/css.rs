@@ -151,7 +151,11 @@ impl CssRules {
         decl_list.add_declaration(declaration);
     }
 
-    /// Takes CSS rules which match the given `selector` name and applies them
+    pub fn lookup(&self, selector: &str) -> Option<&DeclarationList> {
+        self.selectors_to_declarations.get(selector)
+    }
+
+    /// takes CSS rules which match the given `selector` name and applies them
     /// to the `values`.
     pub fn lookup_apply(
         &self,
@@ -159,7 +163,7 @@ impl CssRules {
         values: &mut SpecifiedValues,
         important_styles: &mut HashSet<Attribute>,
     ) -> bool {
-        if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
+        if let Some(decl_list) = self.lookup(selector) {
             for declaration in decl_list.iter() {
                 values.set_property_from_declaration(declaration, important_styles);
             }
