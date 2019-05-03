@@ -600,22 +600,20 @@ impl SpecifiedValues {
         Ok(())
     }
 
-    pub fn set_style_pair_from_parsed_property(
+    pub fn set_property_from_declaration(
         &mut self,
-        attr: Attribute,
-        prop: &ParsedProperty,
-        important: bool,
+        declaration: &Declaration,
         important_styles: &mut HashSet<Attribute>,
     ) {
-        if !important && important_styles.contains(&attr) {
+        if !declaration.important && important_styles.contains(&declaration.attribute) {
             return;
         }
 
-        if important {
-            important_styles.insert(attr);
+        if declaration.important {
+            important_styles.insert(declaration.attribute);
         }
 
-        self.set_parsed_property(prop);
+        self.set_parsed_property(&declaration.property);
     }
 
     pub fn parse_style_declarations(
@@ -652,17 +650,19 @@ impl SpecifiedValues {
                         &value
                     };
 
-                    if let Ok(attr) = Attribute::from_str(prop_name) {
-                        if let Ok(Some(prop)) =
-                            parse_attribute_value_into_parsed_property(attr, value, true)
+                    if let Ok(attribute) = Attribute::from_str(prop_name) {
+                        if let Ok(Some(property)) =
+                            parse_attribute_value_into_parsed_property(attribute, value, true)
                         {
-                            self.set_style_pair_from_parsed_property(
-                                attr,
-                                &prop,
+                            let declaration = Declaration {
+                                attribute,
+                                property,
                                 important,
-                                important_styles,
-                            );
+                            };
+                            
+                            self.set_property_from_declaration(&declaration, important_styles);
                         }
+                        // else unknown property name or invalid value; ignore
                     }
                     // else unknown property name; ignore
                 }

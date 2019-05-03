@@ -132,12 +132,7 @@ impl CssRules {
     ) -> bool {
         if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
             for (_, declaration) in decl_list.iter() {
-                values.set_style_pair_from_parsed_property(
-                    declaration.attribute,
-                    &declaration.property,
-                    declaration.important,
-                    important_styles,
-                );
+                values.set_property_from_declaration(declaration, important_styles);
             }
 
             true
