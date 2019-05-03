@@ -18,8 +18,10 @@ use crate::io::{self, BinaryData};
 use crate::properties::{parse_attribute_value_into_parsed_property, Declaration, SpecifiedValues};
 use crate::util::utf8_cstr;
 
-// Maps property_name -> Declaration
-type DeclarationList = HashMap<Attribute, Declaration>;
+pub struct DeclarationList {
+    // Maps property_name -> Declaration
+    declarations: HashMap<Attribute, Declaration>,
+}
 
 type Selector = String;
 
@@ -27,6 +29,30 @@ type Selector = String;
 /// that result from loading an SVG document.
 pub struct CssRules {
     selectors_to_declarations: HashMap<Selector, DeclarationList>,
+}
+
+impl DeclarationList {
+    fn new() -> DeclarationList {
+        DeclarationList {
+            declarations: HashMap::new(),
+        }
+    }
+
+    fn add_declaration(&mut self, declaration: Declaration) {
+        match self.declarations.entry(declaration.attribute) {
+            Entry::Occupied(mut e) => {
+                let decl = e.get_mut();
+
+                if !decl.important {
+                    *decl = declaration;
+                }
+            }
+
+            Entry::Vacant(v) => {
+                v.insert(declaration);
+            }
+        }
+    }
 }
 
 impl CssRules {
@@ -108,19 +134,7 @@ impl CssRules {
             .entry(selector.to_string())
             .or_insert_with(|| DeclarationList::new());
 
-        match decl_list.entry(declaration.attribute) {
-            Entry::Occupied(mut e) => {
-                let decl = e.get_mut();
-
-                if !decl.important {
-                    *decl = declaration;
-                }
-            }
-
-            Entry::Vacant(v) => {
-                v.insert(declaration);
-            }
-        }
+        decl_list.add_declaration(declaration);
     }
 
     /// Takes CSS rules which match the given `selector` name and applies them
@@ -132,7 +146,7 @@ impl CssRules {
         important_styles: &mut HashSet<Attribute>,
     ) -> bool {
         if let Some(decl_list) = self.selectors_to_declarations.get(selector) {
-            for (_, declaration) in decl_list.iter() {
+            for (_, declaration) in decl_list.declarations.iter() {
                 values.set_property_from_declaration(declaration, important_styles);
             }
 
