@@ -13,6 +13,13 @@ use crate::property_bag::PropertyBag;
 use crate::property_macros::Property;
 use crate::unit_interval::UnitInterval;
 
+/// A parsed CSS declaration (`name: value [!important]`)
+pub struct Declaration {
+    pub attribute: Attribute,
+    pub property: ParsedProperty,
+    pub important: bool,
+}
+
 /// Representation of a single CSS property value.
 ///
 /// `Unspecified` is the `Default`; it means that the corresponding property is not present.

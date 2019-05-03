@@ -14,16 +14,8 @@ use crate::attributes::Attribute;
 use crate::croco::*;
 use crate::error::LoadingError;
 use crate::io::{self, BinaryData};
-use crate::properties::{
-    parse_attribute_value_into_parsed_property, ParsedProperty, SpecifiedValues,
-};
+use crate::properties::{parse_attribute_value_into_parsed_property, Declaration, SpecifiedValues};
 use crate::util::utf8_cstr;
-
-struct Declaration {
-    attribute: Attribute,
-    property: ParsedProperty,
-    important: bool,
-}
 
 // Maps property_name -> Declaration
 type DeclarationList = HashMap<Attribute, Declaration>;
