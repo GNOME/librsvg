@@ -234,157 +234,153 @@ pub struct ComputedValues {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-pub fn parse_attribute_value_into_parsed_property(attr: Attribute, value: &str, accept_shorthands: bool) -> Result<Option<ParsedProperty>, ValueErrorKind> {
+pub fn parse_attribute_value_into_parsed_property(attr: Attribute, value: &str, accept_shorthands: bool) -> Result<ParsedProperty, ValueErrorKind> {
     // please keep these sorted
     match attr {
         Attribute::BaselineShift =>
-            Ok(Some(ParsedProperty::BaselineShift(parse_property(value)?))),
+            Ok(ParsedProperty::BaselineShift(parse_property(value)?)),
 
         Attribute::ClipPath =>
-            Ok(Some(ParsedProperty::ClipPath(parse_property(value)?))),
+            Ok(ParsedProperty::ClipPath(parse_property(value)?)),
 
         Attribute::ClipRule =>
-            Ok(Some(ParsedProperty::ClipRule(parse_property(value)?))),
+            Ok(ParsedProperty::ClipRule(parse_property(value)?)),
 
         Attribute::Color =>
-            Ok(Some(ParsedProperty::Color(parse_property(value)?))),
+            Ok(ParsedProperty::Color(parse_property(value)?)),
 
         Attribute::ColorInterpolationFilters =>
-            Ok(Some(ParsedProperty::ColorInterpolationFilters(parse_property(value)?))),
+            Ok(ParsedProperty::ColorInterpolationFilters(parse_property(value)?)),
 
         Attribute::Direction =>
-            Ok(Some(ParsedProperty::Direction(parse_property(value)?))),
+            Ok(ParsedProperty::Direction(parse_property(value)?)),
 
         Attribute::Display =>
-            Ok(Some(ParsedProperty::Display(parse_property(value)?))),
+            Ok(ParsedProperty::Display(parse_property(value)?)),
 
         Attribute::EnableBackground =>
-            Ok(Some(ParsedProperty::EnableBackground(parse_property(value)?))),
+            Ok(ParsedProperty::EnableBackground(parse_property(value)?)),
 
         Attribute::Fill =>
-            Ok(Some(ParsedProperty::Fill(parse_property(value)?))),
+            Ok(ParsedProperty::Fill(parse_property(value)?)),
 
         Attribute::FillOpacity =>
-            Ok(Some(ParsedProperty::FillOpacity(parse_property(value)?))),
+            Ok(ParsedProperty::FillOpacity(parse_property(value)?)),
 
         Attribute::FillRule =>
-            Ok(Some(ParsedProperty::FillRule(parse_property(value)?))),
+            Ok(ParsedProperty::FillRule(parse_property(value)?)),
 
         Attribute::Filter =>
-            Ok(Some(ParsedProperty::Filter(parse_property(value)?))),
+            Ok(ParsedProperty::Filter(parse_property(value)?)),
 
         Attribute::FloodColor =>
-            Ok(Some(ParsedProperty::FloodColor(parse_property(value)?))),
+            Ok(ParsedProperty::FloodColor(parse_property(value)?)),
 
         Attribute::FloodOpacity =>
-            Ok(Some(ParsedProperty::FloodOpacity(parse_property(value)?))),
+            Ok(ParsedProperty::FloodOpacity(parse_property(value)?)),
 
         Attribute::FontFamily =>
-            Ok(Some(ParsedProperty::FontFamily(parse_property(value)?))),
+            Ok(ParsedProperty::FontFamily(parse_property(value)?)),
 
         Attribute::FontSize =>
-            Ok(Some(ParsedProperty::FontSize(parse_property(value)?))),
+            Ok(ParsedProperty::FontSize(parse_property(value)?)),
 
         Attribute::FontStretch =>
-            Ok(Some(ParsedProperty::FontStretch(parse_property(value)?))),
+            Ok(ParsedProperty::FontStretch(parse_property(value)?)),
 
         Attribute::FontStyle =>
-            Ok(Some(ParsedProperty::FontStyle(parse_property(value)?))),
+            Ok(ParsedProperty::FontStyle(parse_property(value)?)),
 
         Attribute::FontVariant =>
-            Ok(Some(ParsedProperty::FontVariant(parse_property(value)?))),
+            Ok(ParsedProperty::FontVariant(parse_property(value)?)),
 
         Attribute::FontWeight =>
-            Ok(Some(ParsedProperty::FontWeight(parse_property(value)?))),
+            Ok(ParsedProperty::FontWeight(parse_property(value)?)),
 
         Attribute::LetterSpacing =>
-            Ok(Some(ParsedProperty::LetterSpacing(parse_property(value)?))),
+            Ok(ParsedProperty::LetterSpacing(parse_property(value)?)),
 
         Attribute::LightingColor =>
-            Ok(Some(ParsedProperty::LightingColor(parse_property(value)?))),
+            Ok(ParsedProperty::LightingColor(parse_property(value)?)),
 
         Attribute::Marker => {
             if accept_shorthands {
-                Ok(Some(ParsedProperty::Marker(parse_property(value)?)))
+                Ok(ParsedProperty::Marker(parse_property(value)?))
             } else {
-                Ok(None)
+                Err(ValueErrorKind::UnknownProperty)
             }
         }
 
         Attribute::MarkerEnd =>
-            Ok(Some(ParsedProperty::MarkerEnd(parse_property(value)?))),
+            Ok(ParsedProperty::MarkerEnd(parse_property(value)?)),
 
         Attribute::MarkerMid =>
-            Ok(Some(ParsedProperty::MarkerMid(parse_property(value)?))),
+            Ok(ParsedProperty::MarkerMid(parse_property(value)?)),
 
         Attribute::MarkerStart =>
-            Ok(Some(ParsedProperty::MarkerStart(parse_property(value)?))),
+            Ok(ParsedProperty::MarkerStart(parse_property(value)?)),
 
         Attribute::Mask =>
-            Ok(Some(ParsedProperty::Mask(parse_property(value)?))),
+            Ok(ParsedProperty::Mask(parse_property(value)?)),
 
         Attribute::Opacity =>
-            Ok(Some(ParsedProperty::Opacity(parse_property(value)?))),
+            Ok(ParsedProperty::Opacity(parse_property(value)?)),
 
         Attribute::Overflow =>
-            Ok(Some(ParsedProperty::Overflow(parse_property(value)?))),
+            Ok(ParsedProperty::Overflow(parse_property(value)?)),
 
         Attribute::ShapeRendering =>
-            Ok(Some(ParsedProperty::ShapeRendering(parse_property(value)?))),
+            Ok(ParsedProperty::ShapeRendering(parse_property(value)?)),
 
         Attribute::StopColor =>
-            Ok(Some(ParsedProperty::StopColor(parse_property(value)?))),
+            Ok(ParsedProperty::StopColor(parse_property(value)?)),
 
         Attribute::StopOpacity =>
-            Ok(Some(ParsedProperty::StopOpacity(parse_property(value)?))),
+            Ok(ParsedProperty::StopOpacity(parse_property(value)?)),
 
         Attribute::Stroke =>
-            Ok(Some(ParsedProperty::Stroke(parse_property(value)?))),
+            Ok(ParsedProperty::Stroke(parse_property(value)?)),
 
         Attribute::StrokeDasharray =>
-            Ok(Some(ParsedProperty::StrokeDasharray(parse_property(value)?))),
+            Ok(ParsedProperty::StrokeDasharray(parse_property(value)?)),
 
         Attribute::StrokeDashoffset =>
-            Ok(Some(ParsedProperty::StrokeDashoffset(parse_property(value)?))),
+            Ok(ParsedProperty::StrokeDashoffset(parse_property(value)?)),
 
         Attribute::StrokeLinecap =>
-            Ok(Some(ParsedProperty::StrokeLinecap(parse_property(value)?))),
+            Ok(ParsedProperty::StrokeLinecap(parse_property(value)?)),
 
         Attribute::StrokeLinejoin =>
-            Ok(Some(ParsedProperty::StrokeLinejoin(parse_property(value)?))),
+            Ok(ParsedProperty::StrokeLinejoin(parse_property(value)?)),
 
         Attribute::StrokeOpacity =>
-            Ok(Some(ParsedProperty::StrokeOpacity(parse_property(value)?))),
+            Ok(ParsedProperty::StrokeOpacity(parse_property(value)?)),
 
         Attribute::StrokeMiterlimit =>
-            Ok(Some(ParsedProperty::StrokeMiterlimit(parse_property(value)?))),
+            Ok(ParsedProperty::StrokeMiterlimit(parse_property(value)?)),
 
         Attribute::StrokeWidth =>
-            Ok(Some(ParsedProperty::StrokeWidth(parse_property(value)?))),
+            Ok(ParsedProperty::StrokeWidth(parse_property(value)?)),
 
         Attribute::TextAnchor =>
-            Ok(Some(ParsedProperty::TextAnchor(parse_property(value)?))),
+            Ok(ParsedProperty::TextAnchor(parse_property(value)?)),
 
         Attribute::TextDecoration =>
-            Ok(Some(ParsedProperty::TextDecoration(parse_property(value)?))),
+            Ok(ParsedProperty::TextDecoration(parse_property(value)?)),
 
         Attribute::TextRendering =>
-            Ok(Some(ParsedProperty::TextRendering(parse_property(value)?))),
+            Ok(ParsedProperty::TextRendering(parse_property(value)?)),
 
         Attribute::UnicodeBidi =>
-            Ok(Some(ParsedProperty::UnicodeBidi(parse_property(value)?))),
+            Ok(ParsedProperty::UnicodeBidi(parse_property(value)?)),
 
         Attribute::Visibility =>
-            Ok(Some(ParsedProperty::Visibility(parse_property(value)?))),
+            Ok(ParsedProperty::Visibility(parse_property(value)?)),
 
         Attribute::WritingMode =>
-            Ok(Some(ParsedProperty::WritingMode(parse_property(value)?))),
+            Ok(ParsedProperty::WritingMode(parse_property(value)?)),
 
-        _ => {
-            // Maybe it's an attribute not parsed here, but in the
-            // node implementations.
-            Ok(None)
-        }
+        _ => Err(ValueErrorKind::UnknownProperty)
     }
 }
 
@@ -547,8 +543,7 @@ impl SpecifiedValues {
         match parse_attribute_value_into_parsed_property(attr, value, accept_shorthands)
             .attribute(attr)
         {
-            Ok(Some(prop)) => self.set_parsed_property(&prop),
-            Ok(None) => (),
+            Ok(prop) => self.set_parsed_property(&prop),
             Err(e) => {
                 // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
                 // Ignore unsupported / illegal values; don't set the whole
@@ -651,18 +646,18 @@ impl SpecifiedValues {
                     };
 
                     if let Ok(attribute) = Attribute::from_str(prop_name) {
-                        if let Ok(Some(property)) =
-                            parse_attribute_value_into_parsed_property(attribute, value, true)
-                        {
-                            let declaration = Declaration {
-                                attribute,
-                                property,
-                                important,
-                            };
+                        match parse_attribute_value_into_parsed_property(attribute, value, true) {
+                            Ok(property) => {
+                                let declaration = Declaration {
+                                    attribute,
+                                    property,
+                                    important,
+                                };
                             
-                            self.set_property_from_declaration(&declaration, important_styles);
+                                self.set_property_from_declaration(&declaration, important_styles);
+                            },
+                            Err(_) => (), // invalid property name or invalid value; ignore
                         }
-                        // else unknown property name or invalid value; ignore
                     }
                     // else unknown property name; ignore
                 }

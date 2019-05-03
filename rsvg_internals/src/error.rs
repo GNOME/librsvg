@@ -15,6 +15,9 @@ use crate::parsers::ParseError;
 /// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]
 pub enum ValueErrorKind {
+    /// A property with the specified name was not found
+    UnknownProperty,
+
     /// The value could not be parsed
     Parse(ParseError),
 
@@ -52,6 +55,7 @@ impl NodeError {
 impl error::Error for NodeError {
     fn description(&self) -> &str {
         match self.err {
+            ValueErrorKind::UnknownProperty => "unknown property",
             ValueErrorKind::Parse(_) => "parse error",
             ValueErrorKind::Value(_) => "invalid attribute value",
         }
@@ -61,6 +65,8 @@ impl error::Error for NodeError {
 impl fmt::Display for NodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.err {
+            ValueErrorKind::UnknownProperty => write!(f, "unknown property name"),
+
             ValueErrorKind::Parse(ref n) => write!(
                 f,
                 "error parsing value for attribute \"{}\": {}",

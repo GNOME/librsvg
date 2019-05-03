@@ -239,20 +239,22 @@ unsafe extern "C" fn css_property(
                 let important = from_glib(a_is_important);
 
                 if let Ok(attribute) = Attribute::from_str(prop_name) {
-                    if let Ok(Some(property)) =
-                        parse_attribute_value_into_parsed_property(attribute, &prop_value, true)
-                    {
-                        let declaration = Declaration {
-                            attribute,
-                            property,
-                            important,
-                        };
+                    match parse_attribute_value_into_parsed_property(attribute, &prop_value, true) {
+                        Ok(property) => {
+                            let declaration = Declaration {
+                                attribute,
+                                property,
+                                important,
+                            };
 
-                        handler_data
-                            .css_rules
-                            .add_declaration(&selector_name, declaration);
+                            handler_data
+                                .css_rules
+                                .add_declaration(&selector_name, declaration);
+                        },
+                        Err(_) => (), // invalid property name or invalid value; ignore
                     }
                 }
+                // else unknown property name; ignore
             }
         }
 
