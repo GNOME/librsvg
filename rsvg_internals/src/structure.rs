@@ -6,7 +6,6 @@ use cairo::Rectangle;
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::attributes::Attribute;
-use crate::css::CssRules;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::{AttributeResultExt, RenderingError};
@@ -15,7 +14,7 @@ use crate::length::*;
 use crate::node::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
-use crate::property_bag::{OwnedPropertyBag, PropertyBag};
+use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
 use crate::rect::RectangleExt;
 use crate::viewbox::*;
@@ -113,7 +112,6 @@ pub struct NodeSvg {
     w: Cell<Option<LengthHorizontal>>,
     h: Cell<Option<LengthVertical>>,
     vbox: Cell<Option<ViewBox>>,
-    pbag: RefCell<Option<OwnedPropertyBag>>,
 }
 
 impl NodeSvg {
@@ -125,14 +123,6 @@ impl NodeSvg {
             w: Cell::new(None),
             h: Cell::new(None),
             vbox: Cell::new(None),
-            pbag: RefCell::new(None),
-        }
-    }
-
-    pub fn set_delayed_style(&self, node: &RsvgNode, css_rules: &CssRules) {
-        if let Some(owned_pbag) = self.pbag.borrow().as_ref() {
-            let pbag = PropertyBag::from_owned(owned_pbag);
-            node.set_style(css_rules, &pbag);
         }
     }
 
@@ -252,10 +242,6 @@ impl NodeTrait for NodeSvg {
                 _ => (),
             }
         }
-
-        // The "style" sub-element is not loaded yet here, so we need
-        // to store other attributes to be applied later.
-        *self.pbag.borrow_mut() = Some(pbag.to_owned());
 
         Ok(())
     }

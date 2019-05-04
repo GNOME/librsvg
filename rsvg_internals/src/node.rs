@@ -154,6 +154,7 @@ pub struct NodeData {
     values: RefCell<ComputedValues>,
     cond: Cell<bool>,
     node_impl: Box<NodeTrait>,
+    style_attr: RefCell<String>,
 }
 
 pub type Node = tree_utils::Node<NodeData>;
@@ -294,6 +295,7 @@ impl Node {
             values: RefCell::new(ComputedValues::default()),
             cond: Cell::new(true),
             node_impl,
+            style_attr: RefCell::new(String::new()),
         };
 
         tree_utils::Node::<NodeData> {
@@ -347,6 +349,14 @@ impl Node {
         }
     }
 
+    pub fn set_styles_recursively(&self, css_rules: &CssRules) {
+        self.set_style(css_rules);
+
+        for child in self.children() {
+            child.set_styles_recursively(css_rules);
+        }
+    }
+
     pub fn get_cond(&self) -> bool {
         self.data.cond.get()
     }
@@ -367,7 +377,21 @@ impl Node {
         Ok(())
     }
 
+    fn save_style_attribute(&self, pbag: &PropertyBag<'_>) {
+        let mut style_attr = self.data.style_attr.borrow_mut();
+
+        for (attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Style => style_attr.push_str(value),
+
+                _ => (),
+            }
+        }
+    }
+
     pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
+        self.save_style_attribute(pbag);
+
         if let Err(e) = self
             .set_transform_attribute(pbag)
             .and_then(|_| self.parse_conditional_processing_attributes(pbag, locale))
@@ -531,34 +555,32 @@ impl Node {
         }
     }
 
-    /// Looks for the "style" attribute in the pbag, and applies CSS styles from it
-    fn set_style_attribute(&self, pbag: &PropertyBag<'_>) {
-        let mut important_styles = self.data.important_styles.borrow_mut();
+    /// Applies CSS styles from the saved value of the "style" attribute
+    fn set_style_attribute(&self) {
+        let mut style_attr = self.data.style_attr.borrow_mut();
 
-        for (attr, value) in pbag.iter() {
-            match attr {
-                Attribute::Style => {
-                    if let Err(e) = self
-                        .data
-                        .specified_values
-                        .borrow_mut()
-                        .parse_style_declarations(value, &mut important_styles)
-                    {
-                        self.set_error(e);
-                        break;
-                    }
-                }
+        if !style_attr.is_empty() {
+            let mut important_styles = self.data.important_styles.borrow_mut();
 
-                _ => (),
+            if let Err(e) = self
+                .data
+                .specified_values
+                .borrow_mut()
+                .parse_style_declarations(style_attr.as_str(), &mut important_styles)
+            {
+                self.set_error(e);
             }
+
+            style_attr.clear();
+            style_attr.shrink_to_fit();
         }
     }
 
     // Sets the node's specified values from the style-related attributes in the pbag.
     // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&self, css_rules: &CssRules, pbag: &PropertyBag<'_>) {
+    fn set_style(&self, css_rules: &CssRules) {
         self.set_css_styles(css_rules);
-        self.set_style_attribute(pbag);
+        self.set_style_attribute();
     }
 
     pub fn set_overridden_properties(&self) {
