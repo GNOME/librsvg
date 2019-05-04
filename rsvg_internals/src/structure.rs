@@ -15,7 +15,7 @@ use crate::length::*;
 use crate::node::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
-use crate::property_bag::{OwnedPropertyBag, PropertyBag};
+use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
 use crate::rect::RectangleExt;
 use crate::viewbox::*;

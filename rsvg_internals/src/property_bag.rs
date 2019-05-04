@@ -1,15 +1,12 @@
 use libc;
 
-use std::ffi::{CStr, CString};
-use std::ops::Deref;
+use std::ffi::CStr;
 use std::slice;
 use std::str::{self, FromStr};
 
 use crate::attributes::Attribute;
 
 pub struct PropertyBag<'a>(Vec<(Attribute, &'a CStr)>);
-
-pub struct OwnedPropertyBag(Vec<(Attribute, CString)>);
 
 pub struct PropertyBagIter<'a>(slice::Iter<'a, (Attribute, &'a CStr)>);
 
@@ -74,26 +71,6 @@ impl<'a> PropertyBag<'a> {
         }
 
         PropertyBag(array)
-    }
-
-    pub fn from_owned(owned: &OwnedPropertyBag) -> PropertyBag<'_> {
-        let mut array = Vec::new();
-
-        for &(a, ref v) in &owned.0 {
-            array.push((a, v.deref()));
-        }
-
-        PropertyBag(array)
-    }
-
-    pub fn to_owned(&self) -> OwnedPropertyBag {
-        let mut array = Vec::<(Attribute, CString)>::new();
-
-        for &(a, v) in &self.0 {
-            array.push((a, (*v).to_owned()));
-        }
-
-        OwnedPropertyBag(array)
     }
 
     pub fn len(&self) -> usize {
