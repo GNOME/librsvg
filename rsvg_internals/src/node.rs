@@ -349,6 +349,14 @@ impl Node {
         }
     }
 
+    pub fn set_styles_recursively(&self, css_rules: &CssRules) {
+        self.set_style(css_rules);
+
+        for child in self.children() {
+            child.set_styles_recursively(css_rules);
+        }
+    }
+
     pub fn get_cond(&self) -> bool {
         self.data.cond.get()
     }
@@ -570,7 +578,7 @@ impl Node {
 
     // Sets the node's specified values from the style-related attributes in the pbag.
     // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&self, css_rules: &CssRules) {
+    fn set_style(&self, css_rules: &CssRules) {
         self.set_css_styles(css_rules);
         self.set_style_attribute();
     }

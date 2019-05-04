@@ -6,7 +6,6 @@ use cairo::Rectangle;
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::attributes::Attribute;
-use crate::css::CssRules;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::{AttributeResultExt, RenderingError};
@@ -125,10 +124,6 @@ impl NodeSvg {
             h: Cell::new(None),
             vbox: Cell::new(None),
         }
-    }
-
-    pub fn set_delayed_style(&self, node: &RsvgNode, css_rules: &CssRules) {
-        node.set_style(css_rules);
     }
 
     pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(i32, i32)> {

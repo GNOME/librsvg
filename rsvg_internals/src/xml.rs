@@ -16,7 +16,6 @@ use crate::handle::LoadOptions;
 use crate::io::{self, get_input_stream_for_loading};
 use crate::node::{node_new, Node, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
-use crate::structure::NodeSvg;
 use crate::style::NodeStyle;
 use crate::svg::Svg;
 use crate::text::NodeChars;
@@ -115,14 +114,22 @@ impl XmlState {
     pub fn steal_result(&mut self) -> Result<Svg, LoadingError> {
         match self.tree_root {
             None => Err(LoadingError::SvgHasNoElements),
-            Some(ref root) if root.get_type() != NodeType::Svg => {
-                Err(LoadingError::RootElementIsNotSvg)
+
+            Some(ref root) => {
+                if root.get_type() == NodeType::Svg {
+                    let root = self.tree_root.take().unwrap();
+
+                    root.set_styles_recursively(self.css_rules.as_ref().unwrap());
+
+                    Ok(Svg::new(
+                        root,
+                        self.ids.take().unwrap(),
+                        self.load_options.clone(),
+                    ))
+                } else {
+                    Err(LoadingError::RootElementIsNotSvg)
+                }
             }
-            _ => Ok(Svg::new(
-                self.tree_root.take().unwrap(),
-                self.ids.take().unwrap(),
-                self.load_options.clone(),
-            )),
         }
     }
 
@@ -264,14 +271,6 @@ impl XmlState {
     fn element_creation_end_element(&mut self) {
         let node = self.current_node.take().unwrap();
 
-        // The "svg" node is special; it parses its style attributes
-        // here, not during element creation.
-        if node.get_type() == NodeType::Svg {
-            node.with_impl(|svg: &NodeSvg| {
-                svg.set_delayed_style(&node, self.css_rules.as_ref().unwrap());
-            });
-        }
-
         if node.get_type() == NodeType::Style {
             let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
 
@@ -322,12 +321,6 @@ impl XmlState {
         }
 
         new_node.set_atts(&new_node, pbag, self.load_options.locale());
-
-        // The "svg" node is special; it will parse its style attributes
-        // until the end, in standard_element_end().
-        if new_node.get_type() != NodeType::Svg {
-            new_node.set_style(self.css_rules.as_ref().unwrap());
-        }
 
         new_node.set_overridden_properties();
 
