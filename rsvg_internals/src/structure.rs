@@ -113,7 +113,6 @@ pub struct NodeSvg {
     w: Cell<Option<LengthHorizontal>>,
     h: Cell<Option<LengthVertical>>,
     vbox: Cell<Option<ViewBox>>,
-    pbag: RefCell<Option<OwnedPropertyBag>>,
 }
 
 impl NodeSvg {
@@ -125,15 +124,11 @@ impl NodeSvg {
             w: Cell::new(None),
             h: Cell::new(None),
             vbox: Cell::new(None),
-            pbag: RefCell::new(None),
         }
     }
 
     pub fn set_delayed_style(&self, node: &RsvgNode, css_rules: &CssRules) {
-        if let Some(owned_pbag) = self.pbag.borrow().as_ref() {
-            let pbag = PropertyBag::from_owned(owned_pbag);
-            node.set_style(css_rules, &pbag);
-        }
+        node.set_style(css_rules);
     }
 
     pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(i32, i32)> {
@@ -252,10 +247,6 @@ impl NodeTrait for NodeSvg {
                 _ => (),
             }
         }
-
-        // The "style" sub-element is not loaded yet here, so we need
-        // to store other attributes to be applied later.
-        *self.pbag.borrow_mut() = Some(pbag.to_owned());
 
         Ok(())
     }

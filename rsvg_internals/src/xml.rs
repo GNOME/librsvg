@@ -326,7 +326,7 @@ impl XmlState {
         // The "svg" node is special; it will parse its style attributes
         // until the end, in standard_element_end().
         if new_node.get_type() != NodeType::Svg {
-            new_node.set_style(self.css_rules.as_ref().unwrap(), pbag);
+            new_node.set_style(self.css_rules.as_ref().unwrap());
         }
 
         new_node.set_overridden_properties();
