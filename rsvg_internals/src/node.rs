@@ -218,7 +218,7 @@ pub enum NodeType {
 }
 
 impl NodeType {
-    fn element_name(&self) -> &'static str {
+    pub fn element_name(&self) -> &'static str {
         match self {
             NodeType::Chars => "rsvg-chars", // Dummy element name for chars
             NodeType::Circle => "circle",
@@ -349,11 +349,11 @@ impl Node {
         }
     }
 
-    pub fn set_styles_recursively(&self, css_rules: &CssRules) {
-        self.set_style(css_rules);
+    pub fn set_styles_recursively(&self, node: &RsvgNode, css_rules: &CssRules) {
+        self.set_style(node, css_rules);
 
         for child in self.children() {
-            child.set_styles_recursively(css_rules);
+            child.set_styles_recursively(&child, css_rules);
         }
     }
 
@@ -469,89 +469,18 @@ impl Node {
         }
     }
 
-    /// Implements a very limited CSS selection engine
-    fn set_css_styles(&self, css_rules: &CssRules) {
-        // Try to properly support all of the following, including inheritance:
-        // *
-        // #id
-        // tag
-        // tag#id
-        // tag.class
-        // tag.class#id
-        //
-        // This is basically a semi-compliant CSS2 selection engine
-
-        let element_name = self.get_type().element_name();
+    /// Applies the CSS rules that match into the node's specified_values
+    fn set_css_styles(&self, node: &RsvgNode, css_rules: &CssRules) {
         let mut specified_values = self.data.specified_values.borrow_mut();
         let mut important_styles = self.data.important_styles.borrow_mut();
 
-        // *
-        try_apply_by_selector(css_rules, "*", &mut specified_values, &mut important_styles);
-
-        // tag
-        try_apply_by_selector(css_rules, element_name, &mut specified_values, &mut important_styles);
-
-        if let Some(klazz) = self.get_class() {
-            for cls in klazz.split_whitespace() {
-                let mut found = false;
-
-                if !cls.is_empty() {
-                    // tag.class#id
-                    if let Some(id) = self.get_id() {
-                        let target = format!("{}.{}#{}", element_name, cls, id);
-                        found = found
-                            || try_apply_by_selector(
-                                css_rules,
-                                &target,
-                                &mut specified_values,
-                                &mut important_styles,
-                            );
-                    }
-
-                    // .class#id
-                    if let Some(id) = self.get_id() {
-                        let target = format!(".{}#{}", cls, id);
-                        found = found
-                            || try_apply_by_selector(
-                                css_rules,
-                                &target,
-                                &mut specified_values,
-                                &mut important_styles,
-                            );
-                    }
-
-                    // tag.class
-                    let target = format!("{}.{}", element_name, cls);
-                    found = found
-                        || try_apply_by_selector(
-                            css_rules,
-                            &target,
-                            &mut specified_values,
-                            &mut important_styles,
-                        );
-
-                    if !found {
-                        // didn't find anything more specific, just apply the class style
-                        let target = format!(".{}", cls);
-                        try_apply_by_selector(
-                            css_rules,
-                            &target,
-                            &mut specified_values,
-                            &mut important_styles,
-                        );
-                    }
+        for selector in &css_rules.get_matches(node) {
+            if let Some(decl_list) = css_rules.get_declarations(selector) {
+                for declaration in decl_list.iter() {
+                    specified_values
+                        .set_property_from_declaration(declaration, &mut important_styles);
                 }
             }
-        }
-
-        if let Some(id) = self.get_id() {
-            // id
-            let target = format!("#{}", id);
-            try_apply_by_selector(css_rules, &target, &mut specified_values, &mut important_styles);
-
-            // tag#id
-            let target = format!("{}#{}", element_name, id);
-            try_apply_by_selector(css_rules, &target, &mut specified_values, &mut important_styles);
         }
     }
 
@@ -578,8 +507,8 @@ impl Node {
 
     // Sets the node's specified values from the style-related attributes in the pbag.
     // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    fn set_style(&self, css_rules: &CssRules) {
-        self.set_css_styles(css_rules);
+    fn set_style(&self, node: &RsvgNode, css_rules: &CssRules) {
+        self.set_css_styles(node, css_rules);
         self.set_style_attribute();
     }
 
@@ -703,23 +632,4 @@ pub fn node_new(
         class,
         node_impl,
     ))
-}
-
-/// takes CSS rules which match the given `selector` name and applies them
-/// to the `values`.
-pub fn try_apply_by_selector(
-    css_rules: &CssRules,
-    selector: &str,
-    values: &mut SpecifiedValues,
-    important_styles: &mut HashSet<Attribute>,
-) -> bool {
-    if let Some(decl_list) = css_rules.lookup(selector) {
-        for declaration in decl_list.iter() {
-            values.set_property_from_declaration(declaration, important_styles);
-        }
-
-        true
-    } else {
-        false
-    }
 }

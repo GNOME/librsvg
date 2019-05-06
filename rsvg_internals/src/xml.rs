@@ -119,7 +119,7 @@ impl XmlState {
                 if root.get_type() == NodeType::Svg {
                     let root = self.tree_root.take().unwrap();
 
-                    root.set_styles_recursively(self.css_rules.as_ref().unwrap());
+                    root.set_styles_recursively(&root, self.css_rules.as_ref().unwrap());
 
                     Ok(Svg::new(
                         root,

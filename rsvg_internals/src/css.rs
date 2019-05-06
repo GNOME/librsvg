@@ -17,6 +17,7 @@ use crate::attributes::Attribute;
 use crate::croco::*;
 use crate::error::*;
 use crate::io::{self, BinaryData};
+use crate::node::RsvgNode;
 use crate::properties::{parse_attribute_value_into_parsed_property, ParsedProperty};
 use crate::util::utf8_cstr;
 
@@ -67,7 +68,14 @@ impl<'i> AtRuleParser<'i> for DeclParser {
     type Error = ValueErrorKind;
 }
 
-type Selector = String;
+#[derive(Clone, Hash, PartialEq, Eq)]
+pub struct Selector(String);
+
+impl Selector {
+    fn new(s: &str) -> Selector {
+        Selector(s.to_string())
+    }
+}
 
 /// Contains all the mappings of selectors to style declarations
 /// that result from loading an SVG document.
@@ -186,17 +194,110 @@ impl CssRules {
             })
     }
 
-    fn add_declaration(&mut self, selector: &str, declaration: Declaration) {
+    fn add_declaration(&mut self, selector: Selector, declaration: Declaration) {
         let decl_list = self
             .selectors_to_declarations
-            .entry(selector.to_string())
+            .entry(selector)
             .or_insert_with(|| DeclarationList::new());
 
         decl_list.add_declaration(declaration);
     }
 
     pub fn lookup(&self, selector: &str) -> Option<&DeclarationList> {
+        self.get_declarations(&Selector::new(selector))
+    }
+
+    pub fn get_declarations(&self, selector: &Selector) -> Option<&DeclarationList> {
         self.selectors_to_declarations.get(selector)
+    }
+
+    fn selector_matches_node(&self, selector: &Selector, node: &RsvgNode) -> bool {
+        // Try to properly support all of the following, including inheritance:
+        // *
+        // #id
+        // tag
+        // tag#id
+        // tag.class
+        // tag.class#id
+        //
+        // This is basically a semi-compliant CSS2 selection engine
+
+        let element_name = node.get_type().element_name();
+        let id = node.get_id();
+
+        // *
+        if *selector == Selector::new("*") {
+            return true;
+        }
+
+        // tag
+        if *selector == Selector::new(element_name) {
+            return true;
+        }
+
+        if let Some(klazz) = node.get_class() {
+            for cls in klazz.split_whitespace() {
+                if !cls.is_empty() {
+                    // tag.class#id
+                    if let Some(id) = id {
+                        let target = format!("{}.{}#{}", element_name, cls, id);
+                        if *selector == Selector::new(&target) {
+                            return true;
+                        }
+                    }
+
+                    // .class#id
+                    if let Some(id) = id {
+                        let target = format!(".{}#{}", cls, id);
+                        if *selector == Selector::new(&target) {
+                            return true;
+                        }
+                    }
+
+                    // tag.class
+                    let target = format!("{}.{}", element_name, cls);
+                    if *selector == Selector::new(&target) {
+                        return true;
+                    }
+
+                    // didn't find anything more specific, just apply the class style
+                    let target = format!(".{}", cls);
+                    if *selector == Selector::new(&target) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if let Some(id) = id {
+            // id
+            let target = format!("#{}", id);
+            if *selector == Selector::new(&target) {
+                return true;
+            }
+
+            // tag#id
+            let target = format!("{}#{}", element_name, id);
+            if *selector == Selector::new(&target) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn get_matches(&self, node: &RsvgNode) -> Vec<Selector> {
+        self.selectors_to_declarations
+            .iter()
+            .filter_map(|(selector, _)| {
+                if self.selector_matches_node(selector, node) {
+                    Some(selector)
+                } else {
+                    None
+                }
+            })
+            .map(Selector::clone)
+            .collect()
     }
 }
 
@@ -310,7 +411,7 @@ unsafe extern "C" fn css_property(
 
                             handler_data
                                 .css_rules
-                                .add_declaration(&selector_name, declaration);
+                                .add_declaration(Selector::new(&selector_name), declaration);
                         }
                         Err(_) => (), // invalid property name or invalid value; ignore
                     }
