@@ -67,7 +67,14 @@ impl<'i> AtRuleParser<'i> for DeclParser {
     type Error = ValueErrorKind;
 }
 
-type Selector = String;
+#[derive(Hash, PartialEq, Eq)]
+struct Selector(String);
+
+impl Selector {
+    fn new(s: &str) -> Selector {
+        Selector(s.to_string())
+    }
+}
 
 /// Contains all the mappings of selectors to style declarations
 /// that result from loading an SVG document.
@@ -186,17 +193,17 @@ impl CssRules {
             })
     }
 
-    fn add_declaration(&mut self, selector: &str, declaration: Declaration) {
+    fn add_declaration(&mut self, selector: Selector, declaration: Declaration) {
         let decl_list = self
             .selectors_to_declarations
-            .entry(selector.to_string())
+            .entry(selector)
             .or_insert_with(|| DeclarationList::new());
 
         decl_list.add_declaration(declaration);
     }
 
     pub fn lookup(&self, selector: &str) -> Option<&DeclarationList> {
-        self.selectors_to_declarations.get(selector)
+        self.selectors_to_declarations.get(&Selector::new(selector))
     }
 }
 
@@ -310,7 +317,7 @@ unsafe extern "C" fn css_property(
 
                             handler_data
                                 .css_rules
-                                .add_declaration(&selector_name, declaration);
+                                .add_declaration(Selector::new(&selector_name), declaration);
                         }
                         Err(_) => (), // invalid property name or invalid value; ignore
                     }
