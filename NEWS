@@ -1,3 +1,14 @@
+Version 2.44.14
+- Fix #425 - Don't fail parsing if the system's locale is broken (Paolo Borelli).
+- Fix #438, #443 - Don't create intermediate raster surfaces unless
+  absolutely needed.  This was causing blurred output for SVGs from
+  Inkscape and Illustrator, since they include an "enable-background"
+  property even when there are no filters in use.  Thanks to Julian
+  Sparber, Jordan Petridis, Zeeshan Ali for doing a huge "git bisect"
+  to find the cause of this bug.
+- Fix #455 - Fix rounding error on i386 (Olivier Tilloy).
+- Check for Cairo errors when constructing paths.
+
 Version 2.44.13
 - Updated compilation docs for Debian (Jordan Petridis)
 - Fix #415 - register RsvgHandleFlags and the RsvgError enum values in
