@@ -264,7 +264,7 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
 
 gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
                                                const char     *id,
-                                               RsvgRectangle   viewport,
+                                               const RsvgRectangle *viewport,
                                                RsvgRectangle  *out_ink_rect,
                                                RsvgRectangle  *out_logical_rect,
                                                GError        **error);

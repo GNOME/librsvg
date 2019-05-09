@@ -1246,7 +1246,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
 pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
     handle: *mut RsvgHandle,
     id: *const libc::c_char,
-    viewport: RsvgRectangle,
+    viewport: *const RsvgRectangle,
     out_ink_rect: *mut RsvgRectangle,
     out_logical_rect: *mut RsvgRectangle,
     error: *mut *mut glib_sys::GError,
@@ -1255,7 +1255,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_element(id.as_ref().map(String::as_str), &viewport.into()) {
+    match rhandle.get_geometry_for_element(id.as_ref().map(String::as_str), &(*viewport).into()) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
