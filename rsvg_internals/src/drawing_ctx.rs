@@ -21,7 +21,7 @@ use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::NodePattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule, EnableBackground, FillRule, ShapeRendering, StrokeDasharray,
+    ClipRule, FillRule, ShapeRendering, StrokeDasharray,
     StrokeLinecap, StrokeLinejoin,
 };
 use crate::rect::RectangleExt;
@@ -403,7 +403,6 @@ impl DrawingCtx {
                 };
 
                 let UnitInterval(opacity) = values.opacity.0;
-                let enable_background = values.enable_background;
 
                 let affine_at_start = dc.cr.get_matrix();
 
@@ -415,8 +414,7 @@ impl DrawingCtx {
                 let needs_temporary_surface = !(opacity == 1.0
                     && filter.is_none()
                     && mask.is_none()
-                    && clip_in_object_space.is_none()
-                    && enable_background == EnableBackground::Accumulate);
+                    && clip_in_object_space.is_none());
 
                 if needs_temporary_surface {
                     // Compute our assortment of affines
@@ -766,6 +764,18 @@ impl DrawingCtx {
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.
+        //
+        // Addendum: SVG 2 has deprecated the enable-background property, and replaced it with an
+        // "isolation" property from the CSS Compositing and Blending spec.
+        //
+        // Deprecation:
+        //   https://www.w3.org/TR/filter-effects-1/#AccessBackgroundImage
+        //
+        // BackgroundImage, BackgroundAlpha in the "in" attribute of filter primitives:
+        //   https://www.w3.org/TR/filter-effects-1/#attr-valuedef-in-backgroundimage
+        //
+        // CSS Compositing and Blending, "isolation" property:
+        //   https://www.w3.org/TR/compositing-1/#isolation
         let cr = cairo::Context::new(&surface);
         for (depth, draw) in self.cr_stack.iter().enumerate() {
             let affines = CompositingAffines::new(
