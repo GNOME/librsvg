@@ -1061,13 +1061,13 @@ impl From<RsvgRectangle> for cairo::Rectangle {
     }
 }
 
-pub struct AcquiredNode(Rc<RefCell<Vec<RsvgNode>>>, RsvgNode);
+pub struct AcquiredNode(Rc<RefCell<NodeStack>>, RsvgNode);
 
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
-        let mut v = self.0.borrow_mut();
-        assert!(Rc::ptr_eq(v.last().unwrap(), &self.1));
-        v.pop();
+        let mut stack = self.0.borrow_mut();
+        let last = stack.pop().unwrap();
+        assert!(Rc::ptr_eq(&last, &self.1));
     }
 }
 
@@ -1079,23 +1079,15 @@ impl AcquiredNode {
 
 pub struct AcquiredNodes {
     svg: Rc<Svg>,
-    nodes: Rc<RefCell<Vec<RsvgNode>>>,
+    node_stack: Rc<RefCell<NodeStack>>,
 }
 
 impl AcquiredNodes {
     pub fn new(svg: Rc<Svg>) -> AcquiredNodes {
         AcquiredNodes {
             svg,
-            nodes: Rc::new(RefCell::new(Vec::new())),
+            node_stack: Rc::new(RefCell::new(NodeStack::new())),
         }
-    }
-
-    fn contains(&self, node: &RsvgNode) -> bool {
-        self.nodes
-            .borrow()
-            .iter()
-            .find(|n| Rc::ptr_eq(n, node))
-            .is_some()
     }
 
     // Use this function when looking up urls to other nodes. This function
@@ -1109,9 +1101,9 @@ impl AcquiredNodes {
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_node(&self, fragment: &Fragment) -> Option<AcquiredNode> {
         if let Ok(node) = self.svg.lookup(fragment) {
-            if !self.contains(&node) {
-                self.nodes.borrow_mut().push(node.clone());
-                let acq = AcquiredNode(self.nodes.clone(), node.clone());
+            if !self.node_stack.borrow().contains(&node) {
+                self.node_stack.borrow_mut().push(&node);
+                let acq = AcquiredNode(self.node_stack.clone(), node.clone());
                 return Some(acq);
             }
         }
@@ -1164,6 +1156,10 @@ impl NodeStack {
 
     pub fn push(&mut self, node: &RsvgNode) {
         self.0.push(node.clone());
+    }
+
+    pub fn pop(&mut self) -> Option<RsvgNode> {
+        self.0.pop()
     }
 
     pub fn contains(&self, node: &RsvgNode) -> bool {
