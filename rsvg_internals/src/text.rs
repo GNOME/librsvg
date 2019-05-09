@@ -675,7 +675,7 @@ impl NodeTRef {
 
         let values = cascaded.get();
 
-        if let Some(acquired) = draw_ctx.get_acquired_node(link) {
+        if let Some(acquired) = draw_ctx.acquired_nodes().get_node(link) {
             let c = acquired.get();
             extract_chars_children_to_chunks_recursively(chunks, &c, values, depth);
         } else {

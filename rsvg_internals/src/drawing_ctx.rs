@@ -105,7 +105,7 @@ pub struct DrawingCtx {
 
     drawsub_stack: Vec<RsvgNode>,
 
-    acquired_nodes: Rc<RefCell<Vec<RsvgNode>>>,
+    acquired_nodes: AcquiredNodes,
 
     measuring: bool,
     testing: bool,
@@ -159,6 +159,8 @@ impl DrawingCtx {
         let mut view_box_stack = Vec::new();
         view_box_stack.push(vbox);
 
+        let acquired_nodes = AcquiredNodes::new(svg.clone());
+
         let mut draw_ctx = DrawingCtx {
             svg,
             initial_affine,
@@ -170,7 +172,7 @@ impl DrawingCtx {
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
             bbox: BoundingBox::new(&initial_affine),
             drawsub_stack: Vec::new(),
-            acquired_nodes: Rc::new(RefCell::new(Vec::new())),
+            acquired_nodes,
             measuring,
             testing,
         };
@@ -330,63 +332,8 @@ impl DrawingCtx {
         &self.bbox
     }
 
-    // Use this function when looking up urls to other nodes. This function
-    // does proper recursion checking and thereby avoids infinite loops.
-    //
-    // Nodes acquired by this function must be released in reverse
-    // acquiring order.
-    //
-    // Note that if you acquire a node, you have to release it before trying to
-    // acquire it again.  If you acquire a node "#foo" and don't release it before
-    // trying to acquire "foo" again, you will obtain a %NULL the second time.
-    pub fn get_acquired_node(&mut self, fragment: &Fragment) -> Option<AcquiredNode> {
-        if let Ok(node) = self.svg.lookup(fragment) {
-            if !self.acquired_nodes_contains(&node) {
-                self.acquired_nodes.borrow_mut().push(node.clone());
-                let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
-                return Some(acq);
-            }
-        }
-
-        None
-    }
-
-    fn acquired_nodes_contains(&self, node: &RsvgNode) -> bool {
-        self.acquired_nodes
-            .borrow()
-            .iter()
-            .find(|n| Rc::ptr_eq(n, node))
-            .is_some()
-    }
-
-    // Use this function when looking up urls to other nodes, and when you expect
-    // the node to be of a particular type. This function does proper recursion
-    // checking and thereby avoids infinite loops.
-    //
-    // Malformed SVGs, for example, may reference a marker by its IRI, but
-    // the object referenced by the IRI is not a marker.
-    //
-    // Note that if you acquire a node, you have to release it before trying to
-    // acquire it again.  If you acquire a node "#foo" and don't release it before
-    // trying to acquire "foo" again, you will obtain a None the second time.
-    //
-    // For convenience, this function will return None if url is None.
-
-    // FIXME: return a Result<AcquiredNode, RenderingError::InvalidReference>
-    pub fn get_acquired_node_of_type(
-        &mut self,
-        fragment: Option<&Fragment>,
-        node_type: NodeType,
-    ) -> Option<AcquiredNode> {
-        fragment
-            .and_then(move |fragment| self.get_acquired_node(fragment))
-            .and_then(|acquired| {
-                if acquired.get().get_type() == node_type {
-                    Some(acquired)
-                } else {
-                    None
-                }
-            })
+    pub fn acquired_nodes(&self) -> &AcquiredNodes {
+        &self.acquired_nodes
     }
 
     // Returns (clip_in_user_space, clip_in_object_space), both Option<RsvgNode>
@@ -394,7 +341,10 @@ impl DrawingCtx {
         &mut self,
         clip_uri: Option<&Fragment>,
     ) -> (Option<RsvgNode>, Option<RsvgNode>) {
-        if let Some(clip_node) = self.get_acquired_node_of_type(clip_uri, NodeType::ClipPath) {
+        if let Some(clip_node) = self
+            .acquired_nodes
+            .get_node_of_type(clip_uri, NodeType::ClipPath)
+        {
             let clip_node = clip_node.get().clone();
 
             let ClipPathUnits(units) =
@@ -528,8 +478,9 @@ impl DrawingCtx {
                     // Mask
 
                     if let Some(mask) = mask {
-                        if let Some(acquired) =
-                            dc.get_acquired_node_of_type(Some(mask), NodeType::Mask)
+                        if let Some(acquired) = dc
+                            .acquired_nodes
+                            .get_node_of_type(Some(mask), NodeType::Mask)
                         {
                             let mask_node = acquired.get();
 
@@ -613,7 +564,10 @@ impl DrawingCtx {
         child_surface: &cairo::ImageSurface,
         node_bbox: BoundingBox,
     ) -> Result<cairo::ImageSurface, RenderingError> {
-        match self.get_acquired_node_of_type(Some(filter_uri), NodeType::Filter) {
+        match self
+            .acquired_nodes
+            .get_node_of_type(Some(filter_uri), NodeType::Filter)
+        {
             Some(acquired) => {
                 let filter_node = acquired.get();
 
@@ -679,7 +633,7 @@ impl DrawingCtx {
             } => {
                 had_paint_server = false;
 
-                if let Some(acquired) = self.get_acquired_node(iri) {
+                if let Some(acquired) = self.acquired_nodes.get_node(iri) {
                     let node = acquired.get();
 
                     if node.get_type() == NodeType::LinearGradient
@@ -1123,10 +1077,83 @@ impl AcquiredNode {
     }
 }
 
+pub struct AcquiredNodes {
+    svg: Rc<Svg>,
+    nodes: Rc<RefCell<Vec<RsvgNode>>>,
+}
+
+impl AcquiredNodes {
+    pub fn new(svg: Rc<Svg>) -> AcquiredNodes {
+        AcquiredNodes {
+            svg,
+            nodes: Rc::new(RefCell::new(Vec::new())),
+        }
+    }
+
+    fn contains(&self, node: &RsvgNode) -> bool {
+        self.nodes
+            .borrow()
+            .iter()
+            .find(|n| Rc::ptr_eq(n, node))
+            .is_some()
+    }
+
+    // Use this function when looking up urls to other nodes. This function
+    // does proper recursion checking and thereby avoids infinite loops.
+    //
+    // Nodes acquired by this function must be released in reverse
+    // acquiring order.
+    //
+    // Note that if you acquire a node, you have to release it before trying to
+    // acquire it again.  If you acquire a node "#foo" and don't release it before
+    // trying to acquire "foo" again, you will obtain a %NULL the second time.
+    pub fn get_node(&self, fragment: &Fragment) -> Option<AcquiredNode> {
+        if let Ok(node) = self.svg.lookup(fragment) {
+            if !self.contains(&node) {
+                self.nodes.borrow_mut().push(node.clone());
+                let acq = AcquiredNode(self.nodes.clone(), node.clone());
+                return Some(acq);
+            }
+        }
+
+        None
+    }
+
+    // Use this function when looking up urls to other nodes, and when you expect
+    // the node to be of a particular type. This function does proper recursion
+    // checking and thereby avoids infinite loops.
+    //
+    // Malformed SVGs, for example, may reference a marker by its IRI, but
+    // the object referenced by the IRI is not a marker.
+    //
+    // Note that if you acquire a node, you have to release it before trying to
+    // acquire it again.  If you acquire a node "#foo" and don't release it before
+    // trying to acquire "foo" again, you will obtain a None the second time.
+    //
+    // For convenience, this function will return None if url is None.
+
+    // FIXME: return a Result<AcquiredNode, RenderingError::InvalidReference>
+    pub fn get_node_of_type(
+        &self,
+        fragment: Option<&Fragment>,
+        node_type: NodeType,
+    ) -> Option<AcquiredNode> {
+        fragment
+            .and_then(move |fragment| self.get_node(fragment))
+            .and_then(|acquired| {
+                if acquired.get().get_type() == node_type {
+                    Some(acquired)
+                } else {
+                    None
+                }
+            })
+    }
+}
+
 /// Keeps a stack of nodes and can check if a certain node is contained in the stack
 ///
 /// Sometimes parts of the code cannot plainly use the implicit stack of acquired
-/// nodes as maintained by DrawingCtx::get_acquired_node(), and they must keep their
+/// nodes as maintained by DrawingCtx::acquired_nodes, and they must keep their
 /// own stack of nodes to test for reference cycles.  NodeStack can be used to do that.
 pub struct NodeStack(Vec<RsvgNode>);
 

@@ -370,7 +370,7 @@ impl NodeTrait for NodeUse {
 
         let link = link.as_ref().unwrap();
 
-        let child = if let Some(acquired) = draw_ctx.get_acquired_node(link) {
+        let child = if let Some(acquired) = draw_ctx.acquired_nodes().get_node(link) {
             // Here we clone the acquired child, so that we can drop the AcquiredNode as
             // early as possible.  This is so that the child's drawing method will be able
             // to re-acquire the child for other purposes.

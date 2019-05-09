@@ -447,7 +447,7 @@ fn acquire_gradient<'a>(
     draw_ctx: &'a mut DrawingCtx,
     name: Option<&Fragment>,
 ) -> Option<AcquiredNode> {
-    name.and_then(move |fragment| draw_ctx.get_acquired_node(fragment))
+    name.and_then(move |fragment| draw_ctx.acquired_nodes().get_node(fragment))
         .and_then(|acquired| {
             let node_type = acquired.get().get_type();
 
