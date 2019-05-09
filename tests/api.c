@@ -959,14 +959,14 @@ get_geometry_for_element (void)
     RsvgRectangle ink_rect;
     RsvgRectangle logical_rect;
 
-    g_assert (!rsvg_handle_get_geometry_for_element (handle, "#nonexistent", viewport,
+    g_assert (!rsvg_handle_get_geometry_for_element (handle, "#nonexistent", &viewport,
                                                      &ink_rect, &logical_rect, &error));
     g_assert (error != NULL);
 
     g_error_free (error);
     error = NULL;
 
-    g_assert (rsvg_handle_get_geometry_for_element (handle, "#two", viewport,
+    g_assert (rsvg_handle_get_geometry_for_element (handle, "#two", &viewport,
                                                     &ink_rect, &logical_rect, &error));
     g_assert (error == NULL);
 

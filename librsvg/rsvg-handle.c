@@ -336,7 +336,7 @@ extern void rsvg_rust_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                                        RsvgRectangle *out_viewbox);
 extern gboolean rsvg_rust_handle_get_geometry_for_element (RsvgHandle     *handle,
                                                            const char     *id,
-                                                           RsvgRectangle   viewport,
+                                                           const RsvgRectangle *viewport,
                                                            RsvgRectangle  *out_ink_rect,
                                                            RsvgRectangle  *out_logical_rect,
                                                            GError        **error);
@@ -1113,12 +1113,13 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
 gboolean
 rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
                                       const char     *id,
-                                      RsvgRectangle   viewport,
+                                      const RsvgRectangle *viewport,
                                       RsvgRectangle  *out_ink_rect,
                                       RsvgRectangle  *out_logical_rect,
                                       GError        **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (viewport != NULL, FALSE);
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_get_geometry_for_element (handle,
