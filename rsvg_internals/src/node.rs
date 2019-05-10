@@ -16,9 +16,7 @@ use crate::property_defs::Overflow;
 use crate::tree_utils;
 use locale_config::Locale;
 
-// A *const RsvgNode is just a pointer for the C code's benefit: it
-// points to an  Rc<Node>, which is our refcounted Rust representation
-// of nodes.
+/// A strong reference to a node
 pub type RsvgNode = Rc<Node>;
 
 /// Can obtain computed values from a node
