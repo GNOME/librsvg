@@ -209,7 +209,7 @@ impl NodeTrait for NodeSvg {
 
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
-        let is_inner_svg = node.get_parent().is_some();
+        let is_inner_svg = node.parent().is_some();
 
         for (attr, value) in pbag.iter() {
             match attr {
@@ -257,7 +257,7 @@ impl NodeTrait for NodeSvg {
 
         let params = draw_ctx.get_view_params();
 
-        let has_parent = node.get_parent().is_some();
+        let has_parent = node.parent().is_some();
 
         let clip_mode = if !values.is_overflow() && has_parent {
             Some(ClipMode::ClipToViewport)

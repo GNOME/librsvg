@@ -279,7 +279,7 @@ impl XmlState {
             css_rules.parse(self.load_options.base_url.as_ref(), &css_data);
         }
 
-        self.current_node = node.get_parent();
+        self.current_node = node.parent();
     }
 
     fn element_creation_characters(&self, text: &str) {
@@ -296,7 +296,7 @@ impl XmlState {
                     None,
                     Box::new(NodeChars::new()),
                 );
-                node.add_child(&child);
+                node.append(&child);
                 child
             };
 
@@ -317,7 +317,7 @@ impl XmlState {
         let new_node = create_node_and_register_id(name, parent, pbag, ids);
 
         if let Some(parent) = parent {
-            parent.add_child(&new_node);
+            parent.append(&new_node);
         }
 
         new_node.set_atts(&new_node, pbag, self.load_options.locale());

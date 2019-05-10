@@ -5,17 +5,56 @@ pub type NodeRef<T> = Rc<Node<T>>;
 pub type NodeWeakRef<T> = Weak<Node<T>>;
 
 pub struct Node<T> {
-    pub parent: Option<NodeWeakRef<T>>, // optional; weak ref to parent
-    pub first_child: RefCell<Option<NodeRef<T>>>,
-    pub last_child: RefCell<Option<Weak<Node<T>>>>,
-    pub next_sib: RefCell<Option<NodeRef<T>>>, // next sibling; strong ref
-    pub prev_sib: RefCell<Option<NodeWeakRef<T>>>, // previous sibling; weak ref
-    pub data: T,
+    parent: Option<NodeWeakRef<T>>,
+    first_child: RefCell<Option<NodeRef<T>>>,
+    last_child: RefCell<Option<NodeWeakRef<T>>>,
+    next_sibling: RefCell<Option<NodeRef<T>>>,
+    previous_sibling: RefCell<Option<NodeWeakRef<T>>>,
+    data: T,
 }
 
 impl<T> Node<T> {
-    pub fn get_parent(&self) -> Option<NodeRef<T>> {
+    pub fn new(data: T, parent: Option<&NodeRef<T>>) -> Node<T> {
+        Node {
+            parent: parent.map(Rc::downgrade),
+            first_child: RefCell::new(None),
+            last_child: RefCell::new(None),
+            next_sibling: RefCell::new(None),
+            previous_sibling: RefCell::new(None),
+            data,
+        }
+    }
+
+    pub fn parent(&self) -> Option<NodeRef<T>> {
         match self.parent {
+            None => None,
+            Some(ref weak_node) => Some(weak_node.upgrade().unwrap()),
+        }
+    }
+
+    pub fn first_child(&self) -> Option<NodeRef<T>> {
+        match *self.first_child.borrow() {
+            None => None,
+            Some(ref node) => Some(node.clone()),
+        }
+    }
+
+    pub fn last_child(&self) -> Option<NodeRef<T>> {
+        match *self.last_child.borrow() {
+            None => None,
+            Some(ref weak_node) => Some(weak_node.upgrade().unwrap()),
+        }
+    }
+
+    pub fn next_sibling(&self) -> Option<NodeRef<T>> {
+        match *self.next_sibling.borrow() {
+            None => None,
+            Some(ref node) => Some(node.clone()),
+        }
+    }
+
+    pub fn previous_sibling(&self) -> Option<NodeRef<T>> {
+        match *self.previous_sibling.borrow() {
             None => None,
             Some(ref weak_node) => Some(weak_node.upgrade().unwrap()),
         }
@@ -29,28 +68,20 @@ impl<T> Node<T> {
                 return true;
             }
 
-            desc = d.get_parent();
+            desc = d.parent();
         }
 
         false
     }
 
-    pub fn has_previous_sibling(&self) -> bool {
-        !self.prev_sib.borrow().is_none()
-    }
-
-    pub fn has_next_sibling(&self) -> bool {
-        !self.next_sib.borrow().is_none()
-    }
-
-    pub fn add_child(&self, child: &NodeRef<T>) {
-        assert!(child.next_sib.borrow().is_none());
-        assert!(child.prev_sib.borrow().is_none());
+    pub fn append(&self, child: &NodeRef<T>) {
+        assert!(child.next_sibling.borrow().is_none());
+        assert!(child.previous_sibling.borrow().is_none());
 
         if let Some(last_child_weak) = self.last_child.replace(Some(Rc::downgrade(child))) {
             if let Some(last_child) = last_child_weak.upgrade() {
-                child.prev_sib.replace(Some(last_child_weak));
-                last_child.next_sib.replace(Some(child.clone()));
+                child.previous_sibling.replace(Some(last_child_weak));
+                last_child.next_sibling.replace(Some(child.clone()));
                 return;
             }
         }
@@ -70,11 +101,11 @@ impl<T> Node<T> {
         self.first_child.borrow().is_some()
     }
 
-    pub fn data(&self) -> &T {
+    pub fn borrow(&self) -> &T {
         &self.data
     }
 
-    pub fn data_mut(&mut self) -> &mut T {
+    pub fn borrow_mut(&mut self) -> &mut T {
         &mut self.data
     }
 }
@@ -99,7 +130,7 @@ impl<T> Drop for Node<T> {
             non_recursive_drop_unique_rc(rc, &mut stack);
         }
 
-        if let Some(rc) = take_if_unique_strong(&self.next_sib) {
+        if let Some(rc) = take_if_unique_strong(&self.next_sibling) {
             non_recursive_drop_unique_rc(rc, &mut stack);
         }
 
@@ -111,7 +142,7 @@ impl<T> Drop for Node<T> {
                     continue;
                 }
 
-                if let Some(sibling) = take_if_unique_strong(&rc.next_sib) {
+                if let Some(sibling) = take_if_unique_strong(&rc.next_sibling) {
                     rc = sibling;
                     continue;
                 }
@@ -164,7 +195,7 @@ impl<T> Children<T> {
         match &self.next_back {
             &Some(ref next_back) => {
                 next_back
-                    .next_sib
+                    .next_sibling
                     .borrow()
                     .clone()
                     .map(|rc| &*rc as *const Node<T>)
@@ -194,7 +225,7 @@ impl<T> Iterator for Children<T> {
             return None;
         }
         self.next.take().and_then(|next| {
-            self.next = next.next_sib.borrow().clone();
+            self.next = next.next_sibling.borrow().clone();
             Some(next)
         })
     }
@@ -207,7 +238,7 @@ impl<T> DoubleEndedIterator for Children<T> {
         }
         self.next_back.take().and_then(|next_back| {
             self.next_back = next_back
-                .prev_sib
+                .previous_sibling
                 .borrow()
                 .as_ref()
                 .and_then(|sib_weak| sib_weak.upgrade());
@@ -223,42 +254,18 @@ mod tests {
 
     type N = Node<()>;
 
-    impl N {
-        pub fn new() -> N {
-            N {
-                parent: None,
-                first_child: RefCell::new(None),
-                last_child: RefCell::new(None),
-                next_sib: RefCell::new(None),
-                prev_sib: RefCell::new(None),
-                data: (),
-            }
-        }
-
-        pub fn new_with_parent(parent: NodeWeakRef<()>) -> N {
-            N {
-                parent: Some(parent),
-                first_child: RefCell::new(None),
-                last_child: RefCell::new(None),
-                next_sib: RefCell::new(None),
-                prev_sib: RefCell::new(None),
-                data: (),
-            }
-        }
-    }
-
     #[test]
     fn node_is_its_own_ancestor() {
-        let node = Rc::new(N::new());;
+        let node = Rc::new(N::new((), None));;
         assert!(Node::is_ancestor(node.clone(), node.clone()));
     }
 
     #[test]
     fn node_is_ancestor_of_child() {
-        let node = Rc::new(N::new());;
-        let child = Rc::new(N::new_with_parent(Rc::downgrade(&node)));
+        let node = Rc::new(N::new((), None));;
+        let child = Rc::new(N::new((), Some(&node)));
 
-        node.add_child(&child);
+        node.append(&child);
 
         assert!(Node::is_ancestor(node.clone(), child.clone()));
         assert!(!Node::is_ancestor(child.clone(), node.clone()));
@@ -266,12 +273,12 @@ mod tests {
 
     #[test]
     fn node_children_iterator() {
-        let node = Rc::new(N::new());;
-        let child = Rc::new(N::new_with_parent(Rc::downgrade(&node)));
-        let second_child = Rc::new(N::new_with_parent(Rc::downgrade(&node)));
+        let node = Rc::new(N::new((), None));;
+        let child = Rc::new(N::new((), Some(&node)));
+        let second_child = Rc::new(N::new((), Some(&node)));
 
-        node.add_child(&child);
-        node.add_child(&second_child);
+        node.append(&child);
+        node.append(&second_child);
 
         let mut children = node.children();
 
