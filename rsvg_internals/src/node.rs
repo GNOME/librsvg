@@ -567,20 +567,6 @@ impl Node {
         let mut specified_values = self.borrow().specified_values.borrow_mut();
         specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
-
-    // find the last Chars node so that we can coalesce
-    // the text and avoid screwing up the Pango layouts
-    pub fn find_last_chars_child(&self) -> Option<Rc<Node>> {
-        for child in self.children().rev() {
-            match child.get_type() {
-                NodeType::Chars => return Some(child),
-
-                _ => return None,
-            }
-        }
-
-        None
-    }
 }
 
 pub fn node_new(

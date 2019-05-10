@@ -19,7 +19,7 @@ use crate::property_bag::PropertyBag;
 use crate::style::NodeStyle;
 use crate::svg::Svg;
 use crate::text::NodeChars;
-use crate::xml2_load::{Xml2Parser, ParseFromStreamError};
+use crate::xml2_load::{ParseFromStreamError, Xml2Parser};
 
 #[derive(Clone)]
 enum Context {
@@ -286,7 +286,12 @@ impl XmlState {
         let node = self.current_node.as_ref().unwrap();
 
         if text.len() != 0 {
-            let chars_node = if let Some(child) = node.find_last_chars_child() {
+            // When the last child is a Chars node we can coalesce
+            // the text and avoid screwing up the Pango layouts
+            let chars_node = if let Some(child) = node
+                .last_child()
+                .filter(|c| c.get_type() == NodeType::Chars)
+            {
                 child
             } else {
                 let child = node_new(
