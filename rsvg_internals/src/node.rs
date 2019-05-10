@@ -13,12 +13,14 @@ use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
-use crate::tree_utils;
+use crate::tree_utils::{self, NodeRef, NodeWeakRef};
 use locale_config::Locale;
 
-/// A strong reference to a node
-pub type RsvgNode = Rc<Node>;
+/// Tree node with specific data
+pub type RsvgNode = NodeRef<NodeData>;
+pub type RsvgWeakNode = NodeWeakRef<NodeData>;
 
+/// Contents of a tree node
 pub struct NodeData {
     node_type: NodeType,
     id: Option<String>,    // id attribute from XML element
@@ -33,7 +35,45 @@ pub struct NodeData {
     style_attr: RefCell<String>,
 }
 
-pub type Node = tree_utils::Node<NodeData>;
+impl NodeRef<NodeData> {
+    pub fn new(
+        node_type: NodeType,
+        parent: Option<&NodeRef<NodeData>>,
+        id: Option<&str>,
+        class: Option<&str>,
+        node_impl: Box<NodeTrait>,
+    ) -> NodeRef<NodeData> {
+        let data = NodeData {
+            node_type,
+            id: id.map(str::to_string),
+            class: class.map(str::to_string),
+            specified_values: RefCell::new(Default::default()),
+            important_styles: Default::default(),
+            transform: Cell::new(Matrix::identity()),
+            result: RefCell::new(Ok(())),
+            values: RefCell::new(ComputedValues::default()),
+            cond: Cell::new(true),
+            node_impl,
+            style_attr: RefCell::new(String::new()),
+        };
+
+        NodeRef(Rc::new(tree_utils::Node::new(data, parent)))
+    }
+
+    pub fn downgrade(&self) -> RsvgWeakNode {
+        Rc::downgrade(&self.0)
+    }
+
+    pub fn upgrade(weak: &RsvgWeakNode) -> Option<NodeRef<NodeData>> {
+        weak.upgrade().map(NodeRef)
+    }
+}
+
+impl NodeData {
+    pub fn get_impl<T: NodeTrait>(&self) -> Option<&T> {
+        (&self.node_impl).downcast_ref::<T>()
+    }
+}
 
 /// Can obtain computed values from a node
 ///
@@ -60,7 +100,7 @@ impl<'a> CascadedValues<'a> {
     /// This is what nodes should normally use to draw their children from their `draw()` method.
     /// Nodes that need to override the cascade for their children can use `new_from_values()`
     /// instead.
-    pub fn new(&self, node: &'a Node) -> CascadedValues<'a> {
+    pub fn new(&self, node: &'a RsvgNode) -> CascadedValues<'a> {
         match self.inner {
             CascadedInner::FromNode(_) => CascadedValues {
                 inner: CascadedInner::FromNode(node.borrow().values.borrow()),
@@ -75,7 +115,7 @@ impl<'a> CascadedValues<'a> {
     /// This is to be used only in the toplevel drawing function, or in elements like `<marker>`
     /// that don't propagate their parent's cascade to their children.  All others should use
     /// `new()` to derive the cascade from an existing one.
-    fn new_from_node(node: &Node) -> CascadedValues<'_> {
+    fn new_from_node(node: &RsvgNode) -> CascadedValues<'_> {
         CascadedValues {
             inner: CascadedInner::FromNode(node.borrow().values.borrow()),
         }
@@ -86,7 +126,7 @@ impl<'a> CascadedValues<'a> {
     ///
     /// This is for the `<use>` element, which draws the element which it references with the
     /// `<use>`'s own cascade, not wih the element's original cascade.
-    pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
+    pub fn new_from_values(node: &'a RsvgNode, values: &ComputedValues) -> CascadedValues<'a> {
         let mut v = values.clone();
         node.borrow()
             .specified_values
@@ -274,7 +314,7 @@ impl NodeType {
     }
 }
 
-impl Node {
+impl RsvgNode {
     pub fn get_type(&self) -> NodeType {
         self.borrow().node_type
     }
@@ -537,7 +577,7 @@ impl Node {
     }
 
     pub fn get_impl<T: NodeTrait>(&self) -> Option<&T> {
-        (&self.borrow().node_impl).downcast_ref::<T>()
+        self.borrow().get_impl()
     }
 
     pub fn draw_children(
@@ -565,28 +605,4 @@ impl Node {
         let mut specified_values = self.borrow().specified_values.borrow_mut();
         specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
-}
-
-pub fn node_new(
-    node_type: NodeType,
-    parent: Option<&RsvgNode>,
-    id: Option<&str>,
-    class: Option<&str>,
-    node_impl: Box<NodeTrait>,
-) -> RsvgNode {
-    let data = NodeData {
-        node_type,
-        id: id.map(str::to_string),
-        class: class.map(str::to_string),
-        specified_values: RefCell::new(Default::default()),
-        important_styles: Default::default(),
-        transform: Cell::new(Matrix::identity()),
-        result: RefCell::new(Ok(())),
-        values: RefCell::new(ComputedValues::default()),
-        cond: Cell::new(true),
-        node_impl,
-        style_attr: RefCell::new(String::new()),
-    };
-
-    Rc::new(tree_utils::Node::<NodeData>::new(data, parent))
 }

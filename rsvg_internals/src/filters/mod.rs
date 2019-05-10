@@ -11,12 +11,13 @@ use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::length::{LengthHorizontal, LengthUnit, LengthVertical};
-use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{NodeData, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{ParseError, ParseValue};
-use crate::property_defs::ColorInterpolationFilters;
-use crate::property_bag::PropertyBag;
 use crate::properties::ComputedValues;
+use crate::property_bag::PropertyBag;
+use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::tree_utils::{Node, NodeRef};
 
 mod bounds;
 use self::bounds::BoundsBuilder;
@@ -303,24 +304,27 @@ pub fn render(
 
             (c, linear_rgb)
         })
+        // Keep only filter primitives (those that implement the Filter trait)
         .filter_map(|(c, linear_rgb)| {
-            let rr = RcRef::new(c)
-                .try_map(|c| {
+            let rr = RcRef::new(c.0)
+                .try_map(|c: &Node<NodeData>| {
                     // Go through the filter primitives and see if the node is one of them.
                     #[inline]
                     fn as_filter<T: Filter>(x: &T) -> &Filter {
                         x
                     }
 
-                    // Unfortunately it's not possible to downcast to a trait object. If we could
-                    // attach arbitrary data to nodes it would really help here. Previously that
-                    // arbitrary data was in form of RsvgCNodeImpl, but that was heavily tuned for
-                    // storing C pointers with all subsequent downsides.
+                    // Unfortunately it's not possible to downcast to a trait object.  So, we
+                    // try downcasting to each filter type individually, and use
+                    // owning_ref::RcRef to reduce the children to a list of
+                    // OwningRef<Rc<Node<NodeData>>, dyn Filter> -- which is essentially the
+                    // NodeRef, and something inside the NodeRef that implements the Filter
+                    // trait.
                     macro_rules! try_downcasting_to_filter {
                         ($c:expr; $($t:ty),+$(,)*) => ({
                             let mut filter = None;
                             $(
-                                filter = filter.or_else(|| $c.get_impl::<$t>().map(as_filter));
+                                filter = filter.or_else(|| $c.borrow().get_impl::<$t>().map(as_filter));
                             )+
                             filter
                         })
@@ -351,14 +355,18 @@ pub fn render(
         });
 
     for (rr, linear_rgb) in primitives {
+        // rr: OwningRef<Rc<Node<NodeData>>, dyn Filter>
+
+        let rr_node = NodeRef(rr.as_owner().clone());
+
         let mut render = |filter_ctx: &mut FilterContext| {
             if let Err(err) = rr
-                .render(rr.as_owner(), filter_ctx, draw_ctx)
+                .render(&rr_node, filter_ctx, draw_ctx)
                 .and_then(|result| filter_ctx.store_result(result))
             {
                 rsvg_log!(
                     "(filter primitive {} returned an error: {})",
-                    rr.as_owner().get_human_readable_name(),
+                    rr_node.get_human_readable_name(),
                     err
                 );
 
@@ -382,7 +390,7 @@ pub fn render(
         let elapsed = start.elapsed();
         rsvg_log!(
             "(rendered filter primitive {} in\n    {} seconds)",
-            rr.as_owner().get_human_readable_name(),
+            rr_node.get_human_readable_name(),
             elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
         );
     }

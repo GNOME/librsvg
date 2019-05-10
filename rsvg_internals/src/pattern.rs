@@ -2,7 +2,6 @@ use cairo;
 use cairo::{MatrixTrait, PatternTrait};
 use std::cell::RefCell;
 use std::f64;
-use std::rc::*;
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
@@ -45,7 +44,7 @@ pub struct Pattern {
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
     // among the fallbacks.
-    pub node: Option<Weak<Node>>,
+    pub node: Option<RsvgWeakNode>,
 }
 
 impl Default for Pattern {
@@ -179,7 +178,7 @@ impl NodeTrait for NodePattern {
 
         let mut p = self.pattern.borrow_mut();
 
-        p.node = Some(Rc::downgrade(node));
+        p.node = Some(node.downgrade());
 
         for (attr, value) in pbag.iter() {
             match attr {
@@ -422,7 +421,7 @@ impl PaintSource for NodePattern {
         // Set up transformations to be determined by the contents units
 
         // Draw everything
-        let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();
+        let pattern_node = RsvgNode::upgrade(pattern.node.as_ref().unwrap()).unwrap();
         let pattern_cascaded = pattern_node.get_cascaded_values();
         let pattern_values = pattern_cascaded.get();
 

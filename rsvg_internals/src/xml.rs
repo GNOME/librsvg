@@ -4,7 +4,6 @@ use encoding::DecoderTrap;
 use glib::IsA;
 use libc;
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::str;
 
 use crate::allowed_url::AllowedUrl;
@@ -14,7 +13,7 @@ use crate::css::CssRules;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, get_input_stream_for_loading};
-use crate::node::{node_new, Node, NodeType, RsvgNode};
+use crate::node::{NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::NodeStyle;
 use crate::svg::Svg;
@@ -67,11 +66,11 @@ extern "C" {
 /// trait objects. Normally the context refers to a `NodeCreationContext` implementation which is
 /// what creates normal graphical elements.
 pub struct XmlState {
-    tree_root: Option<Rc<Node>>,
+    tree_root: Option<RsvgNode>,
     ids: Option<HashMap<String, RsvgNode>>,
     css_rules: Option<CssRules>,
     context_stack: Vec<Context>,
-    current_node: Option<Rc<Node>>,
+    current_node: Option<RsvgNode>,
 
     entities: HashMap<String, XmlEntityPtr>,
 
@@ -103,7 +102,7 @@ impl XmlState {
         }
     }
 
-    fn set_root(&mut self, root: &Rc<Node>) {
+    fn set_root(&mut self, root: &RsvgNode) {
         if self.tree_root.is_some() {
             panic!("The tree root has already been set");
         }
@@ -294,7 +293,7 @@ impl XmlState {
             {
                 child
             } else {
-                let child = node_new(
+                let child = RsvgNode::new(
                     NodeType::Chars,
                     Some(node),
                     None,
@@ -313,10 +312,10 @@ impl XmlState {
 
     fn create_node(
         &mut self,
-        parent: Option<&Rc<Node>>,
+        parent: Option<&RsvgNode>,
         name: &str,
         pbag: &PropertyBag,
-    ) -> Rc<Node> {
+    ) -> RsvgNode {
         let ids = self.ids.as_mut().unwrap();
 
         let new_node = create_node_and_register_id(name, parent, pbag, ids);
