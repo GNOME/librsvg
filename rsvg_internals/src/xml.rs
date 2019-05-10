@@ -19,7 +19,7 @@ use crate::property_bag::PropertyBag;
 use crate::style::NodeStyle;
 use crate::svg::Svg;
 use crate::text::NodeChars;
-use crate::xml2_load::{Xml2Parser, ParseFromStreamError};
+use crate::xml2_load::{ParseFromStreamError, Xml2Parser};
 
 #[derive(Clone)]
 enum Context {
@@ -279,14 +279,19 @@ impl XmlState {
             css_rules.parse(self.load_options.base_url.as_ref(), &css_data);
         }
 
-        self.current_node = node.get_parent();
+        self.current_node = node.parent();
     }
 
     fn element_creation_characters(&self, text: &str) {
         let node = self.current_node.as_ref().unwrap();
 
         if text.len() != 0 {
-            let chars_node = if let Some(child) = node.find_last_chars_child() {
+            // When the last child is a Chars node we can coalesce
+            // the text and avoid screwing up the Pango layouts
+            let chars_node = if let Some(child) = node
+                .last_child()
+                .filter(|c| c.get_type() == NodeType::Chars)
+            {
                 child
             } else {
                 let child = node_new(
@@ -296,7 +301,7 @@ impl XmlState {
                     None,
                     Box::new(NodeChars::new()),
                 );
-                node.add_child(&child);
+                node.append(&child);
                 child
             };
 
@@ -317,7 +322,7 @@ impl XmlState {
         let new_node = create_node_and_register_id(name, parent, pbag, ids);
 
         if let Some(parent) = parent {
-            parent.add_child(&new_node);
+            parent.append(&new_node);
         }
 
         new_node.set_atts(&new_node, pbag, self.load_options.locale());

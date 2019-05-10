@@ -2,7 +2,7 @@ use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
 use std::cell::{Cell, Ref, RefCell};
 use std::collections::HashSet;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 use crate::attributes::Attribute;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
@@ -49,7 +49,7 @@ impl<'a> CascadedValues<'a> {
     pub fn new(&self, node: &'a Node) -> CascadedValues<'a> {
         match self.inner {
             CascadedInner::FromNode(_) => CascadedValues {
-                inner: CascadedInner::FromNode(node.data.values.borrow()),
+                inner: CascadedInner::FromNode(node.borrow().values.borrow()),
             },
 
             CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, v),
@@ -63,7 +63,7 @@ impl<'a> CascadedValues<'a> {
     /// `new()` to derive the cascade from an existing one.
     fn new_from_node(node: &Node) -> CascadedValues<'_> {
         CascadedValues {
-            inner: CascadedInner::FromNode(node.data.values.borrow()),
+            inner: CascadedInner::FromNode(node.borrow().values.borrow()),
         }
     }
 
@@ -74,7 +74,7 @@ impl<'a> CascadedValues<'a> {
     /// `<use>`'s own cascade, not wih the element's original cascade.
     pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
         let mut v = values.clone();
-        node.data
+        node.borrow()
             .specified_values
             .borrow()
             .to_computed_values(&mut v);
@@ -277,47 +277,16 @@ impl NodeType {
 }
 
 impl Node {
-    pub fn new(
-        node_type: NodeType,
-        parent: Option<Weak<Node>>,
-        id: Option<&str>,
-        class: Option<&str>,
-        node_impl: Box<NodeTrait>,
-    ) -> Node {
-        let data = NodeData {
-            node_type,
-            id: id.map(str::to_string),
-            class: class.map(str::to_string),
-            specified_values: RefCell::new(Default::default()),
-            important_styles: Default::default(),
-            transform: Cell::new(Matrix::identity()),
-            result: RefCell::new(Ok(())),
-            values: RefCell::new(ComputedValues::default()),
-            cond: Cell::new(true),
-            node_impl,
-            style_attr: RefCell::new(String::new()),
-        };
-
-        tree_utils::Node::<NodeData> {
-            parent,
-            first_child: RefCell::new(None),
-            last_child: RefCell::new(None),
-            next_sib: RefCell::new(None),
-            prev_sib: RefCell::new(None),
-            data,
-        }
-    }
-
     pub fn get_type(&self) -> NodeType {
-        self.data.node_type
+        self.borrow().node_type
     }
 
     pub fn get_id(&self) -> Option<&str> {
-        self.data.id.as_ref().map(String::as_str)
+        self.borrow().id.as_ref().map(String::as_str)
     }
 
     pub fn get_class(&self) -> Option<&str> {
-        self.data.class.as_ref().map(String::as_str)
+        self.borrow().class.as_ref().map(String::as_str)
     }
 
     pub fn get_human_readable_name(&self) -> String {
@@ -329,7 +298,7 @@ impl Node {
     }
 
     pub fn get_transform(&self) -> Matrix {
-        self.data.transform.get()
+        self.borrow().transform.get()
     }
 
     pub fn get_cascaded_values(&self) -> CascadedValues<'_> {
@@ -338,11 +307,11 @@ impl Node {
 
     pub fn cascade(&self, values: &ComputedValues) {
         let mut values = values.clone();
-        self.data
+        self.borrow()
             .specified_values
             .borrow()
             .to_computed_values(&mut values);
-        *self.data.values.borrow_mut() = values.clone();
+        *self.borrow().values.borrow_mut() = values.clone();
 
         for child in self.children() {
             child.cascade(&values);
@@ -358,7 +327,7 @@ impl Node {
     }
 
     pub fn get_cond(&self) -> bool {
-        self.data.cond.get()
+        self.borrow().cond.get()
     }
 
     fn set_transform_attribute(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
@@ -367,7 +336,7 @@ impl Node {
                 Attribute::Transform => {
                     return Matrix::parse_str(value)
                         .attribute(Attribute::Transform)
-                        .and_then(|affine| Ok(self.data.transform.set(affine)));
+                        .and_then(|affine| Ok(self.borrow().transform.set(affine)));
                 }
 
                 _ => (),
@@ -378,7 +347,7 @@ impl Node {
     }
 
     fn save_style_attribute(&self, pbag: &PropertyBag<'_>) {
-        let mut style_attr = self.data.style_attr.borrow_mut();
+        let mut style_attr = self.borrow().style_attr.borrow_mut();
 
         for (attr, value) in pbag.iter() {
             match attr {
@@ -395,7 +364,7 @@ impl Node {
         if let Err(e) = self
             .set_transform_attribute(pbag)
             .and_then(|_| self.parse_conditional_processing_attributes(pbag, locale))
-            .and_then(|_| self.data.node_impl.set_atts(node, pbag))
+            .and_then(|_| self.borrow().node_impl.set_atts(node, pbag))
             .and_then(|_| self.set_presentation_attributes(pbag))
         {
             self.set_error(e);
@@ -435,7 +404,7 @@ impl Node {
             };
 
             parse()
-                .map(|c| self.data.cond.set(c))
+                .map(|c| self.borrow().cond.set(c))
                 .map_err(|e| NodeError::attribute_error(attr, e))?;
         }
 
@@ -445,7 +414,7 @@ impl Node {
     /// Hands the pbag to the node's state, to apply the presentation attributes
     fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         match self
-            .data
+            .borrow()
             .specified_values
             .borrow_mut()
             .parse_presentation_attributes(pbag)
@@ -471,8 +440,8 @@ impl Node {
 
     /// Applies the CSS rules that match into the node's specified_values
     fn set_css_styles(&self, node: &RsvgNode, css_rules: &CssRules) {
-        let mut specified_values = self.data.specified_values.borrow_mut();
-        let mut important_styles = self.data.important_styles.borrow_mut();
+        let mut specified_values = self.borrow().specified_values.borrow_mut();
+        let mut important_styles = self.borrow().important_styles.borrow_mut();
 
         for selector in &css_rules.get_matches(node) {
             if let Some(decl_list) = css_rules.get_declarations(selector) {
@@ -486,13 +455,13 @@ impl Node {
 
     /// Applies CSS styles from the saved value of the "style" attribute
     fn set_style_attribute(&self) {
-        let mut style_attr = self.data.style_attr.borrow_mut();
+        let mut style_attr = self.borrow().style_attr.borrow_mut();
 
         if !style_attr.is_empty() {
-            let mut important_styles = self.data.important_styles.borrow_mut();
+            let mut important_styles = self.borrow().important_styles.borrow_mut();
 
             if let Err(e) = self
-                .data
+                .borrow()
                 .specified_values
                 .borrow_mut()
                 .parse_style_declarations(style_attr.as_str(), &mut important_styles)
@@ -513,8 +482,8 @@ impl Node {
     }
 
     pub fn set_overridden_properties(&self) {
-        let mut specified_values = self.data.specified_values.borrow_mut();
-        self.data
+        let mut specified_values = self.borrow().specified_values.borrow_mut();
+        self.borrow()
             .node_impl
             .set_overridden_properties(&mut specified_values);
     }
@@ -531,7 +500,7 @@ impl Node {
                 let cr = dc.get_cairo_context();
                 cr.transform(self.get_transform());
 
-                self.data.node_impl.draw(node, cascaded, dc, clipping)
+                self.borrow().node_impl.draw(node, cascaded, dc, clipping)
             })
         } else {
             rsvg_log!(
@@ -550,11 +519,11 @@ impl Node {
             error
         );
 
-        *self.data.result.borrow_mut() = Err(error);
+        *self.borrow().result.borrow_mut() = Err(error);
     }
 
     pub fn is_in_error(&self) -> bool {
-        self.data.result.borrow().is_err()
+        self.borrow().result.borrow().is_err()
     }
 
     pub fn with_impl<T, F, U>(&self, f: F) -> U
@@ -562,7 +531,7 @@ impl Node {
         T: NodeTrait,
         F: FnOnce(&T) -> U,
     {
-        if let Some(t) = (&self.data.node_impl).downcast_ref::<T>() {
+        if let Some(t) = (&self.borrow().node_impl).downcast_ref::<T>() {
             f(t)
         } else {
             panic!("could not downcast");
@@ -570,7 +539,7 @@ impl Node {
     }
 
     pub fn get_impl<T: NodeTrait>(&self) -> Option<&T> {
-        (&self.data.node_impl).downcast_ref::<T>()
+        (&self.borrow().node_impl).downcast_ref::<T>()
     }
 
     pub fn draw_children(
@@ -591,26 +560,12 @@ impl Node {
     }
 
     pub fn is_overflow(&self) -> bool {
-        self.data.specified_values.borrow().is_overflow()
+        self.borrow().specified_values.borrow().is_overflow()
     }
 
     pub fn set_overflow_hidden(&self) {
-        let mut specified_values = self.data.specified_values.borrow_mut();
+        let mut specified_values = self.borrow().specified_values.borrow_mut();
         specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
-    }
-
-    // find the last Chars node so that we can coalesce
-    // the text and avoid screwing up the Pango layouts
-    pub fn find_last_chars_child(&self) -> Option<Rc<Node>> {
-        for child in self.children().rev() {
-            match child.get_type() {
-                NodeType::Chars => return Some(child),
-
-                _ => return None,
-            }
-        }
-
-        None
     }
 }
 
@@ -621,15 +576,19 @@ pub fn node_new(
     class: Option<&str>,
     node_impl: Box<NodeTrait>,
 ) -> RsvgNode {
-    Rc::new(Node::new(
+    let data = NodeData {
         node_type,
-        if let Some(parent) = parent {
-            Some(Rc::downgrade(parent))
-        } else {
-            None
-        },
-        id,
-        class,
+        id: id.map(str::to_string),
+        class: class.map(str::to_string),
+        specified_values: RefCell::new(Default::default()),
+        important_styles: Default::default(),
+        transform: Cell::new(Matrix::identity()),
+        result: RefCell::new(Ok(())),
+        values: RefCell::new(ComputedValues::default()),
+        cond: Cell::new(true),
         node_impl,
-    ))
+        style_attr: RefCell::new(String::new()),
+    };
+
+    Rc::new(tree_utils::Node::<NodeData>::new(data, parent))
 }

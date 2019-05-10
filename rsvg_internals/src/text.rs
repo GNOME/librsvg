@@ -491,8 +491,8 @@ impl NodeChars {
         if (*normalized).is_none() {
             let mode = match values.xml_space {
                 XmlSpace::Default => XmlSpaceNormalize::Default(NormalizeDefault {
-                    has_element_before: node.has_previous_sibling(),
-                    has_element_after: node.has_next_sibling(),
+                    has_element_before: node.previous_sibling().is_some(),
+                    has_element_after: node.next_sibling().is_some(),
                 }),
 
                 XmlSpace::Preserve => XmlSpaceNormalize::Preserve,

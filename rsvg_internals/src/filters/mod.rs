@@ -115,7 +115,7 @@ impl NodeTrait for Primitive {
     fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let primitiveunits = node
-            .get_parent()
+            .parent()
             .and_then(|parent| {
                 if parent.get_type() == NodeType::Filter {
                     Some(parent.with_impl(|f: &NodeFilter| f.primitiveunits.get()))
