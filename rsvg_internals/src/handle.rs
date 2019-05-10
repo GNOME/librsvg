@@ -233,7 +233,7 @@ impl Handle {
         let node = self.get_node_or_root(id)?;
 
         let root = self.svg.root();
-        let is_root = Rc::ptr_eq(&node, &root);
+        let is_root = node == root;
 
         if is_root {
             let cascaded = node.get_cascaded_values();

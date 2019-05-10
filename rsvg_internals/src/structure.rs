@@ -17,6 +17,7 @@ use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
 use crate::rect::RectangleExt;
+use crate::tree_utils::Node;
 use crate::viewbox::*;
 
 pub struct NodeGroup();

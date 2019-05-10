@@ -824,7 +824,7 @@ impl DrawingCtx {
         let stack_top = self.drawsub_stack.pop();
 
         let draw = if let Some(ref top) = stack_top {
-            Rc::ptr_eq(top, node)
+            top == node
         } else {
             true
         };
@@ -1067,7 +1067,7 @@ impl Drop for AcquiredNode {
     fn drop(&mut self) {
         let mut stack = self.0.borrow_mut();
         let last = stack.pop().unwrap();
-        assert!(Rc::ptr_eq(&last, &self.1));
+        assert!(last == self.1);
     }
 }
 
@@ -1163,6 +1163,6 @@ impl NodeStack {
     }
 
     pub fn contains(&self, node: &RsvgNode) -> bool {
-        self.0.iter().find(|n| Rc::ptr_eq(n, node)).is_some()
+        self.0.iter().find(|n| **n == *node).is_some()
     }
 }

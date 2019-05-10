@@ -1,8 +1,38 @@
 use std::cell::RefCell;
+use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
-pub type NodeRef<T> = Rc<Node<T>>;
+/// A strong reference to a node
+///
+/// These strong references can be compared with `==` as they
+/// implement `PartialEq` and `Eq`; comparison means whether they
+/// point to the same node struct.
+pub struct NodeRef<T>(pub Rc<Node<T>>);
+
 pub type NodeWeakRef<T> = Weak<Node<T>>;
+
+impl<T> Clone for NodeRef<T> {
+    fn clone(&self) -> NodeRef<T> {
+        NodeRef(self.0.clone())
+    }
+}
+
+impl<T> Deref for NodeRef<T> {
+    type Target = Node<T>;
+
+    #[inline]
+    fn deref(&self) -> &Node<T> {
+        &*self.0
+    }
+}
+
+impl<T> Eq for NodeRef<T> {}
+impl<T> PartialEq for NodeRef<T> {
+    #[inline]
+    fn eq(&self, other: &NodeRef<T>) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
 
 pub struct Node<T> {
     parent: Option<NodeWeakRef<T>>,
@@ -16,7 +46,7 @@ pub struct Node<T> {
 impl<T> Node<T> {
     pub fn new(data: T, parent: Option<&NodeRef<T>>) -> Node<T> {
         Node {
-            parent: parent.map(Rc::downgrade),
+            parent: parent.map(|n| Rc::downgrade(&n.0)),
             first_child: RefCell::new(None),
             last_child: RefCell::new(None),
             next_sibling: RefCell::new(None),
@@ -28,7 +58,7 @@ impl<T> Node<T> {
     pub fn parent(&self) -> Option<NodeRef<T>> {
         match self.parent {
             None => None,
-            Some(ref weak_node) => Some(weak_node.upgrade().unwrap()),
+            Some(ref weak_node) => Some(NodeRef(weak_node.upgrade().unwrap())),
         }
     }
 
@@ -42,7 +72,7 @@ impl<T> Node<T> {
     pub fn last_child(&self) -> Option<NodeRef<T>> {
         match *self.last_child.borrow() {
             None => None,
-            Some(ref weak_node) => Some(weak_node.upgrade().unwrap()),
+            Some(ref weak_node) => Some(NodeRef(weak_node.upgrade().unwrap())),
         }
     }
 
@@ -56,7 +86,7 @@ impl<T> Node<T> {
     pub fn previous_sibling(&self) -> Option<NodeRef<T>> {
         match *self.previous_sibling.borrow() {
             None => None,
-            Some(ref weak_node) => Some(weak_node.upgrade().unwrap()),
+            Some(ref weak_node) => Some(NodeRef(weak_node.upgrade().unwrap())),
         }
     }
 
@@ -64,7 +94,7 @@ impl<T> Node<T> {
         let mut desc = Some(descendant.clone());
 
         while let Some(ref d) = desc.clone() {
-            if Rc::ptr_eq(&ancestor, d) {
+            if ancestor == *d {
                 return true;
             }
 
@@ -78,7 +108,7 @@ impl<T> Node<T> {
         assert!(child.next_sibling.borrow().is_none());
         assert!(child.previous_sibling.borrow().is_none());
 
-        if let Some(last_child_weak) = self.last_child.replace(Some(Rc::downgrade(child))) {
+        if let Some(last_child_weak) = self.last_child.replace(Some(Rc::downgrade(&child.0))) {
             if let Some(last_child) = last_child_weak.upgrade() {
                 child.previous_sibling.replace(Some(last_child_weak));
                 last_child.next_sibling.replace(Some(child.clone()));
@@ -93,7 +123,8 @@ impl<T> Node<T> {
             .last_child
             .borrow()
             .as_ref()
-            .and_then(|child_weak| child_weak.upgrade());
+            .and_then(|child_weak| child_weak.upgrade())
+            .map(NodeRef);
         Children::new(self.first_child.borrow().clone(), last_child)
     }
 
@@ -168,7 +199,7 @@ fn take_if_unique_strong<T>(r: &RefCell<Option<NodeRef<T>>>) -> Option<NodeRef<T
 
     let has_single_ref = match *r {
         None => false,
-        Some(ref rc) if Rc::strong_count(rc) > 1 => false,
+        Some(ref rc) if Rc::strong_count(&rc.0) > 1 => false,
         Some(_) => true,
     };
 
@@ -241,7 +272,8 @@ impl<T> DoubleEndedIterator for Children<T> {
                 .previous_sibling
                 .borrow()
                 .as_ref()
-                .and_then(|sib_weak| sib_weak.upgrade());
+                .and_then(|sib_weak| sib_weak.upgrade())
+                .map(NodeRef);
             Some(next_back)
         })
     }
@@ -256,14 +288,14 @@ mod tests {
 
     #[test]
     fn node_is_its_own_ancestor() {
-        let node = Rc::new(N::new((), None));;
+        let node = NodeRef(Rc::new(N::new((), None)));
         assert!(Node::is_ancestor(node.clone(), node.clone()));
     }
 
     #[test]
     fn node_is_ancestor_of_child() {
-        let node = Rc::new(N::new((), None));;
-        let child = Rc::new(N::new((), Some(&node)));
+        let node = NodeRef(Rc::new(N::new((), None)));
+        let child = NodeRef(Rc::new(N::new((), Some(&node))));
 
         node.append(&child);
 
@@ -273,9 +305,9 @@ mod tests {
 
     #[test]
     fn node_children_iterator() {
-        let node = Rc::new(N::new((), None));;
-        let child = Rc::new(N::new((), Some(&node)));
-        let second_child = Rc::new(N::new((), Some(&node)));
+        let node = NodeRef(Rc::new(N::new((), None)));
+        let child = NodeRef(Rc::new(N::new((), Some(&node))));
+        let second_child = NodeRef(Rc::new(N::new((), Some(&node))));
 
         node.append(&child);
         node.append(&second_child);
@@ -285,12 +317,12 @@ mod tests {
         let c = children.next();
         assert!(c.is_some());
         let c = c.unwrap();
-        assert!(Rc::ptr_eq(&c, &child));
+        assert!(c == child);
 
         let c = children.next_back();
         assert!(c.is_some());
         let c = c.unwrap();
-        assert!(Rc::ptr_eq(&c, &second_child));
+        assert!(c == second_child);
 
         assert!(children.next().is_none());
         assert!(children.next_back().is_none());
