@@ -2,7 +2,7 @@ use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
 use std::cell::{Cell, Ref, RefCell};
 use std::collections::HashSet;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 use crate::attributes::Attribute;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
@@ -277,37 +277,6 @@ impl NodeType {
 }
 
 impl Node {
-    pub fn new(
-        node_type: NodeType,
-        parent: Option<Weak<Node>>,
-        id: Option<&str>,
-        class: Option<&str>,
-        node_impl: Box<NodeTrait>,
-    ) -> Node {
-        let data = NodeData {
-            node_type,
-            id: id.map(str::to_string),
-            class: class.map(str::to_string),
-            specified_values: RefCell::new(Default::default()),
-            important_styles: Default::default(),
-            transform: Cell::new(Matrix::identity()),
-            result: RefCell::new(Ok(())),
-            values: RefCell::new(ComputedValues::default()),
-            cond: Cell::new(true),
-            node_impl,
-            style_attr: RefCell::new(String::new()),
-        };
-
-        tree_utils::Node::<NodeData> {
-            parent,
-            first_child: RefCell::new(None),
-            last_child: RefCell::new(None),
-            next_sib: RefCell::new(None),
-            prev_sib: RefCell::new(None),
-            data,
-        }
-    }
-
     pub fn get_type(&self) -> NodeType {
         self.data.node_type
     }
@@ -621,15 +590,26 @@ pub fn node_new(
     class: Option<&str>,
     node_impl: Box<NodeTrait>,
 ) -> RsvgNode {
-    Rc::new(Node::new(
+    let data = NodeData {
         node_type,
-        if let Some(parent) = parent {
-            Some(Rc::downgrade(parent))
-        } else {
-            None
-        },
-        id,
-        class,
+        id: id.map(str::to_string),
+        class: class.map(str::to_string),
+        specified_values: RefCell::new(Default::default()),
+        important_styles: Default::default(),
+        transform: Cell::new(Matrix::identity()),
+        result: RefCell::new(Ok(())),
+        values: RefCell::new(ComputedValues::default()),
+        cond: Cell::new(true),
         node_impl,
-    ))
+        style_attr: RefCell::new(String::new()),
+    };
+
+    Rc::new(tree_utils::Node::<NodeData> {
+        parent: parent.map(Rc::downgrade),
+        first_child: RefCell::new(None),
+        last_child: RefCell::new(None),
+        next_sib: RefCell::new(None),
+        prev_sib: RefCell::new(None),
+        data,
+    })
 }
