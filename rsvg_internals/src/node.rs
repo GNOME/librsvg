@@ -19,6 +19,22 @@ use locale_config::Locale;
 /// A strong reference to a node
 pub type RsvgNode = Rc<Node>;
 
+pub struct NodeData {
+    node_type: NodeType,
+    id: Option<String>,    // id attribute from XML element
+    class: Option<String>, // class attribute from XML element
+    specified_values: RefCell<SpecifiedValues>,
+    important_styles: RefCell<HashSet<Attribute>>,
+    result: RefCell<NodeResult>,
+    transform: Cell<Matrix>,
+    values: RefCell<ComputedValues>,
+    cond: Cell<bool>,
+    node_impl: Box<NodeTrait>,
+    style_attr: RefCell<String>,
+}
+
+pub type Node = tree_utils::Node<NodeData>;
+
 /// Can obtain computed values from a node
 ///
 /// In our tree of SVG elements (Node in our parlance), each node stores a `ComputedValues` that
@@ -140,22 +156,6 @@ impl_downcast!(NodeTrait);
 // don't do this now.  Doing that may be more useful for an SVG
 // validator, not a renderer like librsvg is.
 pub type NodeResult = Result<(), NodeError>;
-
-pub struct NodeData {
-    node_type: NodeType,
-    id: Option<String>,    // id attribute from XML element
-    class: Option<String>, // class attribute from XML element
-    specified_values: RefCell<SpecifiedValues>,
-    important_styles: RefCell<HashSet<Attribute>>,
-    result: RefCell<NodeResult>,
-    transform: Cell<Matrix>,
-    values: RefCell<ComputedValues>,
-    cond: Cell<bool>,
-    node_impl: Box<NodeTrait>,
-    style_attr: RefCell<String>,
-}
-
-pub type Node = tree_utils::Node<NodeData>;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum NodeType {
