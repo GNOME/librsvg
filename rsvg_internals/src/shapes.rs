@@ -132,11 +132,7 @@ impl NodeTrait for NodePath {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
 
-                    rsvg_log!(
-                        "could not parse path {}: {}",
-                        node.get_human_readable_name(),
-                        e
-                    );
+                    rsvg_log!("could not parse path {}: {}", node, e);
                 }
 
                 *self.builder.borrow_mut() = Some(builder);

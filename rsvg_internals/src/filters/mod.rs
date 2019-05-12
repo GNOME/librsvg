@@ -285,10 +285,7 @@ pub fn render(
             let in_error = c.is_in_error();
 
             if in_error {
-                rsvg_log!(
-                    "(ignoring filter primitive {} because it is in error)",
-                    c.get_human_readable_name()
-                );
+                rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
             }
 
             !in_error
@@ -364,11 +361,7 @@ pub fn render(
                 .render(&rr_node, filter_ctx, draw_ctx)
                 .and_then(|result| filter_ctx.store_result(result))
             {
-                rsvg_log!(
-                    "(filter primitive {} returned an error: {})",
-                    rr_node.get_human_readable_name(),
-                    err
-                );
+                rsvg_log!("(filter primitive {} returned an error: {})", rr_node, err);
 
                 // Exit early on Cairo errors. Continue rendering otherwise.
                 if let FilterError::CairoError(status) = err {
@@ -390,7 +383,7 @@ pub fn render(
         let elapsed = start.elapsed();
         rsvg_log!(
             "(rendered filter primitive {} in\n    {} seconds)",
-            rr_node.get_human_readable_name(),
+            rr_node,
             elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
         );
     }

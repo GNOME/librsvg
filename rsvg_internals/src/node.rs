@@ -2,6 +2,7 @@ use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
 use std::cell::{Cell, Ref, RefCell};
 use std::collections::HashSet;
+use std::fmt;
 use std::rc::Rc;
 
 use crate::attributes::Attribute;
@@ -327,14 +328,6 @@ impl RsvgNode {
         self.borrow().class.as_ref().map(String::as_str)
     }
 
-    pub fn get_human_readable_name(&self) -> String {
-        format!(
-            "{:?} id={}",
-            self.get_type(),
-            self.get_id().unwrap_or("None")
-        )
-    }
-
     pub fn get_transform(&self) -> Matrix {
         self.borrow().transform.get()
     }
@@ -541,21 +534,14 @@ impl RsvgNode {
                 self.borrow().node_impl.draw(node, cascaded, dc, clipping)
             })
         } else {
-            rsvg_log!(
-                "(not rendering element {} because it is in error)",
-                self.get_human_readable_name()
-            );
+            rsvg_log!("(not rendering element {} because it is in error)", self);
 
             Ok(()) // maybe we should actually return a RenderingError::NodeIsInError here?
         }
     }
 
     pub fn set_error(&self, error: NodeError) {
-        rsvg_log!(
-            "(attribute error for {}:\n  {})",
-            self.get_human_readable_name(),
-            error
-        );
+        rsvg_log!("(attribute error for {}:\n  {})", self, error);
 
         *self.borrow().result.borrow_mut() = Err(error);
     }
@@ -604,5 +590,16 @@ impl RsvgNode {
     pub fn set_overflow_hidden(&self) {
         let mut specified_values = self.borrow().specified_values.borrow_mut();
         specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
+    }
+}
+
+impl fmt::Display for RsvgNode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:?} id={}",
+            self.get_type(),
+            self.get_id().unwrap_or("None")
+        )
     }
 }

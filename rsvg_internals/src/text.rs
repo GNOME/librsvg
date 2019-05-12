@@ -681,7 +681,7 @@ impl NodeTRef {
         } else {
             rsvg_log!(
                 "element {} references a nonexistent text source \"{}\"",
-                node.get_human_readable_name(),
+                node,
                 link,
             );
         }
