@@ -27,7 +27,6 @@ use state::{
     ClipRule,
     CompOp,
     ComputedValues,
-    EnableBackground,
     FillRule,
     ShapeRendering,
     StrokeDasharray,
@@ -389,8 +388,7 @@ impl<'a> DrawingCtx<'a> {
                 && filter.is_none()
                 && mask.is_none()
                 && (clip_units == None || clip_units == Some(CoordUnits::UserSpaceOnUse))
-                && comp_op == CompOp::SrcOver
-                && enable_background == EnableBackground::Accumulate);
+                && comp_op == CompOp::SrcOver);
 
             if needs_temporary_surface {
                 let cr = if filter.is_some() {
