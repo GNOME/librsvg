@@ -1053,6 +1053,8 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
  * |[
  * <svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm">
  * ]|
+ *
+ * Since: 2.46
  */
 void
 rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
