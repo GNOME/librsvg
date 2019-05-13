@@ -377,11 +377,7 @@ impl NodeTrait for NodeUse {
             // to re-acquire the child for other purposes.
             acquired.get().clone()
         } else {
-            rsvg_log!(
-                "element {} references nonexistent \"{}\"",
-                node.get_human_readable_name(),
-                link,
-            );
+            rsvg_log!("element {} references nonexistent \"{}\"", node, link,);
             return Ok(());
         };
 

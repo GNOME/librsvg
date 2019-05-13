@@ -380,10 +380,7 @@ impl Gradient {
                 let in_error = child.is_in_error();
 
                 if in_error {
-                    rsvg_log!(
-                        "(not using gradient stop {} because it is in error)",
-                        child.get_human_readable_name()
-                    );
+                    rsvg_log!("(not using gradient stop {} because it is in error)", child);
                 }
 
                 !in_error
@@ -549,10 +546,7 @@ impl PaintSource for NodeGradient {
                 let a_node = acquired.get();
 
                 if stack.contains(a_node) {
-                    rsvg_log!(
-                        "circular reference in gradient {}",
-                        node.get_human_readable_name()
-                    );
+                    rsvg_log!("circular reference in gradient {}", node);
                     return Err(RenderingError::CircularReference);
                 }
 

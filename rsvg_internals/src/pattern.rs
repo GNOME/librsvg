@@ -242,10 +242,7 @@ impl PaintSource for NodePattern {
                 let a_node = acquired.get();
 
                 if stack.contains(a_node) {
-                    rsvg_log!(
-                        "circular reference in pattern {}",
-                        node.get_human_readable_name()
-                    );
+                    rsvg_log!("circular reference in pattern {}", node);
                     return Err(RenderingError::CircularReference);
                 }
 

@@ -489,11 +489,7 @@ impl DrawingCtx {
                                 })
                             });
                         } else {
-                            rsvg_log!(
-                                "element {} references nonexistent mask \"{}\"",
-                                node.get_human_readable_name(),
-                                mask,
-                            );
+                            rsvg_log!("element {} references nonexistent mask \"{}\"", node, mask);
                         }
                     } else {
                         // No mask, so composite the temporary surface
@@ -580,7 +576,7 @@ impl DrawingCtx {
             None => {
                 rsvg_log!(
                     "element {} will not be rendered since its filter \"{}\" was not found",
-                    node.get_human_readable_name(),
+                    node,
                     filter_uri,
                 );
 
