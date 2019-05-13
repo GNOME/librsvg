@@ -1,3 +1,5 @@
+cargo-features = ["edition"]
+
 [package]
 name = "librsvg"
 version = "0.0.1"
@@ -22,3 +24,4 @@ rsvg_internals = { path = "../rsvg_internals" }
 
 [build-dependencies]
 pkg-config = "0.3.14"
+

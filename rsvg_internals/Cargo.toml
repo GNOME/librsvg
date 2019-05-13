@@ -1,3 +1,5 @@
+cargo-features = ["edition"]
+
 [package]
 name = "rsvg_internals"
 version = "0.0.1"
