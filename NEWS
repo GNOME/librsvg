@@ -6,6 +6,7 @@ Version 2.44.14
   property even when there are no filters in use.  Thanks to Julian
   Sparber, Jordan Petridis, Zeeshan Ali for doing a huge "git bisect"
   to find the cause of this bug.
+- Fix #443 - Fix blurry output when enable-background is used without filters.
 - Fix #455 - Fix rounding error on i386 (Olivier Tilloy).
 - Check for Cairo errors when constructing paths.
 
