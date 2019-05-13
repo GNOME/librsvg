@@ -1,7 +1,52 @@
 Version 2.45.6
 - Librsvg now requires Rust 1.30.0 or later.
+
 - Librsvg now requires Cairo 1.16.0 or later.  Thanks to
   Julian Sparber for keeping up with cairo-rs API changes.
+
+- This version introduces librsvg_crate, an idiomatic Rust crate for
+  using librsvg from Rust programs directly, without using GObject
+  machinery.  This API is subject to change, but you can start using
+  it now in an experimental fashion.  Thanks to Paolo Borelli and
+  Jordan Petridis for fine-tuning this new API.
+
+- All of the librsvg internals are now in Rust!  The C code is just a
+  thin wrapper over Rust functions.
+
+- The internals library has been converted to Rust 2018 (Jordan Petridis).
+
+- Within librsvg_crate, there is a new infrastructure for doing
+  reftests in Rust, that does not depend on PNG reference files.  See
+  librsvg_crate/tests for details.
+
+- This release introduces the following new APIs:
+  rsvg_handle_get_intrinsic_dimensions(),
+  rsvg_handle_get_geometry_for_element().
+
+- Parsing of the "style" attribute, which has a plain list of CSS
+  property declarations, is now done with rust-cssparser.
+- CSS selector matching should be marginally faster than before.
+
+- Fix Visual Studio builds (Chun-wei Fan).
+
+- Fix #11 - Respect the "direction" property for bidirectional text (Khaled Hosny).
+
+- Fix #295 - Ensure the initial viewport fits into temporary surfaces for compositing
+
+- Fix #425 - Don't fail parsing if the system's locale is broken (Paolo Borelli).
+
+- Fix #438, #443 - Don't create intermediate raster surfaces unless
+  absolutely needed.  This was causing blurred output for SVGs from
+  Inkscape and Illustrator, since they include an "enable-background"
+  property even when there are no filters in use.  Thanks to Julian
+  Sparber, Jordan Petridis, Zeeshan Ali for doing a huge "git bisect"
+  to find the cause of this bug.
+
+- Fix #443 - Fix blurry output when enable-background is used without filters.
+
+- Fix #455 - Fix rounding error on i386 (Olivier Tilloy).
+
+- Check for Cairo errors when constructing paths.
 
 Version 2.45.5
 - At build time, you can now pass $CARGO and $RUSTC environment
