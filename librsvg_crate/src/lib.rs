@@ -100,7 +100,13 @@ use gio::{Cancellable, FileExt};
 use rsvg_internals::{Dpi, Handle};
 
 pub use rsvg_internals::{
-    DefsLookupErrorKind, HrefError, Length, LengthUnit, LoadOptions, LoadingError, RenderingError,
+    DefsLookupErrorKind,
+    HrefError,
+    Length,
+    LengthUnit,
+    LoadOptions,
+    LoadingError,
+    RenderingError,
 };
 
 /// Struct for loading an [`SvgHandle`][SvgHandle].

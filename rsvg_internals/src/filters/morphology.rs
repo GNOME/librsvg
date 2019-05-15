@@ -2,8 +2,8 @@ use std::cell::Cell;
 use std::cmp::{max, min};
 
 use cairo::{self, ImageSurface, MatrixTrait};
+use markup5ever::LocalName;
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -53,10 +53,10 @@ impl NodeTrait for Morphology {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Operator => self.operator.set(Operator::parse(attr, value)?),
-                Attribute::Radius => self.radius.set(
+                local_name!("operator") => self.operator.set(Operator::parse(attr, value)?),
+                local_name!("radius") => self.radius.set(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::attribute_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))
@@ -162,7 +162,7 @@ impl Filter for Morphology {
 }
 
 impl Operator {
-    fn parse(attr: Attribute, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
         match s {
             "erode" => Ok(Operator::Erode),
             "dilate" => Ok(Operator::Dilate),

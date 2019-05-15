@@ -1,3 +1,8 @@
+Version 2.45.7
+- The poly element no longer supports "verts" as an alias for the
+  "points" attribute.  The "verts" name was only used in SVG pre-1.0,
+  and we had been cargo-culting that name ever since.
+
 Version 2.45.6
 - Librsvg now requires Rust 1.30.0 or later.
 

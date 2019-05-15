@@ -1,11 +1,11 @@
 use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
+use markup5ever::LocalName;
 use std::cell::{Cell, Ref, RefCell};
 use std::collections::HashSet;
 use std::fmt;
 use std::rc::Rc;
 
-use crate::attributes::Attribute;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::CssRules;
 use crate::drawing_ctx::DrawingCtx;
@@ -27,7 +27,7 @@ pub struct NodeData {
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
     specified_values: RefCell<SpecifiedValues>,
-    important_styles: RefCell<HashSet<Attribute>>,
+    important_styles: RefCell<HashSet<LocalName>>,
     result: RefCell<NodeResult>,
     transform: Cell<Matrix>,
     values: RefCell<ComputedValues>,
@@ -364,9 +364,9 @@ impl RsvgNode {
     fn set_transform_attribute(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Transform => {
+                local_name!("transform") => {
                     return Matrix::parse_str(value)
-                        .attribute(Attribute::Transform)
+                        .attribute(attr)
                         .and_then(|affine| Ok(self.borrow().transform.set(affine)));
                 }
 
@@ -382,7 +382,7 @@ impl RsvgNode {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Style => style_attr.push_str(value),
+                local_name!("style") => style_attr.push_str(value),
 
                 _ => (),
             }
@@ -413,17 +413,17 @@ impl RsvgNode {
             // FIXME: move this to "try {}" when we can bump the rustc version dependency
             let mut parse = || {
                 match attr {
-                    Attribute::RequiredExtensions if cond => {
+                    local_name!("requiredExtensions") if cond => {
                         cond = RequiredExtensions::from_attribute(value)
                             .map(|RequiredExtensions(res)| res)?;
                     }
 
-                    Attribute::RequiredFeatures if cond => {
+                    local_name!("requiredFeatures") if cond => {
                         cond = RequiredFeatures::from_attribute(value)
                             .map(|RequiredFeatures(res)| res)?;
                     }
 
-                    Attribute::SystemLanguage if cond => {
+                    local_name!("systemLanguage") if cond => {
                         cond = SystemLanguage::from_attribute(value, locale)
                             .map(|SystemLanguage(res)| res)?;
                     }

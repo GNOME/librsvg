@@ -1,8 +1,8 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface, MatrixTrait};
+use markup5ever::LocalName;
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -51,16 +51,16 @@ impl NodeTrait for DisplacementMap {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::In2 => {
-                    self.in2.replace(Some(Input::parse(Attribute::In2, value)?));
+                local_name!("in2") => {
+                    self.in2.replace(Some(Input::parse(attr, value)?));
                 }
-                Attribute::Scale => self.scale.set(
+                local_name!("scale") => self.scale.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::XChannelSelector => self
+                local_name!("xChannelSelector") => self
                     .x_channel_selector
                     .set(ColorChannel::parse(attr, value)?),
-                Attribute::YChannelSelector => self
+                local_name!("yChannelSelector") => self
                     .y_channel_selector
                     .set(ColorChannel::parse(attr, value)?),
                 _ => (),
@@ -152,7 +152,7 @@ impl Filter for DisplacementMap {
 }
 
 impl ColorChannel {
-    fn parse(attr: Attribute, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
         match s {
             "R" => Ok(ColorChannel::R),
             "G" => Ok(ColorChannel::G),

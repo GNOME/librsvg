@@ -2,13 +2,13 @@ use libc;
 
 use std::ffi::CStr;
 use std::slice;
-use std::str::{self, FromStr};
+use std::str;
 
-use crate::attributes::Attribute;
+use markup5ever::LocalName;
 
-pub struct PropertyBag<'a>(Vec<(Attribute, &'a CStr)>);
+pub struct PropertyBag<'a>(Vec<(LocalName, &'a CStr)>);
 
-pub struct PropertyBagIter<'a>(slice::Iter<'a, (Attribute, &'a CStr)>);
+pub struct PropertyBagIter<'a>(slice::Iter<'a, (LocalName, &'a CStr)>);
 
 trait Utf8CStrToStr {
     fn to_str_utf8(&self) -> &str;
@@ -57,11 +57,8 @@ impl<'a> PropertyBag<'a> {
                     let key_str = CStr::from_ptr(key);
                     let val_str = CStr::from_ptr(val);
 
-                    // We silently drop unknown attributes.  New attributes should be added in
-                    // build.rs.
-                    if let Ok(attr) = Attribute::from_str(key_str.to_str_utf8()) {
-                        array.push((attr, val_str));
-                    }
+                    let attr = LocalName::from(key_str.to_str_utf8());
+                    array.push((attr, val_str));
                 } else {
                     break;
                 }
@@ -83,10 +80,10 @@ impl<'a> PropertyBag<'a> {
 }
 
 impl<'a> Iterator for PropertyBagIter<'a> {
-    type Item = (Attribute, &'a str);
+    type Item = (LocalName, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|&(a, v)| (a, v.to_str_utf8()))
+        self.0.next().map(|(a, v)| (a.clone(), v.to_str_utf8()))
     }
 }
 
@@ -126,11 +123,11 @@ mod tests {
 
         for (a, v) in pbag.iter() {
             match a {
-                Attribute::Rx => {
+                local_name!("rx") => {
                     assert!(v == "1");
                     had_rx = true;
                 }
-                Attribute::Ry => {
+                local_name!("ry") => {
                     assert!(v == "2");
                     had_ry = true;
                 }

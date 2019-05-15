@@ -1,8 +1,8 @@
 use cssparser::{self, DeclarationListParser, Parser, ParserInput};
+use markup5ever::LocalName;
 use std::collections::HashSet;
 
-use crate::attributes::Attribute;
-use crate::css::{Declaration, DeclParser};
+use crate::css::{DeclParser, Declaration};
 use crate::error::*;
 use crate::parsers::Parse;
 use crate::property_bag::PropertyBag;
@@ -223,76 +223,76 @@ pub struct ComputedValues {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-pub fn parse_attribute_value_into_parsed_property(attr: Attribute, input: &mut Parser, accept_shorthands: bool) -> Result<ParsedProperty, ValueErrorKind> {
+pub fn parse_attribute_value_into_parsed_property(attr: &LocalName, input: &mut Parser, accept_shorthands: bool) -> Result<ParsedProperty, ValueErrorKind> {
     // please keep these sorted
     match attr {
-        Attribute::BaselineShift =>
+        local_name!("baseline-shift") =>
             Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
 
-        Attribute::ClipPath =>
+        local_name!("clip-path") =>
             Ok(ParsedProperty::ClipPath(parse_input(input)?)),
 
-        Attribute::ClipRule =>
+        local_name!("clip-rule") =>
             Ok(ParsedProperty::ClipRule(parse_input(input)?)),
 
-        Attribute::Color =>
+        local_name!("color") =>
             Ok(ParsedProperty::Color(parse_input(input)?)),
 
-        Attribute::ColorInterpolationFilters =>
+        local_name!("color-interpolation-filters") =>
             Ok(ParsedProperty::ColorInterpolationFilters(parse_input(input)?)),
 
-        Attribute::Direction =>
+        local_name!("direction") =>
             Ok(ParsedProperty::Direction(parse_input(input)?)),
 
-        Attribute::Display =>
+        local_name!("display") =>
             Ok(ParsedProperty::Display(parse_input(input)?)),
 
-        Attribute::EnableBackground =>
+        local_name!("enable-background") =>
             Ok(ParsedProperty::EnableBackground(parse_input(input)?)),
 
-        Attribute::Fill =>
+        local_name!("fill") =>
             Ok(ParsedProperty::Fill(parse_input(input)?)),
 
-        Attribute::FillOpacity =>
+        local_name!("fill-opacity") =>
             Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
 
-        Attribute::FillRule =>
+        local_name!("fill-rule") =>
             Ok(ParsedProperty::FillRule(parse_input(input)?)),
 
-        Attribute::Filter =>
+        local_name!("filter") =>
             Ok(ParsedProperty::Filter(parse_input(input)?)),
 
-        Attribute::FloodColor =>
+        local_name!("flood-color") =>
             Ok(ParsedProperty::FloodColor(parse_input(input)?)),
 
-        Attribute::FloodOpacity =>
+        local_name!("flood-opacity") =>
             Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
 
-        Attribute::FontFamily =>
+        local_name!("font-family") =>
             Ok(ParsedProperty::FontFamily(parse_input(input)?)),
 
-        Attribute::FontSize =>
+        local_name!("font-size") =>
             Ok(ParsedProperty::FontSize(parse_input(input)?)),
 
-        Attribute::FontStretch =>
+        local_name!("font-stretch") =>
             Ok(ParsedProperty::FontStretch(parse_input(input)?)),
 
-        Attribute::FontStyle =>
+        local_name!("font-style") =>
             Ok(ParsedProperty::FontStyle(parse_input(input)?)),
 
-        Attribute::FontVariant =>
+        local_name!("font-variant") =>
             Ok(ParsedProperty::FontVariant(parse_input(input)?)),
 
-        Attribute::FontWeight =>
+        local_name!("font-weight") =>
             Ok(ParsedProperty::FontWeight(parse_input(input)?)),
 
-        Attribute::LetterSpacing =>
+        local_name!("letter-spacing") =>
             Ok(ParsedProperty::LetterSpacing(parse_input(input)?)),
 
-        Attribute::LightingColor =>
+        local_name!("lighting-color") =>
             Ok(ParsedProperty::LightingColor(parse_input(input)?)),
 
-        Attribute::Marker => {
+        local_name!("marker") => {
             if accept_shorthands {
                 Ok(ParsedProperty::Marker(parse_input(input)?))
             } else {
@@ -300,73 +300,73 @@ pub fn parse_attribute_value_into_parsed_property(attr: Attribute, input: &mut P
             }
         }
 
-        Attribute::MarkerEnd =>
+        local_name!("marker-end") =>
             Ok(ParsedProperty::MarkerEnd(parse_input(input)?)),
 
-        Attribute::MarkerMid =>
+        local_name!("marker-mid") =>
             Ok(ParsedProperty::MarkerMid(parse_input(input)?)),
 
-        Attribute::MarkerStart =>
+        local_name!("marker-start") =>
             Ok(ParsedProperty::MarkerStart(parse_input(input)?)),
 
-        Attribute::Mask =>
+        local_name!("mask") =>
             Ok(ParsedProperty::Mask(parse_input(input)?)),
 
-        Attribute::Opacity =>
+        local_name!("opacity") =>
             Ok(ParsedProperty::Opacity(parse_input(input)?)),
 
-        Attribute::Overflow =>
+        local_name!("overflow") =>
             Ok(ParsedProperty::Overflow(parse_input(input)?)),
 
-        Attribute::ShapeRendering =>
+        local_name!("shape-rendering") =>
             Ok(ParsedProperty::ShapeRendering(parse_input(input)?)),
 
-        Attribute::StopColor =>
+        local_name!("stop-color") =>
             Ok(ParsedProperty::StopColor(parse_input(input)?)),
 
-        Attribute::StopOpacity =>
+        local_name!("stop-opacity") =>
             Ok(ParsedProperty::StopOpacity(parse_input(input)?)),
 
-        Attribute::Stroke =>
+        local_name!("stroke") =>
             Ok(ParsedProperty::Stroke(parse_input(input)?)),
 
-        Attribute::StrokeDasharray =>
+        local_name!("stroke-dasharray") =>
             Ok(ParsedProperty::StrokeDasharray(parse_input(input)?)),
 
-        Attribute::StrokeDashoffset =>
+        local_name!("stroke-dashoffset") =>
             Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
 
-        Attribute::StrokeLinecap =>
+        local_name!("stroke-linecap") =>
             Ok(ParsedProperty::StrokeLinecap(parse_input(input)?)),
 
-        Attribute::StrokeLinejoin =>
+        local_name!("stroke-linejoin") =>
             Ok(ParsedProperty::StrokeLinejoin(parse_input(input)?)),
 
-        Attribute::StrokeOpacity =>
-            Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
-
-        Attribute::StrokeMiterlimit =>
+        local_name!("stroke-miterlimit") =>
             Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
 
-        Attribute::StrokeWidth =>
+        local_name!("stroke-opacity") =>
+            Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
+
+        local_name!("stroke-width") =>
             Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
 
-        Attribute::TextAnchor =>
+        local_name!("text-anchor") =>
             Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
 
-        Attribute::TextDecoration =>
+        local_name!("text-decoration") =>
             Ok(ParsedProperty::TextDecoration(parse_input(input)?)),
 
-        Attribute::TextRendering =>
+        local_name!("text-rendering") =>
             Ok(ParsedProperty::TextRendering(parse_input(input)?)),
 
-        Attribute::UnicodeBidi =>
+        local_name!("unicode-bidi") =>
             Ok(ParsedProperty::UnicodeBidi(parse_input(input)?)),
 
-        Attribute::Visibility =>
+        local_name!("visibility") =>
             Ok(ParsedProperty::Visibility(parse_input(input)?)),
 
-        Attribute::WritingMode =>
+        local_name!("writing-mode") =>
             Ok(ParsedProperty::WritingMode(parse_input(input)?)),
 
         _ => Err(ValueErrorKind::UnknownProperty)
@@ -525,15 +525,15 @@ impl SpecifiedValues {
 
     fn parse_attribute_pair(
         &mut self,
-        attr: Attribute,
+        attr: LocalName,
         value: &str,
         accept_shorthands: bool,
     ) -> Result<(), NodeError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        match parse_attribute_value_into_parsed_property(attr, &mut parser, accept_shorthands)
-            .attribute(attr)
+        match parse_attribute_value_into_parsed_property(&attr, &mut parser, accept_shorthands)
+            .attribute(attr.clone())
         {
             Ok(prop) => self.set_parsed_property(&prop),
             Err(e) => {
@@ -542,8 +542,8 @@ impl SpecifiedValues {
                 // node to be in error in that case.
 
                 rsvg_log!(
-                    "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    property \
-                     will be ignored)",
+                    "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    \
+                     property will be ignored)",
                     attr,
                     value,
                     e
@@ -562,22 +562,20 @@ impl SpecifiedValues {
     ) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::XmlLang => {
+                local_name!("xml:lang") => {
                     // xml:lang is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
                     // rather call its parser directly.
-                    self.xml_lang = SpecifiedValue::Specified(
-                        XmlLang::parse_str(value).attribute(Attribute::XmlLang)?,
-                    );
+                    self.xml_lang =
+                        SpecifiedValue::Specified(XmlLang::parse_str(value).attribute(attr)?);
                 }
 
-                Attribute::XmlSpace => {
+                local_name!("xml:space") => {
                     // xml:space is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
                     // rather call its parser directly.
-                    self.xml_space = SpecifiedValue::Specified(
-                        XmlSpace::parse_str(value).attribute(Attribute::XmlSpace)?,
-                    );
+                    self.xml_space =
+                        SpecifiedValue::Specified(XmlSpace::parse_str(value).attribute(attr)?);
                 }
 
                 _ => self.parse_attribute_pair(attr, value, false)?,
@@ -590,14 +588,14 @@ impl SpecifiedValues {
     pub fn set_property_from_declaration(
         &mut self,
         declaration: &Declaration,
-        important_styles: &mut HashSet<Attribute>,
+        important_styles: &mut HashSet<LocalName>,
     ) {
         if !declaration.important && important_styles.contains(&declaration.attribute) {
             return;
         }
 
         if declaration.important {
-            important_styles.insert(declaration.attribute);
+            important_styles.insert(declaration.attribute.clone());
         }
 
         self.set_parsed_property(&declaration.property);
@@ -606,7 +604,7 @@ impl SpecifiedValues {
     pub fn parse_style_declarations(
         &mut self,
         declarations: &str,
-        important_styles: &mut HashSet<Attribute>,
+        important_styles: &mut HashSet<LocalName>,
     ) -> Result<(), NodeError> {
         let mut input = ParserInput::new(declarations);
         let mut parser = Parser::new(&mut input);

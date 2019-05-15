@@ -2,8 +2,8 @@ use std::cell::{Cell, Ref, RefCell};
 use std::cmp::min;
 
 use cairo::{self, ImageSurface};
+use markup5ever::LocalName;
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
@@ -213,8 +213,8 @@ impl NodeTrait for FuncX {
     fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Type => self.function_type.set(FunctionType::parse(attr, value)?),
-                Attribute::TableValues => {
+                local_name!("type") => self.function_type.set(FunctionType::parse(attr, value)?),
+                local_name!("tableValues") => {
                     let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
                         .map_err(|err| {
                         if let NumberListError::Parse(err) = err {
@@ -225,19 +225,19 @@ impl NodeTrait for FuncX {
                     })?;
                     self.table_values.replace(v);
                 }
-                Attribute::Slope => self.slope.set(
+                local_name!("slope") => self.slope.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::Intercept => self.intercept.set(
+                local_name!("intercept") => self.intercept.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::Amplitude => self.amplitude.set(
+                local_name!("amplitude") => self.amplitude.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::Exponent => self.exponent.set(
+                local_name!("exponent") => self.exponent.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::Offset => self.offset.set(
+                local_name!("offset") => self.offset.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
                 _ => (),
@@ -384,7 +384,7 @@ impl Filter for ComponentTransfer {
 }
 
 impl FunctionType {
-    fn parse(attr: Attribute, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
         match s {
             "identity" => Ok(FunctionType::Identity),
             "table" => Ok(FunctionType::Table),

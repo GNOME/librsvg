@@ -7,7 +7,6 @@ use nalgebra::Vector3;
 use num_traits::identities::Zero;
 use rayon::prelude::*;
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::filters::{
@@ -31,8 +30,8 @@ use crate::filters::{
 };
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers;
-use crate::property_defs::ColorInterpolationFilters;
 use crate::property_bag::PropertyBag;
+use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
@@ -102,12 +101,12 @@ impl NodeTrait for Lighting {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::SurfaceScale => self.surface_scale.set(
+                local_name!("surfaceScale") => self.surface_scale.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::KernelUnitLength => self.kernel_unit_length.set(Some(
+                local_name!("kernelUnitLength") => self.kernel_unit_length.set(Some(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::attribute_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                         .and_then(|(x, y)| {
                             if x > 0.0 && y > 0.0 {
                                 Ok((x, y))
@@ -129,9 +128,9 @@ impl NodeTrait for Lighting {
             } => {
                 for (attr, value) in pbag.iter() {
                     match attr {
-                        Attribute::DiffuseConstant => diffuse_constant.set(
+                        local_name!("diffuseConstant") => diffuse_constant.set(
                             parsers::number(value)
-                                .map_err(|err| NodeError::attribute_error(attr, err))
+                                .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                                 .and_then(|x| {
                                     if x >= 0.0 {
                                         Ok(x)
@@ -153,9 +152,9 @@ impl NodeTrait for Lighting {
             } => {
                 for (attr, value) in pbag.iter() {
                     match attr {
-                        Attribute::SpecularConstant => specular_constant.set(
+                        local_name!("specularConstant") => specular_constant.set(
                             parsers::number(value)
-                                .map_err(|err| NodeError::attribute_error(attr, err))
+                                .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                                 .and_then(|x| {
                                     if x >= 0.0 {
                                         Ok(x)
@@ -167,9 +166,9 @@ impl NodeTrait for Lighting {
                                     }
                                 })?,
                         ),
-                        Attribute::SpecularExponent => specular_exponent.set(
+                        local_name!("specularExponent") => specular_exponent.set(
                             parsers::number(value)
-                                .map_err(|err| NodeError::attribute_error(attr, err))
+                                .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                                 .and_then(|x| {
                                     if x >= 1.0 && x <= 128.0 {
                                         Ok(x)

@@ -5,7 +5,6 @@ use std::time::Instant;
 use cairo::{self, MatrixTrait};
 use owning_ref::RcRef;
 
-use crate::attributes::Attribute;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
@@ -164,19 +163,19 @@ impl NodeTrait for Primitive {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(Some(
+                local_name!("x") => self.x.set(Some(
                     attr.parse_and_validate(value, check_units_horizontal)?,
                 )),
-                Attribute::Y => self
+                local_name!("y") => self
                     .y
                     .set(Some(attr.parse_and_validate(value, check_units_vertical)?)),
-                Attribute::Width => self.width.set(Some(
+                local_name!("width") => self.width.set(Some(
                     attr.parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?,
                 )),
-                Attribute::Height => self.height.set(Some(
+                local_name!("height") => self.height.set(Some(
                     attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?,
                 )),
-                Attribute::Result => *self.result.borrow_mut() = Some(value.to_string()),
+                local_name!("result") => *self.result.borrow_mut() = Some(value.to_string()),
                 _ => (),
             }
         }
@@ -212,7 +211,7 @@ impl NodeTrait for PrimitiveWithInput {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::In => drop(self.in_.replace(Some(Input::parse(Attribute::In, value)?))),
+                local_name!("in") => drop(self.in_.replace(Some(Input::parse(attr, value)?))),
                 _ => (),
             }
         }

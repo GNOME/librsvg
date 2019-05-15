@@ -1,9 +1,9 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface, MatrixTrait};
+use markup5ever::LocalName;
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -62,9 +62,9 @@ impl NodeTrait for ConvolveMatrix {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Order => self.order.set(
+                local_name!("order") => self.order.set(
                     parsers::integer_optional_integer(value)
-                        .map_err(|err| NodeError::attribute_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                         .and_then(|(x, y)| {
                             if x > 0 && y > 0 {
                                 Ok((x as u32, y as u32))
@@ -76,9 +76,9 @@ impl NodeTrait for ConvolveMatrix {
                             }
                         })?,
                 ),
-                Attribute::Divisor => self.divisor.set(Some(
+                local_name!("divisor") => self.divisor.set(Some(
                     parsers::number(value)
-                        .map_err(|err| NodeError::attribute_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                         .and_then(|x| {
                             if x != 0.0 {
                                 Ok(x)
@@ -87,13 +87,13 @@ impl NodeTrait for ConvolveMatrix {
                             }
                         })?,
                 )),
-                Attribute::Bias => self.bias.set(
+                local_name!("bias") => self.bias.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::EdgeMode => self.edge_mode.set(EdgeMode::parse(attr, value)?),
-                Attribute::KernelUnitLength => self.kernel_unit_length.set(Some(
+                local_name!("edgeMode") => self.edge_mode.set(EdgeMode::parse(attr, value)?),
+                local_name!("kernelUnitLength") => self.kernel_unit_length.set(Some(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::attribute_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                         .and_then(|(x, y)| {
                             if x > 0.0 && y > 0.0 {
                                 Ok((x, y))
@@ -105,7 +105,7 @@ impl NodeTrait for ConvolveMatrix {
                             }
                         })?,
                 )),
-                Attribute::PreserveAlpha => self.preserve_alpha.set(match value {
+                local_name!("preserveAlpha") => self.preserve_alpha.set(match value {
                     "false" => false,
                     "true" => true,
                     _ => {
@@ -122,9 +122,9 @@ impl NodeTrait for ConvolveMatrix {
         // target_x and target_y depend on order.
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::TargetX => self.target_x.set(Some(
+                local_name!("targetX") => self.target_x.set(Some(
                     parsers::integer(value)
-                        .map_err(|err| NodeError::attribute_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                         .and_then(|x| {
                             if x >= 0 && x < self.order.get().0 as i32 {
                                 Ok(x as u32)
@@ -136,9 +136,9 @@ impl NodeTrait for ConvolveMatrix {
                             }
                         })?,
                 )),
-                Attribute::TargetY => self.target_y.set(Some(
+                local_name!("targetY") => self.target_y.set(Some(
                     parsers::integer(value)
-                        .map_err(|err| NodeError::attribute_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                         .and_then(|x| {
                             if x >= 0 && x < self.order.get().1 as i32 {
                                 Ok(x as u32)
@@ -165,7 +165,7 @@ impl NodeTrait for ConvolveMatrix {
         // Finally, parse the kernel matrix.
         for (attr, value) in pbag
             .iter()
-            .filter(|(attr, _)| *attr == Attribute::KernelMatrix)
+            .filter(|(attr, _)| *attr == local_name!("kernelMatrix"))
         {
             self.kernel_matrix.replace(Some({
                 let number_of_elements = self.order.get().0 as usize * self.order.get().1 as usize;
@@ -175,7 +175,7 @@ impl NodeTrait for ConvolveMatrix {
                 let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
                     .map_err(|err| {
                         NodeError::parse_error(
-                            attr,
+                            attr.clone(),
                             match err {
                                 NumberListError::IncorrectNumberOfElements => unreachable!(),
                                 NumberListError::Parse(err) => err,
@@ -185,7 +185,7 @@ impl NodeTrait for ConvolveMatrix {
 
                 if v.len() != number_of_elements {
                     return Err(NodeError::value_error(
-                        attr,
+                        attr.clone(),
                         &format!(
                             "incorrect number of elements: expected {}",
                             number_of_elements
@@ -204,7 +204,7 @@ impl NodeTrait for ConvolveMatrix {
         // kernel_matrix must have been specified.
         if self.kernel_matrix.borrow().is_none() {
             return Err(NodeError::value_error(
-                Attribute::KernelMatrix,
+                local_name!("kernelMatrix"),
                 "the value must be set",
             ));
         }
@@ -367,7 +367,7 @@ impl Filter for ConvolveMatrix {
 }
 
 impl EdgeMode {
-    fn parse(attr: Attribute, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
         match s {
             "duplicate" => Ok(EdgeMode::Duplicate),
             "wrap" => Ok(EdgeMode::Wrap),

@@ -17,9 +17,6 @@ edition = "2018"
 # regenerate librsvg/Cargo.lock, and copy the resolved version numbers
 # from there into cargo-fetcher/Cargo.toml.
 
-[build-dependencies]
-phf_codegen = "0.7.21"
-
 [dependencies]
 bitflags = "1.0"
 cairo-rs = { version="0.6.0", features=["v1_16"] }
@@ -41,6 +38,7 @@ language-tags = "0.2.2"
 lazy_static = "1.0.0"
 libc = "0.2"
 locale_config = "*" # recommended explicitly by locale_config's README.md
+markup5ever = "0.8.1"
 nalgebra = "0.17"
 num-traits = "0.2"
 owning_ref = "0.4.0"

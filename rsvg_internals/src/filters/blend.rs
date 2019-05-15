@@ -1,8 +1,8 @@
 use std::cell::{Cell, RefCell};
 
 use cairo;
+use markup5ever::LocalName;
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -49,10 +49,10 @@ impl NodeTrait for Blend {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::In2 => {
+                local_name!("in2") => {
                     self.in2.replace(Some(Input::parse(attr, value)?));
                 }
-                Attribute::Mode => self.mode.set(Mode::parse(attr, value)?),
+                local_name!("mode") => self.mode.set(Mode::parse(attr, value)?),
                 _ => (),
             }
         }
@@ -126,7 +126,7 @@ impl Filter for Blend {
 }
 
 impl Mode {
-    fn parse(attr: Attribute, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
         match s {
             "normal" => Ok(Mode::Normal),
             "multiply" => Ok(Mode::Multiply),

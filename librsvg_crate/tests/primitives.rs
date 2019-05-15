@@ -4,7 +4,7 @@ mod utils;
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use self::utils::{load_svg, render_to_viewport, compare_to_surface, SurfaceSize};
+use self::utils::{compare_to_surface, load_svg, render_to_viewport, SurfaceSize};
 
 #[test]
 fn simple_opacity_with_transform() {
@@ -44,7 +44,11 @@ fn simple_opacity_with_transform() {
 
     let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
 
-    compare_to_surface(&output_surf, &reference_surf, "simple_opacity_with_transform");
+    compare_to_surface(
+        &output_surf,
+        &reference_surf,
+        "simple_opacity_with_transform",
+    );
 }
 
 #[test]
@@ -85,7 +89,11 @@ fn simple_opacity_with_offset_viewport() {
 
     let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
 
-    compare_to_surface(&output_surf, &reference_surf, "simple_opacity_with_offset_viewport");
+    compare_to_surface(
+        &output_surf,
+        &reference_surf,
+        "simple_opacity_with_offset_viewport",
+    );
 }
 
 #[test]
@@ -126,7 +134,11 @@ fn opacity_inside_transformed_group() {
 
     let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
 
-    compare_to_surface(&output_surf, &reference_surf, "opacity_inside_transformed_group");
+    compare_to_surface(
+        &output_surf,
+        &reference_surf,
+        "opacity_inside_transformed_group",
+    );
 }
 
 #[test]

@@ -4,7 +4,6 @@ use std::cell::{Cell, RefCell};
 
 use crate::allowed_url::Href;
 use crate::aspect_ratio::AspectRatio;
-use crate::attributes::Attribute;
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::{ClipMode, DrawingCtx};
 use crate::error::{NodeError, RenderingError};
@@ -46,19 +45,19 @@ impl NodeTrait for NodeImage {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value)?),
-                Attribute::Y => self.y.set(attr.parse(value)?),
-                Attribute::Width => self
+                local_name!("x") => self.x.set(attr.parse(value)?),
+                local_name!("y") => self.y.set(attr.parse(value)?),
+                local_name!("width") => self
                     .w
                     .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
-                Attribute::Height => self
+                local_name!("height") => self
                     .h
                     .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
 
-                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value)?),
+                local_name!("preserveAspectRatio") => self.aspect.set(attr.parse(value)?),
 
                 // "path" is used by some older Adobe Illustrator versions
-                Attribute::XlinkHref | Attribute::Path => {
+                local_name!("xlink:href") | local_name!("path") => {
                     let href = Href::parse(value).map_err(|_| {
                         NodeError::parse_error(attr, ParseError::new("could not parse href"))
                     })?;
@@ -155,7 +154,8 @@ impl NodeTrait for NodeImage {
                 }
 
                 Ok(())
-            }).and_then(|()| {
+            })
+            .and_then(|()| {
                 dc.insert_bbox(&bbox);
                 Ok(())
             })

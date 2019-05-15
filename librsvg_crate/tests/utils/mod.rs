@@ -22,9 +22,7 @@ pub fn load_svg(input: &'static [u8]) -> SvgHandle {
     let bytes = glib::Bytes::from_static(input);
     let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
 
-    Loader::new()
-        .read_stream(&stream, None, None)
-        .unwrap()
+    Loader::new().read_stream(&stream, None, None).unwrap()
 }
 
 #[derive(Copy, Clone)]
@@ -146,9 +144,7 @@ pub fn compare_to_surface(
             if diff.num_pixels_changed != 0 && diff.max_diff > MAX_DIFF {
                 println!(
                     "{}: {} pixels changed with maximum difference of {}",
-                    output_base_name,
-                    diff.num_pixels_changed,
-                    diff.max_diff,
+                    output_base_name, diff.num_pixels_changed, diff.max_diff,
                 );
                 unreachable!("surfaces are too different");
             }

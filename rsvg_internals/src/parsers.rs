@@ -1,8 +1,8 @@
 use cssparser::{BasicParseError, Parser, ParserInput, Token};
+use markup5ever::LocalName;
 
 use std::str;
 
-use crate::attributes::Attribute;
 use crate::error::{NodeError, ValueErrorKind};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -77,12 +77,12 @@ pub trait ParseValue<T: Parse<Err = ValueErrorKind>> {
     ) -> Result<T, NodeError>;
 }
 
-impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for Attribute {
+impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for LocalName {
     fn parse(&self, value: &str) -> Result<T, NodeError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser).map_err(|e| NodeError::attribute_error(*self, e))
+        T::parse(&mut parser).map_err(|e| NodeError::attribute_error(self.clone(), e))
     }
 
     fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
@@ -95,7 +95,7 @@ impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for Attribute {
 
         T::parse(&mut parser)
             .and_then(validate)
-            .map_err(|e| NodeError::attribute_error(*self, e))
+            .map_err(|e| NodeError::attribute_error(self.clone(), e))
     }
 }
 

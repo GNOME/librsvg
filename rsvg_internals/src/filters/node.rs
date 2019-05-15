@@ -3,7 +3,6 @@ use std::cell::Cell;
 
 use cairo::{self, MatrixTrait};
 
-use crate::attributes::Attribute;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
@@ -110,7 +109,7 @@ impl NodeTrait for NodeFilter {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::FilterUnits => self.filterunits.set(attr.parse(value)?),
+                local_name!("filterUnits") => self.filterunits.set(attr.parse(value)?),
                 _ => (),
             }
         }
@@ -155,19 +154,19 @@ impl NodeTrait for NodeFilter {
         // Parse the rest of the attributes.
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self
+                local_name!("x") => self
                     .x
                     .set(attr.parse_and_validate(value, check_units_horizontal)?),
-                Attribute::Y => self
+                local_name!("y") => self
                     .y
                     .set(attr.parse_and_validate(value, check_units_vertical)?),
-                Attribute::Width => self.width.set(
+                local_name!("width") => self.width.set(
                     attr.parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?,
                 ),
-                Attribute::Height => self.height.set(
+                local_name!("height") => self.height.set(
                     attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?,
                 ),
-                Attribute::PrimitiveUnits => self.primitiveunits.set(attr.parse(value)?),
+                local_name!("primitiveUnits") => self.primitiveunits.set(attr.parse(value)?),
                 _ => (),
             }
         }

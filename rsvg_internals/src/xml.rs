@@ -3,11 +3,11 @@ use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use glib::IsA;
 use libc;
+use markup5ever::LocalName;
 use std::collections::HashMap;
 use std::str;
 
 use crate::allowed_url::AllowedUrl;
-use crate::attributes::Attribute;
 use crate::create_node::create_node_and_register_id;
 use crate::css::CssRules;
 use crate::error::LoadingError;
@@ -338,9 +338,9 @@ impl XmlState {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Href => href = Some(value),
-                Attribute::Parse => parse = Some(value),
-                Attribute::Encoding => encoding = Some(value),
+                local_name!("href") => href = Some(value),
+                ref n if *n == LocalName::from("parse") => parse = Some(value),
+                local_name!("encoding") => encoding = Some(value),
                 _ => (),
             }
         }

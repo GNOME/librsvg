@@ -5,7 +5,6 @@ use pangocairo;
 use std::cell::{Cell, RefCell};
 
 use crate::allowed_url::Fragment;
-use crate::attributes::Attribute;
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, RenderingError};
@@ -15,6 +14,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
+use crate::property_bag::PropertyBag;
 use crate::property_defs::{
     Direction,
     FontStretch,
@@ -27,7 +27,6 @@ use crate::property_defs::{
     XmlLang,
     XmlSpace,
 };
-use crate::property_bag::PropertyBag;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 
 /// An absolutely-positioned array of `Span`s
@@ -586,10 +585,10 @@ impl NodeTrait for NodeText {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value)?),
-                Attribute::Y => self.y.set(attr.parse(value)?),
-                Attribute::Dx => self.dx.set(attr.parse(value).map(Some)?),
-                Attribute::Dy => self.dy.set(attr.parse(value).map(Some)?),
+                local_name!("x") => self.x.set(attr.parse(value)?),
+                local_name!("y") => self.y.set(attr.parse(value)?),
+                local_name!("dx") => self.dx.set(attr.parse(value).map(Some)?),
+                local_name!("dy") => self.dy.set(attr.parse(value).map(Some)?),
                 _ => (),
             }
         }
@@ -709,9 +708,8 @@ impl NodeTrait for NodeTRef {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::XlinkHref => {
-                    *self.link.borrow_mut() =
-                        Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
+                local_name!("xlink:href") => {
+                    *self.link.borrow_mut() = Some(Fragment::parse(value).attribute(attr)?)
                 }
                 _ => (),
             }
@@ -765,10 +763,10 @@ impl NodeTrait for NodeTSpan {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value).map(Some)?),
-                Attribute::Y => self.y.set(attr.parse(value).map(Some)?),
-                Attribute::Dx => self.dx.set(attr.parse(value).map(Some)?),
-                Attribute::Dy => self.dy.set(attr.parse(value).map(Some)?),
+                local_name!("x") => self.x.set(attr.parse(value).map(Some)?),
+                local_name!("y") => self.y.set(attr.parse(value).map(Some)?),
+                local_name!("dx") => self.dx.set(attr.parse(value).map(Some)?),
+                local_name!("dy") => self.dy.set(attr.parse(value).map(Some)?),
                 _ => (),
             }
         }

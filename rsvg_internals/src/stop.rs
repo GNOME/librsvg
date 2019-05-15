@@ -1,6 +1,5 @@
 use std::cell::Cell;
 
-use crate::attributes::Attribute;
 use crate::error::*;
 use crate::length::*;
 use crate::node::*;
@@ -37,7 +36,7 @@ impl NodeTrait for NodeStop {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Offset => {
+                local_name!("offset") => {
                     self.offset.set(
                         attr.parse_and_validate(value, validate_offset)
                             .map(|l| UnitInterval::clamp(l.length()))?,

@@ -2,7 +2,6 @@ use std::cell::Cell;
 
 use cairo::{self, ImageSurface, MatrixTrait};
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -40,10 +39,10 @@ impl NodeTrait for Offset {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Dx => self.dx.set(
+                local_name!("dx") => self.dx.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::Dy => self.dy.set(
+                local_name!("dy") => self.dy.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
                 _ => (),

@@ -17,7 +17,9 @@ use crate::error::{set_gerror, LoadingError, RenderingError};
 use crate::handle::{Handle, LoadOptions};
 use crate::rect::IRect;
 use crate::surface_utils::{
-    iterators::Pixels, shared_surface::SharedImageSurface, shared_surface::SurfaceType,
+    iterators::Pixels,
+    shared_surface::SharedImageSurface,
+    shared_surface::SurfaceType,
 };
 
 // Pixbuf::new() doesn't return out-of-memory errors properly

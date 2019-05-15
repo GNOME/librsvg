@@ -589,8 +589,9 @@ impl CHandle {
             LoadState::Start => self.read_stream(state, stream, cancellable),
             LoadState::Loading { .. } | LoadState::ClosedOk { .. } | LoadState::ClosedError => {
                 panic!(
-                "handle must not be already loaded in order to call rsvg_handle_read_stream_sync()",
-            )
+                    "handle must not be already loaded in order to call \
+                     rsvg_handle_read_stream_sync()",
+                )
             }
         }
     }
@@ -630,8 +631,8 @@ impl CHandle {
 
             LoadState::ClosedError => {
                 rsvg_g_warning(
-                    "Handle could not read or parse the SVG; did you check for errors during \
-                     the loading stage?",
+                    "Handle could not read or parse the SVG; did you check for errors during the \
+                     loading stage?",
                 );
                 Err(RenderingError::HandleIsNotLoaded)
             }
