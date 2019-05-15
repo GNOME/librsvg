@@ -92,7 +92,6 @@ mod property_macros;
 mod allowed_url;
 mod angle;
 mod aspect_ratio;
-mod attributes;
 mod bbox;
 mod c_api;
 mod clip_path;

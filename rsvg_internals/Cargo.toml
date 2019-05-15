@@ -17,9 +17,6 @@ edition = "2018"
 # regenerate librsvg/Cargo.lock, and copy the resolved version numbers
 # from there into cargo-fetcher/Cargo.toml.
 
-[build-dependencies]
-phf_codegen = "0.7.21"
-
 [dependencies]
 bitflags = "1.0"
 cairo-rs = { version="0.6.0", features=["v1_16"] }
