@@ -3,7 +3,6 @@ use std::cell::{Cell, RefCell};
 use cairo::{self, ImageSurface};
 use cssparser::{CowRcStr, Parser, Token};
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{NodeError, ValueErrorKind};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -66,20 +65,20 @@ impl NodeTrait for Composite {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::In2 => {
-                    self.in2.replace(Some(Input::parse(Attribute::In2, value)?));
+                local_name!("in2") => {
+                    self.in2.replace(Some(Input::parse(attr, value)?));
                 }
-                Attribute::Operator => self.operator.set(attr.parse(value)?),
-                Attribute::K1 => self.k1.set(
+                local_name!("operator") => self.operator.set(attr.parse(value)?),
+                local_name!("k1") => self.k1.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::K2 => self.k2.set(
+                local_name!("k2") => self.k2.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::K3 => self.k3.set(
+                local_name!("k3") => self.k3.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::K4 => self.k4.set(
+                local_name!("k4") => self.k4.set(
                     parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
                 _ => (),

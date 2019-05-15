@@ -4,7 +4,6 @@ use cairo::{self, ImageSurface, MatrixTrait, PatternTrait, Rectangle};
 
 use crate::allowed_url::{Fragment, Href};
 use crate::aspect_ratio::AspectRatio;
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{NodeError, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -179,10 +178,10 @@ impl NodeTrait for Image {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value)?),
+                local_name!("preserveAspectRatio") => self.aspect.set(attr.parse(value)?),
 
                 // "path" is used by some older Adobe Illustrator versions
-                Attribute::XlinkHref | Attribute::Path => {
+                local_name!("xlink:href") | local_name!("path") => {
                     let href = Href::parse(value).map_err(|_| {
                         NodeError::parse_error(attr, ParseError::new("could not parse href"))
                     })?;

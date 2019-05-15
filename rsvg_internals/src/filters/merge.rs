@@ -2,7 +2,6 @@ use std::cell::RefCell;
 
 use cairo::{self, ImageSurface};
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
@@ -55,8 +54,8 @@ impl NodeTrait for MergeNode {
     fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::In => {
-                    self.in_.replace(Some(Input::parse(Attribute::In, value)?));
+                local_name!("in") => {
+                    self.in_.replace(Some(Input::parse(attr, value)?));
                 }
                 _ => (),
             }

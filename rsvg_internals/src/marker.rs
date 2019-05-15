@@ -8,7 +8,6 @@ use cssparser::{CowRcStr, Parser, Token};
 use crate::allowed_url::Fragment;
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -77,7 +76,10 @@ impl Parse for MarkerOrient {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerOrient, ValueErrorKind> {
-        if parser.try_parse(|p| p.expect_ident_matching("auto")).is_ok() {
+        if parser
+            .try_parse(|p| p.expect_ident_matching("auto"))
+            .is_ok()
+        {
             Ok(MarkerOrient::Auto)
         } else {
             Angle::parse(parser).map(MarkerOrient::Angle)
@@ -202,25 +204,25 @@ impl NodeTrait for NodeMarker {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::MarkerUnits => self.units.set(attr.parse(value)?),
+                local_name!("markerUnits") => self.units.set(attr.parse(value)?),
 
-                Attribute::RefX => self.ref_x.set(attr.parse(value)?),
+                local_name!("refX") => self.ref_x.set(attr.parse(value)?),
 
-                Attribute::RefY => self.ref_y.set(attr.parse(value)?),
+                local_name!("refY") => self.ref_y.set(attr.parse(value)?),
 
-                Attribute::MarkerWidth => self
+                local_name!("markerWidth") => self
                     .width
                     .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
 
-                Attribute::MarkerHeight => self
+                local_name!("markerHeight") => self
                     .height
                     .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
 
-                Attribute::Orient => self.orient.set(attr.parse(value)?),
+                local_name!("orient") => self.orient.set(attr.parse(value)?),
 
-                Attribute::PreserveAspectRatio => self.aspect.set(attr.parse(value)?),
+                local_name!("preserveAspectRatio") => self.aspect.set(attr.parse(value)?),
 
-                Attribute::ViewBox => self.vbox.set(Some(attr.parse(value)?)),
+                local_name!("viewBox") => self.vbox.set(Some(attr.parse(value)?)),
 
                 _ => (),
             }

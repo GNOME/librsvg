@@ -4,7 +4,6 @@ use cssparser::{self, CowRcStr, Parser, Token};
 use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
-use crate::attributes::Attribute;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
@@ -668,26 +667,25 @@ impl NodeTrait for NodeGradient {
         for (attr, value) in pbag.iter() {
             match attr {
                 // Attributes common to linear and radial gradients
-                Attribute::GradientUnits => g.common.units = Some(attr.parse(value)?),
-                Attribute::GradientTransform => g.common.affine = Some(attr.parse(value)?),
-                Attribute::SpreadMethod => g.common.spread = Some(attr.parse(value)?),
-                Attribute::XlinkHref => {
-                    g.common.fallback =
-                        Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
+                local_name!("gradientUnits") => g.common.units = Some(attr.parse(value)?),
+                local_name!("gradientTransform") => g.common.affine = Some(attr.parse(value)?),
+                local_name!("spreadMethod") => g.common.spread = Some(attr.parse(value)?),
+                local_name!("xlink:href") => {
+                    g.common.fallback = Some(Fragment::parse(value).attribute(attr)?)
                 }
 
                 // Attributes specific to each gradient type.  The defaults mandated by the spec
                 // are in GradientVariant::resolve_from_defaults()
-                Attribute::X1 => x1 = Some(attr.parse(value)?),
-                Attribute::Y1 => y1 = Some(attr.parse(value)?),
-                Attribute::X2 => x2 = Some(attr.parse(value)?),
-                Attribute::Y2 => y2 = Some(attr.parse(value)?),
+                local_name!("x1") => x1 = Some(attr.parse(value)?),
+                local_name!("y1") => y1 = Some(attr.parse(value)?),
+                local_name!("x2") => x2 = Some(attr.parse(value)?),
+                local_name!("y2") => y2 = Some(attr.parse(value)?),
 
-                Attribute::Cx => cx = Some(attr.parse(value)?),
-                Attribute::Cy => cy = Some(attr.parse(value)?),
-                Attribute::R => r = Some(attr.parse(value)?),
-                Attribute::Fx => fx = Some(attr.parse(value)?),
-                Attribute::Fy => fy = Some(attr.parse(value)?),
+                local_name!("cx") => cx = Some(attr.parse(value)?),
+                local_name!("cy") => cy = Some(attr.parse(value)?),
+                local_name!("r") => r = Some(attr.parse(value)?),
+                local_name!("fx") => fx = Some(attr.parse(value)?),
+                local_name!("fy") => fy = Some(attr.parse(value)?),
 
                 _ => (),
             }

@@ -362,11 +362,11 @@ impl PathBuilder {
 
         // We check the cr's status right after feeding it a new path for a few reasons:
         //
-        // * Any of the individual path commands may cause the cr to enter an error state,
-        //   for example, if they come with coordinates outside of Cairo's supported range.
+        // * Any of the individual path commands may cause the cr to enter an error state, for
+        //   example, if they come with coordinates outside of Cairo's supported range.
         //
-        // * The *next* call to the cr will probably be something that actually checks
-        //   the status (i.e. in cairo-rs), and we don't want to panic there.
+        // * The *next* call to the cr will probably be something that actually checks the status
+        //   (i.e. in cairo-rs), and we don't want to panic there.
 
         let status = cr.status();
 

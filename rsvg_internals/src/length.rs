@@ -360,7 +360,10 @@ impl Parse for Dasharray {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Dasharray, ValueErrorKind> {
-        if parser.try_parse(|p| p.expect_ident_matching("none")).is_ok() {
+        if parser
+            .try_parse(|p| p.expect_ident_matching("none"))
+            .is_ok()
+        {
             Ok(Dasharray::None)
         } else {
             Ok(Dasharray::Array(parse_dash_array(parser)?))

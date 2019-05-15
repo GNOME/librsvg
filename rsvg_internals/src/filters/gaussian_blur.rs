@@ -5,7 +5,6 @@ use std::f64;
 use cairo::MatrixTrait;
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -48,9 +47,9 @@ impl NodeTrait for GaussianBlur {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::StdDeviation => self.std_deviation.set(
+                local_name!("stdDeviation") => self.std_deviation.set(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::attribute_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))

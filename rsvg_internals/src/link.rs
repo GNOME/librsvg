@@ -2,7 +2,6 @@ use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::RenderingError;
 use crate::node::*;
@@ -24,7 +23,7 @@ impl NodeTrait for NodeLink {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
+                local_name!("xlink:href") => *self.link.borrow_mut() = Some(value.to_owned()),
 
                 _ => (),
             }

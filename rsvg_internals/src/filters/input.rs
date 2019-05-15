@@ -1,4 +1,5 @@
-use crate::attributes::Attribute;
+use markup5ever::LocalName;
+
 use crate::error::NodeError;
 use crate::parsers::ParseError;
 
@@ -15,7 +16,7 @@ pub enum Input {
 }
 
 impl Input {
-    pub fn parse(attr: Attribute, s: &str) -> Result<Input, NodeError> {
+    pub fn parse(attr: LocalName, s: &str) -> Result<Input, NodeError> {
         match s {
             "SourceGraphic" => Ok(Input::SourceGraphic),
             "SourceAlpha" => Ok(Input::SourceAlpha),

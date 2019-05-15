@@ -5,7 +5,6 @@ use std::f64;
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
-use crate::attributes::Attribute;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{DrawingCtx, NodeStack};
@@ -182,32 +181,32 @@ impl NodeTrait for NodePattern {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::PatternUnits => p.units = Some(attr.parse(value)?),
+                local_name!("patternUnits") => p.units = Some(attr.parse(value)?),
 
-                Attribute::PatternContentUnits => p.content_units = Some(attr.parse(value)?),
+                local_name!("patternContentUnits") => p.content_units = Some(attr.parse(value)?),
 
-                Attribute::ViewBox => p.vbox = Some(Some(attr.parse(value)?)),
+                local_name!("viewBox") => p.vbox = Some(Some(attr.parse(value)?)),
 
-                Attribute::PreserveAspectRatio => {
+                local_name!("preserveAspectRatio") => {
                     p.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
 
-                Attribute::PatternTransform => p.affine = Some(attr.parse(value)?),
+                local_name!("patternTransform") => p.affine = Some(attr.parse(value)?),
 
-                Attribute::XlinkHref => {
-                    p.fallback = Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?);
+                local_name!("xlink:href") => {
+                    p.fallback = Some(Fragment::parse(value).attribute(attr)?);
                 }
 
-                Attribute::X => p.x = Some(attr.parse(value)?),
+                local_name!("x") => p.x = Some(attr.parse(value)?),
 
-                Attribute::Y => p.y = Some(attr.parse(value)?),
+                local_name!("y") => p.y = Some(attr.parse(value)?),
 
-                Attribute::Width => {
+                local_name!("width") => {
                     p.width =
                         Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
                 }
 
-                Attribute::Height => {
+                local_name!("height") => {
                     p.height =
                         Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
                 }

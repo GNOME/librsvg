@@ -21,8 +21,12 @@ use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::NodePattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule, FillRule, ShapeRendering, StrokeDasharray,
-    StrokeLinecap, StrokeLinejoin,
+    ClipRule,
+    FillRule,
+    ShapeRendering,
+    StrokeDasharray,
+    StrokeLinecap,
+    StrokeLinejoin,
 };
 use crate::rect::RectangleExt;
 use crate::surface_utils::shared_surface::SharedImageSurface;

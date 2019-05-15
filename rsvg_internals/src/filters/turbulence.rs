@@ -1,14 +1,14 @@
 use std::cell::Cell;
 
 use cairo::{self, ImageSurface, MatrixTrait};
+use markup5ever::LocalName;
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{self, ParseError};
-use crate::property_defs::ColorInterpolationFilters;
 use crate::property_bag::PropertyBag;
+use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
@@ -65,9 +65,9 @@ impl NodeTrait for Turbulence {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::BaseFrequency => self.base_frequency.set(
+                local_name!("baseFrequency") => self.base_frequency.set(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::attribute_error(attr, err))
+                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))
@@ -76,11 +76,11 @@ impl NodeTrait for Turbulence {
                             }
                         })?,
                 ),
-                Attribute::NumOctaves => self.num_octaves.set(
+                local_name!("numOctaves") => self.num_octaves.set(
                     parsers::integer(value).map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
                 // Yes, seed needs to be parsed as a number and then truncated.
-                Attribute::Seed => self.seed.set(
+                local_name!("seed") => self.seed.set(
                     parsers::number(value)
                         .map(|x| {
                             clamp(
@@ -91,8 +91,10 @@ impl NodeTrait for Turbulence {
                         })
                         .map_err(|err| NodeError::attribute_error(attr, err))?,
                 ),
-                Attribute::StitchTiles => self.stitch_tiles.set(StitchTiles::parse(attr, value)?),
-                Attribute::Type => self.type_.set(NoiseType::parse(attr, value)?),
+                local_name!("stitchTiles") => {
+                    self.stitch_tiles.set(StitchTiles::parse(attr, value)?)
+                }
+                local_name!("type") => self.type_.set(NoiseType::parse(attr, value)?),
                 _ => (),
             }
         }
@@ -428,7 +430,7 @@ impl Filter for Turbulence {
 }
 
 impl StitchTiles {
-    fn parse(attr: Attribute, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
         match s {
             "stitch" => Ok(StitchTiles::Stitch),
             "noStitch" => Ok(StitchTiles::NoStitch),
@@ -441,7 +443,7 @@ impl StitchTiles {
 }
 
 impl NoiseType {
-    fn parse(attr: Attribute, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
         match s {
             "fractalNoise" => Ok(NoiseType::FractalNoise),
             "turbulence" => Ok(NoiseType::Turbulence),

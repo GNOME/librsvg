@@ -5,7 +5,6 @@ use cairo::Rectangle;
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
-use crate::attributes::Attribute;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::{AttributeResultExt, RenderingError};
@@ -214,31 +213,31 @@ impl NodeTrait for NodeSvg {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::PreserveAspectRatio => {
+                local_name!("preserveAspectRatio") => {
                     self.preserve_aspect_ratio.set(attr.parse(value)?)
                 }
 
-                Attribute::X => {
+                local_name!("x") => {
                     if is_inner_svg {
                         self.x.set(Some(attr.parse(value)?));
                     }
                 }
 
-                Attribute::Y => {
+                local_name!("y") => {
                     if is_inner_svg {
                         self.y.set(Some(attr.parse(value)?));
                     }
                 }
 
-                Attribute::Width => self.w.set(Some(
+                local_name!("width") => self.w.set(Some(
                     attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?,
                 )),
 
-                Attribute::Height => self.h.set(Some(
+                local_name!("height") => self.h.set(Some(
                     attr.parse_and_validate(value, LengthVertical::check_nonnegative)?,
                 )),
 
-                Attribute::ViewBox => self.vbox.set(attr.parse(value).map(Some)?),
+                local_name!("viewBox") => self.vbox.set(attr.parse(value).map(Some)?),
 
                 _ => (),
             }
@@ -282,7 +281,6 @@ impl NodeTrait for NodeSvg {
                 (
                     // The client's viewport overrides the toplevel's x/y/w/h viewport
                     draw_ctx.toplevel_viewport(),
-
                     // Use our viewBox if available, or try to derive one from
                     // the intrinsic dimensions.
                     self.vbox.get().or_else(|| {
@@ -330,19 +328,18 @@ impl NodeTrait for NodeUse {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::XlinkHref => {
-                    *self.link.borrow_mut() =
-                        Some(Fragment::parse(value).attribute(Attribute::XlinkHref)?)
+                local_name!("xlink:href") => {
+                    *self.link.borrow_mut() = Some(Fragment::parse(value).attribute(attr)?)
                 }
 
-                Attribute::X => self.x.set(attr.parse(value)?),
-                Attribute::Y => self.y.set(attr.parse(value)?),
+                local_name!("x") => self.x.set(attr.parse(value)?),
+                local_name!("y") => self.y.set(attr.parse(value)?),
 
-                Attribute::Width => self.w.set(
+                local_name!("width") => self.w.set(
                     attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)
                         .map(Some)?,
                 ),
-                Attribute::Height => self.h.set(
+                local_name!("height") => self.h.set(
                     attr.parse_and_validate(value, LengthVertical::check_nonnegative)
                         .map(Some)?,
                 ),
@@ -479,11 +476,11 @@ impl NodeTrait for NodeSymbol {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::PreserveAspectRatio => {
+                local_name!("preserveAspectRatio") => {
                     self.preserve_aspect_ratio.set(attr.parse(value)?)
                 }
 
-                Attribute::ViewBox => self.vbox.set(attr.parse(value).map(Some)?),
+                local_name!("viewBox") => self.vbox.set(attr.parse(value).map(Some)?),
 
                 _ => (),
             }

@@ -1,19 +1,25 @@
 use cssparser::{
-    self, parse_important, AtRuleParser, CowRcStr, DeclarationParser, Parser, ParserInput,
+    self,
+    parse_important,
+    AtRuleParser,
+    CowRcStr,
+    DeclarationParser,
+    Parser,
+    ParserInput,
 };
 use std::collections::hash_map::{Entry, Iter as HashMapIter};
 use std::collections::HashMap;
 use std::ptr;
-use std::str::{self, FromStr};
+use std::str;
 
 use libc;
+use markup5ever::LocalName;
 use url::Url;
 
 use glib::translate::*;
 use glib_sys::{gboolean, gpointer, GList};
 
 use crate::allowed_url::AllowedUrl;
-use crate::attributes::Attribute;
 use crate::croco::*;
 use crate::error::*;
 use crate::io::{self, BinaryData};
@@ -23,14 +29,14 @@ use crate::util::utf8_cstr;
 
 /// A parsed CSS declaration (`name: value [!important]`)
 pub struct Declaration {
-    pub attribute: Attribute,
+    pub attribute: LocalName,
     pub property: ParsedProperty,
     pub important: bool,
 }
 
 pub struct DeclarationList {
     // Maps property_name -> Declaration
-    declarations: HashMap<Attribute, Declaration>,
+    declarations: HashMap<LocalName, Declaration>,
 }
 
 pub struct DeclParser;
@@ -44,20 +50,17 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
     ) -> Result<Declaration, cssparser::ParseError<'i, ValueErrorKind>> {
-        if let Ok(attribute) = Attribute::from_str(name.as_ref()) {
-            let property = parse_attribute_value_into_parsed_property(attribute, input, true)
-                .map_err(|e| input.new_custom_error(e))?;
+        let attribute = LocalName::from(name.as_ref());
+        let property = parse_attribute_value_into_parsed_property(&attribute, input, true)
+            .map_err(|e| input.new_custom_error(e))?;
 
-            let important = input.try_parse(parse_important).is_ok();
+        let important = input.try_parse(parse_important).is_ok();
 
-            Ok(Declaration {
-                attribute,
-                property,
-                important,
-            })
-        } else {
-            Err(input.new_custom_error(ValueErrorKind::UnknownProperty))
-        }
+        Ok(Declaration {
+            attribute,
+            property,
+            important,
+        })
     }
 }
 
@@ -91,7 +94,7 @@ impl DeclarationList {
     }
 
     fn add_declaration(&mut self, declaration: Declaration) {
-        match self.declarations.entry(declaration.attribute) {
+        match self.declarations.entry(declaration.attribute.clone()) {
             Entry::Occupied(mut e) => {
                 let decl = e.get_mut();
 
@@ -111,7 +114,7 @@ impl DeclarationList {
     }
 }
 
-pub struct DeclarationListIter<'a>(HashMapIter<'a, Attribute, Declaration>);
+pub struct DeclarationListIter<'a>(HashMapIter<'a, LocalName, Declaration>);
 
 impl<'a> Iterator for DeclarationListIter<'a> {
     type Item = &'a Declaration;
@@ -397,26 +400,25 @@ unsafe extern "C" fn css_property(
 
                 let important = from_glib(a_is_important);
 
-                if let Ok(attribute) = Attribute::from_str(prop_name) {
-                    let mut input = ParserInput::new(&prop_value);
-                    let mut parser = Parser::new(&mut input);
+                let attribute = LocalName::from(prop_name);
 
-                    match parse_attribute_value_into_parsed_property(attribute, &mut parser, true) {
-                        Ok(property) => {
-                            let declaration = Declaration {
-                                attribute,
-                                property,
-                                important,
-                            };
+                let mut input = ParserInput::new(&prop_value);
+                let mut parser = Parser::new(&mut input);
 
-                            handler_data
-                                .css_rules
-                                .add_declaration(Selector::new(&selector_name), declaration);
-                        }
-                        Err(_) => (), // invalid property name or invalid value; ignore
+                match parse_attribute_value_into_parsed_property(&attribute, &mut parser, true) {
+                    Ok(property) => {
+                        let declaration = Declaration {
+                            attribute,
+                            property,
+                            important,
+                        };
+
+                        handler_data
+                            .css_rules
+                            .add_declaration(Selector::new(&selector_name), declaration);
                     }
+                    Err(_) => (), // invalid property name or invalid value; ignore
                 }
-                // else unknown property name; ignore
             }
         }
 

@@ -8,8 +8,8 @@ use glib::error::ErrorDomain;
 use glib::translate::*;
 use glib_sys;
 use libc;
+use markup5ever::LocalName;
 
-use crate::attributes::Attribute;
 use crate::parsers::ParseError;
 
 /// A simple error which refers to an attribute's value
@@ -28,26 +28,26 @@ pub enum ValueErrorKind {
 /// A complete error for an attribute and its erroneous value
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
-    attr: Attribute,
+    attr: LocalName,
     err: ValueErrorKind,
 }
 
 impl NodeError {
-    pub fn parse_error(attr: Attribute, error: ParseError) -> NodeError {
+    pub fn parse_error(attr: LocalName, error: ParseError) -> NodeError {
         NodeError {
             attr,
             err: ValueErrorKind::Parse(error),
         }
     }
 
-    pub fn value_error(attr: Attribute, description: &str) -> NodeError {
+    pub fn value_error(attr: LocalName, description: &str) -> NodeError {
         NodeError {
             attr,
             err: ValueErrorKind::Value(description.to_string()),
         }
     }
 
-    pub fn attribute_error(attr: Attribute, error: ValueErrorKind) -> NodeError {
+    pub fn attribute_error(attr: LocalName, error: ValueErrorKind) -> NodeError {
         NodeError { attr, err: error }
     }
 }
@@ -124,12 +124,12 @@ impl From<cairo::Status> for RenderingError {
 
 /// Helper for converting `Result<O, E>` into `Result<O, NodeError>`
 ///
-/// A `NodeError` requires an `Attribute` to which the error refers,
-/// plus the actual `ValueErrorKind` that describes the error.  However,
-/// parsing functions for attribute value types will want to return their
-/// own kind of error, instead of `ValueErrorKind`.  If that particular error
-/// type has an `impl From<FooError> for ValueErrorKind`, then this
-/// trait helps assign attribute values in `set_atts()` methods as follows:
+/// A `NodeError` requires a `LocalName` that corresponds to the attribute to which the
+/// error refers, plus the actual `ValueErrorKind` that describes the error.  However,
+/// parsing functions for attribute value types will want to return their own kind of
+/// error, instead of `ValueErrorKind`.  If that particular error type has an `impl
+/// From<FooError> for ValueErrorKind`, then this trait helps assign attribute values in
+/// `set_atts()` methods as follows:
 ///
 /// ```ignore
 /// use error::AttributeResultExt;
@@ -138,17 +138,17 @@ impl From<cairo::Status> for RenderingError {
 ///
 /// // It is assumed that there is an impl From<FooError> for ValueErrorKind
 ///
-/// self.foo = parse_foo(value).attribute(Attribute::Foo)?;
+/// self.foo = parse_foo(value).attribute(local_name!("foo"))?;
 /// ```
 ///
 /// The call to `.attribute(attr)` converts the `Result` from `parse_foo()` into a full
 /// `NodeError` with the provided `attr`.
 pub trait AttributeResultExt<O, E> {
-    fn attribute(self, attr: Attribute) -> Result<O, NodeError>;
+    fn attribute(self, attr: LocalName) -> Result<O, NodeError>;
 }
 
 impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O, E> for Result<O, E> {
-    fn attribute(self, attr: Attribute) -> Result<O, NodeError> {
+    fn attribute(self, attr: LocalName) -> Result<O, NodeError> {
         self.map_err(|e| e.into())
             .map_err(|e| NodeError::attribute_error(attr, e))
     }

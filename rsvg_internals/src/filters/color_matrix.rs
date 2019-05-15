@@ -1,9 +1,9 @@
 use std::cell::RefCell;
 
 use cairo::{self, ImageSurface};
+use markup5ever::LocalName;
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -53,7 +53,7 @@ impl NodeTrait for ColorMatrix {
 
         // First, determine the operation type.
         let mut operation_type = OperationType::Matrix;
-        for (attr, value) in pbag.iter().filter(|(attr, _)| *attr == Attribute::Type) {
+        for (attr, value) in pbag.iter().filter(|(attr, _)| *attr == local_name!("type")) {
             operation_type = OperationType::parse(attr, value)?;
         }
 
@@ -71,7 +71,10 @@ impl NodeTrait for ColorMatrix {
                 ),
             );
         } else {
-            for (attr, value) in pbag.iter().filter(|(attr, _)| *attr == Attribute::Values) {
+            for (attr, value) in pbag
+                .iter()
+                .filter(|(attr, _)| *attr == local_name!("values"))
+            {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
@@ -97,7 +100,7 @@ impl NodeTrait for ColorMatrix {
                     }
                     OperationType::Saturate => {
                         let s = parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?;
+                            .map_err(|err| NodeError::attribute_error(attr.clone(), err))?;
                         if s < 0.0 || s > 1.0 {
                             return Err(NodeError::value_error(attr, "expected value from 0 to 1"));
                         }
@@ -229,7 +232,7 @@ impl Filter for ColorMatrix {
 }
 
 impl OperationType {
-    fn parse(attr: Attribute, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
         match s {
             "matrix" => Ok(OperationType::Matrix),
             "saturate" => Ok(OperationType::Saturate),

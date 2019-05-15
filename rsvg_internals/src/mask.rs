@@ -1,7 +1,6 @@
 use cairo::{self, MatrixTrait};
 use std::cell::Cell;
 
-use crate::attributes::Attribute;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{CompositingAffines, DrawingCtx};
@@ -13,7 +12,9 @@ use crate::property_bag::PropertyBag;
 use crate::property_defs::Opacity;
 use crate::rect::IRect;
 use crate::surface_utils::{
-    iterators::Pixels, shared_surface::SharedImageSurface, shared_surface::SurfaceType,
+    iterators::Pixels,
+    shared_surface::SharedImageSurface,
+    shared_surface::SurfaceType,
     ImageSurfaceDataExt,
 };
 use crate::unit_interval::UnitInterval;
@@ -187,16 +188,16 @@ impl NodeTrait for NodeMask {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value)?),
-                Attribute::Y => self.y.set(attr.parse(value)?),
-                Attribute::Width => self
+                local_name!("x") => self.x.set(attr.parse(value)?),
+                local_name!("y") => self.y.set(attr.parse(value)?),
+                local_name!("width") => self
                     .width
                     .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
-                Attribute::Height => self
+                local_name!("height") => self
                     .height
                     .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
-                Attribute::MaskUnits => self.units.set(attr.parse(value)?),
-                Attribute::MaskContentUnits => self.content_units.set(attr.parse(value)?),
+                local_name!("maskUnits") => self.units.set(attr.parse(value)?),
+                local_name!("maskContentUnits") => self.content_units.set(attr.parse(value)?),
                 _ => (),
             }
         }

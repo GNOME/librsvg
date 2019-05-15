@@ -2,7 +2,6 @@ use std::cell::Cell;
 
 use cairo::{self, MatrixTrait};
 
-use crate::attributes::Attribute;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
@@ -73,7 +72,7 @@ impl NodeTrait for NodeClipPath {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::ClipPathUnits => self.units.set(attr.parse(value)?),
+                local_name!("clipPathUnits") => self.units.set(attr.parse(value)?),
                 _ => (),
             }
         }

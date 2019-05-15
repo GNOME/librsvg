@@ -3,7 +3,6 @@ use std::cell::Cell;
 use std::cell::RefCell;
 use std::ops::Deref;
 
-use crate::attributes::Attribute;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::length::*;
@@ -125,7 +124,7 @@ impl NodePath {
 impl NodeTrait for NodePath {
     fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            if attr == Attribute::D {
+            if attr == local_name!("d") {
                 let mut builder = PathBuilder::new();
 
                 if let Err(e) = path_parser::parse_path_into_builder(value, &mut builder) {
@@ -229,8 +228,7 @@ impl NodePoly {
 impl NodeTrait for NodePoly {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            // support for svg < 1.0 which used verts
-            if attr == Attribute::Points || attr == Attribute::Verts {
+            if attr == local_name!("points") {
                 *self.points.borrow_mut() = attr.parse(value.trim()).map(Some)?;
             }
         }
@@ -291,10 +289,10 @@ impl NodeTrait for NodeLine {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X1 => self.x1.set(attr.parse(value)?),
-                Attribute::Y1 => self.y1.set(attr.parse(value)?),
-                Attribute::X2 => self.x2.set(attr.parse(value)?),
-                Attribute::Y2 => self.y2.set(attr.parse(value)?),
+                local_name!("x1") => self.x1.set(attr.parse(value)?),
+                local_name!("y1") => self.y1.set(attr.parse(value)?),
+                local_name!("x2") => self.x2.set(attr.parse(value)?),
+                local_name!("y2") => self.y2.set(attr.parse(value)?),
                 _ => (),
             }
         }
@@ -357,19 +355,19 @@ impl NodeTrait for NodeRect {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(attr.parse(value)?),
-                Attribute::Y => self.y.set(attr.parse(value)?),
-                Attribute::Width => self
+                local_name!("x") => self.x.set(attr.parse(value)?),
+                local_name!("y") => self.y.set(attr.parse(value)?),
+                local_name!("width") => self
                     .w
                     .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
-                Attribute::Height => self
+                local_name!("height") => self
                     .h
                     .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
-                Attribute::Rx => self.rx.set(
+                local_name!("rx") => self.rx.set(
                     attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)
                         .map(Some)?,
                 ),
-                Attribute::Ry => self.ry.set(
+                local_name!("ry") => self.ry.set(
                     attr.parse_and_validate(value, LengthVertical::check_nonnegative)
                         .map(Some)?,
                 ),
@@ -581,9 +579,9 @@ impl NodeTrait for NodeCircle {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(attr.parse(value)?),
-                Attribute::Cy => self.cy.set(attr.parse(value)?),
-                Attribute::R => self
+                local_name!("cx") => self.cx.set(attr.parse(value)?),
+                local_name!("cy") => self.cy.set(attr.parse(value)?),
+                local_name!("r") => self
                     .r
                     .set(attr.parse_and_validate(value, LengthBoth::check_nonnegative)?),
 
@@ -635,12 +633,12 @@ impl NodeTrait for NodeEllipse {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(attr.parse(value)?),
-                Attribute::Cy => self.cy.set(attr.parse(value)?),
-                Attribute::Rx => self
+                local_name!("cx") => self.cx.set(attr.parse(value)?),
+                local_name!("cy") => self.cy.set(attr.parse(value)?),
+                local_name!("rx") => self
                     .rx
                     .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
-                Attribute::Ry => self
+                local_name!("ry") => self
                     .ry
                     .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
 

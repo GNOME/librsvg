@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use crate::attributes::Attribute;
 use crate::clip_path::NodeClipPath;
 use crate::filters::{
     blend::Blend,
@@ -277,8 +276,8 @@ pub fn create_node_and_register_id(
 
     for (attr, value) in pbag.iter() {
         match attr {
-            Attribute::Id => id = Some(value),
-            Attribute::Class => class = Some(value),
+            local_name!("id") => id = Some(value),
+            local_name!("class") => class = Some(value),
             _ => (),
         }
     }

@@ -1,4 +1,3 @@
-use crate::attributes::Attribute;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::text::NodeChars;
@@ -57,7 +56,7 @@ impl NodeStyle {
 impl NodeTrait for NodeStyle {
     fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            if attr == Attribute::Type {
+            if attr == local_name!("type") {
                 *self.type_.borrow_mut() = Some(value.to_string());
             }
         }

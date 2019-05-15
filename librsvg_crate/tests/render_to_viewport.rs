@@ -87,11 +87,7 @@ fn render_to_offsetted_viewport() {
 
     let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
 
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "render_to_offseted_viewport",
-    );
+    compare_to_surface(&output_surf, &reference_surf, "render_to_offseted_viewport");
 }
 
 #[test]
