@@ -371,6 +371,7 @@ pub enum NodeType {
     Link,
     Marker,
     Mask,
+    NonRendering,
     Path,
     Pattern,
     PointLight,
@@ -430,6 +431,7 @@ impl NodeType {
             NodeType::Link => "a",
             NodeType::Marker => "marker",
             NodeType::Mask => "mask",
+            NodeType::NonRendering => "rsvg-non-rendering", // Dummy element name
             NodeType::Path => "path",
             NodeType::Pattern => "pattern",
             NodeType::PointLight => "fePointight",

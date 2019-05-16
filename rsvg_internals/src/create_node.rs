@@ -126,6 +126,7 @@ node_create_fn!(
     FilterPrimitiveMorphology,
     Morphology::new
 );
+node_create_fn!(create_non_rendering, NonRendering, NodeNonRendering::new);
 node_create_fn!(create_offset, FilterPrimitiveOffset, Offset::new);
 node_create_fn!(create_path, Path, NodePath::new);
 node_create_fn!(create_pattern, Pattern, NodePattern::new);
@@ -287,10 +288,11 @@ pub fn create_node_and_register_id(
 
     let &(supports_class, create_fn) = match NODE_CREATORS.get(name) {
         Some(c) => c,
-        // Whenever we encounter a node we don't understand, represent it as a defs.
-        // This is like a group, but it doesn't do any rendering of children.  The
-        // effect is that we will ignore all children of unknown elements.
-        None => &(true, create_defs as NodeCreateFn),
+
+        // Whenever we encounter a node we don't understand, represent it as a
+        // non-rendering node.  This is like a group, but it doesn't do any rendering of
+        // children.  The effect is that we will ignore all children of unknown elements.
+        None => &(true, create_non_rendering as NodeCreateFn),
     };
 
     if !supports_class {
