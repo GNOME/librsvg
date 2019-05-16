@@ -29,7 +29,7 @@ use crate::pattern::NodePattern;
 use crate::property_bag::PropertyBag;
 use crate::shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
 use crate::stop::NodeStop;
-use crate::structure::{NodeDefs, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
+use crate::structure::{NodeNonRendering, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
 use crate::style::NodeStyle;
 use crate::text::{NodeTRef, NodeTSpan, NodeText};
 
@@ -83,7 +83,7 @@ node_create_fn!(
     FilterPrimitiveConvolveMatrix,
     ConvolveMatrix::new
 );
-node_create_fn!(create_defs, Defs, NodeDefs::new);
+node_create_fn!(create_defs, Defs, NodeNonRendering::new);
 node_create_fn!(
     create_diffuse_lighting,
     FilterPrimitiveDiffuseLighting,
