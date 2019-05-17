@@ -129,7 +129,7 @@ impl Filter for Merge {
         let mut bounds = self.base.get_bounds(ctx);
         for child in node
             .children()
-            .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
+            .filter(|c| c.get_type() == NodeType::FeMergeNode)
         {
             if child.is_in_error() {
                 return Err(FilterError::ChildNodeInError);
@@ -146,7 +146,7 @@ impl Filter for Merge {
         let mut output_surface = None;
         for child in node
             .children()
-            .filter(|c| c.get_type() == NodeType::FilterPrimitiveMergeNode)
+            .filter(|c| c.get_type() == NodeType::FeMergeNode)
         {
             output_surface = Some(
                 child.with_impl(|c: &MergeNode| c.render(ctx, draw_ctx, bounds, output_surface))?,
