@@ -29,13 +29,13 @@ use crate::pattern::NodePattern;
 use crate::property_bag::PropertyBag;
 use crate::shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
 use crate::stop::NodeStop;
-use crate::structure::{NodeNonRendering, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
+use crate::structure::{NodeGroup, NodeNonRendering, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
 use crate::style::NodeStyle;
 use crate::text::{NodeTRef, NodeTSpan, NodeText};
 
-macro_rules! node_create_fn {
+macro_rules! n {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
-        fn $name(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode {
+        pub fn $name(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode {
             RsvgNode::new(
                 NodeData::new(NodeType::$node_type, id, class, Box::new($new_fn())),
                 parent,
@@ -44,134 +44,73 @@ macro_rules! node_create_fn {
     };
 }
 
-node_create_fn!(create_circle, Circle, NodeCircle::new);
-node_create_fn!(create_clip_path, ClipPath, NodeClipPath::new);
-node_create_fn!(create_blend, FilterPrimitiveBlend, Blend::new);
-node_create_fn!(
-    create_color_matrix,
-    FilterPrimitiveColorMatrix,
-    ColorMatrix::new
-);
-node_create_fn!(
-    create_component_transfer,
-    FilterPrimitiveComponentTransfer,
-    ComponentTransfer::new
-);
-node_create_fn!(
-    create_component_transfer_func_a,
-    ComponentTransferFunctionA,
-    FuncX::new_a
-);
-node_create_fn!(
-    create_component_transfer_func_b,
-    ComponentTransferFunctionB,
-    FuncX::new_b
-);
-node_create_fn!(
-    create_component_transfer_func_g,
-    ComponentTransferFunctionG,
-    FuncX::new_g
-);
-node_create_fn!(
-    create_component_transfer_func_r,
-    ComponentTransferFunctionR,
-    FuncX::new_r
-);
-node_create_fn!(create_composite, FilterPrimitiveComposite, Composite::new);
-node_create_fn!(
-    create_convolve_matrix,
-    FilterPrimitiveConvolveMatrix,
-    ConvolveMatrix::new
-);
-node_create_fn!(create_defs, Defs, NodeNonRendering::new);
-node_create_fn!(
-    create_diffuse_lighting,
-    FilterPrimitiveDiffuseLighting,
-    Lighting::new_diffuse
-);
-node_create_fn!(
-    create_distant_light,
-    DistantLight,
-    LightSource::new_distant_light
-);
-node_create_fn!(
-    create_displacement_map,
-    FilterPrimitiveDisplacementMap,
-    DisplacementMap::new
-);
-node_create_fn!(create_ellipse, Ellipse, NodeEllipse::new);
-node_create_fn!(create_filter, Filter, NodeFilter::new);
-node_create_fn!(create_flood, FilterPrimitiveFlood, Flood::new);
-node_create_fn!(
-    create_gaussian_blur,
-    FilterPrimitiveGaussianBlur,
-    GaussianBlur::new
-);
-node_create_fn!(create_group, Group, NodeGroup::new);
-node_create_fn!(create_image, Image, NodeImage::new);
-node_create_fn!(create_fe_image, FilterPrimitiveImage, Image::new);
-node_create_fn!(
-    create_linear_gradient,
-    LinearGradient,
-    NodeGradient::new_linear
-);
-node_create_fn!(create_line, Line, NodeLine::new);
-node_create_fn!(create_link, Link, NodeLink::new);
-node_create_fn!(create_marker, Marker, NodeMarker::new);
-node_create_fn!(create_mask, Mask, NodeMask::new);
-node_create_fn!(create_merge, FilterPrimitiveMerge, Merge::new);
-node_create_fn!(create_merge_node, FilterPrimitiveMergeNode, MergeNode::new);
-node_create_fn!(
-    create_morphology,
-    FilterPrimitiveMorphology,
-    Morphology::new
-);
-node_create_fn!(create_non_rendering, NonRendering, NodeNonRendering::new);
-node_create_fn!(create_offset, FilterPrimitiveOffset, Offset::new);
-node_create_fn!(create_path, Path, NodePath::new);
-node_create_fn!(create_pattern, Pattern, NodePattern::new);
-node_create_fn!(create_point_light, PointLight, LightSource::new_point_light);
-node_create_fn!(create_polygon, Polygon, NodePoly::new_closed);
-node_create_fn!(create_polyline, Polyline, NodePoly::new_open);
-node_create_fn!(
-    create_radial_gradient,
-    RadialGradient,
-    NodeGradient::new_radial
-);
-node_create_fn!(create_rect, Rect, NodeRect::new);
-node_create_fn!(
-    create_specular_lighting,
-    FilterPrimitiveSpecularLighting,
-    Lighting::new_specular
-);
-node_create_fn!(create_spot_light, SpotLight, LightSource::new_spot_light);
-node_create_fn!(create_stop, Stop, NodeStop::new);
-node_create_fn!(create_style, Style, NodeStyle::new);
-node_create_fn!(create_svg, Svg, NodeSvg::new);
-node_create_fn!(create_switch, Switch, NodeSwitch::new);
-node_create_fn!(create_symbol, Symbol, NodeSymbol::new);
-node_create_fn!(create_text, Text, NodeText::new);
-node_create_fn!(create_tref, TRef, NodeTRef::new);
-node_create_fn!(create_tspan, TSpan, NodeTSpan::new);
-node_create_fn!(create_tile, FilterPrimitiveTile, Tile::new);
-node_create_fn!(
-    create_turbulence,
-    FilterPrimitiveTurbulence,
-    Turbulence::new
-);
-node_create_fn!(create_use, Use, NodeUse::new);
+#[cfg_attr(rustfmt, rustfmt_skip)]
+mod creators {
+    use super::*;
 
-// hack to partially support conical gradient
-node_create_fn!(
-    create_conical_gradient,
-    RadialGradient,
-    NodeGradient::new_radial
-);
+    n!(create_circle,                    Circle,                           NodeCircle::new);
+    n!(create_clip_path,                 ClipPath,                         NodeClipPath::new);
+    n!(create_blend,                     FilterPrimitiveBlend,             Blend::new);
+    n!(create_color_matrix,              FilterPrimitiveColorMatrix,       ColorMatrix::new);
+    n!(create_component_transfer,        FilterPrimitiveComponentTransfer, ComponentTransfer::new);
+    n!(create_component_transfer_func_a, ComponentTransferFunctionA,       FuncX::new_a);
+    n!(create_component_transfer_func_b, ComponentTransferFunctionB,       FuncX::new_b);
+    n!(create_component_transfer_func_g, ComponentTransferFunctionG,       FuncX::new_g);
+    n!(create_component_transfer_func_r, ComponentTransferFunctionR,       FuncX::new_r);
+    n!(create_composite,                 FilterPrimitiveComposite,         Composite::new);
+    n!(create_convolve_matrix,           FilterPrimitiveConvolveMatrix,    ConvolveMatrix::new);
+    n!(create_defs,                      Defs,                             NodeNonRendering::new);
+    n!(create_diffuse_lighting,          FilterPrimitiveDiffuseLighting,   Lighting::new_diffuse);
+    n!(create_distant_light,             DistantLight,                     LightSource::new_distant_light);
+    n!(create_displacement_map,          FilterPrimitiveDisplacementMap,   DisplacementMap::new);
+    n!(create_ellipse,                   Ellipse,                          NodeEllipse::new);
+    n!(create_filter,                    Filter,                           NodeFilter::new);
+    n!(create_flood,                     FilterPrimitiveFlood,             Flood::new);
+    n!(create_gaussian_blur,             FilterPrimitiveGaussianBlur,      GaussianBlur::new);
+    n!(create_group,                     Group,                            NodeGroup::new);
+    n!(create_image,                     Image,                            NodeImage::new);
+    n!(create_fe_image,                  FilterPrimitiveImage,             Image::new);
+    n!(create_linear_gradient,           LinearGradient,                   NodeGradient::new_linear);
+    n!(create_line,                      Line,                             NodeLine::new);
+    n!(create_link,                      Link,                             NodeLink::new);
+    n!(create_marker,                    Marker,                           NodeMarker::new);
+    n!(create_mask,                      Mask,                             NodeMask::new);
+    n!(create_merge,                     FilterPrimitiveMerge,             Merge::new);
+    n!(create_merge_node,                FilterPrimitiveMergeNode,         MergeNode::new);
+    n!(create_morphology,                FilterPrimitiveMorphology,        Morphology::new);
+    n!(create_non_rendering,             NonRendering,                     NodeNonRendering::new);
+    n!(create_offset,                    FilterPrimitiveOffset,            Offset::new);
+    n!(create_path,                      Path,                             NodePath::new);
+    n!(create_pattern,                   Pattern,                          NodePattern::new);
+    n!(create_point_light,               PointLight,                       LightSource::new_point_light);
+    n!(create_polygon,                   Polygon,                          NodePoly::new_closed);
+    n!(create_polyline,                  Polyline,                         NodePoly::new_open);
+    n!(create_radial_gradient,           RadialGradient,                   NodeGradient::new_radial);
+    n!(create_rect,                      Rect,                             NodeRect::new);
+    n!(create_specular_lighting,         FilterPrimitiveSpecularLighting,  Lighting::new_specular);
+    n!(create_spot_light,                SpotLight,                        LightSource::new_spot_light);
+    n!(create_stop,                      Stop,                             NodeStop::new);
+    n!(create_style,                     Style,                            NodeStyle::new);
+    n!(create_svg,                       Svg,                              NodeSvg::new);
+    n!(create_switch,                    Switch,                           NodeSwitch::new);
+    n!(create_symbol,                    Symbol,                           NodeSymbol::new);
+    n!(create_text,                      Text,                             NodeText::new);
+    n!(create_tref,                      TRef,                             NodeTRef::new);
+    n!(create_tspan,                     TSpan,                            NodeTSpan::new);
+    n!(create_tile,                      FilterPrimitiveTile,              Tile::new);
+    n!(create_turbulence,                FilterPrimitiveTurbulence,        Turbulence::new);
+    n!(create_use,                       Use,                              NodeUse::new);
 
-// hack to make multiImage sort-of work
-node_create_fn!(create_multi_image, Switch, NodeSwitch::new);
-node_create_fn!(create_sub_image, Group, NodeGroup::new);
-node_create_fn!(create_sub_image_ref, Image, NodeImage::new);
+    // hack to partially support conical gradient
+    n!(create_conical_gradient,          RadialGradient,                   NodeGradient::new_radial);
+
+    // hack to make multiImage sort-of work
+    n!(create_multi_image,               Switch,                           NodeSwitch::new);
+    n!(create_sub_image,                 Group,                            NodeGroup::new);
+    n!(create_sub_image_ref,             Image,                            NodeImage::new);
+}
+
+use creators::*;
 
 type NodeCreateFn =
     fn(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode;
