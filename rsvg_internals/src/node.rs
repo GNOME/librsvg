@@ -96,6 +96,9 @@ impl NodeData {
         {
             self.set_error(e);
         }
+
+        let mut specified_values = self.specified_values.borrow_mut();
+        self.node_impl.set_overridden_properties(&mut specified_values);
     }
 
     fn save_style_attribute(&self, pbag: &PropertyBag<'_>) {
@@ -522,13 +525,6 @@ impl RsvgNode {
 
     pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
         self.borrow().set_atts(node, pbag, locale);
-    }
-
-    pub fn set_overridden_properties(&self) {
-        let mut specified_values = self.borrow().specified_values.borrow_mut();
-        self.borrow()
-            .node_impl
-            .set_overridden_properties(&mut specified_values);
     }
 
     pub fn draw(

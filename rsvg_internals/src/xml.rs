@@ -326,8 +326,6 @@ impl XmlState {
 
         new_node.set_atts(&new_node, pbag, self.load_options.locale());
 
-        new_node.set_overridden_properties();
-
         new_node
     }
 
