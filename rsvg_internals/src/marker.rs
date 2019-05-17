@@ -197,11 +197,7 @@ impl NodeMarker {
 }
 
 impl NodeTrait for NodeMarker {
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
-        // marker element has overflow:hidden
-        // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
-        node.set_overflow_hidden();
-
+    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("markerUnits") => self.units.set(attr.parse(value)?),
@@ -229,6 +225,10 @@ impl NodeTrait for NodeMarker {
         }
 
         Ok(())
+    }
+
+    fn overflow_hidden(&self) -> bool {
+        true
     }
 
     fn set_overridden_properties(&self, values: &mut SpecifiedValues) {

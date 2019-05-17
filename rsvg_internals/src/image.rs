@@ -38,11 +38,7 @@ impl NodeImage {
 }
 
 impl NodeTrait for NodeImage {
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
-        // SVG element has overflow:hidden
-        // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
-        node.set_overflow_hidden();
-
+    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("x") => self.x.set(attr.parse(value)?),
@@ -70,6 +66,10 @@ impl NodeTrait for NodeImage {
         }
 
         Ok(())
+    }
+
+    fn overflow_hidden(&self) -> bool {
+        true
     }
 
     fn draw(

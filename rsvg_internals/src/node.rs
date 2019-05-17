@@ -86,6 +86,11 @@ impl NodeData {
     }
 
     pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
+        if self.node_impl.overflow_hidden() {
+            let mut specified_values = self.specified_values.borrow_mut();
+            specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
+        }
+
         self.save_style_attribute(pbag);
 
         if let Err(e) = self
@@ -327,6 +332,12 @@ pub trait NodeTrait: Downcast {
     /// Sets any special-cased properties that the node may have, that are different
     /// from defaults in the node's `SpecifiedValues`.
     fn set_overridden_properties(&self, _values: &mut SpecifiedValues) {}
+
+    /// Whether this node has overflow:hidden.
+    /// https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
+    fn overflow_hidden(&self) -> bool {
+        false
+    }
 
     fn draw(
         &self,
@@ -587,11 +598,6 @@ impl RsvgNode {
 
     pub fn is_overflow(&self) -> bool {
         self.borrow().specified_values.borrow().is_overflow()
-    }
-
-    pub fn set_overflow_hidden(&self) {
-        let mut specified_values = self.borrow().specified_values.borrow_mut();
-        specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
 }
 
