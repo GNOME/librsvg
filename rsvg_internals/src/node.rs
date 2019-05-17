@@ -410,9 +410,13 @@ pub enum NodeType {
     FilterPrimitiveTurbulence,
 }
 
-impl NodeType {
+impl RsvgNode {
+    pub fn get_type(&self) -> NodeType {
+        self.borrow().node_type
+    }
+
     pub fn element_name(&self) -> &'static str {
-        match self {
+        match self.get_type() {
             NodeType::Chars => "rsvg-chars", // Dummy element name for chars
             NodeType::Circle => "circle",
             NodeType::ClipPath => "clipPath",
@@ -467,12 +471,6 @@ impl NodeType {
             NodeType::FilterPrimitiveTile => "feTile",
             NodeType::FilterPrimitiveTurbulence => "feTurbulence",
         }
-    }
-}
-
-impl RsvgNode {
-    pub fn get_type(&self) -> NodeType {
-        self.borrow().node_type
     }
 
     pub fn get_id(&self) -> Option<&str> {
