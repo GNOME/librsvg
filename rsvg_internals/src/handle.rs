@@ -12,7 +12,7 @@ use crate::c_api::{RsvgDimensionData, RsvgPositionData, SizeCallback};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{DrawingCtx, RsvgRectangle};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
-use crate::node::RsvgNode;
+use crate::node::{CascadedValues, RsvgNode};
 use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
 use crate::structure::{IntrinsicDimensions, NodeSvg};
 use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
@@ -207,7 +207,7 @@ impl Handle {
         );
         let root = self.svg.root();
 
-        draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false)?;
+        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
 
         let bbox = draw_ctx.get_bbox();
 
@@ -236,7 +236,7 @@ impl Handle {
         let is_root = node == root;
 
         if is_root {
-            let cascaded = node.get_cascaded_values();
+            let cascaded = CascadedValues::new_from_node(&node);
             let values = cascaded.get();
 
             if let Some((root_width, root_height)) =
@@ -373,7 +373,8 @@ impl Handle {
             false,
             is_testing,
         );
-        let res = draw_ctx.draw_node_from_stack(&root.get_cascaded_values(), &root, false);
+        let cascaded = CascadedValues::new_from_node(&root);
+        let res = draw_ctx.draw_node_from_stack(&cascaded, &root, false);
         cr.restore();
 
         res

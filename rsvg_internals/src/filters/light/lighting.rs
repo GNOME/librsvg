@@ -28,7 +28,7 @@ use crate::filters::{
     FilterError,
     PrimitiveWithInput,
 };
-use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
@@ -212,7 +212,7 @@ impl Filter for Lighting {
 
         let surface_scale = self.surface_scale.get();
 
-        let cascaded = node.get_cascaded_values();
+        let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
         let lighting_color = match values.lighting_color.0 {
             cssparser::Color::CurrentColor => values.color.0,
@@ -452,7 +452,7 @@ impl Filter for Lighting {
             }
         }
 
-        let cascaded = node.get_cascaded_values();
+        let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
         // The generated color values are in the color space determined by
         // color-interpolation-filters.

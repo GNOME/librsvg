@@ -2,7 +2,7 @@ use cairo::{self, ImageSurface};
 use cssparser;
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
@@ -46,7 +46,7 @@ impl Filter for Flood {
             ctx.source_graphic().height(),
         )?;
 
-        let cascaded = node.get_cascaded_values();
+        let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
         let color = match values.flood_color.0 {

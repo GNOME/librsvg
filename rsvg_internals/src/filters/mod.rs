@@ -10,7 +10,7 @@ use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::length::{LengthHorizontal, LengthUnit, LengthVertical};
-use crate::node::{NodeData, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeData, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{ParseError, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -292,7 +292,7 @@ pub fn render(
         // Check if the node wants linear RGB.
         .map(|c| {
             let linear_rgb = {
-                let cascaded = c.get_cascaded_values();
+                let cascaded = CascadedValues::new_from_node(&c);
                 let values = cascaded.get();
 
                 values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb

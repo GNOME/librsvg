@@ -123,7 +123,7 @@ impl NodeMarker {
         line_width: f64,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let cascaded = node.get_cascaded_values();
+        let cascaded = CascadedValues::new_from_node(&node);
         let values = cascaded.get();
 
         let params = draw_ctx.get_view_params();

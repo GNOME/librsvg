@@ -247,8 +247,8 @@ impl NodeData {
 /// elsewhere in the SVG; it causes the instanced subtree to re-cascade from the computed values for
 /// the `<use>` element.
 ///
-/// This structure gets created by `Node.get_cascaded_values()`.  You can then call the `get()`
-/// method on the resulting `CascadedValues` to get a `&ComputedValues` whose fields you can access.
+/// You can then call the `get()` method on the resulting `CascadedValues` to get a
+/// `&ComputedValues` whose fields you can access.
 pub struct CascadedValues<'a> {
     inner: CascadedInner<'a>,
 }
@@ -279,7 +279,7 @@ impl<'a> CascadedValues<'a> {
     /// This is to be used only in the toplevel drawing function, or in elements like `<marker>`
     /// that don't propagate their parent's cascade to their children.  All others should use
     /// `new()` to derive the cascade from an existing one.
-    fn new_from_node(node: &RsvgNode) -> CascadedValues<'_> {
+    pub fn new_from_node(node: &RsvgNode) -> CascadedValues<'_> {
         CascadedValues {
             inner: CascadedInner::FromNode(node.borrow().values.borrow()),
         }
@@ -493,10 +493,6 @@ impl RsvgNode {
 
     pub fn get_transform(&self) -> Matrix {
         self.borrow().transform.get()
-    }
-
-    pub fn get_cascaded_values(&self) -> CascadedValues<'_> {
-        CascadedValues::new_from_node(self)
     }
 
     pub fn cascade(&self, values: &ComputedValues) {

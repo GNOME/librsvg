@@ -6,7 +6,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::RenderingError;
-use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 
@@ -41,7 +41,7 @@ impl NodeClipPath {
             return Ok(());
         }
 
-        let cascaded = node.get_cascaded_values();
+        let cascaded = CascadedValues::new_from_node(node);
 
         draw_ctx.with_saved_matrix(&mut |dc| {
             let cr = dc.get_cairo_context();

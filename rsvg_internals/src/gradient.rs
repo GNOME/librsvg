@@ -9,7 +9,7 @@ use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
 use crate::error::*;
 use crate::length::*;
-use crate::node::*;
+use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::paint_server::PaintSource;
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::properties::ComputedValues;
@@ -386,7 +386,7 @@ impl Gradient {
             })
             .for_each(|child| {
                 child.with_impl(|stop: &NodeStop| {
-                    let cascaded = child.get_cascaded_values();
+                    let cascaded = CascadedValues::new_from_node(&child);
                     let values = cascaded.get();
 
                     let rgba = match values.stop_color {

@@ -418,7 +418,7 @@ impl PaintSource for NodePattern {
 
         // Draw everything
         let pattern_node = RsvgNode::upgrade(pattern.node.as_ref().unwrap()).unwrap();
-        let pattern_cascaded = pattern_node.get_cascaded_values();
+        let pattern_cascaded = CascadedValues::new_from_node(&pattern_node);
         let pattern_values = pattern_cascaded.get();
 
         cr_pattern.set_matrix(caffine);

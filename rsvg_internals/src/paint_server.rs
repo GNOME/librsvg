@@ -4,7 +4,7 @@ use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
-use crate::node::RsvgNode;
+use crate::node::{CascadedValues, RsvgNode};
 use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 use crate::unit_interval::UnitInterval;
@@ -81,7 +81,7 @@ pub trait PaintSource {
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
         if let Some(resolved) = self.resolve(&node, draw_ctx, bbox)? {
-            let cascaded = node.get_cascaded_values();
+            let cascaded = CascadedValues::new_from_node(node);
             let values = cascaded.get();
             self.set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
         } else {
