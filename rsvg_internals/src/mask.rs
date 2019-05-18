@@ -6,7 +6,7 @@ use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{CompositingAffines, DrawingCtx};
 use crate::error::RenderingError;
 use crate::length::{LengthHorizontal, LengthVertical};
-use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Opacity;
@@ -62,7 +62,7 @@ impl NodeMask {
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
 
-        let cascaded = mask_node.get_cascaded_values();
+        let cascaded = CascadedValues::new_from_node(mask_node);
         let values = cascaded.get();
 
         let mask_content_surface = draw_ctx.create_surface_for_toplevel_viewport()?;

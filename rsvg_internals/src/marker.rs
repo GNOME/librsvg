@@ -123,7 +123,7 @@ impl NodeMarker {
         line_width: f64,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let cascaded = node.get_cascaded_values();
+        let cascaded = CascadedValues::new_from_node(&node);
         let values = cascaded.get();
 
         let params = draw_ctx.get_view_params();
@@ -197,11 +197,7 @@ impl NodeMarker {
 }
 
 impl NodeTrait for NodeMarker {
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
-        // marker element has overflow:hidden
-        // https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
-        node.set_overflow_hidden();
-
+    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("markerUnits") => self.units.set(attr.parse(value)?),
@@ -229,6 +225,10 @@ impl NodeTrait for NodeMarker {
         }
 
         Ok(())
+    }
+
+    fn overflow_hidden(&self) -> bool {
+        true
     }
 
     fn set_overridden_properties(&self, values: &mut SpecifiedValues) {

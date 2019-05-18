@@ -44,21 +44,10 @@ impl NodeRef<NodeData> {
         class: Option<&str>,
         node_impl: Box<NodeTrait>,
     ) -> NodeRef<NodeData> {
-        let data = NodeData {
-            node_type,
-            id: id.map(str::to_string),
-            class: class.map(str::to_string),
-            specified_values: RefCell::new(Default::default()),
-            important_styles: Default::default(),
-            transform: Cell::new(Matrix::identity()),
-            result: RefCell::new(Ok(())),
-            values: RefCell::new(ComputedValues::default()),
-            cond: Cell::new(true),
-            node_impl,
-            style_attr: RefCell::new(String::new()),
-        };
-
-        NodeRef(Rc::new(tree_utils::Node::new(data, parent)))
+        NodeRef(Rc::new(tree_utils::Node::new(
+            NodeData::new(node_type, id, class, node_impl),
+            parent,
+        )))
     }
 
     pub fn downgrade(&self) -> RsvgWeakNode {
@@ -71,8 +60,190 @@ impl NodeRef<NodeData> {
 }
 
 impl NodeData {
+    pub fn new(
+        node_type: NodeType,
+        id: Option<&str>,
+        class: Option<&str>,
+        node_impl: Box<NodeTrait>,
+    ) -> NodeData {
+        NodeData {
+            node_type,
+            id: id.map(str::to_string),
+            class: class.map(str::to_string),
+            specified_values: RefCell::new(Default::default()),
+            important_styles: Default::default(),
+            transform: Cell::new(Matrix::identity()),
+            result: RefCell::new(Ok(())),
+            values: RefCell::new(ComputedValues::default()),
+            cond: Cell::new(true),
+            node_impl,
+            style_attr: RefCell::new(String::new()),
+        }
+    }
+
     pub fn get_impl<T: NodeTrait>(&self) -> Option<&T> {
         (&self.node_impl).downcast_ref::<T>()
+    }
+
+    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
+        if self.node_impl.overflow_hidden() {
+            let mut specified_values = self.specified_values.borrow_mut();
+            specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
+        }
+
+        self.save_style_attribute(pbag);
+
+        if let Err(e) = self
+            .set_transform_attribute(pbag)
+            .and_then(|_| self.set_conditional_processing_attributes(pbag, locale))
+            .and_then(|_| self.node_impl.set_atts(node, pbag))
+            .and_then(|_| self.set_presentation_attributes(pbag))
+        {
+            self.set_error(e);
+        }
+
+        let mut specified_values = self.specified_values.borrow_mut();
+        self.node_impl.set_overridden_properties(&mut specified_values);
+    }
+
+    fn save_style_attribute(&self, pbag: &PropertyBag<'_>) {
+        let mut style_attr = self.style_attr.borrow_mut();
+
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("style") => style_attr.push_str(value),
+
+                _ => (),
+            }
+        }
+    }
+
+    fn set_transform_attribute(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("transform") => {
+                    return Matrix::parse_str(value)
+                        .attribute(attr)
+                        .and_then(|affine| Ok(self.transform.set(affine)));
+                }
+
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+
+    fn set_conditional_processing_attributes(
+        &self,
+        pbag: &PropertyBag<'_>,
+        locale: &Locale,
+    ) -> Result<(), NodeError> {
+        let mut cond = self.cond.get();
+
+        for (attr, value) in pbag.iter() {
+            // FIXME: move this to "try {}" when we can bump the rustc version dependency
+            let mut parse = || {
+                match attr {
+                    local_name!("requiredExtensions") if cond => {
+                        cond = RequiredExtensions::from_attribute(value)
+                            .map(|RequiredExtensions(res)| res)?;
+                    }
+
+                    local_name!("requiredFeatures") if cond => {
+                        cond = RequiredFeatures::from_attribute(value)
+                            .map(|RequiredFeatures(res)| res)?;
+                    }
+
+                    local_name!("systemLanguage") if cond => {
+                        cond = SystemLanguage::from_attribute(value, locale)
+                            .map(|SystemLanguage(res)| res)?;
+                    }
+
+                    _ => {}
+                }
+
+                Ok(cond)
+            };
+
+            parse()
+                .map(|c| self.cond.set(c))
+                .map_err(|e| NodeError::attribute_error(attr, e))?;
+        }
+
+        Ok(())
+    }
+
+    /// Hands the pbag to the node's state, to apply the presentation attributes
+    fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
+        match self
+            .specified_values
+            .borrow_mut()
+            .parse_presentation_attributes(pbag)
+        {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                // FIXME: we'll ignore errors here for now.
+                //
+                // If we set the node to be in error, we expose buggy handling of the
+                // enable-background property; we are not parsing it correctly. This
+                // causes tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
+                // because it has enable-background="new 0 0 1179.75118 687.74173" in the
+                // toplevel svg element.
+                //
+                //   self.set_error(e);
+                //   return;
+
+                rsvg_log!("(attribute error: {})", e);
+                Ok(())
+            }
+        }
+    }
+
+    /// Applies the CSS rules that match into the node's specified_values
+    fn set_css_styles(&self, node: &RsvgNode, css_rules: &CssRules) {
+        let mut specified_values = self.specified_values.borrow_mut();
+        let mut important_styles = self.important_styles.borrow_mut();
+
+        for selector in &css_rules.get_matches(node) {
+            if let Some(decl_list) = css_rules.get_declarations(selector) {
+                for declaration in decl_list.iter() {
+                    specified_values
+                        .set_property_from_declaration(declaration, &mut important_styles);
+                }
+            }
+        }
+    }
+
+    /// Applies CSS styles from the saved value of the "style" attribute
+    fn set_style_attribute(&self) {
+        let mut style_attr = self.style_attr.borrow_mut();
+
+        if !style_attr.is_empty() {
+            let mut important_styles = self.important_styles.borrow_mut();
+
+            if let Err(e) = self
+                .specified_values
+                .borrow_mut()
+                .parse_style_declarations(style_attr.as_str(), &mut important_styles)
+            {
+                self.set_error(e);
+            }
+
+            style_attr.clear();
+            style_attr.shrink_to_fit();
+        }
+    }
+
+    // Sets the node's specified values from the style-related attributes in the pbag.
+    // Also applies CSS rules in our limited way based on the node's tag/class/id.
+    fn set_style(&self, node: &RsvgNode, css_rules: &CssRules) {
+        self.set_css_styles(node, css_rules);
+        self.set_style_attribute();
+    }
+
+    fn set_error(&self, error: NodeError) {
+        *self.result.borrow_mut() = Err(error);
     }
 }
 
@@ -84,8 +255,8 @@ impl NodeData {
 /// elsewhere in the SVG; it causes the instanced subtree to re-cascade from the computed values for
 /// the `<use>` element.
 ///
-/// This structure gets created by `Node.get_cascaded_values()`.  You can then call the `get()`
-/// method on the resulting `CascadedValues` to get a `&ComputedValues` whose fields you can access.
+/// You can then call the `get()` method on the resulting `CascadedValues` to get a
+/// `&ComputedValues` whose fields you can access.
 pub struct CascadedValues<'a> {
     inner: CascadedInner<'a>,
 }
@@ -116,7 +287,7 @@ impl<'a> CascadedValues<'a> {
     /// This is to be used only in the toplevel drawing function, or in elements like `<marker>`
     /// that don't propagate their parent's cascade to their children.  All others should use
     /// `new()` to derive the cascade from an existing one.
-    fn new_from_node(node: &RsvgNode) -> CascadedValues<'_> {
+    pub fn new_from_node(node: &RsvgNode) -> CascadedValues<'_> {
         CascadedValues {
             inner: CascadedInner::FromNode(node.borrow().values.borrow()),
         }
@@ -161,6 +332,12 @@ pub trait NodeTrait: Downcast {
     /// Sets any special-cased properties that the node may have, that are different
     /// from defaults in the node's `SpecifiedValues`.
     fn set_overridden_properties(&self, _values: &mut SpecifiedValues) {}
+
+    /// Whether this node has overflow:hidden.
+    /// https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
+    fn overflow_hidden(&self) -> bool {
+        false
+    }
 
     fn draw(
         &self,
@@ -332,10 +509,6 @@ impl RsvgNode {
         self.borrow().transform.get()
     }
 
-    pub fn get_cascaded_values(&self) -> CascadedValues<'_> {
-        CascadedValues::new_from_node(self)
-    }
-
     pub fn cascade(&self, values: &ComputedValues) {
         let mut values = values.clone();
         self.borrow()
@@ -350,7 +523,7 @@ impl RsvgNode {
     }
 
     pub fn set_styles_recursively(&self, node: &RsvgNode, css_rules: &CssRules) {
-        self.set_style(node, css_rules);
+        self.borrow().set_style(node, css_rules);
 
         for child in self.children() {
             child.set_styles_recursively(&child, css_rules);
@@ -361,162 +534,8 @@ impl RsvgNode {
         self.borrow().cond.get()
     }
 
-    fn set_transform_attribute(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
-        for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("transform") => {
-                    return Matrix::parse_str(value)
-                        .attribute(attr)
-                        .and_then(|affine| Ok(self.borrow().transform.set(affine)));
-                }
-
-                _ => (),
-            }
-        }
-
-        Ok(())
-    }
-
-    fn save_style_attribute(&self, pbag: &PropertyBag<'_>) {
-        let mut style_attr = self.borrow().style_attr.borrow_mut();
-
-        for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("style") => style_attr.push_str(value),
-
-                _ => (),
-            }
-        }
-    }
-
     pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
-        self.save_style_attribute(pbag);
-
-        if let Err(e) = self
-            .set_transform_attribute(pbag)
-            .and_then(|_| self.parse_conditional_processing_attributes(pbag, locale))
-            .and_then(|_| self.borrow().node_impl.set_atts(node, pbag))
-            .and_then(|_| self.set_presentation_attributes(pbag))
-        {
-            self.set_error(e);
-        }
-    }
-
-    fn parse_conditional_processing_attributes(
-        &self,
-        pbag: &PropertyBag<'_>,
-        locale: &Locale,
-    ) -> Result<(), NodeError> {
-        let mut cond = self.get_cond();
-
-        for (attr, value) in pbag.iter() {
-            // FIXME: move this to "try {}" when we can bump the rustc version dependency
-            let mut parse = || {
-                match attr {
-                    local_name!("requiredExtensions") if cond => {
-                        cond = RequiredExtensions::from_attribute(value)
-                            .map(|RequiredExtensions(res)| res)?;
-                    }
-
-                    local_name!("requiredFeatures") if cond => {
-                        cond = RequiredFeatures::from_attribute(value)
-                            .map(|RequiredFeatures(res)| res)?;
-                    }
-
-                    local_name!("systemLanguage") if cond => {
-                        cond = SystemLanguage::from_attribute(value, locale)
-                            .map(|SystemLanguage(res)| res)?;
-                    }
-
-                    _ => {}
-                }
-
-                Ok(cond)
-            };
-
-            parse()
-                .map(|c| self.borrow().cond.set(c))
-                .map_err(|e| NodeError::attribute_error(attr, e))?;
-        }
-
-        Ok(())
-    }
-
-    /// Hands the pbag to the node's state, to apply the presentation attributes
-    fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
-        match self
-            .borrow()
-            .specified_values
-            .borrow_mut()
-            .parse_presentation_attributes(pbag)
-        {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                // FIXME: we'll ignore errors here for now.
-                //
-                // If we set the node to be in error, we expose buggy handling of the
-                // enable-background property; we are not parsing it correctly. This
-                // causes tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
-                // because it has enable-background="new 0 0 1179.75118 687.74173" in the
-                // toplevel svg element.
-                //
-                //   self.set_error(e);
-                //   return;
-
-                rsvg_log!("(attribute error: {})", e);
-                Ok(())
-            }
-        }
-    }
-
-    /// Applies the CSS rules that match into the node's specified_values
-    fn set_css_styles(&self, node: &RsvgNode, css_rules: &CssRules) {
-        let mut specified_values = self.borrow().specified_values.borrow_mut();
-        let mut important_styles = self.borrow().important_styles.borrow_mut();
-
-        for selector in &css_rules.get_matches(node) {
-            if let Some(decl_list) = css_rules.get_declarations(selector) {
-                for declaration in decl_list.iter() {
-                    specified_values
-                        .set_property_from_declaration(declaration, &mut important_styles);
-                }
-            }
-        }
-    }
-
-    /// Applies CSS styles from the saved value of the "style" attribute
-    fn set_style_attribute(&self) {
-        let mut style_attr = self.borrow().style_attr.borrow_mut();
-
-        if !style_attr.is_empty() {
-            let mut important_styles = self.borrow().important_styles.borrow_mut();
-
-            if let Err(e) = self
-                .borrow()
-                .specified_values
-                .borrow_mut()
-                .parse_style_declarations(style_attr.as_str(), &mut important_styles)
-            {
-                self.set_error(e);
-            }
-
-            style_attr.clear();
-            style_attr.shrink_to_fit();
-        }
-    }
-
-    // Sets the node's specified values from the style-related attributes in the pbag.
-    // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    fn set_style(&self, node: &RsvgNode, css_rules: &CssRules) {
-        self.set_css_styles(node, css_rules);
-        self.set_style_attribute();
-    }
-
-    pub fn set_overridden_properties(&self) {
-        let mut specified_values = self.borrow().specified_values.borrow_mut();
-        self.borrow()
-            .node_impl
-            .set_overridden_properties(&mut specified_values);
+        self.borrow().set_atts(node, pbag, locale);
     }
 
     pub fn draw(
@@ -538,12 +557,6 @@ impl RsvgNode {
 
             Ok(()) // maybe we should actually return a RenderingError::NodeIsInError here?
         }
-    }
-
-    pub fn set_error(&self, error: NodeError) {
-        rsvg_log!("(attribute error for {}:\n  {})", self, error);
-
-        *self.borrow().result.borrow_mut() = Err(error);
     }
 
     pub fn is_in_error(&self) -> bool {
@@ -585,11 +598,6 @@ impl RsvgNode {
 
     pub fn is_overflow(&self) -> bool {
         self.borrow().specified_values.borrow().is_overflow()
-    }
-
-    pub fn set_overflow_hidden(&self) {
-        let mut specified_values = self.borrow().specified_values.borrow_mut();
-        specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
     }
 }
 

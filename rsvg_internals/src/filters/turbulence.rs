@@ -5,7 +5,7 @@ use markup5ever::LocalName;
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
-use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{self, ParseError};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
@@ -403,7 +403,7 @@ impl Filter for Turbulence {
             }
         }
 
-        let cascaded = node.get_cascaded_values();
+        let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
         // The generated color values are in the color space determined by
         // color-interpolation-filters.
