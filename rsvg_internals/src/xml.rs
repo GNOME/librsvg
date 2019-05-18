@@ -113,22 +113,18 @@ impl XmlState {
     pub fn steal_result(&mut self) -> Result<Svg, LoadingError> {
         match self.tree_root {
             None => Err(LoadingError::SvgHasNoElements),
+            Some(ref root) if root.get_type() == NodeType::Svg => {
+                let root = self.tree_root.take().unwrap();
 
-            Some(ref root) => {
-                if root.get_type() == NodeType::Svg {
-                    let root = self.tree_root.take().unwrap();
+                root.set_styles_recursively(&root, self.css_rules.as_ref().unwrap());
 
-                    root.set_styles_recursively(&root, self.css_rules.as_ref().unwrap());
-
-                    Ok(Svg::new(
-                        root,
-                        self.ids.take().unwrap(),
-                        self.load_options.clone(),
-                    ))
-                } else {
-                    Err(LoadingError::RootElementIsNotSvg)
-                }
+                Ok(Svg::new(
+                    root,
+                    self.ids.take().unwrap(),
+                    self.load_options.clone(),
+                ))
             }
+            _ => Err(LoadingError::RootElementIsNotSvg),
         }
     }
 
