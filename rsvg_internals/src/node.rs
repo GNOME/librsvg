@@ -4,7 +4,6 @@ use markup5ever::LocalName;
 use std::cell::{Cell, Ref, RefCell};
 use std::collections::HashSet;
 use std::fmt;
-use std::rc::Rc;
 
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::CssRules;
@@ -14,7 +13,7 @@ use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
-use crate::tree_utils::{self, NodeRef, NodeWeakRef};
+use crate::tree_utils::{NodeRef, NodeWeakRef};
 use locale_config::Locale;
 
 /// Tree node with specific data
@@ -34,29 +33,6 @@ pub struct NodeData {
     cond: Cell<bool>,
     node_impl: Box<NodeTrait>,
     style_attr: RefCell<String>,
-}
-
-impl NodeRef<NodeData> {
-    pub fn new(
-        node_type: NodeType,
-        parent: Option<&NodeRef<NodeData>>,
-        id: Option<&str>,
-        class: Option<&str>,
-        node_impl: Box<NodeTrait>,
-    ) -> NodeRef<NodeData> {
-        NodeRef(Rc::new(tree_utils::Node::new(
-            NodeData::new(node_type, id, class, node_impl),
-            parent,
-        )))
-    }
-
-    pub fn downgrade(&self) -> RsvgWeakNode {
-        Rc::downgrade(&self.0)
-    }
-
-    pub fn upgrade(weak: &RsvgWeakNode) -> Option<NodeRef<NodeData>> {
-        weak.upgrade().map(NodeRef)
-    }
 }
 
 impl NodeData {

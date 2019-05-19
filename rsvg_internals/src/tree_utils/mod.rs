@@ -11,6 +11,20 @@ pub struct NodeRef<T>(pub Rc<Node<T>>);
 
 pub type NodeWeakRef<T> = Weak<Node<T>>;
 
+impl<T> NodeRef<T> {
+    pub fn new(data: T, parent: Option<&NodeRef<T>>) -> NodeRef<T> {
+        NodeRef(Rc::new(Node::new(data, parent)))
+    }
+
+    pub fn downgrade(&self) -> NodeWeakRef<T> {
+        Rc::downgrade(&self.0)
+    }
+
+    pub fn upgrade(weak: &NodeWeakRef<T>) -> Option<NodeRef<T>> {
+        weak.upgrade().map(NodeRef)
+    }
+}
+
 impl<T> Clone for NodeRef<T> {
     fn clone(&self) -> NodeRef<T> {
         NodeRef(self.0.clone())

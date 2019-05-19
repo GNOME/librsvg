@@ -13,7 +13,7 @@ use crate::css::CssRules;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, get_input_stream_for_loading};
-use crate::node::{NodeType, RsvgNode};
+use crate::node::{NodeData, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::NodeStyle;
 use crate::svg::Svg;
@@ -290,11 +290,8 @@ impl XmlState {
                 child
             } else {
                 let child = RsvgNode::new(
-                    NodeType::Chars,
+                    NodeData::new(NodeType::Chars, None, None, Box::new(NodeChars::new())),
                     Some(node),
-                    None,
-                    None,
-                    Box::new(NodeChars::new()),
                 );
                 node.append(&child);
                 child

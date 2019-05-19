@@ -36,7 +36,10 @@ use crate::text::{NodeTRef, NodeTSpan, NodeText};
 macro_rules! node_create_fn {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
         fn $name(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode {
-            RsvgNode::new(NodeType::$node_type, parent, id, class, Box::new($new_fn()))
+            RsvgNode::new(
+                NodeData::new(NodeType::$node_type, id, class, Box::new($new_fn())),
+                parent,
+            )
         }
     };
 }
