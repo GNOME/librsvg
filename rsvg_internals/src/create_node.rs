@@ -131,95 +131,102 @@ type NodeCreateFn = fn(
     parent: Option<&RsvgNode>,
 ) -> RsvgNode;
 
+macro_rules! c {
+    ($hashset:expr, $str_name:expr, $supports_class:expr, $fn_name:ident) => {
+        $hashset.insert($str_name, ($supports_class, $fn_name as NodeCreateFn));
+    }
+}
+
 lazy_static! {
     // Lines in comments are elements that we don't support.
     #[cfg_attr(rustfmt, rustfmt_skip)]
     static ref NODE_CREATORS: HashMap<&'static str, (bool, NodeCreateFn)> = {
         let mut h = HashMap::new();
-        h.insert("a",                   (true,  create_link as NodeCreateFn));
-        /* h.insert("altGlyph",         (true,  as NodeCreateFn)); */
-        /* h.insert("altGlyphDef",      (false, as NodeCreateFn)); */
-        /* h.insert("altGlyphItem",     (false, as NodeCreateFn)); */
-        /* h.insert("animate",          (false, as NodeCreateFn)); */
-        /* h.insert("animateColor",     (false, as NodeCreateFn)); */
-        /* h.insert("animateMotion",    (false, as NodeCreateFn)); */
-        /* h.insert("animateTransform", (false, as NodeCreateFn)); */
-        h.insert("circle",              (true,  create_circle as NodeCreateFn));
-        h.insert("clipPath",            (true,  create_clip_path as NodeCreateFn));
-        /* h.insert("color-profile",    (false, as NodeCreateFn)); */
-        h.insert("conicalGradient",     (true,  create_conical_gradient as NodeCreateFn));
-        /* h.insert("cursor",           (false, as NodeCreateFn)); */
-        h.insert("defs",                (true,  create_defs as NodeCreateFn));
-        /* h.insert("desc",             (true,  as NodeCreateFn)); */
-        h.insert("ellipse",             (true,  create_ellipse as NodeCreateFn));
-        h.insert("feBlend",             (true,  create_blend as NodeCreateFn));
-        h.insert("feColorMatrix",       (true,  create_color_matrix as NodeCreateFn));
-        h.insert("feComponentTransfer", (true,  create_component_transfer as NodeCreateFn));
-        h.insert("feComposite",         (true,  create_composite as NodeCreateFn));
-        h.insert("feConvolveMatrix",    (true,  create_convolve_matrix as NodeCreateFn));
-        h.insert("feDiffuseLighting",   (true,  create_diffuse_lighting as NodeCreateFn));
-        h.insert("feDisplacementMap",   (true,  create_displacement_map as NodeCreateFn));
-        h.insert("feDistantLight",      (false, create_distant_light as NodeCreateFn));
-        h.insert("feFuncA",             (false, create_component_transfer_func_a as NodeCreateFn));
-        h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
-        h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
-        h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
-        h.insert("feFlood",             (true,  create_flood as NodeCreateFn));
-        h.insert("feGaussianBlur",      (true,  create_gaussian_blur as NodeCreateFn));
-        h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));
-        h.insert("feMerge",             (true,  create_merge as NodeCreateFn));
-        h.insert("feMergeNode",         (false, create_merge_node as NodeCreateFn));
-        h.insert("feMorphology",        (true,  create_morphology as NodeCreateFn));
-        h.insert("feOffset",            (true,  create_offset as NodeCreateFn));
-        h.insert("fePointLight",        (false, create_point_light as NodeCreateFn));
-        h.insert("feSpecularLighting",  (true,  create_specular_lighting as NodeCreateFn));
-        h.insert("feSpotLight",         (false, create_spot_light as NodeCreateFn));
-        h.insert("feTile",              (true,  create_tile as NodeCreateFn));
-        h.insert("feTurbulence",        (true,  create_turbulence as NodeCreateFn));
-        h.insert("filter",              (true,  create_filter as NodeCreateFn));
-        /* h.insert("font",             (true,  as NodeCreateFn)); */
-        /* h.insert("font-face",        (false, as NodeCreateFn)); */
-        /* h.insert("font-face-format", (false, as NodeCreateFn)); */
-        /* h.insert("font-face-name",   (false, as NodeCreateFn)); */
-        /* h.insert("font-face-src",    (false, as NodeCreateFn)); */
-        /* h.insert("font-face-uri",    (false, as NodeCreateFn)); */
-        /* h.insert("foreignObject",    (true,  as NodeCreateFn)); */
-        h.insert("g",                   (true,  create_group as NodeCreateFn));
-        /* h.insert("glyph",            (true,  as NodeCreateFn)); */
-        /* h.insert("glyphRef",         (true,  as NodeCreateFn)); */
-        /* h.insert("hkern",            (false, as NodeCreateFn)); */
-        h.insert("image",               (true,  create_image as NodeCreateFn));
-        h.insert("line",                (true,  create_line as NodeCreateFn));
-        h.insert("linearGradient",      (true,  create_linear_gradient as NodeCreateFn));
-        h.insert("marker",              (true,  create_marker as NodeCreateFn));
-        h.insert("mask",                (true,  create_mask as NodeCreateFn));
-        /* h.insert("metadata",         (false, as NodeCreateFn)); */
-        /* h.insert("missing-glyph",    (true,  as NodeCreateFn)); */
-        /* h.insert("mpath",            (false, as NodeCreateFn)); */
-        h.insert("multiImage",          (false, create_multi_image as NodeCreateFn));
-        h.insert("path",                (true,  create_path as NodeCreateFn));
-        h.insert("pattern",             (true,  create_pattern as NodeCreateFn));
-        h.insert("polygon",             (true,  create_polygon as NodeCreateFn));
-        h.insert("polyline",            (true,  create_polyline as NodeCreateFn));
-        h.insert("radialGradient",      (true,  create_radial_gradient as NodeCreateFn));
-        h.insert("rect",                (true,  create_rect as NodeCreateFn));
-        /* h.insert("script",           (false, as NodeCreateFn)); */
-        /* h.insert("set",              (false, as NodeCreateFn)); */
-        h.insert("stop",                (true,  create_stop as NodeCreateFn));
-        h.insert("style",               (false, create_style as NodeCreateFn));
-        h.insert("subImage",            (false, create_sub_image as NodeCreateFn));
-        h.insert("subImageRef",         (false, create_sub_image_ref as NodeCreateFn));
-        h.insert("svg",                 (true,  create_svg as NodeCreateFn));
-        h.insert("switch",              (true,  create_switch as NodeCreateFn));
-        h.insert("symbol",              (true,  create_symbol as NodeCreateFn));
-        h.insert("text",                (true,  create_text as NodeCreateFn));
-        /* h.insert("textPath",         (true,  as NodeCreateFn)); */
-        /* h.insert("title",            (true,  as NodeCreateFn)); */
-        h.insert("tref",                (true,  create_tref as NodeCreateFn));
-        h.insert("tspan",               (true,  create_tspan as NodeCreateFn));
-        h.insert("use",                 (true,  create_use as NodeCreateFn));
-        /* h.insert("view",             (false, as NodeCreateFn)); */
-        /* h.insert("vkern",            (false, as NodeCreateFn)); */
+        // name, supports_class, create_fn
+        c!(h, "a",                   true,  create_link);
+        /* c!(h, "altGlyph",         true,  ); */
+        /* c!(h, "altGlyphDef",      false, ); */
+        /* c!(h, "altGlyphItem",     false, ); */
+        /* c!(h, "animate",          false, ); */
+        /* c!(h, "animateColor",     false, ); */
+        /* c!(h, "animateMotion",    false, ); */
+        /* c!(h, "animateTransform", false, ); */
+        c!(h, "circle",              true,  create_circle);
+        c!(h, "clipPath",            true,  create_clip_path);
+        /* c!(h, "color-profile",    false, ); */
+        c!(h, "conicalGradient",     true,  create_conical_gradient);
+        /* c!(h, "cursor",           false, ); */
+        c!(h, "defs",                true,  create_defs);
+        /* c!(h, "desc",             true,  ); */
+        c!(h, "ellipse",             true,  create_ellipse);
+        c!(h, "feBlend",             true,  create_blend);
+        c!(h, "feColorMatrix",       true,  create_color_matrix);
+        c!(h, "feComponentTransfer", true,  create_component_transfer);
+        c!(h, "feComposite",         true,  create_composite);
+        c!(h, "feConvolveMatrix",    true,  create_convolve_matrix);
+        c!(h, "feDiffuseLighting",   true,  create_diffuse_lighting);
+        c!(h, "feDisplacementMap",   true,  create_displacement_map);
+        c!(h, "feDistantLight",      false, create_distant_light);
+        c!(h, "feFuncA",             false, create_component_transfer_func_a);
+        c!(h, "feFuncB",             false, create_component_transfer_func_b);
+        c!(h, "feFuncG",             false, create_component_transfer_func_g);
+        c!(h, "feFuncR",             false, create_component_transfer_func_r);
+        c!(h, "feFlood",             true,  create_flood);
+        c!(h, "feGaussianBlur",      true,  create_gaussian_blur);
+        c!(h, "feImage",             true,  create_fe_image);
+        c!(h, "feMerge",             true,  create_merge);
+        c!(h, "feMergeNode",         false, create_merge_node);
+        c!(h, "feMorphology",        true,  create_morphology);
+        c!(h, "feOffset",            true,  create_offset);
+        c!(h, "fePointLight",        false, create_point_light);
+        c!(h, "feSpecularLighting",  true,  create_specular_lighting);
+        c!(h, "feSpotLight",         false, create_spot_light);
+        c!(h, "feTile",              true,  create_tile);
+        c!(h, "feTurbulence",        true,  create_turbulence);
+        c!(h, "filter",              true,  create_filter);
+        /* c!(h, "font",             true,  ); */
+        /* c!(h, "font-face",        false, ); */
+        /* c!(h, "font-face-format", false, ); */
+        /* c!(h, "font-face-name",   false, ); */
+        /* c!(h, "font-face-src",    false, ); */
+        /* c!(h, "font-face-uri",    false, ); */
+        /* c!(h, "foreignObject",    true,  ); */
+        c!(h, "g",                   true,  create_group);
+        /* c!(h, "glyph",            true,  ); */
+        /* c!(h, "glyphRef",         true,  ); */
+        /* c!(h, "hkern",            false, ); */
+        c!(h, "image",               true,  create_image);
+        c!(h, "line",                true,  create_line);
+        c!(h, "linearGradient",      true,  create_linear_gradient);
+        c!(h, "marker",              true,  create_marker);
+        c!(h, "mask",                true,  create_mask);
+        /* c!(h, "metadata",         false, ); */
+        /* c!(h, "missing-glyph",    true,  ); */
+        /* c!(h, "mpath",            false, ); */
+        c!(h, "multiImage",          false, create_multi_image);
+        c!(h, "path",                true,  create_path);
+        c!(h, "pattern",             true,  create_pattern);
+        c!(h, "polygon",             true,  create_polygon);
+        c!(h, "polyline",            true,  create_polyline);
+        c!(h, "radialGradient",      true,  create_radial_gradient);
+        c!(h, "rect",                true,  create_rect);
+        /* c!(h, "script",           false, ); */
+        /* c!(h, "set",              false, ); */
+        c!(h, "stop",                true,  create_stop);
+        c!(h, "style",               false, create_style);
+        c!(h, "subImage",            false, create_sub_image);
+        c!(h, "subImageRef",         false, create_sub_image_ref);
+        c!(h, "svg",                 true,  create_svg);
+        c!(h, "switch",              true,  create_switch);
+        c!(h, "symbol",              true,  create_symbol);
+        c!(h, "text",                true,  create_text);
+        /* c!(h, "textPath",         true,  ); */
+        /* c!(h, "title",            true,  ); */
+        c!(h, "tref",                true,  create_tref);
+        c!(h, "tspan",               true,  create_tspan);
+        c!(h, "use",                 true,  create_use);
+        /* c!(h, "view",             false, ); */
+        /* c!(h, "vkern",            false, ); */
         h
     };
 }
