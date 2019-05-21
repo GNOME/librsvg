@@ -1,3 +1,4 @@
+use markup5ever::LocalName;
 use std::collections::HashMap;
 
 use crate::clip_path::NodeClipPath;
@@ -35,9 +36,20 @@ use crate::text::{NodeTRef, NodeTSpan, NodeText};
 
 macro_rules! n {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
-        pub fn $name(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode {
+        pub fn $name(
+            element_name: LocalName,
+            id: Option<&str>,
+            class: Option<&str>,
+            parent: Option<&RsvgNode>,
+        ) -> RsvgNode {
             RsvgNode::new(
-                NodeData::new(NodeType::$node_type, id, class, Box::new($new_fn())),
+                NodeData::new(
+                    NodeType::$node_type,
+                    element_name,
+                    id,
+                    class,
+                    Box::new($new_fn()),
+                ),
                 parent,
             )
         }
@@ -112,8 +124,12 @@ mod creators {
 
 use creators::*;
 
-type NodeCreateFn =
-    fn(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode;
+type NodeCreateFn = fn(
+    element_name: LocalName,
+    id: Option<&str>,
+    class: Option<&str>,
+    parent: Option<&RsvgNode>,
+) -> RsvgNode;
 
 lazy_static! {
     // Lines in comments are elements that we don't support.
@@ -234,11 +250,13 @@ pub fn create_node_and_register_id(
         None => &(true, create_non_rendering as NodeCreateFn),
     };
 
+    let element_name = LocalName::from(name);
+
     if !supports_class {
         class = None;
     };
 
-    let node = create_fn(id, class, parent);
+    let node = create_fn(element_name, id, class, parent);
 
     if let Some(id) = id {
         // This is so we don't overwrite an existing id

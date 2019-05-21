@@ -23,6 +23,7 @@ pub type RsvgWeakNode = NodeWeakRef<NodeData>;
 /// Contents of a tree node
 pub struct NodeData {
     node_type: NodeType,
+    element_name: LocalName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
     specified_values: RefCell<SpecifiedValues>,
@@ -38,12 +39,14 @@ pub struct NodeData {
 impl NodeData {
     pub fn new(
         node_type: NodeType,
+        element_name: LocalName,
         id: Option<&str>,
         class: Option<&str>,
         node_impl: Box<NodeTrait>,
     ) -> NodeData {
         NodeData {
             node_type,
+            element_name,
             id: id.map(str::to_string),
             class: class.map(str::to_string),
             specified_values: RefCell::new(Default::default()),
@@ -415,62 +418,8 @@ impl RsvgNode {
         self.borrow().node_type
     }
 
-    pub fn element_name(&self) -> &'static str {
-        match self.get_type() {
-            NodeType::Chars => "rsvg-chars", // Dummy element name for chars
-            NodeType::Circle => "circle",
-            NodeType::ClipPath => "clipPath",
-            NodeType::ComponentTransferFunctionA => "feFuncA",
-            NodeType::ComponentTransferFunctionB => "feFuncB",
-            NodeType::ComponentTransferFunctionG => "feFuncG",
-            NodeType::ComponentTransferFunctionR => "feFuncR",
-            NodeType::Defs => "defs",
-            NodeType::DistantLight => "feDistantLight",
-            NodeType::Ellipse => "ellipse",
-            NodeType::Filter => "filter",
-            NodeType::Group => "g",
-            NodeType::Image => "image",
-            NodeType::Line => "line",
-            NodeType::LinearGradient => "linearGradient",
-            NodeType::Link => "a",
-            NodeType::Marker => "marker",
-            NodeType::Mask => "mask",
-            NodeType::NonRendering => "rsvg-non-rendering", // Dummy element name
-            NodeType::Path => "path",
-            NodeType::Pattern => "pattern",
-            NodeType::PointLight => "fePointight",
-            NodeType::Polygon => "polygon",
-            NodeType::Polyline => "polyline",
-            NodeType::RadialGradient => "radialGradient",
-            NodeType::Rect => "rect",
-            NodeType::SpotLight => "feSpotLight",
-            NodeType::Stop => "stop",
-            NodeType::Style => "style",
-            NodeType::Svg => "svg",
-            NodeType::Switch => "switch",
-            NodeType::Symbol => "symbol",
-            NodeType::Text => "text",
-            NodeType::TRef => "tref",
-            NodeType::TSpan => "tspan",
-            NodeType::Use => "use",
-            NodeType::FeBlend => "feBlend",
-            NodeType::FeColorMatrix => "feColorMatrix",
-            NodeType::FeComponentTransfer => "feComponentTransfer",
-            NodeType::FeComposite => "feComposite",
-            NodeType::FeConvolveMatrix => "feConvolveMatrix",
-            NodeType::FeDiffuseLighting => "feDiffuseLighting",
-            NodeType::FeDisplacementMap => "feDisplacementMap",
-            NodeType::FeFlood => "feFlood",
-            NodeType::FeGaussianBlur => "feGaussianBlur",
-            NodeType::FeImage => "feImage",
-            NodeType::FeMerge => "feMerge",
-            NodeType::FeMergeNode => "feMergeNode",
-            NodeType::FeMorphology => "feMorphology",
-            NodeType::FeOffset => "feOffset",
-            NodeType::FeSpecularLighting => "feSpecularLighting",
-            NodeType::FeTile => "feTile",
-            NodeType::FeTurbulence => "feTurbulence",
-        }
+    pub fn element_name(&self) -> &str {
+        self.borrow().element_name.as_ref()
     }
 
     pub fn get_id(&self) -> Option<&str> {
