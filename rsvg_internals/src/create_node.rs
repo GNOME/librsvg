@@ -1,3 +1,4 @@
+use markup5ever::LocalName;
 use std::collections::HashMap;
 
 use crate::clip_path::NodeClipPath;
@@ -29,241 +30,203 @@ use crate::pattern::NodePattern;
 use crate::property_bag::PropertyBag;
 use crate::shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
 use crate::stop::NodeStop;
-use crate::structure::{NodeDefs, NodeGroup, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
+use crate::structure::{NodeGroup, NodeNonRendering, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
 use crate::style::NodeStyle;
 use crate::text::{NodeTRef, NodeTSpan, NodeText};
 
-macro_rules! node_create_fn {
+macro_rules! n {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
-        fn $name(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode {
+        pub fn $name(
+            element_name: LocalName,
+            id: Option<&str>,
+            class: Option<&str>,
+            parent: Option<&RsvgNode>,
+        ) -> RsvgNode {
             RsvgNode::new(
-                NodeData::new(NodeType::$node_type, id, class, Box::new($new_fn())),
+                NodeData::new(
+                    NodeType::$node_type,
+                    element_name,
+                    id,
+                    class,
+                    Box::new($new_fn()),
+                ),
                 parent,
             )
         }
     };
 }
 
-node_create_fn!(create_circle, Circle, NodeCircle::new);
-node_create_fn!(create_clip_path, ClipPath, NodeClipPath::new);
-node_create_fn!(create_blend, FilterPrimitiveBlend, Blend::new);
-node_create_fn!(
-    create_color_matrix,
-    FilterPrimitiveColorMatrix,
-    ColorMatrix::new
-);
-node_create_fn!(
-    create_component_transfer,
-    FilterPrimitiveComponentTransfer,
-    ComponentTransfer::new
-);
-node_create_fn!(
-    create_component_transfer_func_a,
-    ComponentTransferFunctionA,
-    FuncX::new_a
-);
-node_create_fn!(
-    create_component_transfer_func_b,
-    ComponentTransferFunctionB,
-    FuncX::new_b
-);
-node_create_fn!(
-    create_component_transfer_func_g,
-    ComponentTransferFunctionG,
-    FuncX::new_g
-);
-node_create_fn!(
-    create_component_transfer_func_r,
-    ComponentTransferFunctionR,
-    FuncX::new_r
-);
-node_create_fn!(create_composite, FilterPrimitiveComposite, Composite::new);
-node_create_fn!(
-    create_convolve_matrix,
-    FilterPrimitiveConvolveMatrix,
-    ConvolveMatrix::new
-);
-node_create_fn!(create_defs, Defs, NodeDefs::new);
-node_create_fn!(
-    create_diffuse_lighting,
-    FilterPrimitiveDiffuseLighting,
-    Lighting::new_diffuse
-);
-node_create_fn!(
-    create_distant_light,
-    DistantLight,
-    LightSource::new_distant_light
-);
-node_create_fn!(
-    create_displacement_map,
-    FilterPrimitiveDisplacementMap,
-    DisplacementMap::new
-);
-node_create_fn!(create_ellipse, Ellipse, NodeEllipse::new);
-node_create_fn!(create_filter, Filter, NodeFilter::new);
-node_create_fn!(create_flood, FilterPrimitiveFlood, Flood::new);
-node_create_fn!(
-    create_gaussian_blur,
-    FilterPrimitiveGaussianBlur,
-    GaussianBlur::new
-);
-node_create_fn!(create_group, Group, NodeGroup::new);
-node_create_fn!(create_image, Image, NodeImage::new);
-node_create_fn!(create_fe_image, FilterPrimitiveImage, Image::new);
-node_create_fn!(
-    create_linear_gradient,
-    LinearGradient,
-    NodeGradient::new_linear
-);
-node_create_fn!(create_line, Line, NodeLine::new);
-node_create_fn!(create_link, Link, NodeLink::new);
-node_create_fn!(create_marker, Marker, NodeMarker::new);
-node_create_fn!(create_mask, Mask, NodeMask::new);
-node_create_fn!(create_merge, FilterPrimitiveMerge, Merge::new);
-node_create_fn!(create_merge_node, FilterPrimitiveMergeNode, MergeNode::new);
-node_create_fn!(
-    create_morphology,
-    FilterPrimitiveMorphology,
-    Morphology::new
-);
-node_create_fn!(create_offset, FilterPrimitiveOffset, Offset::new);
-node_create_fn!(create_path, Path, NodePath::new);
-node_create_fn!(create_pattern, Pattern, NodePattern::new);
-node_create_fn!(create_point_light, PointLight, LightSource::new_point_light);
-node_create_fn!(create_polygon, Polygon, NodePoly::new_closed);
-node_create_fn!(create_polyline, Polyline, NodePoly::new_open);
-node_create_fn!(
-    create_radial_gradient,
-    RadialGradient,
-    NodeGradient::new_radial
-);
-node_create_fn!(create_rect, Rect, NodeRect::new);
-node_create_fn!(
-    create_specular_lighting,
-    FilterPrimitiveSpecularLighting,
-    Lighting::new_specular
-);
-node_create_fn!(create_spot_light, SpotLight, LightSource::new_spot_light);
-node_create_fn!(create_stop, Stop, NodeStop::new);
-node_create_fn!(create_style, Style, NodeStyle::new);
-node_create_fn!(create_svg, Svg, NodeSvg::new);
-node_create_fn!(create_switch, Switch, NodeSwitch::new);
-node_create_fn!(create_symbol, Symbol, NodeSymbol::new);
-node_create_fn!(create_text, Text, NodeText::new);
-node_create_fn!(create_tref, TRef, NodeTRef::new);
-node_create_fn!(create_tspan, TSpan, NodeTSpan::new);
-node_create_fn!(create_tile, FilterPrimitiveTile, Tile::new);
-node_create_fn!(
-    create_turbulence,
-    FilterPrimitiveTurbulence,
-    Turbulence::new
-);
-node_create_fn!(create_use, Use, NodeUse::new);
+#[cfg_attr(rustfmt, rustfmt_skip)]
+mod creators {
+    use super::*;
 
-// hack to partially support conical gradient
-node_create_fn!(
-    create_conical_gradient,
-    RadialGradient,
-    NodeGradient::new_radial
-);
+    n!(create_circle,                    Circle,                     NodeCircle::new);
+    n!(create_clip_path,                 ClipPath,                   NodeClipPath::new);
+    n!(create_blend,                     FeBlend,                    Blend::new);
+    n!(create_color_matrix,              FeColorMatrix,              ColorMatrix::new);
+    n!(create_component_transfer,        FeComponentTransfer,        ComponentTransfer::new);
+    n!(create_component_transfer_func_a, ComponentTransferFunctionA, FuncX::new_a);
+    n!(create_component_transfer_func_b, ComponentTransferFunctionB, FuncX::new_b);
+    n!(create_component_transfer_func_g, ComponentTransferFunctionG, FuncX::new_g);
+    n!(create_component_transfer_func_r, ComponentTransferFunctionR, FuncX::new_r);
+    n!(create_composite,                 FeComposite,                Composite::new);
+    n!(create_convolve_matrix,           FeConvolveMatrix,           ConvolveMatrix::new);
+    n!(create_defs,                      Defs,                       NodeNonRendering::new);
+    n!(create_diffuse_lighting,          FeDiffuseLighting,          Lighting::new_diffuse);
+    n!(create_distant_light,             DistantLight,               LightSource::new_distant_light);
+    n!(create_displacement_map,          FeDisplacementMap,          DisplacementMap::new);
+    n!(create_ellipse,                   Ellipse,                    NodeEllipse::new);
+    n!(create_filter,                    Filter,                     NodeFilter::new);
+    n!(create_flood,                     FeFlood,                    Flood::new);
+    n!(create_gaussian_blur,             FeGaussianBlur,             GaussianBlur::new);
+    n!(create_group,                     Group,                      NodeGroup::new);
+    n!(create_image,                     Image,                      NodeImage::new);
+    n!(create_fe_image,                  FeImage,                    Image::new);
+    n!(create_linear_gradient,           LinearGradient,             NodeGradient::new_linear);
+    n!(create_line,                      Line,                       NodeLine::new);
+    n!(create_link,                      Link,                       NodeLink::new);
+    n!(create_marker,                    Marker,                     NodeMarker::new);
+    n!(create_mask,                      Mask,                       NodeMask::new);
+    n!(create_merge,                     FeMerge,                    Merge::new);
+    n!(create_merge_node,                FeMergeNode,                MergeNode::new);
+    n!(create_morphology,                FeMorphology,               Morphology::new);
+    n!(create_non_rendering,             NonRendering,               NodeNonRendering::new);
+    n!(create_offset,                    FeOffset,                   Offset::new);
+    n!(create_path,                      Path,                       NodePath::new);
+    n!(create_pattern,                   Pattern,                    NodePattern::new);
+    n!(create_point_light,               PointLight,                 LightSource::new_point_light);
+    n!(create_polygon,                   Polygon,                    NodePoly::new_closed);
+    n!(create_polyline,                  Polyline,                   NodePoly::new_open);
+    n!(create_radial_gradient,           RadialGradient,             NodeGradient::new_radial);
+    n!(create_rect,                      Rect,                       NodeRect::new);
+    n!(create_specular_lighting,         FeSpecularLighting,         Lighting::new_specular);
+    n!(create_spot_light,                SpotLight,                  LightSource::new_spot_light);
+    n!(create_stop,                      Stop,                       NodeStop::new);
+    n!(create_style,                     Style,                      NodeStyle::new);
+    n!(create_svg,                       Svg,                        NodeSvg::new);
+    n!(create_switch,                    Switch,                     NodeSwitch::new);
+    n!(create_symbol,                    Symbol,                     NodeSymbol::new);
+    n!(create_text,                      Text,                       NodeText::new);
+    n!(create_tref,                      TRef,                       NodeTRef::new);
+    n!(create_tspan,                     TSpan,                      NodeTSpan::new);
+    n!(create_tile,                      FeTile,                     Tile::new);
+    n!(create_turbulence,                FeTurbulence,               Turbulence::new);
+    n!(create_use,                       Use,                        NodeUse::new);
 
-// hack to make multiImage sort-of work
-node_create_fn!(create_multi_image, Switch, NodeSwitch::new);
-node_create_fn!(create_sub_image, Group, NodeGroup::new);
-node_create_fn!(create_sub_image_ref, Image, NodeImage::new);
+    // hack to partially support conical gradient
+    n!(create_conical_gradient,          RadialGradient,             NodeGradient::new_radial);
 
-type NodeCreateFn =
-    fn(id: Option<&str>, class: Option<&str>, parent: Option<&RsvgNode>) -> RsvgNode;
+    // hack to make multiImage sort-of work
+    n!(create_multi_image,               Switch,                     NodeSwitch::new);
+    n!(create_sub_image,                 Group,                      NodeGroup::new);
+    n!(create_sub_image_ref,             Image,                      NodeImage::new);
+}
+
+use creators::*;
+
+type NodeCreateFn = fn(
+    element_name: LocalName,
+    id: Option<&str>,
+    class: Option<&str>,
+    parent: Option<&RsvgNode>,
+) -> RsvgNode;
+
+macro_rules! c {
+    ($hashset:expr, $str_name:expr, $supports_class:expr, $fn_name:ident) => {
+        $hashset.insert($str_name, ($supports_class, $fn_name as NodeCreateFn));
+    }
+}
 
 lazy_static! {
     // Lines in comments are elements that we don't support.
     #[cfg_attr(rustfmt, rustfmt_skip)]
     static ref NODE_CREATORS: HashMap<&'static str, (bool, NodeCreateFn)> = {
         let mut h = HashMap::new();
-        h.insert("a",                   (true,  create_link as NodeCreateFn));
-        /* h.insert("altGlyph",         (true,  as NodeCreateFn)); */
-        /* h.insert("altGlyphDef",      (false, as NodeCreateFn)); */
-        /* h.insert("altGlyphItem",     (false, as NodeCreateFn)); */
-        /* h.insert("animate",          (false, as NodeCreateFn)); */
-        /* h.insert("animateColor",     (false, as NodeCreateFn)); */
-        /* h.insert("animateMotion",    (false, as NodeCreateFn)); */
-        /* h.insert("animateTransform", (false, as NodeCreateFn)); */
-        h.insert("circle",              (true,  create_circle as NodeCreateFn));
-        h.insert("clipPath",            (true,  create_clip_path as NodeCreateFn));
-        /* h.insert("color-profile",    (false, as NodeCreateFn)); */
-        h.insert("conicalGradient",     (true,  create_conical_gradient as NodeCreateFn));
-        /* h.insert("cursor",           (false, as NodeCreateFn)); */
-        h.insert("defs",                (true,  create_defs as NodeCreateFn));
-        /* h.insert("desc",             (true,  as NodeCreateFn)); */
-        h.insert("ellipse",             (true,  create_ellipse as NodeCreateFn));
-        h.insert("feBlend",             (true,  create_blend as NodeCreateFn));
-        h.insert("feColorMatrix",       (true,  create_color_matrix as NodeCreateFn));
-        h.insert("feComponentTransfer", (true,  create_component_transfer as NodeCreateFn));
-        h.insert("feComposite",         (true,  create_composite as NodeCreateFn));
-        h.insert("feConvolveMatrix",    (true,  create_convolve_matrix as NodeCreateFn));
-        h.insert("feDiffuseLighting",   (true,  create_diffuse_lighting as NodeCreateFn));
-        h.insert("feDisplacementMap",   (true,  create_displacement_map as NodeCreateFn));
-        h.insert("feDistantLight",      (false, create_distant_light as NodeCreateFn));
-        h.insert("feFuncA",             (false, create_component_transfer_func_a as NodeCreateFn));
-        h.insert("feFuncB",             (false, create_component_transfer_func_b as NodeCreateFn));
-        h.insert("feFuncG",             (false, create_component_transfer_func_g as NodeCreateFn));
-        h.insert("feFuncR",             (false, create_component_transfer_func_r as NodeCreateFn));
-        h.insert("feFlood",             (true,  create_flood as NodeCreateFn));
-        h.insert("feGaussianBlur",      (true,  create_gaussian_blur as NodeCreateFn));
-        h.insert("feImage",             (true,  create_fe_image as NodeCreateFn));
-        h.insert("feMerge",             (true,  create_merge as NodeCreateFn));
-        h.insert("feMergeNode",         (false, create_merge_node as NodeCreateFn));
-        h.insert("feMorphology",        (true,  create_morphology as NodeCreateFn));
-        h.insert("feOffset",            (true,  create_offset as NodeCreateFn));
-        h.insert("fePointLight",        (false, create_point_light as NodeCreateFn));
-        h.insert("feSpecularLighting",  (true,  create_specular_lighting as NodeCreateFn));
-        h.insert("feSpotLight",         (false, create_spot_light as NodeCreateFn));
-        h.insert("feTile",              (true,  create_tile as NodeCreateFn));
-        h.insert("feTurbulence",        (true,  create_turbulence as NodeCreateFn));
-        h.insert("filter",              (true,  create_filter as NodeCreateFn));
-        /* h.insert("font",             (true,  as NodeCreateFn)); */
-        /* h.insert("font-face",        (false, as NodeCreateFn)); */
-        /* h.insert("font-face-format", (false, as NodeCreateFn)); */
-        /* h.insert("font-face-name",   (false, as NodeCreateFn)); */
-        /* h.insert("font-face-src",    (false, as NodeCreateFn)); */
-        /* h.insert("font-face-uri",    (false, as NodeCreateFn)); */
-        /* h.insert("foreignObject",    (true,  as NodeCreateFn)); */
-        h.insert("g",                   (true,  create_group as NodeCreateFn));
-        /* h.insert("glyph",            (true,  as NodeCreateFn)); */
-        /* h.insert("glyphRef",         (true,  as NodeCreateFn)); */
-        /* h.insert("hkern",            (false, as NodeCreateFn)); */
-        h.insert("image",               (true,  create_image as NodeCreateFn));
-        h.insert("line",                (true,  create_line as NodeCreateFn));
-        h.insert("linearGradient",      (true,  create_linear_gradient as NodeCreateFn));
-        h.insert("marker",              (true,  create_marker as NodeCreateFn));
-        h.insert("mask",                (true,  create_mask as NodeCreateFn));
-        /* h.insert("metadata",         (false, as NodeCreateFn)); */
-        /* h.insert("missing-glyph",    (true,  as NodeCreateFn)); */
-        /* h.insert("mpath",            (false, as NodeCreateFn)); */
-        h.insert("multiImage",          (false, create_multi_image as NodeCreateFn));
-        h.insert("path",                (true,  create_path as NodeCreateFn));
-        h.insert("pattern",             (true,  create_pattern as NodeCreateFn));
-        h.insert("polygon",             (true,  create_polygon as NodeCreateFn));
-        h.insert("polyline",            (true,  create_polyline as NodeCreateFn));
-        h.insert("radialGradient",      (true,  create_radial_gradient as NodeCreateFn));
-        h.insert("rect",                (true,  create_rect as NodeCreateFn));
-        /* h.insert("script",           (false, as NodeCreateFn)); */
-        /* h.insert("set",              (false, as NodeCreateFn)); */
-        h.insert("stop",                (true,  create_stop as NodeCreateFn));
-        h.insert("style",               (false, create_style as NodeCreateFn));
-        h.insert("subImage",            (false, create_sub_image as NodeCreateFn));
-        h.insert("subImageRef",         (false, create_sub_image_ref as NodeCreateFn));
-        h.insert("svg",                 (true,  create_svg as NodeCreateFn));
-        h.insert("switch",              (true,  create_switch as NodeCreateFn));
-        h.insert("symbol",              (true,  create_symbol as NodeCreateFn));
-        h.insert("text",                (true,  create_text as NodeCreateFn));
-        /* h.insert("textPath",         (true,  as NodeCreateFn)); */
-        /* h.insert("title",            (true,  as NodeCreateFn)); */
-        h.insert("tref",                (true,  create_tref as NodeCreateFn));
-        h.insert("tspan",               (true,  create_tspan as NodeCreateFn));
-        h.insert("use",                 (true,  create_use as NodeCreateFn));
-        /* h.insert("view",             (false, as NodeCreateFn)); */
-        /* h.insert("vkern",            (false, as NodeCreateFn)); */
+        // name, supports_class, create_fn
+        c!(h, "a",                   true,  create_link);
+        /* c!(h, "altGlyph",         true,  ); */
+        /* c!(h, "altGlyphDef",      false, ); */
+        /* c!(h, "altGlyphItem",     false, ); */
+        /* c!(h, "animate",          false, ); */
+        /* c!(h, "animateColor",     false, ); */
+        /* c!(h, "animateMotion",    false, ); */
+        /* c!(h, "animateTransform", false, ); */
+        c!(h, "circle",              true,  create_circle);
+        c!(h, "clipPath",            true,  create_clip_path);
+        /* c!(h, "color-profile",    false, ); */
+        c!(h, "conicalGradient",     true,  create_conical_gradient);
+        /* c!(h, "cursor",           false, ); */
+        c!(h, "defs",                true,  create_defs);
+        /* c!(h, "desc",             true,  ); */
+        c!(h, "ellipse",             true,  create_ellipse);
+        c!(h, "feBlend",             true,  create_blend);
+        c!(h, "feColorMatrix",       true,  create_color_matrix);
+        c!(h, "feComponentTransfer", true,  create_component_transfer);
+        c!(h, "feComposite",         true,  create_composite);
+        c!(h, "feConvolveMatrix",    true,  create_convolve_matrix);
+        c!(h, "feDiffuseLighting",   true,  create_diffuse_lighting);
+        c!(h, "feDisplacementMap",   true,  create_displacement_map);
+        c!(h, "feDistantLight",      false, create_distant_light);
+        c!(h, "feFuncA",             false, create_component_transfer_func_a);
+        c!(h, "feFuncB",             false, create_component_transfer_func_b);
+        c!(h, "feFuncG",             false, create_component_transfer_func_g);
+        c!(h, "feFuncR",             false, create_component_transfer_func_r);
+        c!(h, "feFlood",             true,  create_flood);
+        c!(h, "feGaussianBlur",      true,  create_gaussian_blur);
+        c!(h, "feImage",             true,  create_fe_image);
+        c!(h, "feMerge",             true,  create_merge);
+        c!(h, "feMergeNode",         false, create_merge_node);
+        c!(h, "feMorphology",        true,  create_morphology);
+        c!(h, "feOffset",            true,  create_offset);
+        c!(h, "fePointLight",        false, create_point_light);
+        c!(h, "feSpecularLighting",  true,  create_specular_lighting);
+        c!(h, "feSpotLight",         false, create_spot_light);
+        c!(h, "feTile",              true,  create_tile);
+        c!(h, "feTurbulence",        true,  create_turbulence);
+        c!(h, "filter",              true,  create_filter);
+        /* c!(h, "font",             true,  ); */
+        /* c!(h, "font-face",        false, ); */
+        /* c!(h, "font-face-format", false, ); */
+        /* c!(h, "font-face-name",   false, ); */
+        /* c!(h, "font-face-src",    false, ); */
+        /* c!(h, "font-face-uri",    false, ); */
+        /* c!(h, "foreignObject",    true,  ); */
+        c!(h, "g",                   true,  create_group);
+        /* c!(h, "glyph",            true,  ); */
+        /* c!(h, "glyphRef",         true,  ); */
+        /* c!(h, "hkern",            false, ); */
+        c!(h, "image",               true,  create_image);
+        c!(h, "line",                true,  create_line);
+        c!(h, "linearGradient",      true,  create_linear_gradient);
+        c!(h, "marker",              true,  create_marker);
+        c!(h, "mask",                true,  create_mask);
+        /* c!(h, "metadata",         false, ); */
+        /* c!(h, "missing-glyph",    true,  ); */
+        /* c!(h, "mpath",            false, ); */
+        c!(h, "multiImage",          false, create_multi_image);
+        c!(h, "path",                true,  create_path);
+        c!(h, "pattern",             true,  create_pattern);
+        c!(h, "polygon",             true,  create_polygon);
+        c!(h, "polyline",            true,  create_polyline);
+        c!(h, "radialGradient",      true,  create_radial_gradient);
+        c!(h, "rect",                true,  create_rect);
+        /* c!(h, "script",           false, ); */
+        /* c!(h, "set",              false, ); */
+        c!(h, "stop",                true,  create_stop);
+        c!(h, "style",               false, create_style);
+        c!(h, "subImage",            false, create_sub_image);
+        c!(h, "subImageRef",         false, create_sub_image_ref);
+        c!(h, "svg",                 true,  create_svg);
+        c!(h, "switch",              true,  create_switch);
+        c!(h, "symbol",              true,  create_symbol);
+        c!(h, "text",                true,  create_text);
+        /* c!(h, "textPath",         true,  ); */
+        /* c!(h, "title",            true,  ); */
+        c!(h, "tref",                true,  create_tref);
+        c!(h, "tspan",               true,  create_tspan);
+        c!(h, "use",                 true,  create_use);
+        /* c!(h, "view",             false, ); */
+        /* c!(h, "vkern",            false, ); */
         h
     };
 }
@@ -287,17 +250,20 @@ pub fn create_node_and_register_id(
 
     let &(supports_class, create_fn) = match NODE_CREATORS.get(name) {
         Some(c) => c,
-        // Whenever we encounter a node we don't understand, represent it as a defs.
-        // This is like a group, but it doesn't do any rendering of children.  The
-        // effect is that we will ignore all children of unknown elements.
-        None => &(true, create_defs as NodeCreateFn),
+
+        // Whenever we encounter a node we don't understand, represent it as a
+        // non-rendering node.  This is like a group, but it doesn't do any rendering of
+        // children.  The effect is that we will ignore all children of unknown elements.
+        None => &(true, create_non_rendering as NodeCreateFn),
     };
+
+    let element_name = LocalName::from(name);
 
     if !supports_class {
         class = None;
     };
 
-    let node = create_fn(id, class, parent);
+    let node = create_fn(element_name, id, class, parent);
 
     if let Some(id) = id {
         // This is so we don't overwrite an existing id

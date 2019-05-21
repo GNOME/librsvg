@@ -47,15 +47,19 @@ impl NodeTrait for NodeGroup {
     }
 }
 
-pub struct NodeDefs();
+/// A no-op node that does not render anything
+///
+/// Sometimes we just need a node that can contain children, but doesn't
+/// render itself or its children.  This is just that kind of node.
+pub struct NodeNonRendering;
 
-impl NodeDefs {
-    pub fn new() -> NodeDefs {
-        NodeDefs()
+impl NodeNonRendering{
+    pub fn new() -> NodeNonRendering {
+        NodeNonRendering
     }
 }
 
-impl NodeTrait for NodeDefs {
+impl NodeTrait for NodeNonRendering {
     fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }

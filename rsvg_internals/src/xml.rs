@@ -290,7 +290,13 @@ impl XmlState {
                 child
             } else {
                 let child = RsvgNode::new(
-                    NodeData::new(NodeType::Chars, None, None, Box::new(NodeChars::new())),
+                    NodeData::new(
+                        NodeType::Chars,
+                        LocalName::from("rsvg-chars"),
+                        None,
+                        None,
+                        Box::new(NodeChars::new()),
+                    ),
                     Some(node),
                 );
                 node.append(&child);

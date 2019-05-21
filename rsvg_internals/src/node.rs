@@ -23,6 +23,7 @@ pub type RsvgWeakNode = NodeWeakRef<NodeData>;
 /// Contents of a tree node
 pub struct NodeData {
     node_type: NodeType,
+    element_name: LocalName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
     specified_values: RefCell<SpecifiedValues>,
@@ -38,12 +39,14 @@ pub struct NodeData {
 impl NodeData {
     pub fn new(
         node_type: NodeType,
+        element_name: LocalName,
         id: Option<&str>,
         class: Option<&str>,
         node_impl: Box<NodeTrait>,
     ) -> NodeData {
         NodeData {
             node_type,
+            element_name,
             id: id.map(str::to_string),
             class: class.map(str::to_string),
             specified_values: RefCell::new(Default::default()),
@@ -371,6 +374,7 @@ pub enum NodeType {
     Link,
     Marker,
     Mask,
+    NonRendering,
     Path,
     Pattern,
     PointLight,
@@ -389,88 +393,33 @@ pub enum NodeType {
     TSpan,
     Use,
 
-    // Filter primitives
-    FilterPrimitiveBlend,
-    FilterPrimitiveColorMatrix,
-    FilterPrimitiveComponentTransfer,
-    FilterPrimitiveComposite,
-    FilterPrimitiveConvolveMatrix,
-    FilterPrimitiveDiffuseLighting,
-    FilterPrimitiveDisplacementMap,
-    FilterPrimitiveFlood,
-    FilterPrimitiveGaussianBlur,
-    FilterPrimitiveImage,
-    FilterPrimitiveMerge,
-    FilterPrimitiveMergeNode,
-    FilterPrimitiveMorphology,
-    FilterPrimitiveOffset,
-    FilterPrimitiveSpecularLighting,
-    FilterPrimitiveTile,
-    FilterPrimitiveTurbulence,
-}
-
-impl NodeType {
-    pub fn element_name(&self) -> &'static str {
-        match self {
-            NodeType::Chars => "rsvg-chars", // Dummy element name for chars
-            NodeType::Circle => "circle",
-            NodeType::ClipPath => "clipPath",
-            NodeType::ComponentTransferFunctionA => "feFuncA",
-            NodeType::ComponentTransferFunctionB => "feFuncB",
-            NodeType::ComponentTransferFunctionG => "feFuncG",
-            NodeType::ComponentTransferFunctionR => "feFuncR",
-            NodeType::Defs => "defs",
-            NodeType::DistantLight => "feDistantLight",
-            NodeType::Ellipse => "ellipse",
-            NodeType::Filter => "filter",
-            NodeType::Group => "g",
-            NodeType::Image => "image",
-            NodeType::Line => "line",
-            NodeType::LinearGradient => "linearGradient",
-            NodeType::Link => "a",
-            NodeType::Marker => "marker",
-            NodeType::Mask => "mask",
-            NodeType::Path => "path",
-            NodeType::Pattern => "pattern",
-            NodeType::PointLight => "fePointight",
-            NodeType::Polygon => "polygon",
-            NodeType::Polyline => "polyline",
-            NodeType::RadialGradient => "radialGradient",
-            NodeType::Rect => "rect",
-            NodeType::SpotLight => "feSpotLight",
-            NodeType::Stop => "stop",
-            NodeType::Style => "style",
-            NodeType::Svg => "svg",
-            NodeType::Switch => "switch",
-            NodeType::Symbol => "symbol",
-            NodeType::Text => "text",
-            NodeType::TRef => "tref",
-            NodeType::TSpan => "tspan",
-            NodeType::Use => "use",
-            NodeType::FilterPrimitiveBlend => "feBlend",
-            NodeType::FilterPrimitiveColorMatrix => "feColorMatrix",
-            NodeType::FilterPrimitiveComponentTransfer => "feComponentTransfer",
-            NodeType::FilterPrimitiveComposite => "feComposite",
-            NodeType::FilterPrimitiveConvolveMatrix => "feConvolveMatrix",
-            NodeType::FilterPrimitiveDiffuseLighting => "feDiffuseLighting",
-            NodeType::FilterPrimitiveDisplacementMap => "feDisplacementMap",
-            NodeType::FilterPrimitiveFlood => "feFlood",
-            NodeType::FilterPrimitiveGaussianBlur => "feGaussianBlur",
-            NodeType::FilterPrimitiveImage => "feImage",
-            NodeType::FilterPrimitiveMerge => "feMerge",
-            NodeType::FilterPrimitiveMergeNode => "feMergeNode",
-            NodeType::FilterPrimitiveMorphology => "feMorphology",
-            NodeType::FilterPrimitiveOffset => "feOffset",
-            NodeType::FilterPrimitiveSpecularLighting => "feSpecularLighting",
-            NodeType::FilterPrimitiveTile => "feTile",
-            NodeType::FilterPrimitiveTurbulence => "feTurbulence",
-        }
-    }
+    // Filter primitives, these start with "Fe" as element names are e.g. "feBlend"
+    FeBlend,
+    FeColorMatrix,
+    FeComponentTransfer,
+    FeComposite,
+    FeConvolveMatrix,
+    FeDiffuseLighting,
+    FeDisplacementMap,
+    FeFlood,
+    FeGaussianBlur,
+    FeImage,
+    FeMerge,
+    FeMergeNode,
+    FeMorphology,
+    FeOffset,
+    FeSpecularLighting,
+    FeTile,
+    FeTurbulence,
 }
 
 impl RsvgNode {
     pub fn get_type(&self) -> NodeType {
         self.borrow().node_type
+    }
+
+    pub fn element_name(&self) -> &str {
+        self.borrow().element_name.as_ref()
     }
 
     pub fn get_id(&self) -> Option<&str> {
