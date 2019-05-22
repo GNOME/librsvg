@@ -256,6 +256,35 @@ cd /source/tree/for/librsvg
 make RUST_TARGET_PATH=/my/target/definition
 ```
 
+## Cross-compiling for win32 target
+
+You can also cross-compile to win32 (Microsoft Windows) target by using
+[MinGW-w64][mingw-w64]. You need to specify appropriate target in the same way
+as usual.
+
+* Set appropriate target via `--host` configure option:
+    * `i686-w64-mingw32` for 32bit target
+    * `x86_64-w64-mingw32` for 64bit target
+* Set appropriate RUST_TARGET:
+    * `i686-pc-windows-gnu` for 32bit target
+    * `x86_64-pc-windows-gnu` for 64bit target
+
+In addition you may need to link with some win32 specific libraries like
+`LIBS="-lws2_32 -luserenv"`.
+
+Example:
+
+```sh
+./configure \
+  --host=x86_64-w64-mingw32 \
+  RUST_TARGET=x86_64-pc-windows-gnu \
+  LIBS="-lws2_32 -luserenv"
+make
+```
+
+The most painfull point of this way is preparing win32 build of each dpendent
+libraries. [MXE][mxe] may help you on this work.
+
 # Building with no network access
 
 Automated build systems generally avoid network access so that they
@@ -303,3 +332,5 @@ trying to modify your system locations.
 [cargo-source-replacement]: http://doc.crates.io/source-replacement.html
 [rust-cross]: https://github.com/japaric/rust-cross
 [target-json]: https://github.com/japaric/rust-cross#target-specification-files
+[mingw-w64]: https://mingw-w64.org/
+[mxe]: https://mxe.cc/
