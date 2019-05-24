@@ -417,6 +417,11 @@ main (int argc, char **argv)
                 exit (1);
             }
 
+            if (dimensions.width == 0 || dimensions.height == 0) {
+                g_printerr ("The SVG %s has no dimensions\n", args[i]);
+                exit (1);
+            }
+
             unscaled_width = dimensions.width;
             unscaled_height = dimensions.height;
 
