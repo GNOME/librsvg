@@ -178,7 +178,13 @@ impl XmlState {
         let context = self.context();
 
         match context {
-            Context::Start => panic!("characters: XML handler stack is empty!?"),
+            // This is character data before the first element, i.e. something like
+            //  <?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg"/>
+            // ^ note the space here
+            // libxml2 is not finished reading the file yet; it will emit an error
+            // on its own when it finishes.  So, ignore this condition.
+            Context::Start => return,
+
             Context::ElementCreation => self.element_creation_characters(text),
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
