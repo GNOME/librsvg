@@ -233,7 +233,7 @@ impl Filter for Lighting {
             return Err(FilterError::ChildNodeInError);
         }
 
-        let light_source = light_source.get_impl::<LightSource>().unwrap();
+        let light_source = light_source.get_impl::<LightSource>();
         let light_source = light_source.transform(ctx);
 
         let mut input_surface = input.surface().clone();
