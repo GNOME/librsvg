@@ -620,14 +620,12 @@ impl DrawingCtx {
         bbox: &BoundingBox,
         current_color: &cssparser::RGBA,
     ) -> Result<bool, RenderingError> {
-        let mut had_paint_server;
-
         match *ps {
             PaintServer::Iri {
                 ref iri,
                 ref alternate,
             } => {
-                had_paint_server = false;
+                let mut had_paint_server = false;
 
                 if let Some(acquired) = self.acquired_nodes.get_node(iri) {
                     let node = acquired.get();
@@ -652,19 +650,17 @@ impl DrawingCtx {
                         iri
                     );
                 }
+
+                Ok(had_paint_server)
             }
 
             PaintServer::SolidColor(color) => {
                 self.set_color(&color, opacity, current_color);
-                had_paint_server = true;
+                Ok(true)
             }
 
-            PaintServer::None => {
-                had_paint_server = false;
-            }
-        };
-
-        Ok(had_paint_server)
+            PaintServer::None => Ok(false),
+        }
     }
 
     pub fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
