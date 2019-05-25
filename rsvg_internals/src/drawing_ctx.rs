@@ -351,8 +351,7 @@ impl DrawingCtx {
         {
             let clip_node = clip_node.get().clone();
 
-            let ClipPathUnits(units) =
-                clip_node.with_impl(|clip_path: &NodeClipPath| clip_path.get_units());
+            let ClipPathUnits(units) = clip_node.get_impl::<NodeClipPath>().get_units();
 
             if units == CoordUnits::UserSpaceOnUse {
                 (Some(clip_node), None)
@@ -366,12 +365,11 @@ impl DrawingCtx {
     }
 
     fn clip_to_node(&mut self, clip_node: &Option<RsvgNode>) -> Result<(), RenderingError> {
-        if let Some(clip_node) = clip_node {
+        if let Some(node) = clip_node {
             let orig_bbox = self.bbox;
 
-            let res = clip_node.with_impl(|clip_path: &NodeClipPath| {
-                clip_path.to_cairo_context(&clip_node, self, &orig_bbox)
-            });
+            let clip_path = node.get_impl::<NodeClipPath>();
+            let res = clip_path.to_cairo_context(&node, self, &orig_bbox);
 
             // FIXME: this is an EPIC HACK to keep the clipping context from
             // accumulating bounding boxes.  We'll remove this later, when we
@@ -487,10 +485,10 @@ impl DrawingCtx {
                             let mask_node = acquired.get();
 
                             res = res.and_then(|_| {
-                                mask_node.with_impl(|mask: &NodeMask| {
-                                    let bbox = dc.bbox;
-                                    mask.generate_cairo_mask(&mask_node, &affines, dc, &bbox)
-                                })
+                                let bbox = dc.bbox;
+                                mask_node
+                                    .get_impl::<NodeMask>()
+                                    .generate_cairo_mask(&mask_node, &affines, dc, &bbox)
                             });
                         } else {
                             rsvg_log!("element {} references nonexistent mask \"{}\"", node, mask);
@@ -634,16 +632,14 @@ impl DrawingCtx {
                 if let Some(acquired) = self.acquired_nodes.get_node(iri) {
                     let node = acquired.get();
 
-                    if node.get_type() == NodeType::LinearGradient
-                        || node.get_type() == NodeType::RadialGradient
-                    {
-                        had_paint_server = node.with_impl(|n: &NodeGradient| {
-                            n.resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)
-                        })?;
-                    } else if node.get_type() == NodeType::Pattern {
-                        had_paint_server = node.with_impl(|n: &NodePattern| {
-                            n.resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)
-                        })?;
+                    had_paint_server = match node.get_type() {
+                        NodeType::LinearGradient | NodeType::RadialGradient => node
+                            .get_impl::<NodeGradient>()
+                            .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                        NodeType::Pattern => node
+                            .get_impl::<NodePattern>()
+                            .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                        _ => false,
                     }
                 }
 

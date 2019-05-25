@@ -90,7 +90,7 @@ impl Svg {
 
         assert!(root.get_type() == NodeType::Svg);
 
-        root.with_impl(|svg: &NodeSvg| svg.get_intrinsic_dimensions())
+        root.get_impl::<NodeSvg>().get_intrinsic_dimensions()
     }
 }
 

@@ -41,7 +41,7 @@ impl NodeStyle {
                 .into_iter()
                 .filter_map(|child| {
                     if child.get_type() == NodeType::Chars {
-                        Some(child.with_impl(|chars: &NodeChars| chars.get_string()))
+                        Some(child.get_impl::<NodeChars>().get_string())
                     } else {
                         None
                     }
