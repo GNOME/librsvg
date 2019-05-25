@@ -535,7 +535,7 @@ impl PaintSource for NodeGradient {
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
-        let node_gradient = node.get_impl::<NodeGradient>().unwrap();
+        let node_gradient = node.get_impl::<NodeGradient>();
         let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
         let mut result = gradient.clone();
         let mut stack = NodeStack::new();

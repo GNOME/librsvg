@@ -228,7 +228,7 @@ impl PaintSource for NodePattern {
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
-        let node_pattern = node.get_impl::<NodePattern>().unwrap();
+        let node_pattern = node.get_impl::<NodePattern>();
         let pattern = &*node_pattern.pattern.borrow();
         let mut result = pattern.clone();
         let mut stack = NodeStack::new();

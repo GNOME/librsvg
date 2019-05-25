@@ -500,8 +500,12 @@ impl RsvgNode {
         }
     }
 
-    pub fn get_impl<T: NodeTrait>(&self) -> Option<&T> {
-        self.borrow().get_impl()
+    pub fn get_impl<T: NodeTrait>(&self) -> &T {
+        if let Some(t) = (&self.borrow().node_impl).downcast_ref::<T>() {
+            t
+        } else {
+            panic!("could not downcast");
+        }
     }
 
     pub fn draw_children(
