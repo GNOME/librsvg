@@ -603,17 +603,15 @@ fn emit_marker_by_name(
     {
         let node = acquired.get();
 
-        node.with_impl(|marker: &NodeMarker| {
-            marker.render(
-                &node,
-                draw_ctx,
-                xpos,
-                ypos,
-                computed_angle,
-                line_width,
-                clipping,
-            )
-        })
+        node.get_impl::<NodeMarker>().render(
+            &node,
+            draw_ctx,
+            xpos,
+            ypos,
+            computed_angle,
+            line_width,
+            clipping,
+        )
     } else {
         rsvg_log!("marker \"{}\" not found", name);
         Ok(())

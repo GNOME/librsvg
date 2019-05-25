@@ -419,20 +419,34 @@ fn children_to_chunks(
 ) {
     for child in node.children() {
         match child.get_type() {
-            NodeType::Chars => child.with_impl(|chars: &NodeChars| {
+            NodeType::Chars => {
                 let values = cascaded.get();
-                chars.to_chunks(&child, values, chunks, dx, dy, depth);
-            }),
+                child
+                    .get_impl::<NodeChars>()
+                    .to_chunks(&child, values, chunks, dx, dy, depth);
+            }
 
-            NodeType::TSpan => child.with_impl(|tspan: &NodeTSpan| {
+            NodeType::TSpan => {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                tspan.to_chunks(&child, &cascaded, draw_ctx, chunks, depth + 1);
-            }),
+                child.get_impl::<NodeTSpan>().to_chunks(
+                    &child,
+                    &cascaded,
+                    draw_ctx,
+                    chunks,
+                    depth + 1,
+                );
+            }
 
-            NodeType::TRef => child.with_impl(|tref: &NodeTRef| {
+            NodeType::TRef => {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                tref.to_chunks(&child, &cascaded, draw_ctx, chunks, depth + 1);
-            }),
+                child.get_impl::<NodeTRef>().to_chunks(
+                    &child,
+                    &cascaded,
+                    draw_ctx,
+                    chunks,
+                    depth + 1,
+                );
+            }
 
             _ => (),
         }
@@ -695,10 +709,9 @@ fn extract_chars_children_to_chunks_recursively(
 ) {
     for child in node.children() {
         match child.get_type() {
-            NodeType::Chars => child.with_impl(|chars: &NodeChars| {
-                chars.to_chunks(&child, values, chunks, None, None, depth);
-            }),
-
+            NodeType::Chars => child
+                .get_impl::<NodeChars>()
+                .to_chunks(&child, values, chunks, None, None, depth),
             _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
         }
     }

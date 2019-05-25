@@ -385,17 +385,15 @@ impl Gradient {
                 !in_error
             })
             .for_each(|child| {
-                child.with_impl(|stop: &NodeStop| {
-                    let cascaded = CascadedValues::new_from_node(&child);
-                    let values = cascaded.get();
+                let offset = child.get_impl::<NodeStop>().get_offset();
+                let cascaded = CascadedValues::new_from_node(&child);
+                let values = cascaded.get();
+                let rgba = match values.stop_color {
+                    StopColor(cssparser::Color::CurrentColor) => values.color.0,
+                    StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
+                };
 
-                    let rgba = match values.stop_color {
-                        StopColor(cssparser::Color::CurrentColor) => values.color.0,
-                        StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
-                    };
-
-                    self.add_color_stop(stop.get_offset(), rgba, values.stop_opacity.0);
-                })
+                self.add_color_stop(offset, rgba, values.stop_opacity.0);
             });
     }
 
@@ -549,10 +547,10 @@ impl PaintSource for NodeGradient {
                     return Err(RenderingError::CircularReference);
                 }
 
-                a_node.with_impl(|i: &NodeGradient| {
-                    let fallback_grad = i.get_gradient_with_color_stops_from_node(&a_node);
-                    result.resolve_from_fallback(&fallback_grad)
-                });
+                let fallback = a_node
+                    .get_impl::<NodeGradient>()
+                    .get_gradient_with_color_stops_from_node(&a_node);
+                result.resolve_from_fallback(&fallback);
 
                 stack.push(a_node);
                 continue;

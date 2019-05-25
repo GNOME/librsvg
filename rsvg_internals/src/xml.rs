@@ -273,7 +273,7 @@ impl XmlState {
         let node = self.current_node.take().unwrap();
 
         if node.get_type() == NodeType::Style {
-            let css_data = node.with_impl(|style: &NodeStyle| style.get_css(&node));
+            let css_data = node.get_impl::<NodeStyle>().get_css(&node);
 
             let css_rules = self.css_rules.as_mut().unwrap();
 
@@ -309,9 +309,7 @@ impl XmlState {
                 child
             };
 
-            chars_node.with_impl(|chars: &NodeChars| {
-                chars.append(text);
-            });
+            chars_node.get_impl::<NodeChars>().append(text);
         }
     }
 

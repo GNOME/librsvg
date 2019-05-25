@@ -245,9 +245,8 @@ impl PaintSource for NodePattern {
                     return Err(RenderingError::CircularReference);
                 }
 
-                a_node.with_impl(|i: &NodePattern| {
-                    result.resolve_from_fallback(&*i.pattern.borrow())
-                });
+                let fallback = a_node.get_impl::<NodePattern>().pattern.borrow();
+                result.resolve_from_fallback(&fallback);
 
                 stack.push(a_node);
             } else {

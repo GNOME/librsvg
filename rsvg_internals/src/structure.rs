@@ -53,7 +53,7 @@ impl NodeTrait for NodeGroup {
 /// render itself or its children.  This is just that kind of node.
 pub struct NodeNonRendering;
 
-impl NodeNonRendering{
+impl NodeNonRendering {
     pub fn new() -> NodeNonRendering {
         NodeNonRendering
     }
@@ -430,29 +430,29 @@ impl NodeTrait for NodeUse {
                 )
             })
         } else {
-            child.with_impl(|symbol: &NodeSymbol| {
-                let clip_mode = if !values.is_overflow()
-                    || (values.overflow == Overflow::Visible && child.is_overflow())
-                {
-                    Some(ClipMode::ClipToVbox)
-                } else {
-                    None
-                };
+            let symbol = child.get_impl::<NodeSymbol>();
 
-                draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-                    let _params = dc.push_new_viewport(
-                        symbol.vbox.get(),
-                        &viewport,
-                        symbol.preserve_aspect_ratio.get(),
-                        clip_mode,
-                    );
+            let clip_mode = if !values.is_overflow()
+                || (values.overflow == Overflow::Visible && child.is_overflow())
+            {
+                Some(ClipMode::ClipToVbox)
+            } else {
+                None
+            };
 
-                    child.draw_children(
-                        &CascadedValues::new_from_values(&child, values),
-                        dc,
-                        clipping,
-                    )
-                })
+            draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+                let _params = dc.push_new_viewport(
+                    symbol.vbox.get(),
+                    &viewport,
+                    symbol.preserve_aspect_ratio.get(),
+                    clip_mode,
+                );
+
+                child.draw_children(
+                    &CascadedValues::new_from_values(&child, values),
+                    dc,
+                    clipping,
+                )
             })
         }
     }
