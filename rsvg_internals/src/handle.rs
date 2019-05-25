@@ -240,7 +240,7 @@ impl Handle {
             let values = cascaded.get();
 
             if let Some((root_width, root_height)) =
-                node.with_impl(|svg: &NodeSvg| svg.get_size(&values, dpi))
+                node.get_impl::<NodeSvg>().get_size(&values, dpi)
             {
                 let ink_r = RsvgRectangle {
                     x: 0.0,

@@ -488,18 +488,6 @@ impl RsvgNode {
         self.borrow().result.borrow().is_err()
     }
 
-    pub fn with_impl<T, F, U>(&self, f: F) -> U
-    where
-        T: NodeTrait,
-        F: FnOnce(&T) -> U,
-    {
-        if let Some(t) = (&self.borrow().node_impl).downcast_ref::<T>() {
-            f(t)
-        } else {
-            panic!("could not downcast");
-        }
-    }
-
     pub fn get_impl<T: NodeTrait>(&self) -> &T {
         if let Some(t) = (&self.borrow().node_impl).downcast_ref::<T>() {
             t
