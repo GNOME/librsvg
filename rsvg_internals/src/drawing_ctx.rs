@@ -833,7 +833,7 @@ impl DrawingCtx {
 
         let values = cascaded.get();
         let res = if draw && values.is_visible() {
-            node.draw(node, cascaded, self, clipping)
+            node.draw(cascaded, self, clipping)
         } else {
             Ok(())
         };

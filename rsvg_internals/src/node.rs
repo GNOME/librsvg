@@ -465,7 +465,6 @@ impl RsvgNode {
 
     pub fn draw(
         &self,
-        node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -475,7 +474,7 @@ impl RsvgNode {
                 let cr = dc.get_cairo_context();
                 cr.transform(self.get_transform());
 
-                self.borrow().node_impl.draw(node, cascaded, dc, clipping)
+                self.borrow().node_impl.draw(self, cascaded, dc, clipping)
             })
         } else {
             rsvg_log!("(not rendering element {} because it is in error)", self);
