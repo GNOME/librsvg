@@ -94,7 +94,7 @@ impl XmlState {
         XmlState {
             tree_root: None,
             ids: Some(HashMap::new()),
-            css_rules: Some(CssRules::new()),
+            css_rules: Some(CssRules::default()),
             context_stack: vec![Context::Start],
             current_node: None,
             entities: HashMap::new(),
