@@ -267,7 +267,7 @@ pub fn create_node_and_register_id(
 
     if let Some(id) = id {
         // This is so we don't overwrite an existing id
-        ids.entry(id.to_string()).or_insert(node.clone());
+        ids.entry(id.to_string()).or_insert_with(|| node.clone());
     }
 
     node
