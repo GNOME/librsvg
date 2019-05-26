@@ -161,8 +161,8 @@ pub struct NodePattern {
     pattern: RefCell<Pattern>,
 }
 
-impl NodePattern {
-    pub fn new() -> NodePattern {
+impl Default for NodePattern {
+    fn default() -> NodePattern {
         NodePattern {
             pattern: RefCell::new(Pattern::unresolved()),
         }

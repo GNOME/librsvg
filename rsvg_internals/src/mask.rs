@@ -32,8 +32,8 @@ pub struct NodeMask {
     content_units: Cell<MaskContentUnits>,
 }
 
-impl NodeMask {
-    pub fn new() -> NodeMask {
+impl Default for NodeMask {
+    fn default() -> NodeMask {
         NodeMask {
             // these values are per the spec
             x: Cell::new(LengthHorizontal::parse_str("-10%").unwrap()),
@@ -46,7 +46,9 @@ impl NodeMask {
             content_units: Cell::new(MaskContentUnits::default()),
         }
     }
+}
 
+impl NodeMask {
     pub fn generate_cairo_mask(
         &self,
         mask_node: &RsvgNode,

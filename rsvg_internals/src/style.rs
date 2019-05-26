@@ -8,17 +8,12 @@ use std::cell::RefCell;
 ///
 /// It does not render itself, and just holds CSS stylesheet information for the rest of
 /// the code to use.
+#[derive(Default)]
 pub struct NodeStyle {
     type_: RefCell<Option<String>>,
 }
 
 impl NodeStyle {
-    pub fn new() -> NodeStyle {
-        NodeStyle {
-            type_: RefCell::new(None),
-        }
-    }
-
     pub fn get_css(&self, node: &RsvgNode) -> String {
         // FIXME: See these:
         //

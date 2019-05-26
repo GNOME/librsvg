@@ -15,6 +15,7 @@ use crate::property_bag::PropertyBag;
 use crate::rect::RectangleExt;
 use crate::viewbox::ViewBox;
 
+#[derive(Default)]
 pub struct NodeImage {
     aspect: Cell<AspectRatio>,
     x: Cell<LengthHorizontal>,
@@ -22,19 +23,6 @@ pub struct NodeImage {
     w: Cell<LengthHorizontal>,
     h: Cell<LengthVertical>,
     href: RefCell<Option<Href>>,
-}
-
-impl NodeImage {
-    pub fn new() -> NodeImage {
-        NodeImage {
-            aspect: Cell::new(AspectRatio::default()),
-            x: Cell::new(Default::default()),
-            y: Cell::new(Default::default()),
-            w: Cell::new(Default::default()),
-            h: Cell::new(Default::default()),
-            href: RefCell::new(None),
-        }
-    }
 }
 
 impl NodeTrait for NodeImage {

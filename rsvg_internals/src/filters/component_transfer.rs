@@ -112,10 +112,10 @@ fn gamma(params: &FunctionParameters<'_>, value: f64) -> f64 {
     params.amplitude * value.powf(params.exponent) + params.offset
 }
 
-impl ComponentTransfer {
+impl Default for ComponentTransfer {
     /// Constructs a new `ComponentTransfer` with empty properties.
     #[inline]
-    pub fn new() -> ComponentTransfer {
+    fn default() -> ComponentTransfer {
         ComponentTransfer {
             base: PrimitiveWithInput::new::<Self>(),
         }

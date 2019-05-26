@@ -14,10 +14,10 @@ pub struct Flood {
     base: Primitive,
 }
 
-impl Flood {
+impl Default for Flood {
     /// Constructs a new `Flood` with empty properties.
     #[inline]
-    pub fn new() -> Flood {
+    fn default() -> Flood {
         Flood {
             base: Primitive::new::<Self>(),
         }

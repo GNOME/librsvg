@@ -558,6 +558,7 @@ impl NodeTrait for NodeChars {
     }
 }
 
+#[derive(Default)]
 pub struct NodeText {
     x: Cell<LengthHorizontal>,
     y: Cell<LengthVertical>,
@@ -566,15 +567,6 @@ pub struct NodeText {
 }
 
 impl NodeText {
-    pub fn new() -> NodeText {
-        NodeText {
-            x: Cell::new(Default::default()),
-            y: Cell::new(Default::default()),
-            dx: Cell::new(None),
-            dy: Cell::new(None),
-        }
-    }
-
     fn make_chunks(
         &self,
         node: &RsvgNode,
@@ -659,17 +651,12 @@ impl NodeTrait for NodeText {
     }
 }
 
+#[derive(Default)]
 pub struct NodeTRef {
     link: RefCell<Option<Fragment>>,
 }
 
 impl NodeTRef {
-    pub fn new() -> NodeTRef {
-        NodeTRef {
-            link: RefCell::new(Default::default()),
-        }
-    }
-
     fn to_chunks(
         &self,
         node: &RsvgNode,
@@ -732,6 +719,7 @@ impl NodeTrait for NodeTRef {
     }
 }
 
+#[derive(Default)]
 pub struct NodeTSpan {
     x: Cell<Option<LengthHorizontal>>,
     y: Cell<Option<LengthVertical>>,
@@ -740,15 +728,6 @@ pub struct NodeTSpan {
 }
 
 impl NodeTSpan {
-    pub fn new() -> NodeTSpan {
-        NodeTSpan {
-            x: Cell::new(Default::default()),
-            y: Cell::new(Default::default()),
-            dx: Cell::new(None),
-            dy: Cell::new(None),
-        }
-    }
-
     fn to_chunks(
         &self,
         node: &RsvgNode,

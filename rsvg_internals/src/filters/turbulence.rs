@@ -43,10 +43,10 @@ pub struct Turbulence {
     type_: Cell<NoiseType>,
 }
 
-impl Turbulence {
+impl Default for Turbulence {
     /// Constructs a new `Turbulence` with empty properties.
     #[inline]
-    pub fn new() -> Turbulence {
+    fn default() -> Turbulence {
         Turbulence {
             base: Primitive::new::<Self>(),
             base_frequency: Cell::new((0.0, 0.0)),

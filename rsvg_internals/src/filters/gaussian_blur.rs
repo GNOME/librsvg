@@ -30,10 +30,10 @@ pub struct GaussianBlur {
     std_deviation: Cell<(f64, f64)>,
 }
 
-impl GaussianBlur {
+impl Default for GaussianBlur {
     /// Constructs a new `GaussianBlur` with empty properties.
     #[inline]
-    pub fn new() -> GaussianBlur {
+    fn default() -> GaussianBlur {
         GaussianBlur {
             base: PrimitiveWithInput::new::<Self>(),
             std_deviation: Cell::new((0.0, 0.0)),

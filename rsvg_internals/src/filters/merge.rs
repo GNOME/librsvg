@@ -18,26 +18,17 @@ pub struct Merge {
 }
 
 /// The `<feMergeNode>` element.
+#[derive(Default)]
 pub struct MergeNode {
     in_: RefCell<Option<Input>>,
 }
 
-impl Merge {
+impl Default for Merge {
     /// Constructs a new `Merge` with empty properties.
     #[inline]
-    pub fn new() -> Merge {
+    fn default() -> Merge {
         Merge {
             base: Primitive::new::<Self>(),
-        }
-    }
-}
-
-impl MergeNode {
-    /// Constructs a new `MergeNode` with empty properties.
-    #[inline]
-    pub fn new() -> MergeNode {
-        MergeNode {
-            in_: RefCell::new(None),
         }
     }
 }

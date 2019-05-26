@@ -23,10 +23,10 @@ pub struct NodeFilter {
     pub primitiveunits: Cell<CoordUnits>,
 }
 
-impl NodeFilter {
+impl Default for NodeFilter {
     /// Constructs a new `NodeFilter` with default properties.
     #[inline]
-    pub fn new() -> Self {
+    fn default() -> Self {
         Self {
             x: Cell::new(LengthHorizontal::parse_str("-10%").unwrap()),
             y: Cell::new(LengthVertical::parse_str("-10%").unwrap()),
@@ -36,7 +36,9 @@ impl NodeFilter {
             primitiveunits: Cell::new(CoordUnits::UserSpaceOnUse),
         }
     }
+}
 
+impl NodeFilter {
     /// Computes and returns the filter effects region.
     pub fn compute_effects_region(
         &self,

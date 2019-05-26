@@ -98,8 +98,8 @@ pub struct NodeMarker {
     vbox: Cell<Option<ViewBox>>,
 }
 
-impl NodeMarker {
-    pub fn new() -> NodeMarker {
+impl Default for NodeMarker {
+    fn default() -> NodeMarker {
         NodeMarker {
             units: Cell::new(MarkerUnits::default()),
             ref_x: Cell::new(Default::default()),
@@ -112,7 +112,9 @@ impl NodeMarker {
             vbox: Cell::new(None),
         }
     }
+}
 
+impl NodeMarker {
     fn render(
         &self,
         node: &RsvgNode,

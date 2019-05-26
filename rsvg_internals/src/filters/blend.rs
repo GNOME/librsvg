@@ -31,10 +31,10 @@ pub struct Blend {
     mode: Cell<Mode>,
 }
 
-impl Blend {
+impl Default for Blend {
     /// Constructs a new `Blend` with empty properties.
     #[inline]
-    pub fn new() -> Blend {
+    fn default() -> Blend {
         Blend {
             base: PrimitiveWithInput::new::<Self>(),
             in2: RefCell::new(None),

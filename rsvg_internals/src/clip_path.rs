@@ -12,17 +12,12 @@ use crate::property_bag::PropertyBag;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
+#[derive(Default)]
 pub struct NodeClipPath {
     units: Cell<ClipPathUnits>,
 }
 
 impl NodeClipPath {
-    pub fn new() -> NodeClipPath {
-        NodeClipPath {
-            units: Cell::new(ClipPathUnits::default()),
-        }
-    }
-
     pub fn get_units(&self) -> ClipPathUnits {
         self.units.get()
     }

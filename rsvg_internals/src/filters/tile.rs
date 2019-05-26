@@ -13,10 +13,10 @@ pub struct Tile {
     base: PrimitiveWithInput,
 }
 
-impl Tile {
+impl Default for Tile {
     /// Constructs a new `Tile` with empty properties.
     #[inline]
-    pub fn new() -> Tile {
+    fn default() -> Tile {
         Tile {
             base: PrimitiveWithInput::new::<Self>(),
         }

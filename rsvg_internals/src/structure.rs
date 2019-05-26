@@ -19,13 +19,8 @@ use crate::rect::RectangleExt;
 use crate::tree_utils::Node;
 use crate::viewbox::*;
 
+#[derive(Default)]
 pub struct NodeGroup();
-
-impl NodeGroup {
-    pub fn new() -> NodeGroup {
-        NodeGroup()
-    }
-}
 
 impl NodeTrait for NodeGroup {
     fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
@@ -51,13 +46,8 @@ impl NodeTrait for NodeGroup {
 ///
 /// Sometimes we just need a node that can contain children, but doesn't
 /// render itself or its children.  This is just that kind of node.
+#[derive(Default)]
 pub struct NodeNonRendering;
-
-impl NodeNonRendering {
-    pub fn new() -> NodeNonRendering {
-        NodeNonRendering
-    }
-}
 
 impl NodeTrait for NodeNonRendering {
     fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
@@ -65,13 +55,8 @@ impl NodeTrait for NodeNonRendering {
     }
 }
 
+#[derive(Default)]
 pub struct NodeSwitch();
-
-impl NodeSwitch {
-    pub fn new() -> NodeSwitch {
-        NodeSwitch()
-    }
-}
 
 impl NodeTrait for NodeSwitch {
     fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
@@ -109,6 +94,7 @@ pub struct IntrinsicDimensions {
     pub vbox: Option<ViewBox>,
 }
 
+#[derive(Default)]
 pub struct NodeSvg {
     preserve_aspect_ratio: Cell<AspectRatio>,
     x: Cell<Option<LengthHorizontal>>,
@@ -119,17 +105,6 @@ pub struct NodeSvg {
 }
 
 impl NodeSvg {
-    pub fn new() -> NodeSvg {
-        NodeSvg {
-            preserve_aspect_ratio: Cell::new(AspectRatio::default()),
-            x: Cell::new(None),
-            y: Cell::new(None),
-            w: Cell::new(None),
-            h: Cell::new(None),
-            vbox: Cell::new(None),
-        }
-    }
-
     pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(i32, i32)> {
         let (_, _, w, h) = self.get_unnormalized_viewport();
 
@@ -308,24 +283,13 @@ impl NodeTrait for NodeSvg {
     }
 }
 
+#[derive(Default)]
 pub struct NodeUse {
     link: RefCell<Option<Fragment>>,
     x: Cell<LengthHorizontal>,
     y: Cell<LengthVertical>,
     w: Cell<Option<LengthHorizontal>>,
     h: Cell<Option<LengthVertical>>,
-}
-
-impl NodeUse {
-    pub fn new() -> NodeUse {
-        NodeUse {
-            link: RefCell::new(None),
-            x: Cell::new(Default::default()),
-            y: Cell::new(Default::default()),
-            w: Cell::new(None),
-            h: Cell::new(None),
-        }
-    }
 }
 
 impl NodeTrait for NodeUse {
@@ -458,18 +422,10 @@ impl NodeTrait for NodeUse {
     }
 }
 
+#[derive(Default)]
 pub struct NodeSymbol {
     preserve_aspect_ratio: Cell<AspectRatio>,
     vbox: Cell<Option<ViewBox>>,
-}
-
-impl NodeSymbol {
-    pub fn new() -> NodeSymbol {
-        NodeSymbol {
-            preserve_aspect_ratio: Cell::new(AspectRatio::default()),
-            vbox: Cell::new(None),
-        }
-    }
 }
 
 impl NodeTrait for NodeSymbol {
