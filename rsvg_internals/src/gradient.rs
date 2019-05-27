@@ -370,33 +370,24 @@ impl Gradient {
                 || node.get_type() == NodeType::RadialGradient
         );
 
-        node.children()
-            .into_iter()
-            // just ignore this child; we are only interested in gradient stops
+        for child in node
+            .children()
             .filter(|child| child.get_type() == NodeType::Stop)
-            // don't add any more stops, Eq to break in for-loop
-            .take_while(|child| {
-                let in_error = child.is_in_error();
+        {
+            if child.is_in_error() {
+                rsvg_log!("(not using gradient stop {} because it is in error)", child);
+            } else {
+                let offset = child.get_impl::<NodeStop>().get_offset();
+                let cascaded = CascadedValues::new_from_node(&child);
+                let values = cascaded.get();
+                let rgba = match values.stop_color {
+                    StopColor(cssparser::Color::CurrentColor) => values.color.0,
+                    StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
+                };
 
-                if in_error {
-                    rsvg_log!("(not using gradient stop {} because it is in error)", child);
-                }
-
-                !in_error
-            })
-            .for_each(|child| {
-                child.with_impl(|stop: &NodeStop| {
-                    let cascaded = CascadedValues::new_from_node(&child);
-                    let values = cascaded.get();
-
-                    let rgba = match values.stop_color {
-                        StopColor(cssparser::Color::CurrentColor) => values.color.0,
-                        StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
-                    };
-
-                    self.add_color_stop(stop.get_offset(), rgba, values.stop_opacity.0);
-                })
-            });
+                self.add_color_stop(offset, rgba, values.stop_opacity.0);
+            }
+        }
     }
 
     fn add_color_stop(
@@ -535,9 +526,7 @@ impl PaintSource for NodeGradient {
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
-        let node_gradient = node.get_impl::<NodeGradient>().unwrap();
-        let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
-        let mut result = gradient.clone();
+        let mut result = get_gradient_with_color_stops_from_node(node);
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
@@ -549,10 +538,8 @@ impl PaintSource for NodeGradient {
                     return Err(RenderingError::CircularReference);
                 }
 
-                a_node.with_impl(|i: &NodeGradient| {
-                    let fallback_grad = i.get_gradient_with_color_stops_from_node(&a_node);
-                    result.resolve_from_fallback(&fallback_grad)
-                });
+                let fallback = get_gradient_with_color_stops_from_node(&a_node);
+                result.resolve_from_fallback(&fallback);
 
                 stack.push(a_node);
                 continue;
@@ -619,6 +606,12 @@ impl PaintSource for NodeGradient {
     }
 }
 
+fn get_gradient_with_color_stops_from_node(node: &RsvgNode) -> Gradient {
+    let mut gradient = node.get_impl::<NodeGradient>().gradient.borrow().clone();
+    gradient.add_color_stops_from_node(node);
+    gradient
+}
+
 pub struct NodeGradient {
     gradient: RefCell<Gradient>,
 }
@@ -640,12 +633,6 @@ impl NodeGradient {
                 variant: GradientVariant::unresolved_radial(),
             }),
         }
-    }
-
-    fn get_gradient_with_color_stops_from_node(&self, node: &RsvgNode) -> Gradient {
-        let mut gradient = self.gradient.borrow().clone();
-        gradient.add_color_stops_from_node(node);
-        gradient
     }
 }
 

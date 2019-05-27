@@ -4,7 +4,7 @@ use crate::error::*;
 use crate::parsers::{CssParserExt, Parse, ParseError};
 use crate::util;
 
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, PartialOrd)]
 pub struct UnitInterval(pub f64);
 
 impl UnitInterval {

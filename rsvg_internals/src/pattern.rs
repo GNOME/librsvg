@@ -161,8 +161,8 @@ pub struct NodePattern {
     pattern: RefCell<Pattern>,
 }
 
-impl NodePattern {
-    pub fn new() -> NodePattern {
+impl Default for NodePattern {
+    fn default() -> NodePattern {
         NodePattern {
             pattern: RefCell::new(Pattern::unresolved()),
         }
@@ -228,9 +228,7 @@ impl PaintSource for NodePattern {
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
-        let node_pattern = node.get_impl::<NodePattern>().unwrap();
-        let pattern = &*node_pattern.pattern.borrow();
-        let mut result = pattern.clone();
+        let mut result = node.get_impl::<NodePattern>().pattern.borrow().clone();
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
@@ -245,9 +243,8 @@ impl PaintSource for NodePattern {
                     return Err(RenderingError::CircularReference);
                 }
 
-                a_node.with_impl(|i: &NodePattern| {
-                    result.resolve_from_fallback(&*i.pattern.borrow())
-                });
+                let fallback = a_node.get_impl::<NodePattern>().pattern.borrow();
+                result.resolve_from_fallback(&fallback);
 
                 stack.push(a_node);
             } else {

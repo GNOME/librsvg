@@ -112,10 +112,10 @@ fn gamma(params: &FunctionParameters<'_>, value: f64) -> f64 {
     params.amplitude * value.powf(params.exponent) + params.offset
 }
 
-impl ComponentTransfer {
+impl Default for ComponentTransfer {
     /// Constructs a new `ComponentTransfer` with empty properties.
     #[inline]
-    pub fn new() -> ComponentTransfer {
+    fn default() -> ComponentTransfer {
         ComponentTransfer {
             base: PrimitiveWithInput::new::<Self>(),
         }
@@ -293,7 +293,7 @@ impl Filter for ComponentTransfer {
         let get_node = |channel| {
             functions
                 .clone()
-                .find(|c| c.get_impl::<FuncX>().unwrap().channel == channel)
+                .find(|c| c.get_impl::<FuncX>().channel == channel)
         };
         let func_r = get_node(Channel::R);
         let func_g = get_node(Channel::G);
@@ -318,7 +318,7 @@ impl Filter for ComponentTransfer {
         #[inline]
         fn func_or_default<'a>(func: &'a Option<RsvgNode>, default: &'a FuncX) -> &'a FuncX {
             func.as_ref()
-                .map(|c| c.get_impl::<FuncX>().unwrap())
+                .map(|c| c.get_impl::<FuncX>())
                 .unwrap_or(default)
         }
 

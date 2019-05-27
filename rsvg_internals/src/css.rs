@@ -34,6 +34,7 @@ pub struct Declaration {
     pub important: bool,
 }
 
+#[derive(Default)]
 pub struct DeclarationList {
     // Maps property_name -> Declaration
     declarations: HashMap<LocalName, Declaration>,
@@ -82,17 +83,12 @@ impl Selector {
 
 /// Contains all the mappings of selectors to style declarations
 /// that result from loading an SVG document.
+#[derive(Default)]
 pub struct CssRules {
     selectors_to_declarations: HashMap<Selector, DeclarationList>,
 }
 
 impl DeclarationList {
-    fn new() -> DeclarationList {
-        DeclarationList {
-            declarations: HashMap::new(),
-        }
-    }
-
     fn add_declaration(&mut self, declaration: Declaration) {
         match self.declarations.entry(declaration.attribute.clone()) {
             Entry::Occupied(mut e) => {
@@ -125,12 +121,6 @@ impl<'a> Iterator for DeclarationListIter<'a> {
 }
 
 impl CssRules {
-    pub fn new() -> CssRules {
-        CssRules {
-            selectors_to_declarations: HashMap::new(),
-        }
-    }
-
     pub fn parse(&mut self, base_url: Option<&Url>, buf: &str) {
         if buf.len() == 0 {
             return; // libcroco doesn't like empty strings :(
@@ -201,7 +191,7 @@ impl CssRules {
         let decl_list = self
             .selectors_to_declarations
             .entry(selector)
-            .or_insert_with(|| DeclarationList::new());
+            .or_insert_with(|| DeclarationList::default());
 
         decl_list.add_declaration(declaration);
     }

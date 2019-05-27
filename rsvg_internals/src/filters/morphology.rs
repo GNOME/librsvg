@@ -35,10 +35,10 @@ pub struct Morphology {
     radius: Cell<(f64, f64)>,
 }
 
-impl Morphology {
+impl Default for Morphology {
     /// Constructs a new `Morphology` with empty properties.
     #[inline]
-    pub fn new() -> Morphology {
+    fn default() -> Morphology {
         Morphology {
             base: PrimitiveWithInput::new::<Self>(),
             operator: Cell::new(Operator::Erode),

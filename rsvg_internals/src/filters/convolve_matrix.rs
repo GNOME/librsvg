@@ -37,10 +37,10 @@ pub struct ConvolveMatrix {
     preserve_alpha: Cell<bool>,
 }
 
-impl ConvolveMatrix {
+impl Default for ConvolveMatrix {
     /// Constructs a new `ConvolveMatrix` with empty properties.
     #[inline]
-    pub fn new() -> ConvolveMatrix {
+    fn default() -> ConvolveMatrix {
         ConvolveMatrix {
             base: PrimitiveWithInput::new::<Self>(),
             order: Cell::new((3, 3)),

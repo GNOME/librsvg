@@ -7,17 +7,12 @@ use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::unit_interval::UnitInterval;
 
+#[derive(Default)]
 pub struct NodeStop {
     offset: Cell<UnitInterval>,
 }
 
 impl NodeStop {
-    pub fn new() -> NodeStop {
-        NodeStop {
-            offset: Cell::new(UnitInterval(0.0)),
-        }
-    }
-
     pub fn get_offset(&self) -> UnitInterval {
         self.offset.get()
     }

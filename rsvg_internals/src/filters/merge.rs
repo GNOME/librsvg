@@ -18,26 +18,17 @@ pub struct Merge {
 }
 
 /// The `<feMergeNode>` element.
+#[derive(Default)]
 pub struct MergeNode {
     in_: RefCell<Option<Input>>,
 }
 
-impl Merge {
+impl Default for Merge {
     /// Constructs a new `Merge` with empty properties.
     #[inline]
-    pub fn new() -> Merge {
+    fn default() -> Merge {
         Merge {
             base: Primitive::new::<Self>(),
-        }
-    }
-}
-
-impl MergeNode {
-    /// Constructs a new `MergeNode` with empty properties.
-    #[inline]
-    pub fn new() -> MergeNode {
-        MergeNode {
-            in_: RefCell::new(None),
         }
     }
 }
@@ -135,10 +126,11 @@ impl Filter for Merge {
                 return Err(FilterError::ChildNodeInError);
             }
 
-            bounds = bounds.add_input(
-                &child
-                    .with_impl(|c: &MergeNode| ctx.get_input(draw_ctx, c.in_.borrow().as_ref()))?,
-            );
+            let input = ctx.get_input(
+                draw_ctx,
+                child.get_impl::<MergeNode>().in_.borrow().as_ref(),
+            )?;
+            bounds = bounds.add_input(&input);
         }
         let bounds = bounds.into_irect(draw_ctx);
 
@@ -148,9 +140,12 @@ impl Filter for Merge {
             .children()
             .filter(|c| c.get_type() == NodeType::FeMergeNode)
         {
-            output_surface = Some(
-                child.with_impl(|c: &MergeNode| c.render(ctx, draw_ctx, bounds, output_surface))?,
-            );
+            output_surface = Some(child.get_impl::<MergeNode>().render(
+                ctx,
+                draw_ctx,
+                bounds,
+                output_surface,
+            )?);
         }
 
         let output_surface = match output_surface {

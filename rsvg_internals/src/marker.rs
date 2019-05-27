@@ -98,8 +98,8 @@ pub struct NodeMarker {
     vbox: Cell<Option<ViewBox>>,
 }
 
-impl NodeMarker {
-    pub fn new() -> NodeMarker {
+impl Default for NodeMarker {
+    fn default() -> NodeMarker {
         NodeMarker {
             units: Cell::new(MarkerUnits::default()),
             ref_x: Cell::new(Default::default()),
@@ -112,7 +112,9 @@ impl NodeMarker {
             vbox: Cell::new(None),
         }
     }
+}
 
+impl NodeMarker {
     fn render(
         &self,
         node: &RsvgNode,
@@ -603,17 +605,15 @@ fn emit_marker_by_name(
     {
         let node = acquired.get();
 
-        node.with_impl(|marker: &NodeMarker| {
-            marker.render(
-                &node,
-                draw_ctx,
-                xpos,
-                ypos,
-                computed_angle,
-                line_width,
-                clipping,
-            )
-        })
+        node.get_impl::<NodeMarker>().render(
+            &node,
+            draw_ctx,
+            xpos,
+            ypos,
+            computed_angle,
+            line_width,
+            clipping,
+        )
     } else {
         rsvg_log!("marker \"{}\" not found", name);
         Ok(())

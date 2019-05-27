@@ -21,10 +21,10 @@ pub struct Offset {
     dy: Cell<f64>,
 }
 
-impl Offset {
+impl Default for Offset {
     /// Constructs a new `Offset` with empty properties.
     #[inline]
-    pub fn new() -> Offset {
+    fn default() -> Offset {
         Offset {
             base: PrimitiveWithInput::new::<Self>(),
             dx: Cell::new(0f64),

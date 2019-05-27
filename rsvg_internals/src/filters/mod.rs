@@ -118,7 +118,7 @@ impl NodeTrait for Primitive {
             .parent()
             .and_then(|parent| {
                 if parent.get_type() == NodeType::Filter {
-                    Some(parent.with_impl(|f: &NodeFilter| f.primitiveunits.get()))
+                    Some(parent.get_impl::<NodeFilter>().primitiveunits.get())
                 } else {
                     None
                 }

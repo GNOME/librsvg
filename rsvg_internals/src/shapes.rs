@@ -109,16 +109,9 @@ fn render_ellipse(
     render_path_builder(&builder, draw_ctx, node, values, false, clipping)
 }
 
+#[derive(Default)]
 pub struct NodePath {
     builder: RefCell<Option<PathBuilder>>,
-}
-
-impl NodePath {
-    pub fn new() -> NodePath {
-        NodePath {
-            builder: RefCell::new(None),
-        }
-    }
 }
 
 impl NodeTrait for NodePath {
@@ -267,22 +260,12 @@ impl NodeTrait for NodePoly {
     }
 }
 
+#[derive(Default)]
 pub struct NodeLine {
     x1: Cell<LengthHorizontal>,
     y1: Cell<LengthVertical>,
     x2: Cell<LengthHorizontal>,
     y2: Cell<LengthVertical>,
-}
-
-impl NodeLine {
-    pub fn new() -> NodeLine {
-        NodeLine {
-            x1: Cell::new(Default::default()),
-            y1: Cell::new(Default::default()),
-            x2: Cell::new(Default::default()),
-            y2: Cell::new(Default::default()),
-        }
-    }
 }
 
 impl NodeTrait for NodeLine {
@@ -325,6 +308,7 @@ impl NodeTrait for NodeLine {
     }
 }
 
+#[derive(Default)]
 pub struct NodeRect {
     // x, y, width, height
     x: Cell<LengthHorizontal>,
@@ -335,20 +319,6 @@ pub struct NodeRect {
     // Radiuses for rounded corners
     rx: Cell<Option<LengthHorizontal>>,
     ry: Cell<Option<LengthVertical>>,
-}
-
-impl NodeRect {
-    pub fn new() -> NodeRect {
-        NodeRect {
-            x: Cell::new(Default::default()),
-            y: Cell::new(Default::default()),
-            w: Cell::new(Default::default()),
-            h: Cell::new(Default::default()),
-
-            rx: Cell::new(None),
-            ry: Cell::new(None),
-        }
-    }
 }
 
 impl NodeTrait for NodeRect {
@@ -559,20 +529,11 @@ impl NodeTrait for NodeRect {
     }
 }
 
+#[derive(Default)]
 pub struct NodeCircle {
     cx: Cell<LengthHorizontal>,
     cy: Cell<LengthVertical>,
     r: Cell<LengthBoth>,
-}
-
-impl NodeCircle {
-    pub fn new() -> NodeCircle {
-        NodeCircle {
-            cx: Cell::new(Default::default()),
-            cy: Cell::new(Default::default()),
-            r: Cell::new(Default::default()),
-        }
-    }
 }
 
 impl NodeTrait for NodeCircle {
@@ -611,22 +572,12 @@ impl NodeTrait for NodeCircle {
     }
 }
 
+#[derive(Default)]
 pub struct NodeEllipse {
     cx: Cell<LengthHorizontal>,
     cy: Cell<LengthVertical>,
     rx: Cell<LengthHorizontal>,
     ry: Cell<LengthVertical>,
-}
-
-impl NodeEllipse {
-    pub fn new() -> NodeEllipse {
-        NodeEllipse {
-            cx: Cell::new(Default::default()),
-            cy: Cell::new(Default::default()),
-            rx: Cell::new(Default::default()),
-            ry: Cell::new(Default::default()),
-        }
-    }
 }
 
 impl NodeTrait for NodeEllipse {

@@ -7,16 +7,9 @@ use crate::error::RenderingError;
 use crate::node::*;
 use crate::property_bag::PropertyBag;
 
+#[derive(Default)]
 pub struct NodeLink {
     link: RefCell<Option<String>>,
-}
-
-impl NodeLink {
-    pub fn new() -> NodeLink {
-        NodeLink {
-            link: RefCell::new(None),
-        }
-    }
 }
 
 impl NodeTrait for NodeLink {

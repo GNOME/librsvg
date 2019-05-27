@@ -31,10 +31,10 @@ pub struct DisplacementMap {
     y_channel_selector: Cell<ColorChannel>,
 }
 
-impl DisplacementMap {
+impl Default for DisplacementMap {
     /// Constructs a new `DisplacementMap` with empty properties.
     #[inline]
-    pub fn new() -> DisplacementMap {
+    fn default() -> DisplacementMap {
         DisplacementMap {
             base: PrimitiveWithInput::new::<Self>(),
             in2: RefCell::new(None),

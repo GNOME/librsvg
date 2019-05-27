@@ -24,17 +24,19 @@ pub struct Image {
     href: RefCell<Option<Href>>,
 }
 
-impl Image {
+impl Default for Image {
     /// Constructs a new `Image` with empty properties.
     #[inline]
-    pub fn new() -> Image {
+    fn default() -> Image {
         Image {
             base: Primitive::new::<Self>(),
             aspect: Cell::new(AspectRatio::default()),
             href: RefCell::new(None),
         }
     }
+}
 
+impl Image {
     /// Renders the filter if the source is an existing node.
     fn render_node(
         &self,

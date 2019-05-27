@@ -43,10 +43,10 @@ pub struct Composite {
     k4: Cell<f64>,
 }
 
-impl Composite {
+impl Default for Composite {
     /// Constructs a new `Composite` with empty properties.
     #[inline]
-    pub fn new() -> Composite {
+    fn default() -> Composite {
         Composite {
             base: PrimitiveWithInput::new::<Self>(),
             in2: RefCell::new(None),

@@ -36,10 +36,10 @@ pub struct ColorMatrix {
     matrix: RefCell<Matrix5<f64>>,
 }
 
-impl ColorMatrix {
+impl Default for ColorMatrix {
     /// Constructs a new `ColorMatrix` with empty properties.
     #[inline]
-    pub fn new() -> ColorMatrix {
+    fn default() -> ColorMatrix {
         ColorMatrix {
             base: PrimitiveWithInput::new::<Self>(),
             matrix: RefCell::new(Matrix5::identity()),
