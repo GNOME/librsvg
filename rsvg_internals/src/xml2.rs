@@ -14,6 +14,8 @@ pub const XML_PARSE_NONET:     libc::c_int = 1 << 11;
 pub const XML_PARSE_HUGE:      libc::c_int = 1 << 19;
 pub const XML_PARSE_BIG_LINES: libc::c_int = 1 << 22;
 
+pub const XML_SAX2_MAGIC: libc::c_uint = 0xDEEDBEAF;
+
 pub type xmlDocPtr = gpointer;
 
 pub type xmlEntityPtr = gpointer;
@@ -110,8 +112,24 @@ pub struct xmlSAXHandler {
 
     pub _private: gpointer,
 
-    pub startElementNs: UnusedFn,
-    pub endElementNs:   UnusedFn,
+    pub startElementNs: Option<unsafe extern "C" fn(
+        ctx: *mut libc::c_void,
+        localname: *mut libc::c_char,
+	prefix: *mut libc::c_char,
+	uri: *mut libc::c_char,
+	nb_namespaces: libc::c_int,
+	namespaces: *mut *mut libc::c_char,
+	nb_attributes: libc::c_int,
+	nb_defaulted: libc::c_int,
+	attributes: *mut *mut libc::c_char,
+    )>,
+
+    pub endElementNs: Option<unsafe extern "C" fn(
+        ctx: *mut libc::c_void,
+        localname: *mut libc::c_char,
+	prefix: *mut libc::c_char,
+	uri: *mut libc::c_char,
+    )>,
 
     pub serror: Option<unsafe extern "C" fn(user_data: *mut libc::c_void, error: xmlErrorPtr)>,
 }
