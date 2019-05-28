@@ -114,7 +114,7 @@ impl<'a> PropertyBag<'a> {
                 assert!(!localname.is_null());
 
                 if !value_start.is_null() && !value_end.is_null() {
-                    assert!(value_end > value_start);
+                    assert!(value_end >= value_start);
 
                     // FIXME: ptr::offset_from() is nightly-only.
                     // We'll do the computation of the length by hand.
@@ -215,6 +215,7 @@ mod tests {
         let attrs = [
             (CString::new("rx").unwrap(), CString::new("1").unwrap()),
             (CString::new("ry").unwrap(), CString::new("2").unwrap()),
+            (CString::new("empty").unwrap(), CString::new("").unwrap()),
         ];
 
         let mut v: Vec<*const libc::c_char> = Vec::new();
@@ -234,6 +235,7 @@ mod tests {
 
         let mut had_rx: bool = false;
         let mut had_ry: bool = false;
+        let mut had_empty: bool = false;
 
         for (a, v) in pbag.iter() {
             match a {
@@ -244,6 +246,10 @@ mod tests {
                 local_name!("ry") => {
                     assert!(v == "2");
                     had_ry = true;
+                }
+                ref n if *n == LocalName::from("empty") => {
+                    assert!(v == "");
+                    had_empty = true;
                 }
                 _ => unreachable!(),
             }
