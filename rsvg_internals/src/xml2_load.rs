@@ -42,8 +42,6 @@ fn get_xml2_sax_handler() -> xmlSAXHandler {
         error:                 None,
         fatalError:            None,
         externalSubset:        None,
-        startElementNs:        None,
-        endElementNs:          None,
 
         _private:              ptr::null_mut(),
 
@@ -54,12 +52,14 @@ fn get_xml2_sax_handler() -> xmlSAXHandler {
         getParameterEntity:    Some(sax_get_parameter_entity_cb),
         characters:            Some(sax_characters_cb),
         cdataBlock:            Some(sax_characters_cb),
-        startElement:          Some(sax_start_element_cb),
-        endElement:            Some(sax_end_element_cb),
+        startElement:          None,
+        endElement:            None,
         processingInstruction: Some(sax_processing_instruction_cb),
+        startElementNs:        Some(sax_start_element_ns_cb),
+        endElementNs:          Some(sax_end_element_ns_cb),
         serror:                Some(rsvg_sax_serror_cb),
 
-        initialized:           0,
+        initialized:           XML_SAX2_MAGIC,
     }
 }
 
@@ -173,19 +173,28 @@ unsafe extern "C" fn sax_unparsed_entity_decl_cb(
     );
 }
 
-unsafe extern "C" fn sax_start_element_cb(
+unsafe extern "C" fn sax_start_element_ns_cb(
     user_data: *mut libc::c_void,
-    name: *const libc::c_char,
-    atts: *const *const libc::c_char,
+    localname: *mut libc::c_char,
+    prefix: *mut libc::c_char,
+    uri: *mut libc::c_char,
+    nb_namespaces: libc::c_int,
+    namespaces: *mut *mut libc::c_char,
+    nb_attributes: libc::c_int,
+    nb_defaulted: libc::c_int,
+    attributes: *mut *mut libc::c_char,
 ) {
     let xml2_parser = &*(user_data as *mut Xml2Parser);
 
-    assert!(!name.is_null());
-    let name = utf8_cstr(name);
+    assert!(!localname.is_null());
 
-    let pbag = PropertyBag::new_from_key_value_pairs(atts);
+    let localname = utf8_cstr(localname);
 
-    if let Err(e) = xml2_parser.state.start_element(name, &pbag) {
+    let nb_attributes = nb_attributes as usize;
+    let pbag =
+        PropertyBag::new_from_namespaced_attributes(nb_attributes, attributes as *const *const _);
+
+    if let Err(e) = xml2_parser.state.start_element(localname, &pbag) {
         let _: () = e; // guard in case we change the error type later
 
         let parser = xml2_parser.parser.get();
@@ -193,13 +202,18 @@ unsafe extern "C" fn sax_start_element_cb(
     }
 }
 
-unsafe extern "C" fn sax_end_element_cb(user_data: *mut libc::c_void, name: *const libc::c_char) {
+unsafe extern "C" fn sax_end_element_ns_cb(
+    user_data: *mut libc::c_void,
+    localname: *mut libc::c_char,
+    prefix: *mut libc::c_char,
+    uri: *mut libc::c_char,
+) {
     let xml2_parser = &*(user_data as *mut Xml2Parser);
 
-    assert!(!name.is_null());
-    let name = utf8_cstr(name);
+    assert!(!localname.is_null());
+    let localname = utf8_cstr(localname);
 
-    xml2_parser.state.end_element(name);
+    xml2_parser.state.end_element(localname);
 }
 
 unsafe extern "C" fn sax_characters_cb(

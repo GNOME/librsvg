@@ -60,17 +60,8 @@ pub struct xmlSAXHandler {
     pub setDocumentLocator: UnusedFn,
     pub startDocument:      UnusedFn,
     pub endDocument:        UnusedFn,
-
-    pub startElement: Option<unsafe extern "C" fn(
-        ctx: *mut libc::c_void,
-        name: *const libc::c_char,
-        atts: *const *const libc::c_char,
-    )>,
-
-    pub endElement: Option<unsafe extern "C" fn(
-        ctx: *mut libc::c_void,
-        name: *const libc::c_char,
-    )>,
+    pub startElement:       UnusedFn,
+    pub endElement:         UnusedFn,
 
     pub reference: UnusedFn,
 
