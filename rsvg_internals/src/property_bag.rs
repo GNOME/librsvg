@@ -6,9 +6,14 @@ use std::str;
 
 use markup5ever::LocalName;
 
-pub struct PropertyBag<'a>(Vec<(LocalName, &'a CStr)>);
+enum Attribute<'a> {
+    CStr(&'a CStr),
+    Unterminated(&'a str),
+}
 
-pub struct PropertyBagIter<'a>(slice::Iter<'a, (LocalName, &'a CStr)>);
+pub struct PropertyBag<'a>(Vec<(LocalName, Attribute<'a>)>);
+
+pub struct PropertyBagIter<'a>(slice::Iter<'a, (LocalName, Attribute<'a>)>);
 
 trait Utf8CStrToStr {
     fn to_str_utf8(&self) -> &str;
@@ -58,7 +63,7 @@ impl<'a> PropertyBag<'a> {
                     let val_str = CStr::from_ptr(val);
 
                     let attr = LocalName::from(key_str.to_str_utf8());
-                    array.push((attr, val_str));
+                    array.push((attr, Attribute::CStr(val_str)));
                 } else {
                     break;
                 }
@@ -83,7 +88,12 @@ impl<'a> Iterator for PropertyBagIter<'a> {
     type Item = (LocalName, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(a, v)| (a.clone(), v.to_str_utf8()))
+        self.0.next().map(|(a, v)| {
+            match *v {
+                Attribute::CStr(ref v) => (a.clone(), v.to_str_utf8()),
+                Attribute::Unterminated(v) => (a.clone(), v),
+            }
+        })
     }
 }
 
