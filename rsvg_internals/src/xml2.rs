@@ -18,13 +18,17 @@ pub type xmlDocPtr = gpointer;
 
 pub type xmlEntityPtr = gpointer;
 
+pub type UnusedFn = Option<unsafe extern "C" fn()>;
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[repr(C)]
 pub struct xmlSAXHandler {
-    pub internalSubset: gpointer,
-    pub isStandalone: gpointer,
-    pub hasInternalSubset: gpointer,
-    pub hasExternalSubset: gpointer,
-    pub resolveEntity: gpointer,
+    pub internalSubset:    UnusedFn,
+    pub isStandalone:      UnusedFn,
+    pub hasInternalSubset: UnusedFn,
+    pub hasExternalSubset: UnusedFn,
+    pub resolveEntity:     UnusedFn,
+
     pub getEntity: Option<unsafe extern "C" fn(
         ctx: *mut libc::c_void,
         name: *const libc::c_char,
@@ -39,9 +43,9 @@ pub struct xmlSAXHandler {
         content: *const libc::c_char,
     )>,
 
-    pub notationDecl: gpointer,
-    pub attributeDecl: gpointer,
-    pub elementDecl: gpointer,
+    pub notationDecl:  UnusedFn,
+    pub attributeDecl: UnusedFn,
+    pub elementDecl:   UnusedFn,
 
     pub unparsedEntityDecl: Option<unsafe extern "C" fn(
         ctx: *mut libc::c_void,
@@ -51,9 +55,9 @@ pub struct xmlSAXHandler {
         notation_name: *const libc::c_char,
     )>,
 
-    pub setDocumentLocator: gpointer,
-    pub startDocument: gpointer,
-    pub endDocument: gpointer,
+    pub setDocumentLocator: UnusedFn,
+    pub startDocument:      UnusedFn,
+    pub endDocument:        UnusedFn,
 
     pub startElement: Option<unsafe extern "C" fn(
         ctx: *mut libc::c_void,
@@ -66,7 +70,7 @@ pub struct xmlSAXHandler {
         name: *const libc::c_char,
     )>,
 
-    pub reference: gpointer,
+    pub reference: UnusedFn,
 
     pub characters: Option<unsafe extern "C" fn(
         ctx: *mut libc::c_void,
@@ -74,7 +78,7 @@ pub struct xmlSAXHandler {
         len: libc::c_int,
     )>,
 
-    pub ignorableWhitespace: gpointer,
+    pub ignorableWhitespace: UnusedFn,
 
     pub processingInstruction: Option<unsafe extern "C" fn(
         ctx: *mut libc::c_void,
@@ -82,12 +86,12 @@ pub struct xmlSAXHandler {
         data: *const libc::c_char,
     )>,
 
-    pub comment: gpointer,
-    pub warning: gpointer,
+    pub comment:    UnusedFn,
+    pub warning:    UnusedFn,
 
-    pub error: gpointer,
+    pub error:      UnusedFn,
 
-    pub fatalError: gpointer,
+    pub fatalError: UnusedFn,
 
     pub getParameterEntity: Option<unsafe extern "C" fn(
         ctx: *mut libc::c_void,
@@ -100,13 +104,15 @@ pub struct xmlSAXHandler {
         len: libc::c_int,
     )>,
 
-    pub externalSubset: gpointer,
+    pub externalSubset: UnusedFn,
 
     pub initialized: libc::c_uint,
 
     pub _private: gpointer,
-    pub startElementNs: gpointer,
-    pub endElementNs: gpointer,
+
+    pub startElementNs: UnusedFn,
+    pub endElementNs:   UnusedFn,
+
     pub serror: Option<unsafe extern "C" fn(user_data: *mut libc::c_void, error: xmlErrorPtr)>,
 }
 

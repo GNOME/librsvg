@@ -5,7 +5,6 @@ use gio;
 use gio::prelude::*;
 use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
-use std::mem;
 use std::ptr;
 use std::rc::Rc;
 use std::slice;
@@ -21,21 +20,47 @@ use crate::util::utf8_cstr;
 use crate::xml::XmlState;
 use crate::xml2::*;
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn get_xml2_sax_handler() -> xmlSAXHandler {
-    let mut h: xmlSAXHandler = unsafe { mem::zeroed() };
+    xmlSAXHandler {
+        // first the unused callbacks
+        internalSubset:        None,
+        isStandalone:          None,
+        hasInternalSubset:     None,
+        hasExternalSubset:     None,
+        resolveEntity:         None,
+        notationDecl:          None,
+        attributeDecl:         None,
+        elementDecl:           None,
+        setDocumentLocator:    None,
+        startDocument:         None,
+        endDocument:           None,
+        reference:             None,
+        ignorableWhitespace:   None,
+        comment:               None,
+        warning:               None,
+        error:                 None,
+        fatalError:            None,
+        externalSubset:        None,
+        startElementNs:        None,
+        endElementNs:          None,
 
-    h.getEntity = Some(sax_get_entity_cb);
-    h.entityDecl = Some(sax_entity_decl_cb);
-    h.unparsedEntityDecl = Some(sax_unparsed_entity_decl_cb);
-    h.getParameterEntity = Some(sax_get_parameter_entity_cb);
-    h.characters = Some(sax_characters_cb);
-    h.cdataBlock = Some(sax_characters_cb);
-    h.startElement = Some(sax_start_element_cb);
-    h.endElement = Some(sax_end_element_cb);
-    h.processingInstruction = Some(sax_processing_instruction_cb);
-    h.serror = Some(rsvg_sax_serror_cb);
+        _private:              ptr::null_mut(),
 
-    h
+        // then the used callbacks
+        getEntity:             Some(sax_get_entity_cb),
+        entityDecl:            Some(sax_entity_decl_cb),
+        unparsedEntityDecl:    Some(sax_unparsed_entity_decl_cb),
+        getParameterEntity:    Some(sax_get_parameter_entity_cb),
+        characters:            Some(sax_characters_cb),
+        cdataBlock:            Some(sax_characters_cb),
+        startElement:          Some(sax_start_element_cb),
+        endElement:            Some(sax_end_element_cb),
+        processingInstruction: Some(sax_processing_instruction_cb),
+        serror:                Some(rsvg_sax_serror_cb),
+
+        initialized:           0,
+    }
 }
 
 unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xmlErrorPtr) {
