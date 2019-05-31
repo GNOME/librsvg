@@ -201,8 +201,11 @@ unsafe extern "C" fn sax_processing_instruction_cb(
     assert!(!target.is_null());
     let target = utf8_cstr(target);
 
-    assert!(!data.is_null());
-    let data = utf8_cstr(data);
+    let data = if data.is_null() {
+        ""
+    } else {
+        utf8_cstr(data)
+    };
 
     xml.processing_instruction(target, data);
 }
