@@ -8,6 +8,7 @@ use std::fmt;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::CssRules;
 use crate::drawing_ctx::DrawingCtx;
+use crate::filters::Filter;
 use crate::error::*;
 use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
@@ -58,6 +59,10 @@ impl NodeData {
             node_impl,
             style_attr: RefCell::new(String::new()),
         }
+    }
+
+    pub fn get_node_trait(&self) -> &NodeTrait {
+        self.node_impl.as_ref()
     }
 
     pub fn get_impl<T: NodeTrait>(&self) -> Option<&T> {
@@ -328,6 +333,11 @@ pub trait NodeTrait: Downcast {
         // by default nodes don't draw themselves
         Ok(())
     }
+
+    /// Returns the Filter trait if this node is a filter primitive
+    fn as_filter(&self) -> Option<&Filter> {
+        None
+    }
 }
 
 impl_downcast!(NodeTrait);
@@ -474,7 +484,7 @@ impl RsvgNode {
                 let cr = dc.get_cairo_context();
                 cr.transform(self.get_transform());
 
-                self.borrow().node_impl.draw(self, cascaded, dc, clipping)
+                self.borrow().get_node_trait().draw(self, cascaded, dc, clipping)
             })
         } else {
             rsvg_log!("(not rendering element {} because it is in error)", self);
@@ -488,7 +498,7 @@ impl RsvgNode {
     }
 
     pub fn get_impl<T: NodeTrait>(&self) -> &T {
-        if let Some(t) = (&self.borrow().node_impl).downcast_ref::<T>() {
+        if let Some(t) = self.borrow().get_impl::<T>() {
             t
         } else {
             panic!("could not downcast");

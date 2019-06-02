@@ -25,6 +25,8 @@ impl Default for Flood {
 }
 
 impl NodeTrait for Flood {
+    impl_node_as_filter!();
+
     #[inline]
     fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(node, pbag)

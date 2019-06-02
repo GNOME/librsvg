@@ -3,20 +3,18 @@ use std::ops::Deref;
 use std::time::Instant;
 
 use cairo::{self, MatrixTrait};
-use owning_ref::RcRef;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::length::{LengthHorizontal, LengthUnit, LengthVertical};
-use crate::node::{CascadedValues, NodeData, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{ParseError, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use crate::tree_utils::{Node, NodeRef};
 
 mod bounds;
 use self::bounds::BoundsBuilder;
@@ -33,24 +31,8 @@ use self::input::Input;
 pub mod node;
 use self::node::NodeFilter;
 
-pub mod blend;
-pub mod color_matrix;
-pub mod component_transfer;
-pub mod composite;
-pub mod convolve_matrix;
-pub mod displacement_map;
-pub mod flood;
-pub mod gaussian_blur;
-pub mod image;
-pub mod light;
-pub mod merge;
-pub mod morphology;
-pub mod offset;
-pub mod tile;
-pub mod turbulence;
-
 /// A filter primitive interface.
-trait Filter: NodeTrait {
+pub trait Filter: NodeTrait {
     /// Renders this filter primitive.
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
@@ -69,6 +51,30 @@ trait Filter: NodeTrait {
     /// here, whereas primitives that don't (like `feOffset`) should return `false`.
     fn is_affected_by_color_interpolation_filters(&self) -> bool;
 }
+
+macro_rules! impl_node_as_filter {
+    () => (
+        fn as_filter(&self) -> Option<&Filter> {
+            Some(self)
+        }
+    )
+}
+
+pub mod blend;
+pub mod color_matrix;
+pub mod component_transfer;
+pub mod composite;
+pub mod convolve_matrix;
+pub mod displacement_map;
+pub mod flood;
+pub mod gaussian_blur;
+pub mod image;
+pub mod light;
+pub mod merge;
+pub mod morphology;
+pub mod offset;
+pub mod tile;
+pub mod turbulence;
 
 /// The base filter primitive node containing common properties.
 struct Primitive {
@@ -289,6 +295,8 @@ pub fn render(
 
             !in_error
         })
+        // Keep only filter primitives (those that implement the Filter trait)
+        .filter(|c| c.borrow().get_node_trait().as_filter().is_some())
         // Check if the node wants linear RGB.
         .map(|c| {
             let linear_rgb = {
@@ -299,68 +307,17 @@ pub fn render(
             };
 
             (c, linear_rgb)
-        })
-        // Keep only filter primitives (those that implement the Filter trait)
-        .filter_map(|(c, linear_rgb)| {
-            let rr = RcRef::new(c.0)
-                .try_map(|c: &Node<NodeData>| {
-                    // Go through the filter primitives and see if the node is one of them.
-                    #[inline]
-                    fn as_filter<T: Filter>(x: &T) -> &Filter {
-                        x
-                    }
-
-                    // Unfortunately it's not possible to downcast to a trait object.  So, we
-                    // try downcasting to each filter type individually, and use
-                    // owning_ref::RcRef to reduce the children to a list of
-                    // OwningRef<Rc<Node<NodeData>>, dyn Filter> -- which is essentially the
-                    // NodeRef, and something inside the NodeRef that implements the Filter
-                    // trait.
-                    macro_rules! try_downcasting_to_filter {
-                        ($c:expr; $($t:ty),+$(,)*) => ({
-                            let mut filter = None;
-                            $(
-                                filter = filter.or_else(|| $c.borrow().get_impl::<$t>().map(as_filter));
-                            )+
-                            filter
-                        })
-                    }
-
-                    let filter = try_downcasting_to_filter!(c;
-                        blend::Blend,
-                        color_matrix::ColorMatrix,
-                        component_transfer::ComponentTransfer,
-                        composite::Composite,
-                        convolve_matrix::ConvolveMatrix,
-                        displacement_map::DisplacementMap,
-                        flood::Flood,
-                        gaussian_blur::GaussianBlur,
-                        image::Image,
-                        light::lighting::Lighting,
-                        merge::Merge,
-                        morphology::Morphology,
-                        offset::Offset,
-                        tile::Tile,
-                        turbulence::Turbulence,
-                    );
-                    filter.ok_or(())
-                })
-                .ok();
-
-            rr.map(|rr| (rr, linear_rgb))
         });
 
-    for (rr, linear_rgb) in primitives {
-        // rr: OwningRef<Rc<Node<NodeData>>, dyn Filter>
-
-        let rr_node = NodeRef(rr.as_owner().clone());
+    for (c, linear_rgb) in primitives {
+        let filter = c.borrow().get_node_trait().as_filter().unwrap();
 
         let mut render = |filter_ctx: &mut FilterContext| {
-            if let Err(err) = rr
-                .render(&rr_node, filter_ctx, draw_ctx)
+            if let Err(err) = filter
+                .render(&c, filter_ctx, draw_ctx)
                 .and_then(|result| filter_ctx.store_result(result))
             {
-                rsvg_log!("(filter primitive {} returned an error: {})", rr_node, err);
+                rsvg_log!("(filter primitive {} returned an error: {})", c, err);
 
                 // Exit early on Cairo errors. Continue rendering otherwise.
                 if let FilterError::CairoError(status) = err {
@@ -373,7 +330,7 @@ pub fn render(
 
         let start = Instant::now();
 
-        if rr.is_affected_by_color_interpolation_filters() && linear_rgb {
+        if filter.is_affected_by_color_interpolation_filters() && linear_rgb {
             filter_ctx.with_linear_rgb(render)?;
         } else {
             render(&mut filter_ctx)?;
@@ -382,7 +339,7 @@ pub fn render(
         let elapsed = start.elapsed();
         rsvg_log!(
             "(rendered filter primitive {} in\n    {} seconds)",
-            rr_node,
+            c,
             elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
         );
     }
