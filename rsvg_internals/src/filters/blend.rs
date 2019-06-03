@@ -44,6 +44,8 @@ impl Default for Blend {
 }
 
 impl NodeTrait for Blend {
+    impl_node_as_filter!();
+
     fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(node, pbag)?;
 

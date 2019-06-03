@@ -24,6 +24,8 @@ impl Default for Tile {
 }
 
 impl NodeTrait for Tile {
+    impl_node_as_filter!();
+
     fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(node, pbag)
     }
