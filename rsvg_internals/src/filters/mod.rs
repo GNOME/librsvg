@@ -3,6 +3,7 @@ use std::ops::Deref;
 use std::time::Instant;
 
 use cairo::{self, MatrixTrait};
+use markup5ever::local_name;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;

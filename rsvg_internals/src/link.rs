@@ -1,3 +1,5 @@
+use lazy_static::lazy_static;
+use markup5ever::local_name;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;

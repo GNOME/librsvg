@@ -1,3 +1,4 @@
+use markup5ever::local_name;
 use std::cell::Cell;
 
 use crate::error::*;

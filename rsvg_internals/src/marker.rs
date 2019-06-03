@@ -3,6 +3,7 @@ use std::f64::consts::*;
 use std::ops::Deref;
 
 use cairo::{MatrixTrait, Rectangle};
+use markup5ever::local_name;
 use cssparser::{CowRcStr, Parser, Token};
 
 use crate::allowed_url::Fragment;

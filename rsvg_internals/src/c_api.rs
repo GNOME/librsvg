@@ -11,6 +11,8 @@ use gdk_pixbuf::Pixbuf;
 use libc;
 use url::Url;
 
+use bitflags::bitflags;
+
 use gio::prelude::*;
 
 use glib::object::ObjectClass;
@@ -19,7 +21,10 @@ use glib::subclass::object::ObjectClassSubclassExt;
 use glib::subclass::prelude::*;
 use glib::translate::*;
 use glib::value::{FromValue, FromValueOptional, SetValue};
-use glib::{Bytes, Cast, ParamFlags, ParamSpec, StaticType, ToValue, Type, Value};
+use glib::{
+    glib_object_impl, glib_object_subclass, Bytes, Cast, ParamFlags, ParamSpec, StaticType,
+    ToValue, Type, Value,
+};
 
 use glib_sys;
 use gobject_sys::{self, GEnumValue, GFlagsValue};

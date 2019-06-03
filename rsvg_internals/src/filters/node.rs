@@ -2,6 +2,7 @@
 use std::cell::Cell;
 
 use cairo::{self, MatrixTrait};
+use markup5ever::local_name;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;

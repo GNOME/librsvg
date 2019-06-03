@@ -1,3 +1,5 @@
+use markup5ever::local_name;
+
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::text::NodeChars;

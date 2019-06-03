@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 
 use cairo;
-use markup5ever::LocalName;
+use markup5ever::{local_name, LocalName};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;

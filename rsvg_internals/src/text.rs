@@ -1,4 +1,5 @@
 use glib::translate::*;
+use markup5ever::local_name;
 use pango::{self, ContextExt, FontMapExt, LayoutExt};
 use pango_sys;
 use pangocairo;

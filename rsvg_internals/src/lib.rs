@@ -5,19 +5,6 @@
 
 use ::xml as xml_rs;
 
-#[macro_use]
-extern crate bitflags;
-
-#[macro_use]
-extern crate glib;
-
-#[macro_use]
-extern crate lazy_static;
-
-// This provides the LocalName struct and local_name! macro
-#[macro_use]
-extern crate markup5ever;
-
 pub use crate::c_api::{
     rsvg_rust_error_get_type,
     rsvg_rust_handle_close,

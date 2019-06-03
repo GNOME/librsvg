@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface, MatrixTrait};
-use markup5ever::LocalName;
+use markup5ever::{local_name, LocalName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::drawing_ctx::DrawingCtx;

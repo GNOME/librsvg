@@ -1,6 +1,6 @@
 use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
-use markup5ever::LocalName;
+use markup5ever::{local_name, LocalName};
 use std::cell::{Cell, Ref, RefCell};
 use std::collections::HashSet;
 use std::fmt;
@@ -87,7 +87,8 @@ impl NodeData {
         }
 
         let mut specified_values = self.specified_values.borrow_mut();
-        self.node_impl.set_overridden_properties(&mut specified_values);
+        self.node_impl
+            .set_overridden_properties(&mut specified_values);
     }
 
     fn save_style_attribute(&self, pbag: &PropertyBag<'_>) {

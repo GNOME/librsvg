@@ -3,6 +3,7 @@ use std::cmp::max;
 
 use cairo::{self, ImageSurface, MatrixTrait};
 use cssparser;
+use markup5ever::local_name;
 use nalgebra::Vector3;
 use num_traits::identities::Zero;
 use rayon::prelude::*;

@@ -2,6 +2,7 @@ use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface};
 use cssparser::{CowRcStr, Parser, Token};
+use markup5ever::local_name;
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{NodeError, ValueErrorKind};

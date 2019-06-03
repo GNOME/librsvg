@@ -1,4 +1,5 @@
-use markup5ever::LocalName;
+use lazy_static::lazy_static;
+use markup5ever::{local_name, LocalName};
 use std::collections::HashMap;
 
 use crate::clip_path::NodeClipPath;

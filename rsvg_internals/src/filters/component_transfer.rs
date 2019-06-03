@@ -2,7 +2,7 @@ use std::cell::{Cell, Ref, RefCell};
 use std::cmp::min;
 
 use cairo::{self, ImageSurface};
-use markup5ever::LocalName;
+use markup5ever::{local_name, LocalName};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;

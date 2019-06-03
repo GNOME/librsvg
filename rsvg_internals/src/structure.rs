@@ -2,6 +2,7 @@ use std::cell::Cell;
 use std::cell::RefCell;
 
 use cairo::Rectangle;
+use markup5ever::local_name;
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;

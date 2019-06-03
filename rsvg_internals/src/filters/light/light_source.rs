@@ -2,6 +2,7 @@ use std::cell::Cell;
 
 use cairo::MatrixTrait;
 use cssparser;
+use markup5ever::local_name;
 use nalgebra::Vector3;
 
 use crate::error::NodeError;

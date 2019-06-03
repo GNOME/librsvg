@@ -3,7 +3,7 @@ use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use glib::IsA;
 use libc;
-use markup5ever::LocalName;
+use markup5ever::{local_name, LocalName};
 use std::collections::HashMap;
 use std::str;
 

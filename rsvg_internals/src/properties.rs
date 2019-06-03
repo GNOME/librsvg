@@ -1,5 +1,5 @@
 use cssparser::{self, DeclarationListParser, Parser, ParserInput};
-use markup5ever::LocalName;
+use markup5ever::{local_name, LocalName};
 use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration};

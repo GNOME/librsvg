@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 
 use cairo::{self, ImageSurface};
+use markup5ever::local_name;
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};

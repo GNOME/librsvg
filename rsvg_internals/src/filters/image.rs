@@ -1,6 +1,7 @@
 use std::cell::{Cell, RefCell};
 
 use cairo::{self, ImageSurface, MatrixTrait, PatternTrait, Rectangle};
+use markup5ever::local_name;
 
 use crate::allowed_url::{Fragment, Href};
 use crate::aspect_ratio::AspectRatio;

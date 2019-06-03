@@ -1,5 +1,6 @@
 use cairo;
 use cairo::{PatternTrait, Rectangle};
+use markup5ever::local_name;
 use std::cell::{Cell, RefCell};
 
 use crate::allowed_url::Href;
