@@ -69,6 +69,22 @@ impl NodeData {
         (&self.node_impl).downcast_ref::<T>()
     }
 
+    pub fn get_type(&self) -> NodeType {
+        self.node_type
+    }
+
+    pub fn element_name(&self) -> &str {
+        self.element_name.as_ref()
+    }
+
+    pub fn get_id(&self) -> Option<&str> {
+        self.id.as_ref().map(String::as_str)
+    }
+
+    pub fn get_class(&self) -> Option<&str> {
+        self.class.as_ref().map(String::as_str)
+    }
+
     pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
         if self.node_impl.overflow_hidden() {
             let mut specified_values = self.specified_values.borrow_mut();
@@ -229,6 +245,17 @@ impl NodeData {
 
     fn set_error(&self, error: NodeError) {
         *self.result.borrow_mut() = Err(error);
+    }
+}
+
+impl fmt::Display for NodeData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:?} id={}",
+            self.get_type(),
+            self.get_id().unwrap_or("None")
+        )
     }
 }
 
@@ -426,19 +453,19 @@ pub enum NodeType {
 
 impl RsvgNode {
     pub fn get_type(&self) -> NodeType {
-        self.borrow().node_type
+        self.borrow().get_type()
     }
 
     pub fn element_name(&self) -> &str {
-        self.borrow().element_name.as_ref()
+        self.borrow().element_name()
     }
 
     pub fn get_id(&self) -> Option<&str> {
-        self.borrow().id.as_ref().map(String::as_str)
+        self.borrow().get_id()
     }
 
     pub fn get_class(&self) -> Option<&str> {
-        self.borrow().class.as_ref().map(String::as_str)
+        self.borrow().get_class()
     }
 
     pub fn get_transform(&self) -> Matrix {
@@ -525,16 +552,5 @@ impl RsvgNode {
 
     pub fn is_overflow(&self) -> bool {
         self.borrow().specified_values.borrow().is_overflow()
-    }
-}
-
-impl fmt::Display for RsvgNode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:?} id={}",
-            self.get_type(),
-            self.get_id().unwrap_or("None")
-        )
     }
 }
