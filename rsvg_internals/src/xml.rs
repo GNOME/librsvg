@@ -391,7 +391,13 @@ impl XmlState {
     }
 
     fn xinclude_fallback_characters(&mut self, ctx: &XIncludeContext, text: &str) {
-        if ctx.need_fallback {
+        if ctx.need_fallback && self.current_node.is_some() {
+            // We test for is_some() because with a bad "SVG" file like this:
+            //
+            //    <xi:include href="blah"><xi:fallback>foo</xi:fallback></xi:include>
+            //
+            // at the point we get "foo" here, there is no current_node because
+            // no nodes have been created before the xi:include.
             self.element_creation_characters(text);
         }
     }
