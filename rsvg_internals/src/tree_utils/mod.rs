@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::fmt;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
@@ -45,6 +46,12 @@ impl<T> PartialEq for NodeRef<T> {
     #[inline]
     fn eq(&self, other: &NodeRef<T>) -> bool {
         Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for NodeRef<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.0.data, f)
     }
 }
 
