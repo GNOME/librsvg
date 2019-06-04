@@ -5,7 +5,7 @@ use cairo::{self, ImageSurface};
 use markup5ever::{local_name, LocalName};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::NodeError;
+use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
 use crate::parsers::{self, ParseError};
@@ -228,19 +228,19 @@ impl NodeTrait for FuncX {
                     self.table_values.replace(v);
                 }
                 local_name!("slope") => self.slope.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("intercept") => self.intercept.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("amplitude") => self.amplitude.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("exponent") => self.exponent.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("offset") => self.offset.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 _ => (),
             }

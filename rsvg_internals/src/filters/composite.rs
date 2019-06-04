@@ -5,7 +5,7 @@ use cssparser::{CowRcStr, Parser, Token};
 use markup5ever::local_name;
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{NodeError, ValueErrorKind};
+use crate::error::{AttributeResultExt, ValueErrorKind};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
@@ -73,16 +73,16 @@ impl NodeTrait for Composite {
                 }
                 local_name!("operator") => self.operator.set(attr.parse(value)?),
                 local_name!("k1") => self.k1.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("k2") => self.k2.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("k3") => self.k3.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("k4") => self.k4.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 _ => (),
             }

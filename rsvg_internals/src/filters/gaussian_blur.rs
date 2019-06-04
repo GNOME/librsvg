@@ -7,7 +7,7 @@ use markup5ever::local_name;
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::NodeError;
+use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers;
 use crate::property_bag::PropertyBag;
@@ -52,7 +52,7 @@ impl NodeTrait for GaussianBlur {
             match attr {
                 local_name!("stdDeviation") => self.std_deviation.set(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))

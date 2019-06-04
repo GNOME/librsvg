@@ -4,7 +4,7 @@ use cairo::{self, ImageSurface, MatrixTrait};
 use markup5ever::{local_name, LocalName};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::NodeError;
+use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{self, ParseError};
 use crate::property_bag::PropertyBag;
@@ -69,7 +69,7 @@ impl NodeTrait for Turbulence {
             match attr {
                 local_name!("baseFrequency") => self.base_frequency.set(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))
@@ -79,7 +79,7 @@ impl NodeTrait for Turbulence {
                         })?,
                 ),
                 local_name!("numOctaves") => self.num_octaves.set(
-                    parsers::integer(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::integer(value).attribute(attr)?,
                 ),
                 // Yes, seed needs to be parsed as a number and then truncated.
                 local_name!("seed") => self.seed.set(
@@ -91,7 +91,7 @@ impl NodeTrait for Turbulence {
                                 f64::from(i32::max_value()),
                             ) as i32
                         })
-                        .map_err(|err| NodeError::attribute_error(attr, err))?,
+                        .attribute(attr)?,
                 ),
                 local_name!("stitchTiles") => {
                     self.stitch_tiles.set(StitchTiles::parse(attr, value)?)

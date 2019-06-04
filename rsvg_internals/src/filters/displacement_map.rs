@@ -4,7 +4,7 @@ use cairo::{self, ImageSurface, MatrixTrait};
 use markup5ever::{local_name, LocalName};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::NodeError;
+use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{self, ParseError};
 use crate::property_bag::PropertyBag;
@@ -57,7 +57,7 @@ impl NodeTrait for DisplacementMap {
                     self.in2.replace(Some(Input::parse(attr, value)?));
                 }
                 local_name!("scale") => self.scale.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("xChannelSelector") => self
                     .x_channel_selector

@@ -5,7 +5,7 @@ use markup5ever::{local_name, LocalName};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::NodeError;
+use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
 use crate::parsers::{self, ParseError};
@@ -102,7 +102,7 @@ impl NodeTrait for ColorMatrix {
                     }
                     OperationType::Saturate => {
                         let s = parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr.clone(), err))?;
+                            .attribute(attr.clone())?;
                         if s < 0.0 || s > 1.0 {
                             return Err(NodeError::value_error(attr, "expected value from 0 to 1"));
                         }
@@ -118,7 +118,7 @@ impl NodeTrait for ColorMatrix {
                     }
                     OperationType::HueRotate => {
                         let degrees = parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?;
+                            .attribute(attr.clone())?;
 
                         let (sin, cos) = degrees.to_radians().sin_cos();
 

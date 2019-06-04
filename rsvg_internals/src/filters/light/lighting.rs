@@ -9,7 +9,7 @@ use num_traits::identities::Zero;
 use rayon::prelude::*;
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::NodeError;
+use crate::error::{AttributeResultExt, NodeError};
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
     light::{
@@ -105,11 +105,11 @@ impl NodeTrait for Lighting {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("surfaceScale") => self.surface_scale.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("kernelUnitLength") => self.kernel_unit_length.set(Some(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x > 0.0 && y > 0.0 {
                                 Ok((x, y))
@@ -133,7 +133,7 @@ impl NodeTrait for Lighting {
                     match attr {
                         local_name!("diffuseConstant") => diffuse_constant.set(
                             parsers::number(value)
-                                .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                                .attribute(attr.clone())
                                 .and_then(|x| {
                                     if x >= 0.0 {
                                         Ok(x)
@@ -157,7 +157,7 @@ impl NodeTrait for Lighting {
                     match attr {
                         local_name!("specularConstant") => specular_constant.set(
                             parsers::number(value)
-                                .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                                .attribute(attr.clone())
                                 .and_then(|x| {
                                     if x >= 0.0 {
                                         Ok(x)
@@ -171,7 +171,7 @@ impl NodeTrait for Lighting {
                         ),
                         local_name!("specularExponent") => specular_exponent.set(
                             parsers::number(value)
-                                .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                                .attribute(attr.clone())
                                 .and_then(|x| {
                                     if x >= 1.0 && x <= 128.0 {
                                         Ok(x)

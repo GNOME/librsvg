@@ -5,7 +5,7 @@ use cssparser;
 use markup5ever::local_name;
 use nalgebra::Vector3;
 
-use crate::error::NodeError;
+use crate::error::AttributeResultExt;
 use crate::filters::context::FilterContext;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers;
@@ -207,14 +207,10 @@ impl NodeTrait for LightSource {
                     ref azimuth,
                     ref elevation,
                 } => match attr {
-                    local_name!("azimuth") => azimuth.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("elevation") => elevation.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
+                    local_name!("azimuth") => azimuth.set(parsers::number(value).attribute(attr)?),
+                    local_name!("elevation") => {
+                        elevation.set(parsers::number(value).attribute(attr)?)
+                    }
                     _ => (),
                 },
                 LightSource::Point {
@@ -222,18 +218,9 @@ impl NodeTrait for LightSource {
                     ref y,
                     ref z,
                 } => match attr {
-                    local_name!("x") => x.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("y") => y.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("z") => z.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
+                    local_name!("x") => x.set(parsers::number(value).attribute(attr)?),
+                    local_name!("y") => y.set(parsers::number(value).attribute(attr)?),
+                    local_name!("z") => z.set(parsers::number(value).attribute(attr)?),
                     _ => (),
                 },
                 LightSource::Spot {
@@ -246,38 +233,24 @@ impl NodeTrait for LightSource {
                     ref specular_exponent,
                     ref limiting_cone_angle,
                 } => match attr {
-                    local_name!("x") => x.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("y") => y.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("z") => z.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("pointsAtX") => points_at_x.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("pointsAtY") => points_at_y.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("pointsAtZ") => points_at_z.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("specularExponent") => specular_exponent.set(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    ),
-                    local_name!("limitingConeAngle") => limiting_cone_angle.set(Some(
-                        parsers::number(value)
-                            .map_err(|err| NodeError::attribute_error(attr, err))?,
-                    )),
+                    local_name!("x") => x.set(parsers::number(value).attribute(attr)?),
+                    local_name!("y") => y.set(parsers::number(value).attribute(attr)?),
+                    local_name!("z") => z.set(parsers::number(value).attribute(attr)?),
+                    local_name!("pointsAtX") => {
+                        points_at_x.set(parsers::number(value).attribute(attr)?)
+                    }
+                    local_name!("pointsAtY") => {
+                        points_at_y.set(parsers::number(value).attribute(attr)?)
+                    }
+                    local_name!("pointsAtZ") => {
+                        points_at_z.set(parsers::number(value).attribute(attr)?)
+                    }
+                    local_name!("specularExponent") => {
+                        specular_exponent.set(parsers::number(value).attribute(attr)?)
+                    }
+                    local_name!("limitingConeAngle") => {
+                        limiting_cone_angle.set(Some(parsers::number(value).attribute(attr)?))
+                    }
                     _ => (),
                 },
             }

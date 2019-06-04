@@ -5,7 +5,7 @@ use markup5ever::{local_name, LocalName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::NodeError;
+use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
 use crate::parsers::{self, ParseError};
@@ -66,7 +66,7 @@ impl NodeTrait for ConvolveMatrix {
             match attr {
                 local_name!("order") => self.order.set(
                     parsers::integer_optional_integer(value)
-                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x > 0 && y > 0 {
                                 Ok((x as u32, y as u32))
@@ -80,7 +80,7 @@ impl NodeTrait for ConvolveMatrix {
                 ),
                 local_name!("divisor") => self.divisor.set(Some(
                     parsers::number(value)
-                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                        .attribute(attr.clone())
                         .and_then(|x| {
                             if x != 0.0 {
                                 Ok(x)
@@ -90,12 +90,12 @@ impl NodeTrait for ConvolveMatrix {
                         })?,
                 )),
                 local_name!("bias") => self.bias.set(
-                    parsers::number(value).map_err(|err| NodeError::attribute_error(attr, err))?,
+                    parsers::number(value).attribute(attr)?,
                 ),
                 local_name!("edgeMode") => self.edge_mode.set(EdgeMode::parse(attr, value)?),
                 local_name!("kernelUnitLength") => self.kernel_unit_length.set(Some(
                     parsers::number_optional_number(value)
-                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x > 0.0 && y > 0.0 {
                                 Ok((x, y))
@@ -126,7 +126,7 @@ impl NodeTrait for ConvolveMatrix {
             match attr {
                 local_name!("targetX") => self.target_x.set(Some(
                     parsers::integer(value)
-                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                        .attribute(attr.clone())
                         .and_then(|x| {
                             if x >= 0 && x < self.order.get().0 as i32 {
                                 Ok(x as u32)
@@ -140,7 +140,7 @@ impl NodeTrait for ConvolveMatrix {
                 )),
                 local_name!("targetY") => self.target_y.set(Some(
                     parsers::integer(value)
-                        .map_err(|err| NodeError::attribute_error(attr.clone(), err))
+                        .attribute(attr.clone())
                         .and_then(|x| {
                             if x >= 0 && x < self.order.get().1 as i32 {
                                 Ok(x as u32)
