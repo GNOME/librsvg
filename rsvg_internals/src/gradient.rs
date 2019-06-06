@@ -367,18 +367,18 @@ impl Gradient {
 
     fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
         assert!(
-            node.get_type() == NodeType::LinearGradient
-                || node.get_type() == NodeType::RadialGradient
+            node.borrow().get_type() == NodeType::LinearGradient
+                || node.borrow().get_type() == NodeType::RadialGradient
         );
 
         for child in node
             .children()
-            .filter(|child| child.get_type() == NodeType::Stop)
+            .filter(|child| child.borrow().get_type() == NodeType::Stop)
         {
-            if child.is_in_error() {
+            if child.borrow().is_in_error() {
                 rsvg_log!("(not using gradient stop {} because it is in error)", child);
             } else {
-                let offset = child.get_impl::<NodeStop>().get_offset();
+                let offset = child.borrow().get_impl::<NodeStop>().get_offset();
                 let cascaded = CascadedValues::new_from_node(&child);
                 let values = cascaded.get();
                 let rgba = match values.stop_color {
@@ -437,7 +437,7 @@ fn acquire_gradient<'a>(
 ) -> Option<AcquiredNode> {
     name.and_then(move |fragment| draw_ctx.acquired_nodes().get_node(fragment))
         .and_then(|acquired| {
-            let node_type = acquired.get().get_type();
+            let node_type = acquired.get().borrow().get_type();
 
             if node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient {
                 Some(acquired)
@@ -608,7 +608,12 @@ impl PaintSource for NodeGradient {
 }
 
 fn get_gradient_with_color_stops_from_node(node: &RsvgNode) -> Gradient {
-    let mut gradient = node.get_impl::<NodeGradient>().gradient.borrow().clone();
+    let mut gradient = node
+        .borrow()
+        .get_impl::<NodeGradient>()
+        .gradient
+        .borrow()
+        .clone();
     gradient.add_color_stops_from_node(node);
     gradient
 }
@@ -679,7 +684,7 @@ impl NodeTrait for NodeGradient {
             }
         }
 
-        match node.get_type() {
+        match node.borrow().get_type() {
             NodeType::LinearGradient => {
                 g.variant = GradientVariant::Linear { x1, y1, x2, y2 };
             }

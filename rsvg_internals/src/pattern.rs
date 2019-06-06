@@ -229,7 +229,12 @@ impl PaintSource for NodePattern {
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
-        let mut result = node.get_impl::<NodePattern>().pattern.borrow().clone();
+        let mut result = node
+            .borrow()
+            .get_impl::<NodePattern>()
+            .pattern
+            .borrow()
+            .clone();
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
@@ -244,7 +249,7 @@ impl PaintSource for NodePattern {
                     return Err(RenderingError::CircularReference);
                 }
 
-                let fallback = a_node.get_impl::<NodePattern>().pattern.borrow();
+                let fallback = a_node.borrow().get_impl::<NodePattern>().pattern.borrow();
                 result.resolve_from_fallback(&fallback);
 
                 stack.push(a_node);

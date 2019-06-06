@@ -351,7 +351,7 @@ impl DrawingCtx {
         {
             let clip_node = clip_node.get().clone();
 
-            let ClipPathUnits(units) = clip_node.get_impl::<NodeClipPath>().get_units();
+            let ClipPathUnits(units) = clip_node.borrow().get_impl::<NodeClipPath>().get_units();
 
             if units == CoordUnits::UserSpaceOnUse {
                 (Some(clip_node), None)
@@ -368,7 +368,7 @@ impl DrawingCtx {
         if let Some(node) = clip_node {
             let orig_bbox = self.bbox;
 
-            let clip_path = node.get_impl::<NodeClipPath>();
+            let clip_path = node.borrow().get_impl::<NodeClipPath>();
             let res = clip_path.to_cairo_context(&node, self, &orig_bbox);
 
             // FIXME: this is an EPIC HACK to keep the clipping context from
@@ -398,7 +398,7 @@ impl DrawingCtx {
                 let mask = values.mask.0.get();
 
                 // The `filter` property does not apply to masks.
-                let filter = if node.get_type() == NodeType::Mask {
+                let filter = if node.borrow().get_type() == NodeType::Mask {
                     None
                 } else {
                     values.filter.0.get()
@@ -487,6 +487,7 @@ impl DrawingCtx {
                             res = res.and_then(|_| {
                                 let bbox = dc.bbox;
                                 mask_node
+                                    .borrow()
                                     .get_impl::<NodeMask>()
                                     .generate_cairo_mask(&mask_node, &affines, dc, &bbox)
                             });
@@ -567,7 +568,7 @@ impl DrawingCtx {
             Some(acquired) => {
                 let filter_node = acquired.get();
 
-                if !filter_node.is_in_error() {
+                if !filter_node.borrow().is_in_error() {
                     // FIXME: deal with out of memory here
                     filters::render(&filter_node, values, child_surface, self, node_bbox)
                 } else {
@@ -630,11 +631,13 @@ impl DrawingCtx {
                 if let Some(acquired) = self.acquired_nodes.get_node(iri) {
                     let node = acquired.get();
 
-                    had_paint_server = match node.get_type() {
+                    had_paint_server = match node.borrow().get_type() {
                         NodeType::LinearGradient | NodeType::RadialGradient => node
+                            .borrow()
                             .get_impl::<NodeGradient>()
                             .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
                         NodeType::Pattern => node
+                            .borrow()
                             .get_impl::<NodePattern>()
                             .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
                         _ => false,
@@ -1135,7 +1138,7 @@ impl AcquiredNodes {
         fragment
             .and_then(move |fragment| self.get_node(fragment))
             .and_then(|acquired| {
-                if acquired.get().get_type() == node_type {
+                if acquired.get().borrow().get_type() == node_type {
                     Some(acquired)
                 } else {
                     None

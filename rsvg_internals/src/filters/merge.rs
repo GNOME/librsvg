@@ -123,15 +123,15 @@ impl Filter for Merge {
         let mut bounds = self.base.get_bounds(ctx);
         for child in node
             .children()
-            .filter(|c| c.get_type() == NodeType::FeMergeNode)
+            .filter(|c| c.borrow().get_type() == NodeType::FeMergeNode)
         {
-            if child.is_in_error() {
+            if child.borrow().is_in_error() {
                 return Err(FilterError::ChildNodeInError);
             }
 
             let input = ctx.get_input(
                 draw_ctx,
-                child.get_impl::<MergeNode>().in_.borrow().as_ref(),
+                child.borrow().get_impl::<MergeNode>().in_.borrow().as_ref(),
             )?;
             bounds = bounds.add_input(&input);
         }
@@ -141,9 +141,9 @@ impl Filter for Merge {
         let mut output_surface = None;
         for child in node
             .children()
-            .filter(|c| c.get_type() == NodeType::FeMergeNode)
+            .filter(|c| c.borrow().get_type() == NodeType::FeMergeNode)
         {
-            output_surface = Some(child.get_impl::<MergeNode>().render(
+            output_surface = Some(child.borrow().get_impl::<MergeNode>().render(
                 ctx,
                 draw_ctx,
                 bounds,

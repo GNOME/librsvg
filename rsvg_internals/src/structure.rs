@@ -76,8 +76,8 @@ impl NodeTrait for NodeSwitch {
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
             if let Some(child) = node
                 .children()
-                .filter(|c| c.get_type() != NodeType::Chars)
-                .find(|c| c.get_cond())
+                .filter(|c| c.borrow().get_type() != NodeType::Chars)
+                .find(|c| c.borrow().get_cond())
             {
                 dc.draw_node_from_stack(&CascadedValues::new(cascaded, &child), &child, clipping)
             } else {
@@ -383,7 +383,7 @@ impl NodeTrait for NodeUse {
 
         let viewport = Rectangle::new(nx, ny, nw, nh);
 
-        if child.get_type() != NodeType::Symbol {
+        if child.borrow().get_type() != NodeType::Symbol {
             let cr = draw_ctx.get_cairo_context();
             cr.translate(viewport.x, viewport.y);
 
@@ -395,10 +395,10 @@ impl NodeTrait for NodeUse {
                 )
             })
         } else {
-            let symbol = child.get_impl::<NodeSymbol>();
+            let symbol = child.borrow().get_impl::<NodeSymbol>();
 
             let clip_mode = if !values.is_overflow()
-                || (values.overflow == Overflow::Visible && child.is_overflow())
+                || (values.overflow == Overflow::Visible && child.borrow().is_overflow())
             {
                 Some(ClipMode::ClipToVbox)
             } else {

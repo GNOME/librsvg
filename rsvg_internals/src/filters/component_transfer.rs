@@ -283,19 +283,22 @@ impl Filter for ComponentTransfer {
         )?;
 
         // Enumerate all child <feFuncX> nodes.
-        let functions = node.children().rev().filter(|c| match c.get_type() {
-            NodeType::ComponentTransferFunctionA
-            | NodeType::ComponentTransferFunctionB
-            | NodeType::ComponentTransferFunctionG
-            | NodeType::ComponentTransferFunctionR => true,
-            _ => false,
-        });
+        let functions = node
+            .children()
+            .rev()
+            .filter(|c| match c.borrow().get_type() {
+                NodeType::ComponentTransferFunctionA
+                | NodeType::ComponentTransferFunctionB
+                | NodeType::ComponentTransferFunctionG
+                | NodeType::ComponentTransferFunctionR => true,
+                _ => false,
+            });
 
         // Get a node for every pixel component.
         let get_node = |channel| {
             functions
                 .clone()
-                .find(|c| c.get_impl::<FuncX>().channel == channel)
+                .find(|c| c.borrow().get_impl::<FuncX>().channel == channel)
         };
         let func_r = get_node(Channel::R);
         let func_g = get_node(Channel::G);
@@ -306,7 +309,7 @@ impl Filter for ComponentTransfer {
             .iter()
             .filter_map(|x| x.as_ref())
         {
-            if node.is_in_error() {
+            if node.borrow().is_in_error() {
                 return Err(FilterError::ChildNodeInError);
             }
         }
@@ -320,7 +323,7 @@ impl Filter for ComponentTransfer {
         #[inline]
         fn func_or_default<'a>(func: &'a Option<RsvgNode>, default: &'a FuncX) -> &'a FuncX {
             func.as_ref()
-                .map(|c| c.get_impl::<FuncX>())
+                .map(|c| c.borrow().get_impl::<FuncX>())
                 .unwrap_or(default)
         }
 

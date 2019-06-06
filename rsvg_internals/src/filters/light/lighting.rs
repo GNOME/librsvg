@@ -222,22 +222,26 @@ impl Filter for Lighting {
             cssparser::Color::RGBA(rgba) => rgba,
         };
 
-        let mut light_sources = node.children().rev().filter(|c| match c.get_type() {
-            NodeType::DistantLight | NodeType::PointLight | NodeType::SpotLight => true,
-            _ => false,
-        });
+        let mut light_sources = node
+            .children()
+            .rev()
+            .filter(|c| match c.borrow().get_type() {
+                NodeType::DistantLight | NodeType::PointLight | NodeType::SpotLight => true,
+                _ => false,
+            });
+
         let light_source = light_sources.next();
         if light_source.is_none() || light_sources.next().is_some() {
             return Err(FilterError::InvalidLightSourceCount);
         }
 
         let light_source = light_source.unwrap();
-        if light_source.is_in_error() {
+        if light_source.borrow().is_in_error() {
             return Err(FilterError::ChildNodeInError);
         }
 
-        let light_source = light_source.get_impl::<LightSource>();
-        let light_source = light_source.transform(ctx);
+        let node_data = light_source.borrow();
+        let light_source = node_data.get_impl::<LightSource>().transform(ctx);
 
         let mut input_surface = input.surface().clone();
 

@@ -93,7 +93,7 @@ impl NodeMask {
         {
             let mask_cr = cairo::Context::new(&mask_content_surface);
             mask_cr.set_matrix(affines.for_temporary_surface);
-            mask_cr.transform(mask_node.get_transform());
+            mask_cr.transform(mask_node.borrow().get_transform());
 
             draw_ctx.push_cairo_context(mask_cr);
 

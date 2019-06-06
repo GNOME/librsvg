@@ -88,9 +88,11 @@ impl Svg {
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let root = self.root();
 
-        assert!(root.get_type() == NodeType::Svg);
+        assert!(root.borrow().get_type() == NodeType::Svg);
 
-        root.get_impl::<NodeSvg>().get_intrinsic_dimensions()
+        root.borrow()
+            .get_impl::<NodeSvg>()
+            .get_intrinsic_dimensions()
     }
 }
 
