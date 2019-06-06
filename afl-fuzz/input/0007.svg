@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48">
+  <g transform="translate(-10, -10)">
+    <path fill="blue" d="M 18 18 l 32 0 l 0 32 l -32 0 z"/>
+  </g>
+</svg>

@@ -3,6 +3,7 @@ members = [
     "librsvg_crate",
     "rsvg_internals",
 ]
+exclude = [ "afl-fuzz" ]
 
 [profile.release]
 lto = true

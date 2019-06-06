@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <defs>
+    <clipPath id="one" clipPathUnits="objectBoundingBox">
+      <path d="M 0.5 0.0 L 1.0 0.5 L 0.5 1.0 L 0.0 0.5 Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#one)">
+    <rect x="10" y="10" width="40" height="40" fill="blue"/>
+    <rect x="50" y="50" width="40" height="40" fill="#00ff00"/>
+  </g>
+</svg>

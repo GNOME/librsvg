@@ -1,0 +1,21 @@
+[package]
+name = "rsvg-afl-fuzz"
+version = "0.0.1"
+authors = [
+	"Bastien Orivel <eijebong@bananium.fr>",
+]
+edition = "2018"
+
+[dependencies]
+afl = "0.4"
+cairo-rs = { version = "0.6.0", features=["svg"] }
+glib = "0.7.0"
+gio = { version="0.6.0", features=["v2_48"] } # per configure.ac
+librsvg = { path = "../librsvg_crate/" }
+
+[profile.release]
+lto = true
+debug = true
+
+[profile.bench]
+lto = true
