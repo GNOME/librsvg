@@ -254,7 +254,7 @@ impl NodeData {
 
     // Sets the node's specified values from the style-related attributes in the pbag.
     // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    fn set_style(&self, node: &RsvgNode, css_rules: &CssRules) {
+    pub fn set_style(&self, node: &RsvgNode, css_rules: &CssRules) {
         self.set_css_styles(node, css_rules);
         self.set_style_attribute();
     }
@@ -482,14 +482,6 @@ impl RsvgNode {
 
         for child in self.children() {
             child.cascade(&values);
-        }
-    }
-
-    pub fn set_styles_recursively(&self, node: &RsvgNode, css_rules: &CssRules) {
-        self.borrow().set_style(node, css_rules);
-
-        for child in self.children() {
-            child.set_styles_recursively(&child, css_rules);
         }
     }
 

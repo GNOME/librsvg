@@ -116,7 +116,7 @@ impl XmlState {
             Some(ref root) if root.borrow().get_type() == NodeType::Svg => {
                 let root = self.tree_root.take().unwrap();
 
-                root.set_styles_recursively(&root, self.css_rules.as_ref().unwrap());
+                set_styles_recursively(&root, self.css_rules.as_ref().unwrap());
 
                 Ok(Svg::new(
                     root,
@@ -532,6 +532,14 @@ impl Drop for XmlState {
 
 fn skip_namespace(s: &str) -> &str {
     s.find(':').map_or(s, |pos| &s[pos + 1..])
+}
+
+fn set_styles_recursively(node: &RsvgNode, css_rules: &CssRules) {
+    node.borrow().set_style(node, css_rules);
+
+    for child in node.children() {
+        set_styles_recursively(&child, css_rules);
+    }
 }
 
 // https://www.w3.org/TR/xml-stylesheet/
