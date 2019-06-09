@@ -16,7 +16,7 @@ use crate::filters;
 use crate::gradient::NodeGradient;
 use crate::length::Dasharray;
 use crate::mask::NodeMask;
-use crate::node::{CascadedValues, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::NodePattern;
 use crate::properties::ComputedValues;

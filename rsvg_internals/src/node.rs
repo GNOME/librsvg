@@ -471,8 +471,13 @@ pub enum NodeType {
     FeTurbulence,
 }
 
-impl RsvgNode {
-    pub fn cascade(&self, values: &ComputedValues) {
+/// Helper trait for cascading recursively
+pub trait NodeCascade {
+    fn cascade(&self, values: &ComputedValues);
+}
+
+impl NodeCascade for RsvgNode {
+    fn cascade(&self, values: &ComputedValues) {
         let mut values = values.clone();
         self.borrow()
             .specified_values
@@ -484,8 +489,27 @@ impl RsvgNode {
             child.cascade(&values);
         }
     }
+}
 
-    pub fn draw(
+/// Helper trait for drawing recursively
+pub trait NodeDraw {
+    fn draw(
+        &self,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<(), RenderingError>;
+
+    fn draw_children(
+        &self,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<(), RenderingError>;
+}
+
+impl NodeDraw for RsvgNode {
+    fn draw(
         &self,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -507,7 +531,7 @@ impl RsvgNode {
         }
     }
 
-    pub fn draw_children(
+    fn draw_children(
         &self,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,

@@ -10,7 +10,7 @@ use crate::allowed_url::{AllowedUrl, Fragment};
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeType, RsvgNode};
+use crate::node::{NodeCascade, NodeType, RsvgNode};
 use crate::properties::ComputedValues;
 use crate::structure::{IntrinsicDimensions, NodeSvg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
