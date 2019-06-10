@@ -10,7 +10,7 @@ use crate::allowed_url::{AllowedUrl, Fragment};
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeType, RsvgNode};
+use crate::node::{NodeCascade, NodeType, RsvgNode};
 use crate::properties::ComputedValues;
 use crate::structure::{IntrinsicDimensions, NodeSvg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -88,9 +88,11 @@ impl Svg {
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let root = self.root();
 
-        assert!(root.get_type() == NodeType::Svg);
+        assert!(root.borrow().get_type() == NodeType::Svg);
 
-        root.get_impl::<NodeSvg>().get_intrinsic_dimensions()
+        root.borrow()
+            .get_impl::<NodeSvg>()
+            .get_intrinsic_dimensions()
     }
 }
 

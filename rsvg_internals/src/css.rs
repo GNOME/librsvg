@@ -215,8 +215,9 @@ impl CssRules {
         //
         // This is basically a semi-compliant CSS2 selection engine
 
-        let element_name = node.element_name();
-        let id = node.get_id();
+        let node_data = node.borrow();
+        let element_name = node_data.element_name();
+        let id = node_data.get_id();
 
         // *
         if *selector == Selector::new("*") {
@@ -228,8 +229,8 @@ impl CssRules {
             return true;
         }
 
-        if let Some(klazz) = node.get_class() {
-            for cls in klazz.split_whitespace() {
+        if let Some(class) = node_data.get_class() {
+            for cls in class.split_whitespace() {
                 if !cls.is_empty() {
                     // tag.class#id
                     if let Some(id) = id {

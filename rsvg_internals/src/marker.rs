@@ -606,7 +606,7 @@ fn emit_marker_by_name(
     {
         let node = acquired.get();
 
-        node.get_impl::<NodeMarker>().render(
+        node.borrow().get_impl::<NodeMarker>().render(
             &node,
             draw_ctx,
             xpos,

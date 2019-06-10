@@ -124,8 +124,14 @@ impl NodeTrait for Primitive {
         let primitiveunits = node
             .parent()
             .and_then(|parent| {
-                if parent.get_type() == NodeType::Filter {
-                    Some(parent.get_impl::<NodeFilter>().primitiveunits.get())
+                if parent.borrow().get_type() == NodeType::Filter {
+                    Some(
+                        parent
+                            .borrow()
+                            .get_impl::<NodeFilter>()
+                            .primitiveunits
+                            .get(),
+                    )
                 } else {
                     None
                 }
@@ -263,8 +269,8 @@ pub fn render(
     node_bbox: BoundingBox,
 ) -> Result<cairo::ImageSurface, RenderingError> {
     let filter_node = &*filter_node;
-    assert_eq!(filter_node.get_type(), NodeType::Filter);
-    assert!(!filter_node.is_in_error());
+    assert_eq!(filter_node.borrow().get_type(), NodeType::Filter);
+    assert!(!filter_node.borrow().is_in_error());
 
     // The source surface has multiple references. We need to copy it to a new surface to have a
     // unique reference to be able to safely access the pixel data.
@@ -288,7 +294,7 @@ pub fn render(
         .children()
         // Skip nodes in error.
         .filter(|c| {
-            let in_error = c.is_in_error();
+            let in_error = c.borrow().is_in_error();
 
             if in_error {
                 rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
@@ -311,7 +317,8 @@ pub fn render(
         });
 
     for (c, linear_rgb) in primitives {
-        let filter = c.borrow().get_node_trait().as_filter().unwrap();
+        let node_data = c.borrow();
+        let filter = node_data.get_node_trait().as_filter().unwrap();
 
         let mut render = |filter_ctx: &mut FilterContext| {
             if let Err(err) = filter

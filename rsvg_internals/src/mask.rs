@@ -7,7 +7,7 @@ use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{CompositingAffines, DrawingCtx};
 use crate::error::RenderingError;
 use crate::length::{LengthHorizontal, LengthVertical};
-use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, NodeDraw, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Opacity;
@@ -93,7 +93,7 @@ impl NodeMask {
         {
             let mask_cr = cairo::Context::new(&mask_content_surface);
             mask_cr.set_matrix(affines.for_temporary_surface);
-            mask_cr.transform(mask_node.get_transform());
+            mask_cr.transform(mask_node.borrow().get_transform());
 
             draw_ctx.push_cairo_context(mask_cr);
 

@@ -113,10 +113,10 @@ impl XmlState {
     pub fn steal_result(&mut self) -> Result<Svg, LoadingError> {
         match self.tree_root {
             None => Err(LoadingError::SvgHasNoElements),
-            Some(ref root) if root.get_type() == NodeType::Svg => {
+            Some(ref root) if root.borrow().get_type() == NodeType::Svg => {
                 let root = self.tree_root.take().unwrap();
 
-                root.set_styles_recursively(&root, self.css_rules.as_ref().unwrap());
+                set_styles_recursively(&root, self.css_rules.as_ref().unwrap());
 
                 Ok(Svg::new(
                     root,
@@ -259,6 +259,7 @@ impl XmlState {
             _ => {
                 let parent = self.current_node.clone();
                 let node = self.create_node(parent.as_ref(), name, pbag);
+
                 if self.current_node.is_none() {
                     self.set_root(&node);
                 }
@@ -272,8 +273,8 @@ impl XmlState {
     fn element_creation_end_element(&mut self) {
         let node = self.current_node.take().unwrap();
 
-        if node.get_type() == NodeType::Style {
-            let css_data = node.get_impl::<NodeStyle>().get_css(&node);
+        if node.borrow().get_type() == NodeType::Style {
+            let css_data = node.borrow().get_impl::<NodeStyle>().get_css(&node);
 
             let css_rules = self.css_rules.as_mut().unwrap();
 
@@ -291,7 +292,7 @@ impl XmlState {
             // the text and avoid screwing up the Pango layouts
             let chars_node = if let Some(child) = node
                 .last_child()
-                .filter(|c| c.get_type() == NodeType::Chars)
+                .filter(|c| c.borrow().get_type() == NodeType::Chars)
             {
                 child
             } else {
@@ -309,7 +310,7 @@ impl XmlState {
                 child
             };
 
-            chars_node.get_impl::<NodeChars>().append(text);
+            chars_node.borrow().get_impl::<NodeChars>().append(text);
         }
     }
 
@@ -327,7 +328,9 @@ impl XmlState {
             parent.append(&new_node);
         }
 
-        new_node.set_atts(&new_node, pbag, self.load_options.locale());
+        new_node
+            .borrow()
+            .set_atts(&new_node, pbag, self.load_options.locale());
 
         new_node
     }
@@ -529,6 +532,14 @@ impl Drop for XmlState {
 
 fn skip_namespace(s: &str) -> &str {
     s.find(':').map_or(s, |pos| &s[pos + 1..])
+}
+
+fn set_styles_recursively(node: &RsvgNode, css_rules: &CssRules) {
+    node.borrow().set_style(node, css_rules);
+
+    for child in node.children() {
+        set_styles_recursively(&child, css_rules);
+    }
 }
 
 // https://www.w3.org/TR/xml-stylesheet/

@@ -8,8 +8,8 @@ use std::fmt;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::CssRules;
 use crate::drawing_ctx::DrawingCtx;
-use crate::filters::Filter;
 use crate::error::*;
+use crate::filters::Filter;
 use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
@@ -65,8 +65,12 @@ impl NodeData {
         self.node_impl.as_ref()
     }
 
-    pub fn get_impl<T: NodeTrait>(&self) -> Option<&T> {
-        (&self.node_impl).downcast_ref::<T>()
+    pub fn get_impl<T: NodeTrait>(&self) -> &T {
+        if let Some(t) = (&self.node_impl).downcast_ref::<T>() {
+            t
+        } else {
+            panic!("could not downcast");
+        }
     }
 
     pub fn get_type(&self) -> NodeType {
@@ -83,6 +87,18 @@ impl NodeData {
 
     pub fn get_class(&self) -> Option<&str> {
         self.class.as_ref().map(String::as_str)
+    }
+
+    pub fn get_cond(&self) -> bool {
+        self.cond.get()
+    }
+
+    pub fn get_transform(&self) -> Matrix {
+        self.transform.get()
+    }
+
+    pub fn is_overflow(&self) -> bool {
+        self.specified_values.borrow().is_overflow()
     }
 
     pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
@@ -238,13 +254,17 @@ impl NodeData {
 
     // Sets the node's specified values from the style-related attributes in the pbag.
     // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    fn set_style(&self, node: &RsvgNode, css_rules: &CssRules) {
+    pub fn set_style(&self, node: &RsvgNode, css_rules: &CssRules) {
         self.set_css_styles(node, css_rules);
         self.set_style_attribute();
     }
 
     fn set_error(&self, error: NodeError) {
         *self.result.borrow_mut() = Err(error);
+    }
+
+    pub fn is_in_error(&self) -> bool {
+        self.result.borrow().is_err()
     }
 }
 
@@ -451,28 +471,13 @@ pub enum NodeType {
     FeTurbulence,
 }
 
-impl RsvgNode {
-    pub fn get_type(&self) -> NodeType {
-        self.borrow().get_type()
-    }
+/// Helper trait for cascading recursively
+pub trait NodeCascade {
+    fn cascade(&self, values: &ComputedValues);
+}
 
-    pub fn element_name(&self) -> &str {
-        self.borrow().element_name()
-    }
-
-    pub fn get_id(&self) -> Option<&str> {
-        self.borrow().get_id()
-    }
-
-    pub fn get_class(&self) -> Option<&str> {
-        self.borrow().get_class()
-    }
-
-    pub fn get_transform(&self) -> Matrix {
-        self.borrow().transform.get()
-    }
-
-    pub fn cascade(&self, values: &ComputedValues) {
+impl NodeCascade for RsvgNode {
+    fn cascade(&self, values: &ComputedValues) {
         let mut values = values.clone();
         self.borrow()
             .specified_values
@@ -484,35 +489,40 @@ impl RsvgNode {
             child.cascade(&values);
         }
     }
+}
 
-    pub fn set_styles_recursively(&self, node: &RsvgNode, css_rules: &CssRules) {
-        self.borrow().set_style(node, css_rules);
+/// Helper trait for drawing recursively
+pub trait NodeDraw {
+    fn draw(
+        &self,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<(), RenderingError>;
 
-        for child in self.children() {
-            child.set_styles_recursively(&child, css_rules);
-        }
-    }
+    fn draw_children(
+        &self,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<(), RenderingError>;
+}
 
-    pub fn get_cond(&self) -> bool {
-        self.borrow().cond.get()
-    }
-
-    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
-        self.borrow().set_atts(node, pbag, locale);
-    }
-
-    pub fn draw(
+impl NodeDraw for RsvgNode {
+    fn draw(
         &self,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        if !self.is_in_error() {
+        if !self.borrow().is_in_error() {
             draw_ctx.with_saved_matrix(&mut |dc| {
                 let cr = dc.get_cairo_context();
-                cr.transform(self.get_transform());
+                cr.transform(self.borrow().get_transform());
 
-                self.borrow().get_node_trait().draw(self, cascaded, dc, clipping)
+                self.borrow()
+                    .get_node_trait()
+                    .draw(self, cascaded, dc, clipping)
             })
         } else {
             rsvg_log!("(not rendering element {} because it is in error)", self);
@@ -521,19 +531,7 @@ impl RsvgNode {
         }
     }
 
-    pub fn is_in_error(&self) -> bool {
-        self.borrow().result.borrow().is_err()
-    }
-
-    pub fn get_impl<T: NodeTrait>(&self) -> &T {
-        if let Some(t) = self.borrow().get_impl::<T>() {
-            t
-        } else {
-            panic!("could not downcast");
-        }
-    }
-
-    pub fn draw_children(
+    fn draw_children(
         &self,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -548,9 +546,5 @@ impl RsvgNode {
         }
 
         Ok(())
-    }
-
-    pub fn is_overflow(&self) -> bool {
-        self.borrow().specified_values.borrow().is_overflow()
     }
 }

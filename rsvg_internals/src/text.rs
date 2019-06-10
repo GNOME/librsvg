@@ -419,17 +419,18 @@ fn children_to_chunks(
     depth: usize,
 ) {
     for child in node.children() {
-        match child.get_type() {
+        match child.borrow().get_type() {
             NodeType::Chars => {
                 let values = cascaded.get();
                 child
+                    .borrow()
                     .get_impl::<NodeChars>()
                     .to_chunks(&child, values, chunks, dx, dy, depth);
             }
 
             NodeType::TSpan => {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                child.get_impl::<NodeTSpan>().to_chunks(
+                child.borrow().get_impl::<NodeTSpan>().to_chunks(
                     &child,
                     &cascaded,
                     draw_ctx,
@@ -440,7 +441,7 @@ fn children_to_chunks(
 
             NodeType::TRef => {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                child.get_impl::<NodeTRef>().to_chunks(
+                child.borrow().get_impl::<NodeTRef>().to_chunks(
                     &child,
                     &cascaded,
                     draw_ctx,
@@ -696,8 +697,9 @@ fn extract_chars_children_to_chunks_recursively(
     depth: usize,
 ) {
     for child in node.children() {
-        match child.get_type() {
+        match child.borrow().get_type() {
             NodeType::Chars => child
+                .borrow()
                 .get_impl::<NodeChars>()
                 .to_chunks(&child, values, chunks, None, None, depth),
             _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
