@@ -99,7 +99,6 @@ RUST_SRC =							\
 	rsvg_internals/src/surface_utils/shared_surface.rs	\
 	rsvg_internals/src/space.rs				\
 	rsvg_internals/src/srgb.rs				\
-	rsvg_internals/src/stop.rs				\
 	rsvg_internals/src/structure.rs				\
 	rsvg_internals/src/style.rs				\
 	rsvg_internals/src/svg.rs				\
