@@ -22,7 +22,7 @@ use crate::filters::{
     turbulence::Turbulence,
 };
 
-use crate::gradient::{NodeGradient, NodeStop};
+use crate::gradient::{NodeLinearGradient, NodeRadialGradient, NodeStop};
 use crate::image::NodeImage;
 use crate::link::NodeLink;
 use crate::marker::NodeMarker;
@@ -83,7 +83,7 @@ mod creators {
     n!(create_group,                     Group,                      NodeGroup::default);
     n!(create_image,                     Image,                      NodeImage::default);
     n!(create_fe_image,                  FeImage,                    Image::default);
-    n!(create_linear_gradient,           LinearGradient,             NodeGradient::new_linear);
+    n!(create_linear_gradient,           LinearGradient,             NodeLinearGradient::default);
     n!(create_line,                      Line,                       NodeLine::default);
     n!(create_link,                      Link,                       NodeLink::default);
     n!(create_marker,                    Marker,                     NodeMarker::default);
@@ -98,7 +98,7 @@ mod creators {
     n!(create_point_light,               PointLight,                 LightSource::new_point_light);
     n!(create_polygon,                   Polygon,                    NodePoly::new_closed);
     n!(create_polyline,                  Polyline,                   NodePoly::new_open);
-    n!(create_radial_gradient,           RadialGradient,             NodeGradient::new_radial);
+    n!(create_radial_gradient,           RadialGradient,             NodeRadialGradient::default);
     n!(create_rect,                      Rect,                       NodeRect::default);
     n!(create_specular_lighting,         FeSpecularLighting,         Lighting::new_specular);
     n!(create_spot_light,                SpotLight,                  LightSource::new_spot_light);
@@ -115,7 +115,7 @@ mod creators {
     n!(create_use,                       Use,                        NodeUse::default);
 
     // hack to partially support conical gradient
-    n!(create_conical_gradient,          RadialGradient,             NodeGradient::new_radial);
+    n!(create_conical_gradient,          RadialGradient,             NodeRadialGradient::default);
 
     // hack to make multiImage sort-of work
     n!(create_multi_image,               Switch,                     NodeSwitch::default);

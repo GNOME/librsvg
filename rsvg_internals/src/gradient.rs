@@ -555,122 +555,179 @@ impl NodeTrait for NodeStop {
     }
 }
 
-impl PaintSource for NodeGradient {
-    type Source = Gradient;
+macro_rules! impl_paint_source {
+    ($gradient_type:ty) => {
+        impl PaintSource for $gradient_type {
+            type Source = Gradient;
 
-    fn resolve(
-        &self,
-        node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx,
-        bbox: &BoundingBox,
-    ) -> Result<Option<Self::Source>, RenderingError> {
-        let mut result = get_gradient_with_color_stops_from_node(node);
-        let mut stack = NodeStack::new();
+            fn resolve(
+                &self,
+                node: &RsvgNode,
+                draw_ctx: &mut DrawingCtx,
+                bbox: &BoundingBox,
+            ) -> Result<Option<Self::Source>, RenderingError> {
+                let mut result = get_gradient_with_color_stops_from_node(node);
+                let mut stack = NodeStack::new();
 
-        while !result.is_resolved() {
-            if let Some(acquired) = acquire_gradient(draw_ctx, result.common.fallback.as_ref()) {
-                let a_node = acquired.get();
+                while !result.is_resolved() {
+                    if let Some(acquired) = acquire_gradient(draw_ctx, result.common.fallback.as_ref()) {
+                        let a_node = acquired.get();
 
-                if stack.contains(a_node) {
-                    rsvg_log!("circular reference in gradient {}", node);
-                    return Err(RenderingError::CircularReference);
+                        if stack.contains(a_node) {
+                            rsvg_log!("circular reference in gradient {}", node);
+                            return Err(RenderingError::CircularReference);
+                        }
+
+                        let fallback = get_gradient_with_color_stops_from_node(&a_node);
+                        result.resolve_from_fallback(&fallback);
+
+                        stack.push(a_node);
+                        continue;
+                    }
+
+                    result.resolve_from_defaults();
                 }
 
-                let fallback = get_gradient_with_color_stops_from_node(&a_node);
-                result.resolve_from_fallback(&fallback);
-
-                stack.push(a_node);
-                continue;
+                if result.bounds_are_valid(bbox) {
+                    Ok(Some(result))
+                } else {
+                    Ok(None)
+                }
             }
 
-            result.resolve_from_defaults();
-        }
+            fn set_pattern_on_draw_context(
+                &self,
+                gradient: &Self::Source,
+                values: &ComputedValues,
+                draw_ctx: &mut DrawingCtx,
+                opacity: &UnitInterval,
+                bbox: &BoundingBox,
+            ) -> Result<bool, RenderingError> {
+                assert!(gradient.is_resolved());
 
-        if result.bounds_are_valid(bbox) {
-            Ok(Some(result))
-        } else {
-            Ok(None)
-        }
-    }
+                let units = gradient.common.units.unwrap();
+                let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+                    draw_ctx.push_view_box(1.0, 1.0)
+                } else {
+                    draw_ctx.get_view_params()
+                };
 
-    fn set_pattern_on_draw_context(
-        &self,
-        gradient: &Self::Source,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        opacity: &UnitInterval,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError> {
-        assert!(gradient.is_resolved());
+                match gradient.variant {
+                    GradientVariant::Linear { x1, y1, x2, y2 } => {
+                        let mut pattern = cairo::LinearGradient::new(
+                            x1.as_ref().unwrap().normalize(values, &params),
+                            y1.as_ref().unwrap().normalize(values, &params),
+                            x2.as_ref().unwrap().normalize(values, &params),
+                            y2.as_ref().unwrap().normalize(values, &params),
+                        );
 
-        let units = gradient.common.units.unwrap();
-        let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            draw_ctx.push_view_box(1.0, 1.0)
-        } else {
-            draw_ctx.get_view_params()
-        };
+                        let cr = draw_ctx.get_cairo_context();
+                        set_common_on_pattern(gradient, &mut pattern, bbox, opacity);
+                        cr.set_source(&cairo::Pattern::LinearGradient(pattern));
+                    }
 
-        match gradient.variant {
-            GradientVariant::Linear { x1, y1, x2, y2 } => {
-                let mut pattern = cairo::LinearGradient::new(
-                    x1.as_ref().unwrap().normalize(values, &params),
-                    y1.as_ref().unwrap().normalize(values, &params),
-                    x2.as_ref().unwrap().normalize(values, &params),
-                    y2.as_ref().unwrap().normalize(values, &params),
-                );
+                    GradientVariant::Radial { cx, cy, r, fx, fy } => {
+                        let n_cx = cx.as_ref().unwrap().normalize(values, &params);
+                        let n_cy = cy.as_ref().unwrap().normalize(values, &params);
+                        let n_r = r.as_ref().unwrap().normalize(values, &params);
+                        let n_fx = fx.as_ref().unwrap().normalize(values, &params);
+                        let n_fy = fy.as_ref().unwrap().normalize(values, &params);
 
-                let cr = draw_ctx.get_cairo_context();
-                set_common_on_pattern(gradient, &mut pattern, bbox, opacity);
-                cr.set_source(&cairo::Pattern::LinearGradient(pattern));
-            }
+                        let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
+                        let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
 
-            GradientVariant::Radial { cx, cy, r, fx, fy } => {
-                let n_cx = cx.as_ref().unwrap().normalize(values, &params);
-                let n_cy = cy.as_ref().unwrap().normalize(values, &params);
-                let n_r = r.as_ref().unwrap().normalize(values, &params);
-                let n_fx = fx.as_ref().unwrap().normalize(values, &params);
-                let n_fy = fy.as_ref().unwrap().normalize(values, &params);
+                        let cr = draw_ctx.get_cairo_context();
+                        set_common_on_pattern(gradient, &mut pattern, bbox, opacity);
+                        cr.set_source(&cairo::Pattern::RadialGradient(pattern));
+                    }
+                }
 
-                let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
-                let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
-
-                let cr = draw_ctx.get_cairo_context();
-                set_common_on_pattern(gradient, &mut pattern, bbox, opacity);
-                cr.set_source(&cairo::Pattern::RadialGradient(pattern));
+                Ok(true)
             }
         }
-
-        Ok(true)
-    }
+    };
 }
 
 fn get_gradient_with_color_stops_from_node(node: &RsvgNode) -> Gradient {
-    let mut gradient = node
-        .borrow()
-        .get_impl::<NodeGradient>()
-        .gradient
-        .borrow()
-        .clone();
+    let mut gradient = match node.borrow().get_type() {
+        NodeType::LinearGradient => node
+            .borrow()
+            .get_impl::<NodeLinearGradient>()
+            .gradient
+            .borrow()
+            .clone(),
+        NodeType::RadialGradient => node
+            .borrow()
+            .get_impl::<NodeRadialGradient>()
+            .gradient
+            .borrow()
+            .clone(),
+        _ => unreachable!(),
+    };
+
     gradient.add_color_stops_from_node(node);
     gradient
 }
 
-pub struct NodeGradient {
+pub struct NodeLinearGradient {
     gradient: RefCell<Gradient>,
 }
 
-impl NodeGradient {
-    pub fn new_linear() -> NodeGradient {
-        NodeGradient {
+impl Default for NodeLinearGradient {
+    fn default() -> NodeLinearGradient {
+        NodeLinearGradient {
             gradient: RefCell::new(Gradient {
                 common: GradientCommon::unresolved(),
                 variant: GradientVariant::unresolved_linear(),
             }),
         }
     }
+}
 
-    pub fn new_radial() -> NodeGradient {
-        NodeGradient {
+impl NodeTrait for NodeLinearGradient {
+    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+        let mut g = self.gradient.borrow_mut();
+
+        let mut x1 = None;
+        let mut y1 = None;
+        let mut x2 = None;
+        let mut y2 = None;
+
+        for (attr, value) in pbag.iter() {
+            match attr {
+                // Attributes common to linear and radial gradients
+                local_name!("gradientUnits") => g.common.units = Some(attr.parse(value)?),
+                local_name!("gradientTransform") => g.common.affine = Some(attr.parse(value)?),
+                local_name!("spreadMethod") => g.common.spread = Some(attr.parse(value)?),
+                local_name!("xlink:href") => {
+                    g.common.fallback = Some(Fragment::parse(value).attribute(attr)?)
+                }
+
+                // Attributes specific to linear gradient
+                local_name!("x1") => x1 = Some(attr.parse(value)?),
+                local_name!("y1") => y1 = Some(attr.parse(value)?),
+                local_name!("x2") => x2 = Some(attr.parse(value)?),
+                local_name!("y2") => y2 = Some(attr.parse(value)?),
+
+                _ => (),
+            }
+        }
+
+        g.variant = GradientVariant::Linear { x1, y1, x2, y2 };
+
+        Ok(())
+    }
+}
+
+impl_paint_source!(NodeLinearGradient);
+
+pub struct NodeRadialGradient {
+    gradient: RefCell<Gradient>,
+}
+
+impl Default for NodeRadialGradient {
+    fn default() -> NodeRadialGradient {
+        NodeRadialGradient {
             gradient: RefCell::new(Gradient {
                 common: GradientCommon::unresolved(),
                 variant: GradientVariant::unresolved_radial(),
@@ -679,14 +736,9 @@ impl NodeGradient {
     }
 }
 
-impl NodeTrait for NodeGradient {
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+impl NodeTrait for NodeRadialGradient {
+    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         let mut g = self.gradient.borrow_mut();
-
-        let mut x1 = None;
-        let mut y1 = None;
-        let mut x2 = None;
-        let mut y2 = None;
 
         let mut cx = None;
         let mut cy = None;
@@ -704,13 +756,7 @@ impl NodeTrait for NodeGradient {
                     g.common.fallback = Some(Fragment::parse(value).attribute(attr)?)
                 }
 
-                // Attributes specific to each gradient type.  The defaults mandated by the spec
-                // are in GradientVariant::resolve_from_defaults()
-                local_name!("x1") => x1 = Some(attr.parse(value)?),
-                local_name!("y1") => y1 = Some(attr.parse(value)?),
-                local_name!("x2") => x2 = Some(attr.parse(value)?),
-                local_name!("y2") => y2 = Some(attr.parse(value)?),
-
+                // Attributes specific to radial gradient
                 local_name!("cx") => cx = Some(attr.parse(value)?),
                 local_name!("cy") => cy = Some(attr.parse(value)?),
                 local_name!("r") => r = Some(attr.parse(value)?),
@@ -721,21 +767,13 @@ impl NodeTrait for NodeGradient {
             }
         }
 
-        match node.borrow().get_type() {
-            NodeType::LinearGradient => {
-                g.variant = GradientVariant::Linear { x1, y1, x2, y2 };
-            }
-
-            NodeType::RadialGradient => {
-                g.variant = GradientVariant::Radial { cx, cy, r, fx, fy };
-            }
-
-            _ => unreachable!(),
-        }
+        g.variant = GradientVariant::Radial { cx, cy, r, fx, fy };
 
         Ok(())
     }
 }
+
+impl_paint_source!(NodeRadialGradient);
 
 #[cfg(test)]
 mod tests {
