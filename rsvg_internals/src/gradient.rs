@@ -2,7 +2,7 @@ use cairo::{self, MatrixTrait};
 use cssparser::{self, CowRcStr, Parser, Token};
 use markup5ever::local_name;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 
 use crate::allowed_url::Fragment;
 use crate::bbox::*;
@@ -17,7 +17,6 @@ use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
 use crate::rect::RectangleExt;
-use crate::stop::*;
 use crate::unit_interval::UnitInterval;
 
 #[derive(Copy, Clone)]
@@ -516,6 +515,44 @@ fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64
     // Translate back to (cx, cy) and we are done!
 
     (cx + dx, cy + dy)
+}
+
+#[derive(Default)]
+pub struct NodeStop {
+    offset: Cell<UnitInterval>,
+}
+
+impl NodeStop {
+    pub fn get_offset(&self) -> UnitInterval {
+        self.offset.get()
+    }
+}
+
+fn validate_offset(length: LengthBoth) -> Result<LengthBoth, ValueErrorKind> {
+    match length.unit() {
+        LengthUnit::Px | LengthUnit::Percent => Ok(length),
+        _ => Err(ValueErrorKind::Value(
+            "stop offset must be in default or percent units".to_string(),
+        )),
+    }
+}
+
+impl NodeTrait for NodeStop {
+    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("offset") => {
+                    self.offset.set(
+                        attr.parse_and_validate(value, validate_offset)
+                            .map(|l| UnitInterval::clamp(l.length()))?,
+                    );
+                }
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl PaintSource for NodeGradient {

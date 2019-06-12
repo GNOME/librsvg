@@ -21,7 +21,8 @@ use crate::filters::{
     tile::Tile,
     turbulence::Turbulence,
 };
-use crate::gradient::NodeGradient;
+
+use crate::gradient::{NodeGradient, NodeStop};
 use crate::image::NodeImage;
 use crate::link::NodeLink;
 use crate::marker::NodeMarker;
@@ -30,7 +31,6 @@ use crate::node::*;
 use crate::pattern::NodePattern;
 use crate::property_bag::PropertyBag;
 use crate::shapes::{NodeCircle, NodeEllipse, NodeLine, NodePath, NodePoly, NodeRect};
-use crate::stop::NodeStop;
 use crate::structure::{NodeGroup, NodeNonRendering, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
 use crate::style::NodeStyle;
 use crate::text::{NodeTRef, NodeTSpan, NodeText};
