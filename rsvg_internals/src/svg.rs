@@ -81,7 +81,6 @@ impl Svg {
     }
 
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
-        dbg!(&self.load_options.base_url);
         self.images.borrow_mut().lookup(&self.load_options, href)
     }
 
