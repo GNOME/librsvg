@@ -1,7 +1,32 @@
 Version 2.45.7
+- Fix #463 - Don't panic if an SVG has character data outside the
+  first element.
+
+- Fix #467: Don't panic when there's an xi:include fallback with no
+  parent element.  Thanks to Bastien Orivel for running afl-fuzz
+  on librsvg.
+
+- Fix #471: Fix blurry semi-opaque objects when rendering with a
+  scaled transformation.  Thanks to the gnome-games people for
+  isolating a test case and to Evgeniy Reizner for providing a more
+  minimal one.
+
+- #452 - In librsvg_crate, SvgHandle now has a ::has_element_with_id()
+  method.
+
+- rsvg-convert now catches the case where the SVG has no dimensions.
+
 - The poly element no longer supports "verts" as an alias for the
   "points" attribute.  The "verts" name was only used in SVG pre-1.0,
   and we had been cargo-culting that name ever since.
+
+- We now use more machinery from Mozilla Servo, in this case the
+  markup5ever and rust-selectors crates.  This is in line with
+  gradually replacing libcroco with a Rust-only CSS machinery.
+
+- Lots and lots of refactoring and cleanups (Paolo Borelli).
+
+- Update some dependencies (Bastien Orivel).
 
 Version 2.45.6
 - Librsvg now requires Rust 1.30.0 or later.
