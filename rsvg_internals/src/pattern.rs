@@ -13,7 +13,7 @@ use crate::error::{AttributeResultExt, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
-use crate::paint_server::PaintSource;
+use crate::paint_server::{PaintSource, Resolve};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -24,7 +24,7 @@ use crate::viewbox::*;
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Pattern {
     pub units: Option<PatternUnits>,
     pub content_units: Option<PatternContentUnits>,
@@ -47,66 +47,13 @@ pub struct Pattern {
     pub node: Option<RsvgWeakNode>,
 }
 
-impl Default for Pattern {
-    fn default() -> Pattern {
-        // These are per the spec
-
-        Pattern {
-            units: Some(PatternUnits::default()),
-            content_units: Some(PatternContentUnits::default()),
-            vbox: Some(None),
-            preserve_aspect_ratio: Some(AspectRatio::default()),
-            affine: Some(cairo::Matrix::identity()),
-            fallback: None,
-            x: Some(Default::default()),
-            y: Some(Default::default()),
-            width: Some(Default::default()),
-            height: Some(Default::default()),
-            node: None,
-        }
-    }
-}
-
-// All of the Pattern's fields are Option<foo> values, because
-// those fields can be omitted in the SVG file.  We need to resolve
-// them to default values, or to fallback values that come from
-// another Pattern.
-//
-// For the fallback case, this would need something like
-//
-//    if self.foo.is_none () { self.foo = fallback.foo; }
-//
-// And for the default case, it would be like
-//    if self.foo.is_none () { self.foo = Some (default_value); }
-//
-// Both can be replaced by
-//
-//    self.foo = self.foo.take ().or (bar);
-//
-// So we define a macro for that.
 macro_rules! fallback_to (
     ($dest:expr, $default:expr) => (
         $dest = $dest.take ().or ($default)
     );
 );
 
-impl Pattern {
-    fn unresolved() -> Pattern {
-        Pattern {
-            units: None,
-            content_units: None,
-            vbox: None,
-            preserve_aspect_ratio: None,
-            affine: None,
-            fallback: None,
-            x: None,
-            y: None,
-            width: None,
-            height: None,
-            node: None,
-        }
-    }
-
+impl Resolve for Pattern {
     fn is_resolved(&self) -> bool {
         self.units.is_some()
             && self.content_units.is_some()
@@ -118,21 +65,6 @@ impl Pattern {
             && self.width.is_some()
             && self.height.is_some()
             && self.children_are_resolved()
-    }
-
-    fn children_are_resolved(&self) -> bool {
-        if let Some(ref weak) = self.node {
-            let strong_node = &weak.clone().upgrade().unwrap();
-            strong_node.has_children()
-        } else {
-            // We are an empty pattern; there is nothing further that
-            // can be resolved for children.
-            true
-        }
-    }
-
-    fn resolve_from_defaults(&mut self) {
-        self.resolve_from_fallback(&Pattern::default());
     }
 
     fn resolve_from_fallback(&mut self, fallback: &Pattern) {
@@ -156,6 +88,31 @@ impl Pattern {
             }
         }
     }
+
+    fn resolve_from_defaults(&mut self) {
+        fallback_to!(self.units, Some(PatternUnits::default()));
+        fallback_to!(self.content_units, Some(PatternContentUnits::default()));
+        fallback_to!(self.vbox, Some(None));
+        fallback_to!(self.preserve_aspect_ratio, Some(AspectRatio::default()));
+        fallback_to!(self.affine, Some(cairo::Matrix::identity()));
+        fallback_to!(self.x, Some(Default::default()));
+        fallback_to!(self.y, Some(Default::default()));
+        fallback_to!(self.width, Some(Default::default()));
+        fallback_to!(self.height, Some(Default::default()));
+    }
+}
+
+impl Pattern {
+    fn children_are_resolved(&self) -> bool {
+        if let Some(ref weak) = self.node {
+            let strong_node = &weak.clone().upgrade().unwrap();
+            strong_node.has_children()
+        } else {
+            // We are an empty pattern; there is nothing further that
+            // can be resolved for children.
+            true
+        }
+    }
 }
 
 pub struct NodePattern {
@@ -165,7 +122,7 @@ pub struct NodePattern {
 impl Default for NodePattern {
     fn default() -> NodePattern {
         NodePattern {
-            pattern: RefCell::new(Pattern::unresolved()),
+            pattern: RefCell::new(Pattern::default()),
         }
     }
 }
@@ -457,7 +414,7 @@ mod tests {
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
-        let mut pat = Pattern::unresolved();
+        let mut pat = Pattern::default();
 
         pat.resolve_from_defaults();
         assert!(pat.is_resolved());

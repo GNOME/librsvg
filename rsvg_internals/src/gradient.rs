@@ -11,7 +11,7 @@ use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::paint_server::PaintSource;
+use crate::paint_server::{PaintSource, Resolve};
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -73,18 +73,6 @@ impl From<SpreadMethod> for cairo::Extend {
             SpreadMethod::Repeat => cairo::Extend::Repeat,
         }
     }
-}
-
-// Any of the attributes in gradient elements may be omitted.
-// The missing ones are resolved from the gradient referenced
-// by its "fallback" IRI. If still missing, they are resolved
-// to the default value
-trait Resolve {
-    fn is_resolved(&self) -> bool;
-
-    fn resolve_from_fallback(&mut self, fallback: &Self);
-
-    fn resolve_from_defaults(&mut self);
 }
 
 macro_rules! fallback_to (
