@@ -225,10 +225,17 @@ impl DrawingCtx {
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
+        let (viewport_width, viewport_height) = (self.rect.width, self.rect.height);
+
+        let (scaled_width, scaled_height) = self.initial_affine_with_offset().transform_distance(
+            viewport_width,
+            viewport_height,
+        );
+
         // We need a size in whole pixels, so use ceil() to ensure the whole viewport fits
         // into the temporary surface.
-        let width = self.rect.width.ceil() as i32;
-        let height = self.rect.height.ceil() as i32;
+        let width = scaled_width.ceil() as i32;
+        let height = scaled_height.ceil() as i32;
 
         (width, height)
     }
@@ -896,26 +903,26 @@ impl CompositingAffines {
             cairo::Matrix::multiply(&current, &initial_inverse)
         };
 
+        let (scale_x, scale_y) = initial.transform_distance(1.0, 1.0);
+
         let for_temporary_surface = if is_topmost_temporary_surface {
             let untransformed = cairo::Matrix::multiply(&current, &initial_inverse);
-            untransformed
+            let mut scaled_to_temp_surface = untransformed;
+            scaled_to_temp_surface.scale(scale_x, scale_y);
+            scaled_to_temp_surface
         } else {
             current
         };
 
         let compositing = if is_topmost_temporary_surface {
-            initial
+            let mut scaled = initial;
+            scaled.scale(1.0 / scale_x, 1.0 / scale_y);
+            scaled
         } else {
             cairo::Matrix::identity()
         };
 
-        // This is the inverse of "compositing"; we do it this way
-        // instead of inverting that one to preserve accuracy.
-        let for_snapshot = if is_topmost_temporary_surface {
-            initial_inverse
-        } else {
-            cairo::Matrix::identity()
-        };
+        let for_snapshot = compositing.try_invert().unwrap();
 
         CompositingAffines {
             outside_temporary_surface,
