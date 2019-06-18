@@ -140,49 +140,43 @@ impl NodeMarker {
             return Ok(());
         }
 
-        let cr = draw_ctx.get_cairo_context();
-
-        let mut affine = cr.get_matrix();
-
-        affine.translate(xpos, ypos);
-
-        let rotation = match self.orient.get() {
-            MarkerOrient::Auto => computed_angle,
-            MarkerOrient::Angle(a) => a,
-        };
-
-        affine.rotate(rotation.radians());
-
-        if self.units.get() == MarkerUnits::StrokeWidth {
-            affine.scale(line_width, line_width);
-        }
-
-        let params = if let Some(vbox) = self.vbox.get() {
-            let (_, _, w, h) = self.aspect.get().compute(
-                &vbox,
-                &Rectangle::new(0.0, 0.0, marker_width, marker_height),
-            );
-
-            if vbox.width.approx_eq_cairo(&0.0) || vbox.height.approx_eq_cairo(&0.0) {
-                return Ok(());
-            }
-
-            affine.scale(w / vbox.width, h / vbox.height);
-
-            draw_ctx.push_view_box(vbox.width, vbox.height)
-        } else {
-            draw_ctx.push_view_box(marker_width, marker_height)
-        };
-
-        affine.translate(
-            -self.ref_x.get().normalize(&values, &params),
-            -self.ref_y.get().normalize(&values, &params),
-        );
-
         draw_ctx.with_saved_cr(&mut |dc| {
             let cr = dc.get_cairo_context();
 
-            cr.set_matrix(affine);
+            cr.translate(xpos, ypos);
+
+            let rotation = match self.orient.get() {
+                MarkerOrient::Auto => computed_angle,
+                MarkerOrient::Angle(a) => a,
+            };
+
+            cr.rotate(rotation.radians());
+
+            if self.units.get() == MarkerUnits::StrokeWidth {
+                cr.scale(line_width, line_width);
+            }
+
+            let params = if let Some(vbox) = self.vbox.get() {
+                let (_, _, w, h) = self.aspect.get().compute(
+                    &vbox,
+                    &Rectangle::new(0.0, 0.0, marker_width, marker_height),
+                );
+
+                if vbox.width.approx_eq_cairo(&0.0) || vbox.height.approx_eq_cairo(&0.0) {
+                    return Ok(());
+                }
+
+                cr.scale(w / vbox.width, h / vbox.height);
+
+                dc.push_view_box(vbox.width, vbox.height)
+            } else {
+                dc.push_view_box(marker_width, marker_height)
+            };
+
+            cr.translate(
+                -self.ref_x.get().normalize(&values, &params),
+                -self.ref_y.get().normalize(&values, &params),
+            );
 
             if !values.is_overflow() {
                 if let Some(vbox) = self.vbox.get() {

@@ -879,6 +879,7 @@ impl DrawingCtx {
     }
 }
 
+#[derive(Debug)]
 pub struct CompositingAffines {
     pub outside_temporary_surface: cairo::Matrix,
     pub initial: cairo::Matrix,
@@ -907,9 +908,8 @@ impl CompositingAffines {
 
         let for_temporary_surface = if is_topmost_temporary_surface {
             let untransformed = cairo::Matrix::multiply(&current, &initial_inverse);
-            let mut scaled_to_temp_surface = untransformed;
-            scaled_to_temp_surface.scale(scale_x, scale_y);
-            scaled_to_temp_surface
+            let scale = cairo::Matrix::new(scale_x, 0.0, 0.0, scale_y, 0.0, 0.0);
+            cairo::Matrix::multiply(&untransformed, &scale)
         } else {
             current
         };

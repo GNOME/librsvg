@@ -147,6 +147,68 @@ fn simple_opacity_with_scale() {
 }
 
 #[test]
+// https://gitlab.gnome.org/GNOME/librsvg/issues/471
+fn markers_with_scale() {
+    let svg = load_svg(
+        br#"<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <marker id="marker1" refX="10" refY="10" markerWidth="20" markerHeight="20" orient="auto">
+        <path id="marker-path" d="M 20 10 L 0 16 V 4 Z" fill="blue" opacity="0.5"/>
+    </marker>
+    <path d="M 30 100 L 170 100"
+          fill="none" stroke="green"
+          marker-start="url(#marker1)" marker-end="url(#marker1)"/>
+</svg>
+
+"#,
+    );
+
+    let output_surf = render_to_viewport(
+        &svg,
+        SurfaceSize(800, 800),
+        |cr| {
+            cr.scale(4.0, 4.0);
+        },
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 200.0,
+            height: 200.0,
+        },
+    )
+    .unwrap();
+
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 800, 800).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.scale(4.0, 4.0);
+
+        cr.move_to(30.0, 100.0);
+        cr.line_to(170.0, 100.0);
+        cr.set_source_rgb(0.0, 0.5, 0.0);
+        cr.set_line_width(1.0);
+        cr.stroke();
+
+        for (x, y) in &[(30.0, 100.0), (170.0, 100.0)] {
+            cr.move_to(x + 20.0 - 10.0, y + 10.0 - 10.0);
+            cr.line_to(x + 0.0 - 10.0, y + 16.0 - 10.0);
+            cr.line_to(x + 0.0 - 10.0, y + 4.0 - 10.0);
+            cr.set_source_rgba(0.0, 0.0, 1.0, 0.5);
+            cr.fill();
+        }
+    }
+
+    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(
+        &output_surf,
+        &reference_surf,
+        "markers_with_scale",
+    );
+}
+
+#[test]
 fn opacity_inside_transformed_group() {
     let svg = load_svg(
         br#"<?xml version="1.0" encoding="UTF-8"?>
