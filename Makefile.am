@@ -117,6 +117,7 @@ LIBRSVG_CRATE_SOURCES = 					\
 	librsvg_crate/build.rs					\
 	librsvg_crate/examples/proportional.rs			\
 	librsvg_crate/src/lib.rs				\
+	librsvg_crate/tests/api.rs				\
 	librsvg_crate/tests/intrinsic_dimensions.rs		\
 	librsvg_crate/tests/render_to_viewport.rs		\
 	librsvg_crate/tests/primitives.rs			\

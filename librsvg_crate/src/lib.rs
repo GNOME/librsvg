@@ -309,6 +309,19 @@ fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
 /// [`Loader`](#struct.Loader.html).
 pub struct SvgHandle(Handle);
 
+impl SvgHandle {
+    /// Checks if the SVG has an element with the specified `id`.
+    ///
+    /// Note that the `id` must be a plain fragment identifier like `#foo`, with
+    /// a leading `#` character.
+    ///
+    /// The purpose of the `Err()` case in the return value is to indicate an
+    /// incorrectly-formatted `id` argument.
+    pub fn has_element_with_id(&self, id: &str) -> Result<bool, RenderingError> {
+        self.0.has_sub(id)
+    }
+}
+
 /// Can render an `SvgHandle` to a Cairo context.
 pub struct CairoRenderer<'a> {
     handle: &'a SvgHandle,

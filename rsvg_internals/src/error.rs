@@ -96,14 +96,14 @@ impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DefsLookupErrorKind {
     HrefError(HrefError),
     CannotLookupExternalReferences,
     NotFound,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum RenderingError {
     Cairo(cairo::Status),
     CircularReference,
