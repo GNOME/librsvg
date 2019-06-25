@@ -4,6 +4,7 @@ NULL =
 BUILT_SOURCES =
 
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
+noinst_LTLIBRARIES = librsvg_internals.la
 
 bin_PROGRAMS = rsvg-convert
 if HAVE_GTK_3
@@ -25,7 +26,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg.h				\
 	$(NULL)
 
-RUST_SRC =							\
+librsvg_internals_la_SOURCES =		\
 	Cargo.toml						\
 	rsvg_internals/Cargo.toml				\
 	rsvg_internals/build.rs					\
@@ -147,16 +148,25 @@ cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
 cargo_verbose_0 =
 cargo_verbose_1 = --verbose
 
-RUST_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
+RUST_LIB=@abs_top_builddir@/.libs/librsvg_internals.a
 CARGO_TARGET_DIR=@abs_top_builddir@/target
+
+LIBRSVG_BUILD_DIR=@abs_top_builddir@
+LIBRSVG_TARGET_DIR=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@
 
 check-local:
 	cd $(srcdir) && \
-	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) $(CARGO) --locked test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)	\
+	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)	\
+	LIBRSVG_TARGET_DIR=$(LIBRSVG_TARGET_DIR)	\
+	$(CARGO) --locked test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
 
 clean-local:
 	cd $(top_srcdir) && \
-	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) $(CARGO) clean
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)	\
+	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)	\
+	LIBRSVG_TARGET_DIR=$(LIBRSVG_TARGET_DIR)	\
+	$(CARGO) clean
 
 distcheck-hook:
 	if test -z "${DESTDIR}";						\
@@ -171,12 +181,15 @@ dist-hook:
 	mkdir .cargo &&								\
 	cp cargo-vendor-config .cargo/config)
 
-$(RUST_LIB): $(RUST_SRC)
+librsvg_internals.la: $(librsvg_internals_la_SOURCES)
 	+cd $(top_srcdir)/rsvg_internals &&					\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
-	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --features "c-library"
+	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)					\
+	LIBRSVG_TARGET_DIR=$(LIBRSVG_TARGET_DIR)					\
+	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --features "c-library" \
+	&& $(AR) d $(RUST_LIB) clzsi2.o # HACK: https://github.com/rust-lang/rust/issues/58277
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
@@ -202,7 +215,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
 	$(AM_LDFLAGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
-	$(RUST_LIB)		\
+	librsvg_internals.la \
 	$(LIBRSVG_LIBS) 	\
 	$(LIBM)			\
 	$(DLOPEN_LIBS)
@@ -270,7 +283,7 @@ dist_doc_DATA =				\
 	code-of-conduct.md
 
 EXTRA_DIST =				\
-	$(RUST_SRC)			\
+	$(librsvg_internals_la_SOURCES)		\
 	$(RUST_EXTRA)			\
 	$(LIBRSVG_CRATE_SOURCES)	\
 	librsvg.doap			\

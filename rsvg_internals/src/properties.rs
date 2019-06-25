@@ -399,7 +399,7 @@ macro_rules! compute_value {
 impl SpecifiedValues {
     #[cfg_attr(rustfmt, rustfmt_skip)]
     pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
-        use ParsedProperty::*;
+        use crate::properties::ParsedProperty::*;
 
         use crate::properties as p;
 
