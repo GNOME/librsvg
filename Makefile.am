@@ -11,19 +11,10 @@ if HAVE_GTK_3
 bin_PROGRAMS += rsvg-view-3
 endif
 
-headers =			\
-	librsvg/rsvg.h		\
-	librsvg/rsvg-cairo.h
+include rsvg-c-srcs.mk
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
-	librsvg/librsvg-features.c 		\
-	librsvg/librsvg-features.h 		\
-	librsvg/rsvg-base.c			\
-	librsvg/rsvg-cairo.h			\
-	librsvg/rsvg-css.h 			\
-	librsvg/rsvg-handle.c			\
-	librsvg/rsvg-pixbuf.c			\
-	librsvg/rsvg.h				\
+	$(librsvg_c_srcs)			\
 	$(NULL)
 
 librsvg_internals_la_SOURCES =		\
@@ -223,12 +214,12 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
 librsvginc_HEADERS =			\
 	$(headers)			\
-	librsvg/librsvg-features.h
+	$(extra_inc_headers)
 
 dist_man_MANS = rsvg-convert.1
 
 rsvg_convert_SOURCES =			\
-	rsvg-convert.c			\
+	$(rsvg_convert_srcs)		\
 	$(NULL)
 
 rsvg_convert_CPPFLAGS = \
@@ -250,7 +241,7 @@ rsvg_convert_LDADD = \
 	$(LIBM)
 
 rsvg_view_3_SOURCES =			\
-	rsvg-view.c
+	$(rsvg_view_srcs)
 
 rsvg_view_3_CPPFLAGS = \
 	-I$(top_srcdir) 			\
