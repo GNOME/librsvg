@@ -32,8 +32,6 @@ CARGO_CMD = $(CARGO) build $(CARGO_TARGET) --release
 CARGO_CMD = $(CARGO) build $(CARGO_TARGET)
 !endif
 
-all: vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg_internals.lib
-
 vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg_internals.lib:
 	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
 	@set GTK_LIB_DIR=..\..\vs$(VSVER)\$(PLAT)\lib;$(LIB)
@@ -44,7 +42,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(RUST_TARGET)-pc-windows-msvc\$(CF
 	@set GTK_LIB_DIR=
 	@set CARGO_TARGET_DIR=
 
-clean:
+cargo-clean:
 	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
 	@cd ..\rsvg_internals
 	@$(CARGO) clean
