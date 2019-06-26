@@ -398,6 +398,7 @@ doc/Makefile
 doc/version.xml
 config.h.win32
 win32/Makefile
+win32/config-msvc.mak
 win32/vs12/Makefile
 win32/vs12/rsvg-version-paths.props
 win32/vs14/Makefile

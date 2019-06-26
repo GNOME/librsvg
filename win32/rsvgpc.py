@@ -20,7 +20,8 @@ def main(argv):
     base_pc.setup(argv)
     pkg_replace_items = {'@RSVG_API_MAJOR_VERSION@': rsvg_api_ver,
                          '@RSVG_API_VERSION@': rsvg_api_ver,
-                         ' -lm': ''}
+                         ' cairo': '',
+                         '-lm': '-lcairo'}
 
     pkg_replace_items.update(base_pc.base_replace_items)
 

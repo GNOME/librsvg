@@ -1,0 +1,107 @@
+Please do not compile librsvg in a path with spaces to avoid potential
+problems during the build and/or during the usage of the librsvg
+library.
+
+Please refer to the following GNOME Live! page for more detailed
+instructions on building librsvg and its dependencies with Visual C++:
+
+https://live.gnome.org/GTK%2B/Win32/MSVCCompilationOfGTKStack
+
+This set of NMake Makefiles is intended to be used in a librsvg source tree
+unpacked from a tarball.  For building, you will need the following libraries
+(headers, .lib's, DLLs, EXEs and scripts), with all of their dependencies:
+
+-libxml2
+-GLib
+-Cairo (The included cairo-gobject integration library is also needed)
+-libcroco
+-Pango
+-Gdk-Pixbuf
+-GTK+3.x (optional, for building rsvg-view-3.exe)
+-GObject-Introspection (optional, for building/using introspection files)
+
+
+You will also need the following tools:
+-Visual Studio 2013 or later, with C/C++ compilation support (MSVC).
+-The Rust Compiler and tools with the msvc toolchain(s) installed, that
+ matches the architecture that is being built.  It is recommended to use the
+ 'rustup' tool from https://www.rust-lang.org/ to install and configure
+ Rust, which will install Rust in %HOMEPATH%\.cargo by default.
+-Python (optional, recommended, to generate the pkg-config files and
+ build the introspection files; if building the introspection files, the
+ Python installation must match the version, architecture and configuration
+ of the Python installation that was used to build your copy of
+ GObject-Introspection).
+-For introspection builds, the pkg-config (or compatible) tool is also needed
+ and the introspection files and pkg-config files for the dependent libraries
+ (if applicable) are also needed.  You will need to set PKG_CONFIG_PATH
+ if the pkg-config files cannot be found from the default locations that
+ pkg-config will look for.
+
+It is recommended that the dependent libraries are built with the same version
+of Visual Studio that is being used to build librsvg, as far as possible.
+
+If building from a git checkout is desired, you will need to open the following
+*.in files, and replace any items that are surrounded by the '@' characters,
+and save those files without the .in file extension:
+
+(open file)                           -> (save as file)
+===========                              ==============
+config-msvc.mak.in                    -> config-msvc.mak
+$(srcroot)\config.h.win32.in          -> $(srcroot)\config.h.win32
+$(srcroot)\librsvg\rsvg-features.h.in -> $(srcroot)\librsvg\rsvg-features.h
+
+From this directory in a Visual Studio command prompt, run the following:
+
+ nmake /f Makefile.vc CFG=<CFG> <target> <path_options> <other_options>
+
+Where:
+<CFG> is the build configuration, i.e. release or debug.  This is mandatory
+for all targets.
+
+<target> is as follows:
+-(not specified): builds the librsvg DLL and tools and GDK-Pixbuf SVG loader.
+                  If `NO_GTK=1` is not specified, this will build the rsvg-view-3.exe
+                  tool; and if `INTROSPECTION=1` is specified, this will also build
+                  the introspection files (.gir/.typelib) for librsvg.
+-all: see (not specified).
+-tests: Same as (not specified) but also builds the test programs in $(srcroot)\tests
+-clean: Removes all build files
+-install: Same as (not specified) and also copies the built DLLs, .lib's, headers,
+          tools and possibly introspection files to appropriate locations under
+          $(PREFIX).  This will also create and copy the librsvg-2.0.pc pkg-config
+          file if Python can be found.
+
+<path_options> is as follows:
+-PREFIX: Root directory where built files will be copied to with the 'install' target.
+         This also determines the root directory from which the dependent headers,
+         .lib's and DLLs/.typelib's/.gir's are looked for, if INCLUDEDIR, LIBDIR and/or
+         BINDIR are not respectively specified.  Default is
+         $(srcroot)\..\vs<vs_short_ver>\<arch>, where vs_short_ver is 12 for Visual
+         Studio 2013, 14 for VS 2015, 15 for VS 2017 and 16 for VS 2019.
+-INCLUDEDIR: Base directory where headers are looked for, which is PREFIX\include by
+             default.  Note that GLib headers are looked for in INCLUDEDIR\glib-2.0
+             and LIBDIR\glib-2.0\include.
+-LIBDIR: Base directory where .lib's and arch-dependent headers are looked for, which
+         is PREFIX\lib by default.
+-BINDIR: Base directory where dependent DLLs and tools (.exe's and scripts) are looked
+         for, which is PREFIX\bin by default.  Note that for introspection builds,
+         this means the introspection Python scripts and modules are in
+         BINDIR\..\lib\gobject-introspection and the dependent introspection files are
+         looked for in BINDIR\..\share\gir-1.0 and BINDIR\..\lib\girepository-1.0
+         respectively for .gir files and .typelib files.
+-PYTHON: Path to your Python interpreter executable, if not already in your %PATH% or
+         using a different installation of Python is desired.  Please see note above
+         on Python usage.  If Python cannot be found, you will not be able to build
+         introspection files and the librsvg-2.0.pc pkg-config file will not be
+         generated using the 'install' build target.
+-PKG_CONFIG: Path to your pkg-config (or compatible) tool, if not already in your
+             %PATH%.  This is required for introspection builds.
+
+<other_options> is as follows, activate the options using <option>=1:
+-INTROSPECTION: Build the introspection files.  Please see notes above.
+-NO_GTK: Do not build the rsvg-view-3 tool.  This removes the need for GTK+3.x.
+-USE_PANGOFT2: Build the test programs with PangoFT2 support, which will enable
+               more features to be tested.  This will additionally require Pango
+               built with FreeType support, meaning that HarfBuzz, FontConfig and
+               FreeType will also be required for the test programs to run.
