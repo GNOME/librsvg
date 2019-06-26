@@ -23,7 +23,7 @@ class BasePCItems:
         self.libdir = ''
         self.prefix = ''
         self.srcdir = os.path.dirname(__file__)
-        self.top_srcdir = self.srcdir + '\\..'
+        self.top_srcdir = self.srcdir + os.sep + '..'
         self.version = ''
 
     def setup(self, argv, parser=None):
