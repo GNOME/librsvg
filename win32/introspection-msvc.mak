@@ -7,20 +7,16 @@
 # You will need to have built gobject-introspection for this to work.
 # Change or pass in or set the following to suit your environment
 
-!if "$(PREFIX)" == ""
-PREFIX = ..\..\vs$(VSVER)\$(PLAT)
-!endif
-
 !if ![setlocal]		&& \
-    ![set PFX=$(PREFIX)]	&& \
-    ![for %P in (%PFX%) do @echo PREFIX_FULL=%~dpnfP > pfx.x]
+    ![set PFX_LIB=$(LIBDIR)\lib]	&& \
+    ![for %P in (%PFX_LIB%) do @echo PREFIX_LIB_FULL=%~dpnfP > pfx.x]
 !endif
 !include pfx.x
 
 !if "$(PKG_CONFIG_PATH)" == ""
-PKG_CONFIG_PATH=$(PREFIX_FULL)\lib\pkgconfig
+PKG_CONFIG_PATH=$(PREFIX_LIB_FULL)\pkgconfig
 !else
-PKG_CONFIG_PATH=$(PREFIX_FULL)\lib\pkgconfig;$(PKG_CONFIG_PATH)
+PKG_CONFIG_PATH=$(PREFIX_LIB_FULL)\pkgconfig;$(PKG_CONFIG_PATH)
 !endif
 
 !if ![del $(ERRNUL) /q/f pfx.x]
@@ -46,10 +42,10 @@ PKG_CONFIG=pkg-config
 
 GIR_SUBDIR = share\gir-1.0
 GIR_TYPELIBDIR = lib\girepository-1.0
-G_IR_SCANNER = $(PREFIX)\bin\g-ir-scanner
-G_IR_COMPILER = $(PREFIX)\bin\g-ir-compiler.exe
-G_IR_INCLUDEDIR = $(PREFIX)\$(GIR_SUBDIR)
-G_IR_TYPELIBDIR = $(PREFIX)\$(GIR_TYPELIBDIR)
+G_IR_SCANNER = $(BINDIR)\g-ir-scanner
+G_IR_COMPILER = $(BINDIR)\g-ir-compiler.exe
+G_IR_INCLUDEDIR = $(BINDIR)\..\$(GIR_SUBDIR)
+G_IR_TYPELIBDIR = $(BINDIR)\..\$(GIR_TYPELIBDIR)
 
 VALID_PKG_CONFIG_PATH = FALSE
 
@@ -61,7 +57,7 @@ ERROR_MSG =
 BUILD_INTROSPECTION = TRUE
 
 !if ![set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)]	\
-	&& ![$(PKG_CONFIG) --print-errors --errors-to-stdout $(CHECK_PACKAGE) > pkgconfig.x]	\
+	&& ![$(PKG_CONFIG) --print-errors --errors-to-stdout $(CHECK_GIR_PACKAGE) > pkgconfig.x]	\
 	&& ![setlocal]	\
 	&& ![set file="pkgconfig.x"]	\
 	&& ![FOR %A IN (%file%) DO @echo PKG_CHECK_SIZE=%~zA > pkgconfig.chksize]	\
