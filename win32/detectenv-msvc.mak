@@ -58,6 +58,10 @@ version is not supported.
 !error $(MSG)
 !endif
 
+!ifndef PREFIX
+PREFIX=..\..\vs$(VSVER)\$(PLAT)
+!endif
+
 VALID_CFGSET = FALSE
 !if "$(CFG)" == "release" || "$(CFG)" == "debug" || "$(CFG)" == "Release" || "$(CFG)" == "Debug"
 VALID_CFGSET = TRUE
@@ -65,16 +69,20 @@ VALID_CFGSET = TRUE
 
 # We want debugging symbols logged for all builds,
 # using .pdb files for release builds
-CFLAGS_BASE = /Zi
-
-!if "$(CFG)" == "release" || "$(CFG)" == "Release"
-CFLAGS_ADD = /MD /O2 $(CFLAGS_BASE)
-!else
-CFLAGS_ADD = /MDd /Od $(CFLAGS_BASE)
-!endif
+CFLAGS_BASE = /W3 /Zi
 
 !if "$(PLAT)" == "x64"
 LDFLAGS_ARCH = /machine:x64
 !else
 LDFLAGS_ARCH = /machine:x86
+!endif
+
+LDFLAGS_BASE = $(LDFLAGS_ARCH) /DEBUG
+
+!if "$(CFG)" == "release" || "$(CFG)" == "Release"
+CFLAGS_ADD = /MD /O2 /GL /MP /d2Zi+ $(CFLAGS_BASE)
+LDFLAGS = $(LDFLAGS_BASE) /LTCG /opt:ref
+!else
+CFLAGS_ADD = /MDd /Od $(CFLAGS_BASE)
+LDFLAGS = $(LDFLAGS_BASE)
 !endif
