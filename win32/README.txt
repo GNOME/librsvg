@@ -48,7 +48,7 @@ and save those files without the .in file extension:
 (open file)                           -> (save as file)
 ===========                              ==============
 config-msvc.mak.in                    -> config-msvc.mak
-$(srcroot)\config.h.win32.in          -> $(srcroot)\config.h.win32
+config.h.win32.in                     -> config.h.win32
 $(srcroot)\librsvg\rsvg-features.h.in -> $(srcroot)\librsvg\rsvg-features.h
 
 From this directory in a Visual Studio command prompt, run the following:
