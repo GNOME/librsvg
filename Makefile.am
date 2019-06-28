@@ -273,8 +273,6 @@ EXTRA_DIST =				\
 	gtk-doc.make			\
 	Rsvg-2.0-custom.vala		\
 	Rsvg-2.0.metadata		\
-	config.h.win32.in		\
-	config.h.win32			\
 	rsvg.symbols			\
 	glib-tap.mk			\
 	tap-driver.sh			\
