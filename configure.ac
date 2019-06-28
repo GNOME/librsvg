@@ -396,8 +396,8 @@ tests/Makefile
 tools/Makefile
 doc/Makefile
 doc/version.xml
-config.h.win32
 win32/Makefile
+win32/config.h.win32
 win32/config-msvc.mak
 po/Makefile.in
 ])
