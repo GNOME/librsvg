@@ -1,5 +1,7 @@
 EXTRA_DIST = \
 	build-rules-msvc.mak	\
+	config.h.win32.in	\
+	config.h.win32		\
 	config-msvc.mak		\
 	create-lists.bat	\
 	create-lists-msvc.mak	\
