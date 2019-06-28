@@ -4,7 +4,7 @@
 # one is maintaining the NMake build files.
 
 # Copy the pre-defined config.h.win32
-$(OUTDIR)\librsvg\config.h: ..\config.h.win32
+$(OUTDIR)\librsvg\config.h: config.h.win32
 	@if not exist $(@D) $(MAKE) /f Makefile.vc CFG=$(CFG) $(@D)
 	@-copy $** $@
 
