@@ -38,14 +38,14 @@ impl NodeTrait for Merge {
     impl_node_as_filter!();
 
     #[inline]
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
-        self.base.set_atts(node, pbag)
+    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.base.set_atts(parent, pbag)
     }
 }
 
 impl NodeTrait for MergeNode {
     #[inline]
-    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("in") => {

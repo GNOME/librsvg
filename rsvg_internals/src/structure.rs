@@ -17,14 +17,13 @@ use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
 use crate::rect::RectangleExt;
-use crate::tree_utils::Node;
 use crate::viewbox::*;
 
 #[derive(Default)]
 pub struct NodeGroup();
 
 impl NodeTrait for NodeGroup {
-    fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 
@@ -51,7 +50,7 @@ impl NodeTrait for NodeGroup {
 pub struct NodeNonRendering;
 
 impl NodeTrait for NodeNonRendering {
-    fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 }
@@ -60,7 +59,7 @@ impl NodeTrait for NodeNonRendering {
 pub struct NodeSwitch();
 
 impl NodeTrait for NodeSwitch {
-    fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 
@@ -182,10 +181,10 @@ impl NodeSvg {
 }
 
 impl NodeTrait for NodeSvg {
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
-        let is_inner_svg = node.parent().is_some();
+        let is_inner_svg = parent.is_some();
 
         for (attr, value) in pbag.iter() {
             match attr {
@@ -294,7 +293,7 @@ pub struct NodeUse {
 }
 
 impl NodeTrait for NodeUse {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("xlink:href") => {
@@ -347,7 +346,7 @@ impl NodeTrait for NodeUse {
             return Ok(());
         };
 
-        if Node::is_ancestor(child.clone(), node.clone()) {
+        if node.ancestors().any(|ancestor| ancestor == child) {
             // or, if we're <use>'ing ourselves
             return Err(RenderingError::CircularReference);
         }
@@ -395,7 +394,8 @@ impl NodeTrait for NodeUse {
                 )
             })
         } else {
-            let symbol = child.borrow().get_impl::<NodeSymbol>();
+            let node_data = child.borrow();
+            let symbol = node_data.get_impl::<NodeSymbol>();
 
             let clip_mode = if !values.is_overflow()
                 || (values.overflow == Overflow::Visible && child.borrow().is_overflow())
@@ -430,7 +430,7 @@ pub struct NodeSymbol {
 }
 
 impl NodeTrait for NodeSymbol {
-    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("preserveAspectRatio") => {

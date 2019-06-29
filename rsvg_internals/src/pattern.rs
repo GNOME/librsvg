@@ -128,10 +128,8 @@ impl Default for NodePattern {
 }
 
 impl NodeTrait for NodePattern {
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         let mut p = self.pattern.borrow_mut();
-
-        p.node = Some(node.downgrade());
 
         for (attr, value) in pbag.iter() {
             match attr {
@@ -186,6 +184,12 @@ impl PaintSource for NodePattern {
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
+        {
+            // Initialize pattern.node and release the mutable borrow
+            let mut p = self.pattern.borrow_mut();
+            p.node = Some(node.downgrade());
+        }
+
         let mut result = node
             .borrow()
             .get_impl::<NodePattern>()
@@ -206,7 +210,8 @@ impl PaintSource for NodePattern {
                     return Err(RenderingError::CircularReference);
                 }
 
-                let fallback = a_node.borrow().get_impl::<NodePattern>().pattern.borrow();
+                let node_data = a_node.borrow();
+                let fallback = node_data.get_impl::<NodePattern>().pattern.borrow();
                 result.resolve_from_fallback(&fallback);
 
                 stack.push(a_node);
@@ -377,7 +382,7 @@ impl PaintSource for NodePattern {
         // Set up transformations to be determined by the contents units
 
         // Draw everything
-        let pattern_node = RsvgNode::upgrade(pattern.node.as_ref().unwrap()).unwrap();
+        let pattern_node = pattern.node.as_ref().unwrap().upgrade().unwrap();
         let pattern_cascaded = CascadedValues::new_from_node(&pattern_node);
         let pattern_values = pattern_cascaded.get();
 

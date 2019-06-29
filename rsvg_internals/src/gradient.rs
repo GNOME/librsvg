@@ -370,7 +370,7 @@ fn validate_offset(length: LengthBoth) -> Result<LengthBoth, ValueErrorKind> {
 }
 
 impl NodeTrait for NodeStop {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("offset") => {
@@ -497,7 +497,7 @@ pub struct NodeLinearGradient {
 }
 
 impl NodeTrait for NodeLinearGradient {
-    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         let mut common = self.common.borrow_mut();
 
         let mut x1 = None;
@@ -586,7 +586,7 @@ pub struct NodeRadialGradient {
 }
 
 impl NodeTrait for NodeRadialGradient {
-    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         let mut common = self.common.borrow_mut();
 
         let mut cx = None;

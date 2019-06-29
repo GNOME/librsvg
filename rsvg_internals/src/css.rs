@@ -23,7 +23,7 @@ use crate::allowed_url::AllowedUrl;
 use crate::croco::*;
 use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::node::RsvgNode;
+use crate::node::NodeData;
 use crate::properties::{parse_attribute_value_into_parsed_property, ParsedProperty};
 use crate::util::utf8_cstr;
 
@@ -204,7 +204,7 @@ impl CssRules {
         self.selectors_to_declarations.get(selector)
     }
 
-    fn selector_matches_node(&self, selector: &Selector, node: &RsvgNode) -> bool {
+    fn selector_matches_node(&self, selector: &Selector, node_data: &NodeData) -> bool {
         // Try to properly support all of the following, including inheritance:
         // *
         // #id
@@ -215,7 +215,6 @@ impl CssRules {
         //
         // This is basically a semi-compliant CSS2 selection engine
 
-        let node_data = node.borrow();
         let element_name = node_data.element_name();
         let id = node_data.get_id();
 
@@ -280,11 +279,11 @@ impl CssRules {
         false
     }
 
-    pub fn get_matches(&self, node: &RsvgNode) -> Vec<Selector> {
+    pub fn get_matches(&self, node_data: &NodeData) -> Vec<Selector> {
         self.selectors_to_declarations
             .iter()
             .filter_map(|(selector, _)| {
-                if self.selector_matches_node(selector, node) {
+                if self.selector_matches_node(selector, node_data) {
                     Some(selector)
                 } else {
                     None

@@ -108,7 +108,7 @@ impl NodeFilter {
 }
 
 impl NodeTrait for NodeFilter {
-    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr {

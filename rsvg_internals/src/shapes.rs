@@ -116,7 +116,7 @@ pub struct NodePath {
 }
 
 impl NodeTrait for NodePath {
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == local_name!("d") {
                 let mut builder = PathBuilder::new();
@@ -125,7 +125,7 @@ impl NodeTrait for NodePath {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
 
-                    rsvg_log!("could not parse path {}: {}", node, e);
+                    rsvg_log!("could not parse path: {}", e);
                 }
 
                 *self.builder.borrow_mut() = Some(builder);
@@ -220,7 +220,7 @@ impl NodePoly {
 }
 
 impl NodeTrait for NodePoly {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == local_name!("points") {
                 *self.points.borrow_mut() = attr.parse(value.trim()).map(Some)?;
@@ -270,7 +270,7 @@ pub struct NodeLine {
 }
 
 impl NodeTrait for NodeLine {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("x1") => self.x1.set(attr.parse(value)?),
@@ -323,7 +323,7 @@ pub struct NodeRect {
 }
 
 impl NodeTrait for NodeRect {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("x") => self.x.set(attr.parse(value)?),
@@ -538,7 +538,7 @@ pub struct NodeCircle {
 }
 
 impl NodeTrait for NodeCircle {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("cx") => self.cx.set(attr.parse(value)?),
@@ -582,7 +582,7 @@ pub struct NodeEllipse {
 }
 
 impl NodeTrait for NodeEllipse {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("cx") => self.cx.set(attr.parse(value)?),

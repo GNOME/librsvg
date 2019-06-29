@@ -37,22 +37,14 @@ use crate::text::{NodeTRef, NodeTSpan, NodeText};
 
 macro_rules! n {
     ($name:ident, $node_type:ident, $new_fn:expr) => {
-        pub fn $name(
-            element_name: LocalName,
-            id: Option<&str>,
-            class: Option<&str>,
-            parent: Option<&RsvgNode>,
-        ) -> RsvgNode {
-            RsvgNode::new(
-                NodeData::new(
-                    NodeType::$node_type,
-                    element_name,
-                    id,
-                    class,
-                    Box::new($new_fn()),
-                ),
-                parent,
-            )
+        pub fn $name(element_name: LocalName, id: Option<&str>, class: Option<&str>) -> RsvgNode {
+            RsvgNode::new(NodeData::new(
+                NodeType::$node_type,
+                element_name,
+                id,
+                class,
+                Box::new($new_fn()),
+            ))
         }
     };
 }
@@ -125,17 +117,12 @@ mod creators {
 
 use creators::*;
 
-type NodeCreateFn = fn(
-    element_name: LocalName,
-    id: Option<&str>,
-    class: Option<&str>,
-    parent: Option<&RsvgNode>,
-) -> RsvgNode;
+type NodeCreateFn = fn(element_name: LocalName, id: Option<&str>, class: Option<&str>) -> RsvgNode;
 
 macro_rules! c {
     ($hashset:expr, $str_name:expr, $supports_class:expr, $fn_name:ident) => {
         $hashset.insert($str_name, ($supports_class, $fn_name as NodeCreateFn));
-    }
+    };
 }
 
 lazy_static! {
@@ -234,7 +221,6 @@ lazy_static! {
 
 pub fn create_node_and_register_id(
     name: &str,
-    parent: Option<&RsvgNode>,
     pbag: &PropertyBag,
     ids: &mut HashMap<String, RsvgNode>,
 ) -> RsvgNode {
@@ -264,7 +250,7 @@ pub fn create_node_and_register_id(
         class = None;
     };
 
-    let node = create_fn(element_name, id, class, parent);
+    let node = create_fn(element_name, id, class);
 
     if let Some(id) = id {
         // This is so we don't overwrite an existing id

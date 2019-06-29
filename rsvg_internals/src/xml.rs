@@ -115,8 +115,11 @@ impl XmlState {
             None => Err(LoadingError::SvgHasNoElements),
             Some(ref root) if root.borrow().get_type() == NodeType::Svg => {
                 let root = self.tree_root.take().unwrap();
+                let css_rules = self.css_rules.as_ref().unwrap();
 
-                set_styles_recursively(&root, self.css_rules.as_ref().unwrap());
+                for mut node in root.descendants() {
+                    node.borrow_mut().set_style(css_rules);
+                }
 
                 Ok(Svg::new(
                     root,
@@ -257,12 +260,19 @@ impl XmlState {
         match name {
             "include" => self.xinclude_start_element(name, pbag),
             _ => {
-                let parent = self.current_node.clone();
-                let node = self.create_node(parent.as_ref(), name, pbag);
+                let ids = self.ids.as_mut().unwrap();
+                let mut node = create_node_and_register_id(name, pbag, ids);
 
-                if self.current_node.is_none() {
+                let parent = self.current_node.clone();
+                node.borrow_mut()
+                    .set_atts(parent.as_ref(), pbag, self.load_options.locale());
+
+                if let Some(mut parent) = parent {
+                    parent.append(node.clone());
+                } else {
                     self.set_root(&node);
                 }
+
                 self.current_node = Some(node);
 
                 Context::ElementCreation
@@ -274,9 +284,8 @@ impl XmlState {
         let node = self.current_node.take().unwrap();
 
         if node.borrow().get_type() == NodeType::Style {
-            let css_data = node.borrow().get_impl::<NodeStyle>().get_css(&node);
-
             let css_rules = self.css_rules.as_mut().unwrap();
+            let css_data = node.borrow().get_impl::<NodeStyle>().get_css(&node);
 
             css_rules.parse(self.load_options.base_url.as_ref(), &css_data);
         }
@@ -285,54 +294,34 @@ impl XmlState {
     }
 
     fn element_creation_characters(&self, text: &str) {
-        let node = self.current_node.as_ref().unwrap();
-
         if text.len() != 0 {
             // When the last child is a Chars node we can coalesce
             // the text and avoid screwing up the Pango layouts
-            let chars_node = if let Some(child) = node
+            let chars_node = if let Some(child) = self
+                .current_node
+                .as_ref()
+                .unwrap()
                 .last_child()
                 .filter(|c| c.borrow().get_type() == NodeType::Chars)
             {
                 child
             } else {
-                let child = RsvgNode::new(
-                    NodeData::new(
-                        NodeType::Chars,
-                        LocalName::from("rsvg-chars"),
-                        None,
-                        None,
-                        Box::new(NodeChars::new()),
-                    ),
-                    Some(node),
-                );
-                node.append(&child);
+                let child = RsvgNode::new(NodeData::new(
+                    NodeType::Chars,
+                    LocalName::from("rsvg-chars"),
+                    None,
+                    None,
+                    Box::new(NodeChars::new()),
+                ));
+
+                let mut node = self.current_node.as_ref().unwrap().clone();
+                node.append(child.clone());
+
                 child
             };
 
             chars_node.borrow().get_impl::<NodeChars>().append(text);
         }
-    }
-
-    fn create_node(
-        &mut self,
-        parent: Option<&RsvgNode>,
-        name: &str,
-        pbag: &PropertyBag,
-    ) -> RsvgNode {
-        let ids = self.ids.as_mut().unwrap();
-
-        let new_node = create_node_and_register_id(name, parent, pbag, ids);
-
-        if let Some(parent) = parent {
-            parent.append(&new_node);
-        }
-
-        new_node
-            .borrow()
-            .set_atts(&new_node, pbag, self.load_options.locale());
-
-        new_node
     }
 
     fn xinclude_start_element(&mut self, _name: &str, pbag: &PropertyBag) -> Context {
@@ -532,14 +521,6 @@ impl Drop for XmlState {
 
 fn skip_namespace(s: &str) -> &str {
     s.find(':').map_or(s, |pos| &s[pos + 1..])
-}
-
-fn set_styles_recursively(node: &RsvgNode, css_rules: &CssRules) {
-    node.borrow().set_style(node, css_rules);
-
-    for child in node.children() {
-        set_styles_recursively(&child, css_rules);
-    }
 }
 
 // https://www.w3.org/TR/xml-stylesheet/

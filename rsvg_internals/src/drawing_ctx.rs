@@ -375,7 +375,8 @@ impl DrawingCtx {
         if let Some(node) = clip_node {
             let orig_bbox = self.bbox;
 
-            let clip_path = node.borrow().get_impl::<NodeClipPath>();
+            let node_data = node.borrow();
+            let clip_path = node_data.get_impl::<NodeClipPath>();
             let res = clip_path.to_cairo_context(&node, self, &orig_bbox);
 
             // FIXME: this is an EPIC HACK to keep the clipping context from

@@ -114,7 +114,8 @@ impl FilterContext {
             height: 0.0,
         });
 
-        let filter = filter_node.borrow().get_impl::<NodeFilter>();
+        let node_data = filter_node.borrow();
+        let filter = node_data.get_impl::<NodeFilter>();
 
         let affine = match filter.filterunits.get() {
             CoordUnits::UserSpaceOnUse => cr_affine,
@@ -305,7 +306,8 @@ impl FilterContext {
 
     /// Pushes the viewport size based on the value of `primitiveUnits`.
     pub fn get_view_params(&self, draw_ctx: &mut DrawingCtx) -> ViewParams {
-        let filter = self.node.borrow().get_impl::<NodeFilter>();
+        let node_data = self.node.borrow();
+        let filter = node_data.get_impl::<NodeFilter>();
 
         // See comments in compute_effects_region() for how this works.
         if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
