@@ -218,11 +218,11 @@ impl NodeData {
     }
 
     /// Applies the CSS rules that match into the node's specified_values
-    fn set_css_styles(&self, node: &RsvgNode, css_rules: &CssRules) {
+    fn set_css_styles(&self, css_rules: &CssRules) {
         let mut specified_values = self.specified_values.borrow_mut();
         let mut important_styles = self.important_styles.borrow_mut();
 
-        for selector in &css_rules.get_matches(node) {
+        for selector in &css_rules.get_matches(self) {
             if let Some(decl_list) = css_rules.get_declarations(selector) {
                 for declaration in decl_list.iter() {
                     specified_values
@@ -254,8 +254,8 @@ impl NodeData {
 
     // Sets the node's specified values from the style-related attributes in the pbag.
     // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&self, node: &RsvgNode, css_rules: &CssRules) {
-        self.set_css_styles(node, css_rules);
+    pub fn set_style(&self, css_rules: &CssRules) {
+        self.set_css_styles(css_rules);
         self.set_style_attribute();
     }
 

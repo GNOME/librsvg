@@ -535,7 +535,7 @@ fn skip_namespace(s: &str) -> &str {
 }
 
 fn set_styles_recursively(node: &RsvgNode, css_rules: &CssRules) {
-    node.borrow().set_style(node, css_rules);
+    node.borrow().set_style(css_rules);
 
     for child in node.children() {
         set_styles_recursively(&child, css_rules);
