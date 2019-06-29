@@ -128,10 +128,8 @@ impl Default for NodePattern {
 }
 
 impl NodeTrait for NodePattern {
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
         let mut p = self.pattern.borrow_mut();
-
-        p.node = Some(node.downgrade());
 
         for (attr, value) in pbag.iter() {
             match attr {
@@ -186,6 +184,12 @@ impl PaintSource for NodePattern {
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
+        {
+            // Initialize pattern.node and release the mutable borrow
+            let mut p = self.pattern.borrow_mut();
+            p.node = Some(node.downgrade());
+        }
+
         let mut result = node
             .borrow()
             .get_impl::<NodePattern>()
