@@ -101,7 +101,7 @@ impl NodeData {
         self.specified_values.borrow().is_overflow()
     }
 
-    pub fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>, locale: &Locale) {
+    pub fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>, locale: &Locale) {
         if self.node_impl.overflow_hidden() {
             let mut specified_values = self.specified_values.borrow_mut();
             specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
@@ -112,7 +112,7 @@ impl NodeData {
         if let Err(e) = self
             .set_transform_attribute(pbag)
             .and_then(|_| self.set_conditional_processing_attributes(pbag, locale))
-            .and_then(|_| self.node_impl.set_atts(node, pbag))
+            .and_then(|_| self.node_impl.set_atts(parent, pbag))
             .and_then(|_| self.set_presentation_attributes(pbag))
         {
             self.set_error(e);
@@ -359,7 +359,7 @@ pub trait NodeTrait: Downcast {
     /// Sets per-node attributes from the `pbag`
     ///
     /// Each node is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(&self, node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult;
+    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult;
 
     /// Sets any special-cased properties that the node may have, that are different
     /// from defaults in the node's `SpecifiedValues`.

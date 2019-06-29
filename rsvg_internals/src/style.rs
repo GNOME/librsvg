@@ -51,7 +51,7 @@ impl NodeStyle {
 }
 
 impl NodeTrait for NodeStyle {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == local_name!("type") {
                 *self.type_.borrow_mut() = Some(value.to_string());

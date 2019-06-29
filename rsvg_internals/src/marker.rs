@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::f64::consts::*;
 use std::ops::Deref;
 
-use cairo::{MatrixTrait, Rectangle};
+use cairo::Rectangle;
 use markup5ever::local_name;
 use cssparser::{CowRcStr, Parser, Token};
 
@@ -194,7 +194,7 @@ impl NodeMarker {
 }
 
 impl NodeTrait for NodeMarker {
-    fn set_atts(&self, _node: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("markerUnits") => self.units.set(attr.parse(value)?),

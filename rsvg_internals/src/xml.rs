@@ -330,7 +330,7 @@ impl XmlState {
 
         new_node
             .borrow()
-            .set_atts(&new_node, pbag, self.load_options.locale());
+            .set_atts(parent, pbag, self.load_options.locale());
 
         new_node
     }

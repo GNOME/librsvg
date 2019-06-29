@@ -555,7 +555,7 @@ impl NodeChars {
 }
 
 impl NodeTrait for NodeChars {
-    fn set_atts(&self, _: &RsvgNode, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 }
@@ -590,7 +590,7 @@ impl NodeText {
 }
 
 impl NodeTrait for NodeText {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("x") => self.x.set(attr.parse(value)?),
@@ -708,7 +708,7 @@ fn extract_chars_children_to_chunks_recursively(
 }
 
 impl NodeTrait for NodeTRef {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("xlink:href") => {
@@ -755,7 +755,7 @@ impl NodeTSpan {
 }
 
 impl NodeTrait for NodeTSpan {
-    fn set_atts(&self, _: &RsvgNode, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("x") => self.x.set(attr.parse(value).map(Some)?),
