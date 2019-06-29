@@ -122,7 +122,6 @@ pub mod surface_utils;
 mod svg;
 mod text;
 mod transform;
-pub mod tree_utils;
 mod unit_interval;
 mod util;
 mod viewbox;

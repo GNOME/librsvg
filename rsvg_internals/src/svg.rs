@@ -36,7 +36,7 @@ pub struct Svg {
 }
 
 impl Svg {
-    pub fn new(tree: RsvgNode, ids: HashMap<String, RsvgNode>, load_options: LoadOptions) -> Svg {
+    pub fn new(mut tree: RsvgNode, ids: HashMap<String, RsvgNode>, load_options: LoadOptions) -> Svg {
         let values = ComputedValues::default();
         tree.cascade(&values);
 
@@ -86,12 +86,10 @@ impl Svg {
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let root = self.root();
+        let node_data = root.borrow();
 
-        assert!(root.borrow().get_type() == NodeType::Svg);
-
-        root.borrow()
-            .get_impl::<NodeSvg>()
-            .get_intrinsic_dimensions()
+        assert!(node_data.get_type() == NodeType::Svg);
+        node_data.get_impl::<NodeSvg>().get_intrinsic_dimensions()
     }
 }
 

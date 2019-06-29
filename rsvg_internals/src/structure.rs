@@ -17,7 +17,6 @@ use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
 use crate::rect::RectangleExt;
-use crate::tree_utils::Node;
 use crate::viewbox::*;
 
 #[derive(Default)]
@@ -347,7 +346,7 @@ impl NodeTrait for NodeUse {
             return Ok(());
         };
 
-        if Node::is_ancestor(child.clone(), node.clone()) {
+        if node.ancestors().any(|ancestor| ancestor == child) {
             // or, if we're <use>'ing ourselves
             return Err(RenderingError::CircularReference);
         }
@@ -395,7 +394,8 @@ impl NodeTrait for NodeUse {
                 )
             })
         } else {
-            let symbol = child.borrow().get_impl::<NodeSymbol>();
+            let node_data = child.borrow();
+            let symbol = node_data.get_impl::<NodeSymbol>();
 
             let clip_mode = if !values.is_overflow()
                 || (values.overflow == Overflow::Visible && child.borrow().is_overflow())

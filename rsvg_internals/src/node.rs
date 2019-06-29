@@ -1,7 +1,7 @@
 use cairo::{Matrix, MatrixTrait};
 use downcast_rs::*;
 use markup5ever::{local_name, LocalName};
-use std::cell::{Cell, Ref, RefCell};
+use std::cell::Ref;
 use std::collections::HashSet;
 use std::fmt;
 
@@ -14,12 +14,12 @@ use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
-use crate::tree_utils::{NodeRef, NodeWeakRef};
 use locale_config::Locale;
+use rctree;
 
 /// Tree node with specific data
-pub type RsvgNode = NodeRef<NodeData>;
-pub type RsvgWeakNode = NodeWeakRef<NodeData>;
+pub type RsvgNode = rctree::Node<NodeData>;
+pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
 
 /// Contents of a tree node
 pub struct NodeData {
@@ -27,14 +27,14 @@ pub struct NodeData {
     element_name: LocalName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
-    specified_values: RefCell<SpecifiedValues>,
-    important_styles: RefCell<HashSet<LocalName>>,
-    result: RefCell<NodeResult>,
-    transform: Cell<Matrix>,
-    values: RefCell<ComputedValues>,
-    cond: Cell<bool>,
+    specified_values: SpecifiedValues,
+    important_styles: HashSet<LocalName>,
+    result: NodeResult,
+    transform: Matrix,
+    values: ComputedValues,
+    cond: bool,
+    style_attr: String,
     node_impl: Box<NodeTrait>,
-    style_attr: RefCell<String>,
 }
 
 impl NodeData {
@@ -50,14 +50,14 @@ impl NodeData {
             element_name,
             id: id.map(str::to_string),
             class: class.map(str::to_string),
-            specified_values: RefCell::new(Default::default()),
+            specified_values: Default::default(),
             important_styles: Default::default(),
-            transform: Cell::new(Matrix::identity()),
-            result: RefCell::new(Ok(())),
-            values: RefCell::new(ComputedValues::default()),
-            cond: Cell::new(true),
+            transform: Matrix::identity(),
+            result: Ok(()),
+            values: ComputedValues::default(),
+            cond: true,
+            style_attr: String::new(),
             node_impl,
-            style_attr: RefCell::new(String::new()),
         }
     }
 
@@ -90,21 +90,20 @@ impl NodeData {
     }
 
     pub fn get_cond(&self) -> bool {
-        self.cond.get()
+        self.cond
     }
 
     pub fn get_transform(&self) -> Matrix {
-        self.transform.get()
+        self.transform
     }
 
     pub fn is_overflow(&self) -> bool {
-        self.specified_values.borrow().is_overflow()
+        self.specified_values.is_overflow()
     }
 
-    pub fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>, locale: &Locale) {
+    pub fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>, locale: &Locale) {
         if self.node_impl.overflow_hidden() {
-            let mut specified_values = self.specified_values.borrow_mut();
-            specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
+            self.specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
         }
 
         self.save_style_attribute(pbag);
@@ -118,30 +117,26 @@ impl NodeData {
             self.set_error(e);
         }
 
-        let mut specified_values = self.specified_values.borrow_mut();
         self.node_impl
-            .set_overridden_properties(&mut specified_values);
+            .set_overridden_properties(&mut self.specified_values);
     }
 
-    fn save_style_attribute(&self, pbag: &PropertyBag<'_>) {
-        let mut style_attr = self.style_attr.borrow_mut();
-
+    fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("style") => style_attr.push_str(value),
-
+                local_name!("style") => self.style_attr.push_str(value),
                 _ => (),
             }
         }
     }
 
-    fn set_transform_attribute(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
+    fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("transform") => {
                     return Matrix::parse_str(value)
                         .attribute(attr)
-                        .and_then(|affine| Ok(self.transform.set(affine)));
+                        .and_then(|affine| Ok(self.transform = affine));
                 }
 
                 _ => (),
@@ -152,11 +147,11 @@ impl NodeData {
     }
 
     fn set_conditional_processing_attributes(
-        &self,
+        &mut self,
         pbag: &PropertyBag<'_>,
         locale: &Locale,
     ) -> Result<(), NodeError> {
-        let mut cond = self.cond.get();
+        let mut cond = self.cond;
 
         for (attr, value) in pbag.iter() {
             // FIXME: move this to "try {}" when we can bump the rustc version dependency
@@ -184,7 +179,7 @@ impl NodeData {
             };
 
             parse()
-                .map(|c| self.cond.set(c))
+                .map(|c| self.cond = c)
                 .map_err(|e| NodeError::attribute_error(attr, e))?;
         }
 
@@ -192,12 +187,8 @@ impl NodeData {
     }
 
     /// Hands the pbag to the node's state, to apply the presentation attributes
-    fn set_presentation_attributes(&self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
-        match self
-            .specified_values
-            .borrow_mut()
-            .parse_presentation_attributes(pbag)
-        {
+    fn set_presentation_attributes(&mut self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
+        match self.specified_values.parse_presentation_attributes(pbag) {
             Ok(_) => Ok(()),
             Err(e) => {
                 // FIXME: we'll ignore errors here for now.
@@ -218,53 +209,45 @@ impl NodeData {
     }
 
     /// Applies the CSS rules that match into the node's specified_values
-    fn set_css_styles(&self, css_rules: &CssRules) {
-        let mut specified_values = self.specified_values.borrow_mut();
-        let mut important_styles = self.important_styles.borrow_mut();
-
+    fn set_css_styles(&mut self, css_rules: &CssRules) {
         for selector in &css_rules.get_matches(self) {
             if let Some(decl_list) = css_rules.get_declarations(selector) {
                 for declaration in decl_list.iter() {
-                    specified_values
-                        .set_property_from_declaration(declaration, &mut important_styles);
+                    self.specified_values
+                        .set_property_from_declaration(declaration, &mut self.important_styles);
                 }
             }
         }
     }
 
     /// Applies CSS styles from the saved value of the "style" attribute
-    fn set_style_attribute(&self) {
-        let mut style_attr = self.style_attr.borrow_mut();
-
-        if !style_attr.is_empty() {
-            let mut important_styles = self.important_styles.borrow_mut();
-
+    fn set_style_attribute(&mut self) {
+        if !self.style_attr.is_empty() {
             if let Err(e) = self
                 .specified_values
-                .borrow_mut()
-                .parse_style_declarations(style_attr.as_str(), &mut important_styles)
+                .parse_style_declarations(self.style_attr.as_str(), &mut self.important_styles)
             {
                 self.set_error(e);
             }
 
-            style_attr.clear();
-            style_attr.shrink_to_fit();
+            self.style_attr.clear();
+            self.style_attr.shrink_to_fit();
         }
     }
 
     // Sets the node's specified values from the style-related attributes in the pbag.
     // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&self, css_rules: &CssRules) {
+    pub fn set_style(&mut self, css_rules: &CssRules) {
         self.set_css_styles(css_rules);
         self.set_style_attribute();
     }
 
-    fn set_error(&self, error: NodeError) {
-        *self.result.borrow_mut() = Err(error);
+    fn set_error(&mut self, error: NodeError) {
+        self.result = Err(error);
     }
 
     pub fn is_in_error(&self) -> bool {
-        self.result.borrow().is_err()
+        self.result.is_err()
     }
 }
 
@@ -294,7 +277,7 @@ pub struct CascadedValues<'a> {
 }
 
 enum CascadedInner<'a> {
-    FromNode(Ref<'a, ComputedValues>),
+    FromNode(Ref<'a, NodeData>),
     FromValues(ComputedValues),
 }
 
@@ -307,7 +290,7 @@ impl<'a> CascadedValues<'a> {
     pub fn new(&self, node: &'a RsvgNode) -> CascadedValues<'a> {
         match self.inner {
             CascadedInner::FromNode(_) => CascadedValues {
-                inner: CascadedInner::FromNode(node.borrow().values.borrow()),
+                inner: CascadedInner::FromNode(node.borrow()),
             },
 
             CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, v),
@@ -321,7 +304,7 @@ impl<'a> CascadedValues<'a> {
     /// `new()` to derive the cascade from an existing one.
     pub fn new_from_node(node: &RsvgNode) -> CascadedValues<'_> {
         CascadedValues {
-            inner: CascadedInner::FromNode(node.borrow().values.borrow()),
+            inner: CascadedInner::FromNode(node.borrow()),
         }
     }
 
@@ -332,10 +315,7 @@ impl<'a> CascadedValues<'a> {
     /// `<use>`'s own cascade, not wih the element's original cascade.
     pub fn new_from_values(node: &'a RsvgNode, values: &ComputedValues) -> CascadedValues<'a> {
         let mut v = values.clone();
-        node.borrow()
-            .specified_values
-            .borrow()
-            .to_computed_values(&mut v);
+        node.borrow().specified_values.to_computed_values(&mut v);
 
         CascadedValues {
             inner: CascadedInner::FromValues(v),
@@ -348,7 +328,7 @@ impl<'a> CascadedValues<'a> {
     /// `ComputedValues` from the `CascadedValues` that got passed to `draw()`.
     pub fn get(&'a self) -> &'a ComputedValues {
         match self.inner {
-            CascadedInner::FromNode(ref r) => &*r,
+            CascadedInner::FromNode(ref node) => &node.values,
             CascadedInner::FromValues(ref v) => v,
         }
     }
@@ -473,19 +453,21 @@ pub enum NodeType {
 
 /// Helper trait for cascading recursively
 pub trait NodeCascade {
-    fn cascade(&self, values: &ComputedValues);
+    fn cascade(&mut self, values: &ComputedValues);
 }
 
 impl NodeCascade for RsvgNode {
-    fn cascade(&self, values: &ComputedValues) {
+    fn cascade(&mut self, values: &ComputedValues) {
         let mut values = values.clone();
-        self.borrow()
-            .specified_values
-            .borrow()
-            .to_computed_values(&mut values);
-        *self.borrow().values.borrow_mut() = values.clone();
 
-        for child in self.children() {
+        {
+            let mut node_mut = self.borrow_mut();
+
+            node_mut.specified_values.to_computed_values(&mut values);
+            node_mut.values = values.clone();
+        }
+
+        for mut child in self.children() {
             child.cascade(&values);
         }
     }

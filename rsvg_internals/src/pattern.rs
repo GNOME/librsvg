@@ -210,7 +210,8 @@ impl PaintSource for NodePattern {
                     return Err(RenderingError::CircularReference);
                 }
 
-                let fallback = a_node.borrow().get_impl::<NodePattern>().pattern.borrow();
+                let node_data = a_node.borrow();
+                let fallback = node_data.get_impl::<NodePattern>().pattern.borrow();
                 result.resolve_from_fallback(&fallback);
 
                 stack.push(a_node);
@@ -381,7 +382,7 @@ impl PaintSource for NodePattern {
         // Set up transformations to be determined by the contents units
 
         // Draw everything
-        let pattern_node = RsvgNode::upgrade(pattern.node.as_ref().unwrap()).unwrap();
+        let pattern_node = pattern.node.as_ref().unwrap().upgrade().unwrap();
         let pattern_cascaded = CascadedValues::new_from_node(&pattern_node);
         let pattern_values = pattern_cascaded.get();
 

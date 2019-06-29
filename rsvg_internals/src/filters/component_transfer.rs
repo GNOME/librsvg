@@ -282,30 +282,26 @@ impl Filter for ComponentTransfer {
             ctx.source_graphic().height(),
         )?;
 
-        // Enumerate all child <feFuncX> nodes.
-        let functions = node
-            .children()
-            .rev()
-            .filter(|c| match c.borrow().get_type() {
-                NodeType::ComponentTransferFunctionA
-                | NodeType::ComponentTransferFunctionB
-                | NodeType::ComponentTransferFunctionG
-                | NodeType::ComponentTransferFunctionR => true,
-                _ => false,
-            });
-
         // Get a node for every pixel component.
         let get_node = |channel| {
-            functions
-                .clone()
+            node.children()
+                .rev()
+                .filter(|c| match c.borrow().get_type() {
+                    NodeType::ComponentTransferFunctionA
+                    | NodeType::ComponentTransferFunctionB
+                    | NodeType::ComponentTransferFunctionG
+                    | NodeType::ComponentTransferFunctionR => true,
+                    _ => false,
+                })
                 .find(|c| c.borrow().get_impl::<FuncX>().channel == channel)
         };
-        let func_r = get_node(Channel::R);
-        let func_g = get_node(Channel::G);
-        let func_b = get_node(Channel::B);
-        let func_a = get_node(Channel::A);
 
-        for node in [&func_r, &func_g, &func_b, &func_a]
+        let func_r_node = get_node(Channel::R);
+        let func_g_node = get_node(Channel::G);
+        let func_b_node = get_node(Channel::B);
+        let func_a_node = get_node(Channel::A);
+
+        for node in [&func_r_node, &func_g_node, &func_b_node, &func_a_node]
             .iter()
             .filter_map(|x| x.as_ref())
         {
@@ -314,18 +310,46 @@ impl Filter for ComponentTransfer {
             }
         }
 
+        // We need to tell the borrow checker that these live long enough
+        let func_r_data;
+        let func_g_data;
+        let func_b_data;
+        let func_a_data;
+
         // This is the default node that performs an identity transformation.
         let func_default = FuncX::default();
 
-        // Retrieve the compute function and parameters for each pixel component.
-        // Can't make this a closure without hacks since it's not currently possible to
-        // cleanly describe |&'a T| -> &'a U to the type system.
-        #[inline]
-        fn func_or_default<'a>(func: &'a Option<RsvgNode>, default: &'a FuncX) -> &'a FuncX {
-            func.as_ref()
-                .map(|c| c.borrow().get_impl::<FuncX>())
-                .unwrap_or(default)
-        }
+        let func_r = match func_r_node {
+            Some(ref f) => {
+                func_r_data = f.borrow();
+                func_r_data.get_impl::<FuncX>()
+            }
+            _ => &func_default,
+        };
+
+        let func_g = match func_g_node {
+            Some(ref f) => {
+                func_g_data = f.borrow();
+                func_g_data.get_impl::<FuncX>()
+            }
+            _ => &func_default,
+        };
+
+        let func_b = match func_b_node {
+            Some(ref f) => {
+                func_b_data = f.borrow();
+                func_b_data.get_impl::<FuncX>()
+            }
+            _ => &func_default,
+        };
+
+        let func_a = match func_a_node {
+            Some(ref f) => {
+                func_a_data = f.borrow();
+                func_a_data.get_impl::<FuncX>()
+            }
+            _ => &func_default,
+        };
 
         #[inline]
         fn compute_func<'a>(func: &'a FuncX) -> impl Fn(u8, f64, f64) -> u8 + 'a {
@@ -344,12 +368,11 @@ impl Filter for ComponentTransfer {
             }
         }
 
-        let compute_r = compute_func(func_or_default(&func_r, &func_default));
-        let compute_g = compute_func(func_or_default(&func_g, &func_default));
-        let compute_b = compute_func(func_or_default(&func_b, &func_default));
+        let compute_r = compute_func(&func_r);
+        let compute_g = compute_func(&func_g);
+        let compute_b = compute_func(&func_b);
 
         // Alpha gets special handling since everything else depends on it.
-        let func_a = func_or_default(&func_a, &func_default);
         let compute_a = func_a.function();
         let params_a = func_a.function_parameters();
         let compute_a = |alpha| compute_a(&params_a, alpha);
