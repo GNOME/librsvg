@@ -261,6 +261,18 @@ impl NodeTrait for FuncX {
     }
 }
 
+macro_rules! func_or_default {
+    ($func_node:ident, $func_data:ident, $func_default:ident) => {
+        match $func_node {
+            Some(ref f) => {
+                $func_data = f.borrow();
+                $func_data.get_impl::<FuncX>()
+            }
+            _ => &$func_default,
+        };
+    };
+}
+
 impl Filter for ComponentTransfer {
     fn render(
         &self,
@@ -310,46 +322,19 @@ impl Filter for ComponentTransfer {
             }
         }
 
+        // This is the default node that performs an identity transformation.
+        let func_default = FuncX::default();
+
         // We need to tell the borrow checker that these live long enough
         let func_r_data;
         let func_g_data;
         let func_b_data;
         let func_a_data;
 
-        // This is the default node that performs an identity transformation.
-        let func_default = FuncX::default();
-
-        let func_r = match func_r_node {
-            Some(ref f) => {
-                func_r_data = f.borrow();
-                func_r_data.get_impl::<FuncX>()
-            }
-            _ => &func_default,
-        };
-
-        let func_g = match func_g_node {
-            Some(ref f) => {
-                func_g_data = f.borrow();
-                func_g_data.get_impl::<FuncX>()
-            }
-            _ => &func_default,
-        };
-
-        let func_b = match func_b_node {
-            Some(ref f) => {
-                func_b_data = f.borrow();
-                func_b_data.get_impl::<FuncX>()
-            }
-            _ => &func_default,
-        };
-
-        let func_a = match func_a_node {
-            Some(ref f) => {
-                func_a_data = f.borrow();
-                func_a_data.get_impl::<FuncX>()
-            }
-            _ => &func_default,
-        };
+        let func_r = func_or_default!(func_r_node, func_r_data, func_default);
+        let func_g = func_or_default!(func_g_node, func_g_data, func_default);
+        let func_b = func_or_default!(func_b_node, func_b_data, func_default);
+        let func_a = func_or_default!(func_a_node, func_a_data, func_default);
 
         #[inline]
         fn compute_func<'a>(func: &'a FuncX) -> impl Fn(u8, f64, f64) -> u8 + 'a {
