@@ -114,9 +114,12 @@ impl XmlState {
         match self.tree_root {
             None => Err(LoadingError::SvgHasNoElements),
             Some(ref root) if root.borrow().get_type() == NodeType::Svg => {
-                let mut root = self.tree_root.take().unwrap();
+                let root = self.tree_root.take().unwrap();
+                let css_rules = self.css_rules.as_ref().unwrap();
 
-                set_styles_recursively(&mut root, self.css_rules.as_ref().unwrap());
+                for mut node in root.descendants() {
+                    node.borrow_mut().set_style(css_rules);
+                }
 
                 Ok(Svg::new(
                     root,
@@ -518,14 +521,6 @@ impl Drop for XmlState {
 
 fn skip_namespace(s: &str) -> &str {
     s.find(':').map_or(s, |pos| &s[pos + 1..])
-}
-
-fn set_styles_recursively(node: &mut RsvgNode, css_rules: &CssRules) {
-    node.borrow_mut().set_style(css_rules);
-
-    for mut child in node.children() {
-        set_styles_recursively(&mut child, css_rules);
-    }
 }
 
 // https://www.w3.org/TR/xml-stylesheet/
