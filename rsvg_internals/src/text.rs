@@ -3,7 +3,7 @@ use markup5ever::local_name;
 use pango::{self, ContextExt, FontMapExt, LayoutExt};
 use pango_sys;
 use pangocairo;
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
@@ -562,10 +562,10 @@ impl NodeTrait for NodeChars {
 
 #[derive(Default)]
 pub struct NodeText {
-    x: Cell<LengthHorizontal>,
-    y: Cell<LengthVertical>,
-    dx: Cell<Option<LengthHorizontal>>,
-    dy: Cell<Option<LengthVertical>>,
+    x: LengthHorizontal,
+    y: LengthVertical,
+    dx: Option<LengthHorizontal>,
+    dy: Option<LengthVertical>,
 }
 
 impl NodeText {
@@ -576,15 +576,8 @@ impl NodeText {
         draw_ctx: &mut DrawingCtx,
     ) -> Vec<Chunk> {
         let mut chunks = Vec::new();
-
-        let x = self.x.get();
-        let y = self.y.get();
-        let dx = self.dx.get();
-        let dy = self.dy.get();
-
-        chunks.push(Chunk::new(cascaded.get(), Some(x), Some(y)));
-
-        children_to_chunks(&mut chunks, node, cascaded, draw_ctx, dx, dy, 0);
+        chunks.push(Chunk::new(cascaded.get(), Some(self.x), Some(self.y)));
+        children_to_chunks(&mut chunks, node, cascaded, draw_ctx, self.dx, self.dy, 0);
         chunks
     }
 }
@@ -593,10 +586,10 @@ impl NodeTrait for NodeText {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("x") => self.x.set(attr.parse(value)?),
-                local_name!("y") => self.y.set(attr.parse(value)?),
-                local_name!("dx") => self.dx.set(attr.parse(value).map(Some)?),
-                local_name!("dy") => self.dy.set(attr.parse(value).map(Some)?),
+                local_name!("x") => self.x = attr.parse(value)?,
+                local_name!("y") => self.y = attr.parse(value)?,
+                local_name!("dx") => self.dx = attr.parse(value).map(Some)?,
+                local_name!("dy") => self.dy = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
@@ -614,8 +607,8 @@ impl NodeTrait for NodeText {
         let values = cascaded.get();
         let params = draw_ctx.get_view_params();
 
-        let mut x = self.x.get().normalize(values, &params);
-        let mut y = self.y.get().normalize(values, &params);
+        let mut x = self.x.normalize(values, &params);
+        let mut y = self.y.normalize(values, &params);
 
         let chunks = self.make_chunks(node, cascaded, draw_ctx);
 
@@ -655,7 +648,7 @@ impl NodeTrait for NodeText {
 
 #[derive(Default)]
 pub struct NodeTRef {
-    link: RefCell<Option<Fragment>>,
+    link: Option<Fragment>,
 }
 
 impl NodeTRef {
@@ -667,14 +660,11 @@ impl NodeTRef {
         chunks: &mut Vec<Chunk>,
         depth: usize,
     ) {
-        let link = self.link.borrow();
-
-        if link.is_none() {
+        if self.link.is_none() {
             return;
         }
 
-        let link = link.as_ref().unwrap();
-
+        let link = self.link.as_ref().unwrap();
         let values = cascaded.get();
 
         if let Some(acquired) = draw_ctx.acquired_nodes().get_node(link) {
@@ -712,7 +702,7 @@ impl NodeTrait for NodeTRef {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("xlink:href") => {
-                    *self.link.borrow_mut() = Some(Fragment::parse(value).attribute(attr)?)
+                    self.link = Some(Fragment::parse(value).attribute(attr)?)
                 }
                 _ => (),
             }
@@ -724,10 +714,10 @@ impl NodeTrait for NodeTRef {
 
 #[derive(Default)]
 pub struct NodeTSpan {
-    x: Cell<Option<LengthHorizontal>>,
-    y: Cell<Option<LengthVertical>>,
-    dx: Cell<Option<LengthHorizontal>>,
-    dy: Cell<Option<LengthVertical>>,
+    x: Option<LengthHorizontal>,
+    y: Option<LengthVertical>,
+    dx: Option<LengthHorizontal>,
+    dy: Option<LengthVertical>,
 }
 
 impl NodeTSpan {
@@ -739,18 +729,13 @@ impl NodeTSpan {
         chunks: &mut Vec<Chunk>,
         depth: usize,
     ) {
-        let x = self.x.get();
-        let y = self.y.get();
-        let dx = self.dx.get();
-        let dy = self.dy.get();
-
-        if x.is_some() || y.is_some() {
+        if self.x.is_some() || self.y.is_some() {
             // Any absolute position creates a new chunk
             let values = cascaded.get();
-            chunks.push(Chunk::new(values, x, y));
+            chunks.push(Chunk::new(values, self.x, self.y));
         }
 
-        children_to_chunks(chunks, node, cascaded, draw_ctx, dx, dy, depth);
+        children_to_chunks(chunks, node, cascaded, draw_ctx, self.dx, self.dy, depth);
     }
 }
 
@@ -758,10 +743,10 @@ impl NodeTrait for NodeTSpan {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("x") => self.x.set(attr.parse(value).map(Some)?),
-                local_name!("y") => self.y.set(attr.parse(value).map(Some)?),
-                local_name!("dx") => self.dx.set(attr.parse(value).map(Some)?),
-                local_name!("dy") => self.dy.set(attr.parse(value).map(Some)?),
+                local_name!("x") => self.x = attr.parse(value).map(Some)?,
+                local_name!("y") => self.y = attr.parse(value).map(Some)?,
+                local_name!("dx") => self.dx = attr.parse(value).map(Some)?,
+                local_name!("dy") => self.dy = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
