@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use cairo::{self, ImageSurface};
 use markup5ever::{local_name, LocalName};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
@@ -33,7 +31,7 @@ enum OperationType {
 /// The `feColorMatrix` filter primitive.
 pub struct ColorMatrix {
     base: PrimitiveWithInput,
-    matrix: RefCell<Matrix5<f64>>,
+    matrix: Matrix5<f64>,
 }
 
 impl Default for ColorMatrix {
@@ -42,7 +40,7 @@ impl Default for ColorMatrix {
     fn default() -> ColorMatrix {
         ColorMatrix {
             base: PrimitiveWithInput::new::<Self>(),
-            matrix: RefCell::new(Matrix5::identity()),
+            matrix: Matrix5::identity(),
         }
     }
 }
@@ -62,16 +60,16 @@ impl NodeTrait for ColorMatrix {
         // Now read the matrix correspondingly.
         // LuminanceToAlpha doesn't accept any matrix.
         if operation_type == OperationType::LuminanceToAlpha {
-            #[cfg_attr(rustfmt, rustfmt_skip)]
-            self.matrix.replace(
+            self.matrix = {
+                #[cfg_attr(rustfmt, rustfmt_skip)]
                 Matrix5::new(
                     0.0,    0.0,    0.0,    0.0, 0.0,
                     0.0,    0.0,    0.0,    0.0, 0.0,
                     0.0,    0.0,    0.0,    0.0, 0.0,
                     0.2125, 0.7154, 0.0721, 0.0, 0.0,
                     0.0,    0.0,    0.0,    0.0, 1.0,
-                ),
-            );
+                )
+            };
         } else {
             for (attr, value) in pbag
                 .iter()
@@ -152,7 +150,7 @@ impl NodeTrait for ColorMatrix {
                     }
                 };
 
-                self.matrix.replace(new_matrix);
+                self.matrix = new_matrix;
             }
         }
 
@@ -173,8 +171,6 @@ impl Filter for ColorMatrix {
             .get_bounds(ctx)
             .add_input(&input)
             .into_irect(draw_ctx);
-
-        let matrix = &*self.matrix.borrow();
 
         let mut output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
@@ -201,7 +197,7 @@ impl Filter for ColorMatrix {
                     )
                 };
                 let mut new_pixel_vec = Vector5::zeros();
-                matrix.mul_to(&pixel_vec, &mut new_pixel_vec);
+                self.matrix.mul_to(&pixel_vec, &mut new_pixel_vec);
 
                 let new_alpha = clamp(new_pixel_vec[3], 0.0, 1.0);
 
