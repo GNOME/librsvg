@@ -1,5 +1,3 @@
-use std::cell::{Cell, RefCell};
-
 use cairo::{self, ImageSurface, MatrixTrait};
 use markup5ever::{local_name, LocalName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
@@ -26,15 +24,15 @@ use super::{Filter, FilterError, PrimitiveWithInput};
 /// The `feConvolveMatrix` filter primitive.
 pub struct ConvolveMatrix {
     base: PrimitiveWithInput,
-    order: Cell<(u32, u32)>,
-    kernel_matrix: RefCell<Option<DMatrix<f64>>>,
-    divisor: Cell<Option<f64>>,
-    bias: Cell<f64>,
-    target_x: Cell<Option<u32>>,
-    target_y: Cell<Option<u32>>,
-    edge_mode: Cell<EdgeMode>,
-    kernel_unit_length: Cell<Option<(f64, f64)>>,
-    preserve_alpha: Cell<bool>,
+    order: (u32, u32),
+    kernel_matrix: Option<DMatrix<f64>>,
+    divisor: Option<f64>,
+    bias: f64,
+    target_x: Option<u32>,
+    target_y: Option<u32>,
+    edge_mode: EdgeMode,
+    kernel_unit_length: Option<(f64, f64)>,
+    preserve_alpha: bool,
 }
 
 impl Default for ConvolveMatrix {
@@ -43,15 +41,15 @@ impl Default for ConvolveMatrix {
     fn default() -> ConvolveMatrix {
         ConvolveMatrix {
             base: PrimitiveWithInput::new::<Self>(),
-            order: Cell::new((3, 3)),
-            kernel_matrix: RefCell::new(None),
-            divisor: Cell::new(None),
-            bias: Cell::new(0.0),
-            target_x: Cell::new(None),
-            target_y: Cell::new(None),
-            edge_mode: Cell::new(EdgeMode::Duplicate),
-            kernel_unit_length: Cell::new(None),
-            preserve_alpha: Cell::new(false),
+            order: (3, 3),
+            kernel_matrix: None,
+            divisor: None,
+            bias: 0.0,
+            target_x: None,
+            target_y: None,
+            edge_mode: EdgeMode::Duplicate,
+            kernel_unit_length: None,
+            preserve_alpha: false,
         }
     }
 }
@@ -64,8 +62,8 @@ impl NodeTrait for ConvolveMatrix {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("order") => self.order.set(
-                    parsers::integer_optional_integer(value)
+                local_name!("order") => {
+                    self.order = parsers::integer_optional_integer(value)
                         .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x > 0 && y > 0 {
@@ -76,47 +74,49 @@ impl NodeTrait for ConvolveMatrix {
                                     "values must be greater than 0",
                                 ))
                             }
-                        })?,
-                ),
-                local_name!("divisor") => self.divisor.set(Some(
-                    parsers::number(value)
-                        .attribute(attr.clone())
-                        .and_then(|x| {
+                        })?
+                }
+                local_name!("divisor") => {
+                    self.divisor = Some(parsers::number(value).attribute(attr.clone()).and_then(
+                        |x| {
                             if x != 0.0 {
                                 Ok(x)
                             } else {
                                 Err(NodeError::value_error(attr, "divisor cannot be equal to 0"))
                             }
-                        })?,
-                )),
-                local_name!("bias") => self.bias.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("edgeMode") => self.edge_mode.set(EdgeMode::parse(attr, value)?),
-                local_name!("kernelUnitLength") => self.kernel_unit_length.set(Some(
-                    parsers::number_optional_number(value)
-                        .attribute(attr.clone())
-                        .and_then(|(x, y)| {
-                            if x > 0.0 && y > 0.0 {
-                                Ok((x, y))
-                            } else {
-                                Err(NodeError::value_error(
-                                    attr,
-                                    "kernelUnitLength can't be less or equal to zero",
-                                ))
-                            }
-                        })?,
-                )),
-                local_name!("preserveAlpha") => self.preserve_alpha.set(match value {
-                    "false" => false,
-                    "true" => true,
-                    _ => {
-                        return Err(NodeError::parse_error(
-                            attr,
-                            ParseError::new("expected false or true"),
-                        ));
+                        },
+                    )?)
+                }
+                local_name!("bias") => self.bias = parsers::number(value).attribute(attr)?,
+                local_name!("edgeMode") => self.edge_mode = EdgeMode::parse(attr, value)?,
+                local_name!("kernelUnitLength") => {
+                    self.kernel_unit_length = Some(
+                        parsers::number_optional_number(value)
+                            .attribute(attr.clone())
+                            .and_then(|(x, y)| {
+                                if x > 0.0 && y > 0.0 {
+                                    Ok((x, y))
+                                } else {
+                                    Err(NodeError::value_error(
+                                        attr,
+                                        "kernelUnitLength can't be less or equal to zero",
+                                    ))
+                                }
+                            })?,
+                    )
+                }
+                local_name!("preserveAlpha") => {
+                    self.preserve_alpha = match value {
+                        "false" => false,
+                        "true" => true,
+                        _ => {
+                            return Err(NodeError::parse_error(
+                                attr,
+                                ParseError::new("expected false or true"),
+                            ));
+                        }
                     }
-                }),
+                }
                 _ => (),
             }
         }
@@ -124,11 +124,10 @@ impl NodeTrait for ConvolveMatrix {
         // target_x and target_y depend on order.
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("targetX") => self.target_x.set(Some(
-                    parsers::integer(value)
-                        .attribute(attr.clone())
-                        .and_then(|x| {
-                            if x >= 0 && x < self.order.get().0 as i32 {
+                local_name!("targetX") => {
+                    self.target_x = Some(parsers::integer(value).attribute(attr.clone()).and_then(
+                        |x| {
+                            if x >= 0 && x < self.order.0 as i32 {
                                 Ok(x as u32)
                             } else {
                                 Err(NodeError::value_error(
@@ -136,13 +135,13 @@ impl NodeTrait for ConvolveMatrix {
                                     "targetX must be greater or equal to zero and less than orderX",
                                 ))
                             }
-                        })?,
-                )),
-                local_name!("targetY") => self.target_y.set(Some(
-                    parsers::integer(value)
-                        .attribute(attr.clone())
-                        .and_then(|x| {
-                            if x >= 0 && x < self.order.get().1 as i32 {
+                        },
+                    )?)
+                }
+                local_name!("targetY") => {
+                    self.target_y = Some(parsers::integer(value).attribute(attr.clone()).and_then(
+                        |x| {
+                            if x >= 0 && x < self.order.1 as i32 {
                                 Ok(x as u32)
                             } else {
                                 Err(NodeError::value_error(
@@ -150,18 +149,19 @@ impl NodeTrait for ConvolveMatrix {
                                     "targetY must be greater or equal to zero and less than orderY",
                                 ))
                             }
-                        })?,
-                )),
+                        },
+                    )?)
+                }
                 _ => (),
             }
         }
 
         // Default values for target_x and target_y.
-        if self.target_x.get().is_none() {
-            self.target_x.set(Some(self.order.get().0 / 2));
+        if self.target_x.is_none() {
+            self.target_x = Some(self.order.0 / 2);
         }
-        if self.target_y.get().is_none() {
-            self.target_y.set(Some(self.order.get().1 / 2));
+        if self.target_y.is_none() {
+            self.target_y = Some(self.order.1 / 2);
         }
 
         // Finally, parse the kernel matrix.
@@ -169,8 +169,8 @@ impl NodeTrait for ConvolveMatrix {
             .iter()
             .filter(|(attr, _)| *attr == local_name!("kernelMatrix"))
         {
-            self.kernel_matrix.replace(Some({
-                let number_of_elements = self.order.get().0 as usize * self.order.get().1 as usize;
+            self.kernel_matrix = Some({
+                let number_of_elements = self.order.0 as usize * self.order.1 as usize;
 
                 // #352: Parse as an unbounded list rather than exact length to prevent aborts due
                 //       to huge allocation attempts by underlying Vec::with_capacity().
@@ -196,15 +196,15 @@ impl NodeTrait for ConvolveMatrix {
                 }
 
                 DMatrix::from_data(VecStorage::new(
-                    Dynamic::new(self.order.get().1 as usize),
-                    Dynamic::new(self.order.get().0 as usize),
+                    Dynamic::new(self.order.1 as usize),
+                    Dynamic::new(self.order.0 as usize),
                     v,
                 ))
-            }));
+            });
         }
 
         // kernel_matrix must have been specified.
-        if self.kernel_matrix.borrow().is_none() {
+        if self.kernel_matrix.is_none() {
             return Err(NodeError::value_error(
                 local_name!("kernelMatrix"),
                 "the value must be set",
@@ -212,13 +212,11 @@ impl NodeTrait for ConvolveMatrix {
         }
 
         // Default value for the divisor.
-        if self.divisor.get().is_none() {
-            self.divisor.set(Some(
-                self.kernel_matrix.borrow().as_ref().unwrap().iter().sum(),
-            ));
+        if self.divisor.is_none() {
+            self.divisor = Some(self.kernel_matrix.as_ref().unwrap().iter().sum());
 
-            if self.divisor.get().unwrap() == 0.0 {
-                self.divisor.set(Some(1.0));
+            if self.divisor.unwrap() == 0.0 {
+                self.divisor = Some(1.0);
             }
         }
 
@@ -241,7 +239,7 @@ impl Filter for ConvolveMatrix {
             .into_irect(draw_ctx);
         let original_bounds = bounds;
 
-        let mut input_surface = if self.preserve_alpha.get() {
+        let mut input_surface = if self.preserve_alpha {
             // preserve_alpha means we need to premultiply and unpremultiply the values.
             input.surface().unpremultiply(bounds)?
         } else {
@@ -250,7 +248,6 @@ impl Filter for ConvolveMatrix {
 
         let scale = self
             .kernel_unit_length
-            .get()
             .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
         if let Some((ox, oy)) = scale {
@@ -261,8 +258,7 @@ impl Filter for ConvolveMatrix {
             bounds = new_bounds;
         }
 
-        let matrix = self.kernel_matrix.borrow();
-        let matrix = matrix.as_ref().unwrap();
+        let matrix = self.kernel_matrix.as_ref().unwrap();
 
         let mut output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
@@ -277,10 +273,10 @@ impl Filter for ConvolveMatrix {
             for (x, y, pixel) in Pixels::new(&input_surface, bounds) {
                 // Compute the convolution rectangle bounds.
                 let kernel_bounds = IRect {
-                    x0: x as i32 - self.target_x.get().unwrap() as i32,
-                    y0: y as i32 - self.target_y.get().unwrap() as i32,
-                    x1: x as i32 - self.target_x.get().unwrap() as i32 + self.order.get().0 as i32,
-                    y1: y as i32 - self.target_y.get().unwrap() as i32 + self.order.get().1 as i32,
+                    x0: x as i32 - self.target_x.unwrap() as i32,
+                    y0: y as i32 - self.target_y.unwrap() as i32,
+                    x1: x as i32 - self.target_x.unwrap() as i32 + self.order.0 as i32,
+                    y1: y as i32 - self.target_y.unwrap() as i32 + self.order.1 as i32,
                 };
 
                 // Do the convolution.
@@ -290,7 +286,7 @@ impl Filter for ConvolveMatrix {
                 let mut a = 0.0;
 
                 for (x, y, pixel) in
-                    PixelRectangle::new(&input_surface, bounds, kernel_bounds, self.edge_mode.get())
+                    PixelRectangle::new(&input_surface, bounds, kernel_bounds, self.edge_mode)
                 {
                     let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
                     let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
@@ -299,24 +295,24 @@ impl Filter for ConvolveMatrix {
                     g += f64::from(pixel.g) / 255.0 * matrix[(kernel_y, kernel_x)];
                     b += f64::from(pixel.b) / 255.0 * matrix[(kernel_y, kernel_x)];
 
-                    if !self.preserve_alpha.get() {
+                    if !self.preserve_alpha {
                         a += f64::from(pixel.a) / 255.0 * matrix[(kernel_y, kernel_x)];
                     }
                 }
 
                 // If preserve_alpha is true, set a to the source alpha value.
-                if self.preserve_alpha.get() {
+                if self.preserve_alpha {
                     a = f64::from(pixel.a) / 255.0;
                 } else {
-                    a = a / self.divisor.get().unwrap() + self.bias.get();
+                    a = a / self.divisor.unwrap() + self.bias;
                 }
 
                 let clamped_a = clamp(a, 0.0, 1.0);
 
                 let compute = |x| {
-                    let x = x / self.divisor.get().unwrap() + self.bias.get() * a;
+                    let x = x / self.divisor.unwrap() + self.bias * a;
 
-                    let x = if self.preserve_alpha.get() {
+                    let x = if self.preserve_alpha {
                         // Premultiply the output value.
                         clamp(x, 0.0, 1.0) * clamped_a
                     } else {
