@@ -1,5 +1,3 @@
-use std::cell::Cell;
-
 use cairo::{self, ImageSurface, MatrixTrait};
 use markup5ever::{local_name, LocalName};
 
@@ -36,11 +34,11 @@ enum NoiseType {
 /// The `feTurbulence` filter primitive.
 pub struct Turbulence {
     base: Primitive,
-    base_frequency: Cell<(f64, f64)>,
-    num_octaves: Cell<i32>,
-    seed: Cell<i32>,
-    stitch_tiles: Cell<StitchTiles>,
-    type_: Cell<NoiseType>,
+    base_frequency: (f64, f64),
+    num_octaves: i32,
+    seed: i32,
+    stitch_tiles: StitchTiles,
+    type_: NoiseType,
 }
 
 impl Default for Turbulence {
@@ -49,11 +47,11 @@ impl Default for Turbulence {
     fn default() -> Turbulence {
         Turbulence {
             base: Primitive::new::<Self>(),
-            base_frequency: Cell::new((0.0, 0.0)),
-            num_octaves: Cell::new(1),
-            seed: Cell::new(0),
-            stitch_tiles: Cell::new(StitchTiles::NoStitch),
-            type_: Cell::new(NoiseType::Turbulence),
+            base_frequency: (0.0, 0.0),
+            num_octaves: 1,
+            seed: 0,
+            stitch_tiles: StitchTiles::NoStitch,
+            type_: NoiseType::Turbulence,
         }
     }
 }
@@ -67,8 +65,8 @@ impl NodeTrait for Turbulence {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("baseFrequency") => self.base_frequency.set(
-                    parsers::number_optional_number(value)
+                local_name!("baseFrequency") => {
+                    self.base_frequency = parsers::number_optional_number(value)
                         .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
@@ -76,14 +74,14 @@ impl NodeTrait for Turbulence {
                             } else {
                                 Err(NodeError::value_error(attr, "values can't be negative"))
                             }
-                        })?,
-                ),
-                local_name!("numOctaves") => self.num_octaves.set(
-                    parsers::integer(value).attribute(attr)?,
-                ),
+                        })?
+                }
+                local_name!("numOctaves") => {
+                    self.num_octaves = parsers::integer(value).attribute(attr)?
+                }
                 // Yes, seed needs to be parsed as a number and then truncated.
-                local_name!("seed") => self.seed.set(
-                    parsers::number(value)
+                local_name!("seed") => {
+                    self.seed = parsers::number(value)
                         .map(|x| {
                             clamp(
                                 x.trunc(),
@@ -91,12 +89,10 @@ impl NodeTrait for Turbulence {
                                 f64::from(i32::max_value()),
                             ) as i32
                         })
-                        .attribute(attr)?,
-                ),
-                local_name!("stitchTiles") => {
-                    self.stitch_tiles.set(StitchTiles::parse(attr, value)?)
+                        .attribute(attr)?
                 }
-                local_name!("type") => self.type_.set(NoiseType::parse(attr, value)?),
+                local_name!("stitchTiles") => self.stitch_tiles = StitchTiles::parse(attr, value)?,
+                local_name!("type") => self.type_ = NoiseType::parse(attr, value)?,
                 _ => (),
             }
         }
@@ -350,13 +346,12 @@ impl Filter for Turbulence {
         let mut affine = ctx.paffine();
         affine.invert();
 
-        let type_ = self.type_.get();
         let noise_generator = NoiseGenerator::new(
-            self.seed.get(),
-            self.base_frequency.get(),
-            self.num_octaves.get(),
-            type_,
-            self.stitch_tiles.get(),
+            self.seed,
+            self.base_frequency,
+            self.num_octaves,
+            self.type_,
+            self.stitch_tiles,
             f64::from(bounds.x1 - bounds.x0),
             f64::from(bounds.y1 - bounds.y0),
         );
@@ -384,7 +379,7 @@ impl Filter for Turbulence {
                             f64::from(y - bounds.y0),
                         );
 
-                        let v = match type_ {
+                        let v = match self.type_ {
                             NoiseType::FractalNoise => (v * 255.0 + 255.0) / 2.0,
                             NoiseType::Turbulence => v * 255.0,
                         };
