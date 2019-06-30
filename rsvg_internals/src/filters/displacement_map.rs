@@ -1,5 +1,3 @@
-use std::cell::{Cell, RefCell};
-
 use cairo::{self, ImageSurface, MatrixTrait};
 use markup5ever::{local_name, LocalName};
 
@@ -25,10 +23,10 @@ enum ColorChannel {
 /// The `feDisplacementMap` filter primitive.
 pub struct DisplacementMap {
     base: PrimitiveWithInput,
-    in2: RefCell<Option<Input>>,
-    scale: Cell<f64>,
-    x_channel_selector: Cell<ColorChannel>,
-    y_channel_selector: Cell<ColorChannel>,
+    in2: Option<Input>,
+    scale: f64,
+    x_channel_selector: ColorChannel,
+    y_channel_selector: ColorChannel,
 }
 
 impl Default for DisplacementMap {
@@ -37,10 +35,10 @@ impl Default for DisplacementMap {
     fn default() -> DisplacementMap {
         DisplacementMap {
             base: PrimitiveWithInput::new::<Self>(),
-            in2: RefCell::new(None),
-            scale: Cell::new(0.0),
-            x_channel_selector: Cell::new(ColorChannel::A),
-            y_channel_selector: Cell::new(ColorChannel::A),
+            in2: None,
+            scale: 0.0,
+            x_channel_selector: ColorChannel::A,
+            y_channel_selector: ColorChannel::A,
         }
     }
 }
@@ -53,18 +51,14 @@ impl NodeTrait for DisplacementMap {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("in2") => {
-                    self.in2.replace(Some(Input::parse(attr, value)?));
+                local_name!("in2") => self.in2 = Some(Input::parse(attr, value)?),
+                local_name!("scale") => self.scale = parsers::number(value).attribute(attr)?,
+                local_name!("xChannelSelector") => {
+                    self.x_channel_selector = ColorChannel::parse(attr, value)?
                 }
-                local_name!("scale") => self.scale.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("xChannelSelector") => self
-                    .x_channel_selector
-                    .set(ColorChannel::parse(attr, value)?),
-                local_name!("yChannelSelector") => self
-                    .y_channel_selector
-                    .set(ColorChannel::parse(attr, value)?),
+                local_name!("yChannelSelector") => {
+                    self.y_channel_selector = ColorChannel::parse(attr, value)?
+                }
                 _ => (),
             }
         }
@@ -81,7 +75,7 @@ impl Filter for DisplacementMap {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, draw_ctx)?;
-        let displacement_input = ctx.get_input(draw_ctx, self.in2.borrow().as_ref())?;
+        let displacement_input = ctx.get_input(draw_ctx, self.in2.as_ref())?;
         let bounds = self
             .base
             .get_bounds(ctx)
@@ -92,11 +86,7 @@ impl Filter for DisplacementMap {
         // Displacement map's values need to be non-premultiplied.
         let displacement_surface = displacement_input.surface().unpremultiply(bounds)?;
 
-        let scale = self.scale.get();
-        let (sx, sy) = ctx.paffine().transform_distance(scale, scale);
-
-        let x_channel = self.x_channel_selector.get();
-        let y_channel = self.y_channel_selector.get();
+        let (sx, sy) = ctx.paffine().transform_distance(self.scale, self.scale);
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
@@ -117,8 +107,8 @@ impl Filter for DisplacementMap {
 
                 let process = |x| f64::from(x) / 255.0 - 0.5;
 
-                let dx = process(get_value(x_channel));
-                let dy = process(get_value(y_channel));
+                let dx = process(get_value(self.x_channel_selector));
+                let dy = process(get_value(self.y_channel_selector));
 
                 let x = f64::from(x);
                 let y = f64::from(y);
