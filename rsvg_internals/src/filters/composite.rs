@@ -201,7 +201,7 @@ impl Filter for Composite {
         };
 
         Ok(FilterResult {
-            name: self.base.result.borrow().clone(),
+            name: self.base.result.clone(),
             output: FilterOutput {
                 surface: SharedImageSurface::new(output_surface, surface_type)?,
                 bounds,

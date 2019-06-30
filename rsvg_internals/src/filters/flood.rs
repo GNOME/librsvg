@@ -77,7 +77,7 @@ impl Filter for Flood {
         }
 
         Ok(FilterResult {
-            name: self.base.result.borrow().clone(),
+            name: self.base.result.clone(),
             output: FilterOutput {
                 surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
                 bounds,

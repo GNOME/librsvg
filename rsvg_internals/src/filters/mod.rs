@@ -1,4 +1,3 @@
-use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 use std::time::Instant;
 
@@ -79,17 +78,17 @@ pub mod turbulence;
 
 /// The base filter primitive node containing common properties.
 struct Primitive {
-    x: Cell<Option<LengthHorizontal>>,
-    y: Cell<Option<LengthVertical>>,
-    width: Cell<Option<LengthHorizontal>>,
-    height: Cell<Option<LengthVertical>>,
-    result: RefCell<Option<String>>,
+    x: Option<LengthHorizontal>,
+    y: Option<LengthVertical>,
+    width: Option<LengthHorizontal>,
+    height: Option<LengthVertical>,
+    result: Option<String>,
 }
 
 /// The base node for filter primitives which accept input.
 struct PrimitiveWithInput {
     base: Primitive,
-    in_: RefCell<Option<Input>>,
+    in_: Option<Input>,
 }
 
 impl Primitive {
@@ -97,24 +96,18 @@ impl Primitive {
     #[inline]
     fn new<T: Filter>() -> Primitive {
         Primitive {
-            x: Cell::new(None),
-            y: Cell::new(None),
-            width: Cell::new(None),
-            height: Cell::new(None),
-            result: RefCell::new(None),
+            x: None,
+            y: None,
+            width: None,
+            height: None,
+            result: None,
         }
     }
 
     /// Returns the `BoundsBuilder` for bounds computation.
     #[inline]
     fn get_bounds<'a>(&self, ctx: &'a FilterContext) -> BoundsBuilder<'a> {
-        BoundsBuilder::new(
-            ctx,
-            self.x.get(),
-            self.y.get(),
-            self.width.get(),
-            self.height.get(),
-        )
+        BoundsBuilder::new(ctx, self.x, self.y, self.width, self.height)
     }
 }
 
@@ -169,19 +162,27 @@ impl NodeTrait for Primitive {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("x") => self.x.set(Some(
-                    attr.parse_and_validate(value, check_units_horizontal)?,
-                )),
-                local_name!("y") => self
-                    .y
-                    .set(Some(attr.parse_and_validate(value, check_units_vertical)?)),
-                local_name!("width") => self.width.set(Some(
-                    attr.parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?,
-                )),
-                local_name!("height") => self.height.set(Some(
-                    attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?,
-                )),
-                local_name!("result") => *self.result.borrow_mut() = Some(value.to_string()),
+                local_name!("x") => {
+                    self.x = Some(attr.parse_and_validate(value, check_units_horizontal)?)
+                }
+                local_name!("y") => {
+                    self.y = Some(attr.parse_and_validate(value, check_units_vertical)?)
+                }
+                local_name!("width") => {
+                    self.width =
+                        Some(attr.parse_and_validate(
+                            value,
+                            check_units_horizontal_and_ensure_nonnegative,
+                        )?)
+                }
+                local_name!("height") => {
+                    self.height =
+                        Some(attr.parse_and_validate(
+                            value,
+                            check_units_vertical_and_ensure_nonnegative,
+                        )?)
+                }
+                local_name!("result") => self.result = Some(value.to_string()),
                 _ => (),
             }
         }
@@ -196,7 +197,7 @@ impl PrimitiveWithInput {
     fn new<T: Filter>() -> PrimitiveWithInput {
         PrimitiveWithInput {
             base: Primitive::new::<T>(),
-            in_: RefCell::new(None),
+            in_: None,
         }
     }
 
@@ -207,7 +208,7 @@ impl PrimitiveWithInput {
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterInput, FilterError> {
-        ctx.get_input(draw_ctx, self.in_.borrow().as_ref())
+        ctx.get_input(draw_ctx, self.in_.as_ref())
     }
 }
 
@@ -217,7 +218,7 @@ impl NodeTrait for PrimitiveWithInput {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("in") => drop(self.in_.replace(Some(Input::parse(attr, value)?))),
+                local_name!("in") => drop(self.in_ = Some(Input::parse(attr, value)?)),
                 _ => (),
             }
         }
