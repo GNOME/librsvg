@@ -136,9 +136,11 @@ impl NodeData {
                 local_name!("transform") => {
                     return Matrix::parse_str(value)
                         .attribute(attr)
-                        .and_then(|affine| Ok(self.transform = affine));
+                        .and_then(|affine| {
+                            self.transform = affine;
+                            Ok(())
+                        });
                 }
-
                 _ => (),
             }
         }
