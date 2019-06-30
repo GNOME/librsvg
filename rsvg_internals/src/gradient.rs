@@ -7,7 +7,7 @@ use std::cell::{Cell, RefCell};
 use crate::allowed_url::Fragment;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack};
+use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack, ViewParams};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
@@ -302,6 +302,19 @@ impl GradientLinear {
 
         Ok(())
     }
+
+    fn to_cairo_gradient(
+        &self,
+        values: &ComputedValues,
+        params: &ViewParams,
+    ) -> cairo::LinearGradient {
+        cairo::LinearGradient::new(
+            self.x1.as_ref().unwrap().normalize(values, params),
+            self.y1.as_ref().unwrap().normalize(values, params),
+            self.x2.as_ref().unwrap().normalize(values, params),
+            self.y2.as_ref().unwrap().normalize(values, params),
+        )
+    }
 }
 
 #[derive(Copy, Clone, Default)]
@@ -356,6 +369,21 @@ impl GradientRadial {
         }
 
         Ok(())
+    }
+
+    fn to_cairo_gradient(
+        &self,
+        values: &ComputedValues,
+        params: &ViewParams,
+    ) -> cairo::RadialGradient {
+        let n_cx = self.cx.as_ref().unwrap().normalize(values, params);
+        let n_cy = self.cy.as_ref().unwrap().normalize(values, params);
+        let n_r = self.r.as_ref().unwrap().normalize(values, params);
+        let n_fx = self.fx.as_ref().unwrap().normalize(values, params);
+        let n_fy = self.fy.as_ref().unwrap().normalize(values, params);
+        let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
+
+        cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r)
     }
 }
 
@@ -592,14 +620,7 @@ impl PaintSource for NodeLinearGradient {
             draw_ctx.get_view_params()
         };
 
-        let v = gradient.variant.borrow();
-        let mut pattern = cairo::LinearGradient::new(
-            v.x1.as_ref().unwrap().normalize(values, &params),
-            v.y1.as_ref().unwrap().normalize(values, &params),
-            v.x2.as_ref().unwrap().normalize(values, &params),
-            v.y2.as_ref().unwrap().normalize(values, &params),
-        );
-
+        let mut pattern = gradient.variant.borrow().to_cairo_gradient(values, &params);
         let cr = draw_ctx.get_cairo_context();
         gradient
             .common
@@ -648,16 +669,7 @@ impl PaintSource for NodeRadialGradient {
             draw_ctx.get_view_params()
         };
 
-        let v = gradient.variant.borrow();
-        let n_cx = v.cx.as_ref().unwrap().normalize(values, &params);
-        let n_cy = v.cy.as_ref().unwrap().normalize(values, &params);
-        let n_r = v.r.as_ref().unwrap().normalize(values, &params);
-        let n_fx = v.fx.as_ref().unwrap().normalize(values, &params);
-        let n_fy = v.fy.as_ref().unwrap().normalize(values, &params);
-
-        let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
-        let mut pattern = cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
-
+        let mut pattern = gradient.variant.borrow().to_cairo_gradient(values, &params);
         let cr = draw_ctx.get_cairo_context();
         gradient
             .common
