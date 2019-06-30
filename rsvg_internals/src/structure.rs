@@ -1,6 +1,3 @@
-use std::cell::Cell;
-use std::cell::RefCell;
-
 use cairo::Rectangle;
 use markup5ever::local_name;
 
@@ -96,19 +93,19 @@ pub struct IntrinsicDimensions {
 
 #[derive(Default)]
 pub struct NodeSvg {
-    preserve_aspect_ratio: Cell<AspectRatio>,
-    x: Cell<Option<LengthHorizontal>>,
-    y: Cell<Option<LengthVertical>>,
-    w: Cell<Option<LengthHorizontal>>,
-    h: Cell<Option<LengthVertical>>,
-    vbox: Cell<Option<ViewBox>>,
+    preserve_aspect_ratio: AspectRatio,
+    x: Option<LengthHorizontal>,
+    y: Option<LengthVertical>,
+    w: Option<LengthHorizontal>,
+    h: Option<LengthVertical>,
+    vbox: Option<ViewBox>,
 }
 
 impl NodeSvg {
     pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(i32, i32)> {
         let (_, _, w, h) = self.get_unnormalized_viewport();
 
-        match (w, h, self.vbox.get()) {
+        match (w, h, self.vbox) {
             (w, h, Some(vbox)) => {
                 let params = ViewParams::new(dpi.x(), dpi.y(), vbox.width, vbox.height);
 
@@ -132,9 +129,9 @@ impl NodeSvg {
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         IntrinsicDimensions {
-            width: self.w.get(),
-            height: self.h.get(),
-            vbox: self.vbox.get(),
+            width: self.w,
+            height: self.h,
+            vbox: self.vbox,
         }
     }
 
@@ -150,19 +147,15 @@ impl NodeSvg {
         // these defaults are per the spec
         let x = self
             .x
-            .get()
             .unwrap_or_else(|| LengthHorizontal::parse_str("0").unwrap());
         let y = self
             .y
-            .get()
             .unwrap_or_else(|| LengthVertical::parse_str("0").unwrap());
         let w = self
             .w
-            .get()
             .unwrap_or_else(|| LengthHorizontal::parse_str("100%").unwrap());
         let h = self
             .h
-            .get()
             .unwrap_or_else(|| LengthVertical::parse_str("100%").unwrap());
 
         (x, y, w, h)
@@ -189,31 +182,19 @@ impl NodeTrait for NodeSvg {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("preserveAspectRatio") => {
-                    self.preserve_aspect_ratio.set(attr.parse(value)?)
+                    self.preserve_aspect_ratio = attr.parse(value)?
                 }
-
-                local_name!("x") => {
-                    if is_inner_svg {
-                        self.x.set(Some(attr.parse(value)?));
-                    }
+                local_name!("x") if is_inner_svg => self.x = Some(attr.parse(value)?),
+                local_name!("y") if is_inner_svg => self.y = Some(attr.parse(value)?),
+                local_name!("width") => {
+                    self.w =
+                        Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
                 }
-
-                local_name!("y") => {
-                    if is_inner_svg {
-                        self.y.set(Some(attr.parse(value)?));
-                    }
+                local_name!("height") => {
+                    self.h =
+                        Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
                 }
-
-                local_name!("width") => self.w.set(Some(
-                    attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?,
-                )),
-
-                local_name!("height") => self.h.set(Some(
-                    attr.parse_and_validate(value, LengthVertical::check_nonnegative)?,
-                )),
-
-                local_name!("viewBox") => self.vbox.set(attr.parse(value).map(Some)?),
-
+                local_name!("viewBox") => self.vbox = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
@@ -252,17 +233,17 @@ impl NodeTrait for NodeSvg {
             // We are obtaining the toplevel SVG's geometry.  This means, don't care about the
             // DrawingCtx's viewport, just use the SVG's intrinsic dimensions and see how far
             // it wants to extend.
-            (svg_viewport, self.vbox.get())
+            (svg_viewport, self.vbox)
         } else {
             if has_parent {
-                (svg_viewport, self.vbox.get())
+                (svg_viewport, self.vbox)
             } else {
                 (
                     // The client's viewport overrides the toplevel's x/y/w/h viewport
                     draw_ctx.toplevel_viewport(),
                     // Use our viewBox if available, or try to derive one from
                     // the intrinsic dimensions.
-                    self.vbox.get().or_else(|| {
+                    self.vbox.or_else(|| {
                         Some(ViewBox {
                             x: 0.0,
                             y: 0.0,
@@ -276,7 +257,7 @@ impl NodeTrait for NodeSvg {
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
             let _params =
-                dc.push_new_viewport(vbox, &viewport, self.preserve_aspect_ratio.get(), clip_mode);
+                dc.push_new_viewport(vbox, &viewport, self.preserve_aspect_ratio, clip_mode);
 
             node.draw_children(cascaded, dc, clipping)
         })
@@ -285,11 +266,11 @@ impl NodeTrait for NodeSvg {
 
 #[derive(Default)]
 pub struct NodeUse {
-    link: RefCell<Option<Fragment>>,
-    x: Cell<LengthHorizontal>,
-    y: Cell<LengthVertical>,
-    w: Cell<Option<LengthHorizontal>>,
-    h: Cell<Option<LengthVertical>>,
+    link: Option<Fragment>,
+    x: LengthHorizontal,
+    y: LengthVertical,
+    w: Option<LengthHorizontal>,
+    h: Option<LengthVertical>,
 }
 
 impl NodeTrait for NodeUse {
@@ -297,21 +278,20 @@ impl NodeTrait for NodeUse {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("xlink:href") => {
-                    *self.link.borrow_mut() = Some(Fragment::parse(value).attribute(attr)?)
+                    self.link = Some(Fragment::parse(value).attribute(attr)?)
                 }
-
-                local_name!("x") => self.x.set(attr.parse(value)?),
-                local_name!("y") => self.y.set(attr.parse(value)?),
-
-                local_name!("width") => self.w.set(
-                    attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)
-                        .map(Some)?,
-                ),
-                local_name!("height") => self.h.set(
-                    attr.parse_and_validate(value, LengthVertical::check_nonnegative)
-                        .map(Some)?,
-                ),
-
+                local_name!("x") => self.x = attr.parse(value)?,
+                local_name!("y") => self.y = attr.parse(value)?,
+                local_name!("width") => {
+                    self.w = attr
+                        .parse_and_validate(value, LengthHorizontal::check_nonnegative)
+                        .map(Some)?
+                }
+                local_name!("height") => {
+                    self.h = attr
+                        .parse_and_validate(value, LengthVertical::check_nonnegative)
+                        .map(Some)?
+                }
                 _ => (),
             }
         }
@@ -328,13 +308,11 @@ impl NodeTrait for NodeUse {
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
-        let link = self.link.borrow();
-
-        if link.is_none() {
+        if self.link.is_none() {
             return Ok(());
         }
 
-        let link = link.as_ref().unwrap();
+        let link = self.link.as_ref().unwrap();
 
         let child = if let Some(acquired) = draw_ctx.acquired_nodes().get_node(link) {
             // Here we clone the acquired child, so that we can drop the AcquiredNode as
@@ -355,8 +333,8 @@ impl NodeTrait for NodeUse {
 
         let params = draw_ctx.get_view_params();
 
-        let nx = self.x.get().normalize(values, &params);
-        let ny = self.y.get().normalize(values, &params);
+        let nx = self.x.normalize(values, &params);
+        let ny = self.y.normalize(values, &params);
 
         // If attributes ‘width’ and/or ‘height’ are not specified,
         // [...] use values of '100%' for these attributes.
@@ -365,12 +343,10 @@ impl NodeTrait for NodeUse {
 
         let nw = self
             .w
-            .get()
             .unwrap_or_else(|| LengthHorizontal::parse_str("100%").unwrap())
             .normalize(values, &params);
         let nh = self
             .h
-            .get()
             .unwrap_or_else(|| LengthVertical::parse_str("100%").unwrap())
             .normalize(values, &params);
 
@@ -407,9 +383,9 @@ impl NodeTrait for NodeUse {
 
             draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
                 let _params = dc.push_new_viewport(
-                    symbol.vbox.get(),
+                    symbol.vbox,
                     &viewport,
-                    symbol.preserve_aspect_ratio.get(),
+                    symbol.preserve_aspect_ratio,
                     clip_mode,
                 );
 
@@ -425,8 +401,8 @@ impl NodeTrait for NodeUse {
 
 #[derive(Default)]
 pub struct NodeSymbol {
-    preserve_aspect_ratio: Cell<AspectRatio>,
-    vbox: Cell<Option<ViewBox>>,
+    preserve_aspect_ratio: AspectRatio,
+    vbox: Option<ViewBox>,
 }
 
 impl NodeTrait for NodeSymbol {
@@ -434,11 +410,9 @@ impl NodeTrait for NodeSymbol {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("preserveAspectRatio") => {
-                    self.preserve_aspect_ratio.set(attr.parse(value)?)
+                    self.preserve_aspect_ratio = attr.parse(value)?
                 }
-
-                local_name!("viewBox") => self.vbox.set(attr.parse(value).map(Some)?),
-
+                local_name!("viewBox") => self.vbox = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
