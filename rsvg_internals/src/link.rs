@@ -2,7 +2,6 @@ use lazy_static::lazy_static;
 use markup5ever::local_name;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
-use std::cell::RefCell;
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::RenderingError;
@@ -11,15 +10,14 @@ use crate::property_bag::PropertyBag;
 
 #[derive(Default)]
 pub struct NodeLink {
-    link: RefCell<Option<String>>,
+    link: Option<String>,
 }
 
 impl NodeTrait for NodeLink {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("xlink:href") => *self.link.borrow_mut() = Some(value.to_owned()),
-
+                local_name!("xlink:href") => self.link = Some(value.to_owned()),
                 _ => (),
             }
         }
@@ -34,12 +32,10 @@ impl NodeTrait for NodeLink {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<(), RenderingError> {
-        let link = self.link.borrow();
-
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| match link.as_ref() {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| match self.link.as_ref() {
             Some(l) if !l.is_empty() => {
                 const CAIRO_TAG_LINK: &str = "Link";
 
