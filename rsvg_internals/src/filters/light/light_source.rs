@@ -1,5 +1,3 @@
-use std::cell::Cell;
-
 use cairo::MatrixTrait;
 use cssparser;
 use markup5ever::local_name;
@@ -16,23 +14,23 @@ use crate::util::clamp;
 #[derive(Clone)]
 pub enum LightSource {
     Distant {
-        azimuth: Cell<f64>,
-        elevation: Cell<f64>,
+        azimuth: f64,
+        elevation: f64,
     },
     Point {
-        x: Cell<f64>,
-        y: Cell<f64>,
-        z: Cell<f64>,
+        x: f64,
+        y: f64,
+        z: f64,
     },
     Spot {
-        x: Cell<f64>,
-        y: Cell<f64>,
-        z: Cell<f64>,
-        points_at_x: Cell<f64>,
-        points_at_y: Cell<f64>,
-        points_at_z: Cell<f64>,
-        specular_exponent: Cell<f64>,
-        limiting_cone_angle: Cell<Option<f64>>,
+        x: f64,
+        y: f64,
+        z: f64,
+        points_at_x: f64,
+        points_at_y: f64,
+        points_at_z: f64,
+        specular_exponent: f64,
+        limiting_cone_angle: Option<f64>,
     },
 }
 
@@ -58,8 +56,8 @@ impl LightSource {
     #[inline]
     pub fn new_distant_light() -> LightSource {
         LightSource::Distant {
-            azimuth: Cell::new(0.0),
-            elevation: Cell::new(0.0),
+            azimuth: 0.0,
+            elevation: 0.0,
         }
     }
 
@@ -67,9 +65,9 @@ impl LightSource {
     #[inline]
     pub fn new_point_light() -> LightSource {
         LightSource::Point {
-            x: Cell::new(0.0),
-            y: Cell::new(0.0),
-            z: Cell::new(0.0),
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
         }
     }
 
@@ -77,28 +75,27 @@ impl LightSource {
     #[inline]
     pub fn new_spot_light() -> LightSource {
         LightSource::Spot {
-            x: Cell::new(0.0),
-            y: Cell::new(0.0),
-            z: Cell::new(0.0),
-            points_at_x: Cell::new(0.0),
-            points_at_y: Cell::new(0.0),
-            points_at_z: Cell::new(0.0),
-            specular_exponent: Cell::new(0.0),
-            limiting_cone_angle: Cell::new(None),
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+            points_at_x: 0.0,
+            points_at_y: 0.0,
+            points_at_z: 0.0,
+            specular_exponent: 0.0,
+            limiting_cone_angle: None,
         }
     }
 
     /// Returns a `TransformedLightSource` according to the given `FilterContext`.
     #[inline]
     pub fn transform(&self, ctx: &FilterContext) -> TransformedLightSource {
-        match self {
-            LightSource::Distant { azimuth, elevation } => TransformedLightSource::Distant {
-                azimuth: azimuth.get(),
-                elevation: elevation.get(),
-            },
+        match *self {
+            LightSource::Distant { azimuth, elevation } => {
+                TransformedLightSource::Distant { azimuth, elevation }
+            }
             LightSource::Point { x, y, z } => {
-                let (x, y) = ctx.paffine().transform_point(x.get(), y.get());
-                let z = ctx.transform_dist(z.get());
+                let (x, y) = ctx.paffine().transform_point(x, y);
+                let z = ctx.transform_dist(z);
 
                 TransformedLightSource::Point {
                     origin: Vector3::new(x, y, z),
@@ -114,12 +111,11 @@ impl LightSource {
                 specular_exponent,
                 limiting_cone_angle,
             } => {
-                let (x, y) = ctx.paffine().transform_point(x.get(), y.get());
-                let z = ctx.transform_dist(z.get());
-                let (points_at_x, points_at_y) = ctx
-                    .paffine()
-                    .transform_point(points_at_x.get(), points_at_y.get());
-                let points_at_z = ctx.transform_dist(points_at_z.get());
+                let (x, y) = ctx.paffine().transform_point(x, y);
+                let z = ctx.transform_dist(z);
+                let (points_at_x, points_at_y) =
+                    ctx.paffine().transform_point(points_at_x, points_at_y);
+                let points_at_z = ctx.transform_dist(points_at_z);
 
                 let origin = Vector3::new(x, y, z);
                 let mut direction = Vector3::new(points_at_x, points_at_y, points_at_z) - origin;
@@ -128,8 +124,8 @@ impl LightSource {
                 TransformedLightSource::Spot {
                     origin,
                     direction,
-                    specular_exponent: specular_exponent.get(),
-                    limiting_cone_angle: limiting_cone_angle.get(),
+                    specular_exponent,
+                    limiting_cone_angle,
                 }
             }
         }
@@ -202,54 +198,54 @@ impl TransformedLightSource {
 impl NodeTrait for LightSource {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match self {
+            match *self {
                 LightSource::Distant {
-                    ref azimuth,
-                    ref elevation,
+                    ref mut azimuth,
+                    ref mut elevation,
                 } => match attr {
-                    local_name!("azimuth") => azimuth.set(parsers::number(value).attribute(attr)?),
+                    local_name!("azimuth") => *azimuth = parsers::number(value).attribute(attr)?,
                     local_name!("elevation") => {
-                        elevation.set(parsers::number(value).attribute(attr)?)
+                        *elevation = parsers::number(value).attribute(attr)?
                     }
                     _ => (),
                 },
                 LightSource::Point {
-                    ref x,
-                    ref y,
-                    ref z,
+                    ref mut x,
+                    ref mut y,
+                    ref mut z,
                 } => match attr {
-                    local_name!("x") => x.set(parsers::number(value).attribute(attr)?),
-                    local_name!("y") => y.set(parsers::number(value).attribute(attr)?),
-                    local_name!("z") => z.set(parsers::number(value).attribute(attr)?),
+                    local_name!("x") => *x = parsers::number(value).attribute(attr)?,
+                    local_name!("y") => *y = parsers::number(value).attribute(attr)?,
+                    local_name!("z") => *z = parsers::number(value).attribute(attr)?,
                     _ => (),
                 },
                 LightSource::Spot {
-                    ref x,
-                    ref y,
-                    ref z,
-                    ref points_at_x,
-                    ref points_at_y,
-                    ref points_at_z,
-                    ref specular_exponent,
-                    ref limiting_cone_angle,
+                    ref mut x,
+                    ref mut y,
+                    ref mut z,
+                    ref mut points_at_x,
+                    ref mut points_at_y,
+                    ref mut points_at_z,
+                    ref mut specular_exponent,
+                    ref mut limiting_cone_angle,
                 } => match attr {
-                    local_name!("x") => x.set(parsers::number(value).attribute(attr)?),
-                    local_name!("y") => y.set(parsers::number(value).attribute(attr)?),
-                    local_name!("z") => z.set(parsers::number(value).attribute(attr)?),
+                    local_name!("x") => *x = parsers::number(value).attribute(attr)?,
+                    local_name!("y") => *y = parsers::number(value).attribute(attr)?,
+                    local_name!("z") => *z = parsers::number(value).attribute(attr)?,
                     local_name!("pointsAtX") => {
-                        points_at_x.set(parsers::number(value).attribute(attr)?)
+                        *points_at_x = parsers::number(value).attribute(attr)?
                     }
                     local_name!("pointsAtY") => {
-                        points_at_y.set(parsers::number(value).attribute(attr)?)
+                        *points_at_y = parsers::number(value).attribute(attr)?
                     }
                     local_name!("pointsAtZ") => {
-                        points_at_z.set(parsers::number(value).attribute(attr)?)
+                        *points_at_z = parsers::number(value).attribute(attr)?
                     }
                     local_name!("specularExponent") => {
-                        specular_exponent.set(parsers::number(value).attribute(attr)?)
+                        *specular_exponent = parsers::number(value).attribute(attr)?
                     }
                     local_name!("limitingConeAngle") => {
-                        limiting_cone_angle.set(Some(parsers::number(value).attribute(attr)?))
+                        *limiting_cone_angle = Some(parsers::number(value).attribute(attr)?)
                     }
                     _ => (),
                 },
