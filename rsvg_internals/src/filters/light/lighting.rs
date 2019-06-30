@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::cmp::max;
 
 use cairo::{self, ImageSurface, MatrixTrait};
@@ -41,19 +40,8 @@ use crate::surface_utils::{
 use crate::util::clamp;
 
 /// Properties specific to either diffuse or specular lighting.
-enum Data {
-    Diffuse {
-        diffuse_constant: Cell<f64>,
-    },
-    Specular {
-        specular_constant: Cell<f64>,
-        specular_exponent: Cell<f64>,
-    },
-}
-
-/// `Data` but without `Cell`s, needed for sharing between threads.
 #[derive(Clone, Copy)]
-enum RawData {
+enum Data {
     Diffuse {
         diffuse_constant: f64,
     },
@@ -66,8 +54,8 @@ enum RawData {
 /// The `feDiffuseLighting` and `feSpecularLighting` filter primitives.
 pub struct Lighting {
     base: PrimitiveWithInput,
-    surface_scale: Cell<f64>,
-    kernel_unit_length: Cell<Option<(f64, f64)>>,
+    surface_scale: f64,
+    kernel_unit_length: Option<(f64, f64)>,
     data: Data,
 }
 
@@ -77,7 +65,7 @@ impl Lighting {
     pub fn new_diffuse() -> Lighting {
         Lighting {
             data: Data::Diffuse {
-                diffuse_constant: Cell::new(1.0),
+                diffuse_constant: 1.0,
             },
             ..Self::default()
         }
@@ -88,8 +76,8 @@ impl Lighting {
     pub fn new_specular() -> Lighting {
         Lighting {
             data: Data::Specular {
-                specular_constant: Cell::new(1.0),
-                specular_exponent: Cell::new(1.0),
+                specular_constant: 1.0,
+                specular_exponent: 1.0,
             },
             ..Self::default()
         }
@@ -104,35 +92,37 @@ impl NodeTrait for Lighting {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("surfaceScale") => self.surface_scale.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("kernelUnitLength") => self.kernel_unit_length.set(Some(
-                    parsers::number_optional_number(value)
-                        .attribute(attr.clone())
-                        .and_then(|(x, y)| {
-                            if x > 0.0 && y > 0.0 {
-                                Ok((x, y))
-                            } else {
-                                Err(NodeError::value_error(
-                                    attr,
-                                    "kernelUnitLength can't be less or equal to zero",
-                                ))
-                            }
-                        })?,
-                )),
+                local_name!("surfaceScale") => {
+                    self.surface_scale = parsers::number(value).attribute(attr)?
+                }
+                local_name!("kernelUnitLength") => {
+                    self.kernel_unit_length = Some(
+                        parsers::number_optional_number(value)
+                            .attribute(attr.clone())
+                            .and_then(|(x, y)| {
+                                if x > 0.0 && y > 0.0 {
+                                    Ok((x, y))
+                                } else {
+                                    Err(NodeError::value_error(
+                                        attr,
+                                        "kernelUnitLength can't be less or equal to zero",
+                                    ))
+                                }
+                            })?,
+                    )
+                }
                 _ => (),
             }
         }
 
         match self.data {
             Data::Diffuse {
-                ref diffuse_constant,
+                ref mut diffuse_constant,
             } => {
                 for (attr, value) in pbag.iter() {
                     match attr {
-                        local_name!("diffuseConstant") => diffuse_constant.set(
-                            parsers::number(value)
+                        local_name!("diffuseConstant") => {
+                            *diffuse_constant = parsers::number(value)
                                 .attribute(attr.clone())
                                 .and_then(|x| {
                                     if x >= 0.0 {
@@ -143,20 +133,20 @@ impl NodeTrait for Lighting {
                                             "diffuseConstant can't be negative",
                                         ))
                                     }
-                                })?,
-                        ),
+                                })?;
+                        }
                         _ => (),
                     }
                 }
             }
             Data::Specular {
-                ref specular_constant,
-                ref specular_exponent,
+                ref mut specular_constant,
+                ref mut specular_exponent,
             } => {
                 for (attr, value) in pbag.iter() {
                     match attr {
-                        local_name!("specularConstant") => specular_constant.set(
-                            parsers::number(value)
+                        local_name!("specularConstant") => {
+                            *specular_constant = parsers::number(value)
                                 .attribute(attr.clone())
                                 .and_then(|x| {
                                     if x >= 0.0 {
@@ -167,10 +157,10 @@ impl NodeTrait for Lighting {
                                             "specularConstant can't be negative",
                                         ))
                                     }
-                                })?,
-                        ),
-                        local_name!("specularExponent") => specular_exponent.set(
-                            parsers::number(value)
+                                })?;
+                        }
+                        local_name!("specularExponent") => {
+                            *specular_exponent = parsers::number(value)
                                 .attribute(attr.clone())
                                 .and_then(|x| {
                                     if x >= 1.0 && x <= 128.0 {
@@ -181,8 +171,8 @@ impl NodeTrait for Lighting {
                                             "specularExponent should be between 1.0 and 128.0",
                                         ))
                                     }
-                                })?,
-                        ),
+                                })?;
+                        }
                         _ => (),
                     }
                 }
@@ -210,10 +200,7 @@ impl Filter for Lighting {
 
         let scale = self
             .kernel_unit_length
-            .get()
             .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
-
-        let surface_scale = self.surface_scale.get();
 
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
@@ -271,7 +258,6 @@ impl Filter for Lighting {
         {
             let mut output_data = output_surface.get_data().unwrap();
             let output_slice = &mut *output_data;
-            let data = self.data.to_raw();
 
             let compute_output_pixel =
                 |mut output_slice: &mut [u8], base_y, x, y, normal: Normal| {
@@ -279,18 +265,19 @@ impl Filter for Lighting {
 
                     let scaled_x = f64::from(x) * ox;
                     let scaled_y = f64::from(y) * oy;
-                    let z = f64::from(pixel.a) / 255.0 * surface_scale;
+                    let z = f64::from(pixel.a) / 255.0 * self.surface_scale;
                     let light_vector = light_source.vector(scaled_x, scaled_y, z);
                     let light_color = light_source.color(lighting_color, light_vector);
 
-                    let factor = match data {
-                        RawData::Diffuse { diffuse_constant } => {
+                    let factor = match self.data {
+                        Data::Diffuse { diffuse_constant } => {
                             let k = if normal.normal.is_zero() {
                                 // Common case of (0, 0, 1) normal.
                                 light_vector.z
                             } else {
-                                let mut n =
-                                    normal.normal.map(|x| f64::from(x) * surface_scale / 255.);
+                                let mut n = normal
+                                    .normal
+                                    .map(|x| f64::from(x) * self.surface_scale / 255.);
                                 n.component_mul_assign(&normal.factor);
                                 let normal = Vector3::new(n.x, n.y, 1.0);
 
@@ -299,7 +286,7 @@ impl Filter for Lighting {
 
                             diffuse_constant * k
                         }
-                        RawData::Specular {
+                        Data::Specular {
                             specular_constant,
                             specular_exponent,
                         } => {
@@ -317,8 +304,9 @@ impl Filter for Lighting {
                                         n_dot_h.powf(specular_exponent)
                                     }
                                 } else {
-                                    let mut n =
-                                        normal.normal.map(|x| f64::from(x) * surface_scale / 255.);
+                                    let mut n = normal
+                                        .normal
+                                        .map(|x| f64::from(x) * self.surface_scale / 255.);
                                     n.component_mul_assign(&normal.factor);
                                     let normal = Vector3::new(n.x, n.y, 1.0);
 
@@ -344,7 +332,7 @@ impl Filter for Lighting {
                         a: 255,
                     };
 
-                    if let RawData::Specular { .. } = data {
+                    if let Data::Specular { .. } = self.data {
                         output_pixel.a = max(max(output_pixel.r, output_pixel.g), output_pixel.b);
                     }
 
@@ -499,35 +487,17 @@ impl Filter for Lighting {
     }
 }
 
-impl Data {
-    #[inline]
-    fn to_raw(&self) -> RawData {
-        match self {
-            Data::Diffuse { diffuse_constant } => RawData::Diffuse {
-                diffuse_constant: diffuse_constant.get(),
-            },
-            Data::Specular {
-                specular_constant,
-                specular_exponent,
-            } => RawData::Specular {
-                specular_constant: specular_constant.get(),
-                specular_exponent: specular_exponent.get(),
-            },
-        }
-    }
-}
-
 impl Default for Lighting {
     #[inline]
     fn default() -> Self {
         Self {
             base: PrimitiveWithInput::new::<Self>(),
-            surface_scale: Cell::new(1.0),
-            kernel_unit_length: Cell::new(None),
+            surface_scale: 1.0,
+            kernel_unit_length: None,
 
             // The data field is unused in this case.
             data: Data::Diffuse {
-                diffuse_constant: Cell::new(1.0),
+                diffuse_constant: 1.0,
             },
         }
     }
