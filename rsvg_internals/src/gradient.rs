@@ -116,6 +116,22 @@ impl Resolve for GradientCommon {
 }
 
 impl GradientCommon {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("gradientUnits") => self.units = Some(attr.parse(value)?),
+                local_name!("gradientTransform") => self.affine = Some(attr.parse(value)?),
+                local_name!("spreadMethod") => self.spread = Some(attr.parse(value)?),
+                local_name!("xlink:href") => {
+                    self.fallback = Some(Fragment::parse(value).attribute(attr)?)
+                }
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+
     fn clone_stops(&self) -> Option<Vec<ColorStop>> {
         if let Some(ref stops) = self.stops {
             Some(stops.clone())
@@ -272,6 +288,22 @@ impl Resolve for GradientLinear {
     }
 }
 
+impl GradientLinear {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("x1") => self.x1 = Some(attr.parse(value)?),
+                local_name!("y1") => self.y1 = Some(attr.parse(value)?),
+                local_name!("x2") => self.x2 = Some(attr.parse(value)?),
+                local_name!("y2") => self.y2 = Some(attr.parse(value)?),
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[derive(Copy, Clone, Default)]
 pub struct GradientRadial {
     cx: Option<LengthHorizontal>,
@@ -307,6 +339,23 @@ impl Resolve for GradientRadial {
         // fx and fy fall back to the presentational value of cx and cy
         fallback_to!(self.fx, self.cx);
         fallback_to!(self.fy, self.cy);
+    }
+}
+
+impl GradientRadial {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("cx") => self.cx = Some(attr.parse(value)?),
+                local_name!("cy") => self.cy = Some(attr.parse(value)?),
+                local_name!("r") => self.r = Some(attr.parse(value)?),
+                local_name!("fx") => self.fx = Some(attr.parse(value)?),
+                local_name!("fy") => self.fy = Some(attr.parse(value)?),
+                _ => (),
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -385,6 +434,22 @@ impl NodeTrait for NodeStop {
 
         Ok(())
     }
+}
+
+macro_rules! impl_node_trait {
+    ($gradient_type:ty) => {
+        impl NodeTrait for $gradient_type {
+            fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+                let mut common = self.common.borrow_mut();
+                common.set_atts(pbag)?;
+
+                let mut variant = self.variant.borrow_mut();
+                variant.set_atts(pbag)?;
+
+                Ok(())
+            }
+        }
+    };
 }
 
 macro_rules! impl_resolve {
@@ -496,40 +561,7 @@ pub struct NodeLinearGradient {
     pub variant: RefCell<GradientLinear>,
 }
 
-impl NodeTrait for NodeLinearGradient {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
-        let mut common = self.common.borrow_mut();
-
-        let mut x1 = None;
-        let mut y1 = None;
-        let mut x2 = None;
-        let mut y2 = None;
-
-        for (attr, value) in pbag.iter() {
-            match attr {
-                // Attributes common to linear and radial gradients
-                local_name!("gradientUnits") => common.units = Some(attr.parse(value)?),
-                local_name!("gradientTransform") => common.affine = Some(attr.parse(value)?),
-                local_name!("spreadMethod") => common.spread = Some(attr.parse(value)?),
-                local_name!("xlink:href") => {
-                    common.fallback = Some(Fragment::parse(value).attribute(attr)?)
-                }
-
-                // Attributes specific to linear gradient
-                local_name!("x1") => x1 = Some(attr.parse(value)?),
-                local_name!("y1") => y1 = Some(attr.parse(value)?),
-                local_name!("x2") => x2 = Some(attr.parse(value)?),
-                local_name!("y2") => y2 = Some(attr.parse(value)?),
-
-                _ => (),
-            }
-        }
-
-        *self.variant.borrow_mut() = GradientLinear { x1, y1, x2, y2 };
-
-        Ok(())
-    }
-}
+impl_node_trait!(NodeLinearGradient);
 
 impl_resolve!(NodeLinearGradient);
 
@@ -585,42 +617,7 @@ pub struct NodeRadialGradient {
     pub variant: RefCell<GradientRadial>,
 }
 
-impl NodeTrait for NodeRadialGradient {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
-        let mut common = self.common.borrow_mut();
-
-        let mut cx = None;
-        let mut cy = None;
-        let mut r = None;
-        let mut fx = None;
-        let mut fy = None;
-
-        for (attr, value) in pbag.iter() {
-            match attr {
-                // Attributes common to linear and radial gradients
-                local_name!("gradientUnits") => common.units = Some(attr.parse(value)?),
-                local_name!("gradientTransform") => common.affine = Some(attr.parse(value)?),
-                local_name!("spreadMethod") => common.spread = Some(attr.parse(value)?),
-                local_name!("xlink:href") => {
-                    common.fallback = Some(Fragment::parse(value).attribute(attr)?)
-                }
-
-                // Attributes specific to radial gradient
-                local_name!("cx") => cx = Some(attr.parse(value)?),
-                local_name!("cy") => cy = Some(attr.parse(value)?),
-                local_name!("r") => r = Some(attr.parse(value)?),
-                local_name!("fx") => fx = Some(attr.parse(value)?),
-                local_name!("fy") => fy = Some(attr.parse(value)?),
-
-                _ => (),
-            }
-        }
-
-        *self.variant.borrow_mut() = GradientRadial { cx, cy, r, fx, fy };
-
-        Ok(())
-    }
-}
+impl_node_trait!(NodeRadialGradient);
 
 impl_resolve!(NodeRadialGradient);
 
