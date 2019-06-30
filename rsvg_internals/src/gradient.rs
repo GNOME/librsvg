@@ -504,64 +504,95 @@ macro_rules! impl_resolve {
     };
 }
 
-macro_rules! impl_paint_source_resolve {
-    ($gradient:ty, $node_type:pat, $other_gradient:ty, $other_type:pat) => {
-        fn resolve(
-            &self,
-            node: &RsvgNode,
-            draw_ctx: &mut DrawingCtx,
-            bbox: &BoundingBox,
-        ) -> Result<Option<Self::Source>, RenderingError> {
-            let mut result = self.clone();
-            result.common.borrow_mut().add_color_stops_from_node(node);
+macro_rules! impl_paint_source {
+    ($gradient:ty, $node_type:pat, $other_gradient:ty, $other_type:pat, $cairo_pattern:expr) => {
+        impl PaintSource for $gradient {
+            type Source = $gradient;
 
-            let mut stack = NodeStack::new();
+            fn resolve(
+                &self,
+                node: &RsvgNode,
+                draw_ctx: &mut DrawingCtx,
+                bbox: &BoundingBox,
+            ) -> Result<Option<Self::Source>, RenderingError> {
+                let mut result = self.clone();
+                result.common.borrow_mut().add_color_stops_from_node(node);
 
-            while !result.is_resolved() {
-                let acquired = acquire_gradient(draw_ctx, result.common.borrow().fallback.as_ref());
+                let mut stack = NodeStack::new();
 
-                if let Some(acquired) = acquired {
-                    let a_node = acquired.get();
+                while !result.is_resolved() {
+                    let acquired =
+                        acquire_gradient(draw_ctx, result.common.borrow().fallback.as_ref());
 
-                    if stack.contains(a_node) {
-                        rsvg_log!("circular reference in gradient {}", node);
-                        return Err(RenderingError::CircularReference);
+                    if let Some(acquired) = acquired {
+                        let a_node = acquired.get();
+
+                        if stack.contains(a_node) {
+                            rsvg_log!("circular reference in gradient {}", node);
+                            return Err(RenderingError::CircularReference);
+                        }
+
+                        match a_node.borrow().get_type() {
+                            // Same type, resolve all attributes
+                            $node_type => {
+                                let fallback = a_node.borrow().get_impl::<$gradient>().clone();
+                                fallback.common.borrow_mut().add_color_stops_from_node(a_node);
+                                result.resolve_from_fallback(&fallback);
+                            }
+                            // Other type of gradient, resolve common attributes
+                            $other_type => {
+                                let fallback =
+                                    a_node.borrow().get_impl::<$other_gradient>().clone();
+                                fallback
+                                    .common
+                                    .borrow_mut()
+                                    .add_color_stops_from_node(a_node);
+                                result
+                                    .common
+                                    .borrow_mut()
+                                    .resolve_from_fallback(&fallback.common.borrow());
+                            }
+                            _ => (),
+                        }
+
+                        stack.push(a_node);
+
+                        continue;
                     }
 
-                    match a_node.borrow().get_type() {
-                        // Same type, resolve all attributes
-                        $node_type => {
-                            let fallback = a_node
-                                .borrow()
-                                .get_impl::<$gradient>()
-                                .clone();
-                            fallback.common.borrow_mut().add_color_stops_from_node(a_node);
-                            result.resolve_from_fallback(&fallback);
-                        }
-                        // Other type of gradient, resolve common attributes
-                        $other_type => {
-                            let fallback = a_node
-                                .borrow()
-                                .get_impl::<$other_gradient>()
-                                .clone();
-                            fallback.common.borrow_mut().add_color_stops_from_node(a_node);
-                            result.common.borrow_mut().resolve_from_fallback(&fallback.common.borrow());
-                        }
-                        _ => (),
-                    }
-
-                    stack.push(a_node);
-
-                    continue;
+                    result.resolve_from_defaults();
                 }
 
-                result.resolve_from_defaults();
+                if result.common.borrow().bounds_are_valid(bbox) {
+                    Ok(Some(result))
+                } else {
+                    Ok(None)
+                }
             }
 
-            if result.common.borrow().bounds_are_valid(bbox) {
-                Ok(Some(result))
-            } else {
-                Ok(None)
+            fn set_pattern_on_draw_context(
+                &self,
+                gradient: &Self::Source,
+                values: &ComputedValues,
+                draw_ctx: &mut DrawingCtx,
+                opacity: &UnitInterval,
+                bbox: &BoundingBox,
+            ) -> Result<bool, RenderingError> {
+                assert!(gradient.is_resolved());
+
+                let units = gradient.common.borrow().units.unwrap();
+                let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+                    draw_ctx.push_view_box(1.0, 1.0)
+                } else {
+                    draw_ctx.get_view_params()
+                };
+
+                let mut p = gradient.variant.borrow().to_cairo_gradient(values, &params);
+                gradient.common.borrow().set_on_pattern(&mut p, bbox, opacity);
+                let cr = draw_ctx.get_cairo_context();
+                cr.set_source(&$cairo_pattern(p));
+
+                Ok(true)
             }
         }
     };
@@ -593,44 +624,13 @@ impl_node_trait!(NodeLinearGradient);
 
 impl_resolve!(NodeLinearGradient);
 
-impl PaintSource for NodeLinearGradient {
-    type Source = NodeLinearGradient;
-
-    impl_paint_source_resolve!(
-        NodeLinearGradient,
-        NodeType::LinearGradient,
-        NodeRadialGradient,
-        NodeType::RadialGradient
-    );
-
-    fn set_pattern_on_draw_context(
-        &self,
-        gradient: &Self::Source,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        opacity: &UnitInterval,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError> {
-        assert!(gradient.is_resolved());
-
-        let units = gradient.common.borrow().units.unwrap();
-        let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            draw_ctx.push_view_box(1.0, 1.0)
-        } else {
-            draw_ctx.get_view_params()
-        };
-
-        let mut pattern = gradient.variant.borrow().to_cairo_gradient(values, &params);
-        let cr = draw_ctx.get_cairo_context();
-        gradient
-            .common
-            .borrow_mut()
-            .set_on_pattern(&mut pattern, bbox, opacity);
-        cr.set_source(&cairo::Pattern::LinearGradient(pattern));
-
-        Ok(true)
-    }
-}
+impl_paint_source!(
+    NodeLinearGradient,
+    NodeType::LinearGradient,
+    NodeRadialGradient,
+    NodeType::RadialGradient,
+    cairo::Pattern::LinearGradient
+);
 
 #[derive(Clone, Default)]
 pub struct NodeRadialGradient {
@@ -642,44 +642,13 @@ impl_node_trait!(NodeRadialGradient);
 
 impl_resolve!(NodeRadialGradient);
 
-impl PaintSource for NodeRadialGradient {
-    type Source = NodeRadialGradient;
-
-    impl_paint_source_resolve!(
-        NodeRadialGradient,
-        NodeType::RadialGradient,
-        NodeLinearGradient,
-        NodeType::LinearGradient
-    );
-
-    fn set_pattern_on_draw_context(
-        &self,
-        gradient: &Self::Source,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        opacity: &UnitInterval,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError> {
-        assert!(gradient.is_resolved());
-
-        let units = gradient.common.borrow().units.unwrap();
-        let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            draw_ctx.push_view_box(1.0, 1.0)
-        } else {
-            draw_ctx.get_view_params()
-        };
-
-        let mut pattern = gradient.variant.borrow().to_cairo_gradient(values, &params);
-        let cr = draw_ctx.get_cairo_context();
-        gradient
-            .common
-            .borrow_mut()
-            .set_on_pattern(&mut pattern, bbox, opacity);
-        cr.set_source(&cairo::Pattern::RadialGradient(pattern));
-
-        Ok(true)
-    }
-}
+impl_paint_source!(
+    NodeRadialGradient,
+    NodeType::RadialGradient,
+    NodeLinearGradient,
+    NodeType::LinearGradient,
+    cairo::Pattern::RadialGradient
+);
 
 #[cfg(test)]
 mod tests {
