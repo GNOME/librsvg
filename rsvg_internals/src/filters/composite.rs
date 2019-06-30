@@ -1,5 +1,3 @@
-use std::cell::{Cell, RefCell};
-
 use cairo::{self, ImageSurface};
 use cssparser::{CowRcStr, Parser, Token};
 use markup5ever::local_name;
@@ -36,12 +34,12 @@ enum Operator {
 /// The `feComposite` filter primitive.
 pub struct Composite {
     base: PrimitiveWithInput,
-    in2: RefCell<Option<Input>>,
-    operator: Cell<Operator>,
-    k1: Cell<f64>,
-    k2: Cell<f64>,
-    k3: Cell<f64>,
-    k4: Cell<f64>,
+    in2: Option<Input>,
+    operator: Operator,
+    k1: f64,
+    k2: f64,
+    k3: f64,
+    k4: f64,
 }
 
 impl Default for Composite {
@@ -50,12 +48,12 @@ impl Default for Composite {
     fn default() -> Composite {
         Composite {
             base: PrimitiveWithInput::new::<Self>(),
-            in2: RefCell::new(None),
-            operator: Cell::new(Operator::Over),
-            k1: Cell::new(0f64),
-            k2: Cell::new(0f64),
-            k3: Cell::new(0f64),
-            k4: Cell::new(0f64),
+            in2: None,
+            operator: Operator::Over,
+            k1: 0.0,
+            k2: 0.0,
+            k3: 0.0,
+            k4: 0.0,
         }
     }
 }
@@ -68,22 +66,12 @@ impl NodeTrait for Composite {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("in2") => {
-                    self.in2.replace(Some(Input::parse(attr, value)?));
-                }
-                local_name!("operator") => self.operator.set(attr.parse(value)?),
-                local_name!("k1") => self.k1.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("k2") => self.k2.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("k3") => self.k3.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("k4") => self.k4.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
+                local_name!("in2") => self.in2 = Some(Input::parse(attr, value)?),
+                local_name!("operator") => self.operator = attr.parse(value)?,
+                local_name!("k1") => self.k1 = parsers::number(value).attribute(attr)?,
+                local_name!("k2") => self.k2 = parsers::number(value).attribute(attr)?,
+                local_name!("k3") => self.k3 = parsers::number(value).attribute(attr)?,
+                local_name!("k4") => self.k4 = parsers::number(value).attribute(attr)?,
                 _ => (),
             }
         }
@@ -149,7 +137,7 @@ impl Filter for Composite {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, draw_ctx)?;
-        let input_2 = ctx.get_input(draw_ctx, self.in2.borrow().as_ref())?;
+        let input_2 = ctx.get_input(draw_ctx, self.in2.as_ref())?;
         let bounds = self
             .base
             .get_bounds(ctx)
@@ -174,27 +162,22 @@ impl Filter for Composite {
             input.surface().surface_type()
         };
 
-        let output_surface = if self.operator.get() == Operator::Arithmetic {
+        let output_surface = if self.operator == Operator::Arithmetic {
             let mut output_surface = ImageSurface::create(
                 cairo::Format::ARgb32,
                 input.surface().width(),
                 input.surface().height(),
             )?;
 
-            let k1 = self.k1.get();
-            let k2 = self.k2.get();
-            let k3 = self.k3.get();
-            let k4 = self.k4.get();
-
             composite_arithmetic(
                 input.surface(),
                 input_2.surface(),
                 &mut output_surface,
                 bounds,
-                k1,
-                k2,
-                k3,
-                k4,
+                self.k1,
+                self.k2,
+                self.k3,
+                self.k4,
             );
 
             output_surface
@@ -211,7 +194,7 @@ impl Filter for Composite {
             cr.clip();
 
             input.surface().set_as_source_surface(&cr, 0f64, 0f64);
-            cr.set_operator(self.operator.get().into());
+            cr.set_operator(self.operator.into());
             cr.paint();
 
             output_surface
