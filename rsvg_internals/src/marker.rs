@@ -1,10 +1,9 @@
-use std::cell::Cell;
 use std::f64::consts::*;
 use std::ops::Deref;
 
 use cairo::Rectangle;
-use markup5ever::local_name;
 use cssparser::{CowRcStr, Parser, Token};
+use markup5ever::local_name;
 
 use crate::allowed_url::Fragment;
 use crate::angle::Angle;
@@ -89,28 +88,28 @@ impl Parse for MarkerOrient {
 }
 
 pub struct NodeMarker {
-    units: Cell<MarkerUnits>,
-    ref_x: Cell<LengthHorizontal>,
-    ref_y: Cell<LengthVertical>,
-    width: Cell<LengthHorizontal>,
-    height: Cell<LengthVertical>,
-    orient: Cell<MarkerOrient>,
-    aspect: Cell<AspectRatio>,
-    vbox: Cell<Option<ViewBox>>,
+    units: MarkerUnits,
+    ref_x: LengthHorizontal,
+    ref_y: LengthVertical,
+    width: LengthHorizontal,
+    height: LengthVertical,
+    orient: MarkerOrient,
+    aspect: AspectRatio,
+    vbox: Option<ViewBox>,
 }
 
 impl Default for NodeMarker {
     fn default() -> NodeMarker {
         NodeMarker {
-            units: Cell::new(MarkerUnits::default()),
-            ref_x: Cell::new(Default::default()),
-            ref_y: Cell::new(Default::default()),
+            units: MarkerUnits::default(),
+            ref_x: Default::default(),
+            ref_y: Default::default(),
             // the following two are per the spec
-            width: Cell::new(LengthHorizontal::parse_str("3").unwrap()),
-            height: Cell::new(LengthVertical::parse_str("3").unwrap()),
-            orient: Cell::new(MarkerOrient::default()),
-            aspect: Cell::new(AspectRatio::default()),
-            vbox: Cell::new(None),
+            width: LengthHorizontal::parse_str("3").unwrap(),
+            height: LengthVertical::parse_str("3").unwrap(),
+            orient: MarkerOrient::default(),
+            aspect: AspectRatio::default(),
+            vbox: None,
         }
     }
 }
@@ -131,8 +130,8 @@ impl NodeMarker {
 
         let params = draw_ctx.get_view_params();
 
-        let marker_width = self.width.get().normalize(&values, &params);
-        let marker_height = self.height.get().normalize(&values, &params);
+        let marker_width = self.width.normalize(&values, &params);
+        let marker_height = self.height.normalize(&values, &params);
 
         if marker_width.approx_eq_cairo(&0.0) || marker_height.approx_eq_cairo(&0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
@@ -145,19 +144,19 @@ impl NodeMarker {
 
             cr.translate(xpos, ypos);
 
-            let rotation = match self.orient.get() {
+            let rotation = match self.orient {
                 MarkerOrient::Auto => computed_angle,
                 MarkerOrient::Angle(a) => a,
             };
 
             cr.rotate(rotation.radians());
 
-            if self.units.get() == MarkerUnits::StrokeWidth {
+            if self.units == MarkerUnits::StrokeWidth {
                 cr.scale(line_width, line_width);
             }
 
-            let params = if let Some(vbox) = self.vbox.get() {
-                let (_, _, w, h) = self.aspect.get().compute(
+            let params = if let Some(vbox) = self.vbox {
+                let (_, _, w, h) = self.aspect.compute(
                     &vbox,
                     &Rectangle::new(0.0, 0.0, marker_width, marker_height),
                 );
@@ -174,12 +173,12 @@ impl NodeMarker {
             };
 
             cr.translate(
-                -self.ref_x.get().normalize(&values, &params),
-                -self.ref_y.get().normalize(&values, &params),
+                -self.ref_x.normalize(&values, &params),
+                -self.ref_y.normalize(&values, &params),
             );
 
             if !values.is_overflow() {
-                if let Some(vbox) = self.vbox.get() {
+                if let Some(vbox) = self.vbox {
                     dc.clip(vbox.x, vbox.y, vbox.width, vbox.height);
                 } else {
                     dc.clip(0.0, 0.0, marker_width, marker_height);
@@ -197,26 +196,20 @@ impl NodeTrait for NodeMarker {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("markerUnits") => self.units.set(attr.parse(value)?),
-
-                local_name!("refX") => self.ref_x.set(attr.parse(value)?),
-
-                local_name!("refY") => self.ref_y.set(attr.parse(value)?),
-
-                local_name!("markerWidth") => self
-                    .width
-                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
-
-                local_name!("markerHeight") => self
-                    .height
-                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
-
-                local_name!("orient") => self.orient.set(attr.parse(value)?),
-
-                local_name!("preserveAspectRatio") => self.aspect.set(attr.parse(value)?),
-
-                local_name!("viewBox") => self.vbox.set(Some(attr.parse(value)?)),
-
+                local_name!("markerUnits") => self.units = attr.parse(value)?,
+                local_name!("refX") => self.ref_x = attr.parse(value)?,
+                local_name!("refY") => self.ref_y = attr.parse(value)?,
+                local_name!("markerWidth") => {
+                    self.width =
+                        attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
+                }
+                local_name!("markerHeight") => {
+                    self.height =
+                        attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
+                }
+                local_name!("orient") => self.orient = attr.parse(value)?,
+                local_name!("preserveAspectRatio") => self.aspect = attr.parse(value)?,
+                local_name!("viewBox") => self.vbox = Some(attr.parse(value)?),
                 _ => (),
             }
         }
