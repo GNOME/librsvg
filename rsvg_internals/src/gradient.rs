@@ -82,7 +82,7 @@ macro_rules! fallback_to (
 );
 
 #[derive(Clone, Default)]
-pub struct GradientCommon {
+pub struct CommonGradientData {
     pub units: Option<GradientUnits>,
     pub affine: Option<cairo::Matrix>,
     pub spread: Option<SpreadMethod>,
@@ -90,7 +90,7 @@ pub struct GradientCommon {
     pub stops: Option<Vec<ColorStop>>,
 }
 
-impl Resolve for GradientCommon {
+impl Resolve for CommonGradientData {
     fn is_resolved(&self) -> bool {
         self.units.is_some()
             && self.affine.is_some()
@@ -115,7 +115,7 @@ impl Resolve for GradientCommon {
     }
 }
 
-impl GradientCommon {
+impl CommonGradientData {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
@@ -260,14 +260,14 @@ impl GradientCommon {
 }
 
 #[derive(Copy, Clone, Default)]
-pub struct GradientLinear {
+pub struct LinearGradientData {
     x1: Option<LengthHorizontal>,
     y1: Option<LengthVertical>,
     x2: Option<LengthHorizontal>,
     y2: Option<LengthVertical>,
 }
 
-impl Resolve for GradientLinear {
+impl Resolve for LinearGradientData {
     fn is_resolved(&self) -> bool {
         self.x1.is_some() && self.y1.is_some() && self.x2.is_some() && self.y2.is_some()
     }
@@ -288,7 +288,7 @@ impl Resolve for GradientLinear {
     }
 }
 
-impl GradientLinear {
+impl LinearGradientData {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
@@ -318,7 +318,7 @@ impl GradientLinear {
 }
 
 #[derive(Copy, Clone, Default)]
-pub struct GradientRadial {
+pub struct RadialGradientData {
     cx: Option<LengthHorizontal>,
     cy: Option<LengthVertical>,
     r: Option<LengthBoth>,
@@ -326,7 +326,7 @@ pub struct GradientRadial {
     fy: Option<LengthVertical>,
 }
 
-impl Resolve for GradientRadial {
+impl Resolve for RadialGradientData {
     fn is_resolved(&self) -> bool {
         self.cx.is_some()
             && self.cy.is_some()
@@ -355,7 +355,7 @@ impl Resolve for GradientRadial {
     }
 }
 
-impl GradientRadial {
+impl RadialGradientData {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
@@ -616,8 +616,8 @@ fn acquire_gradient<'a>(
 
 #[derive(Clone, Default)]
 pub struct NodeLinearGradient {
-    pub common: RefCell<GradientCommon>,
-    pub variant: RefCell<GradientLinear>,
+    pub common: RefCell<CommonGradientData>,
+    pub variant: RefCell<LinearGradientData>,
 }
 
 impl_node_trait!(NodeLinearGradient);
@@ -634,8 +634,8 @@ impl_paint_source!(
 
 #[derive(Clone, Default)]
 pub struct NodeRadialGradient {
-    pub common: RefCell<GradientCommon>,
-    pub variant: RefCell<GradientRadial>,
+    pub common: RefCell<CommonGradientData>,
+    pub variant: RefCell<RadialGradientData>,
 }
 
 impl_node_trait!(NodeRadialGradient);
