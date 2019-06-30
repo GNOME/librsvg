@@ -1,6 +1,4 @@
 //! The <filter> node.
-use std::cell::Cell;
-
 use cairo::{self, MatrixTrait};
 use markup5ever::local_name;
 
@@ -16,12 +14,12 @@ use crate::property_bag::PropertyBag;
 
 /// The <filter> node.
 pub struct NodeFilter {
-    pub x: Cell<LengthHorizontal>,
-    pub y: Cell<LengthVertical>,
-    pub width: Cell<LengthHorizontal>,
-    pub height: Cell<LengthVertical>,
-    pub filterunits: Cell<CoordUnits>,
-    pub primitiveunits: Cell<CoordUnits>,
+    pub x: LengthHorizontal,
+    pub y: LengthVertical,
+    pub width: LengthHorizontal,
+    pub height: LengthVertical,
+    pub filterunits: CoordUnits,
+    pub primitiveunits: CoordUnits,
 }
 
 impl Default for NodeFilter {
@@ -29,12 +27,12 @@ impl Default for NodeFilter {
     #[inline]
     fn default() -> Self {
         Self {
-            x: Cell::new(LengthHorizontal::parse_str("-10%").unwrap()),
-            y: Cell::new(LengthVertical::parse_str("-10%").unwrap()),
-            width: Cell::new(LengthHorizontal::parse_str("120%").unwrap()),
-            height: Cell::new(LengthVertical::parse_str("120%").unwrap()),
-            filterunits: Cell::new(CoordUnits::ObjectBoundingBox),
-            primitiveunits: Cell::new(CoordUnits::UserSpaceOnUse),
+            x: LengthHorizontal::parse_str("-10%").unwrap(),
+            y: LengthVertical::parse_str("-10%").unwrap(),
+            width: LengthHorizontal::parse_str("120%").unwrap(),
+            height: LengthVertical::parse_str("120%").unwrap(),
+            filterunits: CoordUnits::ObjectBoundingBox,
+            primitiveunits: CoordUnits::UserSpaceOnUse,
         }
     }
 }
@@ -63,7 +61,7 @@ impl NodeFilter {
         // It's done this way because with ObjectBoundingBox, non-percentage values are supposed to
         // represent the fractions of the referenced node, and with width and height = 1, 1 this
         // works out exactly like that.
-        let params = if self.filterunits.get() == CoordUnits::ObjectBoundingBox {
+        let params = if self.filterunits == CoordUnits::ObjectBoundingBox {
             draw_ctx.push_view_box(1.0, 1.0)
         } else {
             draw_ctx.get_view_params()
@@ -71,19 +69,19 @@ impl NodeFilter {
 
         // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
         // referencing node. No units are allowed (it's checked during attribute parsing).
-        let rect = if self.filterunits.get() == CoordUnits::ObjectBoundingBox {
+        let rect = if self.filterunits == CoordUnits::ObjectBoundingBox {
             cairo::Rectangle {
-                x: self.x.get().get_unitless(),
-                y: self.y.get().get_unitless(),
-                width: self.width.get().get_unitless(),
-                height: self.height.get().get_unitless(),
+                x: self.x.get_unitless(),
+                y: self.y.get_unitless(),
+                width: self.width.get_unitless(),
+                height: self.height.get_unitless(),
             }
         } else {
             cairo::Rectangle {
-                x: self.x.get().normalize(values, &params),
-                y: self.y.get().normalize(values, &params),
-                width: self.width.get().normalize(values, &params),
-                height: self.height.get().normalize(values, &params),
+                x: self.x.normalize(values, &params),
+                y: self.y.normalize(values, &params),
+                width: self.width.normalize(values, &params),
+                height: self.height.normalize(values, &params),
             }
         };
 
@@ -112,13 +110,13 @@ impl NodeTrait for NodeFilter {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("filterUnits") => self.filterunits.set(attr.parse(value)?),
+                local_name!("filterUnits") => self.filterunits = attr.parse(value)?,
                 _ => (),
             }
         }
 
         // With ObjectBoundingBox, only fractions and percents are allowed.
-        let no_units_allowed = self.filterunits.get() == CoordUnits::ObjectBoundingBox;
+        let no_units_allowed = self.filterunits == CoordUnits::ObjectBoundingBox;
 
         let check_units_horizontal = |length: LengthHorizontal| {
             if !no_units_allowed {
@@ -157,19 +155,21 @@ impl NodeTrait for NodeFilter {
         // Parse the rest of the attributes.
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("x") => self
-                    .x
-                    .set(attr.parse_and_validate(value, check_units_horizontal)?),
-                local_name!("y") => self
-                    .y
-                    .set(attr.parse_and_validate(value, check_units_vertical)?),
-                local_name!("width") => self.width.set(
-                    attr.parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?,
-                ),
-                local_name!("height") => self.height.set(
-                    attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?,
-                ),
-                local_name!("primitiveUnits") => self.primitiveunits.set(attr.parse(value)?),
+                local_name!("x") => {
+                    self.x = attr.parse_and_validate(value, check_units_horizontal)?
+                }
+                local_name!("y") => {
+                    self.y = attr.parse_and_validate(value, check_units_vertical)?
+                }
+                local_name!("width") => {
+                    self.width = attr
+                        .parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?
+                }
+                local_name!("height") => {
+                    self.height =
+                        attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?
+                }
+                local_name!("primitiveUnits") => self.primitiveunits = attr.parse(value)?,
                 _ => (),
             }
         }
