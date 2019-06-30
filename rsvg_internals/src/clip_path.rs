@@ -1,5 +1,3 @@
-use std::cell::Cell;
-
 use cairo::{self, MatrixTrait};
 use markup5ever::local_name;
 
@@ -15,12 +13,12 @@ coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
 #[derive(Default)]
 pub struct NodeClipPath {
-    units: Cell<ClipPathUnits>,
+    units: ClipPathUnits,
 }
 
 impl NodeClipPath {
     pub fn get_units(&self) -> ClipPathUnits {
-        self.units.get()
+        self.units
     }
 
     pub fn to_cairo_context(
@@ -29,9 +27,7 @@ impl NodeClipPath {
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
-        let clip_units = self.units.get();
-
-        if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) && bbox.rect.is_none() {
+        if self.units == ClipPathUnits(CoordUnits::ObjectBoundingBox) && bbox.rect.is_none() {
             // The node being clipped is empty / doesn't have a
             // bounding box, so there's nothing to clip!
             return Ok(());
@@ -42,7 +38,7 @@ impl NodeClipPath {
         draw_ctx.with_saved_matrix(&mut |dc| {
             let cr = dc.get_cairo_context();
 
-            if clip_units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+            if self.units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
                 let bbox_rect = bbox.rect.as_ref().unwrap();
 
                 cr.transform(cairo::Matrix::new(
@@ -68,7 +64,7 @@ impl NodeTrait for NodeClipPath {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("clipPathUnits") => self.units.set(attr.parse(value)?),
+                local_name!("clipPathUnits") => self.units = attr.parse(value)?,
                 _ => (),
             }
         }
