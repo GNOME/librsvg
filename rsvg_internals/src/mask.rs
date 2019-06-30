@@ -1,6 +1,5 @@
 use cairo::{self, MatrixTrait};
 use markup5ever::local_name;
-use std::cell::Cell;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -24,27 +23,26 @@ coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
 
 pub struct NodeMask {
-    x: Cell<LengthHorizontal>,
-    y: Cell<LengthVertical>,
-    width: Cell<LengthHorizontal>,
-    height: Cell<LengthVertical>,
+    x: LengthHorizontal,
+    y: LengthVertical,
+    width: LengthHorizontal,
+    height: LengthVertical,
 
-    units: Cell<MaskUnits>,
-    content_units: Cell<MaskContentUnits>,
+    units: MaskUnits,
+    content_units: MaskContentUnits,
 }
 
 impl Default for NodeMask {
     fn default() -> NodeMask {
         NodeMask {
             // these values are per the spec
-            x: Cell::new(LengthHorizontal::parse_str("-10%").unwrap()),
-            y: Cell::new(LengthVertical::parse_str("-10%").unwrap()),
+            x: LengthHorizontal::parse_str("-10%").unwrap(),
+            y: LengthVertical::parse_str("-10%").unwrap(),
+            width: LengthHorizontal::parse_str("120%").unwrap(),
+            height: LengthVertical::parse_str("120%").unwrap(),
 
-            width: Cell::new(LengthHorizontal::parse_str("120%").unwrap()),
-            height: Cell::new(LengthVertical::parse_str("120%").unwrap()),
-
-            units: Cell::new(MaskUnits::default()),
-            content_units: Cell::new(MaskContentUnits::default()),
+            units: MaskUnits::default(),
+            content_units: MaskContentUnits::default(),
         }
     }
 }
@@ -70,8 +68,8 @@ impl NodeMask {
 
         let mask_content_surface = draw_ctx.create_surface_for_toplevel_viewport()?;
 
-        let mask_units = CoordUnits::from(self.units.get());
-        let content_units = CoordUnits::from(self.content_units.get());
+        let mask_units = CoordUnits::from(self.units);
+        let content_units = CoordUnits::from(self.content_units);
 
         let (x, y, w, h) = {
             let params = if mask_units == CoordUnits::ObjectBoundingBox {
@@ -80,10 +78,10 @@ impl NodeMask {
                 draw_ctx.get_view_params()
             };
 
-            let x = self.x.get().normalize(&values, &params);
-            let y = self.y.get().normalize(&values, &params);
-            let w = self.width.get().normalize(&values, &params);
-            let h = self.height.get().normalize(&values, &params);
+            let x = self.x.normalize(&values, &params);
+            let y = self.y.normalize(&values, &params);
+            let w = self.width.normalize(&values, &params);
+            let h = self.height.normalize(&values, &params);
 
             (x, y, w, h)
         };
@@ -191,16 +189,18 @@ impl NodeTrait for NodeMask {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("x") => self.x.set(attr.parse(value)?),
-                local_name!("y") => self.y.set(attr.parse(value)?),
-                local_name!("width") => self
-                    .width
-                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
-                local_name!("height") => self
-                    .height
-                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
-                local_name!("maskUnits") => self.units.set(attr.parse(value)?),
-                local_name!("maskContentUnits") => self.content_units.set(attr.parse(value)?),
+                local_name!("x") => self.x = attr.parse(value)?,
+                local_name!("y") => self.y = attr.parse(value)?,
+                local_name!("width") => {
+                    self.width =
+                        attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
+                }
+                local_name!("height") => {
+                    self.height =
+                        attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
+                }
+                local_name!("maskUnits") => self.units = attr.parse(value)?,
+                local_name!("maskContentUnits") => self.content_units = attr.parse(value)?,
                 _ => (),
             }
         }
