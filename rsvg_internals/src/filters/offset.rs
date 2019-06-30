@@ -1,6 +1,5 @@
-use markup5ever::local_name;
 use cairo::{self, ImageSurface, MatrixTrait};
-use std::cell::Cell;
+use markup5ever::local_name;
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::AttributeResultExt;
@@ -17,8 +16,8 @@ use super::{Filter, FilterError, PrimitiveWithInput};
 /// The `feOffset` filter primitive.
 pub struct Offset {
     base: PrimitiveWithInput,
-    dx: Cell<f64>,
-    dy: Cell<f64>,
+    dx: f64,
+    dy: f64,
 }
 
 impl Default for Offset {
@@ -27,8 +26,8 @@ impl Default for Offset {
     fn default() -> Offset {
         Offset {
             base: PrimitiveWithInput::new::<Self>(),
-            dx: Cell::new(0f64),
-            dy: Cell::new(0f64),
+            dx: 0f64,
+            dy: 0f64,
         }
     }
 }
@@ -41,12 +40,8 @@ impl NodeTrait for Offset {
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("dx") => self.dx.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("dy") => self.dy.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
+                local_name!("dx") => self.dx = parsers::number(value).attribute(attr)?,
+                local_name!("dy") => self.dy = parsers::number(value).attribute(attr)?,
                 _ => (),
             }
         }
@@ -69,9 +64,7 @@ impl Filter for Offset {
             .add_input(&input)
             .into_irect(draw_ctx);
 
-        let dx = self.dx.get();
-        let dy = self.dy.get();
-        let (ox, oy) = ctx.paffine().transform_distance(dx, dy);
+        let (ox, oy) = ctx.paffine().transform_distance(self.dx, self.dy);
 
         // output_bounds contains all pixels within bounds,
         // for which (x - ox) and (y - oy) also lie within bounds.
