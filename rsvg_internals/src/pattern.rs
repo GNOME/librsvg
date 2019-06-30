@@ -25,7 +25,7 @@ coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
 #[derive(Clone, Default)]
-pub struct Pattern {
+pub struct PatternData {
     pub units: Option<PatternUnits>,
     pub content_units: Option<PatternContentUnits>,
     // This Option<Option<ViewBox>> is a bit strange.  We want a field
@@ -53,7 +53,7 @@ macro_rules! fallback_to (
     );
 );
 
-impl Resolve for Pattern {
+impl Resolve for PatternData {
     fn is_resolved(&self) -> bool {
         self.units.is_some()
             && self.content_units.is_some()
@@ -67,7 +67,7 @@ impl Resolve for Pattern {
             && self.children_are_resolved()
     }
 
-    fn resolve_from_fallback(&mut self, fallback: &Pattern) {
+    fn resolve_from_fallback(&mut self, fallback: &PatternData) {
         fallback_to!(self.units, fallback.units);
         fallback_to!(self.content_units, fallback.content_units);
         fallback_to!(self.vbox, fallback.vbox);
@@ -102,7 +102,7 @@ impl Resolve for Pattern {
     }
 }
 
-impl Pattern {
+impl PatternData {
     fn children_are_resolved(&self) -> bool {
         if let Some(ref weak) = self.node {
             let strong_node = &weak.clone().upgrade().unwrap();
@@ -116,13 +116,13 @@ impl Pattern {
 }
 
 pub struct NodePattern {
-    pattern: RefCell<Pattern>,
+    pattern: RefCell<PatternData>,
 }
 
 impl Default for NodePattern {
     fn default() -> NodePattern {
         NodePattern {
-            pattern: RefCell::new(Pattern::default()),
+            pattern: RefCell::new(PatternData::default()),
         }
     }
 }
@@ -176,7 +176,7 @@ impl NodeTrait for NodePattern {
 }
 
 impl PaintSource for NodePattern {
-    type Source = Pattern;
+    type Source = PatternData;
 
     fn resolve(
         &self,
@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
-        let mut pat = Pattern::default();
+        let mut pat = PatternData::default();
 
         pat.resolve_from_defaults();
         assert!(pat.is_resolved());
