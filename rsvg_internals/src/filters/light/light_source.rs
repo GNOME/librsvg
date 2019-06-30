@@ -200,7 +200,7 @@ impl TransformedLightSource {
 }
 
 impl NodeTrait for LightSource {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match self {
                 LightSource::Distant {

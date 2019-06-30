@@ -447,7 +447,7 @@ fn validate_offset(length: LengthBoth) -> Result<LengthBoth, ValueErrorKind> {
 }
 
 impl NodeTrait for NodeStop {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("offset") => {
@@ -467,7 +467,7 @@ impl NodeTrait for NodeStop {
 macro_rules! impl_node_trait {
     ($gradient_type:ty) => {
         impl NodeTrait for $gradient_type {
-            fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+            fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
                 let mut common = self.common.borrow_mut();
                 common.set_atts(pbag)?;
 

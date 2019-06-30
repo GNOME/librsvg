@@ -23,7 +23,7 @@ use crate::viewbox::*;
 pub struct NodeGroup();
 
 impl NodeTrait for NodeGroup {
-    fn set_atts(&self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 
@@ -50,7 +50,7 @@ impl NodeTrait for NodeGroup {
 pub struct NodeNonRendering;
 
 impl NodeTrait for NodeNonRendering {
-    fn set_atts(&self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 }
@@ -59,7 +59,7 @@ impl NodeTrait for NodeNonRendering {
 pub struct NodeSwitch();
 
 impl NodeTrait for NodeSwitch {
-    fn set_atts(&self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 
@@ -181,7 +181,7 @@ impl NodeSvg {
 }
 
 impl NodeTrait for NodeSvg {
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         let is_inner_svg = parent.is_some();
@@ -293,7 +293,7 @@ pub struct NodeUse {
 }
 
 impl NodeTrait for NodeUse {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("xlink:href") => {
@@ -430,7 +430,7 @@ pub struct NodeSymbol {
 }
 
 impl NodeTrait for NodeSymbol {
-    fn set_atts(&self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("preserveAspectRatio") => {

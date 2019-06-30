@@ -119,7 +119,7 @@ impl Primitive {
 }
 
 impl NodeTrait for Primitive {
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let primitiveunits = parent
             .and_then(|parent| {
@@ -218,7 +218,7 @@ impl PrimitiveWithInput {
 }
 
 impl NodeTrait for PrimitiveWithInput {
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {

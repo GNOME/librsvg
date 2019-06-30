@@ -341,7 +341,7 @@ pub trait NodeTrait: Downcast {
     /// Sets per-node attributes from the `pbag`
     ///
     /// Each node is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult;
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult;
 
     /// Sets any special-cased properties that the node may have, that are different
     /// from defaults in the node's `SpecifiedValues`.

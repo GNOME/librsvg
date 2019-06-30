@@ -27,7 +27,7 @@ pub struct NodeImage {
 }
 
 impl NodeTrait for NodeImage {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("x") => self.x.set(attr.parse(value)?),

@@ -15,7 +15,7 @@ pub struct NodeLink {
 }
 
 impl NodeTrait for NodeLink {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("xlink:href") => *self.link.borrow_mut() = Some(value.to_owned()),

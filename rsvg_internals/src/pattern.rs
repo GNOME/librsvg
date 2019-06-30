@@ -128,7 +128,7 @@ impl Default for NodePattern {
 }
 
 impl NodeTrait for NodePattern {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         let mut p = self.pattern.borrow_mut();
 
         for (attr, value) in pbag.iter() {
