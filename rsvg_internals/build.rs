@@ -1,13 +1,23 @@
 use std::env;
-use std::fs;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::os::unix::fs::symlink;
 use std::path::Path;
+
+#[cfg(unix)]
+use std::os::unix::fs::symlink;
+
+#[cfg(all(windows, not(target_env = "msvc")))]
+use std::os::windows::fs::symlink_file;
+
+#[cfg(not(target_env = "msvc"))]
+use std::fs;
+#[cfg(not(target_env = "msvc"))]
 use std::path::PathBuf;
 
 fn main() {
     generate_srgb_tables();
+
+    #[cfg(not (target_env = "msvc"))]
     generate_convenience_lib().unwrap();
 }
 
@@ -70,6 +80,7 @@ fn generate_srgb_tables() {
 
 /// Generate libtool archive file librsvg_internals.la
 /// From: https://docs.rs/libtool/0.1.1/libtool/
+#[cfg(not (target_env = "msvc"))]
 pub fn generate_convenience_lib() -> std::io::Result<()> {
     let target = env::var("TARGET").expect("TARGET was not set");
     let build_dir = env::var("LIBRSVG_BUILD_DIR").expect("LIBRSVG_BUILD_DIR was not set");
