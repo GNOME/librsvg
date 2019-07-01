@@ -36,7 +36,11 @@ pub struct Svg {
 }
 
 impl Svg {
-    pub fn new(mut tree: RsvgNode, ids: HashMap<String, RsvgNode>, load_options: LoadOptions) -> Svg {
+    pub fn new(
+        mut tree: RsvgNode,
+        ids: HashMap<String, RsvgNode>,
+        load_options: LoadOptions,
+    ) -> Svg {
         let values = ComputedValues::default();
         tree.cascade(&values);
 

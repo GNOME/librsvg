@@ -58,9 +58,7 @@ impl NodeTrait for NodePattern {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("patternUnits") => self.units = Some(attr.parse(value)?),
-                local_name!("patternContentUnits") => {
-                    self.content_units = Some(attr.parse(value)?)
-                }
+                local_name!("patternContentUnits") => self.content_units = Some(attr.parse(value)?),
                 local_name!("viewBox") => self.vbox = Some(Some(attr.parse(value)?)),
                 local_name!("preserveAspectRatio") => {
                     self.preserve_aspect_ratio = Some(attr.parse(value)?)

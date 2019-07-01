@@ -89,8 +89,8 @@ impl<'a> Iterator for PropertyBagIter<'a> {
 
 #[cfg(test)]
 mod tests {
-    use markup5ever::local_name;
     use super::*;
+    use markup5ever::local_name;
     use std::ffi::CString;
     use std::ptr;
 

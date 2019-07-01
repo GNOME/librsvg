@@ -134,12 +134,10 @@ impl NodeData {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("transform") => {
-                    return Matrix::parse_str(value)
-                        .attribute(attr)
-                        .and_then(|affine| {
-                            self.transform = affine;
-                            Ok(())
-                        });
+                    return Matrix::parse_str(value).attribute(attr).and_then(|affine| {
+                        self.transform = affine;
+                        Ok(())
+                    });
                 }
                 _ => (),
             }

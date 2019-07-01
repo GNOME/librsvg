@@ -99,8 +99,7 @@ impl NodeTrait for ColorMatrix {
                         matrix
                     }
                     OperationType::Saturate => {
-                        let s = parsers::number(value)
-                            .attribute(attr.clone())?;
+                        let s = parsers::number(value).attribute(attr.clone())?;
                         if s < 0.0 || s > 1.0 {
                             return Err(NodeError::value_error(attr, "expected value from 0 to 1"));
                         }
@@ -115,9 +114,7 @@ impl NodeTrait for ColorMatrix {
                         )
                     }
                     OperationType::HueRotate => {
-                        let degrees = parsers::number(value)
-                            .attribute(attr.clone())?;
-
+                        let degrees = parsers::number(value).attribute(attr.clone())?;
                         let (sin, cos) = degrees.to_radians().sin_cos();
 
                         #[cfg_attr(rustfmt, rustfmt_skip)]
