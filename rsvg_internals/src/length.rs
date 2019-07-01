@@ -208,11 +208,7 @@ impl Parse for Length {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {
-        let length = Length::from_cssparser(parser)?;
-
-        parser.expect_exhausted().map_err(|_| make_err())?;
-
-        Ok(length)
+        Length::from_cssparser(parser)
     }
 }
 

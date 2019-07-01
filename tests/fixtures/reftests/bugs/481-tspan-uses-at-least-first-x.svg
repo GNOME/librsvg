@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+  <!--
+    As of July 2019, librsvg does not support multiple positions in
+    the x/y/dx/dy attributes of text/tspan elements.  This test is to
+    check that the library at least uses the first position specified.
+
+    (The reference PNG for this SVG is incorrect with respect to the
+    spec, since we don't actually use the second and third positions;
+    it's as if the "Foo" had normal letter spacing.)
+  -->
+  <text style="font-family: sans; font-size: 50; fill: black;" y="100">
+    <tspan x="70 120 170">Foo</tspan>
+  </text>
+</svg>
