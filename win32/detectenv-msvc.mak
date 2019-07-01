@@ -42,8 +42,10 @@ VSVER = 11
 VSVER = 12
 !elseif $(VCVERSION) > 1899 && $(VCVERSION) < 1910
 VSVER = 14
-!elseif $(VCVERSION) > 1909 && $(VCVERSION) < 2000
+!elseif $(VCVERSION) > 1909 && $(VCVERSION) < 1920
 VSVER = 15
+!elseif $(VCVERSION) > 1919 && $(VCVERSION) < 2000
+VSVER = 16
 !else
 VSVER = 0
 !endif
@@ -51,9 +53,13 @@ VSVER = 0
 !if "$(VSVER)" == "0"
 MSG = ^
 This NMake Makefile set supports Visual Studio^
-9 (2008) through 14 (2015).  Your Visual Studio^
+9 (2008) through 16 (2019).  Your Visual Studio^
 version is not supported.
 !error $(MSG)
+!endif
+
+!ifndef PREFIX
+PREFIX=..\..\vs$(VSVER)\$(PLAT)
 !endif
 
 VALID_CFGSET = FALSE
@@ -63,16 +69,20 @@ VALID_CFGSET = TRUE
 
 # We want debugging symbols logged for all builds,
 # using .pdb files for release builds
-CFLAGS_BASE = /Zi
-
-!if "$(CFG)" == "release" || "$(CFG)" == "Release"
-CFLAGS_ADD = /MD /O2 $(CFLAGS_BASE)
-!else
-CFLAGS_ADD = /MDd /Od $(CFLAGS_BASE)
-!endif
+CFLAGS_BASE = /W3 /Zi
 
 !if "$(PLAT)" == "x64"
 LDFLAGS_ARCH = /machine:x64
 !else
 LDFLAGS_ARCH = /machine:x86
+!endif
+
+LDFLAGS_BASE = $(LDFLAGS_ARCH) /DEBUG
+
+!if "$(CFG)" == "release" || "$(CFG)" == "Release"
+CFLAGS_ADD = /MD /O2 /GL /MP /d2Zi+ $(CFLAGS_BASE)
+LDFLAGS = $(LDFLAGS_BASE) /LTCG /opt:ref
+!else
+CFLAGS_ADD = /MDd /Od $(CFLAGS_BASE)
+LDFLAGS = $(LDFLAGS_BASE)
 !endif

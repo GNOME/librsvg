@@ -1,4 +1,9 @@
+!ifndef VCVER
 !include detectenv-msvc.mak
+!ifndef LIBDIR
+LIBDIR=$(PREFIX)\lib
+!endif
+!endif
 
 !if "$(CARGO)" == ""
 CARGO = cargo
@@ -32,23 +37,23 @@ CARGO_CMD = $(CARGO) build $(CARGO_TARGET) --release
 CARGO_CMD = $(CARGO) build $(CARGO_TARGET)
 !endif
 
-all: vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg_internals.lib
-
 vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg_internals.lib:
+	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
-	@set GTK_LIB_DIR=..\..\vs$(VSVER)\$(PLAT)\lib;$(LIB)
+	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
 	$(RUSTUP_CMD)
 	@cd ..\rsvg_internals
 	$(CARGO_CMD) --verbose
-	@cd ..\win32\vs$(VSVER)
+	@cd ..\win32
 	@set GTK_LIB_DIR=
 	@set CARGO_TARGET_DIR=
 
-clean:
+cargo-clean:
+	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
 	@cd ..\rsvg_internals
 	@$(CARGO) clean
-	@cd ..\win32\vs$(VSVER)
+	@cd ..\win32
 	@set CARGO_TARGET_DIR=
 	
 !else
