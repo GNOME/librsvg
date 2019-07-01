@@ -24,8 +24,14 @@ use crate::viewbox::*;
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
+macro_rules! fallback_to (
+    ($dest:expr, $default:expr) => (
+        $dest = $dest.take ().or ($default)
+    );
+);
+
 #[derive(Clone, Default)]
-pub struct PatternData {
+pub struct NodePattern {
     pub units: Option<PatternUnits>,
     pub content_units: Option<PatternContentUnits>,
     // This Option<Option<ViewBox>> is a bit strange.  We want a field
@@ -47,13 +53,45 @@ pub struct PatternData {
     pub node: RefCell<Option<RsvgWeakNode>>,
 }
 
-macro_rules! fallback_to (
-    ($dest:expr, $default:expr) => (
-        $dest = $dest.take ().or ($default)
-    );
-);
+impl NodeTrait for NodePattern {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("patternUnits") => self.units = Some(attr.parse(value)?),
+                local_name!("patternContentUnits") => {
+                    self.content_units = Some(attr.parse(value)?)
+                }
+                local_name!("viewBox") => self.vbox = Some(Some(attr.parse(value)?)),
+                local_name!("preserveAspectRatio") => {
+                    self.preserve_aspect_ratio = Some(attr.parse(value)?)
+                }
+                local_name!("patternTransform") => self.affine = Some(attr.parse(value)?),
+                local_name!("xlink:href") => {
+                    self.fallback = Some(Fragment::parse(value).attribute(attr)?);
+                }
+                local_name!("x") => self.x = Some(attr.parse(value)?),
+                local_name!("y") => self.y = Some(attr.parse(value)?),
+                local_name!("width") => {
+                    self.width =
+                        Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
+                }
+                local_name!("height") => {
+                    self.height =
+                        Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
+                }
+                _ => (),
+            }
+        }
 
-impl Resolve for PatternData {
+        Ok(())
+    }
+
+    fn overflow_hidden(&self) -> bool {
+        true
+    }
+}
+
+impl Resolve for NodePattern {
     fn is_resolved(&self) -> bool {
         self.units.is_some()
             && self.content_units.is_some()
@@ -67,7 +105,7 @@ impl Resolve for PatternData {
             && self.children_are_resolved()
     }
 
-    fn resolve_from_fallback(&mut self, fallback: &PatternData) {
+    fn resolve_from_fallback(&mut self, fallback: &NodePattern) {
         fallback_to!(self.units, fallback.units);
         fallback_to!(self.content_units, fallback.content_units);
         fallback_to!(self.vbox, fallback.vbox);
@@ -102,71 +140,8 @@ impl Resolve for PatternData {
     }
 }
 
-impl PatternData {
-    fn children_are_resolved(&self) -> bool {
-        if let Some(ref weak) = *self.node.borrow() {
-            let strong_node = &weak.clone().upgrade().unwrap();
-            strong_node.has_children()
-        } else {
-            // We are an empty pattern; there is nothing further that
-            // can be resolved for children.
-            true
-        }
-    }
-}
-
-pub struct NodePattern {
-    pattern: PatternData,
-}
-
-impl Default for NodePattern {
-    fn default() -> NodePattern {
-        NodePattern {
-            pattern: PatternData::default(),
-        }
-    }
-}
-
-impl NodeTrait for NodePattern {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("patternUnits") => self.pattern.units = Some(attr.parse(value)?),
-                local_name!("patternContentUnits") => {
-                    self.pattern.content_units = Some(attr.parse(value)?)
-                }
-                local_name!("viewBox") => self.pattern.vbox = Some(Some(attr.parse(value)?)),
-                local_name!("preserveAspectRatio") => {
-                    self.pattern.preserve_aspect_ratio = Some(attr.parse(value)?)
-                }
-                local_name!("patternTransform") => self.pattern.affine = Some(attr.parse(value)?),
-                local_name!("xlink:href") => {
-                    self.pattern.fallback = Some(Fragment::parse(value).attribute(attr)?);
-                }
-                local_name!("x") => self.pattern.x = Some(attr.parse(value)?),
-                local_name!("y") => self.pattern.y = Some(attr.parse(value)?),
-                local_name!("width") => {
-                    self.pattern.width =
-                        Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
-                }
-                local_name!("height") => {
-                    self.pattern.height =
-                        Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
-                }
-                _ => (),
-            }
-        }
-
-        Ok(())
-    }
-
-    fn overflow_hidden(&self) -> bool {
-        true
-    }
-}
-
 impl PaintSource for NodePattern {
-    type Source = PatternData;
+    type Source = NodePattern;
 
     fn resolve(
         &self,
@@ -174,9 +149,9 @@ impl PaintSource for NodePattern {
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
-        *self.pattern.node.borrow_mut() = Some(node.downgrade());
+        *self.node.borrow_mut() = Some(node.downgrade());
 
-        let mut result = node.borrow().get_impl::<NodePattern>().pattern.clone();
+        let mut result = node.borrow().get_impl::<NodePattern>().clone();
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
@@ -192,7 +167,7 @@ impl PaintSource for NodePattern {
                 }
 
                 let node_data = a_node.borrow();
-                result.resolve_from_fallback(&node_data.get_impl::<NodePattern>().pattern);
+                result.resolve_from_fallback(&node_data.get_impl::<NodePattern>());
 
                 stack.push(a_node);
             } else {
@@ -393,13 +368,26 @@ impl PaintSource for NodePattern {
     }
 }
 
+impl NodePattern {
+    fn children_are_resolved(&self) -> bool {
+        if let Some(ref weak) = *self.node.borrow() {
+            let strong_node = &weak.clone().upgrade().unwrap();
+            strong_node.has_children()
+        } else {
+            // We are an empty pattern; there is nothing further that
+            // can be resolved for children.
+            true
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
-        let mut pat = PatternData::default();
+        let mut pat = NodePattern::default();
 
         pat.resolve_from_defaults();
         assert!(pat.is_resolved());
