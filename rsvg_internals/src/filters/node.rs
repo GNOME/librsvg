@@ -14,12 +14,12 @@ use crate::property_bag::PropertyBag;
 
 /// The <filter> node.
 pub struct NodeFilter {
-    pub x: LengthHorizontal,
-    pub y: LengthVertical,
-    pub width: LengthHorizontal,
-    pub height: LengthVertical,
-    pub filterunits: CoordUnits,
-    pub primitiveunits: CoordUnits,
+    x: LengthHorizontal,
+    y: LengthVertical,
+    width: LengthHorizontal,
+    height: LengthVertical,
+    filterunits: CoordUnits,
+    primitiveunits: CoordUnits,
 }
 
 impl Default for NodeFilter {
@@ -38,6 +38,14 @@ impl Default for NodeFilter {
 }
 
 impl NodeFilter {
+    pub fn get_filter_units(&self) -> CoordUnits {
+        self.filterunits
+    }
+
+    pub fn get_primitive_units(&self) -> CoordUnits {
+        self.primitiveunits
+    }
+
     /// Computes and returns the filter effects region.
     pub fn compute_effects_region(
         &self,

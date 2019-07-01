@@ -117,7 +117,7 @@ impl NodeTrait for Primitive {
         let primitiveunits = parent
             .and_then(|parent| {
                 if parent.borrow().get_type() == NodeType::Filter {
-                    Some(parent.borrow().get_impl::<NodeFilter>().primitiveunits)
+                    Some(parent.borrow().get_impl::<NodeFilter>().get_primitive_units())
                 } else {
                     None
                 }
