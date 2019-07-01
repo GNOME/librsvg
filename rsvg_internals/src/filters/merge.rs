@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use cairo::{self, ImageSurface};
 use markup5ever::local_name;
 
@@ -21,7 +19,7 @@ pub struct Merge {
 /// The `<feMergeNode>` element.
 #[derive(Default)]
 pub struct MergeNode {
-    in_: RefCell<Option<Input>>,
+    in_: Option<Input>,
 }
 
 impl Default for Merge {
@@ -38,19 +36,17 @@ impl NodeTrait for Merge {
     impl_node_as_filter!();
 
     #[inline]
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)
     }
 }
 
 impl NodeTrait for MergeNode {
     #[inline]
-    fn set_atts(&self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("in") => {
-                    self.in_.replace(Some(Input::parse(attr, value)?));
-                }
+                local_name!("in") => self.in_ = Some(Input::parse(attr, value)?),
                 _ => (),
             }
         }
@@ -67,7 +63,7 @@ impl MergeNode {
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
-        let input = ctx.get_input(draw_ctx, self.in_.borrow().as_ref())?;
+        let input = ctx.get_input(draw_ctx, self.in_.as_ref())?;
 
         if output_surface.is_none() {
             return Ok(input.surface().clone());
@@ -131,7 +127,7 @@ impl Filter for Merge {
 
             let input = ctx.get_input(
                 draw_ctx,
-                child.borrow().get_impl::<MergeNode>().in_.borrow().as_ref(),
+                child.borrow().get_impl::<MergeNode>().in_.as_ref(),
             )?;
             bounds = bounds.add_input(&input);
         }
@@ -164,7 +160,7 @@ impl Filter for Merge {
         };
 
         Ok(FilterResult {
-            name: self.base.result.borrow().clone(),
+            name: self.base.result.clone(),
             output: FilterOutput {
                 surface: output_surface,
                 bounds,

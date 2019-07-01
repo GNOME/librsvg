@@ -25,7 +25,7 @@ coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
 #[derive(Clone, Default)]
-pub struct Pattern {
+pub struct PatternData {
     pub units: Option<PatternUnits>,
     pub content_units: Option<PatternContentUnits>,
     // This Option<Option<ViewBox>> is a bit strange.  We want a field
@@ -44,7 +44,7 @@ pub struct Pattern {
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
     // among the fallbacks.
-    pub node: Option<RsvgWeakNode>,
+    pub node: RefCell<Option<RsvgWeakNode>>,
 }
 
 macro_rules! fallback_to (
@@ -53,7 +53,7 @@ macro_rules! fallback_to (
     );
 );
 
-impl Resolve for Pattern {
+impl Resolve for PatternData {
     fn is_resolved(&self) -> bool {
         self.units.is_some()
             && self.content_units.is_some()
@@ -67,7 +67,7 @@ impl Resolve for Pattern {
             && self.children_are_resolved()
     }
 
-    fn resolve_from_fallback(&mut self, fallback: &Pattern) {
+    fn resolve_from_fallback(&mut self, fallback: &PatternData) {
         fallback_to!(self.units, fallback.units);
         fallback_to!(self.content_units, fallback.content_units);
         fallback_to!(self.vbox, fallback.vbox);
@@ -81,10 +81,10 @@ impl Resolve for Pattern {
         self.fallback = fallback.fallback.clone();
 
         if !self.children_are_resolved() {
-            if fallback.node.is_some() {
-                self.node = fallback.node.clone();
+            if fallback.node.borrow().is_some() {
+                *self.node.borrow_mut() = fallback.node.borrow().clone();
             } else {
-                self.node = None;
+                *self.node.borrow_mut() = None;
             }
         }
     }
@@ -102,9 +102,9 @@ impl Resolve for Pattern {
     }
 }
 
-impl Pattern {
+impl PatternData {
     fn children_are_resolved(&self) -> bool {
-        if let Some(ref weak) = self.node {
+        if let Some(ref weak) = *self.node.borrow() {
             let strong_node = &weak.clone().upgrade().unwrap();
             strong_node.has_children()
         } else {
@@ -116,53 +116,43 @@ impl Pattern {
 }
 
 pub struct NodePattern {
-    pattern: RefCell<Pattern>,
+    pattern: PatternData,
 }
 
 impl Default for NodePattern {
     fn default() -> NodePattern {
         NodePattern {
-            pattern: RefCell::new(Pattern::default()),
+            pattern: PatternData::default(),
         }
     }
 }
 
 impl NodeTrait for NodePattern {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
-        let mut p = self.pattern.borrow_mut();
-
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("patternUnits") => p.units = Some(attr.parse(value)?),
-
-                local_name!("patternContentUnits") => p.content_units = Some(attr.parse(value)?),
-
-                local_name!("viewBox") => p.vbox = Some(Some(attr.parse(value)?)),
-
+                local_name!("patternUnits") => self.pattern.units = Some(attr.parse(value)?),
+                local_name!("patternContentUnits") => {
+                    self.pattern.content_units = Some(attr.parse(value)?)
+                }
+                local_name!("viewBox") => self.pattern.vbox = Some(Some(attr.parse(value)?)),
                 local_name!("preserveAspectRatio") => {
-                    p.preserve_aspect_ratio = Some(attr.parse(value)?)
+                    self.pattern.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
-
-                local_name!("patternTransform") => p.affine = Some(attr.parse(value)?),
-
+                local_name!("patternTransform") => self.pattern.affine = Some(attr.parse(value)?),
                 local_name!("xlink:href") => {
-                    p.fallback = Some(Fragment::parse(value).attribute(attr)?);
+                    self.pattern.fallback = Some(Fragment::parse(value).attribute(attr)?);
                 }
-
-                local_name!("x") => p.x = Some(attr.parse(value)?),
-
-                local_name!("y") => p.y = Some(attr.parse(value)?),
-
+                local_name!("x") => self.pattern.x = Some(attr.parse(value)?),
+                local_name!("y") => self.pattern.y = Some(attr.parse(value)?),
                 local_name!("width") => {
-                    p.width =
+                    self.pattern.width =
                         Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
                 }
-
                 local_name!("height") => {
-                    p.height =
+                    self.pattern.height =
                         Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
                 }
-
                 _ => (),
             }
         }
@@ -176,7 +166,7 @@ impl NodeTrait for NodePattern {
 }
 
 impl PaintSource for NodePattern {
-    type Source = Pattern;
+    type Source = PatternData;
 
     fn resolve(
         &self,
@@ -184,18 +174,9 @@ impl PaintSource for NodePattern {
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
     ) -> Result<Option<Self::Source>, RenderingError> {
-        {
-            // Initialize pattern.node and release the mutable borrow
-            let mut p = self.pattern.borrow_mut();
-            p.node = Some(node.downgrade());
-        }
+        *self.pattern.node.borrow_mut() = Some(node.downgrade());
 
-        let mut result = node
-            .borrow()
-            .get_impl::<NodePattern>()
-            .pattern
-            .borrow()
-            .clone();
+        let mut result = node.borrow().get_impl::<NodePattern>().pattern.clone();
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
@@ -211,8 +192,7 @@ impl PaintSource for NodePattern {
                 }
 
                 let node_data = a_node.borrow();
-                let fallback = node_data.get_impl::<NodePattern>().pattern.borrow();
-                result.resolve_from_fallback(&fallback);
+                result.resolve_from_fallback(&node_data.get_impl::<NodePattern>().pattern);
 
                 stack.push(a_node);
             } else {
@@ -233,7 +213,7 @@ impl PaintSource for NodePattern {
     ) -> Result<bool, RenderingError> {
         assert!(pattern.is_resolved());
 
-        if pattern.node.is_none() {
+        if pattern.node.borrow().is_none() {
             // This means we didn't find any children among the fallbacks,
             // so there is nothing to render.
             return Ok(false);
@@ -382,7 +362,7 @@ impl PaintSource for NodePattern {
         // Set up transformations to be determined by the contents units
 
         // Draw everything
-        let pattern_node = pattern.node.as_ref().unwrap().upgrade().unwrap();
+        let pattern_node = pattern.node.borrow().as_ref().unwrap().upgrade().unwrap();
         let pattern_cascaded = CascadedValues::new_from_node(&pattern_node);
         let pattern_values = pattern_cascaded.get();
 
@@ -419,7 +399,7 @@ mod tests {
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
-        let mut pat = Pattern::default();
+        let mut pat = PatternData::default();
 
         pat.resolve_from_defaults();
         assert!(pat.is_resolved());

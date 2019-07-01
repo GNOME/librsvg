@@ -1,7 +1,5 @@
 use cairo;
 use markup5ever::local_name;
-use std::cell::Cell;
-use std::cell::RefCell;
 use std::ops::Deref;
 
 use crate::drawing_ctx::DrawingCtx;
@@ -112,11 +110,11 @@ fn render_ellipse(
 
 #[derive(Default)]
 pub struct NodePath {
-    builder: RefCell<Option<PathBuilder>>,
+    builder: Option<PathBuilder>,
 }
 
 impl NodeTrait for NodePath {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == local_name!("d") {
                 let mut builder = PathBuilder::new();
@@ -128,7 +126,7 @@ impl NodeTrait for NodePath {
                     rsvg_log!("could not parse path: {}", e);
                 }
 
-                *self.builder.borrow_mut() = Some(builder);
+                self.builder = Some(builder);
             }
         }
 
@@ -144,7 +142,7 @@ impl NodeTrait for NodePath {
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
-        if let Some(ref builder) = *self.builder.borrow() {
+        if let Some(ref builder) = self.builder {
             render_path_builder(builder, draw_ctx, node, values, true, clipping)?;
         }
 
@@ -199,31 +197,31 @@ impl Parse for Points {
 }
 
 pub struct NodePoly {
-    points: RefCell<Option<Points>>,
+    points: Option<Points>,
     kind: PolyKind,
 }
 
 impl NodePoly {
     pub fn new_open() -> NodePoly {
         NodePoly {
-            points: RefCell::new(None),
+            points: None,
             kind: PolyKind::Open,
         }
     }
 
     pub fn new_closed() -> NodePoly {
         NodePoly {
-            points: RefCell::new(None),
+            points: None,
             kind: PolyKind::Closed,
         }
     }
 }
 
 impl NodeTrait for NodePoly {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == local_name!("points") {
-                *self.points.borrow_mut() = attr.parse(value.trim()).map(Some)?;
+                self.points = attr.parse(value.trim()).map(Some)?;
             }
         }
 
@@ -239,7 +237,7 @@ impl NodeTrait for NodePoly {
     ) -> Result<(), RenderingError> {
         let values = cascaded.get();
 
-        if let Some(ref points) = *self.points.borrow() {
+        if let Some(ref points) = self.points {
             let mut builder = PathBuilder::new();
 
             for (i, &(x, y)) in points.iter().enumerate() {
@@ -263,20 +261,20 @@ impl NodeTrait for NodePoly {
 
 #[derive(Default)]
 pub struct NodeLine {
-    x1: Cell<LengthHorizontal>,
-    y1: Cell<LengthVertical>,
-    x2: Cell<LengthHorizontal>,
-    y2: Cell<LengthVertical>,
+    x1: LengthHorizontal,
+    y1: LengthVertical,
+    x2: LengthHorizontal,
+    y2: LengthVertical,
 }
 
 impl NodeTrait for NodeLine {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("x1") => self.x1.set(attr.parse(value)?),
-                local_name!("y1") => self.y1.set(attr.parse(value)?),
-                local_name!("x2") => self.x2.set(attr.parse(value)?),
-                local_name!("y2") => self.y2.set(attr.parse(value)?),
+                local_name!("x1") => self.x1 = attr.parse(value)?,
+                local_name!("y1") => self.y1 = attr.parse(value)?,
+                local_name!("x2") => self.x2 = attr.parse(value)?,
+                local_name!("y2") => self.y2 = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -297,10 +295,10 @@ impl NodeTrait for NodeLine {
 
         let params = draw_ctx.get_view_params();
 
-        let x1 = self.x1.get().normalize(values, &params);
-        let y1 = self.y1.get().normalize(values, &params);
-        let x2 = self.x2.get().normalize(values, &params);
-        let y2 = self.y2.get().normalize(values, &params);
+        let x1 = self.x1.normalize(values, &params);
+        let y1 = self.y1.normalize(values, &params);
+        let x2 = self.x2.normalize(values, &params);
+        let y2 = self.y2.normalize(values, &params);
 
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
@@ -311,38 +309,38 @@ impl NodeTrait for NodeLine {
 
 #[derive(Default)]
 pub struct NodeRect {
-    // x, y, width, height
-    x: Cell<LengthHorizontal>,
-    y: Cell<LengthVertical>,
-    w: Cell<LengthHorizontal>,
-    h: Cell<LengthVertical>,
+    x: LengthHorizontal,
+    y: LengthVertical,
+    w: LengthHorizontal,
+    h: LengthVertical,
 
     // Radiuses for rounded corners
-    rx: Cell<Option<LengthHorizontal>>,
-    ry: Cell<Option<LengthVertical>>,
+    rx: Option<LengthHorizontal>,
+    ry: Option<LengthVertical>,
 }
 
 impl NodeTrait for NodeRect {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("x") => self.x.set(attr.parse(value)?),
-                local_name!("y") => self.y.set(attr.parse(value)?),
-                local_name!("width") => self
-                    .w
-                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
-                local_name!("height") => self
-                    .h
-                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
-                local_name!("rx") => self.rx.set(
-                    attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)
-                        .map(Some)?,
-                ),
-                local_name!("ry") => self.ry.set(
-                    attr.parse_and_validate(value, LengthVertical::check_nonnegative)
-                        .map(Some)?,
-                ),
-
+                local_name!("x") => self.x = attr.parse(value)?,
+                local_name!("y") => self.y = attr.parse(value)?,
+                local_name!("width") => {
+                    self.w = attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
+                }
+                local_name!("height") => {
+                    self.h = attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
+                }
+                local_name!("rx") => {
+                    self.rx = attr
+                        .parse_and_validate(value, LengthHorizontal::check_nonnegative)
+                        .map(Some)?
+                }
+                local_name!("ry") => {
+                    self.ry = attr
+                        .parse_and_validate(value, LengthVertical::check_nonnegative)
+                        .map(Some)?
+                }
                 _ => (),
             }
         }
@@ -361,15 +359,15 @@ impl NodeTrait for NodeRect {
 
         let params = draw_ctx.get_view_params();
 
-        let x = self.x.get().normalize(values, &params);
-        let y = self.y.get().normalize(values, &params);
-        let w = self.w.get().normalize(values, &params);
-        let h = self.h.get().normalize(values, &params);
+        let x = self.x.normalize(values, &params);
+        let y = self.y.normalize(values, &params);
+        let w = self.w.normalize(values, &params);
+        let h = self.h.normalize(values, &params);
 
         let mut rx;
         let mut ry;
 
-        match (self.rx.get(), self.ry.get()) {
+        match (self.rx, self.ry) {
             (None, None) => {
                 rx = 0.0;
                 ry = 0.0;
@@ -532,21 +530,20 @@ impl NodeTrait for NodeRect {
 
 #[derive(Default)]
 pub struct NodeCircle {
-    cx: Cell<LengthHorizontal>,
-    cy: Cell<LengthVertical>,
-    r: Cell<LengthBoth>,
+    cx: LengthHorizontal,
+    cy: LengthVertical,
+    r: LengthBoth,
 }
 
 impl NodeTrait for NodeCircle {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("cx") => self.cx.set(attr.parse(value)?),
-                local_name!("cy") => self.cy.set(attr.parse(value)?),
-                local_name!("r") => self
-                    .r
-                    .set(attr.parse_and_validate(value, LengthBoth::check_nonnegative)?),
-
+                local_name!("cx") => self.cx = attr.parse(value)?,
+                local_name!("cy") => self.cy = attr.parse(value)?,
+                local_name!("r") => {
+                    self.r = attr.parse_and_validate(value, LengthBoth::check_nonnegative)?
+                }
                 _ => (),
             }
         }
@@ -565,9 +562,9 @@ impl NodeTrait for NodeCircle {
 
         let params = draw_ctx.get_view_params();
 
-        let cx = self.cx.get().normalize(values, &params);
-        let cy = self.cy.get().normalize(values, &params);
-        let r = self.r.get().normalize(values, &params);
+        let cx = self.cx.normalize(values, &params);
+        let cy = self.cy.normalize(values, &params);
+        let r = self.r.normalize(values, &params);
 
         render_ellipse(cx, cy, r, r, draw_ctx, node, values, clipping)
     }
@@ -575,25 +572,24 @@ impl NodeTrait for NodeCircle {
 
 #[derive(Default)]
 pub struct NodeEllipse {
-    cx: Cell<LengthHorizontal>,
-    cy: Cell<LengthVertical>,
-    rx: Cell<LengthHorizontal>,
-    ry: Cell<LengthVertical>,
+    cx: LengthHorizontal,
+    cy: LengthVertical,
+    rx: LengthHorizontal,
+    ry: LengthVertical,
 }
 
 impl NodeTrait for NodeEllipse {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("cx") => self.cx.set(attr.parse(value)?),
-                local_name!("cy") => self.cy.set(attr.parse(value)?),
-                local_name!("rx") => self
-                    .rx
-                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
-                local_name!("ry") => self
-                    .ry
-                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
-
+                local_name!("cx") => self.cx = attr.parse(value)?,
+                local_name!("cy") => self.cy = attr.parse(value)?,
+                local_name!("rx") => {
+                    self.rx = attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
+                }
+                local_name!("ry") => {
+                    self.ry = attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
+                }
                 _ => (),
             }
         }
@@ -612,10 +608,10 @@ impl NodeTrait for NodeEllipse {
 
         let params = draw_ctx.get_view_params();
 
-        let cx = self.cx.get().normalize(values, &params);
-        let cy = self.cy.get().normalize(values, &params);
-        let rx = self.rx.get().normalize(values, &params);
-        let ry = self.ry.get().normalize(values, &params);
+        let cx = self.cx.normalize(values, &params);
+        let cy = self.cy.normalize(values, &params);
+        let rx = self.rx.normalize(values, &params);
+        let ry = self.ry.normalize(values, &params);
 
         render_ellipse(cx, cy, rx, ry, draw_ctx, node, values, clipping)
     }

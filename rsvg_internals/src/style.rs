@@ -4,15 +4,13 @@ use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::text::NodeChars;
 
-use std::cell::RefCell;
-
 /// Represents a <style> node.
 ///
 /// It does not render itself, and just holds CSS stylesheet information for the rest of
 /// the code to use.
 #[derive(Default)]
 pub struct NodeStyle {
-    type_: RefCell<Option<String>>,
+    type_: Option<String>,
 }
 
 impl NodeStyle {
@@ -26,12 +24,7 @@ impl NodeStyle {
         // "contentStyleType" attribute of the svg element, which in turn
         // defaults to "text/css".
 
-        let have_css = self
-            .type_
-            .borrow()
-            .as_ref()
-            .map(|t| t == "text/css")
-            .unwrap_or(true);
+        let have_css = self.type_.as_ref().map(|t| t == "text/css").unwrap_or(true);
 
         if have_css {
             node.children()
@@ -51,10 +44,10 @@ impl NodeStyle {
 }
 
 impl NodeTrait for NodeStyle {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == local_name!("type") {
-                *self.type_.borrow_mut() = Some(value.to_string());
+                self.type_ = Some(value.to_string());
             }
         }
 

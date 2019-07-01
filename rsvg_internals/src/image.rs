@@ -1,7 +1,6 @@
 use cairo;
 use cairo::{PatternTrait, Rectangle};
 use markup5ever::local_name;
-use std::cell::{Cell, RefCell};
 
 use crate::allowed_url::Href;
 use crate::aspect_ratio::AspectRatio;
@@ -18,28 +17,27 @@ use crate::viewbox::ViewBox;
 
 #[derive(Default)]
 pub struct NodeImage {
-    aspect: Cell<AspectRatio>,
-    x: Cell<LengthHorizontal>,
-    y: Cell<LengthVertical>,
-    w: Cell<LengthHorizontal>,
-    h: Cell<LengthVertical>,
-    href: RefCell<Option<Href>>,
+    x: LengthHorizontal,
+    y: LengthVertical,
+    w: LengthHorizontal,
+    h: LengthVertical,
+    aspect: AspectRatio,
+    href: Option<Href>,
 }
 
 impl NodeTrait for NodeImage {
-    fn set_atts(&self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("x") => self.x.set(attr.parse(value)?),
-                local_name!("y") => self.y.set(attr.parse(value)?),
-                local_name!("width") => self
-                    .w
-                    .set(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?),
-                local_name!("height") => self
-                    .h
-                    .set(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?),
-
-                local_name!("preserveAspectRatio") => self.aspect.set(attr.parse(value)?),
+                local_name!("x") => self.x = attr.parse(value)?,
+                local_name!("y") => self.y = attr.parse(value)?,
+                local_name!("width") => {
+                    self.w = attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
+                }
+                local_name!("height") => {
+                    self.h = attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
+                }
+                local_name!("preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
                 local_name!("xlink:href") | local_name!("path") => {
@@ -47,7 +45,7 @@ impl NodeTrait for NodeImage {
                         NodeError::parse_error(attr, ParseError::new("could not parse href"))
                     })?;
 
-                    *self.href.borrow_mut() = Some(href);
+                    self.href = Some(href);
                 }
 
                 _ => (),
@@ -71,25 +69,23 @@ impl NodeTrait for NodeImage {
         let values = cascaded.get();
         let params = draw_ctx.get_view_params();
 
-        let x = self.x.get().normalize(values, &params);
-        let y = self.y.get().normalize(values, &params);
-        let w = self.w.get().normalize(values, &params);
-        let h = self.h.get().normalize(values, &params);
+        let x = self.x.normalize(values, &params);
+        let y = self.y.normalize(values, &params);
+        let w = self.w.normalize(values, &params);
+        let h = self.h.normalize(values, &params);
 
         if w.approx_eq_cairo(&0.0) || h.approx_eq_cairo(&0.0) {
             return Ok(());
         }
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-            let surface = if let Some(Href::PlainUrl(ref url)) = *self.href.borrow() {
+            let surface = if let Some(Href::PlainUrl(ref url)) = self.href {
                 dc.lookup_image(&url)?
             } else {
                 return Ok(());
             };
 
-            let aspect = self.aspect.get();
-
-            let clip_mode = if !values.is_overflow() && aspect.is_slice() {
+            let clip_mode = if !values.is_overflow() && self.aspect.is_slice() {
                 Some(ClipMode::ClipToViewport)
             } else {
                 None
@@ -121,7 +117,7 @@ impl NodeTrait for NodeImage {
                 if let Some(_params) = dc.push_new_viewport(
                     Some(ViewBox::new(0.0, 0.0, image_width, image_height)),
                     &Rectangle::new(x, y, w, h),
-                    aspect,
+                    self.aspect,
                     clip_mode,
                 ) {
                     // We need to set extend appropriately, so can't use cr.set_source_surface().

@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::cmp::{max, min};
 
 use cairo::{self, ImageSurface, MatrixTrait};
@@ -31,8 +30,8 @@ enum Operator {
 /// The `feMorphology` filter primitive.
 pub struct Morphology {
     base: PrimitiveWithInput,
-    operator: Cell<Operator>,
-    radius: Cell<(f64, f64)>,
+    operator: Operator,
+    radius: (f64, f64),
 }
 
 impl Default for Morphology {
@@ -41,8 +40,8 @@ impl Default for Morphology {
     fn default() -> Morphology {
         Morphology {
             base: PrimitiveWithInput::new::<Self>(),
-            operator: Cell::new(Operator::Erode),
-            radius: Cell::new((0.0, 0.0)),
+            operator: Operator::Erode,
+            radius: (0.0, 0.0),
         }
     }
 }
@@ -50,14 +49,14 @@ impl Default for Morphology {
 impl NodeTrait for Morphology {
     impl_node_as_filter!();
 
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("operator") => self.operator.set(Operator::parse(attr, value)?),
-                local_name!("radius") => self.radius.set(
-                    parsers::number_optional_number(value)
+                local_name!("operator") => self.operator = Operator::parse(attr, value)?,
+                local_name!("radius") => {
+                    self.radius = parsers::number_optional_number(value)
                         .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
@@ -65,8 +64,8 @@ impl NodeTrait for Morphology {
                             } else {
                                 Err(NodeError::value_error(attr, "radius cannot be negative"))
                             }
-                        })?,
-                ),
+                        })?
+                }
                 _ => (),
             }
         }
@@ -89,14 +88,12 @@ impl Filter for Morphology {
             .add_input(&input)
             .into_irect(draw_ctx);
 
-        let (rx, ry) = self.radius.get();
+        let (rx, ry) = self.radius;
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);
 
         // The radii can become negative here due to the transform.
         let rx = rx.abs();
         let ry = ry.abs();
-
-        let operator = self.operator.get();
 
         let mut output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
@@ -118,7 +115,7 @@ impl Filter for Morphology {
                 };
 
                 // Compute the new pixel values.
-                let initial = match operator {
+                let initial = match self.operator {
                     Operator::Erode => u8::max_value(),
                     Operator::Dilate => u8::min_value(),
                 };
@@ -133,7 +130,7 @@ impl Filter for Morphology {
                 for (_x, _y, pixel) in
                     PixelRectangle::new(&input.surface(), bounds, kernel_bounds, EdgeMode::None)
                 {
-                    let op = match operator {
+                    let op = match self.operator {
                         Operator::Erode => min,
                         Operator::Dilate => max,
                     };
@@ -149,7 +146,7 @@ impl Filter for Morphology {
         }
 
         Ok(FilterResult {
-            name: self.base.result.borrow().clone(),
+            name: self.base.result.clone(),
             output: FilterOutput {
                 surface: SharedImageSurface::new(output_surface, input.surface().surface_type())?,
                 bounds,

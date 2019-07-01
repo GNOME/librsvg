@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::cmp::min;
 use std::f64;
 
@@ -28,7 +27,7 @@ const MAXIMUM_KERNEL_SIZE: usize = 500;
 /// The `feGaussianBlur` filter primitive.
 pub struct GaussianBlur {
     base: PrimitiveWithInput,
-    std_deviation: Cell<(f64, f64)>,
+    std_deviation: (f64, f64),
 }
 
 impl Default for GaussianBlur {
@@ -37,7 +36,7 @@ impl Default for GaussianBlur {
     fn default() -> GaussianBlur {
         GaussianBlur {
             base: PrimitiveWithInput::new::<Self>(),
-            std_deviation: Cell::new((0.0, 0.0)),
+            std_deviation: (0.0, 0.0),
         }
     }
 }
@@ -45,13 +44,13 @@ impl Default for GaussianBlur {
 impl NodeTrait for GaussianBlur {
     impl_node_as_filter!();
 
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("stdDeviation") => self.std_deviation.set(
-                    parsers::number_optional_number(value)
+                local_name!("stdDeviation") => {
+                    self.std_deviation = parsers::number_optional_number(value)
                         .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
@@ -59,8 +58,8 @@ impl NodeTrait for GaussianBlur {
                             } else {
                                 Err(NodeError::value_error(attr, "values can't be negative"))
                             }
-                        })?,
-                ),
+                        })?
+                }
                 _ => (),
             }
         }
@@ -212,7 +211,7 @@ impl Filter for GaussianBlur {
             .add_input(&input)
             .into_irect(draw_ctx);
 
-        let (std_x, std_y) = self.std_deviation.get();
+        let (std_x, std_y) = self.std_deviation;
         let (std_x, std_y) = ctx.paffine().transform_distance(std_x, std_y);
 
         // The deviation can become negative here due to the transform.
@@ -248,7 +247,7 @@ impl Filter for GaussianBlur {
         };
 
         Ok(FilterResult {
-            name: self.base.result.borrow().clone(),
+            name: self.base.result.clone(),
             output: FilterOutput {
                 surface: output_surface,
                 bounds,

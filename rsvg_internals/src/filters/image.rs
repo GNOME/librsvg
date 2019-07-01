@@ -1,5 +1,3 @@
-use std::cell::{Cell, RefCell};
-
 use cairo::{self, ImageSurface, MatrixTrait, PatternTrait, Rectangle};
 use markup5ever::local_name;
 
@@ -21,8 +19,8 @@ use super::{Filter, FilterError, Primitive};
 /// The `feImage` filter primitive.
 pub struct Image {
     base: Primitive,
-    aspect: Cell<AspectRatio>,
-    href: RefCell<Option<Href>>,
+    aspect: AspectRatio,
+    href: Option<Href>,
 }
 
 impl Default for Image {
@@ -31,8 +29,8 @@ impl Default for Image {
     fn default() -> Image {
         Image {
             base: Primitive::new::<Self>(),
-            aspect: Cell::new(AspectRatio::default()),
-            href: RefCell::new(None),
+            aspect: AspectRatio::default(),
+            href: None,
         }
     }
 }
@@ -128,8 +126,7 @@ impl Image {
         )?;
 
         // TODO: this goes through a f64->i32->f64 conversion.
-        let aspect = self.aspect.get();
-        let (x, y, w, h) = aspect.compute(
+        let (x, y, w, h) = self.aspect.compute(
             &ViewBox::new(
                 0.0,
                 0.0,
@@ -178,12 +175,12 @@ impl Image {
 impl NodeTrait for Image {
     impl_node_as_filter!();
 
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("preserveAspectRatio") => self.aspect.set(attr.parse(value)?),
+                local_name!("preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
                 local_name!("xlink:href") | local_name!("path") => {
@@ -191,7 +188,7 @@ impl NodeTrait for Image {
                         NodeError::parse_error(attr, ParseError::new("could not parse href"))
                     })?;
 
-                    *self.href.borrow_mut() = Some(href);
+                    self.href = Some(href);
                 }
 
                 _ => (),
@@ -212,11 +209,8 @@ impl Filter for Image {
         let bounds_builder = self.base.get_bounds(ctx);
         let bounds = bounds_builder.into_irect(draw_ctx);
 
-        let href_borrow = self.href.borrow();
-        let href_opt = href_borrow.as_ref();
-
-        if let Some(href) = href_opt {
-            let output_surface = match *href {
+        if let Some(href) = self.href.as_ref() {
+            let output_surface = match href {
                 Href::PlainUrl(_) => {
                     let unclipped_bounds = bounds_builder.into_irect_without_clipping(draw_ctx);
                     self.render_external_image(ctx, draw_ctx, &bounds, &unclipped_bounds, href)?
@@ -225,7 +219,7 @@ impl Filter for Image {
             };
 
             Ok(FilterResult {
-                name: self.base.result.borrow().clone(),
+                name: self.base.result.clone(),
                 output: FilterOutput {
                     surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
                     bounds,

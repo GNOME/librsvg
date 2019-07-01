@@ -117,7 +117,7 @@ impl FilterContext {
         let node_data = filter_node.borrow();
         let filter = node_data.get_impl::<NodeFilter>();
 
-        let affine = match filter.filterunits.get() {
+        let affine = match filter.filterunits {
             CoordUnits::UserSpaceOnUse => cr_affine,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
@@ -132,7 +132,7 @@ impl FilterContext {
             }
         };
 
-        let paffine = match filter.primitiveunits.get() {
+        let paffine = match filter.primitiveunits {
             CoordUnits::UserSpaceOnUse => cr_affine,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
@@ -310,7 +310,7 @@ impl FilterContext {
         let filter = node_data.get_impl::<NodeFilter>();
 
         // See comments in compute_effects_region() for how this works.
-        if filter.primitiveunits.get() == CoordUnits::ObjectBoundingBox {
+        if filter.primitiveunits == CoordUnits::ObjectBoundingBox {
             draw_ctx.push_view_box(1.0, 1.0)
         } else {
             draw_ctx.get_view_params()

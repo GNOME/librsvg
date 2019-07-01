@@ -1,4 +1,3 @@
-use std::cell::{Cell, Ref, RefCell};
 use std::cmp::min;
 
 use cairo::{self, ImageSurface};
@@ -48,18 +47,18 @@ enum FunctionType {
 /// The `<feFuncX>` element (X is R, G, B or A).
 pub struct FuncX {
     channel: Channel,
-    function_type: Cell<FunctionType>,
-    table_values: RefCell<Vec<f64>>,
-    slope: Cell<f64>,
-    intercept: Cell<f64>,
-    amplitude: Cell<f64>,
-    exponent: Cell<f64>,
-    offset: Cell<f64>,
+    function_type: FunctionType,
+    table_values: Vec<f64>,
+    slope: f64,
+    intercept: f64,
+    amplitude: f64,
+    exponent: f64,
+    offset: f64,
 }
 
 /// The compute function parameters.
 struct FunctionParameters<'a> {
-    table_values: Ref<'a, Vec<f64>>,
+    table_values: &'a Vec<f64>,
     slope: f64,
     intercept: f64,
     amplitude: f64,
@@ -127,13 +126,13 @@ impl Default for FuncX {
     fn default() -> Self {
         Self {
             channel: Channel::R,
-            function_type: Cell::new(FunctionType::Identity),
-            table_values: RefCell::new(Vec::new()),
-            slope: Cell::new(1f64),
-            intercept: Cell::new(0f64),
-            amplitude: Cell::new(1f64),
-            exponent: Cell::new(1f64),
-            offset: Cell::new(0f64),
+            function_type: FunctionType::Identity,
+            table_values: Vec::new(),
+            slope: 1.0,
+            intercept: 0.0,
+            amplitude: 1.0,
+            exponent: 1.0,
+            offset: 0.0,
         }
     }
 }
@@ -179,19 +178,19 @@ impl FuncX {
     #[inline]
     fn function_parameters(&self) -> FunctionParameters<'_> {
         FunctionParameters {
-            table_values: self.table_values.borrow(),
-            slope: self.slope.get(),
-            intercept: self.intercept.get(),
-            amplitude: self.amplitude.get(),
-            exponent: self.exponent.get(),
-            offset: self.offset.get(),
+            table_values: &self.table_values,
+            slope: self.slope,
+            intercept: self.intercept,
+            amplitude: self.amplitude,
+            exponent: self.exponent,
+            offset: self.offset,
         }
     }
 
     /// Returns the component transfer function.
     #[inline]
     fn function(&self) -> Function {
-        match self.function_type.get() {
+        match self.function_type {
             FunctionType::Identity => identity,
             FunctionType::Table => table,
             FunctionType::Discrete => discrete,
@@ -205,17 +204,17 @@ impl NodeTrait for ComponentTransfer {
     impl_node_as_filter!();
 
     #[inline]
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)
     }
 }
 
 impl NodeTrait for FuncX {
     #[inline]
-    fn set_atts(&self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("type") => self.function_type.set(FunctionType::parse(attr, value)?),
+                local_name!("type") => self.function_type = FunctionType::parse(attr, value)?,
                 local_name!("tableValues") => {
                     let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
                         .map_err(|err| {
@@ -225,33 +224,29 @@ impl NodeTrait for FuncX {
                             panic!("unexpected number list error");
                         }
                     })?;
-                    self.table_values.replace(v);
+                    self.table_values = v;
                 }
-                local_name!("slope") => self.slope.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("intercept") => self.intercept.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("amplitude") => self.amplitude.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("exponent") => self.exponent.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
-                local_name!("offset") => self.offset.set(
-                    parsers::number(value).attribute(attr)?,
-                ),
+                local_name!("slope") => self.slope = parsers::number(value).attribute(attr)?,
+                local_name!("intercept") => {
+                    self.intercept = parsers::number(value).attribute(attr)?
+                }
+                local_name!("amplitude") => {
+                    self.amplitude = parsers::number(value).attribute(attr)?
+                }
+                local_name!("exponent") => {
+                    self.exponent = parsers::number(value).attribute(attr)?
+                }
+                local_name!("offset") => self.offset = parsers::number(value).attribute(attr)?,
                 _ => (),
             }
         }
 
-        // The table function type with empty table_values is considered an identity
-        // function.
-        match self.function_type.get() {
+        // The table function type with empty table_values is considered
+        // an identity function.
+        match self.function_type {
             FunctionType::Table | FunctionType::Discrete => {
-                if self.table_values.borrow().is_empty() {
-                    self.function_type.set(FunctionType::Identity);
+                if self.table_values.is_empty() {
+                    self.function_type = FunctionType::Identity;
                 }
             }
             _ => (),
@@ -383,7 +378,7 @@ impl Filter for ComponentTransfer {
         }
 
         Ok(FilterResult {
-            name: self.base.result.borrow().clone(),
+            name: self.base.result.clone(),
             output: FilterOutput {
                 surface: SharedImageSurface::new(output_surface, input.surface().surface_type())?,
                 bounds,

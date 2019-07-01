@@ -1,5 +1,3 @@
-use std::cell::{Cell, RefCell};
-
 use cairo;
 use markup5ever::{local_name, LocalName};
 
@@ -27,8 +25,8 @@ enum Mode {
 /// The `feBlend` filter primitive.
 pub struct Blend {
     base: PrimitiveWithInput,
-    in2: RefCell<Option<Input>>,
-    mode: Cell<Mode>,
+    in2: Option<Input>,
+    mode: Mode,
 }
 
 impl Default for Blend {
@@ -37,8 +35,8 @@ impl Default for Blend {
     fn default() -> Blend {
         Blend {
             base: PrimitiveWithInput::new::<Self>(),
-            in2: RefCell::new(None),
-            mode: Cell::new(Mode::Normal),
+            in2: None,
+            mode: Mode::Normal,
         }
     }
 }
@@ -46,15 +44,15 @@ impl Default for Blend {
 impl NodeTrait for Blend {
     impl_node_as_filter!();
 
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("in2") => {
-                    self.in2.replace(Some(Input::parse(attr, value)?));
+                    self.in2 = Some(Input::parse(attr, value)?);
                 }
-                local_name!("mode") => self.mode.set(Mode::parse(attr, value)?),
+                local_name!("mode") => self.mode = Mode::parse(attr, value)?,
                 _ => (),
             }
         }
@@ -71,7 +69,7 @@ impl Filter for Blend {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, draw_ctx)?;
-        let input_2 = ctx.get_input(draw_ctx, self.in2.borrow().as_ref())?;
+        let input_2 = ctx.get_input(draw_ctx, self.in2.as_ref())?;
         let bounds = self
             .base
             .get_bounds(ctx)
@@ -108,12 +106,12 @@ impl Filter for Blend {
             cr.clip();
 
             input.surface().set_as_source_surface(&cr, 0f64, 0f64);
-            cr.set_operator(self.mode.get().into());
+            cr.set_operator(self.mode.into());
             cr.paint();
         }
 
         Ok(FilterResult {
-            name: self.base.result.borrow().clone(),
+            name: self.base.result.clone(),
             output: FilterOutput {
                 surface: SharedImageSurface::new(output_surface, surface_type)?,
                 bounds,

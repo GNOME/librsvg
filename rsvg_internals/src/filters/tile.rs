@@ -26,7 +26,7 @@ impl Default for Tile {
 impl NodeTrait for Tile {
     impl_node_as_filter!();
 
-    fn set_atts(&self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)
     }
 }
@@ -98,7 +98,7 @@ impl Filter for Tile {
         };
 
         Ok(FilterResult {
-            name: self.base.result.borrow().clone(),
+            name: self.base.result.clone(),
             output: FilterOutput {
                 surface: output_surface,
                 bounds,
