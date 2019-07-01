@@ -732,7 +732,7 @@ rsvg_handle_get_desc (RsvgHandle *handle)
 /**
  * rsvg_handle_render_cairo_sub:
  * @handle: A #RsvgHandle
- * @cr: A Cairo renderer
+ * @cr: A Cairo context
  * @id: (nullable): An element's id within the SVG, or %NULL to render
  *   the whole SVG. For example, if you have a layer called "layer1"
  *   that you wish to render, pass "##layer1" as the id.
@@ -741,6 +741,11 @@ rsvg_handle_get_desc (RsvgHandle *handle)
  * respect to the @cr's current transformation:  for example, if the @cr has a
  * rotated current transformation matrix, the whole SVG will be rotated in the
  * rendered version.
+ *
+ * Note that @cr must be a Cairo context that is not in an error state, that is,
+ * cairo_status() must return #CAIRO_STATUS_SUCCESS for it.  Cairo can set a
+ * context to be in an error state in various situations, for example, if it was
+ * passed an invalid matrix or if it was created for an invalid surface.
  *
  * Returns: %TRUE if drawing succeeded; %FALSE otherwise.
  * Since: 2.14
@@ -757,12 +762,17 @@ rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id)
 /**
  * rsvg_handle_render_cairo:
  * @handle: A #RsvgHandle
- * @cr: A Cairo renderer
+ * @cr: A Cairo context
  *
  * Draws a loaded SVG handle to a Cairo context.  Drawing will occur with
  * respect to the @cr's current transformation:  for example, if the @cr has a
  * rotated current transformation matrix, the whole SVG will be rotated in the
  * rendered version.
+ *
+ * Note that @cr must be a Cairo context that is not in an error state, that is,
+ * cairo_status() must return #CAIRO_STATUS_SUCCESS for it.  Cairo can set a
+ * context to be in an error state in various situations, for example, if it was
+ * passed an invalid matrix or if it was created for an invalid surface.
  *
  * Returns: %TRUE if drawing succeeded; %FALSE otherwise.
  * Since: 2.14
