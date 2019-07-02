@@ -11,10 +11,21 @@ Version 2.45.7
   isolating a test case and to Evgeniy Reizner for providing a more
   minimal one.
 
+- Fix #481: Don't ignore the first x/y/dx/dy in text/tspan elements if
+  there is more than one position specified.
+
 - #452 - In librsvg_crate, SvgHandle now has a ::has_element_with_id()
   method.
 
 - rsvg-convert now catches the case where the SVG has no dimensions.
+
+- Replaced the Visual Studio build infrastructure for NMake
+  (Chun-wei Fan).
+
+- This version no longer contains the rsvg-view program, so librsvg no
+  longer depends on GTK.  Please see
+  https://people.gnome.org/~federico/blog/removing-rsvg-view.html for
+  the rationale behind this change.
 
 - The poly element no longer supports "verts" as an alias for the
   "points" attribute.  The "verts" name was only used in SVG pre-1.0,
@@ -24,9 +35,17 @@ Version 2.45.7
   markup5ever and rust-selectors crates.  This is in line with
   gradually replacing libcroco with a Rust-only CSS machinery.
 
-- Lots and lots of refactoring and cleanups (Paolo Borelli).
+- Lots and lots of refactoring and cleanups:  use the rctree crate
+  instead of our own tree representation; remove interior mutability
+  in element structs; make the gradients and patterns code less
+  repetitive (Paolo Borelli).
 
 - Update some dependencies (Bastien Orivel).
+
+- New section in COMPILING.md about cross-compilation to Windows using
+  mingw (Takuro Ashie)
+
+- Fix static linking and Windows builds (Kleis Auke Wolthuizen).
 
 Version 2.45.6
 - Librsvg now requires Rust 1.30.0 or later.
