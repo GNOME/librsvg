@@ -17,4 +17,3 @@ librsvg_c_srcs =	\
 	$(NULL)
 
 rsvg_convert_srcs = rsvg-convert.c
-rsvg_view_srcs = rsvg-view.c
