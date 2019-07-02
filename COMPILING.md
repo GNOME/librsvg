@@ -46,10 +46,6 @@ minimum version is listed here; you may use a newer version instead.
 * Libxml2 2.9.0
 * Pango 1.38.0
 
-**Optional dependencies:**
-
-* GTK+ 3.10.0 if you want the `rsvg-view-3` program
-
 The following sections describe how to install these dependencies on
 several systems.
 
@@ -64,7 +60,7 @@ As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
 apt-get install -y gcc make rustc cargo \
 automake autoconf libtool gettext itstool \
 libgdk-pixbuf2.0-dev libgirepository1.0-dev \
-gtk-doc-tools git libgtk-3-dev \
+gtk-doc-tools git \
 libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
 ```
 
@@ -80,7 +76,7 @@ PATH="$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0"
 dnf install -y gcc rust rust-std-static cargo make \
 automake autoconf libtool gettext itstool \
 gdk-pixbuf2-devel gobject-introspection-devel \
-gtk-doc git redhat-rpm-config gtk3-devel \
+gtk-doc git redhat-rpm-config \
 libxml2-devel libcroco-devel cairo-devel pango-devel
 ```
 
@@ -89,7 +85,7 @@ libxml2-devel libcroco-devel cairo-devel pango-devel
 ```sh
 zypper install -y gcc rust rust-std cargo make \
 automake autoconf libtool gettext itstool git \
-gtk-doc gobject-introspection-devel gtk3-devel \
+gtk-doc gobject-introspection-devel \
 libxml2-devel libcroco-devel cairo-devel \
 pango-devel gdk-pixbuf-devel
 ```
