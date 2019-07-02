@@ -79,7 +79,6 @@ $(GDK_PIXBUF_SVG_LOADER): $(LIBRSVG_LIB) $(OUTDIR)\rsvg-gdk-pixbuf-loader\io-svg
 # <<
 # 	@-if exist $@.manifest mt /manifest $@.manifest /outputresource:$@;1
 $(OUTDIR)\rsvg-convert.exe: $(LIBRSVG_LIB) $(OUTDIR)\rsvg-tools\rsvg-convert.obj
-$(OUTDIR)\rsvg-view-3.exe: $(LIBRSVG_LIB) $(OUTDIR)\rsvg-tools\rsvg-view.obj
 
 $(OUTDIR)\rsvg-dimensions.exe:	\
 	$(LIBRSVG_LIB)	\
@@ -92,7 +91,6 @@ $(OUTDIR)\test-performance.exe:	\
 	$(OUTDIR)\rsvg-tools\rsvg-tools-main.obj
 
 $(OUTDIR)\rsvg-convert.exe	\
-$(OUTDIR)\rsvg-view-3.exe	\
 $(OUTDIR)\rsvg-dimensions.exe	\
 $(OUTDIR)\test-performance.exe:
 	link $(LDFLAGS) $** $(TOOLS_DEP_LIBS) /out:$@

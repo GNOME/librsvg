@@ -73,7 +73,6 @@ FREETYPE2_REQUIRED=20.0.14
 GDK_PIXBUF_REQUIRED=2.20
 GIO_REQUIRED=2.24.0
 GLIB_REQUIRED=2.48.0
-GTK3_REQUIRED=3.10.0
 LIBXML_REQUIRED=2.9.0
 PANGO_REQUIRED=1.38.0
 
@@ -185,22 +184,6 @@ case "$host" in
 esac
 
 GLIB_TESTS
-
-# ===========================================================================
-# GTK
-# ===========================================================================
-
-PKG_CHECK_MODULES([GTK3],[gtk+-3.0 >= $GTK3_REQUIRED],[have_gtk_3=yes],[have_gtk_3=no])
-
-GTK3_BINARY_VERSION=
-
-if test "$have_gtk_3" = "yes"; then
-    GTK3_BINARY_VERSION="`$PKG_CONFIG --variable=gtk_binary_version gtk+-3.0`"
-fi
-
-AC_SUBST([GTK3_BINARY_VERSION])
-
-AM_CONDITIONAL([HAVE_GTK_3],[test "$have_gtk_3" = "yes"])
 
 dnl ===========================================================================
 dnl GDK-Pixbuf SVG loader
@@ -420,7 +403,6 @@ librsvg-$VERSION
 	Build introspectable bindings:  ${found_introspection}
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
-        GTK+ $GTK3_REQUIRED or later:           ${have_gtk_3}
 	Build miscellaneous tools:      ${build_misc_tools}
 	Build HTML documentation:       ${enable_gtk_doc}
 "

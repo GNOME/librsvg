@@ -17,7 +17,6 @@ unpacked from a tarball.  For building, you will need the following libraries
 -libcroco
 -Pango
 -Gdk-Pixbuf
--GTK+3.x (optional, for building rsvg-view-3.exe)
 -GObject-Introspection (optional, for building/using introspection files)
 
 
@@ -61,8 +60,7 @@ for all targets.
 
 <target> is as follows:
 -(not specified): builds the librsvg DLL and tools and GDK-Pixbuf SVG loader.
-                  If `NO_GTK=1` is not specified, this will build the rsvg-view-3.exe
-                  tool; and if `INTROSPECTION=1` is specified, this will also build
+                  If `INTROSPECTION=1` is specified, this will also build
                   the introspection files (.gir/.typelib) for librsvg.
 -all: see (not specified).
 -tests: Same as (not specified) but also builds the test programs in $(srcroot)\tests
@@ -100,7 +98,6 @@ for all targets.
 
 <other_options> is as follows, activate the options using <option>=1:
 -INTROSPECTION: Build the introspection files.  Please see notes above.
--NO_GTK: Do not build the rsvg-view-3 tool.  This removes the need for GTK+3.x.
 -USE_PANGOFT2: Build the test programs with PangoFT2 support, which will enable
                more features to be tested.  This will additionally require Pango
                built with FreeType support, meaning that HarfBuzz, FontConfig and

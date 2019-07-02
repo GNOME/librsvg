@@ -129,24 +129,6 @@ RSVG_EXTRA_TOOLS =			\
 	$(OUTDIR)\rsvg-dimensions.exe	\
 	$(OUTDIR)\test-performance.exe
 
-# Build rsvg-view-3, which requires GTK
-!ifndef NO_GTK
-RSVG_TOOLS =				\
-	$(RSVG_TOOLS)			\
-	$(OUTDIR)\rsvg-view-3.exe
-
-TOOLS_DEP_INCLUDES =			\
-	/I$(INCLUDEDIR)\gtk-3.0		\
-	/I$(INCLUDEDIR)\pango-1.0	\
-	/I$(INCLUDEDIR)\atk-1.0		\
-	$(TOOLS_DEP_INCLUDES)
-
-TOOLS_DEP_LIBS =		\
-	gtk-3.0.lib		\
-	gdk-3.0.lib		\
-	$(TOOLS_DEP_LIBS)
-!endif
-
 # Build Introspection if requested
 EXTRA_TARGETS = $(GDK_PIXBUF_SVG_LOADER)
 !ifdef INTROSPECTION

@@ -74,9 +74,6 @@ help:
 	@echo introspection files.
 	@echo ======
 	@echo.
-	@echo NO_GTK:
-	@echo Disable GTK support, which will prevent rsvg-view-3.exe from being built.
-	@echo.
 	@echo INTROSPECTION:
 	@echo Enable the build of introspection files requires the GNOME
 	@echo gobject-introspection libraries and tools.  Please see the PYTHON section

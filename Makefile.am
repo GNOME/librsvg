@@ -7,9 +7,6 @@ lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 noinst_LTLIBRARIES = librsvg_internals.la
 
 bin_PROGRAMS = rsvg-convert
-if HAVE_GTK_3
-bin_PROGRAMS += rsvg-view-3
-endif
 
 include rsvg-c-srcs.mk
 
@@ -239,33 +236,6 @@ rsvg_convert_LDADD = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
 	$(RSVG_CONVERT_LIBS) \
 	$(LIBM)
-
-rsvg_view_3_SOURCES =			\
-	$(rsvg_view_srcs)
-
-rsvg_view_3_CPPFLAGS = \
-	-I$(top_srcdir) 			\
-	-I$(top_builddir)/librsvg 		\
-	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
-	$(AM_CPPFLAGS)
-
-rsvg_view_3_CFLAGS =\
-	$(GTK3_CFLAGS)		\
-	$(LIBRSVG_CFLAGS) 	\
-	$(AM_CFLAGS)
-
-rsvg_view_3_LDFLAGS =
-
-rsvg_view_3_LDADD = \
-	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
-	$(GTK3_LIBS)		\
-	$(LIBRSVG_LIBS)		\
-	$(GTHREAD_LIBS)		\
-	$(LIBM)
-
-if OS_WIN32
-rsvg_view_3_LDFLAGS += -mwindows
-endif # OS_WIN32
 
 dist_doc_DATA =				\
 	COMPILING.md			\
