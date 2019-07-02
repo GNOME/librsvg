@@ -12,8 +12,6 @@ AM_CPPFLAGS =				\
 	-I$(top_builddir) 		\
 	-I$(top_builddir)/librsvg	\
 	$(LIBRSVG_CFLAGS) 		\
-	$(GTK_CFLAGS)			\
-	$(GDK_X11_CFLAGS)		\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""
 
