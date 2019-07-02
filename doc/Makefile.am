@@ -98,8 +98,6 @@ GTKDOC_CFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
 	$(LIBRSVG_CFLAGS) \
-	$(GTK_CFLAGS) \
-	$(GDK_X11_CFLAGS) \
 	$(WARN_CFLAGS) \
 	$(DISABLE_DEPRECATED) \
 	$(AM_CFLAGS)
@@ -107,8 +105,7 @@ GTKDOC_CFLAGS = \
 GTKDOC_LIBS = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
 	$(LIBRSVG_LIBS) \
-	$(GTHREAD_LIBS) \
-	$(GTK_LIBS)
+	$(GTHREAD_LIBS)
 
 # This includes the standard gtk-doc make rules, copied by gtkdocize.
 include $(top_srcdir)/gtk-doc.make
