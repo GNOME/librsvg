@@ -28,6 +28,11 @@
 
 #include <glib.h>
 
+/* Override to export public/semi-public APIs */
+#ifndef RSVG_API
+# define RSVG_API
+#endif
+
 G_BEGIN_DECLS
 
 /* Keep this in sync with rust/src/color.rs:ColorKind */
@@ -45,6 +50,7 @@ typedef struct {
 } RsvgCssColorSpec;
 
 /* This one is semi-public for mis-use in rsvg-convert */
+RSVG_API
 RsvgCssColorSpec rsvg_css_parse_color_ (const char *str);
 
 #ifdef RSVG_COMPILATION
