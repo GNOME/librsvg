@@ -255,7 +255,6 @@ EXTRA_DIST =				\
 	gtk-doc.make			\
 	Rsvg-2.0-custom.vala		\
 	Rsvg-2.0.metadata		\
-	rsvg.symbols			\
 	glib-tap.mk			\
 	tap-driver.sh			\
 	tap-test
