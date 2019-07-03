@@ -26,6 +26,7 @@
 
 #include "config.h"
 
+#include "rsvg.h"
 #include "rsvg-css.h"
 
 /* Implemented in rsvg_internals/src/dpi.rs */
