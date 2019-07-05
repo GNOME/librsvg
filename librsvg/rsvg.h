@@ -38,12 +38,17 @@ G_BEGIN_DECLS
 
 #ifndef __GTK_DOC_IGNORE__
 
+/* Override to export public/semi-public APIs */
+#ifndef RSVG_API
+# define RSVG_API
+#endif
+
 #if defined(RSVG_DISABLE_DEPRECATION_WARNINGS) || !GLIB_CHECK_VERSION (2, 31, 0)
-#define RSVG_DEPRECATED
-#define RSVG_DEPRECATED_FOR(f)
+#define RSVG_DEPRECATED RSVG_API
+#define RSVG_DEPRECATED_FOR(f) RSVG_API
 #else
-#define RSVG_DEPRECATED G_DEPRECATED
-#define RSVG_DEPRECATED_FOR(f) G_DEPRECATED_FOR(f)
+#define RSVG_DEPRECATED G_DEPRECATED RSVG_API
+#define RSVG_DEPRECATED_FOR(f) G_DEPRECATED_FOR(f) RSVG_API
 #endif
 
 #endif /* __GTK_DOC_IGNORE__ */
@@ -55,6 +60,7 @@ G_BEGIN_DECLS
 #define RSVG_IS_HANDLE_CLASS(klass)       (G_TYPE_CHECK_CLASS_TYPE ((klass), RSVG_TYPE_HANDLE))
 #define RSVG_HANDLE_GET_CLASS(obj)        (G_TYPE_INSTANCE_GET_CLASS ((obj), RSVG_TYPE_HANDLE, RsvgHandleClass))
 
+RSVG_API
 GType rsvg_handle_get_type (void);
 
 /**
@@ -68,8 +74,10 @@ typedef enum {
 } RsvgError;
 
 #define RSVG_ERROR (rsvg_error_quark ())
+RSVG_API
 GQuark rsvg_error_quark (void) G_GNUC_CONST;
 
+RSVG_API
 GType rsvg_error_get_type (void);
 #define RSVG_TYPE_ERROR (rsvg_error_get_type())
 
@@ -169,9 +177,12 @@ void rsvg_set_default_dpi	(double dpi);
 RSVG_DEPRECATED
 void rsvg_set_default_dpi_x_y	(double dpi_x, double dpi_y);
 
+RSVG_API
 void rsvg_handle_set_dpi	(RsvgHandle *handle, double dpi);
+RSVG_API
 void rsvg_handle_set_dpi_x_y	(RsvgHandle *handle, double dpi_x, double dpi_y);
 
+RSVG_API
 RsvgHandle  *rsvg_handle_new		(void);
 
 RSVG_DEPRECATED_FOR(rsvg_handle_read_stream_sync)
@@ -182,12 +193,17 @@ gboolean     rsvg_handle_write		(RsvgHandle   *handle,
 RSVG_DEPRECATED_FOR(rsvg_handle_read_stream_sync)
 gboolean     rsvg_handle_close		(RsvgHandle *handle, GError **error);
 
+RSVG_API
 GdkPixbuf   *rsvg_handle_get_pixbuf	(RsvgHandle *handle);
+RSVG_API
 GdkPixbuf   *rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id);
 
+RSVG_API
 const char  *rsvg_handle_get_base_uri (RsvgHandle *handle);
+RSVG_API
 void         rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri);
 
+RSVG_API
 void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_data);
 
 RSVG_DEPRECATED_FOR(rsvg_handle_get_geometry_for_element)
@@ -200,6 +216,7 @@ gboolean rsvg_handle_get_position_sub (RsvgHandle       *handle,
                                        RsvgPositionData *position_data,
                                        const char       *id);
 
+RSVG_API
 gboolean rsvg_handle_has_sub (RsvgHandle *handle, const char *id);
 
 /**
@@ -254,6 +271,7 @@ typedef struct {
     RsvgUnit unit;
 } RsvgLength;
 
+RSVG_API
 void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                            gboolean   *out_has_width,
                                            RsvgLength *out_width,
@@ -262,6 +280,7 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                            gboolean   *out_has_viewbox,
                                            RsvgRectangle *out_viewbox);
 
+RSVG_API
 gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
                                                const char     *id,
                                                const RsvgRectangle *viewport,
@@ -299,34 +318,43 @@ typedef enum /*< flags >*/
     RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA = 1 << 1
 } RsvgHandleFlags;
 
+RSVG_API
 GType rsvg_handle_flags_get_type (void);
 #define RSVG_TYPE_HANDLE_FLAGS (rsvg_handle_flags_get_type())
 
+RSVG_API
 RsvgHandle *rsvg_handle_new_with_flags (RsvgHandleFlags flags);
 
+RSVG_API
 void        rsvg_handle_set_base_gfile (RsvgHandle *handle,
                                         GFile      *base_file);
 
+RSVG_API
 gboolean    rsvg_handle_read_stream_sync (RsvgHandle   *handle,
                                           GInputStream *stream,
                                           GCancellable *cancellable,
                                           GError      **error);
 
+RSVG_API
 RsvgHandle *rsvg_handle_new_from_gfile_sync (GFile          *file,
                                              RsvgHandleFlags flags,
                                              GCancellable   *cancellable,
                                              GError        **error);
 
+RSVG_API
 RsvgHandle *rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
                                               GFile          *base_file,
                                               RsvgHandleFlags flags,
                                               GCancellable   *cancellable,
                                               GError        **error);
 
+RSVG_API
 RsvgHandle *rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error);
+RSVG_API
 RsvgHandle *rsvg_handle_new_from_file (const gchar *filename, GError **error);
 
 #ifndef __GTK_DOC_IGNORE__
+RSVG_API
 void rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing);
 #endif /* __GTK_DOC_IGNORE__ */
 

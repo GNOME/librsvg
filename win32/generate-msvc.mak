@@ -15,12 +15,6 @@ $(OUTDIR)\rsvg-tools			\
 $(OUTDIR)\rsvg-tests:
 	@-mkdir $@
 
-# Generate the .def file
-$(OUTDIR)\librsvg\rsvg.def: ..\rsvg.symbols
-	@if not exist $(@D) $(MAKE) /f Makefile.vc CFG=$(CFG) $(@D)
-	@echo EXPORTS > $@
-	$(CPP) /EP $** >> $@
-
 # Generate listing file for introspection
 $(OUTDIR)\librsvg\Rsvg_2_0_gir_list:	\
 $(librsvg_real_pub_HDRS)		\

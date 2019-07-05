@@ -55,12 +55,10 @@ $(LIBRSVG_LIB): $(LIBRSVG_DLL)
 # 	@-if exist $@.manifest mt /manifest $@.manifest /outputresource:$@;2
 $(LIBRSVG_DLL):	\
 $(RSVG_INTERNAL_LIB)		\
-$(OUTDIR)\librsvg\rsvg.def	\
 $(OUTDIR)\librsvg\config.h	\
 $(librsvg_OBJS)
 	link /DLL $(LDFLAGS) 	\
 	$(LIBRSVG_DEP_LIBS)	\
-	/def:$(OUTDIR)\librsvg\rsvg.def	\
 	/implib:$(LIBRSVG_LIB)	\
 	-out:$@ @<<
 $(librsvg_OBJS)
