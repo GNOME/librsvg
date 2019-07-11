@@ -1,4 +1,4 @@
-use cairo::{self, ImageSurface, MatrixTrait};
+use cairo::{self, ImageSurface};
 use markup5ever::{local_name, LocalName};
 
 use crate::drawing_ctx::DrawingCtx;

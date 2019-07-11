@@ -2,7 +2,7 @@ use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::f64;
 
-use cairo::{self, MatrixTrait};
+use cairo;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;

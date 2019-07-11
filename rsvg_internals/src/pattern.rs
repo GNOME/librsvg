@@ -1,5 +1,4 @@
 use cairo;
-use cairo::{MatrixTrait, PatternTrait};
 use markup5ever::local_name;
 use std::cell::RefCell;
 use std::f64;
@@ -360,7 +359,7 @@ impl PaintSource for NodePattern {
         surface_pattern.set_matrix(matrix);
         surface_pattern.set_filter(cairo::Filter::Best);
 
-        cr_save.set_source(&cairo::Pattern::SurfacePattern(surface_pattern));
+        cr_save.set_source(&surface_pattern);
 
         res.and_then(|_| Ok(true))
     }

@@ -1,5 +1,5 @@
 //! The <filter> node.
-use cairo::{self, MatrixTrait};
+use cairo;
 use markup5ever::local_name;
 
 use crate::bbox::BoundingBox;

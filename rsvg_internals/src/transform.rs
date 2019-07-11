@@ -2,7 +2,6 @@ use cairo;
 
 use std::f64::consts::*;
 
-use cairo::MatrixTrait;
 use cssparser::{ParseError as CssParseError, Parser, Token};
 
 use crate::error::*;

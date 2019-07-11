@@ -1,5 +1,5 @@
 use cairo;
-use cairo::{PatternTrait, Rectangle};
+use cairo::Rectangle;
 use markup5ever::local_name;
 
 use crate::allowed_url::Href;

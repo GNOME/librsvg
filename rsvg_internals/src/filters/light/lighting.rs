@@ -1,6 +1,6 @@
 use std::cmp::max;
 
-use cairo::{self, ImageSurface, MatrixTrait};
+use cairo::{self, ImageSurface};
 use cssparser;
 use markup5ever::local_name;
 use nalgebra::Vector3;

@@ -1,4 +1,4 @@
-use cairo::{Matrix, MatrixTrait};
+use cairo::Matrix;
 use downcast_rs::*;
 use markup5ever::{local_name, LocalName};
 use std::cell::Ref;
