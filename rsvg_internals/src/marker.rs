@@ -1,4 +1,5 @@
 use std::cell::Cell;
+use std::f64;
 use std::f64::consts::*;
 
 use cairo::MatrixTrait;
@@ -590,7 +591,7 @@ fn find_outgoing_directionality_forwards(
 // Normalizes an angle to [0.0, 2*PI)
 fn normalize_angle(rad: f64) -> f64 {
     let res = rad % (PI * 2.0);
-    if res.abs() < std::f64::EPSILON {
+    if res.abs() < f64::EPSILON {
         res.abs()
     } else if res < 0.0 {
         res + PI * 2.0
