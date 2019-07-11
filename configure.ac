@@ -113,7 +113,7 @@ AC_CHECK_PROGS(AR, ar)
 dnl Minimum version of rustc that we support
 dnl If you change this, please update COMPILING.md
 MINIMUM_RUST_MAJOR=1
-MINIMUM_RUST_MINOR=31
+MINIMUM_RUST_MINOR=34
 
 rust_version=`$RUSTC --version`
 version=`echo "$rust_version" | sed -e 's/^rustc //g'`
