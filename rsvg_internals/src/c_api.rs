@@ -508,11 +508,7 @@ impl CHandle {
     }
 
     pub fn set_base_gfile(&self, file: &gio::File) {
-        if let Some(uri) = file.get_uri() {
-            self.set_base_url(&uri);
-        } else {
-            panic!("file has no URI; will not set the base URI");
-        }
+        self.set_base_url(&file.get_uri());
     }
 
     pub fn get_base_url_as_ptr(&self) -> *const libc::c_char {

@@ -19,20 +19,20 @@ edition = "2018"
 
 [dependencies]
 bitflags = "1.0"
-cairo-rs = { version="0.6.0", features=["v1_16"] }
-cairo-sys-rs = "0.8.0"
+cairo-rs = { version="0.7.0", features=["v1_16"] }
+cairo-sys-rs = "0.9.0"
 cssparser = "0.25.5"
 data-url = "0.1"
 downcast-rs = "^1.0.0"
 encoding = "0.2.33"
 float-cmp = "= 0.4.0"
-gdk-pixbuf = "0.6.0"
-gdk-pixbuf-sys = "0.8.0"
-gio = { version="0.6.0", features=["v2_48"] } # per configure.ac
-gio-sys = "0.8.0"
-glib = { version="0.7.0", features=["subclassing"] }
-glib-sys = "0.8.0"
-gobject-sys = "0.8.0"
+gdk-pixbuf = "0.7.0"
+gdk-pixbuf-sys = "0.9.0"
+gio = { version="0.7.0", features=["v2_48"] } # per configure.ac
+gio-sys = "0.9.0"
+glib = { version="0.8.0", features=["subclassing"] }
+glib-sys = "0.9.0"
+gobject-sys = "0.9.0"
 itertools = "0.8"
 language-tags = "0.2.2"
 lazy_static = "1.0.0"
@@ -41,9 +41,9 @@ locale_config = "*" # recommended explicitly by locale_config's README.md
 markup5ever = "0.8.1"
 nalgebra = "0.18"
 num-traits = "0.2"
-pango = "0.6.0"
-pango-sys = "0.8.0"
-pangocairo = "0.7.0"
+pango = "0.7.0"
+pango-sys = "0.9.0"
+pangocairo = "0.8.0"
 phf = "0.7.21"
 rayon = "1"
 rctree = "0.3.3"

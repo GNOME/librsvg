@@ -1,4 +1,4 @@
-use cairo::{self, ImageSurface, Matrix, MatrixTrait, PatternTrait};
+use cairo::{self, ImageSurface, Matrix};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -89,7 +89,7 @@ impl Filter for Tile {
                     );
                     cr.clip();
 
-                    cr.set_source(&cairo::Pattern::SurfacePattern(ptn));
+                    cr.set_source(&ptn);
                     cr.paint();
                 }
 

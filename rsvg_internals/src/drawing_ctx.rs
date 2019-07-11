@@ -1,9 +1,9 @@
 use cairo;
-use cairo::prelude::*;
 use cairo_sys;
 use glib::translate::*;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
+use std::convert::TryFrom;
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::AspectRatio;
@@ -437,7 +437,7 @@ impl DrawingCtx {
                     // Create temporary surface and its cr
 
                     let cr = if filter.is_some() {
-                        cairo::Context::new(&dc.create_surface_for_toplevel_viewport()?)
+                        cairo::Context::new(&*dc.create_surface_for_toplevel_viewport()?)
                     } else {
                         cairo::Context::new(
                             &dc.create_similar_surface_for_toplevel_viewport(&dc.cr.get_target())?,
@@ -461,11 +461,11 @@ impl DrawingCtx {
                     // Filter
 
                     let source_surface = if let Some(filter_uri) = filter {
-                        let child_surface = cairo::ImageSurface::from(dc.cr.get_target()).unwrap();
+                        let child_surface = cairo::ImageSurface::try_from(dc.cr.get_target()).unwrap();
                         let img_surface =
                             dc.run_filter(filter_uri, node, values, &child_surface, dc.bbox)?;
                         // turn into a Surface
-                        img_surface.as_ref().clone()
+                        (*img_surface).clone()
                     } else {
                         dc.cr.get_target()
                     };

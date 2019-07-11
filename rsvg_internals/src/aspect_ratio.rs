@@ -22,7 +22,7 @@
 
 use std::ops::Deref;
 
-use cairo::{self, MatrixTrait};
+use cairo;
 
 use crate::error::ValueErrorKind;
 use crate::float_eq_cairo::ApproxEqCairo;

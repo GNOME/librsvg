@@ -1,4 +1,4 @@
-use cairo::{self, MatrixTrait};
+use cairo;
 use cssparser::{self, CowRcStr, Parser, Token};
 use markup5ever::local_name;
 
@@ -197,9 +197,9 @@ impl CommonGradientData {
         }
     }
 
-    fn add_color_stops_to_pattern<T, G: cairo::Gradient<PatternType = T>>(
+    fn add_color_stops_to_pattern(
         &self,
-        pattern: &mut G,
+        pattern: &cairo::Gradient,
         opacity: &UnitInterval,
     ) {
         if let Some(stops) = self.stops.as_ref() {
@@ -219,9 +219,9 @@ impl CommonGradientData {
         }
     }
 
-    fn set_on_pattern<P: cairo::PatternTrait + cairo::Gradient>(
+    fn set_on_pattern(
         &self,
-        pattern: &mut P,
+        pattern: &cairo::Gradient,
         bbox: &BoundingBox,
         opacity: &UnitInterval,
     ) {
@@ -494,7 +494,7 @@ macro_rules! impl_resolve {
 }
 
 macro_rules! impl_paint_source {
-    ($gradient:ty, $node_type:pat, $other_gradient:ty, $other_type:pat, $cairo_pattern:expr) => {
+    ($gradient:ty, $node_type:pat, $other_gradient:ty, $other_type:pat) => {
         impl PaintSource for $gradient {
             type Source = $gradient;
 
@@ -569,10 +569,10 @@ macro_rules! impl_paint_source {
                     draw_ctx.get_view_params()
                 };
 
-                let mut p = gradient.variant.to_cairo_gradient(values, &params);
-                gradient.common.set_on_pattern(&mut p, bbox, opacity);
+                let p = gradient.variant.to_cairo_gradient(values, &params);
+                gradient.common.set_on_pattern(&p, bbox, opacity);
                 let cr = draw_ctx.get_cairo_context();
-                cr.set_source(&$cairo_pattern(p));
+                cr.set_source(&p);
 
                 Ok(true)
             }
@@ -610,8 +610,7 @@ impl_paint_source!(
     NodeLinearGradient,
     NodeType::LinearGradient,
     NodeRadialGradient,
-    NodeType::RadialGradient,
-    cairo::Pattern::LinearGradient
+    NodeType::RadialGradient
 );
 
 #[derive(Clone, Default)]
@@ -628,8 +627,7 @@ impl_paint_source!(
     NodeRadialGradient,
     NodeType::RadialGradient,
     NodeLinearGradient,
-    NodeType::LinearGradient,
-    cairo::Pattern::RadialGradient
+    NodeType::LinearGradient
 );
 
 #[cfg(test)]

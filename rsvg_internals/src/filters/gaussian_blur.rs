@@ -1,7 +1,6 @@
 use std::cmp::min;
 use std::f64;
 
-use cairo::MatrixTrait;
 use markup5ever::local_name;
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 

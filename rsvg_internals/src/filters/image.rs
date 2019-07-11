@@ -1,4 +1,4 @@
-use cairo::{self, ImageSurface, MatrixTrait, PatternTrait, Rectangle};
+use cairo::{self, ImageSurface, Rectangle};
 use markup5ever::local_name;
 
 use crate::allowed_url::{Fragment, Href};

@@ -1,5 +1,4 @@
 use cairo;
-use cairo::MatrixTrait;
 
 use crate::float_eq_cairo::ApproxEqCairo;
 

@@ -3,7 +3,6 @@ use std::cmp::min;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
-use cairo::prelude::SurfaceExt;
 use cairo::{self, ImageSurface};
 use cairo_sys;
 use gdk_pixbuf::{Colorspace, Pixbuf};
@@ -313,8 +312,8 @@ impl SharedImageSurface {
     }
 
     /// Creates a Cairo surface pattern from the surface
-    pub fn to_cairo_pattern(&self) -> cairo::Pattern {
-        cairo::Pattern::SurfacePattern(cairo::SurfacePattern::create(&self.surface))
+    pub fn to_cairo_pattern(&self) -> cairo::SurfacePattern {
+        cairo::SurfacePattern::create(&self.surface)
     }
 
     /// Returns a new `ImageSurface` with the same contents as the one stored in this

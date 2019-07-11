@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::time::Instant;
 
-use cairo::{self, MatrixTrait};
+use cairo;
 use markup5ever::local_name;
 
 use crate::bbox::BoundingBox;

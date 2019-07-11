@@ -296,11 +296,7 @@ impl Loader {
 }
 
 fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
-    if let Some(uri) = file.get_uri() {
-        Ok(Url::parse(&uri).map_err(|_| LoadingError::BadUrl)?)
-    } else {
-        Err(LoadingError::BadUrl)
-    }
+    Ok(Url::parse(&file.get_uri()).map_err(|_| LoadingError::BadUrl)?)
 }
 
 /// Handle used to hold SVG data in memory.

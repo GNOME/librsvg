@@ -198,11 +198,7 @@ fn get_default_dpi() -> Dpi {
 }
 
 fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
-    if let Some(uri) = file.get_uri() {
-        Ok(Url::parse(&uri).map_err(|_| LoadingError::BadUrl)?)
-    } else {
-        Err(LoadingError::BadUrl)
-    }
+    Ok(Url::parse(&file.get_uri()).map_err(|_| LoadingError::BadUrl)?)
 }
 
 fn pixbuf_from_file_with_size_mode(

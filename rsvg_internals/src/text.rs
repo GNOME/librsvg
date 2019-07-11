@@ -1,6 +1,6 @@
 use glib::translate::*;
 use markup5ever::local_name;
-use pango::{self, ContextExt, FontMapExt, LayoutExt};
+use pango::{self, FontMapExt};
 use pango_sys;
 use pangocairo;
 use std::cell::RefCell;
@@ -903,7 +903,7 @@ fn get_pango_context(cr: &cairo::Context, is_testing: bool) -> pango::Context {
         options.set_hint_style(cairo::HintStyle::Full);
         options.set_hint_metrics(cairo::HintMetrics::On);
 
-        pangocairo::functions::context_set_font_options(&context, &options);
+        pangocairo::functions::context_set_font_options(&context, Some(&options));
     }
 
     context
@@ -955,7 +955,7 @@ fn create_pango_layout(
 
     let layout = pango::Layout::new(&pango_context);
     layout.set_auto_dir(false);
-    layout.set_font_description(&font_desc);
+    layout.set_font_description(Some(&font_desc));
 
     let attr_list = pango::AttrList::new();
 
@@ -974,7 +974,7 @@ fn create_pango_layout(
         attr_list.insert(pango::Attribute::new_strikethrough(true).unwrap());
     }
 
-    layout.set_attributes(&attr_list);
+    layout.set_attributes(Some(&attr_list));
     layout.set_alignment(pango::Alignment::from(values.direction));
     layout.set_text(text);
 

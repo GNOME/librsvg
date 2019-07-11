@@ -10,7 +10,7 @@ fn main() {
         .unwrap();
     let renderer = librsvg::CairoRenderer::new(&handle);
 
-    let surface = cairo::svg::File::new(width, height, output);
+    let surface = cairo::SvgSurface::new(width, height, output);
     let cr = cairo::Context::new(&surface);
     renderer
         .render_element_to_viewport(

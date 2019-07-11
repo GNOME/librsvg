@@ -1,5 +1,5 @@
 //! Filter primitive subregion computation.
-use cairo::{self, MatrixTrait};
+use cairo;
 
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
