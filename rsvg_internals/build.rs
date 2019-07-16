@@ -7,7 +7,7 @@ use std::path::Path;
 use std::os::unix::fs::symlink;
 
 #[cfg(all(windows, not(target_env = "msvc")))]
-use std::os::windows::fs::symlink_file;
+use std::os::windows::fs::symlink_file as symlink;
 
 #[cfg(not(target_env = "msvc"))]
 use std::fs;
