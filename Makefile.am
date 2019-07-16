@@ -136,11 +136,11 @@ cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
 cargo_verbose_0 =
 cargo_verbose_1 = --verbose
 
-RUST_LIB=@abs_top_builddir@/.libs/librsvg_internals.a
-CARGO_TARGET_DIR=@abs_top_builddir@/target
-
 LIBRSVG_BUILD_DIR=@abs_top_builddir@
-LIBRSVG_TARGET_DIR=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@
+CARGO_TARGET_DIR=$(LIBRSVG_BUILD_DIR)/target
+LIBRSVG_TARGET_DIR=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)
+
+RUST_LIB=$(LIBRSVG_BUILD_DIR)/.libs/librsvg_internals.a
 
 check-local:
 	cd $(srcdir) && \
@@ -177,7 +177,9 @@ librsvg_internals.la: $(librsvg_internals_la_SOURCES)
 	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)					\
 	LIBRSVG_TARGET_DIR=$(LIBRSVG_TARGET_DIR)					\
 	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --features "c-library" \
-	&& $(AR) d $(RUST_LIB) clzsi2.o # HACK: https://github.com/rust-lang/rust/issues/58277
+	&& if [[ $$($(NM) -g $(RUST_LIB) | grep "T __clzsi2" -c) -gt 1 ]] ; then \
+		$(AR) d $(RUST_LIB) clzsi2.o;					\
+	fi
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\

@@ -109,6 +109,7 @@ AS_IF(test x$RUSTC = xno,
     AC_MSG_ERROR([rustc is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
 )
 AC_CHECK_PROGS(AR, ar)
+AC_CHECK_PROGS(NM, nm)
 
 dnl Minimum version of rustc that we support
 dnl If you change this, please update COMPILING.md
