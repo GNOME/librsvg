@@ -70,8 +70,7 @@ help:
 	@echo.
 	@echo OPTION: Optional, may be any of the following, use OPTION=1 to enable;
 	@echo multiple OPTION's may be used.  If no OPTION is specified, a default
-	@echo librsvg with the rsvg-view-3 utility program is built, without the
-	@echo introspection files.
+	@echo librsvg, without the introspection files.
 	@echo ======
 	@echo.
 	@echo INTROSPECTION:
@@ -89,6 +88,14 @@ help:
 	@echo MinGW/autotools builds.  Please note that this does not enable one to use
 	@echo this build with MinGW builds.
 	@echo ======
+	@echo.
+	@echo Other options:
+	@echo --------------
+	@echo LIBINTL_LIB: This defaults to intl.lib, which is the gettext-runtime library
+	@echo that we need to link to.  Define this if your gettext-runtime library .lib is
+	@echo named differently, such as libintl.lib.
+	@echo ======
+	@echo.
 	@echo A 'clean' target is supported to remove all generated files, intermediate
 	@echo object files and binaries for the specified configuration.
 	@echo.

@@ -95,6 +95,12 @@ for all targets.
          generated using the 'install' build target.
 -PKG_CONFIG: Path to your pkg-config (or compatible) tool, if not already in your
              %PATH%.  This is required for introspection builds.
+-LIBINTL_LIB: Full file name of your gettext-runtime library .lib file, if it is not
+              intl.lib.  This should be in the directories indicated by %LIB% or in
+              $(LIBDIR), or should be passed in with the full path.  Note that its
+              DLL, if applicable, should be found in %PATH% or in $(BINDIR) as well,
+              for building the introspection files or for creating the GDK-Pixbuf
+              loaders cache file.
 
 <other_options> is as follows, activate the options using <option>=1:
 -INTROSPECTION: Build the introspection files.  Please see notes above.

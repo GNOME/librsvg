@@ -7,7 +7,6 @@ RSVG_API_VER = $(RSVG_VER).0
 CHECK_GIR_PACKAGE = gdk-pixbuf-2.0
 RSVG_PKG_VERSION = @LIBRSVG_MAJOR_VERSION@.@LIBRSVG_MINOR_VERSION@.@LIBRSVG_MICRO_VERSION@
 
-
 # Make bin, include and library directories of configurable
 !ifndef BINDIR
 BINDIR=$(PREFIX)\bin
@@ -19,6 +18,11 @@ LIBDIR=$(PREFIX)\lib
 
 !ifndef INCLUDEDIR
 INCLUDEDIR=$(PREFIX)\include
+!endif
+
+# Make import lib of gettext-runtime configurable
+!ifndef LIBINTL_LIB
+LIBINTL_LIB = intl.lib
 !endif
 
 LDFLAGS = $(LDFLAGS) /libpath:$(LIBDIR)
@@ -52,7 +56,7 @@ BASE_DEP_LIBS =			\
 	gobject-2.0.lib		\
 	glib-2.0.lib		\
 	cairo.lib		\
-	intl.lib
+	$(LIBINTL_LIB)
 
 LIBRSVG_LOG_DOMAIN = /DG_LOG_DOMAIN=\"librsvg\"
 
