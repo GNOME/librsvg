@@ -1,3 +1,12 @@
+Version 2.45.8
+- This version requires at least Rust 1.34.
+
+- #485 - Fix build on Rust earlier than 1.36 (Kleis Auke Wolthuizen).
+
+- More polishing of the Windows build (Chun-wei Fan).
+
+- Update gtk-rs and dependent crates (Bastien Orivel)
+
 Version 2.45.7
 - Fix #463 - Don't panic if an SVG has character data outside the
   first element.
