@@ -141,7 +141,7 @@ impl Image {
             ),
         );
 
-        if w.approx_eq_cairo(&0.0) || h.approx_eq_cairo(&0.0) {
+        if w.approx_eq_cairo(0.0) || h.approx_eq_cairo(0.0) {
             return Ok(output_surface);
         }
 

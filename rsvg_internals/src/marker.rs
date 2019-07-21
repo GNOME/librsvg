@@ -133,7 +133,7 @@ impl NodeMarker {
         let marker_width = self.width.normalize(&values, &params);
         let marker_height = self.height.normalize(&values, &params);
 
-        if marker_width.approx_eq_cairo(&0.0) || marker_height.approx_eq_cairo(&0.0) {
+        if marker_width.approx_eq_cairo(0.0) || marker_height.approx_eq_cairo(0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
             // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
             return Ok(());
@@ -161,7 +161,7 @@ impl NodeMarker {
                     &Rectangle::new(0.0, 0.0, marker_width, marker_height),
                 );
 
-                if vbox.width.approx_eq_cairo(&0.0) || vbox.height.approx_eq_cairo(&0.0) {
+                if vbox.width.approx_eq_cairo(0.0) || vbox.height.approx_eq_cairo(0.0) {
                     return Ok(());
                 }
 
@@ -317,7 +317,7 @@ impl Segment {
 }
 
 fn points_equal(x1: f64, y1: f64, x2: f64, y2: f64) -> bool {
-    x1.approx_eq_cairo(&x2) && y1.approx_eq_cairo(&y2)
+    x1.approx_eq_cairo(x2) && y1.approx_eq_cairo(y2)
 }
 
 enum SegmentState {
@@ -647,7 +647,7 @@ pub fn render_markers_for_path_builder(
         .0
         .normalize(values, &draw_ctx.get_view_params());
 
-    if line_width.approx_eq_cairo(&0.0) {
+    if line_width.approx_eq_cairo(0.0) {
         return Ok(());
     }
 
