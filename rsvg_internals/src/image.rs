@@ -74,7 +74,7 @@ impl NodeTrait for NodeImage {
         let w = self.w.normalize(values, &params);
         let h = self.h.normalize(values, &params);
 
-        if w.approx_eq_cairo(&0.0) || h.approx_eq_cairo(&0.0) {
+        if w.approx_eq_cairo(0.0) || h.approx_eq_cairo(0.0) {
             return Ok(());
         }
 

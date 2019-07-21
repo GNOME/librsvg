@@ -22,7 +22,7 @@ impl RectangleExt for cairo::Rectangle {
     }
 
     fn is_empty(&self) -> bool {
-        self.width.approx_eq_cairo(&0.0) || self.height.approx_eq_cairo(&0.0)
+        self.width.approx_eq_cairo(0.0) || self.height.approx_eq_cairo(0.0)
     }
 
     fn intersect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
