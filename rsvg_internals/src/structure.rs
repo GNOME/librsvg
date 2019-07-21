@@ -352,7 +352,7 @@ impl NodeTrait for NodeUse {
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
-        if nw.approx_eq_cairo(&0.0) || nh.approx_eq_cairo(&0.0) {
+        if nw.approx_eq_cairo(0.0) || nh.approx_eq_cairo(0.0) {
             return Ok(());
         }
 

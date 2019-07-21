@@ -88,7 +88,7 @@ impl EllipticalArc {
         } = self;
 
         // If the end points are identical, omit the arc segment entirely.
-        if x1.approx_eq_cairo(&x2) && y1.approx_eq_cairo(&y2) {
+        if x1.approx_eq_cairo(x2) && y1.approx_eq_cairo(y2) {
             return ArcParameterization::Omit;
         }
 
