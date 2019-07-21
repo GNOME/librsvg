@@ -308,7 +308,7 @@ impl PaintSource for NodePattern {
             draw_ctx.get_view_params()
         };
 
-        if !scwscale.approx_eq_cairo(&1.0) || !schscale.approx_eq_cairo(&1.0) {
+        if !scwscale.approx_eq_cairo(1.0) || !schscale.approx_eq_cairo(1.0) {
             let mut scalematrix = cairo::Matrix::identity();
             scalematrix.scale(scwscale, schscale);
             caffine = cairo::Matrix::multiply(&caffine, &scalematrix);

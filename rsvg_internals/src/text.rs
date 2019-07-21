@@ -291,7 +291,7 @@ impl PositionedSpan {
             cr.move_to(self.rendered_position.0, self.rendered_position.1);
 
             let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
-            if !rotation.approx_eq_cairo(&0.0) {
+            if !rotation.approx_eq_cairo(0.0) {
                 cr.rotate(-rotation);
             }
 
