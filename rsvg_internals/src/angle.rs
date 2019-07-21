@@ -132,7 +132,7 @@ mod tests {
         let i = Angle::from_vector(incoming_vx, incoming_vy);
         let o = Angle::from_vector(outgoing_vx, outgoing_vy);
         let bisected = i.bisect(o);
-        assert!(expected.approx_eq(&bisected.radians(), 2.0 * PI * f64::EPSILON, 1));
+        assert!(expected.approx_eq(bisected.radians(), (2.0 * PI * f64::EPSILON, 1)));
     }
 
     #[test]

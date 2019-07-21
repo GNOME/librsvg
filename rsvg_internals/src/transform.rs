@@ -255,12 +255,12 @@ mod tests {
     fn assert_matrix_eq(a: &cairo::Matrix, b: &cairo::Matrix) {
         let epsilon = 8.0 * f64::EPSILON; // kind of arbitrary, but allow for some sloppiness
 
-        assert!(a.xx.approx_eq(&b.xx, epsilon, 1));
-        assert!(a.yx.approx_eq(&b.yx, epsilon, 1));
-        assert!(a.xy.approx_eq(&b.xy, epsilon, 1));
-        assert!(a.yy.approx_eq(&b.yy, epsilon, 1));
-        assert!(a.x0.approx_eq(&b.x0, epsilon, 1));
-        assert!(a.y0.approx_eq(&b.y0, epsilon, 1));
+        assert!(a.xx.approx_eq(b.xx, (epsilon, 1)));
+        assert!(a.yx.approx_eq(b.yx, (epsilon, 1)));
+        assert!(a.xy.approx_eq(b.xy, (epsilon, 1)));
+        assert!(a.yy.approx_eq(b.yy, (epsilon, 1)));
+        assert!(a.x0.approx_eq(b.x0, (epsilon, 1)));
+        assert!(a.y0.approx_eq(b.y0, (epsilon, 1)));
     }
 
     #[test]
