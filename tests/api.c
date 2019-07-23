@@ -654,6 +654,7 @@ render_cairo_sub (void)
 
     g_object_unref (handle);
     cairo_destroy (cr);
+    cairo_surface_destroy (surf);
 }
 
 /* https://gitlab.gnome.org/GNOME/librsvg/issues/385 */
