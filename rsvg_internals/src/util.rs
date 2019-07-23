@@ -55,3 +55,18 @@ pub fn rsvg_g_warning(_msg: &str) {
     // meaningful error code, but the C API isn't - so they issues a
     // g_warning() instead.
 }
+
+#[cfg(feature = "c-library")]
+pub fn rsvg_g_critical(msg: &str) {
+    unsafe {
+        extern "C" {
+            fn rsvg_g_critical_from_c(msg: *const libc::c_char);
+        }
+
+        rsvg_g_critical_from_c(msg.to_glib_none().0);
+    }
+}
+
+#[cfg(not(feature = "c-library"))]
+pub fn rsvg_g_critical(_msg: &str) {
+}
