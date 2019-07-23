@@ -711,9 +711,9 @@ impl CHandle {
         handle.get_geometry_for_element(id, viewport, self.dpi.get(), self.is_testing.get())
     }
 
-    fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let handle = self.get_handle_ref().unwrap();
-        handle.get_intrinsic_dimensions()
+    fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        Ok(handle.get_intrinsic_dimensions())
     }
 
     fn set_testing(&self, is_testing: bool) {
@@ -1236,7 +1236,9 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    let d = rhandle.get_intrinsic_dimensions();
+    let d = rhandle
+        .get_intrinsic_dimensions()
+        .unwrap_or_else(|_| panic!("API called out of order"));
 
     let w = d.width.map(|l| l.to_length());
     let h = d.height.map(|l| l.to_length());

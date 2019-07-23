@@ -172,6 +172,38 @@
  * control the size at which the SVG will be rendered.  It will just be rendered
  * at the size which rsvg_handle_get_dimensions() would return, which depends on
  * the dimensions that librsvg is able to compute from the SVG data.
+ *
+ * # API ordering
+ *
+ * Due to the way the librsvg API evolved over time, an #RsvgHandle object is available
+ * for use as soon as it is constructed.  However, not all of its methods can be
+ * called at any time.  For example, an #RsvgHandle just constructed with rsvg_handle_new()
+ * is not loaded yet, and it does not make sense to call rsvg_handle_get_dimensions() on it
+ * just at that point.
+ *
+ * The documentation for the available methods in #RsvgHandle may mention that a particular
+ * method is only callable on a "fully loaded handle".  This means either:
+ *
+ * <itemizedlist>
+ *   <listitem>
+ *     The handle was loaded with rsvg_handle_write() and rsvg_handle_close(), and
+ *     those functions returned no errors.
+ *   </listitem>
+ *   <listitem>
+ *     The handle was loaded with rsvg_handle_read_stream_sync() and that function
+ *     returned no errors.
+ *   </listitem>
+ * </itemizedlist>
+ *
+ * Before librsvg 2.46, the library did not fully verify that a handle was in a
+ * fully loaded state for the methods that require it.  To preserve
+ * compatibility with old code which inadvertently called the API without
+ * checking for errors, or which called some methods outside of the expected
+ * order, librsvg will just emit a g_critical() message in those cases.
+ *
+ * New methods introduced in librsvg 2.46 and later will check for the correct
+ * ordering, and panic if they are called out of order.  Please check all calls for
+ * errors!
  */
 
 /***** Begin documentation for RsvgHandle properties *****/
@@ -1063,6 +1095,9 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
  * |[
  * <svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm">
  * ]|
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
  *
  * Since: 2.46
  */
