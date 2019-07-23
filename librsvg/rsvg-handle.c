@@ -485,19 +485,43 @@ RsvgHandle *
 rsvg_handle_new_from_file (const gchar *file_name, GError **error)
 {
     gchar *base_uri;
+    gchar *scheme;
     char *data;
     gsize data_len;
     RsvgHandle *handle = NULL;
-    GFile *file;
-    char *scheme;
+    GFile *file = NULL;
+    gboolean maybe_uri;
 
     rsvg_return_val_if_fail (file_name != NULL, NULL, error);
 
-    scheme = g_uri_parse_scheme (file_name);
-    if (scheme) {
-        file = g_file_new_for_uri (file_name);
-        g_free (scheme);
+    if (g_path_is_absolute (file_name)) {
+        maybe_uri = FALSE;
     } else {
+        /* Is the file_name UTF-8?  If not, it's definitely not a URI. */
+        maybe_uri = g_utf8_validate (file_name, -1, NULL);
+    }
+
+    if (maybe_uri) {
+        /* Try construct a URI */
+
+        file = g_file_new_for_uri (file_name);
+        base_uri = g_file_get_uri (file);
+        scheme = g_file_get_uri_scheme (file);
+        if (!(base_uri && scheme)) {
+            g_clear_object (&file);
+            maybe_uri = FALSE;
+        }
+
+        g_clear_pointer (&base_uri, g_free);
+        g_clear_pointer (&scheme, g_free);
+    }
+
+    if (!file) {
+        /* Definitely not a URI.  Try parsing it as a path; verify that it's
+         * well-formed by trying to extract a URI back from it.
+         */
+
+        g_assert (!maybe_uri);
         file = g_file_new_for_path (file_name);
     }
 
