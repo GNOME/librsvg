@@ -127,10 +127,8 @@ impl Handle {
         size_callback: &SizeCallback,
         is_testing: bool,
     ) -> RsvgDimensionData {
-        match self.get_dimensions(dpi, size_callback, is_testing) {
-            Ok(dimensions) => dimensions,
-            Err(_) => RsvgDimensionData::empty(),
-        }
+        self.get_dimensions(dpi, size_callback, is_testing)
+            .unwrap_or_else(|_| RsvgDimensionData::empty())
     }
 
     pub fn get_dimensions_sub(
