@@ -121,28 +121,6 @@ impl Handle {
         res
     }
 
-    pub fn get_dimensions_no_error(
-        &self,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> RsvgDimensionData {
-        match self.get_dimensions(dpi, size_callback, is_testing) {
-            Ok(dimensions) => dimensions,
-
-            Err(_) => {
-                RsvgDimensionData {
-                    width: 0,
-                    height: 0,
-                    em: 0.0,
-                    ex: 0.0,
-                }
-
-                // This old API doesn't even let us return an error, sigh.
-            }
-        }
-    }
-
     pub fn get_dimensions_sub(
         &self,
         id: Option<&str>,

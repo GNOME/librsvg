@@ -50,8 +50,27 @@ pub fn rsvg_g_warning(msg: &str) {
 
 #[cfg(not(feature = "c-library"))]
 pub fn rsvg_g_warning(_msg: &str) {
-    // The only callers of this are in handle.rs. When those functions
-    // are called from the Rust API, they are able to return a
-    // meaningful error code, but the C API isn't - so they issues a
-    // g_warning() instead.
+    // This, and rsvg_g_critical() below, are intended to be called
+    // from Rust code which is directly called from the C API.  When
+    // this crate is being built as part of the c-library, the purpose
+    // of the functions is to call the corresponding glib macros to
+    // print a warning or a critical error message.  When this crate
+    // is being built as part of the standalone Rust crate, they do
+    // nothing, since the Rust code is able to propagate an error code
+    // all the way to the crate's public API.
+}
+
+#[cfg(feature = "c-library")]
+pub fn rsvg_g_critical(msg: &str) {
+    unsafe {
+        extern "C" {
+            fn rsvg_g_critical_from_c(msg: *const libc::c_char);
+        }
+
+        rsvg_g_critical_from_c(msg.to_glib_none().0);
+    }
+}
+
+#[cfg(not(feature = "c-library"))]
+pub fn rsvg_g_critical(_msg: &str) {
 }

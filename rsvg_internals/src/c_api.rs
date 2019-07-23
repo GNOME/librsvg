@@ -35,7 +35,7 @@ use crate::error::{set_gerror, LoadingError, RenderingError, RSVG_ERROR_FAILED};
 use crate::handle::{Handle, LoadOptions};
 use crate::length::RsvgLength;
 use crate::structure::IntrinsicDimensions;
-use crate::util::rsvg_g_warning;
+use crate::util::rsvg_g_critical;
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -134,6 +134,20 @@ pub struct RsvgDimensionData {
     pub height: libc::c_int,
     pub em: f64,
     pub ex: f64,
+}
+
+impl RsvgDimensionData {
+    // This is not #[derive(Default)] to make it clear that it
+    // shouldn't be the default value for anything; it is actually a
+    // special case we use to indicate an error to the public API.
+    pub fn empty() -> RsvgDimensionData {
+        RsvgDimensionData {
+            width: 0,
+            height: 0,
+            em: 0.0,
+            ex: 0.0,
+        }
+    }
 }
 
 // Keep in sync with rsvg.h:RsvgPositionData
@@ -421,10 +435,9 @@ impl ObjectImpl for CHandle {
         }
     }
 
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     fn get_property(&self, _obj: &glib::Object, id: usize) -> Result<glib::Value, ()> {
         let prop = &PROPERTIES[id];
-
-        let size_callback = self.size_callback.borrow();
 
         match *prop {
             subclass::Property("flags", ..) => {
@@ -442,36 +455,21 @@ impl ObjectImpl for CHandle {
                 .map(|url| url.as_str())
                 .to_value()),
 
-            subclass::Property("width", ..) => Ok(self
-                .get_handle_ref()
-                .unwrap()
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-                .width
-                .to_value()),
+            subclass::Property("width", ..) =>
+                Ok(self.get_dimensions_or_empty().width.to_value()),
 
-            subclass::Property("height", ..) => Ok(self
-                .get_handle_ref()
-                .unwrap()
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-                .height
-                .to_value()),
+            subclass::Property("height", ..) =>
+                Ok(self.get_dimensions_or_empty().height.to_value()),
 
-            subclass::Property("em", ..) => Ok(self
-                .get_handle_ref()
-                .unwrap()
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-                .em
-                .to_value()),
-            subclass::Property("ex", ..) => Ok(self
-                .get_handle_ref()
-                .unwrap()
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-                .ex
-                .to_value()),
+            subclass::Property("em", ..) =>
+                Ok(self.get_dimensions_or_empty().em.to_value()),
+
+            subclass::Property("ex", ..) =>
+                Ok(self.get_dimensions_or_empty().ex.to_value()),
 
             // the following three are deprecated
-            subclass::Property("title", ..) => Ok((None as Option<String>).to_value()),
-            subclass::Property("desc", ..) => Ok((None as Option<String>).to_value()),
+            subclass::Property("title", ..)    => Ok((None as Option<String>).to_value()),
+            subclass::Property("desc", ..)     => Ok((None as Option<String>).to_value()),
             subclass::Property("metadata", ..) => Ok((None as Option<String>).to_value()),
 
             _ => unreachable!("invalid property id={} for RsvgHandle", id),
@@ -485,7 +483,12 @@ impl CHandle {
 
         match *state {
             LoadState::Start => (),
-            _ => panic!("Please set the base file or URI before loading any data into RsvgHandle",),
+            _ => {
+                rsvg_g_critical(
+                    "Please set the base file or URI before loading any data into RsvgHandle",
+                );
+                return;
+            }
         }
 
         match Url::parse(&url) {
@@ -553,7 +556,10 @@ impl CHandle {
                 buffer.extend_from_slice(buf);
             }
 
-            _ => panic!("Handle must not be closed in order to write to it"),
+            _ => {
+                rsvg_g_critical("Handle must not be closed in order to write to it");
+                return;
+            }
         }
     }
 
@@ -589,10 +595,11 @@ impl CHandle {
         match *state {
             LoadState::Start => self.read_stream(state, stream, cancellable),
             LoadState::Loading { .. } | LoadState::ClosedOk { .. } | LoadState::ClosedError => {
-                panic!(
+                rsvg_g_critical(
                     "handle must not be already loaded in order to call \
                      rsvg_handle_read_stream_sync()",
-                )
+                );
+                Err(LoadingError::Unknown)
             }
         }
     }
@@ -621,17 +628,17 @@ impl CHandle {
 
         match *state {
             LoadState::Start => {
-                rsvg_g_warning("Handle has not been loaded");
+                rsvg_g_critical("Handle has not been loaded");
                 Err(RenderingError::HandleIsNotLoaded)
             }
 
             LoadState::Loading { .. } => {
-                rsvg_g_warning("Handle is still loading; call rsvg_handle_close() first");
+                rsvg_g_critical("Handle is still loading; call rsvg_handle_close() first");
                 Err(RenderingError::HandleIsNotLoaded)
             }
 
             LoadState::ClosedError => {
-                rsvg_g_warning(
+                rsvg_g_critical(
                     "Handle could not read or parse the SVG; did you check for errors during the \
                      loading stage?",
                 );
@@ -650,13 +657,15 @@ impl CHandle {
         handle.has_sub(id)
     }
 
-    fn get_dimensions(&self) -> RsvgDimensionData {
-        if let Ok(handle) = self.get_handle_ref() {
-            let size_callback = self.size_callback.borrow();
-            handle.get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-        } else {
-            panic!("Handle is not loaded");
-        }
+    fn get_dimensions_or_empty(&self) -> RsvgDimensionData {
+        self.get_dimensions()
+            .unwrap_or_else(|_| RsvgDimensionData::empty())
+    }
+
+    fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let size_callback = self.size_callback.borrow();
+        handle.get_dimensions(self.dpi.get(), &*size_callback, self.is_testing.get())
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
@@ -702,9 +711,9 @@ impl CHandle {
         handle.get_geometry_for_element(id, viewport, self.dpi.get(), self.is_testing.get())
     }
 
-    fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let handle = self.get_handle_ref().unwrap();
-        handle.get_intrinsic_dimensions()
+    fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        Ok(handle.get_intrinsic_dimensions())
     }
 
     fn set_testing(&self, is_testing: bool) {
@@ -971,7 +980,6 @@ pub unsafe extern "C" fn rsvg_rust_handle_has_sub(
     }
 
     let id: String = from_glib_none(id);
-    // FIXME: return a proper error code to the public API
     rhandle.has_sub(&id).unwrap_or(false).to_glib()
 }
 
@@ -1015,7 +1023,9 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
     dimension_data: *mut RsvgDimensionData,
 ) {
     let rhandle = get_rust_handle(handle);
-    *dimension_data = rhandle.get_dimensions();
+    *dimension_data = rhandle
+        .get_dimensions()
+        .unwrap_or_else(|_| RsvgDimensionData::empty());
 }
 
 #[no_mangle]
@@ -1035,14 +1045,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
         }
 
         Err(_) => {
-            let d = &mut *dimension_data;
-
-            d.width = 0;
-            d.height = 0;
-            d.em = 0.0;
-            d.ex = 0.0;
-
-            // FIXME: return a proper error code to the public API
+            *dimension_data = RsvgDimensionData::empty();
             false.to_glib()
         }
     }
@@ -1233,7 +1236,9 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
 ) {
     let rhandle = get_rust_handle(handle);
 
-    let d = rhandle.get_intrinsic_dimensions();
+    let d = rhandle
+        .get_intrinsic_dimensions()
+        .unwrap_or_else(|_| panic!("API called out of order"));
 
     let w = d.width.map(|l| l.to_length());
     let h = d.height.map(|l| l.to_length());
