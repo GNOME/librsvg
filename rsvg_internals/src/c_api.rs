@@ -664,13 +664,10 @@ impl CHandle {
         handle.has_sub(id)
     }
 
-    fn get_dimensions(&self) -> RsvgDimensionData {
-        if let Ok(handle) = self.get_handle_ref() {
-            let size_callback = self.size_callback.borrow();
-            handle.get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-        } else {
-            panic!("Handle is not loaded");
-        }
+    fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let size_callback = self.size_callback.borrow();
+        handle.get_dimensions(self.dpi.get(), &*size_callback, self.is_testing.get())
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
@@ -985,7 +982,6 @@ pub unsafe extern "C" fn rsvg_rust_handle_has_sub(
     }
 
     let id: String = from_glib_none(id);
-    // FIXME: return a proper error code to the public API
     rhandle.has_sub(&id).unwrap_or(false).to_glib()
 }
 
@@ -1029,7 +1025,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
     dimension_data: *mut RsvgDimensionData,
 ) {
     let rhandle = get_rust_handle(handle);
-    *dimension_data = rhandle.get_dimensions();
+    *dimension_data = rhandle.get_dimensions().unwrap_or_else(|_| RsvgDimensionData::empty());
 }
 
 #[no_mangle]
@@ -1049,14 +1045,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
         }
 
         Err(_) => {
-            let d = &mut *dimension_data;
-
-            d.width = 0;
-            d.height = 0;
-            d.em = 0.0;
-            d.ex = 0.0;
-
-            // FIXME: return a proper error code to the public API
+            *dimension_data = RsvgDimensionData::empty();
             false.to_glib()
         }
     }
