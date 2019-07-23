@@ -483,7 +483,12 @@ impl CHandle {
 
         match *state {
             LoadState::Start => (),
-            _ => panic!("Please set the base file or URI before loading any data into RsvgHandle",),
+            _ => {
+                rsvg_g_critical(
+                    "Please set the base file or URI before loading any data into RsvgHandle",
+                );
+                return;
+            }
         }
 
         match Url::parse(&url) {
@@ -551,7 +556,10 @@ impl CHandle {
                 buffer.extend_from_slice(buf);
             }
 
-            _ => panic!("Handle must not be closed in order to write to it"),
+            _ => {
+                rsvg_g_critical("Handle must not be closed in order to write to it");
+                return;
+            }
         }
     }
 
@@ -587,10 +595,11 @@ impl CHandle {
         match *state {
             LoadState::Start => self.read_stream(state, stream, cancellable),
             LoadState::Loading { .. } | LoadState::ClosedOk { .. } | LoadState::ClosedError => {
-                panic!(
+                rsvg_g_critical(
                     "handle must not be already loaded in order to call \
                      rsvg_handle_read_stream_sync()",
-                )
+                );
+                Err(LoadingError::Unknown)
             }
         }
     }
