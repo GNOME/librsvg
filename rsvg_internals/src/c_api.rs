@@ -435,10 +435,9 @@ impl ObjectImpl for CHandle {
         }
     }
 
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     fn get_property(&self, _obj: &glib::Object, id: usize) -> Result<glib::Value, ()> {
         let prop = &PROPERTIES[id];
-
-        let size_callback = self.size_callback.borrow();
 
         match *prop {
             subclass::Property("flags", ..) => {
@@ -456,36 +455,21 @@ impl ObjectImpl for CHandle {
                 .map(|url| url.as_str())
                 .to_value()),
 
-            subclass::Property("width", ..) => Ok(self
-                .get_handle_ref()
-                .unwrap()
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-                .width
-                .to_value()),
+            subclass::Property("width", ..) =>
+                Ok(self.get_dimensions_or_empty().width.to_value()),
 
-            subclass::Property("height", ..) => Ok(self
-                .get_handle_ref()
-                .unwrap()
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-                .height
-                .to_value()),
+            subclass::Property("height", ..) =>
+                Ok(self.get_dimensions_or_empty().height.to_value()),
 
-            subclass::Property("em", ..) => Ok(self
-                .get_handle_ref()
-                .unwrap()
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-                .em
-                .to_value()),
-            subclass::Property("ex", ..) => Ok(self
-                .get_handle_ref()
-                .unwrap()
-                .get_dimensions_no_error(self.dpi.get(), &*size_callback, self.is_testing.get())
-                .ex
-                .to_value()),
+            subclass::Property("em", ..) =>
+                Ok(self.get_dimensions_or_empty().em.to_value()),
+
+            subclass::Property("ex", ..) =>
+                Ok(self.get_dimensions_or_empty().ex.to_value()),
 
             // the following three are deprecated
-            subclass::Property("title", ..) => Ok((None as Option<String>).to_value()),
-            subclass::Property("desc", ..) => Ok((None as Option<String>).to_value()),
+            subclass::Property("title", ..)    => Ok((None as Option<String>).to_value()),
+            subclass::Property("desc", ..)     => Ok((None as Option<String>).to_value()),
             subclass::Property("metadata", ..) => Ok((None as Option<String>).to_value()),
 
             _ => unreachable!("invalid property id={} for RsvgHandle", id),
@@ -662,6 +646,11 @@ impl CHandle {
     fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
         let handle = self.get_handle_ref()?;
         handle.has_sub(id)
+    }
+
+    fn get_dimensions_or_empty(&self) -> RsvgDimensionData {
+        self.get_dimensions()
+            .unwrap_or_else(|_| RsvgDimensionData::empty())
     }
 
     fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
@@ -1025,7 +1014,9 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
     dimension_data: *mut RsvgDimensionData,
 ) {
     let rhandle = get_rust_handle(handle);
-    *dimension_data = rhandle.get_dimensions().unwrap_or_else(|_| RsvgDimensionData::empty());
+    *dimension_data = rhandle
+        .get_dimensions()
+        .unwrap_or_else(|_| RsvgDimensionData::empty());
 }
 
 #[no_mangle]
