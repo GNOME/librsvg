@@ -35,7 +35,7 @@ use crate::error::{set_gerror, LoadingError, RenderingError, RSVG_ERROR_FAILED};
 use crate::handle::{Handle, LoadOptions};
 use crate::length::RsvgLength;
 use crate::structure::IntrinsicDimensions;
-use crate::util::rsvg_g_warning;
+use crate::util::rsvg_g_critical;
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -621,17 +621,17 @@ impl CHandle {
 
         match *state {
             LoadState::Start => {
-                rsvg_g_warning("Handle has not been loaded");
+                rsvg_g_critical("Handle has not been loaded");
                 Err(RenderingError::HandleIsNotLoaded)
             }
 
             LoadState::Loading { .. } => {
-                rsvg_g_warning("Handle is still loading; call rsvg_handle_close() first");
+                rsvg_g_critical("Handle is still loading; call rsvg_handle_close() first");
                 Err(RenderingError::HandleIsNotLoaded)
             }
 
             LoadState::ClosedError => {
-                rsvg_g_warning(
+                rsvg_g_critical(
                     "Handle could not read or parse the SVG; did you check for errors during the \
                      loading stage?",
                 );
