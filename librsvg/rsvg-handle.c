@@ -202,8 +202,8 @@
  * order, librsvg will just emit a g_critical() message in those cases.
  *
  * New methods introduced in librsvg 2.46 and later will check for the correct
- * ordering, and panic if they are called out of order.  Please check all calls for
- * errors!
+ * ordering, and panic if they are called out of order &mdash; this will abort
+ * the program as if it had a failed assertion.
  */
 
 /***** Begin documentation for RsvgHandle properties *****/
