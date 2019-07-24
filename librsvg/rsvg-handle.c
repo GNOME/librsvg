@@ -522,7 +522,7 @@ rsvg_handle_new_with_flags (RsvgHandleFlags flags)
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
  * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
- * returned.
+ * returned in @error.
  *
  * Returns: a new #RsvgHandle on success, or %NULL with @error filled in
  *
@@ -554,7 +554,7 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
  * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
- * returned.
+ * returned in @error.
  *
  * Returns: a new #RsvgHandle on success, or %NULL with @error filled in
  *
@@ -588,7 +588,7 @@ rsvg_handle_new_from_stream_sync (GInputStream    *input_stream,
  *
  * Loads the next @count bytes of the image.
  *
- * Returns: This function always returns %TRUE, and does not set the @error.
+ * Returns: %TRUE on success, or %FALSE on error.
  *
  * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
  * functions rsvg_handle_new_from_gfile_sync() or rsvg_handle_new_from_stream_sync().
