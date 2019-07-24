@@ -240,7 +240,12 @@
  * Width, in pixels, of the rendered SVG after calling the size callback
  * as specified by rsvg_handle_set_size_callback().
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  For historical reasons, this property is of integer type,
+ * which cannot give the exact size of SVG images that are not pixel-aligned.
+ * Moreover, reading each of the size properties causes the size of the SVG to
+ * be recomputed, so reading both the <literal>width</literal> and
+ * <literal>height</literal> properties will cause two such computations.
+ * Please use rsvg_handle_get_intrinsic_dimensions() instead.
  */
 
 /**
@@ -249,7 +254,12 @@
  * Height, in pixels, of the rendered SVG after calling the size callback
  * as specified by rsvg_handle_set_size_callback().
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  For historical reasons, this property is of integer type,
+ * which cannot give the exact size of SVG images that are not pixel-aligned.
+ * Moreover, reading each of the size properties causes the size of the SVG to
+ * be recomputed, so reading both the <literal>width</literal> and
+ * <literal>height</literal> properties will cause two such computations.
+ * Please use rsvg_handle_get_intrinsic_dimensions() instead.
  */
 
 /**
@@ -258,7 +268,10 @@
  * Exact width, in pixels, of the rendered SVG before calling the size callback
  * as specified by rsvg_handle_set_size_callback().
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  Reading each of the size properties causes the size of the
+ * SVG to be recomputed, so reading both the <literal>em</literal> and
+ * <literal>ex</literal> properties will cause two such computations.  Please
+ * use rsvg_handle_get_intrinsic_dimensions() instead.
  */
 
 /**
@@ -267,7 +280,10 @@
  * Exact height, in pixels, of the rendered SVG before calling the size callback
  * as specified by rsvg_handle_set_size_callback().
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  Reading each of the size properties causes the size of the
+ * SVG to be recomputed, so reading both the <literal>em</literal> and
+ * <literal>ex</literal> properties will cause two such computations.  Please
+ * use rsvg_handle_get_intrinsic_dimensions() instead.
  */
 
 /**
