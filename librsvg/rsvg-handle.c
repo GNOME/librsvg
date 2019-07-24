@@ -521,6 +521,10 @@ rsvg_handle_new_with_flags (RsvgHandleFlags flags)
  *
  * Creates a new #RsvgHandle for @file.
  *
+ * This function sets the "base file" of the handle to be @file itself, so SVG
+ * elements like <literal>&lt;image&gt;</literal> which reference external
+ * resources will be resolved relative to the location of @file.
+ *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
  * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
@@ -552,6 +556,10 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
  * @error: (allow-none): a location to store a #GError, or %NULL
  *
  * Creates a new #RsvgHandle for @stream.
+ *
+ * This function sets the "base file" of the handle to be @base_file if
+ * provided.  SVG elements like <literal>&lt;image&gt;</literal> which reference
+ * external resources will be resolved relative to the location of @base_file.
  *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
@@ -590,14 +598,20 @@ rsvg_handle_new_from_stream_sync (GInputStream    *input_stream,
  *
  * Loads the next @count bytes of the image.
  *
+ * Before calling this function for the first time, you may need to call
+ * rsvg_handle_set_base_uri() or rsvg_handle_set_base_gfile() to set the "base
+ * file" for resolving references to external resources.  SVG elements like
+ * <literal>&lt;image&gt;</literal> which reference external resources will be
+ * resolved relative to the location you specify with those functions.
+ *
  * Returns: %TRUE on success, or %FALSE on error.
  *
  * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
- * functions rsvg_handle_new_from_gfile_sync() or rsvg_handle_new_from_stream_sync().
- *
- * Notes: This function will accumlate data from the @buf in memory until
- * rsvg_handle_close() gets called.  To avoid a big temporary buffer, use the
- * funtions listed before, which take a #GFile or a #GInputStream.
+ * functions rsvg_handle_new_from_gfile_sync() or
+ * rsvg_handle_new_from_stream_sync().  This function is deprecated because it
+ * will accumlate data from the @buf in memory until rsvg_handle_close() gets
+ * called.  To avoid a big temporary buffer, use the suggested funtions, which
+ * take a #GFile or a #GInputStream and do not require a temporary buffer.
  **/
 gboolean
 rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error)
@@ -622,7 +636,9 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
  * Returns: %TRUE on success, or %FALSE on error.
  *
  * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
- * functions rsvg_handle_new_from_gfile_sync() or rsvg_handle_new_from_stream_sync().
+ * functions rsvg_handle_new_from_gfile_sync() or
+ * rsvg_handle_new_from_stream_sync().  See the deprecation notes for
+ * rsvg_handle_write() for more information.
  **/
 gboolean
 rsvg_handle_close (RsvgHandle *handle, GError **error)
@@ -641,6 +657,12 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
  * @error: (allow-none): a location to store a #GError, or %NULL
  *
  * Reads @stream and writes the data from it to @handle.
+ *
+ * Before calling this function, you may need to call rsvg_handle_set_base_uri()
+ * or rsvg_handle_set_base_gfile() to set the "base file" for resolving
+ * references to external resources.  SVG elements like
+ * <literal>&lt;image&gt;</literal> which reference external resources will be
+ * resolved relative to the location you specify with those functions.
  *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
@@ -674,8 +696,10 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
  * @handle: A #RsvgHandle
  * @base_uri: The base uri
  *
- * Set the base URI for this SVG. This can only be called before rsvg_handle_write()
- * has been called.
+ * Set the base URI for this SVG.
+ *
+ * Note: This function may only be called before rsvg_handle_write() or
+ * rsvg_handle_read_stream_sync() have been called.
  *
  * Since: 2.9
  */
@@ -694,8 +718,9 @@ rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri)
  * @base_file: a #GFile
  *
  * Set the base URI for @handle from @file.
- * Note: This function may only be called before rsvg_handle_write()
- * or rsvg_handle_read_stream_sync() has been called.
+ *
+ * Note: This function may only be called before rsvg_handle_write() or
+ * rsvg_handle_read_stream_sync() have been called.
  *
  * Since: 2.32
  */
