@@ -821,6 +821,9 @@ rsvg_handle_get_desc (RsvgHandle *handle)
  * rotated current transformation matrix, the whole SVG will be rotated in the
  * rendered version.
  *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
  * Note that @cr must be a Cairo context that is not in an error state, that is,
  * cairo_status() must return #CAIRO_STATUS_SUCCESS for it.  Cairo can set a
  * context to be in an error state in various situations, for example, if it was
@@ -852,6 +855,9 @@ rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id)
  * rotated current transformation matrix, the whole SVG will be rotated in the
  * rendered version.
  *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
  * Note that @cr must be a Cairo context that is not in an error state, that is,
  * cairo_status() must return #CAIRO_STATUS_SUCCESS for it.  Cairo can set a
  * context to be in an error state in various situations, for example, if it was
@@ -871,7 +877,11 @@ rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr)
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
  *
- * Get the SVG's size. Do not call from within the size_func callback, because an infinite loop will occur.
+ * Get the SVG's size. Do not call from within the size_func callback, because
+ * an infinite loop will occur.
+ *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
  *
  * Since: 2.14
  */
@@ -894,6 +904,9 @@ rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_dat
  *
  * Get the size of a subelement of the SVG file. Do not call from within the
  * size_func callback, because an infinite loop will occur.
+ *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
  *
  * Element IDs should look like an URL fragment identifier; for example, pass
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
@@ -924,6 +937,9 @@ rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
  *
  * Get the position of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
+ *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
  *
  * Element IDs should look like an URL fragment identifier; for example, pass
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
@@ -981,6 +997,9 @@ rsvg_handle_has_sub (RsvgHandle *handle, const char *id)
  * sub-sub-elements recursively).  If @id is #NULL, this function renders the
  * whole SVG.
  *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
  * If you need to render an image which is only big enough to fit a particular
  * sub-element of the SVG, consider using rsvg_handle_render_cairo_sub(), upon a
  * surface that is just the size returned by rsvg_handle_get_dimensions_sub().
@@ -1014,6 +1033,9 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id)
  * will be returned.  Note that the pixbuf may not be complete until
  * @rsvg_handle_close has been called.
  *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
  * Returns: (transfer full) (nullable): the pixbuf loaded by @handle, or %NULL.
  **/
 GdkPixbuf *
@@ -1025,11 +1047,14 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 /**
  * rsvg_handle_set_dpi:
  * @handle: An #RsvgHandle
- * @dpi: Dots Per Inch (aka Pixels Per Inch)
+ * @dpi: Dots Per Inch (i.e. as Pixels Per Inch)
  *
- * Sets the DPI for the outgoing pixbuf. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to @dpi will
- * reset the DPI to whatever the default value happens to be.
+ * Sets the DPI at which the @handle will be rendered. Common values are
+ * 75, 90, and 300 DPI.
+ *
+ * Passing a number <= 0 to @dpi will reset the DPI to whatever the default
+ * value happens to be, but since rsvg_set_default_dpi() is deprecated, please
+ * do not pass values <= 0 to this function.
  *
  * Since: 2.8
  */
@@ -1042,12 +1067,15 @@ rsvg_handle_set_dpi (RsvgHandle *handle, double dpi)
 /**
  * rsvg_handle_set_dpi_x_y:
  * @handle: An #RsvgHandle
- * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
- * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
+ * @dpi_x: Dots Per Inch (i.e. Pixels Per Inch)
+ * @dpi_y: Dots Per Inch (i.e. Pixels Per Inch)
  *
- * Sets the DPI for the outgoing pixbuf. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi_x or @dpi_y will
- * reset the DPI to whatever the default value happens to be.
+ * Sets the DPI at which the @handle will be rendered. Common values are
+ * 75, 90, and 300 DPI.
+ *
+ * Passing a number <= 0 to @dpi will reset the DPI to whatever the default
+ * value happens to be, but since rsvg_set_default_dpi_x_y() is deprecated,
+ * please do not pass values <= 0 to this function.
  *
  * Since: 2.8
  */
