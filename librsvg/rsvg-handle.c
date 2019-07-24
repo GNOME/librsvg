@@ -1199,6 +1199,8 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
  * API ordering: This function must be called on a fully-loaded @handle.  See
  * the section <link href="#API-ordering">API ordering</link> for details.
  *
+ * Panics: this function will panic if the @handle is not fully-loaded.
+ *
  * Since: 2.46
  */
 void
@@ -1255,6 +1257,11 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  *
  * This operation is not constant-time, as it involves going through all
  * the child elements.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
+ *
+ * Panics: this function will panic if the @handle is not fully-loaded.
  *
  * Since: 2.46
  */
