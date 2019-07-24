@@ -787,9 +787,9 @@ rsvg_handle_get_desc (RsvgHandle *handle)
  * rsvg_handle_render_cairo_sub:
  * @handle: A #RsvgHandle
  * @cr: A Cairo context
- * @id: (nullable): An element's id within the SVG, or %NULL to render
- *   the whole SVG. For example, if you have a layer called "layer1"
- *   that you wish to render, pass "##layer1" as the id.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to render the whole SVG.
  *
  * Draws a subset of a loaded SVG handle to a Cairo context.  Drawing will occur with
  * respect to the @cr's current transformation:  for example, if the @cr has a
@@ -800,6 +800,10 @@ rsvg_handle_get_desc (RsvgHandle *handle)
  * cairo_status() must return #CAIRO_STATUS_SUCCESS for it.  Cairo can set a
  * context to be in an error state in various situations, for example, if it was
  * passed an invalid matrix or if it was created for an invalid surface.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * Returns: %TRUE if drawing succeeded; %FALSE otherwise.
  * Since: 2.14
@@ -859,11 +863,16 @@ rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_dat
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
- * @id: (nullable): An element's id within the SVG, starting with "##", for
- * example, "##layer1"; or %NULL to use the whole SVG.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
  * Get the size of a subelement of the SVG file. Do not call from within the
  * size_func callback, because an infinite loop will occur.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
  *
@@ -884,11 +893,16 @@ rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
  * rsvg_handle_get_position_sub:
  * @handle: A #RsvgHandle
  * @position_data: (out): A place to store the SVG fragment's position.
- * @id: (nullable): An element's id within the SVG, starting with "##", for
- * example, "##layer1"; or %NULL to use the whole SVG.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
  * Get the position of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
  *
@@ -908,11 +922,17 @@ rsvg_handle_get_position_sub (RsvgHandle *handle,
 /**
  * rsvg_handle_has_sub:
  * @handle: a #RsvgHandle
- * @id: an element's id within the SVG, starting with "##", for example, "##layer1".
+ * @id: An element's id within the SVG, starting with "##" (a single hash
+ * character), for example, "##layer1".  This notation corresponds to a URL's
+ * fragment ID.
  *
  * Checks whether the element @id exists in the SVG document.
  *
- * Returns: %TRUE if @id exists in the SVG document
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
+ *
+ * Returns: %TRUE if @id exists in the SVG document, %FALSE otherwise.
  *
  * Since: 2.22
  */
@@ -927,8 +947,9 @@ rsvg_handle_has_sub (RsvgHandle *handle, const char *id)
 /**
  * rsvg_handle_get_pixbuf_sub:
  * @handle: An #RsvgHandle
- * @id: (nullable): An element's id within the SVG, starting with "##", for
- * example, "##layer1"; or %NULL to use the whole SVG.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
  * Creates a #GdkPixbuf the same size as the entire SVG loaded into @handle, but
  * only renders the sub-element that has the specified @id (and all its
@@ -940,6 +961,10 @@ rsvg_handle_has_sub (RsvgHandle *handle, const char *id)
  * surface that is just the size returned by rsvg_handle_get_dimensions_sub().
  * You will need to offset the rendering by the amount returned in
  * rsvg_handle_get_position_sub().
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * Returns: (transfer full) (nullable): a pixbuf, or %NULL if an error occurs
  * during rendering.
@@ -1146,9 +1171,10 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
 /**
  * rsvg_handle_get_geometry_for_element:
  * @handle: An #RsvgHandle
- * @id: (nullable): An element's id within the SVG, or %NULL to compute
- *   the geometry for the whole SVG. For example, if you have a layer called "layer1"
- *   that you wish to render, pass "##layer1" as the id.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to compute the geometry for the
+ * whole SVG.
  * @viewport: Viewport size at which the whole SVG would be fitted.
  * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
  * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
@@ -1157,9 +1183,9 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * Computes the ink rectangle and logical rectangle of an SVG element, or the
  * whole SVG, as if the whole SVG were rendered to a specific viewport.
  *
- * Element IDs should look like an URL fragment identifier; for
- * example, pass "##foo" to get the geometry of the
- * element that has an <literal>id="foo"</literal> attribute.
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * The "ink rectangle" is the bounding box that would be painted
  * for fully- stroked and filled elements.
