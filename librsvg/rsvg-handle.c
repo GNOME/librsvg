@@ -202,8 +202,8 @@
  * order, librsvg will just emit a g_critical() message in those cases.
  *
  * New methods introduced in librsvg 2.46 and later will check for the correct
- * ordering, and panic if they are called out of order.  Please check all calls for
- * errors!
+ * ordering, and panic if they are called out of order &mdash; this will abort
+ * the program as if it had a failed assertion.
  */
 
 /***** Begin documentation for RsvgHandle properties *****/
@@ -435,9 +435,10 @@ rsvg_handle_free (RsvgHandle *handle)
  * a GdkPixbuf from it. When finished, free the handle with g_object_unref(). No
  * more than one image can be loaded with one handle.
  *
- * Note that this function creates an #RsvgHandle with no flags set.  If you require
- * any of #RsvgHandleFlags to be set, use rsvg_handle_new_with_flags() or the stream
- * functions listed above.
+ * Note that this function creates an #RsvgHandle with no flags set.  If you
+ * require any of #RsvgHandleFlags to be set, use any of
+ * rsvg_handle_new_with_flags(), rsvg_handle_new_from_stream_sync(), or
+ * rsvg_handle_new_from_gfile_sync().
  *
  * Returns: A new #RsvgHandle with no flags set.
  **/
@@ -476,7 +477,10 @@ rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
  * @filename: The file name to load, or a URI.
  * @error: return location for errors
  *
- * Loads the SVG specified by @file_name.
+ * Loads the SVG specified by @file_name.  Note that this function, like
+ * rsvg_handle_new(), does not specify any loading flags for the resulting
+ * handle.  If you require the use of #RsvgHandleFlags, use
+ * rsvg_handle_new_from_gfile_sync().
  *
  * Returns: A #RsvgHandle or %NULL if an error occurs.
  * Since: 2.14
@@ -494,7 +498,9 @@ rsvg_handle_new_from_file (const gchar *filename, GError **error)
  * rsvg_handle_new_with_flags:
  * @flags: flags from #RsvgHandleFlags
  *
- * Creates a new #RsvgHandle with flags @flags.
+ * Creates a new #RsvgHandle with flags @flags.  After calling this function,
+ * you can feed the resulting handle with SVG data by using
+ * rsvg_handle_read_stream_sync().
  *
  * Returns: (transfer full): a new #RsvgHandle
  *
@@ -515,10 +521,14 @@ rsvg_handle_new_with_flags (RsvgHandleFlags flags)
  *
  * Creates a new #RsvgHandle for @file.
  *
+ * This function sets the "base file" of the handle to be @file itself, so SVG
+ * elements like <literal>&lt;image&gt;</literal> which reference external
+ * resources will be resolved relative to the location of @file.
+ *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
  * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
- * returned.
+ * returned in @error.
  *
  * Returns: a new #RsvgHandle on success, or %NULL with @error filled in
  *
@@ -547,10 +557,14 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
  *
  * Creates a new #RsvgHandle for @stream.
  *
+ * This function sets the "base file" of the handle to be @base_file if
+ * provided.  SVG elements like <literal>&lt;image&gt;</literal> which reference
+ * external resources will be resolved relative to the location of @base_file.
+ *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
  * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
- * returned.
+ * returned in @error.
  *
  * Returns: a new #RsvgHandle on success, or %NULL with @error filled in
  *
@@ -584,14 +598,20 @@ rsvg_handle_new_from_stream_sync (GInputStream    *input_stream,
  *
  * Loads the next @count bytes of the image.
  *
- * Returns: This function always returns %TRUE, and does not set the @error.
+ * Before calling this function for the first time, you may need to call
+ * rsvg_handle_set_base_uri() or rsvg_handle_set_base_gfile() to set the "base
+ * file" for resolving references to external resources.  SVG elements like
+ * <literal>&lt;image&gt;</literal> which reference external resources will be
+ * resolved relative to the location you specify with those functions.
+ *
+ * Returns: %TRUE on success, or %FALSE on error.
  *
  * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
- * functions rsvg_handle_new_from_gfile_sync() or rsvg_handle_new_from_stream_sync().
- *
- * Notes: This function will accumlate data from the @buf in memory until
- * rsvg_handle_close() gets called.  To avoid a big temporary buffer, use the
- * funtions listed before, which take a #GFile or a #GInputStream.
+ * functions rsvg_handle_new_from_gfile_sync() or
+ * rsvg_handle_new_from_stream_sync().  This function is deprecated because it
+ * will accumlate data from the @buf in memory until rsvg_handle_close() gets
+ * called.  To avoid a big temporary buffer, use the suggested funtions, which
+ * take a #GFile or a #GInputStream and do not require a temporary buffer.
  **/
 gboolean
 rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error)
@@ -616,7 +636,9 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
  * Returns: %TRUE on success, or %FALSE on error.
  *
  * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
- * functions rsvg_handle_new_from_gfile_sync() or rsvg_handle_new_from_stream_sync().
+ * functions rsvg_handle_new_from_gfile_sync() or
+ * rsvg_handle_new_from_stream_sync().  See the deprecation notes for
+ * rsvg_handle_write() for more information.
  **/
 gboolean
 rsvg_handle_close (RsvgHandle *handle, GError **error)
@@ -635,6 +657,12 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
  * @error: (allow-none): a location to store a #GError, or %NULL
  *
  * Reads @stream and writes the data from it to @handle.
+ *
+ * Before calling this function, you may need to call rsvg_handle_set_base_uri()
+ * or rsvg_handle_set_base_gfile() to set the "base file" for resolving
+ * references to external resources.  SVG elements like
+ * <literal>&lt;image&gt;</literal> which reference external resources will be
+ * resolved relative to the location you specify with those functions.
  *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
@@ -668,8 +696,10 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
  * @handle: A #RsvgHandle
  * @base_uri: The base uri
  *
- * Set the base URI for this SVG. This can only be called before rsvg_handle_write()
- * has been called.
+ * Set the base URI for this SVG.
+ *
+ * Note: This function may only be called before rsvg_handle_write() or
+ * rsvg_handle_read_stream_sync() have been called.
  *
  * Since: 2.9
  */
@@ -688,8 +718,9 @@ rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri)
  * @base_file: a #GFile
  *
  * Set the base URI for @handle from @file.
- * Note: This function may only be called before rsvg_handle_write()
- * or rsvg_handle_read_stream_sync() has been called.
+ *
+ * Note: This function may only be called before rsvg_handle_write() or
+ * rsvg_handle_read_stream_sync() have been called.
  *
  * Since: 2.32
  */
@@ -781,19 +812,26 @@ rsvg_handle_get_desc (RsvgHandle *handle)
  * rsvg_handle_render_cairo_sub:
  * @handle: A #RsvgHandle
  * @cr: A Cairo context
- * @id: (nullable): An element's id within the SVG, or %NULL to render
- *   the whole SVG. For example, if you have a layer called "layer1"
- *   that you wish to render, pass "##layer1" as the id.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to render the whole SVG.
  *
  * Draws a subset of a loaded SVG handle to a Cairo context.  Drawing will occur with
  * respect to the @cr's current transformation:  for example, if the @cr has a
  * rotated current transformation matrix, the whole SVG will be rotated in the
  * rendered version.
  *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
  * Note that @cr must be a Cairo context that is not in an error state, that is,
  * cairo_status() must return #CAIRO_STATUS_SUCCESS for it.  Cairo can set a
  * context to be in an error state in various situations, for example, if it was
  * passed an invalid matrix or if it was created for an invalid surface.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * Returns: %TRUE if drawing succeeded; %FALSE otherwise.
  * Since: 2.14
@@ -817,6 +855,9 @@ rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id)
  * rotated current transformation matrix, the whole SVG will be rotated in the
  * rendered version.
  *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
  * Note that @cr must be a Cairo context that is not in an error state, that is,
  * cairo_status() must return #CAIRO_STATUS_SUCCESS for it.  Cairo can set a
  * context to be in an error state in various situations, for example, if it was
@@ -836,7 +877,11 @@ rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr)
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
  *
- * Get the SVG's size. Do not call from within the size_func callback, because an infinite loop will occur.
+ * Get the SVG's size. Do not call from within the size_func callback, because
+ * an infinite loop will occur.
+ *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
  *
  * Since: 2.14
  */
@@ -853,11 +898,19 @@ rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_dat
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
- * @id: (nullable): An element's id within the SVG, starting with "##", for
- * example, "##layer1"; or %NULL to use the whole SVG.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
  * Get the size of a subelement of the SVG file. Do not call from within the
  * size_func callback, because an infinite loop will occur.
+ *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
  *
@@ -878,11 +931,19 @@ rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
  * rsvg_handle_get_position_sub:
  * @handle: A #RsvgHandle
  * @position_data: (out): A place to store the SVG fragment's position.
- * @id: (nullable): An element's id within the SVG, starting with "##", for
- * example, "##layer1"; or %NULL to use the whole SVG.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
  * Get the position of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
+ *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
  *
@@ -902,11 +963,17 @@ rsvg_handle_get_position_sub (RsvgHandle *handle,
 /**
  * rsvg_handle_has_sub:
  * @handle: a #RsvgHandle
- * @id: an element's id within the SVG, starting with "##", for example, "##layer1".
+ * @id: An element's id within the SVG, starting with "##" (a single hash
+ * character), for example, "##layer1".  This notation corresponds to a URL's
+ * fragment ID.
  *
  * Checks whether the element @id exists in the SVG document.
  *
- * Returns: %TRUE if @id exists in the SVG document
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
+ *
+ * Returns: %TRUE if @id exists in the SVG document, %FALSE otherwise.
  *
  * Since: 2.22
  */
@@ -921,19 +988,27 @@ rsvg_handle_has_sub (RsvgHandle *handle, const char *id)
 /**
  * rsvg_handle_get_pixbuf_sub:
  * @handle: An #RsvgHandle
- * @id: (nullable): An element's id within the SVG, starting with "##", for
- * example, "##layer1"; or %NULL to use the whole SVG.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
  * Creates a #GdkPixbuf the same size as the entire SVG loaded into @handle, but
  * only renders the sub-element that has the specified @id (and all its
  * sub-sub-elements recursively).  If @id is #NULL, this function renders the
  * whole SVG.
  *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
  * If you need to render an image which is only big enough to fit a particular
  * sub-element of the SVG, consider using rsvg_handle_render_cairo_sub(), upon a
  * surface that is just the size returned by rsvg_handle_get_dimensions_sub().
  * You will need to offset the rendering by the amount returned in
  * rsvg_handle_get_position_sub().
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * Returns: (transfer full) (nullable): a pixbuf, or %NULL if an error occurs
  * during rendering.
@@ -958,6 +1033,9 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id)
  * will be returned.  Note that the pixbuf may not be complete until
  * @rsvg_handle_close has been called.
  *
+ * This function depends on the #RsvgHandle's DPI to compute dimensions in
+ * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ *
  * Returns: (transfer full) (nullable): the pixbuf loaded by @handle, or %NULL.
  **/
 GdkPixbuf *
@@ -969,11 +1047,14 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 /**
  * rsvg_handle_set_dpi:
  * @handle: An #RsvgHandle
- * @dpi: Dots Per Inch (aka Pixels Per Inch)
+ * @dpi: Dots Per Inch (i.e. as Pixels Per Inch)
  *
- * Sets the DPI for the outgoing pixbuf. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to @dpi will
- * reset the DPI to whatever the default value happens to be.
+ * Sets the DPI at which the @handle will be rendered. Common values are
+ * 75, 90, and 300 DPI.
+ *
+ * Passing a number <= 0 to @dpi will reset the DPI to whatever the default
+ * value happens to be, but since rsvg_set_default_dpi() is deprecated, please
+ * do not pass values <= 0 to this function.
  *
  * Since: 2.8
  */
@@ -986,12 +1067,15 @@ rsvg_handle_set_dpi (RsvgHandle *handle, double dpi)
 /**
  * rsvg_handle_set_dpi_x_y:
  * @handle: An #RsvgHandle
- * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
- * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
+ * @dpi_x: Dots Per Inch (i.e. Pixels Per Inch)
+ * @dpi_y: Dots Per Inch (i.e. Pixels Per Inch)
  *
- * Sets the DPI for the outgoing pixbuf. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi_x or @dpi_y will
- * reset the DPI to whatever the default value happens to be.
+ * Sets the DPI at which the @handle will be rendered. Common values are
+ * 75, 90, and 300 DPI.
+ *
+ * Passing a number <= 0 to @dpi will reset the DPI to whatever the default
+ * value happens to be, but since rsvg_set_default_dpi_x_y() is deprecated,
+ * please do not pass values <= 0 to this function.
  *
  * Since: 2.8
  */
@@ -1115,6 +1199,8 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
  * API ordering: This function must be called on a fully-loaded @handle.  See
  * the section <link href="#API-ordering">API ordering</link> for details.
  *
+ * Panics: this function will panic if the @handle is not fully-loaded.
+ *
  * Since: 2.46
  */
 void
@@ -1140,9 +1226,10 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
 /**
  * rsvg_handle_get_geometry_for_element:
  * @handle: An #RsvgHandle
- * @id: (nullable): An element's id within the SVG, or %NULL to compute
- *   the geometry for the whole SVG. For example, if you have a layer called "layer1"
- *   that you wish to render, pass "##layer1" as the id.
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to compute the geometry for the
+ * whole SVG.
  * @viewport: Viewport size at which the whole SVG would be fitted.
  * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
  * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
@@ -1151,9 +1238,9 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * Computes the ink rectangle and logical rectangle of an SVG element, or the
  * whole SVG, as if the whole SVG were rendered to a specific viewport.
  *
- * Element IDs should look like an URL fragment identifier; for
- * example, pass "##foo" to get the geometry of the
- * element that has an <literal>id="foo"</literal> attribute.
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
  *
  * The "ink rectangle" is the bounding box that would be painted
  * for fully- stroked and filled elements.
@@ -1170,6 +1257,11 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  *
  * This operation is not constant-time, as it involves going through all
  * the child elements.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
+ *
+ * Panics: this function will panic if the @handle is not fully-loaded.
  *
  * Since: 2.46
  */
