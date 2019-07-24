@@ -1344,6 +1344,16 @@ mod tests {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
+
+            match PathOrUrl::new(b"c:\\foo\\bar\0" as *const u8 as *const _).unwrap() {
+                PathOrUrl::Path(_) => (),
+                _ => panic!("windows filename should be a PathOrUrl::Path"),
+            }
+
+            match PathOrUrl::new(b"C:\\foo\\bar\0" as *const u8 as *const _).unwrap() {
+                PathOrUrl::Path(_) => (),
+                _ => panic!("windows filename should be a PathOrUrl::Path"),
+            }
         }
     }
 
