@@ -435,9 +435,10 @@ rsvg_handle_free (RsvgHandle *handle)
  * a GdkPixbuf from it. When finished, free the handle with g_object_unref(). No
  * more than one image can be loaded with one handle.
  *
- * Note that this function creates an #RsvgHandle with no flags set.  If you require
- * any of #RsvgHandleFlags to be set, use rsvg_handle_new_with_flags() or the stream
- * functions listed above.
+ * Note that this function creates an #RsvgHandle with no flags set.  If you
+ * require any of #RsvgHandleFlags to be set, use any of
+ * rsvg_handle_new_with_flags(), rsvg_handle_new_from_stream_sync(), or
+ * rsvg_handle_new_from_gfile_sync().
  *
  * Returns: A new #RsvgHandle with no flags set.
  **/
@@ -476,7 +477,10 @@ rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
  * @filename: The file name to load, or a URI.
  * @error: return location for errors
  *
- * Loads the SVG specified by @file_name.
+ * Loads the SVG specified by @file_name.  Note that this function, like
+ * rsvg_handle_new(), does not specify any loading flags for the resulting
+ * handle.  If you require the use of #RsvgHandleFlags, use
+ * rsvg_handle_new_from_gfile_sync().
  *
  * Returns: A #RsvgHandle or %NULL if an error occurs.
  * Since: 2.14
