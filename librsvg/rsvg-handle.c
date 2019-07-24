@@ -498,7 +498,9 @@ rsvg_handle_new_from_file (const gchar *filename, GError **error)
  * rsvg_handle_new_with_flags:
  * @flags: flags from #RsvgHandleFlags
  *
- * Creates a new #RsvgHandle with flags @flags.
+ * Creates a new #RsvgHandle with flags @flags.  After calling this function,
+ * you can feed the resulting handle with SVG data by using
+ * rsvg_handle_read_stream_sync().
  *
  * Returns: (transfer full): a new #RsvgHandle
  *
