@@ -425,7 +425,7 @@ impl<'a> CairoRenderer<'a> {
         self.handle.0.render_document(cr, viewport, self.dpi, false)
     }
 
-    /// Renders a single SVG element within an SVG document
+    /// Renders a single SVG element in the same place as for a whole SVG document
     ///
     /// This is equivalent to `render_document`, but renders only a single
     /// element and its children.  The element is rendered with the same
@@ -453,5 +453,42 @@ impl<'a> CairoRenderer<'a> {
         self.handle
             .0
             .snapshot_element(cr, id, viewport, self.dpi, false)
+    }
+
+    /// Renders a single SVG element to a given viewport
+    ///
+    /// This function can be used to extract individual element subtrees and render them,
+    /// scaled to a given `element_viewport`.  This is useful for applications which have
+    /// reusable objects in an SVG and want to render them individually; for example, an
+    /// SVG full of icons that are meant to be be rendered independently of each other.
+    ///
+    /// Note that the `id` must be a plain fragment identifier like `#foo`, with
+    /// a leading `#` character.
+    ///
+    /// The `element_viewport` gives the position and size at which the named element will
+    /// be rendered.  FIXME: mention proportional scaling.
+    ///
+    /// The `cr` must be in a `cairo::Status::Success` state, or this function
+    /// will not render anything, and instead will return
+    /// `RenderingError::Cairo` with the `cr`'s current error state.
+    pub fn render_element(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+        element_viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        self.handle
+            .0
+            .render_element(cr, id, element_viewport, self.dpi, false)
+    }
+
+    pub fn geometry_for_untransformed_element(
+        &self,
+        id: Option<&str>,
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+        self.handle
+            .0
+            .get_untransformed_node_geometry(id, self.dpi, false)
+            .map(|(i, l)| (i.into(), l.into()))
     }
 }

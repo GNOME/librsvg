@@ -368,6 +368,143 @@ impl Handle {
         res
     }
 
+    /// Returns (ink_rect, logical_rect)
+    pub fn get_untransformed_node_geometry(
+        &self,
+        id: Option<&str>,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+        let node = self.get_node_or_root(id)?;
+
+        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let cr = cairo::Context::new(&target);
+
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 1.0,
+            height: 1.0,
+        };
+
+        let mut draw_ctx = DrawingCtx::new(
+            self.svg.clone(),
+            None,
+            &cr,
+            &viewport,
+            dpi,
+            true,
+            is_testing,
+        );
+
+        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false)?;
+
+        let bbox = draw_ctx.get_bbox();
+
+        let mut ink_rect = bbox
+            .ink_rect
+            .map(|r| RsvgRectangle::from(r))
+            .unwrap_or_default();
+        let mut logical_rect = bbox
+            .rect
+            .map(|r| RsvgRectangle::from(r))
+            .unwrap_or_default();
+
+        // Translate so ink_rect is always at offset (0, 0)
+
+        let xofs = ink_rect.x;
+        let yofs = ink_rect.y;
+
+        ink_rect.x -= xofs;
+        ink_rect.y -= yofs;
+
+        logical_rect.x -= xofs;
+        logical_rect.y -= yofs;
+
+        Ok((ink_rect, logical_rect))
+    }
+
+    pub fn render_element(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+        element_viewport: &cairo::Rectangle,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
+        let node = self.get_node_or_root(id)?;
+
+        // Measure the element
+
+        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let measure_cr = cairo::Context::new(&target);
+
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 1.0,
+            height: 1.0,
+        };
+
+        let mut draw_ctx = DrawingCtx::new(
+            self.svg.clone(),
+            None,
+            &measure_cr,
+            &viewport,
+            dpi,
+            true,
+            is_testing,
+        );
+
+        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false)?;
+
+        let bbox = draw_ctx.get_bbox();
+
+        if bbox.ink_rect.is_none() || bbox.rect.is_none() {
+            // Nothing to draw
+            return Ok(());
+        }
+
+        let ink_r = bbox
+            .ink_rect
+            .map(|r| RsvgRectangle::from(r))
+            .unwrap_or_default();
+
+        if ink_r.width == 0.0 || ink_r.height == 0.0 {
+            return Ok(());
+        }
+
+        // Render, transforming so element is at the new viewport's origin
+
+        cr.save();
+
+        let factor =
+            (element_viewport.width / ink_r.width).min(element_viewport.height / ink_r.height);
+
+        cr.translate(element_viewport.x, element_viewport.y);
+        cr.scale(factor, factor);
+        cr.translate(-ink_r.x, -ink_r.y);
+
+        let mut draw_ctx = DrawingCtx::new(
+            self.svg.clone(),
+            None,
+            &cr,
+            &viewport,
+            dpi,
+            false,
+            is_testing,
+        );
+
+        let res =
+            draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false);
+
+        cr.restore();
+
+        res
+    }
+
     pub fn get_pixbuf_sub(
         &self,
         id: Option<&str>,
