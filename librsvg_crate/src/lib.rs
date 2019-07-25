@@ -417,7 +417,7 @@ impl<'a> CairoRenderer<'a> {
         self.handle.0.render_document(cr, viewport, self.dpi, false)
     }
 
-    pub fn render_element_to_viewport(
+    pub fn snapshot_element(
         &self,
         cr: &cairo::Context,
         id: Option<&str>,
@@ -425,6 +425,6 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(), RenderingError> {
         self.handle
             .0
-            .render_element_to_viewport(cr, id, viewport, self.dpi, false)
+            .snapshot_element(cr, id, viewport, self.dpi, false)
     }
 }
