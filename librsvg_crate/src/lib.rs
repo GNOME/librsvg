@@ -409,6 +409,14 @@ impl<'a> CairoRenderer<'a> {
             .map(|(i, l)| (i.into(), l.into()))
     }
 
+    /// Renders the whole SVG document fitted to a viewport
+    ///
+    /// The `viewport` gives the position and size at which the whole SVG
+    /// document will be rendered.
+    ///
+    /// The `cr` must be in a `cairo::Status::Success` state, or this function
+    /// will not render anything, and instead will return
+    /// `RenderingError::Cairo` with the `cr`'s current error state.
     pub fn render_document(
         &self,
         cr: &cairo::Context,
@@ -417,6 +425,25 @@ impl<'a> CairoRenderer<'a> {
         self.handle.0.render_document(cr, viewport, self.dpi, false)
     }
 
+    /// Renders a single SVG element within an SVG document
+    ///
+    /// This is equivalent to `render_document`, but renders only a single
+    /// element and its children.  The element is rendered with the same
+    /// transformation matrix as it has within the whole SVG document.
+    /// Applications can use this to re-render a single element and repaint it
+    /// on top of a previously-rendered document, for example.
+    ///
+    /// Note that the `id` must be a plain fragment identifier like `#foo`, with
+    /// a leading `#` character.
+    ///
+    /// The `viewport` gives the position and size at which the whole SVG
+    /// document would be rendered.  This function will effectively place the
+    /// whole SVG within that viewport, but only render the element given by
+    /// `id`.
+    ///
+    /// The `cr` must be in a `cairo::Status::Success` state, or this function
+    /// will not render anything, and instead will return
+    /// `RenderingError::Cairo` with the `cr`'s current error state.
     pub fn snapshot_element(
         &self,
         cr: &cairo::Context,
