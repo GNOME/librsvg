@@ -409,12 +409,12 @@ impl<'a> CairoRenderer<'a> {
             .map(|(i, l)| (i.into(), l.into()))
     }
 
-    pub fn render_to_viewport(
+    pub fn render_document(
         &self,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.0.render_to_viewport(cr, viewport, self.dpi, false)
+        self.handle.0.render_document(cr, viewport, self.dpi, false)
     }
 
     pub fn render_element_to_viewport(

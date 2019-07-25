@@ -34,7 +34,7 @@ fn main() {
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();
     let cr = cairo::Context::new(&surface);
     renderer
-        .render_to_viewport(
+        .render_document(
             &cr,
             &cairo::Rectangle {
                 x: 0.0,

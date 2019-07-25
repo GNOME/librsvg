@@ -323,7 +323,7 @@ impl Handle {
         self.render_element_to_viewport(cr, id, &viewport, dpi, is_testing)
     }
 
-    pub fn render_to_viewport(
+    pub fn render_document(
         &self,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,

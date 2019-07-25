@@ -28,7 +28,7 @@ pub fn load_svg(input: &'static [u8]) -> SvgHandle {
 #[derive(Copy, Clone)]
 pub struct SurfaceSize(pub i32, pub i32);
 
-pub fn render_to_viewport<F: FnOnce(&cairo::Context)>(
+pub fn render_document<F: FnOnce(&cairo::Context)>(
     svg: &SvgHandle,
     surface_size: SurfaceSize,
     cr_transform: F,
@@ -43,7 +43,7 @@ pub fn render_to_viewport<F: FnOnce(&cairo::Context)>(
     let res = {
         let cr = cairo::Context::new(&output);
         cr_transform(&cr);
-        Ok(renderer.render_to_viewport(&cr, &viewport)?)
+        Ok(renderer.render_document(&cr, &viewport)?)
     };
 
     res.and_then(|_| Ok(SharedImageSurface::new(output, SurfaceType::SRgb)?))
