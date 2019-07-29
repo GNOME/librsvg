@@ -374,6 +374,22 @@ impl<'a> CairoRenderer<'a> {
         }
     }
 
+    /// Renders the whole SVG document fitted to a viewport
+    ///
+    /// The `viewport` gives the position and size at which the whole SVG
+    /// document will be rendered.
+    ///
+    /// The `cr` must be in a `cairo::Status::Success` state, or this function
+    /// will not render anything, and instead will return
+    /// `RenderingError::Cairo` with the `cr`'s current error state.
+    pub fn render_document(
+        &self,
+        cr: &cairo::Context,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        self.handle.0.render_document(cr, viewport, self.dpi, false)
+    }
+
     /// Computes the (ink_rect, logical_rect) of an SVG element, as if
     /// the SVG were rendered to a specific viewport.
     ///
@@ -398,31 +414,15 @@ impl<'a> CairoRenderer<'a> {
     /// the child elements.
     ///
     /// FIXME: example
-    pub fn geometry_for_element(
+    pub fn geometry_for_layer(
         &self,
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_for_element(id, viewport, self.dpi, false)
+            .get_geometry_for_layer(id, viewport, self.dpi, false)
             .map(|(i, l)| (i.into(), l.into()))
-    }
-
-    /// Renders the whole SVG document fitted to a viewport
-    ///
-    /// The `viewport` gives the position and size at which the whole SVG
-    /// document will be rendered.
-    ///
-    /// The `cr` must be in a `cairo::Status::Success` state, or this function
-    /// will not render anything, and instead will return
-    /// `RenderingError::Cairo` with the `cr`'s current error state.
-    pub fn render_document(
-        &self,
-        cr: &cairo::Context,
-        viewport: &cairo::Rectangle,
-    ) -> Result<(), RenderingError> {
-        self.handle.0.render_document(cr, viewport, self.dpi, false)
     }
 
     /// Renders a single SVG element in the same place as for a whole SVG document

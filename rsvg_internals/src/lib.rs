@@ -15,7 +15,7 @@ pub use crate::c_api::{
     rsvg_rust_handle_get_dpi_x,
     rsvg_rust_handle_get_dpi_y,
     rsvg_rust_handle_get_flags,
-    rsvg_rust_handle_get_geometry_for_element,
+    rsvg_rust_handle_get_geometry_for_layer,
     rsvg_rust_handle_get_intrinsic_dimensions,
     rsvg_rust_handle_get_pixbuf_sub,
     rsvg_rust_handle_get_position_sub,

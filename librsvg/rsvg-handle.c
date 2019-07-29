@@ -382,12 +382,12 @@ extern void rsvg_rust_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                                        RsvgLength *out_height,
                                                        gboolean   *out_has_viewbox,
                                                        RsvgRectangle *out_viewbox);
-extern gboolean rsvg_rust_handle_get_geometry_for_element (RsvgHandle     *handle,
-                                                           const char     *id,
-                                                           const RsvgRectangle *viewport,
-                                                           RsvgRectangle  *out_ink_rect,
-                                                           RsvgRectangle  *out_logical_rect,
-                                                           GError        **error);
+extern gboolean rsvg_rust_handle_get_geometry_for_layer (RsvgHandle     *handle,
+                                                         const char     *id,
+                                                         const RsvgRectangle *viewport,
+                                                         RsvgRectangle  *out_ink_rect,
+                                                         RsvgRectangle  *out_logical_rect,
+                                                         GError        **error);
 
 
 /* Implemented in rsvg_internals/src/c_api.rs */
@@ -912,7 +912,7 @@ rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_dat
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
  * has an <literal>id="foo"</literal> attribute.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
  *
  * Since: 2.22
  */
@@ -945,7 +945,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
  * has an <literal>id="foo"</literal> attribute.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
  *
  * Since: 2.22
  */
@@ -1224,7 +1224,7 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
 }
 
 /**
- * rsvg_handle_get_geometry_for_element:
+ * rsvg_handle_get_geometry_for_layer:
  * @handle: An #RsvgHandle
  * @id: (nullable): An element's id within the SVG, starting with "##" (a single
  * hash character), for example, "##layer1".  This notation corresponds to a
@@ -1266,23 +1266,23 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * Since: 2.46
  */
 gboolean
-rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
-                                      const char     *id,
-                                      const RsvgRectangle *viewport,
-                                      RsvgRectangle  *out_ink_rect,
-                                      RsvgRectangle  *out_logical_rect,
-                                      GError        **error)
+rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
+                                    const char     *id,
+                                    const RsvgRectangle *viewport,
+                                    RsvgRectangle  *out_ink_rect,
+                                    RsvgRectangle  *out_logical_rect,
+                                    GError        **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (viewport != NULL, FALSE);
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
-    return rsvg_rust_handle_get_geometry_for_element (handle,
-                                                      id,
-                                                      viewport,
-                                                      out_ink_rect,
-                                                      out_logical_rect,
-                                                      error);
+    return rsvg_rust_handle_get_geometry_for_layer (handle,
+                                                    id,
+                                                    viewport,
+                                                    out_ink_rect,
+                                                    out_logical_rect,
+                                                    error);
 }
 
 /**

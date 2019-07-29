@@ -252,7 +252,7 @@ impl Handle {
         }
     }
 
-    pub fn get_geometry_for_element(
+    pub fn get_geometry_for_layer(
         &self,
         id: Option<&str>,
         viewport: &cairo::Rectangle,

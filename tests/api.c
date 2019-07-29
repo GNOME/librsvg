@@ -944,7 +944,7 @@ get_intrinsic_dimensions (void)
 }
 
 static void
-get_geometry_for_element (void)
+get_geometry_for_layer (void)
 {
     char *filename = get_test_filename ("geometry.svg");
     GError *error = NULL;
@@ -959,15 +959,15 @@ get_geometry_for_element (void)
     RsvgRectangle ink_rect;
     RsvgRectangle logical_rect;
 
-    g_assert (!rsvg_handle_get_geometry_for_element (handle, "#nonexistent", &viewport,
-                                                     &ink_rect, &logical_rect, &error));
+    g_assert (!rsvg_handle_get_geometry_for_layer (handle, "#nonexistent", &viewport,
+                                                   &ink_rect, &logical_rect, &error));
     g_assert (error != NULL);
 
     g_error_free (error);
     error = NULL;
 
-    g_assert (rsvg_handle_get_geometry_for_element (handle, "#two", &viewport,
-                                                    &ink_rect, &logical_rect, &error));
+    g_assert (rsvg_handle_get_geometry_for_layer (handle, "#two", &viewport,
+                                                  &ink_rect, &logical_rect, &error));
     g_assert (error == NULL);
 
     g_assert_cmpfloat (ink_rect.x, ==, 5.0);
@@ -1205,7 +1205,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
     g_test_add_func ("/api/get_intrinsic_dimensions", get_intrinsic_dimensions);
-    g_test_add_func ("/api/get_geometry_for_element", get_geometry_for_element);
+    g_test_add_func ("/api/get_geometry_for_layer", get_geometry_for_layer);
     g_test_add_func ("/api/no_write_before_close", no_write_before_close);
     g_test_add_func ("/api/empty_write_close", empty_write_close);
     g_test_add_func ("/api/cannot_request_external_elements", cannot_request_external_elements);

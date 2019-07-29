@@ -281,12 +281,12 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                            RsvgRectangle *out_viewbox);
 
 RSVG_API
-gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
-                                               const char     *id,
-                                               const RsvgRectangle *viewport,
-                                               RsvgRectangle  *out_ink_rect,
-                                               RsvgRectangle  *out_logical_rect,
-                                               GError        **error);
+gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
+                                             const char     *id,
+                                             const RsvgRectangle *viewport,
+                                             RsvgRectangle  *out_ink_rect,
+                                             RsvgRectangle  *out_logical_rect,
+                                             GError        **error);
 
 /* GIO APIs */
 
