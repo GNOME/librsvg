@@ -730,6 +730,14 @@ impl CHandle {
         handle.render_layer(cr, id, viewport, self.dpi.get(), self.is_testing.get())
     }
 
+    fn get_geometry_for_element(
+        &self,
+        id: Option<&str>,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        handle.get_geometry_for_element(id, self.dpi.get(), self.is_testing.get())
+    }
+
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
         let handle = self.get_handle_ref()?;
         Ok(handle.get_intrinsic_dimensions())
@@ -1335,6 +1343,38 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_layer(
 
     match rhandle.render_layer(&cr, id.as_ref().map(String::as_str), &(*viewport).into()) {
         Ok(()) => true.to_glib(),
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
+    handle: *mut RsvgHandle,
+    id: *const libc::c_char,
+    out_ink_rect: *mut RsvgRectangle,
+    out_logical_rect: *mut RsvgRectangle,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    let id: Option<String> = from_glib_none(id);
+
+    match rhandle.get_geometry_for_element(id.as_ref().map(String::as_str)) {
+        Ok((ink_rect, logical_rect)) => {
+            if !out_ink_rect.is_null() {
+                *out_ink_rect = ink_rect;
+            }
+
+            if !out_logical_rect.is_null() {
+                *out_logical_rect = logical_rect;
+            }
+
+            true.to_glib()
+        }
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));

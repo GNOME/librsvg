@@ -397,6 +397,11 @@ extern gboolean rsvg_rust_handle_render_layer (RsvgHandle           *handle,
                                                const char           *id,
                                                const RsvgRectangle  *viewport,
                                                GError              **error);
+extern gboolean rsvg_rust_handle_get_geometry_for_element (RsvgHandle     *handle,
+                                                           const char     *id,
+                                                           RsvgRectangle  *out_ink_rect,
+                                                           RsvgRectangle  *out_logical_rect,
+                                                           GError        **error);
 
 
 
@@ -1378,6 +1383,70 @@ rsvg_handle_render_layer (RsvgHandle           *handle,
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_render_layer (handle, cr, id, viewport, error);
+}
+
+/**
+ * rsvg_handle_get_geometry_for_element:
+ * @handle: An #RsvgHandle
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to compute the geometry for the
+ * whole SVG.
+ * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
+ * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Computes the ink rectangle and logical rectangle of a singe SVG element.
+ *
+ * While `rsvg_handle_get_geometry_for_layer` computes the geometry of an SVG element subtree with
+ * its transformation matrix, this other function will compute the element's geometry
+ * as if it were being rendered under an identity transformation by itself.  That is,
+ * the resulting geometry is as if the element got extracted by itself from the SVG.
+ *
+ * This function is the counterpart to `rsvg_handle_render_element`.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
+ *
+ * The "ink rectangle" is the bounding box that would be painted
+ * for fully- stroked and filled elements.
+ *
+ * The "logical rectangle" just takes into account the unstroked
+ * paths and text outlines.
+ *
+ * Note that these bounds are not minimum bounds; for example,
+ * clipping paths are not taken into account.
+ *
+ * You can pass #NULL for the @id if you want to measure all
+ * the elements in the SVG, i.e. to measure everything from the
+ * root element.
+ *
+ * This operation is not constant-time, as it involves going through all
+ * the child elements.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
+ *
+ * Panics: this function will panic if the @handle is not fully-loaded.
+ *
+ * Since: 2.46
+ */
+gboolean
+rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
+                                      const char     *id,
+                                      RsvgRectangle  *out_ink_rect,
+                                      RsvgRectangle  *out_logical_rect,
+                                      GError        **error)
+{
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+    return rsvg_rust_handle_get_geometry_for_element (handle,
+                                                      id,
+                                                      out_ink_rect,
+                                                      out_logical_rect,
+                                                      error);
 }
 
 /**

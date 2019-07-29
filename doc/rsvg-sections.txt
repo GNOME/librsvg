@@ -72,6 +72,7 @@ RSVG_TYPE_HANDLE_FLAGS
 rsvg_handle_render_document
 rsvg_handle_get_geometry_for_layer
 rsvg_handle_render_layer
+rsvg_handle_get_geometry_for_element
 rsvg_handle_render_cairo
 rsvg_handle_render_cairo_sub
 </SECTION>
