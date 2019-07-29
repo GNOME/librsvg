@@ -1291,6 +1291,40 @@ rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
                                                     error);
 }
 
+/**
+ * rsvg_handle_render_layer:
+ * @handle: An #RsvgHandle
+ * @cr: A Cairo context
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to render the whole SVG document tree.
+ * @viewport: Viewport size at which the whole SVG would be fitted.
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Renders a single SVG element in the same place as for a whole SVG document.
+ *
+ * This is equivalent to rsvg_handle_render_document(), but it renders only a
+ * single element and its children, as if they composed an individual layer in
+ * the SVG.  The element is rendered with the same transformation matrix as it
+ * has within the whole SVG document.  Applications can use this to re-render a
+ * single element and repaint it on top of a previously-rendered document, for
+ * example.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
+ *
+ * You can pass #NULL for the @id if you want to render all
+ * the elements in the SVG, i.e. to render everything from the
+ * root element.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
+ *
+ * Panics: this function will panic if the @handle is not fully-loaded.
+ *
+ * Since: 2.46
+ */
 gboolean
 rsvg_handle_render_layer (RsvgHandle           *handle,
                           cairo_t              *cr,
