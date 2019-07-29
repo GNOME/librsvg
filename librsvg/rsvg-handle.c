@@ -382,6 +382,10 @@ extern void rsvg_rust_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                                        RsvgLength *out_height,
                                                        gboolean   *out_has_viewbox,
                                                        RsvgRectangle *out_viewbox);
+extern gboolean rsvg_rust_handle_render_document (RsvgHandle           *handle,
+                                                  cairo_t              *cr,
+                                                  const RsvgRectangle  *viewport,
+                                                  GError              **error);
 extern gboolean rsvg_rust_handle_get_geometry_for_layer (RsvgHandle     *handle,
                                                          const char     *id,
                                                          const RsvgRectangle *viewport,
@@ -1227,6 +1231,42 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                                out_height,
                                                out_has_viewbox,
                                                out_viewbox);
+}
+
+/**
+ * rsvg_handle_render_document:
+ * @handle: An #RsvgHandle
+ * @cr: A Cairo context
+ * @viewport: Viewport size at which the whole SVG would be fitted.
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Renders the whole SVG document fitted to a viewport.
+ *
+ * The @viewport gives the position and size at which the whole SVG
+ * document will be rendered.
+ *
+ * The @cr must be in a #CAIRO_STATUS_SUCCESS state, or this function will not
+ * render anything, and instead will return an error.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
+ *
+ * Panics: this function will panic if the @handle is not fully-loaded.
+ *
+ * Since: 2.46
+ */
+gboolean
+rsvg_handle_render_document (RsvgHandle           *handle,
+                             cairo_t              *cr,
+                             const RsvgRectangle  *viewport,
+                             GError              **error)
+{
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (cr != NULL, FALSE);
+    g_return_val_if_fail (viewport != NULL, FALSE);
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+    return rsvg_rust_handle_render_document (handle, cr, viewport, error);
 }
 
 /**

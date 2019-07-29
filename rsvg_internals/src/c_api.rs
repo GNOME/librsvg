@@ -702,6 +702,15 @@ impl CHandle {
         handle.get_pixbuf_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
     }
 
+    fn render_document(
+        &self,
+        cr: &cairo::Context,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        handle.render_document(cr, viewport, self.dpi.get(), self.is_testing.get())
+    }
+
     fn get_geometry_for_layer(
         &self,
         id: Option<&str>,
@@ -1257,6 +1266,26 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
     set_out_param(out_has_width, out_width, &w);
     set_out_param(out_has_height, out_height, &h);
     set_out_param(out_has_viewbox, out_viewbox, &r);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_render_document(
+    handle: *mut RsvgHandle,
+    cr: *mut cairo_sys::cairo_t,
+    viewport: *const RsvgRectangle,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+    let cr = from_glib_none(cr);
+
+    match rhandle.render_document(&cr, &(*viewport).into()) {
+        Ok(()) => true.to_glib(),
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
+    }
 }
 
 #[no_mangle]

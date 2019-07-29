@@ -40,6 +40,12 @@ RSVG_API
 gboolean    rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id);
 
 RSVG_API
+gboolean rsvg_handle_render_document (RsvgHandle           *handle,
+                                      cairo_t              *cr,
+                                      const RsvgRectangle  *viewport,
+                                      GError              **error);
+
+RSVG_API
 gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
                                              const char     *id,
                                              const RsvgRectangle *viewport,
