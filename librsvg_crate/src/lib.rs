@@ -455,6 +455,36 @@ impl<'a> CairoRenderer<'a> {
             .render_layer(cr, id, viewport, self.dpi, false)
     }
 
+    /// Computes the (ink_rect, logical_rect) of a single SVG element
+    ///
+    /// While `geometry_for_layer` computes the geometry of an SVG element subtree with
+    /// its transformation matrix, this other function will compute the element's geometry
+    /// as if it were being rendered under an identity transformation by itself.  That is,
+    /// the resulting geometry is as if the element got extracted by itself from the SVG.
+    ///
+    /// This function is the counterpart to `render_element`.
+    ///
+    /// Element IDs should look like an URL fragment identifier; for
+    /// example, pass `Some("#foo")` to get the geometry of the
+    /// element that has an `id="foo"` attribute.
+    ///
+    /// The "ink rectangle" is the bounding box that would be painted
+    /// for fully- stroked and filled elements.
+    ///
+    /// The "logical rectangle" just takes into account the unstroked
+    /// paths and text outlines.
+    ///
+    /// Note that these bounds are not minimum bounds; for example,
+    /// clipping paths are not taken into account.
+    ///
+    /// You can pass `None` for the `id` if you want to measure all
+    /// the elements in the SVG, i.e. to measure everything from the
+    /// root element.
+    ///
+    /// This operation is not constant-time, as it involves going through all
+    /// the child elements.
+    ///
+    /// FIXME: example
     pub fn geometry_for_element(
         &self,
         id: Option<&str>,

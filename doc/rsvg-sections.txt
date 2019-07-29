@@ -26,7 +26,6 @@ rsvg_handle_get_dimensions
 rsvg_handle_get_dimensions_sub
 rsvg_handle_get_position_sub
 rsvg_handle_get_intrinsic_dimensions
-rsvg_handle_get_geometry_for_element
 rsvg_handle_has_sub
 rsvg_handle_get_title
 rsvg_handle_get_desc
@@ -70,6 +69,8 @@ RSVG_TYPE_HANDLE_FLAGS
 <SECTION>
 <FILE>rsvg-cairo</FILE>
 <TITLE>Using RSVG with cairo</TITLE>
+rsvg_handle_get_geometry_for_layer
+rsvg_handle_render_layer
 rsvg_handle_render_cairo
 rsvg_handle_render_cairo_sub
 </SECTION>

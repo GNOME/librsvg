@@ -388,6 +388,12 @@ extern gboolean rsvg_rust_handle_get_geometry_for_layer (RsvgHandle     *handle,
                                                          RsvgRectangle  *out_ink_rect,
                                                          RsvgRectangle  *out_logical_rect,
                                                          GError        **error);
+extern gboolean rsvg_rust_handle_render_layer (RsvgHandle           *handle,
+                                               cairo_t              *cr,
+                                               const char           *id,
+                                               const RsvgRectangle  *viewport,
+                                               GError              **error);
+
 
 
 /* Implemented in rsvg_internals/src/c_api.rs */
@@ -1283,6 +1289,21 @@ rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
                                                     out_ink_rect,
                                                     out_logical_rect,
                                                     error);
+}
+
+gboolean
+rsvg_handle_render_layer (RsvgHandle           *handle,
+                          cairo_t              *cr,
+                          const char           *id,
+                          const RsvgRectangle  *viewport,
+                          GError              **error)
+{
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (cr != NULL, FALSE);
+    g_return_val_if_fail (viewport != NULL, FALSE);
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+    return rsvg_rust_handle_render_layer (handle, cr, id, viewport, error);
 }
 
 /**

@@ -983,6 +983,52 @@ get_geometry_for_layer (void)
     g_object_unref (handle);
 }
 
+static void
+render_layer (void)
+{
+    char *filename = get_test_filename ("layers.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+    cairo_t *cr = cairo_create (output);
+
+    RsvgRectangle viewport = { 100.0, 100.0, 100.0, 100.0 };
+
+    g_assert (rsvg_handle_render_layer (handle, cr, "#bar", &viewport, &error));
+    g_assert (error == NULL);
+
+    cairo_destroy (cr);
+
+    cairo_surface_t *expected = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+    cr = cairo_create (expected);
+
+    cairo_translate (cr, 100.0, 100.0);
+    cairo_rectangle (cr, 20.0, 20.0, 30.0, 30.0);
+    cairo_set_source_rgba (cr, 0.0, 0.0, 1.0, 1.0);
+    cairo_fill (cr);
+    cairo_destroy (cr);
+
+    cairo_surface_t *diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+
+    TestUtilsBufferDiffResult result = {0, 0};
+    test_utils_compare_surfaces (output, expected, diff, &result);
+
+    if (result.pixels_changed && result.max_diff > 0) {
+        g_test_fail ();
+    }
+
+    cairo_surface_destroy (diff);
+    cairo_surface_destroy (expected);
+    cairo_surface_destroy (output);
+    g_object_unref (handle);
+}
+
 /* https://gitlab.gnome.org/GNOME/librsvg/issues/385 */
 static void
 no_write_before_close (void)
@@ -1206,6 +1252,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
     g_test_add_func ("/api/get_intrinsic_dimensions", get_intrinsic_dimensions);
     g_test_add_func ("/api/get_geometry_for_layer", get_geometry_for_layer);
+    g_test_add_func ("/api/render_layer", render_layer);
     g_test_add_func ("/api/no_write_before_close", no_write_before_close);
     g_test_add_func ("/api/empty_write_close", empty_write_close);
     g_test_add_func ("/api/cannot_request_external_elements", cannot_request_external_elements);

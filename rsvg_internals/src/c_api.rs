@@ -711,6 +711,16 @@ impl CHandle {
         handle.get_geometry_for_layer(id, viewport, self.dpi.get(), self.is_testing.get())
     }
 
+    fn render_layer(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        handle.render_layer(cr, id, viewport, self.dpi.get(), self.is_testing.get())
+    }
+
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
         let handle = self.get_handle_ref()?;
         Ok(handle.get_intrinsic_dimensions())
@@ -1274,6 +1284,28 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_layer(
 
             true.to_glib()
         }
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_render_layer(
+    handle: *mut RsvgHandle,
+    cr: *mut cairo_sys::cairo_t,
+    id: *const libc::c_char,
+    viewport: *const RsvgRectangle,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+    let cr = from_glib_none(cr);
+    let id: Option<String> = from_glib_none(id);
+
+    match rhandle.render_layer(&cr, id.as_ref().map(String::as_str), &(*viewport).into()) {
+        Ok(()) => true.to_glib(),
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));
