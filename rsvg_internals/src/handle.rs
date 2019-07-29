@@ -369,7 +369,7 @@ impl Handle {
     }
 
     /// Returns (ink_rect, logical_rect)
-    pub fn get_untransformed_node_geometry(
+    pub fn get_geometry_for_element(
         &self,
         id: Option<&str>,
         dpi: Dpi,

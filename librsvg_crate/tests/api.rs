@@ -112,7 +112,7 @@ fn untransformed_element() {
     /* Measuring */
 
     let (ink_r, logical_r) = renderer
-        .geometry_for_untransformed_element(Some("#foo"))
+        .geometry_for_element(Some("#foo"))
         .unwrap();
 
     assert_eq!(

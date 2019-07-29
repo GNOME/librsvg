@@ -455,6 +455,16 @@ impl<'a> CairoRenderer<'a> {
             .render_layer(cr, id, viewport, self.dpi, false)
     }
 
+    pub fn geometry_for_element(
+        &self,
+        id: Option<&str>,
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+        self.handle
+            .0
+            .get_geometry_for_element(id, self.dpi, false)
+            .map(|(i, l)| (i.into(), l.into()))
+    }
+
     /// Renders a single SVG element to a given viewport
     ///
     /// This function can be used to extract individual element subtrees and render them,
@@ -480,15 +490,5 @@ impl<'a> CairoRenderer<'a> {
         self.handle
             .0
             .render_element(cr, id, element_viewport, self.dpi, false)
-    }
-
-    pub fn geometry_for_untransformed_element(
-        &self,
-        id: Option<&str>,
-    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
-        self.handle
-            .0
-            .get_untransformed_node_geometry(id, self.dpi, false)
-            .map(|(i, l)| (i.into(), l.into()))
     }
 }
