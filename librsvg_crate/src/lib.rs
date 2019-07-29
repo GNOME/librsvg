@@ -427,10 +427,10 @@ impl<'a> CairoRenderer<'a> {
 
     /// Renders a single SVG element in the same place as for a whole SVG document
     ///
-    /// This is equivalent to `render_document`, but renders only a single
-    /// element and its children.  The element is rendered with the same
-    /// transformation matrix as it has within the whole SVG document.
-    /// Applications can use this to re-render a single element and repaint it
+    /// This is equivalent to `render_document`, but renders only a single element and its
+    /// children, as if they composed an individual layer in the SVG.  The element is
+    /// rendered with the same transformation matrix as it has within the whole SVG
+    /// document.  Applications can use this to re-render a single element and repaint it
     /// on top of a previously-rendered document, for example.
     ///
     /// Note that the `id` must be a plain fragment identifier like `#foo`, with
@@ -444,7 +444,7 @@ impl<'a> CairoRenderer<'a> {
     /// The `cr` must be in a `cairo::Status::Success` state, or this function
     /// will not render anything, and instead will return
     /// `RenderingError::Cairo` with the `cr`'s current error state.
-    pub fn snapshot_element(
+    pub fn render_layer(
         &self,
         cr: &cairo::Context,
         id: Option<&str>,
@@ -452,7 +452,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(), RenderingError> {
         self.handle
             .0
-            .snapshot_element(cr, id, viewport, self.dpi, false)
+            .render_layer(cr, id, viewport, self.dpi, false)
     }
 
     /// Renders a single SVG element to a given viewport

@@ -320,7 +320,7 @@ impl Handle {
             height: f64::from(dimensions.height),
         };
 
-        self.snapshot_element(cr, id, &viewport, dpi, is_testing)
+        self.render_layer(cr, id, &viewport, dpi, is_testing)
     }
 
     pub fn render_document(
@@ -330,10 +330,10 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
-        self.snapshot_element(cr, None, viewport, dpi, is_testing)
+        self.render_layer(cr, None, viewport, dpi, is_testing)
     }
 
-    pub fn snapshot_element(
+    pub fn render_layer(
         &self,
         cr: &cairo::Context,
         id: Option<&str>,

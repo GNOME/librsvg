@@ -42,7 +42,7 @@ fn has_element_with_id_works() {
 }
 
 #[test]
-fn snapshot_element() {
+fn render_layer() {
     let svg = load_svg(
         br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
@@ -65,7 +65,7 @@ fn snapshot_element() {
             height: 100.0,
         };
 
-        renderer.snapshot_element(&cr, Some("#bar"), &viewport)
+        renderer.render_layer(&cr, Some("#bar"), &viewport)
     };
 
     let output_surf = res
@@ -86,7 +86,7 @@ fn snapshot_element() {
 
     let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
 
-    compare_to_surface(&output_surf, &reference_surf, "snapshot_element");
+    compare_to_surface(&output_surf, &reference_surf, "render_layer");
 }
 
 #[test]
