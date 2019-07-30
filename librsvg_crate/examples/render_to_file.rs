@@ -13,9 +13,8 @@ fn main() {
     let surface = cairo::SvgSurface::new(width, height, output);
     let cr = cairo::Context::new(&surface);
     renderer
-        .render_element_to_viewport(
+        .render_document(
             &cr,
-            None,
             &cairo::Rectangle {
                 x: 0.0,
                 y: 0.0,

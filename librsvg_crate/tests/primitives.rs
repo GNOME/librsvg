@@ -4,7 +4,7 @@ mod utils;
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use self::utils::{compare_to_surface, load_svg, render_to_viewport, SurfaceSize};
+use self::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
 
 #[test]
 fn simple_opacity_with_transform() {
@@ -18,7 +18,7 @@ fn simple_opacity_with_transform() {
 "#,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(150, 150),
         |cr| cr.translate(50.0, 50.0),
@@ -63,7 +63,7 @@ fn simple_opacity_with_offset_viewport() {
 "#,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(150, 150),
         |_cr| (),
@@ -109,7 +109,7 @@ fn simple_opacity_with_scale() {
 "#,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(500, 500),
         |cr| {
@@ -162,7 +162,7 @@ fn markers_with_scale() {
 "#,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(800, 800),
         |cr| {
@@ -220,7 +220,7 @@ fn opacity_inside_transformed_group() {
 "#,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(140, 140),
         |cr| cr.translate(20.0, 20.0),
@@ -270,7 +270,7 @@ fn compound_opacity() {
 "##,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(500, 380),
         |cr| cr.translate(10.0, 10.0),
@@ -340,7 +340,7 @@ fn nested_masks() {
 "##,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(321 + 20, 27 + 20),
         |cr| cr.translate(10.0, 10.0),

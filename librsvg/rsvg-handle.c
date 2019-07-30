@@ -382,12 +382,32 @@ extern void rsvg_rust_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                                        RsvgLength *out_height,
                                                        gboolean   *out_has_viewbox,
                                                        RsvgRectangle *out_viewbox);
+extern gboolean rsvg_rust_handle_render_document (RsvgHandle           *handle,
+                                                  cairo_t              *cr,
+                                                  const RsvgRectangle  *viewport,
+                                                  GError              **error);
+extern gboolean rsvg_rust_handle_get_geometry_for_layer (RsvgHandle     *handle,
+                                                         const char     *id,
+                                                         const RsvgRectangle *viewport,
+                                                         RsvgRectangle  *out_ink_rect,
+                                                         RsvgRectangle  *out_logical_rect,
+                                                         GError        **error);
+extern gboolean rsvg_rust_handle_render_layer (RsvgHandle           *handle,
+                                               cairo_t              *cr,
+                                               const char           *id,
+                                               const RsvgRectangle  *viewport,
+                                               GError              **error);
 extern gboolean rsvg_rust_handle_get_geometry_for_element (RsvgHandle     *handle,
                                                            const char     *id,
-                                                           const RsvgRectangle *viewport,
                                                            RsvgRectangle  *out_ink_rect,
                                                            RsvgRectangle  *out_logical_rect,
                                                            GError        **error);
+extern gboolean rsvg_rust_handle_render_element (RsvgHandle           *handle,
+                                                 cairo_t              *cr,
+                                                 const char           *id,
+                                                 const RsvgRectangle  *element_viewport,
+                                                 GError              **error);
+
 
 
 /* Implemented in rsvg_internals/src/c_api.rs */
@@ -912,7 +932,7 @@ rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_dat
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
  * has an <literal>id="foo"</literal> attribute.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
  *
  * Since: 2.22
  */
@@ -945,7 +965,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
  * has an <literal>id="foo"</literal> attribute.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_element() instead.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
  *
  * Since: 2.22
  */
@@ -1224,7 +1244,43 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
 }
 
 /**
- * rsvg_handle_get_geometry_for_element:
+ * rsvg_handle_render_document:
+ * @handle: An #RsvgHandle
+ * @cr: A Cairo context
+ * @viewport: Viewport size at which the whole SVG would be fitted.
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Renders the whole SVG document fitted to a viewport.
+ *
+ * The @viewport gives the position and size at which the whole SVG
+ * document will be rendered.
+ *
+ * The @cr must be in a #CAIRO_STATUS_SUCCESS state, or this function will not
+ * render anything, and instead will return an error.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
+ *
+ * Panics: this function will panic if the @handle is not fully-loaded.
+ *
+ * Since: 2.46
+ */
+gboolean
+rsvg_handle_render_document (RsvgHandle           *handle,
+                             cairo_t              *cr,
+                             const RsvgRectangle  *viewport,
+                             GError              **error)
+{
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (cr != NULL, FALSE);
+    g_return_val_if_fail (viewport != NULL, FALSE);
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+    return rsvg_rust_handle_render_document (handle, cr, viewport, error);
+}
+
+/**
+ * rsvg_handle_get_geometry_for_layer:
  * @handle: An #RsvgHandle
  * @id: (nullable): An element's id within the SVG, starting with "##" (a single
  * hash character), for example, "##layer1".  This notation corresponds to a
@@ -1266,23 +1322,186 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * Since: 2.46
  */
 gboolean
-rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
-                                      const char     *id,
-                                      const RsvgRectangle *viewport,
-                                      RsvgRectangle  *out_ink_rect,
-                                      RsvgRectangle  *out_logical_rect,
-                                      GError        **error)
+rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
+                                    const char     *id,
+                                    const RsvgRectangle *viewport,
+                                    RsvgRectangle  *out_ink_rect,
+                                    RsvgRectangle  *out_logical_rect,
+                                    GError        **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (viewport != NULL, FALSE);
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
+    return rsvg_rust_handle_get_geometry_for_layer (handle,
+                                                    id,
+                                                    viewport,
+                                                    out_ink_rect,
+                                                    out_logical_rect,
+                                                    error);
+}
+
+/**
+ * rsvg_handle_render_layer:
+ * @handle: An #RsvgHandle
+ * @cr: A Cairo context
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to render the whole SVG document tree.
+ * @viewport: Viewport size at which the whole SVG would be fitted.
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Renders a single SVG element in the same place as for a whole SVG document.
+ *
+ * This is equivalent to rsvg_handle_render_document(), but it renders only a
+ * single element and its children, as if they composed an individual layer in
+ * the SVG.  The element is rendered with the same transformation matrix as it
+ * has within the whole SVG document.  Applications can use this to re-render a
+ * single element and repaint it on top of a previously-rendered document, for
+ * example.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
+ *
+ * You can pass #NULL for the @id if you want to render all
+ * the elements in the SVG, i.e. to render everything from the
+ * root element.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
+ *
+ * Panics: this function will panic if the @handle is not fully-loaded.
+ *
+ * Since: 2.46
+ */
+gboolean
+rsvg_handle_render_layer (RsvgHandle           *handle,
+                          cairo_t              *cr,
+                          const char           *id,
+                          const RsvgRectangle  *viewport,
+                          GError              **error)
+{
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (cr != NULL, FALSE);
+    g_return_val_if_fail (viewport != NULL, FALSE);
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+    return rsvg_rust_handle_render_layer (handle, cr, id, viewport, error);
+}
+
+/**
+ * rsvg_handle_get_geometry_for_element:
+ * @handle: An #RsvgHandle
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to compute the geometry for the
+ * whole SVG.
+ * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
+ * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Computes the ink rectangle and logical rectangle of a singe SVG element.
+ *
+ * While `rsvg_handle_get_geometry_for_layer` computes the geometry of an SVG element subtree with
+ * its transformation matrix, this other function will compute the element's geometry
+ * as if it were being rendered under an identity transformation by itself.  That is,
+ * the resulting geometry is as if the element got extracted by itself from the SVG.
+ *
+ * This function is the counterpart to `rsvg_handle_render_element`.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
+ *
+ * The "ink rectangle" is the bounding box that would be painted
+ * for fully- stroked and filled elements.
+ *
+ * The "logical rectangle" just takes into account the unstroked
+ * paths and text outlines.
+ *
+ * Note that these bounds are not minimum bounds; for example,
+ * clipping paths are not taken into account.
+ *
+ * You can pass #NULL for the @id if you want to measure all
+ * the elements in the SVG, i.e. to measure everything from the
+ * root element.
+ *
+ * This operation is not constant-time, as it involves going through all
+ * the child elements.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
+ *
+ * Panics: this function will panic if the @handle is not fully-loaded.
+ *
+ * Since: 2.46
+ */
+gboolean
+rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
+                                      const char     *id,
+                                      RsvgRectangle  *out_ink_rect,
+                                      RsvgRectangle  *out_logical_rect,
+                                      GError        **error)
+{
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
     return rsvg_rust_handle_get_geometry_for_element (handle,
                                                       id,
-                                                      viewport,
                                                       out_ink_rect,
                                                       out_logical_rect,
                                                       error);
+}
+
+/**
+ * rsvg_handle_render_element:
+ * @handle: An #RsvgHandle
+ * @cr: A Cairo context
+ * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * hash character), for example, "##layer1".  This notation corresponds to a
+ * URL's fragment ID.  Alternatively, pass %NULL to render the whole SVG document tree.
+ * @element_viewport: Viewport size in which to fit the element
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Renders a single SVG element to a given viewport
+ *
+ * This function can be used to extract individual element subtrees and render them,
+ * scaled to a given @element_viewport.  This is useful for applications which have
+ * reusable objects in an SVG and want to render them individually; for example, an
+ * SVG full of icons that are meant to be be rendered independently of each other.
+ *
+ * Element IDs should look like an URL fragment identifier; for example, pass
+ * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
+ * has an <literal>id="foo"</literal> attribute.
+ *
+ * You can pass #NULL for the @id if you want to render all
+ * the elements in the SVG, i.e. to render everything from the
+ * root element.
+ *
+ * The `element_viewport` gives the position and size at which the named element will
+ * be rendered.  FIXME: mention proportional scaling.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <link href="#API-ordering">API ordering</link> for details.
+ *
+ * Panics: this function will panic if the @handle is not fully-loaded.
+ *
+ * Since: 2.46
+ */
+gboolean
+rsvg_handle_render_element (RsvgHandle           *handle,
+                            cairo_t              *cr,
+                            const char           *id,
+                            const RsvgRectangle  *element_viewport,
+                            GError              **error)
+{
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (cr != NULL, FALSE);
+    g_return_val_if_fail (element_viewport != NULL, FALSE);
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+    return rsvg_rust_handle_render_element (handle, cr, id, element_viewport, error);
 }
 
 /**

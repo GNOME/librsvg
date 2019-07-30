@@ -374,8 +374,95 @@ impl<'a> CairoRenderer<'a> {
         }
     }
 
+    /// Renders the whole SVG document fitted to a viewport
+    ///
+    /// The `viewport` gives the position and size at which the whole SVG
+    /// document will be rendered.
+    ///
+    /// The `cr` must be in a `cairo::Status::Success` state, or this function
+    /// will not render anything, and instead will return
+    /// `RenderingError::Cairo` with the `cr`'s current error state.
+    pub fn render_document(
+        &self,
+        cr: &cairo::Context,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        self.handle.0.render_document(cr, viewport, self.dpi, false)
+    }
+
     /// Computes the (ink_rect, logical_rect) of an SVG element, as if
     /// the SVG were rendered to a specific viewport.
+    ///
+    /// Element IDs should look like an URL fragment identifier; for
+    /// example, pass `Some("#foo")` to get the geometry of the
+    /// element that has an `id="foo"` attribute.
+    ///
+    /// The "ink rectangle" is the bounding box that would be painted
+    /// for fully- stroked and filled elements.
+    ///
+    /// The "logical rectangle" just takes into account the unstroked
+    /// paths and text outlines.
+    ///
+    /// Note that these bounds are not minimum bounds; for example,
+    /// clipping paths are not taken into account.
+    ///
+    /// You can pass `None` for the `id` if you want to measure all
+    /// the elements in the SVG, i.e. to measure everything from the
+    /// root element.
+    ///
+    /// This operation is not constant-time, as it involves going through all
+    /// the child elements.
+    ///
+    /// FIXME: example
+    pub fn geometry_for_layer(
+        &self,
+        id: Option<&str>,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+        self.handle
+            .0
+            .get_geometry_for_layer(id, viewport, self.dpi, false)
+            .map(|(i, l)| (i.into(), l.into()))
+    }
+
+    /// Renders a single SVG element in the same place as for a whole SVG document
+    ///
+    /// This is equivalent to `render_document`, but renders only a single element and its
+    /// children, as if they composed an individual layer in the SVG.  The element is
+    /// rendered with the same transformation matrix as it has within the whole SVG
+    /// document.  Applications can use this to re-render a single element and repaint it
+    /// on top of a previously-rendered document, for example.
+    ///
+    /// Note that the `id` must be a plain fragment identifier like `#foo`, with
+    /// a leading `#` character.
+    ///
+    /// The `viewport` gives the position and size at which the whole SVG
+    /// document would be rendered.  This function will effectively place the
+    /// whole SVG within that viewport, but only render the element given by
+    /// `id`.
+    ///
+    /// The `cr` must be in a `cairo::Status::Success` state, or this function
+    /// will not render anything, and instead will return
+    /// `RenderingError::Cairo` with the `cr`'s current error state.
+    pub fn render_layer(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        self.handle
+            .0
+            .render_layer(cr, id, viewport, self.dpi, false)
+    }
+
+    /// Computes the (ink_rect, logical_rect) of a single SVG element
+    ///
+    /// While `geometry_for_layer` computes the geometry of an SVG element subtree with
+    /// its transformation matrix, this other function will compute the element's geometry
+    /// as if it were being rendered under an identity transformation by itself.  That is,
+    /// the resulting geometry is as if the element got extracted by itself from the SVG.
+    ///
+    /// This function is the counterpart to `render_element`.
     ///
     /// Element IDs should look like an URL fragment identifier; for
     /// example, pass `Some("#foo")` to get the geometry of the
@@ -401,22 +488,37 @@ impl<'a> CairoRenderer<'a> {
     pub fn geometry_for_element(
         &self,
         id: Option<&str>,
-        viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_for_element(id, viewport, self.dpi, false)
+            .get_geometry_for_element(id, self.dpi, false)
             .map(|(i, l)| (i.into(), l.into()))
     }
 
-    pub fn render_element_to_viewport(
+    /// Renders a single SVG element to a given viewport
+    ///
+    /// This function can be used to extract individual element subtrees and render them,
+    /// scaled to a given `element_viewport`.  This is useful for applications which have
+    /// reusable objects in an SVG and want to render them individually; for example, an
+    /// SVG full of icons that are meant to be be rendered independently of each other.
+    ///
+    /// Note that the `id` must be a plain fragment identifier like `#foo`, with
+    /// a leading `#` character.
+    ///
+    /// The `element_viewport` gives the position and size at which the named element will
+    /// be rendered.  FIXME: mention proportional scaling.
+    ///
+    /// The `cr` must be in a `cairo::Status::Success` state, or this function
+    /// will not render anything, and instead will return
+    /// `RenderingError::Cairo` with the `cr`'s current error state.
+    pub fn render_element(
         &self,
         cr: &cairo::Context,
         id: Option<&str>,
-        viewport: &cairo::Rectangle,
+        element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
         self.handle
             .0
-            .render_element_to_viewport(cr, id, viewport, self.dpi, false)
+            .render_element(cr, id, element_viewport, self.dpi, false)
     }
 }
