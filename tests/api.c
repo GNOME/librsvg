@@ -944,7 +944,53 @@ get_intrinsic_dimensions (void)
 }
 
 static void
-get_geometry_for_element (void)
+render_document (void)
+{
+    char *filename = get_test_filename ("document.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 150, 150);
+    cairo_t *cr = cairo_create (output);
+
+    RsvgRectangle viewport = { 50.0, 50.0, 50.0, 50.0 };
+
+    g_assert (rsvg_handle_render_document (handle, cr, &viewport, &error));
+    g_assert (error == NULL);
+
+    cairo_destroy (cr);
+
+    cairo_surface_t *expected = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 150, 150);
+    cr = cairo_create (expected);
+
+    cairo_translate (cr, 50.0, 50.0);
+    cairo_rectangle (cr, 10.0, 10.0, 30.0, 30.0);
+    cairo_set_source_rgba (cr, 0.0, 0.0, 1.0, 0.5);
+    cairo_fill (cr);
+    cairo_destroy (cr);
+
+    cairo_surface_t *diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 150, 150);
+
+    TestUtilsBufferDiffResult result = {0, 0};
+    test_utils_compare_surfaces (output, expected, diff, &result);
+
+    if (result.pixels_changed && result.max_diff > 0) {
+        g_test_fail ();
+    }
+
+    cairo_surface_destroy (diff);
+    cairo_surface_destroy (expected);
+    cairo_surface_destroy (output);
+    g_object_unref (handle);
+}
+
+static void
+get_geometry_for_layer (void)
 {
     char *filename = get_test_filename ("geometry.svg");
     GError *error = NULL;
@@ -959,15 +1005,15 @@ get_geometry_for_element (void)
     RsvgRectangle ink_rect;
     RsvgRectangle logical_rect;
 
-    g_assert (!rsvg_handle_get_geometry_for_element (handle, "#nonexistent", &viewport,
-                                                     &ink_rect, &logical_rect, &error));
+    g_assert (!rsvg_handle_get_geometry_for_layer (handle, "#nonexistent", &viewport,
+                                                   &ink_rect, &logical_rect, &error));
     g_assert (error != NULL);
 
     g_error_free (error);
     error = NULL;
 
-    g_assert (rsvg_handle_get_geometry_for_element (handle, "#two", &viewport,
-                                                    &ink_rect, &logical_rect, &error));
+    g_assert (rsvg_handle_get_geometry_for_layer (handle, "#two", &viewport,
+                                                  &ink_rect, &logical_rect, &error));
     g_assert (error == NULL);
 
     g_assert_cmpfloat (ink_rect.x, ==, 5.0);
@@ -980,6 +1026,127 @@ get_geometry_for_element (void)
     g_assert_cmpfloat (logical_rect.width, ==, 80.0);
     g_assert_cmpfloat (logical_rect.height, ==, 100.0);
 
+    g_object_unref (handle);
+}
+
+static void
+render_layer (void)
+{
+    char *filename = get_test_filename ("layers.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+    cairo_t *cr = cairo_create (output);
+
+    RsvgRectangle viewport = { 100.0, 100.0, 100.0, 100.0 };
+
+    g_assert (rsvg_handle_render_layer (handle, cr, "#bar", &viewport, &error));
+    g_assert (error == NULL);
+
+    cairo_destroy (cr);
+
+    cairo_surface_t *expected = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+    cr = cairo_create (expected);
+
+    cairo_translate (cr, 100.0, 100.0);
+    cairo_rectangle (cr, 20.0, 20.0, 30.0, 30.0);
+    cairo_set_source_rgba (cr, 0.0, 0.0, 1.0, 1.0);
+    cairo_fill (cr);
+    cairo_destroy (cr);
+
+    cairo_surface_t *diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+
+    TestUtilsBufferDiffResult result = {0, 0};
+    test_utils_compare_surfaces (output, expected, diff, &result);
+
+    if (result.pixels_changed && result.max_diff > 0) {
+        g_test_fail ();
+    }
+
+    cairo_surface_destroy (diff);
+    cairo_surface_destroy (expected);
+    cairo_surface_destroy (output);
+    g_object_unref (handle);
+}
+
+static void
+untransformed_element (void)
+{
+    char *filename = get_test_filename ("geometry-element.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    RsvgRectangle ink_rect;
+    RsvgRectangle logical_rect;
+
+    g_assert (!rsvg_handle_get_geometry_for_element (handle, "#nonexistent",
+                                                     &ink_rect, &logical_rect, &error));
+    g_assert (error != NULL);
+
+    g_error_free (error);
+    error = NULL;
+
+    g_assert (rsvg_handle_get_geometry_for_element (handle, "#foo",
+                                                    &ink_rect, &logical_rect, &error));
+    g_assert (error == NULL);
+
+    g_assert_cmpfloat (ink_rect.x, ==, 0.0);
+    g_assert_cmpfloat (ink_rect.y, ==, 0.0);
+    g_assert_cmpfloat (ink_rect.width, ==, 40.0);
+    g_assert_cmpfloat (ink_rect.height, ==, 50.0);
+
+    g_assert_cmpfloat (logical_rect.x, ==, 5.0);
+    g_assert_cmpfloat (logical_rect.y, ==, 5.0);
+    g_assert_cmpfloat (logical_rect.width, ==, 30.0);
+    g_assert_cmpfloat (logical_rect.height, ==, 40.0);
+
+    cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+    cairo_t *cr = cairo_create (output);
+
+    RsvgRectangle viewport = { 100.0, 100.0, 100.0, 100.0 };
+
+    g_assert (rsvg_handle_render_element (handle, cr, "#foo", &viewport, &error));
+    g_assert (error == NULL);
+
+    cairo_destroy (cr);
+
+    cairo_surface_t *expected = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+    cr = cairo_create (expected);
+
+    cairo_translate (cr, 100.0, 100.0);
+    cairo_rectangle (cr, 10.0, 10.0, 60.0, 80.0);
+    cairo_set_source_rgba (cr, 0.0, 0.0, 1.0, 1.0);
+    cairo_fill_preserve (cr);
+
+    cairo_set_line_width (cr, 20.0);
+    cairo_set_source_rgba (cr, 0.0, 0.0, 0.0, 1.0);
+    cairo_stroke (cr);
+
+    cairo_destroy (cr);
+
+    cairo_surface_t *diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+
+    TestUtilsBufferDiffResult result = {0, 0};
+    test_utils_compare_surfaces (output, expected, diff, &result);
+
+    if (result.pixels_changed && result.max_diff > 0) {
+        g_test_fail ();
+    }
+
+    cairo_surface_destroy (diff);
+    cairo_surface_destroy (expected);
+    cairo_surface_destroy (output);
     g_object_unref (handle);
 }
 
@@ -1205,7 +1372,10 @@ main (int argc, char **argv)
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
     g_test_add_func ("/api/get_intrinsic_dimensions", get_intrinsic_dimensions);
-    g_test_add_func ("/api/get_geometry_for_element", get_geometry_for_element);
+    g_test_add_func ("/api/render_document", render_document);
+    g_test_add_func ("/api/get_geometry_for_layer", get_geometry_for_layer);
+    g_test_add_func ("/api/render_layer", render_layer);
+    g_test_add_func ("/api/untransformed_element", untransformed_element);
     g_test_add_func ("/api/no_write_before_close", no_write_before_close);
     g_test_add_func ("/api/empty_write_close", empty_write_close);
     g_test_add_func ("/api/cannot_request_external_elements", cannot_request_external_elements);

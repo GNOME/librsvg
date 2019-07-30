@@ -702,13 +702,50 @@ impl CHandle {
         handle.get_pixbuf_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
     }
 
-    fn get_geometry_for_element(
+    fn render_document(
+        &self,
+        cr: &cairo::Context,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        handle.render_document(cr, viewport, self.dpi.get(), self.is_testing.get())
+    }
+
+    fn get_geometry_for_layer(
         &self,
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.get_geometry_for_element(id, viewport, self.dpi.get(), self.is_testing.get())
+        handle.get_geometry_for_layer(id, viewport, self.dpi.get(), self.is_testing.get())
+    }
+
+    fn render_layer(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+        viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        handle.render_layer(cr, id, viewport, self.dpi.get(), self.is_testing.get())
+    }
+
+    fn get_geometry_for_element(
+        &self,
+        id: Option<&str>,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        handle.get_geometry_for_element(id, self.dpi.get(), self.is_testing.get())
+    }
+
+    fn render_element(
+        &self,
+        cr: &cairo::Context,
+        id: Option<&str>,
+        element_viewport: &cairo::Rectangle,
+    ) -> Result<(), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        handle.render_element(cr, id, element_viewport, self.dpi.get(), self.is_testing.get())
     }
 
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
@@ -1250,7 +1287,27 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
+pub unsafe extern "C" fn rsvg_rust_handle_render_document(
+    handle: *mut RsvgHandle,
+    cr: *mut cairo_sys::cairo_t,
+    viewport: *const RsvgRectangle,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+    let cr = from_glib_none(cr);
+
+    match rhandle.render_document(&cr, &(*viewport).into()) {
+        Ok(()) => true.to_glib(),
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_layer(
     handle: *mut RsvgHandle,
     id: *const libc::c_char,
     viewport: *const RsvgRectangle,
@@ -1262,7 +1319,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_element(id.as_ref().map(String::as_str), &(*viewport).into()) {
+    match rhandle.get_geometry_for_layer(id.as_ref().map(String::as_str), &(*viewport).into()) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
@@ -1274,6 +1331,86 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
 
             true.to_glib()
         }
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_render_layer(
+    handle: *mut RsvgHandle,
+    cr: *mut cairo_sys::cairo_t,
+    id: *const libc::c_char,
+    viewport: *const RsvgRectangle,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+    let cr = from_glib_none(cr);
+    let id: Option<String> = from_glib_none(id);
+
+    match rhandle.render_layer(&cr, id.as_ref().map(String::as_str), &(*viewport).into()) {
+        Ok(()) => true.to_glib(),
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
+    handle: *mut RsvgHandle,
+    id: *const libc::c_char,
+    out_ink_rect: *mut RsvgRectangle,
+    out_logical_rect: *mut RsvgRectangle,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    let id: Option<String> = from_glib_none(id);
+
+    match rhandle.get_geometry_for_element(id.as_ref().map(String::as_str)) {
+        Ok((ink_rect, logical_rect)) => {
+            if !out_ink_rect.is_null() {
+                *out_ink_rect = ink_rect;
+            }
+
+            if !out_logical_rect.is_null() {
+                *out_logical_rect = logical_rect;
+            }
+
+            true.to_glib()
+        }
+
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_render_element(
+    handle: *mut RsvgHandle,
+    cr: *mut cairo_sys::cairo_t,
+    id: *const libc::c_char,
+    element_viewport: *const RsvgRectangle,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+    let cr = from_glib_none(cr);
+    let id: Option<String> = from_glib_none(id);
+
+    match rhandle.render_element(
+        &cr,
+        id.as_ref().map(String::as_str),
+        &(*element_viewport).into(),
+    ) {
+        Ok(()) => true.to_glib(),
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));

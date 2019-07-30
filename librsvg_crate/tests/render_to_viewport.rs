@@ -4,7 +4,7 @@ mod utils;
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use self::utils::{compare_to_surface, load_svg, render_to_viewport, SurfaceSize};
+use self::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
 
 #[test]
 fn render_to_viewport_with_different_size() {
@@ -16,7 +16,7 @@ fn render_to_viewport_with_different_size() {
 "#,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(128, 128),
         |_cr| (),
@@ -60,7 +60,7 @@ fn render_to_offsetted_viewport() {
 "#,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(100, 100),
         |_cr| (),
@@ -102,7 +102,7 @@ fn render_to_viewport_with_transform() {
 "#,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(100, 100),
         |cr| cr.translate(10.0, 20.0),
@@ -155,7 +155,7 @@ fn clip_on_transformed_viewport() {
 "##,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(200, 200),
         |cr| cr.translate(50.0, 50.0),
@@ -224,7 +224,7 @@ fn mask_on_transformed_viewport() {
 "##,
     );
 
-    let output_surf = render_to_viewport(
+    let output_surf = render_document(
         &svg,
         SurfaceSize(200, 200),
         |cr| cr.translate(50.0, 50.0),
