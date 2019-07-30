@@ -67,6 +67,13 @@ gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
                                                RsvgRectangle  *out_logical_rect,
                                                GError        **error);
 
+RSVG_API
+gboolean rsvg_handle_render_element (RsvgHandle           *handle,
+                                     cairo_t              *cr,
+                                     const char           *id,
+                                     const RsvgRectangle  *element_viewport,
+                                     GError              **error);
+
 G_END_DECLS
 
 #endif

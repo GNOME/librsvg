@@ -28,6 +28,7 @@ pub use crate::c_api::{
     rsvg_rust_handle_new_with_flags,
     rsvg_rust_handle_read_stream_sync,
     rsvg_rust_handle_render_cairo_sub,
+    rsvg_rust_handle_render_element,
     rsvg_rust_handle_render_document,
     rsvg_rust_handle_render_layer,
     rsvg_rust_handle_set_base_gfile,

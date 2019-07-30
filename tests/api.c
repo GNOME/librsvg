@@ -1076,7 +1076,7 @@ render_layer (void)
 }
 
 static void
-get_geometry_for_element (void)
+untransformed_element (void)
 {
     char *filename = get_test_filename ("geometry-element.svg");
     GError *error = NULL;
@@ -1111,6 +1111,42 @@ get_geometry_for_element (void)
     g_assert_cmpfloat (logical_rect.width, ==, 30.0);
     g_assert_cmpfloat (logical_rect.height, ==, 40.0);
 
+    cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+    cairo_t *cr = cairo_create (output);
+
+    RsvgRectangle viewport = { 100.0, 100.0, 100.0, 100.0 };
+
+    g_assert (rsvg_handle_render_element (handle, cr, "#foo", &viewport, &error));
+    g_assert (error == NULL);
+
+    cairo_destroy (cr);
+
+    cairo_surface_t *expected = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+    cr = cairo_create (expected);
+
+    cairo_translate (cr, 100.0, 100.0);
+    cairo_rectangle (cr, 10.0, 10.0, 60.0, 80.0);
+    cairo_set_source_rgba (cr, 0.0, 0.0, 1.0, 1.0);
+    cairo_fill_preserve (cr);
+
+    cairo_set_line_width (cr, 20.0);
+    cairo_set_source_rgba (cr, 0.0, 0.0, 0.0, 1.0);
+    cairo_stroke (cr);
+
+    cairo_destroy (cr);
+
+    cairo_surface_t *diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+
+    TestUtilsBufferDiffResult result = {0, 0};
+    test_utils_compare_surfaces (output, expected, diff, &result);
+
+    if (result.pixels_changed && result.max_diff > 0) {
+        g_test_fail ();
+    }
+
+    cairo_surface_destroy (diff);
+    cairo_surface_destroy (expected);
+    cairo_surface_destroy (output);
     g_object_unref (handle);
 }
 
@@ -1339,7 +1375,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/render_document", render_document);
     g_test_add_func ("/api/get_geometry_for_layer", get_geometry_for_layer);
     g_test_add_func ("/api/render_layer", render_layer);
-    g_test_add_func ("/api/get_geometry_for_element", get_geometry_for_element);
+    g_test_add_func ("/api/untransformed_element", untransformed_element);
     g_test_add_func ("/api/no_write_before_close", no_write_before_close);
     g_test_add_func ("/api/empty_write_close", empty_write_close);
     g_test_add_func ("/api/cannot_request_external_elements", cannot_request_external_elements);
