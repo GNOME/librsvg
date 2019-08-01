@@ -3,21 +3,20 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-#[cfg(unix)]
+#[cfg(all(unix, feature = "c-library"))]
 use std::os::unix::fs::symlink;
 
-#[cfg(all(windows, not(target_env = "msvc")))]
+#[cfg(all(windows, not(target_env = "msvc"), feature="c-library"))]
 use std::os::windows::fs::symlink_file as symlink;
 
-#[cfg(not(target_env = "msvc"))]
+#[cfg(all(not(target_env = "msvc"), feature="c-library"))]
 use std::fs;
-#[cfg(not(target_env = "msvc"))]
+#[cfg(all(not(target_env = "msvc"), feature="c-library"))]
 use std::path::PathBuf;
 
 fn main() {
     generate_srgb_tables();
 
-    #[cfg(not (target_env = "msvc"))]
     generate_convenience_lib().unwrap();
 }
 
@@ -80,7 +79,7 @@ fn generate_srgb_tables() {
 
 /// Generate libtool archive file librsvg_internals.la
 /// From: https://docs.rs/libtool/0.1.1/libtool/
-#[cfg(not (target_env = "msvc"))]
+#[cfg(all(feature = "c-library", not(target_env = "msvc")))]
 pub fn generate_convenience_lib() -> std::io::Result<()> {
     let target = env::var("TARGET").expect("TARGET was not set");
     let build_dir = env::var("LIBRSVG_BUILD_DIR").expect("LIBRSVG_BUILD_DIR was not set");
@@ -122,5 +121,10 @@ pub fn generate_convenience_lib() -> std::io::Result<()> {
     writeln!(file, "installed=no")?;
     writeln!(file, "shouldnotlink=no")?;
     symlink(&old_lib_path, &new_lib_path)?;
+    Ok(())
+}
+
+#[cfg(not(all(feature = "c-library", not(target_env = "msvc"))))]
+pub fn generate_convenience_lib() -> std::io::Result<()> {
     Ok(())
 }
