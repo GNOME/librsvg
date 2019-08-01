@@ -156,22 +156,22 @@ macro_rules! define_length_type {
     };
 }
 
-/// Horizontal length
-///
-/// When this is specified as a percent value, it will get resolved
-/// against the current viewport's width.
+// Horizontal length
+//
+// When this is specified as a percent value, it will get resolved
+// against the current viewport's width.
 define_length_type!(LengthHorizontal, LengthDir::Horizontal);
 
-/// Vertical length
-///
-/// When this is specified as a percent value, it will get resolved
-/// against the current viewport's height.
+// Vertical length
+//
+// When this is specified as a percent value, it will get resolved
+// against the current viewport's height.
 define_length_type!(LengthVertical, LengthDir::Vertical);
 
-/// "Both" length
-///
-/// When this is specified as a percent value, it will get resolved
-/// against the current viewport's width and height.
+// "Both" length
+//
+// When this is specified as a percent value, it will get resolved
+// against the current viewport's width and height.
 define_length_type!(LengthBoth, LengthDir::Both);
 
 // Keep this in sync with rsvg.h:RsvgLength
