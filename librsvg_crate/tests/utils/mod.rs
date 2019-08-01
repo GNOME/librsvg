@@ -1,3 +1,4 @@
+#![allow(unused)]
 use cairo;
 use gio;
 use glib;
