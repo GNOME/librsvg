@@ -102,7 +102,6 @@ struct _RsvgHandleClass {
 
 /**
  * RsvgHandle:
- * @parent: parent instance
  *
  * Lets you load SVG data and render it.
  */
@@ -231,9 +230,9 @@ gboolean rsvg_handle_has_sub (RsvgHandle *handle, const char *id);
  * @RSVG_UNIT_PT: points, or 1/72 inch
  * @RSVG_UNIT_PC: picas, or 1/6 inch (12 points)
  *
- * Units for the #RsvgLength struct.  These have the same meaning as <link
- * href="https://www.w3.org/TR/CSS21/syndata.html#length-units">CSS length
- * units</link>.
+ * Units for the #RsvgLength struct.  These have the same meaning as <ulink
+ * url="https://www.w3.org/TR/CSS21/syndata.html#length-units">CSS length
+ * units</ulink>.
  */
 typedef enum {
     RSVG_UNIT_PERCENT,
@@ -257,8 +256,8 @@ typedef enum {
  * <literal>height</literal> attributes of an <literal>&lt;svg&gt;</literal>
  * element.
  *
- * This is equivalent to <link
- * href="https://www.w3.org/TR/CSS21/syndata.html#length-units">CSS lengths</link>.
+ * This is equivalent to <ulink
+ * url="https://www.w3.org/TR/CSS21/syndata.html#length-units">CSS lengths</ulink>.
  *
  * It is up to the calling application to convert lengths in non-pixel units
  * (i.e. those where the @unit field is not #RSVG_UNIT_PX) into something
@@ -286,9 +285,9 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * RsvgHandleFlags:
  * @RSVG_HANDLE_FLAGS_NONE: No flags are set.
  * @RSVG_HANDLE_FLAG_UNLIMITED: Disable safety limits in the XML parser.
- *   Libxml2 has <link
- *   href="https://gitlab.gnome.org/GNOME/libxml2/blob/master/include/libxml/parserInternals.h">several
- *   limits</link> designed to keep malicious XML content from consuming too
+ *   Libxml2 has <ulink
+ *   url="https://gitlab.gnome.org/GNOME/libxml2/blob/master/include/libxml/parserInternals.h">several
+ *   limits</ulink> designed to keep malicious XML content from consuming too
  *   much memory while parsing.  For security reasons, this should only be used
  *   for trusted input!
  *   Since: 2.40.3
@@ -298,9 +297,9 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  *  the final output, instead of passing uncompressed images.  This will make a
  *  Keeps the image data when loading images, for use by cairo when painting to
  *  e.g. a PDF surface.  For example, this will make the a resulting PDF file
- *  smaller and faster.  Please see <link
- *  href="https://www.cairographics.org/manual/cairo-cairo-surface-t.html#cairo-surface-set-mime-data">the
- *  Cairo documentation</link> for details.
+ *  smaller and faster.  Please see <ulink
+ *  url="https://www.cairographics.org/manual/cairo-cairo-surface-t.html#cairo-surface-set-mime-data">the
+ *  Cairo documentation</ulink> for details.
  *  Since: 2.40.3
  */
 typedef enum /*< flags >*/

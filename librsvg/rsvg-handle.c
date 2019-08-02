@@ -35,10 +35,10 @@
  * Librsvg does not do animation nor scripting, and can load
  * references to external data only in some situations; see below.
  *
- * Librsvg supports reading <link
- * href="https://www.w3.org/TR/SVG11/">SVG 1.1</link> data, and is
- * gradually adding support for features in <link
- * href="https://www.w3.org/TR/SVG2/">SVG 2</link>.  Librsvg also supports
+ * Librsvg supports reading <ulink
+ * url="https://www.w3.org/TR/SVG11/">SVG 1.1</ulink> data, and is
+ * gradually adding support for features in <ulink
+ * url="https://www.w3.org/TR/SVG2/">SVG 2</ulink>.  Librsvg also supports
  * SVGZ files, which are just an SVG stream compressed with the GZIP algorithm.
  *
  * # The "base file" and resolving references to external files
@@ -1217,7 +1217,7 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
  * ]|
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <link href="#API-ordering">API ordering</link> for details.
+ * the section <ulink url="#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -1259,7 +1259,7 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * render anything, and instead will return an error.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <link href="#API-ordering">API ordering</link> for details.
+ * the section <ulink url="#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -1315,7 +1315,7 @@ rsvg_handle_render_document (RsvgHandle           *handle,
  * the child elements.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <link href="#API-ordering">API ordering</link> for details.
+ * the section <ulink url="#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -1369,7 +1369,7 @@ rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  * root element.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <link href="#API-ordering">API ordering</link> for details.
+ * the section <ulink url="#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -1431,7 +1431,7 @@ rsvg_handle_render_layer (RsvgHandle           *handle,
  * the child elements.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <link href="#API-ordering">API ordering</link> for details.
+ * the section <ulink url="#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -1483,7 +1483,7 @@ rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
  * be rendered.  FIXME: mention proportional scaling.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <link href="#API-ordering">API ordering</link> for details.
+ * the section <ulink url="#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *

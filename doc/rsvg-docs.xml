@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML 5.0//EN"
-               "http://www.oasis-open.org/docbook/xml/5.0"
-[
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+               "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+  <!ENTITY % local.common.attrib "xmlns:xi  CDATA  #FIXED 'http://www.w3.org/2003/XInclude'">
   <!ENTITY version SYSTEM "version.xml">
 ]>
-<book xmlns:xi="http://www.w3.org/2001/XInclude">
+<book id="index" xmlns:xi="http://www.w3.org/2003/XInclude">
   <!--
     Copyright © 2009, 2010 Christian Persch
     Copyright © 2017 Federico Mena Quintero
@@ -16,13 +16,13 @@
 
     A copy of the license is included in the COPYING file.
     -->
-  <info>
+  <bookinfo>
     <title>Librsvg Reference Manual</title>
     <releaseinfo>
       For librsvg version &version;
 
       The latest version of this documentation can be found on-line at the
-      <link href="http://library.gnome.org/devel/rsvg/index.html" role="online-location">GNOME Library</link>.
+      <ulink url="http://library.gnome.org/devel/rsvg/index.html" role="online-location">GNOME Library</ulink>.
     </releaseinfo>
 
     <copyright>
@@ -55,7 +55,7 @@
 
         You may obtain a copy of the <citetitle>GNU General Public Licence</citetitle>
         from the Free Software Foundation at
-        <link href="http://www.gnu.org/licences/">GNU Licences web site</link>
+        <ulink url="http://www.gnu.org/licences/">GNU Licences web site</ulink>
         or by writing to:
 
         <address>
@@ -66,25 +66,25 @@
         </address>
       </para>
     </legalnotice>
-  </info>
+  </bookinfo>
 
   <part id="rsvg">
     <title>API Reference</title>
     <partintro>
       <para>
         Librsvg is a library for rendering Scalable Vector Graphics 1.1
-        files (<link href="https://www.w3.org/TR/SVG/">SVG 1.1</link>).
+        files (<ulink url="https://www.w3.org/TR/SVG/">SVG 1.1</ulink>).
         Specifically, it can take non-animated, non-scripted SVG data
-        and render it into a <link href="https://www.cairographics.org/">Cairo</link>
+        and render it into a <ulink url="https://www.cairographics.org/">Cairo</ulink>
         surface.  Normally this means an in-memory raster surface, but
         it could also be any of the other surface types that Cairo
         supports.
       </para>
 
       <para>
-	Librsvg supports many of the graphic features in the <link
-	href="https://www.w3.org/TR/SVG/">SVG 1.1
-	specification</link>.  The main features of SVG 1.1 that
+	Librsvg supports many of the graphic features in the <ulink
+	url="https://www.w3.org/TR/SVG/">SVG 1.1
+	specification</ulink>.  The main features of SVG 1.1 that
 	librsvg does not support are the following:
       </para>
 
@@ -192,7 +192,7 @@
     <para>
       You may obtain a copy of the <citetitle>GNU General Public Licence</citetitle>
       from the Free Software Foundation at
-      <link href="http://www.gnu.org/licences/">GNU Licences web site</link>
+      <ulink url="http://www.gnu.org/licences/">GNU Licences web site</ulink>
       or by writing to:
 
       <address>
