@@ -161,8 +161,12 @@
     <xi:include href="xml/api-index-2.32.xml"/>
   </index>
   <index xml:id="api-index-2-36" role="2.36">
-    <title>Index of new symbols in 2.32</title>
+    <title>Index of new symbols in 2.36</title>
     <xi:include href="xml/api-index-2.36.xml"/>
+  </index>
+  <index xml:id="api-index-2-46" role="2.46">
+    <title>Index of new symbols in 2.46</title>
+    <xi:include href="xml/api-index-2.46.xml"/>
   </index>
 
   <xi:include href="xml/annotation-glossary.xml"/>
