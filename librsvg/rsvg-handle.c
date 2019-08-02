@@ -1193,7 +1193,7 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
  * <literal>viewBox</literal> attributes in an SVG document.
  *
  * If you are calling this function to compute a scaling factor to render the SVG,
- * consider simply using rsvg_handle_render_to_viewport() instead; it will do the
+ * consider simply using rsvg_handle_render_document() instead; it will do the
  * scaling computations automatically.
  *
  * As an example, the following SVG element has a <literal>width</literal> of 100 pixels and a <literal>height</literal> of 400 pixels, but no <literal>viewBox</literal>:
