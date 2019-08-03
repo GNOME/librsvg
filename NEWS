@@ -1,3 +1,22 @@
+Version 2.45.90
+- New API functions:
+    rsvg_handle_render_document()
+    rsvg_handle_render_layer()
+    rsvg_handle_render_element()
+    rsvg_handle_get_geometry_for_layer()
+    rsvg_handle_get_geometry_for_element()
+
+  CairoRenderer in the librsvg_crate has corresponding functions
+  as well.
+
+- Fix builds with gettext ≥ 0.20 (Ting-Wei Lan).
+
+- If the C API is called out of order, downgrade hard panics to
+  g_critical() to cope with incorrect/old applications that called
+  rsvg_handle_get_dimensions() before rsvg_handle_close().
+
+- API reference documentation is much improved.
+
 Version 2.45.8
 - This version requires at least Rust 1.34.
 
