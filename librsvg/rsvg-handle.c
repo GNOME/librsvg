@@ -472,7 +472,7 @@ rsvg_handle_new (void)
  * rsvg_handle_new_from_data:
  * @data: (array length=data_len): The SVG data
  * @data_len: The length of @data, in bytes
- * @error: return location for errors
+ * @error: (optional): return location for errors
  *
  * Loads the SVG specified by @data.  Note that this function creates an
  * #RsvgHandle without a base URL, and without any #RsvgHandleFlags.  If you
@@ -495,7 +495,7 @@ rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
 /**
  * rsvg_handle_new_from_file:
  * @filename: The file name to load, or a URI.
- * @error: return location for errors
+ * @error: (optional): return location for errors
  *
  * Loads the SVG specified by @file_name.  Note that this function, like
  * rsvg_handle_new(), does not specify any loading flags for the resulting
@@ -536,8 +536,8 @@ rsvg_handle_new_with_flags (RsvgHandleFlags flags)
  * rsvg_handle_new_from_gfile_sync:
  * @file: a #GFile
  * @flags: flags from #RsvgHandleFlags
- * @cancellable: (allow-none): a #GCancellable, or %NULL
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @cancellable: (nullable): a #GCancellable, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Creates a new #RsvgHandle for @file.
  *
@@ -570,10 +570,10 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
 /**
  * rsvg_handle_new_from_stream_sync:
  * @input_stream: a #GInputStream
- * @base_file: (allow-none): a #GFile, or %NULL
+ * @base_file: (nullable): a #GFile, or %NULL
  * @flags: flags from #RsvgHandleFlags
- * @cancellable: (allow-none): a #GCancellable, or %NULL
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @cancellable: (nullable): a #GCancellable, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Creates a new #RsvgHandle for @stream.
  *
@@ -614,7 +614,7 @@ rsvg_handle_new_from_stream_sync (GInputStream    *input_stream,
  * @handle: an #RsvgHandle
  * @buf: (array length=count) (element-type guchar): pointer to svg data
  * @count: length of the @buf buffer in bytes
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Loads the next @count bytes of the image.
  *
@@ -647,7 +647,7 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 /**
  * rsvg_handle_close:
  * @handle: a #RsvgHandle
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Closes @handle, to indicate that loading the image is complete.  This will
  * return %TRUE if the loader closed successfully and the SVG data was parsed
@@ -673,8 +673,8 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
  * rsvg_handle_read_stream_sync:
  * @handle: a #RsvgHandle
  * @stream: a #GInputStream
- * @cancellable: (allow-none): a #GCancellable, or %NULL
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @cancellable: (nullable): a #GCancellable, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Reads @stream and writes the data from it to @handle.
  *
@@ -1248,7 +1248,7 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * @handle: An #RsvgHandle
  * @cr: A Cairo context
  * @viewport: Viewport size at which the whole SVG would be fitted.
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Renders the whole SVG document fitted to a viewport.
  *
@@ -1289,7 +1289,7 @@ rsvg_handle_render_document (RsvgHandle           *handle,
  * @viewport: Viewport size at which the whole SVG would be fitted.
  * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
  * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Computes the ink rectangle and logical rectangle of an SVG element, or the
  * whole SVG, as if the whole SVG were rendered to a specific viewport.
@@ -1349,7 +1349,7 @@ rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  * hash character), for example, "##layer1".  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass %NULL to render the whole SVG document tree.
  * @viewport: Viewport size at which the whole SVG would be fitted.
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Renders a single SVG element in the same place as for a whole SVG document.
  *
@@ -1399,7 +1399,7 @@ rsvg_handle_render_layer (RsvgHandle           *handle,
  * whole SVG.
  * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
  * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Computes the ink rectangle and logical rectangle of a singe SVG element.
  *
@@ -1462,7 +1462,7 @@ rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
  * hash character), for example, "##layer1".  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass %NULL to render the whole SVG document tree.
  * @element_viewport: Viewport size in which to fit the element
- * @error: (allow-none): a location to store a #GError, or %NULL
+ * @error: (optional): a location to store a #GError, or %NULL
  *
  * Renders a single SVG element to a given viewport
  *
