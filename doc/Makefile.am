@@ -94,12 +94,13 @@ expand_content_files =
 # signals and properties.
 # e.g. GTKDOC_CFLAGS=-I$(top_srcdir) -I$(top_builddir) $(GTK_DEBUG_FLAGS)
 # e.g. GTKDOC_LIBS=$(top_builddir)/gtk/$(gtktargetlib)
-GTKDOC_CFLAGS = \
-	-I$(top_srcdir) \
-	-I$(top_builddir) \
-	$(LIBRSVG_CFLAGS) \
-	$(WARN_CFLAGS) \
-	$(DISABLE_DEPRECATED) \
+GTKDOC_CFLAGS =					\
+	-I$(top_srcdir)				\
+	-I$(top_builddir)			\
+	-I$(top_builddir)/librsvg		\
+	$(LIBRSVG_CFLAGS)			\
+	$(WARN_CFLAGS)				\
+	$(DISABLE_DEPRECATED)			\
 	$(AM_CFLAGS)
 
 GTKDOC_LIBS = \
