@@ -14,7 +14,7 @@ cairo-rs = "0.7.0"
 glib = "0.8.0"
 gio = { version="0.7.0", features=["v2_48"] } # per configure.ac
 rsvg_internals = { path = "../rsvg_internals" }
-url = "1.7.2"
+url = "2"
 
 [dev-dependencies]
 cairo-rs = { version = "0.7.0", features = ["png", "svg"] }
