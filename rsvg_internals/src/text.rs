@@ -86,6 +86,8 @@ struct PositionedSpan {
     values: ComputedValues,
     _position: (f64, f64),
     rendered_position: (f64, f64),
+    next_span_x: f64,
+    next_span_y: f64,
 }
 
 impl Chunk {
@@ -148,10 +150,12 @@ impl PositionedChunk {
         // Position each span
 
         for measured_span in &measured.spans {
-            positioned.push(PositionedSpan::from_measured(measured_span, draw_ctx, x, y));
+            let positioned_span = PositionedSpan::from_measured(measured_span, draw_ctx, x, y);
 
-            x += measured_span.advance.0;
-            y += measured_span.advance.1;
+            x = positioned_span.next_span_x;
+            y = positioned_span.next_span_y;
+
+            positioned.push(positioned_span);
         }
 
         PositionedChunk {
@@ -263,6 +267,8 @@ impl PositionedSpan {
             values,
             _position: (x, y),
             rendered_position: (render_x, render_y),
+            next_span_x: x + measured.advance.0 + dx,
+            next_span_y: y + measured.advance.1 + dy,
         }
     }
 

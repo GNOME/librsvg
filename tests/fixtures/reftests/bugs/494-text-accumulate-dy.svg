@@ -1,0 +1,14 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="en"  viewBox="0 0 178 178" version="1.1">
+<style type="text/css">
+    svg {
+        font-family: Times;
+        font-size: 44px;
+    }
+  </style>
+  <text  x="0" y="0">
+  <tspan x="0" dy="1.2em">Tata</tspan>
+  <tspan x="0" dy="1.2em">Toto tu</tspan>
+  <tspan x="0" dy="1.2em">ppo</tspan>
+  </text>
+</svg>
