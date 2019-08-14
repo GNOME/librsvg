@@ -6,7 +6,7 @@ fn main() {
     let bytes = glib::Bytes::from_static(include_bytes!("org.gnome.Epiphany.svg"));
     let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
     let handle = librsvg::Loader::new()
-        .read_stream(&stream, None, None::<&gio::Cancellable>)
+        .read_stream(&stream, None::<&gio::File>, None::<&gio::Cancellable>)
         .unwrap();
     let renderer = librsvg::CairoRenderer::new(&handle);
 
