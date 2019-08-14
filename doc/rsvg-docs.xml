@@ -116,6 +116,7 @@
     </partintro>
 
     <xi:include href="overview.xml"/>
+    <xi:include href="recommendations.xml"/>
 
     <xi:include href="xml/rsvg-handle.xml"/>
     <xi:include href="xml/rsvg-gio.xml"/>

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<chapter>
+  <title>Recommendations for Applications</title>
+
+  <section id="sizing">
+    <title>How sizing works in SVG</title>
+
+    <para>
+      SVG documents are <emphasis>scalable</emphasis>.  The
+      conventional way to position SVG documents, which comes from the
+      web platform, is to consider a <emphasis>viewport</emphasis> in
+      which to place the SVG document — that is, a rectangular region
+      to where the SVG will be scaled and positioned.
+    </para>
+
+    <para>
+      SVG renderers are supposed to use the viewport provided by the
+      application, plus the SVG document's <literal>width</literal>
+      and <literal>height</literal> attributes, and its
+      <literal>viewBox</literal> attribute, to compute the position
+      and size for the rendered document.
+    </para>
+
+    <para>
+      Ideally, the toplevel <literal>&lt;svg&gt;</literal> element of
+      an SVG document will contain <literal>width</literal> and
+      <literal>height</literal> attributes, that indicate the
+      proportions and "natural size" of the document.  When those
+      attributes are present, the SVG renderer can unambiguously
+      figure out the natural aspect ratio of the document, and can
+      also suggest a natural size for the document.  Since SVGs are
+      scalable, it is not mandatory to actually use its natural size;
+      it can be scaled arbitrarily.  Of course, it is up to each
+      application how an SVG document will be scaled:  a web browser
+      would want to consider the semantics of embedding images in
+      HTML, which may be different from a GUI toolkit loading SVG
+      assets with hard-coded sizes.
+    </para>
+
+    <para>
+      If an SVG document's toplevel <literal>&lt;svg&gt;</literal>
+      element does not have <literal>width</literal> and
+      <literal>height</literal> attributes, then the SVG renderer can
+      try to figure out the document's aspect ratio from the
+      <literal>viewBox</literal> attribute.  If there is no
+      <literal>viewBox</literal> either, then the SVG renderer cannot
+      easily figure out the natural size of the document.  It can
+      either set a 1:1 scaling matrix within the application's
+      viewport and render the SVG there, or it can actually try to
+      compute the size of each object in the SVG document to figure
+      out the size.  The latter is a moderately expensive operation,
+      and can be avoided by having the SVG document specify
+      <literal>width</literal> and <literal>height</literal>
+      attributes.
+    </para>
+
+    <section>
+      <title>How librsvg computes document sizes</title>
+
+      <para>
+	Librsvg looks for the <literal>width</literal> and
+	<literal>height</literal> attributes in the toplevel
+	<literal>&lt;svg&gt;</literal> element.  If they are present,
+	librsvg uses them for the "natural" size of the SVG, and this
+	also defines the aspect ratio.  The size has actual units
+	(pixels, centimeters, etc.)  depending on the value of the
+	<literal>width</literal> and <literal>height</literal>
+	attributes.
+      </para>
+
+      <para>
+	If there are no <literal>width</literal> or
+	<literal>height</literal> attributes in the toplevel
+	<literal>&lt;svg&gt;</literal>, librsvg looks for the
+	<literal>viewBox</literal> attribute.  If present, this
+	defines the aspect ratio and a "natural" size in pixels.
+      </para>
+
+      <para>
+	In both cases above (with
+	<literal>width</literal>/<literal>height</literal> and/or
+	<literal>viewBox</literal>), librsvg can determine the
+	"natural" size and aspect ratio of an SVG document immediately
+	after loading.
+      </para>
+
+      <para>
+	Otherwise, if none of those attributes are present in the
+	toplevel <literal>&lt;svg&gt;</literal> element, librsvg must
+	actually compute the coverage of all the graphical elements in
+	the SVG.  This is a moderately expensive operation, and
+	depends on the complexity of the document.
+      </para>
+    </section>
+  </section>
+
+  <section id="recommendations-assets">
+    <title>Recommendations for applications with SVG assets</title>
+
+    <para>
+      Before librsvg 2.46, applications would normally load an SVG
+      asset, then they would query librsvg for the SVG's size,
+      and then they would compute the dimensions of their user
+      interface based on the SVG's size.
+    </para>
+
+    <para>
+      With librsvg 2.46 and later, applications may have an easier
+      time by letting the UI choose whatever size it wants, or by
+      hardcoding a size for SVG assets, and then asking librsvg to
+      render SVG assets at that particular size.  Applications can use
+      <function>rsvg_handle_render_document</function>, which takes
+      a destination viewport, to do this in a single step.
+    </para>
+
+    <para>
+      To extract individual elements from an SVG document and render
+      them in arbitrary locations — for example, to extract a single
+      icon from a document full of icons —, applications can use
+      <function>rsvg_handle_render_element</function>.
+    </para>
+  </section>
+</chapter>
