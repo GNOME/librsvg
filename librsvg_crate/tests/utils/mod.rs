@@ -23,7 +23,7 @@ pub fn load_svg(input: &'static [u8]) -> SvgHandle {
     let bytes = glib::Bytes::from_static(input);
     let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
 
-    Loader::new().read_stream(&stream, None, None).unwrap()
+    Loader::new().read_stream(&stream, None, None::<&gio::Cancellable>).unwrap()
 }
 
 #[derive(Copy, Clone)]

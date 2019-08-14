@@ -227,7 +227,7 @@ impl Loader {
     /// ```
     pub fn read_path<P: AsRef<Path>>(self, path: P) -> Result<SvgHandle, LoadingError> {
         let file = gio::File::new_for_path(path);
-        self.read_file(&file, None)
+        self.read_file(&file, None::<&Cancellable>)
     }
 
     /// Reads an SVG file from a `gio::File`.
@@ -245,18 +245,13 @@ impl Loader {
     ///     .read_file(&gio::File::new_for_path("hello.svg"), None)
     ///     .unwrap();
     /// ```
-    pub fn read_file<'a, P: Into<Option<&'a Cancellable>>>(
+    pub fn read_file<P: IsA<Cancellable>>(
         self,
         file: &gio::File,
-        cancellable: P,
+        cancellable: Option<&P>,
     ) -> Result<SvgHandle, LoadingError> {
-        let cancellable = cancellable.into();
-
-        let cancellable_clone = cancellable.clone();
-
         let stream = file.read(cancellable)?;
-
-        self.read_stream(&stream, Some(&file), cancellable_clone)
+        self.read_stream(&stream, Some(&file), cancellable)
     }
 
     /// Reads an SVG stream from a `gio::InputStream`.
@@ -271,11 +266,11 @@ impl Loader {
     /// URL where this SVG got loaded from.
     ///
     /// The `cancellable` can be used to cancel loading from another thread.
-    pub fn read_stream<'a, P: Into<Option<&'a Cancellable>>, S: IsA<gio::InputStream>>(
+    pub fn read_stream<S: IsA<gio::InputStream>, P: IsA<Cancellable>>(
         self,
         stream: &S,
         base_file: Option<&gio::File>,
-        cancellable: P,
+        cancellable: Option<&P>,
     ) -> Result<SvgHandle, LoadingError> {
         let base_url = if let Some(base_file) = base_file {
             Some(url_from_file(&base_file)?)
@@ -290,7 +285,7 @@ impl Loader {
         Ok(SvgHandle(Handle::from_stream(
             &load_options,
             stream,
-            cancellable.into(),
+            cancellable.map(|c| c.as_ref()),
         )?))
     }
 }
