@@ -458,6 +458,13 @@ main (int argc, char **argv)
             scaled_height = dimensions.height;
             get_final_size (&scaled_width, &scaled_height, &size_data);
 
+            if (scaled_width > 32767 || scaled_height > 32767) {
+                g_printerr (_("The resulting image would be larger than 32767 pixels on either dimension.\n"
+                              "Librsvg currently cannot render to images bigger than that.\n"
+                              "Please specify a smaller size.\n"));
+                exit (1);
+            }
+
             if (!format || !strcmp (format, "png"))
                 surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
                                                       scaled_width, scaled_height);
