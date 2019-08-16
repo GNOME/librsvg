@@ -1,3 +1,16 @@
+Version 2.45.91
+- The documentation has a new chapter, Recommendations for Applications.
+
+- #451 - Make rsvg-convert detect images larger than pixman's limit.
+
+- #410 - Update introspection annotations.
+
+- #449 - librsvg_crate: Make cancellable arguments consistent with gio-rs
+
+- librsvg_crate: Take all gio arguments as IsA<SomeGioType> generics
+
+- Updated Rust crates to avoid duplicates (Bastien Orivel)
+
 Version 2.45.90
 - New API functions:
     rsvg_handle_render_document()
