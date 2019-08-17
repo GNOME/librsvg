@@ -8,19 +8,22 @@
   <shortdesc xml:lang="en">SVG rendering library</shortdesc>
 
   <description>
-    librsvg is a library to render SVG documents into GdkPixbuf images or
-    Cairo contexts in general.  It is used throughout GNOME to render things
-    like scalable icons, from image viewers to view SVGs easily, or to generate
-    thumbnails for SVG files.
+    Librsvg takes SVG documents and renders them into Cairo contexts.
+    It is used throughout GNOME to render things like scalable icons,
+    in image viewers to view SVGs easily, or to generate thumbnails
+    for SVG files.  Other projects like Wikimedia and ImageMagick use
+    librsvg for their SVG rendering needs.  Librsvg exports its API
+    through GObject Introspection, so bindings for other programming
+    languages can be created for it in an automated fashion.
   </description>
 
   <homepage rdf:resource="https://wiki.gnome.org/action/show/Projects/LibRsvg" />
   <mailing-list rdf:resource="https://mail.gnome.org/mailman/listinfo/desktop-devel-list" />
   <download-page rdf:resource="https://download.gnome.org/sources/librsvg/" />
   <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/librsvg/issues" />
-  <category rdf:resource="http://api.gnome.org/doap-extensions#deprecated" />
-  <programming-language>C</programming-language>
+  <!-- <category rdf:resource="http://api.gnome.org/doap-extensions#deprecated" /> -->
   <programming-language>Rust</programming-language>
+  <programming-language>C</programming-language>
 
   <maintainer>
     <foaf:Person>
