@@ -1,3 +1,10 @@
+Version 2.44.15
+- Fix #11 - Respect the "direction" property for bidirectional text (Khaled Hosny)
+- Fix #462 - Fix usage of std::f64::EPSILON for Rust 1.28.
+- Fix #496 - Ensure all lengths and angles parse as finite numbers
+- Fix #426 - Detect files vs. URIs in rsvg_handle_new_from_file() on Windows
+- Fix a memroy leak in the test suite.
+
 Version 2.44.14
 - Fix #425 - Don't fail parsing if the system's locale is broken (Paolo Borelli).
 - Fix #438, #443 - Don't create intermediate raster surfaces unless
