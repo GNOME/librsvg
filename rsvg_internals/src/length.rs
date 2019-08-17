@@ -3,8 +3,7 @@ use std::f64::consts::*;
 
 use drawing_ctx::ViewParams;
 use error::*;
-use parsers::Parse;
-use parsers::ParseError;
+use parsers::{Parse, ParseError, finite_f32};
 use state::ComputedValues;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -150,13 +149,13 @@ impl Length {
 
             match *token {
                 Token::Number { value, .. } => Length {
-                    length: f64::from(value),
+                    length: f64::from(finite_f32(value)?),
                     unit: LengthUnit::Default,
                     dir,
                 },
 
                 Token::Percentage { unit_value, .. } => Length {
-                    length: f64::from(unit_value),
+                    length: f64::from(finite_f32(unit_value)?),
                     unit: LengthUnit::Percent,
                     dir,
                 },
@@ -164,7 +163,7 @@ impl Length {
                 Token::Dimension {
                     value, ref unit, ..
                 } => {
-                    let value = f64::from(value);
+                    let value = f64::from(finite_f32(value)?);
 
                     match unit.as_ref() {
                         "em" => Length {

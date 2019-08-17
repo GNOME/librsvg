@@ -130,12 +130,12 @@ pub fn angle_degrees(parser: &mut Parser<'_, '_>) -> Result<f64, ParseError> {
             .map_err(|_| ParseError::new("expected angle"))?;
 
         match *token {
-            Token::Number { value, .. } => f64::from(value),
+            Token::Number { value, .. } => f64::from(finite_f32(value).map_err(|_| ParseError::new("expected finite value"))?),
 
             Token::Dimension {
                 value, ref unit, ..
             } => {
-                let value = f64::from(value);
+                let value = f64::from(finite_f32(value).map_err(|_| ParseError::new("expected finite value"))?);
 
                 match unit.as_ref() {
                     "deg" => value,
