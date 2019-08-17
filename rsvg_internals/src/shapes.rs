@@ -23,24 +23,26 @@ fn render_path_builder(
     render_markers: bool,
     clipping: bool,
 ) -> Result<(), RenderingError> {
-    draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-        let cr = dc.get_cairo_context();
+    if !builder.empty() {
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            let cr = dc.get_cairo_context();
 
-        dc.set_affine_on_cr(&cr);
-        builder.to_cairo(&cr)?;
+            dc.set_affine_on_cr(&cr);
+            builder.to_cairo(&cr)?;
 
-        if clipping {
-            cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
-        } else {
-            cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
-            dc.stroke_and_fill(&cr, values)?;
+            if clipping {
+                cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
+            } else {
+                cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
+                dc.stroke_and_fill(&cr, values)?;
+            }
+
+            Ok(())
+        })?;
+
+        if render_markers {
+            marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping)?;
         }
-
-        Ok(())
-    })?;
-
-    if render_markers {
-        marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping)?;
     }
 
     Ok(())
