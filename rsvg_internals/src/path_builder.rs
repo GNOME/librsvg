@@ -356,6 +356,8 @@ impl PathBuilder {
     }
 
     pub fn to_cairo(&self, cr: &cairo::Context) -> Result<(), cairo::Status> {
+        assert!(!self.empty());
+
         for s in &self.path_commands {
             s.to_cairo(cr);
         }
@@ -375,6 +377,10 @@ impl PathBuilder {
         } else {
             Err(status)
         }
+    }
+
+    pub fn empty(&self) -> bool {
+        self.path_commands.len() == 0
     }
 }
 
