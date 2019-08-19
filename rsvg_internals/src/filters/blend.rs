@@ -20,6 +20,17 @@ enum Mode {
     Screen,
     Darken,
     Lighten,
+    Overlay,
+    ColorDodge,
+    ColorBurn,
+    HardLight,
+    SoftLight,
+    Difference,
+    Exclusion,
+    HslHue,
+    HslSaturation,
+    HslColor,
+    HslLuminosity,
 }
 
 /// The `feBlend` filter primitive.
@@ -133,6 +144,17 @@ impl Mode {
             "screen" => Ok(Mode::Screen),
             "darken" => Ok(Mode::Darken),
             "lighten" => Ok(Mode::Lighten),
+            "overlay" => Ok(Mode::Overlay),
+            "color-dodge" => Ok(Mode::ColorDodge),
+            "color-burn" => Ok(Mode::ColorBurn),
+            "hard-light" => Ok(Mode::HardLight),
+            "soft-light" => Ok(Mode::SoftLight),
+            "difference" => Ok(Mode::Difference),
+            "exclusion" => Ok(Mode::Exclusion),
+            "hue" => Ok(Mode::HslHue),
+            "saturation" => Ok(Mode::HslSaturation),
+            "color" => Ok(Mode::HslColor),
+            "luminosity" => Ok(Mode::HslLuminosity),
             _ => Err(NodeError::parse_error(
                 attr,
                 ParseError::new("invalid value"),
@@ -150,6 +172,17 @@ impl From<Mode> for cairo::Operator {
             Mode::Screen => cairo::Operator::Screen,
             Mode::Darken => cairo::Operator::Darken,
             Mode::Lighten => cairo::Operator::Lighten,
+            Mode::Overlay => cairo::Operator::Overlay,
+            Mode::ColorDodge => cairo::Operator::ColorDodge,
+            Mode::ColorBurn => cairo::Operator::ColorBurn,
+            Mode::HardLight => cairo::Operator::HardLight,
+            Mode::SoftLight => cairo::Operator::SoftLight,
+            Mode::Difference => cairo::Operator::Difference,
+            Mode::Exclusion => cairo::Operator::Exclusion,
+            Mode::HslHue => cairo::Operator::HslHue,
+            Mode::HslSaturation => cairo::Operator::HslSaturation,
+            Mode::HslColor => cairo::Operator::HslColor,
+            Mode::HslLuminosity => cairo::Operator::HslLuminosity,
         }
     }
 }
