@@ -4,7 +4,7 @@ NULL =
 BUILT_SOURCES =
 
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
-noinst_LTLIBRARIES = librsvg_internals.la
+noinst_LTLIBRARIES = librsvg_c_api.la
 
 bin_PROGRAMS = rsvg-convert
 
@@ -14,7 +14,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	$(librsvg_c_srcs)			\
 	$(NULL)
 
-librsvg_internals_la_SOURCES =		\
+LIBRSVG_INTERNALS_SOURCES =					\
 	Cargo.toml						\
 	rsvg_internals/Cargo.toml				\
 	rsvg_internals/build.rs					\
@@ -22,7 +22,6 @@ librsvg_internals_la_SOURCES =		\
 	rsvg_internals/src/angle.rs				\
 	rsvg_internals/src/aspect_ratio.rs			\
 	rsvg_internals/src/bbox.rs				\
-	rsvg_internals/src/c_api.rs				\
 	rsvg_internals/src/clip_path.rs				\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
@@ -98,7 +97,8 @@ librsvg_internals_la_SOURCES =		\
 	rsvg_internals/src/viewbox.rs				\
 	rsvg_internals/src/xml.rs				\
 	rsvg_internals/src/xml2.rs				\
-	rsvg_internals/src/xml2_load.rs
+	rsvg_internals/src/xml2_load.rs				\
+	$(NULL)
 
 LIBRSVG_CRATE_SOURCES = 					\
 	librsvg_crate/Cargo.toml				\
@@ -110,7 +110,15 @@ LIBRSVG_CRATE_SOURCES = 					\
 	librsvg_crate/tests/render_to_viewport.rs		\
 	librsvg_crate/tests/primitives.rs			\
 	librsvg_crate/tests/utils/mod.rs			\
-	librsvg_crate/tests/utils/compare_surfaces.rs
+	librsvg_crate/tests/utils/compare_surfaces.rs		\
+	$(NULL)
+
+LIBRSVG_C_API_SOURCES =						\
+	librsvg/Cargo.toml					\
+	librsvg/build.rs					\
+	librsvg/c_api.rs					\
+	librsvg/lib.rs						\
+	$(NULL)
 
 RUST_EXTRA = 						\
 	Cargo.lock					\
@@ -119,7 +127,8 @@ RUST_EXTRA = 						\
 	rsvg_internals/benches/composite.rs		\
 	rsvg_internals/benches/lighting.rs		\
 	rsvg_internals/benches/pixel_iterators.rs	\
-	rsvg_internals/benches/srgb.rs
+	rsvg_internals/benches/srgb.rs			\
+	$(NULL)
 
 if DEBUG_RELEASE
 CARGO_RELEASE_ARGS=
@@ -140,7 +149,7 @@ LIBRSVG_BUILD_DIR=@abs_top_builddir@
 CARGO_TARGET_DIR=$(LIBRSVG_BUILD_DIR)/target
 LIBRSVG_TARGET_DIR=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)
 
-RUST_LIB=$(LIBRSVG_BUILD_DIR)/.libs/librsvg_internals.a
+RUST_LIB=$(LIBRSVG_BUILD_DIR)/.libs/librsvg_c_api.a
 
 check-local:
 	cd $(srcdir) && \
@@ -169,14 +178,14 @@ dist-hook:
 	mkdir .cargo &&								\
 	cp cargo-vendor-config .cargo/config)
 
-librsvg_internals.la: $(librsvg_internals_la_SOURCES)
-	+cd $(top_srcdir)/rsvg_internals &&					\
+librsvg_c_api.la: $(LIBRSVG_INTERNALS_SOURCES) $(LIBRSVG_C_API_SOURCES)
+	+cd $(top_srcdir)/librsvg &&						\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
 	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)					\
 	LIBRSVG_TARGET_DIR=$(LIBRSVG_TARGET_DIR)					\
-	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --features "c-library" \
+	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) \
 	&& if [[ $$($(NM) -g $(RUST_LIB) | grep "T __clzsi2" -c) -gt 1 ]] ; then \
 		$(AR) d $(RUST_LIB) clzsi2.o;					\
 	fi
@@ -205,7 +214,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
 	$(AM_LDFLAGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
-	librsvg_internals.la \
+	librsvg_c_api.la \
 	$(LIBRSVG_LIBS) 	\
 	$(LIBM)			\
 	$(DLOPEN_LIBS)
@@ -246,7 +255,8 @@ dist_doc_DATA =				\
 	code-of-conduct.md
 
 EXTRA_DIST =				\
-	$(librsvg_internals_la_SOURCES)		\
+	$(LIBRSVG_INTERNALS_SOURCES)	\
+	$(LIBRSVG_C_API_SOURCES)	\
 	$(RUST_EXTRA)			\
 	$(LIBRSVG_CRATE_SOURCES)	\
 	librsvg.doap			\

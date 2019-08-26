@@ -1,3 +1,5 @@
+use std::cell::Cell;
+use std::ptr;
 use std::rc::Rc;
 
 use cairo::{self, ImageSurface, Status};
@@ -8,7 +10,7 @@ use libc;
 use locale_config::{LanguageRange, Locale};
 
 use crate::allowed_url::{AllowedUrl, Href};
-use crate::c_api::{RsvgDimensionData, RsvgPositionData, SizeCallback};
+use crate::bbox::BoundingBox;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{DrawingCtx, RsvgRectangle};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
@@ -17,7 +19,6 @@ use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
 use crate::structure::{IntrinsicDimensions, NodeSvg};
 use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use crate::svg::Svg;
-use crate::util::rsvg_g_warning;
 use url::Url;
 
 #[derive(Clone)]
@@ -65,6 +66,115 @@ impl LoadOptions {
 
     pub fn locale(&self) -> &Locale {
         &self.locale
+    }
+}
+
+// Keep in sync with rsvg.h:RsvgDimensionData
+#[repr(C)]
+pub struct RsvgDimensionData {
+    pub width: libc::c_int,
+    pub height: libc::c_int,
+    pub em: f64,
+    pub ex: f64,
+}
+
+impl RsvgDimensionData {
+    // This is not #[derive(Default)] to make it clear that it
+    // shouldn't be the default value for anything; it is actually a
+    // special case we use to indicate an error to the public API.
+    pub fn empty() -> RsvgDimensionData {
+        RsvgDimensionData {
+            width: 0,
+            height: 0,
+            em: 0.0,
+            ex: 0.0,
+        }
+    }
+}
+
+// Keep in sync with rsvg.h:RsvgPositionData
+#[repr(C)]
+pub struct RsvgPositionData {
+    pub x: libc::c_int,
+    pub y: libc::c_int,
+}
+
+// Keep in sync with rsvg.h:RsvgSizeFunc
+pub type RsvgSizeFunc = Option<
+    unsafe extern "C" fn(
+        inout_width: *mut libc::c_int,
+        inout_height: *mut libc::c_int,
+        user_data: glib_sys::gpointer,
+    ),
+>;
+
+pub struct SizeCallback {
+    pub size_func: RsvgSizeFunc,
+    pub user_data: glib_sys::gpointer,
+    pub destroy_notify: glib_sys::GDestroyNotify,
+    pub in_loop: Cell<bool>,
+}
+
+impl SizeCallback {
+    pub fn new(
+        size_func: RsvgSizeFunc,
+        user_data: glib_sys::gpointer,
+        destroy_notify: glib_sys::GDestroyNotify,
+    ) -> Self {
+        SizeCallback {
+            size_func,
+            user_data,
+            destroy_notify,
+            in_loop: Cell::new(false),
+        }
+    }
+
+    pub fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
+        unsafe {
+            let mut w = width;
+            let mut h = height;
+
+            if let Some(ref f) = self.size_func {
+                f(&mut w, &mut h, self.user_data);
+            };
+
+            (w, h)
+        }
+    }
+
+    pub fn start_loop(&self) {
+        assert!(!self.in_loop.get());
+        self.in_loop.set(true);
+    }
+
+    pub fn end_loop(&self) {
+        assert!(self.in_loop.get());
+        self.in_loop.set(false);
+    }
+
+    pub fn get_in_loop(&self) -> bool {
+        self.in_loop.get()
+    }
+}
+
+impl Default for SizeCallback {
+    fn default() -> SizeCallback {
+        SizeCallback {
+            size_func: None,
+            user_data: ptr::null_mut(),
+            destroy_notify: None,
+            in_loop: Cell::new(false),
+        }
+    }
+}
+
+impl Drop for SizeCallback {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(ref f) = self.destroy_notify {
+                f(self.user_data);
+            };
+        }
     }
 }
 
@@ -233,15 +343,7 @@ impl Handle {
             }
         }
 
-        // This is just to start with an unknown viewport size
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 1.0,
-            height: 1.0,
-        };
-
-        self.get_node_geometry_with_viewport(&node, &viewport, dpi, is_testing)
+        self.get_node_geometry_with_viewport(&node, &unit_rectangle(), dpi, is_testing)
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
@@ -285,7 +387,6 @@ impl Handle {
 
                     rsvg_log!("{}", msg);
 
-                    rsvg_g_warning(&msg);
                     return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
                 }
 
@@ -368,6 +469,29 @@ impl Handle {
         res
     }
 
+    fn get_bbox_for_element(
+        &self,
+        node: &RsvgNode,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let cr = cairo::Context::new(&target);
+
+        let mut draw_ctx = DrawingCtx::new(
+            self.svg.clone(),
+            None,
+            &cr,
+            &unit_rectangle(),
+            dpi,
+            true,
+            is_testing,
+        );
+
+        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(node), node, false)?;
+        Ok(draw_ctx.get_bbox().clone())
+    }
+
     /// Returns (ink_rect, logical_rect)
     pub fn get_geometry_for_element(
         &self,
@@ -377,29 +501,7 @@ impl Handle {
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
 
-        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let cr = cairo::Context::new(&target);
-
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 1.0,
-            height: 1.0,
-        };
-
-        let mut draw_ctx = DrawingCtx::new(
-            self.svg.clone(),
-            None,
-            &cr,
-            &viewport,
-            dpi,
-            true,
-            is_testing,
-        );
-
-        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false)?;
-
-        let bbox = draw_ctx.get_bbox();
+        let bbox = self.get_bbox_for_element(&node, dpi, is_testing)?;
 
         let mut ink_rect = bbox
             .ink_rect
@@ -436,31 +538,7 @@ impl Handle {
 
         let node = self.get_node_or_root(id)?;
 
-        // Measure the element
-
-        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let measure_cr = cairo::Context::new(&target);
-
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 1.0,
-            height: 1.0,
-        };
-
-        let mut draw_ctx = DrawingCtx::new(
-            self.svg.clone(),
-            None,
-            &measure_cr,
-            &viewport,
-            dpi,
-            true,
-            is_testing,
-        );
-
-        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false)?;
-
-        let bbox = draw_ctx.get_bbox();
+        let bbox = self.get_bbox_for_element(&node, dpi, is_testing)?;
 
         if bbox.ink_rect.is_none() || bbox.rect.is_none() {
             // Nothing to draw
@@ -491,7 +569,7 @@ impl Handle {
             self.svg.clone(),
             None,
             &cr,
-            &viewport,
+            &unit_rectangle(),
             dpi,
             false,
             is_testing,
@@ -541,12 +619,6 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
     if status == Status::Success {
         Ok(())
     } else {
-        let msg = format!(
-            "cannot render on a cairo_t with a failure status (status={:?})",
-            status,
-        );
-
-        rsvg_g_warning(&msg);
         Err(RenderingError::Cairo(status))
     }
 }
@@ -570,4 +642,13 @@ fn locale_from_environment() -> Locale {
     }
 
     locale
+}
+
+fn unit_rectangle() -> cairo::Rectangle {
+    cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+    }
 }

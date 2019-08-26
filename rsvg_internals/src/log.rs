@@ -5,7 +5,7 @@ macro_rules! rsvg_log {
     (
         $($arg:tt)+
     ) => {
-        if crate::log::log_enabled() {
+        if $crate::log::log_enabled() {
             println!("{}", format_args!($($arg)+));
         }
     };

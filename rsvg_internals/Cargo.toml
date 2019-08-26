@@ -18,7 +18,6 @@ edition = "2018"
 # from there into cargo-fetcher/Cargo.toml.
 
 [dependencies]
-bitflags = "1.0"
 cairo-rs = { version="0.7.0", features=["v1_16"] }
 cairo-sys-rs = "0.9.0"
 cssparser = "0.25.5"
@@ -30,9 +29,8 @@ gdk-pixbuf = "0.7.0"
 gdk-pixbuf-sys = "0.9.0"
 gio = { version="0.7.0", features=["v2_48"] } # per configure.ac
 gio-sys = "0.9.0"
-glib = { version="0.8.0", features=["subclassing"] }
+glib = { version="0.8.0" }
 glib-sys = "0.9.0"
-gobject-sys = "0.9.0"
 itertools = "0.8"
 language-tags = "0.2.2"
 lazy_static = "1.0.0"
@@ -56,7 +54,6 @@ criterion = "0.2"
 
 [lib]
 name = "rsvg_internals"
-crate-type = ["staticlib", "lib"]
 
 [[bench]]
 name = "box_blur"
@@ -77,7 +74,3 @@ harness = false
 [[bench]]
 name = "srgb"
 harness = false
-
-[features]
-# Enables calling g_warning() when built as part of librsvg.so
-c-library = []

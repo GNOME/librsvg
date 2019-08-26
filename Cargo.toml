@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "librsvg",
     "librsvg_crate",
     "rsvg_internals",
 ]

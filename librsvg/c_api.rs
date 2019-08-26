@@ -7,13 +7,17 @@ use std::slice;
 use std::sync::Once;
 use std::{f64, i32};
 
+use cairo;
+use cairo_sys;
 use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf_sys;
 use libc;
 use url::Url;
 
 use bitflags::bitflags;
 
 use gio::prelude::*;
+use gio_sys;
 
 use glib::object::ObjectClass;
 use glib::subclass;
@@ -29,13 +33,11 @@ use glib::{
 use glib_sys;
 use gobject_sys::{self, GEnumValue, GFlagsValue};
 
-use crate::dpi::Dpi;
-use crate::drawing_ctx::RsvgRectangle;
-use crate::error::{set_gerror, LoadingError, RenderingError, RSVG_ERROR_FAILED};
-use crate::handle::{Handle, LoadOptions};
-use crate::length::RsvgLength;
-use crate::structure::IntrinsicDimensions;
-use crate::util::rsvg_g_critical;
+use rsvg_internals::{
+    rsvg_log, set_gerror, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions,
+    LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData, RsvgRectangle,
+    RsvgSizeFunc, SizeCallback, RSVG_ERROR_FAILED,
+};
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -127,45 +129,6 @@ impl From<LoadFlags> for HandleFlags {
     }
 }
 
-// Keep in sync with rsvg.h:RsvgDimensionData
-#[repr(C)]
-pub struct RsvgDimensionData {
-    pub width: libc::c_int,
-    pub height: libc::c_int,
-    pub em: f64,
-    pub ex: f64,
-}
-
-impl RsvgDimensionData {
-    // This is not #[derive(Default)] to make it clear that it
-    // shouldn't be the default value for anything; it is actually a
-    // special case we use to indicate an error to the public API.
-    pub fn empty() -> RsvgDimensionData {
-        RsvgDimensionData {
-            width: 0,
-            height: 0,
-            em: 0.0,
-            ex: 0.0,
-        }
-    }
-}
-
-// Keep in sync with rsvg.h:RsvgPositionData
-#[repr(C)]
-pub struct RsvgPositionData {
-    pub x: libc::c_int,
-    pub y: libc::c_int,
-}
-
-// Keep in sync with rsvg.h:RsvgSizeFunc
-pub type RsvgSizeFunc = Option<
-    unsafe extern "C" fn(
-        inout_width: *mut libc::c_int,
-        inout_height: *mut libc::c_int,
-        user_data: glib_sys::gpointer,
-    ),
->;
-
 // Keep this in sync with rsvg.h:RsvgHandleClass
 #[repr(C)]
 pub struct RsvgHandleClass {
@@ -180,63 +143,6 @@ pub struct RsvgHandle {
     parent: gobject_sys::GObject,
 
     _abi_padding: [glib_sys::gpointer; 16],
-}
-
-pub struct SizeCallback {
-    size_func: RsvgSizeFunc,
-    user_data: glib_sys::gpointer,
-    destroy_notify: glib_sys::GDestroyNotify,
-    in_loop: Cell<bool>,
-}
-
-impl SizeCallback {
-    pub fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
-        unsafe {
-            let mut w = width;
-            let mut h = height;
-
-            if let Some(ref f) = self.size_func {
-                f(&mut w, &mut h, self.user_data);
-            };
-
-            (w, h)
-        }
-    }
-
-    pub fn start_loop(&self) {
-        assert!(!self.in_loop.get());
-        self.in_loop.set(true);
-    }
-
-    pub fn end_loop(&self) {
-        assert!(self.in_loop.get());
-        self.in_loop.set(false);
-    }
-
-    pub fn get_in_loop(&self) -> bool {
-        self.in_loop.get()
-    }
-}
-
-impl Default for SizeCallback {
-    fn default() -> SizeCallback {
-        SizeCallback {
-            size_func: None,
-            user_data: ptr::null_mut(),
-            destroy_notify: None,
-            in_loop: Cell::new(false),
-        }
-    }
-}
-
-impl Drop for SizeCallback {
-    fn drop(&mut self) {
-        unsafe {
-            if let Some(ref f) = self.destroy_notify {
-                f(self.user_data);
-            };
-        }
-    }
 }
 
 enum LoadState {
@@ -534,12 +440,7 @@ impl CHandle {
         user_data: glib_sys::gpointer,
         destroy_notify: glib_sys::GDestroyNotify,
     ) {
-        *self.size_callback.borrow_mut() = SizeCallback {
-            size_func,
-            user_data,
-            destroy_notify,
-            in_loop: Cell::new(false),
-        };
+        *self.size_callback.borrow_mut() = SizeCallback::new(size_func, user_data, destroy_notify);
     }
 
     fn write(&self, buf: &[u8]) {
@@ -654,7 +555,7 @@ impl CHandle {
 
     fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.has_sub(id)
+        handle.has_sub(id).map_err(warn_on_invalid_id)
     }
 
     fn get_dimensions_or_empty(&self) -> RsvgDimensionData {
@@ -671,13 +572,17 @@ impl CHandle {
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
-        handle.get_dimensions_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+        handle
+            .get_dimensions_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
-        handle.get_position_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+        handle
+            .get_position_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn render_cairo_sub(
@@ -685,21 +590,27 @@ impl CHandle {
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
-        handle.render_cairo_sub(
-            cr,
-            id,
-            self.dpi.get(),
-            &*size_callback,
-            self.is_testing.get(),
-        )
+        handle
+            .render_cairo_sub(
+                cr,
+                id,
+                self.dpi.get(),
+                &*size_callback,
+                self.is_testing.get(),
+            )
+            .map_err(warn_on_invalid_id)
     }
 
     fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
-        handle.get_pixbuf_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+        handle
+            .get_pixbuf_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn render_document(
@@ -707,6 +618,8 @@ impl CHandle {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
         let handle = self.get_handle_ref()?;
         handle.render_document(cr, viewport, self.dpi.get(), self.is_testing.get())
     }
@@ -717,7 +630,9 @@ impl CHandle {
         viewport: &cairo::Rectangle,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.get_geometry_for_layer(id, viewport, self.dpi.get(), self.is_testing.get())
+        handle
+            .get_geometry_for_layer(id, viewport, self.dpi.get(), self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn render_layer(
@@ -726,8 +641,12 @@ impl CHandle {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
         let handle = self.get_handle_ref()?;
-        handle.render_layer(cr, id, viewport, self.dpi.get(), self.is_testing.get())
+        handle
+            .render_layer(cr, id, viewport, self.dpi.get(), self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn get_geometry_for_element(
@@ -735,7 +654,9 @@ impl CHandle {
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.get_geometry_for_element(id, self.dpi.get(), self.is_testing.get())
+        handle
+            .get_geometry_for_element(id, self.dpi.get(), self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn render_element(
@@ -744,8 +665,18 @@ impl CHandle {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
         let handle = self.get_handle_ref()?;
-        handle.render_element(cr, id, element_viewport, self.dpi.get(), self.is_testing.get())
+        handle
+            .render_element(
+                cr,
+                id,
+                element_viewport,
+                self.dpi.get(),
+                self.is_testing.get(),
+            )
+            .map_err(warn_on_invalid_id)
     }
 
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
@@ -1447,6 +1378,50 @@ impl PathOrUrl {
                 }
             })
             .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from_glib_none(s))))
+    }
+}
+
+fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
+    let status = cr.status();
+    if status == cairo::Status::Success {
+        Ok(())
+    } else {
+        let msg = format!(
+            "cannot render on a cairo_t with a failure status (status={:?})",
+            status,
+        );
+
+        rsvg_g_warning(&msg);
+        Err(RenderingError::Cairo(status))
+    }
+}
+
+fn warn_on_invalid_id(e: RenderingError) -> RenderingError {
+    if e == RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences) {
+        rsvg_g_warning("the public API is not allowed to look up external references");
+    }
+
+    e
+}
+
+pub fn rsvg_g_warning(msg: &str) {
+    unsafe {
+        extern "C" {
+            fn rsvg_g_warning_from_c(msg: *const libc::c_char);
+        }
+
+        rsvg_g_warning_from_c(msg.to_glib_none().0);
+    }
+}
+
+
+pub fn rsvg_g_critical(msg: &str) {
+    unsafe {
+        extern "C" {
+            fn rsvg_g_critical_from_c(msg: *const libc::c_char);
+        }
+
+        rsvg_g_critical_from_c(msg.to_glib_none().0);
     }
 }
 
