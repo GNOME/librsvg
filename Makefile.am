@@ -5,6 +5,11 @@ NULL =
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 noinst_LTLIBRARIES = librsvg_c_api.la
 
+# This is empty, because automake wants to have a C sources list for
+# the LTLIBRARIES.  See LIBRSVG_INTERNALS_SRC below for the real list
+# of Rust sources.
+librsvg_c_api_la_SOURCES =
+
 bin_PROGRAMS = rsvg-convert
 
 include rsvg-c-srcs.mk
@@ -13,7 +18,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	$(librsvg_c_srcs)			\
 	$(NULL)
 
-LIBRSVG_INTERNALS_SRC =					\
+LIBRSVG_INTERNALS_SRC =						\
 	Cargo.toml						\
 	rsvg_internals/Cargo.toml				\
 	rsvg_internals/build.rs					\
