@@ -13,7 +13,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	$(librsvg_c_srcs)			\
 	$(NULL)
 
-LIBRSVG_INTERNALS_SOURCES =					\
+LIBRSVG_INTERNALS_SRC =					\
 	Cargo.toml						\
 	rsvg_internals/Cargo.toml				\
 	rsvg_internals/build.rs					\
@@ -99,7 +99,7 @@ LIBRSVG_INTERNALS_SOURCES =					\
 	rsvg_internals/src/xml2_load.rs				\
 	$(NULL)
 
-LIBRSVG_CRATE_SOURCES = 					\
+LIBRSVG_CRATE_SRC = 					\
 	librsvg_crate/Cargo.toml				\
 	librsvg_crate/build.rs					\
 	librsvg_crate/examples/proportional.rs			\
@@ -112,7 +112,7 @@ LIBRSVG_CRATE_SOURCES = 					\
 	librsvg_crate/tests/utils/compare_surfaces.rs		\
 	$(NULL)
 
-LIBRSVG_C_API_SOURCES =						\
+LIBRSVG_C_API_SRC =						\
 	librsvg/Cargo.toml					\
 	librsvg/build.rs					\
 	librsvg/c_api.rs					\
@@ -177,7 +177,7 @@ dist-hook:
 	mkdir .cargo &&								\
 	cp cargo-vendor-config .cargo/config)
 
-librsvg_c_api.la: $(LIBRSVG_INTERNALS_SOURCES) $(LIBRSVG_C_API_SOURCES)
+librsvg_c_api.la: $(LIBRSVG_INTERNALS_SRC) $(LIBRSVG_C_API_SRC)
 	+cd $(top_srcdir)/librsvg &&						\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
@@ -254,10 +254,10 @@ dist_doc_DATA =				\
 	code-of-conduct.md
 
 EXTRA_DIST =				\
-	$(LIBRSVG_INTERNALS_SOURCES)	\
-	$(LIBRSVG_C_API_SOURCES)	\
+	$(LIBRSVG_INTERNALS_SRC)	\
+	$(LIBRSVG_C_API_SRC)		\
 	$(RUST_EXTRA)			\
-	$(LIBRSVG_CRATE_SOURCES)	\
+	$(LIBRSVG_CRATE_SRC)		\
 	librsvg.doap			\
 	AUTHORS				\
 	NEWS				\
