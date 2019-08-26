@@ -234,15 +234,7 @@ impl Handle {
             }
         }
 
-        // This is just to start with an unknown viewport size
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 1.0,
-            height: 1.0,
-        };
-
-        self.get_node_geometry_with_viewport(&node, &viewport, dpi, is_testing)
+        self.get_node_geometry_with_viewport(&node, &unit_rectangle(), dpi, is_testing)
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
@@ -378,18 +370,11 @@ impl Handle {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
 
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 1.0,
-            height: 1.0,
-        };
-
         let mut draw_ctx = DrawingCtx::new(
             self.svg.clone(),
             None,
             &cr,
-            &viewport,
+            &unit_rectangle(),
             dpi,
             true,
             is_testing,
@@ -472,18 +457,11 @@ impl Handle {
         cr.scale(factor, factor);
         cr.translate(-ink_r.x, -ink_r.y);
 
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 1.0,
-            height: 1.0,
-        };
-
         let mut draw_ctx = DrawingCtx::new(
             self.svg.clone(),
             None,
             &cr,
-            &viewport,
+            &unit_rectangle(),
             dpi,
             false,
             is_testing,
@@ -562,4 +540,13 @@ fn locale_from_environment() -> Locale {
     }
 
     locale
+}
+
+fn unit_rectangle() -> cairo::Rectangle {
+    cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+    }
 }
