@@ -1,7 +1,6 @@
 SUBDIRS = . gdk-pixbuf-loader tests tools doc win32 po
 
 NULL =
-BUILT_SOURCES =
 
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 noinst_LTLIBRARIES = librsvg_c_api.la
