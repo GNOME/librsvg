@@ -685,6 +685,8 @@ impl CHandle {
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
         handle.render_cairo_sub(
@@ -707,6 +709,8 @@ impl CHandle {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
         let handle = self.get_handle_ref()?;
         handle.render_document(cr, viewport, self.dpi.get(), self.is_testing.get())
     }
@@ -726,6 +730,8 @@ impl CHandle {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
         let handle = self.get_handle_ref()?;
         handle.render_layer(cr, id, viewport, self.dpi.get(), self.is_testing.get())
     }
@@ -744,6 +750,8 @@ impl CHandle {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
+        check_cairo_context(cr)?;
+
         let handle = self.get_handle_ref()?;
         handle.render_element(cr, id, element_viewport, self.dpi.get(), self.is_testing.get())
     }
@@ -1447,6 +1455,21 @@ impl PathOrUrl {
                 }
             })
             .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from_glib_none(s))))
+    }
+}
+
+fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
+    let status = cr.status();
+    if status == Status::Success {
+        Ok(())
+    } else {
+        let msg = format!(
+            "cannot render on a cairo_t with a failure status (status={:?})",
+            status,
+        );
+
+        rsvg_g_warning(&msg);
+        Err(RenderingError::Cairo(status))
     }
 }
 

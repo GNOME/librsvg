@@ -511,12 +511,6 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
     if status == Status::Success {
         Ok(())
     } else {
-        let msg = format!(
-            "cannot render on a cairo_t with a failure status (status={:?})",
-            status,
-        );
-
-        rsvg_g_warning(&msg);
         Err(RenderingError::Cairo(status))
     }
 }
