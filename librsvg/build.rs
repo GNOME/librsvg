@@ -2,15 +2,15 @@ use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 
-#[cfg(all(unix, feature = "c-library"))]
+#[cfg(unix)]
 use std::os::unix::fs::symlink;
 
-#[cfg(all(windows, not(target_env = "msvc"), feature="c-library"))]
+#[cfg(all(windows, not(target_env = "msvc")))]
 use std::os::windows::fs::symlink_file as symlink;
 
-#[cfg(all(not(target_env = "msvc"), feature="c-library"))]
+#[cfg(not(target_env = "msvc"))]
 use std::fs;
-#[cfg(all(not(target_env = "msvc"), feature="c-library"))]
+#[cfg(not(target_env = "msvc"))]
 use std::path::PathBuf;
 
 fn main() {
@@ -19,7 +19,7 @@ fn main() {
 
 /// Generate libtool archive file librsvg_c_api.la
 /// From: https://docs.rs/libtool/0.1.1/libtool/
-#[cfg(all(feature = "c-library", not(target_env = "msvc")))]
+#[cfg(not(target_env = "msvc"))]
 pub fn generate_convenience_lib() -> std::io::Result<()> {
     let target = env::var("TARGET").expect("TARGET was not set");
     let build_dir = env::var("LIBRSVG_BUILD_DIR").expect("LIBRSVG_BUILD_DIR was not set");
@@ -64,7 +64,7 @@ pub fn generate_convenience_lib() -> std::io::Result<()> {
     Ok(())
 }
 
-#[cfg(not(all(feature = "c-library", not(target_env = "msvc"))))]
+#[cfg(target_env = "msvc")]
 pub fn generate_convenience_lib() -> std::io::Result<()> {
     Ok(())
 }

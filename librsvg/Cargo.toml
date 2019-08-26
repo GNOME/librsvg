@@ -11,10 +11,6 @@ name = "rsvg_c_api"
 path = "lib.rs"
 crate-type = [ "staticlib" ]
 
-[features]
-# Enables calling g_warning() when built as part of librsvg.so
-c-library = []
-
 [dependencies]
 bitflags = "1.0"
 cairo-rs = { version="0.7.0", features=["v1_16"] }

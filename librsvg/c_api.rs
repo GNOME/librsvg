@@ -1404,7 +1404,6 @@ fn warn_on_invalid_id(e: RenderingError) -> RenderingError {
     e
 }
 
-#[cfg(feature = "c-library")]
 pub fn rsvg_g_warning(msg: &str) {
     unsafe {
         extern "C" {
@@ -1415,19 +1414,7 @@ pub fn rsvg_g_warning(msg: &str) {
     }
 }
 
-#[cfg(not(feature = "c-library"))]
-pub fn rsvg_g_warning(_msg: &str) {
-    // This, and rsvg_g_critical() below, are intended to be called
-    // from Rust code which is directly called from the C API.  When
-    // this crate is being built as part of the c-library, the purpose
-    // of the functions is to call the corresponding glib macros to
-    // print a warning or a critical error message.  When this crate
-    // is being built as part of the standalone Rust crate, they do
-    // nothing, since the Rust code is able to propagate an error code
-    // all the way to the crate's public API.
-}
 
-#[cfg(feature = "c-library")]
 pub fn rsvg_g_critical(msg: &str) {
     unsafe {
         extern "C" {
@@ -1437,9 +1424,6 @@ pub fn rsvg_g_critical(msg: &str) {
         rsvg_g_critical_from_c(msg.to_glib_none().0);
     }
 }
-
-#[cfg(not(feature = "c-library"))]
-pub fn rsvg_g_critical(_msg: &str) {}
 
 #[cfg(test)]
 mod tests {
