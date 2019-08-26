@@ -8,13 +8,16 @@ use std::sync::Once;
 use std::{f64, i32};
 
 use cairo;
+use cairo_sys;
 use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf_sys;
 use libc;
 use url::Url;
 
 use bitflags::bitflags;
 
 use gio::prelude::*;
+use gio_sys;
 
 use glib::object::ObjectClass;
 use glib::subclass;
@@ -30,12 +33,11 @@ use glib::{
 use glib_sys;
 use gobject_sys::{self, GEnumValue, GFlagsValue};
 
-use crate::dpi::Dpi;
-use crate::drawing_ctx::RsvgRectangle;
-use crate::error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError, RSVG_ERROR_FAILED};
-use crate::handle::{Handle, LoadOptions};
-use crate::length::RsvgLength;
-use crate::structure::IntrinsicDimensions;
+use rsvg_internals::{
+    rsvg_log, set_gerror, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions,
+    LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData, RsvgRectangle,
+    RsvgSizeFunc, SizeCallback, RSVG_ERROR_FAILED,
+};
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -127,45 +129,6 @@ impl From<LoadFlags> for HandleFlags {
     }
 }
 
-// Keep in sync with rsvg.h:RsvgDimensionData
-#[repr(C)]
-pub struct RsvgDimensionData {
-    pub width: libc::c_int,
-    pub height: libc::c_int,
-    pub em: f64,
-    pub ex: f64,
-}
-
-impl RsvgDimensionData {
-    // This is not #[derive(Default)] to make it clear that it
-    // shouldn't be the default value for anything; it is actually a
-    // special case we use to indicate an error to the public API.
-    pub fn empty() -> RsvgDimensionData {
-        RsvgDimensionData {
-            width: 0,
-            height: 0,
-            em: 0.0,
-            ex: 0.0,
-        }
-    }
-}
-
-// Keep in sync with rsvg.h:RsvgPositionData
-#[repr(C)]
-pub struct RsvgPositionData {
-    pub x: libc::c_int,
-    pub y: libc::c_int,
-}
-
-// Keep in sync with rsvg.h:RsvgSizeFunc
-pub type RsvgSizeFunc = Option<
-    unsafe extern "C" fn(
-        inout_width: *mut libc::c_int,
-        inout_height: *mut libc::c_int,
-        user_data: glib_sys::gpointer,
-    ),
->;
-
 // Keep this in sync with rsvg.h:RsvgHandleClass
 #[repr(C)]
 pub struct RsvgHandleClass {
@@ -180,63 +143,6 @@ pub struct RsvgHandle {
     parent: gobject_sys::GObject,
 
     _abi_padding: [glib_sys::gpointer; 16],
-}
-
-pub struct SizeCallback {
-    size_func: RsvgSizeFunc,
-    user_data: glib_sys::gpointer,
-    destroy_notify: glib_sys::GDestroyNotify,
-    in_loop: Cell<bool>,
-}
-
-impl SizeCallback {
-    pub fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
-        unsafe {
-            let mut w = width;
-            let mut h = height;
-
-            if let Some(ref f) = self.size_func {
-                f(&mut w, &mut h, self.user_data);
-            };
-
-            (w, h)
-        }
-    }
-
-    pub fn start_loop(&self) {
-        assert!(!self.in_loop.get());
-        self.in_loop.set(true);
-    }
-
-    pub fn end_loop(&self) {
-        assert!(self.in_loop.get());
-        self.in_loop.set(false);
-    }
-
-    pub fn get_in_loop(&self) -> bool {
-        self.in_loop.get()
-    }
-}
-
-impl Default for SizeCallback {
-    fn default() -> SizeCallback {
-        SizeCallback {
-            size_func: None,
-            user_data: ptr::null_mut(),
-            destroy_notify: None,
-            in_loop: Cell::new(false),
-        }
-    }
-}
-
-impl Drop for SizeCallback {
-    fn drop(&mut self) {
-        unsafe {
-            if let Some(ref f) = self.destroy_notify {
-                f(self.user_data);
-            };
-        }
-    }
 }
 
 enum LoadState {
@@ -534,12 +440,7 @@ impl CHandle {
         user_data: glib_sys::gpointer,
         destroy_notify: glib_sys::GDestroyNotify,
     ) {
-        *self.size_callback.borrow_mut() = SizeCallback {
-            size_func,
-            user_data,
-            destroy_notify,
-            in_loop: Cell::new(false),
-        };
+        *self.size_callback.borrow_mut() = SizeCallback::new(size_func, user_data, destroy_notify);
     }
 
     fn write(&self, buf: &[u8]) {
@@ -1538,8 +1439,7 @@ pub fn rsvg_g_critical(msg: &str) {
 }
 
 #[cfg(not(feature = "c-library"))]
-pub fn rsvg_g_critical(_msg: &str) {
-}
+pub fn rsvg_g_critical(_msg: &str) {}
 
 #[cfg(test)]
 mod tests {

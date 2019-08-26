@@ -11,10 +11,9 @@ use glib_sys;
 use libc;
 use url::Url;
 
-use crate::c_api::{RsvgDimensionData, SizeCallback};
 use crate::dpi::Dpi;
 use crate::error::{set_gerror, LoadingError, RenderingError};
-use crate::handle::{Handle, LoadOptions};
+use crate::handle::{Handle, LoadOptions, RsvgDimensionData, SizeCallback};
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels,
