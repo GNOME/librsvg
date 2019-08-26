@@ -8,6 +8,7 @@ use libc;
 use locale_config::{LanguageRange, Locale};
 
 use crate::allowed_url::{AllowedUrl, Href};
+use crate::bbox::BoundingBox;
 use crate::c_api::{RsvgDimensionData, RsvgPositionData, SizeCallback};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{DrawingCtx, RsvgRectangle};
@@ -368,15 +369,12 @@ impl Handle {
         res
     }
 
-    /// Returns (ink_rect, logical_rect)
-    pub fn get_geometry_for_element(
+    fn get_bbox_for_element(
         &self,
-        id: Option<&str>,
+        node: &RsvgNode,
         dpi: Dpi,
         is_testing: bool,
-    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
-        let node = self.get_node_or_root(id)?;
-
+    ) -> Result<BoundingBox, RenderingError> {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
 
@@ -397,9 +395,20 @@ impl Handle {
             is_testing,
         );
 
-        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false)?;
+        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(node), node, false)?;
+        Ok(draw_ctx.get_bbox().clone())
+    }
 
-        let bbox = draw_ctx.get_bbox();
+    /// Returns (ink_rect, logical_rect)
+    pub fn get_geometry_for_element(
+        &self,
+        id: Option<&str>,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+        let node = self.get_node_or_root(id)?;
+
+        let bbox = self.get_bbox_for_element(&node, dpi, is_testing)?;
 
         let mut ink_rect = bbox
             .ink_rect
@@ -436,31 +445,7 @@ impl Handle {
 
         let node = self.get_node_or_root(id)?;
 
-        // Measure the element
-
-        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let measure_cr = cairo::Context::new(&target);
-
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 1.0,
-            height: 1.0,
-        };
-
-        let mut draw_ctx = DrawingCtx::new(
-            self.svg.clone(),
-            None,
-            &measure_cr,
-            &viewport,
-            dpi,
-            true,
-            is_testing,
-        );
-
-        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false)?;
-
-        let bbox = draw_ctx.get_bbox();
+        let bbox = self.get_bbox_for_element(&node, dpi, is_testing)?;
 
         if bbox.ink_rect.is_none() || bbox.rect.is_none() {
             // Nothing to draw
@@ -486,6 +471,13 @@ impl Handle {
         cr.translate(element_viewport.x, element_viewport.y);
         cr.scale(factor, factor);
         cr.translate(-ink_r.x, -ink_r.y);
+
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 1.0,
+            height: 1.0,
+        };
 
         let mut draw_ctx = DrawingCtx::new(
             self.svg.clone(),
