@@ -7,6 +7,7 @@ use std::slice;
 use std::sync::Once;
 use std::{f64, i32};
 
+use cairo;
 use gdk_pixbuf::Pixbuf;
 use libc;
 use url::Url;
@@ -31,11 +32,11 @@ use gobject_sys::{self, GEnumValue, GFlagsValue};
 
 use crate::dpi::Dpi;
 use crate::drawing_ctx::RsvgRectangle;
-use crate::error::{set_gerror, LoadingError, RenderingError, RSVG_ERROR_FAILED};
+use crate::error::{set_gerror, DefsLookupErrorKind, LoadingError, RenderingError, RSVG_ERROR_FAILED};
 use crate::handle::{Handle, LoadOptions};
 use crate::length::RsvgLength;
 use crate::structure::IntrinsicDimensions;
-use crate::util::rsvg_g_critical;
+use crate::util::{rsvg_g_critical, rsvg_g_warning};
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -654,7 +655,7 @@ impl CHandle {
 
     fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.has_sub(id)
+        handle.has_sub(id).map_err(warn_on_invalid_id)
     }
 
     fn get_dimensions_or_empty(&self) -> RsvgDimensionData {
@@ -671,13 +672,17 @@ impl CHandle {
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
-        handle.get_dimensions_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+        handle
+            .get_dimensions_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
-        handle.get_position_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+        handle
+            .get_position_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn render_cairo_sub(
@@ -689,19 +694,23 @@ impl CHandle {
 
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
-        handle.render_cairo_sub(
-            cr,
-            id,
-            self.dpi.get(),
-            &*size_callback,
-            self.is_testing.get(),
-        )
+        handle
+            .render_cairo_sub(
+                cr,
+                id,
+                self.dpi.get(),
+                &*size_callback,
+                self.is_testing.get(),
+            )
+            .map_err(warn_on_invalid_id)
     }
 
     fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
-        handle.get_pixbuf_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+        handle
+            .get_pixbuf_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn render_document(
@@ -721,7 +730,9 @@ impl CHandle {
         viewport: &cairo::Rectangle,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.get_geometry_for_layer(id, viewport, self.dpi.get(), self.is_testing.get())
+        handle
+            .get_geometry_for_layer(id, viewport, self.dpi.get(), self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn render_layer(
@@ -733,7 +744,9 @@ impl CHandle {
         check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
-        handle.render_layer(cr, id, viewport, self.dpi.get(), self.is_testing.get())
+        handle
+            .render_layer(cr, id, viewport, self.dpi.get(), self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn get_geometry_for_element(
@@ -741,7 +754,9 @@ impl CHandle {
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.get_geometry_for_element(id, self.dpi.get(), self.is_testing.get())
+        handle
+            .get_geometry_for_element(id, self.dpi.get(), self.is_testing.get())
+            .map_err(warn_on_invalid_id)
     }
 
     fn render_element(
@@ -753,7 +768,15 @@ impl CHandle {
         check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
-        handle.render_element(cr, id, element_viewport, self.dpi.get(), self.is_testing.get())
+        handle
+            .render_element(
+                cr,
+                id,
+                element_viewport,
+                self.dpi.get(),
+                self.is_testing.get(),
+            )
+            .map_err(warn_on_invalid_id)
     }
 
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
@@ -1460,7 +1483,7 @@ impl PathOrUrl {
 
 fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
     let status = cr.status();
-    if status == Status::Success {
+    if status == cairo::Status::Success {
         Ok(())
     } else {
         let msg = format!(
@@ -1471,6 +1494,14 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
         rsvg_g_warning(&msg);
         Err(RenderingError::Cairo(status))
     }
+}
+
+fn warn_on_invalid_id(e: RenderingError) -> RenderingError {
+    if e == RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences) {
+        rsvg_g_warning("the public API is not allowed to look up external references");
+    }
+
+    e
 }
 
 #[cfg(test)]

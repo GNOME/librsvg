@@ -18,7 +18,6 @@ use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
 use crate::structure::{IntrinsicDimensions, NodeSvg};
 use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use crate::svg::Svg;
-use crate::util::rsvg_g_warning;
 use url::Url;
 
 #[derive(Clone)]
@@ -278,7 +277,6 @@ impl Handle {
 
                     rsvg_log!("{}", msg);
 
-                    rsvg_g_warning(&msg);
                     return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
                 }
 
