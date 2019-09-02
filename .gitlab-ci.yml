@@ -82,7 +82,7 @@ stages:
 # STAGE 1 TESTS
 ########################################################################
 
-fedora test:
+.fedora test:
   image: $AMD64_FEDORA_LATEST
   stage: test
   variables:
@@ -96,11 +96,12 @@ fedora:rawhide:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
 
-.opensuse:tumbleweed:
+opensuse:tumbleweed:
   image: $AMD64_OPENSUSE_TUMBLEWEED
+  stage: test
   variables:
     LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
+  <<: *test
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
@@ -145,7 +146,7 @@ clippy:
   when: manual
 
 tarball:
-  image: $AMD64_FEDORA_LATEST
+  image: $AMD64_OPENSUSE_TUMBLEWEED
   stage: lint
   variables:
     LIBRSVG_DEBUG: "yes"
