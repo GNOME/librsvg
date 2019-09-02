@@ -1,3 +1,12 @@
+Version 2.45.92
+- #496 - Ensure all lengths and angles parse as finite numbers
+
+- #497 - Don't panic on paths with all-invalid commands
+
+- #500 - Added additional SVG blend-modes for the feBlend filter primitive (Andargor)
+
+- Some changes in the build structure to allow for faster builds.
+
 Version 2.45.91
 - The documentation has a new chapter, Recommendations for Applications.
 
