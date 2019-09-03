@@ -66,6 +66,18 @@ stages:
       - _build/win32
       - _build/doc
       - _build/.libs
+      - compile
+      - config.guess
+      - config.rpath
+      - config.sub
+      - install-sh
+      - ltmain.sh
+      - config.h.in
+      - depcomp
+      - gtk-doc.make
+      - missing
+      - test-driver
+      - po
     expire_in: 1 day
 
   cache:
