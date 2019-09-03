@@ -54,30 +54,31 @@ stages:
 
   artifacts:
     paths:
-      - _build/config*
+      - _build/*.gir
+      - _build/*.la
       - _build/*.pc
+      - _build/*.typelib
       - _build/*.vapi
+      - _build/.libs
+      - _build/Makefile
+      - _build/config*
+      - _build/doc
       - _build/librsvg-zip
       - _build/libtool
-      - _build/Makefile
-      - _build/*.gir
-      - _build/*.typelib
       - _build/stamp*
       - _build/win32
-      - _build/doc
-      - _build/.libs
       - compile
       - config.guess
+      - config.h.in
       - config.rpath
       - config.sub
-      - install-sh
-      - ltmain.sh
-      - config.h.in
       - depcomp
       - gtk-doc.make
+      - install-sh
+      - ltmain.sh
       - missing
-      - test-driver
       - po
+      - test-driver
     expire_in: 1 day
 
   cache:
