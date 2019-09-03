@@ -54,7 +54,19 @@ stages:
 
   artifacts:
     paths:
-      - _build
+      - _build/config*
+      - _build/*.pc
+      - _build/*.vapi
+      - _build/librsvg-zip
+      - _build/libtool
+      - _build/Makefile
+      - _build/*.gir
+      - _build/*.typelib
+      - _build/stamp*
+      - _build/win32
+      - _build/doc
+      - _build/.libs
+    expire_in: 1 day
 
   cache:
     # JOB_NAME - Each job will have it's own cache
