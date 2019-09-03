@@ -34,7 +34,7 @@ pub struct NodeData {
     values: ComputedValues,
     cond: bool,
     style_attr: String,
-    node_impl: Box<NodeTrait>,
+    node_impl: Box<dyn NodeTrait>,
 }
 
 impl NodeData {
@@ -43,7 +43,7 @@ impl NodeData {
         element_name: LocalName,
         id: Option<&str>,
         class: Option<&str>,
-        node_impl: Box<NodeTrait>,
+        node_impl: Box<dyn NodeTrait>,
     ) -> NodeData {
         NodeData {
             node_type,
@@ -61,7 +61,7 @@ impl NodeData {
         }
     }
 
-    pub fn get_node_trait(&self) -> &NodeTrait {
+    pub fn get_node_trait(&self) -> &dyn NodeTrait {
         self.node_impl.as_ref()
     }
 
@@ -363,7 +363,7 @@ pub trait NodeTrait: Downcast {
     }
 
     /// Returns the Filter trait if this node is a filter primitive
-    fn as_filter(&self) -> Option<&Filter> {
+    fn as_filter(&self) -> Option<&dyn Filter> {
         None
     }
 }

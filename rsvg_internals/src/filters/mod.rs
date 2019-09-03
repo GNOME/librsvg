@@ -54,7 +54,7 @@ pub trait Filter: NodeTrait {
 
 macro_rules! impl_node_as_filter {
     () => (
-        fn as_filter(&self) -> Option<&Filter> {
+        fn as_filter(&self) -> Option<&dyn Filter> {
             Some(self)
         }
     )

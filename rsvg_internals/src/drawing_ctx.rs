@@ -395,7 +395,7 @@ impl DrawingCtx {
         node: &RsvgNode,
         values: &ComputedValues,
         clipping: bool,
-        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
     ) -> Result<(), RenderingError> {
         if clipping {
             draw_fn(self)
@@ -541,7 +541,7 @@ impl DrawingCtx {
     /// was set by the `draw_fn`.
     pub fn with_saved_matrix(
         &mut self,
-        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
     ) -> Result<(), RenderingError> {
         let matrix = self.cr.get_matrix();
         let res = draw_fn(self);
@@ -552,7 +552,7 @@ impl DrawingCtx {
     /// Saves the current Cairo context, runs the draw_fn, and restores the context
     pub fn with_saved_cr(
         &mut self,
-        draw_fn: &mut FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
     ) -> Result<(), RenderingError> {
         self.cr.save();
         let res = draw_fn(self);

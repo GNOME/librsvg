@@ -39,7 +39,7 @@ impl Error for FilterError {
     }
 
     #[inline]
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         None
     }
 }
