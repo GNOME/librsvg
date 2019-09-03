@@ -151,13 +151,7 @@ tarball:
   variables:
     LIBRSVG_DEBUG: "yes"
   script:
-    - rustc --version && cargo --version
-    - mkdir -p _build
-    - cd _build
-    - ../autogen.sh --enable-gtk-doc --enable-vala
-    - make # in theory shouldn't be needed, but "make distcheck" fails otherwise?
     - make distcheck DESTDIR=/tmp/distcheck
-
 
 # STAGE 3 CROSS DISTRO TESTS
 #######################################################################
