@@ -155,6 +155,7 @@ tarball:
     - mkdir -p _build
     - cd _build
     - ../autogen.sh --enable-gtk-doc --enable-vala
+    - make # in theory shouldn't be needed, but "make distcheck" fails otherwise?
     - make distcheck DESTDIR=/tmp/distcheck
 
 
