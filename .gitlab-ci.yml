@@ -52,6 +52,10 @@ stages:
       - _build/tests/*.log
       - _build/tests/output/
 
+  artifacts:
+    paths:
+      - _build
+
   cache:
     # JOB_NAME - Each job will have it's own cache
     # COMMIT_REF_SLUG = Lowercase name of the branch
@@ -148,9 +152,12 @@ clippy:
 tarball:
   image: $AMD64_OPENSUSE_TUMBLEWEED
   stage: lint
+  dependencies:
+    - opensuse:tumbleweed
   variables:
     LIBRSVG_DEBUG: "yes"
   script:
+    - cd _build
     - make distcheck DESTDIR=/tmp/distcheck
 
 # STAGE 3 CROSS DISTRO TESTS
