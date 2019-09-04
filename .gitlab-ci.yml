@@ -143,6 +143,7 @@ debian:testing:
 
 debian_i386:testing:
   image: $I386_DEBIAN_TESTING
+  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "yes"
   before_script:
