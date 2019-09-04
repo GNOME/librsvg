@@ -52,6 +52,35 @@ stages:
       - _build/tests/*.log
       - _build/tests/output/
 
+  artifacts:
+    paths:
+      - _build/*.gir
+      - _build/*.la
+      - _build/*.pc
+      - _build/*.typelib
+      - _build/*.vapi
+      - _build/.libs
+      - _build/Makefile
+      - _build/config*
+      - _build/doc
+      - _build/librsvg-zip
+      - _build/libtool
+      - _build/stamp*
+      - _build/win32
+      - compile
+      - config.guess
+      - config.h.in
+      - config.rpath
+      - config.sub
+      - depcomp
+      - gtk-doc.make
+      - install-sh
+      - ltmain.sh
+      - missing
+      - po
+      - test-driver
+    expire_in: 1 day
+
   cache:
     # JOB_NAME - Each job will have it's own cache
     # COMMIT_REF_SLUG = Lowercase name of the branch
@@ -82,7 +111,7 @@ stages:
 # STAGE 1 TESTS
 ########################################################################
 
-fedora test:
+.fedora test:
   image: $AMD64_FEDORA_LATEST
   stage: test
   variables:
@@ -96,11 +125,12 @@ fedora:rawhide:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
 
-.opensuse:tumbleweed:
+opensuse:tumbleweed:
   image: $AMD64_OPENSUSE_TUMBLEWEED
+  stage: test
   variables:
     LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
+  <<: *test
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
@@ -113,6 +143,7 @@ debian:testing:
 
 debian_i386:testing:
   image: $I386_DEBIAN_TESTING
+  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "yes"
   before_script:
@@ -145,17 +176,15 @@ clippy:
   when: manual
 
 tarball:
-  image: $AMD64_FEDORA_LATEST
+  image: $AMD64_OPENSUSE_TUMBLEWEED
   stage: lint
+  dependencies:
+    - opensuse:tumbleweed
   variables:
     LIBRSVG_DEBUG: "yes"
   script:
-    - rustc --version && cargo --version
-    - mkdir -p _build
     - cd _build
-    - ../autogen.sh --enable-gtk-doc --enable-vala
     - make distcheck DESTDIR=/tmp/distcheck
-
 
 # STAGE 3 CROSS DISTRO TESTS
 #######################################################################
