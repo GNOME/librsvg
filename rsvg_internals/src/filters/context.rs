@@ -201,7 +201,7 @@ impl FilterContext {
     pub fn background_image(
         &self,
         draw_ctx: &DrawingCtx,
-    ) -> Result<&SharedImageSurface, FilterError> {
+    ) -> Result<SharedImageSurface, FilterError> {
         {
             // At this point either no, or only immutable references to background_surface exist, so
             // it's ok to make an immutable reference.
@@ -209,8 +209,8 @@ impl FilterContext {
 
             // If background_surface was already computed, return the immutable reference. It will
             // get bound to the &self lifetime by the function return type.
-            if let Some(result) = bg.as_ref() {
-                return result.as_ref().map_err(|&s| s);
+            if let Some(ref result) = *bg {
+                return result.clone();
             }
         }
 
@@ -232,7 +232,7 @@ impl FilterContext {
         );
 
         // Return the only existing reference as immutable.
-        bg.as_ref().unwrap().as_ref().map_err(|&s| s)
+        bg.as_ref().unwrap().as_ref().map(|surf| surf.clone()).map_err(|&s| s)
     }
 
     /// Returns the surface containing the background image snapshot alpha.
@@ -381,7 +381,6 @@ impl FilterContext {
                 .map(FilterInput::StandardInput),
             Input::BackgroundImage => self
                 .background_image(draw_ctx)
-                .map(Clone::clone)
                 .map(FilterInput::StandardInput),
             Input::BackgroundAlpha => self
                 .background_alpha(draw_ctx, self.effects_region().rect.unwrap().into())
