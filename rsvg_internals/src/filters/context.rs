@@ -1,4 +1,4 @@
-use std::cell::UnsafeCell;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::f64;
 
@@ -62,7 +62,7 @@ pub struct FilterContext {
     /// Surfaces of the previous filter primitives by name.
     previous_results: HashMap<String, FilterOutput>,
     /// The background surface. Computed lazily.
-    background_surface: UnsafeCell<Option<Result<SharedImageSurface, FilterError>>>,
+    background_surface: RefCell<Option<Result<SharedImageSurface, FilterError>>>,
     /// The filter effects region.
     effects_region: BoundingBox,
     /// Whether the currently rendered filter primitive uses linear RGB for color operations.
@@ -157,7 +157,7 @@ impl FilterContext {
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
-            background_surface: UnsafeCell::new(None),
+            background_surface: RefCell::new(None),
             effects_region: filter.compute_effects_region(
                 computed_from_node_being_filtered,
                 draw_ctx,
@@ -205,7 +205,7 @@ impl FilterContext {
         {
             // At this point either no, or only immutable references to background_surface exist, so
             // it's ok to make an immutable reference.
-            let bg = unsafe { &*self.background_surface.get() };
+            let bg = self.background_surface.borrow();
 
             // If background_surface was already computed, return the immutable reference. It will
             // get bound to the &self lifetime by the function return type.
@@ -216,7 +216,7 @@ impl FilterContext {
 
         // If we got here, then background_surface hasn't been computed yet. This means there are
         // no references to it and we can create a mutable reference.
-        let bg = unsafe { &mut *self.background_surface.get() };
+        let mut bg = self.background_surface.borrow_mut();
 
         *bg = Some(
             cairo::ImageSurface::create(
