@@ -1,3 +1,59 @@
+Version 2.46.0
+
+- The following are highlights compared to the 2.44.x series.  For
+  full details, please see the release notes for the 2.45.x series.
+
+- All of librsvg.so is now implemented in Rust!  That is, except for a
+  very thin wrapper over the public API functions.  Hopefully we can
+  remove this wrapper when Cargo gets some more features around
+  controlling the linking step.  This release requires at least Rust 1.34.
+
+- Librsvg now comes with a Rust crate that can be used from Rust
+  applications.  See librsvg_crate/examples.  This Rust API is
+  designed to be idiomatic; if you want a Rust binding to the shared
+  library instead, please use the "rsvg-rs" crate from crates.io.
+
+- The following API functions are new in the C library:
+    rsvg_handle_get_intrinsic_dimensions()
+    rsvg_handle_render_document()
+    rsvg_handle_render_layer()
+    rsvg_handle_render_element()
+    rsvg_handle_get_geometry_for_layer()
+    rsvg_handle_get_geometry_for_element()
+
+  Correspondingly, there is a new chapter in the documentation, called
+  "Recommendations for Applications".  These new APIs conform better
+  with the web platform's idea of how SVG sizing/positioning should
+  work.  Applications should now find it easier to scale and render
+  SVGs in a single call, instead of having to obtain image dimensions
+  first.
+
+- A bunch of functions have been deprecated but are still available:
+
+    - rsvg_handle_write()/close() are deprecated in favor of the
+      stream functions.  Unfortunately the write()/close() pair
+      require buffering the entire document, in case it is a .svgz
+      compressed file; the streaming functions do not have this
+      problem.
+
+    - Functions that return RsvgDimensionData and RsvgPositionData are
+      deprecated, since they just use integers instead of floating
+      point numbers.  They are replaced with the _get_geometry_*()
+      functions above.
+
+- The library is a lot more strict now in terms of detecting that the
+  API functions are called in the correct order.  For example, calling
+  rsvg_handle_get_dimensions() before rsvg_handle_close() will now
+  emit a critical warning.
+
+- Librsvg is gradually moving towards using code from Mozilla's Servo.
+  We haven't quite gotten rid of libcroco and libxml2 yet, but this is
+  in progress.
+
+- Many thanks to all the people who participated in the long cycle for
+  2.45.  Having the whole library's functionality in Rust is a big
+  accomplishment!
+
 Version 2.45.92
 - #496 - Ensure all lengths and angles parse as finite numbers
 
