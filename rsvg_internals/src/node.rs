@@ -5,6 +5,7 @@ use std::cell::Ref;
 use std::collections::HashSet;
 use std::fmt;
 
+use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::CssRules;
 use crate::drawing_ctx::DrawingCtx;
@@ -355,11 +356,11 @@ pub trait NodeTrait: Downcast {
         &self,
         _node: &RsvgNode,
         _cascaded: &CascadedValues<'_>,
-        _draw_ctx: &mut DrawingCtx,
+        draw_ctx: &mut DrawingCtx,
         _clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         // by default nodes don't draw themselves
-        Ok(())
+        Ok(draw_ctx.empty_bbox())
     }
 
     /// Returns the Filter trait if this node is a filter primitive
@@ -480,14 +481,14 @@ pub trait NodeDraw {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError>;
+    ) -> Result<BoundingBox, RenderingError>;
 
     fn draw_children(
         &self,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError>;
+    ) -> Result<BoundingBox, RenderingError>;
 }
 
 impl NodeDraw for RsvgNode {
@@ -496,7 +497,7 @@ impl NodeDraw for RsvgNode {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         if !self.borrow().is_in_error() {
             draw_ctx.with_saved_matrix(&mut |dc| {
                 let cr = dc.get_cairo_context();
@@ -509,7 +510,8 @@ impl NodeDraw for RsvgNode {
         } else {
             rsvg_log!("(not rendering element {} because it is in error)", self);
 
-            Ok(()) // maybe we should actually return a RenderingError::NodeIsInError here?
+            // maybe we should actually return a RenderingError::NodeIsInError here?
+            Ok(draw_ctx.empty_bbox())
         }
     }
 
@@ -518,15 +520,18 @@ impl NodeDraw for RsvgNode {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
+        let mut bbox = draw_ctx.empty_bbox();
+
         for child in self.children() {
-            draw_ctx.draw_node_from_stack(
+            let child_bbox = draw_ctx.draw_node_from_stack(
                 &CascadedValues::new(cascaded, &child),
                 &child,
                 clipping,
             )?;
+            bbox.insert(&child_bbox);
         }
 
-        Ok(())
+        Ok(bbox)
     }
 }

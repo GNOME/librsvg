@@ -2,8 +2,8 @@ use cairo;
 use cairo_sys;
 use glib::translate::*;
 use std::cell::RefCell;
-use std::rc::{Rc, Weak};
 use std::convert::TryFrom;
+use std::rc::{Rc, Weak};
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::AspectRatio;
@@ -21,12 +21,7 @@ use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::NodePattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule,
-    FillRule,
-    ShapeRendering,
-    StrokeDasharray,
-    StrokeLinecap,
-    StrokeLinejoin,
+    ClipRule, FillRule, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
 };
 use crate::rect::RectangleExt;
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -105,8 +100,6 @@ pub struct DrawingCtx {
 
     view_box_stack: Rc<RefCell<Vec<ViewBox>>>,
 
-    bbox: BoundingBox,
-
     drawsub_stack: Vec<RsvgNode>,
 
     acquired_nodes: AcquiredNodes,
@@ -174,7 +167,6 @@ impl DrawingCtx {
             cr_stack: Vec::new(),
             cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
-            bbox: BoundingBox::new(&initial_affine),
             drawsub_stack: Vec::new(),
             acquired_nodes,
             measuring,
@@ -202,6 +194,10 @@ impl DrawingCtx {
 
     pub fn get_cairo_context(&self) -> cairo::Context {
         self.cr.clone()
+    }
+
+    pub fn empty_bbox(&self) -> BoundingBox {
+        BoundingBox::new(&self.cr.get_matrix())
     }
 
     // FIXME: Usage of this function is more less a hack... The caller
@@ -334,14 +330,6 @@ impl DrawingCtx {
             })
     }
 
-    pub fn insert_bbox(&mut self, bbox: &BoundingBox) {
-        self.bbox.insert(bbox);
-    }
-
-    pub fn get_bbox(&self) -> &BoundingBox {
-        &self.bbox
-    }
-
     pub fn acquired_nodes(&self) -> &AcquiredNodes {
         &self.acquired_nodes
     }
@@ -370,21 +358,15 @@ impl DrawingCtx {
         }
     }
 
-    fn clip_to_node(&mut self, clip_node: &Option<RsvgNode>) -> Result<(), RenderingError> {
+    fn clip_to_node(
+        &mut self,
+        clip_node: &Option<RsvgNode>,
+        bbox: &BoundingBox,
+    ) -> Result<(), RenderingError> {
         if let Some(node) = clip_node {
-            let orig_bbox = self.bbox;
-
             let node_data = node.borrow();
             let clip_path = node_data.get_impl::<NodeClipPath>();
-            let res = clip_path.to_cairo_context(&node, self, &orig_bbox);
-
-            // FIXME: this is an EPIC HACK to keep the clipping context from
-            // accumulating bounding boxes.  We'll remove this later, when we
-            // are able to extract bounding boxes from outside the
-            // general drawing loop.
-            self.bbox = orig_bbox;
-
-            res
+            clip_path.to_cairo_context(&node, self, &bbox)
         } else {
             Ok(())
         }
@@ -395,8 +377,8 @@ impl DrawingCtx {
         node: &RsvgNode,
         values: &ComputedValues,
         clipping: bool,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
-    ) -> Result<(), RenderingError> {
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
+    ) -> Result<BoundingBox, RenderingError> {
         if clipping {
             draw_fn(self)
         } else {
@@ -418,7 +400,8 @@ impl DrawingCtx {
                 let (clip_in_user_space, clip_in_object_space) =
                     dc.get_clip_in_user_and_object_space(clip_uri);
 
-                dc.clip_to_node(&clip_in_user_space)?;
+                // Here we are clipping in user space, so the bbox doesn't matter
+                dc.clip_to_node(&clip_in_user_space, &dc.empty_bbox())?;
 
                 let needs_temporary_surface = !(opacity == 1.0
                     && filter.is_none()
@@ -448,22 +431,23 @@ impl DrawingCtx {
 
                     dc.push_cairo_context(cr);
 
-                    // Create temporary bbox with the cr's affine
-
-                    let prev_bbox = dc.bbox;
-
-                    dc.bbox = BoundingBox::new(&affines.for_temporary_surface);
-
                     // Draw!
 
                     let mut res = draw_fn(dc);
 
+                    let bbox = if let Ok(ref bbox) = res {
+                        *bbox
+                    } else {
+                        BoundingBox::new(&affines.for_temporary_surface)
+                    };
+
                     // Filter
 
                     let source_surface = if let Some(filter_uri) = filter {
-                        let child_surface = cairo::ImageSurface::try_from(dc.cr.get_target()).unwrap();
+                        let child_surface =
+                            cairo::ImageSurface::try_from(dc.cr.get_target()).unwrap();
                         let img_surface =
-                            dc.run_filter(filter_uri, node, values, &child_surface, dc.bbox)?;
+                            dc.run_filter(filter_uri, node, values, &child_surface, bbox)?;
                         // turn into a Surface
                         (*img_surface).clone()
                     } else {
@@ -480,7 +464,7 @@ impl DrawingCtx {
                     // Clip
 
                     dc.cr.set_matrix(affines.outside_temporary_surface);
-                    dc.clip_to_node(&clip_in_object_space)?;
+                    let _: () = dc.clip_to_node(&clip_in_object_space, &bbox)?;
 
                     // Mask
 
@@ -491,12 +475,12 @@ impl DrawingCtx {
                         {
                             let mask_node = acquired.get();
 
-                            res = res.and_then(|_| {
-                                let bbox = dc.bbox;
+                            res = res.and_then(|bbox| {
                                 mask_node
                                     .borrow()
                                     .get_impl::<NodeMask>()
                                     .generate_cairo_mask(&mask_node, &affines, dc, &bbox)
+                                    .map(|_: ()| bbox)
                             });
                         } else {
                             rsvg_log!("element {} references nonexistent mask \"{}\"", node, mask);
@@ -514,10 +498,6 @@ impl DrawingCtx {
                     }
 
                     dc.cr.set_matrix(affine_at_start);
-
-                    let bbox = dc.bbox;
-                    dc.bbox = prev_bbox;
-                    dc.bbox.insert(&bbox);
 
                     res
                 } else {
@@ -541,8 +521,8 @@ impl DrawingCtx {
     /// was set by the `draw_fn`.
     pub fn with_saved_matrix(
         &mut self,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
-    ) -> Result<(), RenderingError> {
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
+    ) -> Result<BoundingBox, RenderingError> {
         let matrix = self.cr.get_matrix();
         let res = draw_fn(self);
         self.cr.set_matrix(matrix);
@@ -552,8 +532,8 @@ impl DrawingCtx {
     /// Saves the current Cairo context, runs the draw_fn, and restores the context
     pub fn with_saved_cr(
         &mut self,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
-    ) -> Result<(), RenderingError> {
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
+    ) -> Result<BoundingBox, RenderingError> {
         self.cr.save();
         let res = draw_fn(self);
         self.cr.restore();
@@ -808,7 +788,7 @@ impl DrawingCtx {
         surface: &cairo::ImageSurface,
         width: f64,
         height: f64,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let save_cr = self.cr.clone();
         let save_rect = self.rect;
         let save_affine = self.get_cairo_context().get_matrix();
@@ -835,7 +815,7 @@ impl DrawingCtx {
         cascaded: &CascadedValues<'_>,
         node: &RsvgNode,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let stack_top = self.drawsub_stack.pop();
 
         let draw = if let Some(ref top) = stack_top {
@@ -848,14 +828,14 @@ impl DrawingCtx {
         let res = if draw && values.is_visible() {
             node.draw(cascaded, self, clipping)
         } else {
-            Ok(())
+            Ok(self.empty_bbox())
         };
 
         if let Some(top) = stack_top {
             self.drawsub_stack.push(top);
         }
 
-        res.and_then(|_| self.check_limits())
+        res.and_then(|bbox| self.check_limits().and_then(|_| Ok(bbox)))
     }
 
     pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {

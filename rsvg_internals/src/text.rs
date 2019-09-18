@@ -272,7 +272,7 @@ impl PositionedSpan {
         }
     }
 
-    fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<(), RenderingError> {
+    fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<BoundingBox, RenderingError> {
         draw_ctx.with_saved_cr(&mut |dc| {
             let cr = dc.get_cairo_context();
 
@@ -281,14 +281,14 @@ impl PositionedSpan {
             let gravity = self.layout.get_context().unwrap().get_gravity();
             let bbox = self.compute_text_bbox(&affine, gravity);
             if bbox.is_none() {
-                return Ok(());
+                return Ok(dc.empty_bbox());
             }
 
-            let bbox = bbox.unwrap();
-
-            if !clipping {
-                dc.insert_bbox(&bbox);
-            }
+            let mut bbox = if clipping {
+                dc.empty_bbox()
+            } else {
+                bbox.unwrap()
+            };
 
             cr.set_antialias(cairo::Antialias::from(self.values.text_rendering));
 
@@ -349,13 +349,13 @@ impl PositionedSpan {
                             let ib =
                                 BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
                             cr.stroke();
-                            dc.insert_bbox(&ib);
+                            bbox.insert(&ib);
                         }
                     }
                 }
             }
 
-            res
+            res.and_then(|_: ()| Ok(bbox))
         })
     }
 
@@ -609,7 +609,7 @@ impl NodeTrait for NodeText {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let params = draw_ctx.get_view_params();
 
@@ -641,13 +641,16 @@ impl NodeTrait for NodeText {
         }
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+            let mut bbox = dc.empty_bbox();
+
             for chunk in &positioned_chunks {
                 for span in &chunk.spans {
-                    span.draw(dc, clipping)?;
+                    let span_bbox = span.draw(dc, clipping)?;
+                    bbox.insert(&span_bbox);
                 }
             }
 
-            Ok(())
+            Ok(bbox)
         })
     }
 }

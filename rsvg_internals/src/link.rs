@@ -3,6 +3,7 @@ use markup5ever::local_name;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 
+use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::RenderingError;
 use crate::node::*;
@@ -31,7 +32,7 @@ impl NodeTrait for NodeLink {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
