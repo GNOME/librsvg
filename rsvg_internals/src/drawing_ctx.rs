@@ -706,7 +706,7 @@ impl DrawingCtx {
         &mut self,
         cr: &cairo::Context,
         values: &ComputedValues,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         cr.set_antialias(cairo::Antialias::from(values.shape_rendering));
 
         self.setup_cr_for_stroke(cr, values);
@@ -716,7 +716,6 @@ impl DrawingCtx {
         // rendering context to have an updated bbox; for example, for the
         // coordinate system in patterns.
         let bbox = compute_stroke_and_fill_box(cr, values);
-        self.insert_bbox(&bbox);
 
         let current_color = &values.color.0;
 
@@ -756,7 +755,7 @@ impl DrawingCtx {
         // we leave it around from computing the bounding box
         cr.new_path();
 
-        res
+        res.and_then(|_: ()| Ok(bbox))
     }
 
     pub fn clip(&self, x: f64, y: f64, w: f64, h: f64) {

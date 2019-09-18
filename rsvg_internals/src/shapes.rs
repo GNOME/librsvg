@@ -32,7 +32,8 @@ fn render_path_builder(
                 cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
             } else {
                 cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
-                dc.stroke_and_fill(&cr, values)?;
+                let bbox = dc.stroke_and_fill(&cr, values)?;
+                dc.insert_bbox(&bbox);
             }
 
             Ok(())
