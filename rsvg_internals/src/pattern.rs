@@ -164,7 +164,11 @@ impl PaintSource for NodePattern {
                 }
 
                 let node_data = a_node.borrow();
-                result.resolve_from_fallback(&node_data.get_impl::<NodePattern>());
+
+                let fallback_pattern = node_data.get_impl::<NodePattern>();
+                *fallback_pattern.node.borrow_mut() = Some(a_node.downgrade());
+
+                result.resolve_from_fallback(fallback_pattern);
 
                 stack.push(a_node);
             } else {
