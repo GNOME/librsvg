@@ -295,9 +295,7 @@ impl Handle {
         );
         let root = self.svg.root();
 
-        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
-
-        let bbox = draw_ctx.get_bbox();
+        let bbox = draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
 
         let ink_rect = bbox
             .ink_rect
@@ -463,7 +461,9 @@ impl Handle {
             is_testing,
         );
         let cascaded = CascadedValues::new_from_node(&root);
-        let res = draw_ctx.draw_node_from_stack(&cascaded, &root, false);
+        let res = draw_ctx
+            .draw_node_from_stack(&cascaded, &root, false)
+            .map(|_bbox| ());
         cr.restore();
 
         res
@@ -488,8 +488,7 @@ impl Handle {
             is_testing,
         );
 
-        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(node), node, false)?;
-        Ok(draw_ctx.get_bbox().clone())
+        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(node), node, false)
     }
 
     /// Returns (ink_rect, logical_rect)
@@ -575,8 +574,9 @@ impl Handle {
             is_testing,
         );
 
-        let res =
-            draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false);
+        let res = draw_ctx
+            .draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false)
+            .map(|_bbox| ());
 
         cr.restore();
 

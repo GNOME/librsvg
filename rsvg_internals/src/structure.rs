@@ -3,6 +3,7 @@ use markup5ever::local_name;
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
+use crate::bbox::BoundingBox;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::{AttributeResultExt, RenderingError};
@@ -30,7 +31,7 @@ impl NodeTrait for NodeGroup {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
@@ -66,7 +67,7 @@ impl NodeTrait for NodeSwitch {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
@@ -77,7 +78,7 @@ impl NodeTrait for NodeSwitch {
             {
                 dc.draw_node_from_stack(&CascadedValues::new(cascaded, &child), &child, clipping)
             } else {
-                Ok(())
+                Ok(dc.empty_bbox())
             }
         })
     }
@@ -212,7 +213,7 @@ impl NodeTrait for NodeSvg {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
         let params = draw_ctx.get_view_params();
@@ -305,11 +306,11 @@ impl NodeTrait for NodeUse {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
         if self.link.is_none() {
-            return Ok(());
+            return Ok(draw_ctx.empty_bbox());
         }
 
         let link = self.link.as_ref().unwrap();
@@ -321,7 +322,7 @@ impl NodeTrait for NodeUse {
             acquired.get().clone()
         } else {
             rsvg_log!("element {} references nonexistent \"{}\"", node, link,);
-            return Ok(());
+            return Ok(draw_ctx.empty_bbox());
         };
 
         if node.ancestors().any(|ancestor| ancestor == child) {
@@ -353,7 +354,7 @@ impl NodeTrait for NodeUse {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
         if nw.approx_eq_cairo(0.0) || nh.approx_eq_cairo(0.0) {
-            return Ok(());
+            return Ok(draw_ctx.empty_bbox());
         }
 
         let viewport = Rectangle::new(nx, ny, nw, nh);
