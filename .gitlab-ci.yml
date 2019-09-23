@@ -114,6 +114,7 @@ stages:
 .fedora test:
   image: $AMD64_FEDORA_LATEST
   stage: test
+  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *test
@@ -192,6 +193,7 @@ tarball:
 fedora:test_release:
   image: $AMD64_FEDORA_LATEST
   stage: test
+  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
@@ -199,6 +201,7 @@ fedora:test_release:
 
 debian:testing_release_i386:
   image: $I386_DEBIAN_TESTING
+  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "no"
   before_script:
