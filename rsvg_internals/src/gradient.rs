@@ -9,7 +9,7 @@ use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack, ViewParams};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::paint_server::{PaintSource, Resolve};
+use crate::paint_server::{PaintSource, Resolve, ResolvedPaintSource};
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -613,26 +613,27 @@ macro_rules! impl_paint_source {
                     Ok(None)
                 }
             }
+        }
 
+        impl ResolvedPaintSource for $gradient {
             fn set_pattern_on_draw_context(
-                &self,
-                gradient: Self::Resolved,
+                self,
                 values: &ComputedValues,
                 draw_ctx: &mut DrawingCtx,
                 opacity: &UnitInterval,
                 bbox: &BoundingBox,
             ) -> Result<bool, RenderingError> {
-                assert!(gradient.is_resolved());
+                assert!(self.is_resolved());
 
-                let units = gradient.common.units.unwrap();
+                let units = self.common.units.unwrap();
                 let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
                     draw_ctx.push_view_box(1.0, 1.0)
                 } else {
                     draw_ctx.get_view_params()
                 };
 
-                let p = gradient.variant.to_cairo_gradient(values, &params);
-                gradient.common.set_on_cairo_pattern(&p, bbox, opacity);
+                let p = self.variant.to_cairo_gradient(values, &params);
+                self.common.set_on_cairo_pattern(&p, bbox, opacity);
                 let cr = draw_ctx.get_cairo_context();
                 cr.set_source(&p);
 

@@ -55,7 +55,7 @@ impl Parse for PaintServer {
 }
 
 pub trait PaintSource {
-    type Resolved;
+    type Resolved: ResolvedPaintSource;
 
     fn resolve(
         &self,
@@ -63,15 +63,6 @@ pub trait PaintSource {
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<Option<Self::Resolved>, RenderingError>;
-
-    fn set_pattern_on_draw_context(
-        &self,
-        pattern: Self::Resolved,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        opacity: &UnitInterval,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError>;
 
     fn resolve_fallbacks_and_set_pattern(
         &self,
@@ -83,11 +74,21 @@ pub trait PaintSource {
         if let Some(resolved) = self.resolve(&node, draw_ctx, bbox)? {
             let cascaded = CascadedValues::new_from_node(node);
             let values = cascaded.get();
-            self.set_pattern_on_draw_context(resolved, values, draw_ctx, opacity, bbox)
+            resolved.set_pattern_on_draw_context(values, draw_ctx, opacity, bbox)
         } else {
             Ok(false)
         }
     }
+}
+
+pub trait ResolvedPaintSource {
+    fn set_pattern_on_draw_context(
+        self,
+        values: &ComputedValues,
+        draw_ctx: &mut DrawingCtx,
+        opacity: &UnitInterval,
+        bbox: &BoundingBox,
+    ) -> Result<bool, RenderingError>;
 }
 
 // Any of the attributes in gradient and pattern elements may be omitted.
