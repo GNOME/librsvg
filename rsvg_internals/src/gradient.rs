@@ -239,7 +239,7 @@ impl CommonGradientData {
         }
     }
 
-    fn set_on_pattern(
+    fn set_on_cairo_pattern(
         &self,
         pattern: &cairo::Gradient,
         bbox: &BoundingBox,
@@ -632,7 +632,7 @@ macro_rules! impl_paint_source {
                 };
 
                 let p = gradient.variant.to_cairo_gradient(values, &params);
-                gradient.common.set_on_pattern(&p, bbox, opacity);
+                gradient.common.set_on_cairo_pattern(&p, bbox, opacity);
                 let cr = draw_ctx.get_cairo_context();
                 cr.set_source(&p);
 
