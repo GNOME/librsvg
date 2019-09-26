@@ -285,6 +285,13 @@ pub struct LinearGradientData {
     y2: Option<LengthVertical>,
 }
 
+pub struct LinearGradient {
+    x1: LengthHorizontal,
+    y1: LengthVertical,
+    x2: LengthHorizontal,
+    y2: LengthVertical,
+}
+
 impl Resolve for LinearGradientData {
     fn is_resolved(&self) -> bool {
         self.x1.is_some() && self.y1.is_some() && self.x2.is_some() && self.y2.is_some()
@@ -319,6 +326,19 @@ impl LinearGradientData {
         }
 
         Ok(())
+    }
+
+    fn to_resolved(self) -> LinearGradient {
+        assert!(self.is_resolved());
+
+        let LinearGradientData { x1, y1, x2, y2 } = self;
+
+        LinearGradient {
+            x1: x1.unwrap(),
+            y1: y1.unwrap(),
+            x2: x2.unwrap(),
+            y2: y2.unwrap(),
+        }
     }
 
     fn to_cairo_gradient(
