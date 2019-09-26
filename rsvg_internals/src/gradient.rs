@@ -665,6 +665,11 @@ pub struct NodeLinearGradient {
     pub variant: LinearGradientData,
 }
 
+struct ResolvedLinearGradient {
+    common: CommonGradient,
+    variant: LinearGradient,
+}
+
 impl_node_trait!(NodeLinearGradient);
 
 impl_resolve!(NodeLinearGradient);
@@ -680,6 +685,11 @@ impl_paint_source!(
 pub struct NodeRadialGradient {
     pub common: CommonGradientData,
     pub variant: RadialGradientData,
+}
+
+struct ResolvedRadialGradient {
+    common: CommonGradient,
+    variant: RadialGradient,
 }
 
 impl_node_trait!(NodeRadialGradient);
