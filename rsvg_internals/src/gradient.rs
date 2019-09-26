@@ -88,6 +88,13 @@ pub struct CommonGradientData {
     pub stops: Option<Vec<ColorStop>>,
 }
 
+pub struct CommonGradient {
+    pub units: GradientUnits,
+    pub affine: cairo::Matrix,
+    pub spread: SpreadMethod,
+    pub stops: Vec<ColorStop>,
+}
+
 impl Resolve for CommonGradientData {
     fn is_resolved(&self) -> bool {
         self.units.is_some()
@@ -128,6 +135,19 @@ impl CommonGradientData {
         }
 
         Ok(())
+    }
+
+    fn to_resolved(self) -> CommonGradient {
+        assert!(self.is_resolved());
+
+        let CommonGradientData { units, affine, spread, stops, .. } = self;
+
+        CommonGradient {
+            units: units.unwrap(),
+            affine: affine.unwrap(),
+            spread: spread.unwrap(),
+            stops: stops.unwrap(),
+        }
     }
 
     fn clone_stops(&self) -> Option<Vec<ColorStop>> {
