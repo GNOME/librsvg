@@ -364,6 +364,14 @@ pub struct RadialGradientData {
     fy: Option<LengthVertical>,
 }
 
+pub struct RadialGradient {
+    cx: LengthHorizontal,
+    cy: LengthVertical,
+    r: LengthBoth,
+    fx: LengthHorizontal,
+    fy: LengthVertical,
+}
+
 impl Resolve for RadialGradientData {
     fn is_resolved(&self) -> bool {
         self.cx.is_some()
@@ -407,6 +415,20 @@ impl RadialGradientData {
         }
 
         Ok(())
+    }
+
+    fn to_resolved(self) -> RadialGradient {
+        assert!(self.is_resolved());
+
+        let RadialGradientData { cx, cy, r, fx, fy } = self;
+
+        RadialGradient {
+            cx: cx.unwrap(),
+            cy: cy.unwrap(),
+            r: r.unwrap(),
+            fx: fx.unwrap(),
+            fy: fy.unwrap(),
+        }
     }
 
     fn to_cairo_gradient(
