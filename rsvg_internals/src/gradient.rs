@@ -535,6 +535,24 @@ macro_rules! impl_node_trait {
     };
 }
 
+macro_rules! impl_to_resolved {
+    ($gradient_type:tt, $resolved:tt) => {
+        impl $gradient_type {
+            fn to_resolved(self) -> $resolved {
+                assert!(self.is_resolved());
+
+                let $gradient_type { common, variant } = self;
+
+                $resolved {
+                    common: common.to_resolved(),
+                    variant: variant.to_resolved(),
+                }
+            }
+        }
+    };
+}
+
+
 macro_rules! impl_resolve {
     ($gradient_type:ty) => {
         impl Resolve for $gradient_type {
@@ -672,6 +690,8 @@ struct ResolvedLinearGradient {
 
 impl_node_trait!(NodeLinearGradient);
 
+impl_to_resolved!(NodeLinearGradient, ResolvedLinearGradient);
+
 impl_resolve!(NodeLinearGradient);
 
 impl_paint_source!(
@@ -693,6 +713,8 @@ struct ResolvedRadialGradient {
 }
 
 impl_node_trait!(NodeRadialGradient);
+
+impl_to_resolved!(NodeRadialGradient, ResolvedRadialGradient);
 
 impl_resolve!(NodeRadialGradient);
 
