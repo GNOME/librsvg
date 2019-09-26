@@ -75,7 +75,7 @@ impl From<SpreadMethod> for cairo::Extend {
 
 macro_rules! fallback_to (
     ($dest:expr, $default:expr) => (
-        $dest = $dest.take ().or ($default)
+        $dest = $dest.take ().or_else (|| $default)
     );
 );
 

@@ -25,7 +25,7 @@ coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
 macro_rules! fallback_to (
     ($dest:expr, $default:expr) => (
-        $dest = $dest.take ().or ($default)
+        $dest = $dest.take ().or_else (|| $default)
     );
 );
 
