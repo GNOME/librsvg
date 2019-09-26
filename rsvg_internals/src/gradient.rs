@@ -558,14 +558,14 @@ macro_rules! impl_resolve {
 macro_rules! impl_paint_source {
     ($gradient:ty, $node_type:pat, $other_gradient:ty, $other_type:pat) => {
         impl PaintSource for $gradient {
-            type Source = $gradient;
+            type Resolved = $gradient;
 
             fn resolve(
                 &self,
                 node: &RsvgNode,
                 draw_ctx: &mut DrawingCtx,
                 bbox: &BoundingBox,
-            ) -> Result<Option<Self::Source>, RenderingError> {
+            ) -> Result<Option<Self::Resolved>, RenderingError> {
                 let mut result = self.clone();
                 result.common.add_color_stops_from_node(node);
 
@@ -616,7 +616,7 @@ macro_rules! impl_paint_source {
 
             fn set_pattern_on_draw_context(
                 &self,
-                gradient: Self::Source,
+                gradient: Self::Resolved,
                 values: &ComputedValues,
                 draw_ctx: &mut DrawingCtx,
                 opacity: &UnitInterval,

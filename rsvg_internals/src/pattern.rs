@@ -138,14 +138,14 @@ impl Resolve for NodePattern {
 }
 
 impl PaintSource for NodePattern {
-    type Source = NodePattern;
+    type Resolved = NodePattern;
 
     fn resolve(
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
         _bbox: &BoundingBox,
-    ) -> Result<Option<Self::Source>, RenderingError> {
+    ) -> Result<Option<Self::Resolved>, RenderingError> {
         *self.node.borrow_mut() = Some(node.downgrade());
 
         let mut result = node.borrow().get_impl::<NodePattern>().clone();
@@ -181,7 +181,7 @@ impl PaintSource for NodePattern {
 
     fn set_pattern_on_draw_context(
         &self,
-        pattern: Self::Source,
+        pattern: Self::Resolved,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         _opacity: &UnitInterval,
