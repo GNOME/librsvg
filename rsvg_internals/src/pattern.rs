@@ -181,7 +181,7 @@ impl PaintSource for NodePattern {
 
     fn set_pattern_on_draw_context(
         &self,
-        pattern: &Self::Source,
+        pattern: Self::Source,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         _opacity: &UnitInterval,

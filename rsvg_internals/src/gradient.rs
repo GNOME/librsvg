@@ -554,7 +554,7 @@ macro_rules! impl_paint_source {
 
             fn set_pattern_on_draw_context(
                 &self,
-                gradient: &Self::Source,
+                gradient: Self::Source,
                 values: &ComputedValues,
                 draw_ctx: &mut DrawingCtx,
                 opacity: &UnitInterval,

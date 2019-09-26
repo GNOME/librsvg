@@ -66,7 +66,7 @@ pub trait PaintSource {
 
     fn set_pattern_on_draw_context(
         &self,
-        pattern: &Self::Source,
+        pattern: Self::Source,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         opacity: &UnitInterval,
@@ -83,7 +83,7 @@ pub trait PaintSource {
         if let Some(resolved) = self.resolve(&node, draw_ctx, bbox)? {
             let cascaded = CascadedValues::new_from_node(node);
             let values = cascaded.get();
-            self.set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
+            self.set_pattern_on_draw_context(resolved, values, draw_ctx, opacity, bbox)
         } else {
             Ok(false)
         }
