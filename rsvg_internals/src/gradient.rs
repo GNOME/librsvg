@@ -578,9 +578,9 @@ macro_rules! impl_resolve {
 }
 
 macro_rules! impl_paint_source {
-    ($gradient:tt, $node_type:pat, $other_gradient:ty, $other_type:pat) => {
+    ($gradient:tt, $node_type:pat, $other_gradient:ty, $other_type:pat, $resolved:ty,) => {
         impl PaintSource for $gradient {
-            type Resolved = $gradient;
+            type Resolved = $resolved;
 
             fn resolve(
                 &self,
@@ -630,14 +630,14 @@ macro_rules! impl_paint_source {
                 }
 
                 if result.common.bounds_are_valid(bbox) {
-                    Ok(Some(result))
+                    Ok(Some(result.to_resolved()))
                 } else {
                     Ok(None)
                 }
             }
         }
 
-        impl ResolvedPaintSource for $gradient {
+        impl ResolvedPaintSource for $resolved {
             fn set_pattern_on_draw_context(
                 self,
                 values: &ComputedValues,
@@ -645,22 +645,15 @@ macro_rules! impl_paint_source {
                 opacity: &UnitInterval,
                 bbox: &BoundingBox,
             ) -> Result<bool, RenderingError> {
-                assert!(self.is_resolved());
-
-                let $gradient { common, variant } = self;
-
-                let common = common.to_resolved();
-                let variant = variant.to_resolved();
-
-                let units = common.units;
+                let units = self.common.units;
                 let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
                     draw_ctx.push_view_box(1.0, 1.0)
                 } else {
                     draw_ctx.get_view_params()
                 };
 
-                let p = variant.to_cairo_gradient(values, &params);
-                common.set_on_cairo_pattern(&p, bbox, opacity);
+                let p = self.variant.to_cairo_gradient(values, &params);
+                self.common.set_on_cairo_pattern(&p, bbox, opacity);
                 let cr = draw_ctx.get_cairo_context();
                 cr.set_source(&p);
 
@@ -692,7 +685,7 @@ pub struct NodeLinearGradient {
     pub variant: LinearGradientData,
 }
 
-struct ResolvedLinearGradient {
+pub struct ResolvedLinearGradient {
     common: CommonGradient,
     variant: LinearGradient,
 }
@@ -707,7 +700,8 @@ impl_paint_source!(
     NodeLinearGradient,
     NodeType::LinearGradient,
     NodeRadialGradient,
-    NodeType::RadialGradient
+    NodeType::RadialGradient,
+    ResolvedLinearGradient,
 );
 
 #[derive(Clone, Default)]
@@ -716,7 +710,7 @@ pub struct NodeRadialGradient {
     pub variant: RadialGradientData,
 }
 
-struct ResolvedRadialGradient {
+pub struct ResolvedRadialGradient {
     common: CommonGradient,
     variant: RadialGradient,
 }
@@ -731,7 +725,8 @@ impl_paint_source!(
     NodeRadialGradient,
     NodeType::RadialGradient,
     NodeLinearGradient,
-    NodeType::LinearGradient
+    NodeType::LinearGradient,
+    ResolvedRadialGradient,
 );
 
 #[cfg(test)]
