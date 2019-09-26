@@ -95,6 +95,57 @@ pub struct CommonGradient {
     pub stops: Vec<ColorStop>,
 }
 
+impl CommonGradient {
+    fn set_on_cairo_pattern(
+        &self,
+        pattern: &cairo::Gradient,
+        bbox: &BoundingBox,
+        opacity: &UnitInterval,
+    ) {
+        let mut affine = self.affine;
+        let units = self.units;
+
+        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+            let bbox_rect = bbox.rect.unwrap();
+            let bbox_matrix = cairo::Matrix::new(
+                bbox_rect.width,
+                0.0,
+                0.0,
+                bbox_rect.height,
+                bbox_rect.x,
+                bbox_rect.y,
+            );
+            affine = cairo::Matrix::multiply(&affine, &bbox_matrix);
+        }
+
+        affine.invert();
+        pattern.set_matrix(affine);
+        pattern.set_extend(cairo::Extend::from(self.spread));
+
+        self.add_color_stops_to_pattern(pattern, opacity);
+    }
+
+    fn add_color_stops_to_pattern(
+        &self,
+        pattern: &cairo::Gradient,
+        opacity: &UnitInterval,
+    ) {
+        for stop in &self.stops {
+            let UnitInterval(stop_offset) = stop.offset;
+            let &UnitInterval(o) = opacity;
+            let UnitInterval(stop_opacity) = stop.opacity;
+
+            pattern.add_color_stop_rgba(
+                stop_offset,
+                f64::from(stop.rgba.red_f32()),
+                f64::from(stop.rgba.green_f32()),
+                f64::from(stop.rgba.blue_f32()),
+                f64::from(stop.rgba.alpha_f32()) * stop_opacity * o,
+            );
+        }
+    }
+}
+
 impl Resolve for CommonGradientData {
     fn is_resolved(&self) -> bool {
         self.units.is_some()
@@ -217,57 +268,6 @@ impl CommonGradientData {
         }
     }
 
-    fn add_color_stops_to_pattern(
-        &self,
-        pattern: &cairo::Gradient,
-        opacity: &UnitInterval,
-    ) {
-        if let Some(stops) = self.stops.as_ref() {
-            for stop in stops {
-                let UnitInterval(stop_offset) = stop.offset;
-                let &UnitInterval(o) = opacity;
-                let UnitInterval(stop_opacity) = stop.opacity;
-
-                pattern.add_color_stop_rgba(
-                    stop_offset,
-                    f64::from(stop.rgba.red_f32()),
-                    f64::from(stop.rgba.green_f32()),
-                    f64::from(stop.rgba.blue_f32()),
-                    f64::from(stop.rgba.alpha_f32()) * stop_opacity * o,
-                );
-            }
-        }
-    }
-
-    fn set_on_cairo_pattern(
-        &self,
-        pattern: &cairo::Gradient,
-        bbox: &BoundingBox,
-        opacity: &UnitInterval,
-    ) {
-        let mut affine = self.affine.unwrap();
-        let units = self.units.unwrap();
-
-        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            let bbox_rect = bbox.rect.unwrap();
-            let bbox_matrix = cairo::Matrix::new(
-                bbox_rect.width,
-                0.0,
-                0.0,
-                bbox_rect.height,
-                bbox_rect.x,
-                bbox_rect.y,
-            );
-            affine = cairo::Matrix::multiply(&affine, &bbox_matrix);
-        }
-
-        affine.invert();
-        pattern.set_matrix(affine);
-        pattern.set_extend(cairo::Extend::from(self.spread.unwrap_or_default()));
-
-        self.add_color_stops_to_pattern(pattern, opacity);
-    }
-
     fn bounds_are_valid(&self, bbox: &BoundingBox) -> bool {
         if self.units == Some(GradientUnits(CoordUnits::UserSpaceOnUse)) {
             true
@@ -290,6 +290,21 @@ pub struct LinearGradient {
     y1: LengthVertical,
     x2: LengthHorizontal,
     y2: LengthVertical,
+}
+
+impl LinearGradient {
+    fn to_cairo_gradient(
+        &self,
+        values: &ComputedValues,
+        params: &ViewParams,
+    ) -> cairo::LinearGradient {
+        cairo::LinearGradient::new(
+            self.x1.normalize(values, params),
+            self.y1.normalize(values, params),
+            self.x2.normalize(values, params),
+            self.y2.normalize(values, params),
+        )
+    }
 }
 
 impl Resolve for LinearGradientData {
@@ -340,19 +355,6 @@ impl LinearGradientData {
             y2: y2.unwrap(),
         }
     }
-
-    fn to_cairo_gradient(
-        &self,
-        values: &ComputedValues,
-        params: &ViewParams,
-    ) -> cairo::LinearGradient {
-        cairo::LinearGradient::new(
-            self.x1.as_ref().unwrap().normalize(values, params),
-            self.y1.as_ref().unwrap().normalize(values, params),
-            self.x2.as_ref().unwrap().normalize(values, params),
-            self.y2.as_ref().unwrap().normalize(values, params),
-        )
-    }
 }
 
 #[derive(Copy, Clone, Default)]
@@ -370,6 +372,23 @@ pub struct RadialGradient {
     r: LengthBoth,
     fx: LengthHorizontal,
     fy: LengthVertical,
+}
+
+impl RadialGradient {
+    fn to_cairo_gradient(
+        &self,
+        values: &ComputedValues,
+        params: &ViewParams,
+    ) -> cairo::RadialGradient {
+        let n_cx = self.cx.normalize(values, params);
+        let n_cy = self.cy.normalize(values, params);
+        let n_r = self.r.normalize(values, params);
+        let n_fx = self.fx.normalize(values, params);
+        let n_fy = self.fy.normalize(values, params);
+        let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
+
+        cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r)
+    }
 }
 
 impl Resolve for RadialGradientData {
@@ -429,21 +448,6 @@ impl RadialGradientData {
             fx: fx.unwrap(),
             fy: fy.unwrap(),
         }
-    }
-
-    fn to_cairo_gradient(
-        &self,
-        values: &ComputedValues,
-        params: &ViewParams,
-    ) -> cairo::RadialGradient {
-        let n_cx = self.cx.as_ref().unwrap().normalize(values, params);
-        let n_cy = self.cy.as_ref().unwrap().normalize(values, params);
-        let n_r = self.r.as_ref().unwrap().normalize(values, params);
-        let n_fx = self.fx.as_ref().unwrap().normalize(values, params);
-        let n_fy = self.fy.as_ref().unwrap().normalize(values, params);
-        let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
-
-        cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r)
     }
 }
 
@@ -574,7 +578,7 @@ macro_rules! impl_resolve {
 }
 
 macro_rules! impl_paint_source {
-    ($gradient:ty, $node_type:pat, $other_gradient:ty, $other_type:pat) => {
+    ($gradient:tt, $node_type:pat, $other_gradient:ty, $other_type:pat) => {
         impl PaintSource for $gradient {
             type Resolved = $gradient;
 
@@ -643,15 +647,20 @@ macro_rules! impl_paint_source {
             ) -> Result<bool, RenderingError> {
                 assert!(self.is_resolved());
 
-                let units = self.common.units.unwrap();
+                let $gradient { common, variant } = self;
+
+                let common = common.to_resolved();
+                let variant = variant.to_resolved();
+
+                let units = common.units;
                 let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
                     draw_ctx.push_view_box(1.0, 1.0)
                 } else {
                     draw_ctx.get_view_params()
                 };
 
-                let p = self.variant.to_cairo_gradient(values, &params);
-                self.common.set_on_cairo_pattern(&p, bbox, opacity);
+                let p = variant.to_cairo_gradient(values, &params);
+                common.set_on_cairo_pattern(&p, bbox, opacity);
                 let cr = draw_ctx.get_cairo_context();
                 cr.set_source(&p);
 
