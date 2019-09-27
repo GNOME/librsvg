@@ -84,7 +84,6 @@ struct CommonGradientData {
     units: Option<GradientUnits>,
     affine: Option<cairo::Matrix>,
     spread: Option<SpreadMethod>,
-    fallback: Option<Fragment>,
     stops: Option<Vec<ColorStop>>,
 }
 
@@ -159,8 +158,6 @@ impl Resolve for CommonGradientData {
         fallback_to!(self.affine, fallback.affine);
         fallback_to!(self.spread, fallback.spread);
         fallback_to!(self.stops, fallback.clone_stops());
-
-        self.fallback = fallback.fallback.clone();
     }
 
     fn resolve_from_defaults(&mut self) {
@@ -178,9 +175,6 @@ impl CommonGradientData {
                 local_name!("gradientUnits") => self.units = Some(attr.parse(value)?),
                 local_name!("gradientTransform") => self.affine = Some(attr.parse(value)?),
                 local_name!("spreadMethod") => self.spread = Some(attr.parse(value)?),
-                local_name!("xlink:href") => {
-                    self.fallback = Some(Fragment::parse(value).attribute(attr)?)
-                }
                 _ => (),
             }
         }
@@ -533,6 +527,16 @@ macro_rules! impl_node_trait {
             fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
                 self.common.set_atts(pbag)?;
                 self.variant.set_atts(pbag)?;
+
+                for (attr, value) in pbag.iter() {
+                    match attr {
+                        local_name!("xlink:href") => {
+                            self.fallback = Some(Fragment::parse(value).attribute(attr)?)
+                        }
+                        _ => (),
+                    }
+                }
+
                 Ok(())
             }
         }
@@ -545,7 +549,7 @@ macro_rules! impl_to_resolved {
             fn to_resolved(self) -> $resolved {
                 assert!(self.is_resolved());
 
-                let $gradient_type { common, variant } = self;
+                let $gradient_type { common, variant, .. } = self;
 
                 $resolved {
                     common: common.to_resolved(),
@@ -594,7 +598,7 @@ macro_rules! impl_paint_source {
                 let mut stack = NodeStack::new();
 
                 while !result.is_resolved() {
-                    let acquired = acquire_gradient(draw_ctx, result.common.fallback.as_ref());
+                    let acquired = acquire_gradient(draw_ctx, result.fallback.as_ref());
 
                     if let Some(acquired) = acquired {
                         let a_node = acquired.get();
@@ -683,6 +687,7 @@ fn acquire_gradient<'a>(
 pub struct NodeLinearGradient {
     common: CommonGradientData,
     variant: LinearGradientData,
+    fallback: Option<Fragment>,
 }
 
 pub struct ResolvedLinearGradient {
@@ -708,6 +713,7 @@ impl_paint_source!(
 pub struct NodeRadialGradient {
     common: CommonGradientData,
     variant: RadialGradientData,
+    fallback: Option<Fragment>,
 }
 
 pub struct ResolvedRadialGradient {
