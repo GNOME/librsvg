@@ -218,15 +218,21 @@ impl UnresolvedCommon {
     fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
         assert!(node.borrow().get_type() == NodeType::Gradient);
 
-        for child in node
-            .children()
-            .filter(|child| child.borrow().get_type() == NodeType::Stop)
+        for child_node in node.children()
         {
-            if child.borrow().is_in_error() {
+            let child = child_node.borrow();
+
+            if child.get_type() != NodeType::Stop {
+                continue;
+            }
+
+            let stop = child.get_impl::<NodeStop>();
+
+            if child.is_in_error() {
                 rsvg_log!("(not using gradient stop {} because it is in error)", child);
             } else {
-                let offset = child.borrow().get_impl::<NodeStop>().get_offset();
-                let cascaded = CascadedValues::new_from_node(&child);
+                let offset = stop.get_offset();
+                let cascaded = CascadedValues::new_from_node(&child_node);
                 let values = cascaded.get();
                 let rgba = match values.stop_color {
                     StopColor(cssparser::Color::CurrentColor) => values.color.0,
