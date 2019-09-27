@@ -578,7 +578,7 @@ macro_rules! impl_resolve {
 }
 
 macro_rules! impl_paint_source {
-    ($gradient:tt, $node_type:pat, $other_gradient:ty, $other_type:pat, $resolved:ty,) => {
+    ($gradient:ty, $node_type:pat, $other_gradient:ty, $other_type:pat, $resolved:ty,) => {
         impl PaintSource for $gradient {
             type Resolved = $resolved;
 
