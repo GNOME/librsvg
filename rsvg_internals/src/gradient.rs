@@ -79,201 +79,6 @@ macro_rules! fallback_to (
     );
 );
 
-#[derive(Clone)]
-struct UnresolvedCommon {
-    units: Option<GradientUnits>,
-    affine: Option<cairo::Matrix>,
-    spread: Option<SpreadMethod>,
-    stops: Option<Vec<ColorStop>>,
-}
-
-struct Common {
-    units: GradientUnits,
-    affine: cairo::Matrix,
-    spread: SpreadMethod,
-    stops: Vec<ColorStop>,
-}
-
-impl Common {
-    fn set_on_cairo_pattern(
-        &self,
-        pattern: &cairo::Gradient,
-        bbox: &BoundingBox,
-        opacity: &UnitInterval,
-    ) {
-        let mut affine = self.affine;
-        let units = self.units;
-
-        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            let bbox_rect = bbox.rect.unwrap();
-            let bbox_matrix = cairo::Matrix::new(
-                bbox_rect.width,
-                0.0,
-                0.0,
-                bbox_rect.height,
-                bbox_rect.x,
-                bbox_rect.y,
-            );
-            affine = cairo::Matrix::multiply(&affine, &bbox_matrix);
-        }
-
-        affine.invert();
-        pattern.set_matrix(affine);
-        pattern.set_extend(cairo::Extend::from(self.spread));
-
-        self.add_color_stops_to_pattern(pattern, opacity);
-    }
-
-    fn add_color_stops_to_pattern(&self, pattern: &cairo::Gradient, opacity: &UnitInterval) {
-        for stop in &self.stops {
-            let UnitInterval(stop_offset) = stop.offset;
-            let &UnitInterval(o) = opacity;
-            let UnitInterval(stop_opacity) = stop.opacity;
-
-            pattern.add_color_stop_rgba(
-                stop_offset,
-                f64::from(stop.rgba.red_f32()),
-                f64::from(stop.rgba.green_f32()),
-                f64::from(stop.rgba.blue_f32()),
-                f64::from(stop.rgba.alpha_f32()) * stop_opacity * o,
-            );
-        }
-    }
-}
-
-impl UnresolvedCommon {
-    fn new_without_stops(
-        units: Option<GradientUnits>,
-        affine: Option<cairo::Matrix>,
-        spread: Option<SpreadMethod>,
-    ) -> UnresolvedCommon {
-        UnresolvedCommon {
-            units,
-            affine,
-            spread,
-            stops: None,
-        }
-    }
-
-    fn to_resolved(self) -> Common {
-        assert!(self.is_resolved());
-
-        let UnresolvedCommon {
-            units,
-            affine,
-            spread,
-            stops,
-            ..
-        } = self;
-
-        Common {
-            units: units.unwrap(),
-            affine: affine.unwrap(),
-            spread: spread.unwrap(),
-            stops: stops.unwrap(),
-        }
-    }
-
-    fn clone_stops(&self) -> Option<Vec<ColorStop>> {
-        if let Some(ref stops) = self.stops {
-            Some(stops.clone())
-        } else {
-            None
-        }
-    }
-
-    fn add_color_stop(
-        &mut self,
-        offset: UnitInterval,
-        rgba: cssparser::RGBA,
-        opacity: UnitInterval,
-    ) {
-        if self.stops.is_none() {
-            self.stops = Some(Vec::<ColorStop>::new());
-        }
-
-        if let Some(ref mut stops) = self.stops {
-            let last_offset = if !stops.is_empty() {
-                stops[stops.len() - 1].offset
-            } else {
-                UnitInterval(0.0)
-            };
-
-            let offset = if offset > last_offset {
-                offset
-            } else {
-                last_offset
-            };
-
-            stops.push(ColorStop {
-                offset,
-                rgba,
-                opacity,
-            });
-        } else {
-            unreachable!();
-        }
-    }
-
-    fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
-        assert!(node.borrow().get_type() == NodeType::Gradient);
-
-        for child_node in node.children()
-        {
-            let child = child_node.borrow();
-
-            if child.get_type() != NodeType::Stop {
-                continue;
-            }
-
-            let stop = child.get_impl::<NodeStop>();
-
-            if child.is_in_error() {
-                rsvg_log!("(not using gradient stop {} because it is in error)", child);
-            } else {
-                let offset = stop.get_offset();
-                let cascaded = CascadedValues::new_from_node(&child_node);
-                let values = cascaded.get();
-                let rgba = match values.stop_color {
-                    StopColor(cssparser::Color::CurrentColor) => values.color.0,
-                    StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
-                };
-
-                self.add_color_stop(offset, rgba, values.stop_opacity.0);
-            }
-        }
-    }
-
-    fn bounds_are_valid(&self, bbox: &BoundingBox) -> bool {
-        if self.units == Some(GradientUnits(CoordUnits::UserSpaceOnUse)) {
-            true
-        } else {
-            bbox.rect.map_or(false, |r| !r.is_empty())
-        }
-    }
-
-    fn is_resolved(&self) -> bool {
-        self.units.is_some()
-            && self.affine.is_some()
-            && self.spread.is_some()
-            && self.stops.is_some()
-    }
-
-    fn resolve_from_fallback(&mut self, fallback: &Self) {
-        fallback_to!(self.units, fallback.units);
-        fallback_to!(self.affine, fallback.affine);
-        fallback_to!(self.spread, fallback.spread);
-        fallback_to!(self.stops, fallback.clone_stops());
-    }
-
-    fn resolve_from_defaults(&mut self) {
-        fallback_to!(self.units, Some(GradientUnits::default()));
-        fallback_to!(self.affine, Some(cairo::Matrix::identity()));
-        fallback_to!(self.spread, Some(SpreadMethod::default()));
-        fallback_to!(self.stops, Some(Vec::<ColorStop>::new()));
-    }
-}
-
 #[derive(Copy, Clone, Default)]
 struct UnresolvedLinear {
     x1: Option<LengthHorizontal>,
@@ -579,46 +384,154 @@ pub struct NodeGradient {
 }
 
 struct UnresolvedGradient {
-    common: UnresolvedCommon,
+    units: Option<GradientUnits>,
+    affine: Option<cairo::Matrix>,
+    spread: Option<SpreadMethod>,
+    stops: Option<Vec<ColorStop>>,
+
     variant: UnresolvedVariant,
 }
 
 pub struct Gradient {
-    common: Common,
+    units: GradientUnits,
+    affine: cairo::Matrix,
+    spread: SpreadMethod,
+    stops: Vec<ColorStop>,
+
     variant: Variant,
 }
 
 impl UnresolvedGradient {
     fn to_resolved(self) -> Gradient {
+        assert!(self.is_resolved());
+
         let UnresolvedGradient {
-            common, variant, ..
+            units, affine, spread, stops, variant,
         } = self;
 
         match variant {
             UnresolvedVariant::Linear(_) => Gradient {
-                common: common.to_resolved(),
+                units: units.unwrap(),
+                affine: affine.unwrap(),
+                spread: spread.unwrap(),
+                stops: stops.unwrap(),
+
                 variant: variant.to_resolved(),
             },
 
             UnresolvedVariant::Radial(_) => Gradient {
-                common: common.to_resolved(),
+                units: units.unwrap(),
+                affine: affine.unwrap(),
+                spread: spread.unwrap(),
+                stops: stops.unwrap(),
+
                 variant: variant.to_resolved(),
             },
         }
     }
 
+    fn clone_stops(&self) -> Option<Vec<ColorStop>> {
+        if let Some(ref stops) = self.stops {
+            Some(stops.clone())
+        } else {
+            None
+        }
+    }
+
+    fn add_color_stop(
+        &mut self,
+        offset: UnitInterval,
+        rgba: cssparser::RGBA,
+        opacity: UnitInterval,
+    ) {
+        if self.stops.is_none() {
+            self.stops = Some(Vec::<ColorStop>::new());
+        }
+
+        if let Some(ref mut stops) = self.stops {
+            let last_offset = if !stops.is_empty() {
+                stops[stops.len() - 1].offset
+            } else {
+                UnitInterval(0.0)
+            };
+
+            let offset = if offset > last_offset {
+                offset
+            } else {
+                last_offset
+            };
+
+            stops.push(ColorStop {
+                offset,
+                rgba,
+                opacity,
+            });
+        } else {
+            unreachable!();
+        }
+    }
+
+    fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
+        assert!(node.borrow().get_type() == NodeType::Gradient);
+
+        for child_node in node.children()
+        {
+            let child = child_node.borrow();
+
+            if child.get_type() != NodeType::Stop {
+                continue;
+            }
+
+            let stop = child.get_impl::<NodeStop>();
+
+            if child.is_in_error() {
+                rsvg_log!("(not using gradient stop {} because it is in error)", child);
+            } else {
+                let offset = stop.get_offset();
+                let cascaded = CascadedValues::new_from_node(&child_node);
+                let values = cascaded.get();
+                let rgba = match values.stop_color {
+                    StopColor(cssparser::Color::CurrentColor) => values.color.0,
+                    StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
+                };
+
+                self.add_color_stop(offset, rgba, values.stop_opacity.0);
+            }
+        }
+    }
+
     fn is_resolved(&self) -> bool {
-        self.common.is_resolved() && self.variant.is_resolved()
+        self.units.is_some()
+            && self.affine.is_some()
+            && self.spread.is_some()
+            && self.stops.is_some()
+            && self.variant.is_resolved()
     }
 
     fn resolve_from_fallback(&mut self, fallback: &UnresolvedGradient) {
-        self.common.resolve_from_fallback(&fallback.common);
+        fallback_to!(self.units, fallback.units);
+        fallback_to!(self.affine, fallback.affine);
+        fallback_to!(self.spread, fallback.spread);
+        fallback_to!(self.stops, fallback.clone_stops());
+
         self.variant.resolve_from_fallback(&fallback.variant);
     }
 
     fn resolve_from_defaults(&mut self) {
-        self.common.resolve_from_defaults();
+        fallback_to!(self.units, Some(GradientUnits::default()));
+        fallback_to!(self.affine, Some(cairo::Matrix::identity()));
+        fallback_to!(self.spread, Some(SpreadMethod::default()));
+        fallback_to!(self.stops, Some(Vec::<ColorStop>::new()));
+
         self.variant.resolve_from_defaults();
+    }
+
+    fn bounds_are_valid(&self, bbox: &BoundingBox) -> bool {
+        if self.units == Some(GradientUnits(CoordUnits::UserSpaceOnUse)) {
+            true
+        } else {
+            bbox.rect.map_or(false, |r| !r.is_empty())
+        }
     }
 }
 
@@ -644,17 +557,17 @@ impl NodeGradient {
     }
 
     fn get_unresolved(&self, node: &RsvgNode) -> (UnresolvedGradient, Option<Fragment>) {
-        let mut common = UnresolvedCommon::new_without_stops(self.units, self.affine, self.spread);
+        let mut unresolved = UnresolvedGradient {
+            units: self.units,
+            affine: self.affine,
+            spread: self.spread,
+            stops: None,
+            variant: self.variant,
+        };
 
-        common.add_color_stops_from_node(node);
+        unresolved.add_color_stops_from_node(node);
 
-        (
-            UnresolvedGradient {
-                common,
-                variant: self.variant,
-            },
-            self.fallback.clone(),
-        )
+        (unresolved, self.fallback.clone())
     }
 }
 
@@ -723,7 +636,7 @@ impl PaintSource for NodeGradient {
             }
         }
 
-        if result.common.bounds_are_valid(bbox) {
+        if result.bounds_are_valid(bbox) {
             Ok(Some(result.to_resolved()))
         } else {
             Ok(None)
@@ -739,7 +652,7 @@ impl ResolvedPaintSource for Gradient {
         opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        let units = self.common.units;
+        let units = self.units;
         let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             draw_ctx.push_view_box(1.0, 1.0)
         } else {
@@ -747,22 +660,70 @@ impl ResolvedPaintSource for Gradient {
         };
 
         let p = match self.variant {
-            Variant::Linear(v) => {
+            Variant::Linear(ref v) => {
                 let g = v.to_cairo_gradient(values, &params);
                 cairo::Gradient::clone(&g)
             }
 
-            Variant::Radial(v) => {
+            Variant::Radial(ref v) => {
                 let g = v.to_cairo_gradient(values, &params);
                 cairo::Gradient::clone(&g)
             }
         };
 
-        self.common.set_on_cairo_pattern(&p, bbox, opacity);
+        self.set_on_cairo_pattern(&p, bbox, opacity);
+
         let cr = draw_ctx.get_cairo_context();
         cr.set_source(&p);
 
         Ok(true)
+    }
+}
+
+impl Gradient {
+    fn set_on_cairo_pattern(
+        &self,
+        pattern: &cairo::Gradient,
+        bbox: &BoundingBox,
+        opacity: &UnitInterval,
+    ) {
+        let mut affine = self.affine;
+        let units = self.units;
+
+        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+            let bbox_rect = bbox.rect.unwrap();
+            let bbox_matrix = cairo::Matrix::new(
+                bbox_rect.width,
+                0.0,
+                0.0,
+                bbox_rect.height,
+                bbox_rect.x,
+                bbox_rect.y,
+            );
+            affine = cairo::Matrix::multiply(&affine, &bbox_matrix);
+        }
+
+        affine.invert();
+        pattern.set_matrix(affine);
+        pattern.set_extend(cairo::Extend::from(self.spread));
+
+        self.add_color_stops_to_pattern(pattern, opacity);
+    }
+
+    fn add_color_stops_to_pattern(&self, pattern: &cairo::Gradient, opacity: &UnitInterval) {
+        for stop in &self.stops {
+            let UnitInterval(stop_offset) = stop.offset;
+            let &UnitInterval(o) = opacity;
+            let UnitInterval(stop_opacity) = stop.opacity;
+
+            pattern.add_color_stop_rgba(
+                stop_offset,
+                f64::from(stop.rgba.red_f32()),
+                f64::from(stop.rgba.green_f32()),
+                f64::from(stop.rgba.blue_f32()),
+                f64::from(stop.rgba.alpha_f32()) * stop_opacity * o,
+            );
+        }
     }
 }
 
