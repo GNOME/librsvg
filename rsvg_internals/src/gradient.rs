@@ -702,22 +702,22 @@ impl PaintSource for NodeGradient {
 
         while !result.is_resolved() {
             if let Some(acquired) = acquire_gradient(draw_ctx, fallback.as_ref()) {
-                let a_node = acquired.get();
+                let acquired_node = acquired.get();
 
-                if stack.contains(a_node) {
+                if stack.contains(acquired_node) {
                     rsvg_log!("circular reference in gradient {}", node);
                     return Err(RenderingError::CircularReference);
                 }
 
-                let (a_gradient, next_fallback) = a_node
-                    .borrow()
-                    .get_impl::<NodeGradient>()
-                    .get_unresolved(a_node);
+                let borrowed_node = acquired_node.borrow();
+                let a_gradient = borrowed_node.get_impl::<NodeGradient>();
 
-                result.resolve_from_fallback(&a_gradient);
+                let (unresolved, next_fallback) = a_gradient.get_unresolved(&acquired_node);
+
+                result.resolve_from_fallback(&unresolved);
                 fallback = next_fallback;
 
-                stack.push(a_node);
+                stack.push(acquired_node);
             } else {
                 result.resolve_from_defaults();
             }
