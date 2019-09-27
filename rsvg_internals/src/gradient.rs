@@ -18,16 +18,16 @@ use crate::rect::RectangleExt;
 use crate::unit_interval::UnitInterval;
 
 #[derive(Copy, Clone)]
-pub struct ColorStop {
-    pub offset: UnitInterval,
-    pub rgba: cssparser::RGBA,
-    pub opacity: UnitInterval,
+struct ColorStop {
+    offset: UnitInterval,
+    rgba: cssparser::RGBA,
+    opacity: UnitInterval,
 }
 
 coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum SpreadMethod {
+enum SpreadMethod {
     Pad,
     Reflect,
     Repeat,
@@ -80,19 +80,19 @@ macro_rules! fallback_to (
 );
 
 #[derive(Clone, Default)]
-pub struct CommonGradientData {
-    pub units: Option<GradientUnits>,
-    pub affine: Option<cairo::Matrix>,
-    pub spread: Option<SpreadMethod>,
-    pub fallback: Option<Fragment>,
-    pub stops: Option<Vec<ColorStop>>,
+struct CommonGradientData {
+    units: Option<GradientUnits>,
+    affine: Option<cairo::Matrix>,
+    spread: Option<SpreadMethod>,
+    fallback: Option<Fragment>,
+    stops: Option<Vec<ColorStop>>,
 }
 
-pub struct CommonGradient {
-    pub units: GradientUnits,
-    pub affine: cairo::Matrix,
-    pub spread: SpreadMethod,
-    pub stops: Vec<ColorStop>,
+struct CommonGradient {
+    units: GradientUnits,
+    affine: cairo::Matrix,
+    spread: SpreadMethod,
+    stops: Vec<ColorStop>,
 }
 
 impl CommonGradient {
@@ -278,14 +278,14 @@ impl CommonGradientData {
 }
 
 #[derive(Copy, Clone, Default)]
-pub struct LinearGradientData {
+struct LinearGradientData {
     x1: Option<LengthHorizontal>,
     y1: Option<LengthVertical>,
     x2: Option<LengthHorizontal>,
     y2: Option<LengthVertical>,
 }
 
-pub struct LinearGradient {
+struct LinearGradient {
     x1: LengthHorizontal,
     y1: LengthVertical,
     x2: LengthHorizontal,
@@ -358,7 +358,7 @@ impl LinearGradientData {
 }
 
 #[derive(Copy, Clone, Default)]
-pub struct RadialGradientData {
+struct RadialGradientData {
     cx: Option<LengthHorizontal>,
     cy: Option<LengthVertical>,
     r: Option<LengthBoth>,
@@ -366,7 +366,7 @@ pub struct RadialGradientData {
     fy: Option<LengthVertical>,
 }
 
-pub struct RadialGradient {
+struct RadialGradient {
     cx: LengthHorizontal,
     cy: LengthVertical,
     r: LengthBoth,
@@ -681,8 +681,8 @@ fn acquire_gradient<'a>(
 
 #[derive(Clone, Default)]
 pub struct NodeLinearGradient {
-    pub common: CommonGradientData,
-    pub variant: LinearGradientData,
+    common: CommonGradientData,
+    variant: LinearGradientData,
 }
 
 pub struct ResolvedLinearGradient {
@@ -706,8 +706,8 @@ impl_paint_source!(
 
 #[derive(Clone, Default)]
 pub struct NodeRadialGradient {
-    pub common: CommonGradientData,
-    pub variant: RadialGradientData,
+    common: CommonGradientData,
+    variant: RadialGradientData,
 }
 
 pub struct ResolvedRadialGradient {
