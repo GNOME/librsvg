@@ -79,176 +79,6 @@ macro_rules! fallback_to (
     );
 );
 
-#[derive(Copy, Clone, Default)]
-struct UnresolvedLinear {
-    x1: Option<LengthHorizontal>,
-    y1: Option<LengthVertical>,
-    x2: Option<LengthHorizontal>,
-    y2: Option<LengthVertical>,
-}
-
-struct Linear {
-    x1: LengthHorizontal,
-    y1: LengthVertical,
-    x2: LengthHorizontal,
-    y2: LengthVertical,
-}
-
-impl Linear {
-    fn to_cairo_gradient(
-        &self,
-        values: &ComputedValues,
-        params: &ViewParams,
-    ) -> cairo::LinearGradient {
-        cairo::LinearGradient::new(
-            self.x1.normalize(values, params),
-            self.y1.normalize(values, params),
-            self.x2.normalize(values, params),
-            self.y2.normalize(values, params),
-        )
-    }
-}
-
-impl UnresolvedLinear {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x1") => self.x1 = Some(attr.parse(value)?),
-                local_name!("y1") => self.y1 = Some(attr.parse(value)?),
-                local_name!("x2") => self.x2 = Some(attr.parse(value)?),
-                local_name!("y2") => self.y2 = Some(attr.parse(value)?),
-                _ => (),
-            }
-        }
-
-        Ok(())
-    }
-
-    fn to_resolved(self) -> Linear {
-        assert!(self.is_resolved());
-
-        let UnresolvedLinear { x1, y1, x2, y2 } = self;
-
-        Linear {
-            x1: x1.unwrap(),
-            y1: y1.unwrap(),
-            x2: x2.unwrap(),
-            y2: y2.unwrap(),
-        }
-    }
-
-    fn is_resolved(&self) -> bool {
-        self.x1.is_some() && self.y1.is_some() && self.x2.is_some() && self.y2.is_some()
-    }
-
-    fn resolve_from_fallback(&mut self, fallback: &Self) {
-        fallback_to!(self.x1, fallback.x1);
-        fallback_to!(self.y1, fallback.y1);
-        fallback_to!(self.x2, fallback.x2);
-        fallback_to!(self.y2, fallback.y2);
-    }
-
-    // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
-    fn resolve_from_defaults(&mut self) {
-        fallback_to!(self.x1, Some(LengthHorizontal::parse_str("0%").unwrap()));
-        fallback_to!(self.y1, Some(LengthVertical::parse_str("0%").unwrap()));
-        fallback_to!(self.x2, Some(LengthHorizontal::parse_str("100%").unwrap()));
-        fallback_to!(self.y2, Some(LengthVertical::parse_str("0%").unwrap()));
-    }
-}
-
-#[derive(Copy, Clone, Default)]
-struct UnresolvedRadial {
-    cx: Option<LengthHorizontal>,
-    cy: Option<LengthVertical>,
-    r: Option<LengthBoth>,
-    fx: Option<LengthHorizontal>,
-    fy: Option<LengthVertical>,
-}
-
-struct Radial {
-    cx: LengthHorizontal,
-    cy: LengthVertical,
-    r: LengthBoth,
-    fx: LengthHorizontal,
-    fy: LengthVertical,
-}
-
-impl Radial {
-    fn to_cairo_gradient(
-        &self,
-        values: &ComputedValues,
-        params: &ViewParams,
-    ) -> cairo::RadialGradient {
-        let n_cx = self.cx.normalize(values, params);
-        let n_cy = self.cy.normalize(values, params);
-        let n_r = self.r.normalize(values, params);
-        let n_fx = self.fx.normalize(values, params);
-        let n_fy = self.fy.normalize(values, params);
-        let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
-
-        cairo::RadialGradient::new(new_fx, new_fy, 0.0, n_cx, n_cy, n_r)
-    }
-}
-
-impl UnresolvedRadial {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("cx") => self.cx = Some(attr.parse(value)?),
-                local_name!("cy") => self.cy = Some(attr.parse(value)?),
-                local_name!("r") => self.r = Some(attr.parse(value)?),
-                local_name!("fx") => self.fx = Some(attr.parse(value)?),
-                local_name!("fy") => self.fy = Some(attr.parse(value)?),
-                _ => (),
-            }
-        }
-
-        Ok(())
-    }
-
-    fn to_resolved(self) -> Radial {
-        assert!(self.is_resolved());
-
-        let UnresolvedRadial { cx, cy, r, fx, fy } = self;
-
-        Radial {
-            cx: cx.unwrap(),
-            cy: cy.unwrap(),
-            r: r.unwrap(),
-            fx: fx.unwrap(),
-            fy: fy.unwrap(),
-        }
-    }
-
-    fn is_resolved(&self) -> bool {
-        self.cx.is_some()
-            && self.cy.is_some()
-            && self.r.is_some()
-            && self.fx.is_some()
-            && self.fy.is_some()
-    }
-
-    fn resolve_from_fallback(&mut self, fallback: &Self) {
-        fallback_to!(self.cx, fallback.cx);
-        fallback_to!(self.cy, fallback.cy);
-        fallback_to!(self.r, fallback.r);
-        fallback_to!(self.fx, fallback.fx);
-        fallback_to!(self.fy, fallback.fy);
-    }
-
-    // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
-    fn resolve_from_defaults(&mut self) {
-        fallback_to!(self.cx, Some(LengthHorizontal::parse_str("50%").unwrap()));
-        fallback_to!(self.cy, Some(LengthVertical::parse_str("50%").unwrap()));
-        fallback_to!(self.r, Some(LengthBoth::parse_str("50%").unwrap()));
-
-        // fx and fy fall back to the presentational value of cx and cy
-        fallback_to!(self.fx, self.cx);
-        fallback_to!(self.fy, self.cy);
-    }
-}
-
 // SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
 // gradient projects out from a focus point (fx, fy), which is assumed to be
 // inside the circle, to the edge of the circle.
@@ -327,48 +157,194 @@ impl NodeTrait for NodeStop {
 
 #[derive(Copy, Clone)]
 enum UnresolvedVariant {
-    Linear(UnresolvedLinear),
-    Radial(UnresolvedRadial),
+    Linear {
+        x1: Option<LengthHorizontal>,
+        y1: Option<LengthVertical>,
+        x2: Option<LengthHorizontal>,
+        y2: Option<LengthVertical>,
+    },
+
+    Radial {
+        cx: Option<LengthHorizontal>,
+        cy: Option<LengthVertical>,
+        r: Option<LengthBoth>,
+        fx: Option<LengthHorizontal>,
+        fy: Option<LengthVertical>,
+    },
 }
 
 enum Variant {
-    Linear(Linear),
-    Radial(Radial),
+    Linear {
+        x1: LengthHorizontal,
+        y1: LengthVertical,
+        x2: LengthHorizontal,
+        y2: LengthVertical,
+    },
+
+    Radial {
+        cx: LengthHorizontal,
+        cy: LengthVertical,
+        r: LengthBoth,
+        fx: LengthHorizontal,
+        fy: LengthVertical,
+    },
 }
 
 impl UnresolvedVariant {
-    fn to_resolved(self) -> Variant {
+    fn default_linear() -> UnresolvedVariant {
+        UnresolvedVariant::Linear {
+            x1: Default::default(),
+            y1: Default::default(),
+            x2: Default::default(),
+            y2: Default::default(),
+        }
+    }
+
+    fn default_radial() -> UnresolvedVariant {
+        UnresolvedVariant::Radial {
+            cx: Default::default(),
+            cy: Default::default(),
+            r: Default::default(),
+            fx: Default::default(),
+            fy: Default::default(),
+        }
+    }
+
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         match self {
-            UnresolvedVariant::Linear(v) => Variant::Linear(v.to_resolved()),
-            UnresolvedVariant::Radial(v) => Variant::Radial(v.to_resolved()),
+            &mut UnresolvedVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
+                for (attr, value) in pbag.iter() {
+                    match attr {
+                        local_name!("x1") => *x1 = Some(attr.parse(value)?),
+                        local_name!("y1") => *y1 = Some(attr.parse(value)?),
+                        local_name!("x2") => *x2 = Some(attr.parse(value)?),
+                        local_name!("y2") => *y2 = Some(attr.parse(value)?),
+                        _ => (),
+                    }
+                }
+            }
+
+            &mut UnresolvedVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
+                for (attr, value) in pbag.iter() {
+                    match attr {
+                        local_name!("cx") => *cx = Some(attr.parse(value)?),
+                        local_name!("cy") => *cy = Some(attr.parse(value)?),
+                        local_name!("r") => *r = Some(attr.parse(value)?),
+                        local_name!("fx") => *fx = Some(attr.parse(value)?),
+                        local_name!("fy") => *fy = Some(attr.parse(value)?),
+                        _ => (),
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn to_resolved(self) -> Variant {
+        assert!(self.is_resolved());
+
+        match self {
+            UnresolvedVariant::Linear { x1, y1, x2, y2 } => Variant::Linear {
+                x1: x1.unwrap(),
+                y1: y1.unwrap(),
+                x2: x2.unwrap(),
+                y2: y2.unwrap(),
+            },
+
+            UnresolvedVariant::Radial { cx, cy, r, fx, fy } => Variant::Radial {
+                cx: cx.unwrap(),
+                cy: cy.unwrap(),
+                r: r.unwrap(),
+                fx: fx.unwrap(),
+                fy: fy.unwrap(),
+            },
         }
     }
 
     fn is_resolved(&self) -> bool {
         match *self {
-            UnresolvedVariant::Linear(v) => v.is_resolved(),
-            UnresolvedVariant::Radial(v) => v.is_resolved(),
+            UnresolvedVariant::Linear { x1, y1, x2, y2 } => {
+                x1.is_some() && y1.is_some() && x2.is_some() && y2.is_some()
+            }
+
+            UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
+                cx.is_some() && cy.is_some() && r.is_some() && fx.is_some() && fy.is_some()
+            }
         }
     }
 
     fn resolve_from_fallback(&mut self, fallback: &UnresolvedVariant) {
         match (self, fallback) {
-            (&mut UnresolvedVariant::Linear(ref mut v), &UnresolvedVariant::Linear(ref f)) => {
-                v.resolve_from_fallback(f)
+            (&mut UnresolvedVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 },
+             &UnresolvedVariant::Linear { x1: fx1, y1: fy1, x2: fx2, y2: fy2 }) => {
+                fallback_to!(*x1, fx1);
+                fallback_to!(*y1, fy1);
+                fallback_to!(*x2, fx2);
+                fallback_to!(*y2, fy2);
             }
 
-            (&mut UnresolvedVariant::Radial(ref mut v), &UnresolvedVariant::Radial(ref f)) => {
-                v.resolve_from_fallback(f)
+            (&mut UnresolvedVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy },
+             &UnresolvedVariant::Radial { cx: fcx, cy: fcy, r: fr, fx: ffx, fy: ffy }) => {
+                fallback_to!(*cx, fcx);
+                fallback_to!(*cy, fcy);
+                fallback_to!(*r, fr);
+                fallback_to!(*fx, ffx);
+                fallback_to!(*fy, ffy);
             }
 
             _ => (), // If variants are of different types, then nothing to resolve
         }
     }
 
+    // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
+    // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
     fn resolve_from_defaults(&mut self) {
+        match self {
+            &mut UnresolvedVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
+                fallback_to!(*x1, Some(LengthHorizontal::parse_str("0%").unwrap()));
+                fallback_to!(*y1, Some(LengthVertical::parse_str("0%").unwrap()));
+                fallback_to!(*x2, Some(LengthHorizontal::parse_str("100%").unwrap()));
+                fallback_to!(*y2, Some(LengthVertical::parse_str("0%").unwrap()));
+            }
+
+            &mut UnresolvedVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
+                fallback_to!(*cx, Some(LengthHorizontal::parse_str("50%").unwrap()));
+                fallback_to!(*cy, Some(LengthVertical::parse_str("50%").unwrap()));
+                fallback_to!(*r, Some(LengthBoth::parse_str("50%").unwrap()));
+
+                // fx and fy fall back to the presentational value of cx and cy
+                fallback_to!(*fx, *cx);
+                fallback_to!(*fy, *cy);
+            }
+        }
+    }
+}
+
+impl Variant {
+    fn to_cairo_gradient(&self, values: &ComputedValues, params: &ViewParams) -> cairo::Gradient {
         match *self {
-            UnresolvedVariant::Linear(ref mut v) => v.resolve_from_defaults(),
-            UnresolvedVariant::Radial(ref mut v) => v.resolve_from_defaults(),
+            Variant::Linear { x1, y1, x2, y2 } => {
+                cairo::Gradient::clone(&cairo::LinearGradient::new(
+                    x1.normalize(values, params),
+                    y1.normalize(values, params),
+                    x2.normalize(values, params),
+                    y2.normalize(values, params),
+                ))
+            }
+
+            Variant::Radial { cx, cy, r, fx, fy } => {
+                let n_cx = cx.normalize(values, params);
+                let n_cy = cy.normalize(values, params);
+                let n_r = r.normalize(values, params);
+                let n_fx = fx.normalize(values, params);
+                let n_fy = fy.normalize(values, params);
+                let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
+
+                cairo::Gradient::clone(&cairo::RadialGradient::new(
+                    new_fx, new_fy, 0.0, n_cx, n_cy, n_r,
+                ))
+            }
         }
     }
 }
@@ -406,11 +382,15 @@ impl UnresolvedGradient {
         assert!(self.is_resolved());
 
         let UnresolvedGradient {
-            units, affine, spread, stops, variant,
+            units,
+            affine,
+            spread,
+            stops,
+            variant,
         } = self;
 
         match variant {
-            UnresolvedVariant::Linear(_) => Gradient {
+            UnresolvedVariant::Linear { .. } => Gradient {
                 units: units.unwrap(),
                 affine: affine.unwrap(),
                 spread: spread.unwrap(),
@@ -419,7 +399,7 @@ impl UnresolvedGradient {
                 variant: variant.to_resolved(),
             },
 
-            UnresolvedVariant::Radial(_) => Gradient {
+            UnresolvedVariant::Radial { .. } => Gradient {
                 units: units.unwrap(),
                 affine: affine.unwrap(),
                 spread: spread.unwrap(),
@@ -474,8 +454,7 @@ impl UnresolvedGradient {
     fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
         assert!(node.borrow().get_type() == NodeType::Gradient);
 
-        for child_node in node.children()
-        {
+        for child_node in node.children() {
             let child = child_node.borrow();
 
             if child.get_type() != NodeType::Stop {
@@ -541,7 +520,7 @@ impl NodeGradient {
             units: Default::default(),
             affine: Default::default(),
             spread: Default::default(),
-            variant: UnresolvedVariant::Linear(UnresolvedLinear::default()),
+            variant: UnresolvedVariant::default_linear(),
             fallback: Default::default(),
         }
     }
@@ -551,7 +530,7 @@ impl NodeGradient {
             units: Default::default(),
             affine: Default::default(),
             spread: Default::default(),
-            variant: UnresolvedVariant::Radial(UnresolvedRadial::default()),
+            variant: UnresolvedVariant::default_radial(),
             fallback: Default::default(),
         }
     }
@@ -583,8 +562,8 @@ impl NodeTrait for NodeGradient {
         }
 
         match self.variant {
-            UnresolvedVariant::Linear(ref mut v) => v.set_atts(pbag)?,
-            UnresolvedVariant::Radial(ref mut v) => v.set_atts(pbag)?,
+            UnresolvedVariant::Linear { .. } => self.variant.set_atts(pbag)?,
+            UnresolvedVariant::Radial { .. } => self.variant.set_atts(pbag)?,
         }
 
         for (attr, value) in pbag.iter() {
@@ -660,13 +639,13 @@ impl ResolvedPaintSource for Gradient {
         };
 
         let p = match self.variant {
-            Variant::Linear(ref v) => {
-                let g = v.to_cairo_gradient(values, &params);
+            Variant::Linear { .. } => {
+                let g = self.variant.to_cairo_gradient(values, &params);
                 cairo::Gradient::clone(&g)
             }
 
-            Variant::Radial(ref v) => {
-                let g = v.to_cairo_gradient(values, &params);
+            Variant::Radial { .. } => {
+                let g = self.variant.to_cairo_gradient(values, &params);
                 cairo::Gradient::clone(&g)
             }
         };
