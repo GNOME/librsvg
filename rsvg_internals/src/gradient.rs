@@ -80,21 +80,21 @@ macro_rules! fallback_to (
 );
 
 #[derive(Clone, Default)]
-struct CommonGradientData {
+struct UnresolvedCommon {
     units: Option<GradientUnits>,
     affine: Option<cairo::Matrix>,
     spread: Option<SpreadMethod>,
     stops: Option<Vec<ColorStop>>,
 }
 
-struct CommonGradient {
+struct Common {
     units: GradientUnits,
     affine: cairo::Matrix,
     spread: SpreadMethod,
     stops: Vec<ColorStop>,
 }
 
-impl CommonGradient {
+impl Common {
     fn set_on_cairo_pattern(
         &self,
         pattern: &cairo::Gradient,
@@ -141,7 +141,7 @@ impl CommonGradient {
     }
 }
 
-impl CommonGradientData {
+impl UnresolvedCommon {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
@@ -155,10 +155,10 @@ impl CommonGradientData {
         Ok(())
     }
 
-    fn to_resolved(self) -> CommonGradient {
+    fn to_resolved(self) -> Common {
         assert!(self.is_resolved());
 
-        let CommonGradientData {
+        let UnresolvedCommon {
             units,
             affine,
             spread,
@@ -166,7 +166,7 @@ impl CommonGradientData {
             ..
         } = self;
 
-        CommonGradient {
+        Common {
             units: units.unwrap(),
             affine: affine.unwrap(),
             spread: spread.unwrap(),
@@ -269,21 +269,21 @@ impl CommonGradientData {
 }
 
 #[derive(Copy, Clone, Default)]
-struct LinearGradientData {
+struct UnresolvedLinear {
     x1: Option<LengthHorizontal>,
     y1: Option<LengthVertical>,
     x2: Option<LengthHorizontal>,
     y2: Option<LengthVertical>,
 }
 
-struct LinearGradient {
+struct Linear {
     x1: LengthHorizontal,
     y1: LengthVertical,
     x2: LengthHorizontal,
     y2: LengthVertical,
 }
 
-impl LinearGradient {
+impl Linear {
     fn to_cairo_gradient(
         &self,
         values: &ComputedValues,
@@ -298,7 +298,7 @@ impl LinearGradient {
     }
 }
 
-impl LinearGradientData {
+impl UnresolvedLinear {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
@@ -313,12 +313,12 @@ impl LinearGradientData {
         Ok(())
     }
 
-    fn to_resolved(self) -> LinearGradient {
+    fn to_resolved(self) -> Linear {
         assert!(self.is_resolved());
 
-        let LinearGradientData { x1, y1, x2, y2 } = self;
+        let UnresolvedLinear { x1, y1, x2, y2 } = self;
 
-        LinearGradient {
+        Linear {
             x1: x1.unwrap(),
             y1: y1.unwrap(),
             x2: x2.unwrap(),
@@ -347,7 +347,7 @@ impl LinearGradientData {
 }
 
 #[derive(Copy, Clone, Default)]
-struct RadialGradientData {
+struct UnresolvedRadial {
     cx: Option<LengthHorizontal>,
     cy: Option<LengthVertical>,
     r: Option<LengthBoth>,
@@ -355,7 +355,7 @@ struct RadialGradientData {
     fy: Option<LengthVertical>,
 }
 
-struct RadialGradient {
+struct Radial {
     cx: LengthHorizontal,
     cy: LengthVertical,
     r: LengthBoth,
@@ -363,7 +363,7 @@ struct RadialGradient {
     fy: LengthVertical,
 }
 
-impl RadialGradient {
+impl Radial {
     fn to_cairo_gradient(
         &self,
         values: &ComputedValues,
@@ -380,7 +380,7 @@ impl RadialGradient {
     }
 }
 
-impl RadialGradientData {
+impl UnresolvedRadial {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
@@ -396,12 +396,12 @@ impl RadialGradientData {
         Ok(())
     }
 
-    fn to_resolved(self) -> RadialGradient {
+    fn to_resolved(self) -> Radial {
         assert!(self.is_resolved());
 
-        let RadialGradientData { cx, cy, r, fx, fy } = self;
+        let UnresolvedRadial { cx, cy, r, fx, fy } = self;
 
-        RadialGradient {
+        Radial {
             cx: cx.unwrap(),
             cy: cy.unwrap(),
             r: r.unwrap(),
@@ -515,38 +515,38 @@ impl NodeTrait for NodeStop {
 }
 
 #[derive(Clone)]
-enum GradientVariant {
-    Linear(LinearGradientData),
-    Radial(RadialGradientData),
+enum UnresolvedVariant {
+    Linear(UnresolvedLinear),
+    Radial(UnresolvedRadial),
 }
 
-enum ResolvedGradientVariant {
-    Linear(LinearGradient),
-    Radial(RadialGradient),
+enum Variant {
+    Linear(Linear),
+    Radial(Radial),
 }
 
-impl GradientVariant {
-    fn to_resolved(self) -> ResolvedGradientVariant {
+impl UnresolvedVariant {
+    fn to_resolved(self) -> Variant {
         match self {
-            GradientVariant::Linear(v) => ResolvedGradientVariant::Linear(v.to_resolved()),
-            GradientVariant::Radial(v) => ResolvedGradientVariant::Radial(v.to_resolved()),
+            UnresolvedVariant::Linear(v) => Variant::Linear(v.to_resolved()),
+            UnresolvedVariant::Radial(v) => Variant::Radial(v.to_resolved()),
         }
     }
 
     fn is_resolved(&self) -> bool {
         match *self {
-            GradientVariant::Linear(v) => v.is_resolved(),
-            GradientVariant::Radial(v) => v.is_resolved(),
+            UnresolvedVariant::Linear(v) => v.is_resolved(),
+            UnresolvedVariant::Radial(v) => v.is_resolved(),
         }
     }
 
-    fn resolve_from_fallback(&mut self, fallback: &GradientVariant) {
+    fn resolve_from_fallback(&mut self, fallback: &UnresolvedVariant) {
         match (self, fallback) {
-            (&mut GradientVariant::Linear(ref mut v), &GradientVariant::Linear(ref f)) => {
+            (&mut UnresolvedVariant::Linear(ref mut v), &UnresolvedVariant::Linear(ref f)) => {
                 v.resolve_from_fallback(f)
             }
 
-            (&mut GradientVariant::Radial(ref mut v), &GradientVariant::Radial(ref f)) => {
+            (&mut UnresolvedVariant::Radial(ref mut v), &UnresolvedVariant::Radial(ref f)) => {
                 v.resolve_from_fallback(f)
             }
 
@@ -556,29 +556,29 @@ impl GradientVariant {
 
     fn resolve_from_defaults(&mut self) {
         match *self {
-            GradientVariant::Linear(ref mut v) => v.resolve_from_defaults(),
-            GradientVariant::Radial(ref mut v) => v.resolve_from_defaults(),
+            UnresolvedVariant::Linear(ref mut v) => v.resolve_from_defaults(),
+            UnresolvedVariant::Radial(ref mut v) => v.resolve_from_defaults(),
         }
     }
 }
 
 #[derive(Clone)]
 pub struct NodeGradient {
-    common: CommonGradientData,
-    variant: GradientVariant,
+    common: UnresolvedCommon,
+    variant: UnresolvedVariant,
     fallback: Option<Fragment>,
 }
 
-pub struct ResolvedGradient {
-    common: CommonGradient,
-    variant: ResolvedGradientVariant,
+pub struct Gradient {
+    common: Common,
+    variant: Variant,
 }
 
 impl NodeGradient {
     pub fn new_linear() -> NodeGradient {
         NodeGradient {
             common: Default::default(),
-            variant: GradientVariant::Linear(LinearGradientData::default()),
+            variant: UnresolvedVariant::Linear(UnresolvedLinear::default()),
             fallback: Default::default(),
         }
     }
@@ -586,23 +586,23 @@ impl NodeGradient {
     pub fn new_radial() -> NodeGradient {
         NodeGradient {
             common: Default::default(),
-            variant: GradientVariant::Radial(RadialGradientData::default()),
+            variant: UnresolvedVariant::Radial(UnresolvedRadial::default()),
             fallback: Default::default(),
         }
     }
 
-    fn to_resolved(self) -> ResolvedGradient {
+    fn to_resolved(self) -> Gradient {
         let NodeGradient {
             common, variant, ..
         } = self;
 
         match variant {
-            GradientVariant::Linear(_) => ResolvedGradient {
+            UnresolvedVariant::Linear(_) => Gradient {
                 common: common.to_resolved(),
                 variant: variant.to_resolved(),
             },
 
-            GradientVariant::Radial(_) => ResolvedGradient {
+            UnresolvedVariant::Radial(_) => Gradient {
                 common: common.to_resolved(),
                 variant: variant.to_resolved(),
             },
@@ -630,8 +630,8 @@ impl NodeTrait for NodeGradient {
         self.common.set_atts(pbag)?;
 
         match self.variant {
-            GradientVariant::Linear(ref mut v) => v.set_atts(pbag)?,
-            GradientVariant::Radial(ref mut v) => v.set_atts(pbag)?,
+            UnresolvedVariant::Linear(ref mut v) => v.set_atts(pbag)?,
+            UnresolvedVariant::Radial(ref mut v) => v.set_atts(pbag)?,
         }
 
         for (attr, value) in pbag.iter() {
@@ -648,7 +648,7 @@ impl NodeTrait for NodeGradient {
 }
 
 impl PaintSource for NodeGradient {
-    type Resolved = ResolvedGradient;
+    type Resolved = Gradient;
 
     fn resolve(
         &self,
@@ -688,7 +688,7 @@ impl PaintSource for NodeGradient {
     }
 }
 
-impl ResolvedPaintSource for ResolvedGradient {
+impl ResolvedPaintSource for Gradient {
     fn set_pattern_on_draw_context(
         self,
         values: &ComputedValues,
@@ -704,12 +704,12 @@ impl ResolvedPaintSource for ResolvedGradient {
         };
 
         let p = match self.variant {
-            ResolvedGradientVariant::Linear(v) => {
+            Variant::Linear(v) => {
                 let g = v.to_cairo_gradient(values, &params);
                 cairo::Gradient::clone(&g)
             }
             
-            ResolvedGradientVariant::Radial(v) => {
+            Variant::Radial(v) => {
                 let g = v.to_cairo_gradient(values, &params);
                 cairo::Gradient::clone(&g)
             }
