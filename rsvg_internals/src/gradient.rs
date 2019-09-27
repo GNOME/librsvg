@@ -669,9 +669,7 @@ impl PaintSource for NodeGradient {
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
-            let acquired = acquire_gradient(draw_ctx, result.fallback.as_ref());
-
-            if let Some(acquired) = acquired {
+            if let Some(acquired) = acquire_gradient(draw_ctx, result.fallback.as_ref()) {
                 let a_node = acquired.get();
 
                 if stack.contains(a_node) {
@@ -684,11 +682,9 @@ impl PaintSource for NodeGradient {
                 result.resolve_from_fallback(&a_gradient);
 
                 stack.push(a_node);
-
-                continue;
+            } else {
+                result.resolve_from_defaults();
             }
-
-            result.resolve_from_defaults();
         }
 
         if result.common.bounds_are_valid(bbox) {
