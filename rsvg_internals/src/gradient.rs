@@ -9,7 +9,7 @@ use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack, ViewParams};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::paint_server::{PaintSource, Resolve, ResolvedPaintSource};
+use crate::paint_server::{PaintSource, ResolvedPaintSource};
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -141,29 +141,6 @@ impl CommonGradient {
     }
 }
 
-impl Resolve for CommonGradientData {
-    fn is_resolved(&self) -> bool {
-        self.units.is_some()
-            && self.affine.is_some()
-            && self.spread.is_some()
-            && self.stops.is_some()
-    }
-
-    fn resolve_from_fallback(&mut self, fallback: &Self) {
-        fallback_to!(self.units, fallback.units);
-        fallback_to!(self.affine, fallback.affine);
-        fallback_to!(self.spread, fallback.spread);
-        fallback_to!(self.stops, fallback.clone_stops());
-    }
-
-    fn resolve_from_defaults(&mut self) {
-        fallback_to!(self.units, Some(GradientUnits::default()));
-        fallback_to!(self.affine, Some(cairo::Matrix::identity()));
-        fallback_to!(self.spread, Some(SpreadMethod::default()));
-        fallback_to!(self.stops, Some(Vec::<ColorStop>::new()));
-    }
-}
-
 impl CommonGradientData {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
@@ -268,6 +245,27 @@ impl CommonGradientData {
             bbox.rect.map_or(false, |r| !r.is_empty())
         }
     }
+
+    fn is_resolved(&self) -> bool {
+        self.units.is_some()
+            && self.affine.is_some()
+            && self.spread.is_some()
+            && self.stops.is_some()
+    }
+
+    fn resolve_from_fallback(&mut self, fallback: &Self) {
+        fallback_to!(self.units, fallback.units);
+        fallback_to!(self.affine, fallback.affine);
+        fallback_to!(self.spread, fallback.spread);
+        fallback_to!(self.stops, fallback.clone_stops());
+    }
+
+    fn resolve_from_defaults(&mut self) {
+        fallback_to!(self.units, Some(GradientUnits::default()));
+        fallback_to!(self.affine, Some(cairo::Matrix::identity()));
+        fallback_to!(self.spread, Some(SpreadMethod::default()));
+        fallback_to!(self.stops, Some(Vec::<ColorStop>::new()));
+    }
 }
 
 #[derive(Copy, Clone, Default)]
@@ -300,27 +298,6 @@ impl LinearGradient {
     }
 }
 
-impl Resolve for LinearGradientData {
-    fn is_resolved(&self) -> bool {
-        self.x1.is_some() && self.y1.is_some() && self.x2.is_some() && self.y2.is_some()
-    }
-
-    fn resolve_from_fallback(&mut self, fallback: &Self) {
-        fallback_to!(self.x1, fallback.x1);
-        fallback_to!(self.y1, fallback.y1);
-        fallback_to!(self.x2, fallback.x2);
-        fallback_to!(self.y2, fallback.y2);
-    }
-
-    // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
-    fn resolve_from_defaults(&mut self) {
-        fallback_to!(self.x1, Some(LengthHorizontal::parse_str("0%").unwrap()));
-        fallback_to!(self.y1, Some(LengthVertical::parse_str("0%").unwrap()));
-        fallback_to!(self.x2, Some(LengthHorizontal::parse_str("100%").unwrap()));
-        fallback_to!(self.y2, Some(LengthVertical::parse_str("0%").unwrap()));
-    }
-}
-
 impl LinearGradientData {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
@@ -347,6 +324,25 @@ impl LinearGradientData {
             x2: x2.unwrap(),
             y2: y2.unwrap(),
         }
+    }
+
+    fn is_resolved(&self) -> bool {
+        self.x1.is_some() && self.y1.is_some() && self.x2.is_some() && self.y2.is_some()
+    }
+
+    fn resolve_from_fallback(&mut self, fallback: &Self) {
+        fallback_to!(self.x1, fallback.x1);
+        fallback_to!(self.y1, fallback.y1);
+        fallback_to!(self.x2, fallback.x2);
+        fallback_to!(self.y2, fallback.y2);
+    }
+
+    // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
+    fn resolve_from_defaults(&mut self) {
+        fallback_to!(self.x1, Some(LengthHorizontal::parse_str("0%").unwrap()));
+        fallback_to!(self.y1, Some(LengthVertical::parse_str("0%").unwrap()));
+        fallback_to!(self.x2, Some(LengthHorizontal::parse_str("100%").unwrap()));
+        fallback_to!(self.y2, Some(LengthVertical::parse_str("0%").unwrap()));
     }
 }
 
@@ -384,35 +380,6 @@ impl RadialGradient {
     }
 }
 
-impl Resolve for RadialGradientData {
-    fn is_resolved(&self) -> bool {
-        self.cx.is_some()
-            && self.cy.is_some()
-            && self.r.is_some()
-            && self.fx.is_some()
-            && self.fy.is_some()
-    }
-
-    fn resolve_from_fallback(&mut self, fallback: &Self) {
-        fallback_to!(self.cx, fallback.cx);
-        fallback_to!(self.cy, fallback.cy);
-        fallback_to!(self.r, fallback.r);
-        fallback_to!(self.fx, fallback.fx);
-        fallback_to!(self.fy, fallback.fy);
-    }
-
-    // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
-    fn resolve_from_defaults(&mut self) {
-        fallback_to!(self.cx, Some(LengthHorizontal::parse_str("50%").unwrap()));
-        fallback_to!(self.cy, Some(LengthVertical::parse_str("50%").unwrap()));
-        fallback_to!(self.r, Some(LengthBoth::parse_str("50%").unwrap()));
-
-        // fx and fy fall back to the presentational value of cx and cy
-        fallback_to!(self.fx, self.cx);
-        fallback_to!(self.fy, self.cy);
-    }
-}
-
 impl RadialGradientData {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
@@ -441,6 +408,33 @@ impl RadialGradientData {
             fx: fx.unwrap(),
             fy: fy.unwrap(),
         }
+    }
+
+    fn is_resolved(&self) -> bool {
+        self.cx.is_some()
+            && self.cy.is_some()
+            && self.r.is_some()
+            && self.fx.is_some()
+            && self.fy.is_some()
+    }
+
+    fn resolve_from_fallback(&mut self, fallback: &Self) {
+        fallback_to!(self.cx, fallback.cx);
+        fallback_to!(self.cy, fallback.cy);
+        fallback_to!(self.r, fallback.r);
+        fallback_to!(self.fx, fallback.fx);
+        fallback_to!(self.fy, fallback.fy);
+    }
+
+    // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
+    fn resolve_from_defaults(&mut self) {
+        fallback_to!(self.cx, Some(LengthHorizontal::parse_str("50%").unwrap()));
+        fallback_to!(self.cy, Some(LengthVertical::parse_str("50%").unwrap()));
+        fallback_to!(self.r, Some(LengthBoth::parse_str("50%").unwrap()));
+
+        // fx and fy fall back to the presentational value of cx and cy
+        fallback_to!(self.fx, self.cx);
+        fallback_to!(self.fy, self.cy);
     }
 }
 
@@ -614,6 +608,21 @@ impl NodeGradient {
             },
         }
     }
+
+    fn is_resolved(&self) -> bool {
+        self.common.is_resolved() && self.variant.is_resolved()
+    }
+
+    fn resolve_from_fallback(&mut self, fallback: &NodeGradient) {
+        self.common.resolve_from_fallback(&fallback.common);
+        self.variant.resolve_from_fallback(&fallback.variant);
+    }
+
+    fn resolve_from_defaults(&mut self) {
+        self.common.resolve_from_defaults();
+        self.variant.resolve_from_defaults();
+    }
+
 }
 
 impl NodeTrait for NodeGradient {
@@ -635,22 +644,6 @@ impl NodeTrait for NodeGradient {
         }
 
         Ok(())
-    }
-}
-
-impl Resolve for NodeGradient {
-    fn is_resolved(&self) -> bool {
-        self.common.is_resolved() && self.variant.is_resolved()
-    }
-
-    fn resolve_from_fallback(&mut self, fallback: &NodeGradient) {
-        self.common.resolve_from_fallback(&fallback.common);
-        self.variant.resolve_from_fallback(&fallback.variant);
-    }
-
-    fn resolve_from_defaults(&mut self) {
-        self.common.resolve_from_defaults();
-        self.variant.resolve_from_defaults();
     }
 }
 
