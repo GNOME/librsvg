@@ -13,7 +13,7 @@ use crate::coord_units::CoordUnits;
 use crate::dpi::Dpi;
 use crate::error::RenderingError;
 use crate::filters;
-use crate::gradient::{NodeLinearGradient, NodeRadialGradient};
+use crate::gradient::NodeGradient;
 use crate::length::Dasharray;
 use crate::mask::NodeMask;
 use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
@@ -619,13 +619,9 @@ impl DrawingCtx {
                     let node = acquired.get();
 
                     had_paint_server = match node.borrow().get_type() {
-                        NodeType::LinearGradient => node
+                        NodeType::Gradient => node
                             .borrow()
-                            .get_impl::<NodeLinearGradient>()
-                            .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
-                        NodeType::RadialGradient => node
-                            .borrow()
-                            .get_impl::<NodeRadialGradient>()
+                            .get_impl::<NodeGradient>()
                             .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
                         NodeType::Pattern => node
                             .borrow()
