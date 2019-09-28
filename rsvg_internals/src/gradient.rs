@@ -75,7 +75,7 @@ impl From<SpreadMethod> for cairo::Extend {
 
 macro_rules! fallback_to (
     ($dest:expr, $default:expr) => (
-        $dest = $dest.take ().or_else (|| $default)
+        $dest.take ().or_else (|| $default)
     );
 );
 
@@ -274,49 +274,51 @@ impl UnresolvedVariant {
         }
     }
 
-    fn resolve_from_fallback(&mut self, fallback: &UnresolvedVariant) {
-        match (self, fallback) {
-            (&mut UnresolvedVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 },
-             &UnresolvedVariant::Linear { x1: fx1, y1: fy1, x2: fx2, y2: fy2 }) => {
-                fallback_to!(*x1, fx1);
-                fallback_to!(*y1, fy1);
-                fallback_to!(*x2, fx2);
-                fallback_to!(*y2, fy2);
-            }
+    fn resolve_from_fallback(&self, fallback: &UnresolvedVariant) -> UnresolvedVariant {
+        match (*self, *fallback) {
+            (UnresolvedVariant::Linear { mut x1, mut y1, mut x2, mut y2 },
+             UnresolvedVariant::Linear { x1: fx1, y1: fy1, x2: fx2, y2: fy2 }) => UnresolvedVariant::Linear {
+                x1: fallback_to!(x1, fx1),
+                y1: fallback_to!(y1, fy1),
+                x2: fallback_to!(x2, fx2),
+                y2: fallback_to!(y2, fy2),
+            },
 
-            (&mut UnresolvedVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy },
-             &UnresolvedVariant::Radial { cx: fcx, cy: fcy, r: fr, fx: ffx, fy: ffy }) => {
-                fallback_to!(*cx, fcx);
-                fallback_to!(*cy, fcy);
-                fallback_to!(*r, fr);
-                fallback_to!(*fx, ffx);
-                fallback_to!(*fy, ffy);
-            }
+            (UnresolvedVariant::Radial { mut cx, mut cy, mut r, mut fx, mut fy },
+             UnresolvedVariant::Radial { cx: fcx, cy: fcy, r: fr, fx: ffx, fy: ffy }) => UnresolvedVariant::Radial {
+                cx: fallback_to!(cx, fcx),
+                cy: fallback_to!(cy, fcy),
+                r: fallback_to!(r, fr),
+                fx: fallback_to!(fx, ffx),
+                fy: fallback_to!(fy, ffy),
+            },
 
-            _ => (), // If variants are of different types, then nothing to resolve
+            _ => *self, // If variants are of different types, then nothing to resolve
         }
     }
 
     // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
     // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
-    fn resolve_from_defaults(&mut self) {
+    fn resolve_from_defaults(self) -> UnresolvedVariant {
         match self {
-            &mut UnresolvedVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
-                fallback_to!(*x1, Some(LengthHorizontal::parse_str("0%").unwrap()));
-                fallback_to!(*y1, Some(LengthVertical::parse_str("0%").unwrap()));
-                fallback_to!(*x2, Some(LengthHorizontal::parse_str("100%").unwrap()));
-                fallback_to!(*y2, Some(LengthVertical::parse_str("0%").unwrap()));
-            }
+            UnresolvedVariant::Linear { mut x1, mut y1, mut x2, mut y2 } => UnresolvedVariant::Linear {
+                x1: fallback_to!(x1, Some(LengthHorizontal::parse_str("0%").unwrap())),
+                y1: fallback_to!(y1, Some(LengthVertical::parse_str("0%").unwrap())),
+                x2: fallback_to!(x2, Some(LengthHorizontal::parse_str("100%").unwrap())),
+                y2: fallback_to!(y2, Some(LengthVertical::parse_str("0%").unwrap())),
+            },
 
-            &mut UnresolvedVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
-                fallback_to!(*cx, Some(LengthHorizontal::parse_str("50%").unwrap()));
-                fallback_to!(*cy, Some(LengthVertical::parse_str("50%").unwrap()));
-                fallback_to!(*r, Some(LengthBoth::parse_str("50%").unwrap()));
+            UnresolvedVariant::Radial { mut cx, mut cy, mut r, mut fx, mut fy } => {
+                let cx = fallback_to!(cx, Some(LengthHorizontal::parse_str("50%").unwrap()));
+                let cy = fallback_to!(cy, Some(LengthVertical::parse_str("50%").unwrap()));;
+                let r = fallback_to!(r, Some(LengthBoth::parse_str("50%").unwrap()));
 
                 // fx and fy fall back to the presentational value of cx and cy
-                fallback_to!(*fx, *cx);
-                fallback_to!(*fy, *cy);
-            }
+                let fx = fallback_to!(fx, cx);
+                let fy = fallback_to!(fy, cy);
+
+                UnresolvedVariant::Radial { cx, cy, r, fx, fy }
+            },
         }
     }
 }
@@ -487,22 +489,24 @@ impl UnresolvedGradient {
             && self.variant.is_resolved()
     }
 
-    fn resolve_from_fallback(&mut self, fallback: &UnresolvedGradient) {
-        fallback_to!(self.units, fallback.units);
-        fallback_to!(self.affine, fallback.affine);
-        fallback_to!(self.spread, fallback.spread);
-        fallback_to!(self.stops, fallback.clone_stops());
+    fn resolve_from_fallback(&mut self, fallback: &UnresolvedGradient) -> UnresolvedGradient {
+        let units = fallback_to!(self.units, fallback.units);
+        let affine = fallback_to!(self.affine, fallback.affine);
+        let spread = fallback_to!(self.spread, fallback.spread);
+        let stops = fallback_to!(self.stops, fallback.clone_stops());
+        let variant = self.variant.resolve_from_fallback(&fallback.variant);
 
-        self.variant.resolve_from_fallback(&fallback.variant);
+        UnresolvedGradient { units, affine, spread, stops, variant }
     }
 
-    fn resolve_from_defaults(&mut self) {
-        fallback_to!(self.units, Some(GradientUnits::default()));
-        fallback_to!(self.affine, Some(cairo::Matrix::identity()));
-        fallback_to!(self.spread, Some(SpreadMethod::default()));
-        fallback_to!(self.stops, Some(Vec::<ColorStop>::new()));
+    fn resolve_from_defaults(self) -> UnresolvedGradient {
+        let units = fallback_to!(self.units.clone(), Some(GradientUnits::default()));
+        let affine = fallback_to!(self.affine.clone(), Some(cairo::Matrix::identity()));
+        let spread = fallback_to!(self.spread.clone(), Some(SpreadMethod::default()));
+        let stops = fallback_to!(self.stops.clone(), Some(Vec::<ColorStop>::new()));
+        let variant = self.variant.resolve_from_defaults();
 
-        self.variant.resolve_from_defaults();
+        UnresolvedGradient { units, affine, spread, stops, variant }
     }
 
     fn bounds_are_valid(&self, bbox: &BoundingBox) -> bool {
@@ -614,12 +618,12 @@ impl PaintSource for NodeGradient {
 
                 let unresolved = a_gradient.get_unresolved(&acquired_node);
 
-                gradient.resolve_from_fallback(&unresolved.gradient);
+                gradient = gradient.resolve_from_fallback(&unresolved.gradient);
                 fallback = unresolved.fallback;
 
                 stack.push(acquired_node);
             } else {
-                gradient.resolve_from_defaults();
+                gradient = gradient.resolve_from_defaults();
             }
         }
 
@@ -776,8 +780,8 @@ mod tests {
 
         let borrow = node.borrow();
         let g = borrow.get_impl::<NodeGradient>();
-        let (mut u, _) = g.get_unresolved(&node);
-        u.resolve_from_defaults();
+        let (u, _) = g.get_unresolved(&node);
+        let u = u.resolve_from_defaults();
         assert!(u.is_resolved());
 
         let node = RsvgNode::new(NodeData::new(
@@ -790,8 +794,8 @@ mod tests {
 
         let borrow = node.borrow();
         let g = borrow.get_impl::<NodeGradient>();
-        let (mut u, _) = g.get_unresolved(&node);
-        u.resolve_from_defaults();
+        let (u, _) = g.get_unresolved(&node);
+        let u = u.resolve_from_defaults();
         assert!(u.is_resolved());
     }
 }
