@@ -514,6 +514,11 @@ impl UnresolvedGradient {
     }
 }
 
+struct Unresolved {
+    gradient: UnresolvedGradient,
+    fallback: Option<Fragment>,
+}
+
 impl NodeGradient {
     pub fn new_linear() -> NodeGradient {
         NodeGradient {
@@ -535,8 +540,8 @@ impl NodeGradient {
         }
     }
 
-    fn get_unresolved(&self, node: &RsvgNode) -> (UnresolvedGradient, Option<Fragment>) {
-        let mut unresolved = UnresolvedGradient {
+    fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
+        let mut gradient = UnresolvedGradient {
             units: self.units,
             affine: self.affine,
             spread: self.spread,
@@ -544,9 +549,12 @@ impl NodeGradient {
             variant: self.variant,
         };
 
-        unresolved.add_color_stops_from_node(node);
+        gradient.add_color_stops_from_node(node);
 
-        (unresolved, self.fallback.clone())
+        Unresolved {
+            gradient,
+            fallback: self.fallback.clone(),
+        }
     }
 }
 
@@ -588,11 +596,11 @@ impl PaintSource for NodeGradient {
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<Option<Self::Resolved>, RenderingError> {
-        let (mut result, mut fallback) = self.get_unresolved(node);
+        let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
 
         let mut stack = NodeStack::new();
 
-        while !result.is_resolved() {
+        while !gradient.is_resolved() {
             if let Some(acquired) = acquire_gradient(draw_ctx, fallback.as_ref()) {
                 let acquired_node = acquired.get();
 
@@ -604,19 +612,19 @@ impl PaintSource for NodeGradient {
                 let borrowed_node = acquired_node.borrow();
                 let a_gradient = borrowed_node.get_impl::<NodeGradient>();
 
-                let (unresolved, next_fallback) = a_gradient.get_unresolved(&acquired_node);
+                let unresolved = a_gradient.get_unresolved(&acquired_node);
 
-                result.resolve_from_fallback(&unresolved);
-                fallback = next_fallback;
+                gradient.resolve_from_fallback(&unresolved.gradient);
+                fallback = unresolved.fallback;
 
                 stack.push(acquired_node);
             } else {
-                result.resolve_from_defaults();
+                gradient.resolve_from_defaults();
             }
         }
 
-        if result.bounds_are_valid(bbox) {
-            Ok(Some(result.to_resolved()))
+        if gradient.bounds_are_valid(bbox) {
+            Ok(Some(gradient.to_resolved()))
         } else {
             Ok(None)
         }
