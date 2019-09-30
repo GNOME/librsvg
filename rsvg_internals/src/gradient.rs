@@ -491,25 +491,6 @@ impl NodeLinearGradient {
     }
 }
 
-impl NodeLinearGradient {
-    fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
-        let mut gradient = UnresolvedGradient {
-            units: self.common.units,
-            affine: self.common.affine,
-            spread: self.common.spread,
-            stops: None,
-            variant: self.get_unresolved_variant(),
-        };
-
-        gradient.add_color_stops_from_node(node);
-
-        Unresolved {
-            gradient,
-            fallback: self.common.fallback.clone(),
-        }
-    }
-}
-
 impl NodeRadialGradient {
     fn get_unresolved_variant(&self) -> UnresolvedVariant {
         UnresolvedVariant::Radial {
@@ -522,24 +503,30 @@ impl NodeRadialGradient {
     }
 }
 
-impl NodeRadialGradient {
-    fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
-        let mut gradient = UnresolvedGradient {
-            units: self.common.units,
-            affine: self.common.affine,
-            spread: self.common.spread,
-            stops: None,
-            variant: self.get_unresolved_variant(),
-        };
+macro_rules! impl_get_unresolved {
+    ($gradient:ty) => {
+        impl $gradient {
+            fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
+                let mut gradient = UnresolvedGradient {
+                    units: self.common.units,
+                    affine: self.common.affine,
+                    spread: self.common.spread,
+                    stops: None,
+                    variant: self.get_unresolved_variant(),
+                };
 
-        gradient.add_color_stops_from_node(node);
+                gradient.add_color_stops_from_node(node);
 
-        Unresolved {
-            gradient,
-            fallback: self.common.fallback.clone(),
+                Unresolved {
+                    gradient,
+                    fallback: self.common.fallback.clone(),
+                }
+            }
         }
     }
 }
+impl_get_unresolved!(NodeLinearGradient);
+impl_get_unresolved!(NodeRadialGradient);
 
 impl Common {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
