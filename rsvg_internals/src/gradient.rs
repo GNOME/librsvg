@@ -773,9 +773,9 @@ mod tests {
 
         let borrow = node.borrow();
         let g = borrow.get_impl::<NodeGradient>();
-        let (u, _) = g.get_unresolved(&node);
-        let u = u.resolve_from_defaults();
-        assert!(u.is_resolved());
+        let Unresolved { gradient, .. } = g.get_unresolved(&node);
+        let gradient = gradient.resolve_from_defaults();
+        assert!(gradient.is_resolved());
 
         let node = RsvgNode::new(NodeData::new(
             NodeType::Gradient,
@@ -787,8 +787,8 @@ mod tests {
 
         let borrow = node.borrow();
         let g = borrow.get_impl::<NodeGradient>();
-        let (u, _) = g.get_unresolved(&node);
-        let u = u.resolve_from_defaults();
-        assert!(u.is_resolved());
+        let Unresolved { gradient, .. } = g.get_unresolved(&node);
+        let gradient = gradient.resolve_from_defaults();
+        assert!(gradient.is_resolved());
     }
 }
