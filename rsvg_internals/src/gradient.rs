@@ -296,32 +296,33 @@ impl Variant {
 }
 
 #[derive(Default)]
-pub struct NodeLinearGradient {
+struct Common {
     units: Option<GradientUnits>,
     affine: Option<cairo::Matrix>,
     spread: Option<SpreadMethod>,
-
-    x1: Option<LengthHorizontal>,
-    y1: Option<LengthVertical>,
-    x2: Option<LengthHorizontal>,
-    y2: Option<LengthVertical>,
 
     fallback: Option<Fragment>,
 }
 
 #[derive(Default)]
+pub struct NodeLinearGradient {
+    common: Common,
+
+    x1: Option<LengthHorizontal>,
+    y1: Option<LengthVertical>,
+    x2: Option<LengthHorizontal>,
+    y2: Option<LengthVertical>,
+}
+
+#[derive(Default)]
 pub struct NodeRadialGradient {
-    units: Option<GradientUnits>,
-    affine: Option<cairo::Matrix>,
-    spread: Option<SpreadMethod>,
+    common: Common,
 
     cx: Option<LengthHorizontal>,
     cy: Option<LengthVertical>,
     r: Option<LengthBoth>,
     fx: Option<LengthHorizontal>,
     fy: Option<LengthVertical>,
-
-    fallback: Option<Fragment>,
 }
 
 struct UnresolvedGradient {
@@ -482,9 +483,9 @@ struct Unresolved {
 impl NodeLinearGradient {
     fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
         let mut gradient = UnresolvedGradient {
-            units: self.units,
-            affine: self.affine,
-            spread: self.spread,
+            units: self.common.units,
+            affine: self.common.affine,
+            spread: self.common.spread,
             stops: None,
             variant: UnresolvedVariant::Linear {
                 x1: self.x1,
@@ -498,7 +499,7 @@ impl NodeLinearGradient {
 
         Unresolved {
             gradient,
-            fallback: self.fallback.clone(),
+            fallback: self.common.fallback.clone(),
         }
     }
 }
@@ -506,9 +507,9 @@ impl NodeLinearGradient {
 impl NodeRadialGradient {
     fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
         let mut gradient = UnresolvedGradient {
-            units: self.units,
-            affine: self.affine,
-            spread: self.spread,
+            units: self.common.units,
+            affine: self.common.affine,
+            spread: self.common.spread,
             stops: None,
             variant: UnresolvedVariant::Radial {
                 cx: self.cx,
@@ -523,13 +524,13 @@ impl NodeRadialGradient {
 
         Unresolved {
             gradient,
-            fallback: self.fallback.clone(),
+            fallback: self.common.fallback.clone(),
         }
     }
 }
 
-impl NodeTrait for NodeLinearGradient {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+impl Common {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("gradientUnits") => self.units = Some(attr.parse(value)?),
@@ -538,6 +539,20 @@ impl NodeTrait for NodeLinearGradient {
                 local_name!("xlink:href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?)
                 }
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl NodeTrait for NodeLinearGradient {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.common.set_atts(pbag)?;
+
+        for (attr, value) in pbag.iter() {
+            match attr {
                 local_name!("x1") => self.x1 = Some(attr.parse(value)?),
                 local_name!("y1") => self.y1 = Some(attr.parse(value)?),
                 local_name!("x2") => self.x2 = Some(attr.parse(value)?),
@@ -553,14 +568,10 @@ impl NodeTrait for NodeLinearGradient {
 
 impl NodeTrait for NodeRadialGradient {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.common.set_atts(pbag)?;
+
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("gradientUnits") => self.units = Some(attr.parse(value)?),
-                local_name!("gradientTransform") => self.affine = Some(attr.parse(value)?),
-                local_name!("spreadMethod") => self.spread = Some(attr.parse(value)?),
-                local_name!("xlink:href") => {
-                    self.fallback = Some(Fragment::parse(value).attribute(attr)?)
-                }
                 local_name!("cx") => self.cx = Some(attr.parse(value)?),
                 local_name!("cy") => self.cy = Some(attr.parse(value)?),
                 local_name!("r") => self.r = Some(attr.parse(value)?),
