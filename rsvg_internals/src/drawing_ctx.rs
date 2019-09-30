@@ -339,23 +339,25 @@ impl DrawingCtx {
         &mut self,
         clip_uri: Option<&Fragment>,
     ) -> (Option<RsvgNode>, Option<RsvgNode>) {
-        if let Some(clip_node) = self
-            .acquired_nodes
-            .get_node_of_type(clip_uri, NodeType::ClipPath)
-        {
-            let clip_node = clip_node.get().clone();
+        clip_uri
+            .and_then(|fragment| {
+                self.acquired_nodes
+                    .get_node_of_type(Some(fragment), NodeType::ClipPath)
+            })
+            .and_then(|acquired| {
+                let clip_node = acquired.get().clone();
 
-            let ClipPathUnits(units) = clip_node.borrow().get_impl::<NodeClipPath>().get_units();
+                let ClipPathUnits(units) =
+                    clip_node.borrow().get_impl::<NodeClipPath>().get_units();
 
-            if units == CoordUnits::UserSpaceOnUse {
-                (Some(clip_node), None)
-            } else {
-                assert!(units == CoordUnits::ObjectBoundingBox);
-                (None, Some(clip_node))
-            }
-        } else {
-            (None, None)
-        }
+                if units == CoordUnits::UserSpaceOnUse {
+                    Some((Some(clip_node), None))
+                } else {
+                    assert!(units == CoordUnits::ObjectBoundingBox);
+                    Some((None, Some(clip_node)))
+                }
+            })
+            .unwrap_or((None, None))
     }
 
     fn clip_to_node(
