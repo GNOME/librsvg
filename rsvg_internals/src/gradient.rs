@@ -185,56 +185,6 @@ enum Variant {
 }
 
 impl UnresolvedVariant {
-    fn default_linear() -> UnresolvedVariant {
-        UnresolvedVariant::Linear {
-            x1: Default::default(),
-            y1: Default::default(),
-            x2: Default::default(),
-            y2: Default::default(),
-        }
-    }
-
-    fn default_radial() -> UnresolvedVariant {
-        UnresolvedVariant::Radial {
-            cx: Default::default(),
-            cy: Default::default(),
-            r: Default::default(),
-            fx: Default::default(),
-            fy: Default::default(),
-        }
-    }
-
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
-        match self {
-            &mut UnresolvedVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
-                for (attr, value) in pbag.iter() {
-                    match attr {
-                        local_name!("x1") => *x1 = Some(attr.parse(value)?),
-                        local_name!("y1") => *y1 = Some(attr.parse(value)?),
-                        local_name!("x2") => *x2 = Some(attr.parse(value)?),
-                        local_name!("y2") => *y2 = Some(attr.parse(value)?),
-                        _ => (),
-                    }
-                }
-            }
-
-            &mut UnresolvedVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
-                for (attr, value) in pbag.iter() {
-                    match attr {
-                        local_name!("cx") => *cx = Some(attr.parse(value)?),
-                        local_name!("cy") => *cy = Some(attr.parse(value)?),
-                        local_name!("r") => *r = Some(attr.parse(value)?),
-                        local_name!("fx") => *fx = Some(attr.parse(value)?),
-                        local_name!("fy") => *fy = Some(attr.parse(value)?),
-                        _ => (),
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
     fn to_resolved(self) -> Variant {
         assert!(self.is_resolved());
 
@@ -345,12 +295,31 @@ impl Variant {
     }
 }
 
-pub struct NodeGradient {
+#[derive(Default)]
+pub struct NodeLinearGradient {
     units: Option<GradientUnits>,
     affine: Option<cairo::Matrix>,
     spread: Option<SpreadMethod>,
 
-    variant: UnresolvedVariant,
+    x1: Option<LengthHorizontal>,
+    y1: Option<LengthVertical>,
+    x2: Option<LengthHorizontal>,
+    y2: Option<LengthVertical>,
+
+    fallback: Option<Fragment>,
+}
+
+#[derive(Default)]
+pub struct NodeRadialGradient {
+    units: Option<GradientUnits>,
+    affine: Option<cairo::Matrix>,
+    spread: Option<SpreadMethod>,
+
+    cx: Option<LengthHorizontal>,
+    cy: Option<LengthVertical>,
+    r: Option<LengthBoth>,
+    fx: Option<LengthHorizontal>,
+    fy: Option<LengthVertical>,
 
     fallback: Option<Fragment>,
 }
@@ -448,7 +417,9 @@ impl UnresolvedGradient {
     }
 
     fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
-        assert!(node.borrow().get_type() == NodeType::Gradient);
+        let node_type = node.borrow().get_type();
+
+        assert!(node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient);
 
         for child_node in node.children() {
             let child = child_node.borrow();
@@ -508,34 +479,19 @@ struct Unresolved {
     fallback: Option<Fragment>,
 }
 
-impl NodeGradient {
-    pub fn new_linear() -> NodeGradient {
-        NodeGradient {
-            units: Default::default(),
-            affine: Default::default(),
-            spread: Default::default(),
-            variant: UnresolvedVariant::default_linear(),
-            fallback: Default::default(),
-        }
-    }
-
-    pub fn new_radial() -> NodeGradient {
-        NodeGradient {
-            units: Default::default(),
-            affine: Default::default(),
-            spread: Default::default(),
-            variant: UnresolvedVariant::default_radial(),
-            fallback: Default::default(),
-        }
-    }
-
+impl NodeLinearGradient {
     fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
         let mut gradient = UnresolvedGradient {
             units: self.units,
             affine: self.affine,
             spread: self.spread,
             stops: None,
-            variant: self.variant,
+            variant: UnresolvedVariant::Linear {
+                x1: self.x1,
+                y1: self.y1,
+                x2: self.x2,
+                y2: self.y2,
+            },
         };
 
         gradient.add_color_stops_from_node(node);
@@ -547,27 +503,46 @@ impl NodeGradient {
     }
 }
 
-impl NodeTrait for NodeGradient {
+impl NodeRadialGradient {
+    fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
+        let mut gradient = UnresolvedGradient {
+            units: self.units,
+            affine: self.affine,
+            spread: self.spread,
+            stops: None,
+            variant: UnresolvedVariant::Radial {
+                cx: self.cx,
+                cy: self.cy,
+                r: self.r,
+                fx: self.fx,
+                fy: self.fy,
+            },
+        };
+
+        gradient.add_color_stops_from_node(node);
+
+        Unresolved {
+            gradient,
+            fallback: self.fallback.clone(),
+        }
+    }
+}
+
+impl NodeTrait for NodeLinearGradient {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("gradientUnits") => self.units = Some(attr.parse(value)?),
                 local_name!("gradientTransform") => self.affine = Some(attr.parse(value)?),
                 local_name!("spreadMethod") => self.spread = Some(attr.parse(value)?),
-                _ => (),
-            }
-        }
-
-        match self.variant {
-            UnresolvedVariant::Linear { .. } => self.variant.set_atts(pbag)?,
-            UnresolvedVariant::Radial { .. } => self.variant.set_atts(pbag)?,
-        }
-
-        for (attr, value) in pbag.iter() {
-            match attr {
                 local_name!("xlink:href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?)
                 }
+                local_name!("x1") => self.x1 = Some(attr.parse(value)?),
+                local_name!("y1") => self.y1 = Some(attr.parse(value)?),
+                local_name!("x2") => self.x2 = Some(attr.parse(value)?),
+                local_name!("y2") => self.y2 = Some(attr.parse(value)?),
+
                 _ => (),
             }
         }
@@ -576,45 +551,97 @@ impl NodeTrait for NodeGradient {
     }
 }
 
-impl PaintSource for NodeGradient {
-    type Resolved = Gradient;
-
-    fn resolve(
-        &self,
-        node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<Self::Resolved, PaintServerError> {
-        let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
-
-        let mut stack = NodeStack::new();
-
-        while !gradient.is_resolved() {
-            if let Some(fragment) = fallback {
-                let acquired = acquire_gradient(draw_ctx, &fragment)?;
-                let acquired_node = acquired.get();
-
-                if stack.contains(acquired_node) {
-                    return Err(PaintServerError::CircularReference(fragment.clone()));
+impl NodeTrait for NodeRadialGradient {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("gradientUnits") => self.units = Some(attr.parse(value)?),
+                local_name!("gradientTransform") => self.affine = Some(attr.parse(value)?),
+                local_name!("spreadMethod") => self.spread = Some(attr.parse(value)?),
+                local_name!("xlink:href") => {
+                    self.fallback = Some(Fragment::parse(value).attribute(attr)?)
                 }
+                local_name!("cx") => self.cx = Some(attr.parse(value)?),
+                local_name!("cy") => self.cy = Some(attr.parse(value)?),
+                local_name!("r") => self.r = Some(attr.parse(value)?),
+                local_name!("fx") => self.fx = Some(attr.parse(value)?),
+                local_name!("fy") => self.fy = Some(attr.parse(value)?),
 
-                let borrowed_node = acquired_node.borrow();
-                let a_gradient = borrowed_node.get_impl::<NodeGradient>();
-
-                let unresolved = a_gradient.get_unresolved(&acquired_node);
-
-                gradient = gradient.resolve_from_fallback(&unresolved.gradient);
-                fallback = unresolved.fallback;
-
-                stack.push(acquired_node);
-            } else {
-                gradient = gradient.resolve_from_defaults();
-                break;
+                _ => (),
             }
         }
 
-        Ok(gradient.to_resolved())
+        Ok(())
     }
 }
+
+macro_rules! impl_paint_source {
+    ($gradient:ty, $node_type:pat, $other_gradient:ty, $other_type:pat,) => {
+        impl PaintSource for $gradient {
+            type Resolved = Gradient;
+
+            fn resolve(
+                &self,
+                node: &RsvgNode,
+                draw_ctx: &mut DrawingCtx,
+            ) -> Result<Self::Resolved, PaintServerError> {
+                let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
+
+                let mut stack = NodeStack::new();
+
+                while !gradient.is_resolved() {
+                    if let Some(fragment) = fallback {
+                        let acquired = acquire_gradient(draw_ctx, &fragment)?;
+                        let acquired_node = acquired.get();
+
+                        if stack.contains(acquired_node) {
+                            return Err(PaintServerError::CircularReference(fragment.clone()));
+                        }
+
+                        let borrowed_node = acquired_node.borrow();
+                        let unresolved = match borrowed_node.get_type() {
+                            $node_type => {
+                                let a_gradient = borrowed_node.get_impl::<$gradient>();
+                                a_gradient.get_unresolved(&acquired_node)
+                            }
+
+                            $other_type => {
+                                let a_gradient = borrowed_node.get_impl::<$other_gradient>();
+                                a_gradient.get_unresolved(&acquired_node)
+                            }
+
+                            _ => unreachable!()
+                        };
+
+                        gradient = gradient.resolve_from_fallback(&unresolved.gradient);
+                        fallback = unresolved.fallback;
+
+                        stack.push(acquired_node);
+                    } else {
+                        gradient = gradient.resolve_from_defaults();
+                        break;
+                    }
+                }
+
+                Ok(gradient.to_resolved())
+            }
+        }
+    }
+}
+
+impl_paint_source!(
+    NodeLinearGradient,
+    NodeType::LinearGradient,
+    NodeRadialGradient,
+    NodeType::RadialGradient,
+);
+
+impl_paint_source!(
+    NodeRadialGradient,
+    NodeType::RadialGradient,
+    NodeLinearGradient,
+    NodeType::LinearGradient,
+);
 
 impl ResolvedPaintSource for Gradient {
     fn set_pattern_on_draw_context(
@@ -711,10 +738,10 @@ fn acquire_gradient<'a>(
         .and_then(|acquired| {
             let node_type = acquired.get().borrow().get_type();
 
-            if node_type == NodeType::Gradient {
-                Ok(acquired)
-            } else {
-                Err(PaintServerError::InvalidLinkType(fragment.clone()))
+            match node_type {
+                NodeType::LinearGradient => Ok(acquired),
+                NodeType::RadialGradient => Ok(acquired),
+                _ => Err(PaintServerError::InvalidLinkType(fragment.clone()))
             }
         })
 }
@@ -756,29 +783,29 @@ mod tests {
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
         let node = RsvgNode::new(NodeData::new(
-            NodeType::Gradient,
+            NodeType::LinearGradient,
             local_name!("linearGradient"),
             None,
             None,
-            Box::new(NodeGradient::new_linear())
+            Box::new(NodeLinearGradient::default())
         ));
 
         let borrow = node.borrow();
-        let g = borrow.get_impl::<NodeGradient>();
+        let g = borrow.get_impl::<NodeLinearGradient>();
         let Unresolved { gradient, .. } = g.get_unresolved(&node);
         let gradient = gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
         let node = RsvgNode::new(NodeData::new(
-            NodeType::Gradient,
+            NodeType::RadialGradient,
             local_name!("radialGradient"),
             None,
             None,
-            Box::new(NodeGradient::new_radial())
+            Box::new(NodeRadialGradient::default())
         ));
 
         let borrow = node.borrow();
-        let g = borrow.get_impl::<NodeGradient>();
+        let g = borrow.get_impl::<NodeRadialGradient>();
         let Unresolved { gradient, .. } = g.get_unresolved(&node);
         let gradient = gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
