@@ -154,7 +154,7 @@ impl PaintSource for NodePattern {
             if let Some(ref fallback) = result.fallback {
                 if let Some(acquired) = draw_ctx
                     .acquired_nodes()
-                    .get_node_of_type(Some(fallback), NodeType::Pattern)
+                    .get_node_of_type(fallback, NodeType::Pattern)
                 {
                     let a_node = acquired.get();
 

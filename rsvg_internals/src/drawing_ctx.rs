@@ -341,8 +341,7 @@ impl DrawingCtx {
     ) -> (Option<RsvgNode>, Option<RsvgNode>) {
         clip_uri
             .and_then(|fragment| {
-                self.acquired_nodes
-                    .get_node_of_type(Some(fragment), NodeType::ClipPath)
+                self.acquired_nodes.get_node_of_type(fragment, NodeType::ClipPath)
             })
             .and_then(|acquired| {
                 let clip_node = acquired.get().clone();
@@ -470,10 +469,10 @@ impl DrawingCtx {
 
                     // Mask
 
-                    if let Some(mask) = mask {
+                    if let Some(fragment) = mask {
                         if let Some(acquired) = dc
                             .acquired_nodes
-                            .get_node_of_type(Some(mask), NodeType::Mask)
+                            .get_node_of_type(fragment, NodeType::Mask)
                         {
                             let mask_node = acquired.get();
 
@@ -485,7 +484,7 @@ impl DrawingCtx {
                                     .map(|_: ()| bbox)
                             });
                         } else {
-                            rsvg_log!("element {} references nonexistent mask \"{}\"", node, mask);
+                            rsvg_log!("element {} references nonexistent mask \"{}\"", node, fragment);
                         }
                     } else {
                         // No mask, so composite the temporary surface
@@ -552,7 +551,7 @@ impl DrawingCtx {
     ) -> Result<cairo::ImageSurface, RenderingError> {
         match self
             .acquired_nodes
-            .get_node_of_type(Some(filter_uri), NodeType::Filter)
+            .get_node_of_type(filter_uri, NodeType::Filter)
         {
             Some(acquired) => {
                 let filter_node = acquired.get();
@@ -1114,17 +1113,14 @@ impl AcquiredNodes {
     // Note that if you acquire a node, you have to release it before trying to
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a None the second time.
-    //
-    // For convenience, this function will return None if url is None.
 
     // FIXME: return a Result<AcquiredNode, RenderingError::InvalidReference>
     pub fn get_node_of_type(
         &self,
-        fragment: Option<&Fragment>,
+        fragment: &Fragment,
         node_type: NodeType,
     ) -> Option<AcquiredNode> {
-        fragment
-            .and_then(move |fragment| self.get_node(fragment))
+        self.get_node(fragment)
             .and_then(|acquired| {
                 if acquired.get().borrow().get_type() == node_type {
                     Some(acquired)
