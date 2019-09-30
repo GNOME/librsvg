@@ -583,7 +583,6 @@ impl PaintSource for NodeGradient {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-        _bbox: &BoundingBox,
     ) -> Result<Option<Self::Resolved>, RenderingError> {
         let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
 

@@ -144,7 +144,6 @@ impl PaintSource for NodePattern {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-        _bbox: &BoundingBox,
     ) -> Result<Option<Self::Resolved>, RenderingError> {
         *self.node.borrow_mut() = Some(node.downgrade());
 
