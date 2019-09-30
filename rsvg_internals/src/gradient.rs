@@ -481,18 +481,24 @@ struct Unresolved {
 }
 
 impl NodeLinearGradient {
+    fn get_unresolved_variant(&self) -> UnresolvedVariant {
+        UnresolvedVariant::Linear {
+            x1: self.x1,
+            y1: self.y1,
+            x2: self.x2,
+            y2: self.y2,
+        }
+    }
+}
+
+impl NodeLinearGradient {
     fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
         let mut gradient = UnresolvedGradient {
             units: self.common.units,
             affine: self.common.affine,
             spread: self.common.spread,
             stops: None,
-            variant: UnresolvedVariant::Linear {
-                x1: self.x1,
-                y1: self.y1,
-                x2: self.x2,
-                y2: self.y2,
-            },
+            variant: self.get_unresolved_variant(),
         };
 
         gradient.add_color_stops_from_node(node);
@@ -505,19 +511,25 @@ impl NodeLinearGradient {
 }
 
 impl NodeRadialGradient {
+    fn get_unresolved_variant(&self) -> UnresolvedVariant {
+        UnresolvedVariant::Radial {
+            cx: self.cx,
+            cy: self.cy,
+            r: self.r,
+            fx: self.fx,
+            fy: self.fy,
+        }
+    }
+}
+
+impl NodeRadialGradient {
     fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
         let mut gradient = UnresolvedGradient {
             units: self.common.units,
             affine: self.common.affine,
             spread: self.common.spread,
             stops: None,
-            variant: UnresolvedVariant::Radial {
-                cx: self.cx,
-                cy: self.cy,
-                r: self.r,
-                fx: self.fx,
-                fy: self.fy,
-            },
+            variant: self.get_unresolved_variant(),
         };
 
         gradient.add_color_stops_from_node(node);
