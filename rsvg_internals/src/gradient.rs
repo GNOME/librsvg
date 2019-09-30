@@ -1,6 +1,7 @@
 use cairo;
 use cssparser::{self, CowRcStr, Parser, Token};
 use markup5ever::local_name;
+use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
 use crate::bbox::*;
@@ -167,6 +168,7 @@ enum UnresolvedVariant {
     },
 }
 
+#[derive(Clone)]
 enum Variant {
     Linear {
         x1: LengthHorizontal,
@@ -312,6 +314,8 @@ pub struct NodeLinearGradient {
     y1: Option<LengthVertical>,
     x2: Option<LengthHorizontal>,
     y2: Option<LengthVertical>,
+
+    resolved: RefCell<Option<Gradient>>,
 }
 
 #[derive(Default)]
@@ -323,6 +327,8 @@ pub struct NodeRadialGradient {
     r: Option<LengthBoth>,
     fx: Option<LengthHorizontal>,
     fy: Option<LengthVertical>,
+
+    resolved: RefCell<Option<Gradient>>,
 }
 
 struct UnresolvedGradient {
@@ -334,6 +340,7 @@ struct UnresolvedGradient {
     variant: UnresolvedVariant,
 }
 
+#[derive(Clone)]
 pub struct Gradient {
     units: GradientUnits,
     affine: cairo::Matrix,
@@ -595,6 +602,11 @@ macro_rules! impl_paint_source {
                 node: &RsvgNode,
                 draw_ctx: &mut DrawingCtx,
             ) -> Result<Self::Resolved, PaintServerError> {
+                let mut resolved = self.resolved.borrow_mut();
+                if let Some(ref gradient) = *resolved {
+                    return Ok(gradient.clone());
+                }
+
                 let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
 
                 let mut stack = NodeStack::new();
@@ -633,7 +645,11 @@ macro_rules! impl_paint_source {
                     }
                 }
 
-                Ok(gradient.to_resolved())
+                let gradient = gradient.to_resolved();
+
+                *resolved = Some(gradient.clone());
+
+                Ok(gradient)
             }
         }
     }
