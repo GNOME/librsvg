@@ -501,14 +501,6 @@ impl UnresolvedGradient {
 
         UnresolvedGradient { units, affine, spread, stops, variant }
     }
-
-    fn bounds_are_valid(&self, bbox: &BoundingBox) -> bool {
-        if self.units == Some(GradientUnits(CoordUnits::UserSpaceOnUse)) {
-            true
-        } else {
-            bbox.rect.map_or(false, |r| !r.is_empty())
-        }
-    }
 }
 
 struct Unresolved {
@@ -591,7 +583,7 @@ impl PaintSource for NodeGradient {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-        bbox: &BoundingBox,
+        _bbox: &BoundingBox,
     ) -> Result<Option<Self::Resolved>, RenderingError> {
         let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
 
@@ -620,11 +612,7 @@ impl PaintSource for NodeGradient {
             }
         }
 
-        if gradient.bounds_are_valid(bbox) {
-            Ok(Some(gradient.to_resolved()))
-        } else {
-            Ok(None)
-        }
+        Ok(Some(gradient.to_resolved()))
     }
 }
 
@@ -637,6 +625,11 @@ impl ResolvedPaintSource for Gradient {
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
         let params = if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+            if bbox.rect.map_or(true, |r| r.is_empty()) {
+                // objectBoundingBox requires a non-empty bbox, see issues #187, #373
+                return Ok(false);
+            }
+
             draw_ctx.push_view_box(1.0, 1.0)
         } else {
             draw_ctx.get_view_params()
