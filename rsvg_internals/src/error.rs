@@ -10,6 +10,7 @@ use glib_sys;
 use libc;
 use markup5ever::LocalName;
 
+use crate::allowed_url::Fragment;
 use crate::parsers::ParseError;
 
 /// A simple error which refers to an attribute's value
@@ -119,6 +120,38 @@ impl From<cairo::Status> for RenderingError {
         assert!(e != cairo::Status::Success);
 
         RenderingError::Cairo(e)
+    }
+}
+
+#[derive(Debug)]
+pub enum PaintServerError {
+    LinkNotFound(Fragment),
+    InvalidLinkType(Fragment),
+    CircularReference(Fragment),
+}
+
+impl error::Error for PaintServerError {
+    fn description(&self) -> &str {
+        match *self {
+            PaintServerError::LinkNotFound(_) => "link to paint server not found",
+            PaintServerError::InvalidLinkType(_) => "link is to object of invalid type",
+            PaintServerError::CircularReference(_) => "circular reference in link"
+        }
+    }
+}
+
+impl fmt::Display for PaintServerError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            PaintServerError::LinkNotFound(ref frag) =>
+                write!(f, "link to paint server not found: {}", frag),
+
+            PaintServerError::InvalidLinkType(ref frag) =>
+                write!(f, "link {} is to object of invalid type", frag),
+
+            PaintServerError::CircularReference(ref frag) =>
+                write!(f, "circular reference in link {}", frag),
+        }
     }
 }
 

@@ -8,7 +8,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{DrawingCtx, NodeStack};
-use crate::error::{AttributeResultExt, RenderingError};
+use crate::error::{AttributeResultExt, PaintServerError, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
@@ -144,7 +144,7 @@ impl PaintSource for NodePattern {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Self::Resolved>, RenderingError> {
+    ) -> Result<Option<Self::Resolved>, PaintServerError> {
         *self.node.borrow_mut() = Some(node.downgrade());
 
         let mut result = node.borrow().get_impl::<NodePattern>().clone();
@@ -158,8 +158,9 @@ impl PaintSource for NodePattern {
                 let a_node = acquired.get();
 
                 if stack.contains(a_node) {
-                    rsvg_log!("circular reference in pattern {}", node);
-                    return Err(RenderingError::CircularReference);
+                    return Err(PaintServerError::CircularReference(
+                        result.fallback.as_ref().unwrap().clone(),
+                    ));
                 }
 
                 let node_data = a_node.borrow();

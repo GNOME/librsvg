@@ -583,18 +583,18 @@ impl PaintSource for NodeGradient {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Self::Resolved>, RenderingError> {
+    ) -> Result<Option<Self::Resolved>, PaintServerError> {
         let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
 
         let mut stack = NodeStack::new();
 
         while !gradient.is_resolved() {
-            if let Some(acquired) = acquire_gradient(draw_ctx, fallback.as_ref()) {
+            if let Some(fragment) = fallback {
+                let acquired = acquire_gradient(draw_ctx, &fragment)?;
                 let acquired_node = acquired.get();
 
                 if stack.contains(acquired_node) {
-                    rsvg_log!("circular reference in gradient {}", node);
-                    return Err(RenderingError::CircularReference);
+                    return Err(PaintServerError::CircularReference(fragment.clone()));
                 }
 
                 let borrowed_node = acquired_node.borrow();
@@ -608,6 +608,7 @@ impl PaintSource for NodeGradient {
                 stack.push(acquired_node);
             } else {
                 gradient = gradient.resolve_from_defaults();
+                break;
             }
         }
 
@@ -703,16 +704,17 @@ impl Gradient {
 
 fn acquire_gradient<'a>(
     draw_ctx: &'a mut DrawingCtx,
-    name: Option<&Fragment>,
-) -> Option<AcquiredNode> {
-    name.and_then(move |fragment| draw_ctx.acquired_nodes().get_node(fragment))
+    fragment: &Fragment,
+) -> Result<AcquiredNode, PaintServerError> {
+    draw_ctx.acquired_nodes().get_node(fragment)
+        .ok_or(PaintServerError::LinkNotFound(fragment.clone()))
         .and_then(|acquired| {
             let node_type = acquired.get().borrow().get_type();
 
             if node_type == NodeType::Gradient {
-                Some(acquired)
+                Ok(acquired)
             } else {
-                None
+                Err(PaintServerError::InvalidLinkType(fragment.clone()))
             }
         })
 }
