@@ -636,8 +636,7 @@ impl ResolvedPaintSource for Gradient {
         opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        let units = self.units;
-        let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+        let params = if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             draw_ctx.push_view_box(1.0, 1.0)
         } else {
             draw_ctx.get_view_params()
@@ -672,9 +671,8 @@ impl Gradient {
         opacity: &UnitInterval,
     ) {
         let mut affine = self.affine;
-        let units = self.units;
 
-        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+        if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             let bbox_rect = bbox.rect.unwrap();
             let bbox_matrix = cairo::Matrix::new(
                 bbox_rect.width,
