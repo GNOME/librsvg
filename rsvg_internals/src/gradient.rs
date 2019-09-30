@@ -123,12 +123,6 @@ pub struct NodeStop {
     offset: UnitInterval,
 }
 
-impl NodeStop {
-    pub fn get_offset(&self) -> UnitInterval {
-        self.offset
-    }
-}
-
 fn validate_offset(length: LengthBoth) -> Result<LengthBoth, ValueErrorKind> {
     match length.unit() {
         LengthUnit::Px | LengthUnit::Percent => Ok(length),
@@ -468,7 +462,6 @@ impl UnresolvedGradient {
             if child.is_in_error() {
                 rsvg_log!("(not using gradient stop {} because it is in error)", child);
             } else {
-                let offset = stop.get_offset();
                 let cascaded = CascadedValues::new_from_node(&child_node);
                 let values = cascaded.get();
                 let rgba = match values.stop_color {
@@ -476,7 +469,7 @@ impl UnresolvedGradient {
                     StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
                 };
 
-                self.add_color_stop(offset, rgba, values.stop_opacity.0);
+                self.add_color_stop(stop.offset, rgba, values.stop_opacity.0);
             }
         }
     }
