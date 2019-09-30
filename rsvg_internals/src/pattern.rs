@@ -151,26 +151,30 @@ impl PaintSource for NodePattern {
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
-            if let Some(acquired) = draw_ctx
-                .acquired_nodes()
-                .get_node_of_type(result.fallback.as_ref(), NodeType::Pattern)
-            {
-                let a_node = acquired.get();
+            if let Some(ref fallback) = result.fallback {
+                if let Some(acquired) = draw_ctx
+                    .acquired_nodes()
+                    .get_node_of_type(Some(fallback), NodeType::Pattern)
+                {
+                    let a_node = acquired.get();
 
-                if stack.contains(a_node) {
-                    return Err(PaintServerError::CircularReference(
-                        result.fallback.as_ref().unwrap().clone(),
-                    ));
+                    if stack.contains(a_node) {
+                        return Err(PaintServerError::CircularReference(
+                            fallback.clone(),
+                        ));
+                    }
+
+                    let node_data = a_node.borrow();
+
+                    let fallback_pattern = node_data.get_impl::<NodePattern>();
+                    *fallback_pattern.node.borrow_mut() = Some(a_node.downgrade());
+
+                    result.resolve_from_fallback(fallback_pattern);
+
+                    stack.push(a_node);
+                } else {
+                    result.resolve_from_defaults();
                 }
-
-                let node_data = a_node.borrow();
-
-                let fallback_pattern = node_data.get_impl::<NodePattern>();
-                *fallback_pattern.node.borrow_mut() = Some(a_node.downgrade());
-
-                result.resolve_from_fallback(fallback_pattern);
-
-                stack.push(a_node);
             } else {
                 result.resolve_from_defaults();
             }
