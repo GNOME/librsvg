@@ -61,7 +61,7 @@ pub trait PaintSource {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Self::Resolved>, PaintServerError>;
+    ) -> Result<Self::Resolved, PaintServerError>;
 
     fn resolve_fallbacks_and_set_pattern(
         &self,
@@ -71,13 +71,11 @@ pub trait PaintSource {
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
         match self.resolve(&node, draw_ctx) {
-            Ok(Some(resolved)) => {
+            Ok(resolved) => {
                 let cascaded = CascadedValues::new_from_node(node);
                 let values = cascaded.get();
                 resolved.set_pattern_on_draw_context(values, draw_ctx, opacity, bbox)
             }
-
-            Ok(None) => Ok(false),
 
             Err(PaintServerError::CircularReference(_)) => {
                 // FIXME: add a fragment or node id to this:

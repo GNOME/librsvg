@@ -144,7 +144,7 @@ impl PaintSource for NodePattern {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Self::Resolved>, PaintServerError> {
+    ) -> Result<Self::Resolved, PaintServerError> {
         *self.node.borrow_mut() = Some(node.downgrade());
 
         let mut result = node.borrow().get_impl::<NodePattern>().clone();
@@ -159,9 +159,7 @@ impl PaintSource for NodePattern {
                     let a_node = acquired.get();
 
                     if stack.contains(a_node) {
-                        return Err(PaintServerError::CircularReference(
-                            fallback.clone(),
-                        ));
+                        return Err(PaintServerError::CircularReference(fallback.clone()));
                     }
 
                     let node_data = a_node.borrow();
@@ -180,7 +178,7 @@ impl PaintSource for NodePattern {
             }
         }
 
-        Ok(Some(result))
+        Ok(result)
     }
 }
 

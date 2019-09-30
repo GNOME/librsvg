@@ -583,7 +583,7 @@ impl PaintSource for NodeGradient {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Self::Resolved>, PaintServerError> {
+    ) -> Result<Self::Resolved, PaintServerError> {
         let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
 
         let mut stack = NodeStack::new();
@@ -612,7 +612,7 @@ impl PaintSource for NodeGradient {
             }
         }
 
-        Ok(Some(gradient.to_resolved()))
+        Ok(gradient.to_resolved())
     }
 }
 
