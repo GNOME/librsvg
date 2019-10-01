@@ -50,6 +50,30 @@ struct Unresolved {
     fallback: Option<Fragment>,
 }
 
+/// Keeps track of which NodePattern provided a non-empty set of children during pattern resolution
+#[derive(Clone)]
+enum UnresolvedNodeWithChildren {
+    /// Points back to the original NodePattern if it had no usable children
+    Unresolved,
+
+    /// Points back to the original NodePattern, as no pattern in the
+    /// chain of fallbacks had usable children.  This only gets returned
+    /// by resolve_from_defaults().
+    ResolvedEmpty,
+
+    /// Points back to the NodePattern that had usable children.
+    WithChildren(RsvgWeakNode),
+}
+
+/// Keeps track of which NodePattern provided a non-empty set of children during pattern resolution
+#[derive(Clone)]
+enum NodeWithChildren {
+    Empty,
+
+    /// Points back to the NodePattern that had usable children
+    WithChildren(RsvgWeakNode),
+}
+
 /// Main structure used during pattern resolution.  For unresolved
 /// patterns, we store all fields as Option<T> - if None, it means
 /// that the field is not specified; if Some(T), it means that the
@@ -60,7 +84,7 @@ struct UnresolvedPattern {
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
     // among the fallbacks.
-    node: Option<RsvgNode>,
+    node: UnresolvedNodeWithChildren,
 }
 
 /// Resolved pattern
@@ -81,11 +105,7 @@ pub struct Pattern {
     height: LengthVertical,
 
     // Link to the node whose children are the pattern's resolved children.
-    //
-    // We use a weak reference because this struct Pattern may be
-    // memoized within the corresponding NodePattern, and we don't
-    // want to create a reference cycle.
-    node: Option<RsvgWeakNode>,
+    node: NodeWithChildren,
 }
 
 #[derive(Default)]
@@ -192,11 +212,13 @@ impl ResolvedPaintSource for Pattern {
         _opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        if self.node.is_none() {
+        let node_with_children = if let Some(n) = self.node.node_with_children() {
+            n
+        } else {
             // This means we didn't find any children among the fallbacks,
             // so there is nothing to render.
             return Ok(false);
-        }
+        };
 
         let units = self.units;
         let content_units = self.content_units;
@@ -341,14 +363,13 @@ impl ResolvedPaintSource for Pattern {
         // Set up transformations to be determined by the contents units
 
         // Draw everything
-        let pattern_node = self.node.as_ref().unwrap().upgrade().unwrap();
-        let pattern_cascaded = CascadedValues::new_from_node(&pattern_node);
+        let pattern_cascaded = CascadedValues::new_from_node(&node_with_children);
         let pattern_values = pattern_cascaded.get();
 
         cr_pattern.set_matrix(caffine);
 
-        let res = draw_ctx.with_discrete_layer(&pattern_node, pattern_values, false, &mut |dc| {
-            pattern_node.draw_children(&pattern_cascaded, dc, false)
+        let res = draw_ctx.with_discrete_layer(&node_with_children, pattern_values, false, &mut |dc| {
+            node_with_children.draw_children(&pattern_cascaded, dc, false)
         });
 
         // Return to the original coordinate system and rendering context
@@ -387,7 +408,7 @@ impl UnresolvedPattern {
             width: self.common.width.unwrap(),
             height: self.common.height.unwrap(),
 
-            node: self.node.clone().map(|n| n.downgrade()),
+            node: self.node.to_resolved(),
         }
     }
 
@@ -401,18 +422,7 @@ impl UnresolvedPattern {
             && self.common.y.is_some()
             && self.common.width.is_some()
             && self.common.height.is_some()
-            && self.children_are_resolved()
-    }
-
-
-    fn children_are_resolved(&self) -> bool {
-        if let Some(ref node) = self.node {
-            node.has_children()
-        } else {
-            // We are an empty pattern; there is nothing further that
-            // can be resolved for children.
-            true
-        }
+            && self.node.is_resolved()
     }
 
     fn resolve_from_fallback(&self, fallback: &UnresolvedPattern) -> UnresolvedPattern {
@@ -425,12 +435,7 @@ impl UnresolvedPattern {
         let y = self.common.y.or(fallback.common.y);
         let width = self.common.width.or(fallback.common.width);
         let height = self.common.height.or(fallback.common.height);
-
-        let node = if !self.children_are_resolved() {
-            fallback.node.clone()
-        } else {
-            self.node.clone()
-        };
+        let node = self.node.resolve_from_fallback(&fallback.node);
 
         UnresolvedPattern {
             common: Common {
@@ -458,7 +463,7 @@ impl UnresolvedPattern {
         let y = self.common.y.or(Some(Default::default()));
         let width = self.common.width.or(Some(Default::default()));
         let height = self.common.height.or(Some(Default::default()));
-        let node = self.node.clone();
+        let node = self.node.resolve_from_defaults();
 
         UnresolvedPattern {
             common: Common {
@@ -477,17 +482,71 @@ impl UnresolvedPattern {
     }
 }
 
+impl UnresolvedNodeWithChildren {
+    fn from_node(node: &RsvgNode) -> UnresolvedNodeWithChildren {
+        let weak = node.downgrade();
+
+        if node.children().any(|child| child.borrow().get_type() != NodeType::Chars) {
+            UnresolvedNodeWithChildren::WithChildren(weak)
+        } else {
+            UnresolvedNodeWithChildren::Unresolved
+        }
+    }
+
+    fn is_resolved(&self) -> bool {
+        match *self {
+            UnresolvedNodeWithChildren::Unresolved => false,
+            _ => true,
+        }
+    }
+
+    fn resolve_from_fallback(&self, fallback: &UnresolvedNodeWithChildren) -> UnresolvedNodeWithChildren {
+        use UnresolvedNodeWithChildren::*;
+
+        match (self, fallback) {
+            (&Unresolved, &Unresolved) => Unresolved,
+            (&WithChildren(ref wc), _) => WithChildren(wc.clone()),
+            (_, &WithChildren(ref wc)) => WithChildren(wc.clone()),
+            (_, _) => unreachable!(),
+        }
+    }
+
+    fn resolve_from_defaults(&self) -> UnresolvedNodeWithChildren {
+        use UnresolvedNodeWithChildren::*;
+
+        match *self {
+            Unresolved => ResolvedEmpty,
+            _ => (*self).clone(),
+        }
+    }
+
+    fn to_resolved(&self) -> NodeWithChildren {
+        use UnresolvedNodeWithChildren::*;
+
+        assert!(self.is_resolved());
+
+        match *self {
+            ResolvedEmpty => NodeWithChildren::Empty,
+            WithChildren(ref wc) => NodeWithChildren::WithChildren(wc.clone()),
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl NodeWithChildren {
+    fn node_with_children(&self) -> Option<RsvgNode> {
+        match *self {
+            NodeWithChildren::Empty => None,
+            NodeWithChildren::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
+        }
+    }
+}
+
 impl NodePattern {
     fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
-        let node_with_children = if node.has_children() {
-            Some(node.clone())
-        } else {
-            None
-        };
-
         let pattern = UnresolvedPattern {
             common: self.common.clone(),
-            node: node_with_children,
+            node: UnresolvedNodeWithChildren::from_node(node),
         };
 
         Unresolved {
