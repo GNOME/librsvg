@@ -109,9 +109,9 @@ pub trait ResolvedPaintSource {
 pub trait Resolve {
     fn is_resolved(&self) -> bool;
 
-    fn resolve_from_fallback(&mut self, fallback: &Self);
+    fn resolve_from_fallback(&self, fallback: &Self) -> Self;
 
-    fn resolve_from_defaults(&mut self);
+    fn resolve_from_defaults(&self) -> Self;
 }
 
 #[cfg(test)]
