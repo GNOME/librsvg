@@ -145,9 +145,9 @@ impl PaintSource for NodePattern {
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<Self::Resolved, PaintServerError> {
-        *self.node.borrow_mut() = Some(node.downgrade());
-
         let mut result = node.borrow().get_impl::<NodePattern>().clone();
+        *result.node.borrow_mut() = Some(node.downgrade());
+
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
