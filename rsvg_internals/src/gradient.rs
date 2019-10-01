@@ -18,15 +18,23 @@ use crate::property_defs::StopColor;
 use crate::rect::RectangleExt;
 use crate::unit_interval::UnitInterval;
 
+/// Contents of a <stop> element for gradient color stops
 #[derive(Copy, Clone)]
 struct ColorStop {
+    /// <stop offset="..."/>
     offset: UnitInterval,
+
+    /// <stop stop-color="..."/>
     rgba: cssparser::RGBA,
+
+    /// <stop stop-opacity="..."/>
     opacity: UnitInterval,
 }
 
+// gradientUnits attibute; its default is objectBoundingBox
 coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 
+/// spreadMethod attribute for gradients
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum SpreadMethod {
     Pad,
@@ -74,6 +82,11 @@ impl From<SpreadMethod> for cairo::Extend {
     }
 }
 
+/// See docs for UnresolvedGradient to see how this is used.
+///
+/// When resolving gradients, we replace unspecified fields with value
+/// None with specified fields from fallback fields.  This macro is
+/// just a shortcut to do that.
 macro_rules! fallback_to (
     ($dest:expr, $default:expr) => (
         $dest.take ().or_else (|| $default)
@@ -119,9 +132,14 @@ fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64
     (cx + dx, cy + dy)
 }
 
+/// Node for the <stop> element
 #[derive(Default)]
 pub struct NodeStop {
+    /// <stop offset="..."/>
     offset: UnitInterval,
+
+    // stop-color and stop-opacity are not attributes; they are properties, so
+    // they go into property_defs.rs
 }
 
 fn validate_offset(length: LengthBoth) -> Result<LengthBoth, ValueErrorKind> {
@@ -150,6 +168,10 @@ impl NodeTrait for NodeStop {
     }
 }
 
+/// Parameters specific to each gradient type, before being resolved.
+/// These will be composed together with UnreseolvedVariant from fallback
+/// nodes (referenced with e.g. <linearGradient xlink:href="#fallback">) to form
+/// a final, resolved Variant.
 #[derive(Copy, Clone)]
 enum UnresolvedVariant {
     Linear {
@@ -168,6 +190,7 @@ enum UnresolvedVariant {
     },
 }
 
+/// Parameters specific to each gradient type, after resolving.
 #[derive(Clone)]
 enum Variant {
     Linear {
@@ -270,6 +293,9 @@ impl UnresolvedVariant {
 }
 
 impl Variant {
+    /// Creates a cairo::Gradient corresponding to the gradient type of the
+    /// &self Variant.  This does not have color stops set on it yet;
+    /// call Gradient.add_color_stops_to_pattern() afterwards.
     fn to_cairo_gradient(&self, values: &ComputedValues, params: &ViewParams) -> cairo::Gradient {
         match *self {
             Variant::Linear { x1, y1, x2, y2 } => {
@@ -297,6 +323,7 @@ impl Variant {
     }
 }
 
+/// Fields shared by all gradient nodes
 #[derive(Default)]
 struct Common {
     units: Option<GradientUnits>,
@@ -308,6 +335,7 @@ struct Common {
     resolved: RefCell<Option<Gradient>>,
 }
 
+/// Node for the <linearGradient> element
 #[derive(Default)]
 pub struct NodeLinearGradient {
     common: Common,
@@ -318,6 +346,7 @@ pub struct NodeLinearGradient {
     y2: Option<LengthVertical>,
 }
 
+/// Node for the <radialGradient> element
 #[derive(Default)]
 pub struct NodeRadialGradient {
     common: Common,
@@ -329,6 +358,13 @@ pub struct NodeRadialGradient {
     fy: Option<LengthVertical>,
 }
 
+/// Main structure used during gradient resolution.  For unresolved
+/// gradients, we store all fields as Option<T> - if None, it means
+/// that the field is not specified; if Some(T), it means that the
+/// field was specified.
+///
+/// The fallback_to!() macro is useful to apply fallback values to
+/// each field.
 struct UnresolvedGradient {
     units: Option<GradientUnits>,
     affine: Option<cairo::Matrix>,
@@ -338,6 +374,7 @@ struct UnresolvedGradient {
     variant: UnresolvedVariant,
 }
 
+/// Resolved gradient; this is memoizable after the initial resolution.
 #[derive(Clone)]
 pub struct Gradient {
     units: GradientUnits,
@@ -389,6 +426,7 @@ impl UnresolvedGradient {
         }
     }
 
+    /// Helper for add_color_stops_from_node()
     fn add_color_stop(
         &mut self,
         offset: UnitInterval,
@@ -422,6 +460,8 @@ impl UnresolvedGradient {
         }
     }
 
+    /// Looks for <stop> children inside a linearGradient or radialGradient node,
+    /// and adds their info to the UnresolvedGradient &self.
     fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
         let node_type = node.borrow().get_type();
 
@@ -480,6 +520,11 @@ impl UnresolvedGradient {
     }
 }
 
+/// State used during the gradient resolution process
+///
+/// This is the current node's gradient information, plus the fallback
+/// that should be used in case that information is not complete for a
+/// resolved gradient yet.
 struct Unresolved {
     gradient: UnresolvedGradient,
     fallback: Option<Fragment>,
@@ -753,6 +798,7 @@ impl Gradient {
     }
 }
 
+/// Acquires a node of linearGradient or radialGradient type
 fn acquire_gradient<'a>(
     draw_ctx: &'a mut DrawingCtx,
     fragment: &Fragment,
