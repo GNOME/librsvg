@@ -12,7 +12,7 @@ use crate::error::{AttributeResultExt, PaintServerError, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
-use crate::paint_server::{PaintSource, Resolve, ResolvedPaintSource};
+use crate::paint_server::{PaintSource, ResolvedPaintSource};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -22,12 +22,6 @@ use crate::viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
-
-macro_rules! fallback_to (
-    ($dest:expr, $default:expr) => (
-        $dest = $dest.take ().or_else (|| $default)
-    );
-);
 
 #[derive(Clone, Default)]
 pub struct NodePattern {
@@ -89,55 +83,6 @@ impl NodeTrait for NodePattern {
     }
 }
 
-impl Resolve for NodePattern {
-    fn is_resolved(&self) -> bool {
-        self.units.is_some()
-            && self.content_units.is_some()
-            && self.vbox.is_some()
-            && self.preserve_aspect_ratio.is_some()
-            && self.affine.is_some()
-            && self.x.is_some()
-            && self.y.is_some()
-            && self.width.is_some()
-            && self.height.is_some()
-            && self.children_are_resolved()
-    }
-
-    fn resolve_from_fallback(&mut self, fallback: &NodePattern) {
-        fallback_to!(self.units, fallback.units);
-        fallback_to!(self.content_units, fallback.content_units);
-        fallback_to!(self.vbox, fallback.vbox);
-        fallback_to!(self.preserve_aspect_ratio, fallback.preserve_aspect_ratio);
-        fallback_to!(self.affine, fallback.affine);
-        fallback_to!(self.x, fallback.x);
-        fallback_to!(self.y, fallback.y);
-        fallback_to!(self.width, fallback.width);
-        fallback_to!(self.height, fallback.height);
-
-        self.fallback = fallback.fallback.clone();
-
-        if !self.children_are_resolved() {
-            if fallback.node.borrow().is_some() {
-                *self.node.borrow_mut() = fallback.node.borrow().clone();
-            } else {
-                *self.node.borrow_mut() = None;
-            }
-        }
-    }
-
-    fn resolve_from_defaults(&mut self) {
-        fallback_to!(self.units, Some(PatternUnits::default()));
-        fallback_to!(self.content_units, Some(PatternContentUnits::default()));
-        fallback_to!(self.vbox, Some(None));
-        fallback_to!(self.preserve_aspect_ratio, Some(AspectRatio::default()));
-        fallback_to!(self.affine, Some(cairo::Matrix::identity()));
-        fallback_to!(self.x, Some(Default::default()));
-        fallback_to!(self.y, Some(Default::default()));
-        fallback_to!(self.width, Some(Default::default()));
-        fallback_to!(self.height, Some(Default::default()));
-    }
-}
-
 impl PaintSource for NodePattern {
     type Resolved = NodePattern;
 
@@ -146,6 +91,7 @@ impl PaintSource for NodePattern {
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<Self::Resolved, PaintServerError> {
+
         let mut result = node.borrow().get_impl::<NodePattern>().clone();
         *result.node.borrow_mut() = Some(node.clone());
 
@@ -168,14 +114,14 @@ impl PaintSource for NodePattern {
                     let fallback_pattern = node_data.get_impl::<NodePattern>();
                     *fallback_pattern.node.borrow_mut() = Some(a_node.clone());
 
-                    result.resolve_from_fallback(fallback_pattern);
+                    result = result.resolve_from_fallback(fallback_pattern);
 
                     stack.push(a_node);
                 } else {
-                    result.resolve_from_defaults();
+                    result = result.resolve_from_defaults();
                 }
             } else {
-                result.resolve_from_defaults();
+                result = result.resolve_from_defaults();
             }
         }
 
@@ -375,6 +321,81 @@ impl ResolvedPaintSource for NodePattern {
 }
 
 impl NodePattern {
+    fn is_resolved(&self) -> bool {
+        self.units.is_some()
+            && self.content_units.is_some()
+            && self.vbox.is_some()
+            && self.preserve_aspect_ratio.is_some()
+            && self.affine.is_some()
+            && self.x.is_some()
+            && self.y.is_some()
+            && self.width.is_some()
+            && self.height.is_some()
+            && self.children_are_resolved()
+    }
+
+    fn resolve_from_fallback(&self, fallback: &NodePattern) -> NodePattern {
+        let units = self.units.or(fallback.units);
+        let content_units = self.content_units.or(fallback.content_units);
+        let vbox = self.vbox.or(fallback.vbox);
+        let preserve_aspect_ratio = self.preserve_aspect_ratio.or(fallback.preserve_aspect_ratio);
+        let affine = self.affine.or(fallback.affine);
+        let x = self.x.or(fallback.x);
+        let y = self.y.or(fallback.y);
+        let width = self.width.or(fallback.width);
+        let height = self.height.or(fallback.height);
+
+        let node = if !self.children_are_resolved() {
+            fallback.node.clone()
+        } else {
+            self.node.clone()
+        };
+
+        let fallback = fallback.fallback.clone();
+
+        NodePattern {
+            units,
+            content_units,
+            vbox,
+            preserve_aspect_ratio,
+            affine,
+            x,
+            y,
+            width,
+            height,
+            node,
+            fallback,
+        }
+    }
+
+    fn resolve_from_defaults(&self) -> NodePattern {
+        let units = self.units.or(Some(PatternUnits::default()));
+        let content_units = self.content_units.or(Some(PatternContentUnits::default()));
+        let vbox = self.vbox.or(Some(None));
+        let preserve_aspect_ratio = self.preserve_aspect_ratio.or(Some(AspectRatio::default()));
+        let affine = self.affine.or(Some(cairo::Matrix::identity()));
+        let x = self.x.or(Some(Default::default()));
+        let y = self.y.or(Some(Default::default()));
+        let width = self.width.or(Some(Default::default()));
+        let height = self.height.or(Some(Default::default()));
+        let node = self.node.clone();
+        let fallback = None;
+
+        NodePattern {
+            units,
+            content_units,
+            vbox,
+            preserve_aspect_ratio,
+            affine,
+            x,
+            y,
+            width,
+            height,
+            node,
+            fallback,
+        }
+    }
+
     fn children_are_resolved(&self) -> bool {
         if let Some(ref node) = *self.node.borrow() {
             node.has_children()
@@ -392,9 +413,8 @@ mod tests {
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
-        let mut pat = NodePattern::default();
-
-        pat.resolve_from_defaults();
-        assert!(pat.is_resolved());
+        let pat = NodePattern::default();
+        let res = pat.resolve_from_defaults();
+        assert!(res.is_resolved());
     }
 }
