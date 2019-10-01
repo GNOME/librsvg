@@ -55,23 +55,13 @@ impl Parse for PaintServer {
 }
 
 pub trait PaintSource {
-    type Source;
+    type Resolved: ResolvedPaintSource;
 
     fn resolve(
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-        bbox: &BoundingBox,
-    ) -> Result<Option<Self::Source>, RenderingError>;
-
-    fn set_pattern_on_draw_context(
-        &self,
-        pattern: &Self::Source,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        opacity: &UnitInterval,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError>;
+    ) -> Result<Self::Resolved, PaintServerError>;
 
     fn resolve_fallbacks_and_set_pattern(
         &self,
@@ -80,14 +70,37 @@ pub trait PaintSource {
         opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        if let Some(resolved) = self.resolve(&node, draw_ctx, bbox)? {
-            let cascaded = CascadedValues::new_from_node(node);
-            let values = cascaded.get();
-            self.set_pattern_on_draw_context(&resolved, values, draw_ctx, opacity, bbox)
-        } else {
-            Ok(false)
+        match self.resolve(&node, draw_ctx) {
+            Ok(resolved) => {
+                let cascaded = CascadedValues::new_from_node(node);
+                let values = cascaded.get();
+                resolved.set_pattern_on_draw_context(values, draw_ctx, opacity, bbox)
+            }
+
+            Err(PaintServerError::CircularReference(_)) => {
+                // FIXME: add a fragment or node id to this:
+                rsvg_log!("circular reference in paint server {}", node);
+                Err(RenderingError::CircularReference)
+            }
+
+            Err(e) => {
+                rsvg_log!("not using paint server {}: {}", node, e);
+
+                // "could not resolve" means caller needs to fall back to color
+                Ok(false)
+            }
         }
     }
+}
+
+pub trait ResolvedPaintSource {
+    fn set_pattern_on_draw_context(
+        self,
+        values: &ComputedValues,
+        draw_ctx: &mut DrawingCtx,
+        opacity: &UnitInterval,
+        bbox: &BoundingBox,
+    ) -> Result<bool, RenderingError>;
 }
 
 // Any of the attributes in gradient and pattern elements may be omitted.

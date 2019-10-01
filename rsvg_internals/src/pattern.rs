@@ -8,11 +8,11 @@ use crate::aspect_ratio::*;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{DrawingCtx, NodeStack};
-use crate::error::{AttributeResultExt, RenderingError};
+use crate::error::{AttributeResultExt, PaintServerError, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
-use crate::paint_server::{PaintSource, Resolve};
+use crate::paint_server::{PaintSource, Resolve, ResolvedPaintSource};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -25,7 +25,7 @@ coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
 macro_rules! fallback_to (
     ($dest:expr, $default:expr) => (
-        $dest = $dest.take ().or ($default)
+        $dest = $dest.take ().or_else (|| $default)
     );
 );
 
@@ -138,68 +138,71 @@ impl Resolve for NodePattern {
 }
 
 impl PaintSource for NodePattern {
-    type Source = NodePattern;
+    type Resolved = NodePattern;
 
     fn resolve(
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-        _bbox: &BoundingBox,
-    ) -> Result<Option<Self::Source>, RenderingError> {
+    ) -> Result<Self::Resolved, PaintServerError> {
         *self.node.borrow_mut() = Some(node.downgrade());
 
         let mut result = node.borrow().get_impl::<NodePattern>().clone();
         let mut stack = NodeStack::new();
 
         while !result.is_resolved() {
-            if let Some(acquired) = draw_ctx
-                .acquired_nodes()
-                .get_node_of_type(result.fallback.as_ref(), NodeType::Pattern)
-            {
-                let a_node = acquired.get();
+            if let Some(ref fallback) = result.fallback {
+                if let Some(acquired) = draw_ctx
+                    .acquired_nodes()
+                    .get_node_of_type(fallback, NodeType::Pattern)
+                {
+                    let a_node = acquired.get();
 
-                if stack.contains(a_node) {
-                    rsvg_log!("circular reference in pattern {}", node);
-                    return Err(RenderingError::CircularReference);
+                    if stack.contains(a_node) {
+                        return Err(PaintServerError::CircularReference(fallback.clone()));
+                    }
+
+                    let node_data = a_node.borrow();
+
+                    let fallback_pattern = node_data.get_impl::<NodePattern>();
+                    *fallback_pattern.node.borrow_mut() = Some(a_node.downgrade());
+
+                    result.resolve_from_fallback(fallback_pattern);
+
+                    stack.push(a_node);
+                } else {
+                    result.resolve_from_defaults();
                 }
-
-                let node_data = a_node.borrow();
-
-                let fallback_pattern = node_data.get_impl::<NodePattern>();
-                *fallback_pattern.node.borrow_mut() = Some(a_node.downgrade());
-
-                result.resolve_from_fallback(fallback_pattern);
-
-                stack.push(a_node);
             } else {
                 result.resolve_from_defaults();
             }
         }
 
-        Ok(Some(result))
+        Ok(result)
     }
+}
 
+impl ResolvedPaintSource for NodePattern {
     fn set_pattern_on_draw_context(
-        &self,
-        pattern: &Self::Source,
+        self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         _opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        assert!(pattern.is_resolved());
+        assert!(self.is_resolved());
 
-        if pattern.node.borrow().is_none() {
+        if self.node.borrow().is_none() {
             // This means we didn't find any children among the fallbacks,
             // so there is nothing to render.
             return Ok(false);
         }
 
-        let units = pattern.units.unwrap();
-        let content_units = pattern.content_units.unwrap();
-        let pattern_affine = pattern.affine.unwrap();
-        let vbox = pattern.vbox.unwrap();
-        let preserve_aspect_ratio = pattern.preserve_aspect_ratio.unwrap();
+        let units = self.units.unwrap();
+        let content_units = self.content_units.unwrap();
+        let pattern_affine = self.affine.unwrap();
+        let vbox = self.vbox.unwrap();
+        let preserve_aspect_ratio = self.preserve_aspect_ratio.unwrap();
 
         let (pattern_x, pattern_y, pattern_width, pattern_height) = {
             let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
@@ -208,10 +211,10 @@ impl PaintSource for NodePattern {
                 draw_ctx.get_view_params()
             };
 
-            let pattern_x = pattern.x.unwrap().normalize(values, &params);
-            let pattern_y = pattern.y.unwrap().normalize(values, &params);
-            let pattern_width = pattern.width.unwrap().normalize(values, &params);
-            let pattern_height = pattern.height.unwrap().normalize(values, &params);
+            let pattern_x = self.x.unwrap().normalize(values, &params);
+            let pattern_y = self.y.unwrap().normalize(values, &params);
+            let pattern_width = self.width.unwrap().normalize(values, &params);
+            let pattern_height = self.height.unwrap().normalize(values, &params);
 
             (pattern_x, pattern_y, pattern_width, pattern_height)
         };
@@ -338,7 +341,7 @@ impl PaintSource for NodePattern {
         // Set up transformations to be determined by the contents units
 
         // Draw everything
-        let pattern_node = pattern.node.borrow().as_ref().unwrap().upgrade().unwrap();
+        let pattern_node = self.node.borrow().as_ref().unwrap().upgrade().unwrap();
         let pattern_cascaded = CascadedValues::new_from_node(&pattern_node);
         let pattern_values = pattern_cascaded.get();
 
