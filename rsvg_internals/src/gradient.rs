@@ -257,7 +257,7 @@ impl UnresolvedVariant {
 
     // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
     // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
-    fn resolve_from_defaults(self) -> UnresolvedVariant {
+    fn resolve_from_defaults(&self) -> UnresolvedVariant {
         match self {
             UnresolvedVariant::Linear { x1, y1, x2, y2 } => UnresolvedVariant::Linear {
                 x1: x1.or_else(|| Some(LengthHorizontal::parse_str("0%").unwrap())),
@@ -487,7 +487,7 @@ impl UnresolvedGradient {
         UnresolvedGradient { units, affine, spread, stops, variant }
     }
 
-    fn resolve_from_defaults(self) -> UnresolvedGradient {
+    fn resolve_from_defaults(&self) -> UnresolvedGradient {
         let units = self.units.or(Some(GradientUnits::default()));
         let affine = self.affine.or(Some(cairo::Matrix::identity()));
         let spread = self.spread.or(Some(SpreadMethod::default()));
