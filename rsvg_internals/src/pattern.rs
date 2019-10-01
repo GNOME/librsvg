@@ -1,6 +1,5 @@
 use cairo;
 use markup5ever::local_name;
-use std::cell::RefCell;
 use std::f64;
 
 use crate::allowed_url::Fragment;
@@ -38,18 +37,53 @@ struct Common {
     y: Option<LengthVertical>,
     width: Option<LengthHorizontal>,
     height: Option<LengthVertical>,
-
 }
 
-#[derive(Clone, Default)]
-pub struct NodePattern {
+/// State used during the pattern resolution process
+///
+/// This is the current node's pattern information, plus the fallback
+/// that should be used in case that information is not complete for a
+/// resolved pattern yet.
+struct Unresolved {
+    pattern: UnresolvedPattern,
+    fallback: Option<Fragment>,
+}
+
+/// Main structure used during pattern resolution.  For unresolved
+/// patterns, we store all fields as Option<T> - if None, it means
+/// that the field is not specified; if Some(T), it means that the
+/// field was specified.
+struct UnresolvedPattern {
     common: Common,
 
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
     // among the fallbacks.
-    node: RefCell<Option<RsvgNode>>,
+    node: Option<RsvgNode>,
+}
 
+/// Resolved pattern
+pub struct Pattern {
+    units: PatternUnits,
+    content_units: PatternContentUnits,
+    // This Option<Option<ViewBox>> is a bit strange.  We want a field
+    // with value None to mean, "this field isn't resolved yet".  However,
+    // the vbox can very well be *not* specified in the SVG file.
+    // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
+    vbox: Option<ViewBox>,
+    preserve_aspect_ratio: AspectRatio,
+    affine: cairo::Matrix,
+    x: LengthHorizontal,
+    y: LengthVertical,
+    width: LengthHorizontal,
+    height: LengthVertical,
+
+    node: Option<RsvgNode>,
+}
+
+#[derive(Clone, Default)]
+pub struct NodePattern {
+    common: Common,
     fallback: Option<Fragment>,
 }
 
@@ -90,52 +124,50 @@ impl NodeTrait for NodePattern {
 }
 
 impl PaintSource for NodePattern {
-    type Resolved = NodePattern;
+    type Resolved = Pattern;
 
     fn resolve(
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<Self::Resolved, PaintServerError> {
-
-        let mut result = node.borrow().get_impl::<NodePattern>().clone();
-        *result.node.borrow_mut() = Some(node.clone());
+        let Unresolved { mut pattern, mut fallback } = self.get_unresolved(node);
 
         let mut stack = NodeStack::new();
 
-        while !result.is_resolved() {
-            if let Some(ref fallback) = result.fallback {
+        while !pattern.is_resolved() {
+            if let Some(ref fragment) = fallback {
                 if let Some(acquired) = draw_ctx
                     .acquired_nodes()
-                    .get_node_of_type(fallback, NodeType::Pattern)
+                    .get_node_of_type(&fragment, NodeType::Pattern)
                 {
-                    let a_node = acquired.get();
+                    let acquired_node = acquired.get();
 
-                    if stack.contains(a_node) {
-                        return Err(PaintServerError::CircularReference(fallback.clone()));
+                    if stack.contains(acquired_node) {
+                        return Err(PaintServerError::CircularReference(fragment.clone()));
                     }
 
-                    let node_data = a_node.borrow();
+                    let borrowed_node = acquired_node.borrow();
+                    let borrowed_pattern = borrowed_node.get_impl::<NodePattern>();
+                    let unresolved = borrowed_pattern.get_unresolved(&acquired_node);
 
-                    let fallback_pattern = node_data.get_impl::<NodePattern>();
-                    *fallback_pattern.node.borrow_mut() = Some(a_node.clone());
+                    pattern = pattern.resolve_from_fallback(&unresolved.pattern);
+                    fallback = unresolved.fallback;
 
-                    result = result.resolve_from_fallback(fallback_pattern);
-
-                    stack.push(a_node);
+                    stack.push(acquired_node);
                 } else {
-                    result = result.resolve_from_defaults();
+                    pattern = pattern.resolve_from_defaults();
                 }
             } else {
-                result = result.resolve_from_defaults();
+                pattern = pattern.resolve_from_defaults();
             }
         }
 
-        Ok(result)
+        Ok(pattern.to_resolved())
     }
 }
 
-impl ResolvedPaintSource for NodePattern {
+impl ResolvedPaintSource for Pattern {
     fn set_pattern_on_draw_context(
         self,
         values: &ComputedValues,
@@ -143,19 +175,17 @@ impl ResolvedPaintSource for NodePattern {
         _opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        assert!(self.is_resolved());
-
-        if self.node.borrow().is_none() {
+        if self.node.is_none() {
             // This means we didn't find any children among the fallbacks,
             // so there is nothing to render.
             return Ok(false);
         }
 
-        let units = self.common.units.unwrap();
-        let content_units = self.common.content_units.unwrap();
-        let pattern_affine = self.common.affine.unwrap();
-        let vbox = self.common.vbox.unwrap();
-        let preserve_aspect_ratio = self.common.preserve_aspect_ratio.unwrap();
+        let units = self.units;
+        let content_units = self.content_units;
+        let pattern_affine = self.affine;
+        let vbox = self.vbox;
+        let preserve_aspect_ratio = self.preserve_aspect_ratio;
 
         let (pattern_x, pattern_y, pattern_width, pattern_height) = {
             let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
@@ -164,10 +194,10 @@ impl ResolvedPaintSource for NodePattern {
                 draw_ctx.get_view_params()
             };
 
-            let pattern_x = self.common.x.unwrap().normalize(values, &params);
-            let pattern_y = self.common.y.unwrap().normalize(values, &params);
-            let pattern_width = self.common.width.unwrap().normalize(values, &params);
-            let pattern_height = self.common.height.unwrap().normalize(values, &params);
+            let pattern_x = self.x.normalize(values, &params);
+            let pattern_y = self.y.normalize(values, &params);
+            let pattern_width = self.width.normalize(values, &params);
+            let pattern_height = self.height.normalize(values, &params);
 
             (pattern_x, pattern_y, pattern_width, pattern_height)
         };
@@ -294,8 +324,7 @@ impl ResolvedPaintSource for NodePattern {
         // Set up transformations to be determined by the contents units
 
         // Draw everything
-        let pattern_node_borrow = self.node.borrow();
-        let pattern_node = pattern_node_borrow.as_ref().unwrap();
+        let pattern_node = self.node.as_ref().unwrap();
         let pattern_cascaded = CascadedValues::new_from_node(pattern_node);
         let pattern_values = pattern_cascaded.get();
 
@@ -326,7 +355,25 @@ impl ResolvedPaintSource for NodePattern {
     }
 }
 
-impl NodePattern {
+impl UnresolvedPattern {
+    fn to_resolved(self) -> Pattern {
+        assert!(self.is_resolved());
+
+        Pattern {
+            units: self.common.units.unwrap(),
+            content_units: self.common.content_units.unwrap(),
+            vbox: self.common.vbox.unwrap(),
+            preserve_aspect_ratio: self.common.preserve_aspect_ratio.unwrap(),
+            affine: self.common.affine.unwrap(),
+            x: self.common.x.unwrap(),
+            y: self.common.y.unwrap(),
+            width: self.common.width.unwrap(),
+            height: self.common.height.unwrap(),
+
+            node: self.node.clone(),
+        }
+    }
+
     fn is_resolved(&self) -> bool {
         self.common.units.is_some()
             && self.common.content_units.is_some()
@@ -340,7 +387,18 @@ impl NodePattern {
             && self.children_are_resolved()
     }
 
-    fn resolve_from_fallback(&self, fallback: &NodePattern) -> NodePattern {
+
+    fn children_are_resolved(&self) -> bool {
+        if let Some(ref node) = self.node {
+            node.has_children()
+        } else {
+            // We are an empty pattern; there is nothing further that
+            // can be resolved for children.
+            true
+        }
+    }
+
+    fn resolve_from_fallback(&self, fallback: &UnresolvedPattern) -> UnresolvedPattern {
         let units = self.common.units.or(fallback.common.units);
         let content_units = self.common.content_units.or(fallback.common.content_units);
         let vbox = self.common.vbox.or(fallback.common.vbox);
@@ -357,9 +415,7 @@ impl NodePattern {
             self.node.clone()
         };
 
-        let fallback = fallback.fallback.clone();
-
-        NodePattern {
+        UnresolvedPattern {
             common: Common {
                 units,
                 content_units,
@@ -372,11 +428,10 @@ impl NodePattern {
                 height,
             },
             node,
-            fallback,
         }
     }
 
-    fn resolve_from_defaults(&self) -> NodePattern {
+    fn resolve_from_defaults(&self) -> UnresolvedPattern {
         let units = self.common.units.or(Some(PatternUnits::default()));
         let content_units = self.common.content_units.or(Some(PatternContentUnits::default()));
         let vbox = self.common.vbox.or(Some(None));
@@ -387,9 +442,8 @@ impl NodePattern {
         let width = self.common.width.or(Some(Default::default()));
         let height = self.common.height.or(Some(Default::default()));
         let node = self.node.clone();
-        let fallback = None;
 
-        NodePattern {
+        UnresolvedPattern {
             common: Common {
                 units,
                 content_units,
@@ -402,17 +456,26 @@ impl NodePattern {
                 height,
             },
             node,
-            fallback,
         }
     }
+}
 
-    fn children_are_resolved(&self) -> bool {
-        if let Some(ref node) = *self.node.borrow() {
-            node.has_children()
+impl NodePattern {
+    fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
+        let node_with_children = if node.has_children() {
+            Some(node.clone())
         } else {
-            // We are an empty pattern; there is nothing further that
-            // can be resolved for children.
-            true
+            None
+        };
+
+        let pattern = UnresolvedPattern {
+            common: self.common.clone(),
+            node: node_with_children,
+        };
+
+        Unresolved {
+            pattern,
+            fallback: self.fallback.clone(),
         }
     }
 }
@@ -420,11 +483,22 @@ impl NodePattern {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::node::{NodeData, NodeType, RsvgNode};
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
-        let pat = NodePattern::default();
-        let res = pat.resolve_from_defaults();
-        assert!(res.is_resolved());
+        let node = RsvgNode::new(NodeData::new(
+            NodeType::Pattern,
+            local_name!("pattern"),
+            None,
+            None,
+            Box::new(NodePattern::default())
+        ));
+
+        let borrow = node.borrow();
+        let p = borrow.get_impl::<NodePattern>();
+        let Unresolved { pattern, .. } = p.get_unresolved(&node);
+        let pattern = pattern.resolve_from_defaults();
+        assert!(pattern.is_resolved());
     }
 }
