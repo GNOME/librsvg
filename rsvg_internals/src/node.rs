@@ -20,7 +20,7 @@ use rctree;
 
 /// Tree node with specific data
 pub type RsvgNode = rctree::Node<NodeData>;
-//pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
+pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
 
 /// Contents of a tree node
 pub struct NodeData {

@@ -1,5 +1,6 @@
 use cairo;
 use markup5ever::local_name;
+use std::cell::RefCell;
 use std::f64;
 
 use crate::allowed_url::Fragment;
@@ -63,6 +64,7 @@ struct UnresolvedPattern {
 }
 
 /// Resolved pattern
+#[derive(Clone)]
 pub struct Pattern {
     units: PatternUnits,
     content_units: PatternContentUnits,
@@ -78,13 +80,19 @@ pub struct Pattern {
     width: LengthHorizontal,
     height: LengthVertical,
 
-    node: Option<RsvgNode>,
+    // Link to the node whose children are the pattern's resolved children.
+    //
+    // We use a weak reference because this struct Pattern may be
+    // memoized within the corresponding NodePattern, and we don't
+    // want to create a reference cycle.
+    node: Option<RsvgWeakNode>,
 }
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct NodePattern {
     common: Common,
     fallback: Option<Fragment>,
+    resolved: RefCell<Option<Pattern>>,
 }
 
 impl NodeTrait for NodePattern {
@@ -131,6 +139,11 @@ impl PaintSource for NodePattern {
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<Self::Resolved, PaintServerError> {
+        let mut resolved = self.resolved.borrow_mut();
+        if let Some(ref pattern) = *resolved {
+            return Ok(pattern.clone());
+        }
+
         let Unresolved { mut pattern, mut fallback } = self.get_unresolved(node);
 
         let mut stack = NodeStack::new();
@@ -163,7 +176,11 @@ impl PaintSource for NodePattern {
             }
         }
 
-        Ok(pattern.to_resolved())
+        let pattern = pattern.to_resolved();
+
+        *resolved = Some(pattern.clone());
+
+        Ok(pattern)
     }
 }
 
@@ -324,8 +341,8 @@ impl ResolvedPaintSource for Pattern {
         // Set up transformations to be determined by the contents units
 
         // Draw everything
-        let pattern_node = self.node.as_ref().unwrap();
-        let pattern_cascaded = CascadedValues::new_from_node(pattern_node);
+        let pattern_node = self.node.as_ref().unwrap().upgrade().unwrap();
+        let pattern_cascaded = CascadedValues::new_from_node(&pattern_node);
         let pattern_values = pattern_cascaded.get();
 
         cr_pattern.set_matrix(caffine);
@@ -370,7 +387,7 @@ impl UnresolvedPattern {
             width: self.common.width.unwrap(),
             height: self.common.height.unwrap(),
 
-            node: self.node.clone(),
+            node: self.node.clone().map(|n| n.downgrade()),
         }
     }
 
