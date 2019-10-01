@@ -24,7 +24,7 @@ coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
 #[derive(Clone, Default)]
-pub struct NodePattern {
+struct Common {
     units: Option<PatternUnits>,
     content_units: Option<PatternContentUnits>,
     // This Option<Option<ViewBox>> is a bit strange.  We want a field
@@ -39,6 +39,12 @@ pub struct NodePattern {
     width: Option<LengthHorizontal>,
     height: Option<LengthVertical>,
 
+}
+
+#[derive(Clone, Default)]
+pub struct NodePattern {
+    common: Common,
+
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
     // among the fallbacks.
@@ -51,24 +57,24 @@ impl NodeTrait for NodePattern {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr {
-                local_name!("patternUnits") => self.units = Some(attr.parse(value)?),
-                local_name!("patternContentUnits") => self.content_units = Some(attr.parse(value)?),
-                local_name!("viewBox") => self.vbox = Some(Some(attr.parse(value)?)),
+                local_name!("patternUnits") => self.common.units = Some(attr.parse(value)?),
+                local_name!("patternContentUnits") => self.common.content_units = Some(attr.parse(value)?),
+                local_name!("viewBox") => self.common.vbox = Some(Some(attr.parse(value)?)),
                 local_name!("preserveAspectRatio") => {
-                    self.preserve_aspect_ratio = Some(attr.parse(value)?)
+                    self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
-                local_name!("patternTransform") => self.affine = Some(attr.parse(value)?),
+                local_name!("patternTransform") => self.common.affine = Some(attr.parse(value)?),
                 local_name!("xlink:href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?);
                 }
-                local_name!("x") => self.x = Some(attr.parse(value)?),
-                local_name!("y") => self.y = Some(attr.parse(value)?),
+                local_name!("x") => self.common.x = Some(attr.parse(value)?),
+                local_name!("y") => self.common.y = Some(attr.parse(value)?),
                 local_name!("width") => {
-                    self.width =
+                    self.common.width =
                         Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
                 }
                 local_name!("height") => {
-                    self.height =
+                    self.common.height =
                         Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
                 }
                 _ => (),
@@ -145,11 +151,11 @@ impl ResolvedPaintSource for NodePattern {
             return Ok(false);
         }
 
-        let units = self.units.unwrap();
-        let content_units = self.content_units.unwrap();
-        let pattern_affine = self.affine.unwrap();
-        let vbox = self.vbox.unwrap();
-        let preserve_aspect_ratio = self.preserve_aspect_ratio.unwrap();
+        let units = self.common.units.unwrap();
+        let content_units = self.common.content_units.unwrap();
+        let pattern_affine = self.common.affine.unwrap();
+        let vbox = self.common.vbox.unwrap();
+        let preserve_aspect_ratio = self.common.preserve_aspect_ratio.unwrap();
 
         let (pattern_x, pattern_y, pattern_width, pattern_height) = {
             let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
@@ -158,10 +164,10 @@ impl ResolvedPaintSource for NodePattern {
                 draw_ctx.get_view_params()
             };
 
-            let pattern_x = self.x.unwrap().normalize(values, &params);
-            let pattern_y = self.y.unwrap().normalize(values, &params);
-            let pattern_width = self.width.unwrap().normalize(values, &params);
-            let pattern_height = self.height.unwrap().normalize(values, &params);
+            let pattern_x = self.common.x.unwrap().normalize(values, &params);
+            let pattern_y = self.common.y.unwrap().normalize(values, &params);
+            let pattern_width = self.common.width.unwrap().normalize(values, &params);
+            let pattern_height = self.common.height.unwrap().normalize(values, &params);
 
             (pattern_x, pattern_y, pattern_width, pattern_height)
         };
@@ -322,28 +328,28 @@ impl ResolvedPaintSource for NodePattern {
 
 impl NodePattern {
     fn is_resolved(&self) -> bool {
-        self.units.is_some()
-            && self.content_units.is_some()
-            && self.vbox.is_some()
-            && self.preserve_aspect_ratio.is_some()
-            && self.affine.is_some()
-            && self.x.is_some()
-            && self.y.is_some()
-            && self.width.is_some()
-            && self.height.is_some()
+        self.common.units.is_some()
+            && self.common.content_units.is_some()
+            && self.common.vbox.is_some()
+            && self.common.preserve_aspect_ratio.is_some()
+            && self.common.affine.is_some()
+            && self.common.x.is_some()
+            && self.common.y.is_some()
+            && self.common.width.is_some()
+            && self.common.height.is_some()
             && self.children_are_resolved()
     }
 
     fn resolve_from_fallback(&self, fallback: &NodePattern) -> NodePattern {
-        let units = self.units.or(fallback.units);
-        let content_units = self.content_units.or(fallback.content_units);
-        let vbox = self.vbox.or(fallback.vbox);
-        let preserve_aspect_ratio = self.preserve_aspect_ratio.or(fallback.preserve_aspect_ratio);
-        let affine = self.affine.or(fallback.affine);
-        let x = self.x.or(fallback.x);
-        let y = self.y.or(fallback.y);
-        let width = self.width.or(fallback.width);
-        let height = self.height.or(fallback.height);
+        let units = self.common.units.or(fallback.common.units);
+        let content_units = self.common.content_units.or(fallback.common.content_units);
+        let vbox = self.common.vbox.or(fallback.common.vbox);
+        let preserve_aspect_ratio = self.common.preserve_aspect_ratio.or(fallback.common.preserve_aspect_ratio);
+        let affine = self.common.affine.or(fallback.common.affine);
+        let x = self.common.x.or(fallback.common.x);
+        let y = self.common.y.or(fallback.common.y);
+        let width = self.common.width.or(fallback.common.width);
+        let height = self.common.height.or(fallback.common.height);
 
         let node = if !self.children_are_resolved() {
             fallback.node.clone()
@@ -354,43 +360,47 @@ impl NodePattern {
         let fallback = fallback.fallback.clone();
 
         NodePattern {
-            units,
-            content_units,
-            vbox,
-            preserve_aspect_ratio,
-            affine,
-            x,
-            y,
-            width,
-            height,
+            common: Common {
+                units,
+                content_units,
+                vbox,
+                preserve_aspect_ratio,
+                affine,
+                x,
+                y,
+                width,
+                height,
+            },
             node,
             fallback,
         }
     }
 
     fn resolve_from_defaults(&self) -> NodePattern {
-        let units = self.units.or(Some(PatternUnits::default()));
-        let content_units = self.content_units.or(Some(PatternContentUnits::default()));
-        let vbox = self.vbox.or(Some(None));
-        let preserve_aspect_ratio = self.preserve_aspect_ratio.or(Some(AspectRatio::default()));
-        let affine = self.affine.or(Some(cairo::Matrix::identity()));
-        let x = self.x.or(Some(Default::default()));
-        let y = self.y.or(Some(Default::default()));
-        let width = self.width.or(Some(Default::default()));
-        let height = self.height.or(Some(Default::default()));
+        let units = self.common.units.or(Some(PatternUnits::default()));
+        let content_units = self.common.content_units.or(Some(PatternContentUnits::default()));
+        let vbox = self.common.vbox.or(Some(None));
+        let preserve_aspect_ratio = self.common.preserve_aspect_ratio.or(Some(AspectRatio::default()));
+        let affine = self.common.affine.or(Some(cairo::Matrix::identity()));
+        let x = self.common.x.or(Some(Default::default()));
+        let y = self.common.y.or(Some(Default::default()));
+        let width = self.common.width.or(Some(Default::default()));
+        let height = self.common.height.or(Some(Default::default()));
         let node = self.node.clone();
         let fallback = None;
 
         NodePattern {
-            units,
-            content_units,
-            vbox,
-            preserve_aspect_ratio,
-            affine,
-            x,
-            y,
-            width,
-            height,
+            common: Common {
+                units,
+                content_units,
+                vbox,
+                preserve_aspect_ratio,
+                affine,
+                x,
+                y,
+                width,
+                height,
+            },
             node,
             fallback,
         }
