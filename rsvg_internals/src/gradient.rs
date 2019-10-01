@@ -89,7 +89,7 @@ impl From<SpreadMethod> for cairo::Extend {
 /// just a shortcut to do that.
 macro_rules! fallback_to (
     ($dest:expr, $default:expr) => (
-        $dest.take ().or_else (|| $default)
+        $dest.or_else (|| $default)
     );
 );
 
@@ -245,7 +245,7 @@ impl UnresolvedVariant {
 
     fn resolve_from_fallback(&self, fallback: &UnresolvedVariant) -> UnresolvedVariant {
         match (*self, *fallback) {
-            (UnresolvedVariant::Linear { mut x1, mut y1, mut x2, mut y2 },
+            (UnresolvedVariant::Linear { x1, y1, x2, y2 },
              UnresolvedVariant::Linear { x1: fx1, y1: fy1, x2: fx2, y2: fy2 }) => UnresolvedVariant::Linear {
                 x1: fallback_to!(x1, fx1),
                 y1: fallback_to!(y1, fy1),
@@ -253,7 +253,7 @@ impl UnresolvedVariant {
                 y2: fallback_to!(y2, fy2),
             },
 
-            (UnresolvedVariant::Radial { mut cx, mut cy, mut r, mut fx, mut fy },
+            (UnresolvedVariant::Radial { cx, cy, r, fx, fy },
              UnresolvedVariant::Radial { cx: fcx, cy: fcy, r: fr, fx: ffx, fy: ffy }) => UnresolvedVariant::Radial {
                 cx: fallback_to!(cx, fcx),
                 cy: fallback_to!(cy, fcy),
@@ -270,14 +270,14 @@ impl UnresolvedVariant {
     // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
     fn resolve_from_defaults(self) -> UnresolvedVariant {
         match self {
-            UnresolvedVariant::Linear { mut x1, mut y1, mut x2, mut y2 } => UnresolvedVariant::Linear {
+            UnresolvedVariant::Linear { x1, y1, x2, y2 } => UnresolvedVariant::Linear {
                 x1: fallback_to!(x1, Some(LengthHorizontal::parse_str("0%").unwrap())),
                 y1: fallback_to!(y1, Some(LengthVertical::parse_str("0%").unwrap())),
                 x2: fallback_to!(x2, Some(LengthHorizontal::parse_str("100%").unwrap())),
                 y2: fallback_to!(y2, Some(LengthVertical::parse_str("0%").unwrap())),
             },
 
-            UnresolvedVariant::Radial { mut cx, mut cy, mut r, mut fx, mut fy } => {
+            UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
                 let cx = fallback_to!(cx, Some(LengthHorizontal::parse_str("50%").unwrap()));
                 let cy = fallback_to!(cy, Some(LengthVertical::parse_str("50%").unwrap()));;
                 let r = fallback_to!(r, Some(LengthBoth::parse_str("50%").unwrap()));
@@ -491,11 +491,11 @@ impl UnresolvedGradient {
             && self.variant.is_resolved()
     }
 
-    fn resolve_from_fallback(&mut self, fallback: &UnresolvedGradient) -> UnresolvedGradient {
+    fn resolve_from_fallback(&self, fallback: &UnresolvedGradient) -> UnresolvedGradient {
         let units = fallback_to!(self.units, fallback.units);
         let affine = fallback_to!(self.affine, fallback.affine);
         let spread = fallback_to!(self.spread, fallback.spread);
-        let stops = fallback_to!(self.stops, fallback.stops.clone());
+        let stops = self.stops.clone().or_else(|| fallback.stops.clone());
         let variant = self.variant.resolve_from_fallback(&fallback.variant);
 
         UnresolvedGradient { units, affine, spread, stops, variant }
