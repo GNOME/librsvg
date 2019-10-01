@@ -49,7 +49,7 @@ pub struct NodePattern {
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
     // among the fallbacks.
-    pub node: RefCell<Option<RsvgWeakNode>>,
+    pub node: RefCell<Option<RsvgNode>>,
 }
 
 impl NodeTrait for NodePattern {
@@ -146,7 +146,7 @@ impl PaintSource for NodePattern {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<Self::Resolved, PaintServerError> {
         let mut result = node.borrow().get_impl::<NodePattern>().clone();
-        *result.node.borrow_mut() = Some(node.downgrade());
+        *result.node.borrow_mut() = Some(node.clone());
 
         let mut stack = NodeStack::new();
 
@@ -165,7 +165,7 @@ impl PaintSource for NodePattern {
                     let node_data = a_node.borrow();
 
                     let fallback_pattern = node_data.get_impl::<NodePattern>();
-                    *fallback_pattern.node.borrow_mut() = Some(a_node.downgrade());
+                    *fallback_pattern.node.borrow_mut() = Some(a_node.clone());
 
                     result.resolve_from_fallback(fallback_pattern);
 
@@ -341,8 +341,9 @@ impl ResolvedPaintSource for NodePattern {
         // Set up transformations to be determined by the contents units
 
         // Draw everything
-        let pattern_node = self.node.borrow().as_ref().unwrap().upgrade().unwrap();
-        let pattern_cascaded = CascadedValues::new_from_node(&pattern_node);
+        let pattern_node_borrow = self.node.borrow();
+        let pattern_node = pattern_node_borrow.as_ref().unwrap();
+        let pattern_cascaded = CascadedValues::new_from_node(pattern_node);
         let pattern_values = pattern_cascaded.get();
 
         cr_pattern.set_matrix(caffine);
@@ -374,9 +375,8 @@ impl ResolvedPaintSource for NodePattern {
 
 impl NodePattern {
     fn children_are_resolved(&self) -> bool {
-        if let Some(ref weak) = *self.node.borrow() {
-            let strong_node = &weak.clone().upgrade().unwrap();
-            strong_node.has_children()
+        if let Some(ref node) = *self.node.borrow() {
+            node.has_children()
         } else {
             // We are an empty pattern; there is nothing further that
             // can be resolved for children.
