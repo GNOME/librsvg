@@ -304,6 +304,8 @@ struct Common {
     spread: Option<SpreadMethod>,
 
     fallback: Option<Fragment>,
+
+    resolved: RefCell<Option<Gradient>>,
 }
 
 #[derive(Default)]
@@ -314,8 +316,6 @@ pub struct NodeLinearGradient {
     y1: Option<LengthVertical>,
     x2: Option<LengthHorizontal>,
     y2: Option<LengthVertical>,
-
-    resolved: RefCell<Option<Gradient>>,
 }
 
 #[derive(Default)]
@@ -327,8 +327,6 @@ pub struct NodeRadialGradient {
     r: Option<LengthBoth>,
     fx: Option<LengthHorizontal>,
     fy: Option<LengthVertical>,
-
-    resolved: RefCell<Option<Gradient>>,
 }
 
 struct UnresolvedGradient {
@@ -602,7 +600,7 @@ macro_rules! impl_paint_source {
                 node: &RsvgNode,
                 draw_ctx: &mut DrawingCtx,
             ) -> Result<Self::Resolved, PaintServerError> {
-                let mut resolved = self.resolved.borrow_mut();
+                let mut resolved = self.common.resolved.borrow_mut();
                 if let Some(ref gradient) = *resolved {
                     return Ok(gradient.clone());
                 }
