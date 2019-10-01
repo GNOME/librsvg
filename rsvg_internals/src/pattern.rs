@@ -40,7 +40,6 @@ pub struct NodePattern {
     pub vbox: Option<Option<ViewBox>>,
     pub preserve_aspect_ratio: Option<AspectRatio>,
     pub affine: Option<cairo::Matrix>,
-    pub fallback: Option<Fragment>,
     pub x: Option<LengthHorizontal>,
     pub y: Option<LengthVertical>,
     pub width: Option<LengthHorizontal>,
@@ -50,6 +49,8 @@ pub struct NodePattern {
     // If the value is None, it means we are fully resolved and didn't find any children
     // among the fallbacks.
     pub node: RefCell<Option<RsvgNode>>,
+
+    pub fallback: Option<Fragment>,
 }
 
 impl NodeTrait for NodePattern {
