@@ -25,26 +25,26 @@ coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
 #[derive(Clone, Default)]
 pub struct NodePattern {
-    pub units: Option<PatternUnits>,
-    pub content_units: Option<PatternContentUnits>,
+    units: Option<PatternUnits>,
+    content_units: Option<PatternContentUnits>,
     // This Option<Option<ViewBox>> is a bit strange.  We want a field
     // with value None to mean, "this field isn't resolved yet".  However,
     // the vbox can very well be *not* specified in the SVG file.
     // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
-    pub vbox: Option<Option<ViewBox>>,
-    pub preserve_aspect_ratio: Option<AspectRatio>,
-    pub affine: Option<cairo::Matrix>,
-    pub x: Option<LengthHorizontal>,
-    pub y: Option<LengthVertical>,
-    pub width: Option<LengthHorizontal>,
-    pub height: Option<LengthVertical>,
+    vbox: Option<Option<ViewBox>>,
+    preserve_aspect_ratio: Option<AspectRatio>,
+    affine: Option<cairo::Matrix>,
+    x: Option<LengthHorizontal>,
+    y: Option<LengthVertical>,
+    width: Option<LengthHorizontal>,
+    height: Option<LengthVertical>,
 
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
     // among the fallbacks.
-    pub node: RefCell<Option<RsvgNode>>,
+    node: RefCell<Option<RsvgNode>>,
 
-    pub fallback: Option<Fragment>,
+    fallback: Option<Fragment>,
 }
 
 impl NodeTrait for NodePattern {
