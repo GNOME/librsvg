@@ -82,17 +82,6 @@ impl From<SpreadMethod> for cairo::Extend {
     }
 }
 
-/// See docs for UnresolvedGradient to see how this is used.
-///
-/// When resolving gradients, we replace unspecified fields with value
-/// None with specified fields from fallback fields.  This macro is
-/// just a shortcut to do that.
-macro_rules! fallback_to (
-    ($dest:expr, $default:expr) => (
-        $dest.or_else (|| $default)
-    );
-);
-
 // SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
 // gradient projects out from a focus point (fx, fy), which is assumed to be
 // inside the circle, to the edge of the circle.
@@ -247,19 +236,19 @@ impl UnresolvedVariant {
         match (*self, *fallback) {
             (UnresolvedVariant::Linear { x1, y1, x2, y2 },
              UnresolvedVariant::Linear { x1: fx1, y1: fy1, x2: fx2, y2: fy2 }) => UnresolvedVariant::Linear {
-                x1: fallback_to!(x1, fx1),
-                y1: fallback_to!(y1, fy1),
-                x2: fallback_to!(x2, fx2),
-                y2: fallback_to!(y2, fy2),
+                x1: x1.or(fx1),
+                y1: y1.or(fy1),
+                x2: x2.or(fx2),
+                y2: y2.or(fy2),
             },
 
             (UnresolvedVariant::Radial { cx, cy, r, fx, fy },
              UnresolvedVariant::Radial { cx: fcx, cy: fcy, r: fr, fx: ffx, fy: ffy }) => UnresolvedVariant::Radial {
-                cx: fallback_to!(cx, fcx),
-                cy: fallback_to!(cy, fcy),
-                r: fallback_to!(r, fr),
-                fx: fallback_to!(fx, ffx),
-                fy: fallback_to!(fy, ffy),
+                cx: cx.or(fcx),
+                cy: cy.or(fcy),
+                r: r.or(fr),
+                fx: fx.or(ffx),
+                fy: fy.or(ffy),
             },
 
             _ => *self, // If variants are of different types, then nothing to resolve
@@ -271,20 +260,20 @@ impl UnresolvedVariant {
     fn resolve_from_defaults(self) -> UnresolvedVariant {
         match self {
             UnresolvedVariant::Linear { x1, y1, x2, y2 } => UnresolvedVariant::Linear {
-                x1: fallback_to!(x1, Some(LengthHorizontal::parse_str("0%").unwrap())),
-                y1: fallback_to!(y1, Some(LengthVertical::parse_str("0%").unwrap())),
-                x2: fallback_to!(x2, Some(LengthHorizontal::parse_str("100%").unwrap())),
-                y2: fallback_to!(y2, Some(LengthVertical::parse_str("0%").unwrap())),
+                x1: x1.or_else(|| Some(LengthHorizontal::parse_str("0%").unwrap())),
+                y1: y1.or_else(|| Some(LengthVertical::parse_str("0%").unwrap())),
+                x2: x2.or_else(|| Some(LengthHorizontal::parse_str("100%").unwrap())),
+                y2: y2.or_else(|| Some(LengthVertical::parse_str("0%").unwrap())),
             },
 
             UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
-                let cx = fallback_to!(cx, Some(LengthHorizontal::parse_str("50%").unwrap()));
-                let cy = fallback_to!(cy, Some(LengthVertical::parse_str("50%").unwrap()));;
-                let r = fallback_to!(r, Some(LengthBoth::parse_str("50%").unwrap()));
+                let cx = cx.or_else(|| Some(LengthHorizontal::parse_str("50%").unwrap()));
+                let cy = cy.or_else(|| Some(LengthVertical::parse_str("50%").unwrap()));
+                let r = r.or_else(|| Some(LengthBoth::parse_str("50%").unwrap()));
 
                 // fx and fy fall back to the presentational value of cx and cy
-                let fx = fallback_to!(fx, cx);
-                let fy = fallback_to!(fy, cy);
+                let fx = fx.or(cx);
+                let fy = fy.or(cy);
 
                 UnresolvedVariant::Radial { cx, cy, r, fx, fy }
             },
@@ -362,9 +351,6 @@ pub struct NodeRadialGradient {
 /// gradients, we store all fields as Option<T> - if None, it means
 /// that the field is not specified; if Some(T), it means that the
 /// field was specified.
-///
-/// The fallback_to!() macro is useful to apply fallback values to
-/// each field.
 struct UnresolvedGradient {
     units: Option<GradientUnits>,
     affine: Option<cairo::Matrix>,
@@ -492,9 +478,9 @@ impl UnresolvedGradient {
     }
 
     fn resolve_from_fallback(&self, fallback: &UnresolvedGradient) -> UnresolvedGradient {
-        let units = fallback_to!(self.units, fallback.units);
-        let affine = fallback_to!(self.affine, fallback.affine);
-        let spread = fallback_to!(self.spread, fallback.spread);
+        let units = self.units.or(fallback.units);
+        let affine = self.affine.or(fallback.affine);
+        let spread = self.spread.or(fallback.spread);
         let stops = self.stops.clone().or_else(|| fallback.stops.clone());
         let variant = self.variant.resolve_from_fallback(&fallback.variant);
 
@@ -502,10 +488,10 @@ impl UnresolvedGradient {
     }
 
     fn resolve_from_defaults(self) -> UnresolvedGradient {
-        let units = fallback_to!(self.units.clone(), Some(GradientUnits::default()));
-        let affine = fallback_to!(self.affine.clone(), Some(cairo::Matrix::identity()));
-        let spread = fallback_to!(self.spread.clone(), Some(SpreadMethod::default()));
-        let stops = fallback_to!(self.stops.clone(), Some(Vec::<ColorStop>::new()));
+        let units = self.units.or(Some(GradientUnits::default()));
+        let affine = self.affine.or(Some(cairo::Matrix::identity()));
+        let spread = self.spread.or(Some(SpreadMethod::default()));
+        let stops = self.stops.clone().or_else(|| Some(Vec::<ColorStop>::new()));
         let variant = self.variant.resolve_from_defaults();
 
         UnresolvedGradient { units, affine, spread, stops, variant }
