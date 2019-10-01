@@ -418,14 +418,6 @@ impl UnresolvedGradient {
         }
     }
 
-    fn clone_stops(&self) -> Option<Vec<ColorStop>> {
-        if let Some(ref stops) = self.stops {
-            Some(stops.clone())
-        } else {
-            None
-        }
-    }
-
     /// Helper for add_color_stops_from_node()
     fn add_color_stop(
         &mut self,
@@ -503,7 +495,7 @@ impl UnresolvedGradient {
         let units = fallback_to!(self.units, fallback.units);
         let affine = fallback_to!(self.affine, fallback.affine);
         let spread = fallback_to!(self.spread, fallback.spread);
-        let stops = fallback_to!(self.stops, fallback.clone_stops());
+        let stops = fallback_to!(self.stops, fallback.stops.clone());
         let variant = self.variant.resolve_from_fallback(&fallback.variant);
 
         UnresolvedGradient { units, affine, spread, stops, variant }
