@@ -52,7 +52,7 @@ struct Unresolved {
 
 /// Keeps track of which NodePattern provided a non-empty set of children during pattern resolution
 #[derive(Clone)]
-enum UnresolvedNodeWithChildren {
+enum UnresolvedChildren {
     /// Points back to the original NodePattern if it had no usable children
     Unresolved,
 
@@ -67,7 +67,7 @@ enum UnresolvedNodeWithChildren {
 
 /// Keeps track of which NodePattern provided a non-empty set of children during pattern resolution
 #[derive(Clone)]
-enum NodeWithChildren {
+enum Children {
     Empty,
 
     /// Points back to the NodePattern that had usable children
@@ -84,7 +84,7 @@ struct UnresolvedPattern {
     // Point back to our corresponding node, or to the fallback node which has children.
     // If the value is None, it means we are fully resolved and didn't find any children
     // among the fallbacks.
-    node: UnresolvedNodeWithChildren,
+    children: UnresolvedChildren,
 }
 
 /// Resolved pattern
@@ -105,7 +105,7 @@ pub struct Pattern {
     height: LengthVertical,
 
     // Link to the node whose children are the pattern's resolved children.
-    node: NodeWithChildren,
+    children: Children,
 }
 
 #[derive(Default)]
@@ -212,7 +212,7 @@ impl ResolvedPaintSource for Pattern {
         _opacity: &UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        let node_with_children = if let Some(n) = self.node.node_with_children() {
+        let node_with_children = if let Some(n) = self.children.node_with_children() {
             n
         } else {
             // This means we didn't find any children among the fallbacks,
@@ -408,7 +408,7 @@ impl UnresolvedPattern {
             width: self.common.width.unwrap(),
             height: self.common.height.unwrap(),
 
-            node: self.node.to_resolved(),
+            children: self.children.to_resolved(),
         }
     }
 
@@ -422,7 +422,7 @@ impl UnresolvedPattern {
             && self.common.y.is_some()
             && self.common.width.is_some()
             && self.common.height.is_some()
-            && self.node.is_resolved()
+            && self.children.is_resolved()
     }
 
     fn resolve_from_fallback(&self, fallback: &UnresolvedPattern) -> UnresolvedPattern {
@@ -435,7 +435,7 @@ impl UnresolvedPattern {
         let y = self.common.y.or(fallback.common.y);
         let width = self.common.width.or(fallback.common.width);
         let height = self.common.height.or(fallback.common.height);
-        let node = self.node.resolve_from_fallback(&fallback.node);
+        let children = self.children.resolve_from_fallback(&fallback.children);
 
         UnresolvedPattern {
             common: Common {
@@ -449,7 +449,7 @@ impl UnresolvedPattern {
                 width,
                 height,
             },
-            node,
+            children,
         }
     }
 
@@ -463,7 +463,7 @@ impl UnresolvedPattern {
         let y = self.common.y.or(Some(Default::default()));
         let width = self.common.width.or(Some(Default::default()));
         let height = self.common.height.or(Some(Default::default()));
-        let node = self.node.resolve_from_defaults();
+        let children = self.children.resolve_from_defaults();
 
         UnresolvedPattern {
             common: Common {
@@ -477,31 +477,31 @@ impl UnresolvedPattern {
                 width,
                 height,
             },
-            node,
+            children,
         }
     }
 }
 
-impl UnresolvedNodeWithChildren {
-    fn from_node(node: &RsvgNode) -> UnresolvedNodeWithChildren {
+impl UnresolvedChildren {
+    fn from_node(node: &RsvgNode) -> UnresolvedChildren {
         let weak = node.downgrade();
 
         if node.children().any(|child| child.borrow().get_type() != NodeType::Chars) {
-            UnresolvedNodeWithChildren::WithChildren(weak)
+            UnresolvedChildren::WithChildren(weak)
         } else {
-            UnresolvedNodeWithChildren::Unresolved
+            UnresolvedChildren::Unresolved
         }
     }
 
     fn is_resolved(&self) -> bool {
         match *self {
-            UnresolvedNodeWithChildren::Unresolved => false,
+            UnresolvedChildren::Unresolved => false,
             _ => true,
         }
     }
 
-    fn resolve_from_fallback(&self, fallback: &UnresolvedNodeWithChildren) -> UnresolvedNodeWithChildren {
-        use UnresolvedNodeWithChildren::*;
+    fn resolve_from_fallback(&self, fallback: &UnresolvedChildren) -> UnresolvedChildren {
+        use UnresolvedChildren::*;
 
         match (self, fallback) {
             (&Unresolved, &Unresolved) => Unresolved,
@@ -511,8 +511,8 @@ impl UnresolvedNodeWithChildren {
         }
     }
 
-    fn resolve_from_defaults(&self) -> UnresolvedNodeWithChildren {
-        use UnresolvedNodeWithChildren::*;
+    fn resolve_from_defaults(&self) -> UnresolvedChildren {
+        use UnresolvedChildren::*;
 
         match *self {
             Unresolved => ResolvedEmpty,
@@ -520,24 +520,24 @@ impl UnresolvedNodeWithChildren {
         }
     }
 
-    fn to_resolved(&self) -> NodeWithChildren {
-        use UnresolvedNodeWithChildren::*;
+    fn to_resolved(&self) -> Children {
+        use UnresolvedChildren::*;
 
         assert!(self.is_resolved());
 
         match *self {
-            ResolvedEmpty => NodeWithChildren::Empty,
-            WithChildren(ref wc) => NodeWithChildren::WithChildren(wc.clone()),
+            ResolvedEmpty => Children::Empty,
+            WithChildren(ref wc) => Children::WithChildren(wc.clone()),
             _ => unreachable!(),
         }
     }
 }
 
-impl NodeWithChildren {
+impl Children {
     fn node_with_children(&self) -> Option<RsvgNode> {
         match *self {
-            NodeWithChildren::Empty => None,
-            NodeWithChildren::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
+            Children::Empty => None,
+            Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
         }
     }
 }
@@ -546,7 +546,7 @@ impl NodePattern {
     fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
         let pattern = UnresolvedPattern {
             common: self.common.clone(),
-            node: UnresolvedNodeWithChildren::from_node(node),
+            children: UnresolvedChildren::from_node(node),
         };
 
         Unresolved {
