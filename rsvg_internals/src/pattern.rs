@@ -170,29 +170,33 @@ impl PaintSource for NodePattern {
 
         while !pattern.is_resolved() {
             if let Some(ref fragment) = fallback {
-                if let Some(acquired) = draw_ctx
-                    .acquired_nodes()
-                    .get_node_of_type(&fragment, NodeType::Pattern)
-                {
-                    let acquired_node = acquired.get();
+                match draw_ctx.acquired_nodes().get_node_of_type(&fragment, NodeType::Pattern) {
+                    Ok(acquired) => {
+                        let acquired_node = acquired.get();
 
-                    if stack.contains(acquired_node) {
-                        return Err(AcquireError::CircularReference(fragment.clone()));
+                        if stack.contains(acquired_node) {
+                            return Err(AcquireError::CircularReference(fragment.clone()));
+                        }
+
+                        let borrowed_node = acquired_node.borrow();
+                        let borrowed_pattern = borrowed_node.get_impl::<NodePattern>();
+                        let unresolved = borrowed_pattern.get_unresolved(&acquired_node);
+
+                        pattern = pattern.resolve_from_fallback(&unresolved.pattern);
+                        fallback = unresolved.fallback;
+
+                        stack.push(acquired_node);
                     }
 
-                    let borrowed_node = acquired_node.borrow();
-                    let borrowed_pattern = borrowed_node.get_impl::<NodePattern>();
-                    let unresolved = borrowed_pattern.get_unresolved(&acquired_node);
-
-                    pattern = pattern.resolve_from_fallback(&unresolved.pattern);
-                    fallback = unresolved.fallback;
-
-                    stack.push(acquired_node);
-                } else {
-                    pattern = pattern.resolve_from_defaults();
+                    Err(e) => {
+                        rsvg_log!("Stopping pattern resolution: {}", e);
+                        pattern = pattern.resolve_from_defaults();
+                        break;
+                    }
                 }
             } else {
                 pattern = pattern.resolve_from_defaults();
+                break;
             }
         }
 

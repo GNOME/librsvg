@@ -588,7 +588,7 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    if let Some(acquired) = draw_ctx
+    if let Ok(acquired) = draw_ctx
         .acquired_nodes()
         .get_node_of_type(name, NodeType::Marker)
     {

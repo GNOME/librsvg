@@ -11,7 +11,7 @@ use crate::bbox::BoundingBox;
 use crate::clip_path::{ClipPathUnits, NodeClipPath};
 use crate::coord_units::CoordUnits;
 use crate::dpi::Dpi;
-use crate::error::RenderingError;
+use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{NodeLinearGradient, NodeRadialGradient};
 use crate::length::Dasharray;
@@ -341,7 +341,7 @@ impl DrawingCtx {
     ) -> (Option<RsvgNode>, Option<RsvgNode>) {
         clip_uri
             .and_then(|fragment| {
-                self.acquired_nodes.get_node_of_type(fragment, NodeType::ClipPath)
+                self.acquired_nodes.get_node_of_type(fragment, NodeType::ClipPath).ok()
             })
             .and_then(|acquired| {
                 let clip_node = acquired.get().clone();
@@ -470,7 +470,7 @@ impl DrawingCtx {
                     // Mask
 
                     if let Some(fragment) = mask {
-                        if let Some(acquired) = dc
+                        if let Ok(acquired) = dc
                             .acquired_nodes
                             .get_node_of_type(fragment, NodeType::Mask)
                         {
@@ -553,7 +553,7 @@ impl DrawingCtx {
             .acquired_nodes
             .get_node_of_type(filter_uri, NodeType::Filter)
         {
-            Some(acquired) => {
+            Ok(acquired) => {
                 let filter_node = acquired.get();
 
                 if !filter_node.borrow().is_in_error() {
@@ -564,7 +564,7 @@ impl DrawingCtx {
                 }
             }
 
-            None => {
+            Err(_) => {
                 rsvg_log!(
                     "element {} will not be rendered since its filter \"{}\" was not found",
                     node,
@@ -1117,19 +1117,18 @@ impl AcquiredNodes {
     // Note that if you acquire a node, you have to release it before trying to
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a None the second time.
-
-    // FIXME: return a Result<AcquiredNode, RenderingError::InvalidReference>
     pub fn get_node_of_type(
         &self,
         fragment: &Fragment,
         node_type: NodeType,
-    ) -> Option<AcquiredNode> {
+    ) -> Result<AcquiredNode, AcquireError> {
         self.get_node(fragment)
+            .ok_or_else(|| AcquireError::LinkNotFound(fragment.clone()))
             .and_then(|acquired| {
                 if acquired.get().borrow().get_type() == node_type {
-                    Some(acquired)
+                    Ok(acquired)
                 } else {
-                    None
+                    Err(AcquireError::InvalidLinkType(fragment.clone()))
                 }
             })
     }
