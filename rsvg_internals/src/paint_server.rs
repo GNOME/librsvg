@@ -61,7 +61,7 @@ pub trait PaintSource {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Self::Resolved, PaintServerError>;
+    ) -> Result<Self::Resolved, AcquireError>;
 
     fn resolve_fallbacks_and_set_pattern(
         &self,
@@ -77,7 +77,7 @@ pub trait PaintSource {
                 resolved.set_pattern_on_draw_context(values, draw_ctx, opacity, bbox)
             }
 
-            Err(PaintServerError::CircularReference(_)) => {
+            Err(AcquireError::CircularReference(_)) => {
                 // FIXME: add a fragment or node id to this:
                 rsvg_log!("circular reference in paint server {}", node);
                 Err(RenderingError::CircularReference)

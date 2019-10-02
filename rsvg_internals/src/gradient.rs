@@ -622,7 +622,7 @@ macro_rules! impl_paint_source {
                 &self,
                 node: &RsvgNode,
                 draw_ctx: &mut DrawingCtx,
-            ) -> Result<Self::Resolved, PaintServerError> {
+            ) -> Result<Self::Resolved, AcquireError> {
                 let mut resolved = self.common.resolved.borrow_mut();
                 if let Some(ref gradient) = *resolved {
                     return Ok(gradient.clone());
@@ -638,7 +638,7 @@ macro_rules! impl_paint_source {
                         let acquired_node = acquired.get();
 
                         if stack.contains(acquired_node) {
-                            return Err(PaintServerError::CircularReference(fragment.clone()));
+                            return Err(AcquireError::CircularReference(fragment.clone()));
                         }
 
                         let borrowed_node = acquired_node.borrow();
@@ -780,16 +780,16 @@ impl Gradient {
 fn acquire_gradient<'a>(
     draw_ctx: &'a mut DrawingCtx,
     fragment: &Fragment,
-) -> Result<AcquiredNode, PaintServerError> {
+) -> Result<AcquiredNode, AcquireError> {
     draw_ctx.acquired_nodes().get_node(fragment)
-        .ok_or(PaintServerError::LinkNotFound(fragment.clone()))
+        .ok_or(AcquireError::LinkNotFound(fragment.clone()))
         .and_then(|acquired| {
             let node_type = acquired.get().borrow().get_type();
 
             match node_type {
                 NodeType::LinearGradient => Ok(acquired),
                 NodeType::RadialGradient => Ok(acquired),
-                _ => Err(PaintServerError::InvalidLinkType(fragment.clone()))
+                _ => Err(AcquireError::InvalidLinkType(fragment.clone()))
             }
         })
 }

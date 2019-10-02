@@ -124,32 +124,32 @@ impl From<cairo::Status> for RenderingError {
 }
 
 #[derive(Debug)]
-pub enum PaintServerError {
+pub enum AcquireError {
     LinkNotFound(Fragment),
     InvalidLinkType(Fragment),
     CircularReference(Fragment),
 }
 
-impl error::Error for PaintServerError {
+impl error::Error for AcquireError {
     fn description(&self) -> &str {
         match *self {
-            PaintServerError::LinkNotFound(_) => "link to paint server not found",
-            PaintServerError::InvalidLinkType(_) => "link is to object of invalid type",
-            PaintServerError::CircularReference(_) => "circular reference in link"
+            AcquireError::LinkNotFound(_) => "link not found",
+            AcquireError::InvalidLinkType(_) => "link is to object of invalid type",
+            AcquireError::CircularReference(_) => "circular reference in link"
         }
     }
 }
 
-impl fmt::Display for PaintServerError {
+impl fmt::Display for AcquireError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            PaintServerError::LinkNotFound(ref frag) =>
-                write!(f, "link to paint server not found: {}", frag),
+            AcquireError::LinkNotFound(ref frag) =>
+                write!(f, "link not found: {}", frag),
 
-            PaintServerError::InvalidLinkType(ref frag) =>
+            AcquireError::InvalidLinkType(ref frag) =>
                 write!(f, "link {} is to object of invalid type", frag),
 
-            PaintServerError::CircularReference(ref frag) =>
+            AcquireError::CircularReference(ref frag) =>
                 write!(f, "circular reference in link {}", frag),
         }
     }
