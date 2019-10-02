@@ -10,7 +10,7 @@ use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack, ViewParams};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::paint_server::{PaintSource, ResolvedPaintSource};
+use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -690,8 +690,8 @@ impl_paint_source!(
     NodeType::LinearGradient,
 );
 
-impl ResolvedPaintSource for Gradient {
-    fn set_pattern_on_draw_context(
+impl AsPaintSource for Gradient {
+    fn set_as_paint_source(
         self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,

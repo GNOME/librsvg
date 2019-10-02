@@ -12,7 +12,7 @@ use crate::error::{AttributeResultExt, AcquireError, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
-use crate::paint_server::{PaintSource, ResolvedPaintSource};
+use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -208,8 +208,8 @@ impl PaintSource for NodePattern {
     }
 }
 
-impl ResolvedPaintSource for Pattern {
-    fn set_pattern_on_draw_context(
+impl AsPaintSource for Pattern {
+    fn set_as_paint_source(
         self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,

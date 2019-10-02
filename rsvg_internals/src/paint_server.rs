@@ -55,7 +55,7 @@ impl Parse for PaintServer {
 }
 
 pub trait PaintSource {
-    type Resolved: ResolvedPaintSource;
+    type Resolved: AsPaintSource;
 
     fn resolve(
         &self,
@@ -74,7 +74,7 @@ pub trait PaintSource {
             Ok(resolved) => {
                 let cascaded = CascadedValues::new_from_node(node);
                 let values = cascaded.get();
-                resolved.set_pattern_on_draw_context(values, draw_ctx, opacity, bbox)
+                resolved.set_as_paint_source(values, draw_ctx, opacity, bbox)
             }
 
             Err(AcquireError::CircularReference(_)) => {
@@ -93,8 +93,8 @@ pub trait PaintSource {
     }
 }
 
-pub trait ResolvedPaintSource {
-    fn set_pattern_on_draw_context(
+pub trait AsPaintSource {
+    fn set_as_paint_source(
         self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
