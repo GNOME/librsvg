@@ -616,7 +616,7 @@ impl DrawingCtx {
             } => {
                 let mut had_paint_server = false;
 
-                if let Some(acquired) = self.acquired_nodes.get_node(iri) {
+                if let Ok(acquired) = self.acquired_nodes.get_node(iri) {
                     let node = acquired.get();
 
                     had_paint_server = match node.borrow().get_type() {
@@ -1095,16 +1095,27 @@ impl AcquiredNodes {
     // Note that if you acquire a node, you have to release it before trying to
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
-    pub fn get_node(&self, fragment: &Fragment) -> Option<AcquiredNode> {
-        if let Ok(node) = self.svg.lookup(fragment) {
-            if !self.node_stack.borrow().contains(&node) {
-                self.node_stack.borrow_mut().push(&node);
-                let acq = AcquiredNode(self.node_stack.clone(), node.clone());
-                return Some(acq);
-            }
-        }
+    pub fn get_node(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+        let node = self.svg.lookup(fragment)
+            .map_err(|_| {
+                // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
+                // Maybe we should have the following stages:
+                //   - load main SVG XML
+                //
+                //   - load secondary SVG XML and other files like images;
+                //     all svg::Resources and svg::Images loaded
+                //
+                //   - Now that all files are loaded, resolve URL references
+                AcquireError::LinkNotFound(fragment.clone())
+            })?;
 
-        None
+        if self.node_stack.borrow().contains(&node) {
+            Err(AcquireError::CircularReference(fragment.clone()))
+        } else {
+            self.node_stack.borrow_mut().push(&node);
+            let acquired = AcquiredNode(self.node_stack.clone(), node.clone());
+            Ok(acquired)
+        }
     }
 
     // Use this function when looking up urls to other nodes, and when you expect
@@ -1123,7 +1134,6 @@ impl AcquiredNodes {
         node_type: NodeType,
     ) -> Result<AcquiredNode, AcquireError> {
         self.get_node(fragment)
-            .ok_or_else(|| AcquireError::LinkNotFound(fragment.clone()))
             .and_then(|acquired| {
                 if acquired.get().borrow().get_type() == node_type {
                     Ok(acquired)

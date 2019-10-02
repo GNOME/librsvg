@@ -47,7 +47,7 @@ impl Image {
         let acquired_drawable = draw_ctx
             .acquired_nodes()
             .get_node(fragment)
-            .ok_or(FilterError::InvalidInput)?;
+            .map_err(|_| FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
         let surface = ImageSurface::create(

@@ -782,7 +782,6 @@ fn acquire_gradient<'a>(
     fragment: &Fragment,
 ) -> Result<AcquiredNode, AcquireError> {
     draw_ctx.acquired_nodes().get_node(fragment)
-        .ok_or(AcquireError::LinkNotFound(fragment.clone()))
         .and_then(|acquired| {
             let node_type = acquired.get().borrow().get_type();
 
