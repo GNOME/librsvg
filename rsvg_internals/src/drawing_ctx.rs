@@ -341,7 +341,7 @@ impl DrawingCtx {
     ) -> (Option<RsvgNode>, Option<RsvgNode>) {
         clip_uri
             .and_then(|fragment| {
-                self.acquired_nodes.get_node_of_type(fragment, NodeType::ClipPath).ok()
+                self.acquired_nodes.get_node_of_type(fragment, &[NodeType::ClipPath]).ok()
             })
             .and_then(|acquired| {
                 let clip_node = acquired.get().clone();
@@ -472,7 +472,7 @@ impl DrawingCtx {
                     if let Some(fragment) = mask {
                         if let Ok(acquired) = dc
                             .acquired_nodes
-                            .get_node_of_type(fragment, NodeType::Mask)
+                            .get_node_of_type(fragment, &[NodeType::Mask])
                         {
                             let mask_node = acquired.get();
 
@@ -551,7 +551,7 @@ impl DrawingCtx {
     ) -> Result<cairo::ImageSurface, RenderingError> {
         match self
             .acquired_nodes
-            .get_node_of_type(filter_uri, NodeType::Filter)
+            .get_node_of_type(filter_uri, &[NodeType::Filter])
         {
             Ok(acquired) => {
                 let filter_node = acquired.get();
@@ -1122,6 +1122,8 @@ impl AcquiredNodes {
     // the node to be of a particular type. This function does proper recursion
     // checking and thereby avoids infinite loops.
     //
+    // Specify an empty slice for `node_types` if you want a node of any type.
+    //
     // Malformed SVGs, for example, may reference a marker by its IRI, but
     // the object referenced by the IRI is not a marker.
     //
@@ -1131,14 +1133,19 @@ impl AcquiredNodes {
     pub fn get_node_of_type(
         &self,
         fragment: &Fragment,
-        node_type: NodeType,
+        node_types: &[NodeType],
     ) -> Result<AcquiredNode, AcquireError> {
         self.get_node(fragment)
             .and_then(|acquired| {
-                if acquired.get().borrow().get_type() == node_type {
+                if node_types.len() == 0 {
                     Ok(acquired)
                 } else {
-                    Err(AcquireError::InvalidLinkType(fragment.clone()))
+                    let acquired_type = acquired.get().borrow().get_type();
+                    if node_types.iter().find(|&&t| t == acquired_type).is_some() {
+                        Ok(acquired)
+                    } else {
+                        Err(AcquireError::InvalidLinkType(fragment.clone()))
+                    }
                 }
             })
     }

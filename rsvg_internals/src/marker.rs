@@ -590,7 +590,7 @@ fn emit_marker_by_name(
 ) -> Result<BoundingBox, RenderingError> {
     if let Ok(acquired) = draw_ctx
         .acquired_nodes()
-        .get_node_of_type(name, NodeType::Marker)
+        .get_node_of_type(name, &[NodeType::Marker])
     {
         let node = acquired.get();
 
