@@ -11,7 +11,7 @@ use crate::bbox::BoundingBox;
 use crate::clip_path::{ClipPathUnits, NodeClipPath};
 use crate::coord_units::CoordUnits;
 use crate::dpi::Dpi;
-use crate::error::RenderingError;
+use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{NodeLinearGradient, NodeRadialGradient};
 use crate::length::Dasharray;
@@ -330,8 +330,27 @@ impl DrawingCtx {
             })
     }
 
-    pub fn acquired_nodes(&self) -> &AcquiredNodes {
-        &self.acquired_nodes
+    // Use this function when looking up urls to other nodes, and when you expect
+    // the node to be of a particular type. This function does proper recursion
+    // checking and thereby avoids infinite loops.
+    //
+    // Nodes acquired by this function must be released in reverse
+    // acquiring order.
+    //
+    // Specify an empty slice for `node_types` if you want a node of any type.
+    //
+    // Malformed SVGs, for example, may reference a marker by its IRI, but
+    // the object referenced by the IRI is not a marker.
+    //
+    // Note that if you acquire a node, you have to release it before trying to
+    // acquire it again.  If you acquire a node "#foo" and don't release it before
+    // trying to acquire "foo" again, you will obtain a None the second time.
+    pub fn acquire_node(
+        &self,
+        fragment: &Fragment,
+        node_types: &[NodeType]
+    ) -> Result<AcquiredNode, AcquireError> {
+        self.acquired_nodes.acquire(fragment, node_types)
     }
 
     // Returns (clip_in_user_space, clip_in_object_space), both Option<RsvgNode>
@@ -341,7 +360,7 @@ impl DrawingCtx {
     ) -> (Option<RsvgNode>, Option<RsvgNode>) {
         clip_uri
             .and_then(|fragment| {
-                self.acquired_nodes.get_node_of_type(fragment, NodeType::ClipPath)
+                self.acquire_node(fragment, &[NodeType::ClipPath]).ok()
             })
             .and_then(|acquired| {
                 let clip_node = acquired.get().clone();
@@ -470,9 +489,7 @@ impl DrawingCtx {
                     // Mask
 
                     if let Some(fragment) = mask {
-                        if let Some(acquired) = dc
-                            .acquired_nodes
-                            .get_node_of_type(fragment, NodeType::Mask)
+                        if let Ok(acquired) = dc.acquire_node(fragment, &[NodeType::Mask])
                         {
                             let mask_node = acquired.get();
 
@@ -484,7 +501,11 @@ impl DrawingCtx {
                                     .map(|_: ()| bbox)
                             });
                         } else {
-                            rsvg_log!("element {} references nonexistent mask \"{}\"", node, fragment);
+                            rsvg_log!(
+                                "element {} references nonexistent mask \"{}\"",
+                                node,
+                                fragment
+                            );
                         }
                     } else {
                         // No mask, so composite the temporary surface
@@ -549,11 +570,9 @@ impl DrawingCtx {
         child_surface: &cairo::ImageSurface,
         node_bbox: BoundingBox,
     ) -> Result<cairo::ImageSurface, RenderingError> {
-        match self
-            .acquired_nodes
-            .get_node_of_type(filter_uri, NodeType::Filter)
+        match self.acquire_node(filter_uri, &[NodeType::Filter])
         {
-            Some(acquired) => {
+            Ok(acquired) => {
                 let filter_node = acquired.get();
 
                 if !filter_node.borrow().is_in_error() {
@@ -564,7 +583,7 @@ impl DrawingCtx {
                 }
             }
 
-            None => {
+            Err(_) => {
                 rsvg_log!(
                     "element {} will not be rendered since its filter \"{}\" was not found",
                     node,
@@ -602,6 +621,17 @@ impl DrawingCtx {
         );
     }
 
+    fn acquire_paint_server(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+        self.acquire_node(
+            fragment,
+            &[
+                NodeType::LinearGradient,
+                NodeType::RadialGradient,
+                NodeType::Pattern,
+            ],
+        )
+    }
+
     pub fn set_source_paint_server(
         &mut self,
         ps: &PaintServer,
@@ -616,7 +646,7 @@ impl DrawingCtx {
             } => {
                 let mut had_paint_server = false;
 
-                if let Some(acquired) = self.acquired_nodes.get_node(iri) {
+                if let Ok(acquired) = self.acquire_paint_server(iri) {
                     let node = acquired.get();
 
                     had_paint_server = match node.borrow().get_type() {
@@ -632,7 +662,7 @@ impl DrawingCtx {
                             .borrow()
                             .get_impl::<NodePattern>()
                             .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
-                        _ => false,
+                        _ => unreachable!(),
                     }
                 }
 
@@ -1073,72 +1103,65 @@ impl AcquiredNode {
     }
 }
 
-pub struct AcquiredNodes {
+struct AcquiredNodes {
     svg: Rc<Svg>,
     node_stack: Rc<RefCell<NodeStack>>,
 }
 
 impl AcquiredNodes {
-    pub fn new(svg: Rc<Svg>) -> AcquiredNodes {
+    fn new(svg: Rc<Svg>) -> AcquiredNodes {
         AcquiredNodes {
             svg,
             node_stack: Rc::new(RefCell::new(NodeStack::new())),
         }
     }
 
-    // Use this function when looking up urls to other nodes. This function
-    // does proper recursion checking and thereby avoids infinite loops.
-    //
-    // Nodes acquired by this function must be released in reverse
-    // acquiring order.
-    //
-    // Note that if you acquire a node, you have to release it before trying to
-    // acquire it again.  If you acquire a node "#foo" and don't release it before
-    // trying to acquire "foo" again, you will obtain a %NULL the second time.
-    pub fn get_node(&self, fragment: &Fragment) -> Option<AcquiredNode> {
-        if let Ok(node) = self.svg.lookup(fragment) {
-            if !self.node_stack.borrow().contains(&node) {
-                self.node_stack.borrow_mut().push(&node);
-                let acq = AcquiredNode(self.node_stack.clone(), node.clone());
-                return Some(acq);
-            }
-        }
+    fn lookup_node(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+        let node = self.svg.lookup(fragment).map_err(|_| {
+            // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
+            // Maybe we should have the following stages:
+            //   - load main SVG XML
+            //
+            //   - load secondary SVG XML and other files like images;
+            //     all svg::Resources and svg::Images loaded
+            //
+            //   - Now that all files are loaded, resolve URL references
+            AcquireError::LinkNotFound(fragment.clone())
+        })?;
 
-        None
+        if self.node_stack.borrow().contains(&node) {
+            Err(AcquireError::CircularReference(fragment.clone()))
+        } else {
+            self.node_stack.borrow_mut().push(&node);
+            let acquired = AcquiredNode(self.node_stack.clone(), node.clone());
+            Ok(acquired)
+        }
     }
 
-    // Use this function when looking up urls to other nodes, and when you expect
-    // the node to be of a particular type. This function does proper recursion
-    // checking and thereby avoids infinite loops.
-    //
-    // Malformed SVGs, for example, may reference a marker by its IRI, but
-    // the object referenced by the IRI is not a marker.
-    //
-    // Note that if you acquire a node, you have to release it before trying to
-    // acquire it again.  If you acquire a node "#foo" and don't release it before
-    // trying to acquire "foo" again, you will obtain a None the second time.
-
-    // FIXME: return a Result<AcquiredNode, RenderingError::InvalidReference>
-    pub fn get_node_of_type(
+    fn acquire(
         &self,
         fragment: &Fragment,
-        node_type: NodeType,
-    ) -> Option<AcquiredNode> {
-        self.get_node(fragment)
-            .and_then(|acquired| {
-                if acquired.get().borrow().get_type() == node_type {
-                    Some(acquired)
-                } else {
-                    None
-                }
-            })
+        node_types: &[NodeType],
+    ) -> Result<AcquiredNode, AcquireError> {
+        let acquired = self.lookup_node(fragment)?;
+
+        if node_types.len() == 0 {
+            Ok(acquired)
+        } else {
+            let acquired_type = acquired.get().borrow().get_type();
+            if node_types.iter().find(|&&t| t == acquired_type).is_some() {
+                Ok(acquired)
+            } else {
+                Err(AcquireError::InvalidLinkType(fragment.clone()))
+            }
+        }
     }
 }
 
 /// Keeps a stack of nodes and can check if a certain node is contained in the stack
 ///
 /// Sometimes parts of the code cannot plainly use the implicit stack of acquired
-/// nodes as maintained by DrawingCtx::acquired_nodes, and they must keep their
+/// nodes as maintained by DrawingCtx::acquire_node(), and they must keep their
 /// own stack of nodes to test for reference cycles.  NodeStack can be used to do that.
 pub struct NodeStack(Vec<RsvgNode>);
 

@@ -10,7 +10,7 @@ use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack, ViewParams};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::paint_server::{PaintSource, ResolvedPaintSource};
+use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -257,7 +257,7 @@ impl UnresolvedVariant {
 
     // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
     // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
-    fn resolve_from_defaults(self) -> UnresolvedVariant {
+    fn resolve_from_defaults(&self) -> UnresolvedVariant {
         match self {
             UnresolvedVariant::Linear { x1, y1, x2, y2 } => UnresolvedVariant::Linear {
                 x1: x1.or_else(|| Some(LengthHorizontal::parse_str("0%").unwrap())),
@@ -487,7 +487,7 @@ impl UnresolvedGradient {
         UnresolvedGradient { units, affine, spread, stops, variant }
     }
 
-    fn resolve_from_defaults(self) -> UnresolvedGradient {
+    fn resolve_from_defaults(&self) -> UnresolvedGradient {
         let units = self.units.or(Some(GradientUnits::default()));
         let affine = self.affine.or(Some(cairo::Matrix::identity()));
         let spread = self.spread.or(Some(SpreadMethod::default()));
@@ -622,7 +622,7 @@ macro_rules! impl_paint_source {
                 &self,
                 node: &RsvgNode,
                 draw_ctx: &mut DrawingCtx,
-            ) -> Result<Self::Resolved, PaintServerError> {
+            ) -> Result<Self::Resolved, AcquireError> {
                 let mut resolved = self.common.resolved.borrow_mut();
                 if let Some(ref gradient) = *resolved {
                     return Ok(gradient.clone());
@@ -638,7 +638,7 @@ macro_rules! impl_paint_source {
                         let acquired_node = acquired.get();
 
                         if stack.contains(acquired_node) {
-                            return Err(PaintServerError::CircularReference(fragment.clone()));
+                            return Err(AcquireError::CircularReference(fragment.clone()));
                         }
 
                         let borrowed_node = acquired_node.borrow();
@@ -690,8 +690,8 @@ impl_paint_source!(
     NodeType::LinearGradient,
 );
 
-impl ResolvedPaintSource for Gradient {
-    fn set_pattern_on_draw_context(
+impl AsPaintSource for Gradient {
+    fn set_as_paint_source(
         self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
@@ -780,18 +780,8 @@ impl Gradient {
 fn acquire_gradient<'a>(
     draw_ctx: &'a mut DrawingCtx,
     fragment: &Fragment,
-) -> Result<AcquiredNode, PaintServerError> {
-    draw_ctx.acquired_nodes().get_node(fragment)
-        .ok_or(PaintServerError::LinkNotFound(fragment.clone()))
-        .and_then(|acquired| {
-            let node_type = acquired.get().borrow().get_type();
-
-            match node_type {
-                NodeType::LinearGradient => Ok(acquired),
-                NodeType::RadialGradient => Ok(acquired),
-                _ => Err(PaintServerError::InvalidLinkType(fragment.clone()))
-            }
-        })
+) -> Result<AcquiredNode, AcquireError> {
+    draw_ctx.acquire_node(fragment, &[NodeType::LinearGradient, NodeType::RadialGradient])
 }
 
 #[cfg(test)]

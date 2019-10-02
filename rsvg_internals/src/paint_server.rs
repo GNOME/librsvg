@@ -55,13 +55,13 @@ impl Parse for PaintServer {
 }
 
 pub trait PaintSource {
-    type Resolved: ResolvedPaintSource;
+    type Resolved: AsPaintSource;
 
     fn resolve(
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Self::Resolved, PaintServerError>;
+    ) -> Result<Self::Resolved, AcquireError>;
 
     fn resolve_fallbacks_and_set_pattern(
         &self,
@@ -74,10 +74,10 @@ pub trait PaintSource {
             Ok(resolved) => {
                 let cascaded = CascadedValues::new_from_node(node);
                 let values = cascaded.get();
-                resolved.set_pattern_on_draw_context(values, draw_ctx, opacity, bbox)
+                resolved.set_as_paint_source(values, draw_ctx, opacity, bbox)
             }
 
-            Err(PaintServerError::CircularReference(_)) => {
+            Err(AcquireError::CircularReference(_)) => {
                 // FIXME: add a fragment or node id to this:
                 rsvg_log!("circular reference in paint server {}", node);
                 Err(RenderingError::CircularReference)
@@ -93,8 +93,8 @@ pub trait PaintSource {
     }
 }
 
-pub trait ResolvedPaintSource {
-    fn set_pattern_on_draw_context(
+pub trait AsPaintSource {
+    fn set_as_paint_source(
         self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
@@ -109,9 +109,9 @@ pub trait ResolvedPaintSource {
 pub trait Resolve {
     fn is_resolved(&self) -> bool;
 
-    fn resolve_from_fallback(&mut self, fallback: &Self);
+    fn resolve_from_fallback(&self, fallback: &Self) -> Self;
 
-    fn resolve_from_defaults(&mut self);
+    fn resolve_from_defaults(&self) -> Self;
 }
 
 #[cfg(test)]
