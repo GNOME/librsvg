@@ -781,16 +781,7 @@ fn acquire_gradient<'a>(
     draw_ctx: &'a mut DrawingCtx,
     fragment: &Fragment,
 ) -> Result<AcquiredNode, AcquireError> {
-    draw_ctx.acquired_nodes().get_node(fragment)
-        .and_then(|acquired| {
-            let node_type = acquired.get().borrow().get_type();
-
-            match node_type {
-                NodeType::LinearGradient => Ok(acquired),
-                NodeType::RadialGradient => Ok(acquired),
-                _ => Err(AcquireError::InvalidLinkType(fragment.clone()))
-            }
-        })
+    draw_ctx.acquired_nodes().get_node_of_type(fragment, &[NodeType::LinearGradient, NodeType::RadialGradient])
 }
 
 #[cfg(test)]

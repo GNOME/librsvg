@@ -46,7 +46,7 @@ impl Image {
     ) -> Result<ImageSurface, FilterError> {
         let acquired_drawable = draw_ctx
             .acquired_nodes()
-            .get_node(fragment)
+            .get_node_of_type(fragment, &[])
             .map_err(|_| FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 

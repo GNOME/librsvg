@@ -341,7 +341,9 @@ impl DrawingCtx {
     ) -> (Option<RsvgNode>, Option<RsvgNode>) {
         clip_uri
             .and_then(|fragment| {
-                self.acquired_nodes.get_node_of_type(fragment, &[NodeType::ClipPath]).ok()
+                self.acquired_nodes
+                    .get_node_of_type(fragment, &[NodeType::ClipPath])
+                    .ok()
             })
             .and_then(|acquired| {
                 let clip_node = acquired.get().clone();
@@ -484,7 +486,11 @@ impl DrawingCtx {
                                     .map(|_: ()| bbox)
                             });
                         } else {
-                            rsvg_log!("element {} references nonexistent mask \"{}\"", node, fragment);
+                            rsvg_log!(
+                                "element {} references nonexistent mask \"{}\"",
+                                node,
+                                fragment
+                            );
                         }
                     } else {
                         // No mask, so composite the temporary surface
@@ -602,6 +608,17 @@ impl DrawingCtx {
         );
     }
 
+    fn acquire_paint_server(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+        self.acquired_nodes.get_node_of_type(
+            fragment,
+            &[
+                NodeType::LinearGradient,
+                NodeType::RadialGradient,
+                NodeType::Pattern,
+            ],
+        )
+    }
+
     pub fn set_source_paint_server(
         &mut self,
         ps: &PaintServer,
@@ -616,7 +633,7 @@ impl DrawingCtx {
             } => {
                 let mut had_paint_server = false;
 
-                if let Ok(acquired) = self.acquired_nodes.get_node(iri) {
+                if let Ok(acquired) = self.acquire_paint_server(iri) {
                     let node = acquired.get();
 
                     had_paint_server = match node.borrow().get_type() {
@@ -632,7 +649,7 @@ impl DrawingCtx {
                             .borrow()
                             .get_impl::<NodePattern>()
                             .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
-                        _ => false,
+                        _ => unreachable!(),
                     }
                 }
 
@@ -1095,19 +1112,18 @@ impl AcquiredNodes {
     // Note that if you acquire a node, you have to release it before trying to
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
-    pub fn get_node(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
-        let node = self.svg.lookup(fragment)
-            .map_err(|_| {
-                // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
-                // Maybe we should have the following stages:
-                //   - load main SVG XML
-                //
-                //   - load secondary SVG XML and other files like images;
-                //     all svg::Resources and svg::Images loaded
-                //
-                //   - Now that all files are loaded, resolve URL references
-                AcquireError::LinkNotFound(fragment.clone())
-            })?;
+    fn lookup_node(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+        let node = self.svg.lookup(fragment).map_err(|_| {
+            // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
+            // Maybe we should have the following stages:
+            //   - load main SVG XML
+            //
+            //   - load secondary SVG XML and other files like images;
+            //     all svg::Resources and svg::Images loaded
+            //
+            //   - Now that all files are loaded, resolve URL references
+            AcquireError::LinkNotFound(fragment.clone())
+        })?;
 
         if self.node_stack.borrow().contains(&node) {
             Err(AcquireError::CircularReference(fragment.clone()))
@@ -1135,19 +1151,18 @@ impl AcquiredNodes {
         fragment: &Fragment,
         node_types: &[NodeType],
     ) -> Result<AcquiredNode, AcquireError> {
-        self.get_node(fragment)
-            .and_then(|acquired| {
-                if node_types.len() == 0 {
-                    Ok(acquired)
-                } else {
-                    let acquired_type = acquired.get().borrow().get_type();
-                    if node_types.iter().find(|&&t| t == acquired_type).is_some() {
-                        Ok(acquired)
-                    } else {
-                        Err(AcquireError::InvalidLinkType(fragment.clone()))
-                    }
-                }
-            })
+        let acquired = self.lookup_node(fragment)?;
+
+        if node_types.len() == 0 {
+            Ok(acquired)
+        } else {
+            let acquired_type = acquired.get().borrow().get_type();
+            if node_types.iter().find(|&&t| t == acquired_type).is_some() {
+                Ok(acquired)
+            } else {
+                Err(AcquireError::InvalidLinkType(fragment.clone()))
+            }
+        }
     }
 }
 
