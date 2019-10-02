@@ -781,7 +781,7 @@ fn acquire_gradient<'a>(
     draw_ctx: &'a mut DrawingCtx,
     fragment: &Fragment,
 ) -> Result<AcquiredNode, AcquireError> {
-    draw_ctx.acquired_nodes().acquire(fragment, &[NodeType::LinearGradient, NodeType::RadialGradient])
+    draw_ctx.acquire_node(fragment, &[NodeType::LinearGradient, NodeType::RadialGradient])
 }
 
 #[cfg(test)]
