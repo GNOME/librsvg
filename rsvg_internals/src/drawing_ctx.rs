@@ -342,7 +342,7 @@ impl DrawingCtx {
         clip_uri
             .and_then(|fragment| {
                 self.acquired_nodes
-                    .get_node_of_type(fragment, &[NodeType::ClipPath])
+                    .acquire(fragment, &[NodeType::ClipPath])
                     .ok()
             })
             .and_then(|acquired| {
@@ -474,7 +474,7 @@ impl DrawingCtx {
                     if let Some(fragment) = mask {
                         if let Ok(acquired) = dc
                             .acquired_nodes
-                            .get_node_of_type(fragment, &[NodeType::Mask])
+                            .acquire(fragment, &[NodeType::Mask])
                         {
                             let mask_node = acquired.get();
 
@@ -557,7 +557,7 @@ impl DrawingCtx {
     ) -> Result<cairo::ImageSurface, RenderingError> {
         match self
             .acquired_nodes
-            .get_node_of_type(filter_uri, &[NodeType::Filter])
+            .acquire(filter_uri, &[NodeType::Filter])
         {
             Ok(acquired) => {
                 let filter_node = acquired.get();
@@ -609,7 +609,7 @@ impl DrawingCtx {
     }
 
     fn acquire_paint_server(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
-        self.acquired_nodes.get_node_of_type(
+        self.acquired_nodes.acquire(
             fragment,
             &[
                 NodeType::LinearGradient,
@@ -1103,15 +1103,6 @@ impl AcquiredNodes {
         }
     }
 
-    // Use this function when looking up urls to other nodes. This function
-    // does proper recursion checking and thereby avoids infinite loops.
-    //
-    // Nodes acquired by this function must be released in reverse
-    // acquiring order.
-    //
-    // Note that if you acquire a node, you have to release it before trying to
-    // acquire it again.  If you acquire a node "#foo" and don't release it before
-    // trying to acquire "foo" again, you will obtain a %NULL the second time.
     fn lookup_node(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
         let node = self.svg.lookup(fragment).map_err(|_| {
             // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
@@ -1138,6 +1129,9 @@ impl AcquiredNodes {
     // the node to be of a particular type. This function does proper recursion
     // checking and thereby avoids infinite loops.
     //
+    // Nodes acquired by this function must be released in reverse
+    // acquiring order.
+    //
     // Specify an empty slice for `node_types` if you want a node of any type.
     //
     // Malformed SVGs, for example, may reference a marker by its IRI, but
@@ -1146,7 +1140,7 @@ impl AcquiredNodes {
     // Note that if you acquire a node, you have to release it before trying to
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a None the second time.
-    pub fn get_node_of_type(
+    pub fn acquire(
         &self,
         fragment: &Fragment,
         node_types: &[NodeType],

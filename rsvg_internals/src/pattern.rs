@@ -170,7 +170,7 @@ impl PaintSource for NodePattern {
 
         while !pattern.is_resolved() {
             if let Some(ref fragment) = fallback {
-                match draw_ctx.acquired_nodes().get_node_of_type(&fragment, &[NodeType::Pattern]) {
+                match draw_ctx.acquired_nodes().acquire(&fragment, &[NodeType::Pattern]) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
