@@ -1,6 +1,4 @@
 use cairo;
-use cairo_sys;
-use glib::translate::*;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::{Rc, Weak};
@@ -975,7 +973,7 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
 
     // objectBoundingBox
 
-    let ob = BoundingBox::new(&affine).with_extents(path_extents(cr));
+    let ob = BoundingBox::new(&affine).with_extents(cr.path_extents());
     bbox.insert(&ob);
 
     // restore tolerance
@@ -983,19 +981,6 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     cr.set_tolerance(backup_tolerance);
 
     bbox
-}
-
-// remove this binding once cairo-rs has Context::path_extents()
-fn path_extents(cr: &cairo::Context) -> (f64, f64, f64, f64) {
-    let mut x1: f64 = 0.0;
-    let mut y1: f64 = 0.0;
-    let mut x2: f64 = 0.0;
-    let mut y2: f64 = 0.0;
-
-    unsafe {
-        cairo_sys::cairo_path_extents(cr.to_glib_none().0, &mut x1, &mut y1, &mut x2, &mut y2);
-    }
-    (x1, y1, x2, y2)
 }
 
 impl From<StrokeLinejoin> for cairo::LineJoin {
