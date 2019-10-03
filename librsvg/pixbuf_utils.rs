@@ -11,14 +11,9 @@ use glib_sys;
 use libc;
 use url::Url;
 
-use crate::dpi::Dpi;
-use crate::error::{set_gerror, LoadingError, RenderingError};
-use crate::handle::{Handle, LoadOptions, RsvgDimensionData, SizeCallback};
-use crate::rect::IRect;
-use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    shared_surface::SurfaceType,
+use rsvg_internals::{
+    set_gerror, Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError,
+    RsvgDimensionData, SharedImageSurface, SizeCallback, SurfaceType,
 };
 
 fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {

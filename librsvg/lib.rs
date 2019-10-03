@@ -2,6 +2,7 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(clippy::too_many_arguments)]
 #![warn(unused)]
+#![cfg_attr(rustfmt, rustfmt_skip)]
 
 pub use crate::c_api::{
     rsvg_rust_error_get_type,
@@ -39,4 +40,12 @@ pub use crate::c_api::{
     rsvg_rust_handle_write,
 };
 
+pub use crate::pixbuf_utils::{
+    rsvg_rust_pixbuf_from_file_at_max_size,
+    rsvg_rust_pixbuf_from_file_at_size,
+    rsvg_rust_pixbuf_from_file_at_zoom,
+    rsvg_rust_pixbuf_from_file_at_zoom_with_max,
+};
+
 mod c_api;
+mod pixbuf_utils;
