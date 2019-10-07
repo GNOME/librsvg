@@ -1,3 +1,7 @@
+Version 2.46.1
+- #506 - Fix empty patterns which reference a fallback pattern with
+  children.
+
 Version 2.46.0
 
 - The following are highlights compared to the 2.44.x series.  For
