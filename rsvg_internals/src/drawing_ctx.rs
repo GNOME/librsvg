@@ -337,10 +337,16 @@ impl DrawingCtx {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a None the second time.
     pub fn acquire_node(
-        &self,
+        &mut self,
         fragment: &Fragment,
         node_types: &[NodeType]
     ) -> Result<AcquiredNode, AcquireError> {
+        self.num_elements_acquired += 1;
+
+        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            return Err(AcquireError::MaxReferencesExceeded);
+        }
+
         self.acquired_nodes.acquire(fragment, node_types)
     }
 
@@ -612,7 +618,7 @@ impl DrawingCtx {
         );
     }
 
-    fn acquire_paint_server(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+    fn acquire_paint_server(&mut self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
         self.acquire_node(
             fragment,
             &[
@@ -857,25 +863,13 @@ impl DrawingCtx {
             self.drawsub_stack.push(top);
         }
 
-        res.and_then(|bbox| self.check_limits().and_then(|_| Ok(bbox)))
+        res
     }
 
     pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {
         self.drawsub_stack.push(node.clone());
         if let Some(ref parent) = node.parent() {
             self.add_node_and_ancestors_to_stack(parent);
-        }
-    }
-
-    pub fn increase_num_elements_rendered_through_use(&mut self, n: usize) {
-        self.num_elements_acquired += n;
-    }
-
-    fn check_limits(&self) -> Result<(), RenderingError> {
-        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
-            Err(RenderingError::InstancingLimit)
-        } else {
-            Ok(())
         }
     }
 }

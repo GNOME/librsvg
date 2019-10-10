@@ -330,8 +330,6 @@ impl NodeTrait for NodeUse {
             return Err(RenderingError::CircularReference);
         }
 
-        draw_ctx.increase_num_elements_rendered_through_use(1);
-
         let params = draw_ctx.get_view_params();
 
         let nx = self.x.normalize(values, &params);
