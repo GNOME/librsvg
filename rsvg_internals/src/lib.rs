@@ -66,6 +66,7 @@ mod image;
 mod io;
 mod iri;
 mod length;
+mod limits;
 mod link;
 mod marker;
 mod mask;

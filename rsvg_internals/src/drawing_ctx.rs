@@ -13,6 +13,7 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{NodeLinearGradient, NodeRadialGradient};
 use crate::length::Dasharray;
+use crate::limits;
 use crate::mask::NodeMask;
 use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -879,7 +880,7 @@ impl DrawingCtx {
     }
 
     fn check_limits(&self) -> Result<(), RenderingError> {
-        if self.num_elements_rendered_through_use > 500_000 {
+        if self.num_elements_rendered_through_use > limits::MAX_REFERENCED_ELEMENTS {
             Err(RenderingError::InstancingLimit)
         } else {
             Ok(())
