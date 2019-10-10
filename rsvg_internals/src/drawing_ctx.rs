@@ -19,6 +19,7 @@ use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
+use limits;
 use mask::NodeMask;
 use node::{CascadedValues, NodeType, RsvgNode};
 use paint_server::{self, PaintServer};
@@ -863,7 +864,7 @@ impl<'a> DrawingCtx<'a> {
     }
 
     fn check_limits(&self) -> Result<(), RenderingError> {
-        if self.num_elements_rendered_through_use > 500_000 {
+        if self.num_elements_rendered_through_use > limits::MAX_REFERENCED_ELEMENTS {
             Err(RenderingError::InstancingLimit)
         } else {
             Ok(())

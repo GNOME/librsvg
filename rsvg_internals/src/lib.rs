@@ -113,6 +113,7 @@ mod handle;
 mod image;
 mod iri;
 mod length;
+mod limits;
 mod link;
 mod load;
 mod marker;

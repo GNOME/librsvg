@@ -81,6 +81,7 @@ RUST_SRC =							\
 	rsvg_internals/src/iri.rs				\
 	rsvg_internals/src/length.rs				\
 	rsvg_internals/src/lib.rs				\
+	rsvg_internals/src/limits.rs				\
 	rsvg_internals/src/log.rs				\
 	rsvg_internals/src/link.rs				\
 	rsvg_internals/src/load.rs				\
