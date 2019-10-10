@@ -82,17 +82,9 @@ pub struct DrawingCtx {
     rect: cairo::Rectangle,
     dpi: Dpi,
 
-    /// This is a mitigation for the security-related bug
-    /// https://gitlab.gnome.org/GNOME/librsvg/issues/323 - imagine
-    /// the XML [billion laughs attack], but done by creating deeply
-    /// nested groups of `<use>` elements.  The first one references
-    /// the second one ten times, the second one references the third
-    /// one ten times, and so on.  In the file given, this causes
-    /// 10^17 objects to be rendered.  While this does not exhaust
-    /// memory, it would take a really long time.
-    ///
-    /// [billion laughs attack]: https://bitbucket.org/tiran/defusedxml
-    num_elements_rendered_through_use: usize,
+    // This is a mitigation for SVG files that try to instance a huge number of
+    // elements via <use>, recursive patterns, etc.  See limits.rs for details.
+    num_elements_acquired: usize,
 
     cr_stack: Vec<cairo::Context>,
     cr: cairo::Context,
@@ -162,7 +154,7 @@ impl DrawingCtx {
             initial_affine,
             rect,
             dpi,
-            num_elements_rendered_through_use: 0,
+            num_elements_acquired: 0,
             cr_stack: Vec::new(),
             cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
@@ -876,11 +868,11 @@ impl DrawingCtx {
     }
 
     pub fn increase_num_elements_rendered_through_use(&mut self, n: usize) {
-        self.num_elements_rendered_through_use += n;
+        self.num_elements_acquired += n;
     }
 
     fn check_limits(&self) -> Result<(), RenderingError> {
-        if self.num_elements_rendered_through_use > limits::MAX_REFERENCED_ELEMENTS {
+        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
             Err(RenderingError::InstancingLimit)
         } else {
             Ok(())
