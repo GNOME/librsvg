@@ -28,7 +28,15 @@ fn main() {
 
     assert!(width > 0 && height > 0);
 
-    let handle = librsvg::Loader::new().read_path(input).unwrap();
+    let handle = match librsvg::Loader::new().read_path(input) {
+        Ok(handle) => handle,
+
+        Err(e) => {
+            eprintln!("loading error: {}", e);
+            process::exit(1);
+        }
+    };
+
     let renderer = librsvg::CairoRenderer::new(&handle);
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();

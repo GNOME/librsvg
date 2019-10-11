@@ -14,6 +14,7 @@ use crate::css::CssRules;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, get_input_stream_for_loading};
+use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{NodeData, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::NodeStyle;
@@ -68,6 +69,7 @@ extern "C" {
 /// what creates normal graphical elements.
 struct XmlStateInner {
     weak: Option<Weak<XmlState>>,
+    num_loaded_elements: usize,
     tree_root: Option<RsvgNode>,
     ids: Option<HashMap<String, RsvgNode>>,
     css_rules: Option<CssRules>,
@@ -107,6 +109,7 @@ impl XmlState {
         XmlState {
             inner: RefCell::new(XmlStateInner {
                 weak: None,
+                num_loaded_elements: 0,
                 tree_root: None,
                 ids: Some(HashMap::new()),
                 css_rules: Some(CssRules::default()),
@@ -153,12 +156,28 @@ impl XmlState {
         }
     }
 
+    fn check_limits(&self) -> Result<(), ()> {
+        if self.inner.borrow().num_loaded_elements > MAX_LOADED_ELEMENTS {
+            self.error(ParseFromStreamError::XmlParseError(format!(
+                "cannot load more than {} XML elements",
+                MAX_LOADED_ELEMENTS
+            )));
+            Err(())
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn start_element(&self, name: &str, pbag: &PropertyBag) -> Result<(), ()> {
+        self.check_limits()?;
+
         let context = self.inner.borrow().context();
 
         if let Context::FatalError(_) = context {
             return Err(());
         }
+
+        self.inner.borrow_mut().num_loaded_elements += 1;
 
         // FIXME: we should deal with namespaces at some point
         let name = skip_namespace(name);
@@ -328,15 +347,12 @@ impl XmlState {
     }
 
     fn element_creation_characters(&self, text: &str) {
-        let inner = self.inner.borrow();
+        let mut current_node = self.inner.borrow().current_node.as_ref().unwrap().clone();
 
         if text.len() != 0 {
             // When the last child is a Chars node we can coalesce
             // the text and avoid screwing up the Pango layouts
-            let chars_node = if let Some(child) = inner
-                .current_node
-                .as_ref()
-                .unwrap()
+            let chars_node = if let Some(child) = current_node
                 .last_child()
                 .filter(|c| c.borrow().get_type() == NodeType::Chars)
             {
@@ -350,8 +366,8 @@ impl XmlState {
                     Box::new(NodeChars::new()),
                 ));
 
-                let mut node = inner.current_node.as_ref().unwrap().clone();
-                node.append(child.clone());
+                self.inner.borrow_mut().num_loaded_elements += 1;
+                current_node.append(child.clone());
 
                 child
             };
