@@ -83,6 +83,11 @@ pub trait PaintSource {
                 Err(RenderingError::CircularReference)
             }
 
+            Err(AcquireError::MaxReferencesExceeded) => {
+                rsvg_log!("maximum number of references exceeded");
+                Err(RenderingError::InstancingLimit)
+            }
+
             Err(e) => {
                 rsvg_log!("not using paint server {}: {}", node, e);
 

@@ -643,24 +643,32 @@ impl DrawingCtx {
             } => {
                 let mut had_paint_server = false;
 
-                if let Ok(acquired) = self.acquire_paint_server(iri) {
-                    let node = acquired.get();
+                match self.acquire_paint_server(iri) {
+                    Ok(acquired) => {
+                        let node = acquired.get();
 
-                    had_paint_server = match node.borrow().get_type() {
-                        NodeType::LinearGradient => node
-                            .borrow()
-                            .get_impl::<NodeLinearGradient>()
-                            .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
-                        NodeType::RadialGradient => node
-                            .borrow()
-                            .get_impl::<NodeRadialGradient>()
-                            .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
-                        NodeType::Pattern => node
-                            .borrow()
-                            .get_impl::<NodePattern>()
-                            .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
-                        _ => unreachable!(),
+                        had_paint_server = match node.borrow().get_type() {
+                            NodeType::LinearGradient => node
+                                .borrow()
+                                .get_impl::<NodeLinearGradient>()
+                                .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                            NodeType::RadialGradient => node
+                                .borrow()
+                                .get_impl::<NodeRadialGradient>()
+                                .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                            NodeType::Pattern => node
+                                .borrow()
+                                .get_impl::<NodePattern>()
+                                .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                            _ => unreachable!(),
+                        }
                     }
+
+                    Err(AcquireError::MaxReferencesExceeded) => {
+                        return Err(RenderingError::InstancingLimit);
+                    }
+
+                    Err(_) => (),
                 }
 
                 if !had_paint_server && alternate.is_some() {
