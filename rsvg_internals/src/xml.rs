@@ -493,17 +493,6 @@ impl XmlState {
             .and_then(|parser| parser.parse())
     }
 
-    fn load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
-        &mut self,
-        stream: &S,
-        cancellable: Option<&gio::Cancellable>,
-    ) -> Result<(), ParseFromStreamError> {
-        let stream = get_input_stream_for_loading(stream, cancellable)
-            .map_err(|e| ParseFromStreamError::IoError(e))?;
-
-        self.parse_from_stream(stream, cancellable)
-    }
-
     fn unsupported_xinclude_start_element(&self, _name: &str) -> Context {
         Context::UnsupportedXIncludeChild
     }
@@ -567,7 +556,10 @@ pub fn xml_load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
 ) -> Result<Svg, LoadingError> {
     let mut xml = XmlState::new(load_options);
 
-    xml.load_from_possibly_compressed_stream(stream, cancellable)?;
+    let stream = get_input_stream_for_loading(stream, cancellable)
+        .map_err(|e| ParseFromStreamError::IoError(e))?;
+
+    xml.parse_from_stream(stream, cancellable)?;
 
     xml.steal_result()
 }
