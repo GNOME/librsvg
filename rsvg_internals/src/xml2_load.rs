@@ -66,7 +66,7 @@ unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xml
         column,
         cstr(error.message)
     );
-    xml2_parser.state.error(&full_error_message);
+    xml2_parser.state.error(ParseFromStreamError::XmlParseError(full_error_message));
 }
 
 fn free_xml_parser_and_doc(parser: xmlParserCtxtPtr) {
@@ -440,6 +440,7 @@ fn xml2_error_to_string(xerr: xmlErrorPtr) -> String {
 }
 
 // Error returned when parsing an XML stream
+#[derive(Clone)]
 pub enum ParseFromStreamError {
     // We couldn't even create the libxml2 parser
     CouldNotCreateXmlParser,

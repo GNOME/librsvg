@@ -3,10 +3,10 @@ use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use libc;
 use markup5ever::{local_name, LocalName};
-use std::collections::HashMap;
-use std::str;
-use std::rc::{Rc, Weak};
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::{Rc, Weak};
+use std::str;
 
 use crate::allowed_url::AllowedUrl;
 use crate::create_node::create_node_and_register_id;
@@ -39,7 +39,7 @@ enum Context {
     XIncludeFallback(XIncludeContext),
 
     // An XML parsing error was found.  We will no-op upon any further XML events.
-    FatalError,
+    FatalError(ParseFromStreamError),
 }
 
 #[derive(Clone)]
@@ -92,7 +92,7 @@ enum AcquireError {
     ResourceError,
 
     /// Resource could not be parsed/decoded
-    FatalError,
+    FatalError(String),
 }
 
 impl XmlStateInner {
@@ -119,7 +119,18 @@ impl XmlState {
         }
     }
 
+    fn check_last_error(&self) -> Result<(), ParseFromStreamError> {
+        let inner = self.inner.borrow();
+
+        match inner.context() {
+            Context::FatalError(e) => Err(e),
+            _ => Ok(()),
+        }
+    }
+
     fn steal_result(&self) -> Result<Svg, LoadingError> {
+        self.check_last_error()?;
+
         let mut inner = self.inner.borrow_mut();
 
         match inner.tree_root {
@@ -145,7 +156,7 @@ impl XmlState {
     pub fn start_element(&self, name: &str, pbag: &PropertyBag) -> Result<(), ()> {
         let context = self.inner.borrow().context();
 
-        if let Context::FatalError = context {
+        if let Context::FatalError(_) = context {
             return Err(());
         }
 
@@ -161,7 +172,7 @@ impl XmlState {
                 self.xinclude_fallback_start_element(&ctx, name, pbag)
             }
 
-            Context::FatalError => unreachable!(),
+            Context::FatalError(_) => unreachable!(),
         };
 
         self.inner.borrow_mut().context_stack.push(new_context);
@@ -178,7 +189,7 @@ impl XmlState {
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
             Context::XIncludeFallback(_) => (),
-            Context::FatalError => return,
+            Context::FatalError(_) => return,
         }
 
         // We can unwrap since start_element() always adds a context to the stack
@@ -200,7 +211,7 @@ impl XmlState {
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
             Context::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
-            Context::FatalError => return,
+            Context::FatalError(_) => return,
         }
     }
 
@@ -236,20 +247,23 @@ impl XmlState {
                     let css_rules = inner.css_rules.as_mut().unwrap();
                     let _ = css_rules.load_css(&aurl);
                 } else {
-                    self.error("disallowed URL in xml-stylesheet");
+                    self.error(ParseFromStreamError::XmlParseError(String::from(
+                        "disallowed URL in xml-stylesheet",
+                    )));
                 }
             }
         } else {
-            self.error("invalid processing instruction data in xml-stylesheet");
+            self.error(ParseFromStreamError::XmlParseError(String::from(
+                "invalid processing instruction data in xml-stylesheet",
+            )));
         }
     }
 
-    pub fn error(&self, msg: &str) {
-        // FIXME: aggregate the errors and expose them to the public result
-
-        rsvg_log!("XML error: {}", msg);
-
-        self.inner.borrow_mut().context_stack.push(Context::FatalError);
+    pub fn error(&self, e: ParseFromStreamError) {
+        self.inner
+            .borrow_mut()
+            .context_stack
+            .push(Context::FatalError(e));
     }
 
     pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
@@ -363,7 +377,9 @@ impl XmlState {
         let need_fallback = match self.acquire(href, parse, encoding) {
             Ok(()) => false,
             Err(AcquireError::ResourceError) => true,
-            Err(AcquireError::FatalError) => return Context::FatalError,
+            Err(AcquireError::FatalError(s)) => {
+                return Context::FatalError(ParseFromStreamError::XmlParseError(s))
+            }
         };
 
         Context::XInclude(XIncludeContext { need_fallback })
@@ -441,7 +457,10 @@ impl XmlState {
 
                 Some("text") => self.acquire_text(&aurl, encoding),
 
-                _ => Err(AcquireError::FatalError),
+                Some(v) => Err(AcquireError::FatalError(format!(
+                    "unknown 'parse' attribute value: \"{}\"",
+                    v
+                ))),
             }
         } else {
             // The href attribute is not present.  Per
@@ -453,11 +472,7 @@ impl XmlState {
         }
     }
 
-    fn acquire_text(
-        &self,
-        aurl: &AllowedUrl,
-        encoding: Option<&str>,
-    ) -> Result<(), AcquireError> {
+    fn acquire_text(&self, aurl: &AllowedUrl, encoding: Option<&str>) -> Result<(), AcquireError> {
         let binary = io::acquire_data(aurl, None).map_err(|e| {
             rsvg_log!("could not acquire \"{}\": {}", aurl, e);
             AcquireError::ResourceError
@@ -466,20 +481,19 @@ impl XmlState {
         let encoding = encoding.unwrap_or("utf-8");
 
         let encoder = encoding_from_whatwg_label(encoding).ok_or_else(|| {
-            rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, aurl);
-            AcquireError::FatalError
+            AcquireError::FatalError(format!(
+                "unknown encoding \"{}\" for \"{}\"",
+                encoding, aurl
+            ))
         })?;
 
         let utf8_data = encoder
             .decode(&binary.data, DecoderTrap::Strict)
             .map_err(|e| {
-                rsvg_log!(
+                AcquireError::FatalError(format!(
                     "could not convert contents of \"{}\" from character encoding \"{}\": {}",
-                    aurl,
-                    encoding,
-                    e
-                );
-                AcquireError::FatalError
+                    aurl, encoding, e
+                ))
             })?;
 
         self.element_creation_characters(&utf8_data);
@@ -490,15 +504,19 @@ impl XmlState {
         // FIXME: distinguish between "file not found" and "invalid XML"
 
         let stream = io::acquire_stream(aurl, None).map_err(|e| match e {
-            LoadingError::BadDataUrl => AcquireError::FatalError,
+            LoadingError::BadDataUrl => {
+                AcquireError::FatalError(String::from("malformed data: URL"))
+            }
             _ => AcquireError::ResourceError,
         })?;
 
         // FIXME: pass a cancellable
         self.parse_from_stream(&stream, None).map_err(|e| match e {
-            ParseFromStreamError::CouldNotCreateXmlParser => AcquireError::FatalError,
+            ParseFromStreamError::CouldNotCreateXmlParser => {
+                AcquireError::FatalError(String::from("could not create XML parser"))
+            }
             ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
-            ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,
+            ParseFromStreamError::XmlParseError(s) => AcquireError::FatalError(s),
         })
     }
 
@@ -511,9 +529,22 @@ impl XmlState {
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), ParseFromStreamError> {
-        let strong = self.inner.borrow().weak.as_ref().unwrap().upgrade().unwrap();
-        Xml2Parser::from_stream(strong, self.load_options.unlimited_size, stream, cancellable)
-            .and_then(|parser| parser.parse())
+        let strong = self
+            .inner
+            .borrow()
+            .weak
+            .as_ref()
+            .unwrap()
+            .upgrade()
+            .unwrap();
+        Xml2Parser::from_stream(
+            strong,
+            self.load_options.unlimited_size,
+            stream,
+            cancellable,
+        )
+        .and_then(|parser| parser.parse())
+        .and_then(|_: ()| self.check_last_error())
     }
 
     fn unsupported_xinclude_start_element(&self, _name: &str) -> Context {
@@ -590,7 +621,6 @@ pub fn xml_load_from_possibly_compressed_stream(
 
     state.steal_result()
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -33,7 +33,8 @@ fn main() {
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();
     let cr = cairo::Context::new(&surface);
-    renderer
+
+    let res = renderer
         .render_document(
             &cr,
             &cairo::Rectangle {
@@ -42,10 +43,18 @@ fn main() {
                 width: f64::from(width),
                 height: f64::from(height),
             },
-        )
-        .unwrap();
+        );
 
-    let mut file = BufWriter::new(File::create(output).unwrap());
+    match res {
+        Ok(()) => {
+            let mut file = BufWriter::new(File::create(output).unwrap());
 
-    surface.write_to_png(&mut file).unwrap();
+            surface.write_to_png(&mut file).unwrap();
+        }
+
+        Err(e) => {
+            eprintln!("rendering error: {}", e);
+            process::exit(1);
+        }
+    }
 }
