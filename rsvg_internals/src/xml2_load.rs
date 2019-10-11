@@ -87,10 +87,10 @@ fn free_xml_parser_and_doc(parser: xmlParserCtxtPtr) {
 }
 
 unsafe extern "C" fn sax_get_entity_cb(
-    ctx: *mut libc::c_void,
+    user_data: *mut libc::c_void,
     name: *const libc::c_char,
 ) -> xmlEntityPtr {
-    let xml = &*(ctx as *mut XmlState);
+    let xml = &*(user_data as *mut XmlState);
 
     assert!(!name.is_null());
     let name = utf8_cstr(name);
@@ -99,14 +99,14 @@ unsafe extern "C" fn sax_get_entity_cb(
 }
 
 unsafe extern "C" fn sax_entity_decl_cb(
-    ctx: *mut libc::c_void,
+    user_data: *mut libc::c_void,
     name: *const libc::c_char,
     type_: libc::c_int,
     _public_id: *const libc::c_char,
     _system_id: *const libc::c_char,
     content: *const libc::c_char,
 ) {
-    let xml = &mut *(ctx as *mut XmlState);
+    let xml = &mut *(user_data as *mut XmlState);
 
     assert!(!name.is_null());
 
@@ -132,14 +132,14 @@ unsafe extern "C" fn sax_entity_decl_cb(
 }
 
 unsafe extern "C" fn sax_unparsed_entity_decl_cb(
-    ctx: *mut libc::c_void,
+    user_data: *mut libc::c_void,
     name: *const libc::c_char,
     public_id: *const libc::c_char,
     system_id: *const libc::c_char,
     _notation_name: *const libc::c_char,
 ) {
     sax_entity_decl_cb(
-        ctx,
+        user_data,
         name,
         XML_INTERNAL_GENERAL_ENTITY,
         public_id,
@@ -149,11 +149,11 @@ unsafe extern "C" fn sax_unparsed_entity_decl_cb(
 }
 
 unsafe extern "C" fn sax_start_element_cb(
-    ctx: *mut libc::c_void,
+    user_data: *mut libc::c_void,
     name: *const libc::c_char,
     atts: *const *const libc::c_char,
 ) {
-    let xml = &mut *(ctx as *mut XmlState);
+    let xml = &mut *(user_data as *mut XmlState);
 
     assert!(!name.is_null());
     let name = utf8_cstr(name);
@@ -163,8 +163,8 @@ unsafe extern "C" fn sax_start_element_cb(
     xml.start_element(name, &pbag);
 }
 
-unsafe extern "C" fn sax_end_element_cb(ctx: *mut libc::c_void, name: *const libc::c_char) {
-    let xml = &mut *(ctx as *mut XmlState);
+unsafe extern "C" fn sax_end_element_cb(user_data: *mut libc::c_void, name: *const libc::c_char) {
+    let xml = &mut *(user_data as *mut XmlState);
 
     assert!(!name.is_null());
     let name = utf8_cstr(name);
@@ -173,11 +173,11 @@ unsafe extern "C" fn sax_end_element_cb(ctx: *mut libc::c_void, name: *const lib
 }
 
 unsafe extern "C" fn sax_characters_cb(
-    ctx: *mut libc::c_void,
+    user_data: *mut libc::c_void,
     unterminated_text: *const libc::c_char,
     len: libc::c_int,
 ) {
-    let xml = &mut *(ctx as *mut XmlState);
+    let xml = &mut *(user_data as *mut XmlState);
 
     assert!(!unterminated_text.is_null());
     assert!(len >= 0);
@@ -191,11 +191,11 @@ unsafe extern "C" fn sax_characters_cb(
 }
 
 unsafe extern "C" fn sax_processing_instruction_cb(
-    ctx: *mut libc::c_void,
+    user_data: *mut libc::c_void,
     target: *const libc::c_char,
     data: *const libc::c_char,
 ) {
-    let xml = &mut *(ctx as *mut XmlState);
+    let xml = &mut *(user_data as *mut XmlState);
 
     assert!(!target.is_null());
     let target = utf8_cstr(target);
@@ -210,10 +210,10 @@ unsafe extern "C" fn sax_processing_instruction_cb(
 }
 
 unsafe extern "C" fn sax_get_parameter_entity_cb(
-    ctx: *mut libc::c_void,
+    user_data: *mut libc::c_void,
     name: *const libc::c_char,
 ) -> xmlEntityPtr {
-    sax_get_entity_cb(ctx, name)
+    sax_get_entity_cb(user_data, name)
 }
 
 fn set_xml_parse_options(parser: xmlParserCtxtPtr, unlimited_size: bool) {
