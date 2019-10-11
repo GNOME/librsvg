@@ -142,11 +142,11 @@ impl XmlState {
         }
     }
 
-    pub fn start_element(&self, name: &str, pbag: &PropertyBag) {
+    pub fn start_element(&self, name: &str, pbag: &PropertyBag) -> Result<(), ()> {
         let context = self.inner.borrow().context();
 
         if let Context::FatalError = context {
-            return;
+            return Err(());
         }
 
         // FIXME: we should deal with namespaces at some point
@@ -165,6 +165,8 @@ impl XmlState {
         };
 
         self.inner.borrow_mut().context_stack.push(new_context);
+
+        Ok(())
     }
 
     pub fn end_element(&self, _name: &str) {

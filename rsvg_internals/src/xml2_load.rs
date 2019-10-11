@@ -160,7 +160,12 @@ unsafe extern "C" fn sax_start_element_cb(
 
     let pbag = PropertyBag::new_from_key_value_pairs(atts);
 
-    xml2_parser.state.start_element(name, &pbag);
+    if let Err(e) = xml2_parser.state.start_element(name, &pbag) {
+        let _: () = e; // guard in case we change the error type later
+
+        let parser = xml2_parser.parser.get();
+        xmlStopParser(parser);
+    }
 }
 
 unsafe extern "C" fn sax_end_element_cb(user_data: *mut libc::c_void, name: *const libc::c_char) {
