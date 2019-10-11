@@ -4,7 +4,7 @@
 use gio;
 use gio::prelude::*;
 use std::borrow::Cow;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::mem;
 use std::ptr;
 use std::rc::Rc;
@@ -39,7 +39,7 @@ fn get_xml2_sax_handler() -> xmlSAXHandler {
 }
 
 unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xmlErrorPtr) {
-    let state = (user_data as *mut XmlState).as_mut().unwrap();
+    let xml2_parser = &*(user_data as *mut Xml2Parser);
     let error = error.as_ref().unwrap();
 
     let level_name = match error.level {
@@ -66,7 +66,7 @@ unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xml
         column,
         cstr(error.message)
     );
-    state.error(&full_error_message);
+    xml2_parser.state.error(&full_error_message);
 }
 
 fn free_xml_parser_and_doc(parser: xmlParserCtxtPtr) {
@@ -90,12 +90,12 @@ unsafe extern "C" fn sax_get_entity_cb(
     user_data: *mut libc::c_void,
     name: *const libc::c_char,
 ) -> xmlEntityPtr {
-    let xml = &*(user_data as *mut XmlState);
+    let xml2_parser = &*(user_data as *mut Xml2Parser);
 
     assert!(!name.is_null());
     let name = utf8_cstr(name);
 
-    xml.entity_lookup(name).unwrap_or(ptr::null_mut())
+    xml2_parser.state.entity_lookup(name).unwrap_or(ptr::null_mut())
 }
 
 unsafe extern "C" fn sax_entity_decl_cb(
@@ -106,7 +106,7 @@ unsafe extern "C" fn sax_entity_decl_cb(
     _system_id: *const libc::c_char,
     content: *const libc::c_char,
 ) {
-    let xml = &mut *(user_data as *mut XmlState);
+    let xml2_parser = &*(user_data as *mut Xml2Parser);
 
     assert!(!name.is_null());
 
@@ -128,7 +128,7 @@ unsafe extern "C" fn sax_entity_decl_cb(
     assert!(!entity.is_null());
 
     let name = utf8_cstr(name);
-    xml.entity_insert(name, entity);
+    xml2_parser.state.entity_insert(name, entity);
 }
 
 unsafe extern "C" fn sax_unparsed_entity_decl_cb(
@@ -153,23 +153,23 @@ unsafe extern "C" fn sax_start_element_cb(
     name: *const libc::c_char,
     atts: *const *const libc::c_char,
 ) {
-    let xml = &mut *(user_data as *mut XmlState);
+    let xml2_parser = &*(user_data as *mut Xml2Parser);
 
     assert!(!name.is_null());
     let name = utf8_cstr(name);
 
     let pbag = PropertyBag::new_from_key_value_pairs(atts);
 
-    xml.start_element(name, &pbag);
+    xml2_parser.state.start_element(name, &pbag);
 }
 
 unsafe extern "C" fn sax_end_element_cb(user_data: *mut libc::c_void, name: *const libc::c_char) {
-    let xml = &mut *(user_data as *mut XmlState);
+    let xml2_parser = &*(user_data as *mut Xml2Parser);
 
     assert!(!name.is_null());
     let name = utf8_cstr(name);
 
-    xml.end_element(name);
+    xml2_parser.state.end_element(name);
 }
 
 unsafe extern "C" fn sax_characters_cb(
@@ -177,7 +177,7 @@ unsafe extern "C" fn sax_characters_cb(
     unterminated_text: *const libc::c_char,
     len: libc::c_int,
 ) {
-    let xml = &mut *(user_data as *mut XmlState);
+    let xml2_parser = &*(user_data as *mut Xml2Parser);
 
     assert!(!unterminated_text.is_null());
     assert!(len >= 0);
@@ -187,7 +187,7 @@ unsafe extern "C" fn sax_characters_cb(
     let bytes = std::slice::from_raw_parts(unterminated_text as *const u8, len as usize);
     let utf8 = str::from_utf8_unchecked(bytes);
 
-    xml.characters(utf8);
+    xml2_parser.state.characters(utf8);
 }
 
 unsafe extern "C" fn sax_processing_instruction_cb(
@@ -195,7 +195,7 @@ unsafe extern "C" fn sax_processing_instruction_cb(
     target: *const libc::c_char,
     data: *const libc::c_char,
 ) {
-    let xml = &mut *(user_data as *mut XmlState);
+    let xml2_parser = &*(user_data as *mut Xml2Parser);
 
     assert!(!target.is_null());
     let target = utf8_cstr(target);
@@ -206,7 +206,7 @@ unsafe extern "C" fn sax_processing_instruction_cb(
         utf8_cstr(data)
     };
 
-    xml.processing_instruction(target, data);
+    xml2_parser.state.processing_instruction(target, data);
 }
 
 unsafe extern "C" fn sax_get_parameter_entity_cb(
@@ -314,17 +314,18 @@ fn init_libxml2() {
 }
 
 pub struct Xml2Parser {
-    parser: xmlParserCtxtPtr,
+    parser: Cell<xmlParserCtxtPtr>,
+    state: Rc<XmlState>,
     gio_error: Rc<RefCell<Option<glib::Error>>>,
 }
 
 impl Xml2Parser {
     pub fn from_stream(
-        xml: &mut XmlState,
+        state: Rc<XmlState>,
         unlimited_size: bool,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
-    ) -> Result<Xml2Parser, ParseFromStreamError> {
+    ) -> Result<Box<Xml2Parser>, ParseFromStreamError> {
         init_libxml2();
 
         // The Xml2Parser we end up creating, if
@@ -344,10 +345,16 @@ impl Xml2Parser {
 
         let mut sax_handler = get_xml2_sax_handler();
 
+        let mut xml2_parser = Box::new(Xml2Parser {
+            parser: Cell::new(ptr::null_mut()),
+            state,
+            gio_error,
+        });
+
         unsafe {
             let parser = xmlCreateIOParserCtxt(
                 &mut sax_handler,
-                xml as *mut _ as *mut _,
+                xml2_parser.as_mut() as *mut _ as *mut _,
                 Some(stream_ctx_read),
                 Some(stream_ctx_close),
                 Box::into_raw(ctx) as *mut _,
@@ -359,15 +366,20 @@ impl Xml2Parser {
                 // stream_ctx_close function
                 Err(ParseFromStreamError::CouldNotCreateXmlParser)
             } else {
+                xml2_parser.parser.set(parser);
+
                 set_xml_parse_options(parser, unlimited_size);
-                Ok(Xml2Parser { parser, gio_error })
+
+                Ok(xml2_parser)
             }
         }
     }
 
     pub fn parse(&self) -> Result<(), ParseFromStreamError> {
         unsafe {
-            let xml_parse_success = xmlParseDocument(self.parser) == 0;
+            let parser = self.parser.get();
+
+            let xml_parse_success = xmlParseDocument(parser) == 0;
 
             let mut err_ref = self.gio_error.borrow_mut();
 
@@ -376,7 +388,7 @@ impl Xml2Parser {
             if let Some(io_error) = io_error {
                 Err(ParseFromStreamError::IoError(io_error))
             } else if !xml_parse_success {
-                let xerr = xmlCtxtGetLastError(self.parser as *mut _);
+                let xerr = xmlCtxtGetLastError(parser as *mut _);
                 let msg = xml2_error_to_string(xerr);
                 Err(ParseFromStreamError::XmlParseError(msg))
             } else {
@@ -388,8 +400,9 @@ impl Xml2Parser {
 
 impl Drop for Xml2Parser {
     fn drop(&mut self) {
-        free_xml_parser_and_doc(self.parser);
-        self.parser = ptr::null_mut();
+        let parser = self.parser.get();
+        free_xml_parser_and_doc(parser);
+        self.parser.set(ptr::null_mut());
     }
 }
 
