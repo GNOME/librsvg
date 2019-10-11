@@ -74,7 +74,7 @@ pub struct XmlState {
 
     entities: HashMap<String, XmlEntityPtr>,
 
-    pub load_options: LoadOptions,
+    load_options: LoadOptions,
 }
 
 /// Errors returned from XmlState::acquire()
