@@ -90,7 +90,7 @@ enum AcquireError {
 }
 
 impl XmlState {
-    pub fn new(load_options: &LoadOptions) -> XmlState {
+    fn new(load_options: &LoadOptions) -> XmlState {
         XmlState {
             tree_root: None,
             ids: Some(HashMap::new()),
@@ -110,7 +110,7 @@ impl XmlState {
         self.tree_root = Some(root.clone());
     }
 
-    pub fn steal_result(&mut self) -> Result<Svg, LoadingError> {
+    fn steal_result(&mut self) -> Result<Svg, LoadingError> {
         match self.tree_root {
             None => Err(LoadingError::SvgHasNoElements),
             Some(ref root) if root.borrow().get_type() == NodeType::Svg => {
@@ -493,7 +493,7 @@ impl XmlState {
             .and_then(|parser| parser.parse())
     }
 
-    pub fn load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
+    fn load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
         &mut self,
         stream: &S,
         cancellable: Option<&gio::Cancellable>,
@@ -559,6 +559,19 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
 
     unreachable!();
 }
+
+pub fn xml_load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
+    load_options: &LoadOptions,
+    stream: &S,
+    cancellable: Option<&gio::Cancellable>,
+) -> Result<Svg, LoadingError> {
+    let mut xml = XmlState::new(load_options);
+
+    xml.load_from_possibly_compressed_stream(stream, cancellable)?;
+
+    xml.steal_result()
+}
+
 
 #[cfg(test)]
 mod tests {
