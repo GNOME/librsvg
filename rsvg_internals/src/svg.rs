@@ -1,6 +1,5 @@
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
-use glib::IsA;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -14,7 +13,7 @@ use crate::node::{NodeCascade, NodeType, RsvgNode};
 use crate::properties::ComputedValues;
 use crate::structure::{IntrinsicDimensions, NodeSvg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::xml::XmlState;
+use crate::xml::xml_load_from_possibly_compressed_stream;
 
 /// A loaded SVG file and its derived data
 ///
@@ -53,16 +52,12 @@ impl Svg {
         }
     }
 
-    pub fn load_from_stream<S: IsA<gio::InputStream>>(
+    pub fn load_from_stream(
         load_options: &LoadOptions,
-        stream: &S,
+        stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Svg, LoadingError> {
-        let mut xml = XmlState::new(load_options);
-
-        xml.load_from_possibly_compressed_stream(stream, cancellable)?;
-
-        xml.steal_result()
+        xml_load_from_possibly_compressed_stream(load_options, stream, cancellable)
     }
 
     pub fn root(&self) -> RsvgNode {

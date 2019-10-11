@@ -195,7 +195,7 @@ fn pixbuf_from_file_with_size_mode(
         let handle = match file
             .read(cancellable)
             .map_err(|e| LoadingError::from(e))
-            .and_then(|stream| Handle::from_stream(&load_options, &stream, None))
+            .and_then(|stream| Handle::from_stream(&load_options, stream.as_ref(), None))
         {
             Ok(handle) => handle,
             Err(e) => {

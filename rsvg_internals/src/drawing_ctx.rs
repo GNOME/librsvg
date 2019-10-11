@@ -13,6 +13,7 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{NodeLinearGradient, NodeRadialGradient};
 use crate::length::Dasharray;
+use crate::limits;
 use crate::mask::NodeMask;
 use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -81,17 +82,9 @@ pub struct DrawingCtx {
     rect: cairo::Rectangle,
     dpi: Dpi,
 
-    /// This is a mitigation for the security-related bug
-    /// https://gitlab.gnome.org/GNOME/librsvg/issues/323 - imagine
-    /// the XML [billion laughs attack], but done by creating deeply
-    /// nested groups of `<use>` elements.  The first one references
-    /// the second one ten times, the second one references the third
-    /// one ten times, and so on.  In the file given, this causes
-    /// 10^17 objects to be rendered.  While this does not exhaust
-    /// memory, it would take a really long time.
-    ///
-    /// [billion laughs attack]: https://bitbucket.org/tiran/defusedxml
-    num_elements_rendered_through_use: usize,
+    // This is a mitigation for SVG files that try to instance a huge number of
+    // elements via <use>, recursive patterns, etc.  See limits.rs for details.
+    num_elements_acquired: usize,
 
     cr_stack: Vec<cairo::Context>,
     cr: cairo::Context,
@@ -161,7 +154,7 @@ impl DrawingCtx {
             initial_affine,
             rect,
             dpi,
-            num_elements_rendered_through_use: 0,
+            num_elements_acquired: 0,
             cr_stack: Vec::new(),
             cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
@@ -344,10 +337,16 @@ impl DrawingCtx {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a None the second time.
     pub fn acquire_node(
-        &self,
+        &mut self,
         fragment: &Fragment,
         node_types: &[NodeType]
     ) -> Result<AcquiredNode, AcquireError> {
+        self.num_elements_acquired += 1;
+
+        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            return Err(AcquireError::MaxReferencesExceeded);
+        }
+
         self.acquired_nodes.acquire(fragment, node_types)
     }
 
@@ -619,7 +618,7 @@ impl DrawingCtx {
         );
     }
 
-    fn acquire_paint_server(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+    fn acquire_paint_server(&mut self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
         self.acquire_node(
             fragment,
             &[
@@ -644,24 +643,32 @@ impl DrawingCtx {
             } => {
                 let mut had_paint_server = false;
 
-                if let Ok(acquired) = self.acquire_paint_server(iri) {
-                    let node = acquired.get();
+                match self.acquire_paint_server(iri) {
+                    Ok(acquired) => {
+                        let node = acquired.get();
 
-                    had_paint_server = match node.borrow().get_type() {
-                        NodeType::LinearGradient => node
-                            .borrow()
-                            .get_impl::<NodeLinearGradient>()
-                            .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
-                        NodeType::RadialGradient => node
-                            .borrow()
-                            .get_impl::<NodeRadialGradient>()
-                            .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
-                        NodeType::Pattern => node
-                            .borrow()
-                            .get_impl::<NodePattern>()
-                            .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
-                        _ => unreachable!(),
+                        had_paint_server = match node.borrow().get_type() {
+                            NodeType::LinearGradient => node
+                                .borrow()
+                                .get_impl::<NodeLinearGradient>()
+                                .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                            NodeType::RadialGradient => node
+                                .borrow()
+                                .get_impl::<NodeRadialGradient>()
+                                .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                            NodeType::Pattern => node
+                                .borrow()
+                                .get_impl::<NodePattern>()
+                                .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                            _ => unreachable!(),
+                        }
                     }
+
+                    Err(AcquireError::MaxReferencesExceeded) => {
+                        return Err(RenderingError::InstancingLimit);
+                    }
+
+                    Err(_) => (),
                 }
 
                 if !had_paint_server && alternate.is_some() {
@@ -864,25 +871,13 @@ impl DrawingCtx {
             self.drawsub_stack.push(top);
         }
 
-        res.and_then(|bbox| self.check_limits().and_then(|_| Ok(bbox)))
+        res
     }
 
     pub fn add_node_and_ancestors_to_stack(&mut self, node: &RsvgNode) {
         self.drawsub_stack.push(node.clone());
         if let Some(ref parent) = node.parent() {
             self.add_node_and_ancestors_to_stack(parent);
-        }
-    }
-
-    pub fn increase_num_elements_rendered_through_use(&mut self, n: usize) {
-        self.num_elements_rendered_through_use += n;
-    }
-
-    fn check_limits(&self) -> Result<(), RenderingError> {
-        if self.num_elements_rendered_through_use > 500_000 {
-            Err(RenderingError::InstancingLimit)
-        } else {
-            Ok(())
         }
     }
 }

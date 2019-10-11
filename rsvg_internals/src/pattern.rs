@@ -8,7 +8,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{DrawingCtx, NodeStack};
-use crate::error::{AttributeResultExt, AcquireError, RenderingError};
+use crate::error::{AcquireError, AttributeResultExt, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
@@ -120,7 +120,9 @@ impl NodeTrait for NodePattern {
         for (attr, value) in pbag.iter() {
             match attr {
                 local_name!("patternUnits") => self.common.units = Some(attr.parse(value)?),
-                local_name!("patternContentUnits") => self.common.content_units = Some(attr.parse(value)?),
+                local_name!("patternContentUnits") => {
+                    self.common.content_units = Some(attr.parse(value)?)
+                }
                 local_name!("viewBox") => self.common.vbox = Some(Some(attr.parse(value)?)),
                 local_name!("preserveAspectRatio") => {
                     self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
@@ -164,7 +166,10 @@ impl PaintSource for NodePattern {
             return Ok(pattern.clone());
         }
 
-        let Unresolved { mut pattern, mut fallback } = self.get_unresolved(node);
+        let Unresolved {
+            mut pattern,
+            mut fallback,
+        } = self.get_unresolved(node);
 
         let mut stack = NodeStack::new();
 
@@ -186,6 +191,10 @@ impl PaintSource for NodePattern {
                         fallback = unresolved.fallback;
 
                         stack.push(acquired_node);
+                    }
+
+                    Err(AcquireError::MaxReferencesExceeded) => {
+                        return Err(AcquireError::MaxReferencesExceeded)
                     }
 
                     Err(e) => {
@@ -372,9 +381,10 @@ impl AsPaintSource for Pattern {
 
         cr_pattern.set_matrix(caffine);
 
-        let res = draw_ctx.with_discrete_layer(&node_with_children, pattern_values, false, &mut |dc| {
-            node_with_children.draw_children(&pattern_cascaded, dc, false)
-        });
+        let res =
+            draw_ctx.with_discrete_layer(&node_with_children, pattern_values, false, &mut |dc| {
+                node_with_children.draw_children(&pattern_cascaded, dc, false)
+            });
 
         // Return to the original coordinate system and rendering context
 
@@ -433,7 +443,10 @@ impl UnresolvedPattern {
         let units = self.common.units.or(fallback.common.units);
         let content_units = self.common.content_units.or(fallback.common.content_units);
         let vbox = self.common.vbox.or(fallback.common.vbox);
-        let preserve_aspect_ratio = self.common.preserve_aspect_ratio.or(fallback.common.preserve_aspect_ratio);
+        let preserve_aspect_ratio = self
+            .common
+            .preserve_aspect_ratio
+            .or(fallback.common.preserve_aspect_ratio);
         let affine = self.common.affine.or(fallback.common.affine);
         let x = self.common.x.or(fallback.common.x);
         let y = self.common.y.or(fallback.common.y);
@@ -459,9 +472,15 @@ impl UnresolvedPattern {
 
     fn resolve_from_defaults(&self) -> UnresolvedPattern {
         let units = self.common.units.or(Some(PatternUnits::default()));
-        let content_units = self.common.content_units.or(Some(PatternContentUnits::default()));
+        let content_units = self
+            .common
+            .content_units
+            .or(Some(PatternContentUnits::default()));
         let vbox = self.common.vbox.or(Some(None));
-        let preserve_aspect_ratio = self.common.preserve_aspect_ratio.or(Some(AspectRatio::default()));
+        let preserve_aspect_ratio = self
+            .common
+            .preserve_aspect_ratio
+            .or(Some(AspectRatio::default()));
         let affine = self.common.affine.or(Some(cairo::Matrix::identity()));
         let x = self.common.x.or(Some(Default::default()));
         let y = self.common.y.or(Some(Default::default()));
@@ -490,7 +509,10 @@ impl UnresolvedChildren {
     fn from_node(node: &RsvgNode) -> UnresolvedChildren {
         let weak = node.downgrade();
 
-        if node.children().any(|child| child.borrow().get_type() != NodeType::Chars) {
+        if node
+            .children()
+            .any(|child| child.borrow().get_type() != NodeType::Chars)
+        {
             UnresolvedChildren::WithChildren(weak)
         } else {
             UnresolvedChildren::Unresolved
@@ -572,7 +594,7 @@ mod tests {
             local_name!("pattern"),
             None,
             None,
-            Box::new(NodePattern::default())
+            Box::new(NodePattern::default()),
         ));
 
         let borrow = node.borrow();

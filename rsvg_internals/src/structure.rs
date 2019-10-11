@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::error::{AttributeResultExt, RenderingError};
+use crate::error::{AcquireError, AttributeResultExt, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
@@ -315,22 +315,36 @@ impl NodeTrait for NodeUse {
 
         let link = self.link.as_ref().unwrap();
 
-        let child = if let Ok(acquired) = draw_ctx.acquire_node(link, &[]) {
-            // Here we clone the acquired child, so that we can drop the AcquiredNode as
-            // early as possible.  This is so that the child's drawing method will be able
-            // to re-acquire the child for other purposes.
-            acquired.get().clone()
-        } else {
-            rsvg_log!("element {} references nonexistent \"{}\"", node, link);
-            return Ok(draw_ctx.empty_bbox());
+        let child = match draw_ctx.acquire_node(link, &[]) {
+            Ok(acquired) => {
+                // Here we clone the acquired child, so that we can drop the AcquiredNode as
+                // early as possible.  This is so that the child's drawing method will be able
+                // to re-acquire the child for other purposes.
+                acquired.get().clone()
+            }
+
+            Err(AcquireError::CircularReference(_)) => {
+                // FIXME: add a fragment or node id to this:
+                rsvg_log!("circular reference in <use> element {}", node);
+                return Err(RenderingError::CircularReference);
+            }
+
+            Err(AcquireError::MaxReferencesExceeded) => {
+                return Err(RenderingError::InstancingLimit);
+            }
+
+            Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
+
+            Err(AcquireError::LinkNotFound(fragment)) => {
+                rsvg_log!("element {} references nonexistent \"{}\"", node, fragment);
+                return Ok(draw_ctx.empty_bbox());
+            }
         };
 
         if node.ancestors().any(|ancestor| ancestor == child) {
             // or, if we're <use>'ing ourselves
             return Err(RenderingError::CircularReference);
         }
-
-        draw_ctx.increase_num_elements_rendered_through_use(1);
 
         let params = draw_ctx.get_view_params();
 

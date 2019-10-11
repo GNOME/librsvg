@@ -13,7 +13,7 @@ use gio::{
     ZlibCompressorFormat,
     ZlibDecompressor,
 };
-use glib::{self, Bytes as GBytes, Cast, IsA};
+use glib::{self, Bytes as GBytes, Cast};
 
 use crate::allowed_url::AllowedUrl;
 use crate::error::{LoadingError, RsvgError};
@@ -51,8 +51,8 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
 const GZ_MAGIC_0: u8 = 0x1f;
 const GZ_MAGIC_1: u8 = 0x8b;
 
-pub fn get_input_stream_for_loading<S: IsA<InputStream>>(
-    stream: &S,
+pub fn get_input_stream_for_loading(
+    stream: &InputStream,
     cancellable: Option<&Cancellable>,
 ) -> Result<InputStream, glib::Error> {
     // detect gzipped streams (svgz)

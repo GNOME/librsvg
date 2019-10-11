@@ -986,8 +986,8 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
     match rhandle.render_cairo_sub(&cr, id.as_ref().map(String::as_str)) {
         Ok(()) => true.to_glib(),
 
-        Err(_) => {
-            // FIXME: return a proper error code to the public API
+        Err(e) => {
+            rsvg_log!("could not render: {}", e);
             false.to_glib()
         }
     }
@@ -1003,7 +1003,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf_sub(
 
     match rhandle.get_pixbuf_sub(id.as_ref().map(String::as_str)) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
-        Err(_) => ptr::null_mut(),
+        Err(e) => {
+            rsvg_log!("could not render: {}", e);
+            ptr::null_mut()
+        }
     }
 }
 
@@ -1034,7 +1037,8 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
             true.to_glib()
         }
 
-        Err(_) => {
+        Err(e) => {
+            rsvg_log!("could not get dimensions: {}", e);
             *dimension_data = RsvgDimensionData::empty();
             false.to_glib()
         }
@@ -1057,13 +1061,13 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
             true.to_glib()
         }
 
-        Err(_) => {
+        Err(e) => {
             let p = &mut *position_data;
 
             p.x = 0;
             p.y = 0;
 
-            // FIXME: return a proper error code to the public API
+            rsvg_log!("could not get position: {}", e);
             false.to_glib()
         }
     }

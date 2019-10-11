@@ -128,6 +128,7 @@ pub enum AcquireError {
     LinkNotFound(Fragment),
     InvalidLinkType(Fragment),
     CircularReference(Fragment),
+    MaxReferencesExceeded,
 }
 
 impl error::Error for AcquireError {
@@ -135,7 +136,8 @@ impl error::Error for AcquireError {
         match *self {
             AcquireError::LinkNotFound(_) => "link not found",
             AcquireError::InvalidLinkType(_) => "link is to object of invalid type",
-            AcquireError::CircularReference(_) => "circular reference in link"
+            AcquireError::CircularReference(_) => "circular reference in link",
+            AcquireError::MaxReferencesExceeded => "maximum number of references exceeded",
         }
     }
 }
@@ -151,6 +153,9 @@ impl fmt::Display for AcquireError {
 
             AcquireError::CircularReference(ref frag) =>
                 write!(f, "circular reference in link {}", frag),
+
+            AcquireError::MaxReferencesExceeded =>
+                write!(f, "{}", self.description()),
         }
     }
 }

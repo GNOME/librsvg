@@ -28,12 +28,21 @@ fn main() {
 
     assert!(width > 0 && height > 0);
 
-    let handle = librsvg::Loader::new().read_path(input).unwrap();
+    let handle = match librsvg::Loader::new().read_path(input) {
+        Ok(handle) => handle,
+
+        Err(e) => {
+            eprintln!("loading error: {}", e);
+            process::exit(1);
+        }
+    };
+
     let renderer = librsvg::CairoRenderer::new(&handle);
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();
     let cr = cairo::Context::new(&surface);
-    renderer
+
+    let res = renderer
         .render_document(
             &cr,
             &cairo::Rectangle {
@@ -42,10 +51,18 @@ fn main() {
                 width: f64::from(width),
                 height: f64::from(height),
             },
-        )
-        .unwrap();
+        );
 
-    let mut file = BufWriter::new(File::create(output).unwrap());
+    match res {
+        Ok(()) => {
+            let mut file = BufWriter::new(File::create(output).unwrap());
 
-    surface.write_to_png(&mut file).unwrap();
+            surface.write_to_png(&mut file).unwrap();
+        }
+
+        Err(e) => {
+            eprintln!("rendering error: {}", e);
+            process::exit(1);
+        }
+    }
 }

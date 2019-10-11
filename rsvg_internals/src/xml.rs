@@ -1,10 +1,11 @@
 use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
-use glib::IsA;
 use libc;
 use markup5ever::{local_name, LocalName};
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::{Rc, Weak};
 use std::str;
 
 use crate::allowed_url::AllowedUrl;
@@ -13,6 +14,7 @@ use crate::css::CssRules;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, get_input_stream_for_loading};
+use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{NodeData, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::NodeStyle;
@@ -38,7 +40,7 @@ enum Context {
     XIncludeFallback(XIncludeContext),
 
     // An XML parsing error was found.  We will no-op upon any further XML events.
-    FatalError,
+    FatalError(ParseFromStreamError),
 }
 
 #[derive(Clone)]
@@ -65,7 +67,9 @@ extern "C" {
 /// that context, all XML events will be forwarded to it, and processed in one of the `XmlHandler`
 /// trait objects. Normally the context refers to a `NodeCreationContext` implementation which is
 /// what creates normal graphical elements.
-pub struct XmlState {
+struct XmlStateInner {
+    weak: Option<Weak<XmlState>>,
+    num_loaded_elements: usize,
     tree_root: Option<RsvgNode>,
     ids: Option<HashMap<String, RsvgNode>>,
     css_rules: Option<CssRules>,
@@ -73,8 +77,12 @@ pub struct XmlState {
     current_node: Option<RsvgNode>,
 
     entities: HashMap<String, XmlEntityPtr>,
+}
 
-    pub load_options: LoadOptions,
+pub struct XmlState {
+    inner: RefCell<XmlStateInner>,
+
+    load_options: LoadOptions,
 }
 
 /// Errors returned from XmlState::acquire()
@@ -86,36 +94,53 @@ enum AcquireError {
     ResourceError,
 
     /// Resource could not be parsed/decoded
-    FatalError,
+    FatalError(String),
+}
+
+impl XmlStateInner {
+    fn context(&self) -> Context {
+        // We can unwrap since the stack is never empty
+        self.context_stack.last().unwrap().clone()
+    }
 }
 
 impl XmlState {
-    pub fn new(load_options: &LoadOptions) -> XmlState {
+    fn new(load_options: &LoadOptions) -> XmlState {
         XmlState {
-            tree_root: None,
-            ids: Some(HashMap::new()),
-            css_rules: Some(CssRules::default()),
-            context_stack: vec![Context::Start],
-            current_node: None,
-            entities: HashMap::new(),
+            inner: RefCell::new(XmlStateInner {
+                weak: None,
+                num_loaded_elements: 0,
+                tree_root: None,
+                ids: Some(HashMap::new()),
+                css_rules: Some(CssRules::default()),
+                context_stack: vec![Context::Start],
+                current_node: None,
+                entities: HashMap::new(),
+            }),
+
             load_options: load_options.clone(),
         }
     }
 
-    fn set_root(&mut self, root: &RsvgNode) {
-        if self.tree_root.is_some() {
-            panic!("The tree root has already been set");
-        }
+    fn check_last_error(&self) -> Result<(), ParseFromStreamError> {
+        let inner = self.inner.borrow();
 
-        self.tree_root = Some(root.clone());
+        match inner.context() {
+            Context::FatalError(e) => Err(e),
+            _ => Ok(()),
+        }
     }
 
-    pub fn steal_result(&mut self) -> Result<Svg, LoadingError> {
-        match self.tree_root {
+    fn steal_result(&self) -> Result<Svg, LoadingError> {
+        self.check_last_error()?;
+
+        let mut inner = self.inner.borrow_mut();
+
+        match inner.tree_root {
             None => Err(LoadingError::SvgHasNoElements),
             Some(ref root) if root.borrow().get_type() == NodeType::Svg => {
-                let root = self.tree_root.take().unwrap();
-                let css_rules = self.css_rules.as_ref().unwrap();
+                let root = inner.tree_root.take().unwrap();
+                let css_rules = inner.css_rules.as_ref().unwrap();
 
                 for mut node in root.descendants() {
                     node.borrow_mut().set_style(css_rules);
@@ -123,7 +148,7 @@ impl XmlState {
 
                 Ok(Svg::new(
                     root,
-                    self.ids.take().unwrap(),
+                    inner.ids.take().unwrap(),
                     self.load_options.clone(),
                 ))
             }
@@ -131,17 +156,28 @@ impl XmlState {
         }
     }
 
-    fn context(&self) -> Context {
-        // We can unwrap since the stack is never empty
-        self.context_stack.last().unwrap().clone()
+    fn check_limits(&self) -> Result<(), ()> {
+        if self.inner.borrow().num_loaded_elements > MAX_LOADED_ELEMENTS {
+            self.error(ParseFromStreamError::XmlParseError(format!(
+                "cannot load more than {} XML elements",
+                MAX_LOADED_ELEMENTS
+            )));
+            Err(())
+        } else {
+            Ok(())
+        }
     }
 
-    pub fn start_element(&mut self, name: &str, pbag: &PropertyBag) {
-        let context = self.context();
+    pub fn start_element(&self, name: &str, pbag: &PropertyBag) -> Result<(), ()> {
+        self.check_limits()?;
 
-        if let Context::FatalError = context {
-            return;
+        let context = self.inner.borrow().context();
+
+        if let Context::FatalError(_) = context {
+            return Err(());
         }
+
+        self.inner.borrow_mut().num_loaded_elements += 1;
 
         // FIXME: we should deal with namespaces at some point
         let name = skip_namespace(name);
@@ -155,14 +191,16 @@ impl XmlState {
                 self.xinclude_fallback_start_element(&ctx, name, pbag)
             }
 
-            Context::FatalError => unreachable!(),
+            Context::FatalError(_) => unreachable!(),
         };
 
-        self.context_stack.push(new_context);
+        self.inner.borrow_mut().context_stack.push(new_context);
+
+        Ok(())
     }
 
-    pub fn end_element(&mut self, _name: &str) {
-        let context = self.context();
+    pub fn end_element(&self, _name: &str) {
+        let context = self.inner.borrow().context();
 
         match context {
             Context::Start => panic!("end_element: XML handler stack is empty!?"),
@@ -170,15 +208,15 @@ impl XmlState {
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
             Context::XIncludeFallback(_) => (),
-            Context::FatalError => return,
+            Context::FatalError(_) => return,
         }
 
         // We can unwrap since start_element() always adds a context to the stack
-        self.context_stack.pop().unwrap();
+        self.inner.borrow_mut().context_stack.pop().unwrap();
     }
 
-    pub fn characters(&mut self, text: &str) {
-        let context = self.context();
+    pub fn characters(&self, text: &str) {
+        let context = self.inner.borrow().context();
 
         match context {
             // This is character data before the first element, i.e. something like
@@ -192,11 +230,11 @@ impl XmlState {
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
             Context::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
-            Context::FatalError => return,
+            Context::FatalError(_) => return,
         }
     }
 
-    pub fn processing_instruction(&mut self, target: &str, data: &str) {
+    pub fn processing_instruction(&self, target: &str, data: &str) {
         if target != "xml-stylesheet" {
             return;
         }
@@ -219,35 +257,42 @@ impl XmlState {
                 && type_.as_ref().map(String::as_str) == Some("text/css")
                 && href.is_some()
             {
+                let mut inner = self.inner.borrow_mut();
+
                 if let Ok(aurl) =
                     AllowedUrl::from_href(&href.unwrap(), self.load_options.base_url.as_ref())
                 {
                     // FIXME: handle CSS errors
-                    let css_rules = self.css_rules.as_mut().unwrap();
+                    let css_rules = inner.css_rules.as_mut().unwrap();
                     let _ = css_rules.load_css(&aurl);
                 } else {
-                    self.error("disallowed URL in xml-stylesheet");
+                    self.error(ParseFromStreamError::XmlParseError(String::from(
+                        "disallowed URL in xml-stylesheet",
+                    )));
                 }
             }
         } else {
-            self.error("invalid processing instruction data in xml-stylesheet");
+            self.error(ParseFromStreamError::XmlParseError(String::from(
+                "invalid processing instruction data in xml-stylesheet",
+            )));
         }
     }
 
-    pub fn error(&mut self, msg: &str) {
-        // FIXME: aggregate the errors and expose them to the public result
-
-        rsvg_log!("XML error: {}", msg);
-
-        self.context_stack.push(Context::FatalError);
+    pub fn error(&self, e: ParseFromStreamError) {
+        self.inner
+            .borrow_mut()
+            .context_stack
+            .push(Context::FatalError(e));
     }
 
     pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
-        self.entities.get(entity_name).map(|v| *v)
+        self.inner.borrow().entities.get(entity_name).map(|v| *v)
     }
 
-    pub fn entity_insert(&mut self, entity_name: &str, entity: XmlEntityPtr) {
-        let old_value = self.entities.insert(entity_name.to_string(), entity);
+    pub fn entity_insert(&self, entity_name: &str, entity: XmlEntityPtr) {
+        let mut inner = self.inner.borrow_mut();
+
+        let old_value = inner.entities.insert(entity_name.to_string(), entity);
 
         if let Some(v) = old_value {
             unsafe {
@@ -256,51 +301,58 @@ impl XmlState {
         }
     }
 
-    fn element_creation_start_element(&mut self, name: &str, pbag: &PropertyBag) -> Context {
+    fn element_creation_start_element(&self, name: &str, pbag: &PropertyBag) -> Context {
         match name {
             "include" => self.xinclude_start_element(name, pbag),
             _ => {
-                let ids = self.ids.as_mut().unwrap();
+                let mut inner = self.inner.borrow_mut();
+
+                let ids = inner.ids.as_mut().unwrap();
                 let mut node = create_node_and_register_id(name, pbag, ids);
 
-                let parent = self.current_node.clone();
+                let parent = inner.current_node.clone();
                 node.borrow_mut()
                     .set_atts(parent.as_ref(), pbag, self.load_options.locale());
 
                 if let Some(mut parent) = parent {
                     parent.append(node.clone());
                 } else {
-                    self.set_root(&node);
+                    if inner.tree_root.is_some() {
+                        panic!("The tree root has already been set");
+                    }
+
+                    inner.tree_root = Some(node.clone());
                 }
 
-                self.current_node = Some(node);
+                inner.current_node = Some(node);
 
                 Context::ElementCreation
             }
         }
     }
 
-    fn element_creation_end_element(&mut self) {
-        let node = self.current_node.take().unwrap();
+    fn element_creation_end_element(&self) {
+        let mut inner = self.inner.borrow_mut();
+
+        let node = inner.current_node.take().unwrap();
 
         if node.borrow().get_type() == NodeType::Style {
-            let css_rules = self.css_rules.as_mut().unwrap();
+            let css_rules = inner.css_rules.as_mut().unwrap();
             let css_data = node.borrow().get_impl::<NodeStyle>().get_css(&node);
 
             css_rules.parse(self.load_options.base_url.as_ref(), &css_data);
         }
 
-        self.current_node = node.parent();
+        inner.current_node = node.parent();
     }
 
     fn element_creation_characters(&self, text: &str) {
+        let mut current_node = self.inner.borrow().current_node.as_ref().unwrap().clone();
+
         if text.len() != 0 {
             // When the last child is a Chars node we can coalesce
             // the text and avoid screwing up the Pango layouts
-            let chars_node = if let Some(child) = self
-                .current_node
-                .as_ref()
-                .unwrap()
+            let chars_node = if let Some(child) = current_node
                 .last_child()
                 .filter(|c| c.borrow().get_type() == NodeType::Chars)
             {
@@ -314,8 +366,8 @@ impl XmlState {
                     Box::new(NodeChars::new()),
                 ));
 
-                let mut node = self.current_node.as_ref().unwrap().clone();
-                node.append(child.clone());
+                self.inner.borrow_mut().num_loaded_elements += 1;
+                current_node.append(child.clone());
 
                 child
             };
@@ -324,7 +376,7 @@ impl XmlState {
         }
     }
 
-    fn xinclude_start_element(&mut self, _name: &str, pbag: &PropertyBag) -> Context {
+    fn xinclude_start_element(&self, _name: &str, pbag: &PropertyBag) -> Context {
         let mut href = None;
         let mut parse = None;
         let mut encoding = None;
@@ -341,7 +393,9 @@ impl XmlState {
         let need_fallback = match self.acquire(href, parse, encoding) {
             Ok(()) => false,
             Err(AcquireError::ResourceError) => true,
-            Err(AcquireError::FatalError) => return Context::FatalError,
+            Err(AcquireError::FatalError(s)) => {
+                return Context::FatalError(ParseFromStreamError::XmlParseError(s))
+            }
         };
 
         Context::XInclude(XIncludeContext { need_fallback })
@@ -365,7 +419,7 @@ impl XmlState {
     }
 
     fn xinclude_fallback_start_element(
-        &mut self,
+        &self,
         ctx: &XIncludeContext,
         name: &str,
         pbag: &PropertyBag,
@@ -382,8 +436,8 @@ impl XmlState {
         }
     }
 
-    fn xinclude_fallback_characters(&mut self, ctx: &XIncludeContext, text: &str) {
-        if ctx.need_fallback && self.current_node.is_some() {
+    fn xinclude_fallback_characters(&self, ctx: &XIncludeContext, text: &str) {
+        if ctx.need_fallback && self.inner.borrow().current_node.is_some() {
             // We test for is_some() because with a bad "SVG" file like this:
             //
             //    <xi:include href="blah"><xi:fallback>foo</xi:fallback></xi:include>
@@ -395,7 +449,7 @@ impl XmlState {
     }
 
     fn acquire(
-        &mut self,
+        &self,
         href: Option<&str>,
         parse: Option<&str>,
         encoding: Option<&str>,
@@ -419,7 +473,10 @@ impl XmlState {
 
                 Some("text") => self.acquire_text(&aurl, encoding),
 
-                _ => Err(AcquireError::FatalError),
+                Some(v) => Err(AcquireError::FatalError(format!(
+                    "unknown 'parse' attribute value: \"{}\"",
+                    v
+                ))),
             }
         } else {
             // The href attribute is not present.  Per
@@ -431,11 +488,7 @@ impl XmlState {
         }
     }
 
-    fn acquire_text(
-        &mut self,
-        aurl: &AllowedUrl,
-        encoding: Option<&str>,
-    ) -> Result<(), AcquireError> {
+    fn acquire_text(&self, aurl: &AllowedUrl, encoding: Option<&str>) -> Result<(), AcquireError> {
         let binary = io::acquire_data(aurl, None).map_err(|e| {
             rsvg_log!("could not acquire \"{}\": {}", aurl, e);
             AcquireError::ResourceError
@@ -444,39 +497,42 @@ impl XmlState {
         let encoding = encoding.unwrap_or("utf-8");
 
         let encoder = encoding_from_whatwg_label(encoding).ok_or_else(|| {
-            rsvg_log!("unknown encoding \"{}\" for \"{}\"", encoding, aurl);
-            AcquireError::FatalError
+            AcquireError::FatalError(format!(
+                "unknown encoding \"{}\" for \"{}\"",
+                encoding, aurl
+            ))
         })?;
 
         let utf8_data = encoder
             .decode(&binary.data, DecoderTrap::Strict)
             .map_err(|e| {
-                rsvg_log!(
+                AcquireError::FatalError(format!(
                     "could not convert contents of \"{}\" from character encoding \"{}\": {}",
-                    aurl,
-                    encoding,
-                    e
-                );
-                AcquireError::FatalError
+                    aurl, encoding, e
+                ))
             })?;
 
         self.element_creation_characters(&utf8_data);
         Ok(())
     }
 
-    fn acquire_xml(&mut self, aurl: &AllowedUrl) -> Result<(), AcquireError> {
+    fn acquire_xml(&self, aurl: &AllowedUrl) -> Result<(), AcquireError> {
         // FIXME: distinguish between "file not found" and "invalid XML"
 
         let stream = io::acquire_stream(aurl, None).map_err(|e| match e {
-            LoadingError::BadDataUrl => AcquireError::FatalError,
+            LoadingError::BadDataUrl => {
+                AcquireError::FatalError(String::from("malformed data: URL"))
+            }
             _ => AcquireError::ResourceError,
         })?;
 
         // FIXME: pass a cancellable
-        self.parse_from_stream(stream, None).map_err(|e| match e {
-            ParseFromStreamError::CouldNotCreateXmlParser => AcquireError::FatalError,
+        self.parse_from_stream(&stream, None).map_err(|e| match e {
+            ParseFromStreamError::CouldNotCreateXmlParser => {
+                AcquireError::FatalError(String::from("could not create XML parser"))
+            }
             ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
-            ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,
+            ParseFromStreamError::XmlParseError(s) => AcquireError::FatalError(s),
         })
     }
 
@@ -484,24 +540,27 @@ impl XmlState {
     //
     // This can be called "in the middle" of an XmlState's processing status,
     // for example, when including another XML file via xi:include.
-    fn parse_from_stream<S: IsA<gio::InputStream>>(
-        &mut self,
-        stream: S,
+    fn parse_from_stream(
+        &self,
+        stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), ParseFromStreamError> {
-        Xml2Parser::from_stream(self, self.load_options.unlimited_size, stream, cancellable)
-            .and_then(|parser| parser.parse())
-    }
-
-    pub fn load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
-        &mut self,
-        stream: &S,
-        cancellable: Option<&gio::Cancellable>,
-    ) -> Result<(), ParseFromStreamError> {
-        let stream = get_input_stream_for_loading(stream, cancellable)
-            .map_err(|e| ParseFromStreamError::IoError(e))?;
-
-        self.parse_from_stream(stream, cancellable)
+        let strong = self
+            .inner
+            .borrow()
+            .weak
+            .as_ref()
+            .unwrap()
+            .upgrade()
+            .unwrap();
+        Xml2Parser::from_stream(
+            strong,
+            self.load_options.unlimited_size,
+            stream,
+            cancellable,
+        )
+        .and_then(|parser| parser.parse())
+        .and_then(|_: ()| self.check_last_error())
     }
 
     fn unsupported_xinclude_start_element(&self, _name: &str) -> Context {
@@ -512,7 +571,9 @@ impl XmlState {
 impl Drop for XmlState {
     fn drop(&mut self) {
         unsafe {
-            for (_key, entity) in self.entities.drain() {
+            let mut inner = self.inner.borrow_mut();
+
+            for (_key, entity) in inner.entities.drain() {
                 xmlFreeNode(entity);
             }
         }
@@ -558,6 +619,23 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
     }
 
     unreachable!();
+}
+
+pub fn xml_load_from_possibly_compressed_stream(
+    load_options: &LoadOptions,
+    stream: &gio::InputStream,
+    cancellable: Option<&gio::Cancellable>,
+) -> Result<Svg, LoadingError> {
+    let state = Rc::new(XmlState::new(load_options));
+
+    state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));
+
+    let stream = get_input_stream_for_loading(stream, cancellable)
+        .map_err(|e| ParseFromStreamError::IoError(e))?;
+
+    state.parse_from_stream(&stream, cancellable)?;
+
+    state.steal_result()
 }
 
 #[cfg(test)]
