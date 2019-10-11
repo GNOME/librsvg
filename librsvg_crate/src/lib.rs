@@ -286,7 +286,7 @@ impl Loader {
 
         Ok(SvgHandle(Handle::from_stream(
             &load_options,
-            stream,
+            stream.as_ref(),
             cancellable.map(|c| c.as_ref()),
         )?))
     }

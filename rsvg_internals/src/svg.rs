@@ -1,6 +1,5 @@
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
-use glib::IsA;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -53,9 +52,9 @@ impl Svg {
         }
     }
 
-    pub fn load_from_stream<S: IsA<gio::InputStream>>(
+    pub fn load_from_stream(
         load_options: &LoadOptions,
-        stream: &S,
+        stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Svg, LoadingError> {
         xml_load_from_possibly_compressed_stream(load_options, stream, cancellable)

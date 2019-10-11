@@ -3,7 +3,6 @@
 
 use gio;
 use gio::prelude::*;
-use glib::prelude::*;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::mem;
@@ -320,10 +319,10 @@ pub struct Xml2Parser {
 }
 
 impl Xml2Parser {
-    pub fn from_stream<S: IsA<gio::InputStream>>(
+    pub fn from_stream(
         xml: &mut XmlState,
         unlimited_size: bool,
-        stream: S,
+        stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Xml2Parser, ParseFromStreamError> {
         init_libxml2();
@@ -338,7 +337,7 @@ impl Xml2Parser {
         let gio_error = Rc::new(RefCell::new(None));
 
         let ctx = Box::new(StreamCtx {
-            stream: stream.upcast(),
+            stream: stream.clone(),
             cancellable: cancellable.map(|c| c.clone()),
             gio_error: gio_error.clone(),
         });

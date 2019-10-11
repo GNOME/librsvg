@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use cairo::{self, ImageSurface, Status};
 use gio;
-use glib::{self, IsA};
+use glib;
 use libc;
 use locale_config::{LanguageRange, Locale};
 
@@ -180,9 +180,9 @@ pub struct Handle {
 }
 
 impl Handle {
-    pub fn from_stream<S: IsA<gio::InputStream>>(
+    pub fn from_stream(
         load_options: &LoadOptions,
-        stream: &S,
+        stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Handle, LoadingError> {
         Ok(Handle {

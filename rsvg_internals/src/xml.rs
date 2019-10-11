@@ -1,7 +1,6 @@
 use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
-use glib::IsA;
 use libc;
 use markup5ever::{local_name, LocalName};
 use std::collections::HashMap;
@@ -473,7 +472,7 @@ impl XmlState {
         })?;
 
         // FIXME: pass a cancellable
-        self.parse_from_stream(stream, None).map_err(|e| match e {
+        self.parse_from_stream(&stream, None).map_err(|e| match e {
             ParseFromStreamError::CouldNotCreateXmlParser => AcquireError::FatalError,
             ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
             ParseFromStreamError::XmlParseError(_) => AcquireError::FatalError,
@@ -484,9 +483,9 @@ impl XmlState {
     //
     // This can be called "in the middle" of an XmlState's processing status,
     // for example, when including another XML file via xi:include.
-    fn parse_from_stream<S: IsA<gio::InputStream>>(
+    fn parse_from_stream(
         &mut self,
-        stream: S,
+        stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), ParseFromStreamError> {
         Xml2Parser::from_stream(self, self.load_options.unlimited_size, stream, cancellable)
@@ -549,9 +548,9 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
     unreachable!();
 }
 
-pub fn xml_load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
+pub fn xml_load_from_possibly_compressed_stream(
     load_options: &LoadOptions,
-    stream: &S,
+    stream: &gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<Svg, LoadingError> {
     let mut xml = XmlState::new(load_options);
@@ -559,7 +558,7 @@ pub fn xml_load_from_possibly_compressed_stream<S: IsA<gio::InputStream>>(
     let stream = get_input_stream_for_loading(stream, cancellable)
         .map_err(|e| ParseFromStreamError::IoError(e))?;
 
-    xml.parse_from_stream(stream, cancellable)?;
+    xml.parse_from_stream(&stream, cancellable)?;
 
     xml.steal_result()
 }
