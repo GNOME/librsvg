@@ -66,7 +66,7 @@ mod creators {
     n!(create_convolve_matrix,           FeConvolveMatrix,           ConvolveMatrix::default);
     n!(create_defs,                      Defs,                       NodeNonRendering::default);
     n!(create_diffuse_lighting,          FeDiffuseLighting,          Lighting::new_diffuse);
-    n!(create_distant_light,             DistantLight,               LightSource::new_distant_light);
+    n!(create_distant_light,             FeDistantLight,             LightSource::new_distant_light);
     n!(create_displacement_map,          FeDisplacementMap,          DisplacementMap::default);
     n!(create_ellipse,                   Ellipse,                    NodeEllipse::default);
     n!(create_filter,                    Filter,                     NodeFilter::default);
@@ -87,13 +87,13 @@ mod creators {
     n!(create_offset,                    FeOffset,                   Offset::default);
     n!(create_path,                      Path,                       NodePath::default);
     n!(create_pattern,                   Pattern,                    NodePattern::default);
-    n!(create_point_light,               PointLight,                 LightSource::new_point_light);
+    n!(create_point_light,               FePointLight,               LightSource::new_point_light);
     n!(create_polygon,                   Polygon,                    NodePoly::new_closed);
     n!(create_polyline,                  Polyline,                   NodePoly::new_open);
     n!(create_radial_gradient,           RadialGradient,             NodeRadialGradient::default);
     n!(create_rect,                      Rect,                       NodeRect::default);
     n!(create_specular_lighting,         FeSpecularLighting,         Lighting::new_specular);
-    n!(create_spot_light,                SpotLight,                  LightSource::new_spot_light);
+    n!(create_spot_light,                FeSpotLight,                LightSource::new_spot_light);
     n!(create_stop,                      Stop,                       NodeStop::default);
     n!(create_style,                     Style,                      NodeStyle::default);
     n!(create_svg,                       Svg,                        NodeSvg::default);
