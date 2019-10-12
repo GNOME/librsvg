@@ -9,32 +9,8 @@ use crate::parsers;
 use crate::property_bag::PropertyBag;
 use crate::util::clamp;
 
-/// A light source node (`feDistantLight`, `fePointLight` or `feSpotLight`).
-#[derive(Clone)]
+/// A light source with affine transformations applied.
 pub enum LightSource {
-    Distant {
-        azimuth: f64,
-        elevation: f64,
-    },
-    Point {
-        x: f64,
-        y: f64,
-        z: f64,
-    },
-    Spot {
-        x: f64,
-        y: f64,
-        z: f64,
-        points_at_x: f64,
-        points_at_y: f64,
-        points_at_z: f64,
-        specular_exponent: f64,
-        limiting_cone_angle: Option<f64>,
-    },
-}
-
-/// A light source node with affine transformations applied.
-pub enum TransformedLightSource {
     Distant {
         azimuth: f64,
         elevation: f64,
@@ -51,92 +27,11 @@ pub enum TransformedLightSource {
 }
 
 impl LightSource {
-    /// Constructs a new `feDistantLight` with empty properties.
-    #[inline]
-    pub fn new_distant_light() -> LightSource {
-        LightSource::Distant {
-            azimuth: 0.0,
-            elevation: 0.0,
-        }
-    }
-
-    /// Constructs a new `fePointLight` with empty properties.
-    #[inline]
-    pub fn new_point_light() -> LightSource {
-        LightSource::Point {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        }
-    }
-
-    /// Constructs a new `feSpotLight` with empty properties.
-    #[inline]
-    pub fn new_spot_light() -> LightSource {
-        LightSource::Spot {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-            points_at_x: 0.0,
-            points_at_y: 0.0,
-            points_at_z: 0.0,
-            specular_exponent: 0.0,
-            limiting_cone_angle: None,
-        }
-    }
-
-    /// Returns a `TransformedLightSource` according to the given `FilterContext`.
-    #[inline]
-    pub fn transform(&self, ctx: &FilterContext) -> TransformedLightSource {
-        match *self {
-            LightSource::Distant { azimuth, elevation } => {
-                TransformedLightSource::Distant { azimuth, elevation }
-            }
-            LightSource::Point { x, y, z } => {
-                let (x, y) = ctx.paffine().transform_point(x, y);
-                let z = ctx.transform_dist(z);
-
-                TransformedLightSource::Point {
-                    origin: Vector3::new(x, y, z),
-                }
-            }
-            LightSource::Spot {
-                x,
-                y,
-                z,
-                points_at_x,
-                points_at_y,
-                points_at_z,
-                specular_exponent,
-                limiting_cone_angle,
-            } => {
-                let (x, y) = ctx.paffine().transform_point(x, y);
-                let z = ctx.transform_dist(z);
-                let (points_at_x, points_at_y) =
-                    ctx.paffine().transform_point(points_at_x, points_at_y);
-                let points_at_z = ctx.transform_dist(points_at_z);
-
-                let origin = Vector3::new(x, y, z);
-                let mut direction = Vector3::new(points_at_x, points_at_y, points_at_z) - origin;
-                let _ = direction.try_normalize_mut(0.0);
-
-                TransformedLightSource::Spot {
-                    origin,
-                    direction,
-                    specular_exponent,
-                    limiting_cone_angle,
-                }
-            }
-        }
-    }
-}
-
-impl TransformedLightSource {
     /// Returns the unit (or null) vector from the image sample to the light.
     #[inline]
     pub fn vector(&self, x: f64, y: f64, z: f64) -> Vector3<f64> {
         match self {
-            TransformedLightSource::Distant { azimuth, elevation } => {
+            LightSource::Distant { azimuth, elevation } => {
                 let azimuth = azimuth.to_radians();
                 let elevation = elevation.to_radians();
                 Vector3::new(
@@ -145,8 +40,7 @@ impl TransformedLightSource {
                     elevation.sin(),
                 )
             }
-            TransformedLightSource::Point { origin }
-            | TransformedLightSource::Spot { origin, .. } => {
+            LightSource::Point { origin } | LightSource::Spot { origin, .. } => {
                 let mut v = origin - Vector3::new(x, y, z);
                 let _ = v.try_normalize_mut(0.0);
                 v
@@ -162,7 +56,7 @@ impl TransformedLightSource {
         light_vector: Vector3<f64>,
     ) -> cssparser::RGBA {
         match self {
-            TransformedLightSource::Spot {
+            LightSource::Spot {
                 direction,
                 specular_exponent,
                 limiting_cone_angle,
@@ -194,60 +88,127 @@ impl TransformedLightSource {
     }
 }
 
-impl NodeTrait for LightSource {
+#[derive(Default)]
+pub struct DistantLight {
+    azimuth: f64,
+    elevation: f64,
+}
+
+impl DistantLight {
+    pub fn transform(&self, _ctx: &FilterContext) -> LightSource {
+        LightSource::Distant {
+            azimuth: self.azimuth,
+            elevation: self.elevation,
+        }
+    }
+}
+
+impl NodeTrait for DistantLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match *self {
-                LightSource::Distant {
-                    ref mut azimuth,
-                    ref mut elevation,
-                } => match attr {
-                    local_name!("azimuth") => *azimuth = parsers::number(value).attribute(attr)?,
-                    local_name!("elevation") => {
-                        *elevation = parsers::number(value).attribute(attr)?
-                    }
-                    _ => (),
-                },
-                LightSource::Point {
-                    ref mut x,
-                    ref mut y,
-                    ref mut z,
-                } => match attr {
-                    local_name!("x") => *x = parsers::number(value).attribute(attr)?,
-                    local_name!("y") => *y = parsers::number(value).attribute(attr)?,
-                    local_name!("z") => *z = parsers::number(value).attribute(attr)?,
-                    _ => (),
-                },
-                LightSource::Spot {
-                    ref mut x,
-                    ref mut y,
-                    ref mut z,
-                    ref mut points_at_x,
-                    ref mut points_at_y,
-                    ref mut points_at_z,
-                    ref mut specular_exponent,
-                    ref mut limiting_cone_angle,
-                } => match attr {
-                    local_name!("x") => *x = parsers::number(value).attribute(attr)?,
-                    local_name!("y") => *y = parsers::number(value).attribute(attr)?,
-                    local_name!("z") => *z = parsers::number(value).attribute(attr)?,
-                    local_name!("pointsAtX") => {
-                        *points_at_x = parsers::number(value).attribute(attr)?
-                    }
-                    local_name!("pointsAtY") => {
-                        *points_at_y = parsers::number(value).attribute(attr)?
-                    }
-                    local_name!("pointsAtZ") => {
-                        *points_at_z = parsers::number(value).attribute(attr)?
-                    }
-                    local_name!("specularExponent") => {
-                        *specular_exponent = parsers::number(value).attribute(attr)?
-                    }
-                    local_name!("limitingConeAngle") => {
-                        *limiting_cone_angle = Some(parsers::number(value).attribute(attr)?)
-                    }
-                    _ => (),
-                },
+            match attr {
+                local_name!("azimuth") => self.azimuth = parsers::number(value).attribute(attr)?,
+                local_name!("elevation") => {
+                    self.elevation = parsers::number(value).attribute(attr)?
+                }
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Default)]
+pub struct PointLight {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
+impl PointLight {
+    pub fn transform(&self, ctx: &FilterContext) -> LightSource {
+        let (x, y) = ctx.paffine().transform_point(self.x, self.y);
+        let z = ctx.transform_dist(self.z);
+
+        LightSource::Point {
+            origin: Vector3::new(x, y, z),
+        }
+    }
+}
+
+impl NodeTrait for PointLight {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("x") => self.x = parsers::number(value).attribute(attr)?,
+                local_name!("y") => self.y = parsers::number(value).attribute(attr)?,
+                local_name!("z") => self.z = parsers::number(value).attribute(attr)?,
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Default)]
+pub struct SpotLight {
+    x: f64,
+    y: f64,
+    z: f64,
+    points_at_x: f64,
+    points_at_y: f64,
+    points_at_z: f64,
+    specular_exponent: f64,
+    limiting_cone_angle: Option<f64>,
+}
+
+impl SpotLight {
+    pub fn transform(&self, ctx: &FilterContext) -> LightSource {
+        let (x, y) = ctx.paffine().transform_point(self.x, self.y);
+        let z = ctx.transform_dist(self.z);
+        let (points_at_x, points_at_y) = ctx
+            .paffine()
+            .transform_point(self.points_at_x, self.points_at_y);
+        let points_at_z = ctx.transform_dist(self.points_at_z);
+
+        let origin = Vector3::new(x, y, z);
+        let mut direction = Vector3::new(points_at_x, points_at_y, points_at_z) - origin;
+        let _ = direction.try_normalize_mut(0.0);
+
+        LightSource::Spot {
+            origin,
+            direction,
+            specular_exponent: self.specular_exponent,
+            limiting_cone_angle: self.limiting_cone_angle,
+        }
+    }
+}
+
+impl NodeTrait for SpotLight {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr {
+                local_name!("x") => self.x = parsers::number(value).attribute(attr)?,
+                local_name!("y") => self.y = parsers::number(value).attribute(attr)?,
+                local_name!("z") => self.z = parsers::number(value).attribute(attr)?,
+                local_name!("pointsAtX") => {
+                    self.points_at_x = parsers::number(value).attribute(attr)?
+                }
+                local_name!("pointsAtY") => {
+                    self.points_at_y = parsers::number(value).attribute(attr)?
+                }
+                local_name!("pointsAtZ") => {
+                    self.points_at_z = parsers::number(value).attribute(attr)?
+                }
+                local_name!("specularExponent") => {
+                    self.specular_exponent = parsers::number(value).attribute(attr)?
+                }
+                local_name!("limitingConeAngle") => {
+                    self.limiting_cone_angle = Some(parsers::number(value).attribute(attr)?)
+                }
+                _ => (),
             }
         }
 
