@@ -17,7 +17,10 @@ use crate::filters::{
         bottom_row_normal,
         interior_normal,
         left_column_normal,
+        light_source::DistantLight,
         light_source::LightSource,
+        light_source::PointLight,
+        light_source::SpotLight,
         right_column_normal,
         top_left_normal,
         top_right_normal,
@@ -209,27 +212,7 @@ impl Filter for Lighting {
             cssparser::Color::RGBA(rgba) => rgba,
         };
 
-        let mut light_sources = node
-            .children()
-            .rev()
-            .filter(|c| match c.borrow().get_type() {
-                NodeType::FeDistantLight | NodeType::FePointLight | NodeType::FeSpotLight => true,
-                _ => false,
-            });
-
-        let light_source = light_sources.next();
-        if light_source.is_none() || light_sources.next().is_some() {
-            return Err(FilterError::InvalidLightSourceCount);
-        }
-
-        let light_source = light_source.unwrap();
-        if light_source.borrow().is_in_error() {
-            return Err(FilterError::ChildNodeInError);
-        }
-
-        let node_data = light_source.borrow();
-        let light_source = node_data.get_impl::<LightSource>().transform(ctx);
-
+        let light_source = find_light_source(node, ctx)?;
         let mut input_surface = input.surface().clone();
 
         if let Some((ox, oy)) = scale {
@@ -485,6 +468,35 @@ impl Filter for Lighting {
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
     }
+}
+
+fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource, FilterError> {
+    let mut light_sources = node
+        .children()
+        .rev()
+        .filter(|c| match c.borrow().get_type() {
+            NodeType::FeDistantLight | NodeType::FePointLight | NodeType::FeSpotLight => true,
+            _ => false,
+        });
+
+    let node = light_sources.next();
+    if node.is_none() || light_sources.next().is_some() {
+        return Err(FilterError::InvalidLightSourceCount);
+    }
+
+    let node = node.unwrap();
+    if node.borrow().is_in_error() {
+        return Err(FilterError::ChildNodeInError);
+    }
+
+    let light_source = match node.borrow().get_type() {
+        NodeType::FeDistantLight => node.borrow().get_impl::<DistantLight>().transform(ctx),
+        NodeType::FePointLight => node.borrow().get_impl::<PointLight>().transform(ctx),
+        NodeType::FeSpotLight => node.borrow().get_impl::<SpotLight>().transform(ctx),
+        _ => unreachable!(),
+    };
+
+    Ok(light_source)
 }
 
 impl Default for Lighting {
