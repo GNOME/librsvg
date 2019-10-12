@@ -213,7 +213,7 @@ impl Filter for Lighting {
             .children()
             .rev()
             .filter(|c| match c.borrow().get_type() {
-                NodeType::DistantLight | NodeType::PointLight | NodeType::SpotLight => true,
+                NodeType::FeDistantLight | NodeType::FePointLight | NodeType::FeSpotLight => true,
                 _ => false,
             });
 
