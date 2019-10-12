@@ -85,6 +85,63 @@ impl Lighting {
             ..Self::default()
         }
     }
+
+    #[inline]
+    pub fn compute_factor(&self, normal: Normal, light_vector: Vector3<f64>) -> f64 {
+        match self.data {
+            Data::Diffuse { diffuse_constant } => {
+                let k = if normal.normal.is_zero() {
+                    // Common case of (0, 0, 1) normal.
+                    light_vector.z
+                } else {
+                    let mut n = normal
+                        .normal
+                        .map(|x| f64::from(x) * self.surface_scale / 255.);
+                    n.component_mul_assign(&normal.factor);
+                    let normal = Vector3::new(n.x, n.y, 1.0);
+
+                    normal.dot(&light_vector) / normal.norm()
+                };
+
+                diffuse_constant * k
+            }
+            Data::Specular {
+                specular_constant,
+                specular_exponent,
+            } => {
+                let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
+                let h_norm = h.norm();
+                if h_norm == 0.0 {
+                    0.0
+                } else {
+                    let k = if normal.normal.is_zero() {
+                        // Common case of (0, 0, 1) normal.
+                        let n_dot_h = h.z / h_norm;
+                        if specular_exponent == 1.0 {
+                            n_dot_h
+                        } else {
+                            n_dot_h.powf(specular_exponent)
+                        }
+                    } else {
+                        let mut n = normal
+                            .normal
+                            .map(|x| f64::from(x) * self.surface_scale / 255.);
+                        n.component_mul_assign(&normal.factor);
+                        let normal = Vector3::new(n.x, n.y, 1.0);
+
+                        let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
+                        if specular_exponent == 1.0 {
+                            n_dot_h
+                        } else {
+                            n_dot_h.powf(specular_exponent)
+                        }
+                    };
+
+                    specular_constant * k
+                }
+            }
+        }
+    }
 }
 
 impl NodeTrait for Lighting {
@@ -252,60 +309,7 @@ impl Filter for Lighting {
                     let light_vector = light_source.vector(scaled_x, scaled_y, z);
                     let light_color = light_source.color(lighting_color, light_vector);
 
-                    let factor = match self.data {
-                        Data::Diffuse { diffuse_constant } => {
-                            let k = if normal.normal.is_zero() {
-                                // Common case of (0, 0, 1) normal.
-                                light_vector.z
-                            } else {
-                                let mut n = normal
-                                    .normal
-                                    .map(|x| f64::from(x) * self.surface_scale / 255.);
-                                n.component_mul_assign(&normal.factor);
-                                let normal = Vector3::new(n.x, n.y, 1.0);
-
-                                normal.dot(&light_vector) / normal.norm()
-                            };
-
-                            diffuse_constant * k
-                        }
-                        Data::Specular {
-                            specular_constant,
-                            specular_exponent,
-                        } => {
-                            let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
-                            let h_norm = h.norm();
-                            if h_norm == 0.0 {
-                                0.0
-                            } else {
-                                let k = if normal.normal.is_zero() {
-                                    // Common case of (0, 0, 1) normal.
-                                    let n_dot_h = h.z / h_norm;
-                                    if specular_exponent == 1.0 {
-                                        n_dot_h
-                                    } else {
-                                        n_dot_h.powf(specular_exponent)
-                                    }
-                                } else {
-                                    let mut n = normal
-                                        .normal
-                                        .map(|x| f64::from(x) * self.surface_scale / 255.);
-                                    n.component_mul_assign(&normal.factor);
-                                    let normal = Vector3::new(n.x, n.y, 1.0);
-
-                                    let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
-                                    if specular_exponent == 1.0 {
-                                        n_dot_h
-                                    } else {
-                                        n_dot_h.powf(specular_exponent)
-                                    }
-                                };
-
-                                specular_constant * k
-                            }
-                        }
-                    };
-
+                    let factor = self.compute_factor(normal, light_vector);
                     let compute = |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
 
                     let mut output_pixel = Pixel {
