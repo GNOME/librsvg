@@ -17,7 +17,9 @@ use crate::filters::{
         bottom_row_normal,
         interior_normal,
         left_column_normal,
-        light_source::LightSource,
+        light_source::DistantLight,
+        light_source::PointLight,
+        light_source::SpotLight,
         right_column_normal,
         top_left_normal,
         top_right_normal,
@@ -217,18 +219,25 @@ impl Filter for Lighting {
                 _ => false,
             });
 
-        let light_source = light_sources.next();
-        if light_source.is_none() || light_sources.next().is_some() {
+        let light_node = light_sources.next();
+        if light_node.is_none() || light_sources.next().is_some() {
             return Err(FilterError::InvalidLightSourceCount);
         }
 
-        let light_source = light_source.unwrap();
-        if light_source.borrow().is_in_error() {
+        let light_node = light_node.unwrap();
+        if light_node.borrow().is_in_error() {
             return Err(FilterError::ChildNodeInError);
         }
 
-        let node_data = light_source.borrow();
-        let light_source = node_data.get_impl::<LightSource>().transform(ctx);
+        let light_source = match light_node.borrow().get_type() {
+            NodeType::FeDistantLight => light_node
+                .borrow()
+                .get_impl::<DistantLight>()
+                .transform(ctx),
+            NodeType::FePointLight => light_node.borrow().get_impl::<PointLight>().transform(ctx),
+            NodeType::FeSpotLight => light_node.borrow().get_impl::<SpotLight>().transform(ctx),
+            _ => unreachable!(),
+        };
 
         let mut input_surface = input.surface().clone();
 
