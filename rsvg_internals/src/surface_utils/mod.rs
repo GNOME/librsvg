@@ -113,10 +113,10 @@ impl Pixel {
     /// if pixel = 0x00020202, pixel' = 0x02......
     /// if pixel = 0x00000000, pixel' = 0x00......
     pub fn to_mask(self, opacity: u8) -> Self {
-        let r = self.r as u32;
-        let g = self.g as u32;
-        let b = self.b as u32;
-        let o = opacity as u32;
+        let r = i32::from(self.r);
+        let g = i32::from(self.g);
+        let b = i32::from(self.b);
+        let o = i32::from(opacity);
 
         Self {
             r: 0,
@@ -127,16 +127,16 @@ impl Pixel {
     }
 
     #[inline]
-    pub fn diff(self, p: &Pixel) -> Pixel {
-        let a_r = self.r as i32;
-        let a_g = self.g as i32;
-        let a_b = self.b as i32;
-        let a_a = self.a as i32;
+    pub fn diff(self, pixel: &Pixel) -> Pixel {
+        let a_r = i32::from(self.r);
+        let a_g = i32::from(self.g);
+        let a_b = i32::from(self.b);
+        let a_a = i32::from(self.a);
 
-        let b_r = p.r as i32;
-        let b_g = p.g as i32;
-        let b_b = p.b as i32;
-        let b_a = p.a as i32;
+        let b_r = i32::from(pixel.r);
+        let b_g = i32::from(pixel.g);
+        let b_b = i32::from(pixel.b);
+        let b_a = i32::from(pixel.a);
 
         let r = (a_r - b_r).abs() as u8;
         let g = (a_g - b_g).abs() as u8;
