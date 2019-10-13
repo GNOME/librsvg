@@ -191,7 +191,7 @@ impl CssRules {
         let decl_list = self
             .selectors_to_declarations
             .entry(selector)
-            .or_insert_with(|| DeclarationList::default());
+            .or_insert_with(DeclarationList::default);
 
         decl_list.add_declaration(declaration);
     }
