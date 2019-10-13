@@ -286,7 +286,7 @@ impl XmlState {
     }
 
     pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
-        self.inner.borrow().entities.get(entity_name).map(|v| *v)
+        self.inner.borrow().entities.get(entity_name).copied()
     }
 
     pub fn entity_insert(&self, entity_name: &str, entity: XmlEntityPtr) {
