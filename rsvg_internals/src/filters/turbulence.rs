@@ -256,8 +256,8 @@ impl NoiseGenerator {
         let b10 = self.lattice_selector[j + by0];
         let b01 = self.lattice_selector[i + by1];
         let b11 = self.lattice_selector[j + by1];
-        let sx = f64::from(s_curve(rx0));
-        let sy = f64::from(s_curve(ry0));
+        let sx = s_curve(rx0);
+        let sy = s_curve(ry0);
         let q = self.gradient[color_channel][b00];
         let u = rx0 * q[0] + ry0 * q[1];
         let q = self.gradient[color_channel][b10];
