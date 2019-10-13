@@ -27,7 +27,7 @@ impl Angle {
         }
     }
 
-    pub fn radians(&self) -> f64 {
+    pub fn radians(self) -> f64 {
         self.0
     }
 
