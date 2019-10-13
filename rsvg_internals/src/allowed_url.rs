@@ -224,11 +224,11 @@ impl Href {
         };
 
         match (uri, fragment) {
-            (None, Some(f)) if f.len() == 0 => Err(HrefError::ParseError),
+            (None, Some(f)) if f.is_empty() => Err(HrefError::ParseError),
             (None, Some(f)) => Ok(Href::WithFragment(Fragment(None, f.to_string()))),
-            (Some(u), _) if u.len() == 0 => Err(HrefError::ParseError),
+            (Some(u), _) if u.is_empty() => Err(HrefError::ParseError),
             (Some(u), None) => Ok(Href::PlainUrl(u.to_string())),
-            (Some(_u), Some(f)) if f.len() == 0 => Err(HrefError::ParseError),
+            (Some(_u), Some(f)) if f.is_empty() => Err(HrefError::ParseError),
             (Some(u), Some(f)) => Ok(Href::WithFragment(Fragment(
                 Some(u.to_string()),
                 f.to_string(),
