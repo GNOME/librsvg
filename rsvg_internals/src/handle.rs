@@ -254,7 +254,7 @@ impl Handle {
         size_callback: &SizeCallback,
         is_testing: bool,
     ) -> Result<RsvgPositionData, RenderingError> {
-        if let None = id {
+        if id.is_none() {
             return Ok(RsvgPositionData { x: 0, y: 0 });
         }
 
