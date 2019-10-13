@@ -338,9 +338,9 @@ impl FilterContext {
         let _ = draw_ctx
             .set_source_paint_server(
                 paint_server,
-                &opacity,
+                opacity,
                 &self.node_bbox,
-                &self.computed_from_node_being_filtered.color.0,
+                self.computed_from_node_being_filtered.color.0,
             )
             .and_then(|had_paint_server| {
                 if had_paint_server {

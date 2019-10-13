@@ -305,34 +305,35 @@ impl PositionedSpan {
                 cr.rotate(-rotation);
             }
 
-            let current_color = &self.values.color.0;
-
-            let fill_opacity = &self.values.fill_opacity.0;
+            let current_color = self.values.color.0;
 
             let res = if !clipping {
-                dc.set_source_paint_server(&self.values.fill.0, fill_opacity, &bbox, current_color)
-                    .and_then(|had_paint_server| {
-                        if had_paint_server {
-                            pangocairo::functions::update_layout(&cr, &self.layout);
-                            pangocairo::functions::show_layout(&cr, &self.layout);
-                        };
-                        Ok(())
-                    })
+                dc.set_source_paint_server(
+                    &self.values.fill.0,
+                    self.values.fill_opacity.0,
+                    &bbox,
+                    current_color,
+                )
+                .and_then(|had_paint_server| {
+                    if had_paint_server {
+                        pangocairo::functions::update_layout(&cr, &self.layout);
+                        pangocairo::functions::show_layout(&cr, &self.layout);
+                    };
+                    Ok(())
+                })
             } else {
                 Ok(())
             };
 
             if res.is_ok() {
-                let stroke_opacity = &self.values.stroke_opacity.0;
-
                 let mut need_layout_path = clipping;
 
                 let res = if !clipping {
                     dc.set_source_paint_server(
                         &self.values.stroke.0,
-                        stroke_opacity,
+                        self.values.stroke_opacity.0,
                         &bbox,
-                        &current_color,
+                        current_color,
                     )
                     .and_then(|had_paint_server| {
                         if had_paint_server {

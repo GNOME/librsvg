@@ -600,16 +600,16 @@ impl DrawingCtx {
 
     fn set_color(
         &self,
-        color: &cssparser::Color,
-        opacity: &UnitInterval,
-        current_color: &cssparser::RGBA,
+        color: cssparser::Color,
+        opacity: UnitInterval,
+        current_color: cssparser::RGBA,
     ) {
-        let rgba = match *color {
-            cssparser::Color::RGBA(ref rgba) => rgba,
+        let rgba = match color {
+            cssparser::Color::RGBA(rgba) => rgba,
             cssparser::Color::CurrentColor => current_color,
         };
 
-        let &UnitInterval(o) = opacity;
+        let UnitInterval(o) = opacity;
         self.get_cairo_context().set_source_rgba(
             f64::from(rgba.red_f32()),
             f64::from(rgba.green_f32()),
@@ -632,9 +632,9 @@ impl DrawingCtx {
     pub fn set_source_paint_server(
         &mut self,
         ps: &PaintServer,
-        opacity: &UnitInterval,
+        opacity: UnitInterval,
         bbox: &BoundingBox,
-        current_color: &cssparser::RGBA,
+        current_color: cssparser::RGBA,
     ) -> Result<bool, RenderingError> {
         match *ps {
             PaintServer::Iri {
@@ -672,7 +672,7 @@ impl DrawingCtx {
                 }
 
                 if !had_paint_server && alternate.is_some() {
-                    self.set_color(alternate.as_ref().unwrap(), opacity, current_color);
+                    self.set_color(alternate.unwrap(), opacity, current_color);
                     had_paint_server = true;
                 } else {
                     rsvg_log!(
@@ -685,7 +685,7 @@ impl DrawingCtx {
             }
 
             PaintServer::SolidColor(color) => {
-                self.set_color(&color, opacity, current_color);
+                self.set_color(color, opacity, current_color);
                 Ok(true)
             }
 
@@ -733,12 +733,15 @@ impl DrawingCtx {
         // coordinate system in patterns.
         let bbox = compute_stroke_and_fill_box(cr, values);
 
-        let current_color = &values.color.0;
-
-        let fill_opacity = &values.fill_opacity.0;
+        let current_color = values.color.0;
 
         let res = self
-            .set_source_paint_server(&values.fill.0, fill_opacity, &bbox, current_color)
+            .set_source_paint_server(
+                &values.fill.0,
+                values.fill_opacity.0,
+                &bbox,
+                current_color
+            )
             .and_then(|had_paint_server| {
                 if had_paint_server {
                     if values.stroke.0 == PaintServer::None {
@@ -751,13 +754,11 @@ impl DrawingCtx {
                 Ok(())
             })
             .and_then(|_| {
-                let stroke_opacity = values.stroke_opacity.0;
-
                 self.set_source_paint_server(
                     &values.stroke.0,
-                    &stroke_opacity,
+                    values.stroke_opacity.0,
                     &bbox,
-                    &current_color,
+                    current_color,
                 )
                 .and_then(|had_paint_server| {
                     if had_paint_server {
