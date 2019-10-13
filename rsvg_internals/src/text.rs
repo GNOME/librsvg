@@ -272,7 +272,11 @@ impl PositionedSpan {
         }
     }
 
-    fn draw(&self, draw_ctx: &mut DrawingCtx, clipping: bool) -> Result<BoundingBox, RenderingError> {
+    fn draw(
+        &self,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
         draw_ctx.with_saved_cr(&mut |dc| {
             let cr = dc.get_cairo_context();
 
@@ -340,17 +344,14 @@ impl PositionedSpan {
                     Ok(())
                 };
 
-                if res.is_ok() {
-                    if need_layout_path {
-                        pangocairo::functions::update_layout(&cr, &self.layout);
-                        pangocairo::functions::layout_path(&cr, &self.layout);
+                if res.is_ok() && need_layout_path {
+                    pangocairo::functions::update_layout(&cr, &self.layout);
+                    pangocairo::functions::layout_path(&cr, &self.layout);
 
-                        if !clipping {
-                            let ib =
-                                BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
-                            cr.stroke();
-                            bbox.insert(&ib);
-                        }
+                    if !clipping {
+                        let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
+                        cr.stroke();
+                        bbox.insert(&ib);
                     }
                 }
             }
