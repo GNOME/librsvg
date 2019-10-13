@@ -80,9 +80,7 @@ impl RectangleExt for cairo::Rectangle {
             (x, y, x, y)
         };
 
-        for i in 1..4 {
-            let (x, y) = points[i];
-
+        for &(x, y) in points.iter().take(4).skip(1) {
             if x < xmin {
                 xmin = x;
             }
