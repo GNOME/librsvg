@@ -98,7 +98,7 @@ fn parse_matrix_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Value
             Ok((xx, yx, xy, yy, x0, y0))
         })
         .map_err(CssParseError::<()>::basic)
-        .map_err(|e| ValueErrorKind::from(e))
+        .map_err(ValueErrorKind::from)
         .and_then(|(xx, yx, xy, yy, x0, y0)| {
             let xx = f64::from(finite_f32(xx)?);
             let yx = f64::from(finite_f32(yx)?);
@@ -126,7 +126,7 @@ fn parse_translate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Va
             Ok((tx, ty))
         })
         .map_err(CssParseError::<()>::basic)
-        .map_err(|e| ValueErrorKind::from(e))
+        .map_err(ValueErrorKind::from)
         .and_then(|(tx, ty)| {
             let tx = f64::from(finite_f32(tx)?);
             let ty = f64::from(finite_f32(ty)?);
@@ -150,7 +150,7 @@ fn parse_scale_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueE
             Ok((x, y))
         })
         .map_err(CssParseError::<()>::basic)
-        .map_err(|e| ValueErrorKind::from(e))
+        .map_err(ValueErrorKind::from)
         .and_then(|(x, y)| {
             let x = f64::from(finite_f32(x)?);
             let y = f64::from(finite_f32(y)?);
@@ -179,7 +179,7 @@ fn parse_rotate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Value
             Ok((angle, tx, ty))
         })
         .map_err(CssParseError::<()>::basic)
-        .map_err(|e| ValueErrorKind::from(e))
+        .map_err(ValueErrorKind::from)
         .and_then(|(angle, tx, ty)| {
             let angle = f64::from(finite_f32(angle)?);
             let tx = f64::from(finite_f32(tx)?);
@@ -203,7 +203,7 @@ fn parse_skewx_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueE
             Ok(a)
         })
         .map_err(CssParseError::<()>::basic)
-        .map_err(|e| ValueErrorKind::from(e))
+        .map_err(ValueErrorKind::from)
         .and_then(|a| {
             let a = f64::from(finite_f32(a)?);
 
@@ -219,7 +219,7 @@ fn parse_skewy_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueE
             Ok(a)
         })
         .map_err(CssParseError::<()>::basic)
-        .map_err(|e| ValueErrorKind::from(e))
+        .map_err(ValueErrorKind::from)
         .and_then(|a| {
             let a = f64::from(finite_f32(a)?);
 
