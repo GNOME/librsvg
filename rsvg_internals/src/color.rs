@@ -107,7 +107,7 @@ pub extern "C" fn rsvg_css_parse_color(string: *const libc::c_char) -> ColorSpec
             argb: 0,
         }
     } else {
-        ColorSpec::from(<Color as Parse>::parse_str(s).map(|v| Some(v)))
+        ColorSpec::from(<Color as Parse>::parse_str(s).map(Some))
     }
 }
 
