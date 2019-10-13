@@ -183,7 +183,7 @@ fn load_image(
         content_type,
     } = io::acquire_data(&aurl, None)?;
 
-    if bytes.len() == 0 {
+    if bytes.is_empty() {
         return Err(LoadingError::EmptyData);
     }
 
