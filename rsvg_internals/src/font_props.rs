@@ -24,7 +24,7 @@ pub enum FontSizeSpec {
 impl FontSizeSpec {
     pub fn value(&self) -> LengthBoth {
         match self {
-            FontSizeSpec::Value(s) => s.clone(),
+            FontSizeSpec::Value(s) => *s,
             _ => unreachable!(),
         }
     }
@@ -47,7 +47,7 @@ impl FontSizeSpec {
             FontSizeSpec::Value(s) if s.unit() == LengthUnit::Percent => {
                 LengthBoth::new(size.length() * s.length(), size.unit())
             }
-            FontSizeSpec::Value(s) => s.clone(),
+            FontSizeSpec::Value(s) => *s,
         };
 
         FontSizeSpec::Value(new_size)
@@ -170,7 +170,7 @@ pub enum LetterSpacingSpec {
 impl LetterSpacingSpec {
     pub fn value(&self) -> LengthHorizontal {
         match self {
-            LetterSpacingSpec::Value(s) => s.clone(),
+            LetterSpacingSpec::Value(s) => *s,
             _ => unreachable!(),
         }
     }
@@ -178,7 +178,7 @@ impl LetterSpacingSpec {
     pub fn compute(&self) -> Self {
         let spacing = match self {
             LetterSpacingSpec::Normal => LengthHorizontal::new(0.0, LengthUnit::Px),
-            LetterSpacingSpec::Value(s) => s.clone(),
+            LetterSpacingSpec::Value(s) => *s,
         };
 
         LetterSpacingSpec::Value(spacing)
