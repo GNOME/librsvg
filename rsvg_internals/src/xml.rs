@@ -347,33 +347,34 @@ impl XmlState {
     }
 
     fn element_creation_characters(&self, text: &str) {
-        let mut current_node = self.inner.borrow().current_node.as_ref().unwrap().clone();
-
-        if text.len() != 0 {
-            // When the last child is a Chars node we can coalesce
-            // the text and avoid screwing up the Pango layouts
-            let chars_node = if let Some(child) = current_node
-                .last_child()
-                .filter(|c| c.borrow().get_type() == NodeType::Chars)
-            {
-                child
-            } else {
-                let child = RsvgNode::new(NodeData::new(
-                    NodeType::Chars,
-                    LocalName::from("rsvg-chars"),
-                    None,
-                    None,
-                    Box::new(NodeChars::new()),
-                ));
-
-                self.inner.borrow_mut().num_loaded_elements += 1;
-                current_node.append(child.clone());
-
-                child
-            };
-
-            chars_node.borrow().get_impl::<NodeChars>().append(text);
+        if text.is_empty() {
+            return;
         }
+
+        // When the last child is a Chars node we can coalesce
+        // the text and avoid screwing up the Pango layouts
+        let mut current_node = self.inner.borrow().current_node.as_ref().unwrap().clone();
+        let chars_node = if let Some(child) = current_node
+            .last_child()
+            .filter(|c| c.borrow().get_type() == NodeType::Chars)
+        {
+            child
+        } else {
+            let child = RsvgNode::new(NodeData::new(
+                NodeType::Chars,
+                LocalName::from("rsvg-chars"),
+                None,
+                None,
+                Box::new(NodeChars::new()),
+            ));
+
+            self.inner.borrow_mut().num_loaded_elements += 1;
+            current_node.append(child.clone());
+
+            child
+        };
+
+        chars_node.borrow().get_impl::<NodeChars>().append(text);
     }
 
     fn xinclude_start_element(&self, _name: &str, pbag: &PropertyBag) -> Context {
