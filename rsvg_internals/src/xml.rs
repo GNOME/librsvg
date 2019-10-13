@@ -603,19 +603,15 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
     let reader = ParserConfig::new().create_reader(&mut buf);
 
     for event in reader {
-        if let Ok(event) = event {
-            match event {
-                XmlEvent::StartElement { attributes, .. } => {
-                    return Ok(attributes
-                        .iter()
-                        .map(|att| (att.name.local_name.clone(), att.value.clone()))
-                        .collect());
-                }
-
-                _ => (),
+        match event {
+            Ok(XmlEvent::StartElement { attributes, .. }) => {
+                return Ok(attributes
+                    .iter()
+                    .map(|att| (att.name.local_name.clone(), att.value.clone()))
+                    .collect());
             }
-        } else {
-            return Err(());
+            Err(_) => return Err(()),
+            _ => (),
         }
     }
 
