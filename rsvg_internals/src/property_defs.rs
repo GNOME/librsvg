@@ -694,8 +694,8 @@ make_property!(
 );
 
 impl WritingMode {
-    pub fn is_vertical(&self) -> bool {
-        match *self {
+    pub fn is_vertical(self) -> bool {
+        match self {
             WritingMode::Tb | WritingMode::TbRl => true,
             _ => false,
         }
