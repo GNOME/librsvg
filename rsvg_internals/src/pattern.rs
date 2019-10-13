@@ -471,21 +471,24 @@ impl UnresolvedPattern {
     }
 
     fn resolve_from_defaults(&self) -> UnresolvedPattern {
-        let units = self.common.units.or(Some(PatternUnits::default()));
+        let units = self.common.units.or_else(|| Some(PatternUnits::default()));
         let content_units = self
             .common
             .content_units
-            .or(Some(PatternContentUnits::default()));
+            .or_else(|| Some(PatternContentUnits::default()));
         let vbox = self.common.vbox.or(Some(None));
         let preserve_aspect_ratio = self
             .common
             .preserve_aspect_ratio
-            .or(Some(AspectRatio::default()));
-        let affine = self.common.affine.or(Some(cairo::Matrix::identity()));
-        let x = self.common.x.or(Some(Default::default()));
-        let y = self.common.y.or(Some(Default::default()));
-        let width = self.common.width.or(Some(Default::default()));
-        let height = self.common.height.or(Some(Default::default()));
+            .or_else(|| Some(AspectRatio::default()));
+        let affine = self
+            .common
+            .affine
+            .or_else(|| Some(cairo::Matrix::identity()));
+        let x = self.common.x.or_else(|| Some(Default::default()));
+        let y = self.common.y.or_else(|| Some(Default::default()));
+        let width = self.common.width.or_else(|| Some(Default::default()));
+        let height = self.common.height.or_else(|| Some(Default::default()));
         let children = self.children.resolve_from_defaults();
 
         UnresolvedPattern {
