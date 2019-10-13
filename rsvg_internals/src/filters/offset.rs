@@ -83,12 +83,8 @@ impl Filter for Offset {
 
         {
             let cr = cairo::Context::new(&output_surface);
-            cr.rectangle(
-                output_bounds.x0 as f64,
-                output_bounds.y0 as f64,
-                (output_bounds.x1 - output_bounds.x0) as f64,
-                (output_bounds.y1 - output_bounds.y0) as f64,
-            );
+            let r = cairo::Rectangle::from(output_bounds);
+            cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
             input.surface().set_as_source_surface(&cr, ox, oy);
