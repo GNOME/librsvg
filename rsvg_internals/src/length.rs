@@ -51,8 +51,8 @@ enum LengthDir {
 }
 
 impl LengthDir {
-    fn scaling_factor(&self, x: f64, y: f64) -> f64 {
-        match *self {
+    fn scaling_factor(self, x: f64, y: f64) -> f64 {
+        match self {
             LengthDir::Horizontal => x,
             LengthDir::Vertical => y,
             LengthDir::Both => viewport_percentage(x, y),
