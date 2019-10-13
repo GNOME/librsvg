@@ -222,7 +222,7 @@ impl AsPaintSource for Pattern {
         self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-        _opacity: &UnitInterval,
+        _opacity: UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
         let node_with_children = if let Some(n) = self.children.node_with_children() {

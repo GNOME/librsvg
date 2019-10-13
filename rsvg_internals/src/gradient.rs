@@ -695,7 +695,7 @@ impl AsPaintSource for Gradient {
         self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-        opacity: &UnitInterval,
+        opacity: UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
         let params = if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
@@ -735,7 +735,7 @@ impl Gradient {
         &self,
         pattern: &cairo::Gradient,
         bbox: &BoundingBox,
-        opacity: &UnitInterval,
+        opacity: UnitInterval,
     ) {
         let mut affine = self.affine;
 
@@ -759,10 +759,10 @@ impl Gradient {
         self.add_color_stops_to_pattern(pattern, opacity);
     }
 
-    fn add_color_stops_to_pattern(&self, pattern: &cairo::Gradient, opacity: &UnitInterval) {
+    fn add_color_stops_to_pattern(&self, pattern: &cairo::Gradient, opacity: UnitInterval) {
         for stop in &self.stops {
             let UnitInterval(stop_offset) = stop.offset;
-            let &UnitInterval(o) = opacity;
+            let UnitInterval(o) = opacity;
             let UnitInterval(stop_opacity) = stop.opacity;
 
             pattern.add_color_stop_rgba(
