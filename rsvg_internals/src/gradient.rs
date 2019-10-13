@@ -488,9 +488,9 @@ impl UnresolvedGradient {
     }
 
     fn resolve_from_defaults(&self) -> UnresolvedGradient {
-        let units = self.units.or(Some(GradientUnits::default()));
-        let affine = self.affine.or(Some(cairo::Matrix::identity()));
-        let spread = self.spread.or(Some(SpreadMethod::default()));
+        let units = self.units.or_else(|| Some(GradientUnits::default()));
+        let affine = self.affine.or_else(|| Some(cairo::Matrix::identity()));
+        let spread = self.spread.or_else(|| Some(SpreadMethod::default()));
         let stops = self.stops.clone().or_else(|| Some(Vec::<ColorStop>::new()));
         let variant = self.variant.resolve_from_defaults();
 
