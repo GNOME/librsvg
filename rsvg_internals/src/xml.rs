@@ -224,13 +224,13 @@ impl XmlState {
             // ^ note the space here
             // libxml2 is not finished reading the file yet; it will emit an error
             // on its own when it finishes.  So, ignore this condition.
-            Context::Start => return,
+            Context::Start => (),
 
             Context::ElementCreation => self.element_creation_characters(text),
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
             Context::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
-            Context::FatalError(_) => return,
+            Context::FatalError(_) => (),
         }
     }
 
