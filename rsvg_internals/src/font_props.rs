@@ -210,10 +210,9 @@ impl Parse for LetterSpacingSpec {
                     })?;
 
                     if let Token::Ident(ref cow) = token {
-                        match cow.as_ref() {
-                            "normal" => return Ok(LetterSpacingSpec::Normal),
-                            _ => (),
-                        };
+                        if let "normal" = cow.as_ref() {
+                            return Ok(LetterSpacingSpec::Normal);
+                        }
                     }
                 }
 
