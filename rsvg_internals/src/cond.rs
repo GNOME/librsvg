@@ -96,7 +96,7 @@ impl SystemLanguage {
                         Ok(SystemLanguage(have_match))
                     } else {
                         locale_accepts_language_tag(locale, &language_tag)
-                            .map(|matches| SystemLanguage(matches))
+                            .map(SystemLanguage)
                     }
                 }
 
