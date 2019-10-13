@@ -129,7 +129,7 @@ impl Resources {
         match self.resources.entry(aurl) {
             Entry::Occupied(e) => e.get().clone(),
             Entry::Vacant(e) => {
-                let svg = load_svg(load_options, e.key()).map(|s| Rc::new(s));
+                let svg = load_svg(load_options, e.key()).map(Rc::new);
                 let res = e.insert(svg);
                 res.clone()
             }
