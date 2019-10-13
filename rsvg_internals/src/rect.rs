@@ -166,6 +166,18 @@ impl From<cairo::Rectangle> for IRect {
     }
 }
 
+impl From<IRect> for cairo::Rectangle {
+    #[inline]
+    fn from(IRect { x0, y0, x1, y1 }: IRect) -> Self {
+        Self {
+            x: f64::from(x0),
+            y: f64::from(y0),
+            width: f64::from(x1 - x0),
+            height: f64::from(y1 - y0),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
