@@ -218,10 +218,8 @@ impl<'b> PathParser<'b> {
 
                 let mut c: char = ' ';
 
-                if !has_integer_part {
-                    if !self.lookahead_is_digit(&mut c) {
-                        return Err(self.error(ErrorKind::UnexpectedToken));
-                    }
+                if !has_integer_part && !self.lookahead_is_digit(&mut c) {
+                    return Err(self.error(ErrorKind::UnexpectedToken));
                 }
 
                 while self.lookahead_is_digit(&mut c) {
