@@ -627,8 +627,8 @@ pub fn xml_load_from_possibly_compressed_stream(
 
     state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));
 
-    let stream = get_input_stream_for_loading(stream, cancellable)
-        .map_err(|e| ParseFromStreamError::IoError(e))?;
+    let stream =
+        get_input_stream_for_loading(stream, cancellable).map_err(ParseFromStreamError::IoError)?;
 
     state.parse_from_stream(&stream, cancellable)?;
 
