@@ -1126,7 +1126,7 @@ impl AcquiredNodes {
     ) -> Result<AcquiredNode, AcquireError> {
         let acquired = self.lookup_node(fragment)?;
 
-        if node_types.len() == 0 {
+        if node_types.is_empty() {
             Ok(acquired)
         } else {
             let acquired_type = acquired.get().borrow().get_type();
