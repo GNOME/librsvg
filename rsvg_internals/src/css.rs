@@ -122,7 +122,7 @@ impl<'a> Iterator for DeclarationListIter<'a> {
 
 impl CssRules {
     pub fn parse(&mut self, base_url: Option<&Url>, buf: &str) {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return; // libcroco doesn't like empty strings :(
         }
 
