@@ -65,7 +65,7 @@ impl NodeTrait for NodeImage {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let params = draw_ctx.get_view_params();
 
@@ -75,14 +75,14 @@ impl NodeTrait for NodeImage {
         let h = self.h.normalize(values, &params);
 
         if w.approx_eq_cairo(0.0) || h.approx_eq_cairo(0.0) {
-            return Ok(());
+            return Ok(draw_ctx.empty_bbox());
         }
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
             let surface = if let Some(Href::PlainUrl(ref url)) = self.href {
                 dc.lookup_image(&url)?
             } else {
-                return Ok(());
+                return Ok(dc.empty_bbox());
             };
 
             let clip_mode = if !values.is_overflow() && self.aspect.is_slice() {
@@ -94,12 +94,12 @@ impl NodeTrait for NodeImage {
             let image_width = surface.width();
             let image_height = surface.height();
             if clipping || image_width == 0 || image_height == 0 {
-                return Ok(());
+                return Ok(dc.empty_bbox());
             }
 
             // The bounding box for <image> is decided by the values of x, y, w, h and not by
             // the final computed image bounds.
-            let bbox = BoundingBox::new(&dc.get_cairo_context().get_matrix()).with_rect(Some(
+            let bbox = dc.empty_bbox().with_rect(Some(
                 cairo::Rectangle {
                     x,
                     y,
@@ -138,11 +138,7 @@ impl NodeTrait for NodeImage {
                     cr.paint();
                 }
 
-                Ok(())
-            })
-            .and_then(|()| {
-                dc.insert_bbox(&bbox);
-                Ok(())
+                Ok(bbox)
             })
         })
     }

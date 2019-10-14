@@ -7,7 +7,7 @@ use std::slice;
 use std::sync::Once;
 use std::{f64, i32};
 
-use cairo;
+use cairo::{self, ImageSurface};
 use cairo_sys;
 use gdk_pixbuf::Pixbuf;
 use gdk_pixbuf_sys;
@@ -36,8 +36,11 @@ use gobject_sys::{self, GEnumValue, GFlagsValue};
 use rsvg_internals::{
     rsvg_log, set_gerror, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions,
     LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData, RsvgRectangle,
-    RsvgSizeFunc, SizeCallback, RSVG_ERROR_FAILED,
+    RsvgSizeFunc, SizeCallback, RSVG_ERROR_FAILED, SharedImageSurface, SurfaceType,
 };
+
+use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
+
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -608,9 +611,28 @@ impl CHandle {
     fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
         let handle = self.get_handle_ref()?;
         let size_callback = self.size_callback.borrow();
-        handle
-            .get_pixbuf_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
-            .map_err(warn_on_invalid_id)
+        let dpi = self.dpi.get();
+        let is_testing = self.is_testing.get();
+
+        let dimensions = handle.get_dimensions(dpi, &size_callback, is_testing)?;
+
+        if dimensions.width == 0 || dimensions.height == 0 {
+            return empty_pixbuf();
+        }
+
+        let surface =
+            ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
+
+        {
+            let cr = cairo::Context::new(&surface);
+            handle
+                .render_cairo_sub(&cr, id, dpi, &size_callback, is_testing)
+                .map_err(warn_on_invalid_id)?;
+        }
+
+        let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
+
+        pixbuf_from_surface(&surface)
     }
 
     fn render_document(
@@ -964,8 +986,8 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
     match rhandle.render_cairo_sub(&cr, id.as_ref().map(String::as_str)) {
         Ok(()) => true.to_glib(),
 
-        Err(_) => {
-            // FIXME: return a proper error code to the public API
+        Err(e) => {
+            rsvg_log!("could not render: {}", e);
             false.to_glib()
         }
     }
@@ -981,7 +1003,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf_sub(
 
     match rhandle.get_pixbuf_sub(id.as_ref().map(String::as_str)) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
-        Err(_) => ptr::null_mut(),
+        Err(e) => {
+            rsvg_log!("could not render: {}", e);
+            ptr::null_mut()
+        }
     }
 }
 
@@ -1012,7 +1037,8 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
             true.to_glib()
         }
 
-        Err(_) => {
+        Err(e) => {
+            rsvg_log!("could not get dimensions: {}", e);
             *dimension_data = RsvgDimensionData::empty();
             false.to_glib()
         }
@@ -1035,13 +1061,13 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
             true.to_glib()
         }
 
-        Err(_) => {
+        Err(e) => {
             let p = &mut *position_data;
 
             p.x = 0;
             p.y = 0;
 
-            // FIXME: return a proper error code to the public API
+            rsvg_log!("could not get position: {}", e);
             false.to_glib()
         }
     }
@@ -1413,7 +1439,6 @@ pub fn rsvg_g_warning(msg: &str) {
         rsvg_g_warning_from_c(msg.to_glib_none().0);
     }
 }
-
 
 pub fn rsvg_g_critical(msg: &str) {
     unsafe {

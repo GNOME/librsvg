@@ -22,14 +22,16 @@ pub use crate::handle::{
 
 pub use crate::length::{Length, LengthUnit, RsvgLength};
 
-pub use crate::pixbuf_utils::{
-    rsvg_rust_pixbuf_from_file_at_max_size, rsvg_rust_pixbuf_from_file_at_size,
-    rsvg_rust_pixbuf_from_file_at_zoom, rsvg_rust_pixbuf_from_file_at_zoom_with_max,
-};
-
 pub use crate::rect::IRect;
 
 pub use crate::structure::IntrinsicDimensions;
+
+pub use crate::surface_utils::{
+    iterators::Pixels,
+    shared_surface::{
+        SharedImageSurface, SurfaceType,
+    },
+};
 
 #[macro_use]
 pub mod log;
@@ -64,6 +66,7 @@ mod image;
 mod io;
 mod iri;
 mod length;
+mod limits;
 mod link;
 mod marker;
 mod mask;
@@ -74,7 +77,6 @@ mod parsers;
 mod path_builder;
 mod path_parser;
 mod pattern;
-mod pixbuf_utils;
 mod properties;
 mod property_bag;
 mod property_defs;

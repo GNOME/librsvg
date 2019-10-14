@@ -6,17 +6,6 @@ workspace = "../"
 build = "build.rs"
 edition = "2018"
 
-# IMPORTANT: If you add/remove/update dependencies here, please also
-# update Cargo.toml in https://gitlab.com/BuildStream/cargo-fetcher
-# (just submit a merge request there).
-#
-# BuildStream/cargo-fetcher lets GNOME's BuildStream continuous build
-# service know which dependencies are required.
-#
-# Please update your dependencies here, then run "cargo update" to
-# regenerate librsvg/Cargo.lock, and copy the resolved version numbers
-# from there into cargo-fetcher/Cargo.toml.
-
 [dependencies]
 cairo-rs = { version="0.7.0", features=["v1_16"] }
 cairo-sys-rs = "0.9.0"

@@ -35,28 +35,35 @@ impl NodeClipPath {
 
         let cascaded = CascadedValues::new_from_node(node);
 
-        draw_ctx.with_saved_matrix(&mut |dc| {
-            let cr = dc.get_cairo_context();
+        draw_ctx
+            .with_saved_matrix(&mut |dc| {
+                let cr = dc.get_cairo_context();
 
-            if self.units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
-                let bbox_rect = bbox.rect.as_ref().unwrap();
+                if self.units == ClipPathUnits(CoordUnits::ObjectBoundingBox) {
+                    let bbox_rect = bbox.rect.as_ref().unwrap();
 
-                cr.transform(cairo::Matrix::new(
-                    bbox_rect.width,
-                    0.0,
-                    0.0,
-                    bbox_rect.height,
-                    bbox_rect.x,
-                    bbox_rect.y,
-                ))
-            }
+                    cr.transform(cairo::Matrix::new(
+                        bbox_rect.width,
+                        0.0,
+                        0.0,
+                        bbox_rect.height,
+                        bbox_rect.x,
+                        bbox_rect.y,
+                    ))
+                }
 
-            // here we don't push a layer because we are clipping
-            let res = node.draw_children(&cascaded, dc, true);
+                // here we don't push a layer because we are clipping
+                let res = node.draw_children(&cascaded, dc, true);
 
-            cr.clip();
-            res
-        })
+                cr.clip();
+
+                res
+            })
+            .and_then(|_bbox|
+                      // Clipping paths do not contribute to bounding boxes (they should,
+                      // but we need Real Computational Geometry(tm), so ignore the
+                      // bbox from the clip path.
+                      Ok(()))
     }
 }
 

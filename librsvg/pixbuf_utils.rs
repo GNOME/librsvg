@@ -11,55 +11,25 @@ use glib_sys;
 use libc;
 use url::Url;
 
-use crate::dpi::Dpi;
-use crate::error::{set_gerror, LoadingError, RenderingError};
-use crate::handle::{Handle, LoadOptions, RsvgDimensionData, SizeCallback};
-use crate::rect::IRect;
-use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    shared_surface::SurfaceType,
+use rsvg_internals::{
+    set_gerror, Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError,
+    RsvgDimensionData, SharedImageSurface, SizeCallback, SurfaceType,
 };
 
-// Pixbuf::new() doesn't return out-of-memory errors properly
-// See https://github.com/gtk-rs/gdk-pixbuf/issues/96
 fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {
     assert!(width > 0 && height > 0);
 
-    unsafe {
-        let raw_pixbuf = gdk_pixbuf_sys::gdk_pixbuf_new(
-            Colorspace::Rgb.to_glib(),
-            true.to_glib(),
-            8,
-            width,
-            height,
-        );
-
-        if raw_pixbuf.is_null() {
-            return Err(RenderingError::OutOfMemory);
-        }
-
-        Ok(from_glib_full(raw_pixbuf))
-    }
+    Pixbuf::new(Colorspace::Rgb, true, 8, width, height).ok_or(RenderingError::OutOfMemory)
 }
 
 pub fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
     // GdkPixbuf does not allow zero-sized pixbufs, but Cairo allows zero-sized
     // surfaces.  In this case, return a 1-pixel transparent pixbuf.
 
-    unsafe {
-        let raw_pixbuf =
-            gdk_pixbuf_sys::gdk_pixbuf_new(Colorspace::Rgb.to_glib(), true.to_glib(), 8, 1, 1);
+    let pixbuf = pixbuf_new(1, 1)?;
+    pixbuf.put_pixel(0, 0, 0, 0, 0, 0);
 
-        if raw_pixbuf.is_null() {
-            return Err(RenderingError::OutOfMemory);
-        }
-
-        let pixbuf: Pixbuf = from_glib_full(raw_pixbuf);
-        pixbuf.put_pixel(0, 0, 0, 0, 0, 0);
-
-        Ok(pixbuf)
-    }
+    Ok(pixbuf)
 }
 
 pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, RenderingError> {
@@ -225,7 +195,7 @@ fn pixbuf_from_file_with_size_mode(
         let handle = match file
             .read(cancellable)
             .map_err(|e| LoadingError::from(e))
-            .and_then(|stream| Handle::from_stream(&load_options, &stream, None))
+            .and_then(|stream| Handle::from_stream(&load_options, stream.as_ref(), None))
         {
             Ok(handle) => handle,
             Err(e) => {

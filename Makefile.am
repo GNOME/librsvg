@@ -68,6 +68,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/iri.rs				\
 	rsvg_internals/src/length.rs				\
 	rsvg_internals/src/lib.rs				\
+	rsvg_internals/src/limits.rs				\
 	rsvg_internals/src/log.rs				\
 	rsvg_internals/src/link.rs				\
 	rsvg_internals/src/marker.rs				\
@@ -79,7 +80,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/path_builder.rs			\
 	rsvg_internals/src/path_parser.rs			\
 	rsvg_internals/src/pattern.rs				\
-	rsvg_internals/src/pixbuf_utils.rs			\
 	rsvg_internals/src/properties.rs			\
 	rsvg_internals/src/property_bag.rs			\
 	rsvg_internals/src/property_defs.rs			\
@@ -122,6 +122,7 @@ LIBRSVG_C_API_SRC =						\
 	librsvg/build.rs					\
 	librsvg/c_api.rs					\
 	librsvg/lib.rs						\
+	librsvg/pixbuf_utils.rs					\
 	$(NULL)
 
 RUST_EXTRA = 						\

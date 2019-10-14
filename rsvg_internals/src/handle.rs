@@ -3,9 +3,8 @@ use std::ptr;
 use std::rc::Rc;
 
 use cairo::{self, ImageSurface, Status};
-use gdk_pixbuf::Pixbuf;
 use gio;
-use glib::{self, IsA};
+use glib;
 use libc;
 use locale_config::{LanguageRange, Locale};
 
@@ -15,9 +14,7 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::{DrawingCtx, RsvgRectangle};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, RsvgNode};
-use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
 use crate::structure::{IntrinsicDimensions, NodeSvg};
-use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use crate::svg::Svg;
 use url::Url;
 
@@ -183,9 +180,9 @@ pub struct Handle {
 }
 
 impl Handle {
-    pub fn from_stream<S: IsA<gio::InputStream>>(
+    pub fn from_stream(
         load_options: &LoadOptions,
-        stream: &S,
+        stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Handle, LoadingError> {
         Ok(Handle {
@@ -295,9 +292,7 @@ impl Handle {
         );
         let root = self.svg.root();
 
-        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
-
-        let bbox = draw_ctx.get_bbox();
+        let bbox = draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
 
         let ink_rect = bbox
             .ink_rect
@@ -463,7 +458,9 @@ impl Handle {
             is_testing,
         );
         let cascaded = CascadedValues::new_from_node(&root);
-        let res = draw_ctx.draw_node_from_stack(&cascaded, &root, false);
+        let res = draw_ctx
+            .draw_node_from_stack(&cascaded, &root, false)
+            .map(|_bbox| ());
         cr.restore();
 
         res
@@ -488,8 +485,7 @@ impl Handle {
             is_testing,
         );
 
-        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(node), node, false)?;
-        Ok(draw_ctx.get_bbox().clone())
+        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(node), node, false)
     }
 
     /// Returns (ink_rect, logical_rect)
@@ -575,38 +571,13 @@ impl Handle {
             is_testing,
         );
 
-        let res =
-            draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false);
+        let res = draw_ctx
+            .draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false)
+            .map(|_bbox| ());
 
         cr.restore();
 
         res
-    }
-
-    pub fn get_pixbuf_sub(
-        &self,
-        id: Option<&str>,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> Result<Pixbuf, RenderingError> {
-        let dimensions = self.get_dimensions(dpi, size_callback, is_testing)?;
-
-        if dimensions.width == 0 || dimensions.height == 0 {
-            return empty_pixbuf();
-        }
-
-        let surface =
-            ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
-
-        {
-            let cr = cairo::Context::new(&surface);
-            self.render_cairo_sub(&cr, id, dpi, size_callback, is_testing)?;
-        }
-
-        let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
-
-        pixbuf_from_surface(&surface)
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {

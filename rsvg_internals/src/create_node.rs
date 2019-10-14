@@ -75,8 +75,8 @@ mod creators {
     n!(create_group,                     Group,                      NodeGroup::default);
     n!(create_image,                     Image,                      NodeImage::default);
     n!(create_fe_image,                  FeImage,                    Image::default);
-    n!(create_linear_gradient,           LinearGradient,             NodeLinearGradient::default);
     n!(create_line,                      Line,                       NodeLine::default);
+    n!(create_linear_gradient,           LinearGradient,             NodeLinearGradient::default);
     n!(create_link,                      Link,                       NodeLink::default);
     n!(create_marker,                    Marker,                     NodeMarker::default);
     n!(create_mask,                      Mask,                       NodeMask::default);
@@ -105,9 +105,6 @@ mod creators {
     n!(create_tile,                      FeTile,                     Tile::default);
     n!(create_turbulence,                FeTurbulence,               Turbulence::default);
     n!(create_use,                       Use,                        NodeUse::default);
-
-    // hack to partially support conical gradient
-    n!(create_conical_gradient,          RadialGradient,             NodeRadialGradient::default);
 
     // hack to make multiImage sort-of work
     n!(create_multi_image,               Switch,                     NodeSwitch::default);
@@ -142,7 +139,6 @@ lazy_static! {
         c!(h, "circle",              true,  create_circle);
         c!(h, "clipPath",            true,  create_clip_path);
         /* c!(h, "color-profile",    false, ); */
-        c!(h, "conicalGradient",     true,  create_conical_gradient);
         /* c!(h, "cursor",           false, ); */
         c!(h, "defs",                true,  create_defs);
         /* c!(h, "desc",             true,  ); */

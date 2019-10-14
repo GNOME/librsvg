@@ -8,6 +8,7 @@ use markup5ever::local_name;
 use crate::allowed_url::Fragment;
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
+use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -124,7 +125,7 @@ impl NodeMarker {
         computed_angle: Angle,
         line_width: f64,
         clipping: bool,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<BoundingBox, RenderingError> {
         let cascaded = CascadedValues::new_from_node(&node);
         let values = cascaded.get();
 
@@ -136,7 +137,7 @@ impl NodeMarker {
         if marker_width.approx_eq_cairo(0.0) || marker_height.approx_eq_cairo(0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
             // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
-            return Ok(());
+            return Ok(draw_ctx.empty_bbox());
         }
 
         draw_ctx.with_saved_cr(&mut |dc| {
@@ -162,7 +163,7 @@ impl NodeMarker {
                 );
 
                 if vbox.width.approx_eq_cairo(0.0) || vbox.height.approx_eq_cairo(0.0) {
-                    return Ok(());
+                    return Ok(dc.empty_bbox());
                 }
 
                 cr.scale(w / vbox.width, h / vbox.height);
@@ -586,10 +587,8 @@ fn emit_marker_by_name(
     computed_angle: Angle,
     line_width: f64,
     clipping: bool,
-) -> Result<(), RenderingError> {
-    if let Some(acquired) = draw_ctx
-        .acquired_nodes()
-        .get_node_of_type(Some(name), NodeType::Marker)
+) -> Result<BoundingBox, RenderingError> {
+    if let Ok(acquired) = draw_ctx.acquire_node(name, &[NodeType::Marker])
     {
         let node = acquired.get();
 
@@ -604,7 +603,7 @@ fn emit_marker_by_name(
         )
     } else {
         rsvg_log!("marker \"{}\" not found", name);
-        Ok(())
+        Ok(draw_ctx.empty_bbox())
     }
 }
 
@@ -620,9 +619,9 @@ fn emit_marker<E>(
     marker_type: MarkerType,
     orient: Angle,
     emit_fn: &mut E,
-) -> Result<(), RenderingError>
+) -> Result<BoundingBox, RenderingError>
 where
-    E: FnMut(MarkerType, f64, f64, Angle) -> Result<(), RenderingError>,
+    E: FnMut(MarkerType, f64, f64, Angle) -> Result<BoundingBox, RenderingError>,
 {
     let (x, y) = match *segment {
         Segment::Degenerate { x, y } => (x, y),
@@ -641,14 +640,14 @@ pub fn render_markers_for_path_builder(
     draw_ctx: &mut DrawingCtx,
     values: &ComputedValues,
     clipping: bool,
-) -> Result<(), RenderingError> {
+) -> Result<BoundingBox, RenderingError> {
     let line_width = values
         .stroke_width
         .0
         .normalize(values, &draw_ctx.get_view_params());
 
     if line_width.approx_eq_cairo(0.0) {
-        return Ok(());
+        return Ok(draw_ctx.empty_bbox());
     }
 
     let marker_start = &values.marker_start.0;
@@ -656,12 +655,13 @@ pub fn render_markers_for_path_builder(
     let marker_end = &values.marker_end.0;
 
     match (marker_start, marker_mid, marker_end) {
-        (&IRI::None, &IRI::None, &IRI::None) => return Ok(()),
+        (&IRI::None, &IRI::None, &IRI::None) => return Ok(draw_ctx.empty_bbox()),
         _ => (),
     }
 
     emit_markers_for_path_builder(
         builder,
+        draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
             if let &IRI::Resource(ref marker) = match marker_type {
                 MarkerType::Start => &values.marker_start.0,
@@ -670,7 +670,7 @@ pub fn render_markers_for_path_builder(
             } {
                 emit_marker_by_name(draw_ctx, marker, x, y, computed_angle, line_width, clipping)
             } else {
-                Ok(())
+                Ok(draw_ctx.empty_bbox())
             }
         },
     )
@@ -678,15 +678,18 @@ pub fn render_markers_for_path_builder(
 
 fn emit_markers_for_path_builder<E>(
     builder: &PathBuilder,
+    empty_bbox: BoundingBox,
     emit_fn: &mut E,
-) -> Result<(), RenderingError>
+) -> Result<BoundingBox, RenderingError>
 where
-    E: FnMut(MarkerType, f64, f64, Angle) -> Result<(), RenderingError>,
+    E: FnMut(MarkerType, f64, f64, Angle) -> Result<BoundingBox, RenderingError>,
 {
     enum SubpathState {
         NoSubpath,
         InSubpath,
     };
+
+    let mut bbox = empty_bbox;
 
     // Convert the path to a list of segments and bare points
     let segments = Segments::from(builder);
@@ -702,23 +705,25 @@ where
                     // Got a lone point after a subpath; render the subpath's end marker first
                     let (_, incoming_vx, incoming_vy) =
                         segments.find_incoming_directionality_backwards(i - 1);
-                    emit_marker(
+                    let marker_bbox = emit_marker(
                         &segments[i - 1],
                         MarkerEndpoint::End,
                         MarkerType::End,
                         Angle::from_vector(incoming_vx, incoming_vy),
                         emit_fn,
                     )?;
+                    bbox.insert(&marker_bbox);
                 }
 
                 // Render marker for the lone point; no directionality
-                emit_marker(
+                let marker_bbox = emit_marker(
                     segment,
                     MarkerEndpoint::Start,
                     MarkerType::Middle,
                     Angle::new(0.0),
                     emit_fn,
                 )?;
+                bbox.insert(&marker_bbox);
 
                 subpath_state = SubpathState::NoSubpath;
             }
@@ -729,13 +734,14 @@ where
                     SubpathState::NoSubpath => {
                         let (_, outgoing_vx, outgoing_vy) =
                             segments.find_outgoing_directionality_forwards(i);
-                        emit_marker(
+                        let marker_bbox = emit_marker(
                             segment,
                             MarkerEndpoint::Start,
                             MarkerType::Start,
                             Angle::from_vector(outgoing_vx, outgoing_vy),
                             emit_fn,
                         )?;
+                        bbox.insert(&marker_bbox);
 
                         subpath_state = SubpathState::InSubpath;
                     }
@@ -763,13 +769,14 @@ where
                             angle = Angle::new(0.0);
                         }
 
-                        emit_marker(
+                        let marker_bbox = emit_marker(
                             segment,
                             MarkerEndpoint::Start,
                             MarkerType::Middle,
                             angle,
                             emit_fn,
                         )?;
+                        bbox.insert(&marker_bbox);
                     }
                 }
             }
@@ -795,17 +802,18 @@ where
                 }
             };
 
-            emit_marker(
+            let marker_bbox = emit_marker(
                 segment,
                 MarkerEndpoint::End,
                 MarkerType::End,
                 angle,
                 emit_fn,
             )?;
+            bbox.insert(&marker_bbox);
         }
     }
 
-    Ok(())
+    Ok(bbox)
 }
 
 #[cfg(test)]
@@ -1138,13 +1146,14 @@ mod marker_tests {
 
         assert!(emit_markers_for_path_builder(
             &builder,
+            BoundingBox::new(&cairo::Matrix::identity()),
             &mut |marker_type: MarkerType,
                   x: f64,
                   y: f64,
                   computed_angle: Angle|
-             -> Result<(), RenderingError> {
+             -> Result<BoundingBox, RenderingError> {
                 v.push((marker_type, x, y, computed_angle));
-                Ok(())
+                Ok(BoundingBox::new(&cairo::Matrix::identity()))
             }
         )
         .is_ok());
@@ -1173,13 +1182,14 @@ mod marker_tests {
 
         assert!(emit_markers_for_path_builder(
             &builder,
+            BoundingBox::new(&cairo::Matrix::identity()),
             &mut |marker_type: MarkerType,
                   x: f64,
                   y: f64,
                   computed_angle: Angle|
-             -> Result<(), RenderingError> {
+             -> Result<BoundingBox, RenderingError> {
                 v.push((marker_type, x, y, computed_angle));
-                Ok(())
+                Ok(BoundingBox::new(&cairo::Matrix::identity()))
             }
         )
         .is_ok());

@@ -174,6 +174,8 @@ extern "C" {
         enc: xmlCharEncoding,
     ) -> xmlParserCtxtPtr;
 
+    pub fn xmlStopParser(ctxt: xmlParserCtxtPtr);
+
     pub fn xmlParseDocument(ctxt: xmlParserCtxtPtr) -> libc::c_int;
 
     pub fn xmlFreeDoc(doc: xmlDocPtr);
