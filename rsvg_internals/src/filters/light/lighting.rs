@@ -17,7 +17,10 @@ use crate::filters::{
         bottom_row_normal,
         interior_normal,
         left_column_normal,
+        light_source::DistantLight,
         light_source::LightSource,
+        light_source::PointLight,
+        light_source::SpotLight,
         right_column_normal,
         top_left_normal,
         top_right_normal,
@@ -80,6 +83,63 @@ impl Lighting {
                 specular_exponent: 1.0,
             },
             ..Self::default()
+        }
+    }
+
+    #[inline]
+    pub fn compute_factor(&self, normal: Normal, light_vector: Vector3<f64>) -> f64 {
+        match self.data {
+            Data::Diffuse { diffuse_constant } => {
+                let k = if normal.normal.is_zero() {
+                    // Common case of (0, 0, 1) normal.
+                    light_vector.z
+                } else {
+                    let mut n = normal
+                        .normal
+                        .map(|x| f64::from(x) * self.surface_scale / 255.);
+                    n.component_mul_assign(&normal.factor);
+                    let normal = Vector3::new(n.x, n.y, 1.0);
+
+                    normal.dot(&light_vector) / normal.norm()
+                };
+
+                diffuse_constant * k
+            }
+            Data::Specular {
+                specular_constant,
+                specular_exponent,
+            } => {
+                let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
+                let h_norm = h.norm();
+                if h_norm == 0.0 {
+                    0.0
+                } else {
+                    let k = if normal.normal.is_zero() {
+                        // Common case of (0, 0, 1) normal.
+                        let n_dot_h = h.z / h_norm;
+                        if specular_exponent == 1.0 {
+                            n_dot_h
+                        } else {
+                            n_dot_h.powf(specular_exponent)
+                        }
+                    } else {
+                        let mut n = normal
+                            .normal
+                            .map(|x| f64::from(x) * self.surface_scale / 255.);
+                        n.component_mul_assign(&normal.factor);
+                        let normal = Vector3::new(n.x, n.y, 1.0);
+
+                        let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
+                        if specular_exponent == 1.0 {
+                            n_dot_h
+                        } else {
+                            n_dot_h.powf(specular_exponent)
+                        }
+                    };
+
+                    specular_constant * k
+                }
+            }
         }
     }
 }
@@ -209,27 +269,7 @@ impl Filter for Lighting {
             cssparser::Color::RGBA(rgba) => rgba,
         };
 
-        let mut light_sources = node
-            .children()
-            .rev()
-            .filter(|c| match c.borrow().get_type() {
-                NodeType::DistantLight | NodeType::PointLight | NodeType::SpotLight => true,
-                _ => false,
-            });
-
-        let light_source = light_sources.next();
-        if light_source.is_none() || light_sources.next().is_some() {
-            return Err(FilterError::InvalidLightSourceCount);
-        }
-
-        let light_source = light_source.unwrap();
-        if light_source.borrow().is_in_error() {
-            return Err(FilterError::ChildNodeInError);
-        }
-
-        let node_data = light_source.borrow();
-        let light_source = node_data.get_impl::<LightSource>().transform(ctx);
-
+        let light_source = find_light_source(node, ctx)?;
         let mut input_surface = input.surface().clone();
 
         if let Some((ox, oy)) = scale {
@@ -269,60 +309,7 @@ impl Filter for Lighting {
                     let light_vector = light_source.vector(scaled_x, scaled_y, z);
                     let light_color = light_source.color(lighting_color, light_vector);
 
-                    let factor = match self.data {
-                        Data::Diffuse { diffuse_constant } => {
-                            let k = if normal.normal.is_zero() {
-                                // Common case of (0, 0, 1) normal.
-                                light_vector.z
-                            } else {
-                                let mut n = normal
-                                    .normal
-                                    .map(|x| f64::from(x) * self.surface_scale / 255.);
-                                n.component_mul_assign(&normal.factor);
-                                let normal = Vector3::new(n.x, n.y, 1.0);
-
-                                normal.dot(&light_vector) / normal.norm()
-                            };
-
-                            diffuse_constant * k
-                        }
-                        Data::Specular {
-                            specular_constant,
-                            specular_exponent,
-                        } => {
-                            let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
-                            let h_norm = h.norm();
-                            if h_norm == 0.0 {
-                                0.0
-                            } else {
-                                let k = if normal.normal.is_zero() {
-                                    // Common case of (0, 0, 1) normal.
-                                    let n_dot_h = h.z / h_norm;
-                                    if specular_exponent == 1.0 {
-                                        n_dot_h
-                                    } else {
-                                        n_dot_h.powf(specular_exponent)
-                                    }
-                                } else {
-                                    let mut n = normal
-                                        .normal
-                                        .map(|x| f64::from(x) * self.surface_scale / 255.);
-                                    n.component_mul_assign(&normal.factor);
-                                    let normal = Vector3::new(n.x, n.y, 1.0);
-
-                                    let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
-                                    if specular_exponent == 1.0 {
-                                        n_dot_h
-                                    } else {
-                                        n_dot_h.powf(specular_exponent)
-                                    }
-                                };
-
-                                specular_constant * k
-                            }
-                        }
-                    };
-
+                    let factor = self.compute_factor(normal, light_vector);
                     let compute = |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
 
                     let mut output_pixel = Pixel {
@@ -485,6 +472,35 @@ impl Filter for Lighting {
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
     }
+}
+
+fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource, FilterError> {
+    let mut light_sources = node
+        .children()
+        .rev()
+        .filter(|c| match c.borrow().get_type() {
+            NodeType::FeDistantLight | NodeType::FePointLight | NodeType::FeSpotLight => true,
+            _ => false,
+        });
+
+    let node = light_sources.next();
+    if node.is_none() || light_sources.next().is_some() {
+        return Err(FilterError::InvalidLightSourceCount);
+    }
+
+    let node = node.unwrap();
+    if node.borrow().is_in_error() {
+        return Err(FilterError::ChildNodeInError);
+    }
+
+    let light_source = match node.borrow().get_type() {
+        NodeType::FeDistantLight => node.borrow().get_impl::<DistantLight>().transform(ctx),
+        NodeType::FePointLight => node.borrow().get_impl::<PointLight>().transform(ctx),
+        NodeType::FeSpotLight => node.borrow().get_impl::<SpotLight>().transform(ctx),
+        _ => unreachable!(),
+    };
+
+    Ok(light_source)
 }
 
 impl Default for Lighting {
