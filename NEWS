@@ -1,3 +1,17 @@
+Version 2.47.0
+
+- Patterns and gradients reused across more than one element will only
+  get resolved once now; this should make things marginally faster for
+  patterns or gradients with fallbacks.
+
+- #515 - Librsvg now has limits on the number of loaded XML elements,
+  and the number of referenced elements within an SVG document.  This
+  is to mitigate malicious SVGs which try to consume all memory, and
+  those which try to consume an exponential amount of CPU time.
+
+- #506 - Fix empty patterns which reference a fallback pattern with
+  children.
+
 Version 2.46.0
 
 - The following are highlights compared to the 2.44.x series.  For
