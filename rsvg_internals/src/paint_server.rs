@@ -67,7 +67,7 @@ pub trait PaintSource {
         &self,
         node: &RsvgNode,
         draw_ctx: &mut DrawingCtx,
-        opacity: &UnitInterval,
+        opacity: UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
         match self.resolve(&node, draw_ctx) {
@@ -103,7 +103,7 @@ pub trait AsPaintSource {
         self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-        opacity: &UnitInterval,
+        opacity: UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError>;
 }

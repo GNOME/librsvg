@@ -527,7 +527,7 @@ impl Segments {
     fn find_incoming_directionality_backwards(&self, start_index: usize) -> (bool, f64, f64) {
         // "go backwards ... within the current subpath until ... segment which has directionality
         // at its end point"
-        for segment in self[..start_index + 1].iter().rev() {
+        for segment in self[..=start_index].iter().rev() {
             match *segment {
                 Segment::Degenerate { .. } => {
                     return (false, 0.0, 0.0); // reached the beginning of the subpath as we ran into a standalone point
@@ -654,9 +654,8 @@ pub fn render_markers_for_path_builder(
     let marker_mid = &values.marker_mid.0;
     let marker_end = &values.marker_end.0;
 
-    match (marker_start, marker_mid, marker_end) {
-        (&IRI::None, &IRI::None, &IRI::None) => return Ok(draw_ctx.empty_bbox()),
-        _ => (),
+    if let (&IRI::None, &IRI::None, &IRI::None) = (marker_start, marker_mid, marker_end) {
+        return Ok(draw_ctx.empty_bbox());
     }
 
     emit_markers_for_path_builder(

@@ -344,7 +344,7 @@ impl Xml2Parser {
 
         let ctx = Box::new(StreamCtx {
             stream: stream.clone(),
-            cancellable: cancellable.map(|c| c.clone()),
+            cancellable: cancellable.cloned(),
             gio_error: gio_error.clone(),
         });
 

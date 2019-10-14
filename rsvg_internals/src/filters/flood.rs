@@ -59,12 +59,8 @@ impl Filter for Flood {
 
         if opacity > 0f64 {
             let cr = cairo::Context::new(&output_surface);
-            cr.rectangle(
-                bounds.x0 as f64,
-                bounds.y0 as f64,
-                (bounds.x1 - bounds.x0) as f64,
-                (bounds.y1 - bounds.y0) as f64,
-            );
+            let r = cairo::Rectangle::from(bounds);
+            cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
             cr.set_source_rgba(

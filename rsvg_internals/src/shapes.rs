@@ -23,7 +23,7 @@ fn render_path_builder(
     render_markers: bool,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    if !builder.empty() {
+    if !builder.is_empty() {
         let bbox = draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
             let cr = dc.get_cairo_context();
 

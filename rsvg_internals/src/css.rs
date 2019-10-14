@@ -122,7 +122,7 @@ impl<'a> Iterator for DeclarationListIter<'a> {
 
 impl CssRules {
     pub fn parse(&mut self, base_url: Option<&Url>, buf: &str) {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return; // libcroco doesn't like empty strings :(
         }
 
@@ -191,7 +191,7 @@ impl CssRules {
         let decl_list = self
             .selectors_to_declarations
             .entry(selector)
-            .or_insert_with(|| DeclarationList::default());
+            .or_insert_with(DeclarationList::default);
 
         decl_list.add_declaration(declaration);
     }
