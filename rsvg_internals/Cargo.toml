@@ -48,6 +48,7 @@ rctree = "0.3.3"
 regex = "1"
 url = "2"
 xml-rs = "0.8.0"
+string_cache = "=0.7.3"
 
 [dev-dependencies]
 criterion = "0.2"
