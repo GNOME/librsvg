@@ -238,7 +238,7 @@ impl Parse for AspectRatio {
                     .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
                     .and_then(|ident| parse_fit_mode(ident))
             })
-            .unwrap_or(FitMode::default());
+            .unwrap_or_default();
 
         parser
             .expect_exhausted()

@@ -427,16 +427,11 @@ impl SpecifiedValues {
             LetterSpacing(ref x)             => self.letter_spacing               = x.clone(),
             LightingColor(ref x)             => self.lighting_color               = x.clone(),
 
-            Marker(ref x) => match *x {
-                SpecifiedValue::Specified(p::Marker(ref v)) => {
-
-                    // Since "marker" is a shorthand property, we'll just expand it here
-                    self.marker_end = SpecifiedValue::Specified(p::MarkerEnd(v.clone()));
-                    self.marker_mid = SpecifiedValue::Specified(p::MarkerMid(v.clone()));
-                    self.marker_start = SpecifiedValue::Specified(p::MarkerStart(v.clone()));
-                },
-
-                _ => (),
+            Marker(ref x) => if let SpecifiedValue::Specified(p::Marker(ref v)) = *x {
+                // Since "marker" is a shorthand property, we'll just expand it here
+                self.marker_end = SpecifiedValue::Specified(p::MarkerEnd(v.clone()));
+                self.marker_mid = SpecifiedValue::Specified(p::MarkerMid(v.clone()));
+                self.marker_start = SpecifiedValue::Specified(p::MarkerStart(v.clone()));
             },
 
             MarkerEnd(ref x)                 => self.marker_end                   = x.clone(),
@@ -612,11 +607,9 @@ impl SpecifiedValues {
         let decl_parser = DeclarationListParser::new(&mut parser, DeclParser);
 
         for decl_result in decl_parser {
-            match decl_result {
-                Ok(declaration) => {
-                    self.set_property_from_declaration(&declaration, important_styles)
-                }
-                Err(_) => (), // invalid property name or invalid value; ignore
+            // ignore invalid property name or value
+            if let Ok(declaration) = decl_result {
+                self.set_property_from_declaration(&declaration, important_styles)
             }
         }
 

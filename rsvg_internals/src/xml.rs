@@ -224,13 +224,13 @@ impl XmlState {
             // ^ note the space here
             // libxml2 is not finished reading the file yet; it will emit an error
             // on its own when it finishes.  So, ignore this condition.
-            Context::Start => return,
+            Context::Start => (),
 
             Context::ElementCreation => self.element_creation_characters(text),
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
             Context::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
-            Context::FatalError(_) => return,
+            Context::FatalError(_) => (),
         }
     }
 
@@ -286,7 +286,7 @@ impl XmlState {
     }
 
     pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
-        self.inner.borrow().entities.get(entity_name).map(|v| *v)
+        self.inner.borrow().entities.get(entity_name).copied()
     }
 
     pub fn entity_insert(&self, entity_name: &str, entity: XmlEntityPtr) {
@@ -347,33 +347,34 @@ impl XmlState {
     }
 
     fn element_creation_characters(&self, text: &str) {
-        let mut current_node = self.inner.borrow().current_node.as_ref().unwrap().clone();
-
-        if text.len() != 0 {
-            // When the last child is a Chars node we can coalesce
-            // the text and avoid screwing up the Pango layouts
-            let chars_node = if let Some(child) = current_node
-                .last_child()
-                .filter(|c| c.borrow().get_type() == NodeType::Chars)
-            {
-                child
-            } else {
-                let child = RsvgNode::new(NodeData::new(
-                    NodeType::Chars,
-                    LocalName::from("rsvg-chars"),
-                    None,
-                    None,
-                    Box::new(NodeChars::new()),
-                ));
-
-                self.inner.borrow_mut().num_loaded_elements += 1;
-                current_node.append(child.clone());
-
-                child
-            };
-
-            chars_node.borrow().get_impl::<NodeChars>().append(text);
+        if text.is_empty() {
+            return;
         }
+
+        // When the last child is a Chars node we can coalesce
+        // the text and avoid screwing up the Pango layouts
+        let mut current_node = self.inner.borrow().current_node.as_ref().unwrap().clone();
+        let chars_node = if let Some(child) = current_node
+            .last_child()
+            .filter(|c| c.borrow().get_type() == NodeType::Chars)
+        {
+            child
+        } else {
+            let child = RsvgNode::new(NodeData::new(
+                NodeType::Chars,
+                LocalName::from("rsvg-chars"),
+                None,
+                None,
+                Box::new(NodeChars::new()),
+            ));
+
+            self.inner.borrow_mut().num_loaded_elements += 1;
+            current_node.append(child.clone());
+
+            child
+        };
+
+        chars_node.borrow().get_impl::<NodeChars>().append(text);
     }
 
     fn xinclude_start_element(&self, _name: &str, pbag: &PropertyBag) -> Context {
@@ -602,19 +603,15 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
     let reader = ParserConfig::new().create_reader(&mut buf);
 
     for event in reader {
-        if let Ok(event) = event {
-            match event {
-                XmlEvent::StartElement { attributes, .. } => {
-                    return Ok(attributes
-                        .iter()
-                        .map(|att| (att.name.local_name.clone(), att.value.clone()))
-                        .collect());
-                }
-
-                _ => (),
+        match event {
+            Ok(XmlEvent::StartElement { attributes, .. }) => {
+                return Ok(attributes
+                    .iter()
+                    .map(|att| (att.name.local_name.clone(), att.value.clone()))
+                    .collect());
             }
-        } else {
-            return Err(());
+            Err(_) => return Err(()),
+            _ => (),
         }
     }
 
@@ -630,8 +627,8 @@ pub fn xml_load_from_possibly_compressed_stream(
 
     state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));
 
-    let stream = get_input_stream_for_loading(stream, cancellable)
-        .map_err(|e| ParseFromStreamError::IoError(e))?;
+    let stream =
+        get_input_stream_for_loading(stream, cancellable).map_err(ParseFromStreamError::IoError)?;
 
     state.parse_from_stream(&stream, cancellable)?;
 

@@ -254,7 +254,7 @@ impl Handle {
         size_callback: &SizeCallback,
         is_testing: bool,
     ) -> Result<RsvgPositionData, RenderingError> {
-        if let None = id {
+        if id.is_none() {
             return Ok(RsvgPositionData { x: 0, y: 0 });
         }
 
@@ -294,14 +294,8 @@ impl Handle {
 
         let bbox = draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
 
-        let ink_rect = bbox
-            .ink_rect
-            .map(|r| RsvgRectangle::from(r))
-            .unwrap_or_default();
-        let logical_rect = bbox
-            .rect
-            .map(|r| RsvgRectangle::from(r))
-            .unwrap_or_default();
+        let ink_rect = bbox.ink_rect.map(RsvgRectangle::from).unwrap_or_default();
+        let logical_rect = bbox.rect.map(RsvgRectangle::from).unwrap_or_default();
 
         Ok((ink_rect, logical_rect))
     }
@@ -499,14 +493,8 @@ impl Handle {
 
         let bbox = self.get_bbox_for_element(&node, dpi, is_testing)?;
 
-        let mut ink_rect = bbox
-            .ink_rect
-            .map(|r| RsvgRectangle::from(r))
-            .unwrap_or_default();
-        let mut logical_rect = bbox
-            .rect
-            .map(|r| RsvgRectangle::from(r))
-            .unwrap_or_default();
+        let mut ink_rect = bbox.ink_rect.map(RsvgRectangle::from).unwrap_or_default();
+        let mut logical_rect = bbox.rect.map(RsvgRectangle::from).unwrap_or_default();
 
         // Translate so ink_rect is always at offset (0, 0)
 
@@ -541,10 +529,7 @@ impl Handle {
             return Ok(());
         }
 
-        let ink_r = bbox
-            .ink_rect
-            .map(|r| RsvgRectangle::from(r))
-            .unwrap_or_default();
+        let ink_r = bbox.ink_rect.map(RsvgRectangle::from).unwrap_or_default();
 
         if ink_r.width == 0.0 || ink_r.height == 0.0 {
             return Ok(());

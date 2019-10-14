@@ -80,9 +80,7 @@ impl RectangleExt for cairo::Rectangle {
             (x, y, x, y)
         };
 
-        for i in 1..4 {
-            let (x, y) = points[i];
-
+        for &(x, y) in points.iter().take(4).skip(1) {
             if x < xmin {
                 xmin = x;
             }
@@ -164,6 +162,18 @@ impl From<cairo::Rectangle> for IRect {
             y0: y.floor() as i32,
             x1: (x + width).ceil() as i32,
             y1: (y + height).ceil() as i32,
+        }
+    }
+}
+
+impl From<IRect> for cairo::Rectangle {
+    #[inline]
+    fn from(IRect { x0, y0, x1, y1 }: IRect) -> Self {
+        Self {
+            x: f64::from(x0),
+            y: f64::from(y0),
+            width: f64::from(x1 - x0),
+            height: f64::from(y1 - y0),
         }
     }
 }

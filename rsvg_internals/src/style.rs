@@ -28,7 +28,6 @@ impl NodeStyle {
 
         if have_css {
             node.children()
-                .into_iter()
                 .filter_map(|child| {
                     if child.borrow().get_type() == NodeType::Chars {
                         Some(child.borrow().get_impl::<NodeChars>().get_string())

@@ -235,25 +235,23 @@ impl NodeTrait for NodeSvg {
             // DrawingCtx's viewport, just use the SVG's intrinsic dimensions and see how far
             // it wants to extend.
             (svg_viewport, self.vbox)
+        } else if has_parent {
+            (svg_viewport, self.vbox)
         } else {
-            if has_parent {
-                (svg_viewport, self.vbox)
-            } else {
-                (
-                    // The client's viewport overrides the toplevel's x/y/w/h viewport
-                    draw_ctx.toplevel_viewport(),
-                    // Use our viewBox if available, or try to derive one from
-                    // the intrinsic dimensions.
-                    self.vbox.or_else(|| {
-                        Some(ViewBox {
-                            x: 0.0,
-                            y: 0.0,
-                            width: svg_viewport.width,
-                            height: svg_viewport.height,
-                        })
-                    }),
-                )
-            }
+            (
+                // The client's viewport overrides the toplevel's x/y/w/h viewport
+                draw_ctx.toplevel_viewport(),
+                // Use our viewBox if available, or try to derive one from
+                // the intrinsic dimensions.
+                self.vbox.or_else(|| {
+                    Some(ViewBox {
+                        x: 0.0,
+                        y: 0.0,
+                        width: svg_viewport.width,
+                        height: svg_viewport.height,
+                    })
+                }),
+            )
         };
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {

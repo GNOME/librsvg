@@ -3,7 +3,7 @@ use std::f64::consts::*;
 use cssparser::{Parser, Token};
 
 use crate::error::ValueErrorKind;
-use crate::parsers::{Parse, ParseError, finite_f32};
+use crate::parsers::{finite_f32, Parse, ParseError};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Angle(f64);
@@ -27,7 +27,7 @@ impl Angle {
         }
     }
 
-    pub fn radians(&self) -> f64 {
+    pub fn radians(self) -> f64 {
         self.0
     }
 
@@ -69,7 +69,10 @@ impl Parse for Angle {
                 .map_err(|_| ParseError::new("expected angle"))?;
 
             match *token {
-                Token::Number { value, .. } => Angle::from_degrees(finite_f32(value)? as f64),
+                Token::Number { value, .. } => {
+                    let degrees = finite_f32(value)?;
+                    Angle::from_degrees(f64::from(degrees))
+                }
 
                 Token::Dimension {
                     value, ref unit, ..
