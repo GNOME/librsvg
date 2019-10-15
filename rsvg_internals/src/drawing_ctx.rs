@@ -1138,16 +1138,41 @@ impl AcquiredNodes {
     ) -> Result<AcquiredNode, AcquireError> {
         let node = self.lookup_node(fragment, node_types)?;
 
-        if self.node_stack.borrow().contains(&node) {
-            Err(AcquireError::CircularReference(fragment.clone()))
+        if node_is_accessed_by_reference(&node) {
+            if self.node_stack.borrow().contains(&node) {
+                Err(AcquireError::CircularReference(fragment.clone()))
+            } else {
+                self.node_stack.borrow_mut().push(&node);
+                Ok(AcquiredNode {
+                    stack: Some(self.node_stack.clone()),
+                    node: node.clone()
+                })
+            }
         } else {
-            self.node_stack.borrow_mut().push(&node);
-            let acquired = AcquiredNode {
-                stack: Some(self.node_stack.clone()),
-                node: node.clone()
-            };
-            Ok(acquired)
+            Ok(AcquiredNode {
+                stack: None,
+                node: node.clone(),
+            })
         }
+    }
+}
+
+// Returns whether a node of a particular type is only accessed by reference
+// from other nodes' atributes.  The node could in turn cause other nodes
+// to get referenced, potentially causing reference cycles.
+fn node_is_accessed_by_reference(node: &RsvgNode) -> bool {
+    use NodeType::*;
+
+    match node.borrow().get_type() {
+        ClipPath |
+        Filter |
+        LinearGradient |
+        Marker |
+        Mask |
+        Pattern |
+        RadialGradient => true,
+
+        _ => false,
     }
 }
 
