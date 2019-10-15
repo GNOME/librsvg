@@ -313,6 +313,22 @@ impl NodeTrait for NodeUse {
 
         let link = self.link.as_ref().unwrap();
 
+        // <use> is an element that is used directly, unlike
+        // <pattern>, which is used through a fill="url(#...)"
+        // reference.  However, <use> will always reference another
+        // element, potentially itself or an ancestor of itself (or
+        // another <use> which references the first one, etc.).  So,
+        // we acquire the <use> element itself so that circular
+        // references can be caught.
+        let _self_acquired = draw_ctx.acquire_node_ref(node).map_err(|e| {
+            if let AcquireError::CircularReference(_) = e {
+                rsvg_log!("circular reference in element {}", node);
+                RenderingError::CircularReference
+            } else {
+                unreachable!();
+            }
+        })?;
+
         let acquired = match draw_ctx.acquire_node(link, &[]) {
             Ok(acquired) => acquired,
 
@@ -334,11 +350,6 @@ impl NodeTrait for NodeUse {
         };
 
         let child = acquired.get();
-
-        if node.ancestors().any(|ancestor| ancestor == *child) {
-            // or, if we're <use>'ing ourselves
-            return Err(RenderingError::CircularReference);
-        }
 
         let params = draw_ctx.get_view_params();
 
