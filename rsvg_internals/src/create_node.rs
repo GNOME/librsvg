@@ -6,7 +6,7 @@ use crate::clip_path::NodeClipPath;
 use crate::filters::{
     blend::Blend,
     color_matrix::ColorMatrix,
-    component_transfer::{ComponentTransfer, FuncX},
+    component_transfer::{ComponentTransfer, FuncA, FuncB, FuncG, FuncR},
     composite::Composite,
     convolve_matrix::ConvolveMatrix,
     displacement_map::DisplacementMap,
@@ -61,10 +61,10 @@ mod creators {
     n!(create_blend,                     FeBlend,                    Blend::default);
     n!(create_color_matrix,              FeColorMatrix,              ColorMatrix::default);
     n!(create_component_transfer,        FeComponentTransfer,        ComponentTransfer::default);
-    n!(create_component_transfer_func_a, ComponentTransferFunctionA, FuncX::new_a);
-    n!(create_component_transfer_func_b, ComponentTransferFunctionB, FuncX::new_b);
-    n!(create_component_transfer_func_g, ComponentTransferFunctionG, FuncX::new_g);
-    n!(create_component_transfer_func_r, ComponentTransferFunctionR, FuncX::new_r);
+    n!(create_component_transfer_func_a, ComponentTransferFunctionA, FuncA::default);
+    n!(create_component_transfer_func_b, ComponentTransferFunctionB, FuncB::default);
+    n!(create_component_transfer_func_g, ComponentTransferFunctionG, FuncG::default);
+    n!(create_component_transfer_func_r, ComponentTransferFunctionR, FuncR::default);
     n!(create_composite,                 FeComposite,                Composite::default);
     n!(create_convolve_matrix,           FeConvolveMatrix,           ConvolveMatrix::default);
     n!(create_defs,                      Defs,                       NodeNonRendering::default);
