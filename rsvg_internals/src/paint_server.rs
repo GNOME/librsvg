@@ -77,8 +77,7 @@ pub trait PaintSource {
                 resolved.set_as_paint_source(values, draw_ctx, opacity, bbox)
             }
 
-            Err(AcquireError::CircularReference(_)) => {
-                // FIXME: add a fragment or node id to this:
+            Err(AcquireError::CircularReference(node)) => {
                 rsvg_log!("circular reference in paint server {}", node);
                 Err(RenderingError::CircularReference)
             }

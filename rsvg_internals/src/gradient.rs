@@ -638,7 +638,7 @@ macro_rules! impl_paint_source {
                         let acquired_node = acquired.get();
 
                         if stack.contains(acquired_node) {
-                            return Err(AcquireError::CircularReference(fragment.clone()));
+                            return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
                         let borrowed_node = acquired_node.borrow();

@@ -1140,7 +1140,7 @@ impl AcquiredNodes {
 
         if node_is_accessed_by_reference(&node) {
             if self.node_stack.borrow().contains(&node) {
-                Err(AcquireError::CircularReference(fragment.clone()))
+                Err(AcquireError::CircularReference(node.clone()))
             } else {
                 self.node_stack.borrow_mut().push(&node);
                 Ok(AcquiredNode {
