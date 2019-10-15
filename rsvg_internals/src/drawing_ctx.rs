@@ -1068,19 +1068,22 @@ impl From<RsvgRectangle> for cairo::Rectangle {
     }
 }
 
-pub struct AcquiredNode(Rc<RefCell<NodeStack>>, RsvgNode);
+pub struct AcquiredNode {
+    stack: Rc<RefCell<NodeStack>>,
+    node: RsvgNode,
+}
 
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
-        let mut stack = self.0.borrow_mut();
+        let mut stack = self.stack.borrow_mut();
         let last = stack.pop().unwrap();
-        assert!(last == self.1);
+        assert!(last == self.node);
     }
 }
 
 impl AcquiredNode {
     pub fn get(&self) -> &RsvgNode {
-        &self.1
+        &self.node
     }
 }
 
@@ -1137,7 +1140,10 @@ impl AcquiredNodes {
             Err(AcquireError::CircularReference(fragment.clone()))
         } else {
             self.node_stack.borrow_mut().push(&node);
-            let acquired = AcquiredNode(self.node_stack.clone(), node.clone());
+            let acquired = AcquiredNode {
+                stack: self.node_stack.clone(),
+                node: node.clone()
+            };
             Ok(acquired)
         }
     }
