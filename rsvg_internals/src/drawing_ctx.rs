@@ -1097,7 +1097,11 @@ impl AcquiredNodes {
         }
     }
 
-    fn lookup_node(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+    fn lookup_node(
+        &self,
+        fragment: &Fragment,
+        node_types: &[NodeType],
+    ) -> Result<RsvgNode, AcquireError> {
         let node = self.svg.lookup(fragment).map_err(|_| {
             // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
             // Maybe we should have the following stages:
@@ -1110,12 +1114,15 @@ impl AcquiredNodes {
             AcquireError::LinkNotFound(fragment.clone())
         })?;
 
-        if self.node_stack.borrow().contains(&node) {
-            Err(AcquireError::CircularReference(fragment.clone()))
+        if node_types.is_empty() {
+            Ok(node)
         } else {
-            self.node_stack.borrow_mut().push(&node);
-            let acquired = AcquiredNode(self.node_stack.clone(), node.clone());
-            Ok(acquired)
+            let node_type = node.borrow().get_type();
+            if node_types.iter().find(|&&t| t == node_type).is_some() {
+                Ok(node)
+            } else {
+                Err(AcquireError::InvalidLinkType(fragment.clone()))
+            }
         }
     }
 
@@ -1124,17 +1131,14 @@ impl AcquiredNodes {
         fragment: &Fragment,
         node_types: &[NodeType],
     ) -> Result<AcquiredNode, AcquireError> {
-        let acquired = self.lookup_node(fragment)?;
+        let node = self.lookup_node(fragment, node_types)?;
 
-        if node_types.is_empty() {
-            Ok(acquired)
+        if self.node_stack.borrow().contains(&node) {
+            Err(AcquireError::CircularReference(fragment.clone()))
         } else {
-            let acquired_type = acquired.get().borrow().get_type();
-            if node_types.iter().find(|&&t| t == acquired_type).is_some() {
-                Ok(acquired)
-            } else {
-                Err(AcquireError::InvalidLinkType(fragment.clone()))
-            }
+            self.node_stack.borrow_mut().push(&node);
+            let acquired = AcquiredNode(self.node_stack.clone(), node.clone());
+            Ok(acquired)
         }
     }
 }
