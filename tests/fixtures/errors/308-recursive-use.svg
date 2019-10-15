@@ -1,0 +1,9 @@
+<svg>
+  <defs>
+    <g id="one">
+      <use xlink:href="#one"/>
+    </g>
+  </defs>
+
+  <use xlink:href="#one"/>
+</svg>
