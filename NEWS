@@ -1,3 +1,11 @@
+Version 2.46.3
+
+- #516 - Fix inadvertent bump in the minimum Rust version required.  The
+  string_cache crate is now pinned to a version that still works on
+  Rust 1.34.  (Jordan Petridis)
+
+- #308 - Fix stack exhaustion with circular references in <use> elements.
+
 Version 2.46.2
 
 - Patterns and gradients reused across more than one element will only
