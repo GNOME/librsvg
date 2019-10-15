@@ -313,13 +313,8 @@ impl NodeTrait for NodeUse {
 
         let link = self.link.as_ref().unwrap();
 
-        let child = match draw_ctx.acquire_node(link, &[]) {
-            Ok(acquired) => {
-                // Here we clone the acquired child, so that we can drop the AcquiredNode as
-                // early as possible.  This is so that the child's drawing method will be able
-                // to re-acquire the child for other purposes.
-                acquired.get().clone()
-            }
+        let acquired = match draw_ctx.acquire_node(link, &[]) {
+            Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(_)) => {
                 // FIXME: add a fragment or node id to this:
@@ -339,7 +334,9 @@ impl NodeTrait for NodeUse {
             }
         };
 
-        if node.ancestors().any(|ancestor| ancestor == child) {
+        let child = acquired.get();
+
+        if node.ancestors().any(|ancestor| ancestor == *child) {
             // or, if we're <use>'ing ourselves
             return Err(RenderingError::CircularReference);
         }
