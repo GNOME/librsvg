@@ -339,7 +339,7 @@ impl DrawingCtx {
     pub fn acquire_node(
         &mut self,
         fragment: &Fragment,
-        node_types: &[NodeType]
+        node_types: &[NodeType],
     ) -> Result<AcquiredNode, AcquireError> {
         self.num_elements_acquired += 1;
 
@@ -350,15 +350,17 @@ impl DrawingCtx {
         self.acquired_nodes.acquire(fragment, node_types)
     }
 
+    pub fn acquire_node_ref(&mut self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
+        self.acquired_nodes.push_node_ref(node)
+    }
+
     // Returns (clip_in_user_space, clip_in_object_space), both Option<RsvgNode>
     fn get_clip_in_user_and_object_space(
         &mut self,
         clip_uri: Option<&Fragment>,
     ) -> (Option<RsvgNode>, Option<RsvgNode>) {
         clip_uri
-            .and_then(|fragment| {
-                self.acquire_node(fragment, &[NodeType::ClipPath]).ok()
-            })
+            .and_then(|fragment| self.acquire_node(fragment, &[NodeType::ClipPath]).ok())
             .and_then(|acquired| {
                 let clip_node = acquired.get().clone();
 
@@ -486,8 +488,7 @@ impl DrawingCtx {
                     // Mask
 
                     if let Some(fragment) = mask {
-                        if let Ok(acquired) = dc.acquire_node(fragment, &[NodeType::Mask])
-                        {
+                        if let Ok(acquired) = dc.acquire_node(fragment, &[NodeType::Mask]) {
                             let mask_node = acquired.get();
 
                             res = res.and_then(|bbox| {
@@ -567,8 +568,7 @@ impl DrawingCtx {
         child_surface: &cairo::ImageSurface,
         node_bbox: BoundingBox,
     ) -> Result<cairo::ImageSurface, RenderingError> {
-        match self.acquire_node(filter_uri, &[NodeType::Filter])
-        {
+        match self.acquire_node(filter_uri, &[NodeType::Filter]) {
             Ok(acquired) => {
                 let filter_node = acquired.get();
 
@@ -736,12 +736,7 @@ impl DrawingCtx {
         let current_color = values.color.0;
 
         let res = self
-            .set_source_paint_server(
-                &values.fill.0,
-                values.fill_opacity.0,
-                &bbox,
-                current_color
-            )
+            .set_source_paint_server(&values.fill.0, values.fill_opacity.0, &bbox, current_color)
             .and_then(|had_paint_server| {
                 if had_paint_server {
                     if values.stroke.0 == PaintServer::None {
@@ -1068,19 +1063,24 @@ impl From<RsvgRectangle> for cairo::Rectangle {
     }
 }
 
-pub struct AcquiredNode(Rc<RefCell<NodeStack>>, RsvgNode);
+pub struct AcquiredNode {
+    stack: Option<Rc<RefCell<NodeStack>>>,
+    node: RsvgNode,
+}
 
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
-        let mut stack = self.0.borrow_mut();
-        let last = stack.pop().unwrap();
-        assert!(last == self.1);
+        if let Some(ref stack) = self.stack {
+            let mut stack = stack.borrow_mut();
+            let last = stack.pop().unwrap();
+            assert!(last == self.node);
+        }
     }
 }
 
 impl AcquiredNode {
     pub fn get(&self) -> &RsvgNode {
-        &self.1
+        &self.node
     }
 }
 
@@ -1097,7 +1097,11 @@ impl AcquiredNodes {
         }
     }
 
-    fn lookup_node(&self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+    fn lookup_node(
+        &self,
+        fragment: &Fragment,
+        node_types: &[NodeType],
+    ) -> Result<RsvgNode, AcquireError> {
         let node = self.svg.lookup(fragment).map_err(|_| {
             // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
             // Maybe we should have the following stages:
@@ -1110,12 +1114,15 @@ impl AcquiredNodes {
             AcquireError::LinkNotFound(fragment.clone())
         })?;
 
-        if self.node_stack.borrow().contains(&node) {
-            Err(AcquireError::CircularReference(fragment.clone()))
+        if node_types.is_empty() {
+            Ok(node)
         } else {
-            self.node_stack.borrow_mut().push(&node);
-            let acquired = AcquiredNode(self.node_stack.clone(), node.clone());
-            Ok(acquired)
+            let node_type = node.borrow().get_type();
+            if node_types.iter().find(|&&t| t == node_type).is_some() {
+                Ok(node)
+            } else {
+                Err(AcquireError::InvalidLinkType(fragment.clone()))
+            }
         }
     }
 
@@ -1124,18 +1131,41 @@ impl AcquiredNodes {
         fragment: &Fragment,
         node_types: &[NodeType],
     ) -> Result<AcquiredNode, AcquireError> {
-        let acquired = self.lookup_node(fragment)?;
+        let node = self.lookup_node(fragment, node_types)?;
 
-        if node_types.is_empty() {
-            Ok(acquired)
+        if node_is_accessed_by_reference(&node) {
+            self.push_node_ref(&node)
         } else {
-            let acquired_type = acquired.get().borrow().get_type();
-            if node_types.iter().find(|&&t| t == acquired_type).is_some() {
-                Ok(acquired)
-            } else {
-                Err(AcquireError::InvalidLinkType(fragment.clone()))
-            }
+            Ok(AcquiredNode {
+                stack: None,
+                node: node.clone(),
+            })
         }
+    }
+
+    fn push_node_ref(&self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
+        if self.node_stack.borrow().contains(&node) {
+            Err(AcquireError::CircularReference(node.clone()))
+        } else {
+            self.node_stack.borrow_mut().push(&node);
+            Ok(AcquiredNode {
+                stack: Some(self.node_stack.clone()),
+                node: node.clone(),
+            })
+        }
+    }
+}
+
+// Returns whether a node of a particular type is only accessed by reference
+// from other nodes' atributes.  The node could in turn cause other nodes
+// to get referenced, potentially causing reference cycles.
+fn node_is_accessed_by_reference(node: &RsvgNode) -> bool {
+    use NodeType::*;
+
+    match node.borrow().get_type() {
+        ClipPath | Filter | LinearGradient | Marker | Mask | Pattern | RadialGradient => true,
+
+        _ => false,
     }
 }
 
