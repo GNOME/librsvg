@@ -155,12 +155,6 @@ impl NodeTrait for NodePath {
 }
 
 #[derive(Debug, PartialEq)]
-enum PolyKind {
-    Open,
-    Closed,
-}
-
-#[derive(Debug, PartialEq)]
 struct Points(Vec<(f64, f64)>);
 
 impl Deref for Points {
@@ -200,28 +194,12 @@ impl Parse for Points {
     }
 }
 
-pub struct NodePoly {
+#[derive(Default)]
+pub struct NodePolygon {
     points: Option<Points>,
-    kind: PolyKind,
 }
 
-impl NodePoly {
-    pub fn new_open() -> NodePoly {
-        NodePoly {
-            points: None,
-            kind: PolyKind::Open,
-        }
-    }
-
-    pub fn new_closed() -> NodePoly {
-        NodePoly {
-            points: None,
-            kind: PolyKind::Closed,
-        }
-    }
-}
-
-impl NodeTrait for NodePoly {
+impl NodeTrait for NodePolygon {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == local_name!("points") {
@@ -239,27 +217,79 @@ impl NodeTrait for NodePoly {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
+        draw_poly(
+            self.points.as_ref(),
+            true,
+            node,
+            cascaded,
+            draw_ctx,
+            clipping,
+        )
+    }
+}
 
-        if let Some(ref points) = self.points {
-            let mut builder = PathBuilder::new();
+#[derive(Default)]
+pub struct NodePolyline {
+    points: Option<Points>,
+}
 
-            for (i, &(x, y)) in points.iter().enumerate() {
-                if i == 0 {
-                    builder.move_to(x, y);
-                } else {
-                    builder.line_to(x, y);
-                }
+impl NodeTrait for NodePolyline {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            if attr == local_name!("points") {
+                self.points = attr.parse(value.trim()).map(Some)?;
             }
-
-            if self.kind == PolyKind::Closed {
-                builder.close_path();
-            }
-
-            render_path_builder(&builder, draw_ctx, node, values, true, clipping)
-        } else {
-            Ok(draw_ctx.empty_bbox())
         }
+
+        Ok(())
+    }
+
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        draw_poly(
+            self.points.as_ref(),
+            false,
+            node,
+            cascaded,
+            draw_ctx,
+            clipping,
+        )
+    }
+}
+
+fn draw_poly(
+    points: Option<&Points>,
+    closed: bool,
+    node: &RsvgNode,
+    cascaded: &CascadedValues<'_>,
+    draw_ctx: &mut DrawingCtx,
+    clipping: bool,
+) -> Result<BoundingBox, RenderingError> {
+    let values = cascaded.get();
+
+    if let Some(points) = points {
+        let mut builder = PathBuilder::new();
+
+        for (i, &(x, y)) in points.iter().enumerate() {
+            if i == 0 {
+                builder.move_to(x, y);
+            } else {
+                builder.line_to(x, y);
+            }
+        }
+
+        if closed {
+            builder.close_path();
+        }
+
+        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+    } else {
+        Ok(draw_ctx.empty_bbox())
     }
 }
 
