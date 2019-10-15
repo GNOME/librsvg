@@ -5,24 +5,13 @@
   <!ENTITY version SYSTEM "version.xml">
 ]>
 <book id="index" xmlns:xi="http://www.w3.org/2003/XInclude">
-  <!--
-    Copyright © 2009, 2010 Christian Persch
-    Copyright © 2017 Federico Mena Quintero
-
-    Permission is granted to copy, distribute and/or modify this document
-    under the terms of the GNU General Public License, Version 2
-    as published by the Free Software Foundation; or (at your option) any
-    later version.
-
-    A copy of the license is included in the COPYING file.
-    -->
   <bookinfo>
     <title>Librsvg Reference Manual</title>
     <releaseinfo>
       For librsvg version &version;
 
       The latest version of this documentation can be found on-line at the
-      <ulink url="http://library.gnome.org/devel/rsvg/index.html" role="online-location">GNOME Library</ulink>.
+      <ulink url="https://developer.gnome.org/rsvg/stable/" role="online-location">GNOME Library</ulink>.
     </releaseinfo>
 
     <copyright>
@@ -37,35 +26,17 @@
     </copyright>
 
     <copyright>
+      <year>2009</year>
       <year>2010</year>
       <holder>Christian Persch</holder>
     </copyright>
 
     <copyright>
       <year>2017</year>
+      <year>2018</year>
+      <year>2019</year>
       <holder>Federico Mena Quintero</holder>
     </copyright>
-
-    <legalnotice>
-      <para>
-        Permission is granted to copy, distribute and/or modify this document
-        under the terms of the <citetitle>GNU General Public Licence</citetitle>
-        published by the Free Software Foundation; either version 2 of the License,
-        or (at your option) any later version.
-
-        You may obtain a copy of the <citetitle>GNU General Public Licence</citetitle>
-        from the Free Software Foundation at
-        <ulink url="http://www.gnu.org/licences/">GNU Licences web site</ulink>
-        or by writing to:
-
-        <address>
-          The Free Software Foundation, Inc.,
-          <street>51 Franklin St</street> – Fifth Floor,
-          <city>Boston</city>, <state>MA</state> <postcode>02110-1301</postcode>,
-          <country>USA</country>
-        </address>
-      </para>
-    </legalnotice>
   </bookinfo>
 
   <part id="rsvg">
@@ -177,24 +148,25 @@
 
     <para>
       This library is free software; you can redistribute it and/or
-      modify it under the terms of the <citetitle>GNU General Public
-      Licence</citetitle> as published by the Free Software Foundation; either
-      version 2 of the Licence, or (at your option) any later version.
+      modify it under the terms of the <citetitle>GNU Lesser General
+      Public License</citetitle> as published by the Free Software
+      Foundation; either version 2.1 of the License, or (at your
+      option) any later version.
     </para>
 
     <para>
       This library is distributed in the hope that it will be useful,
       but WITHOUT ANY WARRANTY; without even the implied warranty of
       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-      <citetitle>GNU General Public Licence</citetitle> for
+      <citetitle>GNU Lesser General Public License</citetitle> for
       more details.
     </para>
 
     <para>
-      You may obtain a copy of the <citetitle>GNU General Public Licence</citetitle>
-      from the Free Software Foundation at
-      <ulink url="http://www.gnu.org/licences/">GNU Licences web site</ulink>
-      or by writing to:
+      You may obtain a copy of the <citetitle>GNU Lesser General
+      Public Licence</citetitle> from the Free Software Foundation at
+      <ulink url="https://www.gnu.org/licenses/">GNU Licences web
+      site</ulink> or by writing to:
 
       <address>
         The Free Software Foundation, Inc.,
