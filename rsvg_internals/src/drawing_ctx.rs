@@ -1069,15 +1069,17 @@ impl From<RsvgRectangle> for cairo::Rectangle {
 }
 
 pub struct AcquiredNode {
-    stack: Rc<RefCell<NodeStack>>,
+    stack: Option<Rc<RefCell<NodeStack>>>,
     node: RsvgNode,
 }
 
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
-        let mut stack = self.stack.borrow_mut();
-        let last = stack.pop().unwrap();
-        assert!(last == self.node);
+        if let Some(ref stack) = self.stack {
+            let mut stack = stack.borrow_mut();
+            let last = stack.pop().unwrap();
+            assert!(last == self.node);
+        }
     }
 }
 
@@ -1141,7 +1143,7 @@ impl AcquiredNodes {
         } else {
             self.node_stack.borrow_mut().push(&node);
             let acquired = AcquiredNode {
-                stack: self.node_stack.clone(),
+                stack: Some(self.node_stack.clone()),
                 node: node.clone()
             };
             Ok(acquired)
