@@ -6,6 +6,8 @@ Version 2.46.3
 
 - #308 - Fix stack exhaustion with circular references in <use> elements.
 
+- Consistently use the LGPL 2.1 wherever it is mentioned.
+
 Version 2.46.2
 
 - Patterns and gradients reused across more than one element will only
