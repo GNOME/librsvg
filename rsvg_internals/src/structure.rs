@@ -316,9 +316,8 @@ impl NodeTrait for NodeUse {
         let acquired = match draw_ctx.acquire_node(link, &[]) {
             Ok(acquired) => acquired,
 
-            Err(AcquireError::CircularReference(_)) => {
-                // FIXME: add a fragment or node id to this:
-                rsvg_log!("circular reference in <use> element {}", node);
+            Err(AcquireError::CircularReference(node)) => {
+                rsvg_log!("circular reference in element {}", node);
                 return Err(RenderingError::CircularReference);
             }
 
