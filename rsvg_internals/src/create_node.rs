@@ -15,7 +15,7 @@ use crate::filters::{
     image::Image,
     light::{
         light_source::DistantLight, light_source::PointLight, light_source::SpotLight,
-        lighting::Lighting,
+        lighting::DiffuseLighting, lighting::SpecularLighting,
     },
     merge::{Merge, MergeNode},
     morphology::Morphology,
@@ -68,7 +68,7 @@ mod creators {
     n!(create_composite,                 FeComposite,                Composite::default);
     n!(create_convolve_matrix,           FeConvolveMatrix,           ConvolveMatrix::default);
     n!(create_defs,                      Defs,                       NodeNonRendering::default);
-    n!(create_diffuse_lighting,          FeDiffuseLighting,          Lighting::new_diffuse);
+    n!(create_diffuse_lighting,          FeDiffuseLighting,          DiffuseLighting::default);
     n!(create_distant_light,             FeDistantLight,             DistantLight::default);
     n!(create_displacement_map,          FeDisplacementMap,          DisplacementMap::default);
     n!(create_ellipse,                   Ellipse,                    NodeEllipse::default);
@@ -95,7 +95,7 @@ mod creators {
     n!(create_polyline,                  Polyline,                   NodePoly::new_open);
     n!(create_radial_gradient,           RadialGradient,             NodeRadialGradient::default);
     n!(create_rect,                      Rect,                       NodeRect::default);
-    n!(create_specular_lighting,         FeSpecularLighting,         Lighting::new_specular);
+    n!(create_specular_lighting,         FeSpecularLighting,         SpecularLighting::default);
     n!(create_spot_light,                FeSpotLight,                SpotLight::default);
     n!(create_stop,                      Stop,                       NodeStop::default);
     n!(create_style,                     Style,                      NodeStyle::default);
