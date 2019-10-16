@@ -3,7 +3,6 @@ name = "librsvg_c_api"
 version = "0.0.1"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 workspace = "../"
-build = "build.rs"
 edition = "2018"
 
 [lib]
