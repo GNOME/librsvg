@@ -8,7 +8,7 @@ noinst_LTLIBRARIES = librsvg_c_api.la
 # This is empty, because automake wants to have a C sources list for
 # the LTLIBRARIES.  See LIBRSVG_INTERNALS_SRC below for the real list
 # of Rust sources.
-librsvg_c_api_la_SOURCES =
+librsvg_c_api_la_SOURCES = librsvg/dummy.c
 
 bin_PROGRAMS = rsvg-convert
 
@@ -119,7 +119,6 @@ LIBRSVG_CRATE_SRC = 					\
 
 LIBRSVG_C_API_SRC =						\
 	librsvg/Cargo.toml					\
-	librsvg/build.rs					\
 	librsvg/c_api.rs					\
 	librsvg/lib.rs						\
 	librsvg/pixbuf_utils.rs					\
@@ -152,22 +151,22 @@ cargo_verbose_1 = --verbose
 
 LIBRSVG_BUILD_DIR=@abs_top_builddir@
 CARGO_TARGET_DIR=$(LIBRSVG_BUILD_DIR)/target
-LIBRSVG_TARGET_DIR=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)
 
-RUST_LIB=$(LIBRSVG_BUILD_DIR)/.libs/librsvg_c_api.a
+if PLATFORM_WIN32
+# https://github.com/rust-lang/rust/issues/43749
+RUST_LIB=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/rsvg_c_api.lib
+else
+RUST_LIB=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/librsvg_c_api.a
+endif
 
 check-local:
 	cd $(srcdir) && \
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)	\
-	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)	\
-	LIBRSVG_TARGET_DIR=$(LIBRSVG_TARGET_DIR)	\
 	$(CARGO) --locked test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
 
 clean-local:
 	cd $(top_srcdir) && \
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)	\
-	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)	\
-	LIBRSVG_TARGET_DIR=$(LIBRSVG_TARGET_DIR)	\
 	$(CARGO) clean
 
 distcheck-hook:
@@ -183,17 +182,16 @@ dist-hook:
 	mkdir .cargo &&								\
 	cp cargo-vendor-config .cargo/config)
 
-librsvg_c_api.la: $(LIBRSVG_INTERNALS_SRC) $(LIBRSVG_C_API_SRC)
+librsvg_c_api.la: $(librsvg_c_api_la_OBJECTS) $(LIBRSVG_INTERNALS_SRC) $(LIBRSVG_C_API_SRC)
 	+cd $(top_srcdir)/librsvg &&						\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
-	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)					\
-	LIBRSVG_TARGET_DIR=$(LIBRSVG_TARGET_DIR)					\
 	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) \
-	&& if [[ $$($(NM) -g $(RUST_LIB) | grep "T __clzsi2" -c) -gt 1 ]] ; then \
+	&& if [[ $$($(NM) -g $(RUST_LIB) | grep "T __*clzsi2" -c) -gt 1 ]] ; then \
 		$(AR) d $(RUST_LIB) clzsi2.o;					\
-	fi
+	fi \
+	&& cd $(LIBRSVG_BUILD_DIR) && $(LINK) $< && mv $(RUST_LIB) .libs/librsvg_c_api.a
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
