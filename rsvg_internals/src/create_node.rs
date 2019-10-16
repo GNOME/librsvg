@@ -41,14 +41,14 @@ use crate::style::NodeStyle;
 use crate::text::{NodeTRef, NodeTSpan, NodeText};
 
 macro_rules! n {
-    ($name:ident, $node_type:ident, $new_fn:expr) => {
+    ($name:ident, $node_type:ident, $node_trait:ty) => {
         pub fn $name(element_name: LocalName, id: Option<&str>, class: Option<&str>) -> RsvgNode {
             RsvgNode::new(NodeData::new(
                 NodeType::$node_type,
                 element_name,
                 id,
                 class,
-                Box::new($new_fn()),
+                Box::new(<$node_trait>::default()),
             ))
         }
     };
@@ -58,63 +58,63 @@ macro_rules! n {
 mod creators {
     use super::*;
 
-    n!(create_circle,                    Circle,                     NodeCircle::default);
-    n!(create_clip_path,                 ClipPath,                   NodeClipPath::default);
-    n!(create_blend,                     FeBlend,                    Blend::default);
-    n!(create_color_matrix,              FeColorMatrix,              ColorMatrix::default);
-    n!(create_component_transfer,        FeComponentTransfer,        ComponentTransfer::default);
-    n!(create_component_transfer_func_a, ComponentTransferFunctionA, FuncA::default);
-    n!(create_component_transfer_func_b, ComponentTransferFunctionB, FuncB::default);
-    n!(create_component_transfer_func_g, ComponentTransferFunctionG, FuncG::default);
-    n!(create_component_transfer_func_r, ComponentTransferFunctionR, FuncR::default);
-    n!(create_composite,                 FeComposite,                Composite::default);
-    n!(create_convolve_matrix,           FeConvolveMatrix,           ConvolveMatrix::default);
-    n!(create_defs,                      Defs,                       NodeNonRendering::default);
-    n!(create_diffuse_lighting,          FeDiffuseLighting,          DiffuseLighting::default);
-    n!(create_distant_light,             FeDistantLight,             DistantLight::default);
-    n!(create_displacement_map,          FeDisplacementMap,          DisplacementMap::default);
-    n!(create_ellipse,                   Ellipse,                    NodeEllipse::default);
-    n!(create_filter,                    Filter,                     NodeFilter::default);
-    n!(create_flood,                     FeFlood,                    Flood::default);
-    n!(create_gaussian_blur,             FeGaussianBlur,             GaussianBlur::default);
-    n!(create_group,                     Group,                      NodeGroup::default);
-    n!(create_image,                     Image,                      NodeImage::default);
-    n!(create_fe_image,                  FeImage,                    Image::default);
-    n!(create_line,                      Line,                       NodeLine::default);
-    n!(create_linear_gradient,           LinearGradient,             NodeLinearGradient::default);
-    n!(create_link,                      Link,                       NodeLink::default);
-    n!(create_marker,                    Marker,                     NodeMarker::default);
-    n!(create_mask,                      Mask,                       NodeMask::default);
-    n!(create_merge,                     FeMerge,                    Merge::default);
-    n!(create_merge_node,                FeMergeNode,                MergeNode::default);
-    n!(create_morphology,                FeMorphology,               Morphology::default);
-    n!(create_non_rendering,             NonRendering,               NodeNonRendering::default);
-    n!(create_offset,                    FeOffset,                   Offset::default);
-    n!(create_path,                      Path,                       NodePath::default);
-    n!(create_pattern,                   Pattern,                    NodePattern::default);
-    n!(create_point_light,               FePointLight,               PointLight::default);
-    n!(create_polygon,                   Polygon,                    NodePolygon::default);
-    n!(create_polyline,                  Polyline,                   NodePolyline::default);
-    n!(create_radial_gradient,           RadialGradient,             NodeRadialGradient::default);
-    n!(create_rect,                      Rect,                       NodeRect::default);
-    n!(create_specular_lighting,         FeSpecularLighting,         SpecularLighting::default);
-    n!(create_spot_light,                FeSpotLight,                SpotLight::default);
-    n!(create_stop,                      Stop,                       NodeStop::default);
-    n!(create_style,                     Style,                      NodeStyle::default);
-    n!(create_svg,                       Svg,                        NodeSvg::default);
-    n!(create_switch,                    Switch,                     NodeSwitch::default);
-    n!(create_symbol,                    Symbol,                     NodeSymbol::default);
-    n!(create_text,                      Text,                       NodeText::default);
-    n!(create_tref,                      TRef,                       NodeTRef::default);
-    n!(create_tspan,                     TSpan,                      NodeTSpan::default);
-    n!(create_tile,                      FeTile,                     Tile::default);
-    n!(create_turbulence,                FeTurbulence,               Turbulence::default);
-    n!(create_use,                       Use,                        NodeUse::default);
+    n!(create_circle,                    Circle,                     NodeCircle);
+    n!(create_clip_path,                 ClipPath,                   NodeClipPath);
+    n!(create_blend,                     FeBlend,                    Blend);
+    n!(create_color_matrix,              FeColorMatrix,              ColorMatrix);
+    n!(create_component_transfer,        FeComponentTransfer,        ComponentTransfer);
+    n!(create_component_transfer_func_a, ComponentTransferFunctionA, FuncA);
+    n!(create_component_transfer_func_b, ComponentTransferFunctionB, FuncB);
+    n!(create_component_transfer_func_g, ComponentTransferFunctionG, FuncG);
+    n!(create_component_transfer_func_r, ComponentTransferFunctionR, FuncR);
+    n!(create_composite,                 FeComposite,                Composite);
+    n!(create_convolve_matrix,           FeConvolveMatrix,           ConvolveMatrix);
+    n!(create_defs,                      Defs,                       NodeNonRendering);
+    n!(create_diffuse_lighting,          FeDiffuseLighting,          DiffuseLighting);
+    n!(create_distant_light,             FeDistantLight,             DistantLight);
+    n!(create_displacement_map,          FeDisplacementMap,          DisplacementMap);
+    n!(create_ellipse,                   Ellipse,                    NodeEllipse);
+    n!(create_filter,                    Filter,                     NodeFilter);
+    n!(create_flood,                     FeFlood,                    Flood);
+    n!(create_gaussian_blur,             FeGaussianBlur,             GaussianBlur);
+    n!(create_group,                     Group,                      NodeGroup);
+    n!(create_image,                     Image,                      NodeImage);
+    n!(create_fe_image,                  FeImage,                    Image);
+    n!(create_line,                      Line,                       NodeLine);
+    n!(create_linear_gradient,           LinearGradient,             NodeLinearGradient);
+    n!(create_link,                      Link,                       NodeLink);
+    n!(create_marker,                    Marker,                     NodeMarker);
+    n!(create_mask,                      Mask,                       NodeMask);
+    n!(create_merge,                     FeMerge,                    Merge);
+    n!(create_merge_node,                FeMergeNode,                MergeNode);
+    n!(create_morphology,                FeMorphology,               Morphology);
+    n!(create_non_rendering,             NonRendering,               NodeNonRendering);
+    n!(create_offset,                    FeOffset,                   Offset);
+    n!(create_path,                      Path,                       NodePath);
+    n!(create_pattern,                   Pattern,                    NodePattern);
+    n!(create_point_light,               FePointLight,               PointLight);
+    n!(create_polygon,                   Polygon,                    NodePolygon);
+    n!(create_polyline,                  Polyline,                   NodePolyline);
+    n!(create_radial_gradient,           RadialGradient,             NodeRadialGradient);
+    n!(create_rect,                      Rect,                       NodeRect);
+    n!(create_specular_lighting,         FeSpecularLighting,         SpecularLighting);
+    n!(create_spot_light,                FeSpotLight,                SpotLight);
+    n!(create_stop,                      Stop,                       NodeStop);
+    n!(create_style,                     Style,                      NodeStyle);
+    n!(create_svg,                       Svg,                        NodeSvg);
+    n!(create_switch,                    Switch,                     NodeSwitch);
+    n!(create_symbol,                    Symbol,                     NodeSymbol);
+    n!(create_text,                      Text,                       NodeText);
+    n!(create_tref,                      TRef,                       NodeTRef);
+    n!(create_tspan,                     TSpan,                      NodeTSpan);
+    n!(create_tile,                      FeTile,                     Tile);
+    n!(create_turbulence,                FeTurbulence,               Turbulence);
+    n!(create_use,                       Use,                        NodeUse);
 
     // hack to make multiImage sort-of work
-    n!(create_multi_image,               Switch,                     NodeSwitch::default);
-    n!(create_sub_image,                 Group,                      NodeGroup::default);
-    n!(create_sub_image_ref,             Image,                      NodeImage::default);
+    n!(create_multi_image,               Switch,                     NodeSwitch);
+    n!(create_sub_image,                 Group,                      NodeGroup);
+    n!(create_sub_image_ref,             Image,                      NodeImage);
 }
 
 use creators::*;
