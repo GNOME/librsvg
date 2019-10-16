@@ -25,6 +25,25 @@ pub struct ComponentTransfer {
     base: PrimitiveWithInput,
 }
 
+impl Default for ComponentTransfer {
+    /// Constructs a new `ComponentTransfer` with empty properties.
+    #[inline]
+    fn default() -> ComponentTransfer {
+        ComponentTransfer {
+            base: PrimitiveWithInput::new::<Self>(),
+        }
+    }
+}
+
+impl NodeTrait for ComponentTransfer {
+    impl_node_as_filter!();
+
+    #[inline]
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        self.base.set_atts(parent, pbag)
+    }
+}
+
 /// Pixel components that can be influenced by `feComponentTransfer`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Channel {
@@ -44,16 +63,20 @@ enum FunctionType {
     Gamma,
 }
 
-/// The `<feFuncX>` element (X is R, G, B or A).
-pub struct FuncX {
-    channel: Channel,
-    function_type: FunctionType,
-    table_values: Vec<f64>,
-    slope: f64,
-    intercept: f64,
-    amplitude: f64,
-    exponent: f64,
-    offset: f64,
+impl FunctionType {
+    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
+        match s {
+            "identity" => Ok(FunctionType::Identity),
+            "table" => Ok(FunctionType::Table),
+            "discrete" => Ok(FunctionType::Discrete),
+            "linear" => Ok(FunctionType::Linear),
+            "gamma" => Ok(FunctionType::Gamma),
+            _ => Err(NodeError::parse_error(
+                attr,
+                ParseError::new("invalid value"),
+            )),
+        }
+    }
 }
 
 /// The compute function parameters.
@@ -111,157 +134,155 @@ fn gamma(params: &FunctionParameters<'_>, value: f64) -> f64 {
     params.amplitude * value.powf(params.exponent) + params.offset
 }
 
-impl Default for ComponentTransfer {
-    /// Constructs a new `ComponentTransfer` with empty properties.
-    #[inline]
-    fn default() -> ComponentTransfer {
-        ComponentTransfer {
-            base: PrimitiveWithInput::new::<Self>(),
-        }
-    }
-}
-
-impl Default for FuncX {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            channel: Channel::R,
-            function_type: FunctionType::Identity,
-            table_values: Vec::new(),
-            slope: 1.0,
-            intercept: 0.0,
-            amplitude: 1.0,
-            exponent: 1.0,
-            offset: 0.0,
-        }
-    }
-}
-
-impl FuncX {
-    /// Constructs a new `FuncR` with empty properties.
-    #[inline]
-    pub fn new_r() -> Self {
-        Self {
-            channel: Channel::R,
-            ..Default::default()
-        }
-    }
-
-    /// Constructs a new `FuncG` with empty properties.
-    #[inline]
-    pub fn new_g() -> Self {
-        Self {
-            channel: Channel::G,
-            ..Default::default()
-        }
-    }
-
-    /// Constructs a new `FuncB` with empty properties.
-    #[inline]
-    pub fn new_b() -> Self {
-        Self {
-            channel: Channel::B,
-            ..Default::default()
-        }
-    }
-
-    /// Constructs a new `FuncA` with empty properties.
-    #[inline]
-    pub fn new_a() -> Self {
-        Self {
-            channel: Channel::A,
-            ..Default::default()
-        }
-    }
+trait ComponentTransferFunc {
+    /// Returns the component transfer function.
+    fn function(&self) -> Function;
 
     /// Returns the component transfer function parameters.
-    #[inline]
-    fn function_parameters(&self) -> FunctionParameters<'_> {
-        FunctionParameters {
-            table_values: &self.table_values,
-            slope: self.slope,
-            intercept: self.intercept,
-            amplitude: self.amplitude,
-            exponent: self.exponent,
-            offset: self.offset,
-        }
-    }
+    fn function_parameters(&self) -> FunctionParameters<'_>;
 
-    /// Returns the component transfer function.
-    #[inline]
-    fn function(&self) -> Function {
-        match self.function_type {
-            FunctionType::Identity => identity,
-            FunctionType::Table => table,
-            FunctionType::Discrete => discrete,
-            FunctionType::Linear => linear,
-            FunctionType::Gamma => gamma,
-        }
-    }
+    /// Returns the channel.
+    fn channel(&self) -> Channel;
 }
 
-impl NodeTrait for ComponentTransfer {
-    impl_node_as_filter!();
+macro_rules! func_x {
+    ($func_name:ident, $channel:expr) => {
+        pub struct $func_name {
+            channel: Channel,
+            function_type: FunctionType,
+            table_values: Vec<f64>,
+            slope: f64,
+            intercept: f64,
+            amplitude: f64,
+            exponent: f64,
+            offset: f64,
+        }
 
-    #[inline]
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
-        self.base.set_atts(parent, pbag)
-    }
-}
+        impl Default for $func_name {
+            #[inline]
+            fn default() -> Self {
+                Self {
+                    channel: $channel,
+                    function_type: FunctionType::Identity,
+                    table_values: Vec::new(),
+                    slope: 1.0,
+                    intercept: 0.0,
+                    amplitude: 1.0,
+                    exponent: 1.0,
+                    offset: 0.0,
+                }
+            }
+        }
 
-impl NodeTrait for FuncX {
-    #[inline]
-    fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
-        for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("type") => self.function_type = FunctionType::parse(attr, value)?,
-                local_name!("tableValues") => {
-                    let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
-                        .map_err(|err| {
-                        if let NumberListError::Parse(err) = err {
-                            NodeError::parse_error(attr, err)
-                        } else {
-                            panic!("unexpected number list error");
+        impl ComponentTransferFunc for $func_name {
+            #[inline]
+            fn function_parameters(&self) -> FunctionParameters<'_> {
+                FunctionParameters {
+                    table_values: &self.table_values,
+                    slope: self.slope,
+                    intercept: self.intercept,
+                    amplitude: self.amplitude,
+                    exponent: self.exponent,
+                    offset: self.offset,
+                }
+            }
+
+            #[inline]
+            fn function(&self) -> Function {
+                match self.function_type {
+                    FunctionType::Identity => identity,
+                    FunctionType::Table => table,
+                    FunctionType::Discrete => discrete,
+                    FunctionType::Linear => linear,
+                    FunctionType::Gamma => gamma,
+                }
+            }
+
+            #[inline]
+            fn channel(&self) -> Channel {
+                self.channel
+            }
+        }
+
+        impl NodeTrait for $func_name {
+            #[inline]
+            fn set_atts(
+                &mut self,
+                _parent: Option<&RsvgNode>,
+                pbag: &PropertyBag<'_>,
+            ) -> NodeResult {
+                for (attr, value) in pbag.iter() {
+                    match attr {
+                        local_name!("type") => {
+                            self.function_type = FunctionType::parse(attr, value)?
                         }
-                    })?;
-                    self.table_values = v;
+                        local_name!("tableValues") => {
+                            let NumberList(v) =
+                                NumberList::parse_str(value, NumberListLength::Unbounded).map_err(
+                                    |err| {
+                                        if let NumberListError::Parse(err) = err {
+                                            NodeError::parse_error(attr, err)
+                                        } else {
+                                            panic!("unexpected number list error");
+                                        }
+                                    },
+                                )?;
+                            self.table_values = v;
+                        }
+                        local_name!("slope") => {
+                            self.slope = parsers::number(value).attribute(attr)?
+                        }
+                        local_name!("intercept") => {
+                            self.intercept = parsers::number(value).attribute(attr)?
+                        }
+                        local_name!("amplitude") => {
+                            self.amplitude = parsers::number(value).attribute(attr)?
+                        }
+                        local_name!("exponent") => {
+                            self.exponent = parsers::number(value).attribute(attr)?
+                        }
+                        local_name!("offset") => {
+                            self.offset = parsers::number(value).attribute(attr)?
+                        }
+                        _ => (),
+                    }
                 }
-                local_name!("slope") => self.slope = parsers::number(value).attribute(attr)?,
-                local_name!("intercept") => {
-                    self.intercept = parsers::number(value).attribute(attr)?
+
+                // The table function type with empty table_values is considered
+                // an identity function.
+                match self.function_type {
+                    FunctionType::Table | FunctionType::Discrete => {
+                        if self.table_values.is_empty() {
+                            self.function_type = FunctionType::Identity;
+                        }
+                    }
+                    _ => (),
                 }
-                local_name!("amplitude") => {
-                    self.amplitude = parsers::number(value).attribute(attr)?
-                }
-                local_name!("exponent") => {
-                    self.exponent = parsers::number(value).attribute(attr)?
-                }
-                local_name!("offset") => self.offset = parsers::number(value).attribute(attr)?,
-                _ => (),
+
+                Ok(())
             }
         }
-
-        // The table function type with empty table_values is considered
-        // an identity function.
-        match self.function_type {
-            FunctionType::Table | FunctionType::Discrete => {
-                if self.table_values.is_empty() {
-                    self.function_type = FunctionType::Identity;
-                }
-            }
-            _ => (),
-        }
-
-        Ok(())
-    }
+    };
 }
+
+// The `<feFuncR>` element
+func_x!(FuncR, Channel::R);
+
+// The `<feFuncG>` element
+func_x!(FuncG, Channel::G);
+
+// The `<feFuncB>` element
+func_x!(FuncB, Channel::B);
+
+// The `<feFuncA>` element
+func_x!(FuncA, Channel::A);
 
 macro_rules! func_or_default {
-    ($func_node:ident, $func_data:ident, $func_default:ident) => {
+    ($func_node:ident, $func_type:ty, $func_data:ident, $func_default:ident) => {
         match $func_node {
             Some(ref f) => {
                 $func_data = f.borrow();
-                $func_data.get_impl::<FuncX>()
+                $func_data.get_impl::<$func_type>()
             }
             _ => &$func_default,
         };
@@ -290,23 +311,20 @@ impl Filter for ComponentTransfer {
         )?;
 
         // Get a node for every pixel component.
-        let get_node = |channel| {
+        fn get_node<F>(node: &RsvgNode, node_type: NodeType, channel: Channel) -> Option<RsvgNode>
+        where
+            F: ComponentTransferFunc + NodeTrait,
+        {
             node.children()
                 .rev()
-                .filter(|c| match c.borrow().get_type() {
-                    NodeType::ComponentTransferFunctionA
-                    | NodeType::ComponentTransferFunctionB
-                    | NodeType::ComponentTransferFunctionG
-                    | NodeType::ComponentTransferFunctionR => true,
-                    _ => false,
-                })
-                .find(|c| c.borrow().get_impl::<FuncX>().channel == channel)
+                .filter(|c| c.borrow().get_type() == node_type)
+                .find(|c| c.borrow().get_impl::<F>().channel() == channel)
         };
 
-        let func_r_node = get_node(Channel::R);
-        let func_g_node = get_node(Channel::G);
-        let func_b_node = get_node(Channel::B);
-        let func_a_node = get_node(Channel::A);
+        let func_r_node = get_node::<FuncR>(node, NodeType::ComponentTransferFunctionR, Channel::R);
+        let func_g_node = get_node::<FuncG>(node, NodeType::ComponentTransferFunctionG, Channel::G);
+        let func_b_node = get_node::<FuncB>(node, NodeType::ComponentTransferFunctionB, Channel::B);
+        let func_a_node = get_node::<FuncA>(node, NodeType::ComponentTransferFunctionA, Channel::A);
 
         for node in [&func_r_node, &func_g_node, &func_b_node, &func_a_node]
             .iter()
@@ -317,8 +335,11 @@ impl Filter for ComponentTransfer {
             }
         }
 
-        // This is the default node that performs an identity transformation.
-        let func_default = FuncX::default();
+        // These are the default funcs that perform an identity transformation.
+        let func_r_default = FuncR::default();
+        let func_g_default = FuncG::default();
+        let func_b_default = FuncB::default();
+        let func_a_default = FuncA::default();
 
         // We need to tell the borrow checker that these live long enough
         let func_r_data;
@@ -326,13 +347,16 @@ impl Filter for ComponentTransfer {
         let func_b_data;
         let func_a_data;
 
-        let func_r = func_or_default!(func_r_node, func_r_data, func_default);
-        let func_g = func_or_default!(func_g_node, func_g_data, func_default);
-        let func_b = func_or_default!(func_b_node, func_b_data, func_default);
-        let func_a = func_or_default!(func_a_node, func_a_data, func_default);
+        let func_r = func_or_default!(func_r_node, FuncR, func_r_data, func_r_default);
+        let func_g = func_or_default!(func_g_node, FuncG, func_g_data, func_g_default);
+        let func_b = func_or_default!(func_b_node, FuncB, func_b_data, func_b_default);
+        let func_a = func_or_default!(func_a_node, FuncA, func_a_data, func_a_default);
 
         #[inline]
-        fn compute_func<'a>(func: &'a FuncX) -> impl Fn(u8, f64, f64) -> u8 + 'a {
+        fn compute_func<'a, F>(func: &'a F) -> impl Fn(u8, f64, f64) -> u8 + 'a
+        where
+            F: ComponentTransferFunc,
+        {
             let compute = func.function();
             let params = func.function_parameters();
 
@@ -348,9 +372,9 @@ impl Filter for ComponentTransfer {
             }
         }
 
-        let compute_r = compute_func(&func_r);
-        let compute_g = compute_func(&func_g);
-        let compute_b = compute_func(&func_b);
+        let compute_r = compute_func::<FuncR>(&func_r);
+        let compute_g = compute_func::<FuncG>(&func_g);
+        let compute_b = compute_func::<FuncB>(&func_b);
 
         // Alpha gets special handling since everything else depends on it.
         let compute_a = func_a.function();
@@ -388,21 +412,5 @@ impl Filter for ComponentTransfer {
 
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
-    }
-}
-
-impl FunctionType {
-    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "identity" => Ok(FunctionType::Identity),
-            "table" => Ok(FunctionType::Table),
-            "discrete" => Ok(FunctionType::Discrete),
-            "linear" => Ok(FunctionType::Linear),
-            "gamma" => Ok(FunctionType::Gamma),
-            _ => Err(NodeError::parse_error(
-                attr,
-                ParseError::new("invalid value"),
-            )),
-        }
     }
 }
