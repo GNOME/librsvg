@@ -8,7 +8,7 @@ noinst_LTLIBRARIES = librsvg_c_api.la
 # This is empty, because automake wants to have a C sources list for
 # the LTLIBRARIES.  See LIBRSVG_INTERNALS_SRC below for the real list
 # of Rust sources.
-librsvg_c_api_la_SOURCES =
+librsvg_c_api_la_SOURCES = librsvg/dummy.c
 
 bin_PROGRAMS = rsvg-convert
 
@@ -182,7 +182,7 @@ dist-hook:
 	mkdir .cargo &&								\
 	cp cargo-vendor-config .cargo/config)
 
-librsvg_c_api.la: $(LIBRSVG_INTERNALS_SRC) $(LIBRSVG_C_API_SRC)
+librsvg_c_api.la: $(librsvg_c_api_la_OBJECTS) $(LIBRSVG_INTERNALS_SRC) $(LIBRSVG_C_API_SRC)
 	+cd $(top_srcdir)/librsvg &&						\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
@@ -191,7 +191,7 @@ librsvg_c_api.la: $(LIBRSVG_INTERNALS_SRC) $(LIBRSVG_C_API_SRC)
 	&& if [[ $$($(NM) -g $(RUST_LIB) | grep "T __*clzsi2" -c) -gt 1 ]] ; then \
 		$(AR) d $(RUST_LIB) clzsi2.o;					\
 	fi \
-	&& cd $(LIBRSVG_BUILD_DIR) && $(LINK) && mv $(RUST_LIB) .libs/librsvg_c_api.a
+	&& cd $(LIBRSVG_BUILD_DIR) && $(LINK) $< && mv $(RUST_LIB) .libs/librsvg_c_api.a
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
