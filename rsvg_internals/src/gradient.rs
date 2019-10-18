@@ -787,6 +787,7 @@ fn acquire_gradient<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use markup5ever::{namespace_url, ns, QualName};
     use crate::float_eq_cairo::ApproxEqCairo;
     use crate::node::{NodeData, NodeType, RsvgNode};
 
@@ -822,7 +823,7 @@ mod tests {
     fn gradient_resolved_from_defaults_is_really_resolved() {
         let node = RsvgNode::new(NodeData::new(
             NodeType::LinearGradient,
-            local_name!("linearGradient"),
+            QualName::new(None, ns!(svg), local_name!("linearGradient")),
             None,
             None,
             Box::new(NodeLinearGradient::default())
@@ -836,7 +837,7 @@ mod tests {
 
         let node = RsvgNode::new(NodeData::new(
             NodeType::RadialGradient,
-            local_name!("radialGradient"),
+            QualName::new(None, ns!(svg), local_name!("radialGradient")),
             None,
             None,
             Box::new(NodeRadialGradient::default())

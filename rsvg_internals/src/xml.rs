@@ -2,7 +2,7 @@ use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use libc;
-use markup5ever::{local_name, LocalName};
+use markup5ever::{local_name, LocalName, Namespace, QualName};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -362,7 +362,11 @@ impl XmlState {
         } else {
             let child = RsvgNode::new(NodeData::new(
                 NodeType::Chars,
-                LocalName::from("rsvg-chars"),
+                QualName::new(
+                    None,
+                    Namespace::from("https://wiki.gnome.org/Projects/LibRsvg"),
+                    LocalName::from("rsvg-chars"),
+                ),
                 None,
                 None,
                 Box::new(NodeChars::new()),

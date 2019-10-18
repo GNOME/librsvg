@@ -588,13 +588,14 @@ impl NodePattern {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use markup5ever::{namespace_url, ns, QualName};
     use crate::node::{NodeData, NodeType, RsvgNode};
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
         let node = RsvgNode::new(NodeData::new(
             NodeType::Pattern,
-            local_name!("pattern"),
+            QualName::new(None, ns!(svg), local_name!("pattern")),
             None,
             None,
             Box::new(NodePattern::default()),

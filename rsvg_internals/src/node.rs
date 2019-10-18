@@ -1,6 +1,6 @@
 use cairo::Matrix;
 use downcast_rs::*;
-use markup5ever::{local_name, LocalName};
+use markup5ever::{local_name, LocalName, QualName};
 use std::cell::Ref;
 use std::collections::HashSet;
 use std::fmt;
@@ -25,7 +25,7 @@ pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
 /// Contents of a tree node
 pub struct NodeData {
     node_type: NodeType,
-    element_name: LocalName,
+    element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
     specified_values: SpecifiedValues,
@@ -41,7 +41,7 @@ pub struct NodeData {
 impl NodeData {
     pub fn new(
         node_type: NodeType,
-        element_name: LocalName,
+        element_name: QualName,
         id: Option<&str>,
         class: Option<&str>,
         node_impl: Box<dyn NodeTrait>,
@@ -79,7 +79,7 @@ impl NodeData {
     }
 
     pub fn element_name(&self) -> &str {
-        self.element_name.as_ref()
+        self.element_name.local.as_ref()
     }
 
     pub fn get_id(&self) -> Option<&str> {

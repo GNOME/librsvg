@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use markup5ever::{local_name, LocalName};
+use markup5ever::{local_name, namespace_url, ns, LocalName, Prefix, QualName};
 use std::collections::HashMap;
 
 use crate::clip_path::NodeClipPath;
@@ -42,7 +42,7 @@ use crate::text::{NodeTRef, NodeTSpan, NodeText};
 
 macro_rules! n {
     ($name:ident, $node_type:ident, $node_trait:ty) => {
-        pub fn $name(element_name: LocalName, id: Option<&str>, class: Option<&str>) -> RsvgNode {
+        pub fn $name(element_name: QualName, id: Option<&str>, class: Option<&str>) -> RsvgNode {
             RsvgNode::new(NodeData::new(
                 NodeType::$node_type,
                 element_name,
@@ -119,7 +119,7 @@ mod creators {
 
 use creators::*;
 
-type NodeCreateFn = fn(element_name: LocalName, id: Option<&str>, class: Option<&str>) -> RsvgNode;
+type NodeCreateFn = fn(element_name: QualName, id: Option<&str>, class: Option<&str>) -> RsvgNode;
 
 macro_rules! c {
     ($hashset:expr, $str_name:expr, $supports_class:expr, $fn_name:ident) => {
@@ -236,16 +236,17 @@ pub fn create_node_and_register_id(
         }
     }
 
-    let &(supports_class, create_fn) = match NODE_CREATORS.get(name) {
-        Some(c) => c,
+    let (supports_class, create_fn, prefix, namespace) = match NODE_CREATORS.get(name) {
+        // hack in the SVG namespace for supported element names
+        Some(&(supports_class, create_fn)) => (supports_class, create_fn, Some("svg"), ns!(svg)),
 
         // Whenever we encounter a node we don't understand, represent it as a
         // non-rendering node.  This is like a group, but it doesn't do any rendering of
         // children.  The effect is that we will ignore all children of unknown elements.
-        None => &(true, create_non_rendering as NodeCreateFn),
+        None => (true, create_non_rendering as NodeCreateFn, None, ns!()),
     };
 
-    let element_name = LocalName::from(name);
+    let element_name = QualName::new(prefix.map(Prefix::from), namespace, LocalName::from(name));
 
     if !supports_class {
         class = None;
