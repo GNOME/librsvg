@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="100" viewBox="0 0 2000 1000">
+  <rect id="foo" x="500" y="600" width="700" height="800"/>
+</svg>

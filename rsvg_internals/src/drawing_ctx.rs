@@ -546,7 +546,14 @@ impl DrawingCtx {
         let matrix = self.cr.get_matrix();
         let res = draw_fn(self);
         self.cr.set_matrix(matrix);
-        res
+
+        if let Ok(bbox) = res {
+            let mut orig_matrix_bbox = BoundingBox::new(&matrix);
+            orig_matrix_bbox.insert(&bbox);
+            Ok(orig_matrix_bbox)
+        } else {
+            res
+        }
     }
 
     /// Saves the current Cairo context, runs the draw_fn, and restores the context

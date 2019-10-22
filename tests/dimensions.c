@@ -113,6 +113,13 @@ static FixtureData fixtures[] =
         80, 48.90, 0, 0,
         TRUE, FALSE
     },
+    {
+        "/dimensions/with-viewbox",
+        "dimensions/521-with-viewbox.svg",
+        "#foo",
+        50.0, 60.0, 70.0, 80.0,
+        TRUE, TRUE
+    },
 };
 
 static const gint n_fixtures = G_N_ELEMENTS (fixtures);
