@@ -4,6 +4,8 @@ Version 2.46.3
   string_cache crate is now pinned to a version that still works on
   Rust 1.34.  (Jordan Petridis)
 
+- #521 - Compute geometries correctly if there is a viewBox attribute.
+
 - #308 - Fix stack exhaustion with circular references in <use> elements.
 
 - Consistently use the LGPL 2.1 wherever it is mentioned.
