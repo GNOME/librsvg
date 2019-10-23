@@ -825,15 +825,15 @@ impl DrawingCtx {
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         surface: &cairo::ImageSurface,
+        affine: cairo::Matrix,
         width: f64,
         height: f64,
     ) -> Result<BoundingBox, RenderingError> {
         let save_cr = self.cr.clone();
         let save_rect = self.rect;
-        let save_affine = self.get_cairo_context().get_matrix();
 
         let cr = cairo::Context::new(surface);
-        cr.set_matrix(save_affine);
+        cr.set_matrix(affine);
 
         self.cr = cr;
         self.rect.x = 0.0;

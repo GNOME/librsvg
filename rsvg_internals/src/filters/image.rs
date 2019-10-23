@@ -55,8 +55,6 @@ impl Image {
             ctx.source_graphic().height(),
         )?;
 
-        draw_ctx.get_cairo_context().set_matrix(ctx.paffine());
-
         let node_being_filtered_values = ctx.get_computed_values_from_node_being_filtered();
 
         let cascaded = CascadedValues::new_from_values(&drawable, node_being_filtered_values);
@@ -66,6 +64,7 @@ impl Image {
                 &drawable,
                 &cascaded,
                 &surface,
+                ctx.paffine(),
                 f64::from(ctx.source_graphic().width()),
                 f64::from(ctx.source_graphic().height()),
             )
