@@ -54,11 +54,11 @@ impl NodeMask {
         affines: &CompositingAffines,
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<Option<cairo::ImageSurface>, RenderingError> {
         if bbox.rect.is_none() {
             // The node being masked is empty / doesn't have a
             // bounding box, so there's nothing to mask!
-            return Ok(());
+            return Ok(None);
         }
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
@@ -139,14 +139,7 @@ impl NodeMask {
         let mask_content_surface =
             SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?;
 
-        let mask_surface = compute_luminance_to_alpha(&mask_content_surface, opacity)?;
-
-        let cr = draw_ctx.get_cairo_context();
-        cr.set_matrix(affines.compositing);
-
-        cr.mask_surface(&mask_surface, 0.0, 0.0);
-
-        Ok(())
+        Ok(Some(compute_luminance_to_alpha(&mask_content_surface, opacity)?))
     }
 }
 

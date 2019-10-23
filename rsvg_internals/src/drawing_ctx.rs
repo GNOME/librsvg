@@ -496,6 +496,13 @@ impl DrawingCtx {
                                     .borrow()
                                     .get_impl::<NodeMask>()
                                     .generate_cairo_mask(&mask_node, &affines, dc, &bbox)
+                                    .and_then(|mask_surf| {
+                                        if let Some(surf) = mask_surf {
+                                            dc.cr.set_matrix(affines.compositing);
+                                            dc.cr.mask_surface(&surf, 0.0, 0.0);
+                                        }
+                                        Ok(())
+                                    })
                                     .map(|_: ()| bbox)
                             });
                         } else {
