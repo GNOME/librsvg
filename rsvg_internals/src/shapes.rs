@@ -114,23 +114,19 @@ fn render_ellipse(
 
 #[derive(Default)]
 pub struct NodePath {
-    builder: Option<PathBuilder>,
+    builder: PathBuilder,
 }
 
 impl NodeTrait for NodePath {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr == local_name!("d") {
-                let mut builder = PathBuilder::new();
-
-                if let Err(e) = path_parser::parse_path_into_builder(value, &mut builder) {
+                if let Err(e) = path_parser::parse_path_into_builder(value, &mut self.builder) {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
 
                     rsvg_log!("could not parse path: {}", e);
                 }
-
-                self.builder = Some(builder);
             }
         }
 
@@ -145,12 +141,7 @@ impl NodeTrait for NodePath {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-
-        if let Some(ref builder) = self.builder {
-            render_path_builder(builder, draw_ctx, node, values, true, clipping)
-        } else {
-            Ok(draw_ctx.empty_bbox())
-        }
+        render_path_builder(&self.builder, draw_ctx, node, values, true, clipping)
     }
 }
 

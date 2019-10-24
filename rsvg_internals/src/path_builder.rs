@@ -290,16 +290,9 @@ impl PathCommand {
     }
 }
 
+#[derive(Default)]
 pub struct PathBuilder {
     path_commands: Vec<PathCommand>,
-}
-
-impl Default for PathBuilder {
-    fn default() -> PathBuilder {
-        PathBuilder {
-            path_commands: Vec::new(),
-        }
-    }
 }
 
 impl PathBuilder {
