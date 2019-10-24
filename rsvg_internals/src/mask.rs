@@ -10,14 +10,7 @@ use crate::node::{CascadedValues, NodeDraw, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Opacity;
-use crate::rect::IRect;
-use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    shared_surface::SurfaceType,
-    ImageSurfaceDataExt,
-};
-use crate::unit_interval::UnitInterval;
+use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -136,46 +129,12 @@ impl NodeMask {
 
         let Opacity(opacity) = values.opacity;
 
-        let mask_content_surface =
-            SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?;
+        let mask = SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?
+            .to_mask(u8::from(opacity))?
+            .into_image_surface()?;
 
-        Ok(Some(compute_luminance_to_alpha(&mask_content_surface, opacity)?))
+        Ok(Some(mask))
     }
-}
-
-// Returns a surface whose alpha channel for each pixel is equal to the
-// luminance of that pixel's unpremultiplied RGB values.  The resulting
-// surface's RGB values are not meanignful; only the alpha channel has
-// useful luminance data.
-//
-// This is to get a mask suitable for use with cairo_mask_surface().
-fn compute_luminance_to_alpha(
-    surface: &SharedImageSurface,
-    opacity: UnitInterval,
-) -> Result<cairo::ImageSurface, cairo::Status> {
-    let width = surface.width();
-    let height = surface.height();
-
-    let bounds = IRect {
-        x0: 0,
-        y0: 0,
-        x1: width,
-        y1: height,
-    };
-
-    let opacity = u8::from(opacity);
-    let mut output = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
-    let output_stride = output.get_stride() as usize;
-
-    {
-        let mut output_data = output.get_data().unwrap();
-
-        for (x, y, pixel) in Pixels::new(surface, bounds) {
-            output_data.set_pixel(output_stride, pixel.to_mask(opacity), x, y);
-        }
-    }
-
-    Ok(output)
 }
 
 impl NodeTrait for NodeMask {

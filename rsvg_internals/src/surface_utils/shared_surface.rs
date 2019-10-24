@@ -399,6 +399,35 @@ impl SharedImageSurface {
         SharedImageSurface::new(output_surface, SurfaceType::AlphaOnly)
     }
 
+    /// Returns a surface whose alpha channel for each pixel is equal to the
+    /// luminance of that pixel's unpremultiplied RGB values.  The resulting
+    /// surface's RGB values are not meanignful; only the alpha channel has
+    /// useful luminance data.
+    ///
+    /// This is to get a mask suitable for use with cairo_mask_surface().
+    pub fn to_mask(&self, opacity: u8) -> Result<SharedImageSurface, cairo::Status> {
+        let bounds = IRect {
+            x0: 0,
+            y0: 0,
+            x1: self.width,
+            y1: self.height,
+        };
+
+        let mut output_surface =
+            ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        let stride = output_surface.get_stride() as usize;
+        {
+            let mut data = output_surface.get_data().unwrap();
+
+            for (x, y, pixel) in Pixels::new(self, bounds) {
+                data.set_pixel(stride, pixel.to_mask(opacity), x, y);
+            }
+        }
+
+        SharedImageSurface::new(output_surface, self.surface_type)
+    }
+
     /// Returns a surface with pre-multiplication of color values undone.
     ///
     /// HACK: this is storing unpremultiplied pixels in an ARGB32 image surface (which is supposed
