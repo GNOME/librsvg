@@ -1,5 +1,5 @@
 use cairo;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -188,19 +188,19 @@ fn compute_luminance_to_alpha(
 impl NodeTrait for NodeMask {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x") => self.x = attr.parse(value)?,
-                local_name!("y") => self.y = attr.parse(value)?,
-                local_name!("width") => {
+            match attr.expanded() {
+                expanded_name!(svg "x") => self.x = attr.parse(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value)?,
+                expanded_name!(svg "width") => {
                     self.width =
                         attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
                 }
-                local_name!("height") => {
+                expanded_name!(svg "height") => {
                     self.height =
                         attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
                 }
-                local_name!("maskUnits") => self.units = attr.parse(value)?,
-                local_name!("maskContentUnits") => self.content_units = attr.parse(value)?,
+                expanded_name!(svg "maskUnits") => self.units = attr.parse(value)?,
+                expanded_name!(svg "maskContentUnits") => self.content_units = attr.parse(value)?,
                 _ => (),
             }
         }

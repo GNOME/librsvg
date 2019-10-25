@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use cairo::Rectangle;
 use cssparser::{CowRcStr, Parser, Token};
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Fragment;
 use crate::angle::Angle;
@@ -196,21 +196,21 @@ impl NodeMarker {
 impl NodeTrait for NodeMarker {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("markerUnits") => self.units = attr.parse(value)?,
-                local_name!("refX") => self.ref_x = attr.parse(value)?,
-                local_name!("refY") => self.ref_y = attr.parse(value)?,
-                local_name!("markerWidth") => {
+            match attr.expanded() {
+                expanded_name!(svg "markerUnits") => self.units = attr.parse(value)?,
+                expanded_name!(svg "refX") => self.ref_x = attr.parse(value)?,
+                expanded_name!(svg "refY") => self.ref_y = attr.parse(value)?,
+                expanded_name!(svg "markerWidth") => {
                     self.width =
                         attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
                 }
-                local_name!("markerHeight") => {
+                expanded_name!(svg "markerHeight") => {
                     self.height =
                         attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
                 }
-                local_name!("orient") => self.orient = attr.parse(value)?,
-                local_name!("preserveAspectRatio") => self.aspect = attr.parse(value)?,
-                local_name!("viewBox") => self.vbox = Some(attr.parse(value)?),
+                expanded_name!(svg "orient") => self.orient = attr.parse(value)?,
+                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
+                expanded_name!(svg "viewBox") => self.vbox = Some(attr.parse(value)?),
                 _ => (),
             }
         }

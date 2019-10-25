@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 
@@ -17,8 +17,8 @@ pub struct NodeLink {
 impl NodeTrait for NodeLink {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("xlink:href") => self.link = Some(value.to_owned()),
+            match attr.expanded() {
+                expanded_name!(xlink "href") => self.link = Some(value.to_owned()),
                 _ => (),
             }
         }

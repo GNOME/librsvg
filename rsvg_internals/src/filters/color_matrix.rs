@@ -1,5 +1,5 @@
 use cairo::{self, ImageSurface};
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::drawing_ctx::DrawingCtx;
@@ -9,10 +9,7 @@ use crate::number_list::{NumberList, NumberListError, NumberListLength};
 use crate::parsers::{self, ParseError};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    ImageSurfaceDataExt,
-    Pixel,
+    iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 
@@ -53,7 +50,10 @@ impl NodeTrait for ColorMatrix {
 
         // First, determine the operation type.
         let mut operation_type = OperationType::Matrix;
-        for (attr, value) in pbag.iter().filter(|(attr, _)| *attr == local_name!("type")) {
+        for (attr, value) in pbag
+            .iter()
+            .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "type"))
+        {
             operation_type = OperationType::parse(attr, value)?;
         }
 
@@ -73,7 +73,7 @@ impl NodeTrait for ColorMatrix {
         } else {
             for (attr, value) in pbag
                 .iter()
-                .filter(|(attr, _)| *attr == local_name!("values"))
+                .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "values"))
             {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
@@ -227,7 +227,7 @@ impl Filter for ColorMatrix {
 }
 
 impl OperationType {
-    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
         match s {
             "matrix" => Ok(OperationType::Matrix),
             "saturate" => Ok(OperationType::Saturate),

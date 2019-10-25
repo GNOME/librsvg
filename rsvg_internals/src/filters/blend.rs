@@ -1,5 +1,5 @@
 use cairo;
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::NodeError;
@@ -59,11 +59,11 @@ impl NodeTrait for Blend {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("in2") => {
+            match attr.expanded() {
+                expanded_name!(svg "in2") => {
                     self.in2 = Some(Input::parse(attr, value)?);
                 }
-                local_name!("mode") => self.mode = Mode::parse(attr, value)?,
+                expanded_name!(svg "mode") => self.mode = Mode::parse(attr, value)?,
                 _ => (),
             }
         }
@@ -133,7 +133,7 @@ impl Filter for Blend {
 }
 
 impl Mode {
-    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
         match s {
             "normal" => Ok(Mode::Normal),
             "multiply" => Ok(Mode::Multiply),

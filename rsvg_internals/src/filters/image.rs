@@ -1,5 +1,5 @@
 use cairo::{self, ImageSurface, Rectangle};
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::{Fragment, Href};
 use crate::aspect_ratio::AspectRatio;
@@ -178,11 +178,11 @@ impl NodeTrait for Image {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("preserveAspectRatio") => self.aspect = attr.parse(value)?,
+            match attr.expanded() {
+                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
-                local_name!("xlink:href") | local_name!("path") => {
+                expanded_name!(xlink "href") | expanded_name!(svg "path") => {
                     let href = Href::parse(value).map_err(|_| {
                         NodeError::parse_error(attr, ParseError::new("could not parse href"))
                     })?;

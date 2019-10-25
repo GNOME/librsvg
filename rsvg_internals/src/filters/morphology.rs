@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 
 use cairo::{self, ImageSurface};
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
@@ -53,9 +53,9 @@ impl NodeTrait for Morphology {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("operator") => self.operator = Operator::parse(attr, value)?,
-                local_name!("radius") => {
+            match attr.expanded() {
+                expanded_name!(svg "operator") => self.operator = Operator::parse(attr, value)?,
+                expanded_name!(svg "radius") => {
                     self.radius = parsers::number_optional_number(value)
                         .attribute(attr.clone())
                         .and_then(|(x, y)| {
@@ -161,7 +161,7 @@ impl Filter for Morphology {
 }
 
 impl Operator {
-    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
         match s {
             "erode" => Ok(Operator::Erode),
             "dilate" => Ok(Operator::Dilate),

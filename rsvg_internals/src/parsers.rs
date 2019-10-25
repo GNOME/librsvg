@@ -1,5 +1,5 @@
 use cssparser::{BasicParseError, Parser, ParserInput, Token};
-use markup5ever::LocalName;
+use markup5ever::QualName;
 
 use std::str;
 
@@ -77,7 +77,7 @@ pub trait ParseValue<T: Parse<Err = ValueErrorKind>> {
     ) -> Result<T, NodeError>;
 }
 
-impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for LocalName {
+impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for QualName {
     fn parse(&self, value: &str) -> Result<T, NodeError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);

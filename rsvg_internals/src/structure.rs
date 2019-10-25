@@ -1,5 +1,5 @@
 use cairo::Rectangle;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
@@ -181,21 +181,21 @@ impl NodeTrait for NodeSvg {
         let is_inner_svg = parent.is_some();
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("preserveAspectRatio") => {
+            match attr.expanded() {
+                expanded_name!(svg "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                local_name!("x") if is_inner_svg => self.x = Some(attr.parse(value)?),
-                local_name!("y") if is_inner_svg => self.y = Some(attr.parse(value)?),
-                local_name!("width") => {
+                expanded_name!(svg "x") if is_inner_svg => self.x = Some(attr.parse(value)?),
+                expanded_name!(svg "y") if is_inner_svg => self.y = Some(attr.parse(value)?),
+                expanded_name!(svg "width") => {
                     self.w =
                         Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
                 }
-                local_name!("height") => {
+                expanded_name!(svg "height") => {
                     self.h =
                         Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
                 }
-                local_name!("viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!(svg "viewBox") => self.vbox = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
@@ -275,18 +275,18 @@ pub struct NodeUse {
 impl NodeTrait for NodeUse {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("xlink:href") => {
+            match attr.expanded() {
+                expanded_name!(xlink "href") => {
                     self.link = Some(Fragment::parse(value).attribute(attr)?)
                 }
-                local_name!("x") => self.x = attr.parse(value)?,
-                local_name!("y") => self.y = attr.parse(value)?,
-                local_name!("width") => {
+                expanded_name!(svg "x") => self.x = attr.parse(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value)?,
+                expanded_name!(svg "width") => {
                     self.w = attr
                         .parse_and_validate(value, LengthHorizontal::check_nonnegative)
                         .map(Some)?
                 }
-                local_name!("height") => {
+                expanded_name!(svg "height") => {
                     self.h = attr
                         .parse_and_validate(value, LengthVertical::check_nonnegative)
                         .map(Some)?
@@ -428,11 +428,11 @@ pub struct NodeSymbol {
 impl NodeTrait for NodeSymbol {
     fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("preserveAspectRatio") => {
+            match attr.expanded() {
+                expanded_name!(svg "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                local_name!("viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!(svg "viewBox") => self.vbox = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }

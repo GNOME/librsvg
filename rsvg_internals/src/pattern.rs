@@ -1,5 +1,5 @@
 use cairo;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
 use std::f64;
 
@@ -118,26 +118,26 @@ pub struct NodePattern {
 impl NodeTrait for NodePattern {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("patternUnits") => self.common.units = Some(attr.parse(value)?),
-                local_name!("patternContentUnits") => {
+            match attr.expanded() {
+                expanded_name!(svg "patternUnits") => self.common.units = Some(attr.parse(value)?),
+                expanded_name!(svg "patternContentUnits") => {
                     self.common.content_units = Some(attr.parse(value)?)
                 }
-                local_name!("viewBox") => self.common.vbox = Some(Some(attr.parse(value)?)),
-                local_name!("preserveAspectRatio") => {
+                expanded_name!(svg "viewBox") => self.common.vbox = Some(Some(attr.parse(value)?)),
+                expanded_name!(svg "preserveAspectRatio") => {
                     self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
-                local_name!("patternTransform") => self.common.affine = Some(attr.parse(value)?),
-                local_name!("xlink:href") => {
+                expanded_name!(svg "patternTransform") => self.common.affine = Some(attr.parse(value)?),
+                expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?);
                 }
-                local_name!("x") => self.common.x = Some(attr.parse(value)?),
-                local_name!("y") => self.common.y = Some(attr.parse(value)?),
-                local_name!("width") => {
+                expanded_name!(svg "x") => self.common.x = Some(attr.parse(value)?),
+                expanded_name!(svg "y") => self.common.y = Some(attr.parse(value)?),
+                expanded_name!(svg "width") => {
                     self.common.width =
                         Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
                 }
-                local_name!("height") => {
+                expanded_name!(svg "height") => {
                     self.common.height =
                         Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
                 }
@@ -595,7 +595,7 @@ mod tests {
     fn pattern_resolved_from_defaults_is_really_resolved() {
         let node = RsvgNode::new(NodeData::new(
             NodeType::Pattern,
-            QualName::new(None, ns!(svg), local_name!("pattern")),
+            &QualName::new(None, ns!(svg), local_name!("pattern")),
             None,
             None,
             Box::new(NodePattern::default()),

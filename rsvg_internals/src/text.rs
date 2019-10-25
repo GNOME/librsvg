@@ -1,5 +1,5 @@
 use glib::translate::*;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use pango::{self, FontMapExt};
 use pango_sys;
 use pangocairo;
@@ -593,11 +593,11 @@ impl NodeText {
 impl NodeTrait for NodeText {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x") => self.x = attr.parse(value)?,
-                local_name!("y") => self.y = attr.parse(value)?,
-                local_name!("dx") => self.dx = attr.parse(value).map(Some)?,
-                local_name!("dy") => self.dy = attr.parse(value).map(Some)?,
+            match attr.expanded() {
+                expanded_name!(svg "x") => self.x = attr.parse(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value)?,
+                expanded_name!(svg "dx") => self.dx = attr.parse(value).map(Some)?,
+                expanded_name!(svg "dy") => self.dy = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
@@ -711,8 +711,8 @@ fn extract_chars_children_to_chunks_recursively(
 impl NodeTrait for NodeTRef {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("xlink:href") => {
+            match attr.expanded() {
+                expanded_name!(xlink "href") => {
                     self.link = Some(Fragment::parse(value).attribute(attr)?)
                 }
                 _ => (),
@@ -753,11 +753,11 @@ impl NodeTSpan {
 impl NodeTrait for NodeTSpan {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x") => self.x = attr.parse(value).map(Some)?,
-                local_name!("y") => self.y = attr.parse(value).map(Some)?,
-                local_name!("dx") => self.dx = attr.parse(value).map(Some)?,
-                local_name!("dy") => self.dy = attr.parse(value).map(Some)?,
+            match attr.expanded() {
+                expanded_name!(svg "x") => self.x = attr.parse(value).map(Some)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value).map(Some)?,
+                expanded_name!(svg "dx") => self.dx = attr.parse(value).map(Some)?,
+                expanded_name!(svg "dy") => self.dy = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }

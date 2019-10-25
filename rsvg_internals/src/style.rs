@@ -1,4 +1,4 @@
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
@@ -45,7 +45,7 @@ impl NodeStyle {
 impl NodeTrait for NodeStyle {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            if attr == local_name!("type") {
+            if attr.expanded() == expanded_name!(svg "type") {
                 self.type_ = Some(value.to_string());
             }
         }

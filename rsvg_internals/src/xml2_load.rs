@@ -15,8 +15,7 @@ use glib::translate::*;
 
 use crate::error::LoadingError;
 use crate::property_bag::PropertyBag;
-use crate::util::cstr;
-use crate::util::utf8_cstr;
+use crate::util::{cstr, make_qual_name, opt_utf8_cstr, utf8_cstr};
 use crate::xml::XmlState;
 use crate::xml2::*;
 
@@ -178,23 +177,26 @@ unsafe extern "C" fn sax_start_element_ns_cb(
     localname: *mut libc::c_char,
     prefix: *mut libc::c_char,
     uri: *mut libc::c_char,
-    nb_namespaces: libc::c_int,
-    namespaces: *mut *mut libc::c_char,
+    _nb_namespaces: libc::c_int,
+    _namespaces: *mut *mut libc::c_char,
     nb_attributes: libc::c_int,
-    nb_defaulted: libc::c_int,
+    _nb_defaulted: libc::c_int,
     attributes: *mut *mut libc::c_char,
 ) {
     let xml2_parser = &*(user_data as *mut Xml2Parser);
 
     assert!(!localname.is_null());
 
+    let prefix = opt_utf8_cstr(prefix);
+    let uri = opt_utf8_cstr(uri);
     let localname = utf8_cstr(localname);
+    let qual_name = make_qual_name(prefix, uri, localname);
 
     let nb_attributes = nb_attributes as usize;
     let pbag =
         PropertyBag::new_from_namespaced_attributes(nb_attributes, attributes as *const *const _);
 
-    if let Err(e) = xml2_parser.state.start_element(localname, &pbag) {
+    if let Err(e) = xml2_parser.state.start_element(qual_name, &pbag) {
         let _: () = e; // guard in case we change the error type later
 
         let parser = xml2_parser.parser.get();
@@ -211,9 +213,13 @@ unsafe extern "C" fn sax_end_element_ns_cb(
     let xml2_parser = &*(user_data as *mut Xml2Parser);
 
     assert!(!localname.is_null());
-    let localname = utf8_cstr(localname);
 
-    xml2_parser.state.end_element(localname);
+    let prefix = opt_utf8_cstr(prefix);
+    let uri = opt_utf8_cstr(uri);
+    let localname = utf8_cstr(localname);
+    let qual_name = make_qual_name(prefix, uri, localname);
+
+    xml2_parser.state.end_element(qual_name);
 }
 
 unsafe extern "C" fn sax_characters_cb(

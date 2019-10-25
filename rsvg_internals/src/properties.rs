@@ -1,5 +1,5 @@
 use cssparser::{self, DeclarationListParser, Parser, ParserInput};
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration};
@@ -223,76 +223,76 @@ pub struct ComputedValues {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-pub fn parse_attribute_value_into_parsed_property(attr: &LocalName, input: &mut Parser, accept_shorthands: bool) -> Result<ParsedProperty, ValueErrorKind> {
+pub fn parse_attribute_value_into_parsed_property(attr: &QualName, input: &mut Parser, accept_shorthands: bool) -> Result<ParsedProperty, ValueErrorKind> {
     // please keep these sorted
-    match attr {
-        local_name!("baseline-shift") =>
+    match attr.expanded() {
+        expanded_name!(svg "baseline-shift") =>
             Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
 
-        local_name!("clip-path") =>
+        expanded_name!(svg "clip-path") =>
             Ok(ParsedProperty::ClipPath(parse_input(input)?)),
 
-        local_name!("clip-rule") =>
+        expanded_name!(svg "clip-rule") =>
             Ok(ParsedProperty::ClipRule(parse_input(input)?)),
 
-        local_name!("color") =>
+        expanded_name!(svg "color") =>
             Ok(ParsedProperty::Color(parse_input(input)?)),
 
-        local_name!("color-interpolation-filters") =>
+        expanded_name!(svg "color-interpolation-filters") =>
             Ok(ParsedProperty::ColorInterpolationFilters(parse_input(input)?)),
 
-        local_name!("direction") =>
+        expanded_name!(svg "direction") =>
             Ok(ParsedProperty::Direction(parse_input(input)?)),
 
-        local_name!("display") =>
+        expanded_name!(svg "display") =>
             Ok(ParsedProperty::Display(parse_input(input)?)),
 
-        local_name!("enable-background") =>
+        expanded_name!(svg "enable-background") =>
             Ok(ParsedProperty::EnableBackground(parse_input(input)?)),
 
-        local_name!("fill") =>
+        expanded_name!(svg "fill") =>
             Ok(ParsedProperty::Fill(parse_input(input)?)),
 
-        local_name!("fill-opacity") =>
+        expanded_name!(svg "fill-opacity") =>
             Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
 
-        local_name!("fill-rule") =>
+        expanded_name!(svg "fill-rule") =>
             Ok(ParsedProperty::FillRule(parse_input(input)?)),
 
-        local_name!("filter") =>
+        expanded_name!(svg "filter") =>
             Ok(ParsedProperty::Filter(parse_input(input)?)),
 
-        local_name!("flood-color") =>
+        expanded_name!(svg "flood-color") =>
             Ok(ParsedProperty::FloodColor(parse_input(input)?)),
 
-        local_name!("flood-opacity") =>
+        expanded_name!(svg "flood-opacity") =>
             Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
 
-        local_name!("font-family") =>
+        expanded_name!(svg "font-family") =>
             Ok(ParsedProperty::FontFamily(parse_input(input)?)),
 
-        local_name!("font-size") =>
+        expanded_name!(svg "font-size") =>
             Ok(ParsedProperty::FontSize(parse_input(input)?)),
 
-        local_name!("font-stretch") =>
+        expanded_name!(svg "font-stretch") =>
             Ok(ParsedProperty::FontStretch(parse_input(input)?)),
 
-        local_name!("font-style") =>
+        expanded_name!(svg "font-style") =>
             Ok(ParsedProperty::FontStyle(parse_input(input)?)),
 
-        local_name!("font-variant") =>
+        expanded_name!(svg "font-variant") =>
             Ok(ParsedProperty::FontVariant(parse_input(input)?)),
 
-        local_name!("font-weight") =>
+        expanded_name!(svg "font-weight") =>
             Ok(ParsedProperty::FontWeight(parse_input(input)?)),
 
-        local_name!("letter-spacing") =>
+        expanded_name!(svg "letter-spacing") =>
             Ok(ParsedProperty::LetterSpacing(parse_input(input)?)),
 
-        local_name!("lighting-color") =>
+        expanded_name!(svg "lighting-color") =>
             Ok(ParsedProperty::LightingColor(parse_input(input)?)),
 
-        local_name!("marker") => {
+        expanded_name!(svg "marker") => {
             if accept_shorthands {
                 Ok(ParsedProperty::Marker(parse_input(input)?))
             } else {
@@ -300,73 +300,73 @@ pub fn parse_attribute_value_into_parsed_property(attr: &LocalName, input: &mut 
             }
         }
 
-        local_name!("marker-end") =>
+        expanded_name!(svg "marker-end") =>
             Ok(ParsedProperty::MarkerEnd(parse_input(input)?)),
 
-        local_name!("marker-mid") =>
+        expanded_name!(svg "marker-mid") =>
             Ok(ParsedProperty::MarkerMid(parse_input(input)?)),
 
-        local_name!("marker-start") =>
+        expanded_name!(svg "marker-start") =>
             Ok(ParsedProperty::MarkerStart(parse_input(input)?)),
 
-        local_name!("mask") =>
+        expanded_name!(svg "mask") =>
             Ok(ParsedProperty::Mask(parse_input(input)?)),
 
-        local_name!("opacity") =>
+        expanded_name!(svg "opacity") =>
             Ok(ParsedProperty::Opacity(parse_input(input)?)),
 
-        local_name!("overflow") =>
+        expanded_name!(svg "overflow") =>
             Ok(ParsedProperty::Overflow(parse_input(input)?)),
 
-        local_name!("shape-rendering") =>
+        expanded_name!(svg "shape-rendering") =>
             Ok(ParsedProperty::ShapeRendering(parse_input(input)?)),
 
-        local_name!("stop-color") =>
+        expanded_name!(svg "stop-color") =>
             Ok(ParsedProperty::StopColor(parse_input(input)?)),
 
-        local_name!("stop-opacity") =>
+        expanded_name!(svg "stop-opacity") =>
             Ok(ParsedProperty::StopOpacity(parse_input(input)?)),
 
-        local_name!("stroke") =>
+        expanded_name!(svg "stroke") =>
             Ok(ParsedProperty::Stroke(parse_input(input)?)),
 
-        local_name!("stroke-dasharray") =>
+        expanded_name!(svg "stroke-dasharray") =>
             Ok(ParsedProperty::StrokeDasharray(parse_input(input)?)),
 
-        local_name!("stroke-dashoffset") =>
+        expanded_name!(svg "stroke-dashoffset") =>
             Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
 
-        local_name!("stroke-linecap") =>
+        expanded_name!(svg "stroke-linecap") =>
             Ok(ParsedProperty::StrokeLinecap(parse_input(input)?)),
 
-        local_name!("stroke-linejoin") =>
+        expanded_name!(svg "stroke-linejoin") =>
             Ok(ParsedProperty::StrokeLinejoin(parse_input(input)?)),
 
-        local_name!("stroke-miterlimit") =>
+        expanded_name!(svg "stroke-miterlimit") =>
             Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
 
-        local_name!("stroke-opacity") =>
+        expanded_name!(svg "stroke-opacity") =>
             Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
 
-        local_name!("stroke-width") =>
+        expanded_name!(svg "stroke-width") =>
             Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
 
-        local_name!("text-anchor") =>
+        expanded_name!(svg "text-anchor") =>
             Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
 
-        local_name!("text-decoration") =>
+        expanded_name!(svg "text-decoration") =>
             Ok(ParsedProperty::TextDecoration(parse_input(input)?)),
 
-        local_name!("text-rendering") =>
+        expanded_name!(svg "text-rendering") =>
             Ok(ParsedProperty::TextRendering(parse_input(input)?)),
 
-        local_name!("unicode-bidi") =>
+        expanded_name!(svg "unicode-bidi") =>
             Ok(ParsedProperty::UnicodeBidi(parse_input(input)?)),
 
-        local_name!("visibility") =>
+        expanded_name!(svg "visibility") =>
             Ok(ParsedProperty::Visibility(parse_input(input)?)),
 
-        local_name!("writing-mode") =>
+        expanded_name!(svg "writing-mode") =>
             Ok(ParsedProperty::WritingMode(parse_input(input)?)),
 
         _ => Err(ValueErrorKind::UnknownProperty)
@@ -520,7 +520,7 @@ impl SpecifiedValues {
 
     fn parse_attribute_pair(
         &mut self,
-        attr: LocalName,
+        attr: QualName,
         value: &str,
         accept_shorthands: bool,
     ) -> Result<(), NodeError> {
@@ -556,8 +556,8 @@ impl SpecifiedValues {
         pbag: &PropertyBag<'_>,
     ) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("xml:lang") => {
+            match attr.expanded() {
+                expanded_name!(svg "xml:lang") => {
                     // xml:lang is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
                     // rather call its parser directly.
@@ -565,7 +565,7 @@ impl SpecifiedValues {
                         SpecifiedValue::Specified(XmlLang::parse_str(value).attribute(attr)?);
                 }
 
-                local_name!("xml:space") => {
+                expanded_name!(svg "xml:space") => {
                     // xml:space is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
                     // rather call its parser directly.
@@ -583,7 +583,7 @@ impl SpecifiedValues {
     pub fn set_property_from_declaration(
         &mut self,
         declaration: &Declaration,
-        important_styles: &mut HashSet<LocalName>,
+        important_styles: &mut HashSet<QualName>,
     ) {
         if !declaration.important && important_styles.contains(&declaration.attribute) {
             return;
@@ -599,7 +599,7 @@ impl SpecifiedValues {
     pub fn parse_style_declarations(
         &mut self,
         declarations: &str,
-        important_styles: &mut HashSet<LocalName>,
+        important_styles: &mut HashSet<QualName>,
     ) -> Result<(), NodeError> {
         let mut input = ParserInput::new(declarations);
         let mut parser = Parser::new(&mut input);

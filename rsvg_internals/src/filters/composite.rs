@@ -1,6 +1,6 @@
 use cairo::{self, ImageSurface};
 use cssparser::{CowRcStr, Parser, Token};
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, ValueErrorKind};
@@ -65,13 +65,13 @@ impl NodeTrait for Composite {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("in2") => self.in2 = Some(Input::parse(attr, value)?),
-                local_name!("operator") => self.operator = attr.parse(value)?,
-                local_name!("k1") => self.k1 = parsers::number(value).attribute(attr)?,
-                local_name!("k2") => self.k2 = parsers::number(value).attribute(attr)?,
-                local_name!("k3") => self.k3 = parsers::number(value).attribute(attr)?,
-                local_name!("k4") => self.k4 = parsers::number(value).attribute(attr)?,
+            match attr.expanded() {
+                expanded_name!(svg "in2") => self.in2 = Some(Input::parse(attr, value)?),
+                expanded_name!(svg "operator") => self.operator = attr.parse(value)?,
+                expanded_name!(svg "k1") => self.k1 = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "k2") => self.k2 = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "k3") => self.k3 = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "k4") => self.k4 = parsers::number(value).attribute(attr)?,
                 _ => (),
             }
         }
