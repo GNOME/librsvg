@@ -7,15 +7,14 @@ Version 2.47.0
   (e.g. xmlns:foo="http://example.com/foo").
 
   This may happen especially with incorrectly-written SVGs that use
-  xlink:href attributes without an xlink namespace declaration.  If
-  you run into this, just add
-  xmlns:xlink="http://www.w3.org/1999/xlink" to your toplevel SVG
-  element:
+  xlink:href or xi:include attributes without the corresponding
+  namespace declarations.  If you run into this, just add the
+  following to your toplevel SVG element:
 
       <svg xmlns="http://www.w3.org/2000/svg"
-           xmlns:xlink="http://www.w3.org/1999/xlink">
-
-           ^^^^^^^^^^^ this one
+           xmlns:xlink="http://www.w3.org/1999/xlink"
+	   xmlns:xi="http://www.w3.org/2001/XInclude">
+           ^^^^^^^^^ these ones
 
 - Patterns and gradients reused across more than one element will only
   get resolved once now; this should make things marginally faster for
