@@ -12,10 +12,11 @@ use std::str;
 use std::sync::Once;
 
 use glib::translate::*;
+use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 
 use crate::error::LoadingError;
 use crate::property_bag::PropertyBag;
-use crate::util::{cstr, make_qual_name, opt_utf8_cstr, utf8_cstr};
+use crate::util::{cstr, opt_utf8_cstr, utf8_cstr};
 use crate::xml::XmlState;
 use crate::xml2::*;
 
@@ -90,7 +91,9 @@ unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xml
         column,
         cstr(error.message)
     );
-    xml2_parser.state.error(ParseFromStreamError::XmlParseError(full_error_message));
+    xml2_parser
+        .state
+        .error(ParseFromStreamError::XmlParseError(full_error_message));
 }
 
 fn free_xml_parser_and_doc(parser: xmlParserCtxtPtr) {
@@ -119,7 +122,10 @@ unsafe extern "C" fn sax_get_entity_cb(
     assert!(!name.is_null());
     let name = utf8_cstr(name);
 
-    xml2_parser.state.entity_lookup(name).unwrap_or(ptr::null_mut())
+    xml2_parser
+        .state
+        .entity_lookup(name)
+        .unwrap_or(ptr::null_mut())
 }
 
 unsafe extern "C" fn sax_entity_decl_cb(
@@ -172,6 +178,19 @@ unsafe extern "C" fn sax_unparsed_entity_decl_cb(
     );
 }
 
+fn make_qual_name(prefix: Option<&str>, uri: Option<&str>, localname: &str) -> QualName {
+    // FIXME: If the element doesn't have a namespace URI, we are falling back
+    // to the SVG namespace.  In reality we need to take namespace scoping into account,
+    // i.e. handle the "default namespace" active at that point in the XML stack.
+    let element_ns = uri.map(Namespace::from).unwrap_or_else(|| ns!(svg));
+
+    QualName::new(
+        prefix.map(Prefix::from),
+        element_ns,
+        LocalName::from(localname),
+    )
+}
+
 unsafe extern "C" fn sax_start_element_ns_cb(
     user_data: *mut libc::c_void,
     localname: *mut libc::c_char,
@@ -190,11 +209,15 @@ unsafe extern "C" fn sax_start_element_ns_cb(
     let prefix = opt_utf8_cstr(prefix);
     let uri = opt_utf8_cstr(uri);
     let localname = utf8_cstr(localname);
+
     let qual_name = make_qual_name(prefix, uri, localname);
 
     let nb_attributes = nb_attributes as usize;
-    let pbag =
-        PropertyBag::new_from_xml2_attributes(nb_attributes, attributes as *const *const _);
+    let pbag = PropertyBag::new_from_xml2_attributes(
+        &qual_name.ns,
+        nb_attributes,
+        attributes as *const *const _,
+    );
 
     if let Err(e) = xml2_parser.state.start_element(qual_name, &pbag) {
         let _: () = e; // guard in case we change the error type later
@@ -217,6 +240,7 @@ unsafe extern "C" fn sax_end_element_ns_cb(
     let prefix = opt_utf8_cstr(prefix);
     let uri = opt_utf8_cstr(uri);
     let localname = utf8_cstr(localname);
+
     let qual_name = make_qual_name(prefix, uri, localname);
 
     xml2_parser.state.end_element(qual_name);
@@ -250,11 +274,7 @@ unsafe extern "C" fn sax_processing_instruction_cb(
     assert!(!target.is_null());
     let target = utf8_cstr(target);
 
-    let data = if data.is_null() {
-        ""
-    } else {
-        utf8_cstr(data)
-    };
+    let data = if data.is_null() { "" } else { utf8_cstr(data) };
 
     xml2_parser.state.processing_instruction(target, data);
 }

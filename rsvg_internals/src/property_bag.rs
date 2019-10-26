@@ -4,9 +4,9 @@ use std::mem;
 use std::slice;
 use std::str;
 
-use markup5ever::QualName;
+use markup5ever::{LocalName, Namespace, Prefix, QualName};
 
-use crate::util::{make_qual_name, opt_utf8_cstr, utf8_cstr};
+use crate::util::{opt_utf8_cstr, utf8_cstr};
 
 pub struct PropertyBag<'a>(Vec<(QualName, &'a str)>);
 
@@ -32,6 +32,7 @@ impl<'a> PropertyBag<'a> {
     /// `attrs` array, as the property bag does not copy the strings - it directly stores pointers
     /// into that array's strings.
     pub unsafe fn new_from_xml2_attributes(
+        element_ns: &Namespace,
         n_attributes: usize,
         attrs: *const *const libc::c_char,
     ) -> PropertyBag<'a> {
@@ -53,7 +54,12 @@ impl<'a> PropertyBag<'a> {
                 let prefix = opt_utf8_cstr(prefix);
                 let uri = opt_utf8_cstr(uri);
                 let localname = utf8_cstr(localname);
-                let qual_name = make_qual_name(prefix, uri, localname);
+
+                let qual_name = QualName::new(
+                    prefix.map(Prefix::from),
+                    uri.map(Namespace::from).unwrap_or_else(|| element_ns.clone()),
+                    LocalName::from(localname)
+                );
 
                 if !value_start.is_null() && !value_end.is_null() {
                     assert!(value_end >= value_start);
@@ -103,7 +109,7 @@ mod tests {
 
     #[test]
     fn empty_property_bag() {
-        let map = unsafe { PropertyBag::new_from_xml2_attributes(0, ptr::null()) };
+        let map = unsafe { PropertyBag::new_from_xml2_attributes(&ns!(svg), 0, ptr::null()) };
         assert_eq!(map.len(), 0);
     }
 
@@ -139,7 +145,7 @@ mod tests {
             v.push(val_end); // value_end
         }
 
-        let pbag = unsafe { PropertyBag::new_from_xml2_attributes(3, v.as_ptr()) };
+        let pbag = unsafe { PropertyBag::new_from_xml2_attributes(&ns!(svg), 3, v.as_ptr()) };
 
         let mut had_rx: bool = false;
         let mut had_ry: bool = false;
