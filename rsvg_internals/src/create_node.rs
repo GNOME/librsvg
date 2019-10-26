@@ -238,7 +238,7 @@ pub fn create_node_and_register_id(
 
     for (attr, value) in pbag.iter() {
         match attr.expanded() {
-            expanded_name!(svg "id") => id = Some(value),
+            expanded_name!("", "id") => id = Some(value),
             expanded_name!(svg "class") => class = Some(value),
             _ => (),
         }

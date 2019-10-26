@@ -4,7 +4,7 @@ use std::mem;
 use std::slice;
 use std::str;
 
-use markup5ever::{LocalName, Namespace, Prefix, QualName};
+use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 
 use crate::util::{opt_utf8_cstr, utf8_cstr};
 
@@ -51,15 +51,29 @@ impl<'a> PropertyBag<'a> {
 
                 assert!(!localname.is_null());
 
-                let prefix = opt_utf8_cstr(prefix);
-                let uri = opt_utf8_cstr(uri);
                 let localname = utf8_cstr(localname);
 
-                let qual_name = QualName::new(
-                    prefix.map(Prefix::from),
-                    uri.map(Namespace::from).unwrap_or_else(|| element_ns.clone()),
-                    LocalName::from(localname)
-                );
+                let qual_name = if localname == "id" {
+                    // https://www.w3.org/TR/xml-names11/ section "7 Conformance of Documents"
+                    // "No attributes with a declared type of ID [...] contain any colons."
+                    //
+                    // I'm interpreting this to mean that the id attribute has no
+                    // namespace.
+
+                    QualName::new(None, ns!(), LocalName::from(localname))
+                } else {
+                    let prefix = opt_utf8_cstr(prefix);
+                    let uri = opt_utf8_cstr(uri);
+
+                    // Use the namespace URI from the attribute, or if it is missing,
+                    // use the element's namespace, per section "6.2 Namespace Defaulting"
+                    // of https://www.w3.org/TR/xml-names11/
+                    QualName::new(
+                        prefix.map(Prefix::from),
+                        uri.map(Namespace::from).unwrap_or_else(|| element_ns.clone()),
+                        LocalName::from(localname)
+                    )
+                };
 
                 if !value_start.is_null() && !value_end.is_null() {
                     assert!(value_end >= value_start);
