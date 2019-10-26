@@ -1,5 +1,5 @@
 use cairo::{self, ImageSurface};
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::AttributeResultExt;
@@ -39,9 +39,9 @@ impl NodeTrait for Offset {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("dx") => self.dx = parsers::number(value).attribute(attr)?,
-                local_name!("dy") => self.dy = parsers::number(value).attribute(attr)?,
+            match attr.expanded() {
+                expanded_name!(svg "dx") => self.dx = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "dy") => self.dy = parsers::number(value).attribute(attr)?,
                 _ => (),
             }
         }

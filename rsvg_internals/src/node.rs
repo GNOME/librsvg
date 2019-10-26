@@ -1,6 +1,6 @@
 use cairo::Matrix;
 use downcast_rs::*;
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::cell::Ref;
 use std::collections::HashSet;
 use std::fmt;
@@ -25,11 +25,11 @@ pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
 /// Contents of a tree node
 pub struct NodeData {
     node_type: NodeType,
-    element_name: LocalName,
+    element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
     specified_values: SpecifiedValues,
-    important_styles: HashSet<LocalName>,
+    important_styles: HashSet<QualName>,
     result: NodeResult,
     transform: Matrix,
     values: ComputedValues,
@@ -41,14 +41,14 @@ pub struct NodeData {
 impl NodeData {
     pub fn new(
         node_type: NodeType,
-        element_name: LocalName,
+        element_name: &QualName,
         id: Option<&str>,
         class: Option<&str>,
         node_impl: Box<dyn NodeTrait>,
     ) -> NodeData {
         NodeData {
             node_type,
-            element_name,
+            element_name: element_name.clone(),
             id: id.map(str::to_string),
             class: class.map(str::to_string),
             specified_values: Default::default(),
@@ -79,7 +79,7 @@ impl NodeData {
     }
 
     pub fn element_name(&self) -> &str {
-        self.element_name.as_ref()
+        self.element_name.local.as_ref()
     }
 
     pub fn get_id(&self) -> Option<&str> {
@@ -124,8 +124,8 @@ impl NodeData {
 
     fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("style") => self.style_attr.push_str(value),
+            match attr.expanded() {
+                expanded_name!(svg "style") => self.style_attr.push_str(value),
                 _ => (),
             }
         }
@@ -133,8 +133,8 @@ impl NodeData {
 
     fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("transform") => {
+            match attr.expanded() {
+                expanded_name!(svg "transform") => {
                     return Matrix::parse_str(value).attribute(attr).and_then(|affine| {
                         self.transform = affine;
                         Ok(())
@@ -157,18 +157,18 @@ impl NodeData {
         for (attr, value) in pbag.iter() {
             // FIXME: move this to "try {}" when we can bump the rustc version dependency
             let mut parse = || {
-                match attr {
-                    local_name!("requiredExtensions") if cond => {
+                match attr.expanded() {
+                    expanded_name!(svg "requiredExtensions") if cond => {
                         cond = RequiredExtensions::from_attribute(value)
                             .map(|RequiredExtensions(res)| res)?;
                     }
 
-                    local_name!("requiredFeatures") if cond => {
+                    expanded_name!(svg "requiredFeatures") if cond => {
                         cond = RequiredFeatures::from_attribute(value)
                             .map(|RequiredFeatures(res)| res)?;
                     }
 
-                    local_name!("systemLanguage") if cond => {
+                    expanded_name!(svg "systemLanguage") if cond => {
                         cond = SystemLanguage::from_attribute(value, locale)
                             .map(|SystemLanguage(res)| res)?;
                     }

@@ -1,5 +1,5 @@
 use cairo::{self, ImageSurface};
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
@@ -45,8 +45,8 @@ impl NodeTrait for MergeNode {
     #[inline]
     fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("in") => self.in_ = Some(Input::parse(attr, value)?),
+            match attr.expanded() {
+                expanded_name!(svg "in") => self.in_ = Some(Input::parse(attr, value)?),
                 _ => (),
             }
         }

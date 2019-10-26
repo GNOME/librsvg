@@ -16,6 +16,14 @@ pub unsafe fn utf8_cstr<'a>(s: *const libc::c_char) -> &'a str {
     str::from_utf8_unchecked(CStr::from_ptr(s).to_bytes())
 }
 
+pub unsafe fn opt_utf8_cstr<'a>(s: *const libc::c_char) -> Option<&'a str> {
+    if s.is_null() {
+        None
+    } else {
+        Some(utf8_cstr(s))
+    }
+}
+
 /// Error-tolerant C string import
 pub unsafe fn cstr<'a>(s: *const libc::c_char) -> Cow<'a, str> {
     if s.is_null() {

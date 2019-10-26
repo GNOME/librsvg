@@ -1,5 +1,5 @@
 use cairo::{self, ImageSurface};
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::drawing_ctx::DrawingCtx;
@@ -61,8 +61,8 @@ impl NodeTrait for ConvolveMatrix {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("order") => {
+            match attr.expanded() {
+                expanded_name!(svg "order") => {
                     self.order = parsers::integer_optional_integer(value)
                         .attribute(attr.clone())
                         .and_then(|(x, y)| {
@@ -76,7 +76,7 @@ impl NodeTrait for ConvolveMatrix {
                             }
                         })?
                 }
-                local_name!("divisor") => {
+                expanded_name!(svg "divisor") => {
                     self.divisor = Some(parsers::number(value).attribute(attr.clone()).and_then(
                         |x| {
                             if x != 0.0 {
@@ -87,9 +87,9 @@ impl NodeTrait for ConvolveMatrix {
                         },
                     )?)
                 }
-                local_name!("bias") => self.bias = parsers::number(value).attribute(attr)?,
-                local_name!("edgeMode") => self.edge_mode = EdgeMode::parse(attr, value)?,
-                local_name!("kernelUnitLength") => {
+                expanded_name!(svg "bias") => self.bias = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "edgeMode") => self.edge_mode = EdgeMode::parse(attr, value)?,
+                expanded_name!(svg "kernelUnitLength") => {
                     self.kernel_unit_length = Some(
                         parsers::number_optional_number(value)
                             .attribute(attr.clone())
@@ -105,7 +105,7 @@ impl NodeTrait for ConvolveMatrix {
                             })?,
                     )
                 }
-                local_name!("preserveAlpha") => {
+                expanded_name!(svg "preserveAlpha") => {
                     self.preserve_alpha = match value {
                         "false" => false,
                         "true" => true,
@@ -123,8 +123,8 @@ impl NodeTrait for ConvolveMatrix {
 
         // target_x and target_y depend on order.
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("targetX") => {
+            match attr.expanded() {
+                expanded_name!(svg "targetX") => {
                     self.target_x = Some(parsers::integer(value).attribute(attr.clone()).and_then(
                         |x| {
                             if x >= 0 && x < self.order.0 as i32 {
@@ -138,7 +138,7 @@ impl NodeTrait for ConvolveMatrix {
                         },
                     )?)
                 }
-                local_name!("targetY") => {
+                expanded_name!(svg "targetY") => {
                     self.target_y = Some(parsers::integer(value).attribute(attr.clone()).and_then(
                         |x| {
                             if x >= 0 && x < self.order.1 as i32 {
@@ -167,7 +167,7 @@ impl NodeTrait for ConvolveMatrix {
         // Finally, parse the kernel matrix.
         for (attr, value) in pbag
             .iter()
-            .filter(|(attr, _)| *attr == local_name!("kernelMatrix"))
+            .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "kernelMatrix"))
         {
             self.kernel_matrix = Some({
                 let number_of_elements = self.order.0 as usize * self.order.1 as usize;
@@ -206,7 +206,7 @@ impl NodeTrait for ConvolveMatrix {
         // kernel_matrix must have been specified.
         if self.kernel_matrix.is_none() {
             return Err(NodeError::value_error(
-                local_name!("kernelMatrix"),
+                QualName::new(None, ns!(svg), local_name!("kernelMatrix")),
                 "the value must be set",
             ));
         }
@@ -365,7 +365,7 @@ impl Filter for ConvolveMatrix {
 }
 
 impl EdgeMode {
-    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
         match s {
             "duplicate" => Ok(EdgeMode::Duplicate),
             "wrap" => Ok(EdgeMode::Wrap),

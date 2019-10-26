@@ -1,5 +1,5 @@
 use cairo::{self, ImageSurface};
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
@@ -50,13 +50,13 @@ impl NodeTrait for DisplacementMap {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("in2") => self.in2 = Some(Input::parse(attr, value)?),
-                local_name!("scale") => self.scale = parsers::number(value).attribute(attr)?,
-                local_name!("xChannelSelector") => {
+            match attr.expanded() {
+                expanded_name!(svg "in2") => self.in2 = Some(Input::parse(attr, value)?),
+                expanded_name!(svg "scale") => self.scale = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "xChannelSelector") => {
                     self.x_channel_selector = ColorChannel::parse(attr, value)?
                 }
-                local_name!("yChannelSelector") => {
+                expanded_name!(svg "yChannelSelector") => {
                     self.y_channel_selector = ColorChannel::parse(attr, value)?
                 }
                 _ => (),
@@ -144,7 +144,7 @@ impl Filter for DisplacementMap {
 }
 
 impl ColorChannel {
-    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
         match s {
             "R" => Ok(ColorChannel::R),
             "G" => Ok(ColorChannel::G),

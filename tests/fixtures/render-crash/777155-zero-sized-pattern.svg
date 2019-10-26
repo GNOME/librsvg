@@ -1,4 +1,6 @@
-<svg id="svgt" width="100%" height="100%" viewBox="0 0 480 3">
+<svg id="svgt" width="100%" height="100%" viewBox="0 0 480 3"
+     xmlns:d="http://example.com/d"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
   <!--======-->
   <!--=    =-->
   <!--=    =-->
@@ -6,13 +8,13 @@
   <!--=    =-->
   <!--=    =-->
   <!--======-->
-  <d:SVGTestCase s:d="httt" s="$R$">
+  <d:SVGTestCase s="$R$">
 <d:testDescription x="hts">
   <p>
     </p>
   <p>  </p>
     </d:testDescription>
-<d:operatorScript xmlns="httl">
+<d:operatorScript>
   <p>Runed.</p>
 </d:operatorScript>
 <d:passCriteria s="html">

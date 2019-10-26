@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::collections::HashMap;
 
 use crate::clip_path::NodeClipPath;
@@ -42,7 +42,7 @@ use crate::text::{NodeTRef, NodeTSpan, NodeText};
 
 macro_rules! n {
     ($name:ident, $node_type:ident, $node_trait:ty) => {
-        pub fn $name(element_name: LocalName, id: Option<&str>, class: Option<&str>) -> RsvgNode {
+        pub fn $name(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> RsvgNode {
             RsvgNode::new(NodeData::new(
                 NodeType::$node_type,
                 element_name,
@@ -111,15 +111,23 @@ mod creators {
     n!(create_turbulence,                FeTurbulence,               Turbulence);
     n!(create_use,                       Use,                        NodeUse);
 
-    // hack to make multiImage sort-of work
+    /* Hack to make multiImage sort-of work
+     *
+     * disabled for now, as markup5ever doesn't have local names for
+     * multiImage, subImage, subImageRef.  Maybe we can just... create them ourselves?
+     *
+     * Is multiImage even in SVG2?
+     */
+    /*
     n!(create_multi_image,               Switch,                     NodeSwitch);
     n!(create_sub_image,                 Group,                      NodeGroup);
     n!(create_sub_image_ref,             Image,                      NodeImage);
+    */
 }
 
 use creators::*;
 
-type NodeCreateFn = fn(element_name: LocalName, id: Option<&str>, class: Option<&str>) -> RsvgNode;
+type NodeCreateFn = fn(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> RsvgNode;
 
 macro_rules! c {
     ($hashset:expr, $str_name:expr, $supports_class:expr, $fn_name:ident) => {
@@ -192,7 +200,7 @@ lazy_static! {
         /* c!(h, "metadata",         false, ); */
         /* c!(h, "missing-glyph",    true,  ); */
         /* c!(h, "mpath",            false, ); */
-        c!(h, "multiImage",          false, create_multi_image);
+        /* c!(h, "multiImage",          false, create_multi_image); */
         c!(h, "path",                true,  create_path);
         c!(h, "pattern",             true,  create_pattern);
         c!(h, "polygon",             true,  create_polygon);
@@ -203,8 +211,8 @@ lazy_static! {
         /* c!(h, "set",              false, ); */
         c!(h, "stop",                true,  create_stop);
         c!(h, "style",               false, create_style);
-        c!(h, "subImage",            false, create_sub_image);
-        c!(h, "subImageRef",         false, create_sub_image_ref);
+        /* c!(h, "subImage",            false, create_sub_image); */
+        /* c!(h, "subImageRef",         false, create_sub_image_ref); */
         c!(h, "svg",                 true,  create_svg);
         c!(h, "switch",              true,  create_switch);
         c!(h, "symbol",              true,  create_symbol);
@@ -221,7 +229,7 @@ lazy_static! {
 }
 
 pub fn create_node_and_register_id(
-    name: &str,
+    name: &QualName,
     pbag: &PropertyBag,
     ids: &mut HashMap<String, RsvgNode>,
 ) -> RsvgNode {
@@ -229,29 +237,32 @@ pub fn create_node_and_register_id(
     let mut class = None;
 
     for (attr, value) in pbag.iter() {
-        match attr {
-            local_name!("id") => id = Some(value),
-            local_name!("class") => class = Some(value),
+        match attr.expanded() {
+            expanded_name!("", "id") => id = Some(value),
+            expanded_name!(svg "class") => class = Some(value),
             _ => (),
         }
     }
 
-    let &(supports_class, create_fn) = match NODE_CREATORS.get(name) {
-        Some(c) => c,
+    let (supports_class, create_fn) = if name.ns == ns!(svg) {
+        match NODE_CREATORS.get(name.local.as_ref()) {
+            // hack in the SVG namespace for supported element names
+            Some(&(supports_class, create_fn)) => (supports_class, create_fn),
 
-        // Whenever we encounter a node we don't understand, represent it as a
-        // non-rendering node.  This is like a group, but it doesn't do any rendering of
-        // children.  The effect is that we will ignore all children of unknown elements.
-        None => &(true, create_non_rendering as NodeCreateFn),
+            // Whenever we encounter a node we don't understand, represent it as a
+            // non-rendering node.  This is like a group, but it doesn't do any rendering of
+            // children.  The effect is that we will ignore all children of unknown elements.
+            None => (true, create_non_rendering as NodeCreateFn),
+        }
+    } else {
+        (true, create_non_rendering as NodeCreateFn)
     };
-
-    let element_name = LocalName::from(name);
 
     if !supports_class {
         class = None;
     };
 
-    let node = create_fn(element_name, id, class);
+    let node = create_fn(name, id, class);
 
     if let Some(id) = id {
         // This is so we don't overwrite an existing id

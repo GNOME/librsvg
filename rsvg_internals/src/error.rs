@@ -8,7 +8,7 @@ use glib::error::ErrorDomain;
 use glib::translate::*;
 use glib_sys;
 use libc;
-use markup5ever::LocalName;
+use markup5ever::QualName;
 
 use crate::allowed_url::Fragment;
 use crate::node::RsvgNode;
@@ -30,26 +30,26 @@ pub enum ValueErrorKind {
 /// A complete error for an attribute and its erroneous value
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
-    attr: LocalName,
+    attr: QualName,
     err: ValueErrorKind,
 }
 
 impl NodeError {
-    pub fn parse_error(attr: LocalName, error: ParseError) -> NodeError {
+    pub fn parse_error(attr: QualName, error: ParseError) -> NodeError {
         NodeError {
             attr,
             err: ValueErrorKind::Parse(error),
         }
     }
 
-    pub fn value_error(attr: LocalName, description: &str) -> NodeError {
+    pub fn value_error(attr: QualName, description: &str) -> NodeError {
         NodeError {
             attr,
             err: ValueErrorKind::Value(description.to_string()),
         }
     }
 
-    pub fn attribute_error(attr: LocalName, error: ValueErrorKind) -> NodeError {
+    pub fn attribute_error(attr: QualName, error: ValueErrorKind) -> NodeError {
         NodeError { attr, err: error }
     }
 }
@@ -72,14 +72,14 @@ impl fmt::Display for NodeError {
             ValueErrorKind::Parse(ref n) => write!(
                 f,
                 "error parsing value for attribute \"{}\": {}",
-                self.attr.to_string(),
+                self.attr.local.to_string(),
                 n.display
             ),
 
             ValueErrorKind::Value(ref s) => write!(
                 f,
                 "invalid value for attribute \"{}\": {}",
-                self.attr.to_string(),
+                self.attr.local.to_string(),
                 s
             ),
         }
@@ -151,7 +151,7 @@ impl fmt::Display for AcquireError {
 
 /// Helper for converting `Result<O, E>` into `Result<O, NodeError>`
 ///
-/// A `NodeError` requires a `LocalName` that corresponds to the attribute to which the
+/// A `NodeError` requires a `QualName` that corresponds to the attribute to which the
 /// error refers, plus the actual `ValueErrorKind` that describes the error.  However,
 /// parsing functions for attribute value types will want to return their own kind of
 /// error, instead of `ValueErrorKind`.  If that particular error type has an `impl
@@ -171,11 +171,11 @@ impl fmt::Display for AcquireError {
 /// The call to `.attribute(attr)` converts the `Result` from `parse_foo()` into a full
 /// `NodeError` with the provided `attr`.
 pub trait AttributeResultExt<O, E> {
-    fn attribute(self, attr: LocalName) -> Result<O, NodeError>;
+    fn attribute(self, attr: QualName) -> Result<O, NodeError>;
 }
 
 impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O, E> for Result<O, E> {
-    fn attribute(self, attr: LocalName) -> Result<O, NodeError> {
+    fn attribute(self, attr: QualName) -> Result<O, NodeError> {
         self.map_err(|e| e.into())
             .map_err(|e| NodeError::attribute_error(attr, e))
     }

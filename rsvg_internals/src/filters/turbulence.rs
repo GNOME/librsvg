@@ -1,5 +1,5 @@
 use cairo::{self, ImageSurface};
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
@@ -64,8 +64,8 @@ impl NodeTrait for Turbulence {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("baseFrequency") => {
+            match attr.expanded() {
+                expanded_name!(svg "baseFrequency") => {
                     self.base_frequency = parsers::number_optional_number(value)
                         .attribute(attr.clone())
                         .and_then(|(x, y)| {
@@ -76,11 +76,11 @@ impl NodeTrait for Turbulence {
                             }
                         })?
                 }
-                local_name!("numOctaves") => {
+                expanded_name!(svg "numOctaves") => {
                     self.num_octaves = parsers::integer(value).attribute(attr)?
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
-                local_name!("seed") => {
+                expanded_name!(svg "seed") => {
                     self.seed = parsers::number(value)
                         .map(|x| {
                             clamp(
@@ -91,8 +91,8 @@ impl NodeTrait for Turbulence {
                         })
                         .attribute(attr)?
                 }
-                local_name!("stitchTiles") => self.stitch_tiles = StitchTiles::parse(attr, value)?,
-                local_name!("type") => self.type_ = NoiseType::parse(attr, value)?,
+                expanded_name!(svg "stitchTiles") => self.stitch_tiles = StitchTiles::parse(attr, value)?,
+                expanded_name!(svg "type") => self.type_ = NoiseType::parse(attr, value)?,
                 _ => (),
             }
         }
@@ -427,7 +427,7 @@ impl Filter for Turbulence {
 }
 
 impl StitchTiles {
-    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
         match s {
             "stitch" => Ok(StitchTiles::Stitch),
             "noStitch" => Ok(StitchTiles::NoStitch),
@@ -440,7 +440,7 @@ impl StitchTiles {
 }
 
 impl NoiseType {
-    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
         match s {
             "fractalNoise" => Ok(NoiseType::FractalNoise),
             "turbulence" => Ok(NoiseType::Turbulence),

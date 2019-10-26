@@ -1,7 +1,7 @@
 use std::cmp::min;
 use std::f64;
 
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::drawing_ctx::DrawingCtx;
@@ -47,8 +47,8 @@ impl NodeTrait for GaussianBlur {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("stdDeviation") => {
+            match attr.expanded() {
+                expanded_name!(svg "stdDeviation") => {
                     self.std_deviation = parsers::number_optional_number(value)
                         .attribute(attr.clone())
                         .and_then(|(x, y)| {

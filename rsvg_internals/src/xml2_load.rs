@@ -5,7 +5,6 @@ use gio;
 use gio::prelude::*;
 use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
-use std::mem;
 use std::ptr;
 use std::rc::Rc;
 use std::slice;
@@ -13,29 +12,55 @@ use std::str;
 use std::sync::Once;
 
 use glib::translate::*;
+use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 
 use crate::error::LoadingError;
 use crate::property_bag::PropertyBag;
-use crate::util::cstr;
-use crate::util::utf8_cstr;
+use crate::util::{cstr, opt_utf8_cstr, utf8_cstr};
 use crate::xml::XmlState;
 use crate::xml2::*;
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn get_xml2_sax_handler() -> xmlSAXHandler {
-    let mut h: xmlSAXHandler = unsafe { mem::zeroed() };
+    xmlSAXHandler {
+        // first the unused callbacks
+        internalSubset:        None,
+        isStandalone:          None,
+        hasInternalSubset:     None,
+        hasExternalSubset:     None,
+        resolveEntity:         None,
+        notationDecl:          None,
+        attributeDecl:         None,
+        elementDecl:           None,
+        setDocumentLocator:    None,
+        startDocument:         None,
+        endDocument:           None,
+        reference:             None,
+        ignorableWhitespace:   None,
+        comment:               None,
+        warning:               None,
+        error:                 None,
+        fatalError:            None,
+        externalSubset:        None,
 
-    h.getEntity = Some(sax_get_entity_cb);
-    h.entityDecl = Some(sax_entity_decl_cb);
-    h.unparsedEntityDecl = Some(sax_unparsed_entity_decl_cb);
-    h.getParameterEntity = Some(sax_get_parameter_entity_cb);
-    h.characters = Some(sax_characters_cb);
-    h.cdataBlock = Some(sax_characters_cb);
-    h.startElement = Some(sax_start_element_cb);
-    h.endElement = Some(sax_end_element_cb);
-    h.processingInstruction = Some(sax_processing_instruction_cb);
-    h.serror = Some(rsvg_sax_serror_cb);
+        _private:              ptr::null_mut(),
 
-    h
+        // then the used callbacks
+        getEntity:             Some(sax_get_entity_cb),
+        entityDecl:            Some(sax_entity_decl_cb),
+        unparsedEntityDecl:    Some(sax_unparsed_entity_decl_cb),
+        getParameterEntity:    Some(sax_get_parameter_entity_cb),
+        characters:            Some(sax_characters_cb),
+        cdataBlock:            Some(sax_characters_cb),
+        startElement:          None,
+        endElement:            None,
+        processingInstruction: Some(sax_processing_instruction_cb),
+        startElementNs:        Some(sax_start_element_ns_cb),
+        endElementNs:          Some(sax_end_element_ns_cb),
+        serror:                Some(rsvg_sax_serror_cb),
+
+        initialized:           XML_SAX2_MAGIC,
+    }
 }
 
 unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xmlErrorPtr) {
@@ -66,7 +91,9 @@ unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xml
         column,
         cstr(error.message)
     );
-    xml2_parser.state.error(ParseFromStreamError::XmlParseError(full_error_message));
+    xml2_parser
+        .state
+        .error(ParseFromStreamError::XmlParseError(full_error_message));
 }
 
 fn free_xml_parser_and_doc(parser: xmlParserCtxtPtr) {
@@ -95,7 +122,10 @@ unsafe extern "C" fn sax_get_entity_cb(
     assert!(!name.is_null());
     let name = utf8_cstr(name);
 
-    xml2_parser.state.entity_lookup(name).unwrap_or(ptr::null_mut())
+    xml2_parser
+        .state
+        .entity_lookup(name)
+        .unwrap_or(ptr::null_mut())
 }
 
 unsafe extern "C" fn sax_entity_decl_cb(
@@ -148,19 +178,48 @@ unsafe extern "C" fn sax_unparsed_entity_decl_cb(
     );
 }
 
-unsafe extern "C" fn sax_start_element_cb(
+fn make_qual_name(prefix: Option<&str>, uri: Option<&str>, localname: &str) -> QualName {
+    // FIXME: If the element doesn't have a namespace URI, we are falling back
+    // to the SVG namespace.  In reality we need to take namespace scoping into account,
+    // i.e. handle the "default namespace" active at that point in the XML stack.
+    let element_ns = uri.map(Namespace::from).unwrap_or_else(|| ns!(svg));
+
+    QualName::new(
+        prefix.map(Prefix::from),
+        element_ns,
+        LocalName::from(localname),
+    )
+}
+
+unsafe extern "C" fn sax_start_element_ns_cb(
     user_data: *mut libc::c_void,
-    name: *const libc::c_char,
-    atts: *const *const libc::c_char,
+    localname: *mut libc::c_char,
+    prefix: *mut libc::c_char,
+    uri: *mut libc::c_char,
+    _nb_namespaces: libc::c_int,
+    _namespaces: *mut *mut libc::c_char,
+    nb_attributes: libc::c_int,
+    _nb_defaulted: libc::c_int,
+    attributes: *mut *mut libc::c_char,
 ) {
     let xml2_parser = &*(user_data as *mut Xml2Parser);
 
-    assert!(!name.is_null());
-    let name = utf8_cstr(name);
+    assert!(!localname.is_null());
 
-    let pbag = PropertyBag::new_from_key_value_pairs(atts);
+    let prefix = opt_utf8_cstr(prefix);
+    let uri = opt_utf8_cstr(uri);
+    let localname = utf8_cstr(localname);
 
-    if let Err(e) = xml2_parser.state.start_element(name, &pbag) {
+    let qual_name = make_qual_name(prefix, uri, localname);
+
+    let nb_attributes = nb_attributes as usize;
+    let pbag = PropertyBag::new_from_xml2_attributes(
+        &qual_name.ns,
+        nb_attributes,
+        attributes as *const *const _,
+    );
+
+    if let Err(e) = xml2_parser.state.start_element(qual_name, &pbag) {
         let _: () = e; // guard in case we change the error type later
 
         let parser = xml2_parser.parser.get();
@@ -168,13 +227,23 @@ unsafe extern "C" fn sax_start_element_cb(
     }
 }
 
-unsafe extern "C" fn sax_end_element_cb(user_data: *mut libc::c_void, name: *const libc::c_char) {
+unsafe extern "C" fn sax_end_element_ns_cb(
+    user_data: *mut libc::c_void,
+    localname: *mut libc::c_char,
+    prefix: *mut libc::c_char,
+    uri: *mut libc::c_char,
+) {
     let xml2_parser = &*(user_data as *mut Xml2Parser);
 
-    assert!(!name.is_null());
-    let name = utf8_cstr(name);
+    assert!(!localname.is_null());
 
-    xml2_parser.state.end_element(name);
+    let prefix = opt_utf8_cstr(prefix);
+    let uri = opt_utf8_cstr(uri);
+    let localname = utf8_cstr(localname);
+
+    let qual_name = make_qual_name(prefix, uri, localname);
+
+    xml2_parser.state.end_element(qual_name);
 }
 
 unsafe extern "C" fn sax_characters_cb(
@@ -205,11 +274,7 @@ unsafe extern "C" fn sax_processing_instruction_cb(
     assert!(!target.is_null());
     let target = utf8_cstr(target);
 
-    let data = if data.is_null() {
-        ""
-    } else {
-        utf8_cstr(data)
-    };
+    let data = if data.is_null() { "" } else { utf8_cstr(data) };
 
     xml2_parser.state.processing_instruction(target, data);
 }

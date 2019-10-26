@@ -1,5 +1,5 @@
 use cssparser;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::Vector3;
 
 use crate::error::AttributeResultExt;
@@ -106,9 +106,9 @@ impl DistantLight {
 impl NodeTrait for DistantLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("azimuth") => self.azimuth = parsers::number(value).attribute(attr)?,
-                local_name!("elevation") => {
+            match attr.expanded() {
+                expanded_name!(svg "azimuth") => self.azimuth = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "elevation") => {
                     self.elevation = parsers::number(value).attribute(attr)?
                 }
                 _ => (),
@@ -140,10 +140,10 @@ impl PointLight {
 impl NodeTrait for PointLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x") => self.x = parsers::number(value).attribute(attr)?,
-                local_name!("y") => self.y = parsers::number(value).attribute(attr)?,
-                local_name!("z") => self.z = parsers::number(value).attribute(attr)?,
+            match attr.expanded() {
+                expanded_name!(svg "x") => self.x = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "y") => self.y = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "z") => self.z = parsers::number(value).attribute(attr)?,
                 _ => (),
             }
         }
@@ -189,23 +189,23 @@ impl SpotLight {
 impl NodeTrait for SpotLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x") => self.x = parsers::number(value).attribute(attr)?,
-                local_name!("y") => self.y = parsers::number(value).attribute(attr)?,
-                local_name!("z") => self.z = parsers::number(value).attribute(attr)?,
-                local_name!("pointsAtX") => {
+            match attr.expanded() {
+                expanded_name!(svg "x") => self.x = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "y") => self.y = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "z") => self.z = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "pointsAtX") => {
                     self.points_at_x = parsers::number(value).attribute(attr)?
                 }
-                local_name!("pointsAtY") => {
+                expanded_name!(svg "pointsAtY") => {
                     self.points_at_y = parsers::number(value).attribute(attr)?
                 }
-                local_name!("pointsAtZ") => {
+                expanded_name!(svg "pointsAtZ") => {
                     self.points_at_z = parsers::number(value).attribute(attr)?
                 }
-                local_name!("specularExponent") => {
+                expanded_name!(svg "specularExponent") => {
                     self.specular_exponent = parsers::number(value).attribute(attr)?
                 }
-                local_name!("limitingConeAngle") => {
+                expanded_name!(svg "limitingConeAngle") => {
                     self.limiting_cone_angle = Some(parsers::number(value).attribute(attr)?)
                 }
                 _ => (),

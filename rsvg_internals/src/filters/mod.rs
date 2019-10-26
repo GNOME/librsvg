@@ -2,7 +2,7 @@ use std::ops::Deref;
 use std::time::Instant;
 
 use cairo;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -161,28 +161,28 @@ impl NodeTrait for Primitive {
         };
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x") => {
+            match attr.expanded() {
+                expanded_name!(svg "x") => {
                     self.x = Some(attr.parse_and_validate(value, check_units_horizontal)?)
                 }
-                local_name!("y") => {
+                expanded_name!(svg "y") => {
                     self.y = Some(attr.parse_and_validate(value, check_units_vertical)?)
                 }
-                local_name!("width") => {
+                expanded_name!(svg "width") => {
                     self.width =
                         Some(attr.parse_and_validate(
                             value,
                             check_units_horizontal_and_ensure_nonnegative,
                         )?)
                 }
-                local_name!("height") => {
+                expanded_name!(svg "height") => {
                     self.height =
                         Some(attr.parse_and_validate(
                             value,
                             check_units_vertical_and_ensure_nonnegative,
                         )?)
                 }
-                local_name!("result") => self.result = Some(value.to_string()),
+                expanded_name!(svg "result") => self.result = Some(value.to_string()),
                 _ => (),
             }
         }
@@ -217,8 +217,8 @@ impl NodeTrait for PrimitiveWithInput {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("in") => drop(self.in_ = Some(Input::parse(attr, value)?)),
+            match attr.expanded() {
+                expanded_name!(svg "in") => drop(self.in_ = Some(Input::parse(attr, value)?)),
                 _ => (),
             }
         }

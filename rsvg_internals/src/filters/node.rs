@@ -1,6 +1,6 @@
 //! The <filter> node.
 use cairo;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -117,8 +117,8 @@ impl NodeTrait for NodeFilter {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("filterUnits") => self.filterunits = attr.parse(value)?,
+            match attr.expanded() {
+                expanded_name!(svg "filterUnits") => self.filterunits = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -162,22 +162,22 @@ impl NodeTrait for NodeFilter {
 
         // Parse the rest of the attributes.
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x") => {
+            match attr.expanded() {
+                expanded_name!(svg "x") => {
                     self.x = attr.parse_and_validate(value, check_units_horizontal)?
                 }
-                local_name!("y") => {
+                expanded_name!(svg "y") => {
                     self.y = attr.parse_and_validate(value, check_units_vertical)?
                 }
-                local_name!("width") => {
+                expanded_name!(svg "width") => {
                     self.width = attr
                         .parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?
                 }
-                local_name!("height") => {
+                expanded_name!(svg "height") => {
                     self.height =
                         attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?
                 }
-                local_name!("primitiveUnits") => self.primitiveunits = attr.parse(value)?,
+                expanded_name!(svg "primitiveUnits") => self.primitiveunits = attr.parse(value)?,
                 _ => (),
             }
         }

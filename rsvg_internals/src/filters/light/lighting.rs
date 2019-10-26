@@ -2,7 +2,7 @@ use std::cmp::max;
 
 use cairo::{self, ImageSurface};
 use cssparser;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::Vector3;
 use num_traits::identities::Zero;
 use rayon::prelude::*;
@@ -67,11 +67,11 @@ impl Common {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("surfaceScale") => {
+            match attr.expanded() {
+                expanded_name!(svg "surfaceScale") => {
                     self.surface_scale = parsers::number(value).attribute(attr)?
                 }
-                local_name!("kernelUnitLength") => {
+                expanded_name!(svg "kernelUnitLength") => {
                     self.kernel_unit_length = Some(
                         parsers::number_optional_number(value)
                             .attribute(attr.clone())
@@ -117,8 +117,8 @@ impl NodeTrait for DiffuseLighting {
         self.common.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("diffuseConstant") => {
+            match attr.expanded() {
+                expanded_name!(svg "diffuseConstant") => {
                     self.diffuse_constant = parsers::number(value)
                         .attribute(attr.clone())
                         .and_then(|x| {
@@ -189,8 +189,8 @@ impl NodeTrait for SpecularLighting {
         self.common.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("specularConstant") => {
+            match attr.expanded() {
+                expanded_name!(svg "specularConstant") => {
                     self.specular_constant = parsers::number(value)
                         .attribute(attr.clone())
                         .and_then(|x| {
@@ -204,7 +204,7 @@ impl NodeTrait for SpecularLighting {
                             }
                         })?;
                 }
-                local_name!("specularExponent") => {
+                expanded_name!(svg "specularExponent") => {
                     self.specular_exponent = parsers::number(value)
                         .attribute(attr.clone())
                         .and_then(|x| {

@@ -13,7 +13,7 @@ use std::ptr;
 use std::str;
 
 use libc;
-use markup5ever::LocalName;
+use markup5ever::{namespace_url, ns, LocalName, QualName};
 use url::Url;
 
 use glib::translate::*;
@@ -29,7 +29,7 @@ use crate::util::utf8_cstr;
 
 /// A parsed CSS declaration (`name: value [!important]`)
 pub struct Declaration {
-    pub attribute: LocalName,
+    pub attribute: QualName,
     pub property: ParsedProperty,
     pub important: bool,
 }
@@ -37,7 +37,7 @@ pub struct Declaration {
 #[derive(Default)]
 pub struct DeclarationList {
     // Maps property_name -> Declaration
-    declarations: HashMap<LocalName, Declaration>,
+    declarations: HashMap<QualName, Declaration>,
 }
 
 pub struct DeclParser;
@@ -51,7 +51,7 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
     ) -> Result<Declaration, cssparser::ParseError<'i, ValueErrorKind>> {
-        let attribute = LocalName::from(name.as_ref());
+        let attribute = QualName::new(None, ns!(svg), LocalName::from(name.as_ref()));
         let property = parse_attribute_value_into_parsed_property(&attribute, input, true)
             .map_err(|e| input.new_custom_error(e))?;
 
@@ -110,7 +110,7 @@ impl DeclarationList {
     }
 }
 
-pub struct DeclarationListIter<'a>(HashMapIter<'a, LocalName, Declaration>);
+pub struct DeclarationListIter<'a>(HashMapIter<'a, QualName, Declaration>);
 
 impl<'a> Iterator for DeclarationListIter<'a> {
     type Item = &'a Declaration;
@@ -390,7 +390,7 @@ unsafe extern "C" fn css_property(
 
                 let important = from_glib(a_is_important);
 
-                let attribute = LocalName::from(prop_name);
+                let attribute = QualName::new(None, ns!(svg), LocalName::from(prop_name));
 
                 let mut input = ParserInput::new(&prop_value);
                 let mut parser = Parser::new(&mut input);

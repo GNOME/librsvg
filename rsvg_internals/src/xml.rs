@@ -2,7 +2,7 @@ use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use libc;
-use markup5ever::{local_name, LocalName};
+use markup5ever::{ExpandedName, LocalName, Namespace, QualName};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -56,6 +56,19 @@ extern "C" {
     // The original function takes an xmlNodePtr, but that is compatible
     // with xmlEntityPtr for the purposes of this function.
     fn xmlFreeNode(node: XmlEntityPtr);
+}
+
+// Creates an ExpandedName from the XInclude namespace and a local_name
+//
+// The markup5ever crate doesn't have built-in namespaces for XInclude,
+// so we make our own.
+macro_rules! xinclude_name {
+    ($local_name:expr) => {
+        ExpandedName {
+            ns: &Namespace::from("http://www.w3.org/2001/XInclude"),
+            local: &LocalName::from($local_name),
+        }
+    };
 }
 
 /// Holds the state used for XML processing
@@ -168,7 +181,7 @@ impl XmlState {
         }
     }
 
-    pub fn start_element(&self, name: &str, pbag: &PropertyBag) -> Result<(), ()> {
+    pub fn start_element(&self, name: QualName, pbag: &PropertyBag) -> Result<(), ()> {
         self.check_limits()?;
 
         let context = self.inner.borrow().context();
@@ -179,16 +192,13 @@ impl XmlState {
 
         self.inner.borrow_mut().num_loaded_elements += 1;
 
-        // FIXME: we should deal with namespaces at some point
-        let name = skip_namespace(name);
-
         let new_context = match context {
-            Context::Start => self.element_creation_start_element(name, pbag),
-            Context::ElementCreation => self.element_creation_start_element(name, pbag),
-            Context::XInclude(ref ctx) => self.inside_xinclude_start_element(&ctx, name),
-            Context::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(name),
+            Context::Start => self.element_creation_start_element(&name, pbag),
+            Context::ElementCreation => self.element_creation_start_element(&name, pbag),
+            Context::XInclude(ref ctx) => self.inside_xinclude_start_element(&ctx, &name),
+            Context::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(&name),
             Context::XIncludeFallback(ref ctx) => {
-                self.xinclude_fallback_start_element(&ctx, name, pbag)
+                self.xinclude_fallback_start_element(&ctx, &name, pbag)
             }
 
             Context::FatalError(_) => unreachable!(),
@@ -199,7 +209,7 @@ impl XmlState {
         Ok(())
     }
 
-    pub fn end_element(&self, _name: &str) {
+    pub fn end_element(&self, _name: QualName) {
         let context = self.inner.borrow().context();
 
         match context {
@@ -301,33 +311,32 @@ impl XmlState {
         }
     }
 
-    fn element_creation_start_element(&self, name: &str, pbag: &PropertyBag) -> Context {
-        match name {
-            "include" => self.xinclude_start_element(name, pbag),
-            _ => {
-                let mut inner = self.inner.borrow_mut();
+    fn element_creation_start_element(&self, name: &QualName, pbag: &PropertyBag) -> Context {
+        if name.expanded() == xinclude_name!("include") {
+            self.xinclude_start_element(name, pbag)
+        } else {
+            let mut inner = self.inner.borrow_mut();
 
-                let ids = inner.ids.as_mut().unwrap();
-                let mut node = create_node_and_register_id(name, pbag, ids);
+            let ids = inner.ids.as_mut().unwrap();
+            let mut node = create_node_and_register_id(name, pbag, ids);
 
-                let parent = inner.current_node.clone();
-                node.borrow_mut()
-                    .set_atts(parent.as_ref(), pbag, self.load_options.locale());
+            let parent = inner.current_node.clone();
+            node.borrow_mut()
+                .set_atts(parent.as_ref(), pbag, self.load_options.locale());
 
-                if let Some(mut parent) = parent {
-                    parent.append(node.clone());
-                } else {
-                    if inner.tree_root.is_some() {
-                        panic!("The tree root has already been set");
-                    }
-
-                    inner.tree_root = Some(node.clone());
+            if let Some(mut parent) = parent {
+                parent.append(node.clone());
+            } else {
+                if inner.tree_root.is_some() {
+                    panic!("The tree root has already been set");
                 }
 
-                inner.current_node = Some(node);
-
-                Context::ElementCreation
+                inner.tree_root = Some(node.clone());
             }
+
+            inner.current_node = Some(node);
+
+            Context::ElementCreation
         }
     }
 
@@ -362,7 +371,11 @@ impl XmlState {
         } else {
             let child = RsvgNode::new(NodeData::new(
                 NodeType::Chars,
-                LocalName::from("rsvg-chars"),
+                &QualName::new(
+                    None,
+                    Namespace::from("https://wiki.gnome.org/Projects/LibRsvg"),
+                    LocalName::from("rsvg-chars"),
+                ),
                 None,
                 None,
                 Box::new(NodeChars::new()),
@@ -377,16 +390,16 @@ impl XmlState {
         chars_node.borrow().get_impl::<NodeChars>().append(text);
     }
 
-    fn xinclude_start_element(&self, _name: &str, pbag: &PropertyBag) -> Context {
+    fn xinclude_start_element(&self, _name: &QualName, pbag: &PropertyBag) -> Context {
         let mut href = None;
         let mut parse = None;
         let mut encoding = None;
 
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("href") => href = Some(value),
-                ref n if *n == LocalName::from("parse") => parse = Some(value),
-                local_name!("encoding") => encoding = Some(value),
+            match attr.expanded() {
+                ref n if *n == xinclude_name!("href") => href = Some(value),
+                ref n if *n == xinclude_name!("parse") => parse = Some(value),
+                ref n if *n == xinclude_name!("encoding") => encoding = Some(value),
                 _ => (),
             }
         }
@@ -402,9 +415,8 @@ impl XmlState {
         Context::XInclude(XIncludeContext { need_fallback })
     }
 
-    fn inside_xinclude_start_element(&self, ctx: &XIncludeContext, name: &str) -> Context {
-        // FIXME: we aren't using the xi: namespace
-        if name == "fallback" {
+    fn inside_xinclude_start_element(&self, ctx: &XIncludeContext, name: &QualName) -> Context {
+        if name.expanded() == xinclude_name!("fallback") {
             Context::XIncludeFallback(ctx.clone())
         } else {
             // https://www.w3.org/TR/xinclude/#include_element
@@ -422,12 +434,11 @@ impl XmlState {
     fn xinclude_fallback_start_element(
         &self,
         ctx: &XIncludeContext,
-        name: &str,
+        name: &QualName,
         pbag: &PropertyBag,
     ) -> Context {
         if ctx.need_fallback {
-            // FIXME: we aren't using the xi: namespace
-            if name == "include" {
+            if name.expanded() == xinclude_name!("include") {
                 self.xinclude_start_element(name, pbag)
             } else {
                 self.element_creation_start_element(name, pbag)
@@ -564,7 +575,7 @@ impl XmlState {
         .and_then(|_: ()| self.check_last_error())
     }
 
-    fn unsupported_xinclude_start_element(&self, _name: &str) -> Context {
+    fn unsupported_xinclude_start_element(&self, _name: &QualName) -> Context {
         Context::UnsupportedXIncludeChild
     }
 }
@@ -579,10 +590,6 @@ impl Drop for XmlState {
             }
         }
     }
-}
-
-fn skip_namespace(s: &str) -> &str {
-    s.find(':').map_or(s, |pos| &s[pos + 1..])
 }
 
 // https://www.w3.org/TR/xml-stylesheet/
@@ -633,16 +640,4 @@ pub fn xml_load_from_possibly_compressed_stream(
     state.parse_from_stream(&stream, cancellable)?;
 
     state.steal_result()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn skips_namespaces() {
-        assert_eq!(skip_namespace("foo"), "foo");
-        assert_eq!(skip_namespace("foo:bar"), "bar");
-        assert_eq!(skip_namespace("foo:bar:baz"), "bar:baz");
-    }
 }

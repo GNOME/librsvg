@@ -1,5 +1,5 @@
 use cairo;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
 
 use crate::bbox::BoundingBox;
@@ -120,7 +120,7 @@ pub struct NodePath {
 impl NodeTrait for NodePath {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            if attr == local_name!("d") {
+            if attr.expanded() == expanded_name!(svg "d") {
                 if let Err(e) = path_parser::parse_path_into_builder(value, &mut self.builder) {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
@@ -224,7 +224,7 @@ pub struct NodePolygon {
 impl NodeTrait for NodePolygon {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            if attr == local_name!("points") {
+            if attr.expanded() == expanded_name!(svg "points") {
                 self.points = attr.parse(value.trim()).map(Some)?;
             }
         }
@@ -258,7 +258,7 @@ pub struct NodePolyline {
 impl NodeTrait for NodePolyline {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            if attr == local_name!("points") {
+            if attr.expanded() == expanded_name!(svg "points") {
                 self.points = attr.parse(value.trim()).map(Some)?;
             }
         }
@@ -295,11 +295,11 @@ pub struct NodeLine {
 impl NodeTrait for NodeLine {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x1") => self.x1 = attr.parse(value)?,
-                local_name!("y1") => self.y1 = attr.parse(value)?,
-                local_name!("x2") => self.x2 = attr.parse(value)?,
-                local_name!("y2") => self.y2 = attr.parse(value)?,
+            match attr.expanded() {
+                expanded_name!(svg "x1") => self.x1 = attr.parse(value)?,
+                expanded_name!(svg "y1") => self.y1 = attr.parse(value)?,
+                expanded_name!(svg "x2") => self.x2 = attr.parse(value)?,
+                expanded_name!(svg "y2") => self.y2 = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -347,21 +347,21 @@ pub struct NodeRect {
 impl NodeTrait for NodeRect {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("x") => self.x = attr.parse(value)?,
-                local_name!("y") => self.y = attr.parse(value)?,
-                local_name!("width") => {
+            match attr.expanded() {
+                expanded_name!(svg "x") => self.x = attr.parse(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value)?,
+                expanded_name!(svg "width") => {
                     self.w = attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
                 }
-                local_name!("height") => {
+                expanded_name!(svg "height") => {
                     self.h = attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
                 }
-                local_name!("rx") => {
+                expanded_name!(svg "rx") => {
                     self.rx = attr
                         .parse_and_validate(value, LengthHorizontal::check_nonnegative)
                         .map(Some)?
                 }
-                local_name!("ry") => {
+                expanded_name!(svg "ry") => {
                     self.ry = attr
                         .parse_and_validate(value, LengthVertical::check_nonnegative)
                         .map(Some)?
@@ -563,10 +563,10 @@ pub struct NodeCircle {
 impl NodeTrait for NodeCircle {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("cx") => self.cx = attr.parse(value)?,
-                local_name!("cy") => self.cy = attr.parse(value)?,
-                local_name!("r") => {
+            match attr.expanded() {
+                expanded_name!(svg "cx") => self.cx = attr.parse(value)?,
+                expanded_name!(svg "cy") => self.cy = attr.parse(value)?,
+                expanded_name!(svg "r") => {
                     self.r = attr.parse_and_validate(value, LengthBoth::check_nonnegative)?
                 }
                 _ => (),
@@ -606,13 +606,13 @@ pub struct NodeEllipse {
 impl NodeTrait for NodeEllipse {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("cx") => self.cx = attr.parse(value)?,
-                local_name!("cy") => self.cy = attr.parse(value)?,
-                local_name!("rx") => {
+            match attr.expanded() {
+                expanded_name!(svg "cx") => self.cx = attr.parse(value)?,
+                expanded_name!(svg "cy") => self.cy = attr.parse(value)?,
+                expanded_name!(svg "rx") => {
                     self.rx = attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
                 }
-                local_name!("ry") => {
+                expanded_name!(svg "ry") => {
                     self.ry = attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
                 }
                 _ => (),

@@ -1,5 +1,5 @@
 use cairo;
-use markup5ever::local_name;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -70,8 +70,8 @@ impl NodeClipPath {
 impl NodeTrait for NodeClipPath {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            match attr {
-                local_name!("clipPathUnits") => self.units = attr.parse(value)?,
+            match attr.expanded() {
+                expanded_name!(svg "clipPathUnits") => self.units = attr.parse(value)?,
                 _ => (),
             }
         }

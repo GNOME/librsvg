@@ -1,7 +1,7 @@
 use std::cmp::min;
 
 use cairo::{self, ImageSurface};
-use markup5ever::{local_name, LocalName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
@@ -64,7 +64,7 @@ enum FunctionType {
 }
 
 impl FunctionType {
-    fn parse(attr: LocalName, s: &str) -> Result<Self, NodeError> {
+    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
         match s {
             "identity" => Ok(FunctionType::Identity),
             "table" => Ok(FunctionType::Table),
@@ -212,11 +212,11 @@ macro_rules! func_x {
                 pbag: &PropertyBag<'_>,
             ) -> NodeResult {
                 for (attr, value) in pbag.iter() {
-                    match attr {
-                        local_name!("type") => {
+                    match attr.expanded() {
+                        expanded_name!(svg "type") => {
                             self.function_type = FunctionType::parse(attr, value)?
                         }
-                        local_name!("tableValues") => {
+                        expanded_name!(svg "tableValues") => {
                             let NumberList(v) =
                                 NumberList::parse_str(value, NumberListLength::Unbounded).map_err(
                                     |err| {
@@ -229,19 +229,19 @@ macro_rules! func_x {
                                 )?;
                             self.table_values = v;
                         }
-                        local_name!("slope") => {
+                        expanded_name!(svg "slope") => {
                             self.slope = parsers::number(value).attribute(attr)?
                         }
-                        local_name!("intercept") => {
+                        expanded_name!(svg "intercept") => {
                             self.intercept = parsers::number(value).attribute(attr)?
                         }
-                        local_name!("amplitude") => {
+                        expanded_name!(svg "amplitude") => {
                             self.amplitude = parsers::number(value).attribute(attr)?
                         }
-                        local_name!("exponent") => {
+                        expanded_name!(svg "exponent") => {
                             self.exponent = parsers::number(value).attribute(attr)?
                         }
-                        local_name!("offset") => {
+                        expanded_name!(svg "offset") => {
                             self.offset = parsers::number(value).attribute(attr)?
                         }
                         _ => (),
