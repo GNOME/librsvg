@@ -9,17 +9,14 @@ use std::rc::{Rc, Weak};
 use std::str;
 
 use crate::allowed_url::AllowedUrl;
-use crate::create_node::create_node_and_register_id;
-use crate::css::CssRules;
-use crate::document::Document;
+use crate::document::{Document, DocumentBuilder};
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
-use crate::node::{NodeData, NodeType, RsvgNode};
+use crate::node::{NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::NodeStyle;
-use crate::text::NodeChars;
 use crate::xml2_load::{ParseFromStreamError, Xml2Parser};
 
 #[derive(Clone)]
@@ -82,10 +79,8 @@ macro_rules! xinclude_name {
 /// what creates normal graphical elements.
 struct XmlStateInner {
     weak: Option<Weak<XmlState>>,
+    document_builder: Option<DocumentBuilder>,
     num_loaded_elements: usize,
-    tree_root: Option<RsvgNode>,
-    ids: Option<HashMap<String, RsvgNode>>,
-    css_rules: Option<CssRules>,
     context_stack: Vec<Context>,
     current_node: Option<RsvgNode>,
 
@@ -122,10 +117,8 @@ impl XmlState {
         XmlState {
             inner: RefCell::new(XmlStateInner {
                 weak: None,
+                document_builder: Some(DocumentBuilder::new(load_options)),
                 num_loaded_elements: 0,
-                tree_root: None,
-                ids: Some(HashMap::new()),
-                css_rules: Some(CssRules::default()),
                 context_stack: vec![Context::Start],
                 current_node: None,
                 entities: HashMap::new(),
@@ -141,31 +134,6 @@ impl XmlState {
         match inner.context() {
             Context::FatalError(e) => Err(e),
             _ => Ok(()),
-        }
-    }
-
-    fn steal_result(&self) -> Result<Document, LoadingError> {
-        self.check_last_error()?;
-
-        let mut inner = self.inner.borrow_mut();
-
-        match inner.tree_root {
-            None => Err(LoadingError::SvgHasNoElements),
-            Some(ref root) if root.borrow().get_type() == NodeType::Svg => {
-                let root = inner.tree_root.take().unwrap();
-                let css_rules = inner.css_rules.as_ref().unwrap();
-
-                for mut node in root.descendants() {
-                    node.borrow_mut().set_style(css_rules);
-                }
-
-                Ok(Document::new(
-                    root,
-                    inner.ids.take().unwrap(),
-                    self.load_options.clone(),
-                ))
-            }
-            _ => Err(LoadingError::RootElementIsNotSvg),
         }
     }
 
@@ -272,9 +240,7 @@ impl XmlState {
                 if let Ok(aurl) =
                     AllowedUrl::from_href(&href.unwrap(), self.load_options.base_url.as_ref())
                 {
-                    // FIXME: handle CSS errors
-                    let css_rules = inner.css_rules.as_mut().unwrap();
-                    let _ = css_rules.load_css(&aurl);
+                    inner.document_builder.as_mut().unwrap().load_css(&aurl);
                 } else {
                     self.error(ParseFromStreamError::XmlParseError(String::from(
                         "disallowed URL in xml-stylesheet",
@@ -317,23 +283,12 @@ impl XmlState {
         } else {
             let mut inner = self.inner.borrow_mut();
 
-            let ids = inner.ids.as_mut().unwrap();
-            let mut node = create_node_and_register_id(name, pbag, ids);
-
             let parent = inner.current_node.clone();
-            node.borrow_mut()
-                .set_atts(parent.as_ref(), pbag, self.load_options.locale());
-
-            if let Some(mut parent) = parent {
-                parent.append(node.clone());
-            } else {
-                if inner.tree_root.is_some() {
-                    panic!("The tree root has already been set");
-                }
-
-                inner.tree_root = Some(node.clone());
-            }
-
+            let node = inner
+                .document_builder
+                .as_mut()
+                .unwrap()
+                .append_element(name, pbag, parent);
             inner.current_node = Some(node);
 
             Context::ElementCreation
@@ -346,48 +301,26 @@ impl XmlState {
         let node = inner.current_node.take().unwrap();
 
         if node.borrow().get_type() == NodeType::Style {
-            let css_rules = inner.css_rules.as_mut().unwrap();
             let css_data = node.borrow().get_impl::<NodeStyle>().get_css(&node);
-
-            css_rules.parse(self.load_options.base_url.as_ref(), &css_data);
+            inner
+                .document_builder
+                .as_mut()
+                .unwrap()
+                .parse_css(&css_data);
         }
 
         inner.current_node = node.parent();
     }
 
     fn element_creation_characters(&self, text: &str) {
-        if text.is_empty() {
-            return;
-        }
+        let mut inner = self.inner.borrow_mut();
 
-        // When the last child is a Chars node we can coalesce
-        // the text and avoid screwing up the Pango layouts
-        let mut current_node = self.inner.borrow().current_node.as_ref().unwrap().clone();
-        let chars_node = if let Some(child) = current_node
-            .last_child()
-            .filter(|c| c.borrow().get_type() == NodeType::Chars)
-        {
-            child
-        } else {
-            let child = RsvgNode::new(NodeData::new(
-                NodeType::Chars,
-                &QualName::new(
-                    None,
-                    Namespace::from("https://wiki.gnome.org/Projects/LibRsvg"),
-                    LocalName::from("rsvg-chars"),
-                ),
-                None,
-                None,
-                Box::new(NodeChars::new()),
-            ));
-
-            self.inner.borrow_mut().num_loaded_elements += 1;
-            current_node.append(child.clone());
-
-            child
-        };
-
-        chars_node.borrow().get_impl::<NodeChars>().append(text);
+        let mut parent = inner.current_node.clone().unwrap();
+        inner
+            .document_builder
+            .as_mut()
+            .unwrap()
+            .append_characters(text, &mut parent);
     }
 
     fn xinclude_start_element(&self, _name: &QualName, pbag: &PropertyBag) -> Context {
@@ -578,6 +511,21 @@ impl XmlState {
     fn unsupported_xinclude_start_element(&self, _name: &QualName) -> Context {
         Context::UnsupportedXIncludeChild
     }
+
+    fn build_document(
+        &self,
+        stream: &gio::InputStream,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<Document, LoadingError> {
+        self.parse_from_stream(stream, cancellable)?;
+
+        self.inner
+            .borrow_mut()
+            .document_builder
+            .take()
+            .unwrap()
+            .build()
+    }
 }
 
 impl Drop for XmlState {
@@ -637,7 +585,5 @@ pub fn xml_load_from_possibly_compressed_stream(
     let stream =
         get_input_stream_for_loading(stream, cancellable).map_err(ParseFromStreamError::IoError)?;
 
-    state.parse_from_stream(&stream, cancellable)?;
-
-    state.steal_result()
+    state.build_document(&stream, cancellable)
 }

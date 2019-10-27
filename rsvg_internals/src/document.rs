@@ -1,18 +1,23 @@
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
+use markup5ever::{LocalName, Namespace, QualName};
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, Fragment};
+use crate::create_node::create_node;
+use crate::css::CssRules;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeCascade, NodeType, RsvgNode};
+use crate::node::{NodeCascade, NodeData, NodeType, RsvgNode};
 use crate::properties::ComputedValues;
+use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, NodeSvg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
+use crate::text::NodeChars;
 use crate::xml::xml_load_from_possibly_compressed_stream;
 
 /// A loaded SVG file and its derived data
@@ -212,4 +217,112 @@ fn load_image(
         SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_ref().map(String::as_str))?;
 
     Ok(surface)
+}
+
+pub struct DocumentBuilder {
+    load_options: LoadOptions,
+    tree: Option<RsvgNode>,
+    ids: HashMap<String, RsvgNode>,
+    css_rules: CssRules,
+}
+
+impl DocumentBuilder {
+    pub fn new(load_options: &LoadOptions) -> DocumentBuilder {
+        DocumentBuilder {
+            load_options: load_options.clone(),
+            tree: None,
+            ids: HashMap::new(),
+            css_rules: CssRules::default(),
+        }
+    }
+
+    pub fn append_element(
+        &mut self,
+        name: &QualName,
+        pbag: &PropertyBag,
+        parent: Option<RsvgNode>,
+    ) -> RsvgNode {
+        let mut node = create_node(name, pbag);
+
+        if let Some(id) = node.borrow().get_id() {
+            // This is so we don't overwrite an existing id
+            self.ids
+                .entry(id.to_string())
+                .or_insert_with(|| node.clone());
+        }
+
+        node.borrow_mut()
+            .set_atts(parent.as_ref().clone(), pbag, self.load_options.locale());
+
+        if let Some(mut parent) = parent {
+            parent.append(node.clone());
+        } else if self.tree.is_none() {
+            self.tree = Some(node.clone());
+        } else {
+            panic!("The tree root has already been set");
+        }
+
+        node
+    }
+
+    pub fn append_characters(&mut self, text: &str, parent: &mut RsvgNode) {
+        if text.is_empty() {
+            return;
+        }
+
+        // When the last child is a Chars node we can coalesce
+        // the text and avoid screwing up the Pango layouts
+        let chars_node = if let Some(child) = parent
+            .last_child()
+            .filter(|c| c.borrow().get_type() == NodeType::Chars)
+        {
+            child
+        } else {
+            let child = RsvgNode::new(NodeData::new(
+                NodeType::Chars,
+                &QualName::new(
+                    None,
+                    Namespace::from("https://wiki.gnome.org/Projects/LibRsvg"),
+                    LocalName::from("rsvg-chars"),
+                ),
+                None,
+                None,
+                Box::new(NodeChars::new()),
+            ));
+
+            parent.append(child.clone());
+
+            child
+        };
+
+        chars_node.borrow().get_impl::<NodeChars>().append(text);
+    }
+
+    pub fn load_css(&mut self, url: &AllowedUrl) {
+        // FIXME: handle CSS errors
+        let _ = self.css_rules.load_css(&url);
+    }
+
+    pub fn parse_css(&mut self, css_data: &str) {
+        self.css_rules
+            .parse(self.load_options.base_url.as_ref(), css_data);
+    }
+
+    pub fn build(mut self) -> Result<Document, LoadingError> {
+        match self.tree {
+            None => Err(LoadingError::SvgHasNoElements),
+            Some(ref root) if root.borrow().get_type() == NodeType::Svg => {
+                for mut node in root.descendants() {
+                    node.borrow_mut().set_style(&self.css_rules);
+                }
+
+                Ok(Document::new(
+                    self.tree.take().unwrap(),
+                    self.ids,
+                    self.load_options.clone(),
+                ))
+            }
+            _ => Err(LoadingError::RootElementIsNotSvg),
+        }
+    }
 }
