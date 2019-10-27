@@ -10,12 +10,12 @@ use locale_config::{LanguageRange, Locale};
 
 use crate::allowed_url::{AllowedUrl, Href};
 use crate::bbox::BoundingBox;
+use crate::document::Document;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{DrawingCtx, RsvgRectangle};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, RsvgNode};
 use crate::structure::{IntrinsicDimensions, NodeSvg};
-use crate::svg::Svg;
 use url::Url;
 
 #[derive(Clone)]
@@ -176,7 +176,7 @@ impl Drop for SizeCallback {
 }
 
 pub struct Handle {
-    svg: Rc<Svg>,
+    document: Rc<Document>,
 }
 
 impl Handle {
@@ -186,7 +186,7 @@ impl Handle {
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Handle, LoadingError> {
         Ok(Handle {
-            svg: Rc::new(Svg::load_from_stream(load_options, stream, cancellable)?),
+            document: Rc::new(Document::load_from_stream(load_options, stream, cancellable)?),
         })
     }
 
@@ -282,7 +282,7 @@ impl Handle {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
         let mut draw_ctx = DrawingCtx::new(
-            self.svg.clone(),
+            self.document.clone(),
             Some(node),
             &cr,
             viewport,
@@ -290,7 +290,7 @@ impl Handle {
             true,
             is_testing,
         );
-        let root = self.svg.root();
+        let root = self.document.root();
 
         let bbox = draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
 
@@ -309,7 +309,7 @@ impl Handle {
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
 
-        let root = self.svg.root();
+        let root = self.document.root();
         let is_root = node == root;
 
         if is_root {
@@ -339,7 +339,7 @@ impl Handle {
         if let Some(id) = id {
             self.lookup_node(id).map_err(RenderingError::InvalidId)
         } else {
-            Ok(self.svg.root())
+            Ok(self.document.root())
         }
     }
 
@@ -379,7 +379,7 @@ impl Handle {
                     return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
                 }
 
-                match self.svg.lookup_node_by_id(fragment.fragment()) {
+                match self.document.lookup_node_by_id(fragment.fragment()) {
                     Some(n) => Ok(n),
                     None => Err(DefsLookupErrorKind::NotFound),
                 }
@@ -439,11 +439,11 @@ impl Handle {
             None
         };
 
-        let root = self.svg.root();
+        let root = self.document.root();
 
         cr.save();
         let mut draw_ctx = DrawingCtx::new(
-            self.svg.clone(),
+            self.document.clone(),
             node.as_ref(),
             cr,
             viewport,
@@ -470,7 +470,7 @@ impl Handle {
         let cr = cairo::Context::new(&target);
 
         let mut draw_ctx = DrawingCtx::new(
-            self.svg.clone(),
+            self.document.clone(),
             None,
             &cr,
             &unit_rectangle(),
@@ -547,7 +547,7 @@ impl Handle {
         cr.translate(-ink_r.x, -ink_r.y);
 
         let mut draw_ctx = DrawingCtx::new(
-            self.svg.clone(),
+            self.document.clone(),
             None,
             &cr,
             &unit_rectangle(),
@@ -566,7 +566,7 @@ impl Handle {
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        self.svg.get_intrinsic_dimensions()
+        self.document.get_intrinsic_dimensions()
     }
 }
 

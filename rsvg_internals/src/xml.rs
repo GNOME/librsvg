@@ -11,6 +11,7 @@ use std::str;
 use crate::allowed_url::AllowedUrl;
 use crate::create_node::create_node_and_register_id;
 use crate::css::CssRules;
+use crate::document::Document;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, get_input_stream_for_loading};
@@ -18,7 +19,6 @@ use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{NodeData, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::NodeStyle;
-use crate::svg::Svg;
 use crate::text::NodeChars;
 use crate::xml2_load::{ParseFromStreamError, Xml2Parser};
 
@@ -144,7 +144,7 @@ impl XmlState {
         }
     }
 
-    fn steal_result(&self) -> Result<Svg, LoadingError> {
+    fn steal_result(&self) -> Result<Document, LoadingError> {
         self.check_last_error()?;
 
         let mut inner = self.inner.borrow_mut();
@@ -159,7 +159,7 @@ impl XmlState {
                     node.borrow_mut().set_style(css_rules);
                 }
 
-                Ok(Svg::new(
+                Ok(Document::new(
                     root,
                     inner.ids.take().unwrap(),
                     self.load_options.clone(),
@@ -629,7 +629,7 @@ pub fn xml_load_from_possibly_compressed_stream(
     load_options: &LoadOptions,
     stream: &gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
-) -> Result<Svg, LoadingError> {
+) -> Result<Document, LoadingError> {
     let state = Rc::new(XmlState::new(load_options));
 
     state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));

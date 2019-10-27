@@ -19,7 +19,7 @@ use crate::xml::xml_load_from_possibly_compressed_stream;
 ///
 /// This contains the tree of nodes (SVG elements), the mapping
 /// of id to node, and the CSS styles defined for this SVG.
-pub struct Svg {
+pub struct Document {
     tree: RsvgNode,
 
     ids: HashMap<String, RsvgNode>,
@@ -34,16 +34,16 @@ pub struct Svg {
     load_options: LoadOptions,
 }
 
-impl Svg {
+impl Document {
     pub fn new(
         mut tree: RsvgNode,
         ids: HashMap<String, RsvgNode>,
         load_options: LoadOptions,
-    ) -> Svg {
+    ) -> Document {
         let values = ComputedValues::default();
         tree.cascade(&values);
 
-        Svg {
+        Document {
             tree,
             ids,
             externs: RefCell::new(Resources::new()),
@@ -56,7 +56,7 @@ impl Svg {
         load_options: &LoadOptions,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
-    ) -> Result<Svg, LoadingError> {
+    ) -> Result<Document, LoadingError> {
         xml_load_from_possibly_compressed_stream(load_options, stream, cancellable)
     }
 
@@ -93,7 +93,7 @@ impl Svg {
 }
 
 struct Resources {
-    resources: HashMap<AllowedUrl, Result<Rc<Svg>, LoadingError>>,
+    resources: HashMap<AllowedUrl, Result<Rc<Document>, LoadingError>>,
 }
 
 impl Resources {
@@ -109,28 +109,39 @@ impl Resources {
         fragment: &Fragment,
     ) -> Result<RsvgNode, LoadingError> {
         if let Some(ref href) = fragment.uri() {
-            self.get_extern_svg(load_options, href).and_then(|svg| {
-                svg.lookup_node_by_id(fragment.fragment())
-                    .ok_or(LoadingError::BadUrl)
-            })
+            self.get_extern_document(load_options, href)
+                .and_then(|doc| {
+                    doc.lookup_node_by_id(fragment.fragment())
+                        .ok_or(LoadingError::BadUrl)
+                })
         } else {
             unreachable!();
         }
     }
 
-    fn get_extern_svg(
+    fn get_extern_document(
         &mut self,
         load_options: &LoadOptions,
         href: &str,
-    ) -> Result<Rc<Svg>, LoadingError> {
+    ) -> Result<Rc<Document>, LoadingError> {
         let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref())
             .map_err(|_| LoadingError::BadUrl)?;
 
         match self.resources.entry(aurl) {
             Entry::Occupied(e) => e.get().clone(),
             Entry::Vacant(e) => {
-                let svg = load_svg(load_options, e.key()).map(Rc::new);
-                let res = e.insert(svg);
+                let aurl = e.key();
+                // FIXME: pass a cancellable to these
+                let doc = io::acquire_stream(aurl, None)
+                    .and_then(|stream| {
+                        Document::load_from_stream(
+                            &load_options.copy_with_base_url(aurl),
+                            &stream,
+                            None,
+                        )
+                    })
+                    .map(Rc::new);
+                let res = e.insert(doc);
                 res.clone()
             }
         }
@@ -165,13 +176,6 @@ impl Images {
             }
         }
     }
-}
-
-fn load_svg(load_options: &LoadOptions, aurl: &AllowedUrl) -> Result<Svg, LoadingError> {
-    // FIXME: pass a cancellable to these
-    io::acquire_stream(aurl, None).and_then(|stream| {
-        Svg::load_from_stream(&load_options.copy_with_base_url(aurl), &stream, None)
-    })
 }
 
 fn load_image(
