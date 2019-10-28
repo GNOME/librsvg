@@ -228,11 +228,7 @@ lazy_static! {
     };
 }
 
-pub fn create_node_and_register_id(
-    name: &QualName,
-    pbag: &PropertyBag,
-    ids: &mut HashMap<String, RsvgNode>,
-) -> RsvgNode {
+pub fn create_node(name: &QualName, pbag: &PropertyBag) -> RsvgNode {
     let mut id = None;
     let mut class = None;
 
@@ -262,12 +258,5 @@ pub fn create_node_and_register_id(
         class = None;
     };
 
-    let node = create_fn(name, id, class);
-
-    if let Some(id) = id {
-        // This is so we don't overwrite an existing id
-        ids.entry(id.to_string()).or_insert_with(|| node.clone());
-    }
-
-    node
+    create_fn(name, id, class)
 }
