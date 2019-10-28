@@ -8,6 +8,7 @@ use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::clip_path::{ClipPathUnits, NodeClipPath};
 use crate::coord_units::CoordUnits;
+use crate::document::Document;
 use crate::dpi::Dpi;
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
@@ -24,7 +25,6 @@ use crate::property_defs::{
 };
 use crate::rect::RectangleExt;
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::svg::Svg;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
@@ -75,7 +75,7 @@ pub enum ClipMode {
 }
 
 pub struct DrawingCtx {
-    svg: Rc<Svg>,
+    document: Rc<Document>,
 
     initial_affine: cairo::Matrix,
 
@@ -101,7 +101,7 @@ pub struct DrawingCtx {
 
 impl DrawingCtx {
     pub fn new(
-        svg: Rc<Svg>,
+        document: Rc<Document>,
         node: Option<&RsvgNode>,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
@@ -147,10 +147,10 @@ impl DrawingCtx {
         let mut view_box_stack = Vec::new();
         view_box_stack.push(vbox);
 
-        let acquired_nodes = AcquiredNodes::new(svg.clone());
+        let acquired_nodes = AcquiredNodes::new(document.clone());
 
         let mut draw_ctx = DrawingCtx {
-            svg,
+            document,
             initial_affine,
             rect,
             dpi,
@@ -822,7 +822,7 @@ impl DrawingCtx {
     }
 
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, RenderingError> {
-        self.svg
+        self.document
             .lookup_image(href)
             .map_err(|_| RenderingError::InvalidHref)
     }
@@ -1099,14 +1099,14 @@ impl AcquiredNode {
 }
 
 struct AcquiredNodes {
-    svg: Rc<Svg>,
+    document: Rc<Document>,
     node_stack: Rc<RefCell<NodeStack>>,
 }
 
 impl AcquiredNodes {
-    fn new(svg: Rc<Svg>) -> AcquiredNodes {
+    fn new(document: Rc<Document>) -> AcquiredNodes {
         AcquiredNodes {
-            svg,
+            document,
             node_stack: Rc::new(RefCell::new(NodeStack::new())),
         }
     }
@@ -1116,13 +1116,13 @@ impl AcquiredNodes {
         fragment: &Fragment,
         node_types: &[NodeType],
     ) -> Result<RsvgNode, AcquireError> {
-        let node = self.svg.lookup(fragment).map_err(|_| {
+        let node = self.document.lookup(fragment).map_err(|_| {
             // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
             // Maybe we should have the following stages:
             //   - load main SVG XML
             //
             //   - load secondary SVG XML and other files like images;
-            //     all svg::Resources and svg::Images loaded
+            //     all document::Resources and document::Images loaded
             //
             //   - Now that all files are loaded, resolve URL references
             AcquireError::LinkNotFound(fragment.clone())

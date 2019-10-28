@@ -33,6 +33,8 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/create_node.rs			\
 	rsvg_internals/src/croco.rs				\
 	rsvg_internals/src/css.rs				\
+	rsvg_internals/src/error.rs				\
+	rsvg_internals/src/document.rs				\
 	rsvg_internals/src/dpi.rs				\
 	rsvg_internals/src/drawing_ctx.rs			\
 	rsvg_internals/src/filters/bounds.rs			\
@@ -58,7 +60,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/filters/offset.rs			\
 	rsvg_internals/src/filters/tile.rs			\
 	rsvg_internals/src/filters/turbulence.rs		\
-	rsvg_internals/src/error.rs				\
 	rsvg_internals/src/float_eq_cairo.rs			\
 	rsvg_internals/src/font_props.rs			\
 	rsvg_internals/src/gradient.rs				\
@@ -93,7 +94,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/srgb.rs				\
 	rsvg_internals/src/structure.rs				\
 	rsvg_internals/src/style.rs				\
-	rsvg_internals/src/svg.rs				\
 	rsvg_internals/src/text.rs				\
 	rsvg_internals/src/transform.rs				\
 	rsvg_internals/src/unit_interval.rs			\
