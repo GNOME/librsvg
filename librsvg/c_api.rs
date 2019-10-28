@@ -1,4 +1,4 @@
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::cell::{Ref, RefCell, RefMut};
 use std::ffi::{CStr, CString};
 use std::ops;
 use std::path::PathBuf;
@@ -198,12 +198,16 @@ impl BaseUrl {
 /// Contains all the interior mutability for a RsvgHandle to be called
 /// from the C API.
 pub struct CHandle {
-    dpi: Cell<Dpi>,
-    load_flags: Cell<LoadFlags>,
-    base_url: RefCell<BaseUrl>,
-    size_callback: RefCell<SizeCallback>,
-    is_testing: Cell<bool>,
+    inner: RefCell<CHandleInner>,
     load_state: RefCell<LoadState>,
+}
+
+struct CHandleInner {
+    dpi: Dpi,
+    load_flags: LoadFlags,
+    base_url: BaseUrl,
+    size_callback: SizeCallback,
+    is_testing: bool,
 }
 
 unsafe impl ClassStruct for RsvgHandleClass {
@@ -329,11 +333,13 @@ impl ObjectSubclass for CHandle {
 
     fn new() -> Self {
         CHandle {
-            dpi: Cell::new(Dpi::default()),
-            load_flags: Cell::new(LoadFlags::default()),
-            base_url: RefCell::new(BaseUrl::default()),
-            size_callback: RefCell::new(SizeCallback::default()),
-            is_testing: Cell::new(false),
+            inner: RefCell::new(CHandleInner {
+                dpi: Dpi::default(),
+                load_flags: LoadFlags::default(),
+                base_url: BaseUrl::default(),
+                size_callback: SizeCallback::default(),
+                is_testing: false,
+            }),
             load_state: RefCell::new(LoadState::Start),
         }
     }
@@ -348,17 +354,17 @@ impl ObjectImpl for CHandle {
         match *prop {
             subclass::Property("flags", ..) => {
                 let v: HandleFlags = value.get().expect("flags value has incorrect type");
-                self.load_flags.set(LoadFlags::from(v));
+                self.set_flags(v);
             }
 
             subclass::Property("dpi-x", ..) => {
                 let dpi_x: f64 = value.get().expect("dpi-x value has incorrect type");
-                self.dpi.set(Dpi::new(dpi_x, self.dpi.get().y()));
+                self.set_dpi_x(dpi_x);
             }
 
             subclass::Property("dpi-y", ..) => {
                 let dpi_y: f64 = value.get().expect("dpi-y value has incorrect type");
-                self.dpi.set(Dpi::new(self.dpi.get().x(), dpi_y));
+                self.set_dpi_y(dpi_y);
             }
 
             subclass::Property("base-uri", ..) => {
@@ -382,20 +388,12 @@ impl ObjectImpl for CHandle {
         let prop = &PROPERTIES[id];
 
         match *prop {
-            subclass::Property("flags", ..) => {
-                let flags = HandleFlags::from(self.load_flags.get());
-                Ok(flags.to_value())
-            }
+            subclass::Property("flags", ..) => Ok(self.get_flags().to_value()),
 
-            subclass::Property("dpi-x", ..) => Ok(self.dpi.get().x().to_value()),
-            subclass::Property("dpi-y", ..) => Ok(self.dpi.get().y().to_value()),
+            subclass::Property("dpi-x", ..) => Ok(self.get_dpi_x().to_value()),
+            subclass::Property("dpi-y", ..) => Ok(self.get_dpi_y().to_value()),
 
-            subclass::Property("base-uri", ..) => Ok(self
-                .base_url
-                .borrow()
-                .get()
-                .map(|url| url.as_str())
-                .to_value()),
+            subclass::Property("base-uri", ..) => Ok(self.get_base_url().to_value()),
 
             subclass::Property("width", ..) =>
                 Ok(self.get_dimensions_or_empty().width.to_value()),
@@ -436,7 +434,8 @@ impl CHandle {
         match Url::parse(&url) {
             Ok(u) => {
                 rsvg_log!("setting base_uri to \"{}\"", u.as_str());
-                self.base_url.borrow_mut().set(u);
+                let mut inner = self.inner.borrow_mut();
+                inner.base_url.set(u);
             }
 
             Err(e) => {
@@ -449,28 +448,68 @@ impl CHandle {
         }
     }
 
-    pub fn set_base_gfile(&self, file: &gio::File) {
+    fn set_base_gfile(&self, file: &gio::File) {
         self.set_base_url(&file.get_uri());
     }
 
-    pub fn get_base_url_as_ptr(&self) -> *const libc::c_char {
-        self.base_url.borrow().get_ptr()
+    fn get_base_url(&self) -> Option<String> {
+        let inner = self.inner.borrow();
+        inner.base_url.get().map(|url| url.as_str().to_string())
+    }
+
+    fn get_base_url_as_ptr(&self) -> *const libc::c_char {
+        let inner = self.inner.borrow();
+        inner.base_url.get_ptr()
+    }
+
+    fn set_dpi_x(&self, dpi_x: f64) {
+        let mut inner = self.inner.borrow_mut();
+        let dpi = inner.dpi;
+        inner.dpi = Dpi::new(dpi_x, dpi.y());
+    }
+
+    fn set_dpi_y(&self, dpi_y: f64) {
+        let mut inner = self.inner.borrow_mut();
+        let dpi = inner.dpi;
+        inner.dpi = Dpi::new(dpi.x(), dpi_y);
+    }
+
+    fn get_dpi_x(&self) -> f64 {
+        let inner = self.inner.borrow();
+        inner.dpi.x()
+    }
+
+    fn get_dpi_y(&self) -> f64 {
+        let inner = self.inner.borrow();
+        inner.dpi.y()
+    }
+
+    fn set_flags(&self, flags: HandleFlags) {
+        let mut inner = self.inner.borrow_mut();
+        inner.load_flags = LoadFlags::from(flags);
+    }
+
+    fn get_flags(&self) -> HandleFlags {
+        let inner = self.inner.borrow();
+        HandleFlags::from(inner.load_flags)
     }
 
     fn load_options(&self) -> LoadOptions {
-        let flags = self.load_flags.get();
-        LoadOptions::new(self.base_url.borrow().get().map(|u| (*u).clone()))
-            .with_unlimited_size(flags.unlimited_size)
-            .keep_image_data(flags.keep_image_data)
+        let inner = self.inner.borrow();
+
+        LoadOptions::new(inner.base_url.get().map(|u| (*u).clone()))
+            .with_unlimited_size(inner.load_flags.unlimited_size)
+            .keep_image_data(inner.load_flags.keep_image_data)
     }
 
-    pub fn set_size_callback(
+    fn set_size_callback(
         &self,
         size_func: RsvgSizeFunc,
         user_data: glib_sys::gpointer,
         destroy_notify: glib_sys::GDestroyNotify,
     ) {
-        *self.size_callback.borrow_mut() = SizeCallback::new(size_func, user_data, destroy_notify);
+        let mut inner = self.inner.borrow_mut();
+        inner.size_callback = SizeCallback::new(size_func, user_data, destroy_notify);
     }
 
     fn write(&self, buf: &[u8]) {
@@ -481,16 +520,16 @@ impl CHandle {
                 *state = LoadState::Loading {
                     buffer: Vec::from(buf),
                 }
-            }
+            },
 
             LoadState::Loading { ref mut buffer } => {
                 buffer.extend_from_slice(buf);
-            }
+            },
 
             _ => {
                 rsvg_g_critical("Handle must not be closed in order to write to it");
                 return;
-            }
+            },
         }
     }
 
@@ -595,23 +634,23 @@ impl CHandle {
 
     fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
         let handle = self.get_handle_ref()?;
-        let size_callback = self.size_callback.borrow();
-        handle.get_dimensions(self.dpi.get(), &*size_callback, self.is_testing.get())
+        let inner = self.inner.borrow();
+        handle.get_dimensions(inner.dpi, &inner.size_callback, inner.is_testing)
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
         let handle = self.get_handle_ref()?;
-        let size_callback = self.size_callback.borrow();
+        let inner = self.inner.borrow();
         handle
-            .get_dimensions_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+            .get_dimensions_sub(id, inner.dpi, &inner.size_callback, inner.is_testing)
             .map_err(warn_on_invalid_id)
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
         let handle = self.get_handle_ref()?;
-        let size_callback = self.size_callback.borrow();
+        let inner = self.inner.borrow();
         handle
-            .get_position_sub(id, self.dpi.get(), &*size_callback, self.is_testing.get())
+            .get_position_sub(id, inner.dpi, &inner.size_callback, inner.is_testing)
             .map_err(warn_on_invalid_id)
     }
 
@@ -623,25 +662,26 @@ impl CHandle {
         check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
-        let size_callback = self.size_callback.borrow();
+        let inner = self.inner.borrow();
         handle
             .render_cairo_sub(
                 cr,
                 id,
-                self.dpi.get(),
-                &*size_callback,
-                self.is_testing.get(),
+                inner.dpi,
+                &inner.size_callback,
+                inner.is_testing,
             )
             .map_err(warn_on_invalid_id)
     }
 
     fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
         let handle = self.get_handle_ref()?;
-        let size_callback = self.size_callback.borrow();
-        let dpi = self.dpi.get();
-        let is_testing = self.is_testing.get();
+        let inner = self.inner.borrow();
 
-        let dimensions = handle.get_dimensions(dpi, &size_callback, is_testing)?;
+        let dpi = inner.dpi;
+        let is_testing = inner.is_testing;
+
+        let dimensions = handle.get_dimensions(dpi, &inner.size_callback, is_testing)?;
 
         if dimensions.width == 0 || dimensions.height == 0 {
             return empty_pixbuf();
@@ -653,7 +693,7 @@ impl CHandle {
         {
             let cr = cairo::Context::new(&surface);
             handle
-                .render_cairo_sub(&cr, id, dpi, &size_callback, is_testing)
+                .render_cairo_sub(&cr, id, dpi, &inner.size_callback, is_testing)
                 .map_err(warn_on_invalid_id)?;
         }
 
@@ -670,7 +710,8 @@ impl CHandle {
         check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
-        handle.render_document(cr, viewport, self.dpi.get(), self.is_testing.get())
+        let inner = self.inner.borrow();
+        handle.render_document(cr, viewport, inner.dpi, inner.is_testing)
     }
 
     fn get_geometry_for_layer(
@@ -679,8 +720,9 @@ impl CHandle {
         viewport: &cairo::Rectangle,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
+        let inner = self.inner.borrow();
         handle
-            .get_geometry_for_layer(id, viewport, self.dpi.get(), self.is_testing.get())
+            .get_geometry_for_layer(id, viewport, inner.dpi, inner.is_testing)
             .map_err(warn_on_invalid_id)
     }
 
@@ -693,8 +735,9 @@ impl CHandle {
         check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
+        let inner = self.inner.borrow();
         handle
-            .render_layer(cr, id, viewport, self.dpi.get(), self.is_testing.get())
+            .render_layer(cr, id, viewport, inner.dpi, inner.is_testing)
             .map_err(warn_on_invalid_id)
     }
 
@@ -703,8 +746,9 @@ impl CHandle {
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
+        let inner = self.inner.borrow();
         handle
-            .get_geometry_for_element(id, self.dpi.get(), self.is_testing.get())
+            .get_geometry_for_element(id, inner.dpi, inner.is_testing)
             .map_err(warn_on_invalid_id)
     }
 
@@ -717,14 +761,9 @@ impl CHandle {
         check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
+        let inner = self.inner.borrow();
         handle
-            .render_element(
-                cr,
-                id,
-                element_viewport,
-                self.dpi.get(),
-                self.is_testing.get(),
-            )
+            .render_element(cr, id, element_viewport, inner.dpi, inner.is_testing)
             .map_err(warn_on_invalid_id)
     }
 
@@ -734,11 +773,12 @@ impl CHandle {
     }
 
     fn set_testing(&self, is_testing: bool) {
-        self.is_testing.set(is_testing);
+        let mut inner = self.inner.borrow_mut();
+        inner.is_testing = is_testing;
     }
 }
 
-pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
+fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
     let handle = unsafe { &*handle };
     handle.get_impl()
 }
@@ -869,49 +909,25 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_base_url(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_x(raw_handle: *const RsvgHandle, dpi_x: f64) {
     let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.set(Dpi::new(dpi_x, rhandle.dpi.get().y()));
+    rhandle.set_dpi_x(dpi_x);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_x(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.get().x()
+    rhandle.get_dpi_x()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_y(raw_handle: *const RsvgHandle, dpi_y: f64) {
     let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.set(Dpi::new(rhandle.dpi.get().x(), dpi_y));
+    rhandle.set_dpi_y(dpi_y);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_y(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.get().y()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_get_flags(
-    raw_handle: *const RsvgHandle,
-) -> RsvgHandleFlags {
-    let rhandle = get_rust_handle(raw_handle);
-
-    HandleFlags::from(rhandle.load_flags.get()).to_glib()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_set_flags(
-    raw_handle: *const RsvgHandle,
-    flags: RsvgHandleFlags,
-) {
-    let rhandle = get_rust_handle(raw_handle);
-
-    let flags: HandleFlags = from_glib(flags);
-    rhandle.load_flags.set(LoadFlags::from(flags));
+    rhandle.get_dpi_y()
 }
 
 #[no_mangle]
@@ -1457,7 +1473,7 @@ fn warn_on_invalid_id(e: RenderingError) -> RenderingError {
     e
 }
 
-pub fn rsvg_g_warning(msg: &str) {
+fn rsvg_g_warning(msg: &str) {
     unsafe {
         extern "C" {
             fn rsvg_g_warning_from_c(msg: *const libc::c_char);
@@ -1467,7 +1483,7 @@ pub fn rsvg_g_warning(msg: &str) {
     }
 }
 
-pub fn rsvg_g_critical(msg: &str) {
+fn rsvg_g_critical(msg: &str) {
     unsafe {
         extern "C" {
             fn rsvg_g_critical_from_c(msg: *const libc::c_char);

@@ -333,8 +333,6 @@ extern void rsvg_rust_handle_set_dpi_y (RsvgHandle *raw_handle, double dpi_y);
 extern void rsvg_rust_handle_set_base_url (RsvgHandle *raw_handle, const char *uri);
 extern void rsvg_rust_handle_set_base_gfile (RsvgHandle *raw_handle, GFile *file);
 extern const char *rsvg_rust_handle_get_base_url (RsvgHandle *raw_handle);
-extern guint rsvg_rust_handle_get_flags (RsvgHandle *raw_handle);
-extern void rsvg_rust_handle_set_flags (RsvgHandle *raw_handle, guint flags);
 extern guint rsvg_rust_handle_set_testing (RsvgHandle *raw_handle, gboolean testing);
 extern gboolean rsvg_rust_handle_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,
