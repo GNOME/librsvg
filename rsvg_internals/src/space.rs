@@ -30,9 +30,7 @@ pub fn xml_space_normalize(mode: XmlSpaceNormalize, s: &str) -> String {
 // characters into space characters. Then, it will strip off all
 // leading and trailing space characters. Then, all contiguous space
 // characters will be consolidated.
-fn normalize_default(elements: NormalizeDefault, s: &str) -> String {
-    let mut s = s;
-
+fn normalize_default(elements: NormalizeDefault, mut s: &str) -> String {
     if !elements.has_element_before {
         s = s.trim_start();
     }
