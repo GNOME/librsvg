@@ -353,12 +353,12 @@ impl ObjectImpl for CHandle {
 
             subclass::Property("dpi-x", ..) => {
                 let dpi_x: f64 = value.get().expect("dpi-x value has incorrect type");
-                self.dpi.set(Dpi::new(dpi_x, self.dpi.get().y()));
+                self.set_dpi_x(dpi_x);
             }
 
             subclass::Property("dpi-y", ..) => {
                 let dpi_y: f64 = value.get().expect("dpi-y value has incorrect type");
-                self.dpi.set(Dpi::new(self.dpi.get().x(), dpi_y));
+                self.set_dpi_y(dpi_y);
             }
 
             subclass::Property("base-uri", ..) => {
@@ -387,8 +387,8 @@ impl ObjectImpl for CHandle {
                 Ok(flags.to_value())
             }
 
-            subclass::Property("dpi-x", ..) => Ok(self.dpi.get().x().to_value()),
-            subclass::Property("dpi-y", ..) => Ok(self.dpi.get().y().to_value()),
+            subclass::Property("dpi-x", ..) => Ok(self.get_dpi_x().to_value()),
+            subclass::Property("dpi-y", ..) => Ok(self.get_dpi_y().to_value()),
 
             subclass::Property("base-uri", ..) => Ok(self
                 .base_url
@@ -455,6 +455,24 @@ impl CHandle {
 
     pub fn get_base_url_as_ptr(&self) -> *const libc::c_char {
         self.base_url.borrow().get_ptr()
+    }
+
+    fn set_dpi_x(&self, dpi_x: f64) {
+        let dpi = self.dpi.get();
+        self.dpi.set(Dpi::new(dpi_x, dpi.y()));
+    }
+
+    fn set_dpi_y(&self, dpi_y: f64) {
+        let dpi = self.dpi.get();
+        self.dpi.set(Dpi::new(dpi.x(), dpi_y));
+    }
+
+    fn get_dpi_x(&self) -> f64 {
+        self.dpi.get().x()
+    }
+
+    fn get_dpi_y(&self) -> f64 {
+        self.dpi.get().y()
     }
 
     fn load_options(&self) -> LoadOptions {
@@ -869,29 +887,25 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_base_url(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_x(raw_handle: *const RsvgHandle, dpi_x: f64) {
     let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.set(Dpi::new(dpi_x, rhandle.dpi.get().y()));
+    rhandle.set_dpi_x(dpi_x);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_x(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.get().x()
+    rhandle.get_dpi_x()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_y(raw_handle: *const RsvgHandle, dpi_y: f64) {
     let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.set(Dpi::new(rhandle.dpi.get().x(), dpi_y));
+    rhandle.set_dpi_y(dpi_y);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_y(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
-
-    rhandle.dpi.get().y()
+    rhandle.get_dpi_y()
 }
 
 #[no_mangle]
