@@ -168,22 +168,30 @@ enum LoadState {
 /// internal Url.
 #[derive(Default)]
 struct BaseUrl {
-    url: Option<Url>,
-    url_cstring: Option<CString>,
+    inner: Option<BaseUrlInner>,
+}
+
+struct BaseUrlInner {
+    url: Url,
+    cstring: CString,
 }
 
 impl BaseUrl {
     fn set(&mut self, url: Url) {
-        self.url_cstring = Some(CString::new(url.as_str()).unwrap());
-        self.url = Some(url);
+        let cstring = CString::new(url.as_str()).unwrap();
+
+        self.inner = Some(BaseUrlInner {
+            url,
+            cstring,
+        });
     }
 
     fn get(&self) -> Option<&Url> {
-        self.url.as_ref()
+        self.inner.as_ref().map(|b| &b.url)
     }
 
     fn get_ptr(&self) -> *const libc::c_char {
-        self.url_cstring.as_ref().map(|c| c.as_ptr()).unwrap_or_else(|| ptr::null())
+        self.inner.as_ref().map(|b| b.cstring.as_ptr()).unwrap_or_else(|| ptr::null())
     }
 }
 
@@ -1535,6 +1543,24 @@ mod tests {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// windows filename should be a PathOrUrl::Url"),
             }
+        }
+    }
+
+    #[test]
+    fn base_url_works() {
+        let mut u = BaseUrl::default();
+
+        assert!(u.get().is_none());
+        assert_eq!(u.get_ptr(), ptr::null());
+
+        u.set(Url::parse("file:///example.txt").unwrap());
+
+        assert_eq!(u.get().unwrap().as_str(), "file:///example.txt");
+
+        unsafe {
+            let p = u.get_ptr();
+            let cstr = CStr::from_ptr(p);
+            assert_eq!(cstr.to_str().unwrap(), "file:///example.txt");
         }
     }
 }
