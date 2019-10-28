@@ -160,13 +160,39 @@ enum LoadState {
     ClosedError,
 }
 
+/// Holds the base URL for loading a handle, and the C-accessible version of it
+///
+/// There is a public API to query the base URL, and we need to
+/// produce a CString with it.  However, that API returns a
+/// *const char, so we need to maintain a long-lived CString along with the
+/// internal Url.
+#[derive(Default)]
+struct BaseUrl {
+    url: Option<Url>,
+    url_cstring: Option<CString>,
+}
+
+impl BaseUrl {
+    fn set(&mut self, url: Url) {
+        self.url_cstring = Some(CString::new(url.as_str()).unwrap());
+        self.url = Some(url);
+    }
+
+    fn get(&self) -> Option<&Url> {
+        self.url.as_ref()
+    }
+
+    fn get_ptr(&self) -> *const libc::c_char {
+        self.url_cstring.as_ref().map(|c| c.as_ptr()).unwrap_or_else(|| ptr::null())
+    }
+}
+
 /// Contains all the interior mutability for a RsvgHandle to be called
 /// from the C API.
 pub struct CHandle {
     dpi: Cell<Dpi>,
     load_flags: Cell<LoadFlags>,
-    base_url: RefCell<Option<Url>>,
-    base_url_cstring: RefCell<Option<CString>>, // needed because the C api returns *const char
+    base_url: RefCell<BaseUrl>,
     size_callback: RefCell<SizeCallback>,
     is_testing: Cell<bool>,
     load_state: RefCell<LoadState>,
@@ -297,8 +323,7 @@ impl ObjectSubclass for CHandle {
         CHandle {
             dpi: Cell::new(Dpi::default()),
             load_flags: Cell::new(LoadFlags::default()),
-            base_url: RefCell::new(None),
-            base_url_cstring: RefCell::new(None),
+            base_url: RefCell::new(BaseUrl::default()),
             size_callback: RefCell::new(SizeCallback::default()),
             is_testing: Cell::new(false),
             load_state: RefCell::new(LoadState::Start),
@@ -360,7 +385,7 @@ impl ObjectImpl for CHandle {
             subclass::Property("base-uri", ..) => Ok(self
                 .base_url
                 .borrow()
-                .as_ref()
+                .get()
                 .map(|url| url.as_str())
                 .to_value()),
 
@@ -402,11 +427,8 @@ impl CHandle {
 
         match Url::parse(&url) {
             Ok(u) => {
-                let url_cstring = CString::new(u.as_str()).unwrap();
-
                 rsvg_log!("setting base_uri to \"{}\"", u.as_str());
-                *self.base_url.borrow_mut() = Some(u);
-                *self.base_url_cstring.borrow_mut() = Some(url_cstring);
+                self.base_url.borrow_mut().set(u);
             }
 
             Err(e) => {
@@ -424,15 +446,12 @@ impl CHandle {
     }
 
     pub fn get_base_url_as_ptr(&self) -> *const libc::c_char {
-        match *self.base_url_cstring.borrow() {
-            None => ptr::null(),
-            Some(ref url) => url.as_ptr(),
-        }
+        self.base_url.borrow().get_ptr()
     }
 
     fn load_options(&self) -> LoadOptions {
         let flags = self.load_flags.get();
-        LoadOptions::new(self.base_url.borrow().clone())
+        LoadOptions::new(self.base_url.borrow().get().map(|u| (*u).clone()))
             .with_unlimited_size(flags.unlimited_size)
             .keep_image_data(flags.keep_image_data)
     }
