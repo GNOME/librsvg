@@ -348,7 +348,7 @@ impl ObjectImpl for CHandle {
         match *prop {
             subclass::Property("flags", ..) => {
                 let v: HandleFlags = value.get().expect("flags value has incorrect type");
-                self.load_flags.set(LoadFlags::from(v));
+                self.set_flags(v);
             }
 
             subclass::Property("dpi-x", ..) => {
@@ -382,10 +382,7 @@ impl ObjectImpl for CHandle {
         let prop = &PROPERTIES[id];
 
         match *prop {
-            subclass::Property("flags", ..) => {
-                let flags = HandleFlags::from(self.load_flags.get());
-                Ok(flags.to_value())
-            }
+            subclass::Property("flags", ..) => Ok(self.get_flags().to_value()),
 
             subclass::Property("dpi-x", ..) => Ok(self.get_dpi_x().to_value()),
             subclass::Property("dpi-y", ..) => Ok(self.get_dpi_y().to_value()),
@@ -473,6 +470,14 @@ impl CHandle {
 
     fn get_dpi_y(&self) -> f64 {
         self.dpi.get().y()
+    }
+
+    fn set_flags(&self, flags: HandleFlags) {
+        self.load_flags.set(LoadFlags::from(flags));
+    }
+
+    fn get_flags(&self) -> HandleFlags {
+        HandleFlags::from(self.load_flags.get())
     }
 
     fn load_options(&self) -> LoadOptions {
@@ -906,26 +911,6 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_y(raw_handle: *const RsvgHandl
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_y(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
     rhandle.get_dpi_y()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_get_flags(
-    raw_handle: *const RsvgHandle,
-) -> RsvgHandleFlags {
-    let rhandle = get_rust_handle(raw_handle);
-
-    HandleFlags::from(rhandle.load_flags.get()).to_glib()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_set_flags(
-    raw_handle: *const RsvgHandle,
-    flags: RsvgHandleFlags,
-) {
-    let rhandle = get_rust_handle(raw_handle);
-
-    let flags: HandleFlags = from_glib(flags);
-    rhandle.load_flags.set(LoadFlags::from(flags));
 }
 
 #[no_mangle]
