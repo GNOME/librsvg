@@ -446,11 +446,11 @@ impl CHandle {
         }
     }
 
-    pub fn set_base_gfile(&self, file: &gio::File) {
+    fn set_base_gfile(&self, file: &gio::File) {
         self.set_base_url(&file.get_uri());
     }
 
-    pub fn get_base_url_as_ptr(&self) -> *const libc::c_char {
+    fn get_base_url_as_ptr(&self) -> *const libc::c_char {
         self.base_url.borrow().get_ptr()
     }
 
@@ -487,7 +487,7 @@ impl CHandle {
             .keep_image_data(flags.keep_image_data)
     }
 
-    pub fn set_size_callback(
+    fn set_size_callback(
         &self,
         size_func: RsvgSizeFunc,
         user_data: glib_sys::gpointer,
@@ -761,7 +761,7 @@ impl CHandle {
     }
 }
 
-pub fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
+fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
     let handle = unsafe { &*handle };
     handle.get_impl()
 }
@@ -1456,7 +1456,7 @@ fn warn_on_invalid_id(e: RenderingError) -> RenderingError {
     e
 }
 
-pub fn rsvg_g_warning(msg: &str) {
+fn rsvg_g_warning(msg: &str) {
     unsafe {
         extern "C" {
             fn rsvg_g_warning_from_c(msg: *const libc::c_char);
@@ -1466,7 +1466,7 @@ pub fn rsvg_g_warning(msg: &str) {
     }
 }
 
-pub fn rsvg_g_critical(msg: &str) {
+fn rsvg_g_critical(msg: &str) {
     unsafe {
         extern "C" {
             fn rsvg_g_critical_from_c(msg: *const libc::c_char);
