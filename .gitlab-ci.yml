@@ -25,6 +25,7 @@ stages:
   - distcheck
   - rustc
   - cross_distro
+  - docs
 
 .test_template: &test
   script:
@@ -232,3 +233,21 @@ debian:testing_release_i386:
     LIBRSVG_DEBUG: "yes"
   <<: *rustc
   <<: *stage_3
+
+# STAGE 4 DOCUMENTATION
+#######################################################################
+
+docs:
+  image: $AMD64_OPENSUSE_TUMBLEWEED
+  stage: docs
+  script:
+    - mkdir -p public/doc
+    - cargo doc --document-private-items --no-deps
+    - cp -r target/doc/* public/doc
+
+  artifacts:
+    paths:
+      - public
+
+  only:
+    - master
