@@ -187,7 +187,6 @@ tarball:
   script:
     - cd _build
     - make distcheck DESTDIR=/tmp/distcheck
-  <<: *stage_3
 
 # STAGE 3 CROSS DISTRO TESTS
 #######################################################################
