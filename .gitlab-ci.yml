@@ -25,7 +25,6 @@ stages:
   - distcheck
   - rustc
   - cross_distro
-  - docs
 
 .test_template: &test
   script:
@@ -239,7 +238,7 @@ debian:testing_release_i386:
 
 pages:
   image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: docs
+  stage: test
   script:
     - mkdir -p public/doc
     - cargo doc --document-private-items --no-deps
