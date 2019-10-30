@@ -237,7 +237,7 @@ debian:testing_release_i386:
 # STAGE 4 DOCUMENTATION
 #######################################################################
 
-docs:
+pages:
   image: $AMD64_OPENSUSE_TUMBLEWEED
   stage: docs
   script:
