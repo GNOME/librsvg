@@ -27,7 +27,7 @@
 //! entities.  For example, say you have an SVG in <filename>/foo/bar/foo.svg</filename>
 //! and that it has an image element like this:
 //!
-//! ```ignore
+//! ```xml
 //! <image href="resources/foo.png" .../>
 //! ```
 //!
@@ -136,12 +136,10 @@ impl Loader {
     ///
     /// # Example:
     ///
-    /// ```ignore
+    /// ```
     /// use librsvg;
     ///
-    /// use librsvg::Loader;
-    ///
-    /// let svg_handle = Loader::new()
+    /// let svg_handle = librsvg::Loader::new()
     ///     .read_path("example.svg")
     ///     .unwrap();
     /// ```
@@ -162,14 +160,12 @@ impl Loader {
     /// Set this to `true` only if loading a trusted SVG fails due to size limits.
     ///
     /// # Example:
-    /// ```ignore
+    /// ```
     /// use librsvg;
     ///
-    /// use librsvg::Loader;
-    ///
-    /// let svg_handle = Loader::new()
+    /// let svg_handle = librsvg::Loader::new()
     ///     .with_unlimited_size()
-    ///     .read_path("trusted-huge-file.svg")
+    ///     .read_path("example.svg")    // presumably a trusted huge file
     ///     .unwrap();
     /// ```
     pub fn with_unlimited_size(mut self) -> Self {
@@ -190,22 +186,24 @@ impl Loader {
     /// of context which allows embedding compressed images.
     ///
     /// # Example:
-    /// ```ignore
+    ///
+    /// ```
     /// use cairo;
     /// use librsvg;
     ///
-    /// use librsvg::Loader;
-    ///
-    /// let svg_handle = Loader::new()
+    /// let svg_handle = librsvg::Loader::new()
     ///     .keep_image_data()
-    ///     .read_path("svg-with-embedded-images.svg")
+    ///     .read_path("example.svg")
     ///     .unwrap();
     ///
-    /// let surface = cairo::pdf::File::new(..., "hello.pdf");
+    /// let surface = cairo::PdfSurface::new(640.0, 480.0, "output.pdf");
     /// let cr = cairo::Context::new(&surface);
     ///
-    /// let renderer = CairoRenderer::new(&svg_handle);
-    /// renderer.render(&cr).unwrap();
+    /// let renderer = librsvg::CairoRenderer::new(&svg_handle);
+    /// renderer.render_document(
+    ///     &cr,
+    ///     &cairo::Rectangle { x: 0.0, y: 0.0, width: 640.0, height: 480.0 },
+    /// ).unwrap();
     /// ```
     pub fn keep_image_data(mut self) -> Self {
         self.keep_image_data = true;
@@ -215,13 +213,12 @@ impl Loader {
     /// Reads an SVG document from `path`.
     ///
     /// # Example:
-    /// ```ignore
+    ///
+    /// ```
     /// use librsvg;
     ///
-    /// use librsvg::Loader;
-    ///
-    /// let svg_handle = Loader::new()
-    ///     .read_path("hello.svg")
+    /// let svg_handle = librsvg::Loader::new()
+    ///     .read_path("example.svg")
     ///     .unwrap();
     /// ```
     pub fn read_path<P: AsRef<Path>>(self, path: P) -> Result<SvgHandle, LoadingError> {
@@ -234,14 +231,12 @@ impl Loader {
     /// The `cancellable` can be used to cancel loading from another thread.
     ///
     /// # Example:
-    /// ```ignore
+    /// ```
     /// use gio;
     /// use librsvg;
     ///
-    /// use librsvg::Loader;
-    ///
-    /// let svg_handle = Loader::new()
-    ///     .read_file(&gio::File::new_for_path("hello.svg"), None::<&gio::Cancellable>)
+    /// let svg_handle = librsvg::Loader::new()
+    ///     .read_file(&gio::File::new_for_path("example.svg"), None::<&gio::Cancellable>)
     ///     .unwrap();
     /// ```
     pub fn read_file<F: IsA<gio::File>, P: IsA<Cancellable>>(
@@ -265,6 +260,22 @@ impl Loader {
     /// URL where this SVG got loaded from.
     ///
     /// The `cancellable` can be used to cancel loading from another thread.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gio::prelude::*;
+    /// use gio;
+    /// use librsvg;
+    ///
+    /// let file = gio::File::new_for_path("example.svg");
+    ///
+    /// let stream = file.read(None::<&gio::Cancellable>).unwrap();
+    ///
+    /// let svg_handle = librsvg::Loader::new()
+    ///     .read_stream(&stream, Some(&file), None::<&gio::Cancellable>)
+    ///     .unwrap();
+    /// ```
     pub fn read_stream<S: IsA<gio::InputStream>, F: IsA<gio::File>, P: IsA<Cancellable>>(
         self,
         stream: &S,
