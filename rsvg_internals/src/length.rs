@@ -219,12 +219,12 @@ impl Length {
 
     /// Returns the raw length after asserting units are either default or percent.
     #[inline]
-    pub fn get_unitless(&self) -> f64 {
+    pub(crate) fn get_unitless(&self) -> f64 {
         assert!(self.unit == LengthUnit::Px || self.unit == LengthUnit::Percent);
         self.length
     }
 
-    pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {
+    pub(crate) fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {
         let length = {
             let token = parser.next().map_err(|_| {
                 ValueErrorKind::Parse(ParseError::new(
