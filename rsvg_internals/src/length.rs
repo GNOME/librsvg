@@ -174,11 +174,29 @@ define_length_type!(LengthVertical, LengthDir::Vertical);
 // against the current viewport's width and height.
 define_length_type!(LengthBoth, LengthDir::Both);
 
+/// A CSS length value.
+///
+/// This is equivalent to [CSS lengths].
+///
+/// [CSS lengths]: https://www.w3.org/TR/CSS21/syndata.html#length-units
+///
+/// It is up to the calling application to convert lengths in non-pixel units
+/// (i.e. those where the [`unit`] field is not [`LengthUnit::Px`]) into something
+/// meaningful to the application.  For example, if your application knows the
+/// dots-per-inch (DPI) it is using, it can convert lengths with [`unit`] in
+/// [`LengthUnit::In`] or other physical units.
+///
+/// [`unit`]: #structfield.unit
+/// [`LengthUnit::Px`]: enum.LengthUnit.html#variant.Px
+/// [`LengthUnit::In`]: enum.LengthUnit.html#variant.In
 // Keep this in sync with rsvg.h:RsvgLength
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Length {
+    /// Numeric part of the length
     pub length: f64,
+
+    /// Unit part of the length
     pub unit: LengthUnit,
 }
 
