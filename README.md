@@ -17,6 +17,9 @@ Please see [`CONTRIBUTING.md`][contributing] for details.
 Using librsvg
 -------------
 
+* [C API documentation][c-docs]
+* [Rust API documentation][rust-docs]
+
 **Compiling:** Librsvg uses a mostly normal [autotools] setup.  You
 may run into some peculiarities due to the Rust internals library if
 you are **cross-compiling** or if you are in a **build system with no
@@ -24,9 +27,10 @@ network access**, or if you are **building binary packages from a
 librsvg tarball**.  In those cases, please refer to the
 [`COMPILING.md`][compiling] file.
 
-**Documentation:** You can read the [documentation for librsvg][docs] at
-developer.gnome.org.  Please [tell us][mail] if you don't find
-something there that you need.
+**Documentation:** You can read the documentation for librsvg's [C
+API][c-docs] or the [Rust API][rust-docs].  Please [file an
+issue][reporting-bugs] if you don't find something there that you
+need.
 
 **Bug tracking:** If you have found a bug, take a look at [our bug
 tracker][bugs].  Please see the "[reporting bugs][reporting-bugs]"
@@ -40,6 +44,9 @@ in the [desktop-devel-list][d-d-l] mailing list.
 Introspection][gi].  This way, it is available in many programming
 languages other than C.  Please see your language binding's
 documentation for information on how to load the `Rsvg` namespace.
+
+[c-docs]: https://developer.gnome.org/rsvg/stable/
+[rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html
 
 Contributing to librsvg's development
 -------------------------------------
@@ -160,7 +167,6 @@ ways:
 [coc]: code-of-conduct.md
 [autotools]: https://autotools.io/index.html
 [compiling]: COMPILING.md
-[docs]: https://developer.gnome.org/rsvg/stable/
 [mail]: mailto:federico@gnome.org
 [bugs]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [gi]: https://wiki.gnome.org/Projects/GObjectIntrospection
