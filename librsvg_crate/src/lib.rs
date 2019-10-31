@@ -355,9 +355,10 @@ pub struct IntrinsicDimensions {
 impl<'a> CairoRenderer<'a> {
     /// Creates a `CairoRenderer` for the specified `SvgHandle`.
     ///
-    /// If an SVG file has physical units like `5cm`, they must be resolved
-    /// to pixel-based values.  The default pixel density is `96.0` DPI in
-    /// both dimensions.
+    /// The default dots-per-inch (DPI) value is set to 96; you can change it
+    /// with the [`with_dpi`] method.
+    ///
+    /// [`with_dpi`]: #method.with_dpi
     pub fn new(handle: &'a SvgHandle) -> Self {
         CairoRenderer {
             handle,
@@ -366,6 +367,10 @@ impl<'a> CairoRenderer<'a> {
     }
 
     /// Configures the dots-per-inch for resolving physical lengths.
+    ///
+    /// If an SVG file has physical units like `5cm`, they must be resolved
+    /// to pixel-based values.  The default pixel density is 96 DPI in
+    /// both dimensions.
     pub fn with_dpi(self, dpi_x: f64, dpi_y: f64) -> Self {
         assert!(dpi_x > 0.0);
         assert!(dpi_y > 0.0);
