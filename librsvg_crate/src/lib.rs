@@ -16,6 +16,64 @@
 //! * Get an [`SvgHandle`] from the [`Loader`].
 //! * Create a [`CairoRenderer`] for the [`SvgHandle`] and render to a Cairo context.
 //!
+//! You can put the following in your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! librsvg = { git="https://gitlab.gnome.org/GNOME/librsvg" }
+//! cairo-rs = "0.7.0"
+//! glib = "0.8.0"                                    # only if you need streams
+//! gio = { version="0.7.0", features=["v2_48"] }     # likewise
+//! ```
+//!
+//! # Example
+//!
+//! ```
+//! use cairo;
+//! use gio;
+//! use glib;
+//!
+//! const WIDTH: i32 = 640;
+//! const HEIGHT: i32 = 480;
+//!
+//! fn main() {
+//!     // Loading from a file
+//!
+//!     let handle = librsvg::Loader::new().read_path("example.svg").unwrap();
+//!
+//!     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap();
+//!     let cr = cairo::Context::new(&surface);
+//!
+//!     let renderer = librsvg::CairoRenderer::new(&handle);
+//!     renderer.render_document(
+//!         &cr,
+//!         &cairo::Rectangle {
+//!             x: 0.0,
+//!             y: 0.0,
+//!             width: f64::from(WIDTH),
+//!             height: f64::from(HEIGHT),
+//!         },
+//!     ).unwrap();
+//!
+//!     // Loading from a static SVG asset
+//!
+//!     let bytes = glib::Bytes::from_static(
+//!         br#"<?xml version="1.0" encoding="UTF-8"?>
+//!             <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
+//!                 <rect id="foo" x="10" y="10" width="30" height="30"/>
+//!             </svg>
+//!         "#
+//!     );
+//!     let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+//!
+//!     let handle = librsvg::Loader::new().read_stream(
+//!         &stream,
+//!         None::<&gio::File>,          // no base file as this document has no references
+//!         None::<&gio::Cancellable>,   // no cancellable
+//!     ).unwrap();
+//! }
+//! ```
+//!
 //! [`Loader`]: struct.Loader.html
 //! [`SvgHandle`]: struct.SvgHandle.html
 //! [`CairoRenderer`]: struct.CairoRenderer.html
