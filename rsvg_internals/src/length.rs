@@ -11,7 +11,7 @@ pub type RsvgLength = Length;
 
 // Keep this in sync with rsvg.h:RsvgUnit
 
-/// Units for length values
+/// Units for length values.
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {

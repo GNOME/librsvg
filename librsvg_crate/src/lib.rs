@@ -336,7 +336,7 @@ const DEFAULT_DPI_X: f64 = 96.0;
 const DEFAULT_DPI_Y: f64 = 96.0;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-/// Contains the values of the `<svg>` element's `width`, `height`, and `viewBox` attributes
+/// Contains the values of the `<svg>` element's `width`, `height`, and `viewBox` attributes.
 ///
 /// An SVG document has a toplevel `<svg>` element, with optional attributes `width`,
 /// `height`, and `viewBox`.  This structure contains the values for those attributes; you

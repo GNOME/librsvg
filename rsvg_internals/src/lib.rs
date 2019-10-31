@@ -30,6 +30,7 @@
 //! * [The `property_defs` module](property_defs/index.html) contains one type for each of
 //! the CSS style properties that librsvg supports.
 //!
+//! [`Document`]: document/struct.Document.html
 //! [`RsvgNode`]: node/type.RsvgNode.html
 //! [`NodeTrait`]: node/trait.NodeTrait.html
 
