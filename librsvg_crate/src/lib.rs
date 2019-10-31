@@ -43,7 +43,7 @@
 //! `/foo/bar/baz.svg`, then librsvg will only try to load referenced
 //! files (from SVG's `<image>` element, for example, or from content
 //! included through XML entities) if those files are in `/foo/bar/*`
-//! or in `/foo/bar/*/.../*`.  This is so that malicious SVG files
+//! or in `/foo/bar/*/.../*`.  This is so that malicious SVG documents
 //! cannot include files that are in a directory above.
 //!
 //! The full set of rules for deciding which URLs may be loaded is as follows;
@@ -128,7 +128,7 @@ impl Loader {
     /// Creates a `Loader` with the default flags.
     ///
     /// * [`unlimited_size`](#method.with_unlimited_size) defaults to `false`, as malicious
-    /// SVG files could cause the XML parser to consume very large amounts of memory.
+    /// SVG documents could cause the XML parser to consume very large amounts of memory.
     ///
     /// * [`keep_image_data`](#method.keep_image_data) defaults to
     /// `false`.  You may only need this if rendering to Cairo
@@ -182,7 +182,7 @@ impl Loader {
     ///
     /// Normally, Cairo expects one to pass it uncompressed (decoded)
     /// images as surfaces.  However, when using a PDF rendering
-    /// context to render SVG files that reference raster images
+    /// context to render SVG documents that reference raster images
     /// (e.g. those which include a bitmap as part of the SVG image),
     /// it may be more efficient to embed the original, compressed raster
     /// images into the PDF.
@@ -213,7 +213,7 @@ impl Loader {
         self
     }
 
-    /// Reads an SVG file from `path`.
+    /// Reads an SVG document from `path`.
     ///
     /// # Example:
     /// ```ignore
@@ -230,7 +230,7 @@ impl Loader {
         self.read_file(&file, None::<&Cancellable>)
     }
 
-    /// Reads an SVG file from a `gio::File`.
+    /// Reads an SVG document from a `gio::File`.
     ///
     /// The `cancellable` can be used to cancel loading from another thread.
     ///
@@ -260,7 +260,7 @@ impl Loader {
     /// takes a `gio::InputStream`.  The `base_file`, if it is not
     /// `None`, is used to extract the base URL for this stream.
     ///
-    /// Reading an SVG file may involve resolving relative URLs if the
+    /// Reading an SVG document may involve resolving relative URLs if the
     /// SVG references things like raster images, or other SVG files.
     /// In this case, pass the `base_file` that correspondds to the
     /// URL where this SVG got loaded from.
@@ -368,7 +368,7 @@ impl<'a> CairoRenderer<'a> {
 
     /// Configures the dots-per-inch for resolving physical lengths.
     ///
-    /// If an SVG file has physical units like `5cm`, they must be resolved
+    /// If an SVG document has physical units like `5cm`, they must be resolved
     /// to pixel-based values.  The default pixel density is 96 DPI in
     /// both dimensions.
     pub fn with_dpi(self, dpi_x: f64, dpi_y: f64) -> Self {
