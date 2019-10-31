@@ -326,9 +326,29 @@ const DEFAULT_DPI_X: f64 = 96.0;
 const DEFAULT_DPI_Y: f64 = 96.0;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+/// Contains the values of the `<svg>` element's `width`, `height`, and `viewBox` attributes
+///
+/// An SVG document has a toplevel `<svg>` element, with optional attributes `width`,
+/// `height`, and `viewBox`.  This structure contains the values for those attributes; you
+/// can obtain the struct from [`CairoRenderer::intrinsic_dimensions`].
+///
+/// As an example, the following SVG element has a `width` of 100 pixels
+/// and a `height` of 400 pixels, but no `viewBox`.
+///
+/// ```xml
+/// <svg xmlns="http://www.w3.org/2000/svg" width="100" height="400">
+/// ```
+/// In this case, the length fields will be set to `Some()`, and `vbox` to `None`.
+///
+/// [`CairoRenderer::intrinsic_dimensions`]: struct.CairoRenderer.html#method.intrinsic_dimensions
 pub struct IntrinsicDimensions {
+    /// `width` attribute of the `<svg>`, if present
     pub width: Option<Length>,
+
+    /// `height` attribute of the `<svg>`, if present
     pub height: Option<Length>,
+
+    /// `viewBox` attribute of the `<svg>`, if present
     pub vbox: Option<cairo::Rectangle>,
 }
 
@@ -356,6 +376,13 @@ impl<'a> CairoRenderer<'a> {
         }
     }
 
+    /// Queries the `width`, `height`, and `viewBox` attributes in an SVG document.
+    ///
+    /// If you are calling this function to compute a scaling factor to render the SVG,
+    /// consider simply using [`render_document`] instead; it will do the scaling
+    /// computations automatically.
+    ///
+    /// [`render_document`]: #method.render_document
     pub fn intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let d = self.handle.0.get_intrinsic_dimensions();
 
