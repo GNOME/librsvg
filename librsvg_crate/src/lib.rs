@@ -108,7 +108,7 @@ pub use rsvg_internals::{
     RenderingError,
 };
 
-/// Struct for loading an [`SvgHandle`][SvgHandle].
+/// Builder for loading an [`SvgHandle`][SvgHandle].
 ///
 /// This is the starting point for using librsvg.  This struct
 /// implements a builder pattern for configuring an
