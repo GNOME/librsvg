@@ -9,11 +9,11 @@ use crate::text::NodeChars;
 /// It does not render itself, and just holds CSS stylesheet information for the rest of
 /// the code to use.
 #[derive(Default)]
-pub struct NodeStyle {
+pub struct Style {
     type_: Option<String>,
 }
 
-impl NodeStyle {
+impl Style {
     pub fn get_css(&self, node: &RsvgNode) -> String {
         // FIXME: See these:
         //
@@ -42,7 +42,7 @@ impl NodeStyle {
     }
 }
 
-impl NodeTrait for NodeStyle {
+impl NodeTrait for Style {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "type") {

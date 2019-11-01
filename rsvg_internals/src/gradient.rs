@@ -123,7 +123,7 @@ fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64
 
 /// Node for the <stop> element
 #[derive(Default)]
-pub struct NodeStop {
+pub struct Stop {
     /// <stop offset="..."/>
     offset: UnitInterval,
 
@@ -140,7 +140,7 @@ fn validate_offset(length: LengthBoth) -> Result<LengthBoth, ValueErrorKind> {
     }
 }
 
-impl NodeTrait for NodeStop {
+impl NodeTrait for Stop {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -326,7 +326,7 @@ struct Common {
 
 /// Node for the <linearGradient> element
 #[derive(Default)]
-pub struct NodeLinearGradient {
+pub struct LinearGradient {
     common: Common,
 
     x1: Option<LengthHorizontal>,
@@ -337,7 +337,7 @@ pub struct NodeLinearGradient {
 
 /// Node for the <radialGradient> element
 #[derive(Default)]
-pub struct NodeRadialGradient {
+pub struct RadialGradient {
     common: Common,
 
     cx: Option<LengthHorizontal>,
@@ -452,7 +452,7 @@ impl UnresolvedGradient {
                 continue;
             }
 
-            let stop = child.get_impl::<NodeStop>();
+            let stop = child.get_impl::<Stop>();
 
             if child.is_in_error() {
                 rsvg_log!("(not using gradient stop {} because it is in error)", child);
@@ -508,7 +508,7 @@ struct Unresolved {
     fallback: Option<Fragment>,
 }
 
-impl NodeLinearGradient {
+impl LinearGradient {
     fn get_unresolved_variant(&self) -> UnresolvedVariant {
         UnresolvedVariant::Linear {
             x1: self.x1,
@@ -519,7 +519,7 @@ impl NodeLinearGradient {
     }
 }
 
-impl NodeRadialGradient {
+impl RadialGradient {
     fn get_unresolved_variant(&self) -> UnresolvedVariant {
         UnresolvedVariant::Radial {
             cx: self.cx,
@@ -553,8 +553,8 @@ macro_rules! impl_get_unresolved {
         }
     }
 }
-impl_get_unresolved!(NodeLinearGradient);
-impl_get_unresolved!(NodeRadialGradient);
+impl_get_unresolved!(LinearGradient);
+impl_get_unresolved!(RadialGradient);
 
 impl Common {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -574,7 +574,7 @@ impl Common {
     }
 }
 
-impl NodeTrait for NodeLinearGradient {
+impl NodeTrait for LinearGradient {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.common.set_atts(pbag)?;
 
@@ -593,7 +593,7 @@ impl NodeTrait for NodeLinearGradient {
     }
 }
 
-impl NodeTrait for NodeRadialGradient {
+impl NodeTrait for RadialGradient {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.common.set_atts(pbag)?;
 
@@ -677,16 +677,16 @@ macro_rules! impl_paint_source {
 }
 
 impl_paint_source!(
-    NodeLinearGradient,
+    LinearGradient,
     NodeType::LinearGradient,
-    NodeRadialGradient,
+    RadialGradient,
     NodeType::RadialGradient,
 );
 
 impl_paint_source!(
-    NodeRadialGradient,
+    RadialGradient,
     NodeType::RadialGradient,
-    NodeLinearGradient,
+    LinearGradient,
     NodeType::LinearGradient,
 );
 
@@ -826,11 +826,11 @@ mod tests {
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
             None,
             None,
-            Box::new(NodeLinearGradient::default())
+            Box::new(LinearGradient::default())
         ));
 
         let borrow = node.borrow();
-        let g = borrow.get_impl::<NodeLinearGradient>();
+        let g = borrow.get_impl::<LinearGradient>();
         let Unresolved { gradient, .. } = g.get_unresolved(&node);
         let gradient = gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
@@ -840,11 +840,11 @@ mod tests {
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
             None,
             None,
-            Box::new(NodeRadialGradient::default())
+            Box::new(RadialGradient::default())
         ));
 
         let borrow = node.borrow();
-        let g = borrow.get_impl::<NodeRadialGradient>();
+        let g = borrow.get_impl::<RadialGradient>();
         let Unresolved { gradient, .. } = g.get_unresolved(&node);
         let gradient = gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());

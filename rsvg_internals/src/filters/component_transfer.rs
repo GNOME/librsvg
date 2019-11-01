@@ -18,25 +18,25 @@ use crate::surface_utils::{
 use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// The `feComponentTransfer` filter primitive.
-pub struct ComponentTransfer {
+pub struct FeComponentTransfer {
     base: PrimitiveWithInput,
 }
 
-impl Default for ComponentTransfer {
+impl Default for FeComponentTransfer {
     /// Constructs a new `ComponentTransfer` with empty properties.
     #[inline]
-    fn default() -> ComponentTransfer {
-        ComponentTransfer {
+    fn default() -> FeComponentTransfer {
+        FeComponentTransfer {
             base: PrimitiveWithInput::new::<Self>(),
         }
     }
 }
 
-impl NodeTrait for ComponentTransfer {
-    impl_node_as_filter!();
+impl NodeTrait for FeComponentTransfer {
+    impl_node_as_filter_effect!();
 
     #[inline]
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -134,7 +134,7 @@ fn gamma(params: &FunctionParameters<'_>, value: f64) -> f64 {
     params.amplitude * value.powf(params.exponent) + params.offset
 }
 
-trait ComponentTransferFunc {
+trait FeComponentTransferFunc {
     /// Returns the component transfer function.
     fn function(&self) -> Function;
 
@@ -174,7 +174,7 @@ macro_rules! func_x {
             }
         }
 
-        impl ComponentTransferFunc for $func_name {
+        impl FeComponentTransferFunc for $func_name {
             #[inline]
             fn function_parameters(&self) -> FunctionParameters<'_> {
                 FunctionParameters {
@@ -266,16 +266,16 @@ macro_rules! func_x {
 }
 
 // The `<feFuncR>` element
-func_x!(FuncR, Channel::R);
+func_x!(FeFuncR, Channel::R);
 
 // The `<feFuncG>` element
-func_x!(FuncG, Channel::G);
+func_x!(FeFuncG, Channel::G);
 
 // The `<feFuncB>` element
-func_x!(FuncB, Channel::B);
+func_x!(FeFuncB, Channel::B);
 
 // The `<feFuncA>` element
-func_x!(FuncA, Channel::A);
+func_x!(FeFuncA, Channel::A);
 
 macro_rules! func_or_default {
     ($func_node:ident, $func_type:ty, $func_data:ident, $func_default:ident) => {
@@ -289,7 +289,7 @@ macro_rules! func_or_default {
     };
 }
 
-impl Filter for ComponentTransfer {
+impl FilterEffect for FeComponentTransfer {
     fn render(
         &self,
         node: &RsvgNode,
@@ -313,7 +313,7 @@ impl Filter for ComponentTransfer {
         // Get a node for every pixel component.
         fn get_node<F>(node: &RsvgNode, node_type: NodeType, channel: Channel) -> Option<RsvgNode>
         where
-            F: ComponentTransferFunc + NodeTrait,
+            F: FeComponentTransferFunc + NodeTrait,
         {
             node.children()
                 .rev()
@@ -321,10 +321,10 @@ impl Filter for ComponentTransfer {
                 .find(|c| c.borrow().get_impl::<F>().channel() == channel)
         };
 
-        let func_r_node = get_node::<FuncR>(node, NodeType::ComponentTransferFunctionR, Channel::R);
-        let func_g_node = get_node::<FuncG>(node, NodeType::ComponentTransferFunctionG, Channel::G);
-        let func_b_node = get_node::<FuncB>(node, NodeType::ComponentTransferFunctionB, Channel::B);
-        let func_a_node = get_node::<FuncA>(node, NodeType::ComponentTransferFunctionA, Channel::A);
+        let func_r_node = get_node::<FeFuncR>(node, NodeType::FeFuncR, Channel::R);
+        let func_g_node = get_node::<FeFuncG>(node, NodeType::FeFuncG, Channel::G);
+        let func_b_node = get_node::<FeFuncB>(node, NodeType::FeFuncB, Channel::B);
+        let func_a_node = get_node::<FeFuncA>(node, NodeType::FeFuncA, Channel::A);
 
         for node in [&func_r_node, &func_g_node, &func_b_node, &func_a_node]
             .iter()
@@ -336,10 +336,10 @@ impl Filter for ComponentTransfer {
         }
 
         // These are the default funcs that perform an identity transformation.
-        let func_r_default = FuncR::default();
-        let func_g_default = FuncG::default();
-        let func_b_default = FuncB::default();
-        let func_a_default = FuncA::default();
+        let func_r_default = FeFuncR::default();
+        let func_g_default = FeFuncG::default();
+        let func_b_default = FeFuncB::default();
+        let func_a_default = FeFuncA::default();
 
         // We need to tell the borrow checker that these live long enough
         let func_r_data;
@@ -347,15 +347,15 @@ impl Filter for ComponentTransfer {
         let func_b_data;
         let func_a_data;
 
-        let func_r = func_or_default!(func_r_node, FuncR, func_r_data, func_r_default);
-        let func_g = func_or_default!(func_g_node, FuncG, func_g_data, func_g_default);
-        let func_b = func_or_default!(func_b_node, FuncB, func_b_data, func_b_default);
-        let func_a = func_or_default!(func_a_node, FuncA, func_a_data, func_a_default);
+        let func_r = func_or_default!(func_r_node, FeFuncR, func_r_data, func_r_default);
+        let func_g = func_or_default!(func_g_node, FeFuncG, func_g_data, func_g_default);
+        let func_b = func_or_default!(func_b_node, FeFuncB, func_b_data, func_b_default);
+        let func_a = func_or_default!(func_a_node, FeFuncA, func_a_data, func_a_default);
 
         #[inline]
         fn compute_func<'a, F>(func: &'a F) -> impl Fn(u8, f64, f64) -> u8 + 'a
         where
-            F: ComponentTransferFunc,
+            F: FeComponentTransferFunc,
         {
             let compute = func.function();
             let params = func.function_parameters();
@@ -372,9 +372,9 @@ impl Filter for ComponentTransfer {
             }
         }
 
-        let compute_r = compute_func::<FuncR>(&func_r);
-        let compute_g = compute_func::<FuncG>(&func_g);
-        let compute_b = compute_func::<FuncB>(&func_b);
+        let compute_r = compute_func::<FeFuncR>(&func_r);
+        let compute_g = compute_func::<FeFuncG>(&func_g);
+        let compute_b = compute_func::<FeFuncB>(&func_b);
 
         // Alpha gets special handling since everything else depends on it.
         let compute_a = func_a.function();

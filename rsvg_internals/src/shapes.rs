@@ -113,11 +113,11 @@ fn render_ellipse(
 }
 
 #[derive(Default)]
-pub struct NodePath {
+pub struct Path {
     builder: PathBuilder,
 }
 
-impl NodeTrait for NodePath {
+impl NodeTrait for Path {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "d") {
@@ -217,11 +217,11 @@ fn render_poly(
 }
 
 #[derive(Default)]
-pub struct NodePolygon {
+pub struct Polygon {
     points: Option<Points>,
 }
 
-impl NodeTrait for NodePolygon {
+impl NodeTrait for Polygon {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "points") {
@@ -251,11 +251,11 @@ impl NodeTrait for NodePolygon {
 }
 
 #[derive(Default)]
-pub struct NodePolyline {
+pub struct Polyline {
     points: Option<Points>,
 }
 
-impl NodeTrait for NodePolyline {
+impl NodeTrait for Polyline {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "points") {
@@ -285,14 +285,14 @@ impl NodeTrait for NodePolyline {
 }
 
 #[derive(Default)]
-pub struct NodeLine {
+pub struct Line {
     x1: LengthHorizontal,
     y1: LengthVertical,
     x2: LengthHorizontal,
     y2: LengthVertical,
 }
 
-impl NodeTrait for NodeLine {
+impl NodeTrait for Line {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -333,7 +333,7 @@ impl NodeTrait for NodeLine {
 }
 
 #[derive(Default)]
-pub struct NodeRect {
+pub struct Rect {
     x: LengthHorizontal,
     y: LengthVertical,
     w: LengthHorizontal,
@@ -344,7 +344,7 @@ pub struct NodeRect {
     ry: Option<LengthVertical>,
 }
 
-impl NodeTrait for NodeRect {
+impl NodeTrait for Rect {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -554,13 +554,13 @@ impl NodeTrait for NodeRect {
 }
 
 #[derive(Default)]
-pub struct NodeCircle {
+pub struct Circle {
     cx: LengthHorizontal,
     cy: LengthVertical,
     r: LengthBoth,
 }
 
-impl NodeTrait for NodeCircle {
+impl NodeTrait for Circle {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -596,14 +596,14 @@ impl NodeTrait for NodeCircle {
 }
 
 #[derive(Default)]
-pub struct NodeEllipse {
+pub struct Ellipse {
     cx: LengthHorizontal,
     cy: LengthVertical,
     rx: LengthHorizontal,
     ry: LengthVertical,
 }
 
-impl NodeTrait for NodeEllipse {
+impl NodeTrait for Ellipse {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

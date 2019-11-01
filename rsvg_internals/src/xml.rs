@@ -16,7 +16,7 @@ use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
-use crate::style::NodeStyle;
+use crate::style::Style;
 use crate::xml2_load::{ParseFromStreamError, Xml2Parser};
 
 #[derive(Clone)]
@@ -301,7 +301,7 @@ impl XmlState {
         let node = inner.current_node.take().unwrap();
 
         if node.borrow().get_type() == NodeType::Style {
-            let css_data = node.borrow().get_impl::<NodeStyle>().get_css(&node);
+            let css_data = node.borrow().get_impl::<Style>().get_css(&node);
             inner
                 .document_builder
                 .as_mut()

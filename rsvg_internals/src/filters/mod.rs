@@ -29,10 +29,10 @@ mod input;
 use self::input::Input;
 
 pub mod node;
-use self::node::NodeFilter;
+use self::node::Filter;
 
 /// A filter primitive interface.
-pub trait Filter: NodeTrait {
+pub trait FilterEffect: NodeTrait {
     /// Renders this filter primitive.
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
@@ -52,9 +52,9 @@ pub trait Filter: NodeTrait {
     fn is_affected_by_color_interpolation_filters(&self) -> bool;
 }
 
-macro_rules! impl_node_as_filter {
+macro_rules! impl_node_as_filter_effect {
     () => (
-        fn as_filter(&self) -> Option<&dyn Filter> {
+        fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
             Some(self)
         }
     )
@@ -94,7 +94,7 @@ struct PrimitiveWithInput {
 impl Primitive {
     /// Constructs a new `Primitive` with empty properties.
     #[inline]
-    fn new<T: Filter>() -> Primitive {
+    fn new<T: FilterEffect>() -> Primitive {
         Primitive {
             x: None,
             y: None,
@@ -117,7 +117,7 @@ impl NodeTrait for Primitive {
         let primitiveunits = parent
             .and_then(|parent| {
                 if parent.borrow().get_type() == NodeType::Filter {
-                    Some(parent.borrow().get_impl::<NodeFilter>().get_primitive_units())
+                    Some(parent.borrow().get_impl::<Filter>().get_primitive_units())
                 } else {
                     None
                 }
@@ -194,7 +194,7 @@ impl NodeTrait for Primitive {
 impl PrimitiveWithInput {
     /// Constructs a new `PrimitiveWithInput` with empty properties.
     #[inline]
-    fn new<T: Filter>() -> PrimitiveWithInput {
+    fn new<T: FilterEffect>() -> PrimitiveWithInput {
         PrimitiveWithInput {
             base: Primitive::new::<T>(),
             in_: None,
@@ -297,7 +297,7 @@ pub fn render(
             !in_error
         })
         // Keep only filter primitives (those that implement the Filter trait)
-        .filter(|c| c.borrow().get_node_trait().as_filter().is_some())
+        .filter(|c| c.borrow().get_node_trait().as_filter_effect().is_some())
         // Check if the node wants linear RGB.
         .map(|c| {
             let linear_rgb = {
@@ -312,7 +312,7 @@ pub fn render(
 
     for (c, linear_rgb) in primitives {
         let node_data = c.borrow();
-        let filter = node_data.get_node_trait().as_filter().unwrap();
+        let filter = node_data.get_node_trait().as_filter_effect().unwrap();
 
         let mut render = |filter_ctx: &mut FilterContext| {
             if let Err(err) = filter

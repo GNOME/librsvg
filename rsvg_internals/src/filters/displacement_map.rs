@@ -9,7 +9,7 @@ use crate::property_bag::PropertyBag;
 use crate::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, Input, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
 
 /// Enumeration of the color channels the displacement map can source.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -21,7 +21,7 @@ enum ColorChannel {
 }
 
 /// The `feDisplacementMap` filter primitive.
-pub struct DisplacementMap {
+pub struct FeDisplacementMap {
     base: PrimitiveWithInput,
     in2: Option<Input>,
     scale: f64,
@@ -29,11 +29,11 @@ pub struct DisplacementMap {
     y_channel_selector: ColorChannel,
 }
 
-impl Default for DisplacementMap {
+impl Default for FeDisplacementMap {
     /// Constructs a new `DisplacementMap` with empty properties.
     #[inline]
-    fn default() -> DisplacementMap {
-        DisplacementMap {
+    fn default() -> FeDisplacementMap {
+        FeDisplacementMap {
             base: PrimitiveWithInput::new::<Self>(),
             in2: None,
             scale: 0.0,
@@ -43,8 +43,8 @@ impl Default for DisplacementMap {
     }
 }
 
-impl NodeTrait for DisplacementMap {
-    impl_node_as_filter!();
+impl NodeTrait for FeDisplacementMap {
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -67,7 +67,7 @@ impl NodeTrait for DisplacementMap {
     }
 }
 
-impl Filter for DisplacementMap {
+impl FilterEffect for FeDisplacementMap {
     fn render(
         &self,
         _node: &RsvgNode,

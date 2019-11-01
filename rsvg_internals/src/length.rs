@@ -327,10 +327,10 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
 
         LengthUnit::Px => v.length,
 
-        // This is the same default as used in NodeSvg::get_size()
+        // This is the same default as used in Svg::get_size()
         LengthUnit::Em => v.length * 12.0,
 
-        // This is the same default as used in NodeSvg::get_size()
+        // This is the same default as used in Svg::get_size()
         LengthUnit::Ex => v.length * 12.0 / 2.0,
 
         // FontSize always is a LengthDir::Both, per properties.rs
