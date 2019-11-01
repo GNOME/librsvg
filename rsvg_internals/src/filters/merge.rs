@@ -9,7 +9,7 @@ use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
-use super::{Filter, FilterError, Primitive};
+use super::{FilterEffect, FilterError, Primitive};
 
 /// The `feMerge` filter primitive.
 pub struct Merge {
@@ -33,7 +33,7 @@ impl Default for Merge {
 }
 
 impl NodeTrait for Merge {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     #[inline]
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -104,7 +104,7 @@ impl MergeNode {
     }
 }
 
-impl Filter for Merge {
+impl FilterEffect for Merge {
     fn render(
         &self,
         node: &RsvgNode,

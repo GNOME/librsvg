@@ -27,7 +27,7 @@ use crate::filters::{
         top_row_normal,
         Normal,
     },
-    Filter,
+    FilterEffect,
     FilterError,
     PrimitiveWithInput,
 };
@@ -111,7 +111,7 @@ impl Default for DiffuseLighting {
 }
 
 impl NodeTrait for DiffuseLighting {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.common.set_atts(parent, pbag)?;
@@ -183,7 +183,7 @@ impl Default for SpecularLighting {
 }
 
 impl NodeTrait for SpecularLighting {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.common.set_atts(parent, pbag)?;
@@ -272,7 +272,7 @@ impl Lighting for SpecularLighting {
 // not want to make the Lighting trait public, so we use a macro
 macro_rules! impl_lighting_filter {
     ($lighting_type:ty, $alpha_func:ident) => {
-        impl Filter for $lighting_type {
+        impl FilterEffect for $lighting_type {
             fn render(
                 &self,
                 node: &RsvgNode,

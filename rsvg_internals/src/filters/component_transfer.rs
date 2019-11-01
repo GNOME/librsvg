@@ -18,7 +18,7 @@ use crate::surface_utils::{
 use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// The `feComponentTransfer` filter primitive.
 pub struct ComponentTransfer {
@@ -36,7 +36,7 @@ impl Default for ComponentTransfer {
 }
 
 impl NodeTrait for ComponentTransfer {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     #[inline]
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -289,7 +289,7 @@ macro_rules! func_or_default {
     };
 }
 
-impl Filter for ComponentTransfer {
+impl FilterEffect for ComponentTransfer {
     fn render(
         &self,
         node: &RsvgNode,

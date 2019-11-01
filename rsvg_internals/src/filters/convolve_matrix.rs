@@ -19,7 +19,7 @@ use crate::surface_utils::{
 use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// The `feConvolveMatrix` filter primitive.
 pub struct ConvolveMatrix {
@@ -55,7 +55,7 @@ impl Default for ConvolveMatrix {
 }
 
 impl NodeTrait for ConvolveMatrix {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -224,7 +224,7 @@ impl NodeTrait for ConvolveMatrix {
     }
 }
 
-impl Filter for ConvolveMatrix {
+impl FilterEffect for ConvolveMatrix {
     fn render(
         &self,
         _node: &RsvgNode,

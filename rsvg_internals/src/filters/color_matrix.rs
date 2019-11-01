@@ -14,7 +14,7 @@ use crate::surface_utils::{
 use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// Color matrix operation types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -43,7 +43,7 @@ impl Default for ColorMatrix {
 }
 
 impl NodeTrait for ColorMatrix {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -155,7 +155,7 @@ impl NodeTrait for ColorMatrix {
     }
 }
 
-impl Filter for ColorMatrix {
+impl FilterEffect for ColorMatrix {
     fn render(
         &self,
         _node: &RsvgNode,

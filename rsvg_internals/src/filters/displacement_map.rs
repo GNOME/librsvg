@@ -9,7 +9,7 @@ use crate::property_bag::PropertyBag;
 use crate::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, Input, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
 
 /// Enumeration of the color channels the displacement map can source.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -44,7 +44,7 @@ impl Default for DisplacementMap {
 }
 
 impl NodeTrait for DisplacementMap {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -67,7 +67,7 @@ impl NodeTrait for DisplacementMap {
     }
 }
 
-impl Filter for DisplacementMap {
+impl FilterEffect for DisplacementMap {
     fn render(
         &self,
         _node: &RsvgNode,

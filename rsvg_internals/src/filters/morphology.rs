@@ -18,7 +18,7 @@ use crate::surface_utils::{
 };
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible morphology operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -47,7 +47,7 @@ impl Default for Morphology {
 }
 
 impl NodeTrait for Morphology {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -74,7 +74,7 @@ impl NodeTrait for Morphology {
     }
 }
 
-impl Filter for Morphology {
+impl FilterEffect for Morphology {
     fn render(
         &self,
         _node: &RsvgNode,
