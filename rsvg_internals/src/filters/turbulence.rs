@@ -32,7 +32,7 @@ enum NoiseType {
 }
 
 /// The `feTurbulence` filter primitive.
-pub struct Turbulence {
+pub struct FeTurbulence {
     base: Primitive,
     base_frequency: (f64, f64),
     num_octaves: i32,
@@ -41,11 +41,11 @@ pub struct Turbulence {
     type_: NoiseType,
 }
 
-impl Default for Turbulence {
+impl Default for FeTurbulence {
     /// Constructs a new `Turbulence` with empty properties.
     #[inline]
-    fn default() -> Turbulence {
-        Turbulence {
+    fn default() -> FeTurbulence {
+        FeTurbulence {
             base: Primitive::new::<Self>(),
             base_frequency: (0.0, 0.0),
             num_octaves: 1,
@@ -56,7 +56,7 @@ impl Default for Turbulence {
     }
 }
 
-impl NodeTrait for Turbulence {
+impl NodeTrait for FeTurbulence {
     impl_node_as_filter_effect!();
 
     #[inline]
@@ -334,7 +334,7 @@ impl NoiseGenerator {
     }
 }
 
-impl FilterEffect for Turbulence {
+impl FilterEffect for FeTurbulence {
     fn render(
         &self,
         node: &RsvgNode,

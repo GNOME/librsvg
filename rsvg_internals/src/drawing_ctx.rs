@@ -6,19 +6,19 @@ use std::rc::{Rc, Weak};
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
-use crate::clip_path::{ClipPathUnits, NodeClipPath};
+use crate::clip_path::{ClipPath, ClipPathUnits};
 use crate::coord_units::CoordUnits;
 use crate::document::Document;
 use crate::dpi::Dpi;
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
-use crate::gradient::{NodeLinearGradient, NodeRadialGradient};
+use crate::gradient::{LinearGradient, RadialGradient};
 use crate::length::Dasharray;
 use crate::limits;
-use crate::mask::NodeMask;
+use crate::mask::Mask;
 use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
-use crate::pattern::NodePattern;
+use crate::pattern::Pattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
@@ -364,8 +364,7 @@ impl DrawingCtx {
             .and_then(|acquired| {
                 let clip_node = acquired.get().clone();
 
-                let ClipPathUnits(units) =
-                    clip_node.borrow().get_impl::<NodeClipPath>().get_units();
+                let ClipPathUnits(units) = clip_node.borrow().get_impl::<ClipPath>().get_units();
 
                 if units == CoordUnits::UserSpaceOnUse {
                     Some((Some(clip_node), None))
@@ -384,7 +383,7 @@ impl DrawingCtx {
     ) -> Result<(), RenderingError> {
         if let Some(node) = clip_node {
             let node_data = node.borrow();
-            let clip_path = node_data.get_impl::<NodeClipPath>();
+            let clip_path = node_data.get_impl::<ClipPath>();
             clip_path.to_cairo_context(&node, self, &bbox)
         } else {
             Ok(())
@@ -494,7 +493,7 @@ impl DrawingCtx {
                             res = res.and_then(|bbox| {
                                 mask_node
                                     .borrow()
-                                    .get_impl::<NodeMask>()
+                                    .get_impl::<Mask>()
                                     .generate_cairo_mask(&mask_node, &affines, dc, &bbox)
                                     .and_then(|mask_surf| {
                                         if let Some(surf) = mask_surf {
@@ -664,15 +663,15 @@ impl DrawingCtx {
                         had_paint_server = match node.borrow().get_type() {
                             NodeType::LinearGradient => node
                                 .borrow()
-                                .get_impl::<NodeLinearGradient>()
+                                .get_impl::<LinearGradient>()
                                 .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
                             NodeType::RadialGradient => node
                                 .borrow()
-                                .get_impl::<NodeRadialGradient>()
+                                .get_impl::<RadialGradient>()
                                 .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
                             NodeType::Pattern => node
                                 .borrow()
-                                .get_impl::<NodePattern>()
+                                .get_impl::<Pattern>()
                                 .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
                             _ => unreachable!(),
                         }

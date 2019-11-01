@@ -15,7 +15,7 @@ use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::S
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
 
-pub struct NodeMask {
+pub struct Mask {
     x: LengthHorizontal,
     y: LengthVertical,
     width: LengthHorizontal,
@@ -25,9 +25,9 @@ pub struct NodeMask {
     content_units: MaskContentUnits,
 }
 
-impl Default for NodeMask {
-    fn default() -> NodeMask {
-        NodeMask {
+impl Default for Mask {
+    fn default() -> Mask {
+        Mask {
             // these values are per the spec
             x: LengthHorizontal::parse_str("-10%").unwrap(),
             y: LengthVertical::parse_str("-10%").unwrap(),
@@ -40,7 +40,7 @@ impl Default for NodeMask {
     }
 }
 
-impl NodeMask {
+impl Mask {
     pub fn generate_cairo_mask(
         &self,
         mask_node: &RsvgNode,
@@ -137,7 +137,7 @@ impl NodeMask {
     }
 }
 
-impl NodeTrait for NodeMask {
+impl NodeTrait for Mask {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

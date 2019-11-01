@@ -10,11 +10,11 @@ use crate::node::*;
 use crate::property_bag::PropertyBag;
 
 #[derive(Default)]
-pub struct NodeLink {
+pub struct Link {
     link: Option<String>,
 }
 
-impl NodeTrait for NodeLink {
+impl NodeTrait for Link {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

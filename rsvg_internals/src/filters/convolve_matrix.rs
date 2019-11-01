@@ -22,7 +22,7 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// The `feConvolveMatrix` filter primitive.
-pub struct ConvolveMatrix {
+pub struct FeConvolveMatrix {
     base: PrimitiveWithInput,
     order: (u32, u32),
     kernel_matrix: Option<DMatrix<f64>>,
@@ -35,11 +35,11 @@ pub struct ConvolveMatrix {
     preserve_alpha: bool,
 }
 
-impl Default for ConvolveMatrix {
+impl Default for FeConvolveMatrix {
     /// Constructs a new `ConvolveMatrix` with empty properties.
     #[inline]
-    fn default() -> ConvolveMatrix {
-        ConvolveMatrix {
+    fn default() -> FeConvolveMatrix {
+        FeConvolveMatrix {
             base: PrimitiveWithInput::new::<Self>(),
             order: (3, 3),
             kernel_matrix: None,
@@ -54,7 +54,7 @@ impl Default for ConvolveMatrix {
     }
 }
 
-impl NodeTrait for ConvolveMatrix {
+impl NodeTrait for FeConvolveMatrix {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -224,7 +224,7 @@ impl NodeTrait for ConvolveMatrix {
     }
 }
 
-impl FilterEffect for ConvolveMatrix {
+impl FilterEffect for FeConvolveMatrix {
     fn render(
         &self,
         _node: &RsvgNode,

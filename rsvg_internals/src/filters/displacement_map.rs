@@ -21,7 +21,7 @@ enum ColorChannel {
 }
 
 /// The `feDisplacementMap` filter primitive.
-pub struct DisplacementMap {
+pub struct FeDisplacementMap {
     base: PrimitiveWithInput,
     in2: Option<Input>,
     scale: f64,
@@ -29,11 +29,11 @@ pub struct DisplacementMap {
     y_channel_selector: ColorChannel,
 }
 
-impl Default for DisplacementMap {
+impl Default for FeDisplacementMap {
     /// Constructs a new `DisplacementMap` with empty properties.
     #[inline]
-    fn default() -> DisplacementMap {
-        DisplacementMap {
+    fn default() -> FeDisplacementMap {
+        FeDisplacementMap {
             base: PrimitiveWithInput::new::<Self>(),
             in2: None,
             scale: 0.0,
@@ -43,7 +43,7 @@ impl Default for DisplacementMap {
     }
 }
 
-impl NodeTrait for DisplacementMap {
+impl NodeTrait for FeDisplacementMap {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -67,7 +67,7 @@ impl NodeTrait for DisplacementMap {
     }
 }
 
-impl FilterEffect for DisplacementMap {
+impl FilterEffect for FeDisplacementMap {
     fn render(
         &self,
         _node: &RsvgNode,

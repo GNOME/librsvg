@@ -16,7 +16,7 @@ use crate::unit_interval::UnitInterval;
 
 use super::error::FilterError;
 use super::input::Input;
-use super::node::NodeFilter;
+use super::node::Filter;
 
 /// A filter primitive output.
 #[derive(Debug, Clone)]
@@ -115,7 +115,7 @@ impl FilterContext {
         });
 
         let node_data = filter_node.borrow();
-        let filter = node_data.get_impl::<NodeFilter>();
+        let filter = node_data.get_impl::<Filter>();
 
         let affine = match filter.get_filter_units() {
             CoordUnits::UserSpaceOnUse => cr_affine,
@@ -307,7 +307,7 @@ impl FilterContext {
     /// Pushes the viewport size based on the value of `primitiveUnits`.
     pub fn get_view_params(&self, draw_ctx: &mut DrawingCtx) -> ViewParams {
         let node_data = self.node.borrow();
-        let filter = node_data.get_impl::<NodeFilter>();
+        let filter = node_data.get_impl::<Filter>();
 
         // See comments in compute_effects_region() for how this works.
         if filter.get_primitive_units() == CoordUnits::ObjectBoundingBox {

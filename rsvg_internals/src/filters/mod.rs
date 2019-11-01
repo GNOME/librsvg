@@ -29,7 +29,7 @@ mod input;
 use self::input::Input;
 
 pub mod node;
-use self::node::NodeFilter;
+use self::node::Filter;
 
 /// A filter primitive interface.
 pub trait FilterEffect: NodeTrait {
@@ -117,7 +117,7 @@ impl NodeTrait for Primitive {
         let primitiveunits = parent
             .and_then(|parent| {
                 if parent.borrow().get_type() == NodeType::Filter {
-                    Some(parent.borrow().get_impl::<NodeFilter>().get_primitive_units())
+                    Some(parent.borrow().get_impl::<Filter>().get_primitive_units())
                 } else {
                     None
                 }

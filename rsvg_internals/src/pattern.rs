@@ -50,27 +50,27 @@ struct Unresolved {
     fallback: Option<Fragment>,
 }
 
-/// Keeps track of which NodePattern provided a non-empty set of children during pattern resolution
+/// Keeps track of which Pattern provided a non-empty set of children during pattern resolution
 #[derive(Clone)]
 enum UnresolvedChildren {
-    /// Points back to the original NodePattern if it had no usable children
+    /// Points back to the original Pattern if it had no usable children
     Unresolved,
 
-    /// Points back to the original NodePattern, as no pattern in the
+    /// Points back to the original Pattern, as no pattern in the
     /// chain of fallbacks had usable children.  This only gets returned
     /// by resolve_from_defaults().
     ResolvedEmpty,
 
-    /// Points back to the NodePattern that had usable children.
+    /// Points back to the Pattern that had usable children.
     WithChildren(RsvgWeakNode),
 }
 
-/// Keeps track of which NodePattern provided a non-empty set of children during pattern resolution
+/// Keeps track of which Pattern provided a non-empty set of children during pattern resolution
 #[derive(Clone)]
 enum Children {
     Empty,
 
-    /// Points back to the NodePattern that had usable children
+    /// Points back to the Pattern that had usable children
     WithChildren(RsvgWeakNode),
 }
 
@@ -108,13 +108,13 @@ pub struct ResolvedPattern {
 }
 
 #[derive(Default)]
-pub struct NodePattern {
+pub struct Pattern {
     common: Common,
     fallback: Option<Fragment>,
     resolved: RefCell<Option<ResolvedPattern>>,
 }
 
-impl NodeTrait for NodePattern {
+impl NodeTrait for Pattern {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -152,7 +152,7 @@ impl NodeTrait for NodePattern {
     }
 }
 
-impl PaintSource for NodePattern {
+impl PaintSource for Pattern {
     type Resolved = ResolvedPattern;
 
     fn resolve(
@@ -183,7 +183,7 @@ impl PaintSource for NodePattern {
                         }
 
                         let borrowed_node = acquired_node.borrow();
-                        let borrowed_pattern = borrowed_node.get_impl::<NodePattern>();
+                        let borrowed_pattern = borrowed_node.get_impl::<Pattern>();
                         let unresolved = borrowed_pattern.get_unresolved(&acquired_node);
 
                         pattern = pattern.resolve_from_fallback(&unresolved.pattern);
@@ -570,7 +570,7 @@ impl Children {
     }
 }
 
-impl NodePattern {
+impl Pattern {
     fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
         let pattern = UnresolvedPattern {
             common: self.common.clone(),
@@ -597,11 +597,11 @@ mod tests {
             &QualName::new(None, ns!(svg), local_name!("pattern")),
             None,
             None,
-            Box::new(NodePattern::default()),
+            Box::new(Pattern::default()),
         ));
 
         let borrow = node.borrow();
-        let p = borrow.get_impl::<NodePattern>();
+        let p = borrow.get_impl::<Pattern>();
         let Unresolved { pattern, .. } = p.get_unresolved(&node);
         let pattern = pattern.resolve_from_defaults();
         assert!(pattern.is_resolved());

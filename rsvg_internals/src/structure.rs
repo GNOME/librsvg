@@ -18,9 +18,9 @@ use crate::rect::RectangleExt;
 use crate::viewbox::*;
 
 #[derive(Default)]
-pub struct NodeGroup();
+pub struct Group();
 
-impl NodeTrait for NodeGroup {
+impl NodeTrait for Group {
     fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
@@ -45,18 +45,18 @@ impl NodeTrait for NodeGroup {
 /// Sometimes we just need a node that can contain children, but doesn't
 /// render itself or its children.  This is just that kind of node.
 #[derive(Default)]
-pub struct NodeNonRendering;
+pub struct NonRendering;
 
-impl NodeTrait for NodeNonRendering {
+impl NodeTrait for NonRendering {
     fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
 }
 
 #[derive(Default)]
-pub struct NodeSwitch();
+pub struct Switch();
 
-impl NodeTrait for NodeSwitch {
+impl NodeTrait for Switch {
     fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
         Ok(())
     }
@@ -93,7 +93,7 @@ pub struct IntrinsicDimensions {
 }
 
 #[derive(Default)]
-pub struct NodeSvg {
+pub struct Svg {
     preserve_aspect_ratio: AspectRatio,
     x: Option<LengthHorizontal>,
     y: Option<LengthVertical>,
@@ -102,7 +102,7 @@ pub struct NodeSvg {
     vbox: Option<ViewBox>,
 }
 
-impl NodeSvg {
+impl Svg {
     pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(i32, i32)> {
         let (_, _, w, h) = self.get_unnormalized_viewport();
 
@@ -174,7 +174,7 @@ impl NodeSvg {
     }
 }
 
-impl NodeTrait for NodeSvg {
+impl NodeTrait for Svg {
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
@@ -264,7 +264,7 @@ impl NodeTrait for NodeSvg {
 }
 
 #[derive(Default)]
-pub struct NodeUse {
+pub struct Use {
     link: Option<Fragment>,
     x: LengthHorizontal,
     y: LengthVertical,
@@ -272,7 +272,7 @@ pub struct NodeUse {
     h: Option<LengthVertical>,
 }
 
-impl NodeTrait for NodeUse {
+impl NodeTrait for Use {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -391,7 +391,7 @@ impl NodeTrait for NodeUse {
             })
         } else {
             let node_data = child.borrow();
-            let symbol = node_data.get_impl::<NodeSymbol>();
+            let symbol = node_data.get_impl::<Symbol>();
 
             let clip_mode = if !values.is_overflow()
                 || (values.overflow == Overflow::Visible && child.borrow().is_overflow())
@@ -420,12 +420,12 @@ impl NodeTrait for NodeUse {
 }
 
 #[derive(Default)]
-pub struct NodeSymbol {
+pub struct Symbol {
     preserve_aspect_ratio: AspectRatio,
     vbox: Option<ViewBox>,
 }
 
-impl NodeTrait for NodeSymbol {
+impl NodeTrait for Symbol {
     fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
