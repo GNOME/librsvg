@@ -17,10 +17,10 @@ use crate::filters::{
         bottom_row_normal,
         interior_normal,
         left_column_normal,
-        light_source::DistantLight,
+        light_source::FeDistantLight,
+        light_source::FePointLight,
+        light_source::FeSpotLight,
         light_source::LightSource,
-        light_source::PointLight,
-        light_source::SpotLight,
         right_column_normal,
         top_left_normal,
         top_right_normal,
@@ -96,12 +96,12 @@ impl Common {
 }
 
 /// The `feDiffuseLighting` filter primitives.
-pub struct DiffuseLighting {
+pub struct FeDiffuseLighting {
     common: Common,
     diffuse_constant: f64,
 }
 
-impl Default for DiffuseLighting {
+impl Default for FeDiffuseLighting {
     fn default() -> Self {
         Self {
             common: Common::new(PrimitiveWithInput::new::<Self>()),
@@ -110,7 +110,7 @@ impl Default for DiffuseLighting {
     }
 }
 
-impl NodeTrait for DiffuseLighting {
+impl NodeTrait for FeDiffuseLighting {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -140,7 +140,7 @@ impl NodeTrait for DiffuseLighting {
     }
 }
 
-impl Lighting for DiffuseLighting {
+impl Lighting for FeDiffuseLighting {
     #[inline]
     fn common(&self) -> &Common {
         &self.common
@@ -166,13 +166,13 @@ impl Lighting for DiffuseLighting {
 }
 
 /// The `feSpecularLighting` filter primitives.
-pub struct SpecularLighting {
+pub struct FeSpecularLighting {
     common: Common,
     specular_constant: f64,
     specular_exponent: f64,
 }
 
-impl Default for SpecularLighting {
+impl Default for FeSpecularLighting {
     fn default() -> Self {
         Self {
             common: Common::new(PrimitiveWithInput::new::<Self>()),
@@ -182,7 +182,7 @@ impl Default for SpecularLighting {
     }
 }
 
-impl NodeTrait for SpecularLighting {
+impl NodeTrait for FeSpecularLighting {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -226,7 +226,7 @@ impl NodeTrait for SpecularLighting {
     }
 }
 
-impl Lighting for SpecularLighting {
+impl Lighting for FeSpecularLighting {
     #[inline]
     fn common(&self) -> &Common {
         &self.common
@@ -517,8 +517,8 @@ fn specular_alpha(r: u8, g: u8, b: u8) -> u8 {
     max(max(r, g), b)
 }
 
-impl_lighting_filter!(DiffuseLighting, diffuse_alpha);
-impl_lighting_filter!(SpecularLighting, specular_alpha);
+impl_lighting_filter!(FeDiffuseLighting, diffuse_alpha);
+impl_lighting_filter!(FeSpecularLighting, specular_alpha);
 
 fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource, FilterError> {
     let mut light_sources = node
@@ -540,9 +540,9 @@ fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource
     }
 
     let light_source = match node.borrow().get_type() {
-        NodeType::FeDistantLight => node.borrow().get_impl::<DistantLight>().transform(ctx),
-        NodeType::FePointLight => node.borrow().get_impl::<PointLight>().transform(ctx),
-        NodeType::FeSpotLight => node.borrow().get_impl::<SpotLight>().transform(ctx),
+        NodeType::FeDistantLight => node.borrow().get_impl::<FeDistantLight>().transform(ctx),
+        NodeType::FePointLight => node.borrow().get_impl::<FePointLight>().transform(ctx),
+        NodeType::FeSpotLight => node.borrow().get_impl::<FeSpotLight>().transform(ctx),
         _ => unreachable!(),
     };
 

@@ -88,7 +88,7 @@ impl Parse for MarkerOrient {
     }
 }
 
-pub struct NodeMarker {
+pub struct Marker {
     units: MarkerUnits,
     ref_x: LengthHorizontal,
     ref_y: LengthVertical,
@@ -99,9 +99,9 @@ pub struct NodeMarker {
     vbox: Option<ViewBox>,
 }
 
-impl Default for NodeMarker {
-    fn default() -> NodeMarker {
-        NodeMarker {
+impl Default for Marker {
+    fn default() -> Marker {
+        Marker {
             units: MarkerUnits::default(),
             ref_x: Default::default(),
             ref_y: Default::default(),
@@ -115,7 +115,7 @@ impl Default for NodeMarker {
     }
 }
 
-impl NodeMarker {
+impl Marker {
     fn render(
         &self,
         node: &RsvgNode,
@@ -193,7 +193,7 @@ impl NodeMarker {
     }
 }
 
-impl NodeTrait for NodeMarker {
+impl NodeTrait for Marker {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -592,7 +592,7 @@ fn emit_marker_by_name(
     {
         let node = acquired.get();
 
-        node.borrow().get_impl::<NodeMarker>().render(
+        node.borrow().get_impl::<Marker>().render(
             &node,
             draw_ctx,
             xpos,

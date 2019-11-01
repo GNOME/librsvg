@@ -89,12 +89,12 @@ impl LightSource {
 }
 
 #[derive(Default)]
-pub struct DistantLight {
+pub struct FeDistantLight {
     azimuth: f64,
     elevation: f64,
 }
 
-impl DistantLight {
+impl FeDistantLight {
     pub fn transform(&self, _ctx: &FilterContext) -> LightSource {
         LightSource::Distant {
             azimuth: self.azimuth,
@@ -103,7 +103,7 @@ impl DistantLight {
     }
 }
 
-impl NodeTrait for DistantLight {
+impl NodeTrait for FeDistantLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -120,13 +120,13 @@ impl NodeTrait for DistantLight {
 }
 
 #[derive(Default)]
-pub struct PointLight {
+pub struct FePointLight {
     x: f64,
     y: f64,
     z: f64,
 }
 
-impl PointLight {
+impl FePointLight {
     pub fn transform(&self, ctx: &FilterContext) -> LightSource {
         let (x, y) = ctx.paffine().transform_point(self.x, self.y);
         let z = ctx.transform_dist(self.z);
@@ -137,7 +137,7 @@ impl PointLight {
     }
 }
 
-impl NodeTrait for PointLight {
+impl NodeTrait for FePointLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -153,7 +153,7 @@ impl NodeTrait for PointLight {
 }
 
 #[derive(Default)]
-pub struct SpotLight {
+pub struct FeSpotLight {
     x: f64,
     y: f64,
     z: f64,
@@ -164,7 +164,7 @@ pub struct SpotLight {
     limiting_cone_angle: Option<f64>,
 }
 
-impl SpotLight {
+impl FeSpotLight {
     pub fn transform(&self, ctx: &FilterContext) -> LightSource {
         let (x, y) = ctx.paffine().transform_point(self.x, self.y);
         let z = ctx.transform_dist(self.z);
@@ -186,7 +186,7 @@ impl SpotLight {
     }
 }
 
-impl NodeTrait for SpotLight {
+impl NodeTrait for FeSpotLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

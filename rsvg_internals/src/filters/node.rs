@@ -13,7 +13,7 @@ use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 
 /// The <filter> node.
-pub struct NodeFilter {
+pub struct Filter {
     x: LengthHorizontal,
     y: LengthVertical,
     width: LengthHorizontal,
@@ -22,8 +22,8 @@ pub struct NodeFilter {
     primitiveunits: CoordUnits,
 }
 
-impl Default for NodeFilter {
-    /// Constructs a new `NodeFilter` with default properties.
+impl Default for Filter {
+    /// Constructs a new `Filter` with default properties.
     #[inline]
     fn default() -> Self {
         Self {
@@ -37,7 +37,7 @@ impl Default for NodeFilter {
     }
 }
 
-impl NodeFilter {
+impl Filter {
     pub fn get_filter_units(&self) -> CoordUnits {
         self.filterunits
     }
@@ -113,7 +113,7 @@ impl NodeFilter {
     }
 }
 
-impl NodeTrait for NodeFilter {
+impl NodeTrait for Filter {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {

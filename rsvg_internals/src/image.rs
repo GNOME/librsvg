@@ -16,7 +16,7 @@ use crate::rect::RectangleExt;
 use crate::viewbox::ViewBox;
 
 #[derive(Default)]
-pub struct NodeImage {
+pub struct Image {
     x: LengthHorizontal,
     y: LengthVertical,
     w: LengthHorizontal,
@@ -25,7 +25,7 @@ pub struct NodeImage {
     href: Option<Href>,
 }
 
-impl NodeTrait for NodeImage {
+impl NodeTrait for Image {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

@@ -10,21 +10,21 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive};
 
 /// The `feFlood` filter primitive.
-pub struct Flood {
+pub struct FeFlood {
     base: Primitive,
 }
 
-impl Default for Flood {
+impl Default for FeFlood {
     /// Constructs a new `Flood` with empty properties.
     #[inline]
-    fn default() -> Flood {
-        Flood {
+    fn default() -> FeFlood {
+        FeFlood {
             base: Primitive::new::<Self>(),
         }
     }
 }
 
-impl NodeTrait for Flood {
+impl NodeTrait for FeFlood {
     impl_node_as_filter_effect!();
 
     #[inline]
@@ -33,7 +33,7 @@ impl NodeTrait for Flood {
     }
 }
 
-impl FilterEffect for Flood {
+impl FilterEffect for FeFlood {
     fn render(
         &self,
         node: &RsvgNode,

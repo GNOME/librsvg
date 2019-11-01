@@ -12,27 +12,27 @@ use super::input::Input;
 use super::{FilterEffect, FilterError, Primitive};
 
 /// The `feMerge` filter primitive.
-pub struct Merge {
+pub struct FeMerge {
     base: Primitive,
 }
 
 /// The `<feMergeNode>` element.
 #[derive(Default)]
-pub struct MergeNode {
+pub struct FeMergeNode {
     in_: Option<Input>,
 }
 
-impl Default for Merge {
+impl Default for FeMerge {
     /// Constructs a new `Merge` with empty properties.
     #[inline]
-    fn default() -> Merge {
-        Merge {
+    fn default() -> FeMerge {
+        FeMerge {
             base: Primitive::new::<Self>(),
         }
     }
 }
 
-impl NodeTrait for Merge {
+impl NodeTrait for FeMerge {
     impl_node_as_filter_effect!();
 
     #[inline]
@@ -41,7 +41,7 @@ impl NodeTrait for Merge {
     }
 }
 
-impl NodeTrait for MergeNode {
+impl NodeTrait for FeMergeNode {
     #[inline]
     fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
@@ -55,7 +55,7 @@ impl NodeTrait for MergeNode {
     }
 }
 
-impl MergeNode {
+impl FeMergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
@@ -104,7 +104,7 @@ impl MergeNode {
     }
 }
 
-impl FilterEffect for Merge {
+impl FilterEffect for FeMerge {
     fn render(
         &self,
         node: &RsvgNode,
@@ -123,7 +123,7 @@ impl FilterEffect for Merge {
 
             let input = ctx.get_input(
                 draw_ctx,
-                child.borrow().get_impl::<MergeNode>().in_.as_ref(),
+                child.borrow().get_impl::<FeMergeNode>().in_.as_ref(),
             )?;
             bounds = bounds.add_input(&input);
         }
@@ -135,7 +135,7 @@ impl FilterEffect for Merge {
             .children()
             .filter(|c| c.borrow().get_type() == NodeType::FeMergeNode)
         {
-            output_surface = Some(child.borrow().get_impl::<MergeNode>().render(
+            output_surface = Some(child.borrow().get_impl::<FeMergeNode>().render(
                 ctx,
                 draw_ctx,
                 bounds,

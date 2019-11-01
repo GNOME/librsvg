@@ -12,11 +12,11 @@ use crate::property_bag::PropertyBag;
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
 #[derive(Default)]
-pub struct NodeClipPath {
+pub struct ClipPath {
     units: ClipPathUnits,
 }
 
-impl NodeClipPath {
+impl ClipPath {
     pub fn get_units(&self) -> ClipPathUnits {
         self.units
     }
@@ -67,7 +67,7 @@ impl NodeClipPath {
     }
 }
 
-impl NodeTrait for NodeClipPath {
+impl NodeTrait for ClipPath {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

@@ -24,23 +24,23 @@ use super::{FilterEffect, FilterError, PrimitiveWithInput};
 const MAXIMUM_KERNEL_SIZE: usize = 500;
 
 /// The `feGaussianBlur` filter primitive.
-pub struct GaussianBlur {
+pub struct FeGaussianBlur {
     base: PrimitiveWithInput,
     std_deviation: (f64, f64),
 }
 
-impl Default for GaussianBlur {
+impl Default for FeGaussianBlur {
     /// Constructs a new `GaussianBlur` with empty properties.
     #[inline]
-    fn default() -> GaussianBlur {
-        GaussianBlur {
+    fn default() -> FeGaussianBlur {
+        FeGaussianBlur {
             base: PrimitiveWithInput::new::<Self>(),
             std_deviation: (0.0, 0.0),
         }
     }
 }
 
-impl NodeTrait for GaussianBlur {
+impl NodeTrait for FeGaussianBlur {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -196,7 +196,7 @@ fn gaussian_blur(
     )?)
 }
 
-impl FilterEffect for GaussianBlur {
+impl FilterEffect for FeGaussianBlur {
     fn render(
         &self,
         _node: &RsvgNode,

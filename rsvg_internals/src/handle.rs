@@ -15,7 +15,7 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::{DrawingCtx, RsvgRectangle};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, RsvgNode};
-use crate::structure::{IntrinsicDimensions, NodeSvg};
+use crate::structure::{IntrinsicDimensions, Svg};
 use url::Url;
 
 #[derive(Clone)]
@@ -317,7 +317,7 @@ impl Handle {
             let values = cascaded.get();
 
             if let Some((root_width, root_height)) =
-                node.borrow().get_impl::<NodeSvg>().get_size(&values, dpi)
+                node.borrow().get_impl::<Svg>().get_size(&values, dpi)
             {
                 let ink_r = RsvgRectangle {
                     x: 0.0,

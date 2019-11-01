@@ -15,7 +15,7 @@ use crate::io::{self, BinaryData};
 use crate::node::{NodeCascade, NodeData, NodeType, RsvgNode};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
-use crate::structure::{IntrinsicDimensions, NodeSvg};
+use crate::structure::{IntrinsicDimensions, Svg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::text::NodeChars;
 use crate::xml::xml_load_from_possibly_compressed_stream;
@@ -93,7 +93,7 @@ impl Document {
         let node_data = root.borrow();
 
         assert!(node_data.get_type() == NodeType::Svg);
-        node_data.get_impl::<NodeSvg>().get_intrinsic_dimensions()
+        node_data.get_impl::<Svg>().get_intrinsic_dimensions()
     }
 }
 

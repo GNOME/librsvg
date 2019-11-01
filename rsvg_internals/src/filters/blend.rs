@@ -34,17 +34,17 @@ enum Mode {
 }
 
 /// The `feBlend` filter primitive.
-pub struct Blend {
+pub struct FeBlend {
     base: PrimitiveWithInput,
     in2: Option<Input>,
     mode: Mode,
 }
 
-impl Default for Blend {
+impl Default for FeBlend {
     /// Constructs a new `Blend` with empty properties.
     #[inline]
-    fn default() -> Blend {
-        Blend {
+    fn default() -> FeBlend {
+        FeBlend {
             base: PrimitiveWithInput::new::<Self>(),
             in2: None,
             mode: Mode::Normal,
@@ -52,7 +52,7 @@ impl Default for Blend {
     }
 }
 
-impl NodeTrait for Blend {
+impl NodeTrait for FeBlend {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -72,7 +72,7 @@ impl NodeTrait for Blend {
     }
 }
 
-impl FilterEffect for Blend {
+impl FilterEffect for FeBlend {
     fn render(
         &self,
         _node: &RsvgNode,

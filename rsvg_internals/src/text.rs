@@ -438,7 +438,7 @@ fn children_to_chunks(
 
             NodeType::TSpan => {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                child.borrow().get_impl::<NodeTSpan>().to_chunks(
+                child.borrow().get_impl::<TSpan>().to_chunks(
                     &child,
                     &cascaded,
                     draw_ctx,
@@ -449,7 +449,7 @@ fn children_to_chunks(
 
             NodeType::TRef => {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                child.borrow().get_impl::<NodeTRef>().to_chunks(
+                child.borrow().get_impl::<TRef>().to_chunks(
                     &child,
                     &cascaded,
                     draw_ctx,
@@ -464,7 +464,7 @@ fn children_to_chunks(
 }
 
 /// In SVG text elements, we use `NodeChars` to store character data.  For example,
-/// an element like `<text>Foo Bar</text>` will be a `NodeText` with a single child,
+/// an element like `<text>Foo Bar</text>` will be a `Text` with a single child,
 /// and the child will be a `NodeChars` with "Foo Bar" for its contents.
 ///
 /// Text elements can contain `<tspan>` sub-elements.  In this case,
@@ -569,14 +569,14 @@ impl NodeTrait for NodeChars {
 }
 
 #[derive(Default)]
-pub struct NodeText {
+pub struct Text {
     x: LengthHorizontal,
     y: LengthVertical,
     dx: Option<LengthHorizontal>,
     dy: Option<LengthVertical>,
 }
 
-impl NodeText {
+impl Text {
     fn make_chunks(
         &self,
         node: &RsvgNode,
@@ -590,7 +590,7 @@ impl NodeText {
     }
 }
 
-impl NodeTrait for NodeText {
+impl NodeTrait for Text {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -658,11 +658,11 @@ impl NodeTrait for NodeText {
 }
 
 #[derive(Default)]
-pub struct NodeTRef {
+pub struct TRef {
     link: Option<Fragment>,
 }
 
-impl NodeTRef {
+impl TRef {
     fn to_chunks(
         &self,
         node: &RsvgNode,
@@ -708,7 +708,7 @@ fn extract_chars_children_to_chunks_recursively(
     }
 }
 
-impl NodeTrait for NodeTRef {
+impl NodeTrait for TRef {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -724,14 +724,14 @@ impl NodeTrait for NodeTRef {
 }
 
 #[derive(Default)]
-pub struct NodeTSpan {
+pub struct TSpan {
     x: Option<LengthHorizontal>,
     y: Option<LengthVertical>,
     dx: Option<LengthHorizontal>,
     dy: Option<LengthVertical>,
 }
 
-impl NodeTSpan {
+impl TSpan {
     fn to_chunks(
         &self,
         node: &RsvgNode,
@@ -750,7 +750,7 @@ impl NodeTSpan {
     }
 }
 
-impl NodeTrait for NodeTSpan {
+impl NodeTrait for TSpan {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

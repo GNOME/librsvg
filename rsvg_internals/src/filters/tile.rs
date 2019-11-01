@@ -9,21 +9,21 @@ use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// The `feTile` filter primitive.
-pub struct Tile {
+pub struct FeTile {
     base: PrimitiveWithInput,
 }
 
-impl Default for Tile {
+impl Default for FeTile {
     /// Constructs a new `Tile` with empty properties.
     #[inline]
-    fn default() -> Tile {
-        Tile {
+    fn default() -> FeTile {
+        FeTile {
             base: PrimitiveWithInput::new::<Self>(),
         }
     }
 }
 
-impl NodeTrait for Tile {
+impl NodeTrait for FeTile {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -31,7 +31,7 @@ impl NodeTrait for Tile {
     }
 }
 
-impl FilterEffect for Tile {
+impl FilterEffect for FeTile {
     fn render(
         &self,
         _node: &RsvgNode,

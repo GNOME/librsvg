@@ -2,43 +2,41 @@ use lazy_static::lazy_static;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::collections::HashMap;
 
-use crate::clip_path::NodeClipPath;
+use crate::clip_path::ClipPath;
 use crate::filters::{
-    blend::Blend,
-    color_matrix::ColorMatrix,
-    component_transfer::{ComponentTransfer, FuncA, FuncB, FuncG, FuncR},
-    composite::Composite,
-    convolve_matrix::ConvolveMatrix,
-    displacement_map::DisplacementMap,
-    flood::Flood,
-    gaussian_blur::GaussianBlur,
-    image::Image,
+    blend::FeBlend,
+    color_matrix::FeColorMatrix,
+    component_transfer::{FeComponentTransfer, FeFuncA, FeFuncB, FeFuncG, FeFuncR},
+    composite::FeComposite,
+    convolve_matrix::FeConvolveMatrix,
+    displacement_map::FeDisplacementMap,
+    flood::FeFlood,
+    gaussian_blur::FeGaussianBlur,
+    image::FeImage,
     light::{
-        light_source::DistantLight, light_source::PointLight, light_source::SpotLight,
-        lighting::DiffuseLighting, lighting::SpecularLighting,
+        light_source::FeDistantLight, light_source::FePointLight, light_source::FeSpotLight,
+        lighting::FeDiffuseLighting, lighting::FeSpecularLighting,
     },
-    merge::{Merge, MergeNode},
-    morphology::Morphology,
-    node::NodeFilter,
-    offset::Offset,
-    tile::Tile,
-    turbulence::Turbulence,
+    merge::{FeMerge, FeMergeNode},
+    morphology::FeMorphology,
+    node::Filter,
+    offset::FeOffset,
+    tile::FeTile,
+    turbulence::FeTurbulence,
 };
 
-use crate::gradient::{NodeLinearGradient, NodeRadialGradient, NodeStop};
-use crate::image::NodeImage;
-use crate::link::NodeLink;
-use crate::marker::NodeMarker;
-use crate::mask::NodeMask;
+use crate::gradient::{LinearGradient, RadialGradient, Stop};
+use crate::image::Image;
+use crate::link::Link;
+use crate::marker::Marker;
+use crate::mask::Mask;
 use crate::node::*;
-use crate::pattern::NodePattern;
+use crate::pattern::Pattern;
 use crate::property_bag::PropertyBag;
-use crate::shapes::{
-    NodeCircle, NodeEllipse, NodeLine, NodePath, NodePolygon, NodePolyline, NodeRect,
-};
-use crate::structure::{NodeGroup, NodeNonRendering, NodeSvg, NodeSwitch, NodeSymbol, NodeUse};
-use crate::style::NodeStyle;
-use crate::text::{NodeTRef, NodeTSpan, NodeText};
+use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
+use crate::structure::{Group, NonRendering, Svg, Switch, Symbol, Use};
+use crate::style::Style;
+use crate::text::{TRef, TSpan, Text};
 
 macro_rules! n {
     ($name:ident, $node_type:ident, $node_trait:ty) => {
@@ -58,58 +56,58 @@ macro_rules! n {
 mod creators {
     use super::*;
 
-    n!(create_circle,                    Circle,                     NodeCircle);
-    n!(create_clip_path,                 ClipPath,                   NodeClipPath);
-    n!(create_blend,                     FeBlend,                    Blend);
-    n!(create_color_matrix,              FeColorMatrix,              ColorMatrix);
-    n!(create_component_transfer,        FeComponentTransfer,        ComponentTransfer);
-    n!(create_component_transfer_func_a, ComponentTransferFunctionA, FuncA);
-    n!(create_component_transfer_func_b, ComponentTransferFunctionB, FuncB);
-    n!(create_component_transfer_func_g, ComponentTransferFunctionG, FuncG);
-    n!(create_component_transfer_func_r, ComponentTransferFunctionR, FuncR);
-    n!(create_composite,                 FeComposite,                Composite);
-    n!(create_convolve_matrix,           FeConvolveMatrix,           ConvolveMatrix);
-    n!(create_defs,                      Defs,                       NodeNonRendering);
-    n!(create_diffuse_lighting,          FeDiffuseLighting,          DiffuseLighting);
-    n!(create_distant_light,             FeDistantLight,             DistantLight);
-    n!(create_displacement_map,          FeDisplacementMap,          DisplacementMap);
-    n!(create_ellipse,                   Ellipse,                    NodeEllipse);
-    n!(create_filter,                    Filter,                     NodeFilter);
-    n!(create_flood,                     FeFlood,                    Flood);
-    n!(create_gaussian_blur,             FeGaussianBlur,             GaussianBlur);
-    n!(create_group,                     Group,                      NodeGroup);
-    n!(create_image,                     Image,                      NodeImage);
-    n!(create_fe_image,                  FeImage,                    Image);
-    n!(create_line,                      Line,                       NodeLine);
-    n!(create_linear_gradient,           LinearGradient,             NodeLinearGradient);
-    n!(create_link,                      Link,                       NodeLink);
-    n!(create_marker,                    Marker,                     NodeMarker);
-    n!(create_mask,                      Mask,                       NodeMask);
-    n!(create_merge,                     FeMerge,                    Merge);
-    n!(create_merge_node,                FeMergeNode,                MergeNode);
-    n!(create_morphology,                FeMorphology,               Morphology);
-    n!(create_non_rendering,             NonRendering,               NodeNonRendering);
-    n!(create_offset,                    FeOffset,                   Offset);
-    n!(create_path,                      Path,                       NodePath);
-    n!(create_pattern,                   Pattern,                    NodePattern);
-    n!(create_point_light,               FePointLight,               PointLight);
-    n!(create_polygon,                   Polygon,                    NodePolygon);
-    n!(create_polyline,                  Polyline,                   NodePolyline);
-    n!(create_radial_gradient,           RadialGradient,             NodeRadialGradient);
-    n!(create_rect,                      Rect,                       NodeRect);
-    n!(create_specular_lighting,         FeSpecularLighting,         SpecularLighting);
-    n!(create_spot_light,                FeSpotLight,                SpotLight);
-    n!(create_stop,                      Stop,                       NodeStop);
-    n!(create_style,                     Style,                      NodeStyle);
-    n!(create_svg,                       Svg,                        NodeSvg);
-    n!(create_switch,                    Switch,                     NodeSwitch);
-    n!(create_symbol,                    Symbol,                     NodeSymbol);
-    n!(create_text,                      Text,                       NodeText);
-    n!(create_tref,                      TRef,                       NodeTRef);
-    n!(create_tspan,                     TSpan,                      NodeTSpan);
-    n!(create_tile,                      FeTile,                     Tile);
-    n!(create_turbulence,                FeTurbulence,               Turbulence);
-    n!(create_use,                       Use,                        NodeUse);
+    n!(create_circle,                    Circle,                     Circle);
+    n!(create_clip_path,                 ClipPath,                   ClipPath);
+    n!(create_defs,                      Defs,                       NonRendering);
+    n!(create_ellipse,                   Ellipse,                    Ellipse);
+    n!(create_fe_blend,                  FeBlend,                    FeBlend);
+    n!(create_fe_color_matrix,           FeColorMatrix,              FeColorMatrix);
+    n!(create_fe_component_transfer,     FeComponentTransfer,        FeComponentTransfer);
+    n!(create_fe_func_a,                 FeFuncA,                    FeFuncA);
+    n!(create_fe_func_b,                 FeFuncB,                    FeFuncB);
+    n!(create_fe_func_g,                 FeFuncG,                    FeFuncG);
+    n!(create_fe_func_r,                 FeFuncR,                    FeFuncR);
+    n!(create_fe_composite,              FeComposite,                FeComposite);
+    n!(create_fe_convolve_matrix,        FeConvolveMatrix,           FeConvolveMatrix);
+    n!(create_fe_diffuse_lighting,       FeDiffuseLighting,          FeDiffuseLighting);
+    n!(create_fe_distant_light,          FeDistantLight,             FeDistantLight);
+    n!(create_fe_displacement_map,       FeDisplacementMap,          FeDisplacementMap);
+    n!(create_fe_flood,                  FeFlood,                    FeFlood);
+    n!(create_fe_gaussian_blur,          FeGaussianBlur,             FeGaussianBlur);
+    n!(create_fe_image,                  FeImage,                    FeImage);
+    n!(create_fe_merge,                  FeMerge,                    FeMerge);
+    n!(create_fe_merge_node,             FeMergeNode,                FeMergeNode);
+    n!(create_fe_morphology,             FeMorphology,               FeMorphology);
+    n!(create_fe_offset,                 FeOffset,                   FeOffset);
+    n!(create_fe_point_light,            FePointLight,               FePointLight);
+    n!(create_fe_specular_lighting,      FeSpecularLighting,         FeSpecularLighting);
+    n!(create_fe_spot_light,             FeSpotLight,                FeSpotLight);
+    n!(create_fe_tile,                   FeTile,                     FeTile);
+    n!(create_fe_turbulence,             FeTurbulence,               FeTurbulence);
+    n!(create_filter,                    Filter,                     Filter);
+    n!(create_group,                     Group,                      Group);
+    n!(create_image,                     Image,                      Image);
+    n!(create_line,                      Line,                       Line);
+    n!(create_linear_gradient,           LinearGradient,             LinearGradient);
+    n!(create_link,                      Link,                       Link);
+    n!(create_marker,                    Marker,                     Marker);
+    n!(create_mask,                      Mask,                       Mask);
+    n!(create_non_rendering,             NonRendering,               NonRendering);
+    n!(create_path,                      Path,                       Path);
+    n!(create_pattern,                   Pattern,                    Pattern);
+    n!(create_polygon,                   Polygon,                    Polygon);
+    n!(create_polyline,                  Polyline,                   Polyline);
+    n!(create_radial_gradient,           RadialGradient,             RadialGradient);
+    n!(create_rect,                      Rect,                       Rect);
+    n!(create_stop,                      Stop,                       Stop);
+    n!(create_style,                     Style,                      Style);
+    n!(create_svg,                       Svg,                        Svg);
+    n!(create_switch,                    Switch,                     Switch);
+    n!(create_symbol,                    Symbol,                     Symbol);
+    n!(create_text,                      Text,                       Text);
+    n!(create_tref,                      TRef,                       TRef);
+    n!(create_tspan,                     TSpan,                      TSpan);
+    n!(create_use,                       Use,                        Use);
 
     /* Hack to make multiImage sort-of work
      *
@@ -119,9 +117,9 @@ mod creators {
      * Is multiImage even in SVG2?
      */
     /*
-    n!(create_multi_image,               Switch,                     NodeSwitch);
-    n!(create_sub_image,                 Group,                      NodeGroup);
-    n!(create_sub_image_ref,             Image,                      NodeImage);
+    n!(create_multi_image,               Switch,                     Switch);
+    n!(create_sub_image,                 Group,                      Group);
+    n!(create_sub_image_ref,             Image,                      Image);
     */
 }
 
@@ -156,30 +154,30 @@ lazy_static! {
         c!(h, "defs",                true,  create_defs);
         /* c!(h, "desc",             true,  ); */
         c!(h, "ellipse",             true,  create_ellipse);
-        c!(h, "feBlend",             true,  create_blend);
-        c!(h, "feColorMatrix",       true,  create_color_matrix);
-        c!(h, "feComponentTransfer", true,  create_component_transfer);
-        c!(h, "feComposite",         true,  create_composite);
-        c!(h, "feConvolveMatrix",    true,  create_convolve_matrix);
-        c!(h, "feDiffuseLighting",   true,  create_diffuse_lighting);
-        c!(h, "feDisplacementMap",   true,  create_displacement_map);
-        c!(h, "feDistantLight",      false, create_distant_light);
-        c!(h, "feFuncA",             false, create_component_transfer_func_a);
-        c!(h, "feFuncB",             false, create_component_transfer_func_b);
-        c!(h, "feFuncG",             false, create_component_transfer_func_g);
-        c!(h, "feFuncR",             false, create_component_transfer_func_r);
-        c!(h, "feFlood",             true,  create_flood);
-        c!(h, "feGaussianBlur",      true,  create_gaussian_blur);
+        c!(h, "feBlend",             true,  create_fe_blend);
+        c!(h, "feColorMatrix",       true,  create_fe_color_matrix);
+        c!(h, "feComponentTransfer", true,  create_fe_component_transfer);
+        c!(h, "feComposite",         true,  create_fe_composite);
+        c!(h, "feConvolveMatrix",    true,  create_fe_convolve_matrix);
+        c!(h, "feDiffuseLighting",   true,  create_fe_diffuse_lighting);
+        c!(h, "feDisplacementMap",   true,  create_fe_displacement_map);
+        c!(h, "feDistantLight",      false, create_fe_distant_light);
+        c!(h, "feFuncA",             false, create_fe_func_a);
+        c!(h, "feFuncB",             false, create_fe_func_b);
+        c!(h, "feFuncG",             false, create_fe_func_g);
+        c!(h, "feFuncR",             false, create_fe_func_r);
+        c!(h, "feFlood",             true,  create_fe_flood);
+        c!(h, "feGaussianBlur",      true,  create_fe_gaussian_blur);
         c!(h, "feImage",             true,  create_fe_image);
-        c!(h, "feMerge",             true,  create_merge);
-        c!(h, "feMergeNode",         false, create_merge_node);
-        c!(h, "feMorphology",        true,  create_morphology);
-        c!(h, "feOffset",            true,  create_offset);
-        c!(h, "fePointLight",        false, create_point_light);
-        c!(h, "feSpecularLighting",  true,  create_specular_lighting);
-        c!(h, "feSpotLight",         false, create_spot_light);
-        c!(h, "feTile",              true,  create_tile);
-        c!(h, "feTurbulence",        true,  create_turbulence);
+        c!(h, "feMerge",             true,  create_fe_merge);
+        c!(h, "feMergeNode",         false, create_fe_merge_node);
+        c!(h, "feMorphology",        true,  create_fe_morphology);
+        c!(h, "feOffset",            true,  create_fe_offset);
+        c!(h, "fePointLight",        false, create_fe_point_light);
+        c!(h, "feSpecularLighting",  true,  create_fe_specular_lighting);
+        c!(h, "feSpotLight",         false, create_fe_spot_light);
+        c!(h, "feTile",              true,  create_fe_tile);
+        c!(h, "feTurbulence",        true,  create_fe_turbulence);
         c!(h, "filter",              true,  create_filter);
         /* c!(h, "font",             true,  ); */
         /* c!(h, "font-face",        false, ); */

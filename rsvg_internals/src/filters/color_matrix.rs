@@ -26,23 +26,23 @@ enum OperationType {
 }
 
 /// The `feColorMatrix` filter primitive.
-pub struct ColorMatrix {
+pub struct FeColorMatrix {
     base: PrimitiveWithInput,
     matrix: Matrix5<f64>,
 }
 
-impl Default for ColorMatrix {
+impl Default for FeColorMatrix {
     /// Constructs a new `ColorMatrix` with empty properties.
     #[inline]
-    fn default() -> ColorMatrix {
-        ColorMatrix {
+    fn default() -> FeColorMatrix {
+        FeColorMatrix {
             base: PrimitiveWithInput::new::<Self>(),
             matrix: Matrix5::identity(),
         }
     }
 }
 
-impl NodeTrait for ColorMatrix {
+impl NodeTrait for FeColorMatrix {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -155,7 +155,7 @@ impl NodeTrait for ColorMatrix {
     }
 }
 
-impl FilterEffect for ColorMatrix {
+impl FilterEffect for FeColorMatrix {
     fn render(
         &self,
         _node: &RsvgNode,

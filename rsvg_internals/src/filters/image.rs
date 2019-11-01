@@ -17,17 +17,17 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive};
 
 /// The `feImage` filter primitive.
-pub struct Image {
+pub struct FeImage {
     base: Primitive,
     aspect: AspectRatio,
     href: Option<Href>,
 }
 
-impl Default for Image {
-    /// Constructs a new `Image` with empty properties.
+impl Default for FeImage {
+    /// Constructs a new `FeImage` with empty properties.
     #[inline]
-    fn default() -> Image {
-        Image {
+    fn default() -> FeImage {
+        FeImage {
             base: Primitive::new::<Self>(),
             aspect: AspectRatio::default(),
             href: None,
@@ -35,7 +35,7 @@ impl Default for Image {
     }
 }
 
-impl Image {
+impl FeImage {
     /// Renders the filter if the source is an existing node.
     fn render_node(
         &self,
@@ -170,7 +170,7 @@ impl Image {
     }
 }
 
-impl NodeTrait for Image {
+impl NodeTrait for FeImage {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -197,7 +197,7 @@ impl NodeTrait for Image {
     }
 }
 
-impl FilterEffect for Image {
+impl FilterEffect for FeImage {
     fn render(
         &self,
         _node: &RsvgNode,
