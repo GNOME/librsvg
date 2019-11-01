@@ -40,23 +40,6 @@ pub struct Document {
 }
 
 impl Document {
-    pub fn new(
-        mut tree: RsvgNode,
-        ids: HashMap<String, RsvgNode>,
-        load_options: LoadOptions,
-    ) -> Document {
-        let values = ComputedValues::default();
-        tree.cascade(&values);
-
-        Document {
-            tree,
-            ids,
-            externs: RefCell::new(Resources::new()),
-            images: RefCell::new(Images::new()),
-            load_options,
-        }
-    }
-
     pub fn load_from_stream(
         load_options: &LoadOptions,
         stream: &gio::InputStream,
@@ -311,16 +294,21 @@ impl DocumentBuilder {
     pub fn build(mut self) -> Result<Document, LoadingError> {
         match self.tree {
             None => Err(LoadingError::SvgHasNoElements),
-            Some(ref root) if root.borrow().get_type() == NodeType::Svg => {
+            Some(ref mut root) if root.borrow().get_type() == NodeType::Svg => {
                 for mut node in root.descendants() {
                     node.borrow_mut().set_style(&self.css_rules);
                 }
 
-                Ok(Document::new(
-                    self.tree.take().unwrap(),
-                    self.ids,
-                    self.load_options.clone(),
-                ))
+                let values = ComputedValues::default();
+                root.cascade(&values);
+
+                Ok(Document {
+                    tree: self.tree.take().unwrap(),
+                    ids: self.ids,
+                    externs: RefCell::new(Resources::new()),
+                    images: RefCell::new(Images::new()),
+                    load_options: self.load_options.clone(),
+                })
             }
             _ => Err(LoadingError::RootElementIsNotSvg),
         }
