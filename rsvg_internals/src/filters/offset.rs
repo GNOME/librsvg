@@ -11,20 +11,20 @@ use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
-pub struct Offset {
+pub struct FeOffset {
     base: PrimitiveWithInput,
     dx: f64,
     dy: f64,
 }
 
-impl Default for Offset {
+impl Default for FeOffset {
     /// Constructs a new `Offset` with empty properties.
     #[inline]
-    fn default() -> Offset {
-        Offset {
+    fn default() -> FeOffset {
+        FeOffset {
             base: PrimitiveWithInput::new::<Self>(),
             dx: 0f64,
             dy: 0f64,
@@ -32,8 +32,8 @@ impl Default for Offset {
     }
 }
 
-impl NodeTrait for Offset {
-    impl_node_as_filter!();
+impl NodeTrait for FeOffset {
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -50,7 +50,7 @@ impl NodeTrait for Offset {
     }
 }
 
-impl Filter for Offset {
+impl FilterEffect for FeOffset {
     fn render(
         &self,
         _node: &RsvgNode,

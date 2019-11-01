@@ -18,7 +18,7 @@ use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -32,7 +32,7 @@ enum Operator {
 }
 
 /// The `feComposite` filter primitive.
-pub struct Composite {
+pub struct FeComposite {
     base: PrimitiveWithInput,
     in2: Option<Input>,
     operator: Operator,
@@ -42,11 +42,11 @@ pub struct Composite {
     k4: f64,
 }
 
-impl Default for Composite {
+impl Default for FeComposite {
     /// Constructs a new `Composite` with empty properties.
     #[inline]
-    fn default() -> Composite {
-        Composite {
+    fn default() -> FeComposite {
+        FeComposite {
             base: PrimitiveWithInput::new::<Self>(),
             in2: None,
             operator: Operator::Over,
@@ -58,8 +58,8 @@ impl Default for Composite {
     }
 }
 
-impl NodeTrait for Composite {
-    impl_node_as_filter!();
+impl NodeTrait for FeComposite {
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -129,7 +129,7 @@ pub fn composite_arithmetic(
     }
 }
 
-impl Filter for Composite {
+impl FilterEffect for FeComposite {
     fn render(
         &self,
         _node: &RsvgNode,

@@ -10,7 +10,7 @@ use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::CssRules;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
-use crate::filters::Filter;
+use crate::filters::FilterEffect;
 use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
@@ -363,8 +363,8 @@ pub trait NodeTrait: Downcast {
         Ok(draw_ctx.empty_bbox())
     }
 
-    /// Returns the Filter trait if this node is a filter primitive
-    fn as_filter(&self) -> Option<&dyn Filter> {
+    /// Returns the FilterEffect trait if this node is a filter primitive
+    fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
         None
     }
 }
@@ -398,11 +398,6 @@ pub enum NodeType {
     Chars,
     Circle,
     ClipPath,
-    ComponentTransferFunctionA,
-    ComponentTransferFunctionB,
-    ComponentTransferFunctionG,
-    ComponentTransferFunctionR,
-    Defs,
     Ellipse,
     Filter,
     Group,
@@ -439,6 +434,10 @@ pub enum NodeType {
     FeDisplacementMap,
     FeDistantLight,
     FeFlood,
+    FeFuncA,
+    FeFuncB,
+    FeFuncG,
+    FeFuncR,
     FeGaussianBlur,
     FeImage,
     FeMerge,

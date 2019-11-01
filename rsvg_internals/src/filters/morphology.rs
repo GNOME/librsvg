@@ -18,7 +18,7 @@ use crate::surface_utils::{
 };
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible morphology operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -28,17 +28,17 @@ enum Operator {
 }
 
 /// The `feMorphology` filter primitive.
-pub struct Morphology {
+pub struct FeMorphology {
     base: PrimitiveWithInput,
     operator: Operator,
     radius: (f64, f64),
 }
 
-impl Default for Morphology {
+impl Default for FeMorphology {
     /// Constructs a new `Morphology` with empty properties.
     #[inline]
-    fn default() -> Morphology {
-        Morphology {
+    fn default() -> FeMorphology {
+        FeMorphology {
             base: PrimitiveWithInput::new::<Self>(),
             operator: Operator::Erode,
             radius: (0.0, 0.0),
@@ -46,8 +46,8 @@ impl Default for Morphology {
     }
 }
 
-impl NodeTrait for Morphology {
-    impl_node_as_filter!();
+impl NodeTrait for FeMorphology {
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -74,7 +74,7 @@ impl NodeTrait for Morphology {
     }
 }
 
-impl Filter for Morphology {
+impl FilterEffect for FeMorphology {
     fn render(
         &self,
         _node: &RsvgNode,
