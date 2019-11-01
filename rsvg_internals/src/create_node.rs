@@ -58,7 +58,7 @@ mod creators {
 
     n!(create_circle,                    Circle,                     Circle);
     n!(create_clip_path,                 ClipPath,                   ClipPath);
-    n!(create_defs,                      Defs,                       NonRendering);
+    n!(create_defs,                      NonRendering,               NonRendering);
     n!(create_ellipse,                   Ellipse,                    Ellipse);
     n!(create_fe_blend,                  FeBlend,                    FeBlend);
     n!(create_fe_color_matrix,           FeColorMatrix,              FeColorMatrix);

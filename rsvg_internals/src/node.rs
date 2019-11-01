@@ -398,7 +398,6 @@ pub enum NodeType {
     Chars,
     Circle,
     ClipPath,
-    Defs,
     Ellipse,
     Filter,
     Group,
