@@ -39,14 +39,14 @@ use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 
 macro_rules! n {
-    ($name:ident, $node_type:ident, $node_trait:ty) => {
+    ($name:ident, $node_type:ident) => {
         pub fn $name(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> RsvgNode {
             RsvgNode::new(NodeData::new(
                 NodeType::$node_type,
                 element_name,
                 id,
                 class,
-                Box::new(<$node_trait>::default()),
+                Box::new(<$node_type>::default()),
             ))
         }
     };
@@ -56,58 +56,58 @@ macro_rules! n {
 mod creators {
     use super::*;
 
-    n!(create_circle,                    Circle,                     Circle);
-    n!(create_clip_path,                 ClipPath,                   ClipPath);
-    n!(create_defs,                      NonRendering,               NonRendering);
-    n!(create_ellipse,                   Ellipse,                    Ellipse);
-    n!(create_fe_blend,                  FeBlend,                    FeBlend);
-    n!(create_fe_color_matrix,           FeColorMatrix,              FeColorMatrix);
-    n!(create_fe_component_transfer,     FeComponentTransfer,        FeComponentTransfer);
-    n!(create_fe_func_a,                 FeFuncA,                    FeFuncA);
-    n!(create_fe_func_b,                 FeFuncB,                    FeFuncB);
-    n!(create_fe_func_g,                 FeFuncG,                    FeFuncG);
-    n!(create_fe_func_r,                 FeFuncR,                    FeFuncR);
-    n!(create_fe_composite,              FeComposite,                FeComposite);
-    n!(create_fe_convolve_matrix,        FeConvolveMatrix,           FeConvolveMatrix);
-    n!(create_fe_diffuse_lighting,       FeDiffuseLighting,          FeDiffuseLighting);
-    n!(create_fe_distant_light,          FeDistantLight,             FeDistantLight);
-    n!(create_fe_displacement_map,       FeDisplacementMap,          FeDisplacementMap);
-    n!(create_fe_flood,                  FeFlood,                    FeFlood);
-    n!(create_fe_gaussian_blur,          FeGaussianBlur,             FeGaussianBlur);
-    n!(create_fe_image,                  FeImage,                    FeImage);
-    n!(create_fe_merge,                  FeMerge,                    FeMerge);
-    n!(create_fe_merge_node,             FeMergeNode,                FeMergeNode);
-    n!(create_fe_morphology,             FeMorphology,               FeMorphology);
-    n!(create_fe_offset,                 FeOffset,                   FeOffset);
-    n!(create_fe_point_light,            FePointLight,               FePointLight);
-    n!(create_fe_specular_lighting,      FeSpecularLighting,         FeSpecularLighting);
-    n!(create_fe_spot_light,             FeSpotLight,                FeSpotLight);
-    n!(create_fe_tile,                   FeTile,                     FeTile);
-    n!(create_fe_turbulence,             FeTurbulence,               FeTurbulence);
-    n!(create_filter,                    Filter,                     Filter);
-    n!(create_group,                     Group,                      Group);
-    n!(create_image,                     Image,                      Image);
-    n!(create_line,                      Line,                       Line);
-    n!(create_linear_gradient,           LinearGradient,             LinearGradient);
-    n!(create_link,                      Link,                       Link);
-    n!(create_marker,                    Marker,                     Marker);
-    n!(create_mask,                      Mask,                       Mask);
-    n!(create_non_rendering,             NonRendering,               NonRendering);
-    n!(create_path,                      Path,                       Path);
-    n!(create_pattern,                   Pattern,                    Pattern);
-    n!(create_polygon,                   Polygon,                    Polygon);
-    n!(create_polyline,                  Polyline,                   Polyline);
-    n!(create_radial_gradient,           RadialGradient,             RadialGradient);
-    n!(create_rect,                      Rect,                       Rect);
-    n!(create_stop,                      Stop,                       Stop);
-    n!(create_style,                     Style,                      Style);
-    n!(create_svg,                       Svg,                        Svg);
-    n!(create_switch,                    Switch,                     Switch);
-    n!(create_symbol,                    Symbol,                     Symbol);
-    n!(create_text,                      Text,                       Text);
-    n!(create_tref,                      TRef,                       TRef);
-    n!(create_tspan,                     TSpan,                      TSpan);
-    n!(create_use,                       Use,                        Use);
+    n!(create_circle,                   Circle);
+    n!(create_clip_path,                ClipPath);
+    n!(create_defs,                     NonRendering);
+    n!(create_ellipse,                  Ellipse);
+    n!(create_fe_blend,                 FeBlend);
+    n!(create_fe_color_matrix,          FeColorMatrix);
+    n!(create_fe_component_transfer,    FeComponentTransfer);
+    n!(create_fe_func_a,                FeFuncA);
+    n!(create_fe_func_b,                FeFuncB);
+    n!(create_fe_func_g,                FeFuncG);
+    n!(create_fe_func_r,                FeFuncR);
+    n!(create_fe_composite,             FeComposite);
+    n!(create_fe_convolve_matrix,       FeConvolveMatrix);
+    n!(create_fe_diffuse_lighting,      FeDiffuseLighting);
+    n!(create_fe_distant_light,         FeDistantLight);
+    n!(create_fe_displacement_map,      FeDisplacementMap);
+    n!(create_fe_flood,                 FeFlood);
+    n!(create_fe_gaussian_blur,         FeGaussianBlur);
+    n!(create_fe_image,                 FeImage);
+    n!(create_fe_merge,                 FeMerge);
+    n!(create_fe_merge_node,            FeMergeNode);
+    n!(create_fe_morphology,            FeMorphology);
+    n!(create_fe_offset,                FeOffset);
+    n!(create_fe_point_light,           FePointLight);
+    n!(create_fe_specular_lighting,     FeSpecularLighting);
+    n!(create_fe_spot_light,            FeSpotLight);
+    n!(create_fe_tile,                  FeTile);
+    n!(create_fe_turbulence,            FeTurbulence);
+    n!(create_filter,                   Filter);
+    n!(create_group,                    Group);
+    n!(create_image,                    Image);
+    n!(create_line,                     Line);
+    n!(create_linear_gradient,          LinearGradient);
+    n!(create_link,                     Link);
+    n!(create_marker,                   Marker);
+    n!(create_mask,                     Mask);
+    n!(create_non_rendering,            NonRendering);
+    n!(create_path,                     Path);
+    n!(create_pattern,                  Pattern);
+    n!(create_polygon,                  Polygon);
+    n!(create_polyline,                 Polyline);
+    n!(create_radial_gradient,          RadialGradient);
+    n!(create_rect,                     Rect);
+    n!(create_stop,                     Stop);
+    n!(create_style,                    Style);
+    n!(create_svg,                      Svg);
+    n!(create_switch,                   Switch);
+    n!(create_symbol,                   Symbol);
+    n!(create_text,                     Text);
+    n!(create_tref,                     TRef);
+    n!(create_tspan,                    TSpan);
+    n!(create_use,                      Use);
 
     /* Hack to make multiImage sort-of work
      *
@@ -117,9 +117,9 @@ mod creators {
      * Is multiImage even in SVG2?
      */
     /*
-    n!(create_multi_image,               Switch,                     Switch);
-    n!(create_sub_image,                 Group,                      Group);
-    n!(create_sub_image_ref,             Image,                      Image);
+    n!(create_multi_image,              Switch);
+    n!(create_sub_image,                Group);
+n!(create_sub_image_ref,                Image);
     */
 }
 
