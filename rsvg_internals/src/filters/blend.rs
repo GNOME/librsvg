@@ -10,7 +10,7 @@ use crate::surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible blending modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -53,7 +53,7 @@ impl Default for Blend {
 }
 
 impl NodeTrait for Blend {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -72,7 +72,7 @@ impl NodeTrait for Blend {
     }
 }
 
-impl Filter for Blend {
+impl FilterEffect for Blend {
     fn render(
         &self,
         _node: &RsvgNode,

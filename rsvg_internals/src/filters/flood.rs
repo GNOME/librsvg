@@ -7,7 +7,7 @@ use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, Primitive};
+use super::{FilterEffect, FilterError, Primitive};
 
 /// The `feFlood` filter primitive.
 pub struct Flood {
@@ -25,7 +25,7 @@ impl Default for Flood {
 }
 
 impl NodeTrait for Flood {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     #[inline]
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -33,7 +33,7 @@ impl NodeTrait for Flood {
     }
 }
 
-impl Filter for Flood {
+impl FilterEffect for Flood {
     fn render(
         &self,
         node: &RsvgNode,

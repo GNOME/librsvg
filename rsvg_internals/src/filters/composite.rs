@@ -18,7 +18,7 @@ use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -59,7 +59,7 @@ impl Default for Composite {
 }
 
 impl NodeTrait for Composite {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -129,7 +129,7 @@ pub fn composite_arithmetic(
     }
 }
 
-impl Filter for Composite {
+impl FilterEffect for Composite {
     fn render(
         &self,
         _node: &RsvgNode,

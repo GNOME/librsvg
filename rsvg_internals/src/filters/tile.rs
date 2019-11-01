@@ -6,7 +6,7 @@ use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
-use super::{Filter, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// The `feTile` filter primitive.
 pub struct Tile {
@@ -24,14 +24,14 @@ impl Default for Tile {
 }
 
 impl NodeTrait for Tile {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)
     }
 }
 
-impl Filter for Tile {
+impl FilterEffect for Tile {
     fn render(
         &self,
         _node: &RsvgNode,

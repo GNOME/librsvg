@@ -15,7 +15,7 @@ use crate::surface_utils::{
 use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, Primitive};
+use super::{FilterEffect, FilterError, Primitive};
 
 /// Enumeration of the tile stitching modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -57,7 +57,7 @@ impl Default for Turbulence {
 }
 
 impl NodeTrait for Turbulence {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     #[inline]
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
@@ -334,7 +334,7 @@ impl NoiseGenerator {
     }
 }
 
-impl Filter for Turbulence {
+impl FilterEffect for Turbulence {
     fn render(
         &self,
         node: &RsvgNode,

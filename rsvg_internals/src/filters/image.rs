@@ -14,7 +14,7 @@ use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::viewbox::ViewBox;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{Filter, FilterError, Primitive};
+use super::{FilterEffect, FilterError, Primitive};
 
 /// The `feImage` filter primitive.
 pub struct Image {
@@ -171,7 +171,7 @@ impl Image {
 }
 
 impl NodeTrait for Image {
-    impl_node_as_filter!();
+    impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.base.set_atts(parent, pbag)?;
@@ -197,7 +197,7 @@ impl NodeTrait for Image {
     }
 }
 
-impl Filter for Image {
+impl FilterEffect for Image {
     fn render(
         &self,
         _node: &RsvgNode,
