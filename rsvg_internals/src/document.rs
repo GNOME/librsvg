@@ -327,30 +327,33 @@ impl DocumentBuilder {
             }
 
             // FIXME: handle CSS errors
-            let _ = self
-                .css_rules
-                .load_css(&self.resolve_href(s.href.as_ref().unwrap())?);
+            let _ = self.css_rules.load_css(&self.resolve_href(s.href.as_ref().unwrap())?);
         }
 
-        match self.tree {
+        let DocumentBuilder { load_options, tree, ids, css_rules, .. } = self;
+
+        match tree {
             None => Err(LoadingError::SvgHasNoElements),
-            Some(ref mut root) if root.borrow().get_type() == NodeType::Svg => {
-                for mut node in root.descendants() {
-                    node.borrow_mut().set_style(&self.css_rules);
+            Some(mut root) => {
+                if root.borrow().get_type() == NodeType::Svg {
+                    for mut node in root.descendants() {
+                        node.borrow_mut().set_style(&css_rules);
+                    }
+
+                    let values = ComputedValues::default();
+                    root.cascade(&values);
+
+                    Ok(Document {
+                        tree: root.clone(),
+                        ids: ids,
+                        externs: RefCell::new(Resources::new()),
+                        images: RefCell::new(Images::new()),
+                        load_options: load_options.clone(),
+                    })
+                } else {
+                    Err(LoadingError::RootElementIsNotSvg)
                 }
-
-                let values = ComputedValues::default();
-                root.cascade(&values);
-
-                Ok(Document {
-                    tree: self.tree.take().unwrap(),
-                    ids: self.ids,
-                    externs: RefCell::new(Resources::new()),
-                    images: RefCell::new(Images::new()),
-                    load_options: self.load_options.clone(),
-                })
             }
-            _ => Err(LoadingError::RootElementIsNotSvg),
         }
     }
 }
