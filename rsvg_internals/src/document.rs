@@ -16,6 +16,7 @@ use crate::node::{NodeCascade, NodeData, NodeType, RsvgNode};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
+use crate::style::Style;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::text::NodeChars;
 use crate::xml::xml_load_from_possibly_compressed_stream;
@@ -279,6 +280,16 @@ impl DocumentBuilder {
             return;
         }
 
+        if parent.borrow().get_type() == NodeType::Style {
+            if parent.borrow().get_impl::<Style>().is_text_css() {
+                self.parse_css(text);
+            }
+        } else {
+            self.append_chars_to_parent(text, parent);
+        }
+    }
+
+    fn append_chars_to_parent(&mut self, text: &str, parent: &mut RsvgNode) {
         // When the last child is a Chars node we can coalesce
         // the text and avoid screwing up the Pango layouts
         let chars_node = if let Some(child) = parent
@@ -312,7 +323,7 @@ impl DocumentBuilder {
             .map_err(|_| LoadingError::BadUrl)
     }
 
-    pub fn parse_css(&mut self, css_data: &str) {
+    fn parse_css(&mut self, css_data: &str) {
         self.css_rules
             .parse(self.load_options.base_url.as_ref(), css_data);
     }

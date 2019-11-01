@@ -1,8 +1,7 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::property_bag::PropertyBag;
-use crate::text::NodeChars;
 
 /// Represents a <style> node.
 ///
@@ -14,7 +13,7 @@ pub struct Style {
 }
 
 impl Style {
-    pub fn get_css(&self, node: &RsvgNode) -> String {
+    pub fn is_text_css(&self) -> bool {
         // FIXME: See these:
         //
         // https://www.w3.org/TR/SVG11/styling.html#StyleElementTypeAttribute
@@ -24,21 +23,7 @@ impl Style {
         // "contentStyleType" attribute of the svg element, which in turn
         // defaults to "text/css".
 
-        let have_css = self.type_.as_ref().map(|t| t == "text/css").unwrap_or(true);
-
-        if have_css {
-            node.children()
-                .filter_map(|child| {
-                    if child.borrow().get_type() == NodeType::Chars {
-                        Some(child.borrow().get_impl::<NodeChars>().get_string())
-                    } else {
-                        None
-                    }
-                })
-                .collect::<String>()
-        } else {
-            "".to_string()
-        }
+        self.type_.as_ref().map(|t| t == "text/css").unwrap_or(true)
     }
 }
 

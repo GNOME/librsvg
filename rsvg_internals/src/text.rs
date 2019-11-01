@@ -499,10 +499,6 @@ impl NodeChars {
         }
     }
 
-    pub fn get_string(&self) -> String {
-        self.string.borrow().clone()
-    }
-
     pub fn append(&self, s: &str) {
         self.string.borrow_mut().push_str(s);
         *self.space_normalized.borrow_mut() = None;
