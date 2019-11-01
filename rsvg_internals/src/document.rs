@@ -45,7 +45,12 @@ impl Document {
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Document, LoadingError> {
-        xml_load_from_possibly_compressed_stream(load_options, stream, cancellable)
+        xml_load_from_possibly_compressed_stream(
+            DocumentBuilder::new(load_options),
+            load_options.unlimited_size,
+            stream,
+            cancellable,
+        )
     }
 
     pub fn root(&self) -> RsvgNode {
@@ -279,6 +284,11 @@ impl DocumentBuilder {
         };
 
         chars_node.borrow().get_impl::<NodeChars>().append(text);
+    }
+
+    pub fn resolve_href(&self, href: &str) -> Result<(AllowedUrl), LoadingError> {
+        AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
+            .map_err(|_| LoadingError::BadUrl)
     }
 
     pub fn load_css(&mut self, url: &AllowedUrl) {

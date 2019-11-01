@@ -11,7 +11,6 @@ use std::str;
 use crate::allowed_url::AllowedUrl;
 use crate::document::{Document, DocumentBuilder};
 use crate::error::LoadingError;
-use crate::handle::LoadOptions;
 use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{NodeType, RsvgNode};
@@ -90,7 +89,7 @@ struct XmlStateInner {
 pub struct XmlState {
     inner: RefCell<XmlStateInner>,
 
-    load_options: LoadOptions,
+    unlimited_size: bool,
 }
 
 /// Errors returned from XmlState::acquire()
@@ -113,18 +112,18 @@ impl XmlStateInner {
 }
 
 impl XmlState {
-    fn new(load_options: &LoadOptions) -> XmlState {
+    fn new(document_builder: DocumentBuilder, unlimited_size: bool) -> XmlState {
         XmlState {
             inner: RefCell::new(XmlStateInner {
                 weak: None,
-                document_builder: Some(DocumentBuilder::new(load_options)),
+                document_builder: Some(document_builder),
                 num_loaded_elements: 0,
                 context_stack: vec![Context::Start],
                 current_node: None,
                 entities: HashMap::new(),
             }),
 
-            load_options: load_options.clone(),
+            unlimited_size,
         }
     }
 
@@ -236,14 +235,14 @@ impl XmlState {
                 && href.is_some()
             {
                 let mut inner = self.inner.borrow_mut();
+                let href = href.as_ref().unwrap();
 
-                if let Ok(aurl) =
-                    AllowedUrl::from_href(&href.unwrap(), self.load_options.base_url.as_ref())
-                {
+                if let Ok(aurl) = inner.document_builder.as_ref().unwrap().resolve_href(href) {
                     inner.document_builder.as_mut().unwrap().load_css(&aurl);
                 } else {
-                    self.error(ParseFromStreamError::XmlParseError(String::from(
-                        "disallowed URL in xml-stylesheet",
+                    self.error(ParseFromStreamError::XmlParseError(format!(
+                        "disallowed URL '{}' in xml-stylesheet",
+                        href
                     )));
                 }
             }
@@ -400,8 +399,14 @@ impl XmlState {
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
         if let Some(href) = href {
-            let aurl =
-                AllowedUrl::from_href(href, self.load_options.base_url.as_ref()).map_err(|e| {
+            let aurl = self
+                .inner
+                .borrow()
+                .document_builder
+                .as_ref()
+                .unwrap()
+                .resolve_href(href)
+                .map_err(|e| {
                     // FIXME: should AlloweUrlError::HrefParseError be a fatal error,
                     // not a resource error?
                     rsvg_log!("could not acquire \"{}\": {}", href, e);
@@ -498,14 +503,9 @@ impl XmlState {
             .unwrap()
             .upgrade()
             .unwrap();
-        Xml2Parser::from_stream(
-            strong,
-            self.load_options.unlimited_size,
-            stream,
-            cancellable,
-        )
-        .and_then(|parser| parser.parse())
-        .and_then(|_: ()| self.check_last_error())
+        Xml2Parser::from_stream(strong, self.unlimited_size, stream, cancellable)
+            .and_then(|parser| parser.parse())
+            .and_then(|_: ()| self.check_last_error())
     }
 
     fn unsupported_xinclude_start_element(&self, _name: &QualName) -> Context {
@@ -574,11 +574,12 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
 }
 
 pub fn xml_load_from_possibly_compressed_stream(
-    load_options: &LoadOptions,
+    document_builder: DocumentBuilder,
+    unlimited_size: bool,
     stream: &gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<Document, LoadingError> {
-    let state = Rc::new(XmlState::new(load_options));
+    let state = Rc::new(XmlState::new(document_builder, unlimited_size));
 
     state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));
 
