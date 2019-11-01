@@ -257,12 +257,11 @@ impl XmlState {
                 && type_.as_ref().map(String::as_str) == Some("text/css")
                 && href.is_some()
             {
-                let mut inner = self.inner.borrow_mut();
-
                 if let Ok(aurl) =
                     AllowedUrl::from_href(&href.unwrap(), self.load_options.base_url.as_ref())
                 {
                     // FIXME: handle CSS errors
+                    let mut inner = self.inner.borrow_mut();
                     let css_rules = inner.css_rules.as_mut().unwrap();
                     let _ = css_rules.load_css(&aurl);
                 } else {
