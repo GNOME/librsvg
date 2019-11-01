@@ -230,22 +230,12 @@ impl XmlState {
                 }
             }
 
-            if (alternate == None || alternate.as_ref().map(String::as_str) == Some("no"))
-                && type_.as_ref().map(String::as_str) == Some("text/css")
-                && href.is_some()
-            {
-                let mut inner = self.inner.borrow_mut();
-                let href = href.as_ref().unwrap();
-
-                if let Ok(aurl) = inner.document_builder.as_ref().unwrap().resolve_href(href) {
-                    inner.document_builder.as_mut().unwrap().load_css(&aurl);
-                } else {
-                    self.error(ParseFromStreamError::XmlParseError(format!(
-                        "disallowed URL '{}' in xml-stylesheet",
-                        href
-                    )));
-                }
-            }
+            let mut inner = self.inner.borrow_mut();
+            inner
+                .document_builder
+                .as_mut()
+                .unwrap()
+                .append_stylesheet(alternate, type_, href);
         } else {
             self.error(ParseFromStreamError::XmlParseError(String::from(
                 "invalid processing instruction data in xml-stylesheet",

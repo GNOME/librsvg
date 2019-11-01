@@ -207,10 +207,17 @@ fn load_image(
     Ok(surface)
 }
 
+struct Stylesheet {
+    alternate: Option<String>,
+    type_: Option<String>,
+    href: Option<String>,
+}
+
 pub struct DocumentBuilder {
     load_options: LoadOptions,
     tree: Option<RsvgNode>,
     ids: HashMap<String, RsvgNode>,
+    stylesheets: Vec<Stylesheet>,
     css_rules: CssRules,
 }
 
@@ -220,8 +227,22 @@ impl DocumentBuilder {
             load_options: load_options.clone(),
             tree: None,
             ids: HashMap::new(),
+            stylesheets: Vec::new(),
             css_rules: CssRules::default(),
         }
+    }
+
+    pub fn append_stylesheet(
+        &mut self,
+        alternate: Option<String>,
+        type_: Option<String>,
+        href: Option<String>,
+    ) {
+        self.stylesheets.push(Stylesheet {
+            alternate,
+            type_,
+            href,
+        });
     }
 
     pub fn append_element(
@@ -291,17 +312,26 @@ impl DocumentBuilder {
             .map_err(|_| LoadingError::BadUrl)
     }
 
-    pub fn load_css(&mut self, url: &AllowedUrl) {
-        // FIXME: handle CSS errors
-        let _ = self.css_rules.load_css(&url);
-    }
-
     pub fn parse_css(&mut self, css_data: &str) {
         self.css_rules
             .parse(self.load_options.base_url.as_ref(), css_data);
     }
 
     pub fn build(mut self) -> Result<Document, LoadingError> {
+        for s in self.stylesheets.iter() {
+            if s.type_.as_ref().map(String::as_str) != Some("text/css")
+                || (s.alternate.is_some() && s.alternate.as_ref().map(String::as_str) != Some("no"))
+                || s.href.is_none()
+            {
+                return Err(LoadingError::BadStylesheet);
+            }
+
+            // FIXME: handle CSS errors
+            let _ = self
+                .css_rules
+                .load_css(&self.resolve_href(s.href.as_ref().unwrap())?);
+        }
+
         match self.tree {
             None => Err(LoadingError::SvgHasNoElements),
             Some(ref mut root) if root.borrow().get_type() == NodeType::Svg => {
