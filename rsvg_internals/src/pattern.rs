@@ -87,9 +87,8 @@ struct UnresolvedPattern {
     children: UnresolvedChildren,
 }
 
-/// Resolved pattern
 #[derive(Clone)]
-pub struct Pattern {
+pub struct ResolvedPattern {
     units: PatternUnits,
     content_units: PatternContentUnits,
     // This Option<Option<ViewBox>> is a bit strange.  We want a field
@@ -112,7 +111,7 @@ pub struct Pattern {
 pub struct NodePattern {
     common: Common,
     fallback: Option<Fragment>,
-    resolved: RefCell<Option<Pattern>>,
+    resolved: RefCell<Option<ResolvedPattern>>,
 }
 
 impl NodeTrait for NodePattern {
@@ -154,7 +153,7 @@ impl NodeTrait for NodePattern {
 }
 
 impl PaintSource for NodePattern {
-    type Resolved = Pattern;
+    type Resolved = ResolvedPattern;
 
     fn resolve(
         &self,
@@ -217,7 +216,7 @@ impl PaintSource for NodePattern {
     }
 }
 
-impl AsPaintSource for Pattern {
+impl AsPaintSource for ResolvedPattern {
     fn set_as_paint_source(
         self,
         values: &ComputedValues,
@@ -408,10 +407,10 @@ impl AsPaintSource for Pattern {
 }
 
 impl UnresolvedPattern {
-    fn to_resolved(self) -> Pattern {
+    fn to_resolved(self) -> ResolvedPattern {
         assert!(self.is_resolved());
 
-        Pattern {
+        ResolvedPattern {
             units: self.common.units.unwrap(),
             content_units: self.common.content_units.unwrap(),
             vbox: self.common.vbox.unwrap(),
