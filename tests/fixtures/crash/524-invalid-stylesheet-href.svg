@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml-stylesheet type="text/css" href="file://invalid.css" ?>
+<svg
+    xmlns:xi="http://www.w3.org/2001/XInclude"
+    width="320" height="240">
+  <text x="10" y="100">
+    Hello
+  </text>
+</svg>
