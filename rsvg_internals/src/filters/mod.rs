@@ -8,6 +8,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
+use crate::filter::Filter;
 use crate::length::{LengthHorizontal, LengthUnit, LengthVertical};
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{ParseError, ParseValue};
@@ -27,9 +28,6 @@ use self::error::FilterError;
 
 mod input;
 use self::input::Input;
-
-pub mod node;
-use self::node::Filter;
 
 /// A filter primitive interface.
 pub trait FilterEffect: NodeTrait {

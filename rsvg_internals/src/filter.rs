@@ -1,4 +1,3 @@
-//! The <filter> node.
 use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
@@ -24,7 +23,6 @@ pub struct Filter {
 
 impl Default for Filter {
     /// Constructs a new `Filter` with default properties.
-    #[inline]
     fn default() -> Self {
         Self {
             x: LengthHorizontal::parse_str("-10%").unwrap(),

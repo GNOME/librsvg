@@ -37,6 +37,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/document.rs				\
 	rsvg_internals/src/dpi.rs				\
 	rsvg_internals/src/drawing_ctx.rs			\
+	rsvg_internals/src/filter.rs				\
 	rsvg_internals/src/filters/bounds.rs			\
 	rsvg_internals/src/filters/blend.rs			\
 	rsvg_internals/src/filters/color_matrix.rs		\
@@ -55,7 +56,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/filters/merge.rs			\
 	rsvg_internals/src/filters/morphology.rs		\
 	rsvg_internals/src/filters/mod.rs			\
-	rsvg_internals/src/filters/node.rs			\
 	rsvg_internals/src/filters/input.rs			\
 	rsvg_internals/src/filters/offset.rs			\
 	rsvg_internals/src/filters/tile.rs			\

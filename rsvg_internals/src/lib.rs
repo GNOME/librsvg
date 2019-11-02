@@ -94,6 +94,7 @@ mod document;
 mod dpi;
 mod drawing_ctx;
 mod error;
+mod filter;
 pub mod filters;
 mod font_props;
 mod gradient;

@@ -19,12 +19,12 @@ use crate::filters::{
     },
     merge::{FeMerge, FeMergeNode},
     morphology::FeMorphology,
-    node::Filter,
     offset::FeOffset,
     tile::FeTile,
     turbulence::FeTurbulence,
 };
 
+use crate::filter::Filter;
 use crate::gradient::{LinearGradient, RadialGradient, Stop};
 use crate::image::Image;
 use crate::link::Link;

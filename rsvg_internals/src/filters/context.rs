@@ -7,6 +7,7 @@ use cairo;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::filter::Filter;
 use crate::node::RsvgNode;
 use crate::paint_server::PaintServer;
 use crate::properties::ComputedValues;
@@ -16,7 +17,6 @@ use crate::unit_interval::UnitInterval;
 
 use super::error::FilterError;
 use super::input::Input;
-use super::node::Filter;
 
 /// A filter primitive output.
 #[derive(Debug, Clone)]
