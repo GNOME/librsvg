@@ -15,6 +15,7 @@ use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
 use crate::rect::RectangleExt;
+use crate::style::StyleType;
 use crate::viewbox::*;
 
 #[derive(Default)]
@@ -100,6 +101,7 @@ pub struct Svg {
     w: Option<LengthHorizontal>,
     h: Option<LengthVertical>,
     vbox: Option<ViewBox>,
+    content_style_type: Option<StyleType>,
 }
 
 impl Svg {
@@ -172,6 +174,10 @@ impl Svg {
             h.normalize(values, &params),
         )
     }
+
+    pub fn content_style_type(&self) -> StyleType {
+        self.content_style_type.unwrap_or(StyleType::TextCss)
+    }
 }
 
 impl NodeTrait for Svg {
@@ -196,6 +202,9 @@ impl NodeTrait for Svg {
                         Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
                 }
                 expanded_name!(svg "viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!(svg "contentStyleType") => {
+                    self.content_style_type = Some(attr.parse(value)?)
+                }
                 _ => (),
             }
         }
