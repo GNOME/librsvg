@@ -9,6 +9,9 @@ use crate::property_bag::PropertyBag;
 /// Represents the syntax used in the <style> node.
 ///
 /// Currently only "text/css" is supported.
+///
+/// https://www.w3.org/TR/SVG11/styling.html#StyleElementTypeAttribute
+/// https://www.w3.org/TR/SVG11/styling.html#ContentStyleTypeAttribute
 #[derive(Copy, Clone, PartialEq)]
 pub enum StyleType {
     TextCss,
@@ -39,16 +42,8 @@ pub struct Style {
 }
 
 impl Style {
-    pub fn style_type(&self) -> StyleType {
-        // FIXME: See these:
-        //
-        // https://www.w3.org/TR/SVG11/styling.html#StyleElementTypeAttribute
-        // https://www.w3.org/TR/SVG11/styling.html#ContentStyleTypeAttribute
-        //
-        // If the "type" attribute is not present, we should fallback to the
-        // "contentStyleType" attribute of the svg element, which in turn
-        // defaults to "text/css".
-        self.type_.unwrap_or(StyleType::TextCss)
+    pub fn style_type(&self) -> Option<StyleType> {
+        self.type_
     }
 }
 

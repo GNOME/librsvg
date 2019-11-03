@@ -283,7 +283,16 @@ impl DocumentBuilder {
         }
 
         if parent.borrow().get_type() == NodeType::Style {
-            if parent.borrow().get_impl::<Style>().style_type() == StyleType::TextCss {
+            // If the "type" attribute is not present, fall back to the
+            // "contentStyleType" attribute of the svg element.
+            let style_type = parent.borrow().get_impl::<Style>().style_type().unwrap_or_else(|| {
+                if self.tree.as_ref().unwrap().borrow().get_type() == NodeType::Svg {
+                    self.tree.as_ref().unwrap().borrow().get_impl::<Svg>().content_style_type()
+                } else {
+                    StyleType::TextCss
+                }
+            });
+            if style_type == StyleType::TextCss {
                 self.inline_css.push_str(text);
             }
         } else {
