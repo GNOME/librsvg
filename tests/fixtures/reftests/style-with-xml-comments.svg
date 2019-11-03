@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="10px" height="10px">
+  <defs>
+    <style type="text/css">
+      rect {
+        fill: <!-- yellow --> red;
+      }
+    </style>
+  </defs>
+  <rect width="10" height="10"/>
+</svg>

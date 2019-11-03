@@ -16,7 +16,7 @@ use crate::node::{NodeCascade, NodeData, NodeType, RsvgNode};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
-use crate::style::Style;
+use crate::style::{Style, StyleType};
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::text::NodeChars;
 use crate::xml::xml_load_from_possibly_compressed_stream;
@@ -218,6 +218,7 @@ pub struct DocumentBuilder {
     load_options: LoadOptions,
     tree: Option<RsvgNode>,
     ids: HashMap<String, RsvgNode>,
+    inline_css: String,
     stylesheets: Vec<Stylesheet>,
     css_rules: CssRules,
 }
@@ -228,6 +229,7 @@ impl DocumentBuilder {
             load_options: load_options.clone(),
             tree: None,
             ids: HashMap::new(),
+            inline_css: String::new(),
             stylesheets: Vec::new(),
             css_rules: CssRules::default(),
         }
@@ -281,8 +283,19 @@ impl DocumentBuilder {
         }
 
         if parent.borrow().get_type() == NodeType::Style {
-            if parent.borrow().get_impl::<Style>().is_text_css() {
-                self.parse_css(text);
+            // If the "type" attribute is not present, fall back to the
+            // "contentStyleType" attribute of the svg element.
+            let style_type = parent.borrow().get_impl::<Style>().style_type().unwrap_or_else(|| {
+                if self.tree.is_some()
+                    && self.tree.as_ref().unwrap().borrow().get_type() == NodeType::Svg
+                {
+                    self.tree.as_ref().unwrap().borrow().get_impl::<Svg>().content_style_type()
+                } else {
+                    StyleType::TextCss
+                }
+            });
+            if style_type == StyleType::TextCss {
+                self.inline_css.push_str(text);
             }
         } else {
             self.append_chars_to_parent(text, parent);
@@ -323,11 +336,6 @@ impl DocumentBuilder {
             .map_err(|_| LoadingError::BadUrl)
     }
 
-    fn parse_css(&mut self, css_data: &str) {
-        self.css_rules
-            .parse(self.load_options.base_url.as_ref(), css_data);
-    }
-
     pub fn build(mut self) -> Result<Document, LoadingError> {
         for s in self.stylesheets.iter() {
             if s.type_.as_ref().map(String::as_str) != Some("text/css")
@@ -340,6 +348,8 @@ impl DocumentBuilder {
             // FIXME: handle CSS errors
             let _ = self.css_rules.load_css(&self.resolve_href(s.href.as_ref().unwrap())?);
         }
+
+        self.css_rules.parse(self.load_options.base_url.as_ref(), &self.inline_css);
 
         let DocumentBuilder { load_options, tree, ids, css_rules, .. } = self;
 
@@ -356,7 +366,7 @@ impl DocumentBuilder {
 
                     Ok(Document {
                         tree: root.clone(),
-                        ids: ids,
+                        ids,
                         externs: RefCell::new(Resources::new()),
                         images: RefCell::new(Images::new()),
                         load_options: load_options.clone(),
