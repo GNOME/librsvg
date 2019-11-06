@@ -6,9 +6,9 @@ use libc;
 
 // Opaque types from libcroco, or those which we only manipulate through libcroco functions
 pub type CRString = gpointer;
-pub type CRSimpleSel = gpointer;
 pub type CRParser = gpointer;
 pub type CRTerm = gpointer;
+pub type CRAdditionalSel = gpointer;
 
 pub type CRStatus = u32;
 
@@ -23,8 +23,21 @@ pub struct CRParsingLocation {
 }
 
 #[repr(C)]
+pub struct CRSimpleSel {
+    pub type_mask: libc::c_int,
+    pub is_case_sentive: gboolean,
+    pub name: CRString,
+    pub combinator: libc::c_int,
+    pub add_sel: CRAdditionalSel,
+    pub specificity: libc::c_ulong,
+    pub next: *mut CRSimpleSel,
+    pub prev: *mut CRSimpleSel,
+    pub location: CRParsingLocation,
+}
+
+#[repr(C)]
 pub struct CRSelector {
-    pub simple_sel: CRSimpleSel,
+    pub simple_sel: *mut CRSimpleSel,
 
     pub next: *mut CRSelector,
     pub prev: *mut CRSelector,
@@ -91,7 +104,7 @@ extern "C" {
     pub fn cr_selector_ref(a_this: *mut CRSelector);
     pub fn cr_selector_unref(a_this: *mut CRSelector) -> gboolean;
 
-    pub fn cr_simple_sel_to_string(a_this: CRSimpleSel) -> *mut libc::c_char;
+    pub fn cr_simple_sel_to_string(a_this: *mut CRSimpleSel) -> *mut libc::c_char;
 
     pub fn cr_string_peek_raw_str(a_this: CRString) -> *const libc::c_char;
 
