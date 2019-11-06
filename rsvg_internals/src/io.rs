@@ -85,6 +85,14 @@ pub fn acquire_stream(
     if uri.starts_with("data:") {
         let BinaryData { data, .. } = decode_data_uri(uri)?;
 
+//        {
+//            use std::fs::File;
+//            use std::io::prelude::*;
+//
+//            let mut file = File::create("data.bin").unwrap();
+//            file.write_all(&data).unwrap();
+//        }
+
         let stream = MemoryInputStream::new_from_bytes(&GBytes::from_owned(data));
         Ok(stream.upcast::<InputStream>())
     } else {
