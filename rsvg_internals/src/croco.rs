@@ -11,6 +11,7 @@ pub type CRTerm = gpointer;
 pub type CRAdditionalSel = gpointer;
 
 pub type CRStatus = u32;
+pub const CR_OK: u32 = 0;
 
 pub type CREncoding = u32;
 pub const CR_UTF_8: CREncoding = 5;
@@ -105,6 +106,7 @@ extern "C" {
     pub fn cr_selector_unref(a_this: *mut CRSelector) -> gboolean;
 
     pub fn cr_simple_sel_to_string(a_this: *mut CRSimpleSel) -> *mut libc::c_char;
+    pub fn cr_simple_sel_compute_specificity(a_this: *mut CRSimpleSel) -> CRStatus;
 
     pub fn cr_string_peek_raw_str(a_this: CRString) -> *const libc::c_char;
 

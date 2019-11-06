@@ -73,11 +73,17 @@ impl<'i> AtRuleParser<'i> for DeclParser {
 }
 
 #[derive(Clone, Hash, PartialEq, Eq)]
-pub struct Selector(String);
+pub struct Selector {
+    name: String,
+    specificity: u64,
+}
 
 impl Selector {
-    fn new(s: &str) -> Selector {
-        Selector(s.to_string())
+    fn new(s: &str, specificity: u64) -> Selector {
+        Selector {
+            name: s.to_string(),
+            specificity,
+        }
     }
 }
 
@@ -196,10 +202,6 @@ impl CssRules {
         decl_list.add_declaration(declaration);
     }
 
-    pub fn lookup(&self, selector: &str) -> Option<&DeclarationList> {
-        self.get_declarations(&Selector::new(selector))
-    }
-
     pub fn get_declarations(&self, selector: &Selector) -> Option<&DeclarationList> {
         self.selectors_to_declarations.get(selector)
     }
@@ -219,12 +221,12 @@ impl CssRules {
         let id = node_data.get_id();
 
         // *
-        if *selector == Selector::new("*") {
+        if selector.name == "*" {
             return true;
         }
 
         // tag
-        if *selector == Selector::new(element_name) {
+        if selector.name == element_name {
             return true;
         }
 
@@ -234,7 +236,7 @@ impl CssRules {
                     // tag.class#id
                     if let Some(id) = id {
                         let target = format!("{}.{}#{}", element_name, cls, id);
-                        if *selector == Selector::new(&target) {
+                        if selector.name == target {
                             return true;
                         }
                     }
@@ -242,20 +244,20 @@ impl CssRules {
                     // .class#id
                     if let Some(id) = id {
                         let target = format!(".{}#{}", cls, id);
-                        if *selector == Selector::new(&target) {
+                        if selector.name == target {
                             return true;
                         }
                     }
 
                     // tag.class
                     let target = format!("{}.{}", element_name, cls);
-                    if *selector == Selector::new(&target) {
+                    if selector.name == target {
                         return true;
                     }
 
                     // didn't find anything more specific, just apply the class style
                     let target = format!(".{}", cls);
-                    if *selector == Selector::new(&target) {
+                    if selector.name == target {
                         return true;
                     }
                 }
@@ -265,13 +267,13 @@ impl CssRules {
         if let Some(id) = id {
             // id
             let target = format!("#{}", id);
-            if *selector == Selector::new(&target) {
+            if selector.name == target {
                 return true;
             }
 
             // tag#id
             let target = format!("{}#{}", element_name, id);
-            if *selector == Selector::new(&target) {
+            if selector.name == target {
                 return true;
             }
         }
@@ -375,7 +377,15 @@ unsafe extern "C" fn css_property(
     while !cur_sel.is_null() {
         let simple_sel = (*cur_sel).simple_sel;
 
+        cur_sel = (*cur_sel).next;
+
         if !simple_sel.is_null() {
+            if cr_simple_sel_compute_specificity(simple_sel) != CR_OK {
+                continue;
+            }
+
+            let specificity = u64::from((*simple_sel).specificity);
+
             let raw_selector_name = cr_simple_sel_to_string(simple_sel) as *mut libc::c_char;
 
             if !raw_selector_name.is_null() {
@@ -405,14 +415,12 @@ unsafe extern "C" fn css_property(
 
                         handler_data
                             .css_rules
-                            .add_declaration(Selector::new(&selector_name), declaration);
+                            .add_declaration(Selector::new(&selector_name, specificity), declaration);
                     }
                     Err(_) => (), // invalid property name or invalid value; ignore
                 }
             }
         }
-
-        cur_sel = (*cur_sel).next;
     }
 }
 
