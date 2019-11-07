@@ -3,6 +3,11 @@ members = [
     "librsvg",
     "librsvg_crate",
     "rsvg_internals",
+    "servo_crates/derive_common",
+    "servo_crates/selectors",
+    "servo_crates/servo_arc",
+    "servo_crates/to_shmem",
+    "servo_crates/to_shmem_derive",
 ]
 
 [profile.release]
