@@ -499,6 +499,10 @@ impl NodeChars {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.string.borrow().is_empty()
+    }
+
     pub fn append(&self, s: &str) {
         self.string.borrow_mut().push_str(s);
         *self.space_normalized.borrow_mut() = None;
