@@ -78,8 +78,8 @@ impl NodeData {
         self.node_type
     }
 
-    pub fn element_name(&self) -> &str {
-        self.element_name.local.as_ref()
+    pub fn element_name(&self) -> &QualName {
+        &self.element_name
     }
 
     pub fn get_id(&self) -> Option<&str> {

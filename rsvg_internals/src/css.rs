@@ -217,7 +217,7 @@ impl CssRules {
         //
         // This is basically a semi-compliant CSS2 selection engine
 
-        let element_name = node_data.element_name();
+        let element_name = node_data.element_name().local.as_ref();
         let id = node_data.get_id();
 
         // *
