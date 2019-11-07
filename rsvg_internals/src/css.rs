@@ -29,7 +29,7 @@ use crate::allowed_url::AllowedUrl;
 use crate::croco::*;
 use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::node::NodeData;
+use crate::node::{NodeData, NodeType, RsvgNode};
 use crate::properties::{parse_attribute_value_into_parsed_property, ParsedProperty};
 use crate::text::NodeChars;
 use crate::util::utf8_cstr;
@@ -81,7 +81,7 @@ impl<'i> AtRuleParser<'i> for DeclParser {
 
 /// Dummy type required by the SelectorImpl trait
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct NonTSPseudoClass;
+pub struct NonTSPseudoClass;
 
 impl ToCss for NonTSPseudoClass {
     fn to_css<W>(&self, _dest: &mut W) -> fmt::Result where W: fmt::Write {
@@ -103,7 +103,7 @@ impl selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
 
 /// Dummy type required by the SelectorImpl trait
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct PseudoElement;
+pub struct PseudoElement;
 
 impl ToCss for PseudoElement {
     fn to_css<W>(&self, _dest: &mut W) -> fmt::Result where W: fmt::Write {
@@ -117,7 +117,7 @@ impl selectors::parser::PseudoElement for PseudoElement {
 
 /// Holds all the types for the SelectorImpl trait
 #[derive(Debug, Clone)]
-struct RsvgSelectors;
+pub struct RsvgSelectors;
 
 impl SelectorImpl for RsvgSelectors {
     type ExtraMatchingData = ();
@@ -132,6 +132,197 @@ impl SelectorImpl for RsvgSelectors {
     type BorrowedLocalName = LocalName;
     type NonTSPseudoClass = NonTSPseudoClass;
     type PseudoElement = PseudoElement;
+}
+
+// We need a newtype because RsvgNode is an alias for rctree::Node
+#[derive(Clone)]
+pub struct RsvgElement(RsvgNode);
+
+impl From<RsvgNode> for RsvgElement {
+    fn from(n: RsvgNode) -> RsvgElement {
+        RsvgElement(n)
+    }
+}
+
+impl fmt::Debug for RsvgElement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0.borrow())
+    }
+}
+
+impl selectors::Element for RsvgElement {
+    type Impl = RsvgSelectors;
+
+    /// Converts self into an opaque representation.
+    fn opaque(&self) -> OpaqueElement {
+        OpaqueElement::new(&self.0.borrow())
+    }
+
+    fn parent_element(&self) -> Option<Self> {
+        self.0.parent().map(|n| n.into())
+    }
+
+    /// Whether the parent node of this element is a shadow root.
+    fn parent_node_is_shadow_root(&self) -> bool {
+        // unsupported
+        false
+    }
+
+    /// The host of the containing shadow root, if any.
+    fn containing_shadow_host(&self) -> Option<Self> {
+        // unsupported
+        None
+    }
+
+    /// Whether we're matching on a pseudo-element.
+    fn is_pseudo_element(&self) -> bool {
+        // unsupported
+        false
+    }
+
+    /// Skips non-element nodes
+    fn prev_sibling_element(&self) -> Option<Self> {
+        let mut sibling = self.0.previous_sibling();
+
+        while let Some(ref sib) = sibling {
+            if sib.borrow().get_type() != NodeType::Chars {
+                return sibling.map(|n| n.into())
+            }
+
+            sibling = self.0.previous_sibling();
+        }
+
+        None
+    }
+
+    /// Skips non-element nodes
+    fn next_sibling_element(&self) -> Option<Self> {
+        let mut sibling = self.0.next_sibling();
+
+        while let Some(ref sib) = sibling {
+            if sib.borrow().get_type() != NodeType::Chars {
+                return sibling.map(|n| n.into());
+            }
+
+            sibling = self.0.next_sibling();
+        }
+
+        None
+    }
+
+    fn is_html_element_in_html_document(&self) -> bool {
+        false
+    }
+
+    fn has_local_name(&self, local_name: &LocalName) -> bool {
+        self.0.borrow().element_name().local == *local_name
+    }
+
+    /// Empty string for no namespace
+    fn has_namespace(&self, ns: &Namespace) -> bool {
+        self.0.borrow().element_name().ns == *ns
+    }
+
+    /// Whether this element and the `other` element have the same local name and namespace.
+    fn is_same_type(&self, other: &Self) -> bool {
+        self.0.borrow().element_name() == other.0.borrow().element_name()
+    }
+
+    fn attr_matches(
+        &self,
+        _ns: &NamespaceConstraint<&Namespace>,
+        _local_name: &LocalName,
+        _operation: &AttrSelectorOperation<&String>,
+    ) -> bool {
+        // unsupported
+        false
+    }
+
+    fn match_non_ts_pseudo_class<F>(
+        &self,
+        _pc: &<Self::Impl as SelectorImpl>::NonTSPseudoClass,
+        _context: &mut MatchingContext<Self::Impl>,
+        _flags_setter: &mut F,
+    ) -> bool
+    where
+        F: FnMut(&Self, ElementSelectorFlags) {
+        // unsupported
+        false
+    }
+
+    fn match_pseudo_element(
+        &self,
+        _pe: &<Self::Impl as SelectorImpl>::PseudoElement,
+        _context: &mut MatchingContext<Self::Impl>,
+    ) -> bool {
+        // unsupported
+        false
+    }
+
+    /// Whether this element is a `link`.
+    fn is_link(&self) -> bool {
+        // FIXME: is this correct for SVG <a>, not HTML <a>?
+        self.0.borrow().get_type() == NodeType::Link
+    }
+
+    /// Returns whether the element is an HTML <slot> element.
+    fn is_html_slot_element(&self) -> bool {
+        false
+    }
+
+    fn has_id(
+        &self,
+        id: &LocalName,
+        case_sensitivity: CaseSensitivity,
+    ) -> bool {
+        self.0
+            .borrow()
+            .get_id()
+            .map(|self_id| case_sensitivity.eq(self_id.as_bytes(), id.as_ref().as_bytes()))
+            .unwrap_or(false)
+    }
+
+    fn has_class(
+        &self,
+        name: &LocalName,
+        case_sensitivity: CaseSensitivity,
+    ) -> bool {
+        self.0
+            .borrow()
+            .get_class()
+            .map(|classes| {
+                classes
+                    .split_whitespace()
+                    .any(|class| case_sensitivity.eq(class.as_bytes(), name.as_bytes()))
+            })
+            .unwrap_or(false)
+    }
+
+    fn is_part(&self, _name: &LocalName) -> bool {
+        // unsupported
+        false
+    }
+
+    /// Returns whether this element matches `:empty`.
+    ///
+    /// That is, whether it does not contain any child element or any non-zero-length text node.
+    /// See http://dev.w3.org/csswg/selectors-3/#empty-pseudo
+    fn is_empty(&self) -> bool {
+        !self.0.has_children() ||
+            self.0.children().all(|child| {
+                child.borrow().get_type() == NodeType::Chars
+                    && child.borrow().get_impl::<NodeChars>().is_empty()
+            })
+    }
+
+    /// Returns whether this element matches `:root`,
+    /// i.e. whether it is the root element of a document.
+    ///
+    /// Note: this can be false even if `.parent_element()` is `None`
+    /// if the parent node is a `DocumentFragment`.
+    fn is_root(&self) -> bool {
+        self.0.parent().is_none()
+    }
 }
 
 #[derive(Clone, Hash, PartialEq, Eq)]
