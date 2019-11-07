@@ -282,7 +282,7 @@ impl CssRules {
     }
 
     pub fn get_matches(&self, node_data: &NodeData) -> Vec<Selector> {
-        self.selectors_to_declarations
+        let mut matches: Vec<_> = self.selectors_to_declarations
             .iter()
             .filter_map(|(selector, _)| {
                 if self.selector_matches_node(selector, node_data) {
@@ -292,7 +292,11 @@ impl CssRules {
                 }
             })
             .map(Selector::clone)
-            .collect()
+            .collect();
+
+        matches.as_mut_slice().sort_by(|sel_a, sel_b| sel_a.specificity.cmp(&sel_b.specificity));
+
+        matches
     }
 }
 
