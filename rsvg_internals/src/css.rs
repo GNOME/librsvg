@@ -6,14 +6,20 @@ use cssparser::{
     DeclarationParser,
     Parser,
     ParserInput,
+    ToCss,
 };
+use selectors::attr::{AttrSelectorOperation, NamespaceConstraint, CaseSensitivity};
+use selectors::matching::{ElementSelectorFlags, MatchingContext};
+use selectors::{self, OpaqueElement, SelectorImpl};
+
 use std::collections::hash_map::{Entry, Iter as HashMapIter};
 use std::collections::HashMap;
+use std::fmt;
 use std::ptr;
 use std::str;
 
 use libc;
-use markup5ever::{namespace_url, ns, LocalName, QualName};
+use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use url::Url;
 
 use glib::translate::*;
@@ -25,6 +31,7 @@ use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::NodeData;
 use crate::properties::{parse_attribute_value_into_parsed_property, ParsedProperty};
+use crate::text::NodeChars;
 use crate::util::utf8_cstr;
 
 /// A parsed CSS declaration (`name: value [!important]`)
@@ -70,6 +77,61 @@ impl<'i> AtRuleParser<'i> for DeclParser {
     type PreludeBlock = ();
     type AtRule = Declaration;
     type Error = ValueErrorKind;
+}
+
+/// Dummy type required by the SelectorImpl trait
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct NonTSPseudoClass;
+
+impl ToCss for NonTSPseudoClass {
+    fn to_css<W>(&self, _dest: &mut W) -> fmt::Result where W: fmt::Write {
+        Ok(())
+    }
+}
+
+impl selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
+    type Impl = RsvgSelectors;
+
+    fn is_active_or_hover(&self) -> bool {
+        false
+    }
+
+    fn is_user_action_state(&self) -> bool {
+        false
+    }
+}
+
+/// Dummy type required by the SelectorImpl trait
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct PseudoElement;
+
+impl ToCss for PseudoElement {
+    fn to_css<W>(&self, _dest: &mut W) -> fmt::Result where W: fmt::Write {
+        Ok(())
+    }
+}
+
+impl selectors::parser::PseudoElement for PseudoElement {
+    type Impl = RsvgSelectors;
+}
+
+/// Holds all the types for the SelectorImpl trait
+#[derive(Debug, Clone)]
+struct RsvgSelectors;
+
+impl SelectorImpl for RsvgSelectors {
+    type ExtraMatchingData = ();
+    type AttrValue = String;
+    type Identifier = LocalName;
+    type ClassName = LocalName;
+    type PartName = LocalName;
+    type LocalName = LocalName;
+    type NamespaceUrl = Namespace;
+    type NamespacePrefix = Prefix;
+    type BorrowedNamespaceUrl = Namespace;
+    type BorrowedLocalName = LocalName;
+    type NonTSPseudoClass = NonTSPseudoClass;
+    type PseudoElement = PseudoElement;
 }
 
 #[derive(Clone, Hash, PartialEq, Eq)]
