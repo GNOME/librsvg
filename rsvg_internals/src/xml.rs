@@ -230,11 +230,21 @@ impl XmlState {
             }
 
             let mut inner = self.inner.borrow_mut();
-            inner
-                .document_builder
-                .as_mut()
-                .unwrap()
-                .append_stylesheet_from_xml_processing_instruction(alternate, type_, href);
+
+            if let Some(href) = href {
+                // FIXME: https://www.w3.org/TR/xml-stylesheet/ does not seem to specify
+                // what to do if the stylesheet cannot be loaded, so here we ignore the error.
+                if let Err(_) = inner
+                    .document_builder
+                    .as_mut()
+                    .unwrap()
+                    .append_stylesheet_from_xml_processing_instruction(alternate, type_, &href)
+                {
+                    rsvg_log!("invalid xml-stylesheet {} in XML processing instruction", href);
+                }
+            } else {
+                rsvg_log!("xml-stylesheet processing instruction does not have href; ignoring");
+            }
         } else {
             self.error(ParseFromStreamError::XmlParseError(String::from(
                 "invalid processing instruction data in xml-stylesheet",

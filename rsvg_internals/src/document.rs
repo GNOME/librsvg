@@ -208,18 +208,11 @@ fn load_image(
     Ok(surface)
 }
 
-struct Stylesheet {
-    alternate: Option<String>,
-    type_: Option<String>,
-    href: Option<String>,
-}
-
 pub struct DocumentBuilder {
     load_options: LoadOptions,
     tree: Option<RsvgNode>,
     ids: HashMap<String, RsvgNode>,
     inline_css: String,
-    stylesheets: Vec<Stylesheet>,
     css_rules: CssRules,
 }
 
@@ -230,7 +223,6 @@ impl DocumentBuilder {
             tree: None,
             ids: HashMap::new(),
             inline_css: String::new(),
-            stylesheets: Vec::new(),
             css_rules: CssRules::default(),
         }
     }
@@ -239,13 +231,18 @@ impl DocumentBuilder {
         &mut self,
         alternate: Option<String>,
         type_: Option<String>,
-        href: Option<String>,
-    ) {
-        self.stylesheets.push(Stylesheet {
-            alternate,
-            type_,
-            href,
-        });
+        href: &str,
+    ) -> Result<(), LoadingError> {
+        if type_.as_ref().map(String::as_str) != Some("text/css")
+            || (alternate.is_some() && alternate.as_ref().map(String::as_str) != Some("no"))
+        {
+            return Err(LoadingError::BadStylesheet);
+        }
+
+        // FIXME: handle CSS errors
+        let _ = self.css_rules.load_css(&self.resolve_href(href)?);
+
+        Ok(())
     }
 
     pub fn append_element(
@@ -331,24 +328,12 @@ impl DocumentBuilder {
         chars_node.borrow().get_impl::<NodeChars>().append(text);
     }
 
-    pub fn resolve_href(&self, href: &str) -> Result<(AllowedUrl), LoadingError> {
+    pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, LoadingError> {
         AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
             .map_err(|_| LoadingError::BadUrl)
     }
 
     pub fn build(mut self) -> Result<Document, LoadingError> {
-        for s in self.stylesheets.iter() {
-            if s.type_.as_ref().map(String::as_str) != Some("text/css")
-                || (s.alternate.is_some() && s.alternate.as_ref().map(String::as_str) != Some("no"))
-                || s.href.is_none()
-            {
-                return Err(LoadingError::BadStylesheet);
-            }
-
-            // FIXME: handle CSS errors
-            let _ = self.css_rules.load_css(&self.resolve_href(s.href.as_ref().unwrap())?);
-        }
-
         self.css_rules.parse(self.load_options.base_url.as_ref(), &self.inline_css);
 
         let DocumentBuilder { load_options, tree, ids, css_rules, .. } = self;
