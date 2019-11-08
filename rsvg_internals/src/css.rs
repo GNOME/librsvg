@@ -3,14 +3,17 @@ use cssparser::{
     parse_important,
     AtRuleParser,
     CowRcStr,
+    DeclarationListParser,
     DeclarationParser,
     Parser,
     ParserInput,
+    QualifiedRuleParser,
+    SourceLocation,
     ToCss,
 };
 use selectors::attr::{AttrSelectorOperation, NamespaceConstraint, CaseSensitivity};
 use selectors::matching::{ElementSelectorFlags, MatchingContext};
-use selectors::{self, OpaqueElement, SelectorImpl};
+use selectors::{self, OpaqueElement, SelectorImpl, SelectorList};
 
 use std::collections::hash_map::{Entry, Iter as HashMapIter};
 use std::collections::HashMap;
@@ -77,6 +80,84 @@ impl<'i> AtRuleParser<'i> for DeclParser {
     type PreludeBlock = ();
     type AtRule = Declaration;
     type Error = ValueErrorKind;
+}
+
+/// Dummy struct to implement cssparser::QualifiedRuleParser
+pub struct QualRuleParser;
+
+pub enum CssParseErrorKind<'i> {
+    Selector(selectors::parser::SelectorParseErrorKind<'i>),
+    Value(ValueErrorKind),
+}
+
+impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for CssParseErrorKind<'i> {
+    fn from(e: selectors::parser::SelectorParseErrorKind) -> CssParseErrorKind {
+        CssParseErrorKind::Selector(e)
+    }
+}
+
+/// A CSS ruleset (or rule)
+pub struct Rule {
+    selectors: SelectorList<RsvgSelectors>,
+    declarations: DeclarationList,
+}
+
+impl<'i> selectors::Parser<'i> for QualRuleParser {
+    type Impl = RsvgSelectors;
+    type Error = CssParseErrorKind<'i>;
+
+    fn default_namespace(&self) -> Option<<Self::Impl as SelectorImpl>::NamespaceUrl> {
+        Some(ns!(svg))
+    }
+
+    fn namespace_for_prefix(
+        &self,
+        _prefix: &<Self::Impl as SelectorImpl>::NamespacePrefix,
+    ) -> Option<<Self::Impl as SelectorImpl>::NamespaceUrl> {
+        // FIXME: Do we need to keep a lookup table extracted from libxml2's
+        // XML namespaces?
+        //
+        // Or are CSS namespaces completely different, declared elsewhere?
+        None
+    }
+}
+
+impl<'i> QualifiedRuleParser<'i> for QualRuleParser {
+    type Prelude = SelectorList<RsvgSelectors>;
+    type QualifiedRule = Rule;
+    type Error = CssParseErrorKind<'i>;
+
+    fn parse_prelude<'t>(
+        &mut self,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self::Prelude, cssparser::ParseError<'i, Self::Error>> {
+        SelectorList::parse(self, input)
+    }
+
+    fn parse_block<'t>(
+        &mut self,
+        prelude: Self::Prelude,
+        _location: SourceLocation,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self::QualifiedRule, cssparser::ParseError<'i, Self::Error>> {
+        let decl_parser = DeclarationListParser::new(input, DeclParser);
+
+        let mut decl_list = DeclarationList {
+            declarations: HashMap::new(),
+        };
+
+        for decl_result in decl_parser {
+            // ignore invalid property name or value
+            if let Ok(declaration) = decl_result {
+                decl_list.declarations.insert(declaration.attribute.clone(), declaration);
+            }
+        }
+
+        Ok(Rule {
+            selectors: prelude,
+            declarations: decl_list,
+        })
+    }
 }
 
 /// Dummy type required by the SelectorImpl trait
