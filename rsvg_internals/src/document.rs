@@ -211,8 +211,7 @@ pub struct DocumentBuilder {
     load_options: LoadOptions,
     tree: Option<RsvgNode>,
     ids: HashMap<String, RsvgNode>,
-    inline_css: String,
-    stylesheet: Stylesheet,
+    stylesheets: Vec<Stylesheet>,
 }
 
 impl DocumentBuilder {
@@ -221,8 +220,7 @@ impl DocumentBuilder {
             load_options: load_options.clone(),
             tree: None,
             ids: HashMap::new(),
-            inline_css: String::new(),
-            stylesheet: Stylesheet::default(),
+            stylesheets: Vec::new(),
         }
     }
 
@@ -239,7 +237,10 @@ impl DocumentBuilder {
         }
 
         // FIXME: handle CSS errors
-        let _ = self.stylesheet.load_css(&self.resolve_href(href)?);
+        let mut stylesheet = Stylesheet::default();
+        let _ = stylesheet.load_css(&self.resolve_href(href)?);
+
+        self.stylesheets.push(stylesheet);
 
         Ok(())
     }
@@ -274,7 +275,9 @@ impl DocumentBuilder {
     }
 
     pub fn append_stylesheet_from_text(&mut self, text: &str) {
-        self.inline_css.push_str(text);
+        let mut stylesheet = Stylesheet::default();
+        stylesheet.parse(self.load_options.base_url.as_ref(), text);
+        self.stylesheets.push(stylesheet);
     }
 
     pub fn append_characters(&mut self, text: &str, parent: &mut RsvgNode) {
@@ -317,17 +320,21 @@ impl DocumentBuilder {
             .map_err(|_| LoadingError::BadUrl)
     }
 
-    pub fn build(mut self) -> Result<Document, LoadingError> {
-        self.stylesheet.parse(self.load_options.base_url.as_ref(), &self.inline_css);
-
-        let DocumentBuilder { load_options, tree, ids, stylesheet, .. } = self;
+    pub fn build(self) -> Result<Document, LoadingError> {
+        let DocumentBuilder { load_options, tree, ids, stylesheets, .. } = self;
 
         match tree {
             None => Err(LoadingError::SvgHasNoElements),
             Some(mut root) => {
                 if root.borrow().get_type() == NodeType::Svg {
                     for mut node in root.descendants() {
-                        node.borrow_mut().set_style(&stylesheet);
+                        let mut node_borrow = node.borrow_mut();
+
+                        for stylesheet in &stylesheets {
+                            node_borrow.set_css_styles(stylesheet);
+                        }
+
+                        node_borrow.set_style_attribute();
                     }
 
                     let values = ComputedValues::default();

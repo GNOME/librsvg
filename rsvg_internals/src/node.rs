@@ -210,7 +210,7 @@ impl NodeData {
     }
 
     /// Applies the CSS rules that match into the node's specified_values
-    fn set_css_styles(&mut self, stylesheet: &Stylesheet) {
+    pub fn set_css_styles(&mut self, stylesheet: &Stylesheet) {
         for selector in &stylesheet.get_matches(self) {
             if let Some(decl_list) = stylesheet.get_declarations(selector) {
                 for declaration in decl_list.iter() {
@@ -222,7 +222,7 @@ impl NodeData {
     }
 
     /// Applies CSS styles from the saved value of the "style" attribute
-    fn set_style_attribute(&mut self) {
+    pub fn set_style_attribute(&mut self) {
         if !self.style_attr.is_empty() {
             if let Err(e) = self
                 .specified_values
@@ -234,13 +234,6 @@ impl NodeData {
             self.style_attr.clear();
             self.style_attr.shrink_to_fit();
         }
-    }
-
-    // Sets the node's specified values from the style-related attributes in the pbag.
-    // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&mut self, stylesheet: &Stylesheet) {
-        self.set_css_styles(stylesheet);
-        self.set_style_attribute();
     }
 
     fn set_error(&mut self, error: NodeError) {
