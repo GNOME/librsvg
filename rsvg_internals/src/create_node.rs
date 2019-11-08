@@ -1,5 +1,5 @@
-use lazy_static::lazy_static;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 use crate::clip_path::ClipPath;
@@ -133,98 +133,96 @@ macro_rules! c {
     };
 }
 
-lazy_static! {
-    // Lines in comments are elements that we don't support.
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    static ref NODE_CREATORS: HashMap<&'static str, (bool, NodeCreateFn)> = {
-        let mut h = HashMap::new();
-        // name, supports_class, create_fn
-        c!(h, "a",                   true,  create_link);
-        /* c!(h, "altGlyph",         true,  ); */
-        /* c!(h, "altGlyphDef",      false, ); */
-        /* c!(h, "altGlyphItem",     false, ); */
-        /* c!(h, "animate",          false, ); */
-        /* c!(h, "animateColor",     false, ); */
-        /* c!(h, "animateMotion",    false, ); */
-        /* c!(h, "animateTransform", false, ); */
-        c!(h, "circle",              true,  create_circle);
-        c!(h, "clipPath",            true,  create_clip_path);
-        /* c!(h, "color-profile",    false, ); */
-        /* c!(h, "cursor",           false, ); */
-        c!(h, "defs",                true,  create_defs);
-        /* c!(h, "desc",             true,  ); */
-        c!(h, "ellipse",             true,  create_ellipse);
-        c!(h, "feBlend",             true,  create_fe_blend);
-        c!(h, "feColorMatrix",       true,  create_fe_color_matrix);
-        c!(h, "feComponentTransfer", true,  create_fe_component_transfer);
-        c!(h, "feComposite",         true,  create_fe_composite);
-        c!(h, "feConvolveMatrix",    true,  create_fe_convolve_matrix);
-        c!(h, "feDiffuseLighting",   true,  create_fe_diffuse_lighting);
-        c!(h, "feDisplacementMap",   true,  create_fe_displacement_map);
-        c!(h, "feDistantLight",      false, create_fe_distant_light);
-        c!(h, "feFuncA",             false, create_fe_func_a);
-        c!(h, "feFuncB",             false, create_fe_func_b);
-        c!(h, "feFuncG",             false, create_fe_func_g);
-        c!(h, "feFuncR",             false, create_fe_func_r);
-        c!(h, "feFlood",             true,  create_fe_flood);
-        c!(h, "feGaussianBlur",      true,  create_fe_gaussian_blur);
-        c!(h, "feImage",             true,  create_fe_image);
-        c!(h, "feMerge",             true,  create_fe_merge);
-        c!(h, "feMergeNode",         false, create_fe_merge_node);
-        c!(h, "feMorphology",        true,  create_fe_morphology);
-        c!(h, "feOffset",            true,  create_fe_offset);
-        c!(h, "fePointLight",        false, create_fe_point_light);
-        c!(h, "feSpecularLighting",  true,  create_fe_specular_lighting);
-        c!(h, "feSpotLight",         false, create_fe_spot_light);
-        c!(h, "feTile",              true,  create_fe_tile);
-        c!(h, "feTurbulence",        true,  create_fe_turbulence);
-        c!(h, "filter",              true,  create_filter);
-        /* c!(h, "font",             true,  ); */
-        /* c!(h, "font-face",        false, ); */
-        /* c!(h, "font-face-format", false, ); */
-        /* c!(h, "font-face-name",   false, ); */
-        /* c!(h, "font-face-src",    false, ); */
-        /* c!(h, "font-face-uri",    false, ); */
-        /* c!(h, "foreignObject",    true,  ); */
-        c!(h, "g",                   true,  create_group);
-        /* c!(h, "glyph",            true,  ); */
-        /* c!(h, "glyphRef",         true,  ); */
-        /* c!(h, "hkern",            false, ); */
-        c!(h, "image",               true,  create_image);
-        c!(h, "line",                true,  create_line);
-        c!(h, "linearGradient",      true,  create_linear_gradient);
-        c!(h, "marker",              true,  create_marker);
-        c!(h, "mask",                true,  create_mask);
-        /* c!(h, "metadata",         false, ); */
-        /* c!(h, "missing-glyph",    true,  ); */
-        /* c!(h, "mpath",            false, ); */
-        /* c!(h, "multiImage",          false, create_multi_image); */
-        c!(h, "path",                true,  create_path);
-        c!(h, "pattern",             true,  create_pattern);
-        c!(h, "polygon",             true,  create_polygon);
-        c!(h, "polyline",            true,  create_polyline);
-        c!(h, "radialGradient",      true,  create_radial_gradient);
-        c!(h, "rect",                true,  create_rect);
-        /* c!(h, "script",           false, ); */
-        /* c!(h, "set",              false, ); */
-        c!(h, "stop",                true,  create_stop);
-        c!(h, "style",               false, create_style);
-        /* c!(h, "subImage",            false, create_sub_image); */
-        /* c!(h, "subImageRef",         false, create_sub_image_ref); */
-        c!(h, "svg",                 true,  create_svg);
-        c!(h, "switch",              true,  create_switch);
-        c!(h, "symbol",              true,  create_symbol);
-        c!(h, "text",                true,  create_text);
-        /* c!(h, "textPath",         true,  ); */
-        /* c!(h, "title",            true,  ); */
-        c!(h, "tref",                true,  create_tref);
-        c!(h, "tspan",               true,  create_tspan);
-        c!(h, "use",                 true,  create_use);
-        /* c!(h, "view",             false, ); */
-        /* c!(h, "vkern",            false, ); */
-        h
-    };
-}
+// Lines in comments are elements that we don't support.
+#[cfg_attr(rustfmt, rustfmt_skip)]
+static NODE_CREATORS: Lazy<HashMap<&'static str, (bool, NodeCreateFn)>> = Lazy::new(|| {
+    let mut h = HashMap::new();
+    // name, supports_class, create_fn
+    c!(h, "a",                   true,  create_link);
+    /* c!(h, "altGlyph",         true,  ); */
+    /* c!(h, "altGlyphDef",      false, ); */
+    /* c!(h, "altGlyphItem",     false, ); */
+    /* c!(h, "animate",          false, ); */
+    /* c!(h, "animateColor",     false, ); */
+    /* c!(h, "animateMotion",    false, ); */
+    /* c!(h, "animateTransform", false, ); */
+    c!(h, "circle",              true,  create_circle);
+    c!(h, "clipPath",            true,  create_clip_path);
+    /* c!(h, "color-profile",    false, ); */
+    /* c!(h, "cursor",           false, ); */
+    c!(h, "defs",                true,  create_defs);
+    /* c!(h, "desc",             true,  ); */
+    c!(h, "ellipse",             true,  create_ellipse);
+    c!(h, "feBlend",             true,  create_fe_blend);
+    c!(h, "feColorMatrix",       true,  create_fe_color_matrix);
+    c!(h, "feComponentTransfer", true,  create_fe_component_transfer);
+    c!(h, "feComposite",         true,  create_fe_composite);
+    c!(h, "feConvolveMatrix",    true,  create_fe_convolve_matrix);
+    c!(h, "feDiffuseLighting",   true,  create_fe_diffuse_lighting);
+    c!(h, "feDisplacementMap",   true,  create_fe_displacement_map);
+    c!(h, "feDistantLight",      false, create_fe_distant_light);
+    c!(h, "feFuncA",             false, create_fe_func_a);
+    c!(h, "feFuncB",             false, create_fe_func_b);
+    c!(h, "feFuncG",             false, create_fe_func_g);
+    c!(h, "feFuncR",             false, create_fe_func_r);
+    c!(h, "feFlood",             true,  create_fe_flood);
+    c!(h, "feGaussianBlur",      true,  create_fe_gaussian_blur);
+    c!(h, "feImage",             true,  create_fe_image);
+    c!(h, "feMerge",             true,  create_fe_merge);
+    c!(h, "feMergeNode",         false, create_fe_merge_node);
+    c!(h, "feMorphology",        true,  create_fe_morphology);
+    c!(h, "feOffset",            true,  create_fe_offset);
+    c!(h, "fePointLight",        false, create_fe_point_light);
+    c!(h, "feSpecularLighting",  true,  create_fe_specular_lighting);
+    c!(h, "feSpotLight",         false, create_fe_spot_light);
+    c!(h, "feTile",              true,  create_fe_tile);
+    c!(h, "feTurbulence",        true,  create_fe_turbulence);
+    c!(h, "filter",              true,  create_filter);
+    /* c!(h, "font",             true,  ); */
+    /* c!(h, "font-face",        false, ); */
+    /* c!(h, "font-face-format", false, ); */
+    /* c!(h, "font-face-name",   false, ); */
+    /* c!(h, "font-face-src",    false, ); */
+    /* c!(h, "font-face-uri",    false, ); */
+    /* c!(h, "foreignObject",    true,  ); */
+    c!(h, "g",                   true,  create_group);
+    /* c!(h, "glyph",            true,  ); */
+    /* c!(h, "glyphRef",         true,  ); */
+    /* c!(h, "hkern",            false, ); */
+    c!(h, "image",               true,  create_image);
+    c!(h, "line",                true,  create_line);
+    c!(h, "linearGradient",      true,  create_linear_gradient);
+    c!(h, "marker",              true,  create_marker);
+    c!(h, "mask",                true,  create_mask);
+    /* c!(h, "metadata",         false, ); */
+    /* c!(h, "missing-glyph",    true,  ); */
+    /* c!(h, "mpath",            false, ); */
+    /* c!(h, "multiImage",          false, create_multi_image); */
+    c!(h, "path",                true,  create_path);
+    c!(h, "pattern",             true,  create_pattern);
+    c!(h, "polygon",             true,  create_polygon);
+    c!(h, "polyline",            true,  create_polyline);
+    c!(h, "radialGradient",      true,  create_radial_gradient);
+    c!(h, "rect",                true,  create_rect);
+    /* c!(h, "script",           false, ); */
+    /* c!(h, "set",              false, ); */
+    c!(h, "stop",                true,  create_stop);
+    c!(h, "style",               false, create_style);
+    /* c!(h, "subImage",            false, create_sub_image); */
+    /* c!(h, "subImageRef",         false, create_sub_image_ref); */
+    c!(h, "svg",                 true,  create_svg);
+    c!(h, "switch",              true,  create_switch);
+    c!(h, "symbol",              true,  create_symbol);
+    c!(h, "text",                true,  create_text);
+    /* c!(h, "textPath",         true,  ); */
+    /* c!(h, "title",            true,  ); */
+    c!(h, "tref",                true,  create_tref);
+    c!(h, "tspan",               true,  create_tspan);
+    c!(h, "use",                 true,  create_use);
+    /* c!(h, "view",             false, ); */
+    /* c!(h, "vkern",            false, ); */
+    h
+});
 
 pub fn create_node(name: &QualName, pbag: &PropertyBag) -> RsvgNode {
     let mut id = None;

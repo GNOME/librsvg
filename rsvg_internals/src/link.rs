@@ -1,5 +1,5 @@
-use lazy_static::lazy_static;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 
@@ -59,9 +59,7 @@ impl NodeTrait for Link {
 
 /// escape quotes and backslashes with backslash
 fn escape_value(value: &str) -> Cow<'_, str> {
-    lazy_static! {
-        static ref REGEX: Regex = Regex::new(r"['\\]").unwrap();
-    }
+    static REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"['\\]").unwrap());
 
     REGEX.replace_all(value, |caps: &Captures<'_>| {
         match caps.get(0).unwrap().as_str() {

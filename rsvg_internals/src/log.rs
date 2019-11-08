@@ -1,4 +1,4 @@
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 
 #[macro_export]
 macro_rules! rsvg_log {
@@ -12,9 +12,7 @@ macro_rules! rsvg_log {
 }
 
 pub fn log_enabled() -> bool {
-    lazy_static! {
-        static ref ENABLED: bool = ::std::env::var_os("RSVG_LOG").is_some();
-    }
+    static ENABLED: Lazy<bool> = Lazy::new(|| ::std::env::var_os("RSVG_LOG").is_some());
 
     *ENABLED
 }
