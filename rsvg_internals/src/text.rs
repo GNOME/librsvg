@@ -560,6 +560,10 @@ impl NodeChars {
 
         chunks[num_chunks - 1].spans.push(span);
     }
+
+    pub fn get_string(&self) -> String {
+        self.string.borrow().clone()
+    }
 }
 
 impl NodeTrait for NodeChars {

@@ -16,7 +16,6 @@ use crate::node::{NodeCascade, NodeData, NodeType, RsvgNode};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
-use crate::style::{Style, StyleType};
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::text::NodeChars;
 use crate::xml::xml_load_from_possibly_compressed_stream;
@@ -274,27 +273,12 @@ impl DocumentBuilder {
         node
     }
 
-    pub fn append_characters(&mut self, text: &str, parent: &mut RsvgNode) {
-        if text.is_empty() {
-            return;
-        }
+    pub fn append_stylesheet_from_text(&mut self, text: &str) {
+        self.inline_css.push_str(text);
+    }
 
-        if parent.borrow().get_type() == NodeType::Style {
-            // If the "type" attribute is not present, fall back to the
-            // "contentStyleType" attribute of the svg element.
-            let style_type = parent.borrow().get_impl::<Style>().style_type().unwrap_or_else(|| {
-                if self.tree.is_some()
-                    && self.tree.as_ref().unwrap().borrow().get_type() == NodeType::Svg
-                {
-                    self.tree.as_ref().unwrap().borrow().get_impl::<Svg>().content_style_type()
-                } else {
-                    StyleType::TextCss
-                }
-            });
-            if style_type == StyleType::TextCss {
-                self.inline_css.push_str(text);
-            }
-        } else {
+    pub fn append_characters(&mut self, text: &str, parent: &mut RsvgNode) {
+        if !text.is_empty() {
             self.append_chars_to_parent(text, parent);
         }
     }

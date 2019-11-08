@@ -13,8 +13,10 @@ use crate::document::{Document, DocumentBuilder};
 use crate::error::LoadingError;
 use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
-use crate::node::RsvgNode;
+use crate::node::{NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
+use crate::style::{Style, StyleType};
+use crate::text::NodeChars;
 use crate::xml2_load::{ParseFromStreamError, Xml2Parser};
 
 #[derive(Clone)]
@@ -342,8 +344,35 @@ impl XmlState {
     }
 
     fn style_end_element(&self) {
-        // FIXME: inner.document_builder...add_inline_stylesheet(text)
+        self.add_inline_stylesheet();
         self.element_creation_end_element()
+    }
+
+    fn add_inline_stylesheet(&self) {
+        let mut inner = self.inner.borrow_mut();
+        let current_node = inner.current_node.as_ref().unwrap();
+
+        assert!(current_node.borrow().get_type() == NodeType::Style);
+
+        let style_type = current_node
+            .borrow()
+            .get_impl::<Style>()
+            .style_type()
+            .unwrap_or(StyleType::TextCss);
+
+        if style_type == StyleType::TextCss {
+            let stylesheet_text = current_node.children()
+                .map(|child| {
+                    let child_borrow = child.borrow();
+
+                    assert!(child_borrow.get_type() == NodeType::Chars);
+                    child_borrow.get_impl::<NodeChars>().get_string()
+                })
+                .collect::<String>();
+
+            let builder = inner.document_builder.as_mut().unwrap();
+            builder.append_stylesheet_from_text(&stylesheet_text);
+        }
     }
 
     fn inside_style_start_element(&self, name: &QualName) -> Context {
