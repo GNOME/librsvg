@@ -340,10 +340,10 @@ impl Selector {
     }
 }
 
-/// Contains all the mappings of selectors to style declarations
-/// that result from loading an SVG document.
+/// A parsed CSS stylesheet
 #[derive(Default)]
-pub struct CssRules {
+pub struct Stylesheet {
+    /// Maps a selector name to a list of property/value declarations
     selectors_to_declarations: HashMap<Selector, DeclarationList>,
 }
 
@@ -379,7 +379,7 @@ impl<'a> Iterator for DeclarationListIter<'a> {
     }
 }
 
-impl CssRules {
+impl Stylesheet {
     pub fn parse(&mut self, base_url: Option<&Url>, buf: &str) {
         if buf.is_empty() {
             return; // libcroco doesn't like empty strings :(
@@ -388,7 +388,7 @@ impl CssRules {
         unsafe {
             let mut handler_data = DocHandlerData {
                 base_url,
-                css_rules: self,
+                stylesheet: self,
                 selector: ptr::null_mut(),
             };
 
@@ -555,7 +555,7 @@ impl CssRules {
 
 struct DocHandlerData<'a> {
     base_url: Option<&'a Url>,
-    css_rules: &'a mut CssRules,
+    stylesheet: &'a mut Stylesheet,
     selector: *mut CRSelector,
 }
 
@@ -592,7 +592,7 @@ unsafe extern "C" fn css_import_style(
 
     if let Ok(aurl) = AllowedUrl::from_href(uri, handler_data.base_url) {
         // FIXME: handle CSS errors
-        let _ = handler_data.css_rules.load_css(&aurl);
+        let _ = handler_data.stylesheet.load_css(&aurl);
     } else {
         rsvg_log!("disallowed URL \"{}\" for importing CSS", uri);
     }
@@ -671,7 +671,7 @@ unsafe extern "C" fn css_property(
                         };
 
                         handler_data
-                            .css_rules
+                            .stylesheet
                             .add_declaration(Selector::new(&selector_name, specificity), declaration);
                     }
                     Err(_) => (), // invalid property name or invalid value; ignore

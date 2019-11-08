@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, Fragment};
 use crate::create_node::create_node;
-use crate::css::CssRules;
+use crate::css::Stylesheet;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
@@ -212,7 +212,7 @@ pub struct DocumentBuilder {
     tree: Option<RsvgNode>,
     ids: HashMap<String, RsvgNode>,
     inline_css: String,
-    css_rules: CssRules,
+    stylesheet: Stylesheet,
 }
 
 impl DocumentBuilder {
@@ -222,7 +222,7 @@ impl DocumentBuilder {
             tree: None,
             ids: HashMap::new(),
             inline_css: String::new(),
-            css_rules: CssRules::default(),
+            stylesheet: Stylesheet::default(),
         }
     }
 
@@ -239,7 +239,7 @@ impl DocumentBuilder {
         }
 
         // FIXME: handle CSS errors
-        let _ = self.css_rules.load_css(&self.resolve_href(href)?);
+        let _ = self.stylesheet.load_css(&self.resolve_href(href)?);
 
         Ok(())
     }
@@ -318,16 +318,16 @@ impl DocumentBuilder {
     }
 
     pub fn build(mut self) -> Result<Document, LoadingError> {
-        self.css_rules.parse(self.load_options.base_url.as_ref(), &self.inline_css);
+        self.stylesheet.parse(self.load_options.base_url.as_ref(), &self.inline_css);
 
-        let DocumentBuilder { load_options, tree, ids, css_rules, .. } = self;
+        let DocumentBuilder { load_options, tree, ids, stylesheet, .. } = self;
 
         match tree {
             None => Err(LoadingError::SvgHasNoElements),
             Some(mut root) => {
                 if root.borrow().get_type() == NodeType::Svg {
                     for mut node in root.descendants() {
-                        node.borrow_mut().set_style(&css_rules);
+                        node.borrow_mut().set_style(&stylesheet);
                     }
 
                     let values = ComputedValues::default();
