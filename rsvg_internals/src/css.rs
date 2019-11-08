@@ -8,34 +8,28 @@ use cssparser::{
     Parser,
     ParserInput,
     QualifiedRuleParser,
+    RuleListParser,
     SourceLocation,
     ToCss,
 };
 use selectors::attr::{AttrSelectorOperation, NamespaceConstraint, CaseSensitivity};
-use selectors::matching::{ElementSelectorFlags, MatchingContext};
+use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
 use selectors::{self, OpaqueElement, SelectorImpl, SelectorList};
 
-use std::collections::hash_map::{Entry, Iter as HashMapIter};
+use std::collections::hash_map::{Iter as HashMapIter};
 use std::collections::HashMap;
 use std::fmt;
-use std::ptr;
 use std::str;
 
-use libc;
 use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use url::Url;
 
-use glib::translate::*;
-use glib_sys::{gboolean, gpointer, GList};
-
 use crate::allowed_url::AllowedUrl;
-use crate::croco::*;
 use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeData, NodeType, RsvgNode};
+use crate::node::{NodeType, RsvgNode};
 use crate::properties::{parse_attribute_value_into_parsed_property, ParsedProperty};
 use crate::text::NodeChars;
-use crate::util::utf8_cstr;
 
 /// A parsed CSS declaration (`name: value [!important]`)
 pub struct Declaration {
@@ -158,6 +152,13 @@ impl<'i> QualifiedRuleParser<'i> for QualRuleParser {
             declarations: decl_list,
         })
     }
+}
+
+impl<'i> AtRuleParser<'i> for QualRuleParser {
+    type PreludeNoBlock = ();
+    type PreludeBlock = ();
+    type AtRule = Rule;
+    type Error = CssParseErrorKind<'i>;
 }
 
 /// Dummy type required by the SelectorImpl trait
@@ -406,45 +407,13 @@ impl selectors::Element for RsvgElement {
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Eq)]
-pub struct Selector {
-    name: String,
-    specificity: u64,
-}
-
-impl Selector {
-    fn new(s: &str, specificity: u64) -> Selector {
-        Selector {
-            name: s.to_string(),
-            specificity,
-        }
-    }
-}
-
 /// A parsed CSS stylesheet
 #[derive(Default)]
 pub struct Stylesheet {
-    /// Maps a selector name to a list of property/value declarations
-    selectors_to_declarations: HashMap<Selector, DeclarationList>,
+    rules: Vec<Rule>,
 }
 
 impl DeclarationList {
-    fn add_declaration(&mut self, declaration: Declaration) {
-        match self.declarations.entry(declaration.attribute.clone()) {
-            Entry::Occupied(mut e) => {
-                let decl = e.get_mut();
-
-                if !decl.important {
-                    *decl = declaration;
-                }
-            }
-
-            Entry::Vacant(v) => {
-                v.insert(declaration);
-            }
-        }
-    }
-
     pub fn iter(&self) -> DeclarationListIter {
         DeclarationListIter(self.declarations.iter())
     }
@@ -462,38 +431,16 @@ impl<'a> Iterator for DeclarationListIter<'a> {
 
 impl Stylesheet {
     pub fn parse(&mut self, base_url: Option<&Url>, buf: &str) {
-        if buf.is_empty() {
-            return; // libcroco doesn't like empty strings :(
-        }
+        let mut input = ParserInput::new(buf);
+        let mut parser = Parser::new(&mut input);
 
-        unsafe {
-            let mut handler_data = DocHandlerData {
-                base_url,
-                stylesheet: self,
-                selector: ptr::null_mut(),
-            };
+        let rule_parser = RuleListParser::new_for_stylesheet(&mut parser, QualRuleParser);
 
-            let doc_handler = cr_doc_handler_new();
-            init_cr_doc_handler(&mut *doc_handler);
-
-            (*doc_handler).app_data = &mut handler_data as *mut _ as gpointer;
-
-            let buf_ptr = buf.as_ptr() as *mut _;
-            let buf_len = buf.len() as libc::c_ulong;
-
-            let parser = cr_parser_new_from_buf(buf_ptr, buf_len, CR_UTF_8, false.to_glib());
-            if parser.is_null() {
-                cr_doc_handler_unref(doc_handler);
-                return;
+        for rule_result in rule_parser {
+            // Ignore invalid rules
+            if let Ok(rule) = rule_result {
+                self.rules.push(rule);
             }
-
-            cr_parser_set_sac_handler(parser, doc_handler);
-            cr_doc_handler_unref(doc_handler);
-
-            cr_parser_set_use_core_grammar(parser, false.to_glib());
-            cr_parser_parse(parser);
-
-            cr_parser_destroy(parser);
         }
     }
 
@@ -527,245 +474,29 @@ impl Stylesheet {
             })
     }
 
-    fn add_declaration(&mut self, selector: Selector, declaration: Declaration) {
-        let decl_list = self
-            .selectors_to_declarations
-            .entry(selector)
-            .or_insert_with(DeclarationList::default);
+    pub fn apply_matches_to_node(&self, node: &mut RsvgNode) {
+        let mut match_ctx = MatchingContext::new(
+            MatchingMode::Normal,
 
-        decl_list.add_declaration(declaration);
-    }
+            // FIXME: how the fuck does one set up a bloom filter here?
+            None,
 
-    pub fn get_declarations(&self, selector: &Selector) -> Option<&DeclarationList> {
-        self.selectors_to_declarations.get(selector)
-    }
+            // n_index_cache,
+            None,
 
-    fn selector_matches_node(&self, selector: &Selector, node_data: &NodeData) -> bool {
-        // Try to properly support all of the following, including inheritance:
-        // *
-        // #id
-        // tag
-        // tag#id
-        // tag.class
-        // tag.class#id
-        //
-        // This is basically a semi-compliant CSS2 selection engine
+            QuirksMode::NoQuirks,
+        );
 
-        let element_name = node_data.element_name().local.as_ref();
-        let id = node_data.get_id();
-
-        // *
-        if selector.name == "*" {
-            return true;
-        }
-
-        // tag
-        if selector.name == element_name {
-            return true;
-        }
-
-        if let Some(class) = node_data.get_class() {
-            for cls in class.split_whitespace() {
-                if !cls.is_empty() {
-                    // tag.class#id
-                    if let Some(id) = id {
-                        let target = format!("{}.{}#{}", element_name, cls, id);
-                        if selector.name == target {
-                            return true;
-                        }
-                    }
-
-                    // .class#id
-                    if let Some(id) = id {
-                        let target = format!(".{}#{}", cls, id);
-                        if selector.name == target {
-                            return true;
-                        }
-                    }
-
-                    // tag.class
-                    let target = format!("{}.{}", element_name, cls);
-                    if selector.name == target {
-                        return true;
-                    }
-
-                    // didn't find anything more specific, just apply the class style
-                    let target = format!(".{}", cls);
-                    if selector.name == target {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        if let Some(id) = id {
-            // id
-            let target = format!("#{}", id);
-            if selector.name == target {
-                return true;
-            }
-
-            // tag#id
-            let target = format!("{}#{}", element_name, id);
-            if selector.name == target {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    pub fn get_matches(&self, node_data: &NodeData) -> Vec<Selector> {
-        let mut matches: Vec<_> = self.selectors_to_declarations
-            .iter()
-            .filter_map(|(selector, _)| {
-                if self.selector_matches_node(selector, node_data) {
-                    Some(selector)
-                } else {
-                    None
-                }
-            })
-            .map(Selector::clone)
-            .collect();
-
-        matches.as_mut_slice().sort_by(|sel_a, sel_b| sel_a.specificity.cmp(&sel_b.specificity));
-
-        matches
-    }
-}
-
-struct DocHandlerData<'a> {
-    base_url: Option<&'a Url>,
-    stylesheet: &'a mut Stylesheet,
-    selector: *mut CRSelector,
-}
-
-macro_rules! get_doc_handler_data {
-    ($doc_handler:expr) => {
-        &mut *((*$doc_handler).app_data as *mut DocHandlerData)
-    };
-}
-
-fn init_cr_doc_handler(handler: &mut CRDocHandler) {
-    handler.import_style = Some(css_import_style);
-    handler.start_selector = Some(css_start_selector);
-    handler.end_selector = Some(css_end_selector);
-    handler.property = Some(css_property);
-    handler.error = Some(css_error);
-    handler.unrecoverable_error = Some(css_unrecoverable_error);
-}
-
-unsafe extern "C" fn css_import_style(
-    a_this: *mut CRDocHandler,
-    _a_media_list: *mut GList,
-    a_uri: CRString,
-    _a_uri_default_ns: CRString,
-    _a_location: CRParsingLocation,
-) {
-    let handler_data = get_doc_handler_data!(a_this);
-
-    if a_uri.is_null() {
-        return;
-    }
-
-    let raw_uri = cr_string_peek_raw_str(a_uri);
-    let uri = utf8_cstr(raw_uri);
-
-    if let Ok(aurl) = AllowedUrl::from_href(uri, handler_data.base_url) {
-        // FIXME: handle CSS errors
-        let _ = handler_data.stylesheet.load_css(&aurl);
-    } else {
-        rsvg_log!("disallowed URL \"{}\" for importing CSS", uri);
-    }
-}
-
-unsafe extern "C" fn css_start_selector(
-    a_this: *mut CRDocHandler,
-    a_selector_list: *mut CRSelector,
-) {
-    let handler_data = get_doc_handler_data!(a_this);
-
-    cr_selector_ref(a_selector_list);
-    handler_data.selector = a_selector_list;
-}
-
-unsafe extern "C" fn css_end_selector(
-    a_this: *mut CRDocHandler,
-    _a_selector_list: *mut CRSelector,
-) {
-    let handler_data = get_doc_handler_data!(a_this);
-
-    cr_selector_unref(handler_data.selector);
-    handler_data.selector = ptr::null_mut();
-}
-
-unsafe extern "C" fn css_property(
-    a_this: *mut CRDocHandler,
-    a_name: CRString,
-    a_expression: CRTerm,
-    a_is_important: gboolean,
-) {
-    let handler_data = get_doc_handler_data!(a_this);
-
-    if a_name.is_null() || a_expression.is_null() || handler_data.selector.is_null() {
-        return;
-    }
-
-    let mut cur_sel = handler_data.selector;
-    while !cur_sel.is_null() {
-        let simple_sel = (*cur_sel).simple_sel;
-
-        cur_sel = (*cur_sel).next;
-
-        if !simple_sel.is_null() {
-            if cr_simple_sel_compute_specificity(simple_sel) != CR_OK {
-                continue;
-            }
-
-            let specificity = u64::from((*simple_sel).specificity);
-
-            let raw_selector_name = cr_simple_sel_to_string(simple_sel) as *mut libc::c_char;
-
-            if !raw_selector_name.is_null() {
-                let raw_prop_name = cr_string_peek_raw_str(a_name);
-                let prop_name = utf8_cstr(raw_prop_name);
-
-                let prop_value =
-                    <String as FromGlibPtrFull<_>>::from_glib_full(cr_term_to_string(a_expression));
-
-                let selector_name =
-                    <String as FromGlibPtrFull<_>>::from_glib_full(raw_selector_name);
-
-                let important = from_glib(a_is_important);
-
-                let attribute = QualName::new(None, ns!(svg), LocalName::from(prop_name));
-
-                let mut input = ParserInput::new(&prop_value);
-                let mut parser = Parser::new(&mut input);
-
-                match parse_attribute_value_into_parsed_property(&attribute, &mut parser, true) {
-                    Ok(property) => {
-                        let declaration = Declaration {
-                            attribute,
-                            property,
-                            important,
-                        };
-
-                        handler_data
-                            .stylesheet
-                            .add_declaration(Selector::new(&selector_name, specificity), declaration);
-                    }
-                    Err(_) => (), // invalid property name or invalid value; ignore
+        for rule in &self.rules {
+            if selectors::matching::matches_selector_list(
+                &rule.selectors,
+                &RsvgElement(node.clone()),
+                &mut match_ctx,
+            ) {
+                for decl in rule.declarations.iter() {
+                    node.borrow_mut().apply_style_declaration(decl);
                 }
             }
         }
     }
-}
-
-unsafe extern "C" fn css_error(_a_this: *mut CRDocHandler) {
-    println!("CSS parsing error");
-}
-
-unsafe extern "C" fn css_unrecoverable_error(_a_this: *mut CRDocHandler) {
-    println!("CSS unrecoverable error");
 }

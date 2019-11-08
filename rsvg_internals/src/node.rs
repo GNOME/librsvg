@@ -7,7 +7,7 @@ use std::fmt;
 
 use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
-use crate::css::Stylesheet;
+use crate::css::Declaration;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filters::FilterEffect;
@@ -209,16 +209,10 @@ impl NodeData {
         }
     }
 
-    /// Applies the CSS rules that match into the node's specified_values
-    pub fn set_css_styles(&mut self, stylesheet: &Stylesheet) {
-        for selector in &stylesheet.get_matches(self) {
-            if let Some(decl_list) = stylesheet.get_declarations(selector) {
-                for declaration in decl_list.iter() {
-                    self.specified_values
-                        .set_property_from_declaration(declaration, &mut self.important_styles);
-                }
-            }
-        }
+    // Applies a style declaration to the node's specified_values
+    pub fn apply_style_declaration(&mut self, declaration: &Declaration) {
+        self.specified_values
+            .set_property_from_declaration(declaration, &mut self.important_styles);
     }
 
     /// Applies CSS styles from the saved value of the "style" attribute

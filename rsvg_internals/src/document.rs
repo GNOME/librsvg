@@ -328,13 +328,11 @@ impl DocumentBuilder {
             Some(mut root) => {
                 if root.borrow().get_type() == NodeType::Svg {
                     for mut node in root.descendants() {
-                        let mut node_borrow = node.borrow_mut();
-
                         for stylesheet in &stylesheets {
-                            node_borrow.set_css_styles(stylesheet);
+                            stylesheet.apply_matches_to_node(&mut node);
                         }
 
-                        node_borrow.set_style_attribute();
+                        node.borrow_mut().set_style_attribute();
                     }
 
                     let values = ComputedValues::default();
