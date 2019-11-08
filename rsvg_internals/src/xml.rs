@@ -2,7 +2,7 @@ use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use libc;
-use markup5ever::{ExpandedName, LocalName, Namespace, QualName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -25,6 +25,12 @@ enum Context {
     // Creating nodes for elements under the current node
     ElementCreation,
 
+    // Inside <style>; accumulate text to include in a stylesheet
+    Style,
+
+    // An unsupported element inside a `<style>` element, to be ignored
+    UnsupportedStyleChild,
+
     // Inside <xi:include>
     XInclude(XIncludeContext),
 
@@ -41,6 +47,12 @@ enum Context {
 #[derive(Clone)]
 struct XIncludeContext {
     need_fallback: bool,
+}
+
+/// Accumulates data inside a `<style>` element
+#[derive(Clone)]
+struct StyleContext {
+    text: String,
 }
 
 // This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
@@ -161,6 +173,10 @@ impl XmlState {
         let new_context = match context {
             Context::Start => self.element_creation_start_element(&name, pbag),
             Context::ElementCreation => self.element_creation_start_element(&name, pbag),
+
+            Context::Style => self.inside_style_start_element(&name),
+            Context::UnsupportedStyleChild => self.unsupported_style_start_element(&name),
+
             Context::XInclude(ref ctx) => self.inside_xinclude_start_element(&ctx, &name),
             Context::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(&name),
             Context::XIncludeFallback(ref ctx) => {
@@ -181,9 +197,14 @@ impl XmlState {
         match context {
             Context::Start => panic!("end_element: XML handler stack is empty!?"),
             Context::ElementCreation => self.element_creation_end_element(),
+
+            Context::Style => self.style_end_element(),
+            Context::UnsupportedStyleChild => (),
+
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
             Context::XIncludeFallback(_) => (),
+
             Context::FatalError(_) => return,
         }
 
@@ -195,14 +216,20 @@ impl XmlState {
         let context = self.inner.borrow().context();
 
         match context {
-            // This is character data before the first element, i.e. something like
-            //  <?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg"/>
-            // ^ note the space here
-            // libxml2 is not finished reading the file yet; it will emit an error
-            // on its own when it finishes.  So, ignore this condition.
-            Context::Start => (),
+            Context::Start => {
+                // This is character data before the first element, i.e. something like
+                //  <?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg"/>
+                // ^ note the space here
+                // libxml2 is not finished reading the file yet; it will emit an error
+                // on its own when it finishes.  So, ignore this condition.
+                ()
+            },
 
             Context::ElementCreation => self.element_creation_characters(text),
+
+            Context::Style => self.element_creation_characters(text),
+            Context::UnsupportedStyleChild => (),
+
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
             Context::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
@@ -289,7 +316,11 @@ impl XmlState {
                 .append_element(name, pbag, parent);
             inner.current_node = Some(node);
 
-            Context::ElementCreation
+            if name.expanded() == expanded_name!(svg "style") {
+                Context::Style
+            } else {
+                Context::ElementCreation
+            }
         }
     }
 
@@ -308,6 +339,19 @@ impl XmlState {
             .as_mut()
             .unwrap()
             .append_characters(text, &mut parent);
+    }
+
+    fn style_end_element(&self) {
+        // FIXME: inner.document_builder...add_inline_stylesheet(text)
+        self.element_creation_end_element()
+    }
+
+    fn inside_style_start_element(&self, name: &QualName) -> Context {
+        self.unsupported_style_start_element(name)
+    }
+
+    fn unsupported_style_start_element(&self, _name: &QualName) -> Context {
+        Context::UnsupportedStyleChild
     }
 
     fn xinclude_start_element(&self, _name: &QualName, pbag: &PropertyBag) -> Context {
