@@ -235,7 +235,7 @@ impl DocumentBuilder {
         }
     }
 
-    pub fn append_stylesheet(
+    pub fn append_stylesheet_from_xml_processing_instruction(
         &mut self,
         alternate: Option<String>,
         type_: Option<String>,

@@ -234,7 +234,7 @@ impl XmlState {
                 .document_builder
                 .as_mut()
                 .unwrap()
-                .append_stylesheet(alternate, type_, href);
+                .append_stylesheet_from_xml_processing_instruction(alternate, type_, href);
         } else {
             self.error(ParseFromStreamError::XmlParseError(String::from(
                 "invalid processing instruction data in xml-stylesheet",
