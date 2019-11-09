@@ -31,7 +31,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/cond.rs				\
 	rsvg_internals/src/coord_units.rs			\
 	rsvg_internals/src/create_node.rs			\
-	rsvg_internals/src/croco.rs				\
 	rsvg_internals/src/css.rs				\
 	rsvg_internals/src/error.rs				\
 	rsvg_internals/src/document.rs				\

@@ -71,7 +71,6 @@ LIBRSVG_INCLUDES =			\
 	/I..				\
 	/I.\$(OUTDIR)\librsvg		\
 	/I$(INCLUDEDIR)\pango-1.0	\
-	/I$(INCLUDEDIR)\libcroco-0.6	\
 	$(BASE_DEP_INCLUDES)		\
 	/I$(INCLUDEDIR)\libxml2
 
@@ -98,7 +97,6 @@ LIBRSVG_DEP_LIBS =			\
 	$(LIBRSVG_EXTRA_DEP_LIBS)	\
 	pango-1.0.lib			\
 	cairo-gobject.lib		\
-	croco-0.6.lib			\
 	$(BASE_DEP_LIBS)		\
 	libxml2.lib			\
 	advapi32.lib			\
