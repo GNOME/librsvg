@@ -15,24 +15,30 @@
 //! #baz { stroke-width: 42; }
 //!
 //! ```
-//! Let's look at each part:
+//! The example contains three **rules**, the first one is an **at-rule*,
+//! the other two are **qualified rules**.
 //!
-//! `@import` is an **at-rule**.  There are other at-rules like
-//! `@media`, but librsvg doesn't support those yet.
+//! Each rule is made of two parts, a **prelude** and an optional **block**
+//! The prelude is the part until the first `{` or until `;`, depending on
+//! whether a block is present.  The block is the part between curly braces.
 //!
-//! `foo, .bar` is a **selector list** with two **selectors**, one for
+//! Let's look at each rule:
+//!
+//! `@import` is an **at-rule**.  This rule has a prelude, but no block.
+//! There are other at-rules like `@media` and some of them may have a block,
+//! but librsvg doesn't support those yet.
+//!
+//! The prelude of the following rule is `foo, .bar`.
+//! It is a **selector list** with two **selectors**, one for
 //! `foo` elements and one for elements that have the `bar` class.
 //!
-//! The curly braces begin a **block**; the stuff between `{}` is a
-//! **declaration list**.  The first block contains two
+//! The content of the block between `{}` for a qualified rule is a
+//! **declaration list**.  The block of the first qualified rule contains two
 //! **declarations**, one for the `fill` **property** and one for the
 //! `stroke` property.
 //!
-//! A selector list plus a declaration list inside a block is a
-//! **ruleset** or just **rule**.
-//!
-//! After ther first rule, we have a second rule with a single
-//! selector for the `#baz` id, with a single declaration for the
+//! After ther first qualified rule, we have a second qualified rule with
+//! a single selector for the `#baz` id, with a single declaration for the
 //! `stroke-width` property.
 //!
 //! # Helper crates we use
@@ -70,25 +76,12 @@
 //! through the rules in a stylesheet and apply each rule that matches
 //! to each element node.
 
-use cssparser::{
-    self,
-    parse_important,
-    AtRuleParser,
-    CowRcStr,
-    DeclarationListParser,
-    DeclarationParser,
-    Parser,
-    ParserInput,
-    QualifiedRuleParser,
-    RuleListParser,
-    SourceLocation,
-    ToCss,
-};
-use selectors::attr::{AttrSelectorOperation, NamespaceConstraint, CaseSensitivity};
+use cssparser::*;
+use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
 use selectors::{self, OpaqueElement, SelectorImpl, SelectorList};
 
-use std::collections::hash_map::{Iter as HashMapIter};
+use std::collections::hash_map::Iter as HashMapIter;
 use std::collections::HashMap;
 use std::fmt;
 use std::str;
@@ -148,8 +141,8 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         input: &mut Parser<'i, 't>,
     ) -> Result<Declaration, cssparser::ParseError<'i, ValueErrorKind>> {
         let prop_name = QualName::new(None, ns!(svg), LocalName::from(name.as_ref()));
-        let property = parse_property(&prop_name, input, true)
-            .map_err(|e| input.new_custom_error(e))?;
+        let property =
+            parse_property(&prop_name, input, true).map_err(|e| input.new_custom_error(e))?;
 
         let important = input.try_parse(parse_important).is_ok();
 
@@ -166,14 +159,14 @@ impl<'i> DeclarationParser<'i> for DeclParser {
 // implementation in the future, although this may require keeping track of the
 // CSS parsing state like Servo does.
 impl<'i> AtRuleParser<'i> for DeclParser {
-    type PreludeNoBlock = ();
     type PreludeBlock = ();
+    type PreludeNoBlock = ();
     type AtRule = Declaration;
     type Error = ValueErrorKind;
 }
 
 /// Dummy struct to implement cssparser::QualifiedRuleParser
-pub struct QualRuleParser;
+pub struct RuleParser;
 
 /// Errors from the CSS parsing process
 pub enum CssParseErrorKind<'i> {
@@ -187,23 +180,30 @@ impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for CssParseErrorKi
     }
 }
 
-/// A CSS ruleset (or rule)
-///
-/// This is a complete ruleset or rule:
-///
-/// ```ignore
-/// foo, .bar { fill: red; stroke: green; }
-/// ```
-///
-/// Here, we have a list with two selectors (`foo`, `.bar`), and a block with a
-/// declaration list with two declarations, one for `fill` and one for `stroke`.
-pub struct Rule {
+/// A CSS qualified rule (or ruleset)
+pub struct QualifiedRule {
     selectors: SelectorList<RsvgSelectors>,
     declarations: DeclarationList,
 }
 
+/// Prelude of at-rule used in the AtRuleParser.
+pub enum AtRulePrelude {
+    Import(String),
+}
+
+/// A CSS at-rule (or ruleset)
+pub enum AtRule {
+    Import(String),
+}
+
+/// A CSS rule (or ruleset)
+pub enum Rule {
+    AtRule(AtRule),
+    QualifiedRule(QualifiedRule),
+}
+
 // Required to implement the `Prelude` associated type in `cssparser::QualifiedRuleParser`
-impl<'i> selectors::Parser<'i> for QualRuleParser {
+impl<'i> selectors::Parser<'i> for RuleParser {
     type Impl = RsvgSelectors;
     type Error = CssParseErrorKind<'i>;
 
@@ -237,12 +237,12 @@ impl<'i> selectors::Parser<'i> for QualRuleParser {
 // The prelude is the selector list with the `foo` and `.bar` selectors.
 //
 // The `parse_prelude` method just uses `selectors::SelectorList`.  This
-// is what requires the `impl selectors::Parser for QualRuleParser`.
+// is what requires the `impl selectors::Parser for RuleParser`.
 //
 // Next, the `parse_block` method takes an already-parsed prelude (a selector list),
 // and tries to parse the block between braces - a `DeclarationList`.  It creates
 // a `Rule` out of the selector list and the declaration list.
-impl<'i> QualifiedRuleParser<'i> for QualRuleParser {
+impl<'i> QualifiedRuleParser<'i> for RuleParser {
     type Prelude = SelectorList<RsvgSelectors>;
     type QualifiedRule = Rule;
     type Error = CssParseErrorKind<'i>;
@@ -269,25 +269,53 @@ impl<'i> QualifiedRuleParser<'i> for QualRuleParser {
         for decl_result in decl_parser {
             // ignore invalid property name or value
             if let Ok(declaration) = decl_result {
-                decl_list.declarations.insert(declaration.prop_name.clone(), declaration);
+                decl_list
+                    .declarations
+                    .insert(declaration.prop_name.clone(), declaration);
             }
         }
 
-        Ok(Rule {
+        Ok(Rule::QualifiedRule(QualifiedRule {
             selectors: prelude,
             declarations: decl_list,
-        })
+        }))
     }
 }
 
 // Required by `cssparser::RuleListParser`.
 //
-// This does not handle at-rules like `@import`; we should do so.
-impl<'i> AtRuleParser<'i> for QualRuleParser {
-    type PreludeNoBlock = ();
+// This only handles the `@import` at-rule.
+impl<'i> AtRuleParser<'i> for RuleParser {
     type PreludeBlock = ();
+    type PreludeNoBlock = AtRulePrelude;
     type AtRule = Rule;
     type Error = CssParseErrorKind<'i>;
+
+    fn parse_prelude<'t>(
+        &mut self,
+        name: CowRcStr<'i>,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<AtRuleType<Self::PreludeNoBlock, Self::PreludeBlock>, ParseError<'i, Self::Error>>
+    {
+        match_ignore_ascii_case! { &name,
+            "import" => {
+                // FIXME: at the moment we ignore media queries
+                let url = input.expect_url_or_string()?.as_ref().to_owned();
+                Ok(AtRuleType::WithoutBlock(AtRulePrelude::Import(url)))
+            },
+
+            _ => Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name))),
+        }
+    }
+
+    fn rule_without_block(
+        &mut self,
+        prelude: Self::PreludeNoBlock,
+        _location: SourceLocation,
+    ) -> Self::AtRule {
+        let AtRulePrelude::Import(url) = prelude;
+        Rule::AtRule(AtRule::Import(url))
+    }
 }
 
 /// Dummy type required by the SelectorImpl trait.
@@ -295,7 +323,10 @@ impl<'i> AtRuleParser<'i> for QualRuleParser {
 pub struct NonTSPseudoClass;
 
 impl ToCss for NonTSPseudoClass {
-    fn to_css<W>(&self, _dest: &mut W) -> fmt::Result where W: fmt::Write {
+    fn to_css<W>(&self, _dest: &mut W) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
         Ok(())
     }
 }
@@ -317,7 +348,10 @@ impl selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
 pub struct PseudoElement;
 
 impl ToCss for PseudoElement {
-    fn to_css<W>(&self, _dest: &mut W) -> fmt::Result where W: fmt::Write {
+    fn to_css<W>(&self, _dest: &mut W) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
         Ok(())
     }
 }
@@ -403,7 +437,7 @@ impl selectors::Element for RsvgElement {
 
         while let Some(ref sib) = sibling {
             if sib.borrow().get_type() != NodeType::Chars {
-                return sibling.map(|n| n.into())
+                return sibling.map(|n| n.into());
             }
 
             sibling = self.0.previous_sibling();
@@ -462,7 +496,8 @@ impl selectors::Element for RsvgElement {
         _flags_setter: &mut F,
     ) -> bool
     where
-        F: FnMut(&Self, ElementSelectorFlags) {
+        F: FnMut(&Self, ElementSelectorFlags),
+    {
         // unsupported
         false
     }
@@ -487,11 +522,7 @@ impl selectors::Element for RsvgElement {
         false
     }
 
-    fn has_id(
-        &self,
-        id: &LocalName,
-        case_sensitivity: CaseSensitivity,
-    ) -> bool {
+    fn has_id(&self, id: &LocalName, case_sensitivity: CaseSensitivity) -> bool {
         self.0
             .borrow()
             .get_id()
@@ -499,11 +530,7 @@ impl selectors::Element for RsvgElement {
             .unwrap_or(false)
     }
 
-    fn has_class(
-        &self,
-        name: &LocalName,
-        case_sensitivity: CaseSensitivity,
-    ) -> bool {
+    fn has_class(&self, name: &LocalName, case_sensitivity: CaseSensitivity) -> bool {
         self.0
             .borrow()
             .get_class()
@@ -525,8 +552,8 @@ impl selectors::Element for RsvgElement {
     /// That is, whether it does not contain any child element or any non-zero-length text node.
     /// See http://dev.w3.org/csswg/selectors-3/#empty-pseudo
     fn is_empty(&self) -> bool {
-        !self.0.has_children() ||
-            self.0.children().all(|child| {
+        !self.0.has_children()
+            || self.0.children().all(|child| {
                 child.borrow().get_type() == NodeType::Chars
                     && child.borrow().get_impl::<NodeChars>().is_empty()
             })
@@ -540,12 +567,6 @@ impl selectors::Element for RsvgElement {
     fn is_root(&self) -> bool {
         self.0.parent().is_none()
     }
-}
-
-/// A parsed CSS stylesheet
-#[derive(Default)]
-pub struct Stylesheet {
-    rules: Vec<Rule>,
 }
 
 impl DeclarationList {
@@ -565,28 +586,56 @@ impl<'a> Iterator for DeclarationListIter<'a> {
     }
 }
 
+/// A parsed CSS stylesheet
+#[derive(Default)]
+pub struct Stylesheet {
+    rules: Vec<Rule>,
+}
+
 impl Stylesheet {
+    pub fn from_data(buf: &str, base_url: Option<&Url>) -> Result<Self, LoadingError> {
+        let mut stylesheet = Stylesheet::default();
+        stylesheet.parse(buf, base_url)?;
+        Ok(stylesheet)
+    }
+
+    pub fn from_href(href: &str, base_url: Option<&Url>) -> Result<Self, LoadingError> {
+        let mut stylesheet = Stylesheet::default();
+        stylesheet.load(href, base_url)?;
+        Ok(stylesheet)
+    }
+
     /// Parses a CSS stylesheet from a string
     ///
     /// The `base_url` is required for `@import` rules, so that librsvg
     /// can determine if the requested path is allowed.
-    pub fn parse(&mut self, base_url: Option<&Url>, buf: &str) {
+    fn parse(&mut self, buf: &str, base_url: Option<&Url>) -> Result<(), LoadingError> {
         let mut input = ParserInput::new(buf);
         let mut parser = Parser::new(&mut input);
 
-        let rule_parser = RuleListParser::new_for_stylesheet(&mut parser, QualRuleParser);
+        let rule_parser = RuleListParser::new_for_stylesheet(&mut parser, RuleParser);
 
         for rule_result in rule_parser {
             // Ignore invalid rules
             if let Ok(rule) = rule_result {
-                self.rules.push(rule);
+                match rule {
+                    Rule::AtRule(AtRule::Import(url)) => {
+                        self.load(&url, base_url)?;
+                    }
+
+                    Rule::QualifiedRule(_) => self.rules.push(rule),
+                }
             }
         }
+
+        Ok(())
     }
 
     /// Parses a stylesheet referenced by an URL
-    pub fn load_css(&mut self, aurl: &AllowedUrl) -> Result<(), LoadingError> {
-        io::acquire_data(aurl, None)
+    fn load(&mut self, href: &str, base_url: Option<&Url>) -> Result<(), LoadingError> {
+        let aurl = AllowedUrl::from_href(href, base_url).map_err(|_| LoadingError::BadUrl)?;
+
+        io::acquire_data(&aurl, None)
             .and_then(|data| {
                 let BinaryData {
                     data: bytes,
@@ -609,10 +658,7 @@ impl Stylesheet {
                     LoadingError::BadCss
                 })
             })
-            .and_then(|utf8| {
-                self.parse(Some(&aurl), &utf8);
-                Ok(()) // FIXME: return CSS parsing errors
-            })
+            .and_then(|utf8| self.parse(&utf8, base_url))
     }
 
     /// The main CSS matching function.
@@ -633,13 +679,15 @@ impl Stylesheet {
         );
 
         for rule in &self.rules {
-            if selectors::matching::matches_selector_list(
-                &rule.selectors,
-                &RsvgElement(node.clone()),
-                &mut match_ctx,
-            ) {
-                for decl in rule.declarations.iter() {
-                    node.borrow_mut().apply_style_declaration(decl);
+            if let Rule::QualifiedRule(r) = rule {
+                if selectors::matching::matches_selector_list(
+                    &r.selectors,
+                    &RsvgElement(node.clone()),
+                    &mut match_ctx,
+                ) {
+                    for decl in r.declarations.iter() {
+                        node.borrow_mut().apply_style_declaration(decl);
+                    }
                 }
             }
         }

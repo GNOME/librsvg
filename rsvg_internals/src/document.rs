@@ -237,10 +237,9 @@ impl DocumentBuilder {
         }
 
         // FIXME: handle CSS errors
-        let mut stylesheet = Stylesheet::default();
-        let _ = stylesheet.load_css(&self.resolve_href(href)?);
-
-        self.stylesheets.push(stylesheet);
+        if let Ok(stylesheet) = Stylesheet::from_href(href, self.load_options.base_url.as_ref()) {
+            self.stylesheets.push(stylesheet);
+        }
 
         Ok(())
     }
@@ -275,9 +274,10 @@ impl DocumentBuilder {
     }
 
     pub fn append_stylesheet_from_text(&mut self, text: &str) {
-        let mut stylesheet = Stylesheet::default();
-        stylesheet.parse(self.load_options.base_url.as_ref(), text);
-        self.stylesheets.push(stylesheet);
+        // FIXME: handle CSS errors
+        if let Ok(stylesheet) = Stylesheet::from_data(text, self.load_options.base_url.as_ref()) {
+            self.stylesheets.push(stylesheet);
+        }
     }
 
     pub fn append_characters(&mut self, text: &str, parent: &mut RsvgNode) {
