@@ -100,16 +100,17 @@ use crate::allowed_url::AllowedUrl;
 use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{NodeType, RsvgNode};
-use crate::properties::{parse_attribute_value_into_parsed_property, ParsedProperty};
+use crate::properties::{parse_property, ParsedProperty};
 use crate::text::NodeChars;
 
 /// A parsed CSS declaration
 ///
 /// For example, in the declaration `fill: green !important`, the
-/// `attribute` would be `fill`, the `property` would be the parsed
-/// value of the green color, and `important` would be `true`.
+/// `prop_name` would be `fill`, the `property` would be
+/// `ParsedProperty::Fill(...)` with the green value, and `important`
+/// would be `true`.
 pub struct Declaration {
-    pub attribute: QualName,
+    pub prop_name: QualName,
     pub property: ParsedProperty,
     pub important: bool,
 }
@@ -146,14 +147,14 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
     ) -> Result<Declaration, cssparser::ParseError<'i, ValueErrorKind>> {
-        let attribute = QualName::new(None, ns!(svg), LocalName::from(name.as_ref()));
-        let property = parse_attribute_value_into_parsed_property(&attribute, input, true)
+        let prop_name = QualName::new(None, ns!(svg), LocalName::from(name.as_ref()));
+        let property = parse_property(&prop_name, input, true)
             .map_err(|e| input.new_custom_error(e))?;
 
         let important = input.try_parse(parse_important).is_ok();
 
         Ok(Declaration {
-            attribute,
+            prop_name,
             property,
             important,
         })
@@ -268,7 +269,7 @@ impl<'i> QualifiedRuleParser<'i> for QualRuleParser {
         for decl_result in decl_parser {
             // ignore invalid property name or value
             if let Ok(declaration) = decl_result {
-                decl_list.declarations.insert(declaration.attribute.clone(), declaration);
+                decl_list.declarations.insert(declaration.prop_name.clone(), declaration);
             }
         }
 
