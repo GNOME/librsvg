@@ -6,7 +6,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::allowed_url::{AllowedUrl, Fragment};
+use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
 use crate::create_node::create_node;
 use crate::css::Stylesheet;
 use crate::error::LoadingError;
@@ -315,9 +315,8 @@ impl DocumentBuilder {
         chars_node.borrow().get_impl::<NodeChars>().append(text);
     }
 
-    pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, LoadingError> {
+    pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
         AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
-            .map_err(|_| LoadingError::BadUrl)
     }
 
     pub fn build(self) -> Result<Document, LoadingError> {
