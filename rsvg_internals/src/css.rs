@@ -1,3 +1,75 @@
+//! Representation of CSS types, and the CSS parsing and matching engine.
+//!
+//! # Terminology
+//!
+//! Consider a CSS **stylesheet** like this:
+//!
+//! ```ignore
+//! @import url("another.css");
+//!
+//! foo, .bar {
+//!         fill: red;
+//!         stroke: green;
+//! }
+//!
+//! #baz { stroke-width: 42; }
+//!
+//! ```
+//! Let's look at each part:
+//!
+//! `@import` is an **at-rule**.  There are other at-rules like
+//! `@media`, but librsvg doesn't support those yet.
+//!
+//! `foo, .bar` is a **selector list** with two **selectors**, one for
+//! `foo` elements and one for elements that have the `bar` class.
+//!
+//! The curly braces begin a **block**; the stuff between `{}` is a
+//! **declaration list**.  The first block contains two
+//! **declarations**, one for the `fill` **property** and one for the
+//! `stroke` property.
+//!
+//! A selector list plus a declaration list inside a block is a
+//! **ruleset** or just **rule**.
+//!
+//! After ther first rule, we have a second rule with a single
+//! selector for the `#baz` id, with a single declaration for the
+//! `stroke-width` property.
+//!
+//! # Helper crates we use
+//!
+//! * `cssparser` crate as a CSS tokenizer, and some utilities to
+//! parse CSS rules and declarations.
+//!
+//! * `selectors` crate for the representation of selectors and
+//! selector lists, and for the matching engine.
+//!
+//! Both crates provide very generic implementations of their concepts,
+//! and expect the caller to provide implementations of various traits,
+//! and to provide types that represent certain things.
+//!
+//! For example, `cssparser` expects one to provide representations of
+//! the following types:
+//!
+//! * A parsed CSS rule.  For `fill: blue;` we have
+//! `ParsedProperty::Fill(...)`.
+//!
+//! * A declaration list; we use `DeclarationList`.
+//!
+//! * A parsed selector list; we use `SelectorList` from the
+//! `selectors` crate.
+//!
+//! In turn, the `selectors` crate needs a way to navigate and examine
+//! one's implementation of an element tree.  We provide `impl
+//! selectors::Element for RsvgElement` for this.  This implementation
+//! has methods like "does this element have the id `#foo`", or "give
+//! me the next sibling element".
+//!
+//! Finally, the matching engine ties all of this together with
+//! `matches_selector_list()`.  This takes an opaque representation of
+//! an element, plus a selector list, and returns a bool.  We iterate
+//! through the rules in a stylesheet and apply each rule that matches
+//! to each element node.
+
 use cssparser::{
     self,
     parse_important,
@@ -31,25 +103,44 @@ use crate::node::{NodeType, RsvgNode};
 use crate::properties::{parse_attribute_value_into_parsed_property, ParsedProperty};
 use crate::text::NodeChars;
 
-/// A parsed CSS declaration (`name: value [!important]`)
+/// A parsed CSS declaration
+///
+/// For example, in the declaration `fill: green !important`, the
+/// `attribute` would be `fill`, the `property` would be the parsed
+/// value of the green color, and `important` would be `true`.
 pub struct Declaration {
     pub attribute: QualName,
     pub property: ParsedProperty,
     pub important: bool,
 }
 
+/// A list of property/value declarations, hashed by the property name
+///
+/// For example, in a CSS rule:
+///
+/// ```ignore
+/// foo { fill: red; stroke: green; }
+/// ```
+///
+/// The stuff between braces is the declaration list; this example has two
+/// declarations, one for `fill`, and one for `stroke`, each with its own value.
 #[derive(Default)]
 pub struct DeclarationList {
     // Maps property_name -> Declaration
     declarations: HashMap<QualName, Declaration>,
 }
 
+/// Dummy struct required to use `cssparser::DeclarationListParser`
+///
+/// It implements `cssparser::DeclarationParser`, which knows how to parse
+/// the property/value pairs from a CSS declaration.
 pub struct DeclParser;
 
 impl<'i> DeclarationParser<'i> for DeclParser {
     type Declaration = Declaration;
     type Error = ValueErrorKind;
 
+    /// Parses a CSS declaration like `name: input_value [!important]`
     fn parse_value<'t>(
         &mut self,
         name: CowRcStr<'i>,
@@ -69,6 +160,10 @@ impl<'i> DeclarationParser<'i> for DeclParser {
     }
 }
 
+// cssparser's DeclarationListParser requires this; we just use the dummy
+// implementations from cssparser itself.  We may want to provide a real
+// implementation in the future, although this may require keeping track of the
+// CSS parsing state like Servo does.
 impl<'i> AtRuleParser<'i> for DeclParser {
     type PreludeNoBlock = ();
     type PreludeBlock = ();
@@ -79,6 +174,7 @@ impl<'i> AtRuleParser<'i> for DeclParser {
 /// Dummy struct to implement cssparser::QualifiedRuleParser
 pub struct QualRuleParser;
 
+/// Errors from the CSS parsing process
 pub enum CssParseErrorKind<'i> {
     Selector(selectors::parser::SelectorParseErrorKind<'i>),
     Value(ValueErrorKind),
@@ -91,11 +187,21 @@ impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for CssParseErrorKi
 }
 
 /// A CSS ruleset (or rule)
+///
+/// This is a complete ruleset or rule:
+///
+/// ```ignore
+/// foo, .bar { fill: red; stroke: green; }
+/// ```
+///
+/// Here, we have a list with two selectors (`foo`, `.bar`), and a block with a
+/// declaration list with two declarations, one for `fill` and one for `stroke`.
 pub struct Rule {
     selectors: SelectorList<RsvgSelectors>,
     declarations: DeclarationList,
 }
 
+// Required to implement the `Prelude` associated type in `cssparser::QualifiedRuleParser`
 impl<'i> selectors::Parser<'i> for QualRuleParser {
     type Impl = RsvgSelectors;
     type Error = CssParseErrorKind<'i>;
@@ -116,6 +222,25 @@ impl<'i> selectors::Parser<'i> for QualRuleParser {
     }
 }
 
+// `cssparser::RuleListParser` is a struct which requires that we
+// provide a type that implements `cssparser::QualifiedRuleParser`.
+//
+// In turn, `cssparser::QualifiedRuleParser` requires that we
+// implement a way to parse the `Prelude` of a ruleset or rule.  For
+// example, in this ruleset:
+//
+// ```ignore
+// foo, .bar { fill: red; stroke: green; }
+// ```
+//
+// The prelude is the selector list with the `foo` and `.bar` selectors.
+//
+// The `parse_prelude` method just uses `selectors::SelectorList`.  This
+// is what requires the `impl selectors::Parser for QualRuleParser`.
+//
+// Next, the `parse_block` method takes an already-parsed prelude (a selector list),
+// and tries to parse the block between braces - a `DeclarationList`.  It creates
+// a `Rule` out of the selector list and the declaration list.
 impl<'i> QualifiedRuleParser<'i> for QualRuleParser {
     type Prelude = SelectorList<RsvgSelectors>;
     type QualifiedRule = Rule;
@@ -154,6 +279,9 @@ impl<'i> QualifiedRuleParser<'i> for QualRuleParser {
     }
 }
 
+// Required by `cssparser::RuleListParser`.
+//
+// This does not handle at-rules like `@import`; we should do so.
 impl<'i> AtRuleParser<'i> for QualRuleParser {
     type PreludeNoBlock = ();
     type PreludeBlock = ();
@@ -161,7 +289,7 @@ impl<'i> AtRuleParser<'i> for QualRuleParser {
     type Error = CssParseErrorKind<'i>;
 }
 
-/// Dummy type required by the SelectorImpl trait
+/// Dummy type required by the SelectorImpl trait.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NonTSPseudoClass;
 
@@ -216,7 +344,12 @@ impl SelectorImpl for RsvgSelectors {
     type PseudoElement = PseudoElement;
 }
 
-// We need a newtype because RsvgNode is an alias for rctree::Node
+/// Wraps an `RsvgNode` with a locally-defined type, so we can implement
+/// a foreign trait on it.
+///
+/// RsvgNode is an alias for rctree::Node, so we can't implement
+/// `selectors::Element` directly on it.  We implement it on the
+/// `RsvgElement` wrapper instead.
 #[derive(Clone)]
 pub struct RsvgElement(RsvgNode);
 
@@ -232,6 +365,7 @@ impl fmt::Debug for RsvgElement {
     }
 }
 
+// The selectors crate uses this to examine our tree of elements.
 impl selectors::Element for RsvgElement {
     type Impl = RsvgSelectors;
 
@@ -419,6 +553,7 @@ impl DeclarationList {
     }
 }
 
+/// Iterator for a `DeclarationList`, created with `decl_list.iter()`
 pub struct DeclarationListIter<'a>(HashMapIter<'a, QualName, Declaration>);
 
 impl<'a> Iterator for DeclarationListIter<'a> {
@@ -430,6 +565,10 @@ impl<'a> Iterator for DeclarationListIter<'a> {
 }
 
 impl Stylesheet {
+    /// Parses a CSS stylesheet from a string
+    ///
+    /// The `base_url` is required for `@import` rules, so that librsvg
+    /// can determine if the requested path is allowed.
     pub fn parse(&mut self, base_url: Option<&Url>, buf: &str) {
         let mut input = ParserInput::new(buf);
         let mut parser = Parser::new(&mut input);
@@ -444,6 +583,7 @@ impl Stylesheet {
         }
     }
 
+    /// Parses a stylesheet referenced by an URL
     pub fn load_css(&mut self, aurl: &AllowedUrl) -> Result<(), LoadingError> {
         io::acquire_data(aurl, None)
             .and_then(|data| {
@@ -474,6 +614,10 @@ impl Stylesheet {
             })
     }
 
+    /// The main CSS matching function.
+    ///
+    /// Takes a `node` and modifies its `specified_values` with the
+    /// CSS rules that match the node.
     pub fn apply_matches_to_node(&self, node: &mut RsvgNode) {
         let mut match_ctx = MatchingContext::new(
             MatchingMode::Normal,
