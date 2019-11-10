@@ -162,7 +162,7 @@ impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for CssParseErrorKi
 
 /// A CSS qualified rule (or ruleset)
 pub struct QualifiedRule {
-    selectors: SelectorList<RsvgSelectors>,
+    selectors: SelectorList<Selector>,
     declarations: Vec<Declaration>,
 }
 
@@ -184,7 +184,7 @@ pub enum Rule {
 
 // Required to implement the `Prelude` associated type in `cssparser::QualifiedRuleParser`
 impl<'i> selectors::Parser<'i> for RuleParser {
-    type Impl = RsvgSelectors;
+    type Impl = Selector;
     type Error = CssParseErrorKind<'i>;
 
     fn default_namespace(&self) -> Option<<Self::Impl as SelectorImpl>::NamespaceUrl> {
@@ -223,7 +223,7 @@ impl<'i> selectors::Parser<'i> for RuleParser {
 // and tries to parse the block between braces.  It creates a `Rule` out of
 // the selector list and the declaration list.
 impl<'i> QualifiedRuleParser<'i> for RuleParser {
-    type Prelude = SelectorList<RsvgSelectors>;
+    type Prelude = SelectorList<Selector>;
     type QualifiedRule = Rule;
     type Error = CssParseErrorKind<'i>;
 
@@ -302,7 +302,7 @@ impl ToCss for NonTSPseudoClass {
 }
 
 impl selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
-    type Impl = RsvgSelectors;
+    type Impl = Selector;
 
     fn is_active_or_hover(&self) -> bool {
         false
@@ -327,14 +327,14 @@ impl ToCss for PseudoElement {
 }
 
 impl selectors::parser::PseudoElement for PseudoElement {
-    type Impl = RsvgSelectors;
+    type Impl = Selector;
 }
 
 /// Holds all the types for the SelectorImpl trait
 #[derive(Debug, Clone)]
-pub struct RsvgSelectors;
+pub struct Selector;
 
-impl SelectorImpl for RsvgSelectors {
+impl SelectorImpl for Selector {
     type ExtraMatchingData = ();
     type AttrValue = String;
     type Identifier = LocalName;
@@ -372,7 +372,7 @@ impl fmt::Debug for RsvgElement {
 
 // The selectors crate uses this to examine our tree of elements.
 impl selectors::Element for RsvgElement {
-    type Impl = RsvgSelectors;
+    type Impl = Selector;
 
     /// Converts self into an opaque representation.
     fn opaque(&self) -> OpaqueElement {
