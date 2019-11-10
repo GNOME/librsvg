@@ -59,8 +59,6 @@
 //! * A parsed CSS rule.  For `fill: blue;` we have
 //! `ParsedProperty::Fill(...)`.
 //!
-//! * A declaration list; we use `DeclarationList`.
-//!
 //! * A parsed selector list; we use `SelectorList` from the
 //! `selectors` crate.
 //!
@@ -81,8 +79,6 @@ use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstrain
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
 use selectors::{self, OpaqueElement, SelectorImpl, SelectorList};
 
-use std::collections::hash_map::Iter as HashMapIter;
-use std::collections::HashMap;
 use std::fmt;
 use std::str;
 
@@ -106,22 +102,6 @@ pub struct Declaration {
     pub prop_name: QualName,
     pub property: ParsedProperty,
     pub important: bool,
-}
-
-/// A list of property/value declarations, hashed by the property name
-///
-/// For example, in a CSS rule:
-///
-/// ```ignore
-/// foo { fill: red; stroke: green; }
-/// ```
-///
-/// The stuff between braces is the declaration list; this example has two
-/// declarations, one for `fill`, and one for `stroke`, each with its own value.
-#[derive(Default)]
-pub struct DeclarationList {
-    // Maps property_name -> Declaration
-    declarations: HashMap<QualName, Declaration>,
 }
 
 /// Dummy struct required to use `cssparser::DeclarationListParser`
@@ -183,7 +163,7 @@ impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for CssParseErrorKi
 /// A CSS qualified rule (or ruleset)
 pub struct QualifiedRule {
     selectors: SelectorList<RsvgSelectors>,
-    declarations: DeclarationList,
+    declarations: Vec<Declaration>,
 }
 
 /// Prelude of at-rule used in the AtRuleParser.
@@ -240,8 +220,8 @@ impl<'i> selectors::Parser<'i> for RuleParser {
 // is what requires the `impl selectors::Parser for RuleParser`.
 //
 // Next, the `parse_block` method takes an already-parsed prelude (a selector list),
-// and tries to parse the block between braces - a `DeclarationList`.  It creates
-// a `Rule` out of the selector list and the declaration list.
+// and tries to parse the block between braces.  It creates a `Rule` out of
+// the selector list and the declaration list.
 impl<'i> QualifiedRuleParser<'i> for RuleParser {
     type Prelude = SelectorList<RsvgSelectors>;
     type QualifiedRule = Rule;
@@ -260,15 +240,14 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
         _location: SourceLocation,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self::QualifiedRule, cssparser::ParseError<'i, Self::Error>> {
-        let declarations: HashMap<_, _> = DeclarationListParser::new(input, DeclParser)
+        let declarations = DeclarationListParser::new(input, DeclParser)
             .into_iter()
             .filter_map(Result::ok) // ignore invalid property name or value
-            .map(|decl| (decl.prop_name.clone(), decl))
             .collect();
 
         Ok(Rule::QualifiedRule(QualifiedRule {
             selectors: prelude,
-            declarations: DeclarationList { declarations },
+            declarations,
         }))
     }
 }
@@ -557,23 +536,6 @@ impl selectors::Element for RsvgElement {
     /// if the parent node is a `DocumentFragment`.
     fn is_root(&self) -> bool {
         self.0.parent().is_none()
-    }
-}
-
-impl DeclarationList {
-    pub fn iter(&self) -> DeclarationListIter {
-        DeclarationListIter(self.declarations.iter())
-    }
-}
-
-/// Iterator for a `DeclarationList`, created with `decl_list.iter()`
-pub struct DeclarationListIter<'a>(HashMapIter<'a, QualName, Declaration>);
-
-impl<'a> Iterator for DeclarationListIter<'a> {
-    type Item = &'a Declaration;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(_attribute, declaration)| declaration)
     }
 }
 
