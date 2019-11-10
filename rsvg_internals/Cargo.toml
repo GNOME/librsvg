@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 cairo-rs = { version="0.7.0", features=["v1_16"] }
 cairo-sys-rs = "0.9.0"
-cssparser = "0.25.5"
+cssparser = "0.27.1"
 data-url = "0.1"
 downcast-rs = "^1.0.0"
 encoding = "0.2.33"
@@ -35,6 +35,7 @@ phf = "0.7.21"
 rayon = "1"
 rctree = "0.3.3"
 regex = "1"
+selectors = { path="../servo_crates/selectors" }
 url = "2"
 xml-rs = "0.8.0"
 

@@ -39,7 +39,6 @@ minimum version is listed here; you may use a newer version instead.
 
 * Cairo 1.16.0 with PNG support
 * Freetype2 2.8.0
-* Libcroco 0.6.1
 * Gdk-pixbuf 2.20.0
 * GIO 2.24.0
 * GObject-Introspection 0.10.8
@@ -61,7 +60,7 @@ apt-get install -y gcc make rustc cargo \
 automake autoconf libtool gettext itstool \
 libgdk-pixbuf2.0-dev libgirepository1.0-dev \
 gtk-doc-tools git \
-libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
+libxml2-dev libcairo2-dev libpango1.0-dev
 ```
 
 Additionally, as of September 2018 you need to add `gdk-pixbuf` utilities to your path, see #331 for more.
@@ -77,7 +76,7 @@ dnf install -y gcc rust rust-std-static cargo make \
 automake autoconf libtool gettext itstool \
 gdk-pixbuf2-devel gobject-introspection-devel \
 gtk-doc git redhat-rpm-config gettext-devel \
-libxml2-devel libcroco-devel cairo-devel pango-devel
+libxml2-devel cairo-devel pango-devel
 ```
 
 ### openSUSE based systems
@@ -86,7 +85,7 @@ libxml2-devel libcroco-devel cairo-devel pango-devel
 zypper install -y gcc rust rust-std cargo make \
 automake autoconf libtool gettext itstool git \
 gtk-doc gobject-introspection-devel \
-libxml2-devel libcroco-devel cairo-devel \
+libxml2-devel cairo-devel \
 pango-devel gdk-pixbuf-devel
 ```
 
@@ -96,7 +95,7 @@ Dependencies may be installed using [Homebrew](https://brew.sh) or another
 package manager.
 
 ```sh
-brew install cairo gdk-pixbuf glib libcroco pango \
+brew install cairo gdk-pixbuf glib pango \
 gobject-introspection rust
 
 export PKG_CONFIG_PATH="`brew --prefix`/lib/pkgconfig:\

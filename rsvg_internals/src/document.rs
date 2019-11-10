@@ -6,9 +6,9 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::allowed_url::{AllowedUrl, Fragment};
+use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
 use crate::create_node::create_node;
-use crate::css::CssRules;
+use crate::css::Stylesheet;
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
@@ -16,7 +16,6 @@ use crate::node::{NodeCascade, NodeData, NodeType, RsvgNode};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
-use crate::style::{Style, StyleType};
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::text::NodeChars;
 use crate::xml::xml_load_from_possibly_compressed_stream;
@@ -208,19 +207,11 @@ fn load_image(
     Ok(surface)
 }
 
-struct Stylesheet {
-    alternate: Option<String>,
-    type_: Option<String>,
-    href: Option<String>,
-}
-
 pub struct DocumentBuilder {
     load_options: LoadOptions,
     tree: Option<RsvgNode>,
     ids: HashMap<String, RsvgNode>,
-    inline_css: String,
     stylesheets: Vec<Stylesheet>,
-    css_rules: CssRules,
 }
 
 impl DocumentBuilder {
@@ -229,23 +220,28 @@ impl DocumentBuilder {
             load_options: load_options.clone(),
             tree: None,
             ids: HashMap::new(),
-            inline_css: String::new(),
             stylesheets: Vec::new(),
-            css_rules: CssRules::default(),
         }
     }
 
-    pub fn append_stylesheet(
+    pub fn append_stylesheet_from_xml_processing_instruction(
         &mut self,
         alternate: Option<String>,
         type_: Option<String>,
-        href: Option<String>,
-    ) {
-        self.stylesheets.push(Stylesheet {
-            alternate,
-            type_,
-            href,
-        });
+        href: &str,
+    ) -> Result<(), LoadingError> {
+        if type_.as_ref().map(String::as_str) != Some("text/css")
+            || (alternate.is_some() && alternate.as_ref().map(String::as_str) != Some("no"))
+        {
+            return Err(LoadingError::BadStylesheet);
+        }
+
+        // FIXME: handle CSS errors
+        if let Ok(stylesheet) = Stylesheet::from_href(href, self.load_options.base_url.as_ref()) {
+            self.stylesheets.push(stylesheet);
+        }
+
+        Ok(())
     }
 
     pub fn append_element(
@@ -277,27 +273,15 @@ impl DocumentBuilder {
         node
     }
 
-    pub fn append_characters(&mut self, text: &str, parent: &mut RsvgNode) {
-        if text.is_empty() {
-            return;
+    pub fn append_stylesheet_from_text(&mut self, text: &str) {
+        // FIXME: handle CSS errors
+        if let Ok(stylesheet) = Stylesheet::from_data(text, self.load_options.base_url.as_ref()) {
+            self.stylesheets.push(stylesheet);
         }
+    }
 
-        if parent.borrow().get_type() == NodeType::Style {
-            // If the "type" attribute is not present, fall back to the
-            // "contentStyleType" attribute of the svg element.
-            let style_type = parent.borrow().get_impl::<Style>().style_type().unwrap_or_else(|| {
-                if self.tree.is_some()
-                    && self.tree.as_ref().unwrap().borrow().get_type() == NodeType::Svg
-                {
-                    self.tree.as_ref().unwrap().borrow().get_impl::<Svg>().content_style_type()
-                } else {
-                    StyleType::TextCss
-                }
-            });
-            if style_type == StyleType::TextCss {
-                self.inline_css.push_str(text);
-            }
-        } else {
+    pub fn append_characters(&mut self, text: &str, parent: &mut RsvgNode) {
+        if !text.is_empty() {
             self.append_chars_to_parent(text, parent);
         }
     }
@@ -331,34 +315,23 @@ impl DocumentBuilder {
         chars_node.borrow().get_impl::<NodeChars>().append(text);
     }
 
-    pub fn resolve_href(&self, href: &str) -> Result<(AllowedUrl), LoadingError> {
+    pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
         AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
-            .map_err(|_| LoadingError::BadUrl)
     }
 
-    pub fn build(mut self) -> Result<Document, LoadingError> {
-        for s in self.stylesheets.iter() {
-            if s.type_.as_ref().map(String::as_str) != Some("text/css")
-                || (s.alternate.is_some() && s.alternate.as_ref().map(String::as_str) != Some("no"))
-                || s.href.is_none()
-            {
-                return Err(LoadingError::BadStylesheet);
-            }
-
-            // FIXME: handle CSS errors
-            let _ = self.css_rules.load_css(&self.resolve_href(s.href.as_ref().unwrap())?);
-        }
-
-        self.css_rules.parse(self.load_options.base_url.as_ref(), &self.inline_css);
-
-        let DocumentBuilder { load_options, tree, ids, css_rules, .. } = self;
+    pub fn build(self) -> Result<Document, LoadingError> {
+        let DocumentBuilder { load_options, tree, ids, stylesheets, .. } = self;
 
         match tree {
             None => Err(LoadingError::SvgHasNoElements),
             Some(mut root) => {
                 if root.borrow().get_type() == NodeType::Svg {
                     for mut node in root.descendants() {
-                        node.borrow_mut().set_style(&css_rules);
+                        for stylesheet in &stylesheets {
+                            stylesheet.apply_matches_to_node(&mut node);
+                        }
+
+                        node.borrow_mut().set_style_attribute();
                     }
 
                     let values = ComputedValues::default();

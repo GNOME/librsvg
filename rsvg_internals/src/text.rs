@@ -499,6 +499,10 @@ impl NodeChars {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.string.borrow().is_empty()
+    }
+
     pub fn append(&self, s: &str) {
         self.string.borrow_mut().push_str(s);
         *self.space_normalized.borrow_mut() = None;
@@ -555,6 +559,10 @@ impl NodeChars {
         assert!(num_chunks > 0);
 
         chunks[num_chunks - 1].spans.push(span);
+    }
+
+    pub fn get_string(&self) -> String {
+        self.string.borrow().clone()
     }
 }
 

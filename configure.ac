@@ -69,7 +69,6 @@ AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], "$GETTEXT_PACKAGE", [Define to the gettext
 dnl ===========================================================================
 dnl Please update COMPILING.md with version numbers if these change
 CAIRO_REQUIRED=1.16.0
-CROCO_REQUIRED=0.6.1
 dnl This corresponds to Freetype2 2.8
 FREETYPE2_REQUIRED=20.0.14
 GDK_PIXBUF_REQUIRED=2.20
@@ -163,15 +162,15 @@ AC_SUBST(GLIB_MKENUMS)
 PKG_CHECK_MODULES(LIBRSVG,                     \
 	cairo >= $CAIRO_REQUIRED               \
 	cairo-png >= $CAIRO_REQUIRED           \
-	cairo-gobject >= $CAIRO_REQUIRED           \
+	cairo-gobject >= $CAIRO_REQUIRED       \
 	freetype2 >= $FREETYPE2_REQUIRED       \
 	gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED \
 	gio-2.0 >= $GIO_REQUIRED               \
 	glib-2.0 >= $GLIB_REQUIRED             \
 	libxml-2.0 >= $LIBXML_REQUIRED         \
 	pangocairo >= $PANGO_REQUIRED          \
-	pangoft2 >= $PANGO_REQUIRED            \
-        libcroco-0.6 >= $CROCO_REQUIRED)
+	pangoft2 >= $PANGO_REQUIRED	       \
+)
 
 PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
 

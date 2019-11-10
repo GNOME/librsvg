@@ -7,7 +7,7 @@ use std::fmt;
 
 use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
-use crate::css::CssRules;
+use crate::css::Declaration;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filters::FilterEffect;
@@ -78,8 +78,8 @@ impl NodeData {
         self.node_type
     }
 
-    pub fn element_name(&self) -> &str {
-        self.element_name.local.as_ref()
+    pub fn element_name(&self) -> &QualName {
+        &self.element_name
     }
 
     pub fn get_id(&self) -> Option<&str> {
@@ -209,20 +209,14 @@ impl NodeData {
         }
     }
 
-    /// Applies the CSS rules that match into the node's specified_values
-    fn set_css_styles(&mut self, css_rules: &CssRules) {
-        for selector in &css_rules.get_matches(self) {
-            if let Some(decl_list) = css_rules.get_declarations(selector) {
-                for declaration in decl_list.iter() {
-                    self.specified_values
-                        .set_property_from_declaration(declaration, &mut self.important_styles);
-                }
-            }
-        }
+    // Applies a style declaration to the node's specified_values
+    pub fn apply_style_declaration(&mut self, declaration: &Declaration) {
+        self.specified_values
+            .set_property_from_declaration(declaration, &mut self.important_styles);
     }
 
     /// Applies CSS styles from the saved value of the "style" attribute
-    fn set_style_attribute(&mut self) {
+    pub fn set_style_attribute(&mut self) {
         if !self.style_attr.is_empty() {
             if let Err(e) = self
                 .specified_values
@@ -234,13 +228,6 @@ impl NodeData {
             self.style_attr.clear();
             self.style_attr.shrink_to_fit();
         }
-    }
-
-    // Sets the node's specified values from the style-related attributes in the pbag.
-    // Also applies CSS rules in our limited way based on the node's tag/class/id.
-    pub fn set_style(&mut self, css_rules: &CssRules) {
-        self.set_css_styles(css_rules);
-        self.set_style_attribute();
     }
 
     fn set_error(&mut self, error: NodeError) {

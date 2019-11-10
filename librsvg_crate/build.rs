@@ -8,8 +8,7 @@ use std::process;
 use pkg_config::{Config, Error};
 
 fn main() {
-    // libcroco pulls in libxml2, so the first one is enough
-    if let Err(s) = find("libcroco-0.6", "0.6.1", &["croco-0.6"]) {
+    if let Err(s) = find("libxml-2.0", "2.9.0", &["xml2"]) {
         let _ = writeln!(io::stderr(), "{}", s);
         process::exit(1);
     }

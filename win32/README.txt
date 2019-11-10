@@ -14,7 +14,6 @@ unpacked from a tarball.  For building, you will need the following libraries
 -libxml2
 -GLib
 -Cairo (The included cairo-gobject integration library is also needed)
--libcroco
 -Pango
 -Gdk-Pixbuf
 -GObject-Introspection (optional, for building/using introspection files)
