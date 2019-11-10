@@ -260,24 +260,15 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
         _location: SourceLocation,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self::QualifiedRule, cssparser::ParseError<'i, Self::Error>> {
-        let decl_parser = DeclarationListParser::new(input, DeclParser);
-
-        let mut decl_list = DeclarationList {
-            declarations: HashMap::new(),
-        };
-
-        for decl_result in decl_parser {
-            // ignore invalid property name or value
-            if let Ok(declaration) = decl_result {
-                decl_list
-                    .declarations
-                    .insert(declaration.prop_name.clone(), declaration);
-            }
-        }
+        let declarations: HashMap<_, _> = DeclarationListParser::new(input, DeclParser)
+            .into_iter()
+            .filter_map(Result::ok) // ignore invalid property name or value
+            .map(|decl| (decl.prop_name.clone(), decl))
+            .collect();
 
         Ok(Rule::QualifiedRule(QualifiedRule {
             selectors: prelude,
-            declarations: decl_list,
+            declarations: DeclarationList { declarations },
         }))
     }
 }
@@ -589,7 +580,7 @@ impl<'a> Iterator for DeclarationListIter<'a> {
 /// A parsed CSS stylesheet
 #[derive(Default)]
 pub struct Stylesheet {
-    rules: Vec<Rule>,
+    qualified_rules: Vec<QualifiedRule>,
 }
 
 impl Stylesheet {
@@ -613,20 +604,16 @@ impl Stylesheet {
         let mut input = ParserInput::new(buf);
         let mut parser = Parser::new(&mut input);
 
-        let rule_parser = RuleListParser::new_for_stylesheet(&mut parser, RuleParser);
-
-        for rule_result in rule_parser {
-            // Ignore invalid rules
-            if let Ok(rule) = rule_result {
-                match rule {
-                    Rule::AtRule(AtRule::Import(url)) => {
-                        self.load(&url, base_url)?;
-                    }
-
-                    Rule::QualifiedRule(_) => self.rules.push(rule),
+        RuleListParser::new_for_stylesheet(&mut parser, RuleParser)
+            .into_iter()
+            .filter_map(Result::ok) // ignore invalid rules
+            .for_each(|rule| match rule {
+                Rule::AtRule(AtRule::Import(url)) => {
+                    // ignore invalid imports
+                    let _ = self.load(&url, base_url);
                 }
-            }
-        }
+                Rule::QualifiedRule(qr) => self.qualified_rules.push(qr),
+            });
 
         Ok(())
     }
@@ -678,16 +665,14 @@ impl Stylesheet {
             QuirksMode::NoQuirks,
         );
 
-        for rule in &self.rules {
-            if let Rule::QualifiedRule(r) = rule {
-                if selectors::matching::matches_selector_list(
-                    &r.selectors,
-                    &RsvgElement(node.clone()),
-                    &mut match_ctx,
-                ) {
-                    for decl in r.declarations.iter() {
-                        node.borrow_mut().apply_style_declaration(decl);
-                    }
+        for rule in &self.qualified_rules {
+            if selectors::matching::matches_selector_list(
+                &rule.selectors,
+                &RsvgElement(node.clone()),
+                &mut match_ctx,
+            ) {
+                for decl in rule.declarations.iter() {
+                    node.borrow_mut().apply_style_declaration(decl);
                 }
             }
         }

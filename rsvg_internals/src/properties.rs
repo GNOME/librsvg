@@ -527,8 +527,7 @@ impl SpecifiedValues {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        match parse_property(&attr, &mut parser, accept_shorthands).attribute(attr.clone())
-        {
+        match parse_property(&attr, &mut parser, accept_shorthands).attribute(attr.clone()) {
             Ok(prop) => self.set_parsed_property(&prop),
             Err(e) => {
                 // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
@@ -603,14 +602,10 @@ impl SpecifiedValues {
         let mut input = ParserInput::new(declarations);
         let mut parser = Parser::new(&mut input);
 
-        let decl_parser = DeclarationListParser::new(&mut parser, DeclParser);
-
-        for decl_result in decl_parser {
-            // ignore invalid property name or value
-            if let Ok(declaration) = decl_result {
-                self.set_property_from_declaration(&declaration, important_styles)
-            }
-        }
+        DeclarationListParser::new(&mut parser, DeclParser)
+            .into_iter()
+            .filter_map(Result::ok) // ignore invalid property name or value
+            .for_each(|decl| self.set_property_from_declaration(&decl, important_styles));
 
         Ok(())
     }
