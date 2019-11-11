@@ -39,15 +39,12 @@ impl<'a> PropertyBag<'a> {
         let mut array = Vec::new();
 
         if n_attributes > 0 && !attrs.is_null() {
-            let attrs = slice::from_raw_parts(attrs, n_attributes * 5);
-
-            let mut i = 0;
-            while i < n_attributes * 5 {
-                let localname = attrs[i];
-                let prefix = attrs[i + 1];
-                let uri = attrs[i + 2];
-                let value_start = attrs[i + 3];
-                let value_end = attrs[i + 4];
+            for attr in slice::from_raw_parts(attrs, n_attributes * 5).chunks_exact(5) {
+                let localname = attr[0];
+                let prefix = attr[1];
+                let uri = attr[2];
+                let value_start = attr[3];
+                let value_end = attr[4];
 
                 assert!(!localname.is_null());
 
@@ -89,8 +86,6 @@ impl<'a> PropertyBag<'a> {
 
                     array.push((qual_name, value_str));
                 }
-
-                i += 5;
             }
         }
 
