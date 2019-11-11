@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
 use crate::create_node::create_node;
-use crate::css::{cascade, Stylesheet};
+use crate::css::{cascade, Origin, Stylesheet};
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
@@ -236,7 +236,9 @@ impl DocumentBuilder {
         }
 
         // FIXME: handle CSS errors
-        if let Ok(stylesheet) = Stylesheet::from_href(href, self.load_options.base_url.as_ref()) {
+        if let Ok(stylesheet) =
+            Stylesheet::from_href(href, self.load_options.base_url.as_ref(), Origin::Author)
+        {
             self.stylesheets.push(stylesheet);
         }
 
@@ -274,7 +276,9 @@ impl DocumentBuilder {
 
     pub fn append_stylesheet_from_text(&mut self, text: &str) {
         // FIXME: handle CSS errors
-        if let Ok(stylesheet) = Stylesheet::from_data(text, self.load_options.base_url.as_ref()) {
+        if let Ok(stylesheet) =
+            Stylesheet::from_data(text, self.load_options.base_url.as_ref(), Origin::Author)
+        {
             self.stylesheets.push(stylesheet);
         }
     }

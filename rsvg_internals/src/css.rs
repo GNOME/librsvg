@@ -539,21 +539,45 @@ impl selectors::Element for RsvgElement {
     }
 }
 
+/// Origin for a stylesheet, per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
+///
+/// This is used when sorting selector matches according to their origin and specificity.
+pub enum Origin {
+    UserAgent,
+    User,
+    Author,
+}
+
 /// A parsed CSS stylesheet
-#[derive(Default)]
 pub struct Stylesheet {
+    origin: Origin,
     qualified_rules: Vec<QualifiedRule>,
 }
 
 impl Stylesheet {
-    pub fn from_data(buf: &str, base_url: Option<&Url>) -> Result<Self, LoadingError> {
-        let mut stylesheet = Stylesheet::default();
+    pub fn new(origin: Origin) -> Stylesheet {
+        Stylesheet {
+            origin,
+            qualified_rules: Vec::new(),
+        }
+    }
+
+    pub fn from_data(
+        buf: &str,
+        base_url: Option<&Url>,
+        origin: Origin,
+    ) -> Result<Self, LoadingError> {
+        let mut stylesheet = Stylesheet::new(origin);
         stylesheet.parse(buf, base_url)?;
         Ok(stylesheet)
     }
 
-    pub fn from_href(href: &str, base_url: Option<&Url>) -> Result<Self, LoadingError> {
-        let mut stylesheet = Stylesheet::default();
+    pub fn from_href(
+        href: &str,
+        base_url: Option<&Url>,
+        origin: Origin,
+    ) -> Result<Self, LoadingError> {
+        let mut stylesheet = Stylesheet::new(origin);
         stylesheet.load(href, base_url)?;
         Ok(stylesheet)
     }
