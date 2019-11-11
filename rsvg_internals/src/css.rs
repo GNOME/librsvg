@@ -69,16 +69,17 @@
 //! me the next sibling element".
 //!
 //! Finally, the matching engine ties all of this together with
-//! `matches_selector_list()`.  This takes an opaque representation of
-//! an element, plus a selector list, and returns a bool.  We iterate
-//! through the rules in a stylesheet and apply each rule that matches
-//! to each element node.
+//! `matches_selector()`.  This takes an opaque representation of an
+//! element, plus a selector, and returns a bool.  We iterate through
+//! the rules in the stylesheets and gather the matches; then sort the
+//! matches by specificity and apply the result to each element.
 
 use cssparser::*;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
 use selectors::{self, OpaqueElement, SelectorImpl, SelectorList};
 
+use std::cmp::Ordering;
 use std::fmt;
 use std::str;
 
@@ -88,8 +89,8 @@ use url::Url;
 use crate::allowed_url::AllowedUrl;
 use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeType, RsvgNode};
-use crate::properties::{parse_property, ParsedProperty};
+use crate::node::{NodeCascade, NodeType, RsvgNode};
+use crate::properties::{parse_property, ComputedValues, ParsedProperty};
 use crate::text::NodeChars;
 
 /// A parsed CSS declaration
@@ -152,7 +153,6 @@ pub struct RuleParser;
 /// Errors from the CSS parsing process
 pub enum CssParseErrorKind<'i> {
     Selector(selectors::parser::SelectorParseErrorKind<'i>),
-    Value(ValueErrorKind),
 }
 
 impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for CssParseErrorKind<'i> {
@@ -539,21 +539,86 @@ impl selectors::Element for RsvgElement {
     }
 }
 
+/// Origin for a stylesheet, per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
+///
+/// This is used when sorting selector matches according to their origin and specificity.
+#[allow(unused)]
+#[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd)]
+pub enum Origin {
+    UserAgent,
+    User,
+    Author,
+}
+
 /// A parsed CSS stylesheet
-#[derive(Default)]
 pub struct Stylesheet {
+    origin: Origin,
     qualified_rules: Vec<QualifiedRule>,
 }
 
+/// A match during the selector matching process
+///
+/// This struct comes from `Stylesheet.get_matches()`, and represents
+/// that a certain node matched a CSS rule which has a selector with a
+/// certain `specificity`.  The stylesheet's `origin` is also given here.
+///
+/// This type implements `Ord` so a list of `Match` can be sorted.
+/// That implementation does ordering based on origin and specificity
+/// as per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
+struct Match<'a> {
+    specificity: u32,
+    origin: Origin,
+    declaration: &'a Declaration,
+}
+
+impl<'a> Ord for Match<'a> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.origin.cmp(&other.origin) {
+            Ordering::Equal => self.specificity.cmp(&other.specificity),
+            o => o,
+        }
+    }
+}
+
+impl<'a> PartialOrd for Match<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'a> PartialEq for Match<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.origin == other.origin
+            && self.specificity == other.specificity
+    }
+}
+
+impl<'a> Eq for Match<'a> {}
+
 impl Stylesheet {
-    pub fn from_data(buf: &str, base_url: Option<&Url>) -> Result<Self, LoadingError> {
-        let mut stylesheet = Stylesheet::default();
+    pub fn new(origin: Origin) -> Stylesheet {
+        Stylesheet {
+            origin,
+            qualified_rules: Vec::new(),
+        }
+    }
+
+    pub fn from_data(
+        buf: &str,
+        base_url: Option<&Url>,
+        origin: Origin,
+    ) -> Result<Self, LoadingError> {
+        let mut stylesheet = Stylesheet::new(origin);
         stylesheet.parse(buf, base_url)?;
         Ok(stylesheet)
     }
 
-    pub fn from_href(href: &str, base_url: Option<&Url>) -> Result<Self, LoadingError> {
-        let mut stylesheet = Stylesheet::default();
+    pub fn from_href(
+        href: &str,
+        base_url: Option<&Url>,
+        origin: Origin,
+    ) -> Result<Self, LoadingError> {
+        let mut stylesheet = Stylesheet::new(origin);
         stylesheet.load(href, base_url)?;
         Ok(stylesheet)
     }
@@ -609,33 +674,64 @@ impl Stylesheet {
             .and_then(|utf8| self.parse(&utf8, base_url))
     }
 
-    /// The main CSS matching function.
-    ///
-    /// Takes a `node` and modifies its `specified_values` with the
-    /// CSS rules that match the node.
-    pub fn apply_matches_to_node(&self, node: &mut RsvgNode) {
-        let mut match_ctx = MatchingContext::new(
-            MatchingMode::Normal,
-
-            // FIXME: how the fuck does one set up a bloom filter here?
-            None,
-
-            // n_index_cache,
-            None,
-
-            QuirksMode::NoQuirks,
-        );
-
+    /// Appends the style declarations that match a specified node to a given vector
+    fn get_matches<'a>(
+        &'a self,
+        node: &RsvgNode,
+        match_ctx: &mut MatchingContext<Selector>,
+        acc: &mut Vec<Match<'a>>,
+    ) {
         for rule in &self.qualified_rules {
-            if selectors::matching::matches_selector_list(
-                &rule.selectors,
-                &RsvgElement(node.clone()),
-                &mut match_ctx,
-            ) {
-                for decl in rule.declarations.iter() {
-                    node.borrow_mut().apply_style_declaration(decl);
+            for selector in &rule.selectors.0 {
+                // This magic call is stolen from selectors::matching::matches_selector_list()
+                if selectors::matching::matches_selector(
+                    selector,
+                    0,
+                    None,
+                    &RsvgElement(node.clone()),
+                    match_ctx,
+                    &mut |_, _| {},
+                ) {
+                    for decl in rule.declarations.iter() {
+                        acc.push(Match {
+                            declaration: decl,
+                            specificity: selector.specificity(),
+                            origin: self.origin,
+                        });
+                    }
                 }
             }
         }
     }
+}
+
+/// Runs the CSS cascade on the specified tree from all the stylesheets
+pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
+    for mut node in root.descendants() {
+        let mut matches = Vec::new();
+
+        let mut match_ctx = MatchingContext::new(
+            MatchingMode::Normal,
+            // FIXME: how the fuck does one set up a bloom filter here?
+            None,
+            // n_index_cache,
+            None,
+            QuirksMode::NoQuirks,
+        );
+
+        for stylesheet in stylesheets {
+            stylesheet.get_matches(&node, &mut match_ctx, &mut matches);
+        }
+
+        matches.as_mut_slice().sort();
+
+        for m in matches {
+            node.borrow_mut().apply_style_declaration(m.declaration);
+        }
+
+        node.borrow_mut().set_style_attribute();
+    }
+
+    let values = ComputedValues::default();
+    root.cascade(&values);
 }

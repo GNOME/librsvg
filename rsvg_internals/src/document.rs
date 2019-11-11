@@ -8,12 +8,11 @@ use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
 use crate::create_node::create_node;
-use crate::css::Stylesheet;
+use crate::css::{cascade, Origin, Stylesheet};
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeCascade, NodeData, NodeType, RsvgNode};
-use crate::properties::ComputedValues;
+use crate::node::{NodeData, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -237,7 +236,9 @@ impl DocumentBuilder {
         }
 
         // FIXME: handle CSS errors
-        if let Ok(stylesheet) = Stylesheet::from_href(href, self.load_options.base_url.as_ref()) {
+        if let Ok(stylesheet) =
+            Stylesheet::from_href(href, self.load_options.base_url.as_ref(), Origin::Author)
+        {
             self.stylesheets.push(stylesheet);
         }
 
@@ -275,7 +276,9 @@ impl DocumentBuilder {
 
     pub fn append_stylesheet_from_text(&mut self, text: &str) {
         // FIXME: handle CSS errors
-        if let Ok(stylesheet) = Stylesheet::from_data(text, self.load_options.base_url.as_ref()) {
+        if let Ok(stylesheet) =
+            Stylesheet::from_data(text, self.load_options.base_url.as_ref(), Origin::Author)
+        {
             self.stylesheets.push(stylesheet);
         }
     }
@@ -320,22 +323,19 @@ impl DocumentBuilder {
     }
 
     pub fn build(self) -> Result<Document, LoadingError> {
-        let DocumentBuilder { load_options, tree, ids, stylesheets, .. } = self;
+        let DocumentBuilder {
+            load_options,
+            tree,
+            ids,
+            stylesheets,
+            ..
+        } = self;
 
         match tree {
             None => Err(LoadingError::SvgHasNoElements),
             Some(mut root) => {
                 if root.borrow().get_type() == NodeType::Svg {
-                    for mut node in root.descendants() {
-                        for stylesheet in &stylesheets {
-                            stylesheet.apply_matches_to_node(&mut node);
-                        }
-
-                        node.borrow_mut().set_style_attribute();
-                    }
-
-                    let values = ComputedValues::default();
-                    root.cascade(&values);
+                    cascade(&mut root, &stylesheets);
 
                     Ok(Document {
                         tree: root.clone(),
