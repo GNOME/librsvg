@@ -542,6 +542,7 @@ impl selectors::Element for RsvgElement {
 /// Origin for a stylesheet, per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
 ///
 /// This is used when sorting selector matches according to their origin and specificity.
+#[allow(unused)]
 #[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Origin {
     UserAgent,
