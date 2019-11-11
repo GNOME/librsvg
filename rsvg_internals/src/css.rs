@@ -88,8 +88,8 @@ use url::Url;
 use crate::allowed_url::AllowedUrl;
 use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeType, RsvgNode};
-use crate::properties::{parse_property, ParsedProperty};
+use crate::node::{NodeCascade, NodeType, RsvgNode};
+use crate::properties::{parse_property, ComputedValues, ParsedProperty};
 use crate::text::NodeChars;
 
 /// A parsed CSS declaration
@@ -635,4 +635,22 @@ impl Stylesheet {
             }
         }
     }
+}
+
+/// Runs the CSS cascade on the specified tree from all the stylesheets
+pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
+    for mut node in root.descendants() {
+        for stylesheet in stylesheets {
+            let mut decls = Vec::new();
+            stylesheet.get_matches(&node, &mut decls);
+            for decl in decls {
+                node.borrow_mut().apply_style_declaration(decl);
+            }
+        }
+
+        node.borrow_mut().set_style_attribute();
+    }
+
+    let values = ComputedValues::default();
+    root.cascade(&values);
 }
