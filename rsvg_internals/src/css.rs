@@ -242,7 +242,6 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self::QualifiedRule, cssparser::ParseError<'i, Self::Error>> {
         let declarations = DeclarationListParser::new(input, DeclParser)
-            .into_iter()
             .filter_map(Result::ok) // ignore invalid property name or value
             .collect();
 
@@ -568,7 +567,6 @@ impl Stylesheet {
         let mut parser = Parser::new(&mut input);
 
         RuleListParser::new_for_stylesheet(&mut parser, RuleParser)
-            .into_iter()
             .filter_map(Result::ok) // ignore invalid rules
             .for_each(|rule| match rule {
                 Rule::AtRule(AtRule::Import(url)) => {
