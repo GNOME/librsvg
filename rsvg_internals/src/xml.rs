@@ -224,8 +224,7 @@ impl XmlState {
                 // ^ note the space here
                 // libxml2 is not finished reading the file yet; it will emit an error
                 // on its own when it finishes.  So, ignore this condition.
-                ()
-            },
+            }
 
             Context::ElementCreation => self.element_creation_characters(text),
 
@@ -263,11 +262,12 @@ impl XmlState {
             if let Some(href) = href {
                 // FIXME: https://www.w3.org/TR/xml-stylesheet/ does not seem to specify
                 // what to do if the stylesheet cannot be loaded, so here we ignore the error.
-                if let Err(_) = inner
+                if inner
                     .document_builder
                     .as_mut()
                     .unwrap()
                     .append_stylesheet_from_xml_processing_instruction(alternate, type_, &href)
+                    .is_err()
                 {
                     rsvg_log!("invalid xml-stylesheet {} in XML processing instruction", href);
                 }
