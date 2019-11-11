@@ -145,7 +145,8 @@ impl<'i> AtRuleParser<'i> for DeclParser {
     type Error = ValueErrorKind;
 }
 
-/// Dummy struct to implement cssparser::QualifiedRuleParser
+/// Dummy struct to implement cssparser::QualifiedRuleParser and
+/// cssparser::AtRuleParser
 pub struct RuleParser;
 
 /// Errors from the CSS parsing process
