@@ -69,10 +69,10 @@
 //! me the next sibling element".
 //!
 //! Finally, the matching engine ties all of this together with
-//! `matches_selector_list()`.  This takes an opaque representation of
-//! an element, plus a selector list, and returns a bool.  We iterate
-//! through the rules in a stylesheet and apply each rule that matches
-//! to each element node.
+//! `matches_selector()`.  This takes an opaque representation of an
+//! element, plus a selector, and returns a bool.  We iterate through
+//! the rules in the stylesheets and gather the matches; then sort the
+//! matches by specificity and apply the result to each element.
 
 use cssparser::*;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
