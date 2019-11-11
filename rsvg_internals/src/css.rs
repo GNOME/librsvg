@@ -542,6 +542,7 @@ impl selectors::Element for RsvgElement {
 /// Origin for a stylesheet, per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
 ///
 /// This is used when sorting selector matches according to their origin and specificity.
+#[derive(Copy, Clone)]
 pub enum Origin {
     UserAgent,
     User,
@@ -552,6 +553,18 @@ pub enum Origin {
 pub struct Stylesheet {
     origin: Origin,
     qualified_rules: Vec<QualifiedRule>,
+}
+
+/// A match during the selector matching process
+///
+/// This struct comes from `Stylesheet.get_matches()`, and represents
+/// that a certain node matched a CSS rule which has a selector with a
+/// certain `specificity`.  The stylesheet's `origin` is also given here
+/// to aid sorting the results.
+struct Match<'a> {
+    declaration: &'a Declaration,
+    specificity: u32,
+    origin: Origin,
 }
 
 impl Stylesheet {
@@ -655,17 +668,13 @@ impl Stylesheet {
                         acc.push(Match {
                             declaration: decl,
                             specificity: selector.specificity(),
+                            origin: self.origin,
                         });
                     }
                 }
             }
         }
     }
-}
-
-struct Match<'a> {
-    declaration: &'a Declaration,
-    specificity: u32,
 }
 
 /// Runs the CSS cascade on the specified tree from all the stylesheets
