@@ -153,7 +153,6 @@ pub struct RuleParser;
 /// Errors from the CSS parsing process
 pub enum CssParseErrorKind<'i> {
     Selector(selectors::parser::SelectorParseErrorKind<'i>),
-    Value(ValueErrorKind),
 }
 
 impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for CssParseErrorKind<'i> {
