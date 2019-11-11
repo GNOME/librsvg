@@ -610,7 +610,7 @@ impl Stylesheet {
     }
 
     /// Appends the style declarations that match a specified node to a given vector
-    pub fn get_matches<'a>(&'a self, node: &RsvgNode, acc: &mut Vec<&'a Declaration>) {
+    fn get_matches<'a>(&'a self, node: &RsvgNode, acc: &mut Vec<&'a Declaration>) {
         let mut match_ctx = MatchingContext::new(
             MatchingMode::Normal,
 
