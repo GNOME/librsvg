@@ -328,7 +328,11 @@ impl DocumentBuilder {
                 if root.borrow().get_type() == NodeType::Svg {
                     for mut node in root.descendants() {
                         for stylesheet in &stylesheets {
-                            stylesheet.apply_matches_to_node(&mut node);
+                            let mut decls = Vec::new();
+                            stylesheet.get_matches(&node, &mut decls);
+                            for decl in decls {
+                                node.borrow_mut().apply_style_declaration(decl);
+                            }
                         }
 
                         node.borrow_mut().set_style_attribute();

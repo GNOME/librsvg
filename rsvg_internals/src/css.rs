@@ -609,11 +609,8 @@ impl Stylesheet {
             .and_then(|utf8| self.parse(&utf8, base_url))
     }
 
-    /// The main CSS matching function.
-    ///
-    /// Takes a `node` and modifies its `specified_values` with the
-    /// CSS rules that match the node.
-    pub fn apply_matches_to_node(&self, node: &mut RsvgNode) {
+    /// Appends the style declarations that match a specified node to a given vector
+    pub fn get_matches<'a>(&'a self, node: &RsvgNode, acc: &mut Vec<&'a Declaration>) {
         let mut match_ctx = MatchingContext::new(
             MatchingMode::Normal,
 
@@ -633,7 +630,7 @@ impl Stylesheet {
                 &mut match_ctx,
             ) {
                 for decl in rule.declarations.iter() {
-                    node.borrow_mut().apply_style_declaration(decl);
+                    acc.push(decl);
                 }
             }
         }
