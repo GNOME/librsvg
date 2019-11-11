@@ -651,12 +651,15 @@ struct Match<'a> {
 /// Runs the CSS cascade on the specified tree from all the stylesheets
 pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
     for mut node in root.descendants() {
+        let mut matches = Vec::new();
         for stylesheet in stylesheets {
-            let mut decls = Vec::new();
-            stylesheet.get_matches(&node, &mut decls);
-            for decl in decls {
-                node.borrow_mut().apply_style_declaration(decl.declaration);
-            }
+            stylesheet.get_matches(&node, &mut matches);
+        }
+
+        matches.as_mut_slice().sort_by(|a, b| a.specificity.cmp(&b.specificity));
+
+        for m in matches {
+            node.borrow_mut().apply_style_declaration(m.declaration);
         }
 
         node.borrow_mut().set_style_attribute();

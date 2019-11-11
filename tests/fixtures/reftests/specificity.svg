@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="16">
+  <!-- We have two stylesheets - test that they are both considered.
+       Also, test, that specificity and ordering are handled by having
+       multiple rules that match each element.
+  -->
+  <style type="text/css">
+    .foo {
+      fill: limegreen;
+    }
+    .bar {
+      fill: red;
+    }
+  </style>
+  <rect x="0" y="0" width="16" height="16" class="foo"/>
+  <rect x="16" y="0" width="16" height="16" class="bar"/>
+  <style type="text/css">
+    rect {
+      fill: red;
+    }
+    .bar {
+      fill: limegreen;
+    }
+  </style>
+</svg>
