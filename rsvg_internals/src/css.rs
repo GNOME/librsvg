@@ -610,16 +610,12 @@ impl Stylesheet {
     }
 
     /// Appends the style declarations that match a specified node to a given vector
-    fn get_matches<'a>(&'a self, node: &RsvgNode, acc: &mut Vec<Match<'a>>) {
-        let mut match_ctx = MatchingContext::new(
-            MatchingMode::Normal,
-            // FIXME: how the fuck does one set up a bloom filter here?
-            None,
-            // n_index_cache,
-            None,
-            QuirksMode::NoQuirks,
-        );
-
+    fn get_matches<'a>(
+        &'a self,
+        node: &RsvgNode,
+        match_ctx: &mut MatchingContext<Selector>,
+        acc: &mut Vec<Match<'a>>,
+    ) {
         for rule in &self.qualified_rules {
             for selector in &rule.selectors.0 {
                 // This magic call is stolen from selectors::matching::matches_selector_list()
@@ -628,7 +624,7 @@ impl Stylesheet {
                     0,
                     None,
                     &RsvgElement(node.clone()),
-                    &mut match_ctx,
+                    match_ctx,
                     &mut |_, _| {},
                 ) {
                     for decl in rule.declarations.iter() {
@@ -652,11 +648,23 @@ struct Match<'a> {
 pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
     for mut node in root.descendants() {
         let mut matches = Vec::new();
+
+        let mut match_ctx = MatchingContext::new(
+            MatchingMode::Normal,
+            // FIXME: how the fuck does one set up a bloom filter here?
+            None,
+            // n_index_cache,
+            None,
+            QuirksMode::NoQuirks,
+        );
+
         for stylesheet in stylesheets {
-            stylesheet.get_matches(&node, &mut matches);
+            stylesheet.get_matches(&node, &mut match_ctx, &mut matches);
         }
 
-        matches.as_mut_slice().sort_by(|a, b| a.specificity.cmp(&b.specificity));
+        matches
+            .as_mut_slice()
+            .sort_by(|a, b| a.specificity.cmp(&b.specificity));
 
         for m in matches {
             node.borrow_mut().apply_style_declaration(m.declaration);
