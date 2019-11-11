@@ -610,31 +610,42 @@ impl Stylesheet {
     }
 
     /// Appends the style declarations that match a specified node to a given vector
-    fn get_matches<'a>(&'a self, node: &RsvgNode, acc: &mut Vec<&'a Declaration>) {
+    fn get_matches<'a>(&'a self, node: &RsvgNode, acc: &mut Vec<Match<'a>>) {
         let mut match_ctx = MatchingContext::new(
             MatchingMode::Normal,
-
             // FIXME: how the fuck does one set up a bloom filter here?
             None,
-
             // n_index_cache,
             None,
-
             QuirksMode::NoQuirks,
         );
 
         for rule in &self.qualified_rules {
-            if selectors::matching::matches_selector_list(
-                &rule.selectors,
-                &RsvgElement(node.clone()),
-                &mut match_ctx,
-            ) {
-                for decl in rule.declarations.iter() {
-                    acc.push(decl);
+            for selector in &rule.selectors.0 {
+                // This magic call is stolen from selectors::matching::matches_selector_list()
+                if selectors::matching::matches_selector(
+                    selector,
+                    0,
+                    None,
+                    &RsvgElement(node.clone()),
+                    &mut match_ctx,
+                    &mut |_, _| {},
+                ) {
+                    for decl in rule.declarations.iter() {
+                        acc.push(Match {
+                            declaration: decl,
+                            specificity: selector.specificity(),
+                        });
+                    }
                 }
             }
         }
     }
+}
+
+struct Match<'a> {
+    declaration: &'a Declaration,
+    specificity: u32,
 }
 
 /// Runs the CSS cascade on the specified tree from all the stylesheets
@@ -644,7 +655,7 @@ pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
             let mut decls = Vec::new();
             stylesheet.get_matches(&node, &mut decls);
             for decl in decls {
-                node.borrow_mut().apply_style_declaration(decl);
+                node.borrow_mut().apply_style_declaration(decl.declaration);
             }
         }
 
