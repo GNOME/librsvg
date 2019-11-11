@@ -79,6 +79,7 @@ use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstrain
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
 use selectors::{self, OpaqueElement, SelectorImpl, SelectorList};
 
+use std::cmp::Ordering;
 use std::fmt;
 use std::str;
 
@@ -542,7 +543,7 @@ impl selectors::Element for RsvgElement {
 /// Origin for a stylesheet, per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
 ///
 /// This is used when sorting selector matches according to their origin and specificity.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Origin {
     UserAgent,
     User,
@@ -559,13 +560,40 @@ pub struct Stylesheet {
 ///
 /// This struct comes from `Stylesheet.get_matches()`, and represents
 /// that a certain node matched a CSS rule which has a selector with a
-/// certain `specificity`.  The stylesheet's `origin` is also given here
-/// to aid sorting the results.
+/// certain `specificity`.  The stylesheet's `origin` is also given here.
+///
+/// This type implements `Ord` so a list of `Match` can be sorted.
+/// That implementation does ordering based on origin and specificity
+/// as per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
 struct Match<'a> {
-    declaration: &'a Declaration,
     specificity: u32,
     origin: Origin,
+    declaration: &'a Declaration,
 }
+
+impl<'a> Ord for Match<'a> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.origin.cmp(&other.origin) {
+            Ordering::Equal => self.specificity.cmp(&other.specificity),
+            o => o,
+        }
+    }
+}
+
+impl<'a> PartialOrd for Match<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'a> PartialEq for Match<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.origin == other.origin
+            && self.specificity == other.specificity
+    }
+}
+
+impl<'a> Eq for Match<'a> {}
 
 impl Stylesheet {
     pub fn new(origin: Origin) -> Stylesheet {
@@ -695,9 +723,7 @@ pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
             stylesheet.get_matches(&node, &mut match_ctx, &mut matches);
         }
 
-        matches
-            .as_mut_slice()
-            .sort_by(|a, b| a.specificity.cmp(&b.specificity));
+        matches.as_mut_slice().sort();
 
         for m in matches {
             node.borrow_mut().apply_style_declaration(m.declaration);
