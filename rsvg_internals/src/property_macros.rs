@@ -80,16 +80,7 @@ macro_rules! make_property {
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
-
-        impl crate::property_macros::Property<$computed_values_type> for $name {
-            fn inherits_automatically() -> bool {
-                $inherits_automatically
-            }
-
-            fn compute(&self, _v: &$computed_values_type) -> Self {
-                self.clone()
-            }
-        }
+        impl_property!($computed_values_type, $name, $inherits_automatically);
 
         impl crate::parsers::Parse for $name {
             type Err = crate::error::ValueErrorKind;
