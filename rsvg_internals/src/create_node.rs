@@ -250,5 +250,83 @@ pub fn create_node(name: &QualName, pbag: &PropertyBag) -> RsvgNode {
         class = None;
     };
 
+//    sizes::print_sizes();
+
     create_fn(name, id, class)
+}
+
+#[cfg(ignore)]
+mod sizes {
+    //! This module is in this file just because here we have all the imports.
+
+    use super::*;
+
+    macro_rules! print_size {
+        ($ty:ty) => {
+            println!("sizeof {}: {}", stringify!($ty), mem::size_of::<$ty>());
+        }
+    }
+
+    pub fn print_sizes() {
+        use std::mem;
+        use crate::properties::{ComputedValues, ParsedProperty, SpecifiedValues};
+
+        print_size!(NodeData);
+        print_size!(SpecifiedValues);
+        print_size!(ComputedValues);
+        print_size!(ParsedProperty);
+
+        print_size!(Circle);
+        print_size!(ClipPath);
+        print_size!(NonRendering);
+        print_size!(Ellipse);
+        print_size!(FeBlend);
+        print_size!(FeColorMatrix);
+        print_size!(FeComponentTransfer);
+        print_size!(FeFuncA);
+        print_size!(FeFuncB);
+        print_size!(FeFuncG);
+        print_size!(FeFuncR);
+        print_size!(FeComposite);
+        print_size!(FeConvolveMatrix);
+        print_size!(FeDiffuseLighting);
+        print_size!(FeDistantLight);
+        print_size!(FeDisplacementMap);
+        print_size!(FeFlood);
+        print_size!(FeGaussianBlur);
+        print_size!(FeImage);
+        print_size!(FeMerge);
+        print_size!(FeMergeNode);
+        print_size!(FeMorphology);
+        print_size!(FeOffset);
+        print_size!(FePointLight);
+        print_size!(FeSpecularLighting);
+        print_size!(FeSpotLight);
+        print_size!(FeTile);
+        print_size!(FeTurbulence);
+        print_size!(Filter);
+        print_size!(Group);
+        print_size!(Image);
+        print_size!(Line);
+        print_size!(LinearGradient);
+        print_size!(Link);
+        print_size!(Marker);
+        print_size!(Mask);
+        print_size!(NonRendering);
+        print_size!(Path);
+        print_size!(Pattern);
+        print_size!(Polygon);
+        print_size!(Polyline);
+        print_size!(RadialGradient);
+        print_size!(Rect);
+        print_size!(Stop);
+        print_size!(Style);
+        print_size!(Svg);
+        print_size!(Switch);
+        print_size!(Symbol);
+        print_size!(Text);
+        print_size!(TRef);
+        print_size!(TSpan);
+        print_size!(Use);
+    }
 }
