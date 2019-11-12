@@ -125,14 +125,6 @@ macro_rules! define_length_type {
                 self.0.unit
             }
 
-            /// Extracts the numerical `Length.length` without considering units
-            ///
-            /// This function is meant to be used only by the filters code, which already
-            /// checks that the user-specified lengths have the correct units.
-            pub fn get_unitless(&self) -> f64 {
-                self.0.get_unitless()
-            }
-
             /// Extracts the interior [`Length`].
             ///
             /// [`Length`]: struct.Length.html
@@ -319,13 +311,6 @@ impl Parse for Length {
 impl Length {
     pub fn new(l: f64, unit: LengthUnit) -> Length {
         Length { length: l, unit }
-    }
-
-    /// Returns the raw length after asserting units are either default or percent.
-    #[inline]
-    pub(crate) fn get_unitless(&self) -> f64 {
-        assert!(self.unit == LengthUnit::Px || self.unit == LengthUnit::Percent);
-        self.length
     }
 
     pub(crate) fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {

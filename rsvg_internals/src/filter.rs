@@ -77,10 +77,10 @@ impl Filter {
         // referencing node. No units are allowed (it's checked during attribute parsing).
         let rect = if self.filterunits == CoordUnits::ObjectBoundingBox {
             cairo::Rectangle {
-                x: self.x.get_unitless(),
-                y: self.y.get_unitless(),
-                width: self.width.get_unitless(),
-                height: self.height.get_unitless(),
+                x: self.x.length(),
+                y: self.y.length(),
+                width: self.width.length(),
+                height: self.height.length(),
             }
         } else {
             cairo::Rectangle {
