@@ -1,17 +1,52 @@
+//! CSS length values.
+//!
+//! While the actual representation of CSS lengths is in the
+//! [`Length`] struct, most of librsvg's internals use the newtypes
+//! [`LengthHorizontal`], [`LengthVertical`], or [`LengthBoth`] depending on
+//! whether the length value in question needs to be normalized with respect to
+//! the width, height, or both dimensions of the current viewport.
+//!
+//! For example, the implementation of [`Circle`] defines this structure:
+//!
+//! ```ignore
+//! pub struct Circle {
+//!     cx: LengthHorizontal,
+//!     cy: LengthVertical,
+//!     r: LengthBoth,
+//! }
+//! ```
+//!
+//! Here, `cx` and `cy` define the center of the circle.  If the SVG document specified them as
+//! percentages (e.g. `<circle cx="50%" cy="30%">`, they would need to be resolved against the
+//! current viewport's width and height, respectively; that's why those fields are of type
+//! [`LengthHorizontal`] and [`LengthVertical`].
+//!
+//! However, `r` needs to be resolved against both dimensions of the current viewport, and so
+//! it is of type [`LengthBoth`].
+//!
+//! [`Circle`]: ../shapes/struct.Circle.html
+//! [`Length`]: struct.Length.html
+//! [`LengthHorizontal`]: struct.LengthHorizontal.html
+//! [`LengthVertical`]: struct.LengthVertical.html
+//! [`LengthBoth`]: struct.LengthBoth.html
+
 use cssparser::{Parser, Token};
 use std::f64::consts::*;
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::parsers::Parse;
-use crate::parsers::{ParseError, finite_f32};
+use crate::parsers::{finite_f32, ParseError};
 use crate::properties::ComputedValues;
 
+/// Type alias for use by the [`librsvg_c_api`] crate.
+///
+/// [`librsvg_c_api`]: ../../librsvg_c_api/index.html
 pub type RsvgLength = Length;
 
-// Keep this in sync with rsvg.h:RsvgUnit
-
 /// Units for length values.
+///
+/// This needs to be kept in sync with `rsvg.h:RsvgUnit`.
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
@@ -43,6 +78,12 @@ pub enum LengthUnit {
     Pc,
 }
 
+/// Internal type used to implement the newtypes [`LengthHorizontal`], [`LengthVertical`],
+/// [`LengthBoth`].
+///
+/// [`LengthHorizontal`]: struct.LengthHorizontal.html
+/// [`LengthVertical`]: struct.LengthVertical.html
+/// [`LengthBoth`]: struct.LengthBoth.html
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum LengthDir {
     Horizontal,
@@ -51,6 +92,11 @@ enum LengthDir {
 }
 
 impl LengthDir {
+    /// Computes a direction-based scaling factor.
+    ///
+    /// This is so that `LengthDir::Both` will use the "normalized
+    /// diagonal length" of the current viewport, per
+    /// https://www.w3.org/TR/SVG/coords.html#Units
     fn scaling_factor(self, x: f64, y: f64) -> f64 {
         match self {
             LengthDir::Horizontal => x,
@@ -61,7 +107,8 @@ impl LengthDir {
 }
 
 macro_rules! define_length_type {
-    ($name:ident, $dir:expr) => {
+    {$(#[$docs:meta])* $name:ident, $dir:expr} => {
+        $(#[$docs])*
         #[derive(Debug, PartialEq, Copy, Clone)]
         pub struct $name(Length);
 
@@ -78,14 +125,26 @@ macro_rules! define_length_type {
                 self.0.unit
             }
 
+            /// Extracts the numerical `Length.length` without considering units
+            ///
+            /// This function is meant to be used only by the filters code, which already
+            /// checks that the user-specified lengths have the correct units.
             pub fn get_unitless(&self) -> f64 {
                 self.0.get_unitless()
             }
 
+            /// Extracts the interior [`Length`].
+            ///
+            /// [`Length`]: struct.Length.html
             pub fn to_length(&self) -> Length {
                 self.0
             }
 
+            /// Returns `self` if the length is >= 0, or an error.
+            ///
+            /// See the documentation for [`from_cssparser`] for an example.
+            ///
+            /// [`from_cssparser`]: #method.from_cssparser
             pub fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
                 if self.length() >= 0.0 {
                     Ok(self)
@@ -96,6 +155,13 @@ macro_rules! define_length_type {
                 }
             }
 
+            /// Normalizes a specified length into a used value.
+            ///
+            /// Lengths may come with non-pixel units, and when rendering, they need to be
+            /// normalized to pixels based on the current viewport (e.g. for lengths with
+            /// percent units), and on the current element's set of `ComputedValues` (e.g. for
+            /// lengths with `Em` units that need to be resolved against the current font
+            /// size).
             pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
                 match self.unit() {
                     LengthUnit::Px => self.length(),
@@ -135,6 +201,18 @@ macro_rules! define_length_type {
                 }
             }
 
+            /// Parses a LENGTH from a `Parser`.
+            ///
+            /// The result can be used together with the [`check_nonnegative`] method like
+            /// this:
+            ///
+            /// ```ignore
+            /// let mut parser = Parser::new(...);
+            ///
+            /// let length = LENGTH::from_cssparser(&mut parser).and_then($name::check_nonnegative)?;
+            /// ```
+            ///
+            /// [`check_nonnegative`]: #method.check_nonnegative
             pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
                 Ok($name(Length::from_cssparser(parser)?))
             }
@@ -156,23 +234,31 @@ macro_rules! define_length_type {
     };
 }
 
-// Horizontal length
-//
-// When this is specified as a percent value, it will get resolved
-// against the current viewport's width.
-define_length_type!(LengthHorizontal, LengthDir::Horizontal);
+define_length_type! {
+    /// Horizontal length.
+    ///
+    /// When this is specified as a percent value, it will get normalized
+    /// against the current viewport's width.
 
-// Vertical length
-//
-// When this is specified as a percent value, it will get resolved
-// against the current viewport's height.
-define_length_type!(LengthVertical, LengthDir::Vertical);
+    LengthHorizontal, LengthDir::Horizontal
+}
 
-// "Both" length
-//
-// When this is specified as a percent value, it will get resolved
-// against the current viewport's width and height.
-define_length_type!(LengthBoth, LengthDir::Both);
+define_length_type! {
+    /// Vertical length.
+    ///
+    /// When this is specified as a percent value, it will get normalized
+    /// against the current viewport's height.
+    LengthVertical, LengthDir::Vertical
+}
+
+define_length_type! {
+    /// "Both" length.
+    ///
+    /// When this is specified as a percent value, it will get normalized
+    /// against the current viewport's width and height.
+
+    LengthBoth, LengthDir::Both
+}
 
 /// A CSS length value.
 ///
