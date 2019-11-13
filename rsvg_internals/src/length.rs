@@ -119,7 +119,7 @@ pub trait Orientation {
     /// This is so that `LengthDir::Both` will use the "normalized
     /// diagonal length" of the current viewport, per
     /// https://www.w3.org/TR/SVG/coords.html#Units
-    fn scaling_factor(x: f64, y: f64) -> f64;
+    fn normalize(x: f64, y: f64) -> f64;
 }
 
 pub struct Horizontal;
@@ -128,21 +128,21 @@ pub struct Both;
 
 impl Orientation for Horizontal {
     #[inline]
-    fn scaling_factor(x: f64, _y: f64) -> f64 {
+    fn normalize(x: f64, _y: f64) -> f64 {
         x
     }
 }
 
 impl Orientation for Vertical {
     #[inline]
-    fn scaling_factor(_x: f64, y: f64) -> f64 {
+    fn normalize(_x: f64, y: f64) -> f64 {
         y
     }
 }
 
 impl Orientation for Both {
     #[inline]
-    fn scaling_factor(x: f64, y: f64) -> f64 {
+    fn normalize(x: f64, y: f64) -> f64 {
         viewport_percentage(x, y)
     }
 }
@@ -189,10 +189,7 @@ pub trait LengthTrait: Sized {
 
             LengthUnit::Percent => {
                 self.length()
-                    * <Self::Orientation>::scaling_factor(
-                        params.view_box_width,
-                        params.view_box_height,
-                    )
+                    * <Self::Orientation>::normalize(params.view_box_width, params.view_box_height)
             }
 
             LengthUnit::Em => self.length() * font_size_from_values(values, params),
@@ -200,26 +197,26 @@ pub trait LengthTrait: Sized {
             LengthUnit::Ex => self.length() * font_size_from_values(values, params) / 2.0,
 
             LengthUnit::In => {
-                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
             }
 
             LengthUnit::Cm => {
-                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
                     / CM_PER_INCH
             }
 
             LengthUnit::Mm => {
-                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
                     / MM_PER_INCH
             }
 
             LengthUnit::Pt => {
-                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
                     / POINTS_PER_INCH
             }
 
             LengthUnit::Pc => {
-                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
                     / PICA_PER_INCH
             }
         }
@@ -451,18 +448,18 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
         LengthUnit::Ex => v.length * 12.0 / 2.0,
 
         // FontSize always is a Both, per properties.rs
-        LengthUnit::In => v.length * Both::scaling_factor(params.dpi_x, params.dpi_y),
+        LengthUnit::In => v.length * Both::normalize(params.dpi_x, params.dpi_y),
         LengthUnit::Cm => {
-            v.length * Both::scaling_factor(params.dpi_x, params.dpi_y) / CM_PER_INCH
+            v.length * Both::normalize(params.dpi_x, params.dpi_y) / CM_PER_INCH
         }
         LengthUnit::Mm => {
-            v.length * Both::scaling_factor(params.dpi_x, params.dpi_y) / MM_PER_INCH
+            v.length * Both::normalize(params.dpi_x, params.dpi_y) / MM_PER_INCH
         }
         LengthUnit::Pt => {
-            v.length * Both::scaling_factor(params.dpi_x, params.dpi_y) / POINTS_PER_INCH
+            v.length * Both::normalize(params.dpi_x, params.dpi_y) / POINTS_PER_INCH
         }
         LengthUnit::Pc => {
-            v.length * Both::scaling_factor(params.dpi_x, params.dpi_y) / PICA_PER_INCH
+            v.length * Both::normalize(params.dpi_x, params.dpi_y) / PICA_PER_INCH
         }
     }
 }
