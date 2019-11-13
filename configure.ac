@@ -1,7 +1,7 @@
 # Package version, the "human readable" version
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[47])
-m4_define([rsvg_micro_version],[0]) # Keep this in sync with librsvg_crate/Cargo.toml
+m4_define([rsvg_micro_version],[1]) # Keep this in sync with librsvg_crate/Cargo.toml
 m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_version])
 
 # Library version information.  To make a release:
