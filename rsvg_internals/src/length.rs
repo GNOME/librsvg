@@ -1,32 +1,45 @@
 //! CSS length values.
 //!
-//! While the actual representation of CSS lengths is in the
-//! [`Length`] struct, most of librsvg's internals use the newtypes
-//! [`LengthHorizontal`], [`LengthVertical`], or [`LengthBoth`] depending on
+//! [`Length`] is the struct librsvg uses to represent CSS lengths.  See its documentation for
+//! an example of how to construct it.
 //!
-//! For example, the implementation of [`Circle`] defines this structure:
+//! Length values need to know whether they will be normalized with respect to the width,
+//! height, or both dimensions of the current viewport.  So, a `Length` has a type parameter
+//! [`Orientation`]; the full type is `Length<O: Orientation>`.  We provide [`Horizontal`],
+//! [`Vertical`], and [`Both`] implementations of [`Orientation`]; these let length values know
+//! how to normalize themselves with respect to the current viewport.
+//!
+//! For example, the implementation of [`Circle`] defines this structure with fields for the
+//! `(center_x, center_y, radius)`:
 //!
 //! ```ignore
 //! pub struct Circle {
-//!     cx: LengthHorizontal,
-//!     cy: LengthVertical,
-//!     r: LengthBoth,
+//!     cx: Length<Horizontal>,
+//!     cy: Length<Vertical>,
+//!     r: Length<Both>,
 //! }
 //! ```
 //!
-//! Here, `cx` and `cy` define the center of the circle.  If the SVG document specified them as
-//! percentages (e.g. `<circle cx="50%" cy="30%">`, they would need to be resolved against the
-//! current viewport's width and height, respectively; that's why those fields are of type
-//! [`LengthHorizontal`] and [`LengthVertical`].
+//! This means that:
 //!
-//! However, `r` needs to be resolved against both dimensions of the current viewport, and so
-//! it is of type [`LengthBoth`].
+//! * `cx` and `cy` define the center of the circle, and they will be normalized with respect
+//! to the current viewport's width and height, respectively.  If the SVG document specified
+//! `<circle cx="50%" cy="30%">`, the values would be normalized to be at 50% of the the
+//! viewport's width, and 30% of the viewport's height.
+//!
+//! * `r` needs to be resolved against the [normalized diagonal][diag] of the current viewport.
+//!
+//! The `O` type parameter of `Length<O>` is enough to know how to normalize a length value;
+//! the [`normalize`] method will handle it automatically.
 //!
 //! [`Circle`]: ../shapes/struct.Circle.html
 //! [`Length`]: struct.Length.html
-//! [`LengthHorizontal`]: struct.LengthHorizontal.html
-//! [`LengthVertical`]: struct.LengthVertical.html
-//! [`LengthBoth`]: struct.LengthBoth.html
+//! [`Horizontal`]: struct.Horizontal.html
+//! [`Vertical`]: struct.Vertical.html
+//! [`Both`]: struct.Both.html
+//! [`Orientation`]: trait.Orientation.html
+//! [diag]: https://www.w3.org/TR/SVG/coords.html#Units
+//! [`normalize`]: struct.Length.html#method.normalize
 
 use cssparser::{Parser, Token};
 use std::f64::consts::*;
@@ -75,7 +88,7 @@ pub enum LengthUnit {
 ///
 /// This is equivalent to [CSS lengths].
 ///
-/// [CSS lengths]: https://www.w3.org/TR/CSS21/syndata.html#length-units
+/// [CSS lengths]: https://www.w3.org/TR/CSS22/syndata.html#length-units
 ///
 /// It is up to the calling application to convert lengths in non-pixel units
 /// (i.e. those where the [`unit`] field is not [`LengthUnit::Px`]) into something
@@ -103,23 +116,28 @@ impl RsvgLength {
     }
 }
 
+/// Used for the type parameter of `Length<O: Orientation>`.
 pub trait Orientation {
-    /// Computes a direction-based scaling factor.
+    /// Computes an orientation-based scaling factor.
     ///
-    /// This is so that `Length<Both>` will use the "normalized diagonal length" of the current
-    /// viewport, per https://www.w3.org/TR/SVG/coords.html#Units
+    /// This is used in the [`Length.normalize`] method to resolve lengths with percentage
+    /// units; they need to be resolved with respect to the width, height, or [normalized
+    /// diagonal][diag] of the current viewport.
+    ///
+    /// [`Length.normalize`]: struct.Length.html#method.normalize
+    /// [diag]: https://www.w3.org/TR/SVG/coords.html#Units
     fn normalize(x: f64, y: f64) -> f64;
 }
 
-/// Struct to be able to declare `Length<Horizontal>`
+/// Allows declaring `Length<Horizontal>`.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Horizontal;
 
-/// Struct to be able to declare `Length<Vertical>`
+/// Allows declaring `Length<Vertical>`.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Vertical;
 
-/// Struct to be able to declare `Length<Both>`
+/// Allows declaring `Length<Both>`.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Both;
 
@@ -146,20 +164,37 @@ impl Orientation for Both {
 
 /// A CSS length value.
 ///
-/// https://www.w3.org/TR/SVG/types.html#DataTypeLength
-/// https://www.w3.org/TR/2008/REC-CSS2-20080411/syndata.html#length-units
+/// This is equivalent to [CSS lengths].
 ///
-/// Length values need to know whether they will be normalized with respect to the width,
-/// height, or both dimensions of the current viewport.  So, a `Length` has a type parameter
-/// [`Orientation`].  We provide [`Horizontal`], [`Vertical`], and [`Both`] implementations of
-/// [`Orientation`]; these let length values know how to normalize themselves with respect to
-/// the current viewport.
+/// [CSS lengths]: https://www.w3.org/TR/CSS22/syndata.html#length-units
+///
+/// `Length` implements the [`Parse`] trait, so it can be parsed out of a
+/// [`cssparser::Parser`].
+///
+/// Examples of construction:
+///
+/// ```ignore
+/// // Explicit type
+/// let width: Length<Horizontal> = Length::new(42.0, LengthUnit::Cm);
+///
+/// // Inferred type
+/// let height = Length::<Vertical>::new(42.0, LengthUnit::Cm);
+///
+/// // Parsed
+/// let radius = Length::<Both>::parse_str("5px").unwrap();
+/// ```
+///
+/// During the rendering phase, a `Length` needs to be normalized into the current coordinate
+/// system's units with the [`normalize`] method.
 ///
 /// [`Orientation`]: trait.Orientation.html
 /// [`Horizontal`]: struct.Horizontal.html
 /// [`Vertical`]: struct.Vertical.html
 /// [`Both`]: struct.Both.html
-
+/// [`new`]: #method.new
+/// [`normalize`]: #method.normalize
+/// [`cssparser::Parser`]: https://docs.rs/cssparser/0.27.1/cssparser/struct.Parser.html
+/// [`Parse`]: ../parsers/trait.Parse.html
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Length<O: Orientation> {
     /// Numeric part of the length
@@ -168,6 +203,7 @@ pub struct Length<O: Orientation> {
     /// Unit part of the length
     pub unit: LengthUnit,
 
+    /// Dummy; used internally for the type parameter `O`
     orientation: PhantomData<O>,
 }
 
@@ -210,15 +246,13 @@ impl<O: Orientation> Parse for Length<O> {
             })?;
 
             match *token {
-                Token::Number { value, .. } => Length::new(
-                    f64::from(finite_f32(value)?),
-                    LengthUnit::Px,
-                ),
+                Token::Number { value, .. } => {
+                    Length::new(f64::from(finite_f32(value)?), LengthUnit::Px)
+                }
 
-                Token::Percentage { unit_value, .. } => Length::new(
-                    f64::from(finite_f32(unit_value)?),
-                    LengthUnit::Percent,
-                ),
+                Token::Percentage { unit_value, .. } => {
+                    Length::new(f64::from(finite_f32(unit_value)?), LengthUnit::Percent)
+                }
 
                 Token::Dimension {
                     value, ref unit, ..
@@ -248,6 +282,18 @@ impl<O: Orientation> Parse for Length<O> {
 }
 
 impl<O: Orientation> Length<O> {
+    /// Creates a Length.
+    ///
+    /// The compiler needs to know the type parameter `O` which represents the length's
+    /// orientation.  You can specify it explicitly, or call the parametrized method:
+    ///
+    /// ```ignore
+    /// // Explicit type
+    /// let width: Length<Horizontal> = Length::new(42.0, LengthUnit::Cm);
+    ///
+    /// // Inferred type
+    /// let height = Length::<Vertical>::new(42.0, LengthUnit::Cm);
+    /// ```
     pub fn new(l: f64, unit: LengthUnit) -> Length<O> {
         Length {
             length: l,
@@ -256,12 +302,14 @@ impl<O: Orientation> Length<O> {
         }
     }
 
-    /// Returns `self` if the length is >= 0, or an error.
+    /// Returns `Ok(self)` if the length is >= 0, or an error.
+    ///
+    /// This is usually used right after parsing a length value, as part of a validation step:
     ///
     /// ```ignore
     /// let mut parser = Parser::new(...);
     ///
-    /// let length = LENGTH::parse(&mut parser).and_then($name::check_nonnegative)?;
+    /// let length = Length::<Horizontal>::parse(&mut parser).and_then(Length::check_nonnegative)?;
     /// ```
     pub fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
         if self.length >= 0.0 {
@@ -275,17 +323,16 @@ impl<O: Orientation> Length<O> {
 
     /// Normalizes a specified length into a used value.
     ///
-    /// Lengths may come with non-pixel units, and when rendering, they need to be
-    /// normalized to pixels based on the current viewport (e.g. for lengths with
-    /// percent units), and on the current element's set of `ComputedValues` (e.g. for
-    /// lengths with `Em` units that need to be resolved against the current font
-    /// size).
+    /// Lengths may come with non-pixel units, and when rendering, they need to be normalized
+    /// to pixels based on the current viewport (e.g. for lengths with percent units), and
+    /// based on the current element's set of `ComputedValues` (e.g. for lengths with `Em`
+    /// units that need to be resolved against the current font size).
     pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
         match self.unit {
             LengthUnit::Px => self.length,
 
             LengthUnit::Percent => {
-                self.length 
+                self.length
                     * <O as Orientation>::normalize(params.view_box_width, params.view_box_height)
             }
 
@@ -478,11 +525,14 @@ mod tests {
 
     #[test]
     fn check_nonnegative_works() {
+        // and_then with anonymous function
         assert!(Length::<Both>::parse_str("0")
             .and_then(|l| l.check_nonnegative())
             .is_ok());
+
+        // and_then with named function
         assert!(Length::<Both>::parse_str("-10")
-            .and_then(|l| l.check_nonnegative())
+            .and_then(Length::check_nonnegative)
             .is_err());
     }
 
