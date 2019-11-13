@@ -82,6 +82,9 @@ with a sample SVG file.
 
 ## Hacking on librsvg
 
+The library's internals are being documented at
+https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg_internals/index.html
+
 ### Working on the source
 
 Librsvg uses an autotools setup, which is described in detail [in this

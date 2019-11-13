@@ -4,6 +4,9 @@ Architecture of librsvg
 This document describes the architecture of librsvg, and future plans
 for it.
 
+The library's internals are being documented at
+https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg_internals/index.html
+
 # A bit of history
 
 Librsvg is an old library.  It started around 2001, when Eazel (the
