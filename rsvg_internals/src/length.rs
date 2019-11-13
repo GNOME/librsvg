@@ -39,14 +39,49 @@ use crate::parsers::Parse;
 use crate::parsers::{finite_f32, ParseError};
 use crate::properties::ComputedValues;
 
-/// Type alias for use by the [`librsvg_c_api`] crate.
+/// A CSS length value.
 ///
-/// [`librsvg_c_api`]: ../../librsvg_c_api/index.html
-pub type RsvgLength = Length;
+/// This is equivalent to [CSS lengths].
+///
+/// [CSS lengths]: https://www.w3.org/TR/CSS21/syndata.html#length-units
+///
+/// It is up to the calling application to convert lengths in non-pixel units
+/// (i.e. those where the [`unit`] field is not [`LengthUnit::Px`]) into something
+/// meaningful to the application.  For example, if your application knows the
+/// dots-per-inch (DPI) it is using, it can convert lengths with [`unit`] in
+/// [`LengthUnit::In`] or other physical units.
+///
+/// [`unit`]: #structfield.unit
+/// [`LengthUnit::Px`]: enum.LengthUnit.html#variant.Px
+/// [`LengthUnit::In`]: enum.LengthUnit.html#variant.In
+// Keep this in sync with rsvg.h:RsvgLength
+#[repr(C)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct RsvgLength {
+    /// Numeric part of the length
+    pub length: f64,
+
+    /// Unit part of the length
+    pub unit: LengthUnit,
+}
+
+impl From<Length> for RsvgLength {
+    fn from(l: Length) -> RsvgLength {
+        RsvgLength {
+            length: l.length,
+            unit: l.unit,
+        }
+    }
+}
+
+impl RsvgLength {
+    pub fn new(l: f64, unit: LengthUnit) -> RsvgLength {
+        RsvgLength { length: l, unit }
+    }
+}
 
 /// Units for length values.
-///
-/// This needs to be kept in sync with `rsvg.h:RsvgUnit`.
+// This needs to be kept in sync with `rsvg.h:RsvgUnit`.
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
@@ -280,22 +315,6 @@ define_length_type! {
 }
 
 /// A CSS length value.
-///
-/// This is equivalent to [CSS lengths].
-///
-/// [CSS lengths]: https://www.w3.org/TR/CSS21/syndata.html#length-units
-///
-/// It is up to the calling application to convert lengths in non-pixel units
-/// (i.e. those where the [`unit`] field is not [`LengthUnit::Px`]) into something
-/// meaningful to the application.  For example, if your application knows the
-/// dots-per-inch (DPI) it is using, it can convert lengths with [`unit`] in
-/// [`LengthUnit::In`] or other physical units.
-///
-/// [`unit`]: #structfield.unit
-/// [`LengthUnit::Px`]: enum.LengthUnit.html#variant.Px
-/// [`LengthUnit::In`]: enum.LengthUnit.html#variant.In
-// Keep this in sync with rsvg.h:RsvgLength
-#[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Length {
     /// Numeric part of the length
