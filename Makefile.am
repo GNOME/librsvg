@@ -18,12 +18,12 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	$(librsvg_c_srcs)			\
 	$(NULL)
 
-SERVO_CRATES_SRC = 					\
-	$(wildcard servo_crates/derive_common/*)	\
-	$(wildcard servo_crates/selectors/*)		\
-	$(wildcard servo_crates/servo_arc/*)		\
-	$(wildcard servo_crates/to_shmem/*)		\
-	$(wildcard servo_crates/to_shmem_derive/*)	\
+SERVO_CRATES_SRC =						\
+	$(wildcard $(srcdir)/servo_crates/derive_common/*)	\
+	$(wildcard $(srcdir)/servo_crates/selectors/*)		\
+	$(wildcard $(srcdir)/servo_crates/servo_arc/*)		\
+	$(wildcard $(srcdir)/servo_crates/to_shmem/*)		\
+	$(wildcard $(srcdir)/servo_crates/to_shmem_derive/*)	\
 	$(NULL)
 
 LIBRSVG_INTERNALS_SRC =						\
