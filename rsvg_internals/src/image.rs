@@ -8,7 +8,7 @@ use crate::bbox::BoundingBox;
 use crate::drawing_ctx::{ClipMode, DrawingCtx};
 use crate::error::{NodeError, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::length::{LengthHorizontal, LengthVertical};
+use crate::length::{LengthHorizontal, LengthTrait, LengthVertical};
 use crate::node::*;
 use crate::parsers::{ParseError, ParseValue};
 use crate::property_bag::PropertyBag;

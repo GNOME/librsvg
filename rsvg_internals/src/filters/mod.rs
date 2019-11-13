@@ -9,7 +9,7 @@ use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
-use crate::length::{LengthHorizontal, LengthUnit, LengthVertical};
+use crate::length::{LengthHorizontal, LengthUnit, LengthTrait, LengthVertical};
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{ParseError, ParseValue};
 use crate::properties::ComputedValues;

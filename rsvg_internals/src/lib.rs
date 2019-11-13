@@ -55,7 +55,7 @@ pub use crate::handle::{
     Handle, LoadOptions, RsvgDimensionData, RsvgPositionData, RsvgSizeFunc, SizeCallback,
 };
 
-pub use crate::length::{Length, LengthUnit, RsvgLength};
+pub use crate::length::{Length, LengthUnit, LengthTrait, RsvgLength};
 
 pub use crate::rect::IRect;
 

@@ -13,7 +13,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
-use crate::length::{LengthHorizontal, LengthVertical};
+use crate::length::{LengthHorizontal, LengthTrait, LengthVertical};
 use crate::node::*;
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::path_builder::*;

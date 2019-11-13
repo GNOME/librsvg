@@ -3,7 +3,7 @@ use cssparser::{self, Parser, Token};
 use crate::error::*;
 use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
 use crate::iri::IRI;
-use crate::length::{Dasharray, LengthBoth, LengthUnit};
+use crate::length::{Dasharray, LengthBoth, LengthTrait, LengthUnit};
 use crate::paint_server::PaintServer;
 use crate::parsers::{Parse, ParseError};
 use crate::properties::ComputedValues;

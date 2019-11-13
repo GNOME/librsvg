@@ -78,119 +78,144 @@ pub enum LengthUnit {
     Pc,
 }
 
-/// Internal type used to implement the newtypes [`LengthHorizontal`], [`LengthVertical`],
-/// [`LengthBoth`].
-///
-/// [`LengthHorizontal`]: struct.LengthHorizontal.html
-/// [`LengthVertical`]: struct.LengthVertical.html
-/// [`LengthBoth`]: struct.LengthBoth.html
-#[derive(Debug, PartialEq, Copy, Clone)]
-enum LengthDir {
-    Horizontal,
-    Vertical,
-    Both,
-}
-
-impl LengthDir {
+pub trait Orientation {
     /// Computes a direction-based scaling factor.
     ///
     /// This is so that `LengthDir::Both` will use the "normalized
     /// diagonal length" of the current viewport, per
     /// https://www.w3.org/TR/SVG/coords.html#Units
-    fn scaling_factor(self, x: f64, y: f64) -> f64 {
-        match self {
-            LengthDir::Horizontal => x,
-            LengthDir::Vertical => y,
-            LengthDir::Both => viewport_percentage(x, y),
+    fn scaling_factor(x: f64, y: f64) -> f64;
+}
+
+pub struct Horizontal;
+pub struct Vertical;
+pub struct Both;
+
+impl Orientation for Horizontal {
+    #[inline]
+    fn scaling_factor(x: f64, _y: f64) -> f64 {
+        x
+    }
+}
+
+impl Orientation for Vertical {
+    #[inline]
+    fn scaling_factor(_x: f64, y: f64) -> f64 {
+        y
+    }
+}
+
+impl Orientation for Both {
+    #[inline]
+    fn scaling_factor(x: f64, y: f64) -> f64 {
+        viewport_percentage(x, y)
+    }
+}
+
+pub trait LengthTrait: Sized {
+    type Orientation: Orientation;
+
+    /// Getter for the `length` field
+    fn length(&self) -> f64;
+
+    /// Getter for the `unit` field
+    fn unit(&self) -> LengthUnit;
+
+    /// Extracts the interior [`Length`].
+    ///
+    /// [`Length`]: struct.Length.html
+    fn to_length(&self) -> Length;
+
+    /// Returns `self` if the length is >= 0, or an error.
+    ///
+    /// See the documentation for [`from_cssparser`] for an example.
+    ///
+    /// [`from_cssparser`]: #method.from_cssparser
+    fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
+        if self.length() >= 0.0 {
+            Ok(self)
+        } else {
+            Err(ValueErrorKind::Value(
+                "value must be non-negative".to_string(),
+            ))
+        }
+    }
+
+    /// Normalizes a specified length into a used value.
+    ///
+    /// Lengths may come with non-pixel units, and when rendering, they need to be
+    /// normalized to pixels based on the current viewport (e.g. for lengths with
+    /// percent units), and on the current element's set of `ComputedValues` (e.g. for
+    /// lengths with `Em` units that need to be resolved against the current font
+    /// size).
+    fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
+        match self.unit() {
+            LengthUnit::Px => self.length(),
+
+            LengthUnit::Percent => {
+                self.length()
+                    * <Self::Orientation>::scaling_factor(
+                        params.view_box_width,
+                        params.view_box_height,
+                    )
+            }
+
+            LengthUnit::Em => self.length() * font_size_from_values(values, params),
+
+            LengthUnit::Ex => self.length() * font_size_from_values(values, params) / 2.0,
+
+            LengthUnit::In => {
+                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+            }
+
+            LengthUnit::Cm => {
+                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+                    / CM_PER_INCH
+            }
+
+            LengthUnit::Mm => {
+                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+                    / MM_PER_INCH
+            }
+
+            LengthUnit::Pt => {
+                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+                    / POINTS_PER_INCH
+            }
+
+            LengthUnit::Pc => {
+                self.length() * <Self::Orientation>::scaling_factor(params.dpi_x, params.dpi_y)
+                    / PICA_PER_INCH
+            }
         }
     }
 }
 
 macro_rules! define_length_type {
-    {$(#[$docs:meta])* $name:ident, $dir:expr} => {
+    {$(#[$docs:meta])* $name:ident, $orient:ty} => {
         $(#[$docs])*
         #[derive(Debug, PartialEq, Copy, Clone)]
         pub struct $name(Length);
 
-        impl $name {
-            pub fn new(length: f64, unit: LengthUnit) -> Self {
-                $name(Length::new(length, unit))
-            }
+        impl LengthTrait for $name {
+            type Orientation = $orient;
 
-            pub fn length(&self) -> f64 {
+            fn length(&self) -> f64 {
                 self.0.length
             }
 
-            pub fn unit(&self) -> LengthUnit {
+            fn unit(&self) -> LengthUnit {
                 self.0.unit
             }
 
-            /// Extracts the interior [`Length`].
-            ///
-            /// [`Length`]: struct.Length.html
-            pub fn to_length(&self) -> Length {
+            fn to_length(&self) -> Length {
                 self.0
             }
+        }
 
-            /// Returns `self` if the length is >= 0, or an error.
-            ///
-            /// See the documentation for [`from_cssparser`] for an example.
-            ///
-            /// [`from_cssparser`]: #method.from_cssparser
-            pub fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
-                if self.length() >= 0.0 {
-                    Ok(self)
-                } else {
-                    Err(ValueErrorKind::Value(
-                        "value must be non-negative".to_string(),
-                    ))
-                }
-            }
-
-            /// Normalizes a specified length into a used value.
-            ///
-            /// Lengths may come with non-pixel units, and when rendering, they need to be
-            /// normalized to pixels based on the current viewport (e.g. for lengths with
-            /// percent units), and on the current element's set of `ComputedValues` (e.g. for
-            /// lengths with `Em` units that need to be resolved against the current font
-            /// size).
-            pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
-                match self.unit() {
-                    LengthUnit::Px => self.length(),
-
-                    LengthUnit::Percent => {
-                        self.length()
-                            * $dir.scaling_factor(params.view_box_width, params.view_box_height)
-                    }
-
-                    LengthUnit::Em => self.length() * font_size_from_values(values, params),
-
-                    LengthUnit::Ex => self.length() * font_size_from_values(values, params) / 2.0,
-
-                    LengthUnit::In => {
-                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
-                    }
-
-                    LengthUnit::Cm => {
-                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
-                            / CM_PER_INCH
-                    }
-
-                    LengthUnit::Mm => {
-                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
-                            / MM_PER_INCH
-                    }
-
-                    LengthUnit::Pt => {
-                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
-                            / POINTS_PER_INCH
-                    }
-
-                    LengthUnit::Pc => {
-                        self.length() * $dir.scaling_factor(params.dpi_x, params.dpi_y)
-                            / PICA_PER_INCH
-                    }
-                }
+        impl $name {
+            pub fn new(length: f64, unit: LengthUnit) -> Self {
+                $name(Length::new(length, unit))
             }
 
             /// Parses a LENGTH from a `Parser`.
@@ -232,7 +257,7 @@ define_length_type! {
     /// When this is specified as a percent value, it will get normalized
     /// against the current viewport's width.
 
-    LengthHorizontal, LengthDir::Horizontal
+    LengthHorizontal, Horizontal
 }
 
 define_length_type! {
@@ -240,7 +265,7 @@ define_length_type! {
     ///
     /// When this is specified as a percent value, it will get normalized
     /// against the current viewport's height.
-    LengthVertical, LengthDir::Vertical
+    LengthVertical, Vertical
 }
 
 define_length_type! {
@@ -249,7 +274,7 @@ define_length_type! {
     /// When this is specified as a percent value, it will get normalized
     /// against the current viewport's width and height.
 
-    LengthBoth, LengthDir::Both
+    LengthBoth, Both
 }
 
 /// A CSS length value.
@@ -404,19 +429,19 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
         // This is the same default as used in Svg::get_size()
         LengthUnit::Ex => v.length * 12.0 / 2.0,
 
-        // FontSize always is a LengthDir::Both, per properties.rs
-        LengthUnit::In => v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y),
+        // FontSize always is a Both, per properties.rs
+        LengthUnit::In => v.length * Both::scaling_factor(params.dpi_x, params.dpi_y),
         LengthUnit::Cm => {
-            v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / CM_PER_INCH
+            v.length * Both::scaling_factor(params.dpi_x, params.dpi_y) / CM_PER_INCH
         }
         LengthUnit::Mm => {
-            v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / MM_PER_INCH
+            v.length * Both::scaling_factor(params.dpi_x, params.dpi_y) / MM_PER_INCH
         }
         LengthUnit::Pt => {
-            v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / POINTS_PER_INCH
+            v.length * Both::scaling_factor(params.dpi_x, params.dpi_y) / POINTS_PER_INCH
         }
         LengthUnit::Pc => {
-            v.length * LengthDir::Both.scaling_factor(params.dpi_x, params.dpi_y) / PICA_PER_INCH
+            v.length * Both::scaling_factor(params.dpi_x, params.dpi_y) / PICA_PER_INCH
         }
     }
 }

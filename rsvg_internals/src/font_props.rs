@@ -2,7 +2,7 @@ use cssparser::{BasicParseError, Parser, Token};
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
-use crate::length::{LengthBoth, LengthHorizontal, LengthUnit, POINTS_PER_INCH};
+use crate::length::{LengthBoth, LengthHorizontal, LengthTrait, LengthUnit, POINTS_PER_INCH};
 use crate::parsers::{Parse, ParseError};
 use crate::properties::ComputedValues;
 

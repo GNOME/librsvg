@@ -3,7 +3,7 @@ use cairo;
 
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
-use crate::length::{LengthHorizontal, LengthVertical};
+use crate::length::{LengthHorizontal, LengthTrait, LengthVertical};
 use crate::rect::IRect;
 
 use super::context::{FilterContext, FilterInput, FilterOutput};

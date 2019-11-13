@@ -5,7 +5,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{CompositingAffines, DrawingCtx};
 use crate::error::RenderingError;
-use crate::length::{LengthHorizontal, LengthVertical};
+use crate::length::{LengthHorizontal, LengthTrait, LengthVertical};
 use crate::node::{CascadedValues, NodeDraw, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;

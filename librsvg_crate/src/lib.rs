@@ -97,7 +97,7 @@ use std::path::Path;
 
 use gio::{Cancellable, FileExt};
 
-use rsvg_internals::{Dpi, Handle, LoadOptions};
+use rsvg_internals::{Dpi, Handle, LengthTrait, LoadOptions};
 
 pub use rsvg_internals::{
     DefsLookupErrorKind,

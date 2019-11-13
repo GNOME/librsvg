@@ -13,7 +13,7 @@ use crate::dpi::Dpi;
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{LinearGradient, RadialGradient};
-use crate::length::Dasharray;
+use crate::length::{Dasharray, LengthTrait};
 use crate::limits;
 use crate::mask::Mask;
 use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
