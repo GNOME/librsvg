@@ -102,10 +102,11 @@ use rsvg_internals::{Dpi, Handle, LoadOptions};
 pub use rsvg_internals::{
     DefsLookupErrorKind,
     HrefError,
-    Length,
+    Length as InternalLength,
     LengthUnit,
     LoadingError,
     RenderingError,
+    RsvgLength as Length,
 };
 
 /// Builder for loading an [`SvgHandle`][SvgHandle].
@@ -402,8 +403,8 @@ impl<'a> CairoRenderer<'a> {
         let d = self.handle.0.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
-            width: d.width.map(|l| l.to_length()),
-            height: d.height.map(|l| l.to_length()),
+            width: d.width.map(Into::into),
+            height: d.height.map(Into::into),
             vbox: d.vbox.map(|v| cairo::Rectangle {
                 x: v.x,
                 y: v.y,

@@ -34,13 +34,12 @@ use glib_sys;
 use gobject_sys::{self, GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
-    rsvg_log, set_gerror, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions,
-    LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData, RsvgRectangle,
-    RsvgSizeFunc, SizeCallback, RSVG_ERROR_FAILED, SharedImageSurface, SurfaceType,
+    rsvg_log, set_gerror, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions,
+    LoadOptions, LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData,
+    RsvgRectangle, RsvgSizeFunc, SharedImageSurface, SizeCallback, SurfaceType, RSVG_ERROR_FAILED,
 };
 
 use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
-
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -180,10 +179,7 @@ impl BaseUrl {
     fn set(&mut self, url: Url) {
         let cstring = CString::new(url.as_str()).unwrap();
 
-        self.inner = Some(BaseUrlInner {
-            url,
-            cstring,
-        });
+        self.inner = Some(BaseUrlInner { url, cstring });
     }
 
     fn get(&self) -> Option<&Url> {
@@ -191,7 +187,10 @@ impl BaseUrl {
     }
 
     fn get_ptr(&self) -> *const libc::c_char {
-        self.inner.as_ref().map(|b| b.cstring.as_ptr()).unwrap_or_else(|| ptr::null())
+        self.inner
+            .as_ref()
+            .map(|b| b.cstring.as_ptr())
+            .unwrap_or_else(|| ptr::null())
     }
 }
 
@@ -520,16 +519,16 @@ impl CHandle {
                 *state = LoadState::Loading {
                     buffer: Vec::from(buf),
                 }
-            },
+            }
 
             LoadState::Loading { ref mut buffer } => {
                 buffer.extend_from_slice(buf);
-            },
+            }
 
             _ => {
                 rsvg_g_critical("Handle must not be closed in order to write to it");
                 return;
-            },
+            }
         }
     }
 
@@ -664,13 +663,7 @@ impl CHandle {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
         handle
-            .render_cairo_sub(
-                cr,
-                id,
-                inner.dpi,
-                &inner.size_callback,
-                inner.is_testing,
-            )
+            .render_cairo_sub(cr, id, inner.dpi, &inner.size_callback, inner.is_testing)
             .map_err(warn_on_invalid_id)
     }
 
@@ -1277,12 +1270,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
         .get_intrinsic_dimensions()
         .unwrap_or_else(|_| panic!("API called out of order"));
 
-    let w = d.width.map(|l| l.to_length());
-    let h = d.height.map(|l| l.to_length());
+    let w = d.width;
+    let h = d.height;
     let r = d.vbox.map(RsvgRectangle::from);
 
-    set_out_param(out_has_width, out_width, &w);
-    set_out_param(out_has_height, out_height, &h);
+    set_out_param(out_has_width, out_width, &w.map(Into::into));
+    set_out_param(out_has_height, out_height, &h.map(Into::into));
     set_out_param(out_has_viewbox, out_viewbox, &r);
 }
 

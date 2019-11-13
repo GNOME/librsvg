@@ -34,10 +34,10 @@ struct Common {
     vbox: Option<Option<ViewBox>>,
     preserve_aspect_ratio: Option<AspectRatio>,
     affine: Option<cairo::Matrix>,
-    x: Option<LengthHorizontal>,
-    y: Option<LengthVertical>,
-    width: Option<LengthHorizontal>,
-    height: Option<LengthVertical>,
+    x: Option<Length<Horizontal>>,
+    y: Option<Length<Vertical>>,
+    width: Option<Length<Horizontal>>,
+    height: Option<Length<Vertical>>,
 }
 
 /// State used during the pattern resolution process
@@ -98,10 +98,10 @@ pub struct ResolvedPattern {
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
     affine: cairo::Matrix,
-    x: LengthHorizontal,
-    y: LengthVertical,
-    width: LengthHorizontal,
-    height: LengthVertical,
+    x: Length<Horizontal>,
+    y: Length<Vertical>,
+    width: Length<Horizontal>,
+    height: Length<Vertical>,
 
     // Link to the node whose children are the pattern's resolved children.
     children: Children,
@@ -134,11 +134,11 @@ impl NodeTrait for Pattern {
                 expanded_name!(svg "y") => self.common.y = Some(attr.parse(value)?),
                 expanded_name!(svg "width") => {
                     self.common.width =
-                        Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
+                        Some(attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?)
                 }
                 expanded_name!(svg "height") => {
                     self.common.height =
-                        Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
+                        Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
                 }
                 _ => (),
             }

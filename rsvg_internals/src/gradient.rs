@@ -131,8 +131,8 @@ pub struct Stop {
     // they go into property_defs.rs
 }
 
-fn validate_offset(length: LengthBoth) -> Result<LengthBoth, ValueErrorKind> {
-    match length.unit() {
+fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind> {
+    match length.unit {
         LengthUnit::Px | LengthUnit::Percent => Ok(length),
         _ => Err(ValueErrorKind::Value(
             "stop offset must be in default or percent units".to_string(),
@@ -147,7 +147,7 @@ impl NodeTrait for Stop {
                 expanded_name!(svg "offset") => {
                     self.offset = attr
                         .parse_and_validate(value, validate_offset)
-                        .map(|l| UnitInterval::clamp(l.length()))?
+                        .map(|l| UnitInterval::clamp(l.length))?
                 }
                 _ => (),
             }
@@ -164,18 +164,18 @@ impl NodeTrait for Stop {
 #[derive(Copy, Clone)]
 enum UnresolvedVariant {
     Linear {
-        x1: Option<LengthHorizontal>,
-        y1: Option<LengthVertical>,
-        x2: Option<LengthHorizontal>,
-        y2: Option<LengthVertical>,
+        x1: Option<Length<Horizontal>>,
+        y1: Option<Length<Vertical>>,
+        x2: Option<Length<Horizontal>>,
+        y2: Option<Length<Vertical>>,
     },
 
     Radial {
-        cx: Option<LengthHorizontal>,
-        cy: Option<LengthVertical>,
-        r: Option<LengthBoth>,
-        fx: Option<LengthHorizontal>,
-        fy: Option<LengthVertical>,
+        cx: Option<Length<Horizontal>>,
+        cy: Option<Length<Vertical>>,
+        r: Option<Length<Both>>,
+        fx: Option<Length<Horizontal>>,
+        fy: Option<Length<Vertical>>,
     },
 }
 
@@ -183,18 +183,18 @@ enum UnresolvedVariant {
 #[derive(Clone)]
 enum Variant {
     Linear {
-        x1: LengthHorizontal,
-        y1: LengthVertical,
-        x2: LengthHorizontal,
-        y2: LengthVertical,
+        x1: Length<Horizontal>,
+        y1: Length<Vertical>,
+        x2: Length<Horizontal>,
+        y2: Length<Vertical>,
     },
 
     Radial {
-        cx: LengthHorizontal,
-        cy: LengthVertical,
-        r: LengthBoth,
-        fx: LengthHorizontal,
-        fy: LengthVertical,
+        cx: Length<Horizontal>,
+        cy: Length<Vertical>,
+        r: Length<Both>,
+        fx: Length<Horizontal>,
+        fy: Length<Vertical>,
     },
 }
 
@@ -260,16 +260,16 @@ impl UnresolvedVariant {
     fn resolve_from_defaults(&self) -> UnresolvedVariant {
         match self {
             UnresolvedVariant::Linear { x1, y1, x2, y2 } => UnresolvedVariant::Linear {
-                x1: x1.or_else(|| Some(LengthHorizontal::parse_str("0%").unwrap())),
-                y1: y1.or_else(|| Some(LengthVertical::parse_str("0%").unwrap())),
-                x2: x2.or_else(|| Some(LengthHorizontal::parse_str("100%").unwrap())),
-                y2: y2.or_else(|| Some(LengthVertical::parse_str("0%").unwrap())),
+                x1: x1.or_else(|| Some(Length::<Horizontal>::parse_str("0%").unwrap())),
+                y1: y1.or_else(|| Some(Length::<Vertical>::parse_str("0%").unwrap())),
+                x2: x2.or_else(|| Some(Length::<Horizontal>::parse_str("100%").unwrap())),
+                y2: y2.or_else(|| Some(Length::<Vertical>::parse_str("0%").unwrap())),
             },
 
             UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
-                let cx = cx.or_else(|| Some(LengthHorizontal::parse_str("50%").unwrap()));
-                let cy = cy.or_else(|| Some(LengthVertical::parse_str("50%").unwrap()));
-                let r = r.or_else(|| Some(LengthBoth::parse_str("50%").unwrap()));
+                let cx = cx.or_else(|| Some(Length::<Horizontal>::parse_str("50%").unwrap()));
+                let cy = cy.or_else(|| Some(Length::<Vertical>::parse_str("50%").unwrap()));
+                let r = r.or_else(|| Some(Length::<Both>::parse_str("50%").unwrap()));
 
                 // fx and fy fall back to the presentational value of cx and cy
                 let fx = fx.or(cx);
@@ -329,10 +329,10 @@ struct Common {
 pub struct LinearGradient {
     common: Common,
 
-    x1: Option<LengthHorizontal>,
-    y1: Option<LengthVertical>,
-    x2: Option<LengthHorizontal>,
-    y2: Option<LengthVertical>,
+    x1: Option<Length<Horizontal>>,
+    y1: Option<Length<Vertical>>,
+    x2: Option<Length<Horizontal>>,
+    y2: Option<Length<Vertical>>,
 }
 
 /// Node for the <radialGradient> element
@@ -340,11 +340,11 @@ pub struct LinearGradient {
 pub struct RadialGradient {
     common: Common,
 
-    cx: Option<LengthHorizontal>,
-    cy: Option<LengthVertical>,
-    r: Option<LengthBoth>,
-    fx: Option<LengthHorizontal>,
-    fy: Option<LengthVertical>,
+    cx: Option<Length<Horizontal>>,
+    cy: Option<Length<Vertical>>,
+    r: Option<Length<Both>>,
+    fx: Option<Length<Horizontal>>,
+    fy: Option<Length<Vertical>>,
 }
 
 /// Main structure used during gradient resolution.  For unresolved

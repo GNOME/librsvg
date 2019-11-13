@@ -3,7 +3,7 @@ use cssparser::{self, Parser, Token};
 use crate::error::*;
 use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
 use crate::iri::IRI;
-use crate::length::{Dasharray, LengthBoth, LengthUnit};
+use crate::length::*;
 use crate::paint_server::PaintServer;
 use crate::parsers::{Parse, ParseError};
 use crate::properties::ComputedValues;
@@ -14,8 +14,8 @@ use crate::unit_interval::UnitInterval;
 make_property!(
     ComputedValues,
     BaselineShift,
-    default: LengthBoth::parse_str("0.0").unwrap(),
-    newtype: LengthBoth,
+    default: Length::<Both>::parse_str("0.0").unwrap(),
+    newtype: Length<Both>,
     property_impl: {
         impl Property<ComputedValues> for BaselineShift {
             fn inherits_automatically() -> bool {
@@ -29,11 +29,11 @@ make_property!(
                 // 1) we only handle 'percent' shifts, but it could also be an absolute offset
                 // 2) we should be able to normalize the lengths and add even if they have
                 //    different units, but at the moment that requires access to the draw_ctx
-                if self.0.unit() != LengthUnit::Percent || v.baseline_shift.0.unit() != font_size.unit() {
-                    return BaselineShift(LengthBoth::new(v.baseline_shift.0.length(), v.baseline_shift.0.unit()));
+                if self.0.unit != LengthUnit::Percent || v.baseline_shift.0.unit != font_size.unit {
+                    return BaselineShift(Length::<Both>::new(v.baseline_shift.0.length, v.baseline_shift.0.unit));
                 }
 
-                BaselineShift(LengthBoth::new(self.0.length() * font_size.length() + v.baseline_shift.0.length(), font_size.unit()))
+                BaselineShift(Length::<Both>::new(self.0.length * font_size.length + v.baseline_shift.0.length, font_size.unit))
             }
         }
     },
@@ -54,15 +54,15 @@ make_property!(
                     if let Token::Ident(ref cow) = token {
                         match cow.as_ref() {
                             "baseline" => return Ok(BaselineShift(
-                                LengthBoth::new(0.0, LengthUnit::Percent)
+                                Length::<Both>::new(0.0, LengthUnit::Percent)
                             )),
 
                             "sub" => return Ok(BaselineShift(
-                                LengthBoth::new(-0.2, LengthUnit::Percent)
+                                Length::<Both>::new(-0.2, LengthUnit::Percent)
                             )),
 
                             "super" => return Ok(BaselineShift(
-                                LengthBoth::new(0.4, LengthUnit::Percent),
+                                Length::<Both>::new(0.4, LengthUnit::Percent),
                             )),
 
                             _ => (),
@@ -72,7 +72,7 @@ make_property!(
 
                 parser.reset(&parser_state);
 
-                Ok(BaselineShift(LengthBoth::from_cssparser(parser)?))
+                Ok(BaselineShift(Length::<Both>::parse(parser)?))
             }
         }
     }
@@ -248,7 +248,7 @@ make_property!(
 make_property!(
     ComputedValues,
     FontSize,
-    default: FontSizeSpec::Value(LengthBoth::parse_str("12.0").unwrap()),
+    default: FontSizeSpec::Value(Length::<Both>::parse_str("12.0").unwrap()),
     newtype_parse: FontSizeSpec,
     property_impl: {
         impl Property<ComputedValues> for FontSize {
@@ -467,9 +467,9 @@ make_property!(
 make_property!(
     ComputedValues,
     StrokeDashoffset,
-    default: LengthBoth::default(),
+    default: Length::<Both>::default(),
     inherits_automatically: true,
-    newtype_parse: LengthBoth,
+    newtype_parse: Length<Both>,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeLinecapProperty
@@ -520,9 +520,9 @@ make_property!(
 make_property!(
     ComputedValues,
     StrokeWidth,
-    default: LengthBoth::parse_str("1.0").unwrap(),
+    default: Length::<Both>::parse_str("1.0").unwrap(),
     inherits_automatically: true,
-    newtype_parse: LengthBoth,
+    newtype_parse: Length::<Both>,
 );
 
 // https://www.w3.org/TR/SVG/text.html#TextAnchorProperty
