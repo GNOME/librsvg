@@ -5,8 +5,8 @@
 //!
 //! Length values need to know whether they will be normalized with respect to the width,
 //! height, or both dimensions of the current viewport.  So, a `Length` has a type parameter
-//! [`Orientation`]; the full type is `Length<O: Orientation>`.  We provide [`Horizontal`],
-//! [`Vertical`], and [`Both`] implementations of [`Orientation`]; these let length values know
+//! [`Normalize`]; the full type is `Length<N: Normalize>`.  We provide [`Horizontal`],
+//! [`Vertical`], and [`Both`] implementations of [`Normalize`]; these let length values know
 //! how to normalize themselves with respect to the current viewport.
 //!
 //! For example, the implementation of [`Circle`] defines this structure with fields for the
@@ -29,7 +29,7 @@
 //!
 //! * `r` needs to be resolved against the [normalized diagonal][diag] of the current viewport.
 //!
-//! The `O` type parameter of `Length<O>` is enough to know how to normalize a length value;
+//! The `N` type parameter of `Length<N>` is enough to know how to normalize a length value;
 //! the [`normalize`] method will handle it automatically.
 //!
 //! [`Circle`]: ../shapes/struct.Circle.html
@@ -37,7 +37,7 @@
 //! [`Horizontal`]: struct.Horizontal.html
 //! [`Vertical`]: struct.Vertical.html
 //! [`Both`]: struct.Both.html
-//! [`Orientation`]: trait.Orientation.html
+//! [`Normalize`]: trait.Normalize.html
 //! [diag]: https://www.w3.org/TR/SVG/coords.html#Units
 //! [`normalize`]: struct.Length.html#method.normalize
 
@@ -116,8 +116,8 @@ impl RsvgLength {
     }
 }
 
-/// Used for the type parameter of `Length<O: Orientation>`.
-pub trait Orientation {
+/// Used for the type parameter of `Length<N: Normalize>`.
+pub trait Normalize {
     /// Computes an orientation-based scaling factor.
     ///
     /// This is used in the [`Length.normalize`] method to resolve lengths with percentage
@@ -141,21 +141,21 @@ pub struct Vertical;
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Both;
 
-impl Orientation for Horizontal {
+impl Normalize for Horizontal {
     #[inline]
     fn normalize(x: f64, _y: f64) -> f64 {
         x
     }
 }
 
-impl Orientation for Vertical {
+impl Normalize for Vertical {
     #[inline]
     fn normalize(_x: f64, y: f64) -> f64 {
         y
     }
 }
 
-impl Orientation for Both {
+impl Normalize for Both {
     #[inline]
     fn normalize(x: f64, y: f64) -> f64 {
         viewport_percentage(x, y)
@@ -187,7 +187,7 @@ impl Orientation for Both {
 /// During the rendering phase, a `Length` needs to be normalized into the current coordinate
 /// system's units with the [`normalize`] method.
 ///
-/// [`Orientation`]: trait.Orientation.html
+/// [`Normalize`]: trait.Normalize.html
 /// [`Horizontal`]: struct.Horizontal.html
 /// [`Vertical`]: struct.Vertical.html
 /// [`Both`]: struct.Both.html
@@ -196,19 +196,19 @@ impl Orientation for Both {
 /// [`cssparser::Parser`]: https://docs.rs/cssparser/0.27.1/cssparser/struct.Parser.html
 /// [`Parse`]: ../parsers/trait.Parse.html
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub struct Length<O: Orientation> {
+pub struct Length<N: Normalize> {
     /// Numeric part of the length
     pub length: f64,
 
     /// Unit part of the length
     pub unit: LengthUnit,
 
-    /// Dummy; used internally for the type parameter `O`
-    orientation: PhantomData<O>,
+    /// Dummy; used internally for the type parameter `N`
+    orientation: PhantomData<N>,
 }
 
-impl<O: Orientation> From<Length<O>> for RsvgLength {
-    fn from(l: Length<O>) -> RsvgLength {
+impl<N: Normalize> From<Length<N>> for RsvgLength {
+    fn from(l: Length<N>) -> RsvgLength {
         RsvgLength {
             length: l.length,
             unit: l.unit,
@@ -216,7 +216,7 @@ impl<O: Orientation> From<Length<O>> for RsvgLength {
     }
 }
 
-impl<O: Orientation> Default for Length<O> {
+impl<N: Normalize> Default for Length<N> {
     fn default() -> Self {
         Length::new(0.0, LengthUnit::Px)
     }
@@ -234,10 +234,10 @@ fn make_err() -> ValueErrorKind {
     ))
 }
 
-impl<O: Orientation> Parse for Length<O> {
+impl<N: Normalize> Parse for Length<N> {
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Length<O>, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Length<N>, ValueErrorKind> {
         let length = {
             let token = parser.next().map_err(|_| {
                 ValueErrorKind::Parse(ParseError::new(
@@ -281,10 +281,10 @@ impl<O: Orientation> Parse for Length<O> {
     }
 }
 
-impl<O: Orientation> Length<O> {
+impl<N: Normalize> Length<N> {
     /// Creates a Length.
     ///
-    /// The compiler needs to know the type parameter `O` which represents the length's
+    /// The compiler needs to know the type parameter `N` which represents the length's
     /// orientation.  You can specify it explicitly, or call the parametrized method:
     ///
     /// ```ignore
@@ -294,7 +294,7 @@ impl<O: Orientation> Length<O> {
     /// // Inferred type
     /// let height = Length::<Vertical>::new(42.0, LengthUnit::Cm);
     /// ```
-    pub fn new(l: f64, unit: LengthUnit) -> Length<O> {
+    pub fn new(l: f64, unit: LengthUnit) -> Length<N> {
         Length {
             length: l,
             unit,
@@ -333,7 +333,7 @@ impl<O: Orientation> Length<O> {
 
             LengthUnit::Percent => {
                 self.length
-                    * <O as Orientation>::normalize(params.view_box_width, params.view_box_height)
+                    * <N as Normalize>::normalize(params.view_box_width, params.view_box_height)
             }
 
             LengthUnit::Em => self.length * font_size_from_values(values, params),
@@ -341,26 +341,26 @@ impl<O: Orientation> Length<O> {
             LengthUnit::Ex => self.length * font_size_from_values(values, params) / 2.0,
 
             LengthUnit::In => {
-                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
             }
 
             LengthUnit::Cm => {
-                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
                     / CM_PER_INCH
             }
 
             LengthUnit::Mm => {
-                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
                     / MM_PER_INCH
             }
 
             LengthUnit::Pt => {
-                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
                     / POINTS_PER_INCH
             }
 
             LengthUnit::Pc => {
-                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
                     / PICA_PER_INCH
             }
         }
