@@ -97,7 +97,7 @@ use std::path::Path;
 
 use gio::{Cancellable, FileExt};
 
-use rsvg_internals::{Dpi, Handle, LengthTrait, LoadOptions};
+use rsvg_internals::{Dpi, Handle, LoadOptions};
 
 pub use rsvg_internals::{
     DefsLookupErrorKind,
@@ -402,8 +402,8 @@ impl<'a> CairoRenderer<'a> {
         let d = self.handle.0.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
-            width: d.width.map(|l| l.to_length()),
-            height: d.height.map(|l| l.to_length()),
+            width: d.width,
+            height: d.height,
             vbox: d.vbox.map(|v| cairo::Rectangle {
                 x: v.x,
                 y: v.y,

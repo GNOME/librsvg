@@ -87,8 +87,8 @@ impl NodeTrait for Switch {
 /// Intrinsic dimensions of an SVG document fragment
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IntrinsicDimensions {
-    pub width: Option<LengthHorizontal>,
-    pub height: Option<LengthVertical>,
+    pub width: Option<Length>,
+    pub height: Option<Length>,
     pub vbox: Option<ViewBox>,
 }
 
@@ -130,8 +130,8 @@ impl Svg {
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         IntrinsicDimensions {
-            width: self.w,
-            height: self.h,
+            width: self.w.map(|l| l.to_length()),
+            height: self.h.map(|l| l.to_length()),
             vbox: self.vbox,
         }
     }

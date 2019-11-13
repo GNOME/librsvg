@@ -214,6 +214,7 @@ macro_rules! define_length_type {
         }
 
         impl $name {
+            #[allow(unused)]
             pub fn new(length: f64, unit: LengthUnit) -> Self {
                 $name(Length::new(length, unit))
             }
@@ -230,6 +231,7 @@ macro_rules! define_length_type {
             /// ```
             ///
             /// [`check_nonnegative`]: #method.check_nonnegative
+            #[allow(unused)]
             pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
                 Ok($name(Length::from_cssparser(parser)?))
             }

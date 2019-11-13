@@ -34,7 +34,7 @@ use glib_sys;
 use gobject_sys::{self, GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
-    rsvg_log, set_gerror, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LengthTrait,
+    rsvg_log, set_gerror, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions,
     LoadOptions, LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData,
     RsvgRectangle, RsvgSizeFunc, SharedImageSurface, SizeCallback, SurfaceType, RSVG_ERROR_FAILED,
 };
@@ -1270,8 +1270,8 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_intrinsic_dimensions(
         .get_intrinsic_dimensions()
         .unwrap_or_else(|_| panic!("API called out of order"));
 
-    let w = d.width.map(|l| l.to_length());
-    let h = d.height.map(|l| l.to_length());
+    let w = d.width;
+    let h = d.height;
     let r = d.vbox.map(RsvgRectangle::from);
 
     set_out_param(out_has_width, out_width, &w);
