@@ -265,7 +265,7 @@ macro_rules! define_length_type {
             /// [`check_nonnegative`]: #method.check_nonnegative
             #[allow(unused)]
             pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-                Ok($name(Length::from_cssparser(parser)?))
+                Ok($name(Length::parse(parser)?))
             }
         }
 
@@ -347,16 +347,6 @@ impl Parse for Length {
     type Err = ValueErrorKind;
 
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {
-        Length::from_cssparser(parser)
-    }
-}
-
-impl Length {
-    pub fn new(l: f64, unit: LengthUnit) -> Length {
-        Length { length: l, unit }
-    }
-
-    pub(crate) fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {
         let length = {
             let token = parser.next().map_err(|_| {
                 ValueErrorKind::Parse(ParseError::new(
@@ -430,6 +420,12 @@ impl Length {
         };
 
         Ok(length)
+    }
+}
+
+impl Length {
+    pub fn new(l: f64, unit: LengthUnit) -> Length {
+        Length { length: l, unit }
     }
 }
 
