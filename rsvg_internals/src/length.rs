@@ -163,9 +163,11 @@ pub trait LengthTrait: Sized {
 
     /// Returns `self` if the length is >= 0, or an error.
     ///
-    /// See the documentation for [`from_cssparser`] for an example.
+    /// ```ignore
+    /// let mut parser = Parser::new(...);
     ///
-    /// [`from_cssparser`]: #method.from_cssparser
+    /// let length = LENGTH::parse(&mut parser).and_then($name::check_nonnegative)?;
+    /// ```
     fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
         if self.length() >= 0.0 {
             Ok(self)
@@ -249,23 +251,6 @@ macro_rules! define_length_type {
             #[allow(unused)]
             pub fn new(length: f64, unit: LengthUnit) -> Self {
                 $name(Length::new(length, unit))
-            }
-
-            /// Parses a LENGTH from a `Parser`.
-            ///
-            /// The result can be used together with the [`check_nonnegative`] method like
-            /// this:
-            ///
-            /// ```ignore
-            /// let mut parser = Parser::new(...);
-            ///
-            /// let length = LENGTH::from_cssparser(&mut parser).and_then($name::check_nonnegative)?;
-            /// ```
-            ///
-            /// [`check_nonnegative`]: #method.check_nonnegative
-            #[allow(unused)]
-            pub fn from_cssparser(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-                Ok($name(Length::parse(parser)?))
             }
         }
 
@@ -500,7 +485,7 @@ fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<LengthBoth>, Valu
     let mut dasharray = Vec::new();
 
     loop {
-        dasharray.push(LengthBoth::from_cssparser(parser).and_then(LengthBoth::check_nonnegative)?);
+        dasharray.push(LengthBoth::parse(parser).and_then(LengthBoth::check_nonnegative)?);
 
         if parser.is_exhausted() {
             break;

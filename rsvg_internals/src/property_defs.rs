@@ -72,7 +72,7 @@ make_property!(
 
                 parser.reset(&parser_state);
 
-                Ok(BaselineShift(LengthBoth::from_cssparser(parser)?))
+                Ok(BaselineShift(LengthBoth::parse(parser)?))
             }
         }
     }
