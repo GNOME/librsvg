@@ -14,7 +14,7 @@
 //! handle is being drawn or queried for its geometry.  It has all the mutable state related
 //! to the drawing process.
 //!
-//! * [The `Document` struct][document/struct.Document.html] represents a loaded SVG
+//! * [The `Document` struct](document/struct.Document.html) represents a loaded SVG
 //! document.  It holds the tree of [`RsvgNode`] elements, and a mapping of `id` attributes
 //! to the corresponding element nodes.
 //!
