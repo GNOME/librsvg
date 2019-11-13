@@ -188,7 +188,9 @@ impl Loader {
     ///
     /// # Example:
     ///
-    /// ```
+    /// ```ignore
+    /// # // Test is ignored because "make distcheck" breaks, as the output file
+    /// # // can't be written to the read-only srcdir.
     /// use cairo;
     /// use librsvg;
     ///
