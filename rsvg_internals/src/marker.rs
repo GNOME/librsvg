@@ -13,7 +13,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
-use crate::length::{LengthHorizontal, LengthTrait, LengthVertical};
+use crate::length::*;
 use crate::node::*;
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::path_builder::*;
@@ -90,10 +90,10 @@ impl Parse for MarkerOrient {
 
 pub struct Marker {
     units: MarkerUnits,
-    ref_x: LengthHorizontal,
-    ref_y: LengthVertical,
-    width: LengthHorizontal,
-    height: LengthVertical,
+    ref_x: Length<Horizontal>,
+    ref_y: Length<Vertical>,
+    width: Length<Horizontal>,
+    height: Length<Vertical>,
     orient: MarkerOrient,
     aspect: AspectRatio,
     vbox: Option<ViewBox>,
@@ -106,8 +106,8 @@ impl Default for Marker {
             ref_x: Default::default(),
             ref_y: Default::default(),
             // the following two are per the spec
-            width: LengthHorizontal::parse_str("3").unwrap(),
-            height: LengthVertical::parse_str("3").unwrap(),
+            width: Length::<Horizontal>::parse_str("3").unwrap(),
+            height: Length::<Vertical>::parse_str("3").unwrap(),
             orient: MarkerOrient::default(),
             aspect: AspectRatio::default(),
             vbox: None,
@@ -202,11 +202,11 @@ impl NodeTrait for Marker {
                 expanded_name!(svg "refY") => self.ref_y = attr.parse(value)?,
                 expanded_name!(svg "markerWidth") => {
                     self.width =
-                        attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "markerHeight") => {
                     self.height =
-                        attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
+                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 expanded_name!(svg "orient") => self.orient = attr.parse(value)?,
                 expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,

@@ -45,15 +45,15 @@ use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 /// [text chunk]: https://www.w3.org/TR/SVG11/text.html#TextLayoutIntroduction
 struct Chunk {
     values: ComputedValues,
-    x: Option<LengthHorizontal>,
-    y: Option<LengthVertical>,
+    x: Option<Length<Horizontal>>,
+    y: Option<Length<Vertical>>,
     spans: Vec<Span>,
 }
 
 struct MeasuredChunk {
     values: ComputedValues,
-    x: Option<LengthHorizontal>,
-    y: Option<LengthVertical>,
+    x: Option<Length<Horizontal>>,
+    y: Option<Length<Vertical>>,
     advance: (f64, f64),
     spans: Vec<MeasuredSpan>,
 }
@@ -67,8 +67,8 @@ struct PositionedChunk {
 struct Span {
     values: ComputedValues,
     text: String,
-    dx: Option<LengthHorizontal>,
-    dy: Option<LengthVertical>,
+    dx: Option<Length<Horizontal>>,
+    dy: Option<Length<Vertical>>,
     _depth: usize,
 }
 
@@ -77,8 +77,8 @@ struct MeasuredSpan {
     layout: pango::Layout,
     _layout_size: (f64, f64),
     advance: (f64, f64),
-    dx: Option<LengthHorizontal>,
-    dy: Option<LengthVertical>,
+    dx: Option<Length<Horizontal>>,
+    dy: Option<Length<Vertical>>,
 }
 
 struct PositionedSpan {
@@ -93,8 +93,8 @@ struct PositionedSpan {
 impl Chunk {
     fn new(
         values: &ComputedValues,
-        x: Option<LengthHorizontal>,
-        y: Option<LengthVertical>,
+        x: Option<Length<Horizontal>>,
+        y: Option<Length<Vertical>>,
     ) -> Chunk {
         Chunk {
             values: values.clone(),
@@ -190,8 +190,8 @@ impl Span {
     fn new(
         text: &str,
         values: ComputedValues,
-        dx: Option<LengthHorizontal>,
-        dy: Option<LengthVertical>,
+        dx: Option<Length<Horizontal>>,
+        dy: Option<Length<Vertical>>,
         depth: usize,
     ) -> Span {
         Span {
@@ -422,8 +422,8 @@ fn children_to_chunks(
     node: &RsvgNode,
     cascaded: &CascadedValues<'_>,
     draw_ctx: &mut DrawingCtx,
-    dx: Option<LengthHorizontal>,
-    dy: Option<LengthVertical>,
+    dx: Option<Length<Horizontal>>,
+    dy: Option<Length<Vertical>>,
     depth: usize,
 ) {
     for child in node.children() {
@@ -529,8 +529,8 @@ impl NodeChars {
         &self,
         node: &RsvgNode,
         values: &ComputedValues,
-        dx: Option<LengthHorizontal>,
-        dy: Option<LengthVertical>,
+        dx: Option<Length<Horizontal>>,
+        dy: Option<Length<Vertical>>,
         depth: usize,
     ) -> Span {
         self.ensure_normalized_string(node, values);
@@ -549,8 +549,8 @@ impl NodeChars {
         node: &RsvgNode,
         values: &ComputedValues,
         chunks: &mut Vec<Chunk>,
-        dx: Option<LengthHorizontal>,
-        dy: Option<LengthVertical>,
+        dx: Option<Length<Horizontal>>,
+        dy: Option<Length<Vertical>>,
         depth: usize,
     ) {
         let span = self.make_span(&node, values, dx, dy, depth);
@@ -574,10 +574,10 @@ impl NodeTrait for NodeChars {
 
 #[derive(Default)]
 pub struct Text {
-    x: LengthHorizontal,
-    y: LengthVertical,
-    dx: Option<LengthHorizontal>,
-    dy: Option<LengthVertical>,
+    x: Length<Horizontal>,
+    y: Length<Vertical>,
+    dx: Option<Length<Horizontal>>,
+    dy: Option<Length<Vertical>>,
 }
 
 impl Text {
@@ -729,10 +729,10 @@ impl NodeTrait for TRef {
 
 #[derive(Default)]
 pub struct TSpan {
-    x: Option<LengthHorizontal>,
-    y: Option<LengthVertical>,
-    dx: Option<LengthHorizontal>,
-    dy: Option<LengthVertical>,
+    x: Option<Length<Horizontal>>,
+    y: Option<Length<Vertical>>,
+    dx: Option<Length<Horizontal>>,
+    dy: Option<Length<Vertical>>,
 }
 
 impl TSpan {

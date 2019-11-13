@@ -3,8 +3,6 @@
 //! While the actual representation of CSS lengths is in the
 //! [`Length`] struct, most of librsvg's internals use the newtypes
 //! [`LengthHorizontal`], [`LengthVertical`], or [`LengthBoth`] depending on
-//! whether the length value in question needs to be normalized with respect to
-//! the width, height, or both dimensions of the current viewport.
 //!
 //! For example, the implementation of [`Circle`] defines this structure:
 //!
@@ -32,53 +30,13 @@
 
 use cssparser::{Parser, Token};
 use std::f64::consts::*;
+use std::marker::PhantomData;
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::parsers::Parse;
 use crate::parsers::{finite_f32, ParseError};
 use crate::properties::ComputedValues;
-
-/// A CSS length value.
-///
-/// This is equivalent to [CSS lengths].
-///
-/// [CSS lengths]: https://www.w3.org/TR/CSS21/syndata.html#length-units
-///
-/// It is up to the calling application to convert lengths in non-pixel units
-/// (i.e. those where the [`unit`] field is not [`LengthUnit::Px`]) into something
-/// meaningful to the application.  For example, if your application knows the
-/// dots-per-inch (DPI) it is using, it can convert lengths with [`unit`] in
-/// [`LengthUnit::In`] or other physical units.
-///
-/// [`unit`]: #structfield.unit
-/// [`LengthUnit::Px`]: enum.LengthUnit.html#variant.Px
-/// [`LengthUnit::In`]: enum.LengthUnit.html#variant.In
-// Keep this in sync with rsvg.h:RsvgLength
-#[repr(C)]
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub struct RsvgLength {
-    /// Numeric part of the length
-    pub length: f64,
-
-    /// Unit part of the length
-    pub unit: LengthUnit,
-}
-
-impl From<Length> for RsvgLength {
-    fn from(l: Length) -> RsvgLength {
-        RsvgLength {
-            length: l.length,
-            unit: l.unit,
-        }
-    }
-}
-
-impl RsvgLength {
-    pub fn new(l: f64, unit: LengthUnit) -> RsvgLength {
-        RsvgLength { length: l, unit }
-    }
-}
 
 /// Units for length values.
 // This needs to be kept in sync with `rsvg.h:RsvgUnit`.
@@ -113,17 +71,56 @@ pub enum LengthUnit {
     Pc,
 }
 
+/// A CSS length value.
+///
+/// This is equivalent to [CSS lengths].
+///
+/// [CSS lengths]: https://www.w3.org/TR/CSS21/syndata.html#length-units
+///
+/// It is up to the calling application to convert lengths in non-pixel units
+/// (i.e. those where the [`unit`] field is not [`LengthUnit::Px`]) into something
+/// meaningful to the application.  For example, if your application knows the
+/// dots-per-inch (DPI) it is using, it can convert lengths with [`unit`] in
+/// [`LengthUnit::In`] or other physical units.
+///
+/// [`unit`]: #structfield.unit
+/// [`LengthUnit::Px`]: enum.LengthUnit.html#variant.Px
+/// [`LengthUnit::In`]: enum.LengthUnit.html#variant.In
+// Keep this in sync with rsvg.h:RsvgLength
+#[repr(C)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct RsvgLength {
+    /// Numeric part of the length
+    pub length: f64,
+
+    /// Unit part of the length
+    pub unit: LengthUnit,
+}
+
+impl RsvgLength {
+    pub fn new(l: f64, unit: LengthUnit) -> RsvgLength {
+        RsvgLength { length: l, unit }
+    }
+}
+
 pub trait Orientation {
     /// Computes a direction-based scaling factor.
     ///
-    /// This is so that `LengthDir::Both` will use the "normalized
-    /// diagonal length" of the current viewport, per
-    /// https://www.w3.org/TR/SVG/coords.html#Units
+    /// This is so that `Length<Both>` will use the "normalized diagonal length" of the current
+    /// viewport, per https://www.w3.org/TR/SVG/coords.html#Units
     fn normalize(x: f64, y: f64) -> f64;
 }
 
+/// Struct to be able to declare `Length<Horizontal>`
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Horizontal;
+
+/// Struct to be able to declare `Length<Vertical>`
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Vertical;
+
+/// Struct to be able to declare `Length<Both>`
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Both;
 
 impl Orientation for Horizontal {
@@ -147,19 +144,117 @@ impl Orientation for Both {
     }
 }
 
-pub trait LengthTrait: Sized {
-    type Orientation: Orientation;
+/// A CSS length value.
+///
+/// https://www.w3.org/TR/SVG/types.html#DataTypeLength
+/// https://www.w3.org/TR/2008/REC-CSS2-20080411/syndata.html#length-units
+///
+/// Length values need to know whether they will be normalized with respect to the width,
+/// height, or both dimensions of the current viewport.  So, a `Length` has a type parameter
+/// [`Orientation`].  We provide [`Horizontal`], [`Vertical`], and [`Both`] implementations of
+/// [`Orientation`]; these let length values know how to normalize themselves with respect to
+/// the current viewport.
+///
+/// [`Orientation`]: trait.Orientation.html
+/// [`Horizontal`]: struct.Horizontal.html
+/// [`Vertical`]: struct.Vertical.html
+/// [`Both`]: struct.Both.html
 
-    /// Getter for the `length` field
-    fn length(&self) -> f64;
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct Length<O: Orientation> {
+    /// Numeric part of the length
+    pub length: f64,
 
-    /// Getter for the `unit` field
-    fn unit(&self) -> LengthUnit;
+    /// Unit part of the length
+    pub unit: LengthUnit,
 
-    /// Extracts the interior [`Length`].
-    ///
-    /// [`Length`]: struct.Length.html
-    fn to_length(&self) -> Length;
+    orientation: PhantomData<O>,
+}
+
+impl<O: Orientation> From<Length<O>> for RsvgLength {
+    fn from(l: Length<O>) -> RsvgLength {
+        RsvgLength {
+            length: l.length,
+            unit: l.unit,
+        }
+    }
+}
+
+impl<O: Orientation> Default for Length<O> {
+    fn default() -> Self {
+        Length::new(0.0, LengthUnit::Px)
+    }
+}
+
+pub const POINTS_PER_INCH: f64 = 72.0;
+const CM_PER_INCH: f64 = 2.54;
+const MM_PER_INCH: f64 = 25.4;
+const PICA_PER_INCH: f64 = 6.0;
+
+fn make_err() -> ValueErrorKind {
+    ValueErrorKind::Parse(ParseError::new(
+        "expected length: number(\"em\" | \"ex\" | \"px\" | \"in\" | \"cm\" | \"mm\" | \"pt\" | \
+         \"pc\" | \"%\")?",
+    ))
+}
+
+impl<O: Orientation> Parse for Length<O> {
+    type Err = ValueErrorKind;
+
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Length<O>, ValueErrorKind> {
+        let length = {
+            let token = parser.next().map_err(|_| {
+                ValueErrorKind::Parse(ParseError::new(
+                    "expected number and optional symbol, or number and percentage",
+                ))
+            })?;
+
+            match *token {
+                Token::Number { value, .. } => Length::new(
+                    f64::from(finite_f32(value)?),
+                    LengthUnit::Px,
+                ),
+
+                Token::Percentage { unit_value, .. } => Length::new(
+                    f64::from(finite_f32(unit_value)?),
+                    LengthUnit::Percent,
+                ),
+
+                Token::Dimension {
+                    value, ref unit, ..
+                } => {
+                    let value = f64::from(finite_f32(value)?);
+
+                    match unit.as_ref() {
+                        "px" => Length::new(value, LengthUnit::Px),
+                        "em" => Length::new(value, LengthUnit::Em),
+                        "ex" => Length::new(value, LengthUnit::Ex),
+                        "in" => Length::new(value, LengthUnit::In),
+                        "cm" => Length::new(value, LengthUnit::Cm),
+                        "mm" => Length::new(value, LengthUnit::Mm),
+                        "pt" => Length::new(value, LengthUnit::Pt),
+                        "pc" => Length::new(value, LengthUnit::Pc),
+
+                        _ => return Err(make_err()),
+                    }
+                }
+
+                _ => return Err(make_err()),
+            }
+        };
+
+        Ok(length)
+    }
+}
+
+impl<O: Orientation> Length<O> {
+    pub fn new(l: f64, unit: LengthUnit) -> Length<O> {
+        Length {
+            length: l,
+            unit,
+            orientation: PhantomData,
+        }
+    }
 
     /// Returns `self` if the length is >= 0, or an error.
     ///
@@ -168,8 +263,8 @@ pub trait LengthTrait: Sized {
     ///
     /// let length = LENGTH::parse(&mut parser).and_then($name::check_nonnegative)?;
     /// ```
-    fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
-        if self.length() >= 0.0 {
+    pub fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
+        if self.length >= 0.0 {
             Ok(self)
         } else {
             Err(ValueErrorKind::Value(
@@ -185,237 +280,48 @@ pub trait LengthTrait: Sized {
     /// percent units), and on the current element's set of `ComputedValues` (e.g. for
     /// lengths with `Em` units that need to be resolved against the current font
     /// size).
-    fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
-        match self.unit() {
-            LengthUnit::Px => self.length(),
+    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
+        match self.unit {
+            LengthUnit::Px => self.length,
 
             LengthUnit::Percent => {
-                self.length()
-                    * <Self::Orientation>::normalize(params.view_box_width, params.view_box_height)
+                self.length 
+                    * <O as Orientation>::normalize(params.view_box_width, params.view_box_height)
             }
 
-            LengthUnit::Em => self.length() * font_size_from_values(values, params),
+            LengthUnit::Em => self.length * font_size_from_values(values, params),
 
-            LengthUnit::Ex => self.length() * font_size_from_values(values, params) / 2.0,
+            LengthUnit::Ex => self.length * font_size_from_values(values, params) / 2.0,
 
             LengthUnit::In => {
-                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
             }
 
             LengthUnit::Cm => {
-                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
                     / CM_PER_INCH
             }
 
             LengthUnit::Mm => {
-                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
                     / MM_PER_INCH
             }
 
             LengthUnit::Pt => {
-                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
                     / POINTS_PER_INCH
             }
 
             LengthUnit::Pc => {
-                self.length() * <Self::Orientation>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <O as Orientation>::normalize(params.dpi_x, params.dpi_y)
                     / PICA_PER_INCH
             }
         }
     }
 }
 
-macro_rules! define_length_type {
-    {$(#[$docs:meta])* $name:ident, $orient:ty} => {
-        $(#[$docs])*
-        #[derive(Debug, PartialEq, Copy, Clone)]
-        pub struct $name(Length);
-
-        impl LengthTrait for $name {
-            type Orientation = $orient;
-
-            fn length(&self) -> f64 {
-                self.0.length
-            }
-
-            fn unit(&self) -> LengthUnit {
-                self.0.unit
-            }
-
-            fn to_length(&self) -> Length {
-                self.0
-            }
-        }
-
-        impl $name {
-            #[allow(unused)]
-            pub fn new(length: f64, unit: LengthUnit) -> Self {
-                $name(Length::new(length, unit))
-            }
-        }
-
-        impl Default for $name {
-            fn default() -> Self {
-                $name(Length::new(0.0, LengthUnit::Px))
-            }
-        }
-
-        impl Parse for $name {
-            type Err = ValueErrorKind;
-
-            fn parse(parser: &mut Parser<'_, '_>) -> Result<$name, ValueErrorKind> {
-                Ok($name(Length::parse(parser)?))
-            }
-        }
-    };
-}
-
-define_length_type! {
-    /// Horizontal length.
-    ///
-    /// When this is specified as a percent value, it will get normalized
-    /// against the current viewport's width.
-
-    LengthHorizontal, Horizontal
-}
-
-define_length_type! {
-    /// Vertical length.
-    ///
-    /// When this is specified as a percent value, it will get normalized
-    /// against the current viewport's height.
-    LengthVertical, Vertical
-}
-
-define_length_type! {
-    /// "Both" length.
-    ///
-    /// When this is specified as a percent value, it will get normalized
-    /// against the current viewport's width and height.
-
-    LengthBoth, Both
-}
-
-/// A CSS length value.
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub struct Length {
-    /// Numeric part of the length
-    pub length: f64,
-
-    /// Unit part of the length
-    pub unit: LengthUnit,
-}
-
-pub const POINTS_PER_INCH: f64 = 72.0;
-const CM_PER_INCH: f64 = 2.54;
-const MM_PER_INCH: f64 = 25.4;
-const PICA_PER_INCH: f64 = 6.0;
-
-// https://www.w3.org/TR/SVG/types.html#DataTypeLength
-// https://www.w3.org/TR/2008/REC-CSS2-20080411/syndata.html#length-units
-// Lengths have units.  When they need to be need resolved to
-// units in the user's coordinate system, some unit types
-// need to know if they are horizontal/vertical/both.  For example,
-// a some_object.width="50%" is 50% with respect to the current
-// viewport's width.  In this case, the @dir argument is used
-// inside Length::normalize(), when it needs to know to what the
-// length refers.
-
-fn make_err() -> ValueErrorKind {
-    ValueErrorKind::Parse(ParseError::new(
-        "expected length: number(\"em\" | \"ex\" | \"px\" | \"in\" | \"cm\" | \"mm\" | \"pt\" | \
-         \"pc\" | \"%\")?",
-    ))
-}
-
-impl Parse for Length {
-    type Err = ValueErrorKind;
-
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Length, ValueErrorKind> {
-        let length = {
-            let token = parser.next().map_err(|_| {
-                ValueErrorKind::Parse(ParseError::new(
-                    "expected number and optional symbol, or number and percentage",
-                ))
-            })?;
-
-            match *token {
-                Token::Number { value, .. } => Length {
-                    length: f64::from(finite_f32(value)?),
-                    unit: LengthUnit::Px,
-                },
-
-                Token::Percentage { unit_value, .. } => Length {
-                    length: f64::from(finite_f32(unit_value)?),
-                    unit: LengthUnit::Percent,
-                },
-
-                Token::Dimension {
-                    value, ref unit, ..
-                } => {
-                    let value = f64::from(finite_f32(value)?);
-
-                    match unit.as_ref() {
-                        "px" => Length {
-                            length: value,
-                            unit: LengthUnit::Px,
-                        },
-
-                        "em" => Length {
-                            length: value,
-                            unit: LengthUnit::Em,
-                        },
-
-                        "ex" => Length {
-                            length: value,
-                            unit: LengthUnit::Ex,
-                        },
-
-                        "in" => Length {
-                            length: value,
-                            unit: LengthUnit::In,
-                        },
-
-                        "cm" => Length {
-                            length: value,
-                            unit: LengthUnit::Cm,
-                        },
-
-                        "mm" => Length {
-                            length: value,
-                            unit: LengthUnit::Mm,
-                        },
-
-                        "pt" => Length {
-                            length: value,
-                            unit: LengthUnit::Pt,
-                        },
-
-                        "pc" => Length {
-                            length: value,
-                            unit: LengthUnit::Pc,
-                        },
-
-                        _ => return Err(make_err()),
-                    }
-                }
-
-                _ => return Err(make_err()),
-            }
-        };
-
-        Ok(length)
-    }
-}
-
-impl Length {
-    pub fn new(l: f64, unit: LengthUnit) -> Length {
-        Length { length: l, unit }
-    }
-}
-
 fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
-    let v = &values.font_size.0.value().0;
+    let v = &values.font_size.0.value();
 
     match v.unit {
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
@@ -430,18 +336,10 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
 
         // FontSize always is a Both, per properties.rs
         LengthUnit::In => v.length * Both::normalize(params.dpi_x, params.dpi_y),
-        LengthUnit::Cm => {
-            v.length * Both::normalize(params.dpi_x, params.dpi_y) / CM_PER_INCH
-        }
-        LengthUnit::Mm => {
-            v.length * Both::normalize(params.dpi_x, params.dpi_y) / MM_PER_INCH
-        }
-        LengthUnit::Pt => {
-            v.length * Both::normalize(params.dpi_x, params.dpi_y) / POINTS_PER_INCH
-        }
-        LengthUnit::Pc => {
-            v.length * Both::normalize(params.dpi_x, params.dpi_y) / PICA_PER_INCH
-        }
+        LengthUnit::Cm => v.length * Both::normalize(params.dpi_x, params.dpi_y) / CM_PER_INCH,
+        LengthUnit::Mm => v.length * Both::normalize(params.dpi_x, params.dpi_y) / MM_PER_INCH,
+        LengthUnit::Pt => v.length * Both::normalize(params.dpi_x, params.dpi_y) / POINTS_PER_INCH,
+        LengthUnit::Pc => v.length * Both::normalize(params.dpi_x, params.dpi_y) / PICA_PER_INCH,
     }
 }
 
@@ -456,7 +354,7 @@ fn viewport_percentage(x: f64, y: f64) -> f64 {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Dasharray {
     None,
-    Array(Vec<LengthBoth>),
+    Array(Vec<Length<Both>>),
 }
 
 impl Default for Dasharray {
@@ -481,11 +379,11 @@ impl Parse for Dasharray {
 }
 
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
-fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<LengthBoth>, ValueErrorKind> {
+fn parse_dash_array(parser: &mut Parser<'_, '_>) -> Result<Vec<Length<Both>>, ValueErrorKind> {
     let mut dasharray = Vec::new();
 
     loop {
-        dasharray.push(LengthBoth::parse(parser).and_then(LengthBoth::check_nonnegative)?);
+        dasharray.push(Length::<Both>::parse(parser).and_then(Length::<Both>::check_nonnegative)?);
 
         if parser.is_exhausted() {
             break;
@@ -506,84 +404,84 @@ mod tests {
     #[test]
     fn parses_default() {
         assert_eq!(
-            LengthHorizontal::parse_str("42"),
-            Ok(LengthHorizontal(Length::new(42.0, LengthUnit::Px)))
+            Length::<Horizontal>::parse_str("42"),
+            Ok(Length::<Horizontal>::new(42.0, LengthUnit::Px))
         );
 
         assert_eq!(
-            LengthHorizontal::parse_str("-42px"),
-            Ok(LengthHorizontal(Length::new(-42.0, LengthUnit::Px)))
+            Length::<Horizontal>::parse_str("-42px"),
+            Ok(Length::<Horizontal>::new(-42.0, LengthUnit::Px))
         );
     }
 
     #[test]
     fn parses_percent() {
         assert_eq!(
-            LengthHorizontal::parse_str("50.0%"),
-            Ok(LengthHorizontal(Length::new(0.5, LengthUnit::Percent)))
+            Length::<Horizontal>::parse_str("50.0%"),
+            Ok(Length::<Horizontal>::new(0.5, LengthUnit::Percent))
         );
     }
 
     #[test]
     fn parses_font_em() {
         assert_eq!(
-            LengthVertical::parse_str("22.5em"),
-            Ok(LengthVertical(Length::new(22.5, LengthUnit::Em)))
+            Length::<Vertical>::parse_str("22.5em"),
+            Ok(Length::<Vertical>::new(22.5, LengthUnit::Em))
         );
     }
 
     #[test]
     fn parses_font_ex() {
         assert_eq!(
-            LengthVertical::parse_str("22.5ex"),
-            Ok(LengthVertical(Length::new(22.5, LengthUnit::Ex)))
+            Length::<Vertical>::parse_str("22.5ex"),
+            Ok(Length::<Vertical>::new(22.5, LengthUnit::Ex))
         );
     }
 
     #[test]
     fn parses_physical_units() {
         assert_eq!(
-            LengthBoth::parse_str("72pt"),
-            Ok(LengthBoth(Length::new(72.0, LengthUnit::Pt)))
+            Length::<Both>::parse_str("72pt"),
+            Ok(Length::<Both>::new(72.0, LengthUnit::Pt))
         );
 
         assert_eq!(
-            LengthBoth::parse_str("-22.5in"),
-            Ok(LengthBoth(Length::new(-22.5, LengthUnit::In)))
+            Length::<Both>::parse_str("-22.5in"),
+            Ok(Length::<Both>::new(-22.5, LengthUnit::In))
         );
 
         assert_eq!(
-            LengthBoth::parse_str("-254cm"),
-            Ok(LengthBoth(Length::new(-254.0, LengthUnit::Cm)))
+            Length::<Both>::parse_str("-254cm"),
+            Ok(Length::<Both>::new(-254.0, LengthUnit::Cm))
         );
 
         assert_eq!(
-            LengthBoth::parse_str("254mm"),
-            Ok(LengthBoth(Length::new(254.0, LengthUnit::Mm)))
+            Length::<Both>::parse_str("254mm"),
+            Ok(Length::<Both>::new(254.0, LengthUnit::Mm))
         );
 
         assert_eq!(
-            LengthBoth::parse_str("60pc"),
-            Ok(LengthBoth(Length::new(60.0, LengthUnit::Pc)))
+            Length::<Both>::parse_str("60pc"),
+            Ok(Length::<Both>::new(60.0, LengthUnit::Pc))
         );
     }
 
     #[test]
     fn empty_length_yields_error() {
-        assert!(is_parse_error(&LengthBoth::parse_str("")));
+        assert!(is_parse_error(&Length::<Both>::parse_str("")));
     }
 
     #[test]
     fn invalid_unit_yields_error() {
-        assert!(is_parse_error(&LengthBoth::parse_str("8furlong")));
+        assert!(is_parse_error(&Length::<Both>::parse_str("8furlong")));
     }
 
     #[test]
     fn check_nonnegative_works() {
-        assert!(LengthBoth::parse_str("0")
+        assert!(Length::<Both>::parse_str("0")
             .and_then(|l| l.check_nonnegative())
             .is_ok());
-        assert!(LengthBoth::parse_str("-10")
+        assert!(Length::<Both>::parse_str("-10")
             .and_then(|l| l.check_nonnegative())
             .is_err());
     }
@@ -595,7 +493,7 @@ mod tests {
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
-            LengthBoth::new(10.0, LengthUnit::Px).normalize(&values, &params),
+            Length::<Both>::new(10.0, LengthUnit::Px).normalize(&values, &params),
             10.0
         );
     }
@@ -607,28 +505,28 @@ mod tests {
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
-            LengthHorizontal::new(10.0, LengthUnit::In).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::In).normalize(&values, &params),
             400.0
         );
         assert_approx_eq_cairo!(
-            LengthVertical::new(10.0, LengthUnit::In).normalize(&values, &params),
+            Length::<Vertical>::new(10.0, LengthUnit::In).normalize(&values, &params),
             500.0
         );
 
         assert_approx_eq_cairo!(
-            LengthHorizontal::new(10.0, LengthUnit::Cm).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::Cm).normalize(&values, &params),
             400.0 / CM_PER_INCH
         );
         assert_approx_eq_cairo!(
-            LengthHorizontal::new(10.0, LengthUnit::Mm).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::Mm).normalize(&values, &params),
             400.0 / MM_PER_INCH
         );
         assert_approx_eq_cairo!(
-            LengthHorizontal::new(10.0, LengthUnit::Pt).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::Pt).normalize(&values, &params),
             400.0 / POINTS_PER_INCH
         );
         assert_approx_eq_cairo!(
-            LengthHorizontal::new(10.0, LengthUnit::Pc).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::Pc).normalize(&values, &params),
             400.0 / PICA_PER_INCH
         );
     }
@@ -640,11 +538,11 @@ mod tests {
         let values = ComputedValues::default();
 
         assert_approx_eq_cairo!(
-            LengthHorizontal::new(0.05, LengthUnit::Percent).normalize(&values, &params),
+            Length::<Horizontal>::new(0.05, LengthUnit::Percent).normalize(&values, &params),
             5.0
         );
         assert_approx_eq_cairo!(
-            LengthVertical::new(0.05, LengthUnit::Percent).normalize(&values, &params),
+            Length::<Vertical>::new(0.05, LengthUnit::Percent).normalize(&values, &params),
             10.0
         );
     }
@@ -659,12 +557,12 @@ mod tests {
         // property and the way we compute Em/Ex from that.
 
         assert_approx_eq_cairo!(
-            LengthVertical::new(1.0, LengthUnit::Em).normalize(&values, &params),
+            Length::<Vertical>::new(1.0, LengthUnit::Em).normalize(&values, &params),
             12.0
         );
 
         assert_approx_eq_cairo!(
-            LengthVertical::new(1.0, LengthUnit::Ex).normalize(&values, &params),
+            Length::<Vertical>::new(1.0, LengthUnit::Ex).normalize(&values, &params),
             6.0
         );
     }
@@ -676,7 +574,7 @@ mod tests {
     #[test]
     fn parses_dash_array() {
         // helper to cut down boilderplate
-        let length_parse = |s| LengthBoth::parse_str(s).unwrap();
+        let length_parse = |s| Length::<Both>::parse_str(s).unwrap();
 
         let expected = Dasharray::Array(vec![
             length_parse("1"),

@@ -2,7 +2,7 @@ use cssparser::{BasicParseError, Parser, Token};
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
-use crate::length::{LengthBoth, LengthHorizontal, LengthTrait, LengthUnit, POINTS_PER_INCH};
+use crate::length::*;
 use crate::parsers::{Parse, ParseError};
 use crate::properties::ComputedValues;
 
@@ -18,11 +18,11 @@ pub enum FontSizeSpec {
     Large,
     XLarge,
     XXLarge,
-    Value(LengthBoth),
+    Value(Length<Both>),
 }
 
 impl FontSizeSpec {
-    pub fn value(&self) -> LengthBoth {
+    pub fn value(&self) -> Length<Both> {
         match self {
             FontSizeSpec::Value(s) => *s,
             _ => unreachable!(),
@@ -35,17 +35,17 @@ impl FontSizeSpec {
         let size = v.font_size.0.value();
 
         let new_size = match self {
-            FontSizeSpec::Smaller => LengthBoth::new(size.length() / 1.2, size.unit()),
-            FontSizeSpec::Larger => LengthBoth::new(size.length() * 1.2, size.unit()),
-            FontSizeSpec::XXSmall => LengthBoth::new(compute_points(-3.0), LengthUnit::In),
-            FontSizeSpec::XSmall => LengthBoth::new(compute_points(-2.0), LengthUnit::In),
-            FontSizeSpec::Small => LengthBoth::new(compute_points(-1.0), LengthUnit::In),
-            FontSizeSpec::Medium => LengthBoth::new(compute_points(0.0), LengthUnit::In),
-            FontSizeSpec::Large => LengthBoth::new(compute_points(1.0), LengthUnit::In),
-            FontSizeSpec::XLarge => LengthBoth::new(compute_points(2.0), LengthUnit::In),
-            FontSizeSpec::XXLarge => LengthBoth::new(compute_points(3.0), LengthUnit::In),
-            FontSizeSpec::Value(s) if s.unit() == LengthUnit::Percent => {
-                LengthBoth::new(size.length() * s.length(), size.unit())
+            FontSizeSpec::Smaller => Length::<Both>::new(size.length / 1.2, size.unit),
+            FontSizeSpec::Larger => Length::<Both>::new(size.length * 1.2, size.unit),
+            FontSizeSpec::XXSmall => Length::<Both>::new(compute_points(-3.0), LengthUnit::In),
+            FontSizeSpec::XSmall => Length::<Both>::new(compute_points(-2.0), LengthUnit::In),
+            FontSizeSpec::Small => Length::<Both>::new(compute_points(-1.0), LengthUnit::In),
+            FontSizeSpec::Medium => Length::<Both>::new(compute_points(0.0), LengthUnit::In),
+            FontSizeSpec::Large => Length::<Both>::new(compute_points(1.0), LengthUnit::In),
+            FontSizeSpec::XLarge => Length::<Both>::new(compute_points(2.0), LengthUnit::In),
+            FontSizeSpec::XXLarge => Length::<Both>::new(compute_points(3.0), LengthUnit::In),
+            FontSizeSpec::Value(s) if s.unit == LengthUnit::Percent => {
+                Length::<Both>::new(size.length * s.length, size.unit)
             }
             FontSizeSpec::Value(s) => *s,
         };
@@ -64,7 +64,7 @@ impl Parse for FontSizeSpec {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, crate::error::ValueErrorKind> {
         let parser_state = parser.state();
 
-        LengthBoth::parse(parser)
+        Length::<Both>::parse(parser)
             .and_then(|s| Ok(FontSizeSpec::Value(s)))
             .or_else(|e| {
                 parser.reset(&parser_state);
@@ -164,11 +164,11 @@ impl Parse for FontWeightSpec {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum LetterSpacingSpec {
     Normal,
-    Value(LengthHorizontal),
+    Value(Length<Horizontal>),
 }
 
 impl LetterSpacingSpec {
-    pub fn value(&self) -> LengthHorizontal {
+    pub fn value(&self) -> Length<Horizontal> {
         match self {
             LetterSpacingSpec::Value(s) => *s,
             _ => unreachable!(),
@@ -177,7 +177,7 @@ impl LetterSpacingSpec {
 
     pub fn compute(&self) -> Self {
         let spacing = match self {
-            LetterSpacingSpec::Normal => LengthHorizontal::new(0.0, LengthUnit::Px),
+            LetterSpacingSpec::Normal => Length::<Horizontal>::new(0.0, LengthUnit::Px),
             LetterSpacingSpec::Value(s) => *s,
         };
 
@@ -197,7 +197,7 @@ impl Parse for LetterSpacingSpec {
     ) -> Result<LetterSpacingSpec, crate::error::ValueErrorKind> {
         let parser_state = parser.state();
 
-        LengthHorizontal::parse(parser)
+        Length::<Horizontal>::parse(parser)
             .and_then(|s| Ok(LetterSpacingSpec::Value(s)))
             .or_else(|e| {
                 parser.reset(&parser_state);
@@ -296,7 +296,7 @@ mod tests {
         );
         assert_eq!(
             <LetterSpacingSpec as Parse>::parse_str("10em"),
-            Ok(LetterSpacingSpec::Value(LengthHorizontal::new(
+            Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
                 10.0,
                 LengthUnit::Em,
             )))
@@ -307,14 +307,14 @@ mod tests {
     fn computes_letter_spacing() {
         assert_eq!(
             <LetterSpacingSpec as Parse>::parse_str("normal").map(|s| s.compute()),
-            Ok(LetterSpacingSpec::Value(LengthHorizontal::new(
+            Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
                 0.0,
                 LengthUnit::Px,
             )))
         );
         assert_eq!(
             <LetterSpacingSpec as Parse>::parse_str("10em").map(|s| s.compute()),
-            Ok(LetterSpacingSpec::Value(LengthHorizontal::new(
+            Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
                 10.0,
                 LengthUnit::Em,
             )))

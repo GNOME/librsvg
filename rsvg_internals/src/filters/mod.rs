@@ -9,7 +9,7 @@ use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
-use crate::length::{LengthHorizontal, LengthUnit, LengthTrait, LengthVertical};
+use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{ParseError, ParseValue};
 use crate::properties::ComputedValues;
@@ -76,10 +76,10 @@ pub mod turbulence;
 
 /// The base filter primitive node containing common properties.
 struct Primitive {
-    x: Option<LengthHorizontal>,
-    y: Option<LengthVertical>,
-    width: Option<LengthHorizontal>,
-    height: Option<LengthVertical>,
+    x: Option<Length<Horizontal>>,
+    y: Option<Length<Vertical>>,
+    width: Option<Length<Horizontal>>,
+    height: Option<Length<Vertical>>,
     result: Option<String>,
 }
 
@@ -124,12 +124,12 @@ impl NodeTrait for Primitive {
 
         let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
 
-        let check_units_horizontal = |length: LengthHorizontal| {
+        let check_units_horizontal = |length: Length<Horizontal>| {
             if !no_units_allowed {
                 return Ok(length);
             }
 
-            match length.unit() {
+            match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
                 _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
@@ -137,12 +137,12 @@ impl NodeTrait for Primitive {
             }
         };
 
-        let check_units_vertical = |length: LengthVertical| {
+        let check_units_vertical = |length: Length<Vertical>| {
             if !no_units_allowed {
                 return Ok(length);
             }
 
-            match length.unit() {
+            match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
                 _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
@@ -150,12 +150,12 @@ impl NodeTrait for Primitive {
             }
         };
 
-        let check_units_horizontal_and_ensure_nonnegative = |length: LengthHorizontal| {
-            check_units_horizontal(length).and_then(LengthHorizontal::check_nonnegative)
+        let check_units_horizontal_and_ensure_nonnegative = |length: Length<Horizontal>| {
+            check_units_horizontal(length).and_then(Length::<Horizontal>::check_nonnegative)
         };
 
-        let check_units_vertical_and_ensure_nonnegative = |length: LengthVertical| {
-            check_units_vertical(length).and_then(LengthVertical::check_nonnegative)
+        let check_units_vertical_and_ensure_nonnegative = |length: Length<Vertical>| {
+            check_units_vertical(length).and_then(Length::<Vertical>::check_nonnegative)
         };
 
         for (attr, value) in pbag.iter() {

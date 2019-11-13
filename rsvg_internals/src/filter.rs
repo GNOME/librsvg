@@ -5,7 +5,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::ValueErrorKind;
-use crate::length::{LengthHorizontal, LengthUnit, LengthTrait, LengthVertical};
+use crate::length::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::properties::ComputedValues;
@@ -13,10 +13,10 @@ use crate::property_bag::PropertyBag;
 
 /// The <filter> node.
 pub struct Filter {
-    x: LengthHorizontal,
-    y: LengthVertical,
-    width: LengthHorizontal,
-    height: LengthVertical,
+    x: Length<Horizontal>,
+    y: Length<Vertical>,
+    width: Length<Horizontal>,
+    height: Length<Vertical>,
     filterunits: CoordUnits,
     primitiveunits: CoordUnits,
 }
@@ -25,10 +25,10 @@ impl Default for Filter {
     /// Constructs a new `Filter` with default properties.
     fn default() -> Self {
         Self {
-            x: LengthHorizontal::parse_str("-10%").unwrap(),
-            y: LengthVertical::parse_str("-10%").unwrap(),
-            width: LengthHorizontal::parse_str("120%").unwrap(),
-            height: LengthVertical::parse_str("120%").unwrap(),
+            x: Length::<Horizontal>::parse_str("-10%").unwrap(),
+            y: Length::<Vertical>::parse_str("-10%").unwrap(),
+            width: Length::<Horizontal>::parse_str("120%").unwrap(),
+            height: Length::<Vertical>::parse_str("120%").unwrap(),
             filterunits: CoordUnits::ObjectBoundingBox,
             primitiveunits: CoordUnits::UserSpaceOnUse,
         }
@@ -77,10 +77,10 @@ impl Filter {
         // referencing node. No units are allowed (it's checked during attribute parsing).
         let rect = if self.filterunits == CoordUnits::ObjectBoundingBox {
             cairo::Rectangle {
-                x: self.x.length(),
-                y: self.y.length(),
-                width: self.width.length(),
-                height: self.height.length(),
+                x: self.x.length,
+                y: self.y.length,
+                width: self.width.length,
+                height: self.height.length,
             }
         } else {
             cairo::Rectangle {
@@ -124,12 +124,12 @@ impl NodeTrait for Filter {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let no_units_allowed = self.filterunits == CoordUnits::ObjectBoundingBox;
 
-        let check_units_horizontal = |length: LengthHorizontal| {
+        let check_units_horizontal = |length: Length<Horizontal>| {
             if !no_units_allowed {
                 return Ok(length);
             }
 
-            match length.unit() {
+            match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
                 _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
@@ -137,12 +137,12 @@ impl NodeTrait for Filter {
             }
         };
 
-        let check_units_vertical = |length: LengthVertical| {
+        let check_units_vertical = |length: Length<Vertical>| {
             if !no_units_allowed {
                 return Ok(length);
             }
 
-            match length.unit() {
+            match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
                 _ => Err(ValueErrorKind::Parse(ParseError::new(
                     "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
@@ -150,12 +150,12 @@ impl NodeTrait for Filter {
             }
         };
 
-        let check_units_horizontal_and_ensure_nonnegative = |length: LengthHorizontal| {
-            check_units_horizontal(length).and_then(LengthHorizontal::check_nonnegative)
+        let check_units_horizontal_and_ensure_nonnegative = |length: Length<Horizontal>| {
+            check_units_horizontal(length).and_then(Length::<Horizontal>::check_nonnegative)
         };
 
-        let check_units_vertical_and_ensure_nonnegative = |length: LengthVertical| {
-            check_units_vertical(length).and_then(LengthVertical::check_nonnegative)
+        let check_units_vertical_and_ensure_nonnegative = |length: Length<Vertical>| {
+            check_units_vertical(length).and_then(Length::<Vertical>::check_nonnegative)
         };
 
         // Parse the rest of the attributes.

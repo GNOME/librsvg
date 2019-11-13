@@ -87,18 +87,18 @@ impl NodeTrait for Switch {
 /// Intrinsic dimensions of an SVG document fragment
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IntrinsicDimensions {
-    pub width: Option<Length>,
-    pub height: Option<Length>,
+    pub width: Option<Length<Horizontal>>,
+    pub height: Option<Length<Vertical>>,
     pub vbox: Option<ViewBox>,
 }
 
 #[derive(Default)]
 pub struct Svg {
     preserve_aspect_ratio: AspectRatio,
-    x: Option<LengthHorizontal>,
-    y: Option<LengthVertical>,
-    w: Option<LengthHorizontal>,
-    h: Option<LengthVertical>,
+    x: Option<Length<Horizontal>>,
+    y: Option<Length<Vertical>>,
+    w: Option<Length<Horizontal>>,
+    h: Option<Length<Vertical>>,
     vbox: Option<ViewBox>,
 }
 
@@ -116,7 +116,7 @@ impl Svg {
                 ))
             }
 
-            (w, h, None) if w.unit() != LengthUnit::Percent && h.unit() != LengthUnit::Percent => {
+            (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
                 let params = ViewParams::new(dpi.x(), dpi.y(), 0.0, 0.0);
 
                 Some((
@@ -130,8 +130,8 @@ impl Svg {
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         IntrinsicDimensions {
-            width: self.w.map(|l| l.to_length()),
-            height: self.h.map(|l| l.to_length()),
+            width: self.w.map(Into::into),
+            height: self.h.map(Into::into),
             vbox: self.vbox,
         }
     }
@@ -140,24 +140,24 @@ impl Svg {
     fn get_unnormalized_viewport(
         &self,
     ) -> (
-        LengthHorizontal,
-        LengthVertical,
-        LengthHorizontal,
-        LengthVertical,
+        Length<Horizontal>,
+        Length<Vertical>,
+        Length<Horizontal>,
+        Length<Vertical>,
     ) {
         // these defaults are per the spec
         let x = self
             .x
-            .unwrap_or_else(|| LengthHorizontal::parse_str("0").unwrap());
+            .unwrap_or_else(|| Length::<Horizontal>::parse_str("0").unwrap());
         let y = self
             .y
-            .unwrap_or_else(|| LengthVertical::parse_str("0").unwrap());
+            .unwrap_or_else(|| Length::<Vertical>::parse_str("0").unwrap());
         let w = self
             .w
-            .unwrap_or_else(|| LengthHorizontal::parse_str("100%").unwrap());
+            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap());
         let h = self
             .h
-            .unwrap_or_else(|| LengthVertical::parse_str("100%").unwrap());
+            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap());
 
         (x, y, w, h)
     }
@@ -189,11 +189,11 @@ impl NodeTrait for Svg {
                 expanded_name!(svg "y") if is_inner_svg => self.y = Some(attr.parse(value)?),
                 expanded_name!(svg "width") => {
                     self.w =
-                        Some(attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?)
+                        Some(attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?)
                 }
                 expanded_name!(svg "height") => {
                     self.h =
-                        Some(attr.parse_and_validate(value, LengthVertical::check_nonnegative)?)
+                        Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
                 }
                 expanded_name!(svg "viewBox") => self.vbox = attr.parse(value).map(Some)?,
                 _ => (),
@@ -266,10 +266,10 @@ impl NodeTrait for Svg {
 #[derive(Default)]
 pub struct Use {
     link: Option<Fragment>,
-    x: LengthHorizontal,
-    y: LengthVertical,
-    w: Option<LengthHorizontal>,
-    h: Option<LengthVertical>,
+    x: Length<Horizontal>,
+    y: Length<Vertical>,
+    w: Option<Length<Horizontal>>,
+    h: Option<Length<Vertical>>,
 }
 
 impl NodeTrait for Use {
@@ -283,12 +283,12 @@ impl NodeTrait for Use {
                 expanded_name!(svg "y") => self.y = attr.parse(value)?,
                 expanded_name!(svg "width") => {
                     self.w = attr
-                        .parse_and_validate(value, LengthHorizontal::check_nonnegative)
+                        .parse_and_validate(value, Length::<Horizontal>::check_nonnegative)
                         .map(Some)?
                 }
                 expanded_name!(svg "height") => {
                     self.h = attr
-                        .parse_and_validate(value, LengthVertical::check_nonnegative)
+                        .parse_and_validate(value, Length::<Vertical>::check_nonnegative)
                         .map(Some)?
                 }
                 _ => (),
@@ -363,11 +363,11 @@ impl NodeTrait for Use {
 
         let nw = self
             .w
-            .unwrap_or_else(|| LengthHorizontal::parse_str("100%").unwrap())
+            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap())
             .normalize(values, &params);
         let nh = self
             .h
-            .unwrap_or_else(|| LengthVertical::parse_str("100%").unwrap())
+            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap())
             .normalize(values, &params);
 
         // width or height set to 0 disables rendering of the element

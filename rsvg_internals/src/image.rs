@@ -8,7 +8,7 @@ use crate::bbox::BoundingBox;
 use crate::drawing_ctx::{ClipMode, DrawingCtx};
 use crate::error::{NodeError, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::length::{LengthHorizontal, LengthTrait, LengthVertical};
+use crate::length::*;
 use crate::node::*;
 use crate::parsers::{ParseError, ParseValue};
 use crate::property_bag::PropertyBag;
@@ -17,10 +17,10 @@ use crate::viewbox::ViewBox;
 
 #[derive(Default)]
 pub struct Image {
-    x: LengthHorizontal,
-    y: LengthVertical,
-    w: LengthHorizontal,
-    h: LengthVertical,
+    x: Length<Horizontal>,
+    y: Length<Vertical>,
+    w: Length<Horizontal>,
+    h: Length<Vertical>,
     aspect: AspectRatio,
     href: Option<Href>,
 }
@@ -32,10 +32,10 @@ impl NodeTrait for Image {
                 expanded_name!(svg "x") => self.x = attr.parse(value)?,
                 expanded_name!(svg "y") => self.y = attr.parse(value)?,
                 expanded_name!(svg "width") => {
-                    self.w = attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
+                    self.w = attr.parse_and_validate(value, Length::check_nonnegative)?
                 }
                 expanded_name!(svg "height") => {
-                    self.h = attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
+                    self.h = attr.parse_and_validate(value, Length::check_nonnegative)?
                 }
                 expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 

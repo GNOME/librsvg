@@ -286,10 +286,10 @@ impl NodeTrait for Polyline {
 
 #[derive(Default)]
 pub struct Line {
-    x1: LengthHorizontal,
-    y1: LengthVertical,
-    x2: LengthHorizontal,
-    y2: LengthVertical,
+    x1: Length<Horizontal>,
+    y1: Length<Vertical>,
+    x2: Length<Horizontal>,
+    y2: Length<Vertical>,
 }
 
 impl NodeTrait for Line {
@@ -334,14 +334,14 @@ impl NodeTrait for Line {
 
 #[derive(Default)]
 pub struct Rect {
-    x: LengthHorizontal,
-    y: LengthVertical,
-    w: LengthHorizontal,
-    h: LengthVertical,
+    x: Length<Horizontal>,
+    y: Length<Vertical>,
+    w: Length<Horizontal>,
+    h: Length<Vertical>,
 
     // Radiuses for rounded corners
-    rx: Option<LengthHorizontal>,
-    ry: Option<LengthVertical>,
+    rx: Option<Length<Horizontal>>,
+    ry: Option<Length<Vertical>>,
 }
 
 impl NodeTrait for Rect {
@@ -351,19 +351,19 @@ impl NodeTrait for Rect {
                 expanded_name!(svg "x") => self.x = attr.parse(value)?,
                 expanded_name!(svg "y") => self.y = attr.parse(value)?,
                 expanded_name!(svg "width") => {
-                    self.w = attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
+                    self.w = attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "height") => {
-                    self.h = attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
+                    self.h = attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 expanded_name!(svg "rx") => {
                     self.rx = attr
-                        .parse_and_validate(value, LengthHorizontal::check_nonnegative)
+                        .parse_and_validate(value, Length::<Horizontal>::check_nonnegative)
                         .map(Some)?
                 }
                 expanded_name!(svg "ry") => {
                     self.ry = attr
-                        .parse_and_validate(value, LengthVertical::check_nonnegative)
+                        .parse_and_validate(value, Length::<Vertical>::check_nonnegative)
                         .map(Some)?
                 }
                 _ => (),
@@ -555,9 +555,9 @@ impl NodeTrait for Rect {
 
 #[derive(Default)]
 pub struct Circle {
-    cx: LengthHorizontal,
-    cy: LengthVertical,
-    r: LengthBoth,
+    cx: Length<Horizontal>,
+    cy: Length<Vertical>,
+    r: Length<Both>,
 }
 
 impl NodeTrait for Circle {
@@ -567,7 +567,7 @@ impl NodeTrait for Circle {
                 expanded_name!(svg "cx") => self.cx = attr.parse(value)?,
                 expanded_name!(svg "cy") => self.cy = attr.parse(value)?,
                 expanded_name!(svg "r") => {
-                    self.r = attr.parse_and_validate(value, LengthBoth::check_nonnegative)?
+                    self.r = attr.parse_and_validate(value, Length::<Both>::check_nonnegative)?
                 }
                 _ => (),
             }
@@ -597,10 +597,10 @@ impl NodeTrait for Circle {
 
 #[derive(Default)]
 pub struct Ellipse {
-    cx: LengthHorizontal,
-    cy: LengthVertical,
-    rx: LengthHorizontal,
-    ry: LengthVertical,
+    cx: Length<Horizontal>,
+    cy: Length<Vertical>,
+    rx: Length<Horizontal>,
+    ry: Length<Vertical>,
 }
 
 impl NodeTrait for Ellipse {
@@ -610,10 +610,10 @@ impl NodeTrait for Ellipse {
                 expanded_name!(svg "cx") => self.cx = attr.parse(value)?,
                 expanded_name!(svg "cy") => self.cy = attr.parse(value)?,
                 expanded_name!(svg "rx") => {
-                    self.rx = attr.parse_and_validate(value, LengthHorizontal::check_nonnegative)?
+                    self.rx = attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "ry") => {
-                    self.ry = attr.parse_and_validate(value, LengthVertical::check_nonnegative)?
+                    self.ry = attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 _ => (),
             }
