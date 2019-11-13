@@ -1,3 +1,27 @@
+Version 2.47.1
+
+- Librsvg no longer depends on libcroco!  It now does all CSS
+  processing using Rust crates from Mozilla Servo; these are also the
+  crates that are in use in recent versions of Firefox.  As a result,
+  librsvg can now handle much more complex CSS selectors than before.
+  Fixes #79, #167, #237, #283, #336, #428, #441, #466, #525, #525
+  (Paolo Borelli, Federico Mena).  Thanks to Evgeniy Reizner
+  for fixing https://github.com/servo/servo/issues/22972, which made
+  it possible to use Servo's selectors crate.
+
+- #524 - Panic when reading an invalid stylesheet URL in an XML
+  processing instruction (Paolo Borelli)
+
+- Lots of little improvements to the documentation.
+
+- Link-time optimization (LTO) is disabled by default on release
+  builds, as this increased build time too much.  Downstream
+  distributors may want to turn it back on in the toplevel Cargo.toml.
+
+- We now have the start of documentation on the library's internals at
+  https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg_internals/index.html
+  This should be interest of newcomers to librsvg's source code.
+
 Version 2.47.0
 
 - Librsvg's XML parser now supports namespaces (xmlns), and is
