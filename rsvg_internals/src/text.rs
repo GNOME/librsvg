@@ -29,6 +29,7 @@ use crate::property_defs::{
     XmlSpace,
 };
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
+use crate::transform::Transform;
 
 /// An absolutely-positioned array of `Span`s
 ///
@@ -363,7 +364,7 @@ impl PositionedSpan {
 
     fn compute_text_bbox(
         &self,
-        affine: &cairo::Matrix,
+        affine: &Transform,
         gravity: pango::Gravity,
     ) -> Option<BoundingBox> {
         let (ink, _) = self.layout.get_extents();

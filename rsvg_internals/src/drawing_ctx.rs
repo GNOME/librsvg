@@ -25,6 +25,7 @@ use crate::property_defs::{
 };
 use crate::rect::RectangleExt;
 use crate::surface_utils::shared_surface::SharedImageSurface;
+use crate::transform::{Transform, TransformExt};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
@@ -77,7 +78,7 @@ pub enum ClipMode {
 pub struct DrawingCtx {
     document: Rc<Document>,
 
-    initial_affine: cairo::Matrix,
+    initial_affine: Transform,
 
     rect: cairo::Rectangle,
     dpi: Dpi,
@@ -533,7 +534,7 @@ impl DrawingCtx {
         }
     }
 
-    fn initial_affine_with_offset(&self) -> cairo::Matrix {
+    fn initial_affine_with_offset(&self) -> Transform {
         let mut initial_with_offset = self.initial_affine;
         initial_with_offset.translate(self.rect.x, self.rect.y);
         initial_with_offset
@@ -831,7 +832,7 @@ impl DrawingCtx {
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
         surface: &cairo::ImageSurface,
-        affine: cairo::Matrix,
+        affine: Transform,
         width: f64,
         height: f64,
     ) -> Result<BoundingBox, RenderingError> {
@@ -893,17 +894,17 @@ impl DrawingCtx {
 
 #[derive(Debug)]
 pub struct CompositingAffines {
-    pub outside_temporary_surface: cairo::Matrix,
-    pub initial: cairo::Matrix,
-    pub for_temporary_surface: cairo::Matrix,
-    pub compositing: cairo::Matrix,
-    pub for_snapshot: cairo::Matrix,
+    pub outside_temporary_surface: Transform,
+    pub initial: Transform,
+    pub for_temporary_surface: Transform,
+    pub compositing: Transform,
+    pub for_snapshot: Transform,
 }
 
 impl CompositingAffines {
     fn new(
-        current: cairo::Matrix,
-        initial: cairo::Matrix,
+        current: Transform,
+        initial: Transform,
         cr_stack_depth: usize,
     ) -> CompositingAffines {
         let is_topmost_temporary_surface = cr_stack_depth == 0;
@@ -913,15 +914,15 @@ impl CompositingAffines {
         let outside_temporary_surface = if is_topmost_temporary_surface {
             current
         } else {
-            cairo::Matrix::multiply(&current, &initial_inverse)
+            initial_inverse.pre_transform(&current)
         };
 
         let (scale_x, scale_y) = initial.transform_distance(1.0, 1.0);
 
         let for_temporary_surface = if is_topmost_temporary_surface {
-            let untransformed = cairo::Matrix::multiply(&current, &initial_inverse);
-            let scale = cairo::Matrix::new(scale_x, 0.0, 0.0, scale_y, 0.0, 0.0);
-            cairo::Matrix::multiply(&untransformed, &scale)
+            let untransformed = initial_inverse.pre_transform(&current);
+            let scale = Transform::new(scale_x, 0.0, 0.0, scale_y, 0.0, 0.0);
+            scale.pre_transform(&untransformed)
         } else {
             current
         };
@@ -931,7 +932,7 @@ impl CompositingAffines {
             scaled.scale(1.0 / scale_x, 1.0 / scale_y);
             scaled
         } else {
-            cairo::Matrix::identity()
+            Transform::identity()
         };
 
         let for_snapshot = compositing.try_invert().unwrap();

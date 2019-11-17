@@ -1,16 +1,17 @@
 use cairo;
 
 use crate::rect::RectangleExt;
+use crate::transform::{Transform, TransformExt};
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {
-    pub affine: cairo::Matrix,
+    pub affine: Transform,
     pub rect: Option<cairo::Rectangle>,     // without stroke
     pub ink_rect: Option<cairo::Rectangle>, // with stroke
 }
 
 impl BoundingBox {
-    pub fn new(affine: &cairo::Matrix) -> BoundingBox {
+    pub fn new(affine: &Transform) -> BoundingBox {
         BoundingBox {
             affine: *affine,
             rect: None,
@@ -39,14 +40,12 @@ impl BoundingBox {
             return;
         }
 
-        let mut affine = self.affine;
+        if let Some(inverse) = self.affine.inverse() {
+            let affine = inverse.pre_transform(&src.affine);
 
-        // this will panic!() if it's not invertible... should we check on our own?
-        affine.invert();
-        affine = cairo::Matrix::multiply(&src.affine, &affine);
-
-        self.rect = combine_rects(self.rect, src.rect, &affine, clip);
-        self.ink_rect = combine_rects(self.ink_rect, src.ink_rect, &affine, clip);
+            self.rect = combine_rects(self.rect, src.rect, &affine, clip);
+            self.ink_rect = combine_rects(self.ink_rect, src.ink_rect, &affine, clip);
+        }
     }
 
     pub fn insert(&mut self, src: &BoundingBox) {
@@ -70,7 +69,7 @@ fn rect_from_extents((x1, y1, x2, y2): (f64, f64, f64, f64)) -> Option<cairo::Re
 fn combine_rects(
     r1: Option<cairo::Rectangle>,
     r2: Option<cairo::Rectangle>,
-    affine: &cairo::Matrix,
+    affine: &Transform,
     clip: bool,
 ) -> Option<cairo::Rectangle> {
     match (r1, r2, clip) {

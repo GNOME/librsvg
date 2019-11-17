@@ -7,16 +7,43 @@ use cssparser::{ParseError as CssParseError, Parser, Token};
 use crate::error::*;
 use crate::parsers::{finite_f32, CssParserExt, Parse, ParseError};
 
-impl Parse for cairo::Matrix {
+pub type Transform = cairo::Matrix;
+
+// Extension trait to prepare the switch from cairo::Matrix to euclid
+pub trait TransformExt
+where Self: std::marker::Sized
+{
+    fn row_major(m11: f64, m12: f64, m21: f64, m22: f64, m31: f64, m32: f64) -> Self;
+
+    fn inverse(&self) -> Option<Self>;
+
+    fn pre_transform(&self, mat: &Self) -> Self;
+}
+
+impl TransformExt for Transform {
+    fn row_major(m11: f64, m12: f64, m21: f64, m22: f64, m31: f64, m32: f64) -> Self {
+        cairo::Matrix::new(m11, m12, m21, m22, m31, m32)
+    }
+
+    fn inverse(&self) -> Option<Self> {
+        self.try_invert().ok()
+    }
+
+    fn pre_transform(&self, mat: &Self) -> Self {
+        cairo::Matrix::multiply(mat, self)
+    }
+}
+
+impl Parse for Transform {
     type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Transform, ValueErrorKind> {
         let matrix = parse_transform_list(parser)?;
 
-        matrix
-            .try_invert()
-            .map(|_| matrix)
-            .map_err(|_| ValueErrorKind::Value("invalid transformation matrix".to_string()))
+        match matrix.inverse() {
+            Some(_) => Ok(matrix),
+            _ => Err(ValueErrorKind::Value("invalid transformation matrix".to_string())),
+        }
     }
 }
 
@@ -24,8 +51,8 @@ impl Parse for cairo::Matrix {
 // Its operataion and grammar are described here:
 // https://www.w3.org/TR/SVG/coords.html#TransformAttribute
 
-fn parse_transform_list(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
-    let mut matrix = cairo::Matrix::identity();
+fn parse_transform_list(parser: &mut Parser<'_, '_>) -> Result<Transform, ValueErrorKind> {
+    let mut matrix = Transform::identity();
 
     loop {
         if parser.is_exhausted() {
@@ -33,7 +60,7 @@ fn parse_transform_list(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Va
         }
 
         let m = parse_transform_command(parser)?;
-        matrix = cairo::Matrix::multiply(&m, &matrix);
+        matrix = matrix.pre_transform(&m);
 
         parser.optional_comma();
     }
@@ -47,7 +74,7 @@ fn make_expected_function_error() -> ValueErrorKind {
     ))
 }
 
-fn parse_transform_command(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
+fn parse_transform_command(parser: &mut Parser<'_, '_>) -> Result<Transform, ValueErrorKind> {
     match parser.next()?.clone() {
         Token::Function(ref name) => parse_transform_function(name, parser),
 
@@ -63,7 +90,7 @@ fn parse_transform_command(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix,
 fn parse_transform_function(
     name: &str,
     parser: &mut Parser<'_, '_>,
-) -> Result<cairo::Matrix, ValueErrorKind> {
+) -> Result<Transform, ValueErrorKind> {
     match name {
         "matrix" => parse_matrix_args(parser),
         "translate" => parse_translate_args(parser),
@@ -75,7 +102,7 @@ fn parse_transform_function(
     }
 }
 
-fn parse_matrix_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
+fn parse_matrix_args(parser: &mut Parser<'_, '_>) -> Result<Transform, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let xx = p.expect_number()?;
@@ -107,11 +134,11 @@ fn parse_matrix_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Value
             let x0 = f64::from(finite_f32(x0)?);
             let y0 = f64::from(finite_f32(y0)?);
 
-            Ok(cairo::Matrix::new(xx, yx, xy, yy, x0, y0))
+            Ok(Transform::row_major(xx, yx, xy, yy, x0, y0))
         })
 }
 
-fn parse_translate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
+fn parse_translate_args(parser: &mut Parser<'_, '_>) -> Result<Transform, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let tx = p.expect_number()?;
@@ -131,11 +158,11 @@ fn parse_translate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Va
             let tx = f64::from(finite_f32(tx)?);
             let ty = f64::from(finite_f32(ty)?);
 
-            Ok(cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx, ty))
+            Ok(Transform::row_major(1.0, 0.0, 0.0, 1.0, tx, ty))
         })
 }
 
-fn parse_scale_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
+fn parse_scale_args(parser: &mut Parser<'_, '_>) -> Result<Transform, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let x = p.expect_number()?;
@@ -155,11 +182,11 @@ fn parse_scale_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueE
             let x = f64::from(finite_f32(x)?);
             let y = f64::from(finite_f32(y)?);
 
-            Ok(cairo::Matrix::new(x, 0.0, 0.0, y, 0.0, 0.0))
+            Ok(Transform::row_major(x, 0.0, 0.0, y, 0.0, 0.0))
         })
 }
 
-fn parse_rotate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
+fn parse_rotate_args(parser: &mut Parser<'_, '_>) -> Result<Transform, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let angle = p.expect_number()?;
@@ -188,15 +215,16 @@ fn parse_rotate_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Value
             let angle = angle * PI / 180.0;
             let (s, c) = angle.sin_cos();
 
-            let mut m = cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx, ty);
+            let mut m = Transform::row_major(1.0, 0.0, 0.0, 1.0, tx, ty);
 
-            m = cairo::Matrix::multiply(&cairo::Matrix::new(c, s, -s, c, 0.0, 0.0), &m);
-            m = cairo::Matrix::multiply(&cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
+            // FIXME: use euclid pre_rotate / pre_translate?
+            m = m.pre_transform(&Transform::row_major(c, s, -s, c, 0.0, 0.0));
+            m = m.pre_transform(&Transform::row_major(1.0, 0.0, 0.0, 1.0, -tx, -ty));
             Ok(m)
         })
 }
 
-fn parse_skewx_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
+fn parse_skewx_args(parser: &mut Parser<'_, '_>) -> Result<Transform, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let a = p.expect_number()?;
@@ -208,11 +236,11 @@ fn parse_skewx_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueE
             let a = f64::from(finite_f32(a)?);
 
             let a = a * PI / 180.0;
-            Ok(cairo::Matrix::new(1.0, 0.0, a.tan(), 1.0, 0.0, 0.0))
+            Ok(Transform::row_major(1.0, 0.0, a.tan(), 1.0, 0.0, 0.0))
         })
 }
 
-fn parse_skewy_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
+fn parse_skewy_args(parser: &mut Parser<'_, '_>) -> Result<Transform, ValueErrorKind> {
     parser
         .parse_nested_block(|p| {
             let a = p.expect_number()?;
@@ -224,22 +252,21 @@ fn parse_skewy_args(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueE
             let a = f64::from(finite_f32(a)?);
 
             let a = a * PI / 180.0;
-            Ok(cairo::Matrix::new(1.0, a.tan(), 0.0, 1.0, 0.0, 0.0))
+            Ok(Transform::row_major(1.0, a.tan(), 0.0, 1.0, 0.0, 0.0))
         })
 }
 
 #[cfg(test)]
-fn make_rotation_matrix(angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
+fn make_rotation_matrix(angle_degrees: f64, tx: f64, ty: f64) -> Transform {
     let angle = angle_degrees * PI / 180.0;
 
-    let mut m = cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx, ty);
+    let mut m = Transform::row_major(1.0, 0.0, 0.0, 1.0, tx, ty);
 
-    let mut r = cairo::Matrix::identity();
+    let mut r = Transform::identity();
     r.rotate(angle);
-    m = cairo::Matrix::multiply(&r, &m);
 
-    m = cairo::Matrix::multiply(&cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
-    m
+    m = m.pre_transform(&r);
+    m.pre_transform(&Transform::row_major(1.0, 0.0, 0.0, 1.0, -tx, -ty))
 }
 
 #[cfg(test)]
@@ -248,11 +275,11 @@ mod tests {
     use float_cmp::ApproxEq;
     use std::f64;
 
-    fn parse_transform(s: &str) -> Result<cairo::Matrix, ValueErrorKind> {
-        cairo::Matrix::parse_str(s)
+    fn parse_transform(s: &str) -> Result<Transform, ValueErrorKind> {
+        Transform::parse_str(s)
     }
 
-    fn assert_matrix_eq(a: &cairo::Matrix, b: &cairo::Matrix) {
+    fn assert_matrix_eq(a: &Transform, b: &Transform) {
         let epsilon = 8.0 * f64::EPSILON; // kind of arbitrary, but allow for some sloppiness
 
         assert!(a.xx.approx_eq(b.xx, (epsilon, 1)));
@@ -265,14 +292,14 @@ mod tests {
 
     #[test]
     fn parses_valid_transform() {
-        let t = cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
-        let s = cairo::Matrix::new(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
+        let t = Transform::row_major(1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
+        let s = Transform::row_major(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
         let r = make_rotation_matrix(30.0, 10.0, 10.0);
 
-        let a = cairo::Matrix::multiply(&s, &t);
+        let a = t.pre_transform(&s);
         assert_matrix_eq(
             &parse_transform("translate(20, 30), scale (10) rotate (30 10 10)").unwrap(),
-            &cairo::Matrix::multiply(&r, &a),
+            &a.pre_transform(&r),
         );
     }
 
@@ -325,17 +352,17 @@ mod tests {
     fn parses_matrix() {
         assert_matrix_eq(
             &parse_transform("matrix (1 2 3 4 5 6)").unwrap(),
-            &cairo::Matrix::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
+            &Transform::row_major(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
         );
 
         assert_matrix_eq(
             &parse_transform("matrix(1,2,3,4 5 6)").unwrap(),
-            &cairo::Matrix::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
+            &Transform::row_major(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
         );
 
         assert_matrix_eq(
             &parse_transform("matrix (1,2.25,-3.25e2,4 5 6)").unwrap(),
-            &cairo::Matrix::new(1.0, 2.25, -325.0, 4.0, 5.0, 6.0),
+            &Transform::row_major(1.0, 2.25, -325.0, 4.0, 5.0, 6.0),
         );
     }
 
@@ -343,17 +370,17 @@ mod tests {
     fn parses_translate() {
         assert_matrix_eq(
             &parse_transform("translate(-1 -2)").unwrap(),
-            &cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
+            &Transform::row_major(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
         );
 
         assert_matrix_eq(
             &parse_transform("translate(-1, -2)").unwrap(),
-            &cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
+            &Transform::row_major(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
         );
 
         assert_matrix_eq(
             &parse_transform("translate(-1)").unwrap(),
-            &cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, -1.0, 0.0),
+            &Transform::row_major(1.0, 0.0, 0.0, 1.0, -1.0, 0.0),
         );
     }
 
@@ -361,17 +388,17 @@ mod tests {
     fn parses_scale() {
         assert_matrix_eq(
             &parse_transform("scale (-1)").unwrap(),
-            &cairo::Matrix::new(-1.0, 0.0, 0.0, -1.0, 0.0, 0.0),
+            &Transform::row_major(-1.0, 0.0, 0.0, -1.0, 0.0, 0.0),
         );
 
         assert_matrix_eq(
             &parse_transform("scale(-1 -2)").unwrap(),
-            &cairo::Matrix::new(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
+            &Transform::row_major(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
         );
 
         assert_matrix_eq(
             &parse_transform("scale(-1, -2)").unwrap(),
-            &cairo::Matrix::new(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
+            &Transform::row_major(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
         );
     }
 
@@ -391,12 +418,12 @@ mod tests {
         );
     }
 
-    fn make_skew_x_matrix(angle_degrees: f64) -> cairo::Matrix {
+    fn make_skew_x_matrix(angle_degrees: f64) -> Transform {
         let a = angle_degrees * PI / 180.0;
-        cairo::Matrix::new(1.0, 0.0, a.tan(), 1.0, 0.0, 0.0)
+        Transform::row_major(1.0, 0.0, a.tan(), 1.0, 0.0, 0.0)
     }
 
-    fn make_skew_y_matrix(angle_degrees: f64) -> cairo::Matrix {
+    fn make_skew_y_matrix(angle_degrees: f64) -> Transform {
         let mut m = make_skew_x_matrix(angle_degrees);
         m.yx = m.xy;
         m.xy = 0.0;
@@ -421,29 +448,29 @@ mod tests {
 
     #[test]
     fn parses_transform_list() {
-        let t = cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
-        let s = cairo::Matrix::new(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
+        let t = Transform::row_major(1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
+        let s = Transform::row_major(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
         let r = make_rotation_matrix(30.0, 10.0, 10.0);
 
         assert_matrix_eq(
             &parse_transform("scale(10)rotate(30, 10, 10)").unwrap(),
-            &cairo::Matrix::multiply(&r, &s),
+            &s.pre_transform(&r),
         );
 
         assert_matrix_eq(
             &parse_transform("translate(20, 30), scale (10)").unwrap(),
-            &cairo::Matrix::multiply(&s, &t),
+            &t.pre_transform(&s),
         );
 
-        let a = cairo::Matrix::multiply(&s, &t);
+        let a = t.pre_transform(&s);
         assert_matrix_eq(
             &parse_transform("translate(20, 30), scale (10) rotate (30 10 10)").unwrap(),
-            &cairo::Matrix::multiply(&r, &a),
+            &a.pre_transform(&r),
         );
     }
 
     #[test]
     fn parses_empty() {
-        assert_matrix_eq(&parse_transform("").unwrap(), &cairo::Matrix::identity());
+        assert_matrix_eq(&parse_transform("").unwrap(), &Transform::identity());
     }
 }
