@@ -1,6 +1,7 @@
-use cairo::Matrix;
 use downcast_rs::*;
+use locale_config::Locale;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use rctree;
 use std::cell::Ref;
 use std::collections::HashSet;
 use std::fmt;
@@ -15,8 +16,7 @@ use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
-use locale_config::Locale;
-use rctree;
+use crate::transform::Transform;
 
 /// Tree node with specific data
 pub type RsvgNode = rctree::Node<NodeData>;
@@ -31,7 +31,7 @@ pub struct NodeData {
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
     result: NodeResult,
-    transform: Matrix,
+    transform: Transform,
     values: ComputedValues,
     cond: bool,
     style_attr: String,
@@ -53,7 +53,7 @@ impl NodeData {
             class: class.map(str::to_string),
             specified_values: Default::default(),
             important_styles: Default::default(),
-            transform: Matrix::identity(),
+            transform: Transform::identity(),
             result: Ok(()),
             values: ComputedValues::default(),
             cond: true,
@@ -94,7 +94,7 @@ impl NodeData {
         self.cond
     }
 
-    pub fn get_transform(&self) -> Matrix {
+    pub fn get_transform(&self) -> Transform {
         self.transform
     }
 
@@ -135,7 +135,7 @@ impl NodeData {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "transform") => {
-                    return Matrix::parse_str(value).attribute(attr).and_then(|affine| {
+                    return Transform::parse_str(value).attribute(attr).and_then(|affine| {
                         self.transform = affine;
                         Ok(())
                     });

@@ -28,6 +28,7 @@ use crate::error::ValueErrorKind;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::parsers::Parse;
 use crate::parsers::ParseError;
+use crate::transform::Transform;
 use crate::viewbox::ViewBox;
 use cssparser::{CowRcStr, Parser};
 
@@ -154,7 +155,7 @@ impl AspectRatio {
         &self,
         vbox: Option<ViewBox>,
         viewport: &cairo::Rectangle,
-    ) -> Option<cairo::Matrix> {
+    ) -> Option<Transform> {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
@@ -174,14 +175,14 @@ impl AspectRatio {
                 None
             } else {
                 let (x, y, w, h) = self.compute(&vbox, viewport);
-                let mut matrix = cairo::Matrix::identity();
+                let mut matrix = Transform::identity();
                 matrix.translate(x, y);
                 matrix.scale(w / vbox.width, h / vbox.height);
                 matrix.translate(-vbox.x, -vbox.y);
                 Some(matrix)
             }
         } else {
-            let mut matrix = cairo::Matrix::identity();
+            let mut matrix = Transform::identity();
             matrix.translate(viewport.x, viewport.y);
             Some(matrix)
         }
