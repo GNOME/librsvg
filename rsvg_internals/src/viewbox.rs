@@ -46,12 +46,7 @@ impl Parse for ViewBox {
         let (x, y, width, height) = (v[0], v[1], v[2], v[3]);
 
         if width >= 0.0 && height >= 0.0 {
-            Ok(ViewBox {
-                x,
-                y,
-                width,
-                height,
-            })
+            Ok(ViewBox::new(x, y, width, height))
         } else {
             Err(ValueErrorKind::Value(
                 "width and height must not be negative".to_string(),
