@@ -1,10 +1,11 @@
 //! Bounding boxes that know their coordinate space.
 
-use crate::rect::{Rect, TransformRect};
+use crate::rect::Rect;
+use crate::transform::{Transform, TransformExt};
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {
-    pub affine: cairo::Matrix,
+    pub affine: Transform,
     pub rect: Option<Rect>,     // without stroke
     pub ink_rect: Option<Rect>, // with stroke
 }
@@ -12,13 +13,13 @@ pub struct BoundingBox {
 impl BoundingBox {
     pub fn new() -> BoundingBox {
         BoundingBox {
-            affine: cairo::Matrix::identity(),
+            affine: Transform::identity(),
             rect: None,
             ink_rect: None,
         }
     }
 
-    pub fn with_affine(self, affine: cairo::Matrix) -> BoundingBox {
+    pub fn with_affine(self, affine: Transform) -> BoundingBox {
         BoundingBox { affine, ..self }
     }
 
@@ -46,14 +47,12 @@ impl BoundingBox {
             return;
         }
 
-        let mut affine = self.affine;
+        if let Some(inverse) = self.affine.inverse() {
+            let affine = inverse.pre_transform(&src.affine);
 
-        // this will panic!() if it's not invertible... should we check on our own?
-        affine.invert();
-        affine = cairo::Matrix::multiply(&src.affine, &affine);
-
-        self.rect = combine_rects(self.rect, src.rect, &affine, clip);
-        self.ink_rect = combine_rects(self.ink_rect, src.ink_rect, &affine, clip);
+            self.rect = combine_rects(self.rect, src.rect, &affine, clip);
+            self.ink_rect = combine_rects(self.ink_rect, src.ink_rect, &affine, clip);
+        }
     }
 
     pub fn insert(&mut self, src: &BoundingBox) {
@@ -68,7 +67,7 @@ impl BoundingBox {
 fn combine_rects(
     r1: Option<Rect>,
     r2: Option<Rect>,
-    affine: &cairo::Matrix,
+    affine: &Transform,
     clip: bool,
 ) -> Option<Rect> {
     match (r1, r2, clip) {
@@ -91,7 +90,7 @@ mod tests {
         let r1 = Rect::new(1.0, 2.0, 3.0, 4.0);
         let r2 = Rect::new(1.5, 2.5, 3.5, 4.5);
         let r3 = Rect::new(10.0, 11.0, 12.0, 13.0);
-        let affine = cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, 0.5, 0.5);
+        let affine = Transform::row_major(1.0, 0.0, 0.0, 1.0, 0.5, 0.5);
 
         let res = combine_rects(None, None, &affine, true);
         assert_eq!(res, None);

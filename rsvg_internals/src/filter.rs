@@ -12,6 +12,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
+use crate::transform::Transform;
 
 /// The <filter> node.
 pub struct Filter {
@@ -51,7 +52,7 @@ impl Filter {
         &self,
         computed_from_target_node: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-        affine: cairo::Matrix,
+        affine: Transform,
         width: f64,
         height: f64,
     ) -> BoundingBox {

@@ -16,6 +16,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
+use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 
 /// Contents of a <stop> element for gradient color stops
@@ -317,7 +318,7 @@ impl Variant {
 #[derive(Default)]
 struct Common {
     units: Option<GradientUnits>,
-    affine: Option<cairo::Matrix>,
+    affine: Option<Transform>,
     spread: Option<SpreadMethod>,
 
     fallback: Option<Fragment>,
@@ -354,7 +355,7 @@ pub struct RadialGradient {
 /// field was specified.
 struct UnresolvedGradient {
     units: Option<GradientUnits>,
-    affine: Option<cairo::Matrix>,
+    affine: Option<Transform>,
     spread: Option<SpreadMethod>,
     stops: Option<Vec<ColorStop>>,
 
@@ -365,7 +366,7 @@ struct UnresolvedGradient {
 #[derive(Clone)]
 pub struct Gradient {
     units: GradientUnits,
-    affine: cairo::Matrix,
+    affine: Transform,
     spread: SpreadMethod,
     stops: Vec<ColorStop>,
 
@@ -496,7 +497,7 @@ impl UnresolvedGradient {
 
     fn resolve_from_defaults(&self) -> UnresolvedGradient {
         let units = self.units.or_else(|| Some(GradientUnits::default()));
-        let affine = self.affine.or_else(|| Some(cairo::Matrix::identity()));
+        let affine = self.affine.or_else(|| Some(Transform::identity()));
         let spread = self.spread.or_else(|| Some(SpreadMethod::default()));
         let stops = self.stops.clone().or_else(|| Some(Vec::<ColorStop>::new()));
         let variant = self.variant.resolve_from_defaults();

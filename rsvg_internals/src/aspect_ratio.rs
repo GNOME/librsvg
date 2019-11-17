@@ -25,6 +25,7 @@ use std::ops::Deref;
 use crate::error::*;
 use crate::parsers::Parse;
 use crate::rect::Rect;
+use crate::transform::Transform;
 use crate::viewbox::ViewBox;
 use cssparser::{BasicParseError, Parser};
 
@@ -155,7 +156,7 @@ impl AspectRatio {
         &self,
         vbox: Option<ViewBox>,
         viewport: &Rect,
-    ) -> Option<cairo::Matrix> {
+    ) -> Option<Transform> {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
@@ -175,14 +176,14 @@ impl AspectRatio {
                 None
             } else {
                 let r = self.compute(&vbox, viewport);
-                let mut matrix = cairo::Matrix::identity();
+                let mut matrix = Transform::identity();
                 matrix.translate(r.x0, r.y0);
                 matrix.scale(r.width() / vbox.0.width(), r.height() / vbox.0.height());
                 matrix.translate(-vbox.0.x0, -vbox.0.y0);
                 Some(matrix)
             }
         } else {
-            let mut matrix = cairo::Matrix::identity();
+            let mut matrix = Transform::identity();
             matrix.translate(viewport.x0, viewport.y0);
             Some(matrix)
         }

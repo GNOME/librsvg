@@ -18,6 +18,7 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
+use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
 
@@ -34,7 +35,7 @@ struct Common {
     // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
     vbox: Option<Option<ViewBox>>,
     preserve_aspect_ratio: Option<AspectRatio>,
-    affine: Option<cairo::Matrix>,
+    affine: Option<Transform>,
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
     width: Option<Length<Horizontal>>,
@@ -98,7 +99,7 @@ pub struct ResolvedPattern {
     // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
-    affine: cairo::Matrix,
+    affine: Transform,
     x: Length<Horizontal>,
     y: Length<Vertical>,
     width: Length<Horizontal>,
@@ -467,10 +468,7 @@ impl UnresolvedPattern {
             .common
             .preserve_aspect_ratio
             .or_else(|| Some(AspectRatio::default()));
-        let affine = self
-            .common
-            .affine
-            .or_else(|| Some(cairo::Matrix::identity()));
+        let affine = self.common.affine.or_else(|| Some(Transform::identity()));
         let x = self.common.x.or_else(|| Some(Default::default()));
         let y = self.common.y.or_else(|| Some(Default::default()));
         let width = self.common.width.or_else(|| Some(Default::default()));
