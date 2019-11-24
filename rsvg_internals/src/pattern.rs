@@ -322,12 +322,7 @@ impl AsPaintSource for ResolvedPattern {
             // If there is a vbox, use that
             let (mut x, mut y, w, h) = preserve_aspect_ratio.compute(
                 &vbox,
-                &cairo::Rectangle::new(
-                    0.0,
-                    0.0,
-                    pattern_width * bbwscale,
-                    pattern_height * bbhscale,
-                ),
+                &cairo::Rectangle::from_size(scaled_width, scaled_height),
             );
 
             x -= vbox.x * w / vbox.width;
