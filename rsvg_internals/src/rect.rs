@@ -1,4 +1,5 @@
 use cairo;
+use core::ops::Range;
 
 use crate::float_eq_cairo::ApproxEqCairo;
 
@@ -137,6 +138,16 @@ pub struct IRect {
 }
 
 impl IRect {
+    #[inline]
+    pub fn x_range(&self) -> Range<i32> {
+        self.x0..self.x1
+    }
+
+    #[inline]
+    pub fn y_range(&self) -> Range<i32> {
+        self.y0..self.y1
+    }
+
     /// Returns true if the `IRect` contains the given coordinates.
     #[inline]
     pub fn contains(self, x: i32, y: i32) -> bool {
