@@ -131,11 +131,7 @@ impl<'a> Iterator for PixelRectangle<'a> {
 
         let rv = {
             let get_pixel = |x, y| {
-                if x < self.bounds.x0
-                    || y < self.bounds.y0
-                    || x >= self.bounds.x1
-                    || y >= self.bounds.y1
-                {
+                if !self.bounds.contains(x, y) {
                     match self.edge_mode {
                         EdgeMode::None => Pixel {
                             r: 0,
