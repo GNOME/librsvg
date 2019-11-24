@@ -1034,48 +1034,6 @@ impl From<ShapeRendering> for cairo::Antialias {
     }
 }
 
-#[derive(Default, Clone, Copy, Debug, PartialEq)]
-#[repr(C)]
-pub struct RsvgRectangle {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
-}
-
-impl From<cairo::Rectangle> for RsvgRectangle {
-    fn from(r: cairo::Rectangle) -> RsvgRectangle {
-        RsvgRectangle {
-            x: r.x,
-            y: r.y,
-            width: r.width,
-            height: r.height,
-        }
-    }
-}
-
-impl From<ViewBox> for RsvgRectangle {
-    fn from(vb: ViewBox) -> RsvgRectangle {
-        RsvgRectangle {
-            x: vb.x,
-            y: vb.y,
-            width: vb.width,
-            height: vb.height,
-        }
-    }
-}
-
-impl From<RsvgRectangle> for cairo::Rectangle {
-    fn from(r: RsvgRectangle) -> cairo::Rectangle {
-        cairo::Rectangle {
-            x: r.x,
-            y: r.y,
-            width: r.width,
-            height: r.height,
-        }
-    }
-}
-
 pub struct AcquiredNode {
     stack: Option<Rc<RefCell<NodeStack>>>,
     node: RsvgNode,

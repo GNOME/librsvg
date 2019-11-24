@@ -44,8 +44,6 @@ pub use crate::color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use crate::dpi::{rsvg_rust_set_default_dpi_x_y, Dpi};
 
-pub use crate::drawing_ctx::RsvgRectangle;
-
 pub use crate::error::{
     rsvg_rust_error_quark, set_gerror, DefsLookupErrorKind, HrefError, LoadingError,
     RenderingError, RSVG_ERROR_FAILED,
@@ -67,6 +65,8 @@ pub use crate::surface_utils::{
         SharedImageSurface, SurfaceType,
     },
 };
+
+pub use crate::viewbox::ViewBox;
 
 #[macro_use]
 pub mod log;
