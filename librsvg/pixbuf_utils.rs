@@ -37,13 +37,7 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
     let height = surface.height();
 
     let pixbuf = pixbuf_new(width as i32, height as i32)?;
-
-    let bounds = IRect {
-        x0: 0,
-        y0: 0,
-        x1: width,
-        y1: height,
-    };
+    let bounds = IRect::from_size(width, height);
 
     for (x, y, pixel) in Pixels::new(&surface, bounds) {
         let (r, g, b, a) = if pixel.a == 0 {
