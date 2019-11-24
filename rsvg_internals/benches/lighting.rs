@@ -3,7 +3,6 @@ extern crate criterion;
 use criterion::Criterion;
 
 use cairo;
-use cairo_sys;
 use nalgebra;
 use rsvg_internals;
 
