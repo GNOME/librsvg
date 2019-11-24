@@ -176,6 +176,33 @@ impl IRect {
             y1: (f64::from(self.y1) * y).ceil() as i32,
         }
     }
+
+    /// Returns an `IRect` translated by the given amounts.
+    #[inline]
+    pub fn translate(&self, by: (i32, i32)) -> IRect {
+        IRect {
+            x0: self.x0 + by.0,
+            y0: self.y0 + by.1,
+            x1: self.x1 + by.0,
+            y1: self.y1 + by.1,
+        }
+    }
+
+    #[inline]
+    pub fn intersection(&self, rect: &Self) -> Option<IRect> {
+        let (x0, y0, x1, y1) = (
+            self.x0.max(rect.x0),
+            self.y0.max(rect.y0),
+            self.x1.min(rect.x1),
+            self.y1.min(rect.y1),
+        );
+
+        if x1 > x0 && y1 > y0 {
+            Some(IRect { x0, y0, x1, y1 })
+        } else {
+            None
+        }
+    }
 }
 
 impl From<cairo::Rectangle> for IRect {

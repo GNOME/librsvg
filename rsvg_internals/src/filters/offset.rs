@@ -6,9 +6,7 @@ use crate::error::AttributeResultExt;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers;
 use crate::property_bag::PropertyBag;
-use crate::rect::IRect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
@@ -66,21 +64,17 @@ impl FilterEffect for FeOffset {
 
         let (ox, oy) = ctx.paffine().transform_distance(self.dx, self.dy);
 
-        // output_bounds contains all pixels within bounds,
-        // for which (x - ox) and (y - oy) also lie within bounds.
-        let output_bounds = IRect::new(
-            clamp(bounds.x0 + ox as i32, bounds.x0, bounds.x1),
-            clamp(bounds.y0 + oy as i32, bounds.y0, bounds.y1),
-            clamp(bounds.x1 + ox as i32, bounds.x0, bounds.x1),
-            clamp(bounds.y1 + oy as i32, bounds.y0, bounds.y1),
-        );
-
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
         )?;
 
+        // output_bounds contains all pixels within bounds,
+        // for which (x - ox) and (y - oy) also lie within bounds.
+        if let Some(output_bounds) = bounds
+            .translate((ox as i32, oy as i32))
+            .intersection(&bounds)
         {
             let cr = cairo::Context::new(&output_surface);
             let r = cairo::Rectangle::from(output_bounds);
