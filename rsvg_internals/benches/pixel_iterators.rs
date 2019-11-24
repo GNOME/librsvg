@@ -34,8 +34,8 @@ fn bench_pixel_iterators(c: &mut Criterion) {
             let mut b = 0usize;
             let mut a = 0usize;
 
-            for y in bounds.y0..bounds.y1 {
-                for x in bounds.x0..bounds.x1 {
+            for y in bounds.y_range() {
+                for x in bounds.x_range() {
                     let base = (y * stride + x * 4) as usize;
 
                     r += data[base + 0] as usize;
@@ -62,8 +62,8 @@ fn bench_pixel_iterators(c: &mut Criterion) {
             let mut b = 0usize;
             let mut a = 0usize;
 
-            for y in bounds.y0..bounds.y1 {
-                for x in bounds.x0..bounds.x1 {
+            for y in bounds.y_range() {
+                for x in bounds.x_range() {
                     let pixel = surface.get_pixel(x as u32, y as u32);
 
                     r += pixel.r as usize;

@@ -1,4 +1,4 @@
-use cairo::{self, ImageSurface, Rectangle};
+use cairo::{self, ImageSurface};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::{Fragment, Href};
@@ -9,7 +9,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{ParseError, ParseValue};
 use crate::property_bag::PropertyBag;
-use crate::rect::{IRect, RectangleExt};
+use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::viewbox::ViewBox;
 
@@ -86,12 +86,8 @@ impl FeImage {
         )?;
 
         let cr = cairo::Context::new(&output_surface);
-        cr.rectangle(
-            f64::from(bounds.x0),
-            f64::from(bounds.y0),
-            f64::from(bounds.x1 - bounds.x0),
-            f64::from(bounds.y1 - bounds.y0),
-        );
+        let r = cairo::Rectangle::from(bounds);
+        cr.rectangle(r.x, r.y, r.width, r.height);
         cr.clip();
         cr.set_source_surface(&surface, 0f64, 0f64);
         cr.paint();
@@ -131,12 +127,7 @@ impl FeImage {
                 f64::from(surface.width()),
                 f64::from(surface.height()),
             ),
-            &Rectangle::new(
-                f64::from(unclipped_bounds.x0),
-                f64::from(unclipped_bounds.y0),
-                f64::from(unclipped_bounds.x1 - unclipped_bounds.x0),
-                f64::from(unclipped_bounds.y1 - unclipped_bounds.y0),
-            ),
+            &cairo::Rectangle::from(*unclipped_bounds),
         );
 
         if w.approx_eq_cairo(0.0) || h.approx_eq_cairo(0.0) {
@@ -156,12 +147,8 @@ impl FeImage {
         ptn.set_matrix(matrix);
 
         let cr = cairo::Context::new(&output_surface);
-        cr.rectangle(
-            f64::from(bounds.x0),
-            f64::from(bounds.y0),
-            f64::from(bounds.x1 - bounds.x0),
-            f64::from(bounds.y1 - bounds.y0),
-        );
+        let r = cairo::Rectangle::from(*bounds);
+        cr.rectangle(r.x, r.y, r.width, r.height);
         cr.clip();
         cr.set_source(&ptn);
         cr.paint();
