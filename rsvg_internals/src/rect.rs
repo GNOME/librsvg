@@ -10,6 +10,7 @@ pub trait RectangleExt {
     fn intersection(&self, rect: &cairo::Rectangle) -> Option<cairo::Rectangle>;
     fn union(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
     fn transform(&self, affine: &cairo::Matrix) -> cairo::Rectangle;
+    fn translate(&self, by: (f64, f64)) -> cairo::Rectangle;
     fn outer(&self) -> cairo::Rectangle;
 }
 
@@ -109,6 +110,15 @@ impl RectangleExt for cairo::Rectangle {
             y: ymin,
             width: xmax - xmin,
             height: ymax - ymin,
+        }
+    }
+
+    fn translate(&self, by: (f64, f64)) -> cairo::Rectangle {
+        cairo::Rectangle {
+            x: self.x + by.0,
+            y: self.y + by.1,
+            width: self.width,
+            height: self.height,
         }
     }
 
