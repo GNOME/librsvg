@@ -6,7 +6,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::length::*;
 use crate::rect::IRect;
 
-use super::context::{FilterContext, FilterInput, FilterOutput};
+use super::context::{FilterContext, FilterInput};
 
 /// A helper type for filter primitive subregion computation.
 #[derive(Clone, Copy)]
@@ -63,18 +63,9 @@ impl<'a> BoundsBuilder<'a> {
             FilterInput::StandardInput(_) => {
                 self.standard_input_was_referenced = true;
             }
-            FilterInput::PrimitiveOutput(FilterOutput {
-                bounds: IRect { x0, y0, x1, y1 },
-                ..
-            }) => {
-                let rect = cairo::Rectangle {
-                    x: f64::from(x0),
-                    y: f64::from(y0),
-                    width: f64::from(x1 - x0),
-                    height: f64::from(y1 - y0),
-                };
-
-                let input_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(Some(rect));
+            FilterInput::PrimitiveOutput(ref output) => {
+                let input_bbox = BoundingBox::new(&cairo::Matrix::identity())
+                    .with_rect(Some(output.bounds.into()));
                 self.bbox.insert(&input_bbox);
             }
         }
