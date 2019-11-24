@@ -107,12 +107,12 @@ impl FilterEffect for FeMorphology {
 
             for (x, y, _pixel) in Pixels::new(input.surface(), bounds) {
                 // Compute the kernel rectangle bounds.
-                let kernel_bounds = IRect {
-                    x0: (f64::from(x) - rx).floor() as i32,
-                    y0: (f64::from(y) - ry).floor() as i32,
-                    x1: (f64::from(x) + rx).ceil() as i32 + 1,
-                    y1: (f64::from(y) + ry).ceil() as i32 + 1,
-                };
+                let kernel_bounds = IRect::new(
+                    (f64::from(x) - rx).floor() as i32,
+                    (f64::from(y) - ry).floor() as i32,
+                    (f64::from(x) + rx).ceil() as i32 + 1,
+                    (f64::from(y) + ry).ceil() as i32 + 1,
+                );
 
                 // Compute the new pixel values.
                 let initial = match self.operator {

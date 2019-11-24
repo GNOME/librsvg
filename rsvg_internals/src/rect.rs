@@ -139,6 +139,21 @@ pub struct IRect {
 
 impl IRect {
     #[inline]
+    pub fn new(x0: i32, y0: i32, x1: i32, y1: i32) -> IRect {
+        IRect { x0, y0, x1, y1 }
+    }
+
+    #[inline]
+    pub fn from_size(w: i32, h: i32) -> IRect {
+        IRect {
+            x0: 0,
+            y0: 0,
+            x1: w,
+            y1: h,
+        }
+    }
+
+    #[inline]
     pub fn x_range(&self) -> Range<i32> {
         self.x0..self.x1
     }

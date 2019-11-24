@@ -68,12 +68,12 @@ impl FilterEffect for FeOffset {
 
         // output_bounds contains all pixels within bounds,
         // for which (x - ox) and (y - oy) also lie within bounds.
-        let output_bounds = IRect {
-            x0: clamp(bounds.x0 + ox as i32, bounds.x0, bounds.x1),
-            y0: clamp(bounds.y0 + oy as i32, bounds.y0, bounds.y1),
-            x1: clamp(bounds.x1 + ox as i32, bounds.x0, bounds.x1),
-            y1: clamp(bounds.y1 + oy as i32, bounds.y0, bounds.y1),
-        };
+        let output_bounds = IRect::new(
+            clamp(bounds.x0 + ox as i32, bounds.x0, bounds.x1),
+            clamp(bounds.y0 + oy as i32, bounds.y0, bounds.y1),
+            clamp(bounds.x1 + ox as i32, bounds.x0, bounds.x1),
+            clamp(bounds.y1 + oy as i32, bounds.y0, bounds.y1),
+        );
 
         let output_surface = ImageSurface::create(
             cairo::Format::ARgb32,
