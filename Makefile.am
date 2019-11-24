@@ -41,6 +41,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/create_node.rs			\
 	rsvg_internals/src/css.rs				\
 	rsvg_internals/src/error.rs				\
+	rsvg_internals/src/dasharray.rs				\
 	rsvg_internals/src/document.rs				\
 	rsvg_internals/src/dpi.rs				\
 	rsvg_internals/src/drawing_ctx.rs			\
