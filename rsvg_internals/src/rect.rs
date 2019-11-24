@@ -7,7 +7,7 @@ pub trait RectangleExt {
     fn new(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle;
     fn from_size(width: f64, height: f64) -> cairo::Rectangle;
     fn is_empty(&self) -> bool;
-    fn intersect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
+    fn intersection(&self, rect: &cairo::Rectangle) -> Option<cairo::Rectangle>;
     fn union(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
     fn transform(&self, affine: &cairo::Matrix) -> cairo::Rectangle;
     fn outer(&self) -> cairo::Rectangle;
@@ -36,7 +36,7 @@ impl RectangleExt for cairo::Rectangle {
         self.width.approx_eq_cairo(0.0) || self.height.approx_eq_cairo(0.0)
     }
 
-    fn intersect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
+    fn intersection(&self, rect: &cairo::Rectangle) -> Option<cairo::Rectangle> {
         let (x1, y1, x2, y2) = (
             self.x.max(rect.x),
             self.y.max(rect.y),
@@ -45,19 +45,14 @@ impl RectangleExt for cairo::Rectangle {
         );
 
         if x2 > x1 && y2 > y1 {
-            cairo::Rectangle {
+            Some(cairo::Rectangle {
                 x: x1,
                 y: y1,
                 width: x2 - x1,
                 height: y2 - y1,
-            }
+            })
         } else {
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 0.0,
-                height: 0.0,
-            }
+            None
         }
     }
 
@@ -258,14 +253,14 @@ mod tests {
             height: 3.14,
         };
 
-        let r = r1.intersect(&r2);
+        let r = r1.intersection(&r2).unwrap();
         assert_approx_eq_cairo!(0.42_f64, r.x);
         assert_approx_eq_cairo!(0.42_f64, r.y);
         assert_approx_eq_cairo!(2.94_f64, r.width);
         assert_approx_eq_cairo!(2.94_f64, r.height);
 
-        let r = r1.intersect(&r3);
-        assert!(r.is_empty());
+        let r = r1.intersection(&r3);
+        assert!(r.is_none());
     }
 
     #[test]
