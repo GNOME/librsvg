@@ -167,12 +167,7 @@ fn normal(surface: &SharedImageSurface, bounds: IRect, x: u32, y: u32) -> Normal
         ),
     };
 
-    let kernel_bounds = IRect {
-        x0: x as i32 - 1,
-        y0: y as i32 - 1,
-        x1: x as i32 + 2,
-        y1: y as i32 + 2,
-    };
+    let kernel_bounds = IRect::new(x as i32 - 1, y as i32 - 1, x as i32 + 2, y as i32 + 2);
 
     let mut nx = 0;
     let mut ny = 0;
