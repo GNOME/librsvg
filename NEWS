@@ -1,3 +1,12 @@
+Version 2.46.4
+
+- #524 - Panic when reading an invalid stylesheet URL in an XML
+  processing instruction (Paolo Borelli)
+
+- #525 - Consider specificity when applying CSS selector matches.
+
+- #504 - Provide an usage example in the librsvg crate docs.
+
 Version 2.46.3
 
 - #516 - Fix inadvertent bump in the minimum Rust version required.  The
