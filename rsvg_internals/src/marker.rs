@@ -1,7 +1,6 @@
 use std::f64::consts::*;
 use std::ops::Deref;
 
-use cairo::Rectangle;
 use cssparser::{CowRcStr, Parser, Token};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
@@ -159,7 +158,7 @@ impl Marker {
             let params = if let Some(vbox) = self.vbox {
                 let (_, _, w, h) = self.aspect.compute(
                     &vbox,
-                    &Rectangle::new(0.0, 0.0, marker_width, marker_height),
+                    &cairo::Rectangle::from_size(marker_width, marker_height),
                 );
 
                 if vbox.width.approx_eq_cairo(0.0) || vbox.height.approx_eq_cairo(0.0) {
@@ -588,8 +587,7 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    if let Ok(acquired) = draw_ctx.acquire_node(name, &[NodeType::Marker])
-    {
+    if let Ok(acquired) = draw_ctx.acquire_node(name, &[NodeType::Marker]) {
         let node = acquired.get();
 
         node.borrow().get_impl::<Marker>().render(

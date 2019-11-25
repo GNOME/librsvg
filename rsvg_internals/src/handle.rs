@@ -12,9 +12,10 @@ use crate::allowed_url::{AllowedUrl, Href};
 use crate::bbox::BoundingBox;
 use crate::document::Document;
 use crate::dpi::Dpi;
-use crate::drawing_ctx::{DrawingCtx, RsvgRectangle};
+use crate::drawing_ctx::DrawingCtx;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, RsvgNode};
+use crate::rect::RectangleExt;
 use crate::structure::{IntrinsicDimensions, Svg};
 use url::Url;
 
@@ -278,7 +279,7 @@ impl Handle {
         viewport: &cairo::Rectangle,
         dpi: Dpi,
         is_testing: bool,
-    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
         let mut draw_ctx = DrawingCtx::new(
@@ -294,8 +295,8 @@ impl Handle {
 
         let bbox = draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
 
-        let ink_rect = bbox.ink_rect.map(RsvgRectangle::from).unwrap_or_default();
-        let logical_rect = bbox.rect.map(RsvgRectangle::from).unwrap_or_default();
+        let ink_rect = bbox.ink_rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
+        let logical_rect = bbox.rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
 
         Ok((ink_rect, logical_rect))
     }
@@ -306,7 +307,7 @@ impl Handle {
         id: Option<&str>,
         dpi: Dpi,
         is_testing: bool,
-    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
 
         let root = self.document.root();
@@ -319,12 +320,10 @@ impl Handle {
             if let Some((root_width, root_height)) =
                 node.borrow().get_impl::<Svg>().get_size(&values, dpi)
             {
-                let ink_r = RsvgRectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: f64::from(root_width),
-                    height: f64::from(root_height),
-                };
+                let ink_r = cairo::Rectangle::from_size(
+                    f64::from(root_width),
+                    f64::from(root_height),
+                );
 
                 let logical_r = ink_r;
 
@@ -349,7 +348,7 @@ impl Handle {
         viewport: &cairo::Rectangle,
         dpi: Dpi,
         is_testing: bool,
-    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
         self.get_node_geometry_with_viewport(&node, viewport, dpi, is_testing)
     }
@@ -488,26 +487,18 @@ impl Handle {
         id: Option<&str>,
         dpi: Dpi,
         is_testing: bool,
-    ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
 
         let bbox = self.get_bbox_for_element(&node, dpi, is_testing)?;
 
-        let mut ink_rect = bbox.ink_rect.map(RsvgRectangle::from).unwrap_or_default();
-        let mut logical_rect = bbox.rect.map(RsvgRectangle::from).unwrap_or_default();
+        let ink_rect = bbox.ink_rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
+        let logical_rect = bbox.rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
 
         // Translate so ink_rect is always at offset (0, 0)
+        let ofs = (-ink_rect.x, -ink_rect.y);
 
-        let xofs = ink_rect.x;
-        let yofs = ink_rect.y;
-
-        ink_rect.x -= xofs;
-        ink_rect.y -= yofs;
-
-        logical_rect.x -= xofs;
-        logical_rect.y -= yofs;
-
-        Ok((ink_rect, logical_rect))
+        Ok((ink_rect.translate(ofs), logical_rect.translate(ofs)))
     }
 
     pub fn render_element(
@@ -529,9 +520,9 @@ impl Handle {
             return Ok(());
         }
 
-        let ink_r = bbox.ink_rect.map(RsvgRectangle::from).unwrap_or_default();
+        let ink_r = bbox.ink_rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
 
-        if ink_r.width == 0.0 || ink_r.height == 0.0 {
+        if ink_r.is_empty() {
             return Ok(());
         }
 

@@ -36,7 +36,7 @@ use gobject_sys::{self, GEnumValue, GFlagsValue};
 use rsvg_internals::{
     rsvg_log, set_gerror, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions,
     LoadOptions, LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData,
-    RsvgRectangle, RsvgSizeFunc, SharedImageSurface, SizeCallback, SurfaceType, RSVG_ERROR_FAILED,
+    RsvgSizeFunc, SharedImageSurface, SizeCallback, SurfaceType, ViewBox, RSVG_ERROR_FAILED,
 };
 
 use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
@@ -191,6 +191,48 @@ impl BaseUrl {
             .as_ref()
             .map(|b| b.cstring.as_ptr())
             .unwrap_or_else(|| ptr::null())
+    }
+}
+
+#[derive(Default, Clone, Copy, Debug, PartialEq)]
+#[repr(C)]
+pub struct RsvgRectangle {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+impl From<cairo::Rectangle> for RsvgRectangle {
+    fn from(r: cairo::Rectangle) -> RsvgRectangle {
+        RsvgRectangle {
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+        }
+    }
+}
+
+impl From<RsvgRectangle> for cairo::Rectangle {
+    fn from(r: RsvgRectangle) -> cairo::Rectangle {
+        cairo::Rectangle {
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+        }
+    }
+}
+
+impl From<ViewBox> for RsvgRectangle {
+    fn from(vb: ViewBox) -> RsvgRectangle {
+        RsvgRectangle {
+            x: vb.x,
+            y: vb.y,
+            width: vb.width,
+            height: vb.height,
+        }
     }
 }
 
@@ -716,6 +758,7 @@ impl CHandle {
         let inner = self.inner.borrow();
         handle
             .get_geometry_for_layer(id, viewport, inner.dpi, inner.is_testing)
+            .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
             .map_err(warn_on_invalid_id)
     }
 
@@ -742,6 +785,7 @@ impl CHandle {
         let inner = self.inner.borrow();
         handle
             .get_geometry_for_element(id, inner.dpi, inner.is_testing)
+            .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
             .map_err(warn_on_invalid_id)
     }
 

@@ -366,8 +366,8 @@ impl FilterEffect for FeTurbulence {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for y in bounds.y0..bounds.y1 {
-                for x in bounds.x0..bounds.x1 {
+            for y in bounds.y_range() {
+                for x in bounds.x_range() {
                     let point = affine.transform_point(f64::from(x), f64::from(y));
                     let point = [point.0, point.1];
 

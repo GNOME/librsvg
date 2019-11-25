@@ -131,11 +131,7 @@ impl<'a> Iterator for PixelRectangle<'a> {
 
         let rv = {
             let get_pixel = |x, y| {
-                if x < self.bounds.x0
-                    || y < self.bounds.y0
-                    || x >= self.bounds.x1
-                    || y >= self.bounds.y1
-                {
+                if !self.bounds.contains(x, y) {
                     match self.edge_mode {
                         EdgeMode::None => Pixel {
                             r: 0,
@@ -200,69 +196,34 @@ mod tests {
         .unwrap();
 
         // Full image.
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: WIDTH,
-            y1: HEIGHT,
-        };
+        let bounds = IRect::from_size(WIDTH, HEIGHT);
         assert_eq!(
             Pixels::new(&surface, bounds).count(),
             (WIDTH * HEIGHT) as usize
         );
 
         // 1-wide column.
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: 1,
-            y1: HEIGHT,
-        };
+        let bounds = IRect::from_size(1, HEIGHT);
         assert_eq!(Pixels::new(&surface, bounds).count(), HEIGHT as usize);
 
         // 1-tall row.
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: WIDTH,
-            y1: 1,
-        };
+        let bounds = IRect::from_size(WIDTH, 1);
         assert_eq!(Pixels::new(&surface, bounds).count(), WIDTH as usize);
 
         // 1×1.
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: 1,
-            y1: 1,
-        };
+        let bounds = IRect::from_size(1, 1);
         assert_eq!(Pixels::new(&surface, bounds).count(), 1);
 
         // Nothing (x0 == x1).
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: 0,
-            y1: HEIGHT,
-        };
+        let bounds = IRect::from_size(0, HEIGHT);
         assert_eq!(Pixels::new(&surface, bounds).count(), 0);
 
         // Nothing (y0 == y1).
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: WIDTH,
-            y1: 0,
-        };
+        let bounds = IRect::from_size(WIDTH, 0);
         assert_eq!(Pixels::new(&surface, bounds).count(), 0);
 
         // Nothing (x0 == x1, y0 == y1).
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: 0,
-            y1: 0,
-        };
+        let bounds = IRect::new(0, 0, 0, 0);
         assert_eq!(Pixels::new(&surface, bounds).count(), 0);
     }
 
@@ -277,19 +238,8 @@ mod tests {
         )
         .unwrap();
 
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: WIDTH,
-            y1: HEIGHT,
-        };
-
-        let rect_bounds = IRect {
-            x0: -8,
-            y0: -8,
-            x1: 8,
-            y1: 8,
-        };
+        let bounds = IRect::from_size(WIDTH, HEIGHT);
+        let rect_bounds = IRect::new(-8, -8, 8, 8);
         assert_eq!(
             PixelRectangle::new(&surface, bounds, rect_bounds, EdgeMode::None).count(),
             (16 * 16) as usize

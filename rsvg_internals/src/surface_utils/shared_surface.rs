@@ -160,14 +160,7 @@ impl SharedImageSurface {
             Ok(self.surface)
         } else {
             // If there are any other references, copy the underlying surface.
-            let bounds = IRect {
-                x0: 0,
-                y0: 0,
-                x1: self.width,
-                y1: self.height,
-            };
-
-            self.copy_surface(bounds)
+            self.copy_surface(IRect::from_size(self.width, self.height))
         }
     }
 
@@ -406,12 +399,7 @@ impl SharedImageSurface {
     ///
     /// This is to get a mask suitable for use with cairo_mask_surface().
     pub fn to_mask(&self, opacity: u8) -> Result<SharedImageSurface, cairo::Status> {
-        let bounds = IRect {
-            x0: 0,
-            y0: 0,
-            x1: self.width,
-            y1: self.height,
-        };
+        let bounds = IRect::from_size(self.width, self.height);
 
         let mut output_surface =
             ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
@@ -504,12 +492,12 @@ impl SharedImageSurface {
 
             if self.is_alpha_only() {
                 for (x, y, _pixel) in Pixels::new(self, bounds) {
-                    let kernel_bounds = IRect {
-                        x0: x as i32 - target.0,
-                        y0: y as i32 - target.1,
-                        x1: x as i32 - target.0 + kernel.ncols() as i32,
-                        y1: y as i32 - target.1 + kernel.nrows() as i32,
-                    };
+                    let kernel_bounds = IRect::new(
+                        x as i32 - target.0,
+                        y as i32 - target.1,
+                        x as i32 - target.0 + kernel.ncols() as i32,
+                        y as i32 - target.1 + kernel.nrows() as i32,
+                    );
 
                     let mut a = 0.0;
 
@@ -535,12 +523,12 @@ impl SharedImageSurface {
                 }
             } else {
                 for (x, y, _pixel) in Pixels::new(self, bounds) {
-                    let kernel_bounds = IRect {
-                        x0: x as i32 - target.0,
-                        y0: y as i32 - target.1,
-                        x1: x as i32 - target.0 + kernel.ncols() as i32,
-                        y1: y as i32 - target.1 + kernel.nrows() as i32,
-                    };
+                    let kernel_bounds = IRect::new(
+                        x as i32 - target.0,
+                        y as i32 - target.1,
+                        x as i32 - target.0 + kernel.ncols() as i32,
+                        y as i32 - target.1 + kernel.nrows() as i32,
+                    );
 
                     let mut r = 0.0;
                     let mut g = 0.0;

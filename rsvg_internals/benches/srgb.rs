@@ -32,8 +32,8 @@ fn bench_srgb_linearization(c: &mut Criterion) {
         let stride = surface.get_stride() as usize;
         {
             let mut data = surface.get_data().unwrap();
-            for y in BOUNDS.y0..BOUNDS.y1 {
-                for x in BOUNDS.x0..BOUNDS.x1 {
+            for y in BOUNDS.y_range() {
+                for x in BOUNDS.x_range() {
                     data.set_pixel(
                         stride,
                         Pixel {
