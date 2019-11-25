@@ -89,6 +89,7 @@ mod color;
 mod cond;
 mod create_node;
 mod css;
+mod dasharray;
 mod document;
 mod dpi;
 mod drawing_ctx;
