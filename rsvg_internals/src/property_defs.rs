@@ -2,6 +2,7 @@ use cssparser::{self, Parser, Token};
 
 use crate::error::*;
 use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
+use crate::dasharray::Dasharray;
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
