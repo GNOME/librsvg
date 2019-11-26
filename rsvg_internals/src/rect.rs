@@ -159,6 +159,16 @@ impl IRect {
     }
 
     #[inline]
+    pub fn width(&self) -> i32 {
+        self.x1 - self.x0
+    }
+
+    #[inline]
+    pub fn height(&self) -> i32 {
+        self.y1 - self.y0
+    }
+
+    #[inline]
     pub fn x_range(&self) -> Range<i32> {
         self.x0..self.x1
     }

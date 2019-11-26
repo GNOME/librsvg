@@ -52,8 +52,8 @@ impl FilterEffect for FeTile {
                 // Create a surface containing just the region to tile.
                 let bounded_input_surface = ImageSurface::create(
                     cairo::Format::ARgb32,
-                    input_bounds.x1 - input_bounds.x0,
-                    input_bounds.y1 - input_bounds.y0,
+                    input_bounds.width(),
+                    input_bounds.height(),
                 )?;
 
                 {

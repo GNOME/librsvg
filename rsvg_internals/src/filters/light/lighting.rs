@@ -313,7 +313,7 @@ macro_rules! impl_lighting_filter {
 
                 // Check if the surface is too small for normal computation. This case is unspecified;
                 // WebKit doesn't render anything in this case.
-                if bounds.x1 < bounds.x0 + 2 || bounds.y1 < bounds.y0 + 2 {
+                if bounds.width() < 2 || bounds.height() < 2 {
                     return Err(FilterError::LightingInputTooSmall);
                 }
 
@@ -349,12 +349,7 @@ macro_rules! impl_lighting_filter {
                             let b = compute(light_color.blue);
                             let a = $alpha_func(r, g, b);
 
-                            let output_pixel = Pixel {
-                                r,
-                                g,
-                                b,
-                                a,
-                            };
+                            let output_pixel = Pixel { r, g, b, a };
 
                             output_slice.set_pixel(output_stride, output_pixel, x, y - base_y);
                         };
@@ -443,7 +438,7 @@ macro_rules! impl_lighting_filter {
                         }
                     }
 
-                    if bounds.x1 - bounds.x0 >= 3 && bounds.y1 - bounds.y0 >= 3 {
+                    if bounds.width() >= 3 && bounds.height() >= 3 {
                         // Interior pixels.
                         let first_row = bounds.y0 as u32 + 1;
                         let one_past_last_row = bounds.y1 as u32 - 1;
@@ -506,7 +501,7 @@ macro_rules! impl_lighting_filter {
                 true
             }
         }
-    }
+    };
 }
 
 const fn diffuse_alpha(_r: u8, _g: u8, _b: u8) -> u8 {

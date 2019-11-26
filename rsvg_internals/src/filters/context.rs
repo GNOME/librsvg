@@ -481,18 +481,9 @@ mod tests {
     fn test_extract_alpha() {
         const WIDTH: i32 = 32;
         const HEIGHT: i32 = 64;
-        const BOUNDS: IRect = IRect {
-            x0: 8,
-            x1: 24,
-            y0: 16,
-            y1: 48,
-        };
-        const FULL_BOUNDS: IRect = IRect {
-            x0: 0,
-            x1: WIDTH,
-            y0: 0,
-            y1: HEIGHT,
-        };
+
+        let bounds = IRect::new(8, 24, 16, 48);
+        let full_bounds = IRect::from_size(WIDTH, HEIGHT);
 
         let mut surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap();
@@ -509,16 +500,16 @@ mod tests {
         }
 
         let surface = SharedImageSurface::new(surface, SurfaceType::SRgb).unwrap();
-        let alpha = surface.extract_alpha(BOUNDS).unwrap();
+        let alpha = surface.extract_alpha(bounds).unwrap();
 
         for (x, y, p, pa) in
-            Pixels::new(&surface, FULL_BOUNDS).map(|(x, y, p)| (x, y, p, alpha.get_pixel(x, y)))
+            Pixels::new(&surface, full_bounds).map(|(x, y, p)| (x, y, p, alpha.get_pixel(x, y)))
         {
             assert_eq!(pa.r, 0);
             assert_eq!(pa.g, 0);
             assert_eq!(pa.b, 0);
 
-            if !BOUNDS.contains(x as i32, y as i32) {
+            if !bounds.contains(x as i32, y as i32) {
                 assert_eq!(pa.a, 0);
             } else {
                 assert_eq!(pa.a, p.a);

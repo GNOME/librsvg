@@ -108,8 +108,7 @@ impl<'a> Iterator for Pixels<'a> {
         if self.x + 1 == self.bounds.x1 as u32 {
             self.x = self.bounds.x0 as u32;
             self.y += 1;
-            self.offset +=
-                self.surface.stride() - (self.bounds.x1 - self.bounds.x0 - 1) as isize * 4;
+            self.offset += self.surface.stride() - (self.bounds.width() - 1) as isize * 4;
         } else {
             self.x += 1;
             self.offset += 4;
@@ -152,10 +151,8 @@ impl<'a> Iterator for PixelRectangle<'a> {
                                 x % v
                             };
 
-                            let x = self.bounds.x0
-                                + wrap(x - self.bounds.x0, self.bounds.x1 - self.bounds.x0);
-                            let y = self.bounds.y0
-                                + wrap(y - self.bounds.y0, self.bounds.y1 - self.bounds.y0);
+                            let x = self.bounds.x0 + wrap(x - self.bounds.x0, self.bounds.width());
+                            let y = self.bounds.y0 + wrap(y - self.bounds.y0, self.bounds.height());
                             self.surface.get_pixel(x as u32, y as u32)
                         }
                     }

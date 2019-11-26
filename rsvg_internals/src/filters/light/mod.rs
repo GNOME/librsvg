@@ -33,8 +33,8 @@ fn return_normal(factor_x: f64, nx: i16, factor_y: f64, ny: i16) -> Normal {
 #[inline]
 pub fn top_left_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
     // Surface needs to be at least 2×2.
-    assert!(bounds.x1 >= bounds.x0 + 2);
-    assert!(bounds.y1 >= bounds.y0 + 2);
+    assert!(bounds.width() >= 2);
+    assert!(bounds.height() >= 2);
 
     let get = |x, y| i16::from(surface.get_pixel(x, y).a);
     let x = bounds.x0 as u32;
@@ -58,7 +58,7 @@ pub fn top_left_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
 pub fn top_row_normal(surface: &SharedImageSurface, bounds: IRect, x: u32) -> Normal {
     assert!(x as i32 > bounds.x0);
     assert!((x as i32) + 1 < bounds.x1);
-    assert!(bounds.y1 >= bounds.y0 + 2);
+    assert!(bounds.height() >= 2);
 
     let get = |x, y| i16::from(surface.get_pixel(x, y).a);
     let y = bounds.y0 as u32;
@@ -82,8 +82,8 @@ pub fn top_row_normal(surface: &SharedImageSurface, bounds: IRect, x: u32) -> No
 #[inline]
 pub fn top_right_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
     // Surface needs to be at least 2×2.
-    assert!(bounds.x1 >= bounds.x0 + 2);
-    assert!(bounds.y1 >= bounds.y0 + 2);
+    assert!(bounds.width() >= 2);
+    assert!(bounds.height() >= 2);
 
     let get = |x, y| i16::from(surface.get_pixel(x, y).a);
     let x = bounds.x1 as u32 - 1;
@@ -107,7 +107,7 @@ pub fn top_right_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
 pub fn left_column_normal(surface: &SharedImageSurface, bounds: IRect, y: u32) -> Normal {
     assert!(y as i32 > bounds.y0);
     assert!((y as i32) + 1 < bounds.y1);
-    assert!(bounds.x1 >= bounds.x0 + 2);
+    assert!(bounds.width() >= 2);
 
     let get = |x, y| i16::from(surface.get_pixel(x, y).a);
     let x = bounds.x0 as u32;
@@ -159,7 +159,7 @@ pub fn interior_normal(surface: &SharedImageSurface, bounds: IRect, x: u32, y: u
 pub fn right_column_normal(surface: &SharedImageSurface, bounds: IRect, y: u32) -> Normal {
     assert!(y as i32 > bounds.y0);
     assert!((y as i32) + 1 < bounds.y1);
-    assert!(bounds.x1 >= bounds.x0 + 2);
+    assert!(bounds.width() >= 2);
 
     let get = |x, y| i16::from(surface.get_pixel(x, y).a);
     let x = bounds.x1 as u32 - 1;
@@ -183,8 +183,8 @@ pub fn right_column_normal(surface: &SharedImageSurface, bounds: IRect, y: u32) 
 #[inline]
 pub fn bottom_left_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
     // Surface needs to be at least 2×2.
-    assert!(bounds.x1 >= bounds.x0 + 2);
-    assert!(bounds.y1 >= bounds.y0 + 2);
+    assert!(bounds.width() >= 2);
+    assert!(bounds.height() >= 2);
 
     let get = |x, y| i16::from(surface.get_pixel(x, y).a);
     let x = bounds.x0 as u32;
@@ -208,7 +208,7 @@ pub fn bottom_left_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal
 pub fn bottom_row_normal(surface: &SharedImageSurface, bounds: IRect, x: u32) -> Normal {
     assert!(x as i32 > bounds.x0);
     assert!((x as i32) + 1 < bounds.x1);
-    assert!(bounds.y1 >= bounds.y0 + 2);
+    assert!(bounds.height() >= 2);
 
     let get = |x, y| i16::from(surface.get_pixel(x, y).a);
     let y = bounds.y1 as u32 - 1;
@@ -232,8 +232,8 @@ pub fn bottom_row_normal(surface: &SharedImageSurface, bounds: IRect, x: u32) ->
 #[inline]
 pub fn bottom_right_normal(surface: &SharedImageSurface, bounds: IRect) -> Normal {
     // Surface needs to be at least 2×2.
-    assert!(bounds.x1 >= bounds.x0 + 2);
-    assert!(bounds.y1 >= bounds.y0 + 2);
+    assert!(bounds.width() >= 2);
+    assert!(bounds.height() >= 2);
 
     let get = |x, y| i16::from(surface.get_pixel(x, y).a);
     let x = bounds.x1 as u32 - 1;

@@ -352,8 +352,8 @@ impl FilterEffect for FeTurbulence {
             self.num_octaves,
             self.type_,
             self.stitch_tiles,
-            f64::from(bounds.x1 - bounds.x0),
-            f64::from(bounds.y1 - bounds.y0),
+            f64::from(bounds.width()),
+            f64::from(bounds.height()),
         );
 
         let mut output_surface = ImageSurface::create(
