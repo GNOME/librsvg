@@ -331,7 +331,7 @@ mod tests {
         assert_eq!(tr, r);
 
         let t = cairo::Matrix::new(2.0, 0.0, 0.0, 2.0, 1.5, 1.5);
-        let tr = r.transform(&m);
+        let tr = r.transform(&t);
         assert_approx_eq_cairo!(2.34_f64, tr.x);
         assert_approx_eq_cairo!(2.34_f64, tr.y);
         assert_approx_eq_cairo!(6.28_f64, tr.width);
