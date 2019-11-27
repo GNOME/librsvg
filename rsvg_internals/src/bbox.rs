@@ -74,11 +74,11 @@ fn combine_rects(
 ) -> Option<cairo::Rectangle> {
     match (r1, r2, clip) {
         (r1, None, _) => r1,
-        (None, Some(r2), _) => Some(r2.transform(&affine)),
-        (Some(r1), Some(r2), true) => r2
-            .transform(&affine)
+        (None, Some(r2), _) => Some(affine.transform_rect(&r2)),
+        (Some(r1), Some(r2), true) => affine
+            .transform_rect(&r2)
             .intersection(&r1)
             .or_else(|| Some(cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0))),
-        (Some(r1), Some(r2), false) => Some(r2.transform(&affine).union(&r1)),
+        (Some(r1), Some(r2), false) => Some(affine.transform_rect(&r2).union(&r1)),
     }
 }

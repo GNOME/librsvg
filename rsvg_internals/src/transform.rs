@@ -18,6 +18,8 @@ where Self: std::marker::Sized
     fn inverse(&self) -> Option<Self>;
 
     fn pre_transform(&self, mat: &Self) -> Self;
+
+    fn transform_rect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
 }
 
 impl TransformExt for Transform {
@@ -31,6 +33,46 @@ impl TransformExt for Transform {
 
     fn pre_transform(&self, mat: &Self) -> Self {
         cairo::Matrix::multiply(mat, self)
+    }
+
+    fn transform_rect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
+        let points = vec![
+            self.transform_point(rect.x, rect.y),
+            self.transform_point(rect.x + rect.width, rect.y),
+            self.transform_point(rect.x, rect.y + rect.height),
+            self.transform_point(rect.x + rect.width, rect.y + rect.height),
+        ];
+
+        let (mut xmin, mut ymin, mut xmax, mut ymax) = {
+            let (x, y) = points[0];
+
+            (x, y, x, y)
+        };
+
+        for &(x, y) in points.iter().take(4).skip(1) {
+            if x < xmin {
+                xmin = x;
+            }
+
+            if x > xmax {
+                xmax = x;
+            }
+
+            if y < ymin {
+                ymin = y;
+            }
+
+            if y > ymax {
+                ymax = y;
+            }
+        }
+
+        cairo::Rectangle {
+            x: xmin,
+            y: ymin,
+            width: xmax - xmin,
+            height: ymax - ymin,
+        }
     }
 }
 
@@ -272,8 +314,30 @@ fn make_rotation_matrix(angle_degrees: f64, tx: f64, ty: f64) -> Transform {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::float_eq_cairo::ApproxEqCairo;
     use float_cmp::ApproxEq;
     use std::f64;
+
+    #[test]
+    fn transform_rect() {
+        let r = cairo::Rectangle {
+            x: 0.42,
+            y: 0.42,
+            width: 3.14,
+            height: 3.14,
+        };
+
+        let t = cairo::Matrix::identity();
+        let tr = t.transform_rect(&r);
+        assert_eq!(tr, r);
+
+        let t = cairo::Matrix::new(2.0, 0.0, 0.0, 2.0, 1.5, 1.5);
+        let tr = t.transform_rect(&r);
+        assert_approx_eq_cairo!(2.34_f64, tr.x);
+        assert_approx_eq_cairo!(2.34_f64, tr.y);
+        assert_approx_eq_cairo!(6.28_f64, tr.width);
+        assert_approx_eq_cairo!(6.28_f64, tr.height);
+    }
 
     fn parse_transform(s: &str) -> Result<Transform, ValueErrorKind> {
         Transform::parse_str(s)
