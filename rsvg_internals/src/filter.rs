@@ -10,6 +10,7 @@ use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseError, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
+use crate::transform::Transform;
 
 /// The <filter> node.
 pub struct Filter {
@@ -49,14 +50,14 @@ impl Filter {
         &self,
         computed_from_target_node: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-        affine: cairo::Matrix,
+        affine: Transform,
         width: f64,
         height: f64,
     ) -> BoundingBox {
         // Filters use the properties of the target node.
         let values = computed_from_target_node;
 
-        let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
+        let mut bbox = BoundingBox::new(&Transform::identity());
 
         // affine is set up in FilterContext::new() in such a way that for
         // filterunits == ObjectBoundingBox affine includes scaling to correct width, height and
@@ -104,7 +105,7 @@ impl Filter {
             width,
             height,
         };
-        let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(Some(rect));
+        let other_bbox = BoundingBox::new(&Transform::identity()).with_rect(Some(rect));
         bbox.clip(&other_bbox);
 
         bbox

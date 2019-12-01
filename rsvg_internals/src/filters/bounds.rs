@@ -1,10 +1,9 @@
 //! Filter primitive subregion computation.
-use cairo;
-
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
 use crate::length::*;
 use crate::rect::IRect;
+use crate::transform::Transform;
 
 use super::context::{FilterContext, FilterInput};
 
@@ -64,8 +63,8 @@ impl<'a> BoundsBuilder<'a> {
                 self.standard_input_was_referenced = true;
             }
             FilterInput::PrimitiveOutput(ref output) => {
-                let input_bbox = BoundingBox::new(&cairo::Matrix::identity())
-                    .with_rect(Some(output.bounds.into()));
+                let input_bbox =
+                    BoundingBox::new(&Transform::identity()).with_rect(Some(output.bounds.into()));
                 self.bbox.insert(&input_bbox);
             }
         }
@@ -128,7 +127,7 @@ impl<'a> BoundsBuilder<'a> {
         }
 
         // Convert into the surface coordinate system.
-        let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
+        let mut bbox = BoundingBox::new(&Transform::identity());
         bbox.insert(&self.bbox);
         bbox
     }
