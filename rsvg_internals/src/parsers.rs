@@ -24,11 +24,20 @@ impl<'a> From<BasicParseError<'a>> for ParseError {
     }
 }
 
+/// Trait to parse values using `cssparser::Parser`.
 pub trait Parse: Sized {
+    /// Error type for parse errors.
     type Err;
 
+    /// Parses a value out of the `parser`.
+    ///
+    /// All value types should implement this for composability.
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, Self::Err>;
 
+    /// Convenience function to parse a value out of a `&str`.
+    ///
+    /// This is useful mostly for tests which want to avoid creating a
+    /// `cssparser::Parser` by hand.
     fn parse_str(s: &str) -> Result<Self, Self::Err> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
@@ -40,10 +49,12 @@ pub trait Parse: Sized {
     }
 }
 
+/// Extra utility methods for `cssparser::Parser`.
 pub trait CssParserExt {
     /// Avoid infinities.
     fn expect_finite_number(&mut self) -> Result<f32, ValueErrorKind>;
 
+    /// Consumes a comma if it exists, or does nothing.
     fn optional_comma(&mut self);
 }
 

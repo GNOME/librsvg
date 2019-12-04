@@ -24,8 +24,8 @@ pub trait Property<T> {
 /// The macro will generate a `StrokeLinejoin` enum with the provided
 /// variants.  It will generate an `impl Default for StrokeLinejoin`
 /// with the provided `default:` value.  Finally, it will generate an
-/// `impl Parse for StrokeLinejoin`, from `parsers::Parse`, where
-/// `type Data = ()` and `type Err = ValueErrorKind`.
+/// `impl Parse for StrokeLinejoin`, from `parsers::Parse`, with
+/// `type Err = ValueErrorKind`.
 #[macro_export]
 macro_rules! make_property {
     ($computed_values_type: ty,
