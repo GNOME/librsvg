@@ -540,8 +540,9 @@ impl SpecifiedValues {
                 // Ignore illegal values; don't set the whole node to be in error in that case.
 
                 rsvg_log!(
-                    "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    \
-                     property will be ignored)",
+                    "(ignoring invalid presentation attribute {:?}\n    \
+                         value=\"{}\"\n    \
+                         {})",
                     attr.expanded(),
                     value,
                     e
