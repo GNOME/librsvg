@@ -1536,6 +1536,13 @@ pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) 
         // this is RSVG_ERROR_FAILED, the only error code available in RsvgError
         assert!(code == 0);
 
+        // Log this, in case the calling program passes a NULL GError, so we can at least
+        // diagnose things by asking for RSVG_LOG.
+        //
+        // See https://gitlab.gnome.org/GNOME/gtk/issues/2294 for an example of code that
+        // passed a NULL GError and so we had no easy way to see what was wrong.
+        rsvg_log!("{}", msg);
+
         glib_sys::g_set_error_literal(
             err,
             rsvg_rust_error_quark(),
