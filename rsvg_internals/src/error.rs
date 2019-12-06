@@ -26,8 +26,8 @@ pub enum ValueErrorKind {
 /// A complete error for an attribute and its erroneous value
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
-    attr: QualName,
-    err: ValueErrorKind,
+    pub attr: QualName,
+    pub err: ValueErrorKind,
 }
 
 impl NodeError {

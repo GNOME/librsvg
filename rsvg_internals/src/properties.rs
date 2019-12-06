@@ -531,10 +531,13 @@ impl SpecifiedValues {
         // like style="marker: #foo;".  So, pass false for accept_shorthands here.
         match parse_property(&attr, &mut parser, false).attribute(attr.clone()) {
             Ok(prop) => self.set_parsed_property(&prop),
+
+            // not a presentation attribute
+            Err(NodeError { err: ValueErrorKind::UnknownProperty, .. }) => (),
+
             Err(e) => {
                 // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
-                // Ignore unsupported / illegal values; don't set the whole
-                // node to be in error in that case.
+                // Ignore illegal values; don't set the whole node to be in error in that case.
 
                 rsvg_log!(
                     "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    \
@@ -546,8 +549,6 @@ impl SpecifiedValues {
             }
         }
 
-        // If we didn't ignore property errors, we could just return this:
-        // ParsedProperty::parse().attribute(attr)
         Ok(())
     }
 
