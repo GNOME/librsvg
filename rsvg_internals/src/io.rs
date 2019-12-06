@@ -16,7 +16,7 @@ use gio::{
 use glib::{self, Bytes as GBytes, Cast};
 
 use crate::allowed_url::AllowedUrl;
-use crate::error::{LoadingError, RsvgError};
+use crate::error::LoadingError;
 
 pub struct BinaryData {
     pub data: Vec<u8>,
@@ -61,7 +61,7 @@ pub fn get_input_stream_for_loading(
     let num_read = buffered.fill(2, cancellable)?;
     if num_read < 2 {
         // FIXME: this string was localized in the original; localize it
-        return Err(glib::Error::new(RsvgError, "Input file is too short").into());
+        return Err(LoadingError::XmlParseError(String::from("Input file is too short")));
     }
 
     let buf = buffered.peek_buffer();
