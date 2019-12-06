@@ -1,6 +1,7 @@
 use cssparser::Parser;
 
 use crate::allowed_url::{Fragment, Href};
+use crate::error::ValueErrorKind;
 use crate::parsers::Parse;
 use crate::parsers::ParseError;
 
@@ -33,25 +34,20 @@ impl IRI {
 }
 
 impl Parse for IRI {
-    type Err = ParseError;
+    type Err = ValueErrorKind;
 
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<IRI, ParseError> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<IRI, ValueErrorKind> {
         if parser
             .try_parse(|i| i.expect_ident_matching("none"))
             .is_ok()
         {
             Ok(IRI::None)
         } else {
-            let url = parser
-                .expect_url()
-                .map_err(|_| ParseError::new("expected url"))?;
-
-            parser
-                .expect_exhausted()
-                .map_err(|_| ParseError::new("expected url"))?;
+            let url = parser.expect_url()?;
+            parser.expect_exhausted()?;
 
             match Href::parse(&url).map_err(|_| ParseError::new("could not parse href"))? {
-                Href::PlainUrl(_) => Err(ParseError::new("href requires a fragment identifier")),
+                Href::PlainUrl(_) => Err(ParseError::new("href requires a fragment identifier"))?,
                 Href::WithFragment(f) => Ok(IRI::Resource(f)),
             }
         }
