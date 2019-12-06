@@ -529,11 +529,11 @@ impl SpecifiedValues {
         // Presentation attributes don't accept shorthands, e.g. there is no
         // attribute like marker="#foo" and it needs to be set in the style attribute
         // like style="marker: #foo;".  So, pass false for accept_shorthands here.
-        match parse_property(&attr, &mut parser, false).attribute(attr.clone()) {
+        match parse_property(&attr, &mut parser, false) {
             Ok(prop) => self.set_parsed_property(&prop),
 
             // not a presentation attribute
-            Err(NodeError { err: ValueErrorKind::UnknownProperty, .. }) => (),
+            Err(ValueErrorKind::UnknownProperty) => (),
 
             Err(e) => {
                 // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values

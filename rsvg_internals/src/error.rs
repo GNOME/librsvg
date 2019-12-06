@@ -23,6 +23,26 @@ pub enum ValueErrorKind {
     Value(String),
 }
 
+impl fmt::Display for ValueErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            ValueErrorKind::UnknownProperty => write!(f, "unknown property name"),
+
+            ValueErrorKind::Parse(ref n) => write!(
+                f,
+                "parse error: {}",
+                n.display
+            ),
+
+            ValueErrorKind::Value(ref s) => write!(
+                f,
+                "invalid value: {}",
+                s
+            ),
+        }
+    }
+}
+
 /// A complete error for an attribute and its erroneous value
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
@@ -62,21 +82,7 @@ impl error::Error for NodeError {
 
 impl fmt::Display for NodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.err {
-            ValueErrorKind::UnknownProperty => write!(f, "unknown property name"),
-
-            ValueErrorKind::Parse(ref n) => write!(
-                f,
-                "parse error: {}",
-                n.display
-            ),
-
-            ValueErrorKind::Value(ref s) => write!(
-                f,
-                "invalid value: {}",
-                s
-            ),
-        }
+        write!(f, "{:?}: {}", self.attr.expanded(), self.err)
     }
 }
 
