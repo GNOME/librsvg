@@ -44,10 +44,7 @@ pub use crate::color::{rsvg_css_parse_color, ColorKind, ColorSpec};
 
 pub use crate::dpi::{rsvg_rust_set_default_dpi_x_y, Dpi};
 
-pub use crate::error::{
-    rsvg_rust_error_quark, set_gerror, DefsLookupErrorKind, HrefError, LoadingError,
-    RenderingError, RSVG_ERROR_FAILED,
-};
+pub use crate::error::{DefsLookupErrorKind, HrefError, LoadingError, RenderingError};
 
 pub use crate::handle::{
     Handle, LoadOptions, RsvgDimensionData, RsvgPositionData, RsvgSizeFunc, SizeCallback,
@@ -61,9 +58,7 @@ pub use crate::structure::IntrinsicDimensions;
 
 pub use crate::surface_utils::{
     iterators::Pixels,
-    shared_surface::{
-        SharedImageSurface, SurfaceType,
-    },
+    shared_surface::{SharedImageSurface, SurfaceType},
 };
 
 pub use crate::viewbox::ViewBox;

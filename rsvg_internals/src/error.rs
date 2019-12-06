@@ -4,10 +4,6 @@ use std::fmt;
 use cairo;
 use cssparser::BasicParseError;
 use glib;
-use glib::error::ErrorDomain;
-use glib::translate::*;
-use glib_sys;
-use libc;
 use markup5ever::QualName;
 
 use crate::allowed_url::Fragment;
@@ -313,20 +309,6 @@ impl From<glib::Error> for LoadingError {
     }
 }
 
-pub fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) {
-    unsafe {
-        // this is RSVG_ERROR_FAILED, the only error code available in RsvgError
-        assert!(code == 0);
-
-        glib_sys::g_set_error_literal(
-            err,
-            rsvg_rust_error_quark(),
-            code as libc::c_int,
-            msg.to_glib_none().0,
-        );
-    }
-}
-
 #[cfg(test)]
 pub fn is_parse_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
     match *r {
@@ -341,38 +323,4 @@ pub fn is_value_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
         Err(ValueErrorKind::Value(_)) => true,
         _ => false,
     }
-}
-
-/// Used as a generic error to translate to glib::Error
-///
-/// This type implements `glib::error::ErrorDomain`, so it can be used
-/// to obtain the error code while calling `glib::Error::new()`.  Unfortunately
-/// the public librsvg API does not have detailed error codes yet, so we use
-/// this single value as the only possible error code to return.
-#[derive(Copy, Clone)]
-pub struct RsvgError;
-
-// Keep in sync with rsvg.h:RsvgError
-pub const RSVG_ERROR_FAILED: i32 = 0;
-
-impl ErrorDomain for RsvgError {
-    fn domain() -> glib::Quark {
-        glib::Quark::from_string("rsvg-error-quark")
-    }
-
-    fn code(self) -> i32 {
-        RSVG_ERROR_FAILED
-    }
-
-    fn from(code: i32) -> Option<Self> {
-        match code {
-            // We don't have enough information from glib error codes
-            _ => Some(RsvgError),
-        }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_rust_error_quark() -> glib_sys::GQuark {
-    RsvgError::domain().to_glib()
 }
