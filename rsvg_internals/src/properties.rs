@@ -542,7 +542,7 @@ impl SpecifiedValues {
                 rsvg_log!(
                     "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    \
                      property will be ignored)",
-                    attr,
+                    attr.expanded(),
                     value,
                     e
                 );
