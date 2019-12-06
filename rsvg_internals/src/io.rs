@@ -54,14 +54,14 @@ const GZ_MAGIC_1: u8 = 0x8b;
 pub fn get_input_stream_for_loading(
     stream: &InputStream,
     cancellable: Option<&Cancellable>,
-) -> Result<InputStream, glib::Error> {
+) -> Result<InputStream, LoadingError> {
     // detect gzipped streams (svgz)
 
     let buffered = BufferedInputStream::new(stream);
     let num_read = buffered.fill(2, cancellable)?;
     if num_read < 2 {
         // FIXME: this string was localized in the original; localize it
-        return Err(glib::Error::new(RsvgError, "Input file is too short"));
+        return Err(glib::Error::new(RsvgError, "Input file is too short").into());
     }
 
     let buf = buffered.peek_buffer();
