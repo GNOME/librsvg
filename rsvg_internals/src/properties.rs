@@ -615,7 +615,7 @@ impl SpecifiedValues {
 }
 
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
-fn parse_input<T>(input: &mut Parser) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
+fn parse_input<T>(input: &mut Parser) -> Result<SpecifiedValue<T>, ValueErrorKind>
 where
     T: Property<ComputedValues> + Clone + Default + Parse,
 {

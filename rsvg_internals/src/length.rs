@@ -235,8 +235,6 @@ fn make_err() -> ValueErrorKind {
 }
 
 impl<N: Normalize> Parse for Length<N> {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Length<N>, ValueErrorKind> {
         let length = {
             let token = parser.next().map_err(|_| {

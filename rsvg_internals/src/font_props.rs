@@ -59,8 +59,6 @@ impl FontSizeSpec {
 }
 
 impl Parse for FontSizeSpec {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, crate::error::ValueErrorKind> {
         let parser_state = parser.state();
 
@@ -118,8 +116,6 @@ pub enum FontWeightSpec {
 }
 
 impl Parse for FontWeightSpec {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, crate::error::ValueErrorKind> {
         if let Ok(r) = parser.try_parse(|p| {
             p.expect_ident()
@@ -190,8 +186,6 @@ impl LetterSpacingSpec {
 }
 
 impl Parse for LetterSpacingSpec {
-    type Err = ValueErrorKind;
-
     fn parse(
         parser: &mut Parser<'_, '_>,
     ) -> Result<LetterSpacingSpec, crate::error::ValueErrorKind> {
@@ -228,8 +222,6 @@ impl Parse for LetterSpacingSpec {
 pub struct SingleFontFamily(pub String);
 
 impl Parse for SingleFontFamily {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<SingleFontFamily, ValueErrorKind> {
         parse_single_font_family(parser)
             .map_err(|_| ValueErrorKind::from(ParseError::new("expected font family")))

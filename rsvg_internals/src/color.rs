@@ -9,8 +9,6 @@ use crate::util::utf8_cstr;
 pub use cssparser::Color;
 
 impl Parse for cssparser::Color {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<cssparser::Color, ValueErrorKind> {
         cssparser::Color::parse(parser)
             .map_err(|_| ValueErrorKind::Parse(ParseError::new("invalid syntax for color")))
@@ -18,8 +16,6 @@ impl Parse for cssparser::Color {
 }
 
 impl Parse for cssparser::RGBA {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<cssparser::RGBA, ValueErrorKind> {
         match cssparser::Color::parse(parser) {
             Ok(cssparser::Color::RGBA(rgba)) => Ok(rgba),

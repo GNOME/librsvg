@@ -29,8 +29,6 @@ impl ViewBox {
 }
 
 impl Parse for ViewBox {
-    type Err = ValueErrorKind;
-
     // Parse a viewBox attribute
     // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
     //

@@ -8,8 +8,6 @@ use crate::error::*;
 use crate::parsers::{finite_f32, CssParserExt, Parse, ParseError};
 
 impl Parse for cairo::Matrix {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
         let matrix = parse_transform_list(parser)?;
 

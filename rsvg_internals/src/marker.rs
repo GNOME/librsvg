@@ -35,8 +35,6 @@ impl Default for MarkerUnits {
 }
 
 impl Parse for MarkerUnits {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerUnits, ValueErrorKind> {
         let loc = parser.current_source_location();
 
@@ -73,8 +71,6 @@ impl Default for MarkerOrient {
 }
 
 impl Parse for MarkerOrient {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerOrient, ValueErrorKind> {
         if parser
             .try_parse(|p| p.expect_ident_matching("auto"))

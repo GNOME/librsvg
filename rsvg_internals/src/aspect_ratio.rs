@@ -219,8 +219,6 @@ fn parse_fit_mode(s: &str) -> Result<FitMode, ValueErrorKind> {
 }
 
 impl Parse for AspectRatio {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<AspectRatio, ValueErrorKind> {
         let defer = parser
             .try_parse(|p| p.expect_ident_matching("defer"))

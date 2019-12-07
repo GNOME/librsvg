@@ -36,19 +36,16 @@ impl<'a> From<BasicParseError<'a>> for ParseError {
 
 /// Trait to parse values using `cssparser::Parser`.
 pub trait Parse: Sized {
-    /// Error type for parse errors.
-    type Err;
-
     /// Parses a value out of the `parser`.
     ///
     /// All value types should implement this for composability.
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, Self::Err>;
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind>;
 
     /// Convenience function to parse a value out of a `&str`.
     ///
     /// This is useful mostly for tests which want to avoid creating a
     /// `cssparser::Parser` by hand.
-    fn parse_str(s: &str) -> Result<Self, Self::Err> {
+    fn parse_str(s: &str) -> Result<Self, ValueErrorKind> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
@@ -86,7 +83,7 @@ pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
     }
 }
 
-pub trait ParseValue<T: Parse<Err = ValueErrorKind>> {
+pub trait ParseValue<T: Parse> {
     /// Parses a `value` string into a type `T`.
     fn parse(&self, value: &str) -> Result<T, NodeError>;
 
@@ -98,7 +95,7 @@ pub trait ParseValue<T: Parse<Err = ValueErrorKind>> {
     ) -> Result<T, NodeError>;
 }
 
-impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for QualName {
+impl<T: Parse> ParseValue<T> for QualName {
     fn parse(&self, value: &str) -> Result<T, NodeError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
@@ -121,8 +118,6 @@ impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for QualName {
 }
 
 impl Parse for f64 {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<f64, ValueErrorKind> {
         Ok(f64::from(parser.expect_finite_number().map_err(|_| {
             ValueErrorKind::Parse(ParseError::new("expected number"))

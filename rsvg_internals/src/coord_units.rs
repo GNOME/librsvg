@@ -13,8 +13,6 @@ pub enum CoordUnits {
 }
 
 impl Parse for CoordUnits {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<CoordUnits, ValueErrorKind> {
         let loc = parser.current_source_location();
 
@@ -64,8 +62,6 @@ macro_rules! coord_units {
         }
 
         impl $crate::parsers::Parse for $name {
-            type Err = $crate::error::ValueErrorKind;
-
             fn parse(
                 parser: &mut ::cssparser::Parser<'_, '_>,
             ) -> Result<Self, $crate::error::ValueErrorKind> {

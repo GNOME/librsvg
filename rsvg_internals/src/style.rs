@@ -18,8 +18,6 @@ pub enum StyleType {
 }
 
 impl Parse for StyleType {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<StyleType, ValueErrorKind> {
         parser
             .expect_ident_matching("text/css")

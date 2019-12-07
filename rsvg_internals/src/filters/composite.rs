@@ -212,9 +212,7 @@ impl FilterEffect for FeComposite {
 }
 
 impl Parse for Operator {
-    type Err = ValueErrorKind;
-
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, Self::Err> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
         let loc = parser.current_source_location();
 
         parser

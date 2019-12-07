@@ -60,8 +60,6 @@ impl Angle {
 // angle ::= number ("deg" | "grad" | "rad")?
 //
 impl Parse for Angle {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Angle, ValueErrorKind> {
         let angle = {
             let token = parser

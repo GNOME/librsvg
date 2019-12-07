@@ -40,8 +40,6 @@ make_property!(
     },
     parse_impl: {
         impl Parse for BaselineShift {
-            type Err = ValueErrorKind;
-
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
             fn parse(parser: &mut Parser<'_, '_>) -> Result<BaselineShift, crate::error::ValueErrorKind> {
@@ -553,8 +551,6 @@ make_property!(
 
     parse_impl: {
         impl Parse for TextDecoration {
-            type Err = ValueErrorKind;
-
             fn parse(parser: &mut Parser<'_, '_>) -> Result<TextDecoration, ValueErrorKind> {
                 let mut overline = false;
                 let mut underline = false;
@@ -711,8 +707,6 @@ make_property!(
     newtype: String,
     parse_impl: {
         impl Parse for XmlLang {
-            type Err = ValueErrorKind;
-
             fn parse(
                 parser: &mut Parser<'_, '_>,
             ) -> Result<XmlLang, ValueErrorKind> {

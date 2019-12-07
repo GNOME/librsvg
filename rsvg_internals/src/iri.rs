@@ -34,8 +34,6 @@ impl IRI {
 }
 
 impl Parse for IRI {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<IRI, ValueErrorKind> {
         if parser
             .try_parse(|i| i.expect_ident_matching("none"))

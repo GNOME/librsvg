@@ -43,8 +43,6 @@ enum SpreadMethod {
 }
 
 impl Parse for SpreadMethod {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<SpreadMethod, ValueErrorKind> {
         let loc = parser.current_source_location();
 
