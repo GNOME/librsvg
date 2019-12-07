@@ -7,7 +7,6 @@ use language_tags::LanguageTag;
 use locale_config::{LanguageRange, Locale};
 
 use crate::error::*;
-use crate::parsers::ParseError;
 
 // No extensions at the moment.
 static IMPLEMENTED_EXTENSIONS: &[&str] = &[];
@@ -100,10 +99,9 @@ impl SystemLanguage {
                     }
                 }
 
-                Err(e) => Err(ValueErrorKind::Parse(ParseError::new(&format!(
-                    "invalid language tag: \"{}\"",
-                    e
-                )))),
+                Err(e) => Err(ValueErrorKind::parse_error(&format!(
+                    "invalid language tag: \"{}\"", e)
+                )),
             },
         )
     }
@@ -121,14 +119,14 @@ fn locale_accepts_language_tag(
         let str_locale_range = locale_range.as_ref();
 
         let locale_tag = LanguageTag::from_str(str_locale_range).map_err(|e| {
-            ValueErrorKind::Parse(ParseError::new(&format!(
+            ValueErrorKind::parse_error(&format!(
                 "invalid language tag \"{}\" in locale: {}",
                 str_locale_range, e
-            )))
+            ))
         })?;
 
         if !locale_tag.is_language_range() {
-            return Err(ValueErrorKind::Value(format!(
+            return Err(ValueErrorKind::value_error(&format!(
                 "language tag \"{}\" is not a language range",
                 locale_tag
             )));

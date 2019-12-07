@@ -60,9 +60,7 @@ macro_rules! make_property {
                             ),
                     })
                     .map_err(|_| {
-                        crate::error::ValueErrorKind::Parse(crate::parsers::ParseError::new(
-                            "unexpected value",
-                        ))
+                        crate::error::ValueErrorKind::parse_error("unexpected value")
                     })
             }
         }

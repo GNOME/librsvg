@@ -3,7 +3,6 @@ use libc;
 
 use crate::error::*;
 use crate::parsers::Parse;
-use crate::parsers::ParseError;
 use crate::util::utf8_cstr;
 
 pub use cssparser::Color;
@@ -11,7 +10,7 @@ pub use cssparser::Color;
 impl Parse for cssparser::Color {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<cssparser::Color, ValueErrorKind> {
         cssparser::Color::parse(parser)
-            .map_err(|_| ValueErrorKind::Parse(ParseError::new("invalid syntax for color")))
+            .map_err(|_| ValueErrorKind::parse_error("invalid syntax for color"))
     }
 }
 
@@ -22,9 +21,7 @@ impl Parse for cssparser::RGBA {
             Ok(cssparser::Color::CurrentColor) => Err(ValueErrorKind::Value(
                 "currentColor is not allowed here".to_string(),
             )),
-            _ => Err(ValueErrorKind::Parse(ParseError::new(
-                "invalid syntax for color",
-            ))),
+            _ => Err(ValueErrorKind::parse_error("invalid syntax for color")),
         }
     }
 }

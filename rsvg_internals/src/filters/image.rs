@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::{NodeError, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{ParseError, ParseValue};
+use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -170,7 +170,7 @@ impl NodeTrait for FeImage {
                 // "path" is used by some older Adobe Illustrator versions
                 expanded_name!(xlink "href") | expanded_name!(svg "path") => {
                     let href = Href::parse(value).map_err(|_| {
-                        NodeError::parse_error(attr, ParseError::new("could not parse href"))
+                        NodeError::parse_error(attr, "could not parse href")
                     })?;
 
                     self.href = Some(href);

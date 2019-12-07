@@ -14,7 +14,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
 use crate::length::*;
 use crate::node::*;
-use crate::parsers::{Parse, ParseError, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::*;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
@@ -50,9 +50,7 @@ impl Parse for MarkerUnits {
                 ),
             })
             .map_err(|_| {
-                ValueErrorKind::Parse(ParseError::new(
-                    "expected \"userSpaceOnUse\" or \"strokeWidth\"",
-                ))
+                ValueErrorKind::parse_error("expected \"userSpaceOnUse\" or \"strokeWidth\"")
             })
     }
 }

@@ -4,7 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{self, ParseError};
+use crate::parsers;
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
 
@@ -150,10 +150,7 @@ impl ColorChannel {
             "G" => Ok(ColorChannel::G),
             "B" => Ok(ColorChannel::B),
             "A" => Ok(ColorChannel::A),
-            _ => Err(NodeError::parse_error(
-                attr,
-                ParseError::new("invalid value"),
-            )),
+            _ => Err(NodeError::parse_error(attr, "invalid value")),
         }
     }
 }

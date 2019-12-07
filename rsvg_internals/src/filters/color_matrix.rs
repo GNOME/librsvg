@@ -6,7 +6,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
-use crate::parsers::{self, ParseError};
+use crate::parsers;
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
@@ -78,21 +78,19 @@ impl NodeTrait for FeColorMatrix {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
-                        let NumberList(v) = NumberList::parse_str(
-                            value,
-                            NumberListLength::Exact(20),
-                        )
-                        .map_err(|err| {
-                            NodeError::parse_error(
-                                attr,
-                                match err {
-                                    NumberListError::IncorrectNumberOfElements => {
-                                        ParseError::new("incorrect number of elements: expected 20")
-                                    }
-                                    NumberListError::Parse(err) => err,
+                        let NumberList(v) =
+                            NumberList::parse_str(value, NumberListLength::Exact(20)).map_err(
+                                |err| {
+                                    let err_str = match err {
+                                        NumberListError::IncorrectNumberOfElements => {
+                                            "incorrect number of elements: expected 20"
+                                        }
+                                        NumberListError::Parse(ref err) => &err,
+                                    };
+
+                                    NodeError::parse_error(attr, err_str)
                                 },
-                            )
-                        })?;
+                            )?;
                         let matrix = Matrix4x5::from_row_slice(&v);
                         let mut matrix = matrix.fixed_resize(0.0);
                         matrix[(4, 4)] = 1.0;
@@ -233,10 +231,7 @@ impl OperationType {
             "saturate" => Ok(OperationType::Saturate),
             "hueRotate" => Ok(OperationType::HueRotate),
             "luminanceToAlpha" => Ok(OperationType::LuminanceToAlpha),
-            _ => Err(NodeError::parse_error(
-                attr,
-                ParseError::new("invalid value"),
-            )),
+            _ => Err(NodeError::parse_error(attr, "invalid value")),
         }
     }
 }

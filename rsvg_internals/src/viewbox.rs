@@ -2,7 +2,7 @@ use cssparser::Parser;
 
 use crate::error::*;
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{Parse, ParseError};
+use crate::parsers::Parse;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ViewBox {
@@ -38,17 +38,17 @@ impl Parse for ViewBox {
     //
     // Where w and h must be nonnegative.
     fn parse(parser: &mut Parser<'_, '_>) -> Result<ViewBox, ValueErrorKind> {
-        let NumberList(v) = NumberList::parse(parser, NumberListLength::Exact(4))
-            .map_err(|_| ParseError::new("string does not match 'x [,] y [,] w [,] h'"))?;
+        let NumberList(v) =
+            NumberList::parse(parser, NumberListLength::Exact(4)).map_err(|_| {
+                ValueErrorKind::parse_error("string does not match 'x [,] y [,] w [,] h'")
+            })?;
 
         let (x, y, width, height) = (v[0], v[1], v[2], v[3]);
 
         if width >= 0.0 && height >= 0.0 {
             Ok(ViewBox::new(x, y, width, height))
         } else {
-            Err(ValueErrorKind::Value(
-                "width and height must not be negative".to_string(),
-            ))
+            Err(ValueErrorKind::value_error("width and height must not be negative"))
         }
     }
 }

@@ -48,7 +48,7 @@ use std::marker::PhantomData;
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::parsers::Parse;
-use crate::parsers::{finite_f32, ParseError};
+use crate::parsers::finite_f32;
 use crate::properties::ComputedValues;
 
 /// Units for length values.
@@ -228,19 +228,19 @@ const MM_PER_INCH: f64 = 25.4;
 const PICA_PER_INCH: f64 = 6.0;
 
 fn make_err() -> ValueErrorKind {
-    ValueErrorKind::Parse(ParseError::new(
+    ValueErrorKind::parse_error(
         "expected length: number(\"em\" | \"ex\" | \"px\" | \"in\" | \"cm\" | \"mm\" | \"pt\" | \
          \"pc\" | \"%\")?",
-    ))
+    )
 }
 
 impl<N: Normalize> Parse for Length<N> {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Length<N>, ValueErrorKind> {
         let length = {
             let token = parser.next().map_err(|_| {
-                ValueErrorKind::Parse(ParseError::new(
+                ValueErrorKind::parse_error(
                     "expected number and optional symbol, or number and percentage",
-                ))
+                )
             })?;
 
             match *token {

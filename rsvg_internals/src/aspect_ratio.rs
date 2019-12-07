@@ -27,7 +27,6 @@ use cairo;
 use crate::error::ValueErrorKind;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::parsers::Parse;
-use crate::parsers::ParseError;
 use crate::viewbox::ViewBox;
 use cssparser::{CowRcStr, Parser};
 
@@ -206,7 +205,7 @@ fn parse_align_xy(ident: &CowRcStr) -> Result<Option<(X, Y)>, ValueErrorKind> {
         "xMidYMax" => Ok(Some((X(Mid), Y(Max)))),
         "xMaxYMax" => Ok(Some((X(Max), Y(Max)))),
 
-        _ => Err(ValueErrorKind::Parse(ParseError::new("invalid alignment"))),
+        _ => Err(ValueErrorKind::parse_error("invalid alignment")),
     }
 }
 
@@ -214,7 +213,7 @@ fn parse_fit_mode(s: &str) -> Result<FitMode, ValueErrorKind> {
     match s {
         "meet" => Ok(FitMode::Meet),
         "slice" => Ok(FitMode::Slice),
-        _ => Err(ValueErrorKind::Parse(ParseError::new("invalid fit mode"))),
+        _ => Err(ValueErrorKind::parse_error("invalid fit mode")),
     }
 }
 
@@ -226,21 +225,21 @@ impl Parse for AspectRatio {
 
         let align_xy = parser.try_parse(|p| {
             p.expect_ident()
-                .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
+                .map_err(|_| ValueErrorKind::parse_error("expected identifier"))
                 .and_then(|ident| parse_align_xy(ident))
         })?;
 
         let fit = parser
             .try_parse(|p| {
                 p.expect_ident()
-                    .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected identifier")))
+                    .map_err(|_| ValueErrorKind::parse_error("expected identifier"))
                     .and_then(|ident| parse_fit_mode(ident))
             })
             .unwrap_or_default();
 
         parser
             .expect_exhausted()
-            .map_err(|_| ValueErrorKind::Parse(ParseError::new("extra data in AspectRatio")))?;
+            .map_err(|_| ValueErrorKind::parse_error("extra data in AspectRatio"))?;
 
         let align = align_xy.map(|(x, y)| Align { x, y, fit });
 

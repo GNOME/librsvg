@@ -8,7 +8,6 @@ use markup5ever::QualName;
 
 use crate::allowed_url::Fragment;
 use crate::node::RsvgNode;
-use crate::parsers::ParseError;
 
 /// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]
@@ -17,10 +16,20 @@ pub enum ValueErrorKind {
     UnknownProperty,
 
     /// The value could not be parsed
-    Parse(ParseError),
+    Parse(String),
 
     // The value could be parsed, but is invalid
     Value(String),
+}
+
+impl ValueErrorKind {
+    pub fn parse_error(s: &str) -> ValueErrorKind {
+        ValueErrorKind::Parse(s.to_string())
+    }
+
+    pub fn value_error(s: &str) -> ValueErrorKind {
+        ValueErrorKind::Value(s.to_string())
+    }
 }
 
 impl fmt::Display for ValueErrorKind {
@@ -28,10 +37,10 @@ impl fmt::Display for ValueErrorKind {
         match *self {
             ValueErrorKind::UnknownProperty => write!(f, "unknown property name"),
 
-            ValueErrorKind::Parse(ref n) => write!(
+            ValueErrorKind::Parse(ref s) => write!(
                 f,
                 "parse error: {}",
-                n.display
+                s
             ),
 
             ValueErrorKind::Value(ref s) => write!(
@@ -55,10 +64,10 @@ impl NodeError {
         NodeError { attr, err: error }
     }
 
-    pub fn parse_error(attr: QualName, error: ParseError) -> NodeError {
+    pub fn parse_error(attr: QualName, error: &str) -> NodeError {
         NodeError {
             attr,
-            err: ValueErrorKind::Parse(error),
+            err: ValueErrorKind::Parse(error.to_string()),
         }
     }
 
@@ -86,12 +95,6 @@ impl fmt::Display for NodeError {
     }
 }
 
-impl From<ParseError> for ValueErrorKind {
-    fn from(pe: ParseError) -> ValueErrorKind {
-        ValueErrorKind::Parse(pe)
-    }
-}
-
 impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
     fn from(e: BasicParseError<'_>) -> ValueErrorKind {
         let BasicParseError { kind, location: _ } =  e;
@@ -104,7 +107,7 @@ impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
             BasicParseErrorKind::QualifiedRuleInvalid => "invalid qualified rule",
         };
 
-        ValueErrorKind::Parse(ParseError::new(msg))
+        ValueErrorKind::parse_error(msg)
     }
 }
 
@@ -212,12 +215,12 @@ pub enum HrefError {
 impl From<HrefError> for ValueErrorKind {
     fn from(e: HrefError) -> ValueErrorKind {
         match e {
-            HrefError::ParseError => ValueErrorKind::Parse(ParseError::new("url parse error")),
+            HrefError::ParseError => ValueErrorKind::parse_error("url parse error"),
             HrefError::FragmentForbidden => {
-                ValueErrorKind::Value("fragment identifier not allowed".to_string())
+                ValueErrorKind::value_error("fragment identifier not allowed")
             }
             HrefError::FragmentRequired => {
-                ValueErrorKind::Value("fragment identifier required".to_string())
+                ValueErrorKind::value_error("fragment identifier required")
             }
         }
     }

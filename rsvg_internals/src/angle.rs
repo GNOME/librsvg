@@ -3,7 +3,7 @@ use std::f64::consts::*;
 use cssparser::{Parser, Token};
 
 use crate::error::ValueErrorKind;
-use crate::parsers::{finite_f32, Parse, ParseError};
+use crate::parsers::{finite_f32, Parse};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Angle(f64);
@@ -62,9 +62,7 @@ impl Angle {
 impl Parse for Angle {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Angle, ValueErrorKind> {
         let angle = {
-            let token = parser
-                .next()
-                .map_err(|_| ParseError::new("expected angle"))?;
+            let token = parser.next()?;
 
             match *token {
                 Token::Number { value, .. } => {
@@ -82,20 +80,20 @@ impl Parse for Angle {
                         "grad" => Angle::from_degrees(value * 360.0 / 400.0),
                         "rad" => Angle::new(value),
                         _ => {
-                            return Err(ValueErrorKind::Parse(ParseError::new(
+                            return Err(ValueErrorKind::parse_error(
                                 "expected 'deg' | 'grad' | 'rad'",
-                            )));
+                            ));
                         }
                     }
                 }
 
-                _ => return Err(ValueErrorKind::Parse(ParseError::new("expected angle"))),
+                _ => return Err(ValueErrorKind::parse_error("expected angle")),
             }
         };
 
         parser
             .expect_exhausted()
-            .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected angle")))?;
+            .map_err(|_| ValueErrorKind::parse_error("expected angle"))?;
 
         Ok(angle)
     }

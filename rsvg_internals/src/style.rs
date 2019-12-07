@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{Parse, ParseError, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 
 /// Represents the syntax used in the <style> node.
@@ -23,9 +23,7 @@ impl Parse for StyleType {
             .expect_ident_matching("text/css")
             .and_then(|_| Ok(StyleType::TextCss))
             .map_err(|_| {
-                ValueErrorKind::Parse(ParseError::new(
-                    "only the \"text/css\" style type is supported",
-                ))
+                ValueErrorKind::parse_error("only the \"text/css\" style type is supported")
             })
     }
 }

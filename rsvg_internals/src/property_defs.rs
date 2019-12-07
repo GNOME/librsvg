@@ -6,7 +6,7 @@ use crate::dasharray::Dasharray;
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
-use crate::parsers::{Parse, ParseError};
+use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::unit_interval::UnitInterval;
@@ -46,9 +46,9 @@ make_property!(
                 let parser_state = parser.state();
 
                 {
-                    let token = parser.next().map_err(|_| crate::error::ValueErrorKind::Parse(
-                        crate::parsers::ParseError::new("expected token"),
-                    ))?;
+                    let token = parser.next().map_err(|_| {
+                        crate::error::ValueErrorKind::parse_error("expected token")
+                    })?;
 
                     if let Token::Ident(ref cow) = token {
                         match cow.as_ref() {
@@ -561,15 +561,15 @@ make_property!(
                 }
 
                 while !parser.is_exhausted() {
-                    let cow = parser.expect_ident().map_err(|_| crate::error::ValueErrorKind::Parse(
-                        crate::parsers::ParseError::new("expected identifier"),
-                    ))?;
+                    let cow = parser.expect_ident().map_err(|_| {
+                        crate::error::ValueErrorKind::parse_error("expected identifier")
+                    })?;
 
                     match cow.as_ref() {
                         "overline" => overline = true,
                         "underline" => underline = true,
                         "line-through" => strike = true,
-                        _ => return Err(ValueErrorKind::Parse(ParseError::new("invalid syntax"))),
+                        _ => return Err(ValueErrorKind::parse_error("invalid syntax")),
                     }
                 }
 

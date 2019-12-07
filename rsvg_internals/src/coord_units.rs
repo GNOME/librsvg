@@ -1,7 +1,7 @@
 use cssparser::{CowRcStr, Parser, Token};
 
 use crate::error::ValueErrorKind;
-use crate::parsers::{Parse, ParseError};
+use crate::parsers::Parse;
 
 /// Defines the units to be used for things that can consider a
 /// coordinate system in terms of the current transformation, or in
@@ -28,9 +28,7 @@ impl Parse for CoordUnits {
                 ),
             })
             .map_err(|_| {
-                ValueErrorKind::Parse(ParseError::new(
-                    "expected 'userSpaceOnUse' or 'objectBoundingBox'",
-                ))
+                ValueErrorKind::parse_error("expected 'userSpaceOnUse' or 'objectBoundingBox'")
             })
     }
 }

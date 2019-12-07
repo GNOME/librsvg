@@ -11,7 +11,7 @@ use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::paint_server::{AsPaintSource, PaintSource};
-use crate::parsers::{Parse, ParseError, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
@@ -59,7 +59,7 @@ impl Parse for SpreadMethod {
                 ),
             })
             .map_err(|_| {
-                ValueErrorKind::Parse(ParseError::new("expected 'pad' | 'reflect' | 'repeat'"))
+                ValueErrorKind::parse_error("expected 'pad' | 'reflect' | 'repeat'")
             })
     }
 }

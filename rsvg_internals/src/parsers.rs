@@ -5,19 +5,6 @@ use std::str;
 
 use crate::error::{NodeError, ValueErrorKind};
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ParseError {
-    pub display: String,
-}
-
-impl ParseError {
-    pub fn new<T: AsRef<str>>(msg: T) -> ParseError {
-        ParseError {
-            display: msg.as_ref().to_string(),
-        }
-    }
-}
-
 /// Trait to parse values using `cssparser::Parser`.
 pub trait Parse: Sized {
     /// Parses a value out of the `parser`.
@@ -104,7 +91,7 @@ impl<T: Parse> ParseValue<T> for QualName {
 impl Parse for f64 {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<f64, ValueErrorKind> {
         Ok(f64::from(parser.expect_finite_number().map_err(|_| {
-            ValueErrorKind::Parse(ParseError::new("expected number"))
+            ValueErrorKind::Parse(String::from("expected number"))
         })?))
     }
 }

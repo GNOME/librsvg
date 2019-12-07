@@ -6,15 +6,13 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
-use crate::parsers::{self, ParseError};
+use crate::parsers;
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::SharedImageSurface,
-    EdgeMode,
-    ImageSurfaceDataExt,
-    Pixel,
+    EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 
@@ -110,10 +108,7 @@ impl NodeTrait for FeConvolveMatrix {
                         "false" => false,
                         "true" => true,
                         _ => {
-                            return Err(NodeError::parse_error(
-                                attr,
-                                ParseError::new("expected false or true"),
-                            ));
+                            return Err(NodeError::parse_error(attr, "expected false or true"));
                         }
                     }
                 }
@@ -175,14 +170,11 @@ impl NodeTrait for FeConvolveMatrix {
                 // #352: Parse as an unbounded list rather than exact length to prevent aborts due
                 //       to huge allocation attempts by underlying Vec::with_capacity().
                 let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
-                    .map_err(|err| {
-                        NodeError::parse_error(
-                            attr.clone(),
-                            match err {
-                                NumberListError::IncorrectNumberOfElements => unreachable!(),
-                                NumberListError::Parse(err) => err,
-                            },
-                        )
+                    .map_err(|err| match err {
+                        NumberListError::IncorrectNumberOfElements => unreachable!(),
+                        NumberListError::Parse(ref err) => {
+                            NodeError::parse_error(attr.clone(), &err)
+                        }
                     })?;
 
                 if v.len() != number_of_elements {
@@ -370,10 +362,7 @@ impl EdgeMode {
             "duplicate" => Ok(EdgeMode::Duplicate),
             "wrap" => Ok(EdgeMode::Wrap),
             "none" => Ok(EdgeMode::None),
-            _ => Err(NodeError::parse_error(
-                attr,
-                ParseError::new("invalid value"),
-            )),
+            _ => Err(NodeError::parse_error(attr, "invalid value")),
         }
     }
 }

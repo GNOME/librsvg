@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
-use crate::parsers::{self, ParseError};
+use crate::parsers;
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     iterators::Pixels,
@@ -71,10 +71,7 @@ impl FunctionType {
             "discrete" => Ok(FunctionType::Discrete),
             "linear" => Ok(FunctionType::Linear),
             "gamma" => Ok(FunctionType::Gamma),
-            _ => Err(NodeError::parse_error(
-                attr,
-                ParseError::new("invalid value"),
-            )),
+            _ => Err(NodeError::parse_error(attr, "invalid value")),
         }
     }
 }
@@ -221,7 +218,7 @@ macro_rules! func_x {
                                 NumberList::parse_str(value, NumberListLength::Unbounded).map_err(
                                     |err| {
                                         if let NumberListError::Parse(err) = err {
-                                            NodeError::parse_error(attr, err)
+                                            NodeError::parse_error(attr, &err)
                                         } else {
                                             panic!("unexpected number list error");
                                         }
