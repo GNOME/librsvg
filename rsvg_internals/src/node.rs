@@ -181,7 +181,7 @@ impl NodeData {
 
             parse()
                 .map(|c| self.cond = c)
-                .map_err(|e| NodeError::attribute_error(attr, e))?;
+                .map_err(|e| NodeError::new(attr, e))?;
         }
 
         Ok(())
