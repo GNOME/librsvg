@@ -145,13 +145,13 @@ struct Images {
 }
 
 impl Images {
-    pub fn new() -> Images {
+    fn new() -> Images {
         Images {
             images: Default::default(),
         }
     }
 
-    pub fn lookup(
+    fn lookup(
         &mut self,
         load_options: &LoadOptions,
         href: &str,
