@@ -72,7 +72,10 @@ impl Document {
     }
 
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
-        self.images.borrow_mut().lookup(&self.load_options, href)
+        let aurl = AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
+            .map_err(|_| LoadingError::BadUrl)?;
+
+        self.images.borrow_mut().lookup(&self.load_options, &aurl)
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
@@ -154,12 +157,9 @@ impl Images {
     fn lookup(
         &mut self,
         load_options: &LoadOptions,
-        href: &str,
+        aurl: &AllowedUrl,
     ) -> Result<SharedImageSurface, LoadingError> {
-        let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref())
-            .map_err(|_| LoadingError::BadUrl)?;
-
-        match self.images.entry(aurl) {
+        match self.images.entry(aurl.clone()) {
             Entry::Occupied(e) => e.get().clone(),
             Entry::Vacant(e) => {
                 let surface = load_image(load_options, e.key());

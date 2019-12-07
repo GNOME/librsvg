@@ -55,7 +55,7 @@ impl LoadOptions {
 
     pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> Self {
         LoadOptions {
-            base_url: Some((*base_url).clone()),
+            base_url: Some((**base_url).clone()),
             unlimited_size: self.unlimited_size,
             keep_image_data: self.keep_image_data,
             locale: self.locale.clone(),
