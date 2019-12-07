@@ -93,7 +93,7 @@ unsafe extern "C" fn rsvg_sax_serror_cb(user_data: *mut libc::c_void, error: xml
     );
     xml2_parser
         .state
-        .error(ParseFromStreamError::XmlParseError(full_error_message));
+        .error(LoadingError::XmlParseError(full_error_message));
 }
 
 fn free_xml_parser_and_doc(parser: xmlParserCtxtPtr) {
@@ -395,7 +395,7 @@ impl Xml2Parser {
         unlimited_size: bool,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
-    ) -> Result<Box<Xml2Parser>, ParseFromStreamError> {
+    ) -> Result<Box<Xml2Parser>, LoadingError> {
         init_libxml2();
 
         // The Xml2Parser we end up creating, if
@@ -434,7 +434,7 @@ impl Xml2Parser {
             if parser.is_null() {
                 // on error, xmlCreateIOParserCtxt() frees our ctx via the
                 // stream_ctx_close function
-                Err(ParseFromStreamError::CouldNotCreateXmlParser)
+                Err(LoadingError::CouldNotCreateXmlParser)
             } else {
                 xml2_parser.parser.set(parser);
 
@@ -445,7 +445,7 @@ impl Xml2Parser {
         }
     }
 
-    pub fn parse(&self) -> Result<(), ParseFromStreamError> {
+    pub fn parse(&self) -> Result<(), LoadingError> {
         unsafe {
             let parser = self.parser.get();
 
@@ -456,11 +456,11 @@ impl Xml2Parser {
             let io_error = err_ref.take();
 
             if let Some(io_error) = io_error {
-                Err(ParseFromStreamError::IoError(io_error))
+                Err(LoadingError::Glib(io_error))
             } else if !xml_parse_success {
                 let xerr = xmlCtxtGetLastError(parser as *mut _);
                 let msg = xml2_error_to_string(xerr);
-                Err(ParseFromStreamError::XmlParseError(msg))
+                Err(LoadingError::XmlParseError(msg))
             } else {
                 Ok(())
             }
@@ -500,29 +500,6 @@ fn xml2_error_to_string(xerr: xmlErrorPtr) -> String {
         } else {
             // The error is not set?  Return a generic message :(
             "Error parsing XML data".to_string()
-        }
-    }
-}
-
-// Error returned when parsing an XML stream
-#[derive(Clone)]
-pub enum ParseFromStreamError {
-    // We couldn't even create the libxml2 parser
-    CouldNotCreateXmlParser,
-
-    // GIO error from the I/O callbacks
-    IoError(glib::Error),
-
-    // XML parsing error from libxml2
-    XmlParseError(String),
-}
-
-impl From<ParseFromStreamError> for LoadingError {
-    fn from(e: ParseFromStreamError) -> LoadingError {
-        match e {
-            ParseFromStreamError::CouldNotCreateXmlParser => LoadingError::CouldNotCreateXmlParser,
-            ParseFromStreamError::IoError(e) => LoadingError::Glib(e),
-            ParseFromStreamError::XmlParseError(s) => LoadingError::XmlParseError(s),
         }
     }
 }

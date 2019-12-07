@@ -14,7 +14,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
 use crate::length::*;
 use crate::node::*;
-use crate::parsers::{Parse, ParseError, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::*;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
@@ -35,8 +35,6 @@ impl Default for MarkerUnits {
 }
 
 impl Parse for MarkerUnits {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerUnits, ValueErrorKind> {
         let loc = parser.current_source_location();
 
@@ -52,9 +50,7 @@ impl Parse for MarkerUnits {
                 ),
             })
             .map_err(|_| {
-                ValueErrorKind::Parse(ParseError::new(
-                    "expected \"userSpaceOnUse\" or \"strokeWidth\"",
-                ))
+                ValueErrorKind::parse_error("expected \"userSpaceOnUse\" or \"strokeWidth\"")
             })
     }
 }
@@ -73,8 +69,6 @@ impl Default for MarkerOrient {
 }
 
 impl Parse for MarkerOrient {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerOrient, ValueErrorKind> {
         if parser
             .try_parse(|p| p.expect_ident_matching("auto"))

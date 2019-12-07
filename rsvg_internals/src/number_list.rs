@@ -1,6 +1,6 @@
 use cssparser::{Parser, ParserInput};
 
-use crate::parsers::{CssParserExt, ParseError};
+use crate::parsers::CssParserExt;
 
 #[derive(Eq, PartialEq)]
 pub enum NumberListLength {
@@ -11,7 +11,7 @@ pub enum NumberListLength {
 #[derive(Debug, PartialEq)]
 pub enum NumberListError {
     IncorrectNumberOfElements,
-    Parse(ParseError),
+    Parse(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -38,7 +38,7 @@ impl NumberList {
             }
 
             v.push(f64::from(parser.expect_finite_number().map_err(|_| {
-                NumberListError::Parse(ParseError::new("expected number"))
+                NumberListError::Parse("expected number".to_string())
             })?));
 
             if let NumberListLength::Exact(l) = length {

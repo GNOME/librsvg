@@ -1,8 +1,8 @@
 use cssparser::Parser;
 
 use crate::allowed_url::{Fragment, Href};
+use crate::error::ValueErrorKind;
 use crate::parsers::Parse;
-use crate::parsers::ParseError;
 
 /// Used where style properties take a funciri or "none"
 ///
@@ -33,25 +33,23 @@ impl IRI {
 }
 
 impl Parse for IRI {
-    type Err = ParseError;
-
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<IRI, ParseError> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<IRI, ValueErrorKind> {
         if parser
             .try_parse(|i| i.expect_ident_matching("none"))
             .is_ok()
         {
             Ok(IRI::None)
         } else {
-            let url = parser
-                .expect_url()
-                .map_err(|_| ParseError::new("expected url"))?;
+            let url = parser.expect_url()?;
+            parser.expect_exhausted()?;
 
-            parser
-                .expect_exhausted()
-                .map_err(|_| ParseError::new("expected url"))?;
+            let href = Href::parse(&url)
+                .map_err(|_| ValueErrorKind::parse_error("could not parse href"))?;
 
-            match Href::parse(&url).map_err(|_| ParseError::new("could not parse href"))? {
-                Href::PlainUrl(_) => Err(ParseError::new("href requires a fragment identifier")),
+            match href {
+                Href::PlainUrl(_) => Err(ValueErrorKind::parse_error(
+                    "href requires a fragment identifier",
+                ))?,
                 Href::WithFragment(f) => Ok(IRI::Resource(f)),
             }
         }

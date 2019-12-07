@@ -6,7 +6,7 @@ use crate::dasharray::Dasharray;
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
-use crate::parsers::{Parse, ParseError};
+use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::unit_interval::UnitInterval;
@@ -40,17 +40,15 @@ make_property!(
     },
     parse_impl: {
         impl Parse for BaselineShift {
-            type Err = ValueErrorKind;
-
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
             fn parse(parser: &mut Parser<'_, '_>) -> Result<BaselineShift, crate::error::ValueErrorKind> {
                 let parser_state = parser.state();
 
                 {
-                    let token = parser.next().map_err(|_| crate::error::ValueErrorKind::Parse(
-                        crate::parsers::ParseError::new("expected token"),
-                    ))?;
+                    let token = parser.next().map_err(|_| {
+                        crate::error::ValueErrorKind::parse_error("expected token")
+                    })?;
 
                     if let Token::Ident(ref cow) = token {
                         match cow.as_ref() {
@@ -553,8 +551,6 @@ make_property!(
 
     parse_impl: {
         impl Parse for TextDecoration {
-            type Err = ValueErrorKind;
-
             fn parse(parser: &mut Parser<'_, '_>) -> Result<TextDecoration, ValueErrorKind> {
                 let mut overline = false;
                 let mut underline = false;
@@ -565,15 +561,15 @@ make_property!(
                 }
 
                 while !parser.is_exhausted() {
-                    let cow = parser.expect_ident().map_err(|_| crate::error::ValueErrorKind::Parse(
-                        crate::parsers::ParseError::new("expected identifier"),
-                    ))?;
+                    let cow = parser.expect_ident().map_err(|_| {
+                        crate::error::ValueErrorKind::parse_error("expected identifier")
+                    })?;
 
                     match cow.as_ref() {
                         "overline" => overline = true,
                         "underline" => underline = true,
                         "line-through" => strike = true,
-                        _ => return Err(ValueErrorKind::Parse(ParseError::new("invalid syntax"))),
+                        _ => return Err(ValueErrorKind::parse_error("invalid syntax")),
                     }
                 }
 
@@ -711,8 +707,6 @@ make_property!(
     newtype: String,
     parse_impl: {
         impl Parse for XmlLang {
-            type Err = ValueErrorKind;
-
             fn parse(
                 parser: &mut Parser<'_, '_>,
             ) -> Result<XmlLang, ValueErrorKind> {

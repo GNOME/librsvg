@@ -1,7 +1,7 @@
 use cssparser::{CowRcStr, Parser, Token};
 
 use crate::error::ValueErrorKind;
-use crate::parsers::{Parse, ParseError};
+use crate::parsers::Parse;
 
 /// Defines the units to be used for things that can consider a
 /// coordinate system in terms of the current transformation, or in
@@ -13,8 +13,6 @@ pub enum CoordUnits {
 }
 
 impl Parse for CoordUnits {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<CoordUnits, ValueErrorKind> {
         let loc = parser.current_source_location();
 
@@ -30,9 +28,7 @@ impl Parse for CoordUnits {
                 ),
             })
             .map_err(|_| {
-                ValueErrorKind::Parse(ParseError::new(
-                    "expected 'userSpaceOnUse' or 'objectBoundingBox'",
-                ))
+                ValueErrorKind::parse_error("expected 'userSpaceOnUse' or 'objectBoundingBox'")
             })
     }
 }
@@ -64,8 +60,6 @@ macro_rules! coord_units {
         }
 
         impl $crate::parsers::Parse for $name {
-            type Err = $crate::error::ValueErrorKind;
-
             fn parse(
                 parser: &mut ::cssparser::Parser<'_, '_>,
             ) -> Result<Self, $crate::error::ValueErrorKind> {

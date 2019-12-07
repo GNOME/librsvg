@@ -1,7 +1,7 @@
 use cssparser::Parser;
 
 use crate::error::*;
-use crate::parsers::{CssParserExt, Parse, ParseError};
+use crate::parsers::{CssParserExt, Parse};
 use crate::util;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, PartialOrd)]
@@ -14,13 +14,11 @@ impl UnitInterval {
 }
 
 impl Parse for UnitInterval {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<UnitInterval, ValueErrorKind> {
         let x = f64::from(
             parser
                 .expect_finite_number()
-                .map_err(|_| ValueErrorKind::Parse(ParseError::new("expected number")))?,
+                .map_err(|_| ValueErrorKind::parse_error("expected number"))?,
         );
 
         Ok(UnitInterval::clamp(x))

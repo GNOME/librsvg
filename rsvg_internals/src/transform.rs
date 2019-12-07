@@ -5,11 +5,9 @@ use std::f64::consts::*;
 use cssparser::{ParseError as CssParseError, Parser, Token};
 
 use crate::error::*;
-use crate::parsers::{finite_f32, CssParserExt, Parse, ParseError};
+use crate::parsers::{finite_f32, CssParserExt, Parse};
 
 impl Parse for cairo::Matrix {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
         let matrix = parse_transform_list(parser)?;
 
@@ -42,9 +40,7 @@ fn parse_transform_list(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, Va
 }
 
 fn make_expected_function_error() -> ValueErrorKind {
-    ValueErrorKind::from(ParseError::new(
-        "expected matrix|translate|scale|rotate|skewX|skewY",
-    ))
+    ValueErrorKind::parse_error("expected matrix|translate|scale|rotate|skewX|skewY")
 }
 
 fn parse_transform_command(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {

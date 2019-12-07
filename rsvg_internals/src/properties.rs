@@ -518,34 +518,38 @@ impl SpecifiedValues {
         }
     }
 
-    fn parse_attribute_pair(
+    fn parse_one_presentation_attribute(
         &mut self,
         attr: QualName,
         value: &str,
-        accept_shorthands: bool,
     ) -> Result<(), NodeError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        match parse_property(&attr, &mut parser, accept_shorthands).attribute(attr.clone()) {
+        // Presentation attributes don't accept shorthands, e.g. there is no
+        // attribute like marker="#foo" and it needs to be set in the style attribute
+        // like style="marker: #foo;".  So, pass false for accept_shorthands here.
+        match parse_property(&attr, &mut parser, false) {
             Ok(prop) => self.set_parsed_property(&prop),
+
+            // not a presentation attribute
+            Err(ValueErrorKind::UnknownProperty) => (),
+
             Err(e) => {
                 // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
-                // Ignore unsupported / illegal values; don't set the whole
-                // node to be in error in that case.
+                // Ignore illegal values; don't set the whole node to be in error in that case.
 
                 rsvg_log!(
-                    "(style property error for attribute {:?}\n    value=\"{}\"\n    {}\n    \
-                     property will be ignored)",
-                    attr,
+                    "(ignoring invalid presentation attribute {:?}\n    \
+                         value=\"{}\"\n    \
+                         {})",
+                    attr.expanded(),
                     value,
                     e
                 );
             }
         }
 
-        // If we didn't ignore property errors, we could just return this:
-        // ParsedProperty::parse().attribute(attr)
         Ok(())
     }
 
@@ -557,21 +561,21 @@ impl SpecifiedValues {
             match attr.expanded() {
                 expanded_name!(svg "xml:lang") => {
                     // xml:lang is a non-presentation attribute and as such cannot have the
-                    // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
-                    // rather call its parser directly.
+                    // "inherit" value.  So, we don't call parse_one_presentation_attribute()
+                    // for it, but rather call its parser directly.
                     self.xml_lang =
                         SpecifiedValue::Specified(XmlLang::parse_str(value).attribute(attr)?);
                 }
 
                 expanded_name!(svg "xml:space") => {
                     // xml:space is a non-presentation attribute and as such cannot have the
-                    // "inherit" value.  So, we don't call parse_attribute_pair() for it, but
-                    // rather call its parser directly.
+                    // "inherit" value.  So, we don't call parse_one_presentation_attribute()
+                    // for it, but rather call its parser directly.
                     self.xml_space =
                         SpecifiedValue::Specified(XmlSpace::parse_str(value).attribute(attr)?);
                 }
 
-                _ => self.parse_attribute_pair(attr, value, false)?,
+                _ => self.parse_one_presentation_attribute(attr, value)?,
             }
         }
 
@@ -611,7 +615,7 @@ impl SpecifiedValues {
 }
 
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
-fn parse_input<T>(input: &mut Parser) -> Result<SpecifiedValue<T>, <T as Parse>::Err>
+fn parse_input<T>(input: &mut Parser) -> Result<SpecifiedValue<T>, ValueErrorKind>
 where
     T: Property<ComputedValues> + Clone + Default + Parse,
 {

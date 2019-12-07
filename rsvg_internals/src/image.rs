@@ -10,7 +10,7 @@ use crate::error::{NodeError, RenderingError};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
-use crate::parsers::{ParseError, ParseValue};
+use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::RectangleExt;
 use crate::viewbox::ViewBox;
@@ -42,7 +42,7 @@ impl NodeTrait for Image {
                 // "path" is used by some older Adobe Illustrator versions
                 expanded_name!(xlink "href") | expanded_name!(svg "path") => {
                     let href = Href::parse(value).map_err(|_| {
-                        NodeError::parse_error(attr, ParseError::new("could not parse href"))
+                        NodeError::parse_error(attr, "could not parse href")
                     })?;
 
                     self.href = Some(href);

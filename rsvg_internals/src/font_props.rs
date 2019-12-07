@@ -3,7 +3,7 @@ use cssparser::{BasicParseError, Parser, Token};
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::length::*;
-use crate::parsers::{Parse, ParseError};
+use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
@@ -59,8 +59,6 @@ impl FontSizeSpec {
 }
 
 impl Parse for FontSizeSpec {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, crate::error::ValueErrorKind> {
         let parser_state = parser.state();
 
@@ -71,9 +69,7 @@ impl Parse for FontSizeSpec {
 
                 {
                     let token = parser.next().map_err(|_| {
-                        crate::error::ValueErrorKind::Parse(crate::parsers::ParseError::new(
-                            "expected token",
-                        ))
+                        crate::error::ValueErrorKind::parse_error("expected token")
                     })?;
 
                     if let Token::Ident(ref cow) = token {
@@ -118,8 +114,6 @@ pub enum FontWeightSpec {
 }
 
 impl Parse for FontWeightSpec {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, crate::error::ValueErrorKind> {
         if let Ok(r) = parser.try_parse(|p| {
             p.expect_ident()
@@ -153,9 +147,9 @@ impl Parse for FontWeightSpec {
         {
             Ok(r)
         } else {
-            Err(ValueErrorKind::Parse(ParseError::new(
+            Err(ValueErrorKind::parse_error(
                 "invalid font-weight specification",
-            )))
+            ))
         }
     }
 }
@@ -190,8 +184,6 @@ impl LetterSpacingSpec {
 }
 
 impl Parse for LetterSpacingSpec {
-    type Err = ValueErrorKind;
-
     fn parse(
         parser: &mut Parser<'_, '_>,
     ) -> Result<LetterSpacingSpec, crate::error::ValueErrorKind> {
@@ -204,9 +196,7 @@ impl Parse for LetterSpacingSpec {
 
                 {
                     let token = parser.next().map_err(|_| {
-                        crate::error::ValueErrorKind::Parse(crate::parsers::ParseError::new(
-                            "expected token",
-                        ))
+                        crate::error::ValueErrorKind::parse_error("expected token")
                     })?;
 
                     if let Token::Ident(ref cow) = token {
@@ -228,11 +218,9 @@ impl Parse for LetterSpacingSpec {
 pub struct SingleFontFamily(pub String);
 
 impl Parse for SingleFontFamily {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<SingleFontFamily, ValueErrorKind> {
         parse_single_font_family(parser)
-            .map_err(|_| ValueErrorKind::from(ParseError::new("expected font family")))
+            .map_err(|_| ValueErrorKind::parse_error("expected font family"))
     }
 }
 

@@ -11,7 +11,7 @@ use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers::{ParseError, ParseValue};
+use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
@@ -131,9 +131,9 @@ impl NodeTrait for Primitive {
 
             match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(ValueErrorKind::Parse(ParseError::new(
+                _ => Err(ValueErrorKind::parse_error(
                     "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
-                ))),
+                )),
             }
         };
 
@@ -144,9 +144,9 @@ impl NodeTrait for Primitive {
 
             match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(ValueErrorKind::Parse(ParseError::new(
+                _ => Err(ValueErrorKind::parse_error(
                     "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
-                ))),
+                )),
             }
         };
 

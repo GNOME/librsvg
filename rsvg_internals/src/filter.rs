@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::ValueErrorKind;
 use crate::length::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{Parse, ParseError, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 
@@ -131,9 +131,9 @@ impl NodeTrait for Filter {
 
             match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(ValueErrorKind::Parse(ParseError::new(
+                _ => Err(ValueErrorKind::parse_error(
                     "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
-                ))),
+                )),
             }
         };
 
@@ -144,9 +144,9 @@ impl NodeTrait for Filter {
 
             match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(ValueErrorKind::Parse(ParseError::new(
+                _ => Err(ValueErrorKind::parse_error(
                     "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
-                ))),
+                )),
             }
         };
 

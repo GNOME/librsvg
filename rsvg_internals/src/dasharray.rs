@@ -17,8 +17,6 @@ impl Default for Dasharray {
 }
 
 impl Parse for Dasharray {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Dasharray, ValueErrorKind> {
         if parser
             .try_parse(|p| p.expect_ident_matching("none"))

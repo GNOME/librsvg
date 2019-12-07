@@ -2,17 +2,12 @@ use std::error::{self, Error};
 use std::fmt;
 
 use cairo;
-use cssparser::BasicParseError;
+use cssparser::{BasicParseError, BasicParseErrorKind};
 use glib;
-use glib::error::ErrorDomain;
-use glib::translate::*;
-use glib_sys;
-use libc;
 use markup5ever::QualName;
 
 use crate::allowed_url::Fragment;
 use crate::node::RsvgNode;
-use crate::parsers::ParseError;
 
 /// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]
@@ -21,24 +16,58 @@ pub enum ValueErrorKind {
     UnknownProperty,
 
     /// The value could not be parsed
-    Parse(ParseError),
+    Parse(String),
 
     // The value could be parsed, but is invalid
     Value(String),
 }
 
+impl ValueErrorKind {
+    pub fn parse_error(s: &str) -> ValueErrorKind {
+        ValueErrorKind::Parse(s.to_string())
+    }
+
+    pub fn value_error(s: &str) -> ValueErrorKind {
+        ValueErrorKind::Value(s.to_string())
+    }
+}
+
+impl fmt::Display for ValueErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            ValueErrorKind::UnknownProperty => write!(f, "unknown property name"),
+
+            ValueErrorKind::Parse(ref s) => write!(
+                f,
+                "parse error: {}",
+                s
+            ),
+
+            ValueErrorKind::Value(ref s) => write!(
+                f,
+                "invalid value: {}",
+                s
+            ),
+        }
+    }
+}
+
 /// A complete error for an attribute and its erroneous value
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
-    attr: QualName,
-    err: ValueErrorKind,
+    pub attr: QualName,
+    pub err: ValueErrorKind,
 }
 
 impl NodeError {
-    pub fn parse_error(attr: QualName, error: ParseError) -> NodeError {
+    pub fn new(attr: QualName, error: ValueErrorKind) -> NodeError {
+        NodeError { attr, err: error }
+    }
+
+    pub fn parse_error(attr: QualName, error: &str) -> NodeError {
         NodeError {
             attr,
-            err: ValueErrorKind::Parse(error),
+            err: ValueErrorKind::Parse(error.to_string()),
         }
     }
 
@@ -47,10 +76,6 @@ impl NodeError {
             attr,
             err: ValueErrorKind::Value(description.to_string()),
         }
-    }
-
-    pub fn attribute_error(attr: QualName, error: ValueErrorKind) -> NodeError {
-        NodeError { attr, err: error }
     }
 }
 
@@ -66,35 +91,23 @@ impl error::Error for NodeError {
 
 impl fmt::Display for NodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.err {
-            ValueErrorKind::UnknownProperty => write!(f, "unknown property name"),
-
-            ValueErrorKind::Parse(ref n) => write!(
-                f,
-                "error parsing value for attribute \"{}\": {}",
-                self.attr.local.to_string(),
-                n.display
-            ),
-
-            ValueErrorKind::Value(ref s) => write!(
-                f,
-                "invalid value for attribute \"{}\": {}",
-                self.attr.local.to_string(),
-                s
-            ),
-        }
-    }
-}
-
-impl From<ParseError> for ValueErrorKind {
-    fn from(pe: ParseError) -> ValueErrorKind {
-        ValueErrorKind::Parse(pe)
+        write!(f, "{:?}: {}", self.attr.expanded(), self.err)
     }
 }
 
 impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
     fn from(e: BasicParseError<'_>) -> ValueErrorKind {
-        ValueErrorKind::from(ParseError::from(e))
+        let BasicParseError { kind, location: _ } =  e;
+
+        let msg = match kind {
+            BasicParseErrorKind::UnexpectedToken(_) => "unexpected token",
+            BasicParseErrorKind::EndOfInput => "unexpected end of input",
+            BasicParseErrorKind::AtRuleInvalid(_) => "invalid @-rule",
+            BasicParseErrorKind::AtRuleBodyInvalid => "invalid @-rule body",
+            BasicParseErrorKind::QualifiedRuleInvalid => "invalid qualified rule",
+        };
+
+        ValueErrorKind::parse_error(msg)
     }
 }
 
@@ -177,7 +190,7 @@ pub trait AttributeResultExt<O, E> {
 impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O, E> for Result<O, E> {
     fn attribute(self, attr: QualName) -> Result<O, NodeError> {
         self.map_err(|e| e.into())
-            .map_err(|e| NodeError::attribute_error(attr, e))
+            .map_err(|e| NodeError::new(attr, e))
     }
 }
 
@@ -202,12 +215,12 @@ pub enum HrefError {
 impl From<HrefError> for ValueErrorKind {
     fn from(e: HrefError) -> ValueErrorKind {
         match e {
-            HrefError::ParseError => ValueErrorKind::Parse(ParseError::new("url parse error")),
+            HrefError::ParseError => ValueErrorKind::parse_error("url parse error"),
             HrefError::FragmentForbidden => {
-                ValueErrorKind::Value("fragment identifier not allowed".to_string())
+                ValueErrorKind::value_error("fragment identifier not allowed")
             }
             HrefError::FragmentRequired => {
-                ValueErrorKind::Value("fragment identifier required".to_string())
+                ValueErrorKind::value_error("fragment identifier required")
             }
         }
     }
@@ -313,20 +326,6 @@ impl From<glib::Error> for LoadingError {
     }
 }
 
-pub fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) {
-    unsafe {
-        // this is RSVG_ERROR_FAILED, the only error code available in RsvgError
-        assert!(code == 0);
-
-        glib_sys::g_set_error_literal(
-            err,
-            rsvg_rust_error_quark(),
-            code as libc::c_int,
-            msg.to_glib_none().0,
-        );
-    }
-}
-
 #[cfg(test)]
 pub fn is_parse_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
     match *r {
@@ -341,38 +340,4 @@ pub fn is_value_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
         Err(ValueErrorKind::Value(_)) => true,
         _ => false,
     }
-}
-
-/// Used as a generic error to translate to glib::Error
-///
-/// This type implements `glib::error::ErrorDomain`, so it can be used
-/// to obtain the error code while calling `glib::Error::new()`.  Unfortunately
-/// the public librsvg API does not have detailed error codes yet, so we use
-/// this single value as the only possible error code to return.
-#[derive(Copy, Clone)]
-pub struct RsvgError;
-
-// Keep in sync with rsvg.h:RsvgError
-pub const RSVG_ERROR_FAILED: i32 = 0;
-
-impl ErrorDomain for RsvgError {
-    fn domain() -> glib::Quark {
-        glib::Quark::from_string("rsvg-error-quark")
-    }
-
-    fn code(self) -> i32 {
-        RSVG_ERROR_FAILED
-    }
-
-    fn from(code: i32) -> Option<Self> {
-        match code {
-            // We don't have enough information from glib error codes
-            _ => Some(RsvgError),
-        }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_rust_error_quark() -> glib_sys::GQuark {
-    RsvgError::domain().to_glib()
 }

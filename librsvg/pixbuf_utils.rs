@@ -12,9 +12,11 @@ use libc;
 use url::Url;
 
 use rsvg_internals::{
-    set_gerror, Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError,
+    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError,
     RsvgDimensionData, SharedImageSurface, SizeCallback, SurfaceType,
 };
+
+use crate::c_api::set_gerror;
 
 fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {
     assert!(width > 0 && height > 0);

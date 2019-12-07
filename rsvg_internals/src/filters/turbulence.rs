@@ -4,7 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{self, ParseError};
+use crate::parsers;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{
@@ -431,10 +431,7 @@ impl StitchTiles {
         match s {
             "stitch" => Ok(StitchTiles::Stitch),
             "noStitch" => Ok(StitchTiles::NoStitch),
-            _ => Err(NodeError::parse_error(
-                attr,
-                ParseError::new("invalid value"),
-            )),
+            _ => Err(NodeError::parse_error(attr, "invalid value")),
         }
     }
 }
@@ -444,10 +441,7 @@ impl NoiseType {
         match s {
             "fractalNoise" => Ok(NoiseType::FractalNoise),
             "turbulence" => Ok(NoiseType::Turbulence),
-            _ => Err(NodeError::parse_error(
-                attr,
-                ParseError::new("invalid value"),
-            )),
+            _ => Err(NodeError::parse_error(attr, "invalid value")),
         }
     }
 }

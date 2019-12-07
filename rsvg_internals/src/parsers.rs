@@ -1,54 +1,22 @@
-use cssparser::{BasicParseError, BasicParseErrorKind, Parser, ParserInput, Token};
+use cssparser::{Parser, ParserInput, Token};
 use markup5ever::QualName;
 
 use std::str;
 
 use crate::error::{NodeError, ValueErrorKind};
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ParseError {
-    pub display: String,
-}
-
-impl ParseError {
-    pub fn new<T: AsRef<str>>(msg: T) -> ParseError {
-        ParseError {
-            display: msg.as_ref().to_string(),
-        }
-    }
-}
-
-impl<'a> From<BasicParseError<'a>> for ParseError {
-    fn from(e: BasicParseError<'_>) -> ParseError {
-        let BasicParseError { kind, location: _ } =  e;
-
-        let msg = match kind {
-            BasicParseErrorKind::UnexpectedToken(_) => "unexpected token",
-            BasicParseErrorKind::EndOfInput => "unexpected end of input",
-            BasicParseErrorKind::AtRuleInvalid(_) => "invalid @-rule",
-            BasicParseErrorKind::AtRuleBodyInvalid => "invalid @-rule body",
-            BasicParseErrorKind::QualifiedRuleInvalid => "invalid qualified rule",
-        };
-
-        ParseError::new(msg)
-    }
-}
-
 /// Trait to parse values using `cssparser::Parser`.
 pub trait Parse: Sized {
-    /// Error type for parse errors.
-    type Err;
-
     /// Parses a value out of the `parser`.
     ///
     /// All value types should implement this for composability.
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, Self::Err>;
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind>;
 
     /// Convenience function to parse a value out of a `&str`.
     ///
     /// This is useful mostly for tests which want to avoid creating a
     /// `cssparser::Parser` by hand.
-    fn parse_str(s: &str) -> Result<Self, Self::Err> {
+    fn parse_str(s: &str) -> Result<Self, ValueErrorKind> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
@@ -86,7 +54,7 @@ pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
     }
 }
 
-pub trait ParseValue<T: Parse<Err = ValueErrorKind>> {
+pub trait ParseValue<T: Parse> {
     /// Parses a `value` string into a type `T`.
     fn parse(&self, value: &str) -> Result<T, NodeError>;
 
@@ -98,12 +66,12 @@ pub trait ParseValue<T: Parse<Err = ValueErrorKind>> {
     ) -> Result<T, NodeError>;
 }
 
-impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for QualName {
+impl<T: Parse> ParseValue<T> for QualName {
     fn parse(&self, value: &str) -> Result<T, NodeError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser).map_err(|e| NodeError::attribute_error(self.clone(), e))
+        T::parse(&mut parser).map_err(|e| NodeError::new(self.clone(), e))
     }
 
     fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
@@ -116,16 +84,14 @@ impl<T: Parse<Err = ValueErrorKind>> ParseValue<T> for QualName {
 
         T::parse(&mut parser)
             .and_then(validate)
-            .map_err(|e| NodeError::attribute_error(self.clone(), e))
+            .map_err(|e| NodeError::new(self.clone(), e))
     }
 }
 
 impl Parse for f64 {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<f64, ValueErrorKind> {
         Ok(f64::from(parser.expect_finite_number().map_err(|_| {
-            ValueErrorKind::Parse(ParseError::new("expected number"))
+            ValueErrorKind::Parse(String::from("expected number"))
         })?))
     }
 }

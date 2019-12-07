@@ -44,8 +44,6 @@ macro_rules! make_property {
         impl_property!($computed_values_type, $name, $inherits_automatically);
 
         impl crate::parsers::Parse for $name {
-            type Err = crate::error::ValueErrorKind;
-
             fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
                 let loc = parser.current_source_location();
 
@@ -62,9 +60,7 @@ macro_rules! make_property {
                             ),
                     })
                     .map_err(|_| {
-                        crate::error::ValueErrorKind::Parse(crate::parsers::ParseError::new(
-                            "unexpected value",
-                        ))
+                        crate::error::ValueErrorKind::parse_error("unexpected value")
                     })
             }
         }
@@ -83,8 +79,6 @@ macro_rules! make_property {
         impl_property!($computed_values_type, $name, $inherits_automatically);
 
         impl crate::parsers::Parse for $name {
-            type Err = crate::error::ValueErrorKind;
-
             fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
                 Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
             }
@@ -105,8 +99,6 @@ macro_rules! make_property {
         $prop
 
         impl crate::parsers::Parse for $name {
-            type Err = crate::error::ValueErrorKind;
-
             fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
                 Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
             }

@@ -159,8 +159,6 @@ impl Deref for Points {
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
 impl Parse for Points {
-    type Err = ValueErrorKind;
-
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Points, ValueErrorKind> {
         let mut v = Vec::new();
 

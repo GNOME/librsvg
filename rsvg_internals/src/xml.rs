@@ -17,7 +17,7 @@ use crate::node::{NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::{Style, StyleType};
 use crate::text::NodeChars;
-use crate::xml2_load::{ParseFromStreamError, Xml2Parser};
+use crate::xml2_load::Xml2Parser;
 
 #[derive(Clone)]
 enum Context {
@@ -43,7 +43,7 @@ enum Context {
     XIncludeFallback(XIncludeContext),
 
     // An XML parsing error was found.  We will no-op upon any further XML events.
-    FatalError(ParseFromStreamError),
+    FatalError(LoadingError),
 }
 
 #[derive(Clone)]
@@ -140,7 +140,7 @@ impl XmlState {
         }
     }
 
-    fn check_last_error(&self) -> Result<(), ParseFromStreamError> {
+    fn check_last_error(&self) -> Result<(), LoadingError> {
         let inner = self.inner.borrow();
 
         match inner.context() {
@@ -151,7 +151,7 @@ impl XmlState {
 
     fn check_limits(&self) -> Result<(), ()> {
         if self.inner.borrow().num_loaded_elements > MAX_LOADED_ELEMENTS {
-            self.error(ParseFromStreamError::XmlParseError(format!(
+            self.error(LoadingError::XmlParseError(format!(
                 "cannot load more than {} XML elements",
                 MAX_LOADED_ELEMENTS
             )));
@@ -275,13 +275,13 @@ impl XmlState {
                 rsvg_log!("xml-stylesheet processing instruction does not have href; ignoring");
             }
         } else {
-            self.error(ParseFromStreamError::XmlParseError(String::from(
+            self.error(LoadingError::XmlParseError(String::from(
                 "invalid processing instruction data in xml-stylesheet",
             )));
         }
     }
 
-    pub fn error(&self, e: ParseFromStreamError) {
+    pub fn error(&self, e: LoadingError) {
         self.inner
             .borrow_mut()
             .context_stack
@@ -401,7 +401,7 @@ impl XmlState {
             Ok(()) => false,
             Err(AcquireError::ResourceError) => true,
             Err(AcquireError::FatalError(s)) => {
-                return Context::FatalError(ParseFromStreamError::XmlParseError(s))
+                return Context::FatalError(LoadingError::XmlParseError(s))
             }
         };
 
@@ -539,11 +539,12 @@ impl XmlState {
 
         // FIXME: pass a cancellable
         self.parse_from_stream(&stream, None).map_err(|e| match e {
-            ParseFromStreamError::CouldNotCreateXmlParser => {
+            LoadingError::CouldNotCreateXmlParser => {
                 AcquireError::FatalError(String::from("could not create XML parser"))
             }
-            ParseFromStreamError::IoError(_) => AcquireError::ResourceError,
-            ParseFromStreamError::XmlParseError(s) => AcquireError::FatalError(s),
+            LoadingError::Glib(_) => AcquireError::ResourceError,
+            LoadingError::XmlParseError(s) => AcquireError::FatalError(s),
+            _ => AcquireError::FatalError(String::from("unknown error")),
         })
     }
 
@@ -555,7 +556,7 @@ impl XmlState {
         &self,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
-    ) -> Result<(), ParseFromStreamError> {
+    ) -> Result<(), LoadingError> {
         let strong = self
             .inner
             .borrow()
@@ -644,8 +645,7 @@ pub fn xml_load_from_possibly_compressed_stream(
 
     state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));
 
-    let stream =
-        get_input_stream_for_loading(stream, cancellable).map_err(ParseFromStreamError::IoError)?;
+    let stream = get_input_stream_for_loading(stream, cancellable)?;
 
     state.build_document(&stream, cancellable)
 }

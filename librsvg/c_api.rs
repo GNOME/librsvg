@@ -11,6 +11,7 @@ use cairo::{self, ImageSurface};
 use cairo_sys;
 use gdk_pixbuf::Pixbuf;
 use gdk_pixbuf_sys;
+use glib::error::ErrorDomain;
 use libc;
 use url::Url;
 
@@ -34,9 +35,9 @@ use glib_sys;
 use gobject_sys::{self, GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
-    rsvg_log, set_gerror, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions,
+    rsvg_log, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions,
     LoadOptions, LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData,
-    RsvgSizeFunc, SharedImageSurface, SizeCallback, SurfaceType, ViewBox, RSVG_ERROR_FAILED,
+    RsvgSizeFunc, SharedImageSurface, SizeCallback, SurfaceType, ViewBox,
 };
 
 use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
@@ -1528,6 +1529,61 @@ fn rsvg_g_critical(msg: &str) {
 
         rsvg_g_critical_from_c(msg.to_glib_none().0);
     }
+}
+
+pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) {
+    unsafe {
+        // this is RSVG_ERROR_FAILED, the only error code available in RsvgError
+        assert!(code == 0);
+
+        // Log this, in case the calling program passes a NULL GError, so we can at least
+        // diagnose things by asking for RSVG_LOG.
+        //
+        // See https://gitlab.gnome.org/GNOME/gtk/issues/2294 for an example of code that
+        // passed a NULL GError and so we had no easy way to see what was wrong.
+        rsvg_log!("{}", msg);
+
+        glib_sys::g_set_error_literal(
+            err,
+            rsvg_rust_error_quark(),
+            code as libc::c_int,
+            msg.to_glib_none().0,
+        );
+    }
+}
+
+/// Used as a generic error to translate to glib::Error
+///
+/// This type implements `glib::error::ErrorDomain`, so it can be used
+/// to obtain the error code while calling `glib::Error::new()`.  Unfortunately
+/// the public librsvg API does not have detailed error codes yet, so we use
+/// this single value as the only possible error code to return.
+#[derive(Copy, Clone)]
+pub struct RsvgError;
+
+// Keep in sync with rsvg.h:RsvgError
+pub const RSVG_ERROR_FAILED: i32 = 0;
+
+impl ErrorDomain for RsvgError {
+    fn domain() -> glib::Quark {
+        glib::Quark::from_string("rsvg-error-quark")
+    }
+
+    fn code(self) -> i32 {
+        RSVG_ERROR_FAILED
+    }
+
+    fn from(code: i32) -> Option<Self> {
+        match code {
+            // We don't have enough information from glib error codes
+            _ => Some(RsvgError),
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_rust_error_quark() -> glib_sys::GQuark {
+    RsvgError::domain().to_glib()
 }
 
 #[cfg(test)]

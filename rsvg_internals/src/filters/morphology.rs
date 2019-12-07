@@ -6,7 +6,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{self, ParseError};
+use crate::parsers;
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -165,10 +165,7 @@ impl Operator {
         match s {
             "erode" => Ok(Operator::Erode),
             "dilate" => Ok(Operator::Dilate),
-            _ => Err(NodeError::parse_error(
-                attr,
-                ParseError::new("invalid value"),
-            )),
+            _ => Err(NodeError::parse_error(attr, "invalid value")),
         }
     }
 }
