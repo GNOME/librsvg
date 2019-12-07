@@ -1,4 +1,4 @@
-use cssparser::{BasicParseError, BasicParseErrorKind, Parser, ParserInput, Token};
+use cssparser::{Parser, ParserInput, Token};
 use markup5ever::QualName;
 
 use std::str;
@@ -15,22 +15,6 @@ impl ParseError {
         ParseError {
             display: msg.as_ref().to_string(),
         }
-    }
-}
-
-impl<'a> From<BasicParseError<'a>> for ParseError {
-    fn from(e: BasicParseError<'_>) -> ParseError {
-        let BasicParseError { kind, location: _ } =  e;
-
-        let msg = match kind {
-            BasicParseErrorKind::UnexpectedToken(_) => "unexpected token",
-            BasicParseErrorKind::EndOfInput => "unexpected end of input",
-            BasicParseErrorKind::AtRuleInvalid(_) => "invalid @-rule",
-            BasicParseErrorKind::AtRuleBodyInvalid => "invalid @-rule body",
-            BasicParseErrorKind::QualifiedRuleInvalid => "invalid qualified rule",
-        };
-
-        ParseError::new(msg)
     }
 }
 

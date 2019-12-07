@@ -2,7 +2,7 @@ use std::error::{self, Error};
 use std::fmt;
 
 use cairo;
-use cssparser::BasicParseError;
+use cssparser::{BasicParseError, BasicParseErrorKind};
 use glib;
 use markup5ever::QualName;
 
@@ -94,7 +94,17 @@ impl From<ParseError> for ValueErrorKind {
 
 impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
     fn from(e: BasicParseError<'_>) -> ValueErrorKind {
-        ValueErrorKind::from(ParseError::from(e))
+        let BasicParseError { kind, location: _ } =  e;
+
+        let msg = match kind {
+            BasicParseErrorKind::UnexpectedToken(_) => "unexpected token",
+            BasicParseErrorKind::EndOfInput => "unexpected end of input",
+            BasicParseErrorKind::AtRuleInvalid(_) => "invalid @-rule",
+            BasicParseErrorKind::AtRuleBodyInvalid => "invalid @-rule body",
+            BasicParseErrorKind::QualifiedRuleInvalid => "invalid qualified rule",
+        };
+
+        ValueErrorKind::Parse(ParseError::new(msg))
     }
 }
 
