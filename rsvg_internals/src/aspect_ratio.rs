@@ -25,7 +25,6 @@ use std::ops::Deref;
 use cairo;
 
 use crate::error::ValueErrorKind;
-use crate::float_eq_cairo::ApproxEqCairo;
 use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
@@ -130,7 +129,7 @@ impl AspectRatio {
             None => *viewport,
 
             Some(Align { x, y, fit }) => {
-                let (vb_width, vb_height) = (vbox.width, vbox.height);
+                let (vb_width, vb_height) = vbox.0.size();
                 let (vp_width, vp_height) = viewport.size();
 
                 let w_factor = vp_width / vb_width;
@@ -172,7 +171,7 @@ impl AspectRatio {
         // the preserveAspectRatio attribute is only used if viewBox is specified
         // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
         if let Some(vbox) = vbox {
-            if vbox.width.approx_eq_cairo(0.0) || vbox.height.approx_eq_cairo(0.0) {
+            if vbox.0.is_empty() {
                 // Width or height of 0 for the viewBox disables rendering of the element
                 // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
                 None
@@ -180,8 +179,8 @@ impl AspectRatio {
                 let r = self.compute(&vbox, viewport);
                 let mut matrix = cairo::Matrix::identity();
                 matrix.translate(r.x0, r.y0);
-                matrix.scale(r.width() / vbox.width, r.height() / vbox.height);
-                matrix.translate(-vbox.x, -vbox.y);
+                matrix.scale(r.width() / vbox.0.width(), r.height() / vbox.0.height());
+                matrix.translate(-vbox.0.x0, -vbox.0.y0);
                 Some(matrix)
             }
         } else {
@@ -349,7 +348,7 @@ mod tests {
 
     #[test]
     fn aligns() {
-        let viewbox = ViewBox::new(0.0, 0.0, 1.0, 10.0);
+        let viewbox = ViewBox(Rect::from_size(1.0, 10.0));
 
         let foo = AspectRatio::parse_str("xMinYMin meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
