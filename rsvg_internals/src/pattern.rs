@@ -325,14 +325,14 @@ impl AsPaintSource for ResolvedPattern {
                 Rect::from_size(scaled_width, scaled_height),
             );
 
-            let sw = r.width() / vbox.width;
-            let sh = r.height() / vbox.height;
-            let x = r.x0 - vbox.x * sw;
-            let y = r.y0 - vbox.y * sh;
+            let sw = r.width() / vbox.0.width();
+            let sh = r.height() / vbox.0.height();
+            let x = r.x0 - vbox.0.x0 * sw;
+            let y = r.y0 - vbox.0.y0 * sh;
 
             caffine = cairo::Matrix::new(sw, 0.0, 0.0, sh, x, y);
 
-            draw_ctx.push_view_box(vbox.width, vbox.height)
+            draw_ctx.push_view_box(vbox.0.width(), vbox.0.height())
         } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
             // If coords are in terms of the bounding box, use them
             let bbrect = bbox.rect.unwrap();
