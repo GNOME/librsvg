@@ -10,7 +10,7 @@ use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 
 /// The <filter> node.
 pub struct Filter {
@@ -92,7 +92,7 @@ impl Filter {
             )
         };
 
-        let rect = cairo::Rectangle::new(x, y, w, h);
+        let rect = Rect::new(x, y, x + w, y + h);
         let other_bbox = BoundingBox::new(&affine).with_rect(rect);
 
         // At this point all of the previous viewbox and matrix business gets converted to pixel
@@ -100,7 +100,7 @@ impl Filter {
         bbox.insert(&other_bbox);
 
         // Finally, clip to the width and height of our surface.
-        let rect = cairo::Rectangle::from_size(width, height);
+        let rect = Rect::from_size(width, height);
         let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(rect);
         bbox.clip(&other_bbox);
 

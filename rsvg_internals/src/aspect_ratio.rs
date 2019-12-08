@@ -27,6 +27,7 @@ use cairo;
 use crate::error::ValueErrorKind;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::parsers::Parse;
+use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 use cssparser::{CowRcStr, Parser};
 
@@ -124,25 +125,29 @@ impl AspectRatio {
         }
     }
 
-    pub fn compute(&self, vbox: &ViewBox, viewport: &cairo::Rectangle) -> (f64, f64, f64, f64) {
+    pub fn compute(&self, vbox: &ViewBox, viewport: Rect) -> Rect {
         match self.align {
-            None => (viewport.x, viewport.y, viewport.width, viewport.height),
+            None => viewport,
 
             Some(Align { x, y, fit }) => {
-                let w_factor = viewport.width / vbox.width;
-                let h_factor = viewport.height / vbox.height;
+                let (vb_width, vb_height) = (vbox.width, vbox.height);
+                let (vp_width, vp_height) = viewport.size();
+
+                let w_factor = vp_width / vb_width;
+                let h_factor = vp_height / vb_height;
+
                 let factor = match fit {
                     FitMode::Meet => w_factor.min(h_factor),
                     FitMode::Slice => w_factor.max(h_factor),
                 };
 
-                let w = vbox.width * factor;
-                let h = vbox.height * factor;
+                let w = vb_width * factor;
+                let h = vb_height * factor;
 
-                let xpos = x.compute(viewport.x, viewport.width, w);
-                let ypos = y.compute(viewport.y, viewport.height, h);
+                let xpos = x.compute(viewport.x0, vp_width, w);
+                let ypos = y.compute(viewport.y0, vp_height, h);
 
-                (xpos, ypos, w, h)
+                Rect::new(xpos, ypos, xpos + w, ypos + h)
             }
         }
     }
@@ -152,7 +157,7 @@ impl AspectRatio {
     pub fn viewport_to_viewbox_transform(
         &self,
         vbox: Option<ViewBox>,
-        viewport: &cairo::Rectangle,
+        viewport: Rect,
     ) -> Option<cairo::Matrix> {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
@@ -160,7 +165,7 @@ impl AspectRatio {
         // https://www.w3.org/TR/SVG/struct.html#ImageElementWidthAttribute
         // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
 
-        if viewport.width.approx_eq_cairo(0.0) || viewport.height.approx_eq_cairo(0.0) {
+        if viewport.is_empty() {
             return None;
         }
 
@@ -172,16 +177,16 @@ impl AspectRatio {
                 // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
                 None
             } else {
-                let (x, y, w, h) = self.compute(&vbox, viewport);
+                let r = self.compute(&vbox, viewport);
                 let mut matrix = cairo::Matrix::identity();
-                matrix.translate(x, y);
-                matrix.scale(w / vbox.width, h / vbox.height);
+                matrix.translate(r.x0, r.y0);
+                matrix.scale(r.width() / vbox.width, r.height() / vbox.height);
                 matrix.translate(-vbox.x, -vbox.y);
                 Some(matrix)
             }
         } else {
             let mut matrix = cairo::Matrix::identity();
-            matrix.translate(viewport.x, viewport.y);
+            matrix.translate(viewport.x0, viewport.y0);
             Some(matrix)
         }
     }
@@ -251,8 +256,6 @@ impl Parse for AspectRatio {
 mod tests {
     use super::*;
     use crate::float_eq_cairo::ApproxEqCairo;
-    use crate::rect::RectangleExt;
-    use cairo::Rectangle;
 
     #[test]
     fn parsing_invalid_strings_yields_error() {
@@ -337,11 +340,11 @@ mod tests {
         );
     }
 
-    fn assert_quadruples_equal(a: &(f64, f64, f64, f64), b: &(f64, f64, f64, f64)) {
-        assert_approx_eq_cairo!(a.0, b.0);
-        assert_approx_eq_cairo!(a.1, b.1);
-        assert_approx_eq_cairo!(a.2, b.2);
-        assert_approx_eq_cairo!(a.3, b.3);
+    fn assert_rect_equal(r1: &Rect, r2: &Rect) {
+        assert_approx_eq_cairo!(r1.x0, r2.x0);
+        assert_approx_eq_cairo!(r1.y0, r2.y0);
+        assert_approx_eq_cairo!(r1.x1, r2.x1);
+        assert_approx_eq_cairo!(r1.y1, r2.y1);
     }
 
     #[test]
@@ -349,127 +352,127 @@ mod tests {
         let foo = AspectRatio::parse_str("xMinYMin meet").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, 0.0, 0.1, 1.0));
+        assert_rect_equal(&foo, &Rect::from_size(0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMinYMin slice").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, 0.0, 10.0, 100.0));
+        assert_rect_equal(&foo, &Rect::from_size(10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMinYMid meet").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, 0.0, 0.1, 1.0));
+        assert_rect_equal(&foo, &Rect::from_size(0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMinYMid slice").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, -49.5, 10.0, 100.0));
+        assert_rect_equal(&foo, &Rect::new(0.0, -49.5, 10.0, 100.0 - 49.5));
 
         let foo = AspectRatio::parse_str("xMinYMax meet").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, 0.0, 0.1, 1.0));
+        assert_rect_equal(&foo, &Rect::from_size(0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMinYMax slice").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, -99.0, 10.0, 100.0));
+        assert_rect_equal(&foo, &Rect::new(0.0, -99.0, 10.0, 1.0));
 
         let foo = AspectRatio::parse_str("xMidYMin meet").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(4.95, 0.0, 0.1, 1.0));
+        assert_rect_equal(&foo, &Rect::new(4.95, 0.0, 4.95 + 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMidYMin slice").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, 0.0, 10.0, 100.0));
+        assert_rect_equal(&foo, &Rect::from_size(10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMidYMid meet").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(4.95, 0.0, 0.1, 1.0));
+        assert_rect_equal(&foo, &Rect::new(4.95, 0.0, 4.95 + 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMidYMid slice").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, -49.5, 10.0, 100.0));
+        assert_rect_equal(&foo, &Rect::new(0.0, -49.5, 10.0, 100.0 - 49.5));
 
         let foo = AspectRatio::parse_str("xMidYMax meet").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(4.95, 0.0, 0.1, 1.0));
+        assert_rect_equal(&foo, &Rect::new(4.95, 0.0, 4.95 + 0.1, 1.0));
 
         let foo = AspectRatio::parse_str("xMidYMax slice").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, -99.0, 10.0, 100.0));
+        assert_rect_equal(&foo, &Rect::new(0.0, -99.0, 10.0, 1.0));
 
         let foo = AspectRatio::parse_str("xMaxYMin meet").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(9.9, 0.0, 0.1, 1.0));
+        assert_rect_equal(&foo, &Rect::new(9.9, 0.0, 10.0, 1.0));
 
         let foo = AspectRatio::parse_str("xMaxYMin slice").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, 0.0, 10.0, 100.0));
+        assert_rect_equal(&foo, &Rect::from_size(10.0, 100.0));
 
         let foo = AspectRatio::parse_str("xMaxYMid meet").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(9.9, 0.0, 0.1, 1.0));
+        assert_rect_equal(&foo, &Rect::new(9.9, 0.0, 10.0, 1.0));
 
         let foo = AspectRatio::parse_str("xMaxYMid slice").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, -49.5, 10.0, 100.0));
+        assert_rect_equal(&foo, &Rect::new(0.0, -49.5, 10.0, 100.0 - 49.5));
 
         let foo = AspectRatio::parse_str("xMaxYMax meet").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(9.9, 0.0, 0.1, 1.0));
+        assert_rect_equal(&foo, &Rect::new(9.9, 0.0, 10.0, 1.0));
 
         let foo = AspectRatio::parse_str("xMaxYMax slice").unwrap();
         let foo = foo.compute(
             &ViewBox::new(0.0, 0.0, 1.0, 10.0),
-            &Rectangle::new(0.0, 0.0, 10.0, 1.0),
+            Rect::from_size(10.0, 1.0),
         );
-        assert_quadruples_equal(&foo, &(0.0, -99.0, 10.0, 100.0));
+        assert_rect_equal(&foo, &Rect::new(0.0, -99.0, 10.0, 1.0));
     }
 }

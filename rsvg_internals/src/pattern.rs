@@ -16,7 +16,7 @@ use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
 
@@ -255,21 +255,15 @@ impl AsPaintSource for ResolvedPattern {
 
         // Work out the size of the rectangle so it takes into account the object bounding box
 
-        let bbwscale: f64;
-        let bbhscale: f64;
-
-        match units {
+        let (bbwscale, bbhscale) = match units {
             PatternUnits(CoordUnits::ObjectBoundingBox) => {
-                let bbrect = bbox.rect.unwrap();
-                bbwscale = bbrect.width;
-                bbhscale = bbrect.height;
+                bbox.rect.unwrap().size()
             }
 
             PatternUnits(CoordUnits::UserSpaceOnUse) => {
-                bbwscale = 1.0;
-                bbhscale = 1.0;
+                (1.0, 1.0)
             }
-        }
+        };
 
         let cr = draw_ctx.get_cairo_context();
         let affine = cr.get_matrix();
@@ -302,8 +296,8 @@ impl AsPaintSource for ResolvedPattern {
             PatternUnits(CoordUnits::ObjectBoundingBox) => {
                 let bbrect = bbox.rect.unwrap();
                 affine.translate(
-                    bbrect.x + pattern_x * bbrect.width,
-                    bbrect.y + pattern_y * bbrect.height,
+                    bbrect.x0 + pattern_x * bbrect.width(),
+                    bbrect.y0 + pattern_y * bbrect.height(),
                 );
             }
 
@@ -320,23 +314,25 @@ impl AsPaintSource for ResolvedPattern {
         // Create the pattern contents coordinate system
         let _params = if let Some(vbox) = vbox {
             // If there is a vbox, use that
-            let (mut x, mut y, w, h) = preserve_aspect_ratio.compute(
+            let r = preserve_aspect_ratio.compute(
                 &vbox,
-                &cairo::Rectangle::from_size(scaled_width, scaled_height),
+                Rect::from_size(scaled_width, scaled_height),
             );
 
-            x -= vbox.x * w / vbox.width;
-            y -= vbox.y * h / vbox.height;
+            let sw = r.width() / vbox.width;
+            let sh = r.height() / vbox.height;
+            let x = r.x0 - vbox.x * sw;
+            let y = r.y0 - vbox.y * sh;
 
-            caffine = cairo::Matrix::new(w / vbox.width, 0.0, 0.0, h / vbox.height, x, y);
+            caffine = cairo::Matrix::new(sw, 0.0, 0.0, sh, x, y);
 
             draw_ctx.push_view_box(vbox.width, vbox.height)
         } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
             // If coords are in terms of the bounding box, use them
-            let bbrect = bbox.rect.unwrap();
+            let (bbw, bbh) = bbox.rect.unwrap().size();
 
             caffine = cairo::Matrix::identity();
-            caffine.scale(bbrect.width, bbrect.height);
+            caffine.scale(bbw, bbh);
 
             draw_ctx.push_view_box(1.0, 1.0)
         } else {

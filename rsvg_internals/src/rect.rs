@@ -321,16 +321,16 @@ impl RectangleExt for cairo::Rectangle {
 }
 
 pub trait TransformRect {
-    fn transform_rect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
+    fn transform_rect(&self, rect: &Rect) -> Rect;
 }
 
 impl TransformRect for cairo::Matrix {
-    fn transform_rect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
+    fn transform_rect(&self, rect: &Rect) -> Rect {
         let points = vec![
-            self.transform_point(rect.x, rect.y),
-            self.transform_point(rect.x + rect.width, rect.y),
-            self.transform_point(rect.x, rect.y + rect.height),
-            self.transform_point(rect.x + rect.width, rect.y + rect.height),
+            self.transform_point(rect.x0, rect.y0),
+            self.transform_point(rect.x1, rect.y0),
+            self.transform_point(rect.x0, rect.y1),
+            self.transform_point(rect.x1, rect.y1),
         ];
 
         let (mut xmin, mut ymin, mut xmax, mut ymax) = {
@@ -357,11 +357,11 @@ impl TransformRect for cairo::Matrix {
             }
         }
 
-        cairo::Rectangle {
-            x: xmin,
-            y: ymin,
-            width: xmax - xmin,
-            height: ymax - ymin,
+        Rect {
+            x0: xmin,
+            y0: ymin,
+            x1: xmax,
+            y1: ymax,
         }
     }
 }
