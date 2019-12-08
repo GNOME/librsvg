@@ -109,7 +109,7 @@ impl NodeTrait for Image {
                 let image_height = f64::from(image_height);
 
                 if let Some(_params) = dc.push_new_viewport(
-                    Some(ViewBox::new(0.0, 0.0, image_width, image_height)),
+                    Some(ViewBox(Rect::from_size(image_width, image_height))),
                     Rect::new(x, y, x + w, y + h),
                     self.aspect,
                     clip_mode,
