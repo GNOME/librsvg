@@ -16,7 +16,7 @@ use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
 
@@ -322,7 +322,7 @@ impl AsPaintSource for ResolvedPattern {
             // If there is a vbox, use that
             let (mut x, mut y, w, h) = preserve_aspect_ratio.compute(
                 &vbox,
-                &cairo::Rectangle::from_size(scaled_width, scaled_height),
+                &Rect::from_size(scaled_width, scaled_height),
             );
 
             x -= vbox.x * w / vbox.width;

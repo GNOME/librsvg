@@ -4,7 +4,7 @@ use cairo;
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
 use crate::length::*;
-use crate::rect::IRect;
+use crate::rect::{IRect, Rect};
 
 use super::context::{FilterContext, FilterInput};
 
@@ -88,7 +88,7 @@ impl<'a> BoundsBuilder<'a> {
     ///
     /// Used by feImage.
     #[inline]
-    pub fn into_irect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> IRect {
+    pub fn into_rect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> Rect {
         self.apply_properties(draw_ctx).rect.unwrap().into()
     }
 

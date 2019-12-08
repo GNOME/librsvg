@@ -18,7 +18,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::*;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 use crate::viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -152,7 +152,7 @@ impl Marker {
             let params = if let Some(vbox) = self.vbox {
                 let (_, _, w, h) = self.aspect.compute(
                     &vbox,
-                    &cairo::Rectangle::from_size(marker_width, marker_height),
+                    &Rect::from_size(marker_width, marker_height),
                 );
 
                 if vbox.width.approx_eq_cairo(0.0) || vbox.height.approx_eq_cairo(0.0) {
@@ -172,11 +172,13 @@ impl Marker {
             );
 
             if !values.is_overflow() {
-                if let Some(vbox) = self.vbox {
-                    dc.clip(vbox.x, vbox.y, vbox.width, vbox.height);
+                let clip_rect = if let Some(vbox) = self.vbox {
+                    Rect::new(vbox.x, vbox.y, vbox.x + vbox.width, vbox.y + vbox.height)
                 } else {
-                    dc.clip(0.0, 0.0, marker_width, marker_height);
-                }
+                    Rect::from_size(marker_width, marker_height)
+                };
+
+                dc.clip(clip_rect);
             }
 
             dc.with_discrete_layer(node, values, clipping, &mut |dc| {

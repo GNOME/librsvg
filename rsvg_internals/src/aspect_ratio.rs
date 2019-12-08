@@ -27,6 +27,7 @@ use cairo;
 use crate::error::ValueErrorKind;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::parsers::Parse;
+use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 use cssparser::{CowRcStr, Parser};
 
@@ -124,13 +125,13 @@ impl AspectRatio {
         }
     }
 
-    pub fn compute(&self, vbox: &ViewBox, viewport: &cairo::Rectangle) -> (f64, f64, f64, f64) {
+    pub fn compute(&self, vbox: &ViewBox, viewport: &Rect) -> (f64, f64, f64, f64) {
         match self.align {
-            None => (viewport.x, viewport.y, viewport.width, viewport.height),
+            None => (viewport.x0, viewport.y0, viewport.width(), viewport.height()),
 
             Some(Align { x, y, fit }) => {
-                let w_factor = viewport.width / vbox.width;
-                let h_factor = viewport.height / vbox.height;
+                let w_factor = viewport.width() / vbox.width;
+                let h_factor = viewport.height() / vbox.height;
                 let factor = match fit {
                     FitMode::Meet => w_factor.min(h_factor),
                     FitMode::Slice => w_factor.max(h_factor),
@@ -139,8 +140,8 @@ impl AspectRatio {
                 let w = vbox.width * factor;
                 let h = vbox.height * factor;
 
-                let xpos = x.compute(viewport.x, viewport.width, w);
-                let ypos = y.compute(viewport.y, viewport.height, h);
+                let xpos = x.compute(viewport.x0, viewport.width(), w);
+                let ypos = y.compute(viewport.y0, viewport.height(), h);
 
                 (xpos, ypos, w, h)
             }
@@ -152,7 +153,7 @@ impl AspectRatio {
     pub fn viewport_to_viewbox_transform(
         &self,
         vbox: Option<ViewBox>,
-        viewport: &cairo::Rectangle,
+        viewport: &Rect,
     ) -> Option<cairo::Matrix> {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
@@ -160,7 +161,7 @@ impl AspectRatio {
         // https://www.w3.org/TR/SVG/struct.html#ImageElementWidthAttribute
         // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
 
-        if viewport.width.approx_eq_cairo(0.0) || viewport.height.approx_eq_cairo(0.0) {
+        if viewport.is_empty() {
             return None;
         }
 
@@ -181,7 +182,7 @@ impl AspectRatio {
             }
         } else {
             let mut matrix = cairo::Matrix::identity();
-            matrix.translate(viewport.x, viewport.y);
+            matrix.translate(viewport.x0, viewport.y0);
             Some(matrix)
         }
     }

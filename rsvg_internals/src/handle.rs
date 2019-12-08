@@ -15,7 +15,7 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, RsvgNode};
-use crate::rect::RectangleExt;
+use crate::rect::{Rect, RectangleExt};
 use crate::structure::{IntrinsicDimensions, Svg};
 use url::Url;
 
@@ -276,7 +276,7 @@ impl Handle {
     fn get_node_geometry_with_viewport(
         &self,
         node: &RsvgNode,
-        viewport: &cairo::Rectangle,
+        viewport: Rect,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
@@ -331,7 +331,7 @@ impl Handle {
             }
         }
 
-        self.get_node_geometry_with_viewport(&node, &unit_rectangle(), dpi, is_testing)
+        self.get_node_geometry_with_viewport(&node, unit_rectangle(), dpi, is_testing)
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
@@ -350,6 +350,7 @@ impl Handle {
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
+        let viewport = Rect::from(*viewport);
         self.get_node_geometry_with_viewport(&node, viewport, dpi, is_testing)
     }
 
@@ -445,7 +446,7 @@ impl Handle {
             self.document.clone(),
             node.as_ref(),
             cr,
-            viewport,
+            Rect::from(*viewport),
             dpi,
             false,
             is_testing,
@@ -472,7 +473,7 @@ impl Handle {
             self.document.clone(),
             None,
             &cr,
-            &unit_rectangle(),
+            unit_rectangle(),
             dpi,
             true,
             is_testing,
@@ -541,7 +542,7 @@ impl Handle {
             self.document.clone(),
             None,
             &cr,
-            &unit_rectangle(),
+            unit_rectangle(),
             dpi,
             false,
             is_testing,
@@ -591,11 +592,6 @@ fn locale_from_environment() -> Locale {
     locale
 }
 
-fn unit_rectangle() -> cairo::Rectangle {
-    cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 1.0,
-        height: 1.0,
-    }
+fn unit_rectangle() -> Rect {
+    Rect::from_size(1.0, 1.0)
 }
