@@ -158,6 +158,18 @@ mod rect {
 
 pub type Rect = rect::Rect<f64>;
 
+impl From<Rect> for IRect {
+    #[inline]
+    fn from(r: Rect) -> Self {
+        Self {
+            x0: r.x0.floor() as i32,
+            y0: r.y0.floor() as i32,
+            x1: r.x1.ceil() as i32,
+            y1: r.y1.ceil() as i32,
+        }
+    }
+}
+
 impl From<cairo::Rectangle> for Rect {
     #[inline]
     fn from(r: cairo::Rectangle) -> Self {
@@ -183,6 +195,18 @@ impl From<Rect> for cairo::Rectangle {
 }
 
 pub type IRect = rect::Rect<i32>;
+
+impl From<IRect> for Rect {
+    #[inline]
+    fn from(r: IRect) -> Self {
+        Self {
+            x0: f64::from(r.x0),
+            y0: f64::from(r.y0),
+            x1: f64::from(r.x1),
+            y1: f64::from(r.y1),
+        }
+    }
+}
 
 impl From<cairo::Rectangle> for IRect {
     #[inline]
