@@ -18,12 +18,17 @@ impl BoundingBox {
         }
     }
 
-    pub fn with_rect(self, rect: Option<Rect>) -> BoundingBox {
-        BoundingBox { rect, ..self }
+    pub fn with_rect(self, rect: Rect) -> BoundingBox {
+        BoundingBox { rect: Some(rect), ..self }
     }
 
-    pub fn with_ink_rect(self, ink_rect: Option<Rect>) -> BoundingBox {
-        BoundingBox { ink_rect, ..self }
+    pub fn with_ink_rect(self, ink_rect: Rect) -> BoundingBox {
+        BoundingBox { ink_rect: Some(ink_rect), ..self }
+    }
+
+    pub fn clear(mut self) {
+        self.rect = None;
+        self.ink_rect = None;
     }
 
     fn combine(&mut self, src: &BoundingBox, clip: bool) {

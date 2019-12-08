@@ -93,7 +93,7 @@ impl Filter {
         };
 
         let rect = Rect::new(x, y, x + w, y + h);
-        let other_bbox = BoundingBox::new(&affine).with_rect(Some(rect));
+        let other_bbox = BoundingBox::new(&affine).with_rect(rect);
 
         // At this point all of the previous viewbox and matrix business gets converted to pixel
         // coordinates in the final surface, because bbox is created with an identity affine.
@@ -101,7 +101,7 @@ impl Filter {
 
         // Finally, clip to the width and height of our surface.
         let rect = Rect::from_size(width, height);
-        let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(Some(rect));
+        let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(rect);
         bbox.clip(&other_bbox);
 
         bbox
