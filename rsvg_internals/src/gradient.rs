@@ -15,7 +15,6 @@ use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
-use crate::rect::RectangleExt;
 use crate::unit_interval::UnitInterval;
 
 /// Contents of a <stop> element for gradient color stops
@@ -740,12 +739,12 @@ impl Gradient {
         if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             let bbox_rect = bbox.rect.unwrap();
             let bbox_matrix = cairo::Matrix::new(
-                bbox_rect.width,
+                bbox_rect.width(),
                 0.0,
                 0.0,
-                bbox_rect.height,
-                bbox_rect.x,
-                bbox_rect.y,
+                bbox_rect.height(),
+                bbox_rect.x0,
+                bbox_rect.y0,
             );
             affine = cairo::Matrix::multiply(&affine, &bbox_matrix);
         }

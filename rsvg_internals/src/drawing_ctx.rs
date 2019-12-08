@@ -964,19 +964,22 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     // paths for the icon's shape.  We need to be able to compute the bounding
     // rectangle's extents, even when it has no fill nor stroke.
 
-    let fb = BoundingBox::new(&affine).with_ink_extents(cr.fill_extents());
+    let (x0, y0, x1, y1) = cr.fill_extents();
+    let fb = BoundingBox::new(&affine).with_ink_rect(Rect::new(x0, y0, x1, y1));
     bbox.insert(&fb);
 
     // Bounding box for stroke
 
     if values.stroke.0 != PaintServer::None {
-        let sb = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
+        let (x0, y0, x1, y1) = cr.stroke_extents();
+        let sb = BoundingBox::new(&affine).with_ink_rect(Rect::new(x0, y0, x1, y1));
         bbox.insert(&sb);
     }
 
     // objectBoundingBox
 
-    let ob = BoundingBox::new(&affine).with_extents(cr.path_extents());
+    let (x0, y0, x1, y1) = cr.path_extents();
+    let ob = BoundingBox::new(&affine).with_rect(Rect::new(x0, y0, x1, y1));
     bbox.insert(&ob);
 
     // restore tolerance
