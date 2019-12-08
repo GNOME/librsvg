@@ -15,7 +15,7 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, RsvgNode};
-use crate::rect::{Rect, RectangleExt};
+use crate::rect::{IRect, Rect};
 use crate::structure::{IntrinsicDimensions, Svg};
 use url::Url;
 
@@ -324,12 +324,9 @@ impl Handle {
             if let Some((root_width, root_height)) =
                 node.borrow().get_impl::<Svg>().get_size(&values, dpi)
             {
-                let ink_r =
-                    cairo::Rectangle::from_size(f64::from(root_width), f64::from(root_height));
+                let rect = IRect::from_size(root_width, root_height);
 
-                let logical_r = ink_r;
-
-                return Ok((ink_r, logical_r));
+                return Ok((cairo::Rectangle::from(rect), cairo::Rectangle::from(rect)));
             }
         }
 
