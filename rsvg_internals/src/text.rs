@@ -345,7 +345,7 @@ impl PositionedSpan {
                     if !clipping {
                         let (x0, y0, x1, y1) = cr.stroke_extents();
                         let ib = BoundingBox::new(&affine)
-                            .with_ink_rect(Some(Rect::new(x0, y0, x1, y1)));
+                            .with_ink_rect(Rect::new(x0, y0, x1, y1));
                         cr.stroke();
                         bbox.insert(&ib);
                     }
@@ -389,9 +389,8 @@ impl PositionedSpan {
             )
         };
 
-        let bbox = BoundingBox::new(affine)
-            .with_rect(Some(Rect::new(x, y, x + w, y + h)))
-            .with_ink_rect(Some(Rect::new(x, y, x + w, y + h)));
+        let r = Rect::new(x, y, x + w, y + h);
+        let bbox = BoundingBox::new(affine).with_rect(r).with_ink_rect(r);
 
         Some(bbox)
     }
