@@ -3,6 +3,7 @@ use cairo;
 use crate::float_eq_cairo::ApproxEqCairo;
 
 mod rect {
+    use crate::float_eq_cairo::ApproxEqCairo;
     use core::ops::{Add, Range, Sub};
     use num_traits::Zero;
 
@@ -129,6 +130,49 @@ mod rect {
                 x1: (f64::from(self.x1) * x).ceil() as i32,
                 y1: (f64::from(self.y1) * y).ceil() as i32,
             }
+        }
+    }
+
+    impl Rect<f64> {
+        #[inline]
+        pub fn is_empty(&self) -> bool {
+            self.width().approx_eq_cairo(0.0) || self.height().approx_eq_cairo(0.0)
+        }
+
+        #[inline]
+        pub fn scale(self, x: f64, y: f64) -> Self {
+            Self {
+                x0: self.x0 * x,
+                y0: self.y0 * y,
+                x1: self.x1 * x,
+                y1: self.y1 * y,
+            }
+        }
+    }
+}
+
+pub type Rect = rect::Rect<f64>;
+
+impl From<cairo::Rectangle> for Rect {
+    #[inline]
+    fn from(r: cairo::Rectangle) -> Self {
+        Self {
+            x0: r.x,
+            y0: r.y,
+            x1: r.x + r.width,
+            y1: r.y + r.height,
+        }
+    }
+}
+
+impl From<Rect> for cairo::Rectangle {
+    #[inline]
+    fn from(r: Rect) -> Self {
+        Self {
+            x: r.x0,
+            y: r.y0,
+            width: r.x1 - r.x0,
+            height: r.y1 - r.y0,
         }
     }
 }
