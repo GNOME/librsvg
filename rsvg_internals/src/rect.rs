@@ -1,7 +1,5 @@
 use cairo;
 
-use crate::float_eq_cairo::ApproxEqCairo;
-
 mod rect {
     use crate::float_eq_cairo::ApproxEqCairo;
     use core::ops::{Add, Range, Sub};
@@ -232,94 +230,6 @@ impl From<IRect> for cairo::Rectangle {
     }
 }
 
-pub trait RectangleExt {
-    fn new(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle;
-    fn from_size(width: f64, height: f64) -> cairo::Rectangle;
-    fn from_extents(x0: f64, y0: f64, x1: f64, y1: f64) -> cairo::Rectangle;
-    fn is_empty(&self) -> bool;
-    fn intersection(&self, rect: &cairo::Rectangle) -> Option<cairo::Rectangle>;
-    fn union(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
-    fn translate(&self, by: (f64, f64)) -> cairo::Rectangle;
-}
-
-impl RectangleExt for cairo::Rectangle {
-    fn new(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle {
-        cairo::Rectangle {
-            x,
-            y,
-            width,
-            height,
-        }
-    }
-
-    fn from_size(width: f64, height: f64) -> cairo::Rectangle {
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width,
-            height,
-        }
-    }
-
-    fn from_extents(x0: f64, y0: f64, x1: f64, y1: f64) -> cairo::Rectangle {
-        cairo::Rectangle {
-            x: x0,
-            y: y0,
-            width: x1 - x0,
-            height: y1 - y0,
-        }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.width.approx_eq_cairo(0.0) || self.height.approx_eq_cairo(0.0)
-    }
-
-    fn intersection(&self, rect: &cairo::Rectangle) -> Option<cairo::Rectangle> {
-        let (x1, y1, x2, y2) = (
-            self.x.max(rect.x),
-            self.y.max(rect.y),
-            (self.x + self.width).min(rect.x + rect.width),
-            (self.y + self.height).min(rect.y + rect.height),
-        );
-
-        if x2 > x1 && y2 > y1 {
-            Some(cairo::Rectangle {
-                x: x1,
-                y: y1,
-                width: x2 - x1,
-                height: y2 - y1,
-            })
-        } else {
-            None
-        }
-    }
-
-    fn union(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
-        let (x1, y1, x2, y2) = (
-            self.x.min(rect.x),
-            self.y.min(rect.y),
-            (self.x + self.width).max(rect.x + rect.width),
-            (self.y + self.height).max(rect.y + rect.height),
-        );
-
-        cairo::Rectangle {
-            x: x1,
-            y: y1,
-            width: x2 - x1,
-            height: y2 - y1,
-        }
-    }
-
-    fn translate(&self, by: (f64, f64)) -> cairo::Rectangle {
-        cairo::Rectangle {
-            x: self.x + by.0,
-            y: self.y + by.1,
-            width: self.width,
-            height: self.height,
-        }
-    }
-}
-
 pub trait TransformRect {
     fn transform_rect(&self, rect: &Rect) -> Rect;
 }
@@ -363,82 +273,5 @@ impl TransformRect for cairo::Matrix {
             x1: xmax,
             y1: ymax,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn empty_rect() {
-        let empty = cairo::Rectangle {
-            x: 0.42,
-            y: 0.42,
-            width: 0.0,
-            height: 0.0,
-        };
-        let not_empty = cairo::Rectangle {
-            x: 0.22,
-            y: 0.22,
-            width: 3.14,
-            height: 3.14,
-        };
-
-        assert!(empty.is_empty());
-        assert!(!not_empty.is_empty());
-    }
-
-    #[test]
-    fn intersect_rects() {
-        let r1 = cairo::Rectangle {
-            x: 0.42,
-            y: 0.42,
-            width: 4.14,
-            height: 4.14,
-        };
-        let r2 = cairo::Rectangle {
-            x: 0.22,
-            y: 0.22,
-            width: 3.14,
-            height: 3.14,
-        };
-        let r3 = cairo::Rectangle {
-            x: 10.0,
-            y: 10.0,
-            width: 3.14,
-            height: 3.14,
-        };
-
-        let r = r1.intersection(&r2).unwrap();
-        assert_approx_eq_cairo!(0.42_f64, r.x);
-        assert_approx_eq_cairo!(0.42_f64, r.y);
-        assert_approx_eq_cairo!(2.94_f64, r.width);
-        assert_approx_eq_cairo!(2.94_f64, r.height);
-
-        let r = r1.intersection(&r3);
-        assert!(r.is_none());
-    }
-
-    #[test]
-    fn union_rects() {
-        let r1 = cairo::Rectangle {
-            x: 0.42,
-            y: 0.42,
-            width: 4.14,
-            height: 4.14,
-        };
-        let r2 = cairo::Rectangle {
-            x: 0.22,
-            y: 0.22,
-            width: 3.14,
-            height: 3.14,
-        };
-
-        let r = r1.union(&r2);
-        assert_approx_eq_cairo!(0.22_f64, r.x);
-        assert_approx_eq_cairo!(0.22_f64, r.y);
-        assert_approx_eq_cairo!(4.34_f64, r.width);
-        assert_approx_eq_cairo!(4.34_f64, r.height);
     }
 }
