@@ -120,12 +120,10 @@ impl FeImage {
 
         // TODO: this goes through a f64->i32->f64 conversion.
         let r = self.aspect.compute(
-            &ViewBox::new(
-                0.0,
-                0.0,
+            &ViewBox::new(Rect::from_size(
                 f64::from(surface.width()),
                 f64::from(surface.height()),
-            ),
+            )),
             unclipped_bounds,
         );
 

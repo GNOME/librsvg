@@ -115,10 +115,8 @@ impl DrawingCtx {
         // while the code gets refactored not to need special cases for that.
 
         let (rect, vbox) = if measuring {
-            (
-                Rect::from_size(1.0, 1.0),
-                ViewBox::new(0.0, 0.0, 1.0, 1.0),
-            )
+            let unit_rect = Rect::from_size(1.0, 1.0);
+            (unit_rect, ViewBox::new(unit_rect))
         } else {
             // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
             //
@@ -132,12 +130,7 @@ impl DrawingCtx {
             // "... the initial viewport coordinate system (and therefore
             // the initial user coordinate system) must have its origin at
             // the top/left of the viewport"
-            let vbox = ViewBox {
-                x: 0.0,
-                y: 0.0,
-                width: viewport.width(),
-                height: viewport.height(),
-            };
+            let vbox = ViewBox::new(Rect::from_size(viewport.width(), viewport.height()));
 
             (viewport, vbox)
         };
@@ -255,13 +248,13 @@ impl DrawingCtx {
     pub fn get_view_params(&self) -> ViewParams {
         let view_box_stack = self.view_box_stack.borrow();
         let last = view_box_stack.len() - 1;
-        let stack_top = &view_box_stack[last];
+        let top_rect = &view_box_stack[last].0;
 
         ViewParams {
             dpi_x: self.dpi.x(),
             dpi_y: self.dpi.y(),
-            view_box_width: stack_top.width,
-            view_box_height: stack_top.height,
+            view_box_width: top_rect.width(),
+            view_box_height: top_rect.height(),
             view_box_stack: None,
         }
     }
@@ -276,7 +269,7 @@ impl DrawingCtx {
     pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
         self.view_box_stack
             .borrow_mut()
-            .push(ViewBox::new(0.0, 0.0, width, height));
+            .push(ViewBox::new(Rect::from_size(width, height)));
 
         ViewParams {
             dpi_x: self.dpi.x(),
@@ -308,16 +301,11 @@ impl DrawingCtx {
                 if let Some(vbox) = vbox {
                     if let Some(ref clip) = clip_mode {
                         if *clip == ClipMode::ClipToVbox {
-                            self.clip(Rect::new(
-                                vbox.x,
-                                vbox.y,
-                                vbox.x + vbox.width,
-                                vbox.y + vbox.height,
-                            ));
+                            self.clip(vbox.0);
                         }
                     }
 
-                    Some(self.push_view_box(vbox.width, vbox.height))
+                    Some(self.push_view_box(vbox.0.width(), vbox.0.height()))
                 } else {
                     Some(self.get_view_params())
                 }
