@@ -15,7 +15,7 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, RsvgNode};
-use crate::rect::RectangleExt;
+use crate::rect::{IRect, Rect};
 use crate::structure::{IntrinsicDimensions, Svg};
 use url::Url;
 
@@ -276,7 +276,7 @@ impl Handle {
     fn get_node_geometry_with_viewport(
         &self,
         node: &RsvgNode,
-        viewport: &cairo::Rectangle,
+        viewport: Rect,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
@@ -293,12 +293,13 @@ impl Handle {
         );
         let root = self.document.root();
 
-        let bbox = draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
+        let bbox =
+            draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
 
-        let ink_rect = bbox.ink_rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
-        let logical_rect = bbox.rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
+        let ink_rect = bbox.ink_rect.unwrap_or_default();
+        let logical_rect = bbox.rect.unwrap_or_default();
 
-        Ok((ink_rect, logical_rect))
+        Ok((cairo::Rectangle::from(ink_rect), cairo::Rectangle::from(logical_rect)))
     }
 
     /// Returns (ink_rect, logical_rect)
@@ -320,16 +321,13 @@ impl Handle {
             if let Some((root_width, root_height)) =
                 node.borrow().get_impl::<Svg>().get_size(&values, dpi)
             {
-                let ink_r =
-                    cairo::Rectangle::from_size(f64::from(root_width), f64::from(root_height));
+                let rect = IRect::from_size(root_width, root_height);
 
-                let logical_r = ink_r;
-
-                return Ok((ink_r, logical_r));
+                return Ok((cairo::Rectangle::from(rect), cairo::Rectangle::from(rect)));
             }
         }
 
-        self.get_node_geometry_with_viewport(&node, &unit_rectangle(), dpi, is_testing)
+        self.get_node_geometry_with_viewport(&node, unit_rectangle(), dpi, is_testing)
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
@@ -348,6 +346,7 @@ impl Handle {
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
+        let viewport = Rect::from(*viewport);
         self.get_node_geometry_with_viewport(&node, viewport, dpi, is_testing)
     }
 
@@ -443,7 +442,7 @@ impl Handle {
             self.document.clone(),
             node.as_ref(),
             cr,
-            viewport,
+            Rect::from(*viewport),
             dpi,
             false,
             is_testing,
@@ -470,7 +469,7 @@ impl Handle {
             self.document.clone(),
             None,
             &cr,
-            &unit_rectangle(),
+            unit_rectangle(),
             dpi,
             true,
             is_testing,
@@ -490,13 +489,16 @@ impl Handle {
 
         let bbox = self.get_bbox_for_element(&node, dpi, is_testing)?;
 
-        let ink_rect = bbox.ink_rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
-        let logical_rect = bbox.rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
+        let ink_rect = bbox.ink_rect.unwrap_or_default();
+        let logical_rect = bbox.rect.unwrap_or_default();
 
         // Translate so ink_rect is always at offset (0, 0)
-        let ofs = (-ink_rect.x, -ink_rect.y);
+        let ofs = (-ink_rect.x0, -ink_rect.y0);
 
-        Ok((ink_rect.translate(ofs), logical_rect.translate(ofs)))
+        Ok((
+            cairo::Rectangle::from(ink_rect.translate(ofs)),
+            cairo::Rectangle::from(logical_rect.translate(ofs)),
+        ))
     }
 
     pub fn render_element(
@@ -518,7 +520,7 @@ impl Handle {
             return Ok(());
         }
 
-        let ink_r = bbox.ink_rect.unwrap_or_else(|| cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0));
+        let ink_r = bbox.ink_rect.unwrap_or_default();
 
         if ink_r.is_empty() {
             return Ok(());
@@ -529,17 +531,17 @@ impl Handle {
         cr.save();
 
         let factor =
-            (element_viewport.width / ink_r.width).min(element_viewport.height / ink_r.height);
+            (element_viewport.width / ink_r.width()).min(element_viewport.height / ink_r.height());
 
         cr.translate(element_viewport.x, element_viewport.y);
         cr.scale(factor, factor);
-        cr.translate(-ink_r.x, -ink_r.y);
+        cr.translate(-ink_r.x0, -ink_r.y0);
 
         let mut draw_ctx = DrawingCtx::new(
             self.document.clone(),
             None,
             &cr,
-            &unit_rectangle(),
+            unit_rectangle(),
             dpi,
             false,
             is_testing,
@@ -589,11 +591,6 @@ fn locale_from_environment() -> Locale {
     locale
 }
 
-fn unit_rectangle() -> cairo::Rectangle {
-    cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 1.0,
-        height: 1.0,
-    }
+fn unit_rectangle() -> Rect {
+    Rect::from_size(1.0, 1.0)
 }

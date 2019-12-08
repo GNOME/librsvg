@@ -1,4 +1,3 @@
-use cairo::Rectangle;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Fragment;
@@ -14,7 +13,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 use crate::viewbox::*;
 
 #[derive(Default)]
@@ -162,15 +161,15 @@ impl Svg {
         (x, y, w, h)
     }
 
-    fn get_viewport(&self, values: &ComputedValues, params: &ViewParams) -> Rectangle {
+    fn get_viewport(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
         let (x, y, w, h) = self.get_unnormalized_viewport();
 
-        Rectangle::new(
-            x.normalize(values, &params),
-            y.normalize(values, &params),
-            w.normalize(values, &params),
-            h.normalize(values, &params),
-        )
+        let nx = x.normalize(values, &params);
+        let ny = y.normalize(values, &params);
+        let nw = w.normalize(values, &params);
+        let nh = h.normalize(values, &params);
+
+        Rect::new(nx, ny, nx + nw, ny + nh)
     }
 }
 
@@ -247,8 +246,8 @@ impl NodeTrait for Svg {
                     Some(ViewBox {
                         x: 0.0,
                         y: 0.0,
-                        width: svg_viewport.width,
-                        height: svg_viewport.height,
+                        width: svg_viewport.width(),
+                        height: svg_viewport.height(),
                     })
                 }),
             )
@@ -256,7 +255,7 @@ impl NodeTrait for Svg {
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
             let _params =
-                dc.push_new_viewport(vbox, &viewport, self.preserve_aspect_ratio, clip_mode);
+                dc.push_new_viewport(vbox, viewport, self.preserve_aspect_ratio, clip_mode);
 
             node.draw_children(cascaded, dc, clipping)
         })
@@ -376,11 +375,9 @@ impl NodeTrait for Use {
             return Ok(draw_ctx.empty_bbox());
         }
 
-        let viewport = Rectangle::new(nx, ny, nw, nh);
-
         if child.borrow().get_type() != NodeType::Symbol {
             let cr = draw_ctx.get_cairo_context();
-            cr.translate(viewport.x, viewport.y);
+            cr.translate(nx, ny);
 
             draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
                 dc.draw_node_from_stack(
@@ -404,7 +401,7 @@ impl NodeTrait for Use {
             draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
                 let _params = dc.push_new_viewport(
                     symbol.vbox,
-                    &viewport,
+                    Rect::new(nx, ny, nx + nw, ny + nh),
                     symbol.preserve_aspect_ratio,
                     clip_mode,
                 );
