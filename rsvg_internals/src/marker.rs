@@ -158,9 +158,10 @@ impl Marker {
                     return Ok(dc.empty_bbox());
                 }
 
-                cr.scale(r.width() / vbox.width, r.height() / vbox.height);
+                let (vb_width, vb_height) = vbox.0.size();
+                cr.scale(r.width() / vb_width, r.height() / vb_height);
 
-                dc.push_view_box(vbox.width, vbox.height)
+                dc.push_view_box(vb_width, vb_height)
             } else {
                 dc.push_view_box(marker_width, marker_height)
             };
@@ -171,11 +172,9 @@ impl Marker {
             );
 
             if !values.is_overflow() {
-                let clip_rect = if let Some(vbox) = self.vbox {
-                    Rect::new(vbox.x, vbox.y, vbox.x + vbox.width, vbox.y + vbox.height)
-                } else {
-                    Rect::from_size(marker_width, marker_height)
-                };
+                let clip_rect = self
+                    .vbox
+                    .map_or_else(|| Rect::from_size(marker_width, marker_height), |vb| vb.0);
 
                 dc.clip(clip_rect);
             }
