@@ -1,12 +1,12 @@
 use cairo;
 
-use crate::rect::RectangleExt;
+use crate::rect::{Rect, TransformRect};
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {
     pub affine: cairo::Matrix,
-    pub rect: Option<cairo::Rectangle>,     // without stroke
-    pub ink_rect: Option<cairo::Rectangle>, // with stroke
+    pub rect: Option<Rect>,     // without stroke
+    pub ink_rect: Option<Rect>, // with stroke
 }
 
 impl BoundingBox {
@@ -18,20 +18,12 @@ impl BoundingBox {
         }
     }
 
-    pub fn with_rect(self, rect: Option<cairo::Rectangle>) -> BoundingBox {
+    pub fn with_rect(self, rect: Option<Rect>) -> BoundingBox {
         BoundingBox { rect, ..self }
     }
 
-    pub fn with_ink_rect(self, ink_rect: Option<cairo::Rectangle>) -> BoundingBox {
+    pub fn with_ink_rect(self, ink_rect: Option<Rect>) -> BoundingBox {
         BoundingBox { ink_rect, ..self }
-    }
-
-    pub fn with_extents(self, extents: (f64, f64, f64, f64)) -> BoundingBox {
-        self.with_rect(rect_from_extents(extents))
-    }
-
-    pub fn with_ink_extents(self, extents: (f64, f64, f64, f64)) -> BoundingBox {
-        self.with_ink_rect(rect_from_extents(extents))
     }
 
     fn combine(&mut self, src: &BoundingBox, clip: bool) {
@@ -58,28 +50,19 @@ impl BoundingBox {
     }
 }
 
-fn rect_from_extents((x1, y1, x2, y2): (f64, f64, f64, f64)) -> Option<cairo::Rectangle> {
-    Some(cairo::Rectangle {
-        x: x1,
-        y: y1,
-        width: x2 - x1,
-        height: y2 - y1,
-    })
-}
-
 fn combine_rects(
-    r1: Option<cairo::Rectangle>,
-    r2: Option<cairo::Rectangle>,
+    r1: Option<Rect>,
+    r2: Option<Rect>,
     affine: &cairo::Matrix,
     clip: bool,
-) -> Option<cairo::Rectangle> {
+) -> Option<Rect> {
     match (r1, r2, clip) {
         (r1, None, _) => r1,
-        (None, Some(r2), _) => Some(r2.transform(&affine)),
-        (Some(r1), Some(r2), true) => r2
-            .transform(&affine)
+        (None, Some(r2), _) => Some(affine.transform_rect(&r2)),
+        (Some(r1), Some(r2), true) => affine
+            .transform_rect(&r2)
             .intersection(&r1)
-            .or_else(|| Some(cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0))),
-        (Some(r1), Some(r2), false) => Some(r2.transform(&affine).union(&r1)),
+            .or_else(|| Some(Rect::default())),
+        (Some(r1), Some(r2), false) => Some(affine.transform_rect(&r2).union(&r1)),
     }
 }

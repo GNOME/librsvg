@@ -56,6 +56,8 @@ impl Mask {
         }
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
+        let (bb_x, bb_y) = (bbox_rect.x0, bbox_rect.y0);
+        let (bb_w, bb_h) = (bbox_rect.width(), bbox_rect.height());
 
         let cascaded = CascadedValues::new_from_node(mask_node);
         let values = cascaded.get();
@@ -90,12 +92,7 @@ impl Mask {
             draw_ctx.push_cairo_context(mask_cr);
 
             let (x, y, w, h) = if mask_units == CoordUnits::ObjectBoundingBox {
-                (
-                    x * bbox_rect.width + bbox_rect.x,
-                    y * bbox_rect.height + bbox_rect.y,
-                    w * bbox_rect.width,
-                    h * bbox_rect.height,
-                )
+                (x * bb_w + bb_x, y * bb_h + bb_y, w * bb_w, h * bb_h)
             } else {
                 (x, y, w, h)
             };
@@ -104,14 +101,7 @@ impl Mask {
 
             {
                 let _params = if content_units == CoordUnits::ObjectBoundingBox {
-                    let bbtransform = cairo::Matrix::new(
-                        bbox_rect.width,
-                        0.0,
-                        0.0,
-                        bbox_rect.height,
-                        bbox_rect.x,
-                        bbox_rect.y,
-                    );
+                    let bbtransform = cairo::Matrix::new(bb_w, 0.0, 0.0, bb_h, bb_x, bb_y);
 
                     draw_ctx.get_cairo_context().transform(bbtransform);
 

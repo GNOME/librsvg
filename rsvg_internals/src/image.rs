@@ -98,12 +98,9 @@ impl NodeTrait for Image {
 
             // The bounding box for <image> is decided by the values of x, y, w, h and not by
             // the final computed image bounds.
-            let bbox = dc.empty_bbox().with_rect(Some(cairo::Rectangle {
-                x,
-                y,
-                width: w,
-                height: h,
-            }));
+            let bbox = dc
+                .empty_bbox()
+                .with_rect(Some(Rect::new(x, y, x + w, y + h)));
 
             dc.with_saved_cr(&mut |dc| {
                 let cr = dc.get_cairo_context();

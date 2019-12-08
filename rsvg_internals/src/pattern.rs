@@ -261,8 +261,8 @@ impl AsPaintSource for ResolvedPattern {
         match units {
             PatternUnits(CoordUnits::ObjectBoundingBox) => {
                 let bbrect = bbox.rect.unwrap();
-                bbwscale = bbrect.width;
-                bbhscale = bbrect.height;
+                bbwscale = bbrect.width();
+                bbhscale = bbrect.height();
             }
 
             PatternUnits(CoordUnits::UserSpaceOnUse) => {
@@ -302,8 +302,8 @@ impl AsPaintSource for ResolvedPattern {
             PatternUnits(CoordUnits::ObjectBoundingBox) => {
                 let bbrect = bbox.rect.unwrap();
                 affine.translate(
-                    bbrect.x + pattern_x * bbrect.width,
-                    bbrect.y + pattern_y * bbrect.height,
+                    bbrect.x0 + pattern_x * bbrect.width(),
+                    bbrect.y0 + pattern_y * bbrect.height(),
                 );
             }
 
@@ -338,7 +338,7 @@ impl AsPaintSource for ResolvedPattern {
             let bbrect = bbox.rect.unwrap();
 
             caffine = cairo::Matrix::identity();
-            caffine.scale(bbrect.width, bbrect.height);
+            caffine.scale(bbrect.width(), bbrect.height());
 
             draw_ctx.push_view_box(1.0, 1.0)
         } else {

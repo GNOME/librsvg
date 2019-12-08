@@ -17,17 +17,10 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::{
-    Direction,
-    FontStretch,
-    FontStyle,
-    FontVariant,
-    TextAnchor,
-    TextRendering,
-    UnicodeBidi,
-    WritingMode,
-    XmlLang,
-    XmlSpace,
+    Direction, FontStretch, FontStyle, FontVariant, TextAnchor, TextRendering, UnicodeBidi,
+    WritingMode, XmlLang, XmlSpace,
 };
+use crate::rect::Rect;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 
 /// An absolutely-positioned array of `Span`s
@@ -350,7 +343,9 @@ impl PositionedSpan {
                     pangocairo::functions::layout_path(&cr, &self.layout);
 
                     if !clipping {
-                        let ib = BoundingBox::new(&affine).with_ink_extents(cr.stroke_extents());
+                        let (x0, y0, x1, y1) = cr.stroke_extents();
+                        let ib = BoundingBox::new(&affine)
+                            .with_ink_rect(Some(Rect::new(x0, y0, x1, y1)));
                         cr.stroke();
                         bbox.insert(&ib);
                     }
@@ -378,25 +373,25 @@ impl PositionedSpan {
         let ink_height = f64::from(ink.height);
         let pango_scale = f64::from(pango::SCALE);
 
-        let rect = if gravity_is_vertical(gravity) {
-            cairo::Rectangle {
-                x: x + (ink_x - ink_height) / pango_scale,
-                y: y + ink_y / pango_scale,
-                width: ink_height / pango_scale,
-                height: ink_width / pango_scale,
-            }
+        let (x, y, w, h) = if gravity_is_vertical(gravity) {
+            (
+                x + (ink_x - ink_height) / pango_scale,
+                y + ink_y / pango_scale,
+                ink_height / pango_scale,
+                ink_width / pango_scale,
+            )
         } else {
-            cairo::Rectangle {
-                x: x + ink_x / pango_scale,
-                y: y + ink_y / pango_scale,
-                width: ink_width / pango_scale,
-                height: ink_height / pango_scale,
-            }
+            (
+                x + ink_x / pango_scale,
+                y + ink_y / pango_scale,
+                ink_width / pango_scale,
+                ink_height / pango_scale,
+            )
         };
 
         let bbox = BoundingBox::new(affine)
-            .with_rect(Some(rect))
-            .with_ink_rect(Some(rect));
+            .with_rect(Some(Rect::new(x, y, x + w, y + h)))
+            .with_ink_rect(Some(Rect::new(x, y, x + w, y + h)));
 
         Some(bbox)
     }
