@@ -4,7 +4,7 @@ use cairo;
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
 use crate::length::*;
-use crate::rect::IRect;
+use crate::rect::{IRect, Rect};
 
 use super::context::{FilterContext, FilterInput};
 
@@ -74,7 +74,7 @@ impl<'a> BoundsBuilder<'a> {
     }
 
     /// Returns the final exact bounds.
-    pub fn into_rect(self, draw_ctx: &mut DrawingCtx) -> cairo::Rectangle {
+    pub fn into_rect(self, draw_ctx: &mut DrawingCtx) -> Rect {
         let mut bbox = self.apply_properties(draw_ctx);
 
         let effects_region = self.ctx.effects_region();
@@ -91,7 +91,7 @@ impl<'a> BoundsBuilder<'a> {
     /// Returns the final pixel bounds without clipping to the filter effects region.
     ///
     /// Used by feImage.
-    pub fn into_rect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> cairo::Rectangle {
+    pub fn into_rect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> Rect {
         self.apply_properties(draw_ctx).rect.unwrap().into()
     }
 
@@ -118,16 +118,20 @@ impl<'a> BoundsBuilder<'a> {
             let rect = self.bbox.rect.as_mut().unwrap();
 
             if let Some(x) = self.x {
-                rect.x = x.normalize(values, &params);
+                let w = rect.width();
+                rect.x0 = x.normalize(values, &params);
+                rect.x1 = rect.x0 + w;
             }
             if let Some(y) = self.y {
-                rect.y = y.normalize(values, &params);
+                let h = rect.height();
+                rect.y0 = y.normalize(values, &params);
+                rect.y1 = rect.y0 + h;
             }
             if let Some(width) = self.width {
-                rect.width = width.normalize(values, &params);
+                rect.x1 = rect.x0 + width.normalize(values, &params);
             }
             if let Some(height) = self.height {
-                rect.height = height.normalize(values, &params);
+                rect.y1 = rect.y0 + height.normalize(values, &params);
             }
         }
 
