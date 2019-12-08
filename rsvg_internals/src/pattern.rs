@@ -16,7 +16,7 @@ use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
 
@@ -320,15 +320,17 @@ impl AsPaintSource for ResolvedPattern {
         // Create the pattern contents coordinate system
         let _params = if let Some(vbox) = vbox {
             // If there is a vbox, use that
-            let (mut x, mut y, w, h) = preserve_aspect_ratio.compute(
+            let r = preserve_aspect_ratio.compute(
                 &vbox,
-                &cairo::Rectangle::from_size(scaled_width, scaled_height),
+                Rect::from_size(scaled_width, scaled_height),
             );
 
-            x -= vbox.x * w / vbox.width;
-            y -= vbox.y * h / vbox.height;
+            let sw = r.width() / vbox.width;
+            let sh = r.height() / vbox.height;
+            let x = r.x0 - vbox.x * sw;
+            let y = r.y0 - vbox.y * sh;
 
-            caffine = cairo::Matrix::new(w / vbox.width, 0.0, 0.0, h / vbox.height, x, y);
+            caffine = cairo::Matrix::new(sw, 0.0, 0.0, sh, x, y);
 
             draw_ctx.push_view_box(vbox.width, vbox.height)
         } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {

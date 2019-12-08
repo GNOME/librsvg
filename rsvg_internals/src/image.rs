@@ -1,5 +1,4 @@
 use cairo;
-use cairo::Rectangle;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Href;
@@ -12,7 +11,7 @@ use crate::length::*;
 use crate::node::*;
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 
 #[derive(Default)]
@@ -114,7 +113,7 @@ impl NodeTrait for Image {
 
                 if let Some(_params) = dc.push_new_viewport(
                     Some(ViewBox::new(0.0, 0.0, image_width, image_height)),
-                    &Rectangle::new(x, y, w, h),
+                    Rect::new(x, y, x + w, y + h),
                     self.aspect,
                     clip_mode,
                 ) {

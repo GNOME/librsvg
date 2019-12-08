@@ -10,6 +10,7 @@ use crate::node::{CascadedValues, NodeDraw, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Opacity;
+use crate::rect::Rect;
 use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
@@ -88,16 +89,18 @@ impl Mask {
 
             draw_ctx.push_cairo_context(mask_cr);
 
-            if mask_units == CoordUnits::ObjectBoundingBox {
-                draw_ctx.clip(
+            let (x, y, w, h) = if mask_units == CoordUnits::ObjectBoundingBox {
+                (
                     x * bbox_rect.width + bbox_rect.x,
                     y * bbox_rect.height + bbox_rect.y,
                     w * bbox_rect.width,
                     h * bbox_rect.height,
-                );
+                )
             } else {
-                draw_ctx.clip(x, y, w, h);
-            }
+                (x, y, w, h)
+            };
+
+            draw_ctx.clip(Rect::new(x, y, x + w, y + h));
 
             {
                 let _params = if content_units == CoordUnits::ObjectBoundingBox {
