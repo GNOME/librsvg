@@ -107,7 +107,7 @@ impl Svg {
 
         match (w, h, self.vbox) {
             (w, h, Some(vbox)) => {
-                let params = ViewParams::new(dpi.x(), dpi.y(), vbox.width, vbox.height);
+                let params = ViewParams::new(dpi.x(), dpi.y(), vbox.0.width(), vbox.0.height());
 
                 Some((
                     w.normalize(values, &params).round() as i32,
@@ -243,12 +243,10 @@ impl NodeTrait for Svg {
                 // Use our viewBox if available, or try to derive one from
                 // the intrinsic dimensions.
                 self.vbox.or_else(|| {
-                    Some(ViewBox {
-                        x: 0.0,
-                        y: 0.0,
-                        width: svg_viewport.width(),
-                        height: svg_viewport.height(),
-                    })
+                    Some(ViewBox(Rect::from_size(
+                        svg_viewport.width(),
+                        svg_viewport.height(),
+                    )))
                 }),
             )
         };
