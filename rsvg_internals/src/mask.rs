@@ -10,6 +10,7 @@ use crate::node::{CascadedValues, NodeDraw, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Opacity;
+use crate::rect::Rect;
 use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
@@ -55,8 +56,8 @@ impl Mask {
         }
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
-        let (bb_x, bb_y) = (bbox_rect.x, bbox_rect.y);
-        let (bb_w, bb_h) = (bbox_rect.width, bbox_rect.height);
+        let (bb_x, bb_y) = (bbox_rect.x0, bbox_rect.y0);
+        let (bb_w, bb_h) = bbox_rect.size();
 
         let cascaded = CascadedValues::new_from_node(mask_node);
         let values = cascaded.get();
@@ -96,7 +97,7 @@ impl Mask {
                 (x, y, w, h)
             };
 
-            draw_ctx.clip(x, y, w, h);
+            draw_ctx.clip(Rect::new(x, y, x + w, y + h));
 
             {
                 let _params = if content_units == CoordUnits::ObjectBoundingBox {

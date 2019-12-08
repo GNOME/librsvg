@@ -321,16 +321,16 @@ impl RectangleExt for cairo::Rectangle {
 }
 
 pub trait TransformRect {
-    fn transform_rect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
+    fn transform_rect(&self, rect: &Rect) -> Rect;
 }
 
 impl TransformRect for cairo::Matrix {
-    fn transform_rect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
+    fn transform_rect(&self, rect: &Rect) -> Rect {
         let points = vec![
-            self.transform_point(rect.x, rect.y),
-            self.transform_point(rect.x + rect.width, rect.y),
-            self.transform_point(rect.x, rect.y + rect.height),
-            self.transform_point(rect.x + rect.width, rect.y + rect.height),
+            self.transform_point(rect.x0, rect.y0),
+            self.transform_point(rect.x1, rect.y0),
+            self.transform_point(rect.x0, rect.y1),
+            self.transform_point(rect.x1, rect.y1),
         ];
 
         let (mut xmin, mut ymin, mut xmax, mut ymax) = {
@@ -357,11 +357,11 @@ impl TransformRect for cairo::Matrix {
             }
         }
 
-        cairo::Rectangle {
-            x: xmin,
-            y: ymin,
-            width: xmax - xmin,
-            height: ymax - ymin,
+        Rect {
+            x0: xmin,
+            y0: ymin,
+            x1: xmax,
+            y1: ymax,
         }
     }
 }
@@ -440,26 +440,5 @@ mod tests {
         assert_approx_eq_cairo!(0.22_f64, r.y);
         assert_approx_eq_cairo!(4.34_f64, r.width);
         assert_approx_eq_cairo!(4.34_f64, r.height);
-    }
-
-    #[test]
-    fn transform_rect() {
-        let r = cairo::Rectangle {
-            x: 0.42,
-            y: 0.42,
-            width: 3.14,
-            height: 3.14,
-        };
-
-        let m = cairo::Matrix::identity();
-        let tr = m.transform_rect(&r);
-        assert_eq!(tr, r);
-
-        let m = cairo::Matrix::new(2.0, 0.0, 0.0, 2.0, 1.5, 1.5);
-        let tr = m.transform_rect(&r);
-        assert_approx_eq_cairo!(2.34_f64, tr.x);
-        assert_approx_eq_cairo!(2.34_f64, tr.y);
-        assert_approx_eq_cairo!(6.28_f64, tr.width);
-        assert_approx_eq_cairo!(6.28_f64, tr.height);
     }
 }
