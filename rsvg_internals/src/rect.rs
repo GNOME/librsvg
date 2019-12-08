@@ -227,6 +227,52 @@ impl From<IRect> for cairo::Rectangle {
     }
 }
 
+pub trait TransformRect {
+    fn transform_rect(&self, rect: &Rect) -> Rect;
+}
+
+impl TransformRect for cairo::Matrix {
+    fn transform_rect(&self, rect: &Rect) -> Rect {
+        let points = vec![
+            self.transform_point(rect.x0, rect.y0),
+            self.transform_point(rect.x1, rect.y0),
+            self.transform_point(rect.x0, rect.y1),
+            self.transform_point(rect.x1, rect.y1),
+        ];
+
+        let (mut xmin, mut ymin, mut xmax, mut ymax) = {
+            let (x, y) = points[0];
+
+            (x, y, x, y)
+        };
+
+        for &(x, y) in points.iter().take(4).skip(1) {
+            if x < xmin {
+                xmin = x;
+            }
+
+            if x > xmax {
+                xmax = x;
+            }
+
+            if y < ymin {
+                ymin = y;
+            }
+
+            if y > ymax {
+                ymax = y;
+            }
+        }
+
+        Rect {
+            x0: xmin,
+            y0: ymin,
+            x1: xmax,
+            y1: ymax,
+        }
+    }
+}
+
 pub trait RectangleExt {
     fn new(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle;
     fn from_size(width: f64, height: f64) -> cairo::Rectangle;
