@@ -150,16 +150,16 @@ impl Marker {
             }
 
             let params = if let Some(vbox) = self.vbox {
-                let (_, _, w, h) = self.aspect.compute(
+                let r = self.aspect.compute(
                     &vbox,
-                    &Rect::from_size(marker_width, marker_height),
+                    Rect::from_size(marker_width, marker_height),
                 );
 
-                if vbox.width.approx_eq_cairo(0.0) || vbox.height.approx_eq_cairo(0.0) {
+                if r.is_empty() {
                     return Ok(dc.empty_bbox());
                 }
 
-                cr.scale(w / vbox.width, h / vbox.height);
+                cr.scale(r.width() / vbox.width, r.height() / vbox.height);
 
                 dc.push_view_box(vbox.width, vbox.height)
             } else {

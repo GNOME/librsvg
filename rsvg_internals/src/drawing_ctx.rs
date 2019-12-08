@@ -301,7 +301,7 @@ impl DrawingCtx {
         }
 
         preserve_aspect_ratio
-            .viewport_to_viewbox_transform(vbox, &viewport)
+            .viewport_to_viewbox_transform(vbox, viewport)
             .and_then(|matrix| {
                 self.cr.transform(matrix);
 
