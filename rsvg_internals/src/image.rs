@@ -1,5 +1,4 @@
 use cairo;
-use cairo::Rectangle;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Href;
@@ -12,7 +11,7 @@ use crate::length::*;
 use crate::node::*;
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 
 #[derive(Default)]
@@ -99,12 +98,7 @@ impl NodeTrait for Image {
 
             // The bounding box for <image> is decided by the values of x, y, w, h and not by
             // the final computed image bounds.
-            let bbox = dc.empty_bbox().with_rect(Some(cairo::Rectangle {
-                x,
-                y,
-                width: w,
-                height: h,
-            }));
+            let bbox = dc.empty_bbox().with_rect(Rect::new(x, y, x + w, y + h));
 
             dc.with_saved_cr(&mut |dc| {
                 let cr = dc.get_cairo_context();
@@ -113,8 +107,8 @@ impl NodeTrait for Image {
                 let image_height = f64::from(image_height);
 
                 if let Some(_params) = dc.push_new_viewport(
-                    Some(ViewBox::new(0.0, 0.0, image_width, image_height)),
-                    &Rectangle::new(x, y, w, h),
+                    Some(ViewBox::new(Rect::from_size(image_width, image_height))),
+                    Rect::new(x, y, x + w, y + h),
                     self.aspect,
                     clip_mode,
                 ) {

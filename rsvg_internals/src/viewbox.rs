@@ -3,28 +3,14 @@ use cssparser::Parser;
 use crate::error::*;
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::Parse;
+use crate::rect::Rect;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ViewBox {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
-}
+pub struct ViewBox(pub Rect);
 
 impl ViewBox {
-    pub fn new(x: f64, y: f64, w: f64, h: f64) -> ViewBox {
-        assert!(
-            w >= 0.0 && h >= 0.0,
-            "width and height must not be negative"
-        );
-
-        ViewBox {
-            x,
-            y,
-            width: w,
-            height: h,
-        }
+    pub fn new(r: Rect) -> ViewBox {
+        ViewBox(r)
     }
 }
 
@@ -46,7 +32,7 @@ impl Parse for ViewBox {
         let (x, y, width, height) = (v[0], v[1], v[2], v[3]);
 
         if width >= 0.0 && height >= 0.0 {
-            Ok(ViewBox::new(x, y, width, height))
+            Ok(ViewBox::new(Rect::new(x, y, x + width, y + height)))
         } else {
             Err(ValueErrorKind::value_error("width and height must not be negative"))
         }
@@ -61,12 +47,12 @@ mod tests {
     fn parses_valid_viewboxes() {
         assert_eq!(
             ViewBox::parse_str("  1 2 3 4"),
-            Ok(ViewBox::new(1.0, 2.0, 3.0, 4.0))
+            Ok(ViewBox::new(Rect::new(1.0, 2.0, 4.0, 6.0)))
         );
 
         assert_eq!(
             ViewBox::parse_str(" -1.5 -2.5e1,34,56e2  "),
-            Ok(ViewBox::new(-1.5, -25.0, 34.0, 5600.0))
+            Ok(ViewBox::new(Rect::new(-1.5, -25.0, 32.5, 5575.0)))
         );
     }
 
