@@ -64,8 +64,8 @@ impl<'a> BoundsBuilder<'a> {
                 self.standard_input_was_referenced = true;
             }
             FilterInput::PrimitiveOutput(ref output) => {
-                let input_bbox = BoundingBox::new(&cairo::Matrix::identity())
-                    .with_rect(Some(output.bounds.into()));
+                let input_bbox =
+                    BoundingBox::new(&cairo::Matrix::identity()).with_rect(output.bounds.into());
                 self.bbox.insert(&input_bbox);
             }
         }
@@ -99,7 +99,8 @@ impl<'a> BoundsBuilder<'a> {
             let effects_region = self.ctx.effects_region();
 
             // Clear out the rect.
-            self.bbox = self.bbox.with_rect(None);
+            self.bbox.clear();
+
             // Convert into the paffine coordinate system.
             self.bbox.insert(&effects_region);
         }
