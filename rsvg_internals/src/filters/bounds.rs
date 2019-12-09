@@ -88,7 +88,7 @@ impl<'a> BoundsBuilder<'a> {
     ///
     /// Used by feImage.
     #[inline]
-    pub fn into_irect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> IRect {
+    pub fn into_rect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> cairo::Rectangle {
         self.apply_properties(draw_ctx).rect.unwrap().into()
     }
 
