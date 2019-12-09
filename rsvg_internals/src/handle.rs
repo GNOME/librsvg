@@ -320,10 +320,8 @@ impl Handle {
             if let Some((root_width, root_height)) =
                 node.borrow().get_impl::<Svg>().get_size(&values, dpi)
             {
-                let ink_r = cairo::Rectangle::from_size(
-                    f64::from(root_width),
-                    f64::from(root_height),
-                );
+                let ink_r =
+                    cairo::Rectangle::from_size(f64::from(root_width), f64::from(root_height));
 
                 let logical_r = ink_r;
 

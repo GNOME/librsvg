@@ -10,6 +10,7 @@ use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
+use crate::rect::RectangleExt;
 
 /// The <filter> node.
 pub struct Filter {
@@ -75,36 +76,32 @@ impl Filter {
 
         // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
         // referencing node. No units are allowed (it's checked during attribute parsing).
-        let rect = if self.filterunits == CoordUnits::ObjectBoundingBox {
-            cairo::Rectangle {
-                x: self.x.length,
-                y: self.y.length,
-                width: self.width.length,
-                height: self.height.length,
-            }
+        let (x, y, w, h) = if self.filterunits == CoordUnits::ObjectBoundingBox {
+            (
+                self.x.length,
+                self.y.length,
+                self.width.length,
+                self.height.length,
+            )
         } else {
-            cairo::Rectangle {
-                x: self.x.normalize(values, &params),
-                y: self.y.normalize(values, &params),
-                width: self.width.normalize(values, &params),
-                height: self.height.normalize(values, &params),
-            }
+            (
+                self.x.normalize(values, &params),
+                self.y.normalize(values, &params),
+                self.width.normalize(values, &params),
+                self.height.normalize(values, &params),
+            )
         };
 
-        let other_bbox = BoundingBox::new(&affine).with_rect(Some(rect));
+        let rect = cairo::Rectangle::new(x, y, w, h);
+        let other_bbox = BoundingBox::new(&affine).with_rect(rect);
 
         // At this point all of the previous viewbox and matrix business gets converted to pixel
         // coordinates in the final surface, because bbox is created with an identity affine.
         bbox.insert(&other_bbox);
 
         // Finally, clip to the width and height of our surface.
-        let rect = cairo::Rectangle {
-            x: 0f64,
-            y: 0f64,
-            width,
-            height,
-        };
-        let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(Some(rect));
+        let rect = cairo::Rectangle::from_size(width, height);
+        let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(rect);
         bbox.clip(&other_bbox);
 
         bbox

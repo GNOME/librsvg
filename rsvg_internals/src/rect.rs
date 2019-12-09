@@ -6,10 +6,10 @@ use crate::float_eq_cairo::ApproxEqCairo;
 pub trait RectangleExt {
     fn new(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle;
     fn from_size(width: f64, height: f64) -> cairo::Rectangle;
+    fn from_extents(x0: f64, y0: f64, x1: f64, y1: f64) -> cairo::Rectangle;
     fn is_empty(&self) -> bool;
     fn intersection(&self, rect: &cairo::Rectangle) -> Option<cairo::Rectangle>;
     fn union(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
-    fn transform(&self, affine: &cairo::Matrix) -> cairo::Rectangle;
     fn translate(&self, by: (f64, f64)) -> cairo::Rectangle;
     fn outer(&self) -> cairo::Rectangle;
 }
@@ -30,6 +30,15 @@ impl RectangleExt for cairo::Rectangle {
             y: 0.0,
             width,
             height,
+        }
+    }
+
+    fn from_extents(x0: f64, y0: f64, x1: f64, y1: f64) -> cairo::Rectangle {
+        cairo::Rectangle {
+            x: x0,
+            y: y0,
+            width: x1 - x0,
+            height: y1 - y0,
         }
     }
 
@@ -73,12 +82,38 @@ impl RectangleExt for cairo::Rectangle {
         }
     }
 
-    fn transform(&self, affine: &cairo::Matrix) -> cairo::Rectangle {
+    fn translate(&self, by: (f64, f64)) -> cairo::Rectangle {
+        cairo::Rectangle {
+            x: self.x + by.0,
+            y: self.y + by.1,
+            width: self.width,
+            height: self.height,
+        }
+    }
+
+    fn outer(&self) -> cairo::Rectangle {
+        let (x, y) = (self.x.floor(), self.y.floor());
+
+        cairo::Rectangle {
+            x,
+            y,
+            width: (self.x + self.width).ceil() - x,
+            height: (self.y + self.height).ceil() - y,
+        }
+    }
+}
+
+pub trait TransformRect {
+    fn transform_rect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
+}
+
+impl TransformRect for cairo::Matrix {
+    fn transform_rect(&self, rect: &cairo::Rectangle) -> cairo::Rectangle {
         let points = vec![
-            affine.transform_point(self.x, self.y),
-            affine.transform_point(self.x + self.width, self.y),
-            affine.transform_point(self.x, self.y + self.height),
-            affine.transform_point(self.x + self.width, self.y + self.height),
+            self.transform_point(rect.x, rect.y),
+            self.transform_point(rect.x + rect.width, rect.y),
+            self.transform_point(rect.x, rect.y + rect.height),
+            self.transform_point(rect.x + rect.width, rect.y + rect.height),
         ];
 
         let (mut xmin, mut ymin, mut xmax, mut ymax) = {
@@ -110,26 +145,6 @@ impl RectangleExt for cairo::Rectangle {
             y: ymin,
             width: xmax - xmin,
             height: ymax - ymin,
-        }
-    }
-
-    fn translate(&self, by: (f64, f64)) -> cairo::Rectangle {
-        cairo::Rectangle {
-            x: self.x + by.0,
-            y: self.y + by.1,
-            width: self.width,
-            height: self.height,
-        }
-    }
-
-    fn outer(&self) -> cairo::Rectangle {
-        let (x, y) = (self.x.floor(), self.y.floor());
-
-        cairo::Rectangle {
-            x,
-            y,
-            width: (self.x + self.width).ceil() - x,
-            height: (self.y + self.height).ceil() - y,
         }
     }
 }
@@ -333,27 +348,6 @@ mod tests {
     }
 
     #[test]
-    fn transform_rect() {
-        let r = cairo::Rectangle {
-            x: 0.42,
-            y: 0.42,
-            width: 3.14,
-            height: 3.14,
-        };
-
-        let m = cairo::Matrix::identity();
-        let tr = r.transform(&m);
-        assert_eq!(tr, r);
-
-        let m = cairo::Matrix::new(2.0, 0.0, 0.0, 2.0, 1.5, 1.5);
-        let tr = r.transform(&m);
-        assert_approx_eq_cairo!(2.34_f64, tr.x);
-        assert_approx_eq_cairo!(2.34_f64, tr.y);
-        assert_approx_eq_cairo!(6.28_f64, tr.width);
-        assert_approx_eq_cairo!(6.28_f64, tr.height);
-    }
-
-    #[test]
     fn outer_rect() {
         let r = cairo::Rectangle {
             x: 1.42,
@@ -367,5 +361,26 @@ mod tests {
         assert_eq!(1.0, or.y);
         assert_eq!(4.0, or.width);
         assert_eq!(4.0, or.height);
+    }
+
+    #[test]
+    fn transform_rect() {
+        let r = cairo::Rectangle {
+            x: 0.42,
+            y: 0.42,
+            width: 3.14,
+            height: 3.14,
+        };
+
+        let m = cairo::Matrix::identity();
+        let tr = m.transform_rect(&r);
+        assert_eq!(tr, r);
+
+        let m = cairo::Matrix::new(2.0, 0.0, 0.0, 2.0, 1.5, 1.5);
+        let tr = m.transform_rect(&r);
+        assert_approx_eq_cairo!(2.34_f64, tr.x);
+        assert_approx_eq_cairo!(2.34_f64, tr.y);
+        assert_approx_eq_cairo!(6.28_f64, tr.width);
+        assert_approx_eq_cairo!(6.28_f64, tr.height);
     }
 }
