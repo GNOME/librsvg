@@ -11,7 +11,6 @@ pub trait RectangleExt {
     fn intersection(&self, rect: &cairo::Rectangle) -> Option<cairo::Rectangle>;
     fn union(&self, rect: &cairo::Rectangle) -> cairo::Rectangle;
     fn translate(&self, by: (f64, f64)) -> cairo::Rectangle;
-    fn outer(&self) -> cairo::Rectangle;
 }
 
 impl RectangleExt for cairo::Rectangle {
@@ -88,17 +87,6 @@ impl RectangleExt for cairo::Rectangle {
             y: self.y + by.1,
             width: self.width,
             height: self.height,
-        }
-    }
-
-    fn outer(&self) -> cairo::Rectangle {
-        let (x, y) = (self.x.floor(), self.y.floor());
-
-        cairo::Rectangle {
-            x,
-            y,
-            width: (self.x + self.width).ceil() - x,
-            height: (self.y + self.height).ceil() - y,
         }
     }
 }
@@ -345,22 +333,6 @@ mod tests {
         assert_approx_eq_cairo!(0.22_f64, r.y);
         assert_approx_eq_cairo!(4.34_f64, r.width);
         assert_approx_eq_cairo!(4.34_f64, r.height);
-    }
-
-    #[test]
-    fn outer_rect() {
-        let r = cairo::Rectangle {
-            x: 1.42,
-            y: 1.42,
-            width: 3.14,
-            height: 3.14,
-        };
-
-        let or = r.outer();
-        assert_eq!(1.0, or.x);
-        assert_eq!(1.0, or.y);
-        assert_eq!(4.0, or.width);
-        assert_eq!(4.0, or.height);
     }
 
     #[test]
