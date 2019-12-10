@@ -126,15 +126,18 @@ impl NodeTrait for Pattern {
                 expanded_name!(svg "preserveAspectRatio") => {
                     self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
-                expanded_name!(svg "patternTransform") => self.common.affine = Some(attr.parse(value)?),
+                expanded_name!(svg "patternTransform") => {
+                    self.common.affine = Some(attr.parse(value)?)
+                }
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?);
                 }
                 expanded_name!(svg "x") => self.common.x = Some(attr.parse(value)?),
                 expanded_name!(svg "y") => self.common.y = Some(attr.parse(value)?),
                 expanded_name!(svg "width") => {
-                    self.common.width =
-                        Some(attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?)
+                    self.common.width = Some(
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
+                    )
                 }
                 expanded_name!(svg "height") => {
                     self.common.height =
@@ -255,21 +258,14 @@ impl AsPaintSource for ResolvedPattern {
 
         // Work out the size of the rectangle so it takes into account the object bounding box
 
-        let bbwscale: f64;
-        let bbhscale: f64;
-
-        match units {
+        let (bbwscale, bbhscale) = match units {
             PatternUnits(CoordUnits::ObjectBoundingBox) => {
-                let bbrect = bbox.rect.unwrap();
-                bbwscale = bbrect.width;
-                bbhscale = bbrect.height;
+                let rect = bbox.rect.unwrap();
+                (rect.width, rect.height)
             }
 
-            PatternUnits(CoordUnits::UserSpaceOnUse) => {
-                bbwscale = 1.0;
-                bbhscale = 1.0;
-            }
-        }
+            PatternUnits(CoordUnits::UserSpaceOnUse) => (1.0, 1.0),
+        };
 
         let cr = draw_ctx.get_cairo_context();
         let affine = cr.get_matrix();
@@ -582,8 +578,8 @@ impl Pattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use markup5ever::{namespace_url, ns, QualName};
     use crate::node::{NodeData, NodeType, RsvgNode};
+    use markup5ever::{namespace_url, ns, QualName};
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
