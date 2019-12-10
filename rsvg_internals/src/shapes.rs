@@ -1,6 +1,6 @@
 use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use std::borrow::Cow;
+use std::rc::Rc;
 use std::ops::Deref;
 
 use crate::bbox::BoundingBox;
@@ -55,13 +55,13 @@ pub enum Markers {
     Yes,
 }
 
-pub struct Shape<'a> {
-    builder: Cow<'a, PathBuilder>,
+pub struct Shape {
+    builder: Rc<PathBuilder>,
     markers: Markers,
 }
 
-impl<'a> Shape<'a> {
-    fn new(builder: Cow<'a, PathBuilder>, markers: Markers) -> Shape<'a> {
+impl Shape {
+    fn new(builder: Rc<PathBuilder>, markers: Markers) -> Shape {
         Shape {
             builder,
             markers,
@@ -144,19 +144,21 @@ fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> PathBuilder {
 
 #[derive(Default)]
 pub struct Path {
-    builder: PathBuilder,
+    builder: Option<Rc<PathBuilder>>,
 }
 
 impl NodeTrait for Path {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "d") {
-                if let Err(e) = path_parser::parse_path_into_builder(value, &mut self.builder) {
+                let mut builder = PathBuilder::new();
+                if let Err(e) = path_parser::parse_path_into_builder(value, &mut builder) {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
 
                     rsvg_log!("could not parse path: {}", e);
                 }
+                self.builder = Some(Rc::new(builder));
             }
         }
 
@@ -170,9 +172,13 @@ impl NodeTrait for Path {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        Shape::new(Cow::Borrowed(&self.builder), Markers::Yes)
-            .draw(node, values, draw_ctx, clipping)
+        if let Some(builder) = self.builder.as_ref() {
+            let values = cascaded.get();
+            Shape::new(builder.clone(), Markers::Yes)
+                .draw(node, values, draw_ctx, clipping)
+        } else {
+            Ok(draw_ctx.empty_bbox())
+        }
     }
 }
 
@@ -258,7 +264,7 @@ impl NodeTrait for Polygon {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Cow::Owned(make_poly(self.points.as_ref(), true)), Markers::Yes)
+        Shape::new(Rc::new(make_poly(self.points.as_ref(), true)), Markers::Yes)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -287,7 +293,7 @@ impl NodeTrait for Polyline {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Cow::Owned(make_poly(self.points.as_ref(), false)), Markers::Yes)
+        Shape::new(Rc::new(make_poly(self.points.as_ref(), false)), Markers::Yes)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -323,7 +329,7 @@ impl NodeTrait for Line {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path_builder(values, draw_ctx), Markers::Yes)
+        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::Yes)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -333,7 +339,7 @@ impl Line {
         &self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-    ) -> Cow<PathBuilder> {
+    ) -> PathBuilder {
         let mut builder = PathBuilder::new();
 
         let params = draw_ctx.get_view_params();
@@ -346,7 +352,7 @@ impl Line {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        Cow::Owned(builder)
+        builder
     }
 }
 
@@ -401,7 +407,7 @@ impl NodeTrait for Rect {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path_builder(values, draw_ctx), Markers::No)
+        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::No)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -411,7 +417,7 @@ impl Rect {
         &self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-    ) -> Cow<PathBuilder> {
+    ) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let x = self.x.normalize(values, &params);
@@ -448,12 +454,12 @@ impl Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return Cow::Owned(builder);
+            return builder;
         }
 
         // ... and rx,ry must be nonnegative
         if rx < 0.0 || ry < 0.0 {
-            return Cow::Owned(builder);
+            return builder;
         }
 
         let half_w = w / 2.0;
@@ -579,7 +585,7 @@ impl Rect {
             builder.close_path();
         }
 
-        Cow::Owned(builder)
+        builder
     }
 }
 
@@ -614,7 +620,7 @@ impl NodeTrait for Circle {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path_builder(values, draw_ctx), Markers::No)
+        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::No)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -624,14 +630,14 @@ impl Circle {
         &self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-    ) -> Cow<PathBuilder> {
+    ) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
         let cy = self.cy.normalize(values, &params);
         let r = self.r.normalize(values, &params);
 
-        Cow::Owned(make_ellipse(cx, cy, r, r))
+        make_ellipse(cx, cy, r, r)
     }
 }
 
@@ -672,7 +678,7 @@ impl NodeTrait for Ellipse {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path_builder(values, draw_ctx), Markers::No)
+        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::No)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -682,7 +688,7 @@ impl Ellipse {
         &self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-    ) -> Cow<PathBuilder> {
+    ) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -690,7 +696,7 @@ impl Ellipse {
         let rx = self.rx.normalize(values, &params);
         let ry = self.ry.normalize(values, &params);
 
-        Cow::Owned(make_ellipse(cx, cy, rx, ry))
+        make_ellipse(cx, cy, rx, ry)
     }
 }
 
