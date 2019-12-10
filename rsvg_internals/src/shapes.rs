@@ -309,7 +309,17 @@ impl NodeTrait for Line {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
+        let builder = self.make_path_builder(values, draw_ctx);
+        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+    }
+}
 
+impl Line {
+    fn make_path_builder(
+        &self,
+        values: &ComputedValues,
+        draw_ctx: &mut DrawingCtx,
+    ) -> PathBuilder {
         let mut builder = PathBuilder::new();
 
         let params = draw_ctx.get_view_params();
@@ -322,7 +332,7 @@ impl NodeTrait for Line {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+        builder
     }
 }
 
