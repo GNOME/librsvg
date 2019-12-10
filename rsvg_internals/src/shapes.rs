@@ -1,6 +1,7 @@
 use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
+use std::borrow::Cow;
 
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
@@ -234,8 +235,8 @@ impl Polygon {
         &self,
         _values: &ComputedValues,
         _draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
-        make_poly(self.points.as_ref(), true)
+    ) -> Cow<PathBuilder> {
+        Cow::Owned(make_poly(self.points.as_ref(), true))
     }
 }
 
@@ -273,8 +274,8 @@ impl Polyline {
         &self,
         _values: &ComputedValues,
         _draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
-        make_poly(self.points.as_ref(), false)
+    ) -> Cow<PathBuilder> {
+        Cow::Owned(make_poly(self.points.as_ref(), false))
     }
 }
 
@@ -319,7 +320,7 @@ impl Line {
         &self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    ) -> Cow<PathBuilder> {
         let mut builder = PathBuilder::new();
 
         let params = draw_ctx.get_view_params();
@@ -332,7 +333,7 @@ impl Line {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        builder
+        Cow::Owned(builder)
     }
 }
 
@@ -395,7 +396,7 @@ impl Rect {
         &self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    ) -> Cow<PathBuilder> {
         let params = draw_ctx.get_view_params();
 
         let x = self.x.normalize(values, &params);
@@ -432,12 +433,12 @@ impl Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return builder;
+            return Cow::Owned(builder);
         }
 
         // ... and rx,ry must be nonnegative
         if rx < 0.0 || ry < 0.0 {
-            return builder;
+            return Cow::Owned(builder);
         }
 
         let half_w = w / 2.0;
@@ -563,7 +564,7 @@ impl Rect {
             builder.close_path();
         }
 
-        builder
+        Cow::Owned(builder)
     }
 }
 
@@ -608,14 +609,14 @@ impl Circle {
         &self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    ) -> Cow<PathBuilder> {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
         let cy = self.cy.normalize(values, &params);
         let r = self.r.normalize(values, &params);
 
-        make_ellipse(cx, cy, r, r)
+        Cow::Owned(make_ellipse(cx, cy, r, r))
     }
 }
 
@@ -664,7 +665,7 @@ impl Ellipse {
         &self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    ) -> Cow<PathBuilder> {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -672,7 +673,7 @@ impl Ellipse {
         let rx = self.rx.normalize(values, &params);
         let ry = self.ry.normalize(values, &params);
 
-        make_ellipse(cx, cy, rx, ry)
+        Cow::Owned(make_ellipse(cx, cy, rx, ry))
     }
 }
 
