@@ -1,7 +1,7 @@
 use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use std::ops::Deref;
 use std::borrow::Cow;
+use std::ops::Deref;
 
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
@@ -49,34 +49,38 @@ fn render_path_builder(
     }
 }
 
-trait Shape {
-    fn draw_shape(
+pub struct Shape<'a> {
+    builder: Cow<'a, PathBuilder>,
+    uses_markers: bool,
+}
+
+impl<'a> Shape<'a> {
+    fn new(builder: Cow<'a, PathBuilder>, uses_markers: bool) -> Shape<'a> {
+        Shape {
+            builder,
+            uses_markers,
+        }
+    }
+
+    fn draw(
         &self,
         node: &RsvgNode,
-        cascaded: &CascadedValues<'_>,
+        values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
+        render_path_builder(
+            &self.builder,
+            draw_ctx,
+            node,
+            values,
+            self.uses_markers,
+            clipping,
+        )
     }
-
-    fn make_path_builder(
-        &self,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Cow<PathBuilder>;
-
-    fn uses_markers(&self) -> bool;
 }
 
-fn make_ellipse(
-    cx: f64,
-    cy: f64,
-    rx: f64,
-    ry: f64,
-) -> PathBuilder {
+fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> PathBuilder {
     let mut builder = PathBuilder::new();
 
     // Per the spec, rx and ry must be nonnegative
@@ -160,21 +164,9 @@ impl NodeTrait for Path {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        self.draw_shape(node, cascaded, draw_ctx, clipping)
-    }
-}
-
-impl Shape for Path {
-    fn make_path_builder(
-        &self,
-        _values: &ComputedValues,
-        _draw_ctx: &mut DrawingCtx,
-    ) -> Cow<PathBuilder> {
-        Cow::Borrowed(&self.builder)
-    }
-
-    fn uses_markers(&self) -> bool {
-        true
+        let values = cascaded.get();
+        Shape::new(Cow::Borrowed(&self.builder), true)
+            .draw(node, values, draw_ctx, clipping)
     }
 }
 
@@ -259,21 +251,9 @@ impl NodeTrait for Polygon {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        self.draw_shape(node, cascaded, draw_ctx, clipping)
-    }
-}
-
-impl Shape for Polygon {
-    fn make_path_builder(
-        &self,
-        _values: &ComputedValues,
-        _draw_ctx: &mut DrawingCtx,
-    ) -> Cow<PathBuilder> {
-        Cow::Owned(make_poly(self.points.as_ref(), true))
-    }
-
-    fn uses_markers(&self) -> bool {
-        true
+        let values = cascaded.get();
+        Shape::new(Cow::Owned(make_poly(self.points.as_ref(), true)), true)
+            .draw(node, values, draw_ctx, clipping)
     }
 }
 
@@ -300,21 +280,9 @@ impl NodeTrait for Polyline {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        self.draw_shape(node, cascaded, draw_ctx, clipping)
-    }
-}
-
-impl Shape for Polyline {
-    fn make_path_builder(
-        &self,
-        _values: &ComputedValues,
-        _draw_ctx: &mut DrawingCtx,
-    ) -> Cow<PathBuilder> {
-        Cow::Owned(make_poly(self.points.as_ref(), false))
-    }
-
-    fn uses_markers(&self) -> bool {
-        true
+        let values = cascaded.get();
+        Shape::new(Cow::Owned(make_poly(self.points.as_ref(), false)), true)
+            .draw(node, values, draw_ctx, clipping)
     }
 }
 
@@ -348,11 +316,13 @@ impl NodeTrait for Line {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        self.draw_shape(node, cascaded, draw_ctx, clipping)
+        let values = cascaded.get();
+        Shape::new(self.make_path_builder(values, draw_ctx), true)
+            .draw(node, values, draw_ctx, clipping)
     }
 }
 
-impl Shape for Line {
+impl Line {
     fn make_path_builder(
         &self,
         values: &ComputedValues,
@@ -371,10 +341,6 @@ impl Shape for Line {
         builder.line_to(x2, y2);
 
         Cow::Owned(builder)
-    }
-
-    fn uses_markers(&self) -> bool {
-        true
     }
 }
 
@@ -397,10 +363,12 @@ impl NodeTrait for Rect {
                 expanded_name!(svg "x") => self.x = attr.parse(value)?,
                 expanded_name!(svg "y") => self.y = attr.parse(value)?,
                 expanded_name!(svg "width") => {
-                    self.w = attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                    self.w =
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "height") => {
-                    self.h = attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                    self.h =
+                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 expanded_name!(svg "rx") => {
                     self.rx = attr
@@ -426,11 +394,13 @@ impl NodeTrait for Rect {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        self.draw_shape(node, cascaded, draw_ctx, clipping)
+        let values = cascaded.get();
+        Shape::new(self.make_path_builder(values, draw_ctx), false)
+            .draw(node, values, draw_ctx, clipping)
     }
 }
 
-impl Shape for Rect {
+impl Rect {
     fn make_path_builder(
         &self,
         values: &ComputedValues,
@@ -605,10 +575,6 @@ impl Shape for Rect {
 
         Cow::Owned(builder)
     }
-
-    fn uses_markers(&self) -> bool {
-        false
-    }
 }
 
 #[derive(Default)]
@@ -641,11 +607,13 @@ impl NodeTrait for Circle {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        self.draw_shape(node, cascaded, draw_ctx, clipping)
+        let values = cascaded.get();
+        Shape::new(self.make_path_builder(values, draw_ctx), false)
+            .draw(node, values, draw_ctx, clipping)
     }
 }
 
-impl Shape for Circle {
+impl Circle {
     fn make_path_builder(
         &self,
         values: &ComputedValues,
@@ -658,10 +626,6 @@ impl Shape for Circle {
         let r = self.r.normalize(values, &params);
 
         Cow::Owned(make_ellipse(cx, cy, r, r))
-    }
-
-    fn uses_markers(&self) -> bool {
-        false
     }
 }
 
@@ -680,10 +644,12 @@ impl NodeTrait for Ellipse {
                 expanded_name!(svg "cx") => self.cx = attr.parse(value)?,
                 expanded_name!(svg "cy") => self.cy = attr.parse(value)?,
                 expanded_name!(svg "rx") => {
-                    self.rx = attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                    self.rx =
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "ry") => {
-                    self.ry = attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                    self.ry =
+                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 _ => (),
             }
@@ -699,11 +665,13 @@ impl NodeTrait for Ellipse {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        self.draw_shape(node, cascaded, draw_ctx, clipping)
+        let values = cascaded.get();
+        Shape::new(self.make_path_builder(values, draw_ctx), false)
+            .draw(node, values, draw_ctx, clipping)
     }
 }
 
-impl Shape for Ellipse {
+impl Ellipse {
     fn make_path_builder(
         &self,
         values: &ComputedValues,
@@ -717,10 +685,6 @@ impl Shape for Ellipse {
         let ry = self.ry.normalize(values, &params);
 
         Cow::Owned(make_ellipse(cx, cy, rx, ry))
-    }
-
-    fn uses_markers(&self) -> bool {
-        false
     }
 }
 
