@@ -139,7 +139,18 @@ impl NodeTrait for Path {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        render_path_builder(&self.builder, draw_ctx, node, values, true, clipping)
+        let builder = self.make_path_builder(values, draw_ctx);
+        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+    }
+}
+
+impl Path {
+    fn make_path_builder(
+        &self,
+        _values: &ComputedValues,
+        _draw_ctx: &mut DrawingCtx,
+    ) -> Cow<PathBuilder> {
+        Cow::Borrowed(&self.builder)
     }
 }
 
