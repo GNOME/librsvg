@@ -9,7 +9,6 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
-use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::viewbox::ViewBox;
 
@@ -41,7 +40,7 @@ impl FeImage {
         &self,
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
-        bounds: IRect,
+        bounds: cairo::Rectangle,
         fragment: &Fragment,
     ) -> Result<ImageSurface, FilterError> {
         let acquired_drawable = draw_ctx
@@ -100,8 +99,8 @@ impl FeImage {
         &self,
         ctx: &FilterContext,
         draw_ctx: &DrawingCtx,
-        bounds: &IRect,
-        unclipped_bounds: &IRect,
+        bounds: &cairo::Rectangle,
+        unclipped_bounds: &cairo::Rectangle,
         href: &Href,
     ) -> Result<ImageSurface, FilterError> {
         let surface = if let Href::PlainUrl(ref url) = *href {
@@ -127,7 +126,7 @@ impl FeImage {
                 f64::from(surface.width()),
                 f64::from(surface.height()),
             ),
-            &cairo::Rectangle::from(*unclipped_bounds),
+            &unclipped_bounds,
         );
 
         if w.approx_eq_cairo(0.0) || h.approx_eq_cairo(0.0) {
@@ -192,12 +191,12 @@ impl FilterEffect for FeImage {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds_builder = self.base.get_bounds(ctx);
-        let bounds = bounds_builder.into_irect(draw_ctx);
+        let bounds = bounds_builder.into_rect(draw_ctx);
 
         if let Some(href) = self.href.as_ref() {
             let output_surface = match href {
                 Href::PlainUrl(_) => {
-                    let unclipped_bounds = bounds_builder.into_irect_without_clipping(draw_ctx);
+                    let unclipped_bounds = bounds_builder.into_rect_without_clipping(draw_ctx);
                     self.render_external_image(ctx, draw_ctx, &bounds, &unclipped_bounds, href)?
                 }
                 Href::WithFragment(ref frag) => self.render_node(ctx, draw_ctx, bounds, frag)?,
@@ -207,7 +206,7 @@ impl FilterEffect for FeImage {
                 name: self.base.result.clone(),
                 output: FilterOutput {
                     surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
-                    bounds,
+                    bounds: bounds.into(),
                 },
             })
         } else {
