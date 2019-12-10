@@ -49,6 +49,28 @@ fn render_path_builder(
     }
 }
 
+trait Shape {
+    fn draw_shape(
+        &self,
+        node: &RsvgNode,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        let values = cascaded.get();
+        let builder = self.make_path_builder(values, draw_ctx);
+        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
+    }
+
+    fn make_path_builder(
+        &self,
+        values: &ComputedValues,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Cow<PathBuilder>;
+
+    fn uses_markers(&self) -> bool;
+}
+
 fn make_ellipse(
     cx: f64,
     cy: f64,
@@ -138,13 +160,11 @@ impl NodeTrait for Path {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
+        self.draw_shape(node, cascaded, draw_ctx, clipping)
     }
 }
 
-impl Path {
+impl Shape for Path {
     fn make_path_builder(
         &self,
         _values: &ComputedValues,
@@ -239,13 +259,11 @@ impl NodeTrait for Polygon {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
+        self.draw_shape(node, cascaded, draw_ctx, clipping)
     }
 }
 
-impl Polygon {
+impl Shape for Polygon {
     fn make_path_builder(
         &self,
         _values: &ComputedValues,
@@ -282,13 +300,11 @@ impl NodeTrait for Polyline {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
+        self.draw_shape(node, cascaded, draw_ctx, clipping)
     }
 }
 
-impl Polyline {
+impl Shape for Polyline {
     fn make_path_builder(
         &self,
         _values: &ComputedValues,
@@ -332,13 +348,11 @@ impl NodeTrait for Line {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
+        self.draw_shape(node, cascaded, draw_ctx, clipping)
     }
 }
 
-impl Line {
+impl Shape for Line {
     fn make_path_builder(
         &self,
         values: &ComputedValues,
@@ -412,13 +426,11 @@ impl NodeTrait for Rect {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
+        self.draw_shape(node, cascaded, draw_ctx, clipping)
     }
 }
 
-impl Rect {
+impl Shape for Rect {
     fn make_path_builder(
         &self,
         values: &ComputedValues,
@@ -629,13 +641,11 @@ impl NodeTrait for Circle {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
+        self.draw_shape(node, cascaded, draw_ctx, clipping)
     }
 }
 
-impl Circle {
+impl Shape for Circle {
     fn make_path_builder(
         &self,
         values: &ComputedValues,
@@ -689,13 +699,11 @@ impl NodeTrait for Ellipse {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
+        self.draw_shape(node, cascaded, draw_ctx, clipping)
     }
 }
 
-impl Ellipse {
+impl Shape for Ellipse {
     fn make_path_builder(
         &self,
         values: &ComputedValues,
