@@ -73,9 +73,8 @@ impl<'a> BoundsBuilder<'a> {
         self
     }
 
-    /// Returns the final pixel bounds.
-    #[inline]
-    pub fn into_irect(self, draw_ctx: &mut DrawingCtx) -> IRect {
+    /// Returns the final exact bounds.
+    pub fn into_rect(self, draw_ctx: &mut DrawingCtx) -> cairo::Rectangle {
         let mut bbox = self.apply_properties(draw_ctx);
 
         let effects_region = self.ctx.effects_region();
@@ -84,10 +83,14 @@ impl<'a> BoundsBuilder<'a> {
         bbox.rect.unwrap().into()
     }
 
+    /// Returns the final pixel bounds.
+    pub fn into_irect(self, draw_ctx: &mut DrawingCtx) -> IRect {
+        self.into_rect(draw_ctx).into()
+    }
+
     /// Returns the final pixel bounds without clipping to the filter effects region.
     ///
     /// Used by feImage.
-    #[inline]
     pub fn into_rect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> cairo::Rectangle {
         self.apply_properties(draw_ctx).rect.unwrap().into()
     }

@@ -9,7 +9,6 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
-use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::viewbox::ViewBox;
 
@@ -41,7 +40,7 @@ impl FeImage {
         &self,
         ctx: &FilterContext,
         draw_ctx: &mut DrawingCtx,
-        bounds: IRect,
+        bounds: cairo::Rectangle,
         fragment: &Fragment,
     ) -> Result<ImageSurface, FilterError> {
         let acquired_drawable = draw_ctx
@@ -100,7 +99,7 @@ impl FeImage {
         &self,
         ctx: &FilterContext,
         draw_ctx: &DrawingCtx,
-        bounds: &IRect,
+        bounds: &cairo::Rectangle,
         unclipped_bounds: &cairo::Rectangle,
         href: &Href,
     ) -> Result<ImageSurface, FilterError> {
@@ -192,7 +191,7 @@ impl FilterEffect for FeImage {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds_builder = self.base.get_bounds(ctx);
-        let bounds = bounds_builder.into_irect(draw_ctx);
+        let bounds = bounds_builder.into_rect(draw_ctx);
 
         if let Some(href) = self.href.as_ref() {
             let output_surface = match href {
@@ -207,7 +206,7 @@ impl FilterEffect for FeImage {
                 name: self.base.result.clone(),
                 output: FilterOutput {
                     surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
-                    bounds,
+                    bounds: bounds.into(),
                 },
             })
         } else {
