@@ -21,7 +21,7 @@ fn render_path_builder(
     draw_ctx: &mut DrawingCtx,
     node: &RsvgNode,
     values: &ComputedValues,
-    render_markers: bool,
+    markers: Markers,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
     if !builder.is_empty() {
@@ -39,7 +39,7 @@ fn render_path_builder(
             }
         })?;
 
-        if render_markers {
+        if markers == Markers::Yes {
             marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping)?;
         }
 
@@ -49,16 +49,22 @@ fn render_path_builder(
     }
 }
 
+#[derive(Copy, Clone, PartialEq)]
+pub enum Markers {
+    No,
+    Yes,
+}
+
 pub struct Shape<'a> {
     builder: Cow<'a, PathBuilder>,
-    uses_markers: bool,
+    markers: Markers,
 }
 
 impl<'a> Shape<'a> {
-    fn new(builder: Cow<'a, PathBuilder>, uses_markers: bool) -> Shape<'a> {
+    fn new(builder: Cow<'a, PathBuilder>, markers: Markers) -> Shape<'a> {
         Shape {
             builder,
-            uses_markers,
+            markers,
         }
     }
 
@@ -74,7 +80,7 @@ impl<'a> Shape<'a> {
             draw_ctx,
             node,
             values,
-            self.uses_markers,
+            self.markers,
             clipping,
         )
     }
@@ -165,7 +171,7 @@ impl NodeTrait for Path {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Cow::Borrowed(&self.builder), true)
+        Shape::new(Cow::Borrowed(&self.builder), Markers::Yes)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -252,7 +258,7 @@ impl NodeTrait for Polygon {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Cow::Owned(make_poly(self.points.as_ref(), true)), true)
+        Shape::new(Cow::Owned(make_poly(self.points.as_ref(), true)), Markers::Yes)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -281,7 +287,7 @@ impl NodeTrait for Polyline {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Cow::Owned(make_poly(self.points.as_ref(), false)), true)
+        Shape::new(Cow::Owned(make_poly(self.points.as_ref(), false)), Markers::Yes)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -317,7 +323,7 @@ impl NodeTrait for Line {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path_builder(values, draw_ctx), true)
+        Shape::new(self.make_path_builder(values, draw_ctx), Markers::Yes)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -395,7 +401,7 @@ impl NodeTrait for Rect {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path_builder(values, draw_ctx), false)
+        Shape::new(self.make_path_builder(values, draw_ctx), Markers::No)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -608,7 +614,7 @@ impl NodeTrait for Circle {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path_builder(values, draw_ctx), false)
+        Shape::new(self.make_path_builder(values, draw_ctx), Markers::No)
             .draw(node, values, draw_ctx, clipping)
     }
 }
@@ -666,7 +672,7 @@ impl NodeTrait for Ellipse {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path_builder(values, draw_ctx), false)
+        Shape::new(self.make_path_builder(values, draw_ctx), Markers::No)
             .draw(node, values, draw_ctx, clipping)
     }
 }
