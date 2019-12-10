@@ -48,26 +48,23 @@ fn render_path_builder(
     }
 }
 
-fn render_ellipse(
+fn make_ellipse(
     cx: f64,
     cy: f64,
     rx: f64,
     ry: f64,
-    draw_ctx: &mut DrawingCtx,
-    node: &RsvgNode,
-    values: &ComputedValues,
-    clipping: bool,
-) -> Result<BoundingBox, RenderingError> {
+) -> PathBuilder {
+    let mut builder = PathBuilder::new();
+
     // Per the spec, rx and ry must be nonnegative
     if rx <= 0.0 || ry <= 0.0 {
-        return Ok(draw_ctx.empty_bbox());
+        return builder;
     }
 
     // 4/3 * (1-cos 45°)/sin 45° = 4/3 * sqrt(2) - 1
     let arc_magic: f64 = 0.5522847498;
 
     // approximate an ellipse using 4 Bézier curves
-    let mut builder = PathBuilder::new();
 
     builder.move_to(cx + rx, cy);
 
@@ -109,7 +106,7 @@ fn render_ellipse(
 
     builder.close_path();
 
-    render_path_builder(&builder, draw_ctx, node, values, false, clipping)
+    builder
 }
 
 #[derive(Default)]
@@ -592,14 +589,24 @@ impl NodeTrait for Circle {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
+        let builder = self.make_path_builder(values, draw_ctx);
+        render_path_builder(&builder, draw_ctx, node, values, false, clipping)
+    }
+}
 
+impl Circle {
+    fn make_path_builder(
+        &self,
+        values: &ComputedValues,
+        draw_ctx: &mut DrawingCtx,
+    ) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
         let cy = self.cy.normalize(values, &params);
         let r = self.r.normalize(values, &params);
 
-        render_ellipse(cx, cy, r, r, draw_ctx, node, values, clipping)
+        make_ellipse(cx, cy, r, r)
     }
 }
 
@@ -638,7 +645,17 @@ impl NodeTrait for Ellipse {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
+        let builder = self.make_path_builder(values, draw_ctx);
+        render_path_builder(&builder, draw_ctx, node, values, false, clipping)
+    }
+}
 
+impl Ellipse {
+    fn make_path_builder(
+        &self,
+        values: &ComputedValues,
+        draw_ctx: &mut DrawingCtx,
+    ) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -646,7 +663,7 @@ impl NodeTrait for Ellipse {
         let rx = self.rx.normalize(values, &params);
         let ry = self.ry.normalize(values, &params);
 
-        render_ellipse(cx, cy, rx, ry, draw_ctx, node, values, clipping)
+        make_ellipse(cx, cy, rx, ry)
     }
 }
 
