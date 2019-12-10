@@ -311,9 +311,11 @@ macro_rules! impl_lighting_filter {
                     bounds = new_bounds;
                 }
 
+                let (bounds_w, bounds_h) = bounds.size();
+
                 // Check if the surface is too small for normal computation. This case is unspecified;
                 // WebKit doesn't render anything in this case.
-                if bounds.width() < 2 || bounds.height() < 2 {
+                if bounds_w < 2 || bounds_h < 2 {
                     return Err(FilterError::LightingInputTooSmall);
                 }
 
@@ -390,7 +392,7 @@ macro_rules! impl_lighting_filter {
                         bottom_right_normal(&input_surface, bounds),
                     );
 
-                    if bounds.x1 - bounds.x0 >= 3 {
+                    if bounds_w >= 3 {
                         // Top row.
                         for x in bounds.x0 as u32 + 1..bounds.x1 as u32 - 1 {
                             compute_output_pixel(
@@ -414,7 +416,7 @@ macro_rules! impl_lighting_filter {
                         }
                     }
 
-                    if bounds.y1 - bounds.y0 >= 3 {
+                    if bounds_h >= 3 {
                         // Left column.
                         for y in bounds.y0 as u32 + 1..bounds.y1 as u32 - 1 {
                             compute_output_pixel(
@@ -438,7 +440,7 @@ macro_rules! impl_lighting_filter {
                         }
                     }
 
-                    if bounds.width() >= 3 && bounds.height() >= 3 {
+                    if bounds_w >= 3 && bounds_h >= 3 {
                         // Interior pixels.
                         let first_row = bounds.y0 as u32 + 1;
                         let one_past_last_row = bounds.y1 as u32 - 1;
