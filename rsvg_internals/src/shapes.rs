@@ -379,7 +379,17 @@ impl NodeTrait for Rect {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
+        let builder = self.make_path_builder(values, draw_ctx);
+        render_path_builder(&builder, draw_ctx, node, values, false, clipping)
+    }
+}
 
+impl Rect {
+    fn make_path_builder(
+        &self,
+        values: &ComputedValues,
+        draw_ctx: &mut DrawingCtx,
+    ) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let x = self.x.normalize(values, &params);
@@ -412,14 +422,16 @@ impl NodeTrait for Rect {
             }
         }
 
+        let mut builder = PathBuilder::new();
+
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return Ok(draw_ctx.empty_bbox());
+            return builder;
         }
 
         // ... and rx,ry must be nonnegative
         if rx < 0.0 || ry < 0.0 {
-            return Ok(draw_ctx.empty_bbox());
+            return builder;
         }
 
         let half_w = w / 2.0;
@@ -438,8 +450,6 @@ impl NodeTrait for Rect {
         } else if ry == 0.0 {
             rx = 0.0;
         }
-
-        let mut builder = PathBuilder::new();
 
         if rx == 0.0 {
             // Easy case, no rounded corners
@@ -547,7 +557,7 @@ impl NodeTrait for Rect {
             builder.close_path();
         }
 
-        render_path_builder(&builder, draw_ctx, node, values, false, clipping)
+        builder
     }
 }
 
