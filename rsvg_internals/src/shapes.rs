@@ -140,7 +140,7 @@ impl NodeTrait for Path {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
     }
 }
 
@@ -151,6 +151,10 @@ impl Path {
         _draw_ctx: &mut DrawingCtx,
     ) -> Cow<PathBuilder> {
         Cow::Borrowed(&self.builder)
+    }
+
+    fn uses_markers(&self) -> bool {
+        true
     }
 }
 
@@ -237,7 +241,7 @@ impl NodeTrait for Polygon {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
     }
 }
 
@@ -248,6 +252,10 @@ impl Polygon {
         _draw_ctx: &mut DrawingCtx,
     ) -> Cow<PathBuilder> {
         Cow::Owned(make_poly(self.points.as_ref(), true))
+    }
+
+    fn uses_markers(&self) -> bool {
+        true
     }
 }
 
@@ -276,7 +284,7 @@ impl NodeTrait for Polyline {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
     }
 }
 
@@ -287,6 +295,10 @@ impl Polyline {
         _draw_ctx: &mut DrawingCtx,
     ) -> Cow<PathBuilder> {
         Cow::Owned(make_poly(self.points.as_ref(), false))
+    }
+
+    fn uses_markers(&self) -> bool {
+        true
     }
 }
 
@@ -322,7 +334,7 @@ impl NodeTrait for Line {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
     }
 }
 
@@ -345,6 +357,10 @@ impl Line {
         builder.line_to(x2, y2);
 
         Cow::Owned(builder)
+    }
+
+    fn uses_markers(&self) -> bool {
+        true
     }
 }
 
@@ -398,7 +414,7 @@ impl NodeTrait for Rect {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, false, clipping)
+        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
     }
 }
 
@@ -577,6 +593,10 @@ impl Rect {
 
         Cow::Owned(builder)
     }
+
+    fn uses_markers(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Default)]
@@ -611,7 +631,7 @@ impl NodeTrait for Circle {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, false, clipping)
+        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
     }
 }
 
@@ -628,6 +648,10 @@ impl Circle {
         let r = self.r.normalize(values, &params);
 
         Cow::Owned(make_ellipse(cx, cy, r, r))
+    }
+
+    fn uses_markers(&self) -> bool {
+        false
     }
 }
 
@@ -667,7 +691,7 @@ impl NodeTrait for Ellipse {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let builder = self.make_path_builder(values, draw_ctx);
-        render_path_builder(&builder, draw_ctx, node, values, false, clipping)
+        render_path_builder(&builder, draw_ctx, node, values, self.uses_markers(), clipping)
     }
 }
 
@@ -685,6 +709,10 @@ impl Ellipse {
         let ry = self.ry.normalize(values, &params);
 
         Cow::Owned(make_ellipse(cx, cy, rx, ry))
+    }
+
+    fn uses_markers(&self) -> bool {
+        false
     }
 }
 
