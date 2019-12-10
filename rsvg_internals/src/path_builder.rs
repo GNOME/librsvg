@@ -269,7 +269,7 @@ pub(crate) fn arc_segment(
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum PathCommand {
     MoveTo(f64, f64),
     LineTo(f64, f64),
@@ -290,7 +290,7 @@ impl PathCommand {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct PathBuilder {
     path_commands: Vec<PathCommand>,
 }
