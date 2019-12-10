@@ -180,19 +180,10 @@ impl Parse for Points {
     }
 }
 
-fn render_poly(
-    points: Option<&Points>,
-    closed: bool,
-    node: &RsvgNode,
-    cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
-    clipping: bool,
-) -> Result<BoundingBox, RenderingError> {
-    let values = cascaded.get();
+fn make_poly(points: Option<&Points>, closed: bool) -> PathBuilder {
+    let mut builder = PathBuilder::new();
 
     if let Some(points) = points {
-        let mut builder = PathBuilder::new();
-
         for (i, &(x, y)) in points.iter().enumerate() {
             if i == 0 {
                 builder.move_to(x, y);
@@ -204,11 +195,9 @@ fn render_poly(
         if closed {
             builder.close_path();
         }
-
-        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
-    } else {
-        Ok(draw_ctx.empty_bbox())
     }
+
+    builder
 }
 
 #[derive(Default)]
@@ -234,14 +223,19 @@ impl NodeTrait for Polygon {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        render_poly(
-            self.points.as_ref(),
-            true,
-            node,
-            cascaded,
-            draw_ctx,
-            clipping,
-        )
+        let values = cascaded.get();
+        let builder = self.make_path_builder(values, draw_ctx);
+        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+    }
+}
+
+impl Polygon {
+    fn make_path_builder(
+        &self,
+        _values: &ComputedValues,
+        _draw_ctx: &mut DrawingCtx,
+    ) -> PathBuilder {
+        make_poly(self.points.as_ref(), true)
     }
 }
 
@@ -268,14 +262,19 @@ impl NodeTrait for Polyline {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        render_poly(
-            self.points.as_ref(),
-            false,
-            node,
-            cascaded,
-            draw_ctx,
-            clipping,
-        )
+        let values = cascaded.get();
+        let builder = self.make_path_builder(values, draw_ctx);
+        render_path_builder(&builder, draw_ctx, node, values, true, clipping)
+    }
+}
+
+impl Polyline {
+    fn make_path_builder(
+        &self,
+        _values: &ComputedValues,
+        _draw_ctx: &mut DrawingCtx,
+    ) -> PathBuilder {
+        make_poly(self.points.as_ref(), false)
     }
 }
 
