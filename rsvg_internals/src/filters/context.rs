@@ -107,12 +107,7 @@ impl FilterContext {
 
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
-        let bbox_rect = node_bbox.rect.unwrap_or(cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 0.0,
-            height: 0.0,
-        });
+        let bbox_rect = node_bbox.rect.unwrap_or_default();
 
         let node_data = filter_node.borrow();
         let filter = node_data.get_impl::<Filter>();
@@ -121,12 +116,12 @@ impl FilterContext {
             CoordUnits::UserSpaceOnUse => cr_affine,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
-                    bbox_rect.width,
-                    0f64,
-                    0f64,
-                    bbox_rect.height,
-                    bbox_rect.x,
-                    bbox_rect.y,
+                    bbox_rect.width(),
+                    0.0,
+                    0.0,
+                    bbox_rect.height(),
+                    bbox_rect.x0,
+                    bbox_rect.y0,
                 );
                 cairo::Matrix::multiply(&affine, &cr_affine)
             }
@@ -136,12 +131,12 @@ impl FilterContext {
             CoordUnits::UserSpaceOnUse => cr_affine,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
-                    bbox_rect.width,
-                    0f64,
-                    0f64,
-                    bbox_rect.height,
-                    bbox_rect.x,
-                    bbox_rect.y,
+                    bbox_rect.width(),
+                    0.0,
+                    0.0,
+                    bbox_rect.height(),
+                    bbox_rect.x0,
+                    bbox_rect.y0,
                 );
                 cairo::Matrix::multiply(&affine, &cr_affine)
             }

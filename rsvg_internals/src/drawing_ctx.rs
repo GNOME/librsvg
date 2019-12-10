@@ -23,7 +23,7 @@ use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
 };
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
@@ -79,7 +79,7 @@ pub struct DrawingCtx {
 
     initial_affine: cairo::Matrix,
 
-    rect: cairo::Rectangle,
+    rect: Rect,
     dpi: Dpi,
 
     // This is a mitigation for SVG files that try to instance a huge number of
@@ -104,7 +104,7 @@ impl DrawingCtx {
         document: Rc<Document>,
         node: Option<&RsvgNode>,
         cr: &cairo::Context,
-        viewport: &cairo::Rectangle,
+        viewport: Rect,
         dpi: Dpi,
         measuring: bool,
         testing: bool,
@@ -115,13 +115,9 @@ impl DrawingCtx {
         // while the code gets refactored not to need special cases for that.
 
         let (rect, vbox) = if measuring {
-            (
-                cairo::Rectangle::new(0.0, 0.0, 1.0, 1.0),
-                ViewBox::new(0.0, 0.0, 1.0, 1.0),
-            )
+            let unit_rect = Rect::from_size(1.0, 1.0);
+            (unit_rect, ViewBox(unit_rect))
         } else {
-            let rect = *viewport;
-
             // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
             //
             // "For the outermost svg element, the SVG user agent must
@@ -134,14 +130,9 @@ impl DrawingCtx {
             // "... the initial viewport coordinate system (and therefore
             // the initial user coordinate system) must have its origin at
             // the top/left of the viewport"
-            let vbox = ViewBox {
-                x: 0.0,
-                y: 0.0,
-                width: viewport.width,
-                height: viewport.height,
-            };
+            let vbox = ViewBox(Rect::from_size(viewport.width(), viewport.height()));
 
-            (rect, vbox)
+            (viewport, vbox)
         };
 
         let mut view_box_stack = Vec::new();
@@ -171,7 +162,7 @@ impl DrawingCtx {
         draw_ctx
     }
 
-    pub fn toplevel_viewport(&self) -> cairo::Rectangle {
+    pub fn toplevel_viewport(&self) -> Rect {
         self.rect
     }
 
@@ -212,7 +203,7 @@ impl DrawingCtx {
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
-        let (viewport_width, viewport_height) = (self.rect.width, self.rect.height);
+        let (viewport_width, viewport_height) = (self.rect.width(), self.rect.height());
 
         let (scaled_width, scaled_height) = self
             .initial_affine_with_offset()
@@ -257,13 +248,13 @@ impl DrawingCtx {
     pub fn get_view_params(&self) -> ViewParams {
         let view_box_stack = self.view_box_stack.borrow();
         let last = view_box_stack.len() - 1;
-        let stack_top = &view_box_stack[last];
+        let top_rect = &view_box_stack[last].0;
 
         ViewParams {
             dpi_x: self.dpi.x(),
             dpi_y: self.dpi.y(),
-            view_box_width: stack_top.width,
-            view_box_height: stack_top.height,
+            view_box_width: top_rect.width(),
+            view_box_height: top_rect.height(),
             view_box_stack: None,
         }
     }
@@ -278,7 +269,7 @@ impl DrawingCtx {
     pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
         self.view_box_stack
             .borrow_mut()
-            .push(ViewBox::new(0.0, 0.0, width, height));
+            .push(ViewBox(Rect::from_size(width, height)));
 
         ViewParams {
             dpi_x: self.dpi.x(),
@@ -292,29 +283,29 @@ impl DrawingCtx {
     pub fn push_new_viewport(
         &self,
         vbox: Option<ViewBox>,
-        viewport: &cairo::Rectangle,
+        viewport: Rect,
         preserve_aspect_ratio: AspectRatio,
         clip_mode: Option<ClipMode>,
     ) -> Option<ViewParams> {
         if let Some(ref clip) = clip_mode {
             if *clip == ClipMode::ClipToViewport {
-                self.clip(viewport.x, viewport.y, viewport.width, viewport.height);
+                self.clip(viewport);
             }
         }
 
         preserve_aspect_ratio
-            .viewport_to_viewbox_transform(vbox, viewport)
+            .viewport_to_viewbox_transform(vbox, &viewport)
             .and_then(|matrix| {
                 self.cr.transform(matrix);
 
                 if let Some(vbox) = vbox {
                     if let Some(ref clip) = clip_mode {
                         if *clip == ClipMode::ClipToVbox {
-                            self.clip(vbox.x, vbox.y, vbox.width, vbox.height);
+                            self.clip(vbox.0);
                         }
                     }
 
-                    Some(self.push_view_box(vbox.width, vbox.height))
+                    Some(self.push_view_box(vbox.0.width(), vbox.0.height()))
                 } else {
                     Some(self.get_view_params())
                 }
@@ -535,7 +526,7 @@ impl DrawingCtx {
 
     fn initial_affine_with_offset(&self) -> cairo::Matrix {
         let mut initial_with_offset = self.initial_affine;
-        initial_with_offset.translate(self.rect.x, self.rect.y);
+        initial_with_offset.translate(self.rect.x0, self.rect.y0);
         initial_with_offset
     }
 
@@ -783,10 +774,9 @@ impl DrawingCtx {
         res.and_then(|_: ()| Ok(bbox))
     }
 
-    pub fn clip(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn clip(&self, rect: Rect) {
         let cr = self.get_cairo_context();
-
-        cr.rectangle(x, y, w, h);
+        cr.rectangle(rect.x0, rect.y0, rect.width(), rect.height());
         cr.clip();
     }
 
@@ -842,10 +832,7 @@ impl DrawingCtx {
         cr.set_matrix(affine);
 
         self.cr = cr;
-        self.rect.x = 0.0;
-        self.rect.y = 0.0;
-        self.rect.width = width;
-        self.rect.height = height;
+        self.rect = Rect::from_size(width, height);
 
         let res = self.draw_node_from_stack(cascaded, node, false);
 
@@ -966,21 +953,21 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     // rectangle's extents, even when it has no fill nor stroke.
 
     let (x0, y0, x1, y1) = cr.fill_extents();
-    let fb = BoundingBox::new(&affine).with_ink_rect(cairo::Rectangle::from_extents(x0, y0, x1, y1));
+    let fb = BoundingBox::new(&affine).with_ink_rect(Rect::new(x0, y0, x1, y1));
     bbox.insert(&fb);
 
     // Bounding box for stroke
 
     if values.stroke.0 != PaintServer::None {
         let (x0, y0, x1, y1) = cr.stroke_extents();
-        let sb = BoundingBox::new(&affine).with_ink_rect(cairo::Rectangle::from_extents(x0, y0, x1, y1));
+        let sb = BoundingBox::new(&affine).with_ink_rect(Rect::new(x0, y0, x1, y1));
         bbox.insert(&sb);
     }
 
     // objectBoundingBox
 
     let (x0, y0, x1, y1) = cr.path_extents();
-    let ob = BoundingBox::new(&affine).with_rect(cairo::Rectangle::from_extents(x0, y0, x1, y1));
+    let ob = BoundingBox::new(&affine).with_rect(Rect::new(x0, y0, x1, y1));
     bbox.insert(&ob);
 
     // restore tolerance

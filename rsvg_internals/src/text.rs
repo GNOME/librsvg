@@ -28,7 +28,7 @@ use crate::property_defs::{
     XmlLang,
     XmlSpace,
 };
-use crate::rect::RectangleExt;
+use crate::rect::Rect;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 
 /// An absolutely-positioned array of `Span`s
@@ -352,7 +352,7 @@ impl PositionedSpan {
 
                     if !clipping {
                         let (x0, y0, x1, y1) = cr.stroke_extents();
-                        let r = cairo::Rectangle::from_extents(x0, y0, x1, y1);
+                        let r = Rect::new(x0, y0, x1, y1);
                         let ib = BoundingBox::new(&affine).with_ink_rect(r);
                         cr.stroke();
                         bbox.insert(&ib);
@@ -397,7 +397,7 @@ impl PositionedSpan {
             )
         };
 
-        let r = cairo::Rectangle::new(x, y, w, h);
+        let r = Rect::new(x, y, x + w, y + h);
         let bbox = BoundingBox::new(affine).with_rect(r).with_ink_rect(r);
 
         Some(bbox)

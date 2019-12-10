@@ -43,12 +43,12 @@ impl ClipPath {
                     let bbox_rect = bbox.rect.as_ref().unwrap();
 
                     cr.transform(cairo::Matrix::new(
-                        bbox_rect.width,
+                        bbox_rect.width(),
                         0.0,
                         0.0,
-                        bbox_rect.height,
-                        bbox_rect.x,
-                        bbox_rect.y,
+                        bbox_rect.height(),
+                        bbox_rect.x0,
+                        bbox_rect.y0,
                     ))
                 }
 
