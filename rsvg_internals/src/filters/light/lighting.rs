@@ -34,7 +34,6 @@ use crate::filters::{
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers;
 use crate::property_bag::PropertyBag;
-use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
@@ -468,12 +467,7 @@ macro_rules! impl_lighting_filter {
                 let values = cascaded.get();
                 // The generated color values are in the color space determined by
                 // color-interpolation-filters.
-                let surface_type =
-                    if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
-                        SurfaceType::LinearRgb
-                    } else {
-                        SurfaceType::SRgb
-                    };
+                let surface_type = SurfaceType::from(values.color_interpolation_filters);
                 let mut output_surface = SharedImageSurface::new(output_surface, surface_type)?;
 
                 if let Some((ox, oy)) = scale {

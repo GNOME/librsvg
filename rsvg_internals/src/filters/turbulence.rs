@@ -6,7 +6,6 @@ use crate::error::{AttributeResultExt, NodeError};
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers;
 use crate::property_bag::PropertyBag;
-use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt,
@@ -404,12 +403,7 @@ impl FilterEffect for FeTurbulence {
         let values = cascaded.get();
         // The generated color values are in the color space determined by
         // color-interpolation-filters.
-        let surface_type =
-            if values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb {
-                SurfaceType::LinearRgb
-            } else {
-                SurfaceType::SRgb
-            };
+        let surface_type = SurfaceType::from(values.color_interpolation_filters);
 
         Ok(FilterResult {
             name: self.base.result.clone(),

@@ -346,3 +346,12 @@ pub fn render(
 
     Ok(filter_ctx.into_output()?.into_image_surface()?)
 }
+
+impl From<ColorInterpolationFilters> for SurfaceType {
+   fn from(c: ColorInterpolationFilters) -> Self {
+        match c {
+            ColorInterpolationFilters::LinearRgb => SurfaceType::LinearRgb,
+            _ => SurfaceType::SRgb,
+        }
+    }
+}
