@@ -242,12 +242,6 @@ impl FilterContext {
             .map_err(FilterError::CairoError)
     }
 
-    /// Returns the output of the filter primitive by its result name.
-    #[inline]
-    pub fn filter_output(&self, name: &str) -> Option<&FilterOutput> {
-        self.previous_results.get(name)
-    }
-
     /// Converts this `FilterContext` into the surface corresponding to the output of the filter
     /// chain.
     ///
@@ -399,7 +393,8 @@ impl FilterContext {
                 .map(FilterInput::StandardInput),
 
             Input::FilterOutput(ref name) => self
-                .filter_output(name)
+                .previous_results
+                .get(name)
                 .cloned()
                 .map(FilterInput::PrimitiveOutput)
                 .ok_or(FilterError::InvalidInput),
