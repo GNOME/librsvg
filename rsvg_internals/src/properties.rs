@@ -613,14 +613,14 @@ impl SpecifiedValues {
     ) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "xml:lang") => {
+                expanded_name!(xml "lang") => {
                     // xml:lang is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
                     self.xml_lang = SpecifiedValue::Specified(attr.parse(value)?);
                 }
 
-                expanded_name!(svg "xml:space") => {
+                expanded_name!(xml "space") => {
                     // xml:space is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
