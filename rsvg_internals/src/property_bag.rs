@@ -1,3 +1,5 @@
+//! Iterate among libxml2's arrays of XML attribute/value.
+
 use libc;
 
 use std::mem;
@@ -8,16 +10,22 @@ use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 
 use crate::util::{opt_utf8_cstr, utf8_cstr};
 
+/// Iterable wrapper for libxml2's representation of attribute/value.
+///
+/// See the [`new_from_xml2_attributes`] function for information.
+///
+/// [`new_from_xml2_attributes`]: #method.new_from_xml2_attributes
 pub struct PropertyBag<'a>(Vec<(QualName, &'a str)>);
 
+/// Iterator from `PropertyBag.iter`.
 pub struct PropertyBagIter<'a>(slice::Iter<'a, (QualName, &'a str)>);
 
 impl<'a> PropertyBag<'a> {
-    /// Creates an iterable `PropertyBag` from a C array of borrowed C strings.
+    /// Creates an iterable `PropertyBag` from the C array of borrowed C strings.
     ///
     /// With libxml2's SAX parser, the caller's startElementNsSAX2Func
     /// callback gets passed a `xmlChar **` for attributes, which
-    /// comes in groups of /// (localname/prefix/URI/value_start/value_end).
+    /// comes in groups of (localname/prefix/URI/value_start/value_end).
     /// In those, localname/prefix/URI are NUL-terminated strings;
     /// value_start and value_end point to the start-inclusive and
     /// end-exclusive bytes in the attribute's value.
@@ -92,10 +100,12 @@ impl<'a> PropertyBag<'a> {
         PropertyBag(array)
     }
 
+    /// Returns the number of attributes in the property bag.
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    /// Creates an iterator that yields `(QualName, &'a str)` tuples.
     pub fn iter(&self) -> PropertyBagIter<'_> {
         PropertyBagIter(self.0.iter())
     }
