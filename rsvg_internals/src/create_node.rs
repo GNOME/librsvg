@@ -1,3 +1,11 @@
+//! Creates tree nodes based on SVG element names.
+//!
+//! The main [`create_node`] function takes an XML element name, and
+//! creates an [`RsvgNode`] for it.
+//!
+//! [`create_node`]: fn.create_node.html
+//! [`RsvgNode`]: ../node/type.RsvgNode.html
+
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -220,6 +228,13 @@ static NODE_CREATORS: Lazy<HashMap<&'static str, (bool, NodeCreateFn)>> = Lazy::
     creators_table.into_iter().map(|(n, s, f)| (n, (s, f))).collect()
 });
 
+/// Takes an XML element name and a list of attribute/value pairs and creates an [`RsvgNode`].
+///
+/// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
+/// node.
+///
+/// [`RsvgNode`]: ../node/type.RsvgNode.html
+/// [`NonRendering`]: ../structure/struct.NonRendering.html
 pub fn create_node(name: &QualName, pbag: &PropertyBag) -> RsvgNode {
     let mut id = None;
     let mut class = None;

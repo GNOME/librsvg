@@ -1,3 +1,17 @@
+//! Tree nodes, the representation of SVG elements.
+//!
+//! Librsvg uses the [rctree crate][rctree] to represent the SVG tree of elements.
+//! Its [`Node`] struct provides a generic wrapper over nodes in a tree.
+//! Librsvg puts a [`NodeData`] as the type parameter of [`Node`].  For convenience,
+//! librsvg has a type alias `RsvgNode = Node<NodeData>`.
+//!
+//! Nodes are not constructed directly by callers; this is done in the [`create_node`] module.
+//!
+//! [rctree]: ../../rctree/index.html
+//! [`Node`]: ../../rctree/struct.Node.html
+//! [`NodeData`]: struct.NodeData.html
+//! [`create_node`]: ../create_node/index.html
+
 use cairo::Matrix;
 use downcast_rs::*;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
@@ -18,8 +32,14 @@ use crate::property_defs::Overflow;
 use locale_config::Locale;
 use rctree;
 
-/// Tree node with specific data
+/// Strong reference to an element in the SVG tree.
+///
+/// See the [module documentation](index.html) for more information.
 pub type RsvgNode = rctree::Node<NodeData>;
+
+/// Weak reference to an element in the SVG tree.
+///
+/// See the [module documentation](index.html) for more information.
 pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
 
 /// Contents of a tree node
