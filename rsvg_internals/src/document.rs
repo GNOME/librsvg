@@ -19,26 +19,30 @@ use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::text::NodeChars;
 use crate::xml::xml_load_from_possibly_compressed_stream;
 
-/// A loaded SVG file and its derived data
-///
-/// This contains the tree of nodes (SVG elements), the mapping
-/// of id to node, and the CSS styles defined for this SVG.
+/// A loaded SVG file and its derived data.
 pub struct Document {
+    /// Tree of nodes; the root is guaranteed to be an `<svg>` element.
     tree: RsvgNode,
 
+    /// Mapping from `id` attributes to nodes.
     ids: HashMap<String, RsvgNode>,
 
-    // These require interior mutability because we load the extern
+    // The following two require interior mutability because we load the extern
     // resources all over the place.  Eventually we'll be able to do this
     // once, at loading time, and keep this immutable.
+
+    /// SVG documents referenced from this document.
     externs: RefCell<Resources>,
+
+    /// Image resources referenced from this document.
     images: RefCell<Images>,
 
-    // Once we do not need to load externs, we can drop this as well
+    /// Used to load referenced resources.
     load_options: LoadOptions,
 }
 
 impl Document {
+    /// Constructs a `Document` by loading it from a stream.
     pub fn load_from_stream(
         load_options: &LoadOptions,
         stream: &gio::InputStream,
@@ -52,10 +56,15 @@ impl Document {
         )
     }
 
+    /// Gets the root node.  This is guaranteed to be an `<svg>` element.
     pub fn root(&self) -> RsvgNode {
         self.tree.clone()
     }
 
+    /// Looks up an element node by its URL.
+    ///
+    /// This is also used to find elements in referenced resources, as in
+    /// `xlink:href="subresource.svg#element_name".
     pub fn lookup(&self, fragment: &Fragment) -> Result<RsvgNode, LoadingError> {
         if fragment.uri().is_some() {
             self.externs
@@ -67,10 +76,12 @@ impl Document {
         }
     }
 
+    /// Looks up a node only in this document fragment by its `id` attribute.
     pub fn lookup_node_by_id(&self, id: &str) -> Option<RsvgNode> {
         self.ids.get(id).map(|n| (*n).clone())
     }
 
+    /// Loads an image by URL, or returns a pre-loaded one.
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
         let aurl = AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
             .map_err(|_| LoadingError::BadUrl)?;
@@ -78,6 +89,7 @@ impl Document {
         self.images.borrow_mut().lookup(&self.load_options, &aurl)
     }
 
+    /// Gets the dimension parameters of the toplevel `<svg>`.
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let root = self.root();
         let node_data = root.borrow();
