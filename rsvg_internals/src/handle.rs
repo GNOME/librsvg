@@ -19,21 +19,24 @@ use crate::rect::{IRect, Rect};
 use crate::structure::{IntrinsicDimensions, Svg};
 use url::Url;
 
+/// Loading options for SVG documents.
 #[derive(Clone)]
 pub struct LoadOptions {
-    /// Base URL
+    /// Base URL; all relative references will be resolved with respect to this.
     pub base_url: Option<Url>,
 
-    /// Whether to turn off size limits in libxml2
+    /// Whether to turn off size limits in libxml2.
     pub unlimited_size: bool,
 
-    /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces
+    /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces.
     pub keep_image_data: bool,
 
+    /// The environment's locale, used for the `<switch>` element and the `systemLanguage` attribute.
     locale: Locale,
 }
 
 impl LoadOptions {
+    /// Creates a `LoadOptions` with defaults, and sets the `base_url`.
     pub fn new(base_url: Option<Url>) -> Self {
         LoadOptions {
             base_url,
@@ -43,16 +46,28 @@ impl LoadOptions {
         }
     }
 
+    /// Sets whether libxml2's limits on memory usage should be turned off.
+    ///
+    /// This should only be done for trusted data.
     pub fn with_unlimited_size(mut self, unlimited: bool) -> Self {
         self.unlimited_size = unlimited;
         self
     }
 
+    /// Sets whether to keep the original compressed image data from referenced JPEG/PNG images.
+    ///
+    /// This is only useful for rendering to Cairo PDF
+    /// surfaces, which can embed the original, compressed image data instead of uncompressed
+    /// RGB buffers.
     pub fn keep_image_data(mut self, keep: bool) -> Self {
         self.keep_image_data = keep;
         self
     }
 
+    /// Creates a new `LoadOptions` with a different `base_url`.
+    ///
+    /// This is used when loading a referenced file that may in turn cause other files
+    /// to be loaded, for example `<image xlink:href="subimage.svg"/>`
     pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> Self {
         LoadOptions {
             base_url: Some((**base_url).clone()),
