@@ -1,3 +1,5 @@
+//! The `link` element.
+
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};

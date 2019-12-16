@@ -1,3 +1,5 @@
+//! Main SVG document structure.
+
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use gio;
 use markup5ever::{LocalName, Namespace, QualName};

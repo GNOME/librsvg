@@ -1,3 +1,5 @@
+//! Macros to define CSS properties.
+
 pub trait Property<T> {
     fn inherits_automatically() -> bool;
     fn compute(&self, _: &T) -> Self;

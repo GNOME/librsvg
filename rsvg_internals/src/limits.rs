@@ -1,3 +1,7 @@
+//! Processing limits to mitigate malicious SVGs.
+
+/// Maximum number of times that elements can be referenced through URL fragments.
+///
 /// This is a mitigation for the security-related bugs:
 /// https://gitlab.gnome.org/GNOME/librsvg/issues/323
 /// https://gitlab.gnome.org/GNOME/librsvg/issues/515
@@ -22,6 +26,8 @@
 /// [billion laughs attack]: https://bitbucket.org/tiran/defusedxml
 pub const MAX_REFERENCED_ELEMENTS: usize = 500_000;
 
+/// Maximum number of elements loadable per document.
+///
 /// This is a mitigation for SVG files which create millions of elements
 /// in an attempt to exhaust memory.  We don't allow loading more than
 /// this number of elements during the initial streaming load process.

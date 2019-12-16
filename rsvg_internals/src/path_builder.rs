@@ -1,3 +1,5 @@
+//! Representation of Bézier paths.
+
 use cairo;
 
 use std::f64;

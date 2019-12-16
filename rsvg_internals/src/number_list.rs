@@ -1,3 +1,5 @@
+//! CSS number-list values.
+
 use cssparser::{Parser, ParserInput};
 
 use crate::parsers::CssParserExt;

@@ -1,3 +1,5 @@
+//! Utilities to acquire streams and data from from URLs.
+
 use data_url;
 
 use gio::{

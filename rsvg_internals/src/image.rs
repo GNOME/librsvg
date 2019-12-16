@@ -1,3 +1,5 @@
+//! The `image` element.
+
 use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 

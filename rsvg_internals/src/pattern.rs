@@ -1,3 +1,5 @@
+//! The `pattern` element.
+
 use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;

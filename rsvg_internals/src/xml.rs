@@ -1,3 +1,5 @@
+//! The main XML parser.
+
 use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;

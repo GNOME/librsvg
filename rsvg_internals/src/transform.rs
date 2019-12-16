@@ -1,3 +1,5 @@
+//! CSS transform values.
+
 use cairo;
 
 use std::f64::consts::*;

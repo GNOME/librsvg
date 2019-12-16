@@ -1,3 +1,5 @@
+//! Conditional processing attributes: `requiredExtensions`, `requiredFeatures`, `systemLanguage`.
+
 #[allow(unused_imports, deprecated)]
 use std::ascii::AsciiExt;
 

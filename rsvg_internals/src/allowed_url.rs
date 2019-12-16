@@ -1,3 +1,5 @@
+//! Determine which URLs are allowed for loading.
+
 use std::error::{self, Error};
 use std::fmt;
 use std::io;

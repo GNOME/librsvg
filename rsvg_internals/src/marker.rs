@@ -1,3 +1,5 @@
+//! The `marker` element, and geometry computations for markers.
+
 use std::f64::consts::*;
 use std::ops::Deref;
 

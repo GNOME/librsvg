@@ -1,4 +1,4 @@
-// This is a hand-written binding to the very minimal part of libxml2 that we need.
+//! Hand-written binding to the very minimal part of libxml2 that we need.
 
 #![allow(non_snake_case, non_camel_case_types)]
 #![cfg_attr(rustfmt, rustfmt_skip)]

@@ -1,3 +1,5 @@
+//! Processing of the `xml:space` attribute.
+
 use itertools::Itertools;
 
 pub struct NormalizeDefault {

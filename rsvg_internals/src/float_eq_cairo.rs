@@ -1,3 +1,5 @@
+//! Utilities to compare floating-point numbers.
+
 use float_cmp::ApproxEq;
 
 // The following are copied from cairo/src/{cairo-fixed-private.h,

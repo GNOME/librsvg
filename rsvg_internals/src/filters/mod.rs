@@ -1,3 +1,5 @@
+//! Entry point for the CSS filters infrastructure.
+
 use std::ops::Deref;
 use std::time::Instant;
 

@@ -1,3 +1,5 @@
+//! Structural elements in SVG: the `g`, `switch`, `svg`, `use`, `symbol` elements.
+
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Fragment;

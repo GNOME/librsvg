@@ -1,3 +1,5 @@
+//! Utilities for logging messages from the library.
+
 use once_cell::sync::Lazy;
 
 #[macro_export]

@@ -1,3 +1,5 @@
+//! The `Parse` trait for CSS properties, and utilities for parsers.
+
 use cssparser::{Parser, ParserInput, Token};
 use markup5ever::QualName;
 

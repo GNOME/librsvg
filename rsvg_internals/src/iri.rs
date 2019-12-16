@@ -1,3 +1,5 @@
+//! CSS funciri values.
+
 use cssparser::Parser;
 
 use crate::allowed_url::{Fragment, Href};

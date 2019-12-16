@@ -1,3 +1,5 @@
+//! CSS font properties.
+
 use cssparser::{BasicParseError, Parser, Token};
 
 use crate::drawing_ctx::ViewParams;

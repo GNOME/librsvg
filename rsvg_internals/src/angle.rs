@@ -1,3 +1,5 @@
+//! CSS angle values.
+
 use std::f64::consts::*;
 
 use cssparser::{Parser, Token};

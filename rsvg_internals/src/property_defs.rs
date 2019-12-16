@@ -1,3 +1,5 @@
+//! Definitions for CSS property types.
+
 use cssparser::{self, Parser, Token};
 
 use crate::error::*;

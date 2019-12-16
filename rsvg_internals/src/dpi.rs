@@ -1,3 +1,5 @@
+//! Resolution for rendering (dots per inch = DPI).
+
 // This is configurable at runtime
 const DEFAULT_DPI_X: f64 = 90.0;
 const DEFAULT_DPI_Y: f64 = 90.0;

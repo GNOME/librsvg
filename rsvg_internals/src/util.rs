@@ -1,3 +1,5 @@
+//! Miscellaneous utilities.
+
 use libc;
 
 use std::borrow::Cow;

@@ -1,3 +1,5 @@
+//! CSS properties, specified values, computed values.
+
 use cssparser::{self, DeclarationListParser, Parser, ParserInput};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::collections::HashSet;

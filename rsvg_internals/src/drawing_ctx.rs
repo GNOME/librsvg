@@ -1,3 +1,5 @@
+//! The main context structure which drives the drawing process.
+
 use cairo;
 use std::cell::RefCell;
 use std::convert::TryFrom;

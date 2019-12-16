@@ -1,3 +1,5 @@
+//! Type for values in the [0.0, 1.0] range.
+
 use cssparser::Parser;
 
 use crate::error::*;

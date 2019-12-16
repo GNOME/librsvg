@@ -1,5 +1,7 @@
-// This file provides functions to create a libxml2 xmlParserCtxtPtr, configured
-// to read from a gio::InputStream, and to maintain its loading data in an XmlState.
+//! Glue between the libxml2 API and our xml parser module.
+//!
+//! This file provides functions to create a libxml2 xmlParserCtxtPtr, configured
+//! to read from a gio::InputStream, and to maintain its loading data in an XmlState.
 
 use gio;
 use gio::prelude::*;

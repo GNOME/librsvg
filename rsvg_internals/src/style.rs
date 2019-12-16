@@ -1,3 +1,5 @@
+//! The `style` element.
+
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 

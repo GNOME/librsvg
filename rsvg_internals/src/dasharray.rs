@@ -1,3 +1,5 @@
+//! Parser for the `stroke-dasharray` property.
+
 use cssparser::Parser;
 
 use crate::error::*;

@@ -1,3 +1,5 @@
+//! `userSpaceOnUse` or `objectBoundingBox` values.
+
 use cssparser::{CowRcStr, Parser, Token};
 
 use crate::error::ValueErrorKind;

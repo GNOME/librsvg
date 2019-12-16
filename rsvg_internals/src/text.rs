@@ -1,3 +1,5 @@
+//! Text elements: `text`, `tspan`, `tref`.
+
 use glib::translate::*;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use pango::{self, FontMapExt};

@@ -1,3 +1,5 @@
+//! CSS color values.
+
 use cssparser::{self, Parser};
 use libc;
 

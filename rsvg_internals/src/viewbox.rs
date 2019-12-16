@@ -1,3 +1,5 @@
+//! Parser for the `viewBox` attribute.
+
 use cssparser::Parser;
 
 use crate::error::*;

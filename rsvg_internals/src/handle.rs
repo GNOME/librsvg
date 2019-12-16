@@ -1,3 +1,7 @@
+//! Toplevel handle for a loaded SVG document.
+//!
+//! This module provides the primitives on which the public APIs are implemented.
+
 use std::cell::Cell;
 use std::ptr;
 use std::rc::Rc;

@@ -1,3 +1,5 @@
+//! Types for rectangles.
+
 use cairo;
 
 mod rect {

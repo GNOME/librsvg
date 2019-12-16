@@ -1,3 +1,5 @@
+//! Error types.
+
 use std::error::{self, Error};
 use std::fmt;
 
