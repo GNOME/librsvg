@@ -106,7 +106,8 @@ impl NodeTrait for FeConvolveMatrix {
                         "false" => false,
                         "true" => true,
                         _ => {
-                            return Err(NodeError::parse_error(attr, "expected false or true"));
+                            return Err(ValueErrorKind::parse_error("expected false or true"))
+                                .attribute(attr);
                         }
                     }
                 }
@@ -357,7 +358,7 @@ impl EdgeMode {
             "duplicate" => Ok(EdgeMode::Duplicate),
             "wrap" => Ok(EdgeMode::Wrap),
             "none" => Ok(EdgeMode::None),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
+            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
     }
 }
