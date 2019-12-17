@@ -424,7 +424,7 @@ impl StitchTiles {
         match s {
             "stitch" => Ok(StitchTiles::Stitch),
             "noStitch" => Ok(StitchTiles::NoStitch),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
+            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
     }
 }
@@ -434,7 +434,7 @@ impl NoiseType {
         match s {
             "fractalNoise" => Ok(NoiseType::FractalNoise),
             "turbulence" => Ok(NoiseType::Turbulence),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
+            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
     }
 }
