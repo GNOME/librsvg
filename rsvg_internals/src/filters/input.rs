@@ -1,6 +1,6 @@
 use markup5ever::QualName;
 
-use crate::error::NodeError;
+use crate::error::*;
 
 /// An enumeration of possible inputs for a filter primitive.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -24,7 +24,7 @@ impl Input {
             "FillPaint" => Ok(Input::FillPaint),
             "StrokePaint" => Ok(Input::StrokePaint),
             s if !s.is_empty() => Ok(Input::FilterOutput(s.to_string())),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
+            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
     }
 }
