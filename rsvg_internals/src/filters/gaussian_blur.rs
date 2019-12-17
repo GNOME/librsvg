@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers;
 use crate::property_bag::PropertyBag;
@@ -50,14 +50,13 @@ impl NodeTrait for FeGaussianBlur {
             match attr.expanded() {
                 expanded_name!(svg "stdDeviation") => {
                     self.std_deviation = parsers::number_optional_number(value)
-                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))
                             } else {
-                                Err(NodeError::value_error(attr, "values can't be negative"))
+                                Err(ValueErrorKind::value_error("values can't be negative"))
                             }
-                        })?
+                        }).attribute(attr)?
                 }
                 _ => (),
             }
