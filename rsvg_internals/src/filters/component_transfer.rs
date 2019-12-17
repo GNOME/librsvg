@@ -4,7 +4,7 @@ use cairo::{self, ImageSurface};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
 use crate::parsers;
@@ -218,12 +218,12 @@ macro_rules! func_x {
                                 NumberList::parse_str(value, NumberListLength::Unbounded).map_err(
                                     |err| {
                                         if let NumberListError::Parse(err) = err {
-                                            NodeError::parse_error(attr, &err)
+                                            ValueErrorKind::parse_error(&err)
                                         } else {
                                             panic!("unexpected number list error");
                                         }
                                     },
-                                )?;
+                                ).attribute(attr)?;
                             self.table_values = v;
                         }
                         expanded_name!(svg "slope") => {
