@@ -72,13 +72,6 @@ impl NodeError {
             err: ValueErrorKind::Parse(error.to_string()),
         }
     }
-
-    pub fn value_error(attr: QualName, description: &str) -> NodeError {
-        NodeError {
-            attr,
-            err: ValueErrorKind::Value(description.to_string()),
-        }
-    }
 }
 
 impl error::Error for NodeError {
