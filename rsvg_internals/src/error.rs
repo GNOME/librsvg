@@ -65,13 +65,6 @@ impl NodeError {
     pub fn new(attr: QualName, error: ValueErrorKind) -> NodeError {
         NodeError { attr, err: error }
     }
-
-    pub fn parse_error(attr: QualName, error: &str) -> NodeError {
-        NodeError {
-            attr,
-            err: ValueErrorKind::Parse(error.to_string()),
-        }
-    }
 }
 
 impl error::Error for NodeError {
