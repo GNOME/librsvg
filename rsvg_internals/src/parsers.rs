@@ -5,7 +5,7 @@ use markup5ever::QualName;
 
 use std::str;
 
-use crate::error::{NodeError, ValueErrorKind};
+use crate::error::*;
 
 /// Trait to parse values using `cssparser::Parser`.
 pub trait Parse: Sized {
@@ -73,7 +73,7 @@ impl<T: Parse> ParseValue<T> for QualName {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser).map_err(|e| NodeError::new(self.clone(), e))
+        T::parse(&mut parser).attribute(self.clone())
     }
 
     fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
@@ -84,9 +84,7 @@ impl<T: Parse> ParseValue<T> for QualName {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser)
-            .and_then(validate)
-            .map_err(|e| NodeError::new(self.clone(), e))
+        T::parse(&mut parser).and_then(validate).attribute(self.clone())
     }
 }
 
