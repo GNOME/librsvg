@@ -4,12 +4,23 @@ use std::error::{self, Error};
 use std::fmt;
 
 use cairo;
-use cssparser::{BasicParseError, BasicParseErrorKind};
+use cssparser::{self, BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use glib;
 use markup5ever::QualName;
 
 use crate::allowed_url::Fragment;
 use crate::node::RsvgNode;
+
+/// A short-lived error.
+///
+/// The lifetime of the error is the same as the `cssparser::ParserInput` that
+/// was used to create a `cssparser::Parser`.  That is, it is the lifetime of
+/// the string data that is being parsed.
+///
+/// The code flow will sometimes require preserving this error as a long-lived struct;
+/// see the `impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>>` for that
+/// purpose.
+pub type ParseError<'i> = cssparser::ParseError<'i, ValueErrorKind>;
 
 /// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]
@@ -39,17 +50,9 @@ impl fmt::Display for ValueErrorKind {
         match *self {
             ValueErrorKind::UnknownProperty => write!(f, "unknown property name"),
 
-            ValueErrorKind::Parse(ref s) => write!(
-                f,
-                "parse error: {}",
-                s
-            ),
+            ValueErrorKind::Parse(ref s) => write!(f, "parse error: {}", s),
 
-            ValueErrorKind::Value(ref s) => write!(
-                f,
-                "invalid value: {}",
-                s
-            ),
+            ValueErrorKind::Value(ref s) => write!(f, "invalid value: {}", s),
         }
     }
 }
@@ -79,7 +82,7 @@ impl fmt::Display for NodeError {
 
 impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
     fn from(e: BasicParseError<'_>) -> ValueErrorKind {
-        let BasicParseError { kind, location: _ } =  e;
+        let BasicParseError { kind, location: _ } = e;
 
         let msg = match kind {
             BasicParseErrorKind::UnexpectedToken(_) => "unexpected token",
@@ -129,17 +132,19 @@ pub enum AcquireError {
 impl fmt::Display for AcquireError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            AcquireError::LinkNotFound(ref frag) =>
-                write!(f, "link not found: {}", frag),
+            AcquireError::LinkNotFound(ref frag) => write!(f, "link not found: {}", frag),
 
-            AcquireError::InvalidLinkType(ref frag) =>
-                write!(f, "link {} is to object of invalid type", frag),
+            AcquireError::InvalidLinkType(ref frag) => {
+                write!(f, "link {} is to object of invalid type", frag)
+            }
 
-            AcquireError::CircularReference(ref node) =>
-                write!(f, "circular reference in node {}", node),
+            AcquireError::CircularReference(ref node) => {
+                write!(f, "circular reference in node {}", node)
+            }
 
-            AcquireError::MaxReferencesExceeded =>
-                write!(f, "maximum number of references exceeded"),
+            AcquireError::MaxReferencesExceeded => {
+                write!(f, "maximum number of references exceeded")
+            }
         }
     }
 }
@@ -173,6 +178,44 @@ impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O> for Result<O, E> {
     fn attribute(self, attr: QualName) -> Result<O, NodeError> {
         self.map_err(|e| e.into())
             .map_err(|err| NodeError { attr, err })
+    }
+}
+
+/// Turns a short-lived `ParseError` into a long-lived `NodeError`
+impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
+    fn attribute(self, attr: QualName) -> Result<O, NodeError> {
+        self.map_err(|e| {
+            // FIXME: eventually, here we'll want to preserve the location information
+
+            let ParseError {
+                kind,
+                location: _location,
+            } = e;
+
+            match kind {
+                ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken(tok)) => {
+                    let mut s = String::from("unexpected token '");
+                    tok.to_css(&mut s).unwrap(); // FIXME: what do we do with a fmt::Error?
+                    s.push_str("'");
+
+                    NodeError {
+                        attr,
+                        err: ValueErrorKind::Parse(s),
+                    }
+                },
+
+                ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput) => NodeError {
+                    attr,
+                    err: ValueErrorKind::parse_error("unexpected end of input"),
+                },
+
+                ParseErrorKind::Basic(_) => unreachable!(
+                    "attribute parsers should not return errors for CSS rules"
+                ),
+
+                ParseErrorKind::Custom(err) => NodeError { attr, err },
+            }
+        })
     }
 }
 
