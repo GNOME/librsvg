@@ -275,12 +275,7 @@ mod tests {
     }
 
     fn assert_parse_error(s: &str) {
-        match parse_transform(s) {
-            Err(ValueErrorKind::Parse(_)) => {}
-            _ => {
-                panic!();
-            }
-        }
+        assert!(is_parse_error(&parse_transform(s)));
     }
 
     #[test]
