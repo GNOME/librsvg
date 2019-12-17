@@ -165,11 +165,11 @@ impl fmt::Display for AcquireError {
 ///
 /// The call to `.attribute(attr)` converts the `Result` from `parse_foo()` into a full
 /// `NodeError` with the provided `attr`.
-pub trait AttributeResultExt<O, E> {
+pub trait AttributeResultExt<O> {
     fn attribute(self, attr: QualName) -> Result<O, NodeError>;
 }
 
-impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O, E> for Result<O, E> {
+impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O> for Result<O, E> {
     fn attribute(self, attr: QualName) -> Result<O, NodeError> {
         self.map_err(|e| e.into())
             .map_err(|err| NodeError { attr, err })
