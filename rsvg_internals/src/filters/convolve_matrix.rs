@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
 use crate::parsers;
@@ -62,45 +62,43 @@ impl NodeTrait for FeConvolveMatrix {
             match attr.expanded() {
                 expanded_name!(svg "order") => {
                     self.order = parsers::integer_optional_integer(value)
-                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x > 0 && y > 0 {
                                 Ok((x as u32, y as u32))
                             } else {
-                                Err(NodeError::value_error(
-                                    attr,
-                                    "values must be greater than 0",
-                                ))
+                                Err(ValueErrorKind::value_error("values must be greater than 0"))
                             }
-                        })?
+                        })
+                        .attribute(attr)?
                 }
                 expanded_name!(svg "divisor") => {
-                    self.divisor = Some(parsers::number(value).attribute(attr.clone()).and_then(
-                        |x| {
-                            if x != 0.0 {
-                                Ok(x)
-                            } else {
-                                Err(NodeError::value_error(attr, "divisor cannot be equal to 0"))
-                            }
-                        },
-                    )?)
+                    self.divisor = Some(
+                        parsers::number(value)
+                            .and_then(|x| {
+                                if x != 0.0 {
+                                    Ok(x)
+                                } else {
+                                    Err(ValueErrorKind::value_error("divisor cannot be equal to 0"))
+                                }
+                            })
+                            .attribute(attr)?,
+                    )
                 }
                 expanded_name!(svg "bias") => self.bias = parsers::number(value).attribute(attr)?,
                 expanded_name!(svg "edgeMode") => self.edge_mode = EdgeMode::parse(attr, value)?,
                 expanded_name!(svg "kernelUnitLength") => {
                     self.kernel_unit_length = Some(
                         parsers::number_optional_number(value)
-                            .attribute(attr.clone())
                             .and_then(|(x, y)| {
                                 if x > 0.0 && y > 0.0 {
                                     Ok((x, y))
                                 } else {
-                                    Err(NodeError::value_error(
-                                        attr,
+                                    Err(ValueErrorKind::value_error(
                                         "kernelUnitLength can't be less or equal to zero",
                                     ))
                                 }
-                            })?,
+                            })
+                            .attribute(attr)?,
                     )
                 }
                 expanded_name!(svg "preserveAlpha") => {
@@ -120,32 +118,34 @@ impl NodeTrait for FeConvolveMatrix {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "targetX") => {
-                    self.target_x = Some(parsers::integer(value).attribute(attr.clone()).and_then(
-                        |x| {
-                            if x >= 0 && x < self.order.0 as i32 {
-                                Ok(x as u32)
-                            } else {
-                                Err(NodeError::value_error(
-                                    attr,
+                    self.target_x = Some(
+                        parsers::integer(value)
+                            .and_then(|x| {
+                                if x >= 0 && x < self.order.0 as i32 {
+                                    Ok(x as u32)
+                                } else {
+                                    Err(ValueErrorKind::value_error(
                                     "targetX must be greater or equal to zero and less than orderX",
                                 ))
-                            }
-                        },
-                    )?)
+                                }
+                            })
+                            .attribute(attr)?,
+                    )
                 }
                 expanded_name!(svg "targetY") => {
-                    self.target_y = Some(parsers::integer(value).attribute(attr.clone()).and_then(
-                        |x| {
-                            if x >= 0 && x < self.order.1 as i32 {
-                                Ok(x as u32)
-                            } else {
-                                Err(NodeError::value_error(
-                                    attr,
+                    self.target_y = Some(
+                        parsers::integer(value)
+                            .and_then(|x| {
+                                if x >= 0 && x < self.order.1 as i32 {
+                                    Ok(x as u32)
+                                } else {
+                                    Err(ValueErrorKind::value_error(
                                     "targetY must be greater or equal to zero and less than orderY",
                                 ))
-                            }
-                        },
-                    )?)
+                                }
+                            })
+                            .attribute(attr)?,
+                    )
                 }
                 _ => (),
             }
@@ -172,19 +172,16 @@ impl NodeTrait for FeConvolveMatrix {
                 let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
                     .map_err(|err| match err {
                         NumberListError::IncorrectNumberOfElements => unreachable!(),
-                        NumberListError::Parse(ref err) => {
-                            NodeError::parse_error(attr.clone(), &err)
-                        }
-                    })?;
+                        NumberListError::Parse(ref err) => ValueErrorKind::parse_error(&err),
+                    })
+                    .attribute(attr.clone())?;
 
                 if v.len() != number_of_elements {
-                    return Err(NodeError::value_error(
-                        attr.clone(),
-                        &format!(
-                            "incorrect number of elements: expected {}",
-                            number_of_elements
-                        ),
-                    ));
+                    return Err(ValueErrorKind::value_error(&format!(
+                        "incorrect number of elements: expected {}",
+                        number_of_elements
+                    )))
+                    .attribute(attr);
                 }
 
                 DMatrix::from_data(VecStorage::new(
@@ -197,10 +194,8 @@ impl NodeTrait for FeConvolveMatrix {
 
         // kernel_matrix must have been specified.
         if self.kernel_matrix.is_none() {
-            return Err(NodeError::value_error(
-                QualName::new(None, ns!(svg), local_name!("kernelMatrix")),
-                "the value must be set",
-            ));
+            return Err(ValueErrorKind::value_error("the value must be set"))
+                .attribute(QualName::new(None, ns!(svg), local_name!("kernelMatrix")));
         }
 
         // Default value for the divisor.
