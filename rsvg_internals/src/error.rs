@@ -61,12 +61,6 @@ pub struct NodeError {
     pub err: ValueErrorKind,
 }
 
-impl NodeError {
-    pub fn new(attr: QualName, error: ValueErrorKind) -> NodeError {
-        NodeError { attr, err: error }
-    }
-}
-
 impl error::Error for NodeError {
     fn description(&self) -> &str {
         match self.err {
@@ -178,7 +172,7 @@ pub trait AttributeResultExt<O, E> {
 impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O, E> for Result<O, E> {
     fn attribute(self, attr: QualName) -> Result<O, NodeError> {
         self.map_err(|e| e.into())
-            .map_err(|e| NodeError::new(attr, e))
+            .map_err(|err| NodeError { attr, err })
     }
 }
 
