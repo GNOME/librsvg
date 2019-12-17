@@ -2,7 +2,7 @@ use cairo::{self, ImageSurface};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers;
 use crate::property_bag::PropertyBag;
@@ -150,7 +150,7 @@ impl ColorChannel {
             "G" => Ok(ColorChannel::G),
             "B" => Ok(ColorChannel::B),
             "A" => Ok(ColorChannel::A),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
+            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
     }
 }
