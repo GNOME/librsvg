@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
 use crate::parsers;
@@ -79,8 +79,8 @@ impl NodeTrait for FeColorMatrix {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
                         let NumberList(v) =
-                            NumberList::parse_str(value, NumberListLength::Exact(20)).map_err(
-                                |err| {
+                            NumberList::parse_str(value, NumberListLength::Exact(20))
+                                .map_err(|err| {
                                     let err_str = match err {
                                         NumberListError::IncorrectNumberOfElements => {
                                             "incorrect number of elements: expected 20"
@@ -88,9 +88,9 @@ impl NodeTrait for FeColorMatrix {
                                         NumberListError::Parse(ref err) => &err,
                                     };
 
-                                    NodeError::parse_error(attr, err_str)
-                                },
-                            )?;
+                                    ValueErrorKind::parse_error(err_str)
+                                })
+                                .attribute(attr)?;
                         let matrix = Matrix4x5::from_row_slice(&v);
                         let mut matrix = matrix.fixed_resize(0.0);
                         matrix[(4, 4)] = 1.0;
@@ -99,7 +99,8 @@ impl NodeTrait for FeColorMatrix {
                     OperationType::Saturate => {
                         let s = parsers::number(value).attribute(attr.clone())?;
                         if s < 0.0 || s > 1.0 {
-                            return Err(NodeError::value_error(attr, "expected value from 0 to 1"));
+                            return Err(ValueErrorKind::value_error("expected value from 0 to 1"))
+                                .attribute(attr);
                         }
 
                         #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -231,7 +232,7 @@ impl OperationType {
             "saturate" => Ok(OperationType::Saturate),
             "hueRotate" => Ok(OperationType::HueRotate),
             "luminanceToAlpha" => Ok(OperationType::LuminanceToAlpha),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
+            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
     }
 }
