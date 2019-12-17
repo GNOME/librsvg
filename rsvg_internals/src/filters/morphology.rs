@@ -4,7 +4,7 @@ use cairo::{self, ImageSurface};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers;
 use crate::property_bag::PropertyBag;
@@ -57,14 +57,13 @@ impl NodeTrait for FeMorphology {
                 expanded_name!(svg "operator") => self.operator = Operator::parse(attr, value)?,
                 expanded_name!(svg "radius") => {
                     self.radius = parsers::number_optional_number(value)
-                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))
                             } else {
-                                Err(NodeError::value_error(attr, "radius cannot be negative"))
+                                Err(ValueErrorKind::value_error("radius cannot be negative"))
                             }
-                        })?
+                        }).attribute(attr)?
                 }
                 _ => (),
             }
