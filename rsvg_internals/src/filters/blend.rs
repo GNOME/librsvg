@@ -2,7 +2,7 @@ use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::NodeError;
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -150,7 +150,7 @@ impl Mode {
             "saturation" => Ok(Mode::HslSaturation),
             "color" => Ok(Mode::HslColor),
             "luminosity" => Ok(Mode::HslLuminosity),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
+            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
     }
 }
