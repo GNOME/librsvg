@@ -93,7 +93,7 @@ impl<T: Parse> ParseValue<T> for QualName {
 impl Parse for f64 {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<f64, ValueErrorKind> {
         Ok(f64::from(parser.expect_finite_number().map_err(|_| {
-            ValueErrorKind::Parse(String::from("expected number"))
+            ValueErrorKind::parse_error("expected number")
         })?))
     }
 }
