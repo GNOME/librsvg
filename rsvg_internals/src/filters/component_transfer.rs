@@ -71,7 +71,7 @@ impl FunctionType {
             "discrete" => Ok(FunctionType::Discrete),
             "linear" => Ok(FunctionType::Linear),
             "gamma" => Ok(FunctionType::Gamma),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
+            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
     }
 }
