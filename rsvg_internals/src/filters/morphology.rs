@@ -164,7 +164,7 @@ impl Operator {
         match s {
             "erode" => Ok(Operator::Erode),
             "dilate" => Ok(Operator::Dilate),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
+            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
     }
 }
