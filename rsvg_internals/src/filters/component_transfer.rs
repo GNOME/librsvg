@@ -1,19 +1,17 @@
 use std::cmp::min;
 
 use cairo::{self, ImageSurface};
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use cssparser::Parser;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
-use crate::parsers;
+use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    ImageSurfaceDataExt,
-    Pixel,
+    iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 
@@ -63,16 +61,17 @@ enum FunctionType {
     Gamma,
 }
 
-impl FunctionType {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "identity" => Ok(FunctionType::Identity),
-            "table" => Ok(FunctionType::Table),
-            "discrete" => Ok(FunctionType::Discrete),
-            "linear" => Ok(FunctionType::Linear),
-            "gamma" => Ok(FunctionType::Gamma),
-            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
-        }
+impl Parse for FunctionType {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FunctionType, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "identity" => FunctionType::Identity,
+            "table" => FunctionType::Table,
+            "discrete" => FunctionType::Discrete,
+            "linear" => FunctionType::Linear,
+            "gamma" => FunctionType::Gamma,
+        )
+        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -211,7 +210,7 @@ macro_rules! func_x {
                 for (attr, value) in pbag.iter() {
                     match attr.expanded() {
                         expanded_name!(svg "type") => {
-                            self.function_type = FunctionType::parse(attr, value)?
+                            self.function_type = attr.parse(value)?
                         }
                         expanded_name!(svg "tableValues") => {
                             let NumberList(v) =
