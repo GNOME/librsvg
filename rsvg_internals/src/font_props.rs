@@ -62,7 +62,8 @@ impl FontSizeSpec {
 
 impl Parse for FontSizeSpec {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, crate::error::ValueErrorKind> {
-        parser.try_parse(|p| Length::<Both>::parse(p))
+        parser
+            .try_parse(|p| Length::<Both>::parse(p))
             .and_then(|l| Ok(FontSizeSpec::Value(l)))
             .or_else(|_| {
                 parse_identifiers!(
@@ -77,7 +78,8 @@ impl Parse for FontSizeSpec {
                     "x-large" => FontSizeSpec::XLarge,
                     "xx-large" => FontSizeSpec::XXLarge,
                 )
-            }).map_err(|_| ValueErrorKind::parse_error("parse error"))
+            })
+            .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -101,42 +103,34 @@ pub enum FontWeightSpec {
 
 impl Parse for FontWeightSpec {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, crate::error::ValueErrorKind> {
-        if let Ok(r) = parser.try_parse(|p| {
-            p.expect_ident()
-                .map_err(|_| ())
-                .and_then(|cow| match cow.as_ref() {
-                    "normal" => Ok(FontWeightSpec::Normal),
-                    "bold" => Ok(FontWeightSpec::Bold),
-                    "bolder" => Ok(FontWeightSpec::Bolder),
-                    "lighter" => Ok(FontWeightSpec::Lighter),
-                    _ => Err(()),
-                })
-        }) {
-            return Ok(r);
-        }
-
-        if let Ok(r) = parser
-            .expect_integer()
-            .map_err(|_| ())
-            .and_then(|i| match i {
-                100 => Ok(FontWeightSpec::W100),
-                200 => Ok(FontWeightSpec::W200),
-                300 => Ok(FontWeightSpec::W300),
-                400 => Ok(FontWeightSpec::W400),
-                500 => Ok(FontWeightSpec::W500),
-                600 => Ok(FontWeightSpec::W600),
-                700 => Ok(FontWeightSpec::W700),
-                800 => Ok(FontWeightSpec::W800),
-                900 => Ok(FontWeightSpec::W900),
-                _ => Err(()),
+        parser
+            .try_parse(|p| {
+                parse_identifiers!(
+                    p,
+                    "normal" => FontWeightSpec::Normal,
+                    "bold" => FontWeightSpec::Bold,
+                    "bolder" => FontWeightSpec::Bolder,
+                    "lighter" => FontWeightSpec::Lighter,
+                )
+                .map_err(|_| ValueErrorKind::parse_error("parse error"))
             })
-        {
-            Ok(r)
-        } else {
-            Err(ValueErrorKind::parse_error(
-                "invalid font-weight specification",
-            ))
-        }
+            .or_else(|_| {
+                parser
+                    .expect_integer()
+                    .map_err(|_| ValueErrorKind::parse_error("parse error"))
+                    .and_then(|i| match i {
+                        100 => Ok(FontWeightSpec::W100),
+                        200 => Ok(FontWeightSpec::W200),
+                        300 => Ok(FontWeightSpec::W300),
+                        400 => Ok(FontWeightSpec::W400),
+                        500 => Ok(FontWeightSpec::W500),
+                        600 => Ok(FontWeightSpec::W600),
+                        700 => Ok(FontWeightSpec::W700),
+                        800 => Ok(FontWeightSpec::W800),
+                        900 => Ok(FontWeightSpec::W900),
+                        _ => Err(ValueErrorKind::parse_error("parse error")),
+                    })
+            })
     }
 }
 
@@ -173,14 +167,16 @@ impl Parse for LetterSpacingSpec {
     fn parse(
         parser: &mut Parser<'_, '_>,
     ) -> Result<LetterSpacingSpec, crate::error::ValueErrorKind> {
-        parser.try_parse(|p| Length::<Horizontal>::parse(p))
+        parser
+            .try_parse(|p| Length::<Horizontal>::parse(p))
             .and_then(|l| Ok(LetterSpacingSpec::Value(l)))
             .or_else(|_| {
                 parse_identifiers!(
                     parser,
                     "normal" => LetterSpacingSpec::Normal,
                 )
-            }).map_err(|_| ValueErrorKind::parse_error("parse error"))
+            })
+            .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
