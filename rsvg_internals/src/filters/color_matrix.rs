@@ -26,6 +26,12 @@ enum OperationType {
     LuminanceToAlpha,
 }
 
+impl Default for OperationType {
+    fn default() -> Self {
+        OperationType::Matrix
+    }
+}
+
 /// The `feColorMatrix` filter primitive.
 pub struct FeColorMatrix {
     base: PrimitiveWithInput,
@@ -50,7 +56,7 @@ impl NodeTrait for FeColorMatrix {
         self.base.set_atts(parent, pbag)?;
 
         // First, determine the operation type.
-        let mut operation_type = OperationType::Matrix;
+        let mut operation_type = Default::default();
         for (attr, value) in pbag
             .iter()
             .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "type"))
