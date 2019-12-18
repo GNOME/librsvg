@@ -240,6 +240,6 @@ impl Parse for OperationType {
             "saturate" => OperationType::Saturate,
             "hueRotate" => OperationType::HueRotate,
             "luminanceToAlpha" => OperationType::LuminanceToAlpha,
-        ).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }

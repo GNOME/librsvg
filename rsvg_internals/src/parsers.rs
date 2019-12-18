@@ -192,7 +192,7 @@ macro_rules! parse_identifiers {
             match token {
                 $(cssparser::Token::Ident(ref cow) if cow.eq_ignore_ascii_case($str) => Ok($val),)+
 
-                _ => Err(loc.new_unexpected_token_error(token.clone()))
+                _ => Err(loc.new_basic_unexpected_token_error(token.clone()))
             }
         }
     };

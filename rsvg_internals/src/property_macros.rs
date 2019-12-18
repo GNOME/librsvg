@@ -50,7 +50,7 @@ macro_rules! make_property {
                 parse_identifiers!(
                     parser,
                     $($str_prop => $name::$variant,)+
-                ).map_err(|_e: crate::error::ParseError| crate::error::ValueErrorKind::parse_error("parse error"))
+                ).map_err(|_| crate::error::ValueErrorKind::parse_error("parse error"))
             }
         }
     };

@@ -154,7 +154,7 @@ impl Parse for Mode {
             "color" => Mode::HslColor,
             "luminosity" => Mode::HslLuminosity,
         )
-        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

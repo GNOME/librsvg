@@ -353,7 +353,7 @@ impl Parse for EdgeMode {
             "wrap" => EdgeMode::Wrap,
             "none" => EdgeMode::None,
         )
-        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -365,6 +365,6 @@ impl Parse for bool {
             "false" => false,
             "true" => true,
         )
-        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }

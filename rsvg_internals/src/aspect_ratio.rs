@@ -28,7 +28,7 @@ use crate::error::*;
 use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
-use cssparser::Parser;
+use cssparser::{BasicParseError, Parser};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
@@ -191,7 +191,7 @@ impl AspectRatio {
     }
 }
 
-fn parse_align_xy<'i>(parser: &mut Parser<'i, '_>) -> Result<Option<(X, Y)>, ParseError<'i>> {
+fn parse_align_xy<'i>(parser: &mut Parser<'i, '_>) -> Result<Option<(X, Y)>, BasicParseError<'i>> {
     use self::Align1D::*;
 
     parse_identifiers!(
@@ -213,7 +213,7 @@ fn parse_align_xy<'i>(parser: &mut Parser<'i, '_>) -> Result<Option<(X, Y)>, Par
     )
 }
 
-fn parse_fit_mode<'i>(parser: &mut Parser<'i, '_>) -> Result<FitMode, ParseError<'i>> {
+fn parse_fit_mode<'i>(parser: &mut Parser<'i, '_>) -> Result<FitMode, BasicParseError<'i>> {
     parse_identifiers!(
         parser,
         "meet" => FitMode::Meet,

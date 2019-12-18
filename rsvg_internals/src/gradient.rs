@@ -50,7 +50,7 @@ impl Parse for SpreadMethod {
             "pad" => SpreadMethod::Pad,
             "reflect" => SpreadMethod::Reflect,
             "repeat" => SpreadMethod::Repeat,
-        ).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

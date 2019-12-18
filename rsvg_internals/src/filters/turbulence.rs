@@ -427,7 +427,7 @@ impl Parse for StitchTiles {
             "stitch" => StitchTiles::Stitch,
             "noStitch" => StitchTiles::NoStitch,
         )
-        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -438,7 +438,7 @@ impl Parse for NoiseType {
             "fractalNoise" => NoiseType::FractalNoise,
             "turbulence" => NoiseType::Turbulence,
         )
-        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

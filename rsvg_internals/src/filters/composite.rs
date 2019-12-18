@@ -221,7 +221,7 @@ impl Parse for Operator {
             "atop" => Operator::Atop,
             "xor" => Operator::Xor,
             "arithmetic" => Operator::Arithmetic,
-        ).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

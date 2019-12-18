@@ -77,7 +77,7 @@ impl Parse for FontSizeSpec {
                     "x-large" => FontSizeSpec::XLarge,
                     "xx-large" => FontSizeSpec::XXLarge,
                 )
-            }).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+            }).map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -180,7 +180,7 @@ impl Parse for LetterSpacingSpec {
                     parser,
                     "normal" => LetterSpacingSpec::Normal,
                 )
-            }).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+            }).map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

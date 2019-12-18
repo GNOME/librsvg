@@ -43,7 +43,7 @@ impl Parse for MarkerUnits {
             "userSpaceOnUse" => MarkerUnits::UserSpaceOnUse,
             "strokeWidth" => MarkerUnits::StrokeWidth,
         )
-        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

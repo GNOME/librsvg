@@ -1,6 +1,6 @@
 //! `userSpaceOnUse` or `objectBoundingBox` values.
 
-use cssparser::Parser;
+use cssparser::{BasicParseError, Parser};
 
 use crate::error::*;
 use crate::parsers::Parse;
@@ -20,7 +20,7 @@ impl Parse for CoordUnits {
             parser,
             "userSpaceOnUse" => CoordUnits::UserSpaceOnUse,
             "objectBoundingBox" => CoordUnits::ObjectBoundingBox,
-        ).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        ).map_err(|_: BasicParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 

@@ -53,7 +53,7 @@ make_property!(
                             "sub" => BaselineShift(Length::<Both>::new(-0.2, LengthUnit::Percent)),
 
                             "super" => BaselineShift(Length::<Both>::new(0.4, LengthUnit::Percent)),
-                        ).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+                        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
                     })
             }
         }

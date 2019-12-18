@@ -155,6 +155,6 @@ impl Parse for ColorChannel {
             "B" => ColorChannel::B,
             "A" => ColorChannel::A,
         )
-        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }

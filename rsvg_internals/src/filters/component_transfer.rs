@@ -70,7 +70,7 @@ impl Parse for FunctionType {
             "linear" => FunctionType::Linear,
             "gamma" => FunctionType::Gamma,
         )
-        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

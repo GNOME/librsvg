@@ -165,6 +165,6 @@ impl Parse for Operator {
             "erode" => Operator::Erode,
             "dilate" => Operator::Dilate,
         )
-        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
