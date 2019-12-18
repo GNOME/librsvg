@@ -1,9 +1,9 @@
 use cairo::{self, ImageSurface};
-use cssparser::{CowRcStr, Parser, Token};
+use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, ValueErrorKind};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
@@ -213,24 +213,15 @@ impl FilterEffect for FeComposite {
 
 impl Parse for Operator {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        let loc = parser.current_source_location();
-
-        parser
-            .expect_ident()
-            .and_then(|cow| match cow.as_ref() {
-                "over" => Ok(Operator::Over),
-                "in" => Ok(Operator::In),
-                "out" => Ok(Operator::Out),
-                "atop" => Ok(Operator::Atop),
-                "xor" => Ok(Operator::Xor),
-                "arithmetic" => Ok(Operator::Arithmetic),
-                _ => Err(
-                    loc.new_basic_unexpected_token_error(Token::Ident(CowRcStr::from(
-                        cow.as_ref().to_string(),
-                    ))),
-                ),
-            })
-            .map_err(|_| ValueErrorKind::Value("invalid operator value".to_string()))
+        parse_identifiers!(
+            parser,
+            "over" => Operator::Over,
+            "in" => Operator::In,
+            "out" => Operator::Out,
+            "atop" => Operator::Atop,
+            "xor" => Operator::Xor,
+            "arithmetic" => Operator::Arithmetic,
+        ).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 
