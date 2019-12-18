@@ -1,20 +1,19 @@
 use std::cmp::{max, min};
 
 use cairo::{self, ImageSurface};
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use cssparser::Parser;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers;
+use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::SharedImageSurface,
-    EdgeMode,
-    ImageSurfaceDataExt,
-    Pixel,
+    EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -54,7 +53,7 @@ impl NodeTrait for FeMorphology {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "operator") => self.operator = Operator::parse(attr, value)?,
+                expanded_name!(svg "operator") => self.operator = attr.parse(value)?,
                 expanded_name!(svg "radius") => {
                     self.radius = parsers::number_optional_number(value)
                         .and_then(|(x, y)| {
@@ -63,7 +62,8 @@ impl NodeTrait for FeMorphology {
                             } else {
                                 Err(ValueErrorKind::value_error("radius cannot be negative"))
                             }
-                        }).attribute(attr)?
+                        })
+                        .attribute(attr)?
                 }
                 _ => (),
             }
@@ -159,12 +159,13 @@ impl FilterEffect for FeMorphology {
     }
 }
 
-impl Operator {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "erode" => Ok(Operator::Erode),
-            "dilate" => Ok(Operator::Dilate),
-            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
-        }
+impl Parse for Operator {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Operator, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "erode" => Operator::Erode,
+            "dilate" => Operator::Dilate,
+        )
+        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
