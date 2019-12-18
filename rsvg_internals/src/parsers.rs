@@ -171,6 +171,33 @@ pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ValueErrorKind> {
     }
 }
 
+/// Parses a list of identifiers from a `cssparser::Parser`
+///
+/// # Example
+///
+/// ```ignore
+/// let my_boolean = parse_identifiers!(
+///     parser,
+///     "true" => true,
+///     "false" => false,
+/// )?;
+/// ```
+macro_rules! parse_identifiers {
+    ($parser:expr,
+     $($str:expr => $val:expr,)+) => {
+        {
+            let loc = $parser.current_source_location();
+            let token = $parser.next()?;
+
+            match token {
+                $(cssparser::Token::Ident(ref cow) if cow.eq_ignore_ascii_case($str) => Ok($val),)+
+
+                _ => Err(loc.new_unexpected_token_error(token.clone()))
+            }
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

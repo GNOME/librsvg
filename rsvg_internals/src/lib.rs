@@ -73,6 +73,9 @@ mod coord_units;
 mod float_eq_cairo;
 
 #[macro_use]
+mod parsers;
+
+#[macro_use]
 mod property_macros;
 
 mod allowed_url;
@@ -105,7 +108,6 @@ mod mask;
 mod node;
 mod number_list;
 mod paint_server;
-mod parsers;
 mod path_builder;
 mod path_parser;
 mod pattern;
