@@ -47,23 +47,10 @@ macro_rules! make_property {
 
         impl crate::parsers::Parse for $name {
             fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
-                let loc = parser.current_source_location();
-
-                parser
-                    .expect_ident()
-                    .and_then(|cow| match cow.as_ref() {
-                        $($str_prop => Ok($name::$variant),)+
-
-                            _ => Err(
-                                loc.new_basic_unexpected_token_error(
-                                    ::cssparser::Token::Ident(::cssparser::CowRcStr::from(
-                                        cow.as_ref().to_string(),
-                                    ))),
-                            ),
-                    })
-                    .map_err(|_| {
-                        crate::error::ValueErrorKind::parse_error("unexpected value")
-                    })
+                parse_identifiers!(
+                    parser,
+                    $($str_prop => $name::$variant,)+
+                ).map_err(|_e: crate::error::ParseError| crate::error::ValueErrorKind::parse_error("parse error"))
             }
         }
     };
