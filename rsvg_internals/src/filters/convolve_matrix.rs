@@ -86,7 +86,7 @@ impl NodeTrait for FeConvolveMatrix {
                     )
                 }
                 expanded_name!(svg "bias") => self.bias = parsers::number(value).attribute(attr)?,
-                expanded_name!(svg "edgeMode") => self.edge_mode = EdgeMode::parse(attr, value)?,
+                expanded_name!(svg "edgeMode") => self.edge_mode = attr.parse(value)?,
                 expanded_name!(svg "kernelUnitLength") => {
                     self.kernel_unit_length = Some(
                         parsers::number_optional_number(value)
@@ -345,14 +345,15 @@ impl FilterEffect for FeConvolveMatrix {
     }
 }
 
-impl EdgeMode {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "duplicate" => Ok(EdgeMode::Duplicate),
-            "wrap" => Ok(EdgeMode::Wrap),
-            "none" => Ok(EdgeMode::None),
-            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
-        }
+impl Parse for EdgeMode {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "duplicate" => EdgeMode::Duplicate,
+            "wrap" => EdgeMode::Wrap,
+            "none" => EdgeMode::None,
+        )
+        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 
