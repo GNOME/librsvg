@@ -1,4 +1,5 @@
 use cairo::{self, ImageSurface};
+use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
@@ -6,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
-use crate::parsers;
+use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -101,16 +102,8 @@ impl NodeTrait for FeConvolveMatrix {
                             .attribute(attr)?,
                     )
                 }
-                expanded_name!(svg "preserveAlpha") => {
-                    self.preserve_alpha = match value {
-                        "false" => false,
-                        "true" => true,
-                        _ => {
-                            return Err(ValueErrorKind::parse_error("expected false or true"))
-                                .attribute(attr);
-                        }
-                    }
-                }
+                expanded_name!(svg "preserveAlpha") => self.preserve_alpha = attr.parse(value)?,
+
                 _ => (),
             }
         }
@@ -360,5 +353,17 @@ impl EdgeMode {
             "none" => Ok(EdgeMode::None),
             _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
         }
+    }
+}
+
+// Used for the preserveAlpha attribute
+impl Parse for bool {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "false" => false,
+            "true" => true,
+        )
+        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
