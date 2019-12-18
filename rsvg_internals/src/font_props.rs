@@ -1,6 +1,6 @@
 //! CSS font properties.
 
-use cssparser::{BasicParseError, Parser, Token};
+use cssparser::{BasicParseError, Parser};
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
@@ -173,29 +173,14 @@ impl Parse for LetterSpacingSpec {
     fn parse(
         parser: &mut Parser<'_, '_>,
     ) -> Result<LetterSpacingSpec, crate::error::ValueErrorKind> {
-        let parser_state = parser.state();
-
-        Length::<Horizontal>::parse(parser)
-            .and_then(|s| Ok(LetterSpacingSpec::Value(s)))
-            .or_else(|e| {
-                parser.reset(&parser_state);
-
-                {
-                    let token = parser.next().map_err(|_| {
-                        crate::error::ValueErrorKind::parse_error("expected token")
-                    })?;
-
-                    if let Token::Ident(ref cow) = token {
-                        if let "normal" = cow.as_ref() {
-                            return Ok(LetterSpacingSpec::Normal);
-                        }
-                    }
-                }
-
-                parser.reset(&parser_state);
-
-                Err(e)
-            })
+        parser.try_parse(|p| Length::<Horizontal>::parse(p))
+            .and_then(|l| Ok(LetterSpacingSpec::Value(l)))
+            .or_else(|_| {
+                parse_identifiers!(
+                    parser,
+                    "normal" => LetterSpacingSpec::Normal,
+                )
+            }).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 
