@@ -62,38 +62,22 @@ impl FontSizeSpec {
 
 impl Parse for FontSizeSpec {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, crate::error::ValueErrorKind> {
-        let parser_state = parser.state();
-
-        Length::<Both>::parse(parser)
-            .and_then(|s| Ok(FontSizeSpec::Value(s)))
-            .or_else(|e| {
-                parser.reset(&parser_state);
-
-                {
-                    let token = parser.next().map_err(|_| {
-                        crate::error::ValueErrorKind::parse_error("expected token")
-                    })?;
-
-                    if let Token::Ident(ref cow) = token {
-                        match cow.as_ref() {
-                            "smaller" => return Ok(FontSizeSpec::Smaller),
-                            "larger" => return Ok(FontSizeSpec::Larger),
-                            "xx-small" => return Ok(FontSizeSpec::XXSmall),
-                            "x-small" => return Ok(FontSizeSpec::XSmall),
-                            "small" => return Ok(FontSizeSpec::Small),
-                            "medium" => return Ok(FontSizeSpec::Medium),
-                            "large" => return Ok(FontSizeSpec::Large),
-                            "x-large" => return Ok(FontSizeSpec::XLarge),
-                            "xx-large" => return Ok(FontSizeSpec::XXLarge),
-                            _ => (),
-                        };
-                    }
-                }
-
-                parser.reset(&parser_state);
-
-                Err(e)
-            })
+        parser.try_parse(|p| Length::<Both>::parse(p))
+            .and_then(|l| Ok(FontSizeSpec::Value(l)))
+            .or_else(|_| {
+                parse_identifiers!(
+                    parser,
+                    "smaller" => FontSizeSpec::Smaller,
+                    "larger" => FontSizeSpec::Larger,
+                    "xx-small" => FontSizeSpec::XXSmall,
+                    "x-small" => FontSizeSpec::XSmall,
+                    "small" => FontSizeSpec::Small,
+                    "medium" => FontSizeSpec::Medium,
+                    "large" => FontSizeSpec::Large,
+                    "x-large" => FontSizeSpec::XLarge,
+                    "xx-large" => FontSizeSpec::XXLarge,
+                )
+            }).map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 
