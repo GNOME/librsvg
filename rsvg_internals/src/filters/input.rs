@@ -1,5 +1,4 @@
 use cssparser::{Parser, Token};
-use markup5ever::QualName;
 
 use crate::error::*;
 use crate::parsers::Parse;
@@ -13,25 +12,31 @@ pub enum Input {
     BackgroundAlpha,
     FillPaint,
     StrokePaint,
-    FilterOutput(String),
+    FilterOutput(CustomIdent),
 }
 
 /// https://www.w3.org/TR/css-values-4/#custom-idents
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CustomIdent(String);
 
-impl Input {
-    pub fn parse(attr: QualName, s: &str) -> Result<Input, NodeError> {
-        match s {
-            "SourceGraphic" => Ok(Input::SourceGraphic),
-            "SourceAlpha" => Ok(Input::SourceAlpha),
-            "BackgroundImage" => Ok(Input::BackgroundImage),
-            "BackgroundAlpha" => Ok(Input::BackgroundAlpha),
-            "FillPaint" => Ok(Input::FillPaint),
-            "StrokePaint" => Ok(Input::StrokePaint),
-            s if !s.is_empty() => Ok(Input::FilterOutput(s.to_string())),
-            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
-        }
+impl Parse for Input {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+        parser
+            .try_parse(|p| {
+                parse_identifiers!(
+                    p,
+                    "SourceGraphic" => Input::SourceGraphic,
+                    "SourceAlpha" => Input::SourceAlpha,
+                    "BackgroundImage" => Input::BackgroundImage,
+                    "BackgroundAlpha" => Input::BackgroundAlpha,
+                    "FillPaint" => Input::FillPaint,
+                    "StrokePaint" => Input::StrokePaint,
+                ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+            })
+            .or_else(|_| {
+                let ident = CustomIdent::parse(parser)?;
+                Ok(Input::FilterOutput(ident))
+            })
     }
 }
 

@@ -66,7 +66,7 @@ impl NodeTrait for FeComposite {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in2") => self.in2 = Some(Input::parse(attr, value)?),
+                expanded_name!(svg "in2") => self.in2 = Some(attr.parse(value)?),
                 expanded_name!(svg "operator") => self.operator = attr.parse(value)?,
                 expanded_name!(svg "k1") => self.k1 = parsers::number(value).attribute(attr)?,
                 expanded_name!(svg "k2") => self.k2 = parsers::number(value).attribute(attr)?,

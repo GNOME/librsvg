@@ -3,6 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -46,7 +47,7 @@ impl NodeTrait for FeMergeNode {
     fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in") => self.in_ = Some(Input::parse(attr, value)?),
+                expanded_name!(svg "in") => self.in_ = Some(attr.parse(value)?),
                 _ => (),
             }
         }

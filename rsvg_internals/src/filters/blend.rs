@@ -62,7 +62,7 @@ impl NodeTrait for FeBlend {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "in2") => {
-                    self.in2 = Some(Input::parse(attr, value)?);
+                    self.in2 = Some(attr.parse(value)?);
                 }
                 expanded_name!(svg "mode") => self.mode = attr.parse(value)?,
                 _ => (),
