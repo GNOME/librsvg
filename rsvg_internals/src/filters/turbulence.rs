@@ -1,15 +1,15 @@
 use cairo::{self, ImageSurface};
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use cssparser::Parser;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers;
+use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt,
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 
@@ -72,7 +72,8 @@ impl NodeTrait for FeTurbulence {
                             } else {
                                 Err(ValueErrorKind::value_error("values can't be negative"))
                             }
-                        }).attribute(attr)?
+                        })
+                        .attribute(attr)?
                 }
                 expanded_name!(svg "numOctaves") => {
                     self.num_octaves = parsers::integer(value).attribute(attr)?
@@ -89,8 +90,8 @@ impl NodeTrait for FeTurbulence {
                         })
                         .attribute(attr)?
                 }
-                expanded_name!(svg "stitchTiles") => self.stitch_tiles = StitchTiles::parse(attr, value)?,
-                expanded_name!(svg "type") => self.type_ = NoiseType::parse(attr, value)?,
+                expanded_name!(svg "stitchTiles") => self.stitch_tiles = attr.parse(value)?,
+                expanded_name!(svg "type") => self.type_ = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -419,23 +420,25 @@ impl FilterEffect for FeTurbulence {
     }
 }
 
-impl StitchTiles {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "stitch" => Ok(StitchTiles::Stitch),
-            "noStitch" => Ok(StitchTiles::NoStitch),
-            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
-        }
+impl Parse for StitchTiles {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "stitch" => StitchTiles::Stitch,
+            "noStitch" => StitchTiles::NoStitch,
+        )
+        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 
-impl NoiseType {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "fractalNoise" => Ok(NoiseType::FractalNoise),
-            "turbulence" => Ok(NoiseType::Turbulence),
-            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
-        }
+impl Parse for NoiseType {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "fractalNoise" => NoiseType::FractalNoise,
+            "turbulence" => NoiseType::Turbulence,
+        )
+        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 
