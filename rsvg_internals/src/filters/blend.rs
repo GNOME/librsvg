@@ -1,9 +1,11 @@
 use cairo;
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use cssparser::Parser;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 
@@ -62,7 +64,7 @@ impl NodeTrait for FeBlend {
                 expanded_name!(svg "in2") => {
                     self.in2 = Some(Input::parse(attr, value)?);
                 }
-                expanded_name!(svg "mode") => self.mode = Mode::parse(attr, value)?,
+                expanded_name!(svg "mode") => self.mode = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -131,27 +133,28 @@ impl FilterEffect for FeBlend {
     }
 }
 
-impl Mode {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "normal" => Ok(Mode::Normal),
-            "multiply" => Ok(Mode::Multiply),
-            "screen" => Ok(Mode::Screen),
-            "darken" => Ok(Mode::Darken),
-            "lighten" => Ok(Mode::Lighten),
-            "overlay" => Ok(Mode::Overlay),
-            "color-dodge" => Ok(Mode::ColorDodge),
-            "color-burn" => Ok(Mode::ColorBurn),
-            "hard-light" => Ok(Mode::HardLight),
-            "soft-light" => Ok(Mode::SoftLight),
-            "difference" => Ok(Mode::Difference),
-            "exclusion" => Ok(Mode::Exclusion),
-            "hue" => Ok(Mode::HslHue),
-            "saturation" => Ok(Mode::HslSaturation),
-            "color" => Ok(Mode::HslColor),
-            "luminosity" => Ok(Mode::HslLuminosity),
-            _ => Err(ValueErrorKind::parse_error("invalid value")).attribute(attr),
-        }
+impl Parse for Mode {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "normal" => Mode::Normal,
+            "multiply" => Mode::Multiply,
+            "screen" => Mode::Screen,
+            "darken" => Mode::Darken,
+            "lighten" => Mode::Lighten,
+            "overlay" => Mode::Overlay,
+            "color-dodge" => Mode::ColorDodge,
+            "color-burn" => Mode::ColorBurn,
+            "hard-light" => Mode::HardLight,
+            "soft-light" => Mode::SoftLight,
+            "difference" => Mode::Difference,
+            "exclusion" => Mode::Exclusion,
+            "hue" => Mode::HslHue,
+            "saturation" => Mode::HslSaturation,
+            "color" => Mode::HslColor,
+            "luminosity" => Mode::HslLuminosity,
+        )
+        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 
