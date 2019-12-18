@@ -67,13 +67,13 @@ pub use crate::viewbox::ViewBox;
 pub mod log;
 
 #[macro_use]
+mod parsers;
+
+#[macro_use]
 mod coord_units;
 
 #[macro_use]
 mod float_eq_cairo;
-
-#[macro_use]
-mod parsers;
 
 #[macro_use]
 mod property_macros;
