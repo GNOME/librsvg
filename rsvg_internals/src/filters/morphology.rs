@@ -20,7 +20,6 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible morphology operations.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 enum Operator {
     Erode,
     Dilate,

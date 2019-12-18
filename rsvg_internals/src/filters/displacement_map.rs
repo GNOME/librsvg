@@ -13,7 +13,7 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
 
 /// Enumeration of the color channels the displacement map can source.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy)]
 enum ColorChannel {
     R,
     G,

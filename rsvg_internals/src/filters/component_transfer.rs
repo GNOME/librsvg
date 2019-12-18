@@ -52,7 +52,6 @@ enum Channel {
 }
 
 /// Component transfer function types.
-#[derive(Debug, Clone, Copy)]
 enum FunctionType {
     Identity,
     Table,
