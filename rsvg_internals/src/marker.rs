@@ -3,7 +3,7 @@
 use std::f64::consts::*;
 use std::ops::Deref;
 
-use cssparser::{CowRcStr, Parser, Token};
+use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Fragment;
@@ -38,22 +38,12 @@ impl Default for MarkerUnits {
 
 impl Parse for MarkerUnits {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerUnits, ValueErrorKind> {
-        let loc = parser.current_source_location();
-
-        parser
-            .expect_ident()
-            .and_then(|cow| match cow.as_ref() {
-                "userSpaceOnUse" => Ok(MarkerUnits::UserSpaceOnUse),
-                "strokeWidth" => Ok(MarkerUnits::StrokeWidth),
-                _ => Err(
-                    loc.new_basic_unexpected_token_error(Token::Ident(CowRcStr::from(
-                        cow.as_ref().to_string(),
-                    ))),
-                ),
-            })
-            .map_err(|_| {
-                ValueErrorKind::parse_error("expected \"userSpaceOnUse\" or \"strokeWidth\"")
-            })
+        parse_identifiers!(
+            parser,
+            "userSpaceOnUse" => MarkerUnits::UserSpaceOnUse,
+            "strokeWidth" => MarkerUnits::StrokeWidth,
+        )
+        .map_err(|_: ParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 
