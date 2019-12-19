@@ -1,3 +1,11 @@
+Version 2.47.2
+
+- Handling of the "result", "in", "in2" attributes in filter
+  primitives is slightly stricter now, and spec compliant.  Their
+  arguments must be of type CSS custom-ident, so "default", "inherit",
+  "initial", and "unset" are disallowed.  Most SVGs should still work
+  fine.
+
 Version 2.47.1
 
 - Librsvg no longer depends on libcroco!  It now does all CSS
