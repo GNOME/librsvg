@@ -74,7 +74,7 @@ impl NodeTrait for FeConvolveMatrix {
                 }
                 expanded_name!(svg "divisor") => {
                     self.divisor = Some(
-                        parsers::number(value)
+                        f64::parse_str(value)
                             .and_then(|x| {
                                 if x != 0.0 {
                                     Ok(x)
@@ -85,7 +85,7 @@ impl NodeTrait for FeConvolveMatrix {
                             .attribute(attr)?,
                     )
                 }
-                expanded_name!(svg "bias") => self.bias = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "bias") => self.bias = attr.parse(value)?,
                 expanded_name!(svg "edgeMode") => self.edge_mode = attr.parse(value)?,
                 expanded_name!(svg "kernelUnitLength") => {
                     self.kernel_unit_length = Some(

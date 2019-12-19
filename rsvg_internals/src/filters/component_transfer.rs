@@ -8,7 +8,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
@@ -224,21 +224,12 @@ macro_rules! func_x {
                                 ).attribute(attr)?;
                             self.table_values = v;
                         }
-                        expanded_name!(svg "slope") => {
-                            self.slope = parsers::number(value).attribute(attr)?
-                        }
-                        expanded_name!(svg "intercept") => {
-                            self.intercept = parsers::number(value).attribute(attr)?
-                        }
-                        expanded_name!(svg "amplitude") => {
-                            self.amplitude = parsers::number(value).attribute(attr)?
-                        }
-                        expanded_name!(svg "exponent") => {
-                            self.exponent = parsers::number(value).attribute(attr)?
-                        }
-                        expanded_name!(svg "offset") => {
-                            self.offset = parsers::number(value).attribute(attr)?
-                        }
+                        expanded_name!(svg "slope") => self.slope = attr.parse(value)?,
+                        expanded_name!(svg "intercept") => self.intercept = attr.parse(value)?,
+                        expanded_name!(svg "amplitude") => self.amplitude = attr.parse(value)?,
+                        expanded_name!(svg "exponent") => self.exponent = attr.parse(value)?,
+                        expanded_name!(svg "offset") => self.offset = attr.parse(value)?,
+
                         _ => (),
                     }
                 }

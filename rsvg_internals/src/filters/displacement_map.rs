@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
 
@@ -53,12 +53,12 @@ impl NodeTrait for FeDisplacementMap {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "in2") => self.in2 = Some(attr.parse(value)?),
-                expanded_name!(svg "scale") => {
-                    self.scale = parsers::number(value).attribute(attr)?
-                }
+                expanded_name!(svg "scale") => self.scale = attr.parse(value)?,
+
                 expanded_name!(svg "xChannelSelector") => {
                     self.x_channel_selector = attr.parse(value)?
                 }
+
                 expanded_name!(svg "yChannelSelector") => {
                     self.y_channel_selector = attr.parse(value)?
                 }

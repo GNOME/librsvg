@@ -80,7 +80,7 @@ impl NodeTrait for FeTurbulence {
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
                 expanded_name!(svg "seed") => {
-                    self.seed = parsers::number(value)
+                    self.seed = f64::parse_str(value)
                         .map(|x| {
                             clamp(
                                 x.trunc(),

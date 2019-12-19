@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -68,10 +68,10 @@ impl NodeTrait for FeComposite {
             match attr.expanded() {
                 expanded_name!(svg "in2") => self.in2 = Some(attr.parse(value)?),
                 expanded_name!(svg "operator") => self.operator = attr.parse(value)?,
-                expanded_name!(svg "k1") => self.k1 = parsers::number(value).attribute(attr)?,
-                expanded_name!(svg "k2") => self.k2 = parsers::number(value).attribute(attr)?,
-                expanded_name!(svg "k3") => self.k3 = parsers::number(value).attribute(attr)?,
-                expanded_name!(svg "k4") => self.k4 = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "k1") => self.k1 = attr.parse(value)?,
+                expanded_name!(svg "k2") => self.k2 = attr.parse(value)?,
+                expanded_name!(svg "k3") => self.k3 = attr.parse(value)?,
+                expanded_name!(svg "k4") => self.k4 = attr.parse(value)?,
                 _ => (),
             }
         }

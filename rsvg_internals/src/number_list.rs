@@ -2,7 +2,7 @@
 
 use cssparser::{Parser, ParserInput};
 
-use crate::parsers::CssParserExt;
+use crate::parsers::{optional_comma, Parse};
 
 #[derive(Eq, PartialEq)]
 pub enum NumberListLength {
@@ -36,12 +36,12 @@ impl NumberList {
 
         for i in 0.. {
             if i != 0 {
-                parser.optional_comma();
+                optional_comma(parser);
             }
 
-            v.push(f64::from(parser.expect_finite_number().map_err(|_| {
+            v.push(f64::parse(parser).map_err(|_| {
                 NumberListError::Parse("expected number".to_string())
-            })?));
+            })?);
 
             if let NumberListLength::Exact(l) = length {
                 if i + 1 == l {

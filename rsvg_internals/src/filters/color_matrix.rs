@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
@@ -104,7 +104,7 @@ impl NodeTrait for FeColorMatrix {
                         matrix
                     }
                     OperationType::Saturate => {
-                        let s = parsers::number(value).attribute(attr.clone())?;
+                        let s: f64 = attr.parse(value)?;
                         if s < 0.0 || s > 1.0 {
                             return Err(ValueErrorKind::value_error("expected value from 0 to 1"))
                                 .attribute(attr);
@@ -120,7 +120,7 @@ impl NodeTrait for FeColorMatrix {
                         )
                     }
                     OperationType::HueRotate => {
-                        let degrees = parsers::number(value).attribute(attr.clone())?;
+                        let degrees: f64 = attr.parse(value)?;
                         let (sin, cos) = degrees.to_radians().sin_cos();
 
                         #[cfg_attr(rustfmt, rustfmt_skip)]
