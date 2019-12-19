@@ -1,27 +1,25 @@
 use std::cmp::{max, min};
 
 use cairo::{self, ImageSurface};
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use cssparser::Parser;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers;
+use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::SharedImageSurface,
-    EdgeMode,
-    ImageSurfaceDataExt,
-    Pixel,
+    EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
 
 /// Enumeration of the possible morphology operations.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 enum Operator {
     Erode,
     Dilate,
@@ -54,17 +52,17 @@ impl NodeTrait for FeMorphology {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "operator") => self.operator = Operator::parse(attr, value)?,
+                expanded_name!(svg "operator") => self.operator = attr.parse(value)?,
                 expanded_name!(svg "radius") => {
                     self.radius = parsers::number_optional_number(value)
-                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))
                             } else {
-                                Err(NodeError::value_error(attr, "radius cannot be negative"))
+                                Err(ValueErrorKind::value_error("radius cannot be negative"))
                             }
-                        })?
+                        })
+                        .attribute(attr)?
                 }
                 _ => (),
             }
@@ -160,12 +158,13 @@ impl FilterEffect for FeMorphology {
     }
 }
 
-impl Operator {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "erode" => Ok(Operator::Erode),
-            "dilate" => Ok(Operator::Dilate),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
-        }
+impl Parse for Operator {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Operator, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "erode" => Operator::Erode,
+            "dilate" => Operator::Dilate,
+        )
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }

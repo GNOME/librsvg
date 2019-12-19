@@ -1,15 +1,15 @@
 use cairo::{self, ImageSurface};
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use cssparser::Parser;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers;
+use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt,
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 
@@ -66,21 +66,21 @@ impl NodeTrait for FeTurbulence {
             match attr.expanded() {
                 expanded_name!(svg "baseFrequency") => {
                     self.base_frequency = parsers::number_optional_number(value)
-                        .attribute(attr.clone())
                         .and_then(|(x, y)| {
                             if x >= 0.0 && y >= 0.0 {
                                 Ok((x, y))
                             } else {
-                                Err(NodeError::value_error(attr, "values can't be negative"))
+                                Err(ValueErrorKind::value_error("values can't be negative"))
                             }
-                        })?
+                        })
+                        .attribute(attr)?
                 }
                 expanded_name!(svg "numOctaves") => {
                     self.num_octaves = parsers::integer(value).attribute(attr)?
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
                 expanded_name!(svg "seed") => {
-                    self.seed = parsers::number(value)
+                    self.seed = f64::parse_str(value)
                         .map(|x| {
                             clamp(
                                 x.trunc(),
@@ -90,8 +90,8 @@ impl NodeTrait for FeTurbulence {
                         })
                         .attribute(attr)?
                 }
-                expanded_name!(svg "stitchTiles") => self.stitch_tiles = StitchTiles::parse(attr, value)?,
-                expanded_name!(svg "type") => self.type_ = NoiseType::parse(attr, value)?,
+                expanded_name!(svg "stitchTiles") => self.stitch_tiles = attr.parse(value)?,
+                expanded_name!(svg "type") => self.type_ = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -420,23 +420,25 @@ impl FilterEffect for FeTurbulence {
     }
 }
 
-impl StitchTiles {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "stitch" => Ok(StitchTiles::Stitch),
-            "noStitch" => Ok(StitchTiles::NoStitch),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
-        }
+impl Parse for StitchTiles {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "stitch" => StitchTiles::Stitch,
+            "noStitch" => StitchTiles::NoStitch,
+        )
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
-impl NoiseType {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "fractalNoise" => Ok(NoiseType::FractalNoise),
-            "turbulence" => Ok(NoiseType::Turbulence),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
-        }
+impl Parse for NoiseType {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "fractalNoise" => NoiseType::FractalNoise,
+            "turbulence" => NoiseType::Turbulence,
+        )
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

@@ -1,10 +1,10 @@
 //! Definitions for CSS property types.
 
-use cssparser::{self, Parser, Token};
+use cssparser::{self, Parser};
 
+use crate::dasharray::Dasharray;
 use crate::error::*;
 use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleFontFamily};
-use crate::dasharray::Dasharray;
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
@@ -45,35 +45,16 @@ make_property!(
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
             fn parse(parser: &mut Parser<'_, '_>) -> Result<BaselineShift, crate::error::ValueErrorKind> {
-                let parser_state = parser.state();
+                parser.try_parse(|p| Ok(BaselineShift(Length::<Both>::parse(p)?)))
+                    .or_else(|_: ValueErrorKind| {
+                        parse_identifiers!(
+                            parser,
+                            "baseline" => BaselineShift(Length::<Both>::new(0.0, LengthUnit::Percent)),
+                            "sub" => BaselineShift(Length::<Both>::new(-0.2, LengthUnit::Percent)),
 
-                {
-                    let token = parser.next().map_err(|_| {
-                        crate::error::ValueErrorKind::parse_error("expected token")
-                    })?;
-
-                    if let Token::Ident(ref cow) = token {
-                        match cow.as_ref() {
-                            "baseline" => return Ok(BaselineShift(
-                                Length::<Both>::new(0.0, LengthUnit::Percent)
-                            )),
-
-                            "sub" => return Ok(BaselineShift(
-                                Length::<Both>::new(-0.2, LengthUnit::Percent)
-                            )),
-
-                            "super" => return Ok(BaselineShift(
-                                Length::<Both>::new(0.4, LengthUnit::Percent),
-                            )),
-
-                            _ => (),
-                        }
-                    }
-                }
-
-                parser.reset(&parser_state);
-
-                Ok(BaselineShift(Length::<Both>::parse(parser)?))
+                            "super" => BaselineShift(Length::<Both>::new(0.4, LengthUnit::Percent)),
+                        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+                    })
             }
         }
     }

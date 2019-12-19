@@ -1,8 +1,8 @@
 //! `userSpaceOnUse` or `objectBoundingBox` values.
 
-use cssparser::{CowRcStr, Parser, Token};
+use cssparser::{BasicParseError, Parser};
 
-use crate::error::ValueErrorKind;
+use crate::error::*;
 use crate::parsers::Parse;
 
 /// Defines the units to be used for things that can consider a
@@ -16,22 +16,11 @@ pub enum CoordUnits {
 
 impl Parse for CoordUnits {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<CoordUnits, ValueErrorKind> {
-        let loc = parser.current_source_location();
-
-        parser
-            .expect_ident()
-            .and_then(|cow| match cow.as_ref() {
-                "userSpaceOnUse" => Ok(CoordUnits::UserSpaceOnUse),
-                "objectBoundingBox" => Ok(CoordUnits::ObjectBoundingBox),
-                _ => Err(
-                    loc.new_basic_unexpected_token_error(Token::Ident(CowRcStr::from(
-                        cow.as_ref().to_string(),
-                    ))),
-                ),
-            })
-            .map_err(|_| {
-                ValueErrorKind::parse_error("expected 'userSpaceOnUse' or 'objectBoundingBox'")
-            })
+        parse_identifiers!(
+            parser,
+            "userSpaceOnUse" => CoordUnits::UserSpaceOnUse,
+            "objectBoundingBox" => CoordUnits::ObjectBoundingBox,
+        ).map_err(|_: BasicParseError| ValueErrorKind::parse_error("parse error"))
     }
 }
 

@@ -29,7 +29,7 @@ mod error;
 use self::error::FilterError;
 
 mod input;
-use self::input::Input;
+use self::input::{CustomIdent, Input};
 
 /// A filter primitive interface.
 pub trait FilterEffect: NodeTrait {
@@ -82,7 +82,7 @@ struct Primitive {
     y: Option<Length<Vertical>>,
     width: Option<Length<Horizontal>>,
     height: Option<Length<Vertical>>,
-    result: Option<String>,
+    result: Option<CustomIdent>,
 }
 
 /// The base node for filter primitives which accept input.
@@ -182,7 +182,7 @@ impl NodeTrait for Primitive {
                             check_units_vertical_and_ensure_nonnegative,
                         )?)
                 }
-                expanded_name!(svg "result") => self.result = Some(value.to_string()),
+                expanded_name!(svg "result") => self.result = Some(attr.parse(value)?),
                 _ => (),
             }
         }
@@ -218,7 +218,7 @@ impl NodeTrait for PrimitiveWithInput {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in") => drop(self.in_ = Some(Input::parse(attr, value)?)),
+                expanded_name!(svg "in") => self.in_ = Some(attr.parse(value)?),
                 _ => (),
             }
         }

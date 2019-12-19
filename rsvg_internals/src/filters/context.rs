@@ -16,7 +16,7 @@ use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::unit_interval::UnitInterval;
 
 use super::error::FilterError;
-use super::input::Input;
+use super::input::{CustomIdent, Input};
 
 /// A filter primitive output.
 #[derive(Debug, Clone)]
@@ -32,7 +32,7 @@ pub struct FilterOutput {
 #[derive(Debug, Clone)]
 pub struct FilterResult {
     /// The name of this result: the value of the `result` attribute.
-    pub name: Option<String>,
+    pub name: Option<CustomIdent>,
 
     /// The output.
     pub output: FilterOutput,
@@ -60,7 +60,7 @@ pub struct FilterContext {
     /// Output of the last filter primitive.
     last_result: Option<FilterOutput>,
     /// Surfaces of the previous filter primitives by name.
-    previous_results: HashMap<String, FilterOutput>,
+    previous_results: HashMap<CustomIdent, FilterOutput>,
     /// The background surface. Computed lazily.
     background_surface: RefCell<Option<Result<SharedImageSurface, FilterError>>>,
     /// The filter effects region.

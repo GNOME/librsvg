@@ -24,11 +24,11 @@ use std::ops::Deref;
 
 use cairo;
 
-use crate::error::ValueErrorKind;
+use crate::error::*;
 use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
-use cssparser::{CowRcStr, Parser};
+use cssparser::{BasicParseError, Parser};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
@@ -191,34 +191,34 @@ impl AspectRatio {
     }
 }
 
-fn parse_align_xy(ident: &CowRcStr) -> Result<Option<(X, Y)>, ValueErrorKind> {
+fn parse_align_xy<'i>(parser: &mut Parser<'i, '_>) -> Result<Option<(X, Y)>, BasicParseError<'i>> {
     use self::Align1D::*;
 
-    match ident.as_ref() {
-        "none" => Ok(None),
+    parse_identifiers!(
+        parser,
 
-        "xMinYMin" => Ok(Some((X(Min), Y(Min)))),
-        "xMidYMin" => Ok(Some((X(Mid), Y(Min)))),
-        "xMaxYMin" => Ok(Some((X(Max), Y(Min)))),
+        "none" => None,
 
-        "xMinYMid" => Ok(Some((X(Min), Y(Mid)))),
-        "xMidYMid" => Ok(Some((X(Mid), Y(Mid)))),
-        "xMaxYMid" => Ok(Some((X(Max), Y(Mid)))),
+        "xMinYMin" => Some((X(Min), Y(Min))),
+        "xMidYMin" => Some((X(Mid), Y(Min))),
+        "xMaxYMin" => Some((X(Max), Y(Min))),
 
-        "xMinYMax" => Ok(Some((X(Min), Y(Max)))),
-        "xMidYMax" => Ok(Some((X(Mid), Y(Max)))),
-        "xMaxYMax" => Ok(Some((X(Max), Y(Max)))),
+        "xMinYMid" => Some((X(Min), Y(Mid))),
+        "xMidYMid" => Some((X(Mid), Y(Mid))),
+        "xMaxYMid" => Some((X(Max), Y(Mid))),
 
-        _ => Err(ValueErrorKind::parse_error("invalid alignment")),
-    }
+        "xMinYMax" => Some((X(Min), Y(Max))),
+        "xMidYMax" => Some((X(Mid), Y(Max))),
+        "xMaxYMax" => Some((X(Max), Y(Max))),
+    )
 }
 
-fn parse_fit_mode(s: &str) -> Result<FitMode, ValueErrorKind> {
-    match s {
-        "meet" => Ok(FitMode::Meet),
-        "slice" => Ok(FitMode::Slice),
-        _ => Err(ValueErrorKind::parse_error("invalid fit mode")),
-    }
+fn parse_fit_mode<'i>(parser: &mut Parser<'i, '_>) -> Result<FitMode, BasicParseError<'i>> {
+    parse_identifiers!(
+        parser,
+        "meet" => FitMode::Meet,
+        "slice" => FitMode::Slice,
+    )
 }
 
 impl Parse for AspectRatio {
@@ -227,18 +227,13 @@ impl Parse for AspectRatio {
             .try_parse(|p| p.expect_ident_matching("defer"))
             .is_ok();
 
-        let align_xy = parser.try_parse(|p| {
-            p.expect_ident()
-                .map_err(|_| ValueErrorKind::parse_error("expected identifier"))
-                .and_then(|ident| parse_align_xy(ident))
-        })?;
+        let align_xy = parser
+            .try_parse(|p| parse_align_xy(p))
+            .map_err(|_e| ValueErrorKind::parse_error("parse error"))?;
 
         let fit = parser
-            .try_parse(|p| {
-                p.expect_ident()
-                    .map_err(|_| ValueErrorKind::parse_error("expected identifier"))
-                    .and_then(|ident| parse_fit_mode(ident))
-            })
+            .try_parse(|p| parse_fit_mode(p))
+            .map_err(|_e| ValueErrorKind::parse_error("parse error"))
             .unwrap_or_default();
 
         parser
@@ -261,9 +256,7 @@ mod tests {
         assert!(AspectRatio::parse_str("").is_err());
         assert!(AspectRatio::parse_str("defer").is_err());
         assert!(AspectRatio::parse_str("defer foo").is_err());
-        assert!(AspectRatio::parse_str("defer xmidymid").is_err());
         assert!(AspectRatio::parse_str("defer xMidYMid foo").is_err());
-        assert!(AspectRatio::parse_str("xmidymid").is_err());
         assert!(AspectRatio::parse_str("xMidYMid foo").is_err());
         assert!(AspectRatio::parse_str("defer xMidYMid meet foo").is_err());
     }

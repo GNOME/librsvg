@@ -175,8 +175,7 @@ impl NodeData {
         let mut cond = self.cond;
 
         for (attr, value) in pbag.iter() {
-            // FIXME: move this to "try {}" when we can bump the rustc version dependency
-            let mut parse = || {
+            let mut parse = || -> Result<_, ValueErrorKind> {
                 match attr.expanded() {
                     expanded_name!(svg "requiredExtensions") if cond => {
                         cond = RequiredExtensions::from_attribute(value)
@@ -199,9 +198,7 @@ impl NodeData {
                 Ok(cond)
             };
 
-            parse()
-                .map(|c| self.cond = c)
-                .map_err(|e| NodeError::new(attr, e))?;
+            parse().map(|c| self.cond = c).attribute(attr)?;
         }
 
         Ok(())

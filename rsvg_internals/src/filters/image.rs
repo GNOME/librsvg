@@ -4,7 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::allowed_url::{Fragment, Href};
 use crate::aspect_ratio::AspectRatio;
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{NodeError, RenderingError};
+use crate::error::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
@@ -167,8 +167,8 @@ impl NodeTrait for FeImage {
                 // "path" is used by some older Adobe Illustrator versions
                 expanded_name!(xlink "href") | expanded_name!(svg "path") => {
                     let href = Href::parse(value).map_err(|_| {
-                        NodeError::parse_error(attr, "could not parse href")
-                    })?;
+                        ValueErrorKind::parse_error("could not parse href")
+                    }).attribute(attr)?;
 
                     self.href = Some(href);
                 }

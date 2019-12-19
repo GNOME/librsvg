@@ -8,7 +8,7 @@ use num_traits::identities::Zero;
 use rayon::prelude::*;
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
     light::{
@@ -32,7 +32,7 @@ use crate::filters::{
     PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers;
+use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
@@ -67,23 +67,21 @@ impl Common {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "surfaceScale") => {
-                    self.surface_scale = parsers::number(value).attribute(attr)?
-                }
+                expanded_name!(svg "surfaceScale") => self.surface_scale = attr.parse(value)?,
+
                 expanded_name!(svg "kernelUnitLength") => {
                     self.kernel_unit_length = Some(
                         parsers::number_optional_number(value)
-                            .attribute(attr.clone())
                             .and_then(|(x, y)| {
                                 if x > 0.0 && y > 0.0 {
                                     Ok((x, y))
                                 } else {
-                                    Err(NodeError::value_error(
-                                        attr,
+                                    Err(ValueErrorKind::value_error(
                                         "kernelUnitLength can't be less or equal to zero",
                                     ))
                                 }
-                            })?,
+                            })
+                            .attribute(attr)?,
                     )
                 }
                 _ => (),
@@ -118,18 +116,17 @@ impl NodeTrait for FeDiffuseLighting {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "diffuseConstant") => {
-                    self.diffuse_constant = parsers::number(value)
-                        .attribute(attr.clone())
+                    self.diffuse_constant = f64::parse_str(value)
                         .and_then(|x| {
                             if x >= 0.0 {
                                 Ok(x)
                             } else {
-                                Err(NodeError::value_error(
-                                    attr,
+                                Err(ValueErrorKind::value_error(
                                     "diffuseConstant can't be negative",
                                 ))
                             }
-                        })?;
+                        })
+                        .attribute(attr)?;
                 }
                 _ => (),
             }
@@ -190,32 +187,29 @@ impl NodeTrait for FeSpecularLighting {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "specularConstant") => {
-                    self.specular_constant = parsers::number(value)
-                        .attribute(attr.clone())
+                    self.specular_constant = f64::parse_str(value)
                         .and_then(|x| {
                             if x >= 0.0 {
                                 Ok(x)
                             } else {
-                                Err(NodeError::value_error(
-                                    attr,
+                                Err(ValueErrorKind::value_error(
                                     "specularConstant can't be negative",
                                 ))
                             }
-                        })?;
+                        })
+                        .attribute(attr)?;
                 }
                 expanded_name!(svg "specularExponent") => {
-                    self.specular_exponent = parsers::number(value)
-                        .attribute(attr.clone())
+                    self.specular_exponent = f64::parse_str(value)
                         .and_then(|x| {
                             if x >= 1.0 && x <= 128.0 {
                                 Ok(x)
                             } else {
-                                Err(NodeError::value_error(
-                                    attr,
+                                Err(ValueErrorKind::value_error(
                                     "specularExponent should be between 1.0 and 128.0",
                                 ))
                             }
-                        })?;
+                        }).attribute(attr)?;
                 }
                 _ => (),
             }

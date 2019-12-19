@@ -1,11 +1,11 @@
 //! The `Parse` trait for CSS properties, and utilities for parsers.
 
-use cssparser::{Parser, ParserInput, Token};
+use cssparser::{Parser, ParserInput};
 use markup5ever::QualName;
 
 use std::str;
 
-use crate::error::{NodeError, ValueErrorKind};
+use crate::error::*;
 
 /// Trait to parse values using `cssparser::Parser`.
 pub trait Parse: Sized {
@@ -29,23 +29,9 @@ pub trait Parse: Sized {
     }
 }
 
-/// Extra utility methods for `cssparser::Parser`.
-pub trait CssParserExt {
-    /// Avoid infinities.
-    fn expect_finite_number(&mut self) -> Result<f32, ValueErrorKind>;
-
-    /// Consumes a comma if it exists, or does nothing.
-    fn optional_comma(&mut self);
-}
-
-impl<'i, 't> CssParserExt for Parser<'i, 't> {
-    fn expect_finite_number(&mut self) -> Result<f32, ValueErrorKind> {
-        finite_f32(self.expect_number()?)
-    }
-
-    fn optional_comma(&mut self) {
-        let _ = self.try_parse(|p| p.expect_comma());
-    }
+/// Consumes a comma if it exists, or does nothing.
+pub fn optional_comma<'i, 't>(parser: &mut Parser<'i, 't>) {
+    let _ = parser.try_parse(|p| p.expect_comma());
 }
 
 pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
@@ -73,7 +59,7 @@ impl<T: Parse> ParseValue<T> for QualName {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser).map_err(|e| NodeError::new(self.clone(), e))
+        T::parse(&mut parser).attribute(self.clone())
     }
 
     fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
@@ -86,26 +72,39 @@ impl<T: Parse> ParseValue<T> for QualName {
 
         T::parse(&mut parser)
             .and_then(validate)
-            .map_err(|e| NodeError::new(self.clone(), e))
+            .attribute(self.clone())
     }
 }
 
 impl Parse for f64 {
+    /// Avoid infinities, and convert to `f64`.
+    /// https://www.w3.org/TR/SVG11/types.html#DataTypeNumber
     fn parse(parser: &mut Parser<'_, '_>) -> Result<f64, ValueErrorKind> {
-        Ok(f64::from(parser.expect_finite_number().map_err(|_| {
-            ValueErrorKind::Parse(String::from("expected number"))
-        })?))
+        parser
+            .expect_number()
+            .map_err(|_| ValueErrorKind::parse_error("parse error"))
+            .and_then(|n| Ok(f64::from(finite_f32(n)?)))
     }
 }
 
-// number
-//
-// https://www.w3.org/TR/SVG11/types.html#DataTypeNumber
-pub fn number(s: &str) -> Result<f64, ValueErrorKind> {
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
+pub trait ParseToParseError: Sized {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>>;
+}
 
-    Ok(f64::from(parser.expect_finite_number()?))
+impl ParseToParseError for f64 {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        parser
+            .expect_number()
+            .map_err(|e| e.into())
+            .and_then(|n| {
+                if n.is_finite() {
+                    Ok(f64::from(n))
+                } else {
+                    Err(loc.new_custom_error(ValueErrorKind::value_error("expected finite number")))
+                }
+            })
+    }
 }
 
 // number-optional-number
@@ -116,17 +115,12 @@ pub fn number_optional_number(s: &str) -> Result<(f64, f64), ValueErrorKind> {
     let mut input = ParserInput::new(s);
     let mut parser = Parser::new(&mut input);
 
-    let x = f64::from(parser.expect_finite_number()?);
+    let x = f64::parse(&mut parser)?;
 
     if !parser.is_exhausted() {
-        let state = parser.state();
+        optional_comma(&mut parser);
 
-        match *parser.next()? {
-            Token::Comma => {}
-            _ => parser.reset(&state),
-        };
-
-        let y = f64::from(parser.expect_finite_number()?);
+        let y = f64::parse(&mut parser)?;
 
         parser.expect_exhausted()?;
 
@@ -156,12 +150,7 @@ pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ValueErrorKind> {
     let x = parser.expect_integer()?;
 
     if !parser.is_exhausted() {
-        let state = parser.state();
-
-        match *parser.next()? {
-            Token::Comma => {}
-            _ => parser.reset(&state),
-        };
+        optional_comma(&mut parser);
 
         let y = parser.expect_integer()?;
 
@@ -171,6 +160,33 @@ pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ValueErrorKind> {
     } else {
         Ok((x, x))
     }
+}
+
+/// Parses a list of identifiers from a `cssparser::Parser`
+///
+/// # Example
+///
+/// ```ignore
+/// let my_boolean = parse_identifiers!(
+///     parser,
+///     "true" => true,
+///     "false" => false,
+/// )?;
+/// ```
+macro_rules! parse_identifiers {
+    ($parser:expr,
+     $($str:expr => $val:expr,)+) => {
+        {
+            let loc = $parser.current_source_location();
+            let token = $parser.next()?;
+
+            match token {
+                $(cssparser::Token::Ident(ref cow) if cow.eq_ignore_ascii_case($str) => Ok($val),)+
+
+                _ => Err(loc.new_basic_unexpected_token_error(token.clone()))
+            }
+        }
+    };
 }
 
 #[cfg(test)]

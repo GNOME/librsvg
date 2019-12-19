@@ -12,7 +12,7 @@ use crate::error::*;
 use crate::length::*;
 use crate::marker;
 use crate::node::*;
-use crate::parsers::{CssParserExt, Parse, ParseValue};
+use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::*;
 use crate::path_parser;
 use crate::properties::ComputedValues;
@@ -203,9 +203,9 @@ impl Parse for Points {
         let mut v = Vec::new();
 
         loop {
-            let x = f64::from(parser.expect_finite_number()?);
-            parser.optional_comma();
-            let y = f64::from(parser.expect_finite_number()?);
+            let x = f64::parse(parser)?;
+            optional_comma(parser);
+            let y = f64::parse(parser)?;
 
             v.push((x, y));
 
@@ -215,7 +215,7 @@ impl Parse for Points {
 
             match parser.next_including_whitespace() {
                 Ok(&Token::WhiteSpace(_)) => (),
-                _ => parser.optional_comma(),
+                _ => optional_comma(parser),
             }
         }
 

@@ -1,7 +1,7 @@
 //! Gradient paint servers; the `linearGradient` and `radialGradient` elements.
 
 use cairo;
-use cssparser::{self, CowRcStr, Parser, Token};
+use cssparser::{self, Parser};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
 
@@ -45,23 +45,12 @@ enum SpreadMethod {
 
 impl Parse for SpreadMethod {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<SpreadMethod, ValueErrorKind> {
-        let loc = parser.current_source_location();
-
-        parser
-            .expect_ident()
-            .and_then(|cow| match cow.as_ref() {
-                "pad" => Ok(SpreadMethod::Pad),
-                "reflect" => Ok(SpreadMethod::Reflect),
-                "repeat" => Ok(SpreadMethod::Repeat),
-                _ => Err(
-                    loc.new_basic_unexpected_token_error(Token::Ident(CowRcStr::from(
-                        cow.as_ref().to_string(),
-                    ))),
-                ),
-            })
-            .map_err(|_| {
-                ValueErrorKind::parse_error("expected 'pad' | 'reflect' | 'repeat'")
-            })
+        parse_identifiers!(
+            parser,
+            "pad" => SpreadMethod::Pad,
+            "reflect" => SpreadMethod::Reflect,
+            "repeat" => SpreadMethod::Repeat,
+        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

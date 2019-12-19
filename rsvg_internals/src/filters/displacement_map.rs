@@ -1,10 +1,11 @@
 use cairo::{self, ImageSurface};
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use cssparser::Parser;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers;
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
 
@@ -12,7 +13,7 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
 
 /// Enumeration of the color channels the displacement map can source.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy)]
 enum ColorChannel {
     R,
     G,
@@ -51,13 +52,15 @@ impl NodeTrait for FeDisplacementMap {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in2") => self.in2 = Some(Input::parse(attr, value)?),
-                expanded_name!(svg "scale") => self.scale = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "in2") => self.in2 = Some(attr.parse(value)?),
+                expanded_name!(svg "scale") => self.scale = attr.parse(value)?,
+
                 expanded_name!(svg "xChannelSelector") => {
-                    self.x_channel_selector = ColorChannel::parse(attr, value)?
+                    self.x_channel_selector = attr.parse(value)?
                 }
+
                 expanded_name!(svg "yChannelSelector") => {
-                    self.y_channel_selector = ColorChannel::parse(attr, value)?
+                    self.y_channel_selector = attr.parse(value)?
                 }
                 _ => (),
             }
@@ -143,14 +146,15 @@ impl FilterEffect for FeDisplacementMap {
     }
 }
 
-impl ColorChannel {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "R" => Ok(ColorChannel::R),
-            "G" => Ok(ColorChannel::G),
-            "B" => Ok(ColorChannel::B),
-            "A" => Ok(ColorChannel::A),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
-        }
+impl Parse for ColorChannel {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<ColorChannel, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "R" => ColorChannel::R,
+            "G" => ColorChannel::G,
+            "B" => ColorChannel::B,
+            "A" => ColorChannel::A,
+        )
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }

@@ -67,6 +67,9 @@ pub use crate::viewbox::ViewBox;
 pub mod log;
 
 #[macro_use]
+mod parsers;
+
+#[macro_use]
 mod coord_units;
 
 #[macro_use]
@@ -105,7 +108,6 @@ mod mask;
 mod node;
 mod number_list;
 mod paint_server;
-mod parsers;
 mod path_builder;
 mod path_parser;
 mod pattern;

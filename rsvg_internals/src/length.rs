@@ -47,8 +47,7 @@ use std::marker::PhantomData;
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
-use crate::parsers::Parse;
-use crate::parsers::finite_f32;
+use crate::parsers::{finite_f32, Parse};
 use crate::properties::ComputedValues;
 
 /// Units for length values.

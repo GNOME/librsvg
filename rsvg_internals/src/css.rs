@@ -265,7 +265,7 @@ impl<'i> AtRuleParser<'i> for RuleParser {
         &mut self,
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
-    ) -> Result<AtRuleType<Self::PreludeNoBlock, Self::PreludeBlock>, ParseError<'i, Self::Error>>
+    ) -> Result<AtRuleType<Self::PreludeNoBlock, Self::PreludeBlock>, cssparser::ParseError<'i, Self::Error>>
     {
         match_ignore_ascii_case! { &name,
             "import" => {
@@ -588,8 +588,7 @@ impl<'a> PartialOrd for Match<'a> {
 
 impl<'a> PartialEq for Match<'a> {
     fn eq(&self, other: &Self) -> bool {
-        self.origin == other.origin
-            && self.specificity == other.specificity
+        self.origin == other.origin && self.specificity == other.specificity
     }
 }
 

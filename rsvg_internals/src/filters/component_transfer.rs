@@ -1,19 +1,17 @@
 use std::cmp::min;
 
 use cairo::{self, ImageSurface};
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use cssparser::Parser;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
-use crate::parsers;
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    ImageSurfaceDataExt,
-    Pixel,
+    iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 
@@ -54,7 +52,6 @@ enum Channel {
 }
 
 /// Component transfer function types.
-#[derive(Debug, Clone, Copy)]
 enum FunctionType {
     Identity,
     Table,
@@ -63,16 +60,17 @@ enum FunctionType {
     Gamma,
 }
 
-impl FunctionType {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "identity" => Ok(FunctionType::Identity),
-            "table" => Ok(FunctionType::Table),
-            "discrete" => Ok(FunctionType::Discrete),
-            "linear" => Ok(FunctionType::Linear),
-            "gamma" => Ok(FunctionType::Gamma),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
-        }
+impl Parse for FunctionType {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FunctionType, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "identity" => FunctionType::Identity,
+            "table" => FunctionType::Table,
+            "discrete" => FunctionType::Discrete,
+            "linear" => FunctionType::Linear,
+            "gamma" => FunctionType::Gamma,
+        )
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -211,36 +209,27 @@ macro_rules! func_x {
                 for (attr, value) in pbag.iter() {
                     match attr.expanded() {
                         expanded_name!(svg "type") => {
-                            self.function_type = FunctionType::parse(attr, value)?
+                            self.function_type = attr.parse(value)?
                         }
                         expanded_name!(svg "tableValues") => {
                             let NumberList(v) =
                                 NumberList::parse_str(value, NumberListLength::Unbounded).map_err(
                                     |err| {
                                         if let NumberListError::Parse(err) = err {
-                                            NodeError::parse_error(attr, &err)
+                                            ValueErrorKind::parse_error(&err)
                                         } else {
                                             panic!("unexpected number list error");
                                         }
                                     },
-                                )?;
+                                ).attribute(attr)?;
                             self.table_values = v;
                         }
-                        expanded_name!(svg "slope") => {
-                            self.slope = parsers::number(value).attribute(attr)?
-                        }
-                        expanded_name!(svg "intercept") => {
-                            self.intercept = parsers::number(value).attribute(attr)?
-                        }
-                        expanded_name!(svg "amplitude") => {
-                            self.amplitude = parsers::number(value).attribute(attr)?
-                        }
-                        expanded_name!(svg "exponent") => {
-                            self.exponent = parsers::number(value).attribute(attr)?
-                        }
-                        expanded_name!(svg "offset") => {
-                            self.offset = parsers::number(value).attribute(attr)?
-                        }
+                        expanded_name!(svg "slope") => self.slope = attr.parse(value)?,
+                        expanded_name!(svg "intercept") => self.intercept = attr.parse(value)?,
+                        expanded_name!(svg "amplitude") => self.amplitude = attr.parse(value)?,
+                        expanded_name!(svg "exponent") => self.exponent = attr.parse(value)?,
+                        expanded_name!(svg "offset") => self.offset = attr.parse(value)?,
+
                         _ => (),
                     }
                 }

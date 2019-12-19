@@ -1,11 +1,11 @@
 use cairo::{self, ImageSurface};
-use cssparser::{CowRcStr, Parser, Token};
+use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, ValueErrorKind};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -66,12 +66,12 @@ impl NodeTrait for FeComposite {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in2") => self.in2 = Some(Input::parse(attr, value)?),
+                expanded_name!(svg "in2") => self.in2 = Some(attr.parse(value)?),
                 expanded_name!(svg "operator") => self.operator = attr.parse(value)?,
-                expanded_name!(svg "k1") => self.k1 = parsers::number(value).attribute(attr)?,
-                expanded_name!(svg "k2") => self.k2 = parsers::number(value).attribute(attr)?,
-                expanded_name!(svg "k3") => self.k3 = parsers::number(value).attribute(attr)?,
-                expanded_name!(svg "k4") => self.k4 = parsers::number(value).attribute(attr)?,
+                expanded_name!(svg "k1") => self.k1 = attr.parse(value)?,
+                expanded_name!(svg "k2") => self.k2 = attr.parse(value)?,
+                expanded_name!(svg "k3") => self.k3 = attr.parse(value)?,
+                expanded_name!(svg "k4") => self.k4 = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -213,24 +213,15 @@ impl FilterEffect for FeComposite {
 
 impl Parse for Operator {
     fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        let loc = parser.current_source_location();
-
-        parser
-            .expect_ident()
-            .and_then(|cow| match cow.as_ref() {
-                "over" => Ok(Operator::Over),
-                "in" => Ok(Operator::In),
-                "out" => Ok(Operator::Out),
-                "atop" => Ok(Operator::Atop),
-                "xor" => Ok(Operator::Xor),
-                "arithmetic" => Ok(Operator::Arithmetic),
-                _ => Err(
-                    loc.new_basic_unexpected_token_error(Token::Ident(CowRcStr::from(
-                        cow.as_ref().to_string(),
-                    ))),
-                ),
-            })
-            .map_err(|_| ValueErrorKind::Value("invalid operator value".to_string()))
+        parse_identifiers!(
+            parser,
+            "over" => Operator::Over,
+            "in" => Operator::In,
+            "out" => Operator::Out,
+            "atop" => Operator::Atop,
+            "xor" => Operator::Xor,
+            "arithmetic" => Operator::Arithmetic,
+        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 

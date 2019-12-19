@@ -1,12 +1,13 @@
 use cairo::{self, ImageSurface};
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use cssparser::Parser;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, NodeError};
+use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListError, NumberListLength};
-use crate::parsers;
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
@@ -23,6 +24,12 @@ enum OperationType {
     Saturate,
     HueRotate,
     LuminanceToAlpha,
+}
+
+impl Default for OperationType {
+    fn default() -> Self {
+        OperationType::Matrix
+    }
 }
 
 /// The `feColorMatrix` filter primitive.
@@ -49,12 +56,12 @@ impl NodeTrait for FeColorMatrix {
         self.base.set_atts(parent, pbag)?;
 
         // First, determine the operation type.
-        let mut operation_type = OperationType::Matrix;
+        let mut operation_type = Default::default();
         for (attr, value) in pbag
             .iter()
             .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "type"))
         {
-            operation_type = OperationType::parse(attr, value)?;
+            operation_type = attr.parse(value)?;
         }
 
         // Now read the matrix correspondingly.
@@ -79,8 +86,8 @@ impl NodeTrait for FeColorMatrix {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
                         let NumberList(v) =
-                            NumberList::parse_str(value, NumberListLength::Exact(20)).map_err(
-                                |err| {
+                            NumberList::parse_str(value, NumberListLength::Exact(20))
+                                .map_err(|err| {
                                     let err_str = match err {
                                         NumberListError::IncorrectNumberOfElements => {
                                             "incorrect number of elements: expected 20"
@@ -88,18 +95,19 @@ impl NodeTrait for FeColorMatrix {
                                         NumberListError::Parse(ref err) => &err,
                                     };
 
-                                    NodeError::parse_error(attr, err_str)
-                                },
-                            )?;
+                                    ValueErrorKind::parse_error(err_str)
+                                })
+                                .attribute(attr)?;
                         let matrix = Matrix4x5::from_row_slice(&v);
                         let mut matrix = matrix.fixed_resize(0.0);
                         matrix[(4, 4)] = 1.0;
                         matrix
                     }
                     OperationType::Saturate => {
-                        let s = parsers::number(value).attribute(attr.clone())?;
+                        let s: f64 = attr.parse(value)?;
                         if s < 0.0 || s > 1.0 {
-                            return Err(NodeError::value_error(attr, "expected value from 0 to 1"));
+                            return Err(ValueErrorKind::value_error("expected value from 0 to 1"))
+                                .attribute(attr);
                         }
 
                         #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -112,7 +120,7 @@ impl NodeTrait for FeColorMatrix {
                         )
                     }
                     OperationType::HueRotate => {
-                        let degrees = parsers::number(value).attribute(attr.clone())?;
+                        let degrees: f64 = attr.parse(value)?;
                         let (sin, cos) = degrees.to_radians().sin_cos();
 
                         #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -224,14 +232,14 @@ impl FilterEffect for FeColorMatrix {
     }
 }
 
-impl OperationType {
-    fn parse(attr: QualName, s: &str) -> Result<Self, NodeError> {
-        match s {
-            "matrix" => Ok(OperationType::Matrix),
-            "saturate" => Ok(OperationType::Saturate),
-            "hueRotate" => Ok(OperationType::HueRotate),
-            "luminanceToAlpha" => Ok(OperationType::LuminanceToAlpha),
-            _ => Err(NodeError::parse_error(attr, "invalid value")),
-        }
+impl Parse for OperationType {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+        parse_identifiers!(
+            parser,
+            "matrix" => OperationType::Matrix,
+            "saturate" => OperationType::Saturate,
+            "hueRotate" => OperationType::HueRotate,
+            "luminanceToAlpha" => OperationType::LuminanceToAlpha,
+        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
