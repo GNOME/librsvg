@@ -1,7 +1,7 @@
-use cssparser::{Parser, Token};
+use cssparser::{BasicParseError, Parser, Token};
 
 use crate::error::*;
-use crate::parsers::Parse;
+use crate::parsers::ParseToParseError;
 
 /// An enumeration of possible inputs for a filter primitive.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -19,11 +19,11 @@ pub enum Input {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CustomIdent(String);
 
-impl Parse for Input {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+impl ParseToParseError for Input {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         parser
             .try_parse(|p| {
-                parse_identifiers!(
+                Ok(parse_identifiers!(
                     p,
                     "SourceGraphic" => Input::SourceGraphic,
                     "SourceAlpha" => Input::SourceAlpha,
@@ -31,17 +31,17 @@ impl Parse for Input {
                     "BackgroundAlpha" => Input::BackgroundAlpha,
                     "FillPaint" => Input::FillPaint,
                     "StrokePaint" => Input::StrokePaint,
-                ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+                )?)
             })
-            .or_else(|_| {
-                let ident = CustomIdent::parse(parser)?;
+            .or_else(|_: BasicParseError| {
+                let ident = CustomIdent::parse_to_parse_error(parser)?;
                 Ok(Input::FilterOutput(ident))
             })
     }
 }
 
-impl Parse for CustomIdent {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+impl ParseToParseError for CustomIdent {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         let loc = parser.current_source_location();
         let token = parser.next()?;
 
@@ -70,17 +70,17 @@ mod tests {
     #[test]
     fn parses_custom_ident() {
         assert_eq!(
-            CustomIdent::parse_str("hello"),
+            CustomIdent::parse_str_to_parse_error("hello"),
             Ok(CustomIdent("hello".to_string()))
         );
     }
 
     #[test]
     fn invalid_custom_ident_yields_error() {
-        assert!(CustomIdent::parse_str("initial").is_err());
-        assert!(CustomIdent::parse_str("inherit").is_err());
-        assert!(CustomIdent::parse_str("unset").is_err());
-        assert!(CustomIdent::parse_str("default").is_err());
-        assert!(CustomIdent::parse_str("").is_err());
+        assert!(CustomIdent::parse_str_to_parse_error("initial").is_err());
+        assert!(CustomIdent::parse_str_to_parse_error("inherit").is_err());
+        assert!(CustomIdent::parse_str_to_parse_error("unset").is_err());
+        assert!(CustomIdent::parse_str_to_parse_error("default").is_err());
+        assert!(CustomIdent::parse_str_to_parse_error("").is_err());
     }
 }

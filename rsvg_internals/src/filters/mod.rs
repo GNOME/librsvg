@@ -13,7 +13,7 @@ use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers::{ParseValue, ParseValueToParseError};
+use crate::parsers::ParseValueToParseError;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
@@ -182,7 +182,7 @@ impl NodeTrait for Primitive {
                             check_units_vertical_and_ensure_nonnegative,
                         )?)
                 }
-                expanded_name!(svg "result") => self.result = Some(attr.parse(value)?),
+                expanded_name!(svg "result") => self.result = Some(attr.parse_to_parse_error(value)?),
                 _ => (),
             }
         }
@@ -218,7 +218,7 @@ impl NodeTrait for PrimitiveWithInput {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in") => self.in_ = Some(attr.parse(value)?),
+                expanded_name!(svg "in") => self.in_ = Some(attr.parse_to_parse_error(value)?),
                 _ => (),
             }
         }
