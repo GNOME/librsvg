@@ -195,7 +195,7 @@ impl NodeTrait for Marker {
                 }
                 expanded_name!(svg "orient") => self.orient = attr.parse(value)?,
                 expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
-                expanded_name!(svg "viewBox") => self.vbox = Some(attr.parse(value)?),
+                expanded_name!(svg "viewBox") => self.vbox = Some(attr.parse_to_parse_error(value)?),
                 _ => (),
             }
         }

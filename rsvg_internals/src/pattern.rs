@@ -124,7 +124,7 @@ impl NodeTrait for Pattern {
                 expanded_name!(svg "patternContentUnits") => {
                     self.common.content_units = Some(attr.parse(value)?)
                 }
-                expanded_name!(svg "viewBox") => self.common.vbox = Some(Some(attr.parse(value)?)),
+                expanded_name!(svg "viewBox") => self.common.vbox = Some(Some(attr.parse_to_parse_error(value)?)),
                 expanded_name!(svg "preserveAspectRatio") => {
                     self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }

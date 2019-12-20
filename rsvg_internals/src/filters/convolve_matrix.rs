@@ -6,7 +6,7 @@ use nalgebra::{DMatrix, Dynamic, VecStorage};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::number_list::{NumberList, NumberListError, NumberListLength};
+use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{self, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
@@ -163,11 +163,7 @@ impl NodeTrait for FeConvolveMatrix {
 
                 // #352: Parse as an unbounded list rather than exact length to prevent aborts due
                 //       to huge allocation attempts by underlying Vec::with_capacity().
-                let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
-                    .map_err(|err| match err {
-                        NumberListError::IncorrectNumberOfElements => unreachable!(),
-                        NumberListError::Parse(ref err) => ValueErrorKind::parse_error(&err),
-                    })
+                let NumberList(v) = NumberList::parse_str_to_parse_error(value, NumberListLength::Unbounded)
                     .attribute(attr.clone())?;
 
                 if v.len() != number_of_elements {

@@ -6,7 +6,7 @@ use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::number_list::{NumberList, NumberListError, NumberListLength};
+use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -85,19 +85,11 @@ impl NodeTrait for FeColorMatrix {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
-                        let NumberList(v) =
-                            NumberList::parse_str(value, NumberListLength::Exact(20))
-                                .map_err(|err| {
-                                    let err_str = match err {
-                                        NumberListError::IncorrectNumberOfElements => {
-                                            "incorrect number of elements: expected 20"
-                                        }
-                                        NumberListError::Parse(ref err) => &err,
-                                    };
-
-                                    ValueErrorKind::parse_error(err_str)
-                                })
-                                .attribute(attr)?;
+                        let NumberList(v) = NumberList::parse_str_to_parse_error(
+                            value,
+                            NumberListLength::Exact(20),
+                        )
+                        .attribute(attr)?;
                         let matrix = Matrix4x5::from_row_slice(&v);
                         let mut matrix = matrix.fixed_resize(0.0);
                         matrix[(4, 4)] = 1.0;
@@ -240,6 +232,7 @@ impl Parse for OperationType {
             "saturate" => OperationType::Saturate,
             "hueRotate" => OperationType::HueRotate,
             "luminanceToAlpha" => OperationType::LuminanceToAlpha,
-        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )
+        .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }

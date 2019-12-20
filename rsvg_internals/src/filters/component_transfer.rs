@@ -7,7 +7,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::number_list::{NumberList, NumberListError, NumberListLength};
+use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -213,15 +213,8 @@ macro_rules! func_x {
                         }
                         expanded_name!(svg "tableValues") => {
                             let NumberList(v) =
-                                NumberList::parse_str(value, NumberListLength::Unbounded).map_err(
-                                    |err| {
-                                        if let NumberListError::Parse(err) = err {
-                                            ValueErrorKind::parse_error(&err)
-                                        } else {
-                                            panic!("unexpected number list error");
-                                        }
-                                    },
-                                ).attribute(attr)?;
+                                NumberList::parse_str_to_parse_error(value, NumberListLength::Unbounded)
+                                .attribute(attr)?;
                             self.table_values = v;
                         }
                         expanded_name!(svg "slope") => self.slope = attr.parse(value)?,

@@ -196,7 +196,7 @@ impl NodeTrait for Svg {
                     self.h =
                         Some(attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?)
                 }
-                expanded_name!(svg "viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!(svg "viewBox") => self.vbox = attr.parse_to_parse_error(value).map(Some)?,
                 _ => (),
             }
         }
@@ -429,7 +429,7 @@ impl NodeTrait for Symbol {
                 expanded_name!(svg "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!(svg "viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!(svg "viewBox") => self.vbox = attr.parse_to_parse_error(value).map(Some)?,
                 _ => (),
             }
         }
