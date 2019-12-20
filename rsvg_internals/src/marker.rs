@@ -60,15 +60,17 @@ impl Default for MarkerOrient {
     }
 }
 
-impl Parse for MarkerOrient {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerOrient, ValueErrorKind> {
+impl ParseToParseError for MarkerOrient {
+    fn parse_to_parse_error<'i>(
+        parser: &mut Parser<'i, '_>,
+    ) -> Result<MarkerOrient, CssParseError<'i>> {
         if parser
             .try_parse(|p| p.expect_ident_matching("auto"))
             .is_ok()
         {
             Ok(MarkerOrient::Auto)
         } else {
-            Angle::parse(parser).map(MarkerOrient::Angle)
+            Angle::parse_to_parse_error(parser).map(MarkerOrient::Angle)
         }
     }
 }
@@ -186,16 +188,22 @@ impl NodeTrait for Marker {
                 expanded_name!(svg "refX") => self.ref_x = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "refY") => self.ref_y = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "markerWidth") => {
-                    self.width =
-                        attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                    self.width = attr.parse_to_parse_error_and_validate(
+                        value,
+                        Length::<Horizontal>::check_nonnegative,
+                    )?
                 }
                 expanded_name!(svg "markerHeight") => {
-                    self.height =
-                        attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                    self.height = attr.parse_to_parse_error_and_validate(
+                        value,
+                        Length::<Vertical>::check_nonnegative,
+                    )?
                 }
-                expanded_name!(svg "orient") => self.orient = attr.parse(value)?,
+                expanded_name!(svg "orient") => self.orient = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
-                expanded_name!(svg "viewBox") => self.vbox = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "viewBox") => {
+                    self.vbox = Some(attr.parse_to_parse_error(value)?)
+                }
                 _ => (),
             }
         }
@@ -823,33 +831,33 @@ mod parser_tests {
 
     #[test]
     fn parsing_invalid_marker_orient_yields_error() {
-        assert!(MarkerOrient::parse_str("").is_err());
-        assert!(MarkerOrient::parse_str("blah").is_err());
-        assert!(MarkerOrient::parse_str("45blah").is_err());
+        assert!(MarkerOrient::parse_str_to_parse_error("").is_err());
+        assert!(MarkerOrient::parse_str_to_parse_error("blah").is_err());
+        assert!(MarkerOrient::parse_str_to_parse_error("45blah").is_err());
     }
 
     #[test]
     fn parses_marker_orient() {
-        assert_eq!(MarkerOrient::parse_str("auto"), Ok(MarkerOrient::Auto));
+        assert_eq!(MarkerOrient::parse_str_to_parse_error("auto"), Ok(MarkerOrient::Auto));
 
         assert_eq!(
-            MarkerOrient::parse_str("0"),
+            MarkerOrient::parse_str_to_parse_error("0"),
             Ok(MarkerOrient::Angle(Angle::new(0.0)))
         );
         assert_eq!(
-            MarkerOrient::parse_str("180"),
+            MarkerOrient::parse_str_to_parse_error("180"),
             Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
         );
         assert_eq!(
-            MarkerOrient::parse_str("180deg"),
+            MarkerOrient::parse_str_to_parse_error("180deg"),
             Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
         );
         assert_eq!(
-            MarkerOrient::parse_str("-400grad"),
+            MarkerOrient::parse_str_to_parse_error("-400grad"),
             Ok(MarkerOrient::Angle(Angle::from_degrees(-360.0)))
         );
         assert_eq!(
-            MarkerOrient::parse_str("1rad"),
+            MarkerOrient::parse_str_to_parse_error("1rad"),
             Ok(MarkerOrient::Angle(Angle::new(1.0)))
         );
     }
