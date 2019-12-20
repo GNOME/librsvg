@@ -805,12 +805,8 @@ mod parser_tests {
 
     #[test]
     fn parsing_invalid_marker_units_yields_error() {
-        assert!(is_parse_error(
-            &MarkerUnits::parse_str("").map_err(|e| ValueErrorKind::from(e))
-        ));
-        assert!(is_parse_error(
-            &MarkerUnits::parse_str("foo").map_err(|e| ValueErrorKind::from(e))
-        ));
+        assert!(MarkerUnits::parse_str("").is_err());
+        assert!(MarkerUnits::parse_str("foo").is_err());
     }
 
     #[test]
@@ -827,15 +823,9 @@ mod parser_tests {
 
     #[test]
     fn parsing_invalid_marker_orient_yields_error() {
-        assert!(is_parse_error(
-            &MarkerOrient::parse_str("").map_err(|e| ValueErrorKind::from(e))
-        ));
-        assert!(is_parse_error(
-            &MarkerOrient::parse_str("blah").map_err(|e| ValueErrorKind::from(e))
-        ));
-        assert!(is_parse_error(
-            &MarkerOrient::parse_str("45blah").map_err(|e| ValueErrorKind::from(e))
-        ));
+        assert!(MarkerOrient::parse_str("").is_err());
+        assert!(MarkerOrient::parse_str("blah").is_err());
+        assert!(MarkerOrient::parse_str("45blah").is_err());
     }
 
     #[test]

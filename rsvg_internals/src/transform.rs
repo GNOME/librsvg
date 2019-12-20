@@ -220,7 +220,7 @@ mod tests {
     }
 
     fn assert_parse_error(s: &str) {
-        assert!(is_parse_error(&parse_transform(s)));
+        assert!(parse_transform(s).is_err());
     }
 
     #[test]

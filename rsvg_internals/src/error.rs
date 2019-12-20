@@ -367,19 +367,3 @@ impl From<glib::Error> for LoadingError {
         LoadingError::Glib(e)
     }
 }
-
-#[cfg(test)]
-pub fn is_parse_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
-    match *r {
-        Err(ValueErrorKind::Parse(_)) => true,
-        _ => false,
-    }
-}
-
-#[cfg(test)]
-pub fn is_value_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
-    match *r {
-        Err(ValueErrorKind::Value(_)) => true,
-        _ => false,
-    }
-}
