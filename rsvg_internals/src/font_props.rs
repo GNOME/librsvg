@@ -1,6 +1,6 @@
 //! CSS font properties.
 
-use cssparser::{BasicParseError, Parser};
+use cssparser::Parser;
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
@@ -184,30 +184,33 @@ impl ParseToParseError for LetterSpacingSpec {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SingleFontFamily(pub String);
 
-impl Parse for SingleFontFamily {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<SingleFontFamily, ValueErrorKind> {
-        parse_single_font_family(parser)
-            .map_err(|_| ValueErrorKind::parse_error("expected font family"))
+impl ParseToParseError for SingleFontFamily {
+    fn parse_to_parse_error<'i>(
+        parser: &mut Parser<'i, '_>,
+    ) -> Result<SingleFontFamily, CssParseError<'i>> {
+        let loc = parser.current_source_location();
+
+        if let Ok(cow) = parser.try_parse(|p| p.expect_string_cloned()) {
+            if cow == "" {
+                return Err(loc.new_custom_error(ValueErrorKind::value_error(
+                    "empty string is not a valid font family name",
+                )));
+            }
+
+            return Ok(SingleFontFamily((*cow).to_owned()));
+        }
+
+        let first_ident = parser.expect_ident()?.clone();
+
+        let mut value = first_ident.as_ref().to_owned();
+
+        while let Ok(cow) = parser.try_parse(|p| p.expect_ident_cloned()) {
+            value.push(' ');
+            value.push_str(&cow);
+        }
+
+        Ok(SingleFontFamily(value))
     }
-}
-
-fn parse_single_font_family<'i>(
-    parser: &'i mut Parser<'_, '_>,
-) -> Result<SingleFontFamily, BasicParseError<'i>> {
-    if let Ok(cow) = parser.try_parse(|p| p.expect_string_cloned()) {
-        return Ok(SingleFontFamily((*cow).to_owned()));
-    }
-
-    let first_ident = parser.expect_ident()?.clone();
-
-    let mut value = first_ident.as_ref().to_owned();
-
-    while let Ok(cow) = parser.try_parse(|p| p.expect_ident_cloned()) {
-        value.push(' ');
-        value.push_str(&cow);
-    }
-
-    Ok(SingleFontFamily(value))
 }
 
 #[cfg(test)]
@@ -261,14 +264,16 @@ mod tests {
     #[test]
     fn computes_letter_spacing() {
         assert_eq!(
-            <LetterSpacingSpec as ParseToParseError>::parse_str_to_parse_error("normal").map(|s| s.compute()),
+            <LetterSpacingSpec as ParseToParseError>::parse_str_to_parse_error("normal")
+                .map(|s| s.compute()),
             Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
                 0.0,
                 LengthUnit::Px,
             )))
         );
         assert_eq!(
-            <LetterSpacingSpec as ParseToParseError>::parse_str_to_parse_error("10em").map(|s| s.compute()),
+            <LetterSpacingSpec as ParseToParseError>::parse_str_to_parse_error("10em")
+                .map(|s| s.compute()),
             Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
                 10.0,
                 LengthUnit::Em,
@@ -284,32 +289,30 @@ mod tests {
     #[test]
     fn parses_font_family() {
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("'Hello world'"),
+            <SingleFontFamily as ParseToParseError>::parse_str_to_parse_error("'Hello world'"),
             Ok(SingleFontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("\"Hello world\""),
+            <SingleFontFamily as ParseToParseError>::parse_str_to_parse_error("\"Hello world\""),
             Ok(SingleFontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("  Hello  world  "),
+            <SingleFontFamily as ParseToParseError>::parse_str_to_parse_error("  Hello  world  "),
             Ok(SingleFontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("Plonk"),
+            <SingleFontFamily as ParseToParseError>::parse_str_to_parse_error("Plonk"),
             Ok(SingleFontFamily("Plonk".to_owned()))
         );
     }
 
     #[test]
     fn detects_invalid_font_family() {
-        assert!(<SingleFontFamily as Parse>::parse_str("").is_err());
-
-        // assert!(<SingleFontFamily as Parse>::parse_str("''").is_err());
-
-        assert!(<SingleFontFamily as Parse>::parse_str("42").is_err());
+        assert!(<SingleFontFamily as ParseToParseError>::parse_str_to_parse_error("").is_err());
+        assert!(<SingleFontFamily as ParseToParseError>::parse_str_to_parse_error("''").is_err());
+        assert!(<SingleFontFamily as ParseToParseError>::parse_str_to_parse_error("42").is_err());
     }
 }

@@ -223,7 +223,7 @@ make_property!(
     FontFamily,
     default: SingleFontFamily("Times New Roman".to_string()),
     inherits_automatically: true,
-    newtype_parse: SingleFontFamily,
+    newtype_parse_to_parse_error: SingleFontFamily,
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontSizeProperty

@@ -194,7 +194,7 @@ macro_rules! impl_property {
 mod tests {
     use super::*;
 
-    use crate::parsers::{Parse, ParseToParseError};
+    use crate::parsers::ParseToParseError;
     use cssparser::RGBA;
 
     #[test]

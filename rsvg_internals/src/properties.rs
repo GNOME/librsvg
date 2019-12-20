@@ -273,7 +273,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
 
         expanded_name!(svg "font-family") =>
-            Ok(ParsedProperty::FontFamily(parse_input(input)?)),
+            Ok(ParsedProperty::FontFamily(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "font-size") =>
             Ok(ParsedProperty::FontSize(parse_input_to_parse_error(input)?)),
