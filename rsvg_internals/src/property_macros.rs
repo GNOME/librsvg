@@ -77,6 +77,25 @@ macro_rules! make_property {
     ($computed_values_type: ty,
      $name: ident,
      default: $default: expr,
+     inherits_automatically: $inherits_automatically: expr,
+     newtype_parse_to_parse_error: $type: ty,
+    ) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct $name(pub $type);
+
+        impl_default!($name, $name($default));
+        impl_property!($computed_values_type, $name, $inherits_automatically);
+
+        impl crate::parsers::ParseToParseError for $name {
+            fn parse_to_parse_error<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::CssParseError<'i>> {
+                Ok($name(<$type as crate::parsers::ParseToParseError>::parse_to_parse_error(parser)?))
+            }
+        }
+    };
+
+    ($computed_values_type: ty,
+     $name: ident,
+     default: $default: expr,
      newtype_parse: $type: ty,
      property_impl: { $prop: item }
     ) => {
@@ -87,9 +106,9 @@ macro_rules! make_property {
 
         $prop
 
-        impl crate::parsers::Parse for $name {
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
-                Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
+        impl crate::parsers::ParseToParseError for $name {
+            fn parse_to_parse_error<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::CssParseError<'i>> {
+                Ok($name(<$type as crate::parsers::ParseToParseError>::parse_to_parse_error(parser)?))
             }
         }
     };
@@ -224,7 +243,7 @@ mod tests {
         }
 
         let color = RGBA::new(1, 1, 1, 1);
-        let a = <AddColor as Parse>::parse_str("#02030405").unwrap();
+        let a = <AddColor as ParseToParseError>::parse_str_to_parse_error("#02030405").unwrap();
         let b = a.compute(&color);
 
         assert_eq!(b, AddColor(RGBA::new(3, 4, 5, 6)));

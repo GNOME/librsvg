@@ -240,7 +240,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::ClipRule(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "color") =>
-            Ok(ParsedProperty::Color(parse_input(input)?)),
+            Ok(ParsedProperty::Color(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "color-interpolation-filters") =>
             Ok(ParsedProperty::ColorInterpolationFilters(parse_input_to_parse_error(input)?)),
@@ -267,7 +267,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::Filter(parse_input(input)?)),
 
         expanded_name!(svg "flood-color") =>
-            Ok(ParsedProperty::FloodColor(parse_input(input)?)),
+            Ok(ParsedProperty::FloodColor(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "flood-opacity") =>
             Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
@@ -276,7 +276,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::FontFamily(parse_input(input)?)),
 
         expanded_name!(svg "font-size") =>
-            Ok(ParsedProperty::FontSize(parse_input(input)?)),
+            Ok(ParsedProperty::FontSize(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "font-stretch") =>
             Ok(ParsedProperty::FontStretch(parse_input_to_parse_error(input)?)),
@@ -291,10 +291,10 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::FontWeight(parse_input(input)?)),
 
         expanded_name!(svg "letter-spacing") =>
-            Ok(ParsedProperty::LetterSpacing(parse_input(input)?)),
+            Ok(ParsedProperty::LetterSpacing(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "lighting-color") =>
-            Ok(ParsedProperty::LightingColor(parse_input(input)?)),
+            Ok(ParsedProperty::LightingColor(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "marker") => {
             if accept_shorthands {
@@ -326,7 +326,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::ShapeRendering(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stop-color") =>
-            Ok(ParsedProperty::StopColor(parse_input(input)?)),
+            Ok(ParsedProperty::StopColor(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stop-opacity") =>
             Ok(ParsedProperty::StopOpacity(parse_input(input)?)),

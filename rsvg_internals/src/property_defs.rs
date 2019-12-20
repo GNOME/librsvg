@@ -93,7 +93,7 @@ make_property!(
     // surrounding text.
     default: cssparser::RGBA::new(0, 0, 0, 0xff),
     inherits_automatically: true,
-    newtype_parse: cssparser::RGBA,
+    newtype_parse_to_parse_error: cssparser::RGBA,
 );
 
 // https://www.w3.org/TR/SVG11/painting.html#ColorInterpolationProperty
@@ -205,7 +205,7 @@ make_property!(
     FloodColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
     inherits_automatically: false,
-    newtype_parse: cssparser::Color,
+    newtype_parse_to_parse_error: cssparser::Color,
 );
 
 // https://www.w3.org/TR/SVG/filters.html#FloodOpacityProperty
@@ -325,7 +325,7 @@ make_property!(
     LightingColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
     inherits_automatically: false,
-    newtype_parse: cssparser::Color,
+    newtype_parse_to_parse_error: cssparser::Color,
 );
 
 make_property!(
@@ -415,7 +415,7 @@ make_property!(
     StopColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
-    newtype_parse: cssparser::Color,
+    newtype_parse_to_parse_error: cssparser::Color,
 );
 
 // https://www.w3.org/TR/SVG/pservers.html#StopOpacityProperty

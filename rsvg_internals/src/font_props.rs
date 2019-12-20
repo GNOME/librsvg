@@ -5,7 +5,7 @@ use cssparser::{BasicParseError, Parser};
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::length::*;
-use crate::parsers::Parse;
+use crate::parsers::{Parse, ParseToParseError};
 use crate::properties::ComputedValues;
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
@@ -60,13 +60,15 @@ impl FontSizeSpec {
     }
 }
 
-impl Parse for FontSizeSpec {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, crate::error::ValueErrorKind> {
+impl ParseToParseError for FontSizeSpec {
+    fn parse_to_parse_error<'i>(
+        parser: &mut Parser<'i, '_>,
+    ) -> Result<FontSizeSpec, CssParseError<'i>> {
         parser
             .try_parse(|p| Length::<Both>::parse(p))
             .and_then(|l| Ok(FontSizeSpec::Value(l)))
             .or_else(|_| {
-                parse_identifiers!(
+                Ok(parse_identifiers!(
                     parser,
                     "smaller" => FontSizeSpec::Smaller,
                     "larger" => FontSizeSpec::Larger,
@@ -77,9 +79,8 @@ impl Parse for FontSizeSpec {
                     "large" => FontSizeSpec::Large,
                     "x-large" => FontSizeSpec::XLarge,
                     "xx-large" => FontSizeSpec::XXLarge,
-                )
+                )?)
             })
-            .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -102,7 +103,7 @@ pub enum FontWeightSpec {
 }
 
 impl Parse for FontWeightSpec {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, crate::error::ValueErrorKind> {
+    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, ValueErrorKind> {
         parser
             .try_parse(|p| {
                 parse_identifiers!(
@@ -163,20 +164,19 @@ impl LetterSpacingSpec {
     }
 }
 
-impl Parse for LetterSpacingSpec {
-    fn parse(
-        parser: &mut Parser<'_, '_>,
-    ) -> Result<LetterSpacingSpec, crate::error::ValueErrorKind> {
+impl ParseToParseError for LetterSpacingSpec {
+    fn parse_to_parse_error<'i>(
+        parser: &mut Parser<'i, '_>,
+    ) -> Result<LetterSpacingSpec, CssParseError<'i>> {
         parser
             .try_parse(|p| Length::<Horizontal>::parse(p))
             .and_then(|l| Ok(LetterSpacingSpec::Value(l)))
             .or_else(|_| {
-                parse_identifiers!(
+                Ok(parse_identifiers!(
                     parser,
                     "normal" => LetterSpacingSpec::Normal,
-                )
+                )?)
             })
-            .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn detects_invalid_invalid_font_size() {
-        assert!(is_parse_error(&FontSizeSpec::parse_str("furlong")));
+        assert!(FontSizeSpec::parse_str_to_parse_error("furlong").is_err());
     }
 
     #[test]
@@ -246,11 +246,11 @@ mod tests {
     #[test]
     fn parses_letter_spacing() {
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("normal"),
+            <LetterSpacingSpec as ParseToParseError>::parse_str_to_parse_error("normal"),
             Ok(LetterSpacingSpec::Normal)
         );
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("10em"),
+            <LetterSpacingSpec as ParseToParseError>::parse_str_to_parse_error("10em"),
             Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
                 10.0,
                 LengthUnit::Em,
@@ -261,14 +261,14 @@ mod tests {
     #[test]
     fn computes_letter_spacing() {
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("normal").map(|s| s.compute()),
+            <LetterSpacingSpec as ParseToParseError>::parse_str_to_parse_error("normal").map(|s| s.compute()),
             Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
                 0.0,
                 LengthUnit::Px,
             )))
         );
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("10em").map(|s| s.compute()),
+            <LetterSpacingSpec as ParseToParseError>::parse_str_to_parse_error("10em").map(|s| s.compute()),
             Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
                 10.0,
                 LengthUnit::Em,
@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn detects_invalid_invalid_letter_spacing() {
-        assert!(is_parse_error(&LetterSpacingSpec::parse_str("furlong")));
+        assert!(LetterSpacingSpec::parse_str_to_parse_error("furlong").is_err());
     }
 
     #[test]
