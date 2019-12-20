@@ -76,6 +76,40 @@ impl<T: Parse> ParseValue<T> for QualName {
     }
 }
 
+pub trait ParseValueToParseError<T: ParseToParseError> {
+    /// Parses a `value` string into a type `T`.
+    fn parse_to_parse_error(&self, value: &str) -> Result<T, NodeError>;
+
+    /// Parses a `value` string into a type `T` with an optional validation function.
+    fn parse_to_parse_error_and_validate<'i, F: FnOnce(T) -> Result<T, CssParseError<'i>>>(
+        &self,
+        value: &'i str,
+        validate: F,
+    ) -> Result<T, NodeError>;
+}
+
+impl<T: ParseToParseError> ParseValueToParseError<T> for QualName {
+    fn parse_to_parse_error(&self, value: &str) -> Result<T, NodeError> {
+        let mut input = ParserInput::new(value);
+        let mut parser = Parser::new(&mut input);
+
+        T::parse_to_parse_error(&mut parser).attribute(self.clone())
+    }
+
+    fn parse_to_parse_error_and_validate<'i, F: FnOnce(T) -> Result<T, CssParseError<'i>>>(
+        &self,
+        value: &'i str,
+        validate: F,
+    ) -> Result<T, NodeError> {
+        let mut input = ParserInput::new(value);
+        let mut parser = Parser::new(&mut input);
+
+        T::parse_to_parse_error(&mut parser)
+            .and_then(validate)
+            .attribute(self.clone())
+    }
+}
+
 impl Parse for f64 {
     /// Avoid infinities, and convert to `f64`.
     /// https://www.w3.org/TR/SVG11/types.html#DataTypeNumber
