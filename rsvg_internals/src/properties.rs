@@ -258,7 +258,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::Fill(parse_input(input)?)),
 
         expanded_name!(svg "fill-opacity") =>
-            Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
+            Ok(ParsedProperty::FillOpacity(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "fill-rule") =>
             Ok(ParsedProperty::FillRule(parse_input_to_parse_error(input)?)),
@@ -270,7 +270,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::FloodColor(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "flood-opacity") =>
-            Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
+            Ok(ParsedProperty::FloodOpacity(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "font-family") =>
             Ok(ParsedProperty::FontFamily(parse_input_to_parse_error(input)?)),
@@ -317,7 +317,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::Mask(parse_input(input)?)),
 
         expanded_name!(svg "opacity") =>
-            Ok(ParsedProperty::Opacity(parse_input(input)?)),
+            Ok(ParsedProperty::Opacity(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "overflow") =>
             Ok(ParsedProperty::Overflow(parse_input_to_parse_error(input)?)),
@@ -329,7 +329,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::StopColor(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stop-opacity") =>
-            Ok(ParsedProperty::StopOpacity(parse_input(input)?)),
+            Ok(ParsedProperty::StopOpacity(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke") =>
             Ok(ParsedProperty::Stroke(parse_input(input)?)),
@@ -350,7 +350,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
 
         expanded_name!(svg "stroke-opacity") =>
-            Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
+            Ok(ParsedProperty::StrokeOpacity(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-width") =>
             Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),

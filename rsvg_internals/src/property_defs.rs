@@ -175,7 +175,7 @@ make_property!(
     FillOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
-    newtype_parse: UnitInterval,
+    newtype_parse_to_parse_error: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#FillRuleProperty
@@ -214,7 +214,7 @@ make_property!(
     FloodOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
-    newtype_parse: UnitInterval,
+    newtype_parse_to_parse_error: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
@@ -378,7 +378,7 @@ make_property!(
     Opacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
-    newtype_parse: UnitInterval,
+    newtype_parse_to_parse_error: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#OverflowProperty
@@ -424,7 +424,7 @@ make_property!(
     StopOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
-    newtype_parse: UnitInterval,
+    newtype_parse_to_parse_error: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeProperty
@@ -495,7 +495,7 @@ make_property!(
     StrokeOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
-    newtype_parse: UnitInterval,
+    newtype_parse_to_parse_error: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeWidthProperty
