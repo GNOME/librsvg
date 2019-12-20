@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration};
 use crate::error::*;
-use crate::parsers::Parse;
+use crate::parsers::{Parse, ParseToParseError};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::*;
 use crate::property_macros::Property;
@@ -628,5 +628,20 @@ where
         Ok(SpecifiedValue::Inherit)
     } else {
         Parse::parse(input).map(SpecifiedValue::Specified)
+    }
+}
+
+// Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
+fn parse_input_to_parse_error<'i, T>(input: &mut Parser<'i, '_>) -> Result<SpecifiedValue<T>, ParseError<'i>>
+where
+    T: Property<ComputedValues> + Clone + Default + ParseToParseError,
+{
+    if input
+        .try_parse(|p| p.expect_ident_matching("inherit"))
+        .is_ok()
+    {
+        Ok(SpecifiedValue::Inherit)
+    } else {
+        ParseToParseError::parse_to_parse_error(input).map(SpecifiedValue::Specified)
     }
 }
