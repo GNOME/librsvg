@@ -89,6 +89,15 @@ impl Parse for f64 {
 
 pub trait ParseToParseError: Sized {
     fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>>;
+    fn parse_str_to_parse_error<'i>(s: &'i str) -> Result<Self, CssParseError<'i>> {
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
+        Self::parse_to_parse_error(&mut parser).and_then(|r| {
+            // FIXME: parser.expect_exhausted()?;
+            Ok(r)
+        })
+    }
 }
 
 impl ParseToParseError for f64 {

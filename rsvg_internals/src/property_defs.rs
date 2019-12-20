@@ -1,6 +1,6 @@
 //! Definitions for CSS property types.
 
-use cssparser::{self, Parser};
+use cssparser::{self, Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
@@ -8,7 +8,7 @@ use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleF
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
-use crate::parsers::Parse;
+use crate::parsers::{Parse, ParseToParseError};
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::unit_interval::UnitInterval;
@@ -533,8 +533,8 @@ make_property!(
     }
 
     parse_impl: {
-        impl Parse for TextDecoration {
-            fn parse(parser: &mut Parser<'_, '_>) -> Result<TextDecoration, ValueErrorKind> {
+        impl ParseToParseError for TextDecoration {
+            fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<TextDecoration, CssParseError<'i>> {
                 let mut overline = false;
                 let mut underline = false;
                 let mut strike = false;
@@ -544,15 +544,14 @@ make_property!(
                 }
 
                 while !parser.is_exhausted() {
-                    let cow = parser.expect_ident().map_err(|_| {
-                        crate::error::ValueErrorKind::parse_error("expected identifier")
-                    })?;
+                    let loc = parser.current_source_location();
+                    let token = parser.next()?;
 
-                    match cow.as_ref() {
-                        "overline" => overline = true,
-                        "underline" => underline = true,
-                        "line-through" => strike = true,
-                        _ => return Err(ValueErrorKind::parse_error("invalid syntax")),
+                    match token {
+                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("overline") => overline = true,
+                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("underline") => underline = true,
+                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("line-through") => strike = true,
+                        _ => Err(loc.new_basic_unexpected_token_error(token.clone()))?,
                     }
                 }
 
@@ -570,7 +569,7 @@ make_property!(
 #[test]
 fn parses_text_decoration() {
     assert_eq!(
-        TextDecoration::parse_str("none").unwrap(),
+        TextDecoration::parse_str_to_parse_error("none").unwrap(),
         TextDecoration {
             overline: false,
             underline: false,
@@ -579,7 +578,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str("overline").unwrap(),
+        TextDecoration::parse_str_to_parse_error("overline").unwrap(),
         TextDecoration {
             overline: true,
             underline: false,
@@ -588,7 +587,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str("underline").unwrap(),
+        TextDecoration::parse_str_to_parse_error("underline").unwrap(),
         TextDecoration {
             overline: false,
             underline: true,
@@ -597,7 +596,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str("line-through").unwrap(),
+        TextDecoration::parse_str_to_parse_error("line-through").unwrap(),
         TextDecoration {
             overline: false,
             underline: false,
@@ -606,7 +605,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str("underline overline").unwrap(),
+        TextDecoration::parse_str_to_parse_error("underline overline").unwrap(),
         TextDecoration {
             overline: true,
             underline: true,
@@ -614,7 +613,7 @@ fn parses_text_decoration() {
         }
     );
 
-    assert!(TextDecoration::parse_str("airline").is_err())
+    assert!(TextDecoration::parse_str_to_parse_error("airline").is_err())
 }
 
 // https://www.w3.org/TR/SVG/painting.html#TextRenderingProperty

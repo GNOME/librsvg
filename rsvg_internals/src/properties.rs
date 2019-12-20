@@ -359,7 +359,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
 
         expanded_name!(svg "text-decoration") =>
-            Ok(ParsedProperty::TextDecoration(parse_input(input)?)),
+            Ok(ParsedProperty::TextDecoration(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "text-rendering") =>
             Ok(ParsedProperty::TextRendering(parse_input(input)?)),
