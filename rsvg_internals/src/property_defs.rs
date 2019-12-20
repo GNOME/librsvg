@@ -66,7 +66,7 @@ make_property!(
     ClipPath,
     default: IRI::None,
     inherits_automatically: false,
-    newtype_parse: IRI,
+    newtype_parse_to_parse_error: IRI,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#ClipRuleProperty
@@ -196,7 +196,7 @@ make_property!(
     Filter,
     default: IRI::None,
     inherits_automatically: false,
-    newtype_parse: IRI,
+    newtype_parse_to_parse_error: IRI,
 );
 
 // https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
@@ -333,7 +333,7 @@ make_property!(
     Marker,
     default: IRI::None,
     inherits_automatically: true,
-    newtype_parse: IRI,
+    newtype_parse_to_parse_error: IRI,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerEndProperty
@@ -342,7 +342,7 @@ make_property!(
     MarkerEnd,
     default: IRI::None,
     inherits_automatically: true,
-    newtype_parse: IRI,
+    newtype_parse_to_parse_error: IRI,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerMidProperty
@@ -351,7 +351,7 @@ make_property!(
     MarkerMid,
     default: IRI::None,
     inherits_automatically: true,
-    newtype_parse: IRI,
+    newtype_parse_to_parse_error: IRI,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerStartProperty
@@ -360,7 +360,7 @@ make_property!(
     MarkerStart,
     default: IRI::None,
     inherits_automatically: true,
-    newtype_parse: IRI,
+    newtype_parse_to_parse_error: IRI,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#MaskProperty
@@ -369,7 +369,7 @@ make_property!(
     Mask,
     default: IRI::None,
     inherits_automatically: false,
-    newtype_parse: IRI,
+    newtype_parse_to_parse_error: IRI,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#OpacityProperty

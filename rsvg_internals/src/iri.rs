@@ -3,8 +3,8 @@
 use cssparser::Parser;
 
 use crate::allowed_url::{Fragment, Href};
-use crate::error::ValueErrorKind;
-use crate::parsers::Parse;
+use crate::error::*;
+use crate::parsers::ParseToParseError;
 
 /// Used where style properties take a funciri or "none"
 ///
@@ -34,24 +34,27 @@ impl IRI {
     }
 }
 
-impl Parse for IRI {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<IRI, ValueErrorKind> {
+impl ParseToParseError for IRI {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<IRI, CssParseError<'i>> {
         if parser
             .try_parse(|i| i.expect_ident_matching("none"))
             .is_ok()
         {
             Ok(IRI::None)
         } else {
+            let loc = parser.current_source_location();
+
             let url = parser.expect_url()?;
             parser.expect_exhausted()?;
 
-            let href = Href::parse(&url)
-                .map_err(|_| ValueErrorKind::parse_error("could not parse href"))?;
+            let href = Href::parse(&url).map_err(|_| {
+                loc.new_custom_error(ValueErrorKind::parse_error("could not parse href"))
+            })?;
 
             match href {
-                Href::PlainUrl(_) => Err(ValueErrorKind::parse_error(
+                Href::PlainUrl(_) => Err(loc.new_custom_error(ValueErrorKind::parse_error(
                     "href requires a fragment identifier",
-                ))?,
+                )))?,
                 Href::WithFragment(f) => Ok(IRI::Resource(f)),
             }
         }
@@ -64,18 +67,18 @@ mod tests {
 
     #[test]
     fn parses_none() {
-        assert_eq!(IRI::parse_str("none"), Ok(IRI::None));
+        assert_eq!(IRI::parse_str_to_parse_error("none"), Ok(IRI::None));
     }
 
     #[test]
     fn parses_url() {
         assert_eq!(
-            IRI::parse_str("url(#bar)"),
+            IRI::parse_str_to_parse_error("url(#bar)"),
             Ok(IRI::Resource(Fragment::new(None, "bar".to_string())))
         );
 
         assert_eq!(
-            IRI::parse_str("url(foo#bar)"),
+            IRI::parse_str_to_parse_error("url(foo#bar)"),
             Ok(IRI::Resource(Fragment::new(
                 Some("foo".to_string()),
                 "bar".to_string()
@@ -84,19 +87,19 @@ mod tests {
 
         // be permissive if the closing ) is missing
         assert_eq!(
-            IRI::parse_str("url(#bar"),
+            IRI::parse_str_to_parse_error("url(#bar"),
             Ok(IRI::Resource(Fragment::new(None, "bar".to_string())))
         );
         assert_eq!(
-            IRI::parse_str("url(foo#bar"),
+            IRI::parse_str_to_parse_error("url(foo#bar"),
             Ok(IRI::Resource(Fragment::new(
                 Some("foo".to_string()),
                 "bar".to_string()
             )))
         );
 
-        assert!(IRI::parse_str("").is_err());
-        assert!(IRI::parse_str("foo").is_err());
-        assert!(IRI::parse_str("url(foo)bar").is_err());
+        assert!(IRI::parse_str_to_parse_error("").is_err());
+        assert!(IRI::parse_str_to_parse_error("foo").is_err());
+        assert!(IRI::parse_str_to_parse_error("url(foo)bar").is_err());
     }
 }

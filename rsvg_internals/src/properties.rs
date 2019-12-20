@@ -234,7 +234,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
 
         expanded_name!(svg "clip-path") =>
-            Ok(ParsedProperty::ClipPath(parse_input(input)?)),
+            Ok(ParsedProperty::ClipPath(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "clip-rule") =>
             Ok(ParsedProperty::ClipRule(parse_input_to_parse_error(input)?)),
@@ -264,7 +264,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::FillRule(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "filter") =>
-            Ok(ParsedProperty::Filter(parse_input(input)?)),
+            Ok(ParsedProperty::Filter(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "flood-color") =>
             Ok(ParsedProperty::FloodColor(parse_input_to_parse_error(input)?)),
@@ -298,23 +298,23 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
 
         expanded_name!(svg "marker") => {
             if accept_shorthands {
-                Ok(ParsedProperty::Marker(parse_input(input)?))
+                Ok(ParsedProperty::Marker(parse_input_to_parse_error(input)?))
             } else {
                 Err(ValueErrorKind::UnknownProperty)?
             }
         }
 
         expanded_name!(svg "marker-end") =>
-            Ok(ParsedProperty::MarkerEnd(parse_input(input)?)),
+            Ok(ParsedProperty::MarkerEnd(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "marker-mid") =>
-            Ok(ParsedProperty::MarkerMid(parse_input(input)?)),
+            Ok(ParsedProperty::MarkerMid(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "marker-start") =>
-            Ok(ParsedProperty::MarkerStart(parse_input(input)?)),
+            Ok(ParsedProperty::MarkerStart(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "mask") =>
-            Ok(ParsedProperty::Mask(parse_input(input)?)),
+            Ok(ParsedProperty::Mask(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "opacity") =>
             Ok(ParsedProperty::Opacity(parse_input_to_parse_error(input)?)),
