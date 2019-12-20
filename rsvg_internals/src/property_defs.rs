@@ -297,7 +297,7 @@ make_property!(
     FontWeight,
     default: FontWeightSpec::Normal,
     inherits_automatically: true,
-    newtype_parse: FontWeightSpec,
+    newtype_parse_to_parse_error: FontWeightSpec,
 );
 
 // https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty

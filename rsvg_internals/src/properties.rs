@@ -288,7 +288,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::FontVariant(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "font-weight") =>
-            Ok(ParsedProperty::FontWeight(parse_input(input)?)),
+            Ok(ParsedProperty::FontWeight(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "letter-spacing") =>
             Ok(ParsedProperty::LetterSpacing(parse_input_to_parse_error(input)?)),

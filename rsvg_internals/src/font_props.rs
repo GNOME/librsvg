@@ -1,6 +1,6 @@
 //! CSS font properties.
 
-use cssparser::Parser;
+use cssparser::{BasicParseError, Parser};
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
@@ -102,23 +102,23 @@ pub enum FontWeightSpec {
     W900,
 }
 
-impl Parse for FontWeightSpec {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, ValueErrorKind> {
+impl ParseToParseError for FontWeightSpec {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<FontWeightSpec, CssParseError<'i>> {
         parser
             .try_parse(|p| {
-                parse_identifiers!(
+                Ok(parse_identifiers!(
                     p,
                     "normal" => FontWeightSpec::Normal,
                     "bold" => FontWeightSpec::Bold,
                     "bolder" => FontWeightSpec::Bolder,
                     "lighter" => FontWeightSpec::Lighter,
-                )
-                .map_err(|_| ValueErrorKind::parse_error("parse error"))
+                )?)
             })
-            .or_else(|_| {
+            .or_else(|_: CssParseError| {
+                let loc = parser.current_source_location();
                 parser
                     .expect_integer()
-                    .map_err(|_| ValueErrorKind::parse_error("parse error"))
+                    .map_err(|e: BasicParseError| e.into())
                     .and_then(|i| match i {
                         100 => Ok(FontWeightSpec::W100),
                         200 => Ok(FontWeightSpec::W200),
@@ -129,7 +129,7 @@ impl Parse for FontWeightSpec {
                         700 => Ok(FontWeightSpec::W700),
                         800 => Ok(FontWeightSpec::W800),
                         900 => Ok(FontWeightSpec::W900),
-                        _ => Err(ValueErrorKind::parse_error("parse error")),
+                        _ => Err(loc.new_custom_error(ValueErrorKind::parse_error("parse error")))
                     })
             })
     }
@@ -225,25 +225,25 @@ mod tests {
     #[test]
     fn parses_font_weight() {
         assert_eq!(
-            <FontWeightSpec as Parse>::parse_str("normal"),
+            <FontWeightSpec as ParseToParseError>::parse_str_to_parse_error("normal"),
             Ok(FontWeightSpec::Normal)
         );
         assert_eq!(
-            <FontWeightSpec as Parse>::parse_str("bold"),
+            <FontWeightSpec as ParseToParseError>::parse_str_to_parse_error("bold"),
             Ok(FontWeightSpec::Bold)
         );
         assert_eq!(
-            <FontWeightSpec as Parse>::parse_str("100"),
+            <FontWeightSpec as ParseToParseError>::parse_str_to_parse_error("100"),
             Ok(FontWeightSpec::W100)
         );
     }
 
     #[test]
     fn detects_invalid_font_weight() {
-        assert!(<FontWeightSpec as Parse>::parse_str("").is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("strange").is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("314").is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("3.14").is_err());
+        assert!(<FontWeightSpec as ParseToParseError>::parse_str_to_parse_error("").is_err());
+        assert!(<FontWeightSpec as ParseToParseError>::parse_str_to_parse_error("strange").is_err());
+        assert!(<FontWeightSpec as ParseToParseError>::parse_str_to_parse_error("314").is_err());
+        assert!(<FontWeightSpec as ParseToParseError>::parse_str_to_parse_error("3.14").is_err());
     }
 
     #[test]
