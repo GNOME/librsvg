@@ -17,7 +17,7 @@ use crate::unit_interval::UnitInterval;
 make_property!(
     ComputedValues,
     BaselineShift,
-    default: Length::<Both>::parse_str("0.0").unwrap(),
+    default: Length::<Both>::parse_str_to_parse_error("0.0").unwrap(),
     newtype: Length<Both>,
     property_impl: {
         impl Property<ComputedValues> for BaselineShift {
@@ -41,19 +41,19 @@ make_property!(
         }
     },
     parse_impl: {
-        impl Parse for BaselineShift {
+        impl ParseToParseError for BaselineShift {
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
-            fn parse(parser: &mut Parser<'_, '_>) -> Result<BaselineShift, crate::error::ValueErrorKind> {
-                parser.try_parse(|p| Ok(BaselineShift(Length::<Both>::parse(p)?)))
-                    .or_else(|_: ValueErrorKind| {
-                        parse_identifiers!(
+            fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<BaselineShift, crate::error::CssParseError<'i>> {
+                parser.try_parse(|p| Ok(BaselineShift(Length::<Both>::parse_to_parse_error(p)?)))
+                    .or_else(|_: CssParseError| {
+                        Ok(parse_identifiers!(
                             parser,
                             "baseline" => BaselineShift(Length::<Both>::new(0.0, LengthUnit::Percent)),
                             "sub" => BaselineShift(Length::<Both>::new(-0.2, LengthUnit::Percent)),
 
                             "super" => BaselineShift(Length::<Both>::new(0.4, LengthUnit::Percent)),
-                        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+                        )?)
                     })
             }
         }
@@ -230,7 +230,7 @@ make_property!(
 make_property!(
     ComputedValues,
     FontSize,
-    default: FontSizeSpec::Value(Length::<Both>::parse_str("12.0").unwrap()),
+    default: FontSizeSpec::Value(Length::<Both>::parse_str_to_parse_error("12.0").unwrap()),
     newtype_parse: FontSizeSpec,
     property_impl: {
         impl Property<ComputedValues> for FontSize {
@@ -451,7 +451,7 @@ make_property!(
     StrokeDashoffset,
     default: Length::<Both>::default(),
     inherits_automatically: true,
-    newtype_parse: Length<Both>,
+    newtype_parse_to_parse_error: Length<Both>,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeLinecapProperty
@@ -502,9 +502,9 @@ make_property!(
 make_property!(
     ComputedValues,
     StrokeWidth,
-    default: Length::<Both>::parse_str("1.0").unwrap(),
+    default: Length::<Both>::parse_str_to_parse_error("1.0").unwrap(),
     inherits_automatically: true,
-    newtype_parse: Length::<Both>,
+    newtype_parse_to_parse_error: Length::<Both>,
 );
 
 // https://www.w3.org/TR/SVG/text.html#TextAnchorProperty

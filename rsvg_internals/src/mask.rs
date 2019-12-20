@@ -9,7 +9,7 @@ use crate::drawing_ctx::{CompositingAffines, DrawingCtx};
 use crate::error::RenderingError;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeDraw, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{Parse, ParseValue};
+use crate::parsers::{ParseToParseError, ParseValue, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Opacity;
 use crate::rect::Rect;
@@ -32,10 +32,10 @@ impl Default for Mask {
     fn default() -> Mask {
         Mask {
             // these values are per the spec
-            x: Length::<Horizontal>::parse_str("-10%").unwrap(),
-            y: Length::<Vertical>::parse_str("-10%").unwrap(),
-            width: Length::<Horizontal>::parse_str("120%").unwrap(),
-            height: Length::<Vertical>::parse_str("120%").unwrap(),
+            x: Length::<Horizontal>::parse_str_to_parse_error("-10%").unwrap(),
+            y: Length::<Vertical>::parse_str_to_parse_error("-10%").unwrap(),
+            width: Length::<Horizontal>::parse_str_to_parse_error("120%").unwrap(),
+            height: Length::<Vertical>::parse_str_to_parse_error("120%").unwrap(),
 
             units: MaskUnits::default(),
             content_units: MaskContentUnits::default(),
@@ -136,15 +136,15 @@ impl NodeTrait for Mask {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
+                expanded_name!(svg "x") => self.x = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "width") => {
                     self.width =
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                        attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "height") => {
                     self.height =
-                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                        attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 expanded_name!(svg "maskUnits") => self.units = attr.parse(value)?,
                 expanded_name!(svg "maskContentUnits") => self.content_units = attr.parse(value)?,

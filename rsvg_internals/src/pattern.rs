@@ -10,12 +10,12 @@ use crate::aspect_ratio::*;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{DrawingCtx, NodeStack};
-use crate::error::{AcquireError, AttributeResultExt, RenderingError};
+use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
 use crate::paint_server::{AsPaintSource, PaintSource};
-use crate::parsers::ParseValue;
+use crate::parsers::{ParseValue, ParseValueToParseError};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
@@ -134,16 +134,16 @@ impl NodeTrait for Pattern {
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?);
                 }
-                expanded_name!(svg "x") => self.common.x = Some(attr.parse(value)?),
-                expanded_name!(svg "y") => self.common.y = Some(attr.parse(value)?),
+                expanded_name!(svg "x") => self.common.x = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "y") => self.common.y = Some(attr.parse_to_parse_error(value)?),
                 expanded_name!(svg "width") => {
                     self.common.width = Some(
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
+                        attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
                     )
                 }
                 expanded_name!(svg "height") => {
                     self.common.height =
-                        Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
+                        Some(attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?)
                 }
                 _ => (),
             }

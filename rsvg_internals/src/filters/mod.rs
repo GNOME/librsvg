@@ -13,7 +13,7 @@ use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers::ParseValue;
+use crate::parsers::{ParseValue, ParseValueToParseError};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
@@ -163,21 +163,21 @@ impl NodeTrait for Primitive {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "x") => {
-                    self.x = Some(attr.parse_and_validate(value, check_units_horizontal)?)
+                    self.x = Some(attr.parse_to_parse_error_and_validate(value, check_units_horizontal)?)
                 }
                 expanded_name!(svg "y") => {
-                    self.y = Some(attr.parse_and_validate(value, check_units_vertical)?)
+                    self.y = Some(attr.parse_to_parse_error_and_validate(value, check_units_vertical)?)
                 }
                 expanded_name!(svg "width") => {
                     self.width =
-                        Some(attr.parse_and_validate(
+                        Some(attr.parse_to_parse_error_and_validate(
                             value,
                             check_units_horizontal_and_ensure_nonnegative,
                         )?)
                 }
                 expanded_name!(svg "height") => {
                     self.height =
-                        Some(attr.parse_and_validate(
+                        Some(attr.parse_to_parse_error_and_validate(
                             value,
                             check_units_vertical_and_ensure_nonnegative,
                         )?)

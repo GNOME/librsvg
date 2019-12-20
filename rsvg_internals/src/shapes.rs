@@ -12,7 +12,7 @@ use crate::error::*;
 use crate::length::*;
 use crate::marker;
 use crate::node::*;
-use crate::parsers::{optional_comma, Parse, ParseValue};
+use crate::parsers::{optional_comma, Parse, ParseValue, ParseValueToParseError};
 use crate::path_builder::*;
 use crate::path_parser;
 use crate::properties::ComputedValues;
@@ -313,10 +313,10 @@ impl NodeTrait for Line {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x1") => self.x1 = attr.parse(value)?,
-                expanded_name!(svg "y1") => self.y1 = attr.parse(value)?,
-                expanded_name!(svg "x2") => self.x2 = attr.parse(value)?,
-                expanded_name!(svg "y2") => self.y2 = attr.parse(value)?,
+                expanded_name!(svg "x1") => self.x1 = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "y1") => self.y1 = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "x2") => self.x2 = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "y2") => self.y2 = attr.parse_to_parse_error(value)?,
                 _ => (),
             }
         }
@@ -375,24 +375,24 @@ impl NodeTrait for Rect {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
+                expanded_name!(svg "x") => self.x = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "width") => {
                     self.w =
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                        attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "height") => {
                     self.h =
-                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                        attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 expanded_name!(svg "rx") => {
                     self.rx = attr
-                        .parse_and_validate(value, Length::<Horizontal>::check_nonnegative)
+                        .parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)
                         .map(Some)?
                 }
                 expanded_name!(svg "ry") => {
                     self.ry = attr
-                        .parse_and_validate(value, Length::<Vertical>::check_nonnegative)
+                        .parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)
                         .map(Some)?
                 }
                 _ => (),
@@ -603,10 +603,10 @@ impl NodeTrait for Circle {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "cx") => self.cx = attr.parse(value)?,
-                expanded_name!(svg "cy") => self.cy = attr.parse(value)?,
+                expanded_name!(svg "cx") => self.cx = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "cy") => self.cy = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "r") => {
-                    self.r = attr.parse_and_validate(value, Length::<Both>::check_nonnegative)?
+                    self.r = attr.parse_to_parse_error_and_validate(value, Length::<Both>::check_nonnegative)?
                 }
                 _ => (),
             }
@@ -656,15 +656,15 @@ impl NodeTrait for Ellipse {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "cx") => self.cx = attr.parse(value)?,
-                expanded_name!(svg "cy") => self.cy = attr.parse(value)?,
+                expanded_name!(svg "cx") => self.cx = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "cy") => self.cy = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "rx") => {
                     self.rx =
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                        attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "ry") => {
                     self.ry =
-                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                        attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 _ => (),
             }

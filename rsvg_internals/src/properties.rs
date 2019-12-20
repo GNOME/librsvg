@@ -231,7 +231,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
     // please keep these sorted
     match prop_name.expanded() {
         expanded_name!(svg "baseline-shift") =>
-            Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
+            Ok(ParsedProperty::BaselineShift(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "clip-path") =>
             Ok(ParsedProperty::ClipPath(parse_input_to_parse_error(input)?)),
@@ -338,7 +338,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::StrokeDasharray(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-dashoffset") =>
-            Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
+            Ok(ParsedProperty::StrokeDashoffset(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-linecap") =>
             Ok(ParsedProperty::StrokeLinecap(parse_input_to_parse_error(input)?)),
@@ -353,7 +353,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::StrokeOpacity(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-width") =>
-            Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
+            Ok(ParsedProperty::StrokeWidth(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "text-anchor") =>
             Ok(ParsedProperty::TextAnchor(parse_input_to_parse_error(input)?)),

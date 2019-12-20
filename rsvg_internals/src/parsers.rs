@@ -81,9 +81,9 @@ pub trait ParseValueToParseError<T: ParseToParseError> {
     fn parse_to_parse_error(&self, value: &str) -> Result<T, NodeError>;
 
     /// Parses a `value` string into a type `T` with an optional validation function.
-    fn parse_to_parse_error_and_validate<'i, F: FnOnce(T) -> Result<T, CssParseError<'i>>>(
+    fn parse_to_parse_error_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
         &self,
-        value: &'i str,
+        value: &str,
         validate: F,
     ) -> Result<T, NodeError>;
 }
@@ -96,17 +96,17 @@ impl<T: ParseToParseError> ParseValueToParseError<T> for QualName {
         T::parse_to_parse_error(&mut parser).attribute(self.clone())
     }
 
-    fn parse_to_parse_error_and_validate<'i, F: FnOnce(T) -> Result<T, CssParseError<'i>>>(
+    fn parse_to_parse_error_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
         &self,
-        value: &'i str,
+        value: &str,
         validate: F,
     ) -> Result<T, NodeError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse_to_parse_error(&mut parser)
-            .and_then(validate)
-            .attribute(self.clone())
+        let v = T::parse_to_parse_error(&mut parser).attribute(self.clone())?;
+
+        validate(v).map_err(|e| parser.new_custom_error(e)).attribute(self.clone())
     }
 }
 

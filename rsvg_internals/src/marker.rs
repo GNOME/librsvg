@@ -16,7 +16,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
 use crate::length::*;
 use crate::node::*;
-use crate::parsers::{Parse, ParseValue};
+use crate::parsers::{Parse, ParseToParseError, ParseValue, ParseValueToParseError};
 use crate::path_builder::*;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
@@ -91,8 +91,8 @@ impl Default for Marker {
             ref_x: Default::default(),
             ref_y: Default::default(),
             // the following two are per the spec
-            width: Length::<Horizontal>::parse_str("3").unwrap(),
-            height: Length::<Vertical>::parse_str("3").unwrap(),
+            width: Length::<Horizontal>::parse_str_to_parse_error("3").unwrap(),
+            height: Length::<Vertical>::parse_str_to_parse_error("3").unwrap(),
             orient: MarkerOrient::default(),
             aspect: AspectRatio::default(),
             vbox: None,
@@ -183,15 +183,15 @@ impl NodeTrait for Marker {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "markerUnits") => self.units = attr.parse(value)?,
-                expanded_name!(svg "refX") => self.ref_x = attr.parse(value)?,
-                expanded_name!(svg "refY") => self.ref_y = attr.parse(value)?,
+                expanded_name!(svg "refX") => self.ref_x = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "refY") => self.ref_y = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "markerWidth") => {
                     self.width =
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                        attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "markerHeight") => {
                     self.height =
-                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                        attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 expanded_name!(svg "orient") => self.orient = attr.parse(value)?,
                 expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,

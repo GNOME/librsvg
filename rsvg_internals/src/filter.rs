@@ -9,7 +9,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::ValueErrorKind;
 use crate::length::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{Parse, ParseValue};
+use crate::parsers::{ParseToParseError, ParseValue, ParseValueToParseError};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
@@ -28,10 +28,10 @@ impl Default for Filter {
     /// Constructs a new `Filter` with default properties.
     fn default() -> Self {
         Self {
-            x: Length::<Horizontal>::parse_str("-10%").unwrap(),
-            y: Length::<Vertical>::parse_str("-10%").unwrap(),
-            width: Length::<Horizontal>::parse_str("120%").unwrap(),
-            height: Length::<Vertical>::parse_str("120%").unwrap(),
+            x: Length::<Horizontal>::parse_str_to_parse_error("-10%").unwrap(),
+            y: Length::<Vertical>::parse_str_to_parse_error("-10%").unwrap(),
+            width: Length::<Horizontal>::parse_str_to_parse_error("120%").unwrap(),
+            height: Length::<Vertical>::parse_str_to_parse_error("120%").unwrap(),
             filterunits: CoordUnits::ObjectBoundingBox,
             primitiveunits: CoordUnits::UserSpaceOnUse,
         }
@@ -161,18 +161,23 @@ impl NodeTrait for Filter {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "x") => {
-                    self.x = attr.parse_and_validate(value, check_units_horizontal)?
+                    self.x =
+                        attr.parse_to_parse_error_and_validate(value, check_units_horizontal)?
                 }
                 expanded_name!(svg "y") => {
-                    self.y = attr.parse_and_validate(value, check_units_vertical)?
+                    self.y = attr.parse_to_parse_error_and_validate(value, check_units_vertical)?
                 }
                 expanded_name!(svg "width") => {
-                    self.width = attr
-                        .parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?
+                    self.width = attr.parse_to_parse_error_and_validate(
+                        value,
+                        check_units_horizontal_and_ensure_nonnegative,
+                    )?
                 }
                 expanded_name!(svg "height") => {
-                    self.height =
-                        attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?
+                    self.height = attr.parse_to_parse_error_and_validate(
+                        value,
+                        check_units_vertical_and_ensure_nonnegative,
+                    )?
                 }
                 expanded_name!(svg "primitiveUnits") => self.primitiveunits = attr.parse(value)?,
                 _ => (),

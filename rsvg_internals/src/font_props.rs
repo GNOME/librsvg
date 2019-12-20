@@ -5,7 +5,7 @@ use cssparser::{BasicParseError, Parser};
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::length::*;
-use crate::parsers::{Parse, ParseToParseError};
+use crate::parsers::ParseToParseError;
 use crate::properties::ComputedValues;
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
@@ -65,7 +65,7 @@ impl ParseToParseError for FontSizeSpec {
         parser: &mut Parser<'i, '_>,
     ) -> Result<FontSizeSpec, CssParseError<'i>> {
         parser
-            .try_parse(|p| Length::<Both>::parse(p))
+            .try_parse(|p| Length::<Both>::parse_to_parse_error(p))
             .and_then(|l| Ok(FontSizeSpec::Value(l)))
             .or_else(|_| {
                 Ok(parse_identifiers!(
@@ -169,7 +169,7 @@ impl ParseToParseError for LetterSpacingSpec {
         parser: &mut Parser<'i, '_>,
     ) -> Result<LetterSpacingSpec, CssParseError<'i>> {
         parser
-            .try_parse(|p| Length::<Horizontal>::parse(p))
+            .try_parse(|p| Length::<Horizontal>::parse_to_parse_error(p))
             .and_then(|l| Ok(LetterSpacingSpec::Value(l)))
             .or_else(|_| {
                 Ok(parse_identifiers!(

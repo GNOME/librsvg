@@ -13,7 +13,7 @@ use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::paint_server::{AsPaintSource, PaintSource};
-use crate::parsers::{Parse, ParseValue};
+use crate::parsers::{Parse, ParseToParseError, ParseValue, ParseValueToParseError};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
@@ -134,7 +134,7 @@ impl NodeTrait for Stop {
             match attr.expanded() {
                 expanded_name!(svg "offset") => {
                     self.offset = attr
-                        .parse_and_validate(value, validate_offset)
+                        .parse_to_parse_error_and_validate(value, validate_offset)
                         .map(|l| UnitInterval::clamp(l.length))?
                 }
                 _ => (),
@@ -248,16 +248,16 @@ impl UnresolvedVariant {
     fn resolve_from_defaults(&self) -> UnresolvedVariant {
         match self {
             UnresolvedVariant::Linear { x1, y1, x2, y2 } => UnresolvedVariant::Linear {
-                x1: x1.or_else(|| Some(Length::<Horizontal>::parse_str("0%").unwrap())),
-                y1: y1.or_else(|| Some(Length::<Vertical>::parse_str("0%").unwrap())),
-                x2: x2.or_else(|| Some(Length::<Horizontal>::parse_str("100%").unwrap())),
-                y2: y2.or_else(|| Some(Length::<Vertical>::parse_str("0%").unwrap())),
+                x1: x1.or_else(|| Some(Length::<Horizontal>::parse_str_to_parse_error("0%").unwrap())),
+                y1: y1.or_else(|| Some(Length::<Vertical>::parse_str_to_parse_error("0%").unwrap())),
+                x2: x2.or_else(|| Some(Length::<Horizontal>::parse_str_to_parse_error("100%").unwrap())),
+                y2: y2.or_else(|| Some(Length::<Vertical>::parse_str_to_parse_error("0%").unwrap())),
             },
 
             UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
-                let cx = cx.or_else(|| Some(Length::<Horizontal>::parse_str("50%").unwrap()));
-                let cy = cy.or_else(|| Some(Length::<Vertical>::parse_str("50%").unwrap()));
-                let r = r.or_else(|| Some(Length::<Both>::parse_str("50%").unwrap()));
+                let cx = cx.or_else(|| Some(Length::<Horizontal>::parse_str_to_parse_error("50%").unwrap()));
+                let cy = cy.or_else(|| Some(Length::<Vertical>::parse_str_to_parse_error("50%").unwrap()));
+                let r = r.or_else(|| Some(Length::<Both>::parse_str_to_parse_error("50%").unwrap()));
 
                 // fx and fy fall back to the presentational value of cx and cy
                 let fx = fx.or(cx);
@@ -568,10 +568,10 @@ impl NodeTrait for LinearGradient {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x1") => self.x1 = Some(attr.parse(value)?),
-                expanded_name!(svg "y1") => self.y1 = Some(attr.parse(value)?),
-                expanded_name!(svg "x2") => self.x2 = Some(attr.parse(value)?),
-                expanded_name!(svg "y2") => self.y2 = Some(attr.parse(value)?),
+                expanded_name!(svg "x1") => self.x1 = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "y1") => self.y1 = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "x2") => self.x2 = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "y2") => self.y2 = Some(attr.parse_to_parse_error(value)?),
 
                 _ => (),
             }
@@ -587,11 +587,11 @@ impl NodeTrait for RadialGradient {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "cx") => self.cx = Some(attr.parse(value)?),
-                expanded_name!(svg "cy") => self.cy = Some(attr.parse(value)?),
-                expanded_name!(svg "r") => self.r = Some(attr.parse(value)?),
-                expanded_name!(svg "fx") => self.fx = Some(attr.parse(value)?),
-                expanded_name!(svg "fy") => self.fy = Some(attr.parse(value)?),
+                expanded_name!(svg "cx") => self.cx = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "cy") => self.cy = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "r") => self.r = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "fx") => self.fx = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "fy") => self.fy = Some(attr.parse_to_parse_error(value)?),
 
                 _ => (),
             }

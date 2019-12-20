@@ -7,11 +7,11 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::error::{AcquireError, AttributeResultExt, RenderingError};
+use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
-use crate::parsers::{Parse, ParseValue};
+use crate::parsers::{ParseToParseError, ParseValue, ParseValueToParseError};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
@@ -149,16 +149,16 @@ impl Svg {
         // these defaults are per the spec
         let x = self
             .x
-            .unwrap_or_else(|| Length::<Horizontal>::parse_str("0").unwrap());
+            .unwrap_or_else(|| Length::<Horizontal>::parse_str_to_parse_error("0").unwrap());
         let y = self
             .y
-            .unwrap_or_else(|| Length::<Vertical>::parse_str("0").unwrap());
+            .unwrap_or_else(|| Length::<Vertical>::parse_str_to_parse_error("0").unwrap());
         let w = self
             .w
-            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap());
+            .unwrap_or_else(|| Length::<Horizontal>::parse_str_to_parse_error("100%").unwrap());
         let h = self
             .h
-            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap());
+            .unwrap_or_else(|| Length::<Vertical>::parse_str_to_parse_error("100%").unwrap());
 
         (x, y, w, h)
     }
@@ -186,15 +186,15 @@ impl NodeTrait for Svg {
                 expanded_name!(svg "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!(svg "x") if is_inner_svg => self.x = Some(attr.parse(value)?),
-                expanded_name!(svg "y") if is_inner_svg => self.y = Some(attr.parse(value)?),
+                expanded_name!(svg "x") if is_inner_svg => self.x = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "y") if is_inner_svg => self.y = Some(attr.parse_to_parse_error(value)?),
                 expanded_name!(svg "width") => {
                     self.w =
-                        Some(attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?)
+                        Some(attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?)
                 }
                 expanded_name!(svg "height") => {
                     self.h =
-                        Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
+                        Some(attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?)
                 }
                 expanded_name!(svg "viewBox") => self.vbox = attr.parse(value).map(Some)?,
                 _ => (),
@@ -278,16 +278,16 @@ impl NodeTrait for Use {
                 expanded_name!(xlink "href") => {
                     self.link = Some(Fragment::parse(value).attribute(attr)?)
                 }
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
+                expanded_name!(svg "x") => self.x = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "width") => {
                     self.w = attr
-                        .parse_and_validate(value, Length::<Horizontal>::check_nonnegative)
+                        .parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)
                         .map(Some)?
                 }
                 expanded_name!(svg "height") => {
                     self.h = attr
-                        .parse_and_validate(value, Length::<Vertical>::check_nonnegative)
+                        .parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)
                         .map(Some)?
                 }
                 _ => (),
@@ -362,11 +362,11 @@ impl NodeTrait for Use {
 
         let nw = self
             .w
-            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap())
+            .unwrap_or_else(|| Length::<Horizontal>::parse_str_to_parse_error("100%").unwrap())
             .normalize(values, &params);
         let nh = self
             .h
-            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap())
+            .unwrap_or_else(|| Length::<Vertical>::parse_str_to_parse_error("100%").unwrap())
             .normalize(values, &params);
 
         // width or height set to 0 disables rendering of the element
