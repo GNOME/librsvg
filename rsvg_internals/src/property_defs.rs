@@ -164,9 +164,9 @@ make_property!(
 make_property!(
     ComputedValues,
     Fill,
-    default: PaintServer::parse_str("#000").unwrap(),
+    default: PaintServer::parse_str_to_parse_error("#000").unwrap(),
     inherits_automatically: true,
-    newtype_parse: PaintServer,
+    newtype_parse_to_parse_error: PaintServer,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#FillOpacityProperty
@@ -433,7 +433,7 @@ make_property!(
     Stroke,
     default: PaintServer::None,
     inherits_automatically: true,
-    newtype_parse: PaintServer,
+    newtype_parse_to_parse_error: PaintServer,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeDasharrayProperty
