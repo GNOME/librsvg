@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{self, Parse, ParseValue, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
@@ -76,7 +76,7 @@ impl NodeTrait for FeTurbulence {
                         .attribute(attr)?
                 }
                 expanded_name!(svg "numOctaves") => {
-                    self.num_octaves = parsers::integer(value).attribute(attr)?
+                    self.num_octaves = attr.parse_to_parse_error(value)?;
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
                 expanded_name!(svg "seed") => {

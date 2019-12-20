@@ -153,14 +153,13 @@ pub fn number_optional_number(s: &str) -> Result<(f64, f64), ValueErrorKind> {
     }
 }
 
-// integer
-//
-// https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
-pub fn integer(s: &str) -> Result<i32, ValueErrorKind> {
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
-
-    Ok(parser.expect_integer()?)
+impl ParseToParseError for i32 {
+    /// CSS integer
+    ///
+    /// https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parser.expect_integer()?)
+    }
 }
 
 // integer-optional-integer
@@ -240,15 +239,15 @@ mod tests {
 
     #[test]
     fn parses_integer() {
-        assert_eq!(integer("1"), Ok(1));
-        assert_eq!(integer("-1"), Ok(-1));
+        assert_eq!(i32::parse_str_to_parse_error("1"), Ok(1));
+        assert_eq!(i32::parse_str_to_parse_error("-1"), Ok(-1));
     }
 
     #[test]
     fn invalid_integer() {
-        assert!(integer("").is_err());
-        assert!(integer("1x").is_err());
-        assert!(integer("1.5").is_err());
+        assert!(i32::parse_str_to_parse_error("").is_err());
+        assert!(i32::parse_str_to_parse_error("1x").is_err());
+        assert!(i32::parse_str_to_parse_error("1.5").is_err());
     }
 
     #[test]

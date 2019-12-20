@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{self, Parse, ParseValue, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -112,34 +112,32 @@ impl NodeTrait for FeConvolveMatrix {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "targetX") => {
-                    self.target_x = Some(
-                        parsers::integer(value)
-                            .and_then(|x| {
-                                if x >= 0 && x < self.order.0 as i32 {
-                                    Ok(x as u32)
-                                } else {
-                                    Err(ValueErrorKind::value_error(
+                    self.target_x = {
+                        let v = attr.parse_to_parse_error_and_validate(value, |v: i32| {
+                            if v >= 0 && v < self.order.0 as i32 {
+                                Ok(v)
+                            } else {
+                                Err(ValueErrorKind::value_error(
                                     "targetX must be greater or equal to zero and less than orderX",
                                 ))
-                                }
-                            })
-                            .attribute(attr)?,
-                    )
+                            }
+                        })?;
+                        Some(v as u32)
+                    }
                 }
                 expanded_name!(svg "targetY") => {
-                    self.target_y = Some(
-                        parsers::integer(value)
-                            .and_then(|x| {
-                                if x >= 0 && x < self.order.1 as i32 {
-                                    Ok(x as u32)
-                                } else {
-                                    Err(ValueErrorKind::value_error(
+                    self.target_y = {
+                        let v = attr.parse_to_parse_error_and_validate(value, |v: i32| {
+                            if v >= 0 && v < self.order.1 as i32 {
+                                Ok(v)
+                            } else {
+                                Err(ValueErrorKind::value_error(
                                     "targetY must be greater or equal to zero and less than orderY",
                                 ))
-                                }
-                            })
-                            .attribute(attr)?,
-                    )
+                            }
+                        })?;
+                        Some(v as u32)
+                    }
                 }
                 _ => (),
             }
@@ -163,8 +161,9 @@ impl NodeTrait for FeConvolveMatrix {
 
                 // #352: Parse as an unbounded list rather than exact length to prevent aborts due
                 //       to huge allocation attempts by underlying Vec::with_capacity().
-                let NumberList(v) = NumberList::parse_str_to_parse_error(value, NumberListLength::Unbounded)
-                    .attribute(attr.clone())?;
+                let NumberList(v) =
+                    NumberList::parse_str_to_parse_error(value, NumberListLength::Unbounded)
+                        .attribute(attr.clone())?;
 
                 if v.len() != number_of_elements {
                     return Err(ValueErrorKind::value_error(&format!(
