@@ -25,7 +25,7 @@ impl Parse for cairo::Matrix {
 // Its operataion and grammar are described here:
 // https://www.w3.org/TR/SVG/coords.html#TransformAttribute
 
-fn parse_transform_list<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, ParseError<'i>> {
+fn parse_transform_list<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     let mut matrix = cairo::Matrix::identity();
 
     loop {
@@ -44,7 +44,7 @@ fn parse_transform_list<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix
 
 fn parse_transform_command<'i>(
     parser: &mut Parser<'i, '_>,
-) -> Result<cairo::Matrix, ParseError<'i>> {
+) -> Result<cairo::Matrix, CssParseError<'i>> {
     let loc = parser.current_source_location();
 
     match parser.next()?.clone() {
@@ -62,7 +62,7 @@ fn parse_transform_command<'i>(
 fn parse_transform_function<'i>(
     name: &str,
     parser: &mut Parser<'i, '_>,
-) -> Result<cairo::Matrix, ParseError<'i>> {
+) -> Result<cairo::Matrix, CssParseError<'i>> {
     let loc = parser.current_source_location();
 
     match name {
@@ -78,7 +78,7 @@ fn parse_transform_function<'i>(
     }
 }
 
-fn parse_matrix_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, ParseError<'i>> {
+fn parse_matrix_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
         let xx = f64::parse_to_parse_error(p)?;
         optional_comma(p);
@@ -101,7 +101,7 @@ fn parse_matrix_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, P
     })
 }
 
-fn parse_translate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, ParseError<'i>> {
+fn parse_translate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
         let tx = f64::parse_to_parse_error(p)?;
 
@@ -116,7 +116,7 @@ fn parse_translate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix
     })
 }
 
-fn parse_scale_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, ParseError<'i>> {
+fn parse_scale_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
         let x = f64::parse_to_parse_error(p)?;
 
@@ -131,12 +131,12 @@ fn parse_scale_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, Pa
     })
 }
 
-fn parse_rotate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, ParseError<'i>> {
+fn parse_rotate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
         let angle = f64::parse_to_parse_error(p)? * PI / 180.0;
 
         let (tx, ty) = p
-            .try_parse(|p| -> Result<_, ParseError> {
+            .try_parse(|p| -> Result<_, CssParseError> {
                 optional_comma(p);
                 let tx = f64::parse_to_parse_error(p)?;
 
@@ -157,14 +157,14 @@ fn parse_rotate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, P
     })
 }
 
-fn parse_skewx_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, ParseError<'i>> {
+fn parse_skewx_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
         let a = f64::parse_to_parse_error(p)? * PI / 180.0;
         Ok(cairo::Matrix::new(1.0, 0.0, a.tan(), 1.0, 0.0, 0.0))
     })
 }
 
-fn parse_skewy_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, ParseError<'i>> {
+fn parse_skewy_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
         let a = f64::parse_to_parse_error(p)? * PI / 180.0;
         Ok(cairo::Matrix::new(1.0, a.tan(), 0.0, 1.0, 0.0, 0.0))

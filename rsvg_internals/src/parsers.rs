@@ -88,11 +88,11 @@ impl Parse for f64 {
 }
 
 pub trait ParseToParseError: Sized {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>>;
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>>;
 }
 
 impl ParseToParseError for f64 {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         let loc = parser.current_source_location();
         parser
             .expect_number()

@@ -543,8 +543,8 @@ impl SpecifiedValues {
 
                 rsvg_log!(
                     "(ignoring invalid presentation attribute {:?}\n    \
-                         value=\"{}\"\n    \
-                         {})",
+                     value=\"{}\"\n    \
+                     {})",
                     attr.expanded(),
                     value,
                     e
@@ -632,7 +632,9 @@ where
 }
 
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
-fn parse_input_to_parse_error<'i, T>(input: &mut Parser<'i, '_>) -> Result<SpecifiedValue<T>, ParseError<'i>>
+fn parse_input_to_parse_error<'i, T>(
+    input: &mut Parser<'i, '_>,
+) -> Result<SpecifiedValue<T>, CssParseError<'i>>
 where
     T: Property<ComputedValues> + Clone + Default + ParseToParseError,
 {

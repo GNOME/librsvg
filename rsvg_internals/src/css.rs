@@ -120,7 +120,7 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         &mut self,
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
-    ) -> Result<Declaration, cssparser::ParseError<'i, ValueErrorKind>> {
+    ) -> Result<Declaration, CssParseError<'i>> {
         let prop_name = QualName::new(None, ns!(svg), LocalName::from(name.as_ref()));
         let property =
             parse_property(&prop_name, input, true).map_err(|e| input.new_custom_error(e))?;
