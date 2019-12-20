@@ -442,7 +442,7 @@ make_property!(
     StrokeDasharray,
     default: Dasharray::default(),
     inherits_automatically: true,
-    newtype_parse: Dasharray,
+    newtype_parse_to_parse_error: Dasharray,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeDashoffsetProperty

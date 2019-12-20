@@ -335,7 +335,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::Stroke(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-dasharray") =>
-            Ok(ParsedProperty::StrokeDasharray(parse_input(input)?)),
+            Ok(ParsedProperty::StrokeDasharray(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-dashoffset") =>
             Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
