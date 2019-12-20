@@ -32,7 +32,7 @@ use crate::filters::{
     PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{NumberOptionalNumber, Parse, ParseValue, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
@@ -70,19 +70,20 @@ impl Common {
                 expanded_name!(svg "surfaceScale") => self.surface_scale = attr.parse(value)?,
 
                 expanded_name!(svg "kernelUnitLength") => {
-                    self.kernel_unit_length = Some(
-                        parsers::number_optional_number(value)
-                            .and_then(|(x, y)| {
-                                if x > 0.0 && y > 0.0 {
-                                    Ok((x, y))
-                                } else {
-                                    Err(ValueErrorKind::value_error(
-                                        "kernelUnitLength can't be less or equal to zero",
-                                    ))
-                                }
-                            })
-                            .attribute(attr)?,
-                    )
+                    let NumberOptionalNumber(x, y) = attr.parse_to_parse_error_and_validate(
+                        value,
+                        |v: NumberOptionalNumber<f64>| {
+                            if v.0 > 0.0 && v.1 > 0.0 {
+                                Ok(v)
+                            } else {
+                                Err(ValueErrorKind::value_error(
+                                    "kernelUnitLength can't be less or equal to zero",
+                                ))
+                            }
+                        }
+                    )?;
+
+                    self.kernel_unit_length = Some((x, y));
                 }
                 _ => (),
             }

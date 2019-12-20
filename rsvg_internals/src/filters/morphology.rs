@@ -7,7 +7,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{NumberOptionalNumber, Parse, ParseValue, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -54,15 +54,18 @@ impl NodeTrait for FeMorphology {
             match attr.expanded() {
                 expanded_name!(svg "operator") => self.operator = attr.parse(value)?,
                 expanded_name!(svg "radius") => {
-                    self.radius = parsers::number_optional_number(value)
-                        .and_then(|(x, y)| {
-                            if x >= 0.0 && y >= 0.0 {
-                                Ok((x, y))
+                    let NumberOptionalNumber(x, y) = attr.parse_to_parse_error_and_validate(
+                        value,
+                        |v: NumberOptionalNumber<f64>| {
+                            if v.0 >= 0.0 && v.1 >= 0.0 {
+                                Ok(v)
                             } else {
                                 Err(ValueErrorKind::value_error("radius cannot be negative"))
                             }
-                        })
-                        .attribute(attr)?
+                        }
+                    )?;
+
+                    self.radius = (x, y);
                 }
                 _ => (),
             }

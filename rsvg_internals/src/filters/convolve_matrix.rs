@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{self, Parse, ParseValue, ParseValueToParseError};
+use crate::parsers::{NumberOptionalNumber, Parse, ParseValue, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -62,45 +62,42 @@ impl NodeTrait for FeConvolveMatrix {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "order") => {
-                    self.order = parsers::integer_optional_integer(value)
-                        .and_then(|(x, y)| {
-                            if x > 0 && y > 0 {
-                                Ok((x as u32, y as u32))
+                    let NumberOptionalNumber(x, y) = attr.parse_to_parse_error_and_validate(
+                        value,
+                        |v: NumberOptionalNumber<i32>| {
+                            if v.0 > 0 && v.1 > 0 {
+                                Ok(v)
                             } else {
-                                Err(ValueErrorKind::value_error("values must be greater than 0"))
+                                Err(ValueErrorKind::value_error("values must be greater than 0"))?
                             }
-                        })
-                        .attribute(attr)?
+                        },
+                    )?;
+                    self.order = (x as u32, y as u32);
                 }
                 expanded_name!(svg "divisor") => {
-                    self.divisor = Some(
-                        f64::parse_str(value)
-                            .and_then(|x| {
-                                if x != 0.0 {
-                                    Ok(x)
-                                } else {
-                                    Err(ValueErrorKind::value_error("divisor cannot be equal to 0"))
-                                }
-                            })
-                            .attribute(attr)?,
-                    )
+                    self.divisor = Some(attr.parse_to_parse_error_and_validate(value, |x| {
+                        if x != 0.0 {
+                            Ok(x)
+                        } else {
+                            Err(ValueErrorKind::value_error("divisor cannot be equal to 0"))
+                        }
+                    })?)
                 }
                 expanded_name!(svg "bias") => self.bias = attr.parse(value)?,
                 expanded_name!(svg "edgeMode") => self.edge_mode = attr.parse(value)?,
                 expanded_name!(svg "kernelUnitLength") => {
-                    self.kernel_unit_length = Some(
-                        parsers::number_optional_number(value)
-                            .and_then(|(x, y)| {
-                                if x > 0.0 && y > 0.0 {
-                                    Ok((x, y))
-                                } else {
-                                    Err(ValueErrorKind::value_error(
-                                        "kernelUnitLength can't be less or equal to zero",
-                                    ))
-                                }
-                            })
-                            .attribute(attr)?,
-                    )
+                    let NumberOptionalNumber(x, y) =
+                        attr.parse_to_parse_error_and_validate(value, |v: NumberOptionalNumber<f64>| {
+                            if v.0 > 0.0 && v.1 > 0.0 {
+                                Ok(v)
+                            } else {
+                                Err(ValueErrorKind::value_error(
+                                    "kernelUnitLength can't be less or equal to zero",
+                                ))
+                            }
+                        })?;
+
+                    self.kernel_unit_length = Some((x, y))
                 }
                 expanded_name!(svg "preserveAlpha") => self.preserve_alpha = attr.parse(value)?,
 

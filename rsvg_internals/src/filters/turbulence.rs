@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{self, Parse, ParseValue, ParseValueToParseError};
+use crate::parsers::{NumberOptionalNumber, Parse, ParseValue, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
@@ -65,15 +65,18 @@ impl NodeTrait for FeTurbulence {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "baseFrequency") => {
-                    self.base_frequency = parsers::number_optional_number(value)
-                        .and_then(|(x, y)| {
-                            if x >= 0.0 && y >= 0.0 {
-                                Ok((x, y))
+                    let NumberOptionalNumber(x, y) = attr.parse_to_parse_error_and_validate(
+                        value,
+                        |v: NumberOptionalNumber<f64>| {
+                            if v.0 >= 0.0 && v.1 >= 0.0 {
+                                Ok(v)
                             } else {
                                 Err(ValueErrorKind::value_error("values can't be negative"))
                             }
-                        })
-                        .attribute(attr)?
+                        }
+                    )?;
+
+                    self.base_frequency = (x, y);
                 }
                 expanded_name!(svg "numOctaves") => {
                     self.num_octaves = attr.parse_to_parse_error(value)?;
