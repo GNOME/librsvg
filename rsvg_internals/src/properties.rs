@@ -347,7 +347,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::StrokeLinejoin(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-miterlimit") =>
-            Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
+            Ok(ParsedProperty::StrokeMiterlimit(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-opacity") =>
             Ok(ParsedProperty::StrokeOpacity(parse_input_to_parse_error(input)?)),

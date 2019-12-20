@@ -486,7 +486,7 @@ make_property!(
     StrokeMiterlimit,
     default: 4f64,
     inherits_automatically: true,
-    newtype_parse: f64,
+    newtype_parse_to_parse_error: f64,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeOpacityProperty
