@@ -676,21 +676,6 @@ impl SpecifiedValues {
 }
 
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
-fn parse_input<T>(input: &mut Parser) -> Result<SpecifiedValue<T>, ValueErrorKind>
-where
-    T: Property<ComputedValues> + Clone + Default + Parse,
-{
-    if input
-        .try_parse(|p| p.expect_ident_matching("inherit"))
-        .is_ok()
-    {
-        Ok(SpecifiedValue::Inherit)
-    } else {
-        Parse::parse(input).map(SpecifiedValue::Specified)
-    }
-}
-
-// Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
 fn parse_input_to_parse_error<'i, T>(
     input: &mut Parser<'i, '_>,
 ) -> Result<SpecifiedValue<T>, CssParseError<'i>>
