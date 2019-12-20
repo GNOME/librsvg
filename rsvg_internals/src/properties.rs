@@ -237,22 +237,22 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::ClipPath(parse_input(input)?)),
 
         expanded_name!(svg "clip-rule") =>
-            Ok(ParsedProperty::ClipRule(parse_input(input)?)),
+            Ok(ParsedProperty::ClipRule(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "color") =>
             Ok(ParsedProperty::Color(parse_input(input)?)),
 
         expanded_name!(svg "color-interpolation-filters") =>
-            Ok(ParsedProperty::ColorInterpolationFilters(parse_input(input)?)),
+            Ok(ParsedProperty::ColorInterpolationFilters(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "direction") =>
-            Ok(ParsedProperty::Direction(parse_input(input)?)),
+            Ok(ParsedProperty::Direction(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "display") =>
-            Ok(ParsedProperty::Display(parse_input(input)?)),
+            Ok(ParsedProperty::Display(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "enable-background") =>
-            Ok(ParsedProperty::EnableBackground(parse_input(input)?)),
+            Ok(ParsedProperty::EnableBackground(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "fill") =>
             Ok(ParsedProperty::Fill(parse_input(input)?)),
@@ -261,7 +261,7 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
 
         expanded_name!(svg "fill-rule") =>
-            Ok(ParsedProperty::FillRule(parse_input(input)?)),
+            Ok(ParsedProperty::FillRule(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "filter") =>
             Ok(ParsedProperty::Filter(parse_input(input)?)),
@@ -279,13 +279,13 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::FontSize(parse_input(input)?)),
 
         expanded_name!(svg "font-stretch") =>
-            Ok(ParsedProperty::FontStretch(parse_input(input)?)),
+            Ok(ParsedProperty::FontStretch(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "font-style") =>
-            Ok(ParsedProperty::FontStyle(parse_input(input)?)),
+            Ok(ParsedProperty::FontStyle(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "font-variant") =>
-            Ok(ParsedProperty::FontVariant(parse_input(input)?)),
+            Ok(ParsedProperty::FontVariant(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "font-weight") =>
             Ok(ParsedProperty::FontWeight(parse_input(input)?)),
@@ -320,10 +320,10 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::Opacity(parse_input(input)?)),
 
         expanded_name!(svg "overflow") =>
-            Ok(ParsedProperty::Overflow(parse_input(input)?)),
+            Ok(ParsedProperty::Overflow(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "shape-rendering") =>
-            Ok(ParsedProperty::ShapeRendering(parse_input(input)?)),
+            Ok(ParsedProperty::ShapeRendering(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stop-color") =>
             Ok(ParsedProperty::StopColor(parse_input(input)?)),
@@ -341,10 +341,10 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
 
         expanded_name!(svg "stroke-linecap") =>
-            Ok(ParsedProperty::StrokeLinecap(parse_input(input)?)),
+            Ok(ParsedProperty::StrokeLinecap(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-linejoin") =>
-            Ok(ParsedProperty::StrokeLinejoin(parse_input(input)?)),
+            Ok(ParsedProperty::StrokeLinejoin(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "stroke-miterlimit") =>
             Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
@@ -356,22 +356,22 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
 
         expanded_name!(svg "text-anchor") =>
-            Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
+            Ok(ParsedProperty::TextAnchor(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "text-decoration") =>
             Ok(ParsedProperty::TextDecoration(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "text-rendering") =>
-            Ok(ParsedProperty::TextRendering(parse_input(input)?)),
+            Ok(ParsedProperty::TextRendering(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "unicode-bidi") =>
-            Ok(ParsedProperty::UnicodeBidi(parse_input(input)?)),
+            Ok(ParsedProperty::UnicodeBidi(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "visibility") =>
-            Ok(ParsedProperty::Visibility(parse_input(input)?)),
+            Ok(ParsedProperty::Visibility(parse_input_to_parse_error(input)?)),
 
         expanded_name!(svg "writing-mode") =>
-            Ok(ParsedProperty::WritingMode(parse_input(input)?)),
+            Ok(ParsedProperty::WritingMode(parse_input_to_parse_error(input)?)),
 
         _ => Err(ValueErrorKind::UnknownProperty)?
     }
@@ -633,7 +633,7 @@ impl SpecifiedValues {
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
                     self.xml_space =
-                        SpecifiedValue::Specified(XmlSpace::parse_str(value).attribute(attr)?);
+                        SpecifiedValue::Specified(XmlSpace::parse_str_to_parse_error(value).attribute(attr)?);
                 }
 
                 _ => self.parse_one_presentation_attribute(attr, value)?,

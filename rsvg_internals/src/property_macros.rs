@@ -45,12 +45,12 @@ macro_rules! make_property {
         impl_default!($name, $name::$default);
         impl_property!($computed_values_type, $name, $inherits_automatically);
 
-        impl crate::parsers::Parse for $name {
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
-                parse_identifiers!(
+        impl crate::parsers::ParseToParseError for $name {
+            fn parse_to_parse_error<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::CssParseError<'i>> {
+                Ok(parse_identifiers!(
                     parser,
                     $($str_prop => $name::$variant,)+
-                ).map_err(|_| crate::error::ValueErrorKind::parse_error("parse error"))
+                )?)
             }
         }
     };
@@ -175,11 +175,11 @@ macro_rules! impl_property {
 mod tests {
     use super::*;
 
-    use crate::parsers::Parse;
+    use crate::parsers::{Parse, ParseToParseError};
     use cssparser::RGBA;
 
     #[test]
-    fn check_generated_property() {
+    fn check_identifiers_property() {
         make_property! {
             (),
             Foo,
@@ -194,8 +194,8 @@ mod tests {
 
         assert_eq!(<Foo as Default>::default(), Foo::Def);
         assert_eq!(<Foo as Property<()>>::inherits_automatically(), true);
-        assert!(<Foo as Parse>::parse_str("blargh").is_err());
-        assert_eq!(<Foo as Parse>::parse_str("bar"), Ok(Foo::Bar));
+        assert!(<Foo as ParseToParseError>::parse_str_to_parse_error("blargh").is_err());
+        assert_eq!(<Foo as ParseToParseError>::parse_str_to_parse_error("bar"), Ok(Foo::Bar));
     }
 
     #[test]
