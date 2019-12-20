@@ -549,7 +549,7 @@ impl Common {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "gradientUnits") => self.units = Some(attr.parse(value)?),
-                expanded_name!(svg "gradientTransform") => self.affine = Some(attr.parse(value)?),
+                expanded_name!(svg "gradientTransform") => self.affine = Some(attr.parse_to_parse_error(value)?),
                 expanded_name!(svg "spreadMethod") => self.spread = Some(attr.parse(value)?),
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?)

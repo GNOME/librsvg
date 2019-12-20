@@ -129,7 +129,7 @@ impl NodeTrait for Pattern {
                     self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
                 expanded_name!(svg "patternTransform") => {
-                    self.common.affine = Some(attr.parse(value)?)
+                    self.common.affine = Some(attr.parse_to_parse_error(value)?)
                 }
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?);

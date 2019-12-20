@@ -7,17 +7,21 @@ use std::f64::consts::*;
 use cssparser::{self, Parser, Token};
 
 use crate::error::*;
-use crate::parsers::{optional_comma, Parse, ParseToParseError};
+use crate::parsers::{optional_comma, ParseToParseError};
 
-impl Parse for cairo::Matrix {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<cairo::Matrix, ValueErrorKind> {
-        let matrix =
-            parse_transform_list(parser).map_err(|_| ValueErrorKind::parse_error("parse error"))?;
+impl ParseToParseError for cairo::Matrix {
+    fn parse_to_parse_error<'i>(
+        parser: &mut Parser<'i, '_>,
+    ) -> Result<cairo::Matrix, CssParseError<'i>> {
+        let loc = parser.current_source_location();
 
-        matrix
-            .try_invert()
-            .map(|_| matrix)
-            .map_err(|_| ValueErrorKind::Value("invalid transformation matrix".to_string()))
+        let matrix = parse_transform_list(parser)?;
+
+        matrix.try_invert().map(|_| matrix).map_err(|_| {
+            loc.new_custom_error(ValueErrorKind::Value(
+                "invalid transformation matrix".to_string(),
+            ))
+        })
     }
 }
 
@@ -25,7 +29,9 @@ impl Parse for cairo::Matrix {
 // Its operataion and grammar are described here:
 // https://www.w3.org/TR/SVG/coords.html#TransformAttribute
 
-fn parse_transform_list<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
+fn parse_transform_list<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<cairo::Matrix, CssParseError<'i>> {
     let mut matrix = cairo::Matrix::identity();
 
     loop {
@@ -101,7 +107,9 @@ fn parse_matrix_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, C
     })
 }
 
-fn parse_translate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
+fn parse_translate_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
         let tx = f64::parse_to_parse_error(p)?;
 
@@ -191,8 +199,8 @@ mod tests {
     use float_cmp::ApproxEq;
     use std::f64;
 
-    fn parse_transform(s: &str) -> Result<cairo::Matrix, ValueErrorKind> {
-        cairo::Matrix::parse_str(s)
+    fn parse_transform(s: &str) -> Result<cairo::Matrix, CssParseError> {
+        cairo::Matrix::parse_str_to_parse_error(s)
     }
 
     fn assert_matrix_eq(a: &cairo::Matrix, b: &cairo::Matrix) {
@@ -237,26 +245,9 @@ mod tests {
 
     #[test]
     fn invalid_transform_yields_value_error() {
-        match parse_transform("matrix (0 0 0 0 0 0)") {
-            Err(ValueErrorKind::Value(_)) => {}
-            _ => {
-                panic!();
-            }
-        }
-
-        match parse_transform("scale (0), translate (10, 10)") {
-            Err(ValueErrorKind::Value(_)) => {}
-            _ => {
-                panic!();
-            }
-        }
-
-        match parse_transform("scale (0), skewX (90)") {
-            Err(ValueErrorKind::Value(_)) => {}
-            _ => {
-                panic!();
-            }
-        }
+        assert!(parse_transform("matrix (0 0 0 0 0 0)").is_err());
+        assert!(parse_transform("scale (0), translate (10, 10)").is_err());
+        assert!(parse_transform("scale (0), skewX (90)").is_err());
     }
 
     #[test]
