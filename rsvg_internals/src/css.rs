@@ -123,7 +123,7 @@ impl<'i> DeclarationParser<'i> for DeclParser {
     ) -> Result<Declaration, CssParseError<'i>> {
         let prop_name = QualName::new(None, ns!(svg), LocalName::from(name.as_ref()));
         let property =
-            parse_property(&prop_name, input, true).map_err(|e| input.new_custom_error(e))?;
+            parse_property(&prop_name, input, true).map_err(|_| input.new_custom_error(ValueErrorKind::parse_error("parse error")))?;
 
         let important = input.try_parse(parse_important).is_ok();
 
