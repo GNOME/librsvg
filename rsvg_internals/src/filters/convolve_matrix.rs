@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{NumberOptionalNumber, Parse, ParseValue, ParseValueToParseError};
+use crate::parsers::{NumberOptionalNumber, ParseToParseError, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -83,8 +83,8 @@ impl NodeTrait for FeConvolveMatrix {
                         }
                     })?)
                 }
-                expanded_name!(svg "bias") => self.bias = attr.parse(value)?,
-                expanded_name!(svg "edgeMode") => self.edge_mode = attr.parse(value)?,
+                expanded_name!(svg "bias") => self.bias = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "edgeMode") => self.edge_mode = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "kernelUnitLength") => {
                     let NumberOptionalNumber(x, y) =
                         attr.parse_to_parse_error_and_validate(value, |v: NumberOptionalNumber<f64>| {
@@ -99,7 +99,7 @@ impl NodeTrait for FeConvolveMatrix {
 
                     self.kernel_unit_length = Some((x, y))
                 }
-                expanded_name!(svg "preserveAlpha") => self.preserve_alpha = attr.parse(value)?,
+                expanded_name!(svg "preserveAlpha") => self.preserve_alpha = attr.parse_to_parse_error(value)?,
 
                 _ => (),
             }
@@ -337,26 +337,24 @@ impl FilterEffect for FeConvolveMatrix {
     }
 }
 
-impl Parse for EdgeMode {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for EdgeMode {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "duplicate" => EdgeMode::Duplicate,
             "wrap" => EdgeMode::Wrap,
             "none" => EdgeMode::None,
-        )
-        .map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 
 // Used for the preserveAlpha attribute
-impl Parse for bool {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for bool {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "false" => false,
             "true" => true,
-        )
-        .map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
