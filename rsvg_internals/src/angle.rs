@@ -4,7 +4,7 @@ use std::f64::consts::*;
 
 use cssparser::{Parser, Token};
 
-use crate::error::ValueErrorKind;
+use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -62,40 +62,38 @@ impl Angle {
 // angle ::= number ("deg" | "grad" | "rad")?
 //
 impl Parse for Angle {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Angle, ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Angle, CssParseError<'i>> {
         let angle = {
+            let loc = parser.current_source_location();
+
             let token = parser.next()?;
 
             match *token {
                 Token::Number { value, .. } => {
-                    let degrees = finite_f32(value)?;
+                    let degrees = finite_f32(value).map_err(|e| loc.new_custom_error(e))?;
                     Angle::from_degrees(f64::from(degrees))
                 }
 
                 Token::Dimension {
                     value, ref unit, ..
                 } => {
-                    let value = f64::from(finite_f32(value)?);
+                    let value = f64::from(finite_f32(value).map_err(|e| loc.new_custom_error(e))?);
 
                     match unit.as_ref() {
                         "deg" => Angle::from_degrees(value),
                         "grad" => Angle::from_degrees(value * 360.0 / 400.0),
                         "rad" => Angle::new(value),
                         _ => {
-                            return Err(ValueErrorKind::parse_error(
-                                "expected 'deg' | 'grad' | 'rad'",
-                            ));
+                            return Err(loc.new_unexpected_token_error(token.clone()));
                         }
                     }
                 }
 
-                _ => return Err(ValueErrorKind::parse_error("expected angle")),
+                _ => return Err(loc.new_unexpected_token_error(token.clone())),
             }
         };
 
-        parser
-            .expect_exhausted()
-            .map_err(|_| ValueErrorKind::parse_error("expected angle"))?;
+        parser.expect_exhausted()?;
 
         Ok(angle)
     }

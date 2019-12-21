@@ -134,8 +134,8 @@ impl FilterEffect for FeBlend {
 }
 
 impl Parse for Mode {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        parse_identifiers!(
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "normal" => Mode::Normal,
             "multiply" => Mode::Multiply,
@@ -153,8 +153,7 @@ impl Parse for Mode {
             "saturation" => Mode::HslSaturation,
             "color" => Mode::HslColor,
             "luminosity" => Mode::HslLuminosity,
-        )
-        .map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 

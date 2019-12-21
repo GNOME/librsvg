@@ -227,7 +227,11 @@ impl FilterContext {
         );
 
         // Return the only existing reference as immutable.
-        bg.as_ref().unwrap().as_ref().map(|surf| surf.clone()).map_err(|&s| s)
+        bg.as_ref()
+            .unwrap()
+            .as_ref()
+            .map(|surf| surf.clone())
+            .map_err(|&s| s)
     }
 
     /// Returns the surface containing the background image snapshot alpha.

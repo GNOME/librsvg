@@ -4,7 +4,7 @@ use nalgebra::Vector3;
 
 use crate::filters::context::FilterContext;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{ParseValue};
+use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::util::clamp;
 

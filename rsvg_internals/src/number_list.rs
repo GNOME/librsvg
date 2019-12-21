@@ -2,6 +2,7 @@
 
 use cssparser::{Parser, ParserInput};
 
+use crate::error::*;
 use crate::parsers::{optional_comma, Parse};
 
 #[derive(Eq, PartialEq)]
@@ -11,22 +12,16 @@ pub enum NumberListLength {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum NumberListError {
-    IncorrectNumberOfElements,
-    Parse(String),
-}
-
-#[derive(Debug, PartialEq)]
 pub struct NumberList(pub Vec<f64>);
 
 impl NumberList {
-    pub fn parse(
-        parser: &mut Parser<'_, '_>,
+    pub fn parse<'i>(
+        parser: &mut Parser<'i, '_>,
         length: NumberListLength,
-    ) -> Result<NumberList, NumberListError> {
+    ) -> Result<Self, CssParseError<'i>> {
         let mut v = match length {
             NumberListLength::Exact(l) if l > 0 => Vec::<f64>::with_capacity(l),
-            NumberListLength::Exact(_) => unreachable!(),
+            NumberListLength::Exact(_) => unreachable!("NumberListLength::Exact cannot be 0"),
             NumberListLength::Unbounded => Vec::<f64>::new(),
         };
 
@@ -39,9 +34,7 @@ impl NumberList {
                 optional_comma(parser);
             }
 
-            v.push(f64::parse(parser).map_err(|_| {
-                NumberListError::Parse("expected number".to_string())
-            })?);
+            v.push(f64::parse(parser)?);
 
             if let NumberListLength::Exact(l) = length {
                 if i + 1 == l {
@@ -61,14 +54,15 @@ impl NumberList {
             }
         }
 
-        parser
-            .expect_exhausted()
-            .map_err(|_| NumberListError::IncorrectNumberOfElements)?;
+        parser.expect_exhausted()?;
 
         Ok(NumberList(v))
     }
 
-    pub fn parse_str(s: &str, length: NumberListLength) -> Result<NumberList, NumberListError> {
+    pub fn parse_str<'i>(
+        s: &'i str,
+        length: NumberListLength,
+    ) -> Result<NumberList, CssParseError<'i>> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 

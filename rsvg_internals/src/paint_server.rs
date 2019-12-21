@@ -22,13 +22,15 @@ pub enum PaintServer {
 }
 
 impl Parse for PaintServer {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<PaintServer, ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<PaintServer, CssParseError<'i>> {
         if parser
             .try_parse(|i| i.expect_ident_matching("none"))
             .is_ok()
         {
             Ok(PaintServer::None)
         } else if let Ok(url) = parser.try_parse(|i| i.expect_url()) {
+            let loc = parser.current_source_location();
+
             let alternate = if !parser.is_exhausted() {
                 if parser
                     .try_parse(|i| i.expect_ident_matching("none"))
@@ -43,13 +45,13 @@ impl Parse for PaintServer {
             };
 
             Ok(PaintServer::Iri {
-                iri: Fragment::parse(&url)?,
+                iri: Fragment::parse(&url)
+                    .map_err(|e: HrefError| -> ValueErrorKind { e.into() })
+                    .map_err(|e| loc.new_custom_error(e))?,
                 alternate,
             })
         } else {
-            cssparser::Color::parse(parser)
-                .map(PaintServer::SolidColor)
-                .map_err(ValueErrorKind::from)
+            Ok(cssparser::Color::parse(parser).map(PaintServer::SolidColor)?)
         }
     }
 }

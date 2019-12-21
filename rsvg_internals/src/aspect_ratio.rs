@@ -222,23 +222,16 @@ fn parse_fit_mode<'i>(parser: &mut Parser<'i, '_>) -> Result<FitMode, BasicParse
 }
 
 impl Parse for AspectRatio {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<AspectRatio, ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<AspectRatio, CssParseError<'i>> {
         let defer = parser
             .try_parse(|p| p.expect_ident_matching("defer"))
             .is_ok();
 
-        let align_xy = parser
-            .try_parse(|p| parse_align_xy(p))
-            .map_err(|_e| ValueErrorKind::parse_error("parse error"))?;
+        let align_xy = parser.try_parse(|p| parse_align_xy(p))?;
 
-        let fit = parser
-            .try_parse(|p| parse_fit_mode(p))
-            .map_err(|_e| ValueErrorKind::parse_error("parse error"))
-            .unwrap_or_default();
+        let fit = parser.try_parse(|p| parse_fit_mode(p)).unwrap_or_default();
 
-        parser
-            .expect_exhausted()
-            .map_err(|_| ValueErrorKind::parse_error("extra data in AspectRatio"))?;
+        parser.expect_exhausted()?;
 
         let align = align_xy.map(|(x, y)| Align { x, y, fit });
 

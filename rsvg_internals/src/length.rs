@@ -226,35 +226,27 @@ const CM_PER_INCH: f64 = 2.54;
 const MM_PER_INCH: f64 = 25.4;
 const PICA_PER_INCH: f64 = 6.0;
 
-fn make_err() -> ValueErrorKind {
-    ValueErrorKind::parse_error(
-        "expected length: number(\"em\" | \"ex\" | \"px\" | \"in\" | \"cm\" | \"mm\" | \"pt\" | \
-         \"pc\" | \"%\")?",
-    )
-}
-
 impl<N: Normalize> Parse for Length<N> {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Length<N>, ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Length<N>, CssParseError<'i>> {
         let length = {
-            let token = parser.next().map_err(|_| {
-                ValueErrorKind::parse_error(
-                    "expected number and optional symbol, or number and percentage",
-                )
-            })?;
+            let token = parser.next()?.clone();
 
-            match *token {
-                Token::Number { value, .. } => {
-                    Length::new(f64::from(finite_f32(value)?), LengthUnit::Px)
-                }
+            match token {
+                Token::Number { value, .. } => Length::new(
+                    f64::from(finite_f32(value).map_err(|e| parser.new_custom_error(e))?),
+                    LengthUnit::Px,
+                ),
 
-                Token::Percentage { unit_value, .. } => {
-                    Length::new(f64::from(finite_f32(unit_value)?), LengthUnit::Percent)
-                }
+                Token::Percentage { unit_value, .. } => Length::new(
+                    f64::from(finite_f32(unit_value).map_err(|e| parser.new_custom_error(e))?),
+                    LengthUnit::Percent,
+                ),
 
                 Token::Dimension {
                     value, ref unit, ..
                 } => {
-                    let value = f64::from(finite_f32(value)?);
+                    let value =
+                        f64::from(finite_f32(value).map_err(|e| parser.new_custom_error(e))?);
 
                     match unit.as_ref() {
                         "px" => Length::new(value, LengthUnit::Px),
@@ -266,11 +258,11 @@ impl<N: Normalize> Parse for Length<N> {
                         "pt" => Length::new(value, LengthUnit::Pt),
                         "pc" => Length::new(value, LengthUnit::Pc),
 
-                        _ => return Err(make_err()),
+                        _ => return Err(parser.new_unexpected_token_error(token.clone()))?,
                     }
                 }
 
-                _ => return Err(make_err()),
+                _ => return Err(parser.new_unexpected_token_error(token.clone()))?,
             }
         };
 
@@ -337,18 +329,14 @@ impl<N: Normalize> Length<N> {
 
             LengthUnit::Ex => self.length * font_size_from_values(values, params) / 2.0,
 
-            LengthUnit::In => {
-                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
-            }
+            LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y),
 
             LengthUnit::Cm => {
-                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
-                    / CM_PER_INCH
+                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y) / CM_PER_INCH
             }
 
             LengthUnit::Mm => {
-                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
-                    / MM_PER_INCH
+                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y) / MM_PER_INCH
             }
 
             LengthUnit::Pt => {
@@ -468,24 +456,26 @@ mod tests {
 
     #[test]
     fn empty_length_yields_error() {
-        assert!(is_parse_error(&Length::<Both>::parse_str("")));
+        assert!(Length::<Both>::parse_str("").is_err());
     }
 
     #[test]
     fn invalid_unit_yields_error() {
-        assert!(is_parse_error(&Length::<Both>::parse_str("8furlong")));
+        assert!(Length::<Both>::parse_str("8furlong").is_err());
     }
 
     #[test]
     fn check_nonnegative_works() {
         // and_then with anonymous function
         assert!(Length::<Both>::parse_str("0")
-            .and_then(|l| l.check_nonnegative())
+            .unwrap()
+            .check_nonnegative()
             .is_ok());
 
         // and_then with named function
         assert!(Length::<Both>::parse_str("-10")
-            .and_then(Length::check_nonnegative)
+            .unwrap()
+            .check_nonnegative()
             .is_err());
     }
 

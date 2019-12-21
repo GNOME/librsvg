@@ -4,7 +4,16 @@ use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use libc;
-use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName};
+use markup5ever::{
+    expanded_name,
+    local_name,
+    namespace_url,
+    ns,
+    ExpandedName,
+    LocalName,
+    Namespace,
+    QualName,
+};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -271,7 +280,10 @@ impl XmlState {
                     .append_stylesheet_from_xml_processing_instruction(alternate, type_, &href)
                     .is_err()
                 {
-                    rsvg_log!("invalid xml-stylesheet {} in XML processing instruction", href);
+                    rsvg_log!(
+                        "invalid xml-stylesheet {} in XML processing instruction",
+                        href
+                    );
                 }
             } else {
                 rsvg_log!("xml-stylesheet processing instruction does not have href; ignoring");
@@ -363,7 +375,8 @@ impl XmlState {
             .unwrap_or(StyleType::TextCss);
 
         if style_type == StyleType::TextCss {
-            let stylesheet_text = current_node.children()
+            let stylesheet_text = current_node
+                .children()
                 .map(|child| {
                     let child_borrow = child.borrow();
 

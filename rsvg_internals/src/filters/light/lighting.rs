@@ -32,7 +32,7 @@ use crate::filters::{
     PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers::{self, Parse, ParseValue};
+use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
@@ -70,19 +70,18 @@ impl Common {
                 expanded_name!(svg "surfaceScale") => self.surface_scale = attr.parse(value)?,
 
                 expanded_name!(svg "kernelUnitLength") => {
-                    self.kernel_unit_length = Some(
-                        parsers::number_optional_number(value)
-                            .and_then(|(x, y)| {
-                                if x > 0.0 && y > 0.0 {
-                                    Ok((x, y))
-                                } else {
-                                    Err(ValueErrorKind::value_error(
-                                        "kernelUnitLength can't be less or equal to zero",
-                                    ))
-                                }
-                            })
-                            .attribute(attr)?,
-                    )
+                    let NumberOptionalNumber(x, y) =
+                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
+                            if v.0 > 0.0 && v.1 > 0.0 {
+                                Ok(v)
+                            } else {
+                                Err(ValueErrorKind::value_error(
+                                    "kernelUnitLength can't be less or equal to zero",
+                                ))
+                            }
+                        })?;
+
+                    self.kernel_unit_length = Some((x, y));
                 }
                 _ => (),
             }
@@ -116,17 +115,15 @@ impl NodeTrait for FeDiffuseLighting {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "diffuseConstant") => {
-                    self.diffuse_constant = f64::parse_str(value)
-                        .and_then(|x| {
-                            if x >= 0.0 {
-                                Ok(x)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "diffuseConstant can't be negative",
-                                ))
-                            }
-                        })
-                        .attribute(attr)?;
+                    self.diffuse_constant = attr.parse_and_validate(value, |x| {
+                        if x >= 0.0 {
+                            Ok(x)
+                        } else {
+                            Err(ValueErrorKind::value_error(
+                                "diffuseConstant can't be negative",
+                            ))
+                        }
+                    })?;
                 }
                 _ => (),
             }
@@ -187,29 +184,26 @@ impl NodeTrait for FeSpecularLighting {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "specularConstant") => {
-                    self.specular_constant = f64::parse_str(value)
-                        .and_then(|x| {
-                            if x >= 0.0 {
-                                Ok(x)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "specularConstant can't be negative",
-                                ))
-                            }
-                        })
-                        .attribute(attr)?;
+                    self.specular_constant = attr.parse_and_validate(value, |x| {
+                        if x >= 0.0 {
+                            Ok(x)
+                        } else {
+                            Err(ValueErrorKind::value_error(
+                                "specularConstant can't be negative",
+                            ))
+                        }
+                    })?;
                 }
                 expanded_name!(svg "specularExponent") => {
-                    self.specular_exponent = f64::parse_str(value)
-                        .and_then(|x| {
-                            if x >= 1.0 && x <= 128.0 {
-                                Ok(x)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "specularExponent should be between 1.0 and 128.0",
-                                ))
-                            }
-                        }).attribute(attr)?;
+                    self.specular_exponent = attr.parse_and_validate(value, |x| {
+                        if x >= 1.0 && x <= 128.0 {
+                            Ok(x)
+                        } else {
+                            Err(ValueErrorKind::value_error(
+                                "specularExponent should be between 1.0 and 128.0",
+                            ))
+                        }
+                    })?;
                 }
                 _ => (),
             }
@@ -298,7 +292,8 @@ macro_rules! impl_lighting_filter {
 
                 if let Some((ox, oy)) = scale {
                     // Scale the input surface to match kernel_unit_length.
-                    let (new_surface, new_bounds) = input_surface.scale(bounds, 1.0 / ox, 1.0 / oy)?;
+                    let (new_surface, new_bounds) =
+                        input_surface.scale(bounds, 1.0 / ox, 1.0 / oy)?;
 
                     input_surface = new_surface;
                     bounds = new_bounds;
@@ -306,8 +301,8 @@ macro_rules! impl_lighting_filter {
 
                 let (bounds_w, bounds_h) = bounds.size();
 
-                // Check if the surface is too small for normal computation. This case is unspecified;
-                // WebKit doesn't render anything in this case.
+                // Check if the surface is too small for normal computation. This case is
+                // unspecified; WebKit doesn't render anything in this case.
                 if bounds_w < 2 || bounds_h < 2 {
                     return Err(FilterError::LightingInputTooSmall);
                 }
@@ -337,7 +332,8 @@ macro_rules! impl_lighting_filter {
 
                             // compute the factor just once for the three colors
                             let factor = self.compute_factor(normal, light_vector);
-                            let compute = |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
+                            let compute =
+                                |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
 
                             let r = compute(light_color.red);
                             let g = compute(light_color.green);

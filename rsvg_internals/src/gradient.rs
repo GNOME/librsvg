@@ -44,13 +44,13 @@ enum SpreadMethod {
 }
 
 impl Parse for SpreadMethod {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<SpreadMethod, ValueErrorKind> {
-        parse_identifiers!(
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "pad" => SpreadMethod::Pad,
             "reflect" => SpreadMethod::Reflect,
             "repeat" => SpreadMethod::Repeat,
-        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 
@@ -114,9 +114,8 @@ fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64
 pub struct Stop {
     /// <stop offset="..."/>
     offset: UnitInterval,
-
-    // stop-color and stop-opacity are not attributes; they are properties, so
-    // they go into property_defs.rs
+    /* stop-color and stop-opacity are not attributes; they are properties, so
+     * they go into property_defs.rs */
 }
 
 fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind> {
@@ -222,16 +221,31 @@ impl UnresolvedVariant {
 
     fn resolve_from_fallback(&self, fallback: &UnresolvedVariant) -> UnresolvedVariant {
         match (*self, *fallback) {
-            (UnresolvedVariant::Linear { x1, y1, x2, y2 },
-             UnresolvedVariant::Linear { x1: fx1, y1: fy1, x2: fx2, y2: fy2 }) => UnresolvedVariant::Linear {
+            (
+                UnresolvedVariant::Linear { x1, y1, x2, y2 },
+                UnresolvedVariant::Linear {
+                    x1: fx1,
+                    y1: fy1,
+                    x2: fx2,
+                    y2: fy2,
+                },
+            ) => UnresolvedVariant::Linear {
                 x1: x1.or(fx1),
                 y1: y1.or(fy1),
                 x2: x2.or(fx2),
                 y2: y2.or(fy2),
             },
 
-            (UnresolvedVariant::Radial { cx, cy, r, fx, fy },
-             UnresolvedVariant::Radial { cx: fcx, cy: fcy, r: fr, fx: ffx, fy: ffy }) => UnresolvedVariant::Radial {
+            (
+                UnresolvedVariant::Radial { cx, cy, r, fx, fy },
+                UnresolvedVariant::Radial {
+                    cx: fcx,
+                    cy: fcy,
+                    r: fr,
+                    fx: ffx,
+                    fy: ffy,
+                },
+            ) => UnresolvedVariant::Radial {
                 cx: cx.or(fcx),
                 cy: cy.or(fcy),
                 r: r.or(fr),
@@ -264,7 +278,7 @@ impl UnresolvedVariant {
                 let fy = fy.or(cy);
 
                 UnresolvedVariant::Radial { cx, cy, r, fx, fy }
-            },
+            }
         }
     }
 }
@@ -472,7 +486,13 @@ impl UnresolvedGradient {
         let stops = self.stops.clone().or_else(|| fallback.stops.clone());
         let variant = self.variant.resolve_from_fallback(&fallback.variant);
 
-        UnresolvedGradient { units, affine, spread, stops, variant }
+        UnresolvedGradient {
+            units,
+            affine,
+            spread,
+            stops,
+            variant,
+        }
     }
 
     fn resolve_from_defaults(&self) -> UnresolvedGradient {
@@ -482,7 +502,13 @@ impl UnresolvedGradient {
         let stops = self.stops.clone().or_else(|| Some(Vec::<ColorStop>::new()));
         let variant = self.variant.resolve_from_defaults();
 
-        UnresolvedGradient { units, affine, spread, stops, variant }
+        UnresolvedGradient {
+            units,
+            affine,
+            spread,
+            stops,
+            variant,
+        }
     }
 }
 
@@ -539,7 +565,7 @@ macro_rules! impl_get_unresolved {
                 }
             }
         }
-    }
+    };
 }
 impl_get_unresolved!(LinearGradient);
 impl_get_unresolved!(RadialGradient);
@@ -616,7 +642,10 @@ macro_rules! impl_paint_source {
                     return Ok(gradient.clone());
                 }
 
-                let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
+                let Unresolved {
+                    mut gradient,
+                    mut fallback,
+                } = self.get_unresolved(node);
 
                 let mut stack = NodeStack::new();
 
@@ -641,7 +670,7 @@ macro_rules! impl_paint_source {
                                 a_gradient.get_unresolved(&acquired_node)
                             }
 
-                            _ => unreachable!()
+                            _ => unreachable!(),
                         };
 
                         gradient = gradient.resolve_from_fallback(&unresolved.gradient);
@@ -661,7 +690,7 @@ macro_rules! impl_paint_source {
                 Ok(gradient)
             }
         }
-    }
+    };
 }
 
 impl_paint_source!(
@@ -769,15 +798,18 @@ fn acquire_gradient<'a>(
     draw_ctx: &'a mut DrawingCtx,
     fragment: &Fragment,
 ) -> Result<AcquiredNode, AcquireError> {
-    draw_ctx.acquire_node(fragment, &[NodeType::LinearGradient, NodeType::RadialGradient])
+    draw_ctx.acquire_node(
+        fragment,
+        &[NodeType::LinearGradient, NodeType::RadialGradient],
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use markup5ever::{namespace_url, ns, QualName};
     use crate::float_eq_cairo::ApproxEqCairo;
     use crate::node::{NodeData, NodeType, RsvgNode};
+    use markup5ever::{namespace_url, ns, QualName};
 
     #[test]
     fn parses_spread_method() {
@@ -814,7 +846,7 @@ mod tests {
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
             None,
             None,
-            Box::new(LinearGradient::default())
+            Box::new(LinearGradient::default()),
         ));
 
         let borrow = node.borrow();
@@ -828,7 +860,7 @@ mod tests {
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
             None,
             None,
-            Box::new(RadialGradient::default())
+            Box::new(RadialGradient::default()),
         ));
 
         let borrow = node.borrow();

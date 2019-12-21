@@ -3,8 +3,8 @@
 
 use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use std::rc::Rc;
 use std::ops::Deref;
+use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
@@ -65,10 +65,7 @@ pub struct Shape {
 
 impl Shape {
     fn new(builder: Rc<PathBuilder>, markers: Markers) -> Shape {
-        Shape {
-            builder,
-            markers,
-        }
+        Shape { builder, markers }
     }
 
     fn draw(
@@ -177,8 +174,7 @@ impl NodeTrait for Path {
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(builder) = self.builder.as_ref() {
             let values = cascaded.get();
-            Shape::new(builder.clone(), Markers::Yes)
-                .draw(node, values, draw_ctx, clipping)
+            Shape::new(builder.clone(), Markers::Yes).draw(node, values, draw_ctx, clipping)
         } else {
             Ok(draw_ctx.empty_bbox())
         }
@@ -199,7 +195,7 @@ impl Deref for Points {
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
 impl Parse for Points {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Points, ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Points, CssParseError<'i>> {
         let mut v = Vec::new();
 
         loop {
@@ -252,7 +248,7 @@ impl NodeTrait for Polygon {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "points") {
-                self.points = attr.parse(value.trim()).map(Some)?;
+                self.points = attr.parse(value).map(Some)?;
             }
         }
 
@@ -281,7 +277,7 @@ impl NodeTrait for Polyline {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "points") {
-                self.points = attr.parse(value.trim()).map(Some)?;
+                self.points = attr.parse(value).map(Some)?;
             }
         }
 
@@ -296,8 +292,11 @@ impl NodeTrait for Polyline {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(make_poly(self.points.as_ref(), false)), Markers::Yes)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(make_poly(self.points.as_ref(), false)),
+            Markers::Yes,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
@@ -332,17 +331,16 @@ impl NodeTrait for Line {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::Yes)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(self.make_path_builder(values, draw_ctx)),
+            Markers::Yes,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
 impl Line {
-    fn make_path_builder(
-        &self,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
         let mut builder = PathBuilder::new();
 
         let params = draw_ctx.get_view_params();
@@ -410,17 +408,16 @@ impl NodeTrait for Rect {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::No)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(self.make_path_builder(values, draw_ctx)),
+            Markers::No,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
 impl Rect {
-    fn make_path_builder(
-        &self,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let x = self.x.normalize(values, &params);
@@ -623,17 +620,16 @@ impl NodeTrait for Circle {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::No)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(self.make_path_builder(values, draw_ctx)),
+            Markers::No,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
 impl Circle {
-    fn make_path_builder(
-        &self,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -681,17 +677,16 @@ impl NodeTrait for Ellipse {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::No)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(self.make_path_builder(values, draw_ctx)),
+            Markers::No,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
 impl Ellipse {
-    fn make_path_builder(
-        &self,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);

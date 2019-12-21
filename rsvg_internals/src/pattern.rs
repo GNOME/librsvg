@@ -10,7 +10,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{DrawingCtx, NodeStack};
-use crate::error::{AcquireError, AttributeResultExt, RenderingError};
+use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
@@ -314,10 +314,8 @@ impl AsPaintSource for ResolvedPattern {
         // Create the pattern contents coordinate system
         let _params = if let Some(vbox) = vbox {
             // If there is a vbox, use that
-            let r = preserve_aspect_ratio.compute(
-                &vbox,
-                &Rect::from_size(scaled_width, scaled_height),
-            );
+            let r =
+                preserve_aspect_ratio.compute(&vbox, &Rect::from_size(scaled_width, scaled_height));
 
             let sw = r.width() / vbox.0.width();
             let sh = r.height() / vbox.0.height();

@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{ParseValue};
+use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 

@@ -20,7 +20,24 @@ use crate::node::RsvgNode;
 /// The code flow will sometimes require preserving this error as a long-lived struct;
 /// see the `impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>>` for that
 /// purpose.
-pub type ParseError<'i> = cssparser::ParseError<'i, ValueErrorKind>;
+pub type CssParseError<'i> = cssparser::ParseError<'i, ValueErrorKind>;
+
+pub enum ParseError<'i> {
+    P(CssParseError<'i>),
+    V(ValueErrorKind),
+}
+
+impl<'i> From<CssParseError<'i>> for ParseError<'i> {
+    fn from(p: CssParseError<'i>) -> ParseError {
+        ParseError::P(p)
+    }
+}
+
+impl<'i> From<ValueErrorKind> for ParseError<'i> {
+    fn from(v: ValueErrorKind) -> ParseError<'i> {
+        ParseError::V(v)
+    }
+}
 
 /// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]
@@ -182,12 +199,12 @@ impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O> for Result<O, E> {
 }
 
 /// Turns a short-lived `ParseError` into a long-lived `NodeError`
-impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
+impl<'i, O> AttributeResultExt<O> for Result<O, CssParseError<'i>> {
     fn attribute(self, attr: QualName) -> Result<O, NodeError> {
         self.map_err(|e| {
             // FIXME: eventually, here we'll want to preserve the location information
 
-            let ParseError {
+            let CssParseError {
                 kind,
                 location: _location,
             } = e;
@@ -202,16 +219,16 @@ impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
                         attr,
                         err: ValueErrorKind::Parse(s),
                     }
-                },
+                }
 
                 ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput) => NodeError {
                     attr,
                     err: ValueErrorKind::parse_error("unexpected end of input"),
                 },
 
-                ParseErrorKind::Basic(_) => unreachable!(
-                    "attribute parsers should not return errors for CSS rules"
-                ),
+                ParseErrorKind::Basic(_) => {
+                    unreachable!("attribute parsers should not return errors for CSS rules")
+                }
 
                 ParseErrorKind::Custom(err) => NodeError { attr, err },
             }
@@ -348,21 +365,5 @@ impl From<cairo::Status> for LoadingError {
 impl From<glib::Error> for LoadingError {
     fn from(e: glib::Error) -> LoadingError {
         LoadingError::Glib(e)
-    }
-}
-
-#[cfg(test)]
-pub fn is_parse_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
-    match *r {
-        Err(ValueErrorKind::Parse(_)) => true,
-        _ => false,
-    }
-}
-
-#[cfg(test)]
-pub fn is_value_error<T>(r: &Result<T, ValueErrorKind>) -> bool {
-    match *r {
-        Err(ValueErrorKind::Value(_)) => true,
-        _ => false,
     }
 }

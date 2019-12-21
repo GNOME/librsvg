@@ -1,6 +1,6 @@
 //! `userSpaceOnUse` or `objectBoundingBox` values.
 
-use cssparser::{BasicParseError, Parser};
+use cssparser::Parser;
 
 use crate::error::*;
 use crate::parsers::Parse;
@@ -15,12 +15,12 @@ pub enum CoordUnits {
 }
 
 impl Parse for CoordUnits {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<CoordUnits, ValueErrorKind> {
-        parse_identifiers!(
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "userSpaceOnUse" => CoordUnits::UserSpaceOnUse,
             "objectBoundingBox" => CoordUnits::ObjectBoundingBox,
-        ).map_err(|_: BasicParseError| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 
@@ -51,9 +51,9 @@ macro_rules! coord_units {
         }
 
         impl $crate::parsers::Parse for $name {
-            fn parse(
-                parser: &mut ::cssparser::Parser<'_, '_>,
-            ) -> Result<Self, $crate::error::ValueErrorKind> {
+            fn parse<'i>(
+                parser: &mut ::cssparser::Parser<'i, '_>,
+            ) -> Result<Self, $crate::error::CssParseError<'i>> {
                 Ok($name($crate::coord_units::CoordUnits::parse(parser)?))
             }
         }

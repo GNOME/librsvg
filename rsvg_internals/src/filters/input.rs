@@ -1,4 +1,4 @@
-use cssparser::{Parser, Token};
+use cssparser::{BasicParseError, Parser, Token};
 
 use crate::error::*;
 use crate::parsers::Parse;
@@ -20,10 +20,10 @@ pub enum Input {
 pub struct CustomIdent(String);
 
 impl Parse for Input {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         parser
             .try_parse(|p| {
-                parse_identifiers!(
+                Ok(parse_identifiers!(
                     p,
                     "SourceGraphic" => Input::SourceGraphic,
                     "SourceAlpha" => Input::SourceAlpha,
@@ -31,9 +31,9 @@ impl Parse for Input {
                     "BackgroundAlpha" => Input::BackgroundAlpha,
                     "FillPaint" => Input::FillPaint,
                     "StrokePaint" => Input::StrokePaint,
-                ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+                )?)
             })
-            .or_else(|_| {
+            .or_else(|_: BasicParseError| {
                 let ident = CustomIdent::parse(parser)?;
                 Ok(Input::FilterOutput(ident))
             })
@@ -41,7 +41,7 @@ impl Parse for Input {
 }
 
 impl Parse for CustomIdent {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         let loc = parser.current_source_location();
         let token = parser.next()?;
 

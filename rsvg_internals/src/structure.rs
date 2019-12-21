@@ -7,7 +7,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::error::{AcquireError, AttributeResultExt, RenderingError};
+use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
@@ -189,8 +189,9 @@ impl NodeTrait for Svg {
                 expanded_name!(svg "x") if is_inner_svg => self.x = Some(attr.parse(value)?),
                 expanded_name!(svg "y") if is_inner_svg => self.y = Some(attr.parse(value)?),
                 expanded_name!(svg "width") => {
-                    self.w =
-                        Some(attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?)
+                    self.w = Some(
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
+                    )
                 }
                 expanded_name!(svg "height") => {
                     self.h =

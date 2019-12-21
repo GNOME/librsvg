@@ -12,13 +12,13 @@ pub trait Parse: Sized {
     /// Parses a value out of the `parser`.
     ///
     /// All value types should implement this for composability.
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind>;
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>>;
 
     /// Convenience function to parse a value out of a `&str`.
     ///
     /// This is useful mostly for tests which want to avoid creating a
     /// `cssparser::Parser` by hand.
-    fn parse_str(s: &str) -> Result<Self, ValueErrorKind> {
+    fn parse_str<'i>(s: &'i str) -> Result<Self, CssParseError<'i>> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
@@ -70,95 +70,54 @@ impl<T: Parse> ParseValue<T> for QualName {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser)
-            .and_then(validate)
+        let v = T::parse(&mut parser).attribute(self.clone())?;
+
+        validate(v)
+            .map_err(|e| parser.new_custom_error(e))
             .attribute(self.clone())
     }
 }
 
 impl Parse for f64 {
-    /// Avoid infinities, and convert to `f64`.
-    /// https://www.w3.org/TR/SVG11/types.html#DataTypeNumber
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<f64, ValueErrorKind> {
-        parser
-            .expect_number()
-            .map_err(|_| ValueErrorKind::parse_error("parse error"))
-            .and_then(|n| Ok(f64::from(finite_f32(n)?)))
-    }
-}
-
-pub trait ParseToParseError: Sized {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>>;
-}
-
-impl ParseToParseError for f64 {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         let loc = parser.current_source_location();
-        parser
-            .expect_number()
-            .map_err(|e| e.into())
-            .and_then(|n| {
-                if n.is_finite() {
-                    Ok(f64::from(n))
-                } else {
-                    Err(loc.new_custom_error(ValueErrorKind::value_error("expected finite number")))
-                }
-            })
+        parser.expect_number().map_err(|e| e.into()).and_then(|n| {
+            if n.is_finite() {
+                Ok(f64::from(n))
+            } else {
+                Err(loc.new_custom_error(ValueErrorKind::value_error("expected finite number")))
+            }
+        })
     }
 }
 
-// number-optional-number
-//
-// https://www.w3.org/TR/SVG/types.html#DataTypeNumberOptionalNumber
+/// CSS number-optional-number
+///
+/// https://www.w3.org/TR/SVG/types.html#DataTypeNumberOptionalNumber
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct NumberOptionalNumber<T: Parse>(pub T, pub T);
 
-pub fn number_optional_number(s: &str) -> Result<(f64, f64), ValueErrorKind> {
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
+impl<T: Parse + Copy> Parse for NumberOptionalNumber<T> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        let x = Parse::parse(parser)?;
 
-    let x = f64::parse(&mut parser)?;
-
-    if !parser.is_exhausted() {
-        optional_comma(&mut parser);
-
-        let y = f64::parse(&mut parser)?;
-
-        parser.expect_exhausted()?;
-
-        Ok((x, y))
-    } else {
-        Ok((x, x))
+        if !parser.is_exhausted() {
+            optional_comma(parser);
+            let y = Parse::parse(parser)?;
+            parser.expect_exhausted()?;
+            Ok(NumberOptionalNumber(x, y))
+        } else {
+            Ok(NumberOptionalNumber(x, x))
+        }
     }
 }
 
-// integer
-//
-// https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
-pub fn integer(s: &str) -> Result<i32, ValueErrorKind> {
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
-
-    Ok(parser.expect_integer()?)
-}
-
-// integer-optional-integer
-//
-// Like number-optional-number but with integers.
-pub fn integer_optional_integer(s: &str) -> Result<(i32, i32), ValueErrorKind> {
-    let mut input = ParserInput::new(s);
-    let mut parser = Parser::new(&mut input);
-
-    let x = parser.expect_integer()?;
-
-    if !parser.is_exhausted() {
-        optional_comma(&mut parser);
-
-        let y = parser.expect_integer()?;
-
-        parser.expect_exhausted()?;
-
-        Ok((x, y))
-    } else {
-        Ok((x, x))
+impl Parse for i32 {
+    /// CSS integer
+    ///
+    /// https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parser.expect_integer()?)
     }
 }
 
@@ -195,61 +154,97 @@ mod tests {
 
     #[test]
     fn parses_number_optional_number() {
-        assert_eq!(number_optional_number("1, 2"), Ok((1.0, 2.0)));
-        assert_eq!(number_optional_number("1 2"), Ok((1.0, 2.0)));
-        assert_eq!(number_optional_number("1"), Ok((1.0, 1.0)));
+        assert_eq!(
+            NumberOptionalNumber::parse_str("1, 2"),
+            Ok(NumberOptionalNumber(1.0, 2.0))
+        );
+        assert_eq!(
+            NumberOptionalNumber::parse_str("1 2"),
+            Ok(NumberOptionalNumber(1.0, 2.0))
+        );
+        assert_eq!(
+            NumberOptionalNumber::parse_str("1"),
+            Ok(NumberOptionalNumber(1.0, 1.0))
+        );
 
-        assert_eq!(number_optional_number("-1, -2"), Ok((-1.0, -2.0)));
-        assert_eq!(number_optional_number("-1 -2"), Ok((-1.0, -2.0)));
-        assert_eq!(number_optional_number("-1"), Ok((-1.0, -1.0)));
+        assert_eq!(
+            NumberOptionalNumber::parse_str("-1, -2"),
+            Ok(NumberOptionalNumber(-1.0, -2.0))
+        );
+        assert_eq!(
+            NumberOptionalNumber::parse_str("-1 -2"),
+            Ok(NumberOptionalNumber(-1.0, -2.0))
+        );
+        assert_eq!(
+            NumberOptionalNumber::parse_str("-1"),
+            Ok(NumberOptionalNumber(-1.0, -1.0))
+        );
     }
 
     #[test]
     fn invalid_number_optional_number() {
-        assert!(number_optional_number("").is_err());
-        assert!(number_optional_number("1x").is_err());
-        assert!(number_optional_number("x1").is_err());
-        assert!(number_optional_number("1 x").is_err());
-        assert!(number_optional_number("1 , x").is_err());
-        assert!(number_optional_number("1 , 2x").is_err());
-        assert!(number_optional_number("1 2 x").is_err());
+        assert!(NumberOptionalNumber::<f64>::parse_str("").is_err());
+        assert!(NumberOptionalNumber::<f64>::parse_str("1x").is_err());
+        assert!(NumberOptionalNumber::<f64>::parse_str("x1").is_err());
+        assert!(NumberOptionalNumber::<f64>::parse_str("1 x").is_err());
+        assert!(NumberOptionalNumber::<f64>::parse_str("1 , x").is_err());
+        assert!(NumberOptionalNumber::<f64>::parse_str("1 , 2x").is_err());
+        assert!(NumberOptionalNumber::<f64>::parse_str("1 2 x").is_err());
     }
 
     #[test]
     fn parses_integer() {
-        assert_eq!(integer("1"), Ok(1));
-        assert_eq!(integer("-1"), Ok(-1));
+        assert_eq!(i32::parse_str("1"), Ok(1));
+        assert_eq!(i32::parse_str("-1"), Ok(-1));
     }
 
     #[test]
     fn invalid_integer() {
-        assert!(integer("").is_err());
-        assert!(integer("1x").is_err());
-        assert!(integer("1.5").is_err());
+        assert!(i32::parse_str("").is_err());
+        assert!(i32::parse_str("1x").is_err());
+        assert!(i32::parse_str("1.5").is_err());
     }
 
     #[test]
     fn parses_integer_optional_integer() {
-        assert_eq!(integer_optional_integer("1, 2"), Ok((1, 2)));
-        assert_eq!(integer_optional_integer("1 2"), Ok((1, 2)));
-        assert_eq!(integer_optional_integer("1"), Ok((1, 1)));
+        assert_eq!(
+            NumberOptionalNumber::parse_str("1, 2"),
+            Ok(NumberOptionalNumber(1, 2))
+        );
+        assert_eq!(
+            NumberOptionalNumber::parse_str("1 2"),
+            Ok(NumberOptionalNumber(1, 2))
+        );
+        assert_eq!(
+            NumberOptionalNumber::parse_str("1"),
+            Ok(NumberOptionalNumber(1, 1))
+        );
 
-        assert_eq!(integer_optional_integer("-1, -2"), Ok((-1, -2)));
-        assert_eq!(integer_optional_integer("-1 -2"), Ok((-1, -2)));
-        assert_eq!(integer_optional_integer("-1"), Ok((-1, -1)));
+        assert_eq!(
+            NumberOptionalNumber::parse_str("-1, -2"),
+            Ok(NumberOptionalNumber(-1, -2))
+        );
+        assert_eq!(
+            NumberOptionalNumber::parse_str("-1 -2"),
+            Ok(NumberOptionalNumber(-1, -2))
+        );
+        assert_eq!(
+            NumberOptionalNumber::parse_str("-1"),
+            Ok(NumberOptionalNumber(-1, -1))
+        );
     }
 
     #[test]
     fn invalid_integer_optional_integer() {
-        assert!(integer_optional_integer("").is_err());
-        assert!(integer_optional_integer("1x").is_err());
-        assert!(integer_optional_integer("x1").is_err());
-        assert!(integer_optional_integer("1 x").is_err());
-        assert!(integer_optional_integer("1 , x").is_err());
-        assert!(integer_optional_integer("1 , 2x").is_err());
-        assert!(integer_optional_integer("1 2 x").is_err());
-        assert!(integer_optional_integer("1.5").is_err());
-        assert!(integer_optional_integer("1 2.5").is_err());
-        assert!(integer_optional_integer("1, 2.5").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("1x").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("x1").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("1 x").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("1 , x").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("1 , 2x").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("1 2 x").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("1.5").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("1 2.5").is_err());
+        assert!(NumberOptionalNumber::<i32>::parse_str("1, 2.5").is_err());
     }
 }

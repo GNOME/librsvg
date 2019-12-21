@@ -350,7 +350,7 @@ pub fn render(
 }
 
 impl From<ColorInterpolationFilters> for SurfaceType {
-   fn from(c: ColorInterpolationFilters) -> Self {
+    fn from(c: ColorInterpolationFilters) -> Self {
         match c {
             ColorInterpolationFilters::LinearRgb => SurfaceType::LinearRgb,
             _ => SurfaceType::SRgb,

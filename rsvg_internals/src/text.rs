@@ -10,7 +10,7 @@ use std::cell::RefCell;
 use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
-use crate::error::{AttributeResultExt, RenderingError};
+use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeightSpec;
 use crate::length::*;

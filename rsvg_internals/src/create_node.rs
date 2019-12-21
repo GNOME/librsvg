@@ -22,8 +22,11 @@ use crate::filters::{
     gaussian_blur::FeGaussianBlur,
     image::FeImage,
     light::{
-        light_source::FeDistantLight, light_source::FePointLight, light_source::FeSpotLight,
-        lighting::FeDiffuseLighting, lighting::FeSpecularLighting,
+        light_source::FeDistantLight,
+        light_source::FePointLight,
+        light_source::FeSpotLight,
+        lighting::FeDiffuseLighting,
+        lighting::FeSpecularLighting,
     },
     merge::{FeMerge, FeMergeNode},
     morphology::FeMorphology,
@@ -265,7 +268,7 @@ pub fn create_node(name: &QualName, pbag: &PropertyBag) -> RsvgNode {
         class = None;
     };
 
-//    sizes::print_sizes();
+    //    sizes::print_sizes();
 
     create_fn(name, id, class)
 }
@@ -279,12 +282,12 @@ mod sizes {
     macro_rules! print_size {
         ($ty:ty) => {
             println!("sizeof {}: {}", stringify!($ty), mem::size_of::<$ty>());
-        }
+        };
     }
 
     pub fn print_sizes() {
-        use std::mem;
         use crate::properties::{ComputedValues, ParsedProperty, SpecifiedValues};
+        use std::mem;
 
         print_size!(NodeData);
         print_size!(SpecifiedValues);

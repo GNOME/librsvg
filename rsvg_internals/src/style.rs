@@ -20,13 +20,9 @@ pub enum StyleType {
 }
 
 impl Parse for StyleType {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<StyleType, ValueErrorKind> {
-        parser
-            .expect_ident_matching("text/css")
-            .and_then(|_| Ok(StyleType::TextCss))
-            .map_err(|_| {
-                ValueErrorKind::parse_error("only the \"text/css\" style type is supported")
-            })
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<StyleType, CssParseError<'i>> {
+        parser.expect_ident_matching("text/css")?;
+        Ok(StyleType::TextCss)
     }
 }
 

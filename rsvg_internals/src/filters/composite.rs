@@ -212,8 +212,8 @@ impl FilterEffect for FeComposite {
 }
 
 impl Parse for Operator {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        parse_identifiers!(
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "over" => Operator::Over,
             "in" => Operator::In,
@@ -221,7 +221,7 @@ impl Parse for Operator {
             "atop" => Operator::Atop,
             "xor" => Operator::Xor,
             "arithmetic" => Operator::Arithmetic,
-        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 

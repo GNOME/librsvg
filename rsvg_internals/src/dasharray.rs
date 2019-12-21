@@ -19,7 +19,7 @@ impl Default for Dasharray {
 }
 
 impl Parse for Dasharray {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Dasharray, ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Dasharray, CssParseError<'i>> {
         if parser
             .try_parse(|p| p.expect_ident_matching("none"))
             .is_ok()
@@ -30,7 +30,11 @@ impl Parse for Dasharray {
         let mut dasharray = Vec::new();
 
         loop {
-            let d = Length::<Both>::parse(parser).and_then(Length::<Both>::check_nonnegative)?;
+            let loc = parser.current_source_location();
+
+            let d = Length::<Both>::parse(parser)?
+                .check_nonnegative()
+                .map_err(|e| loc.new_custom_error(e))?;
             dasharray.push(d);
 
             if parser.is_exhausted() {
@@ -96,12 +100,7 @@ mod tests {
         assert_eq!(Dasharray::parse_str("2").unwrap(), sample_7);
 
         // Negative numbers
-        assert_eq!(
-            Dasharray::parse_str("20,40,-20"),
-            Err(ValueErrorKind::Value(String::from(
-                "value must be non-negative"
-            )))
-        );
+        assert!(Dasharray::parse_str("20,40,-20").is_err());
 
         // Empty dash_array
         assert!(Dasharray::parse_str("").is_err());

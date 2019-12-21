@@ -61,12 +61,12 @@ impl FontSizeSpec {
 }
 
 impl Parse for FontSizeSpec {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontSizeSpec, crate::error::ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontSizeSpec, CssParseError<'i>> {
         parser
             .try_parse(|p| Length::<Both>::parse(p))
             .and_then(|l| Ok(FontSizeSpec::Value(l)))
             .or_else(|_| {
-                parse_identifiers!(
+                Ok(parse_identifiers!(
                     parser,
                     "smaller" => FontSizeSpec::Smaller,
                     "larger" => FontSizeSpec::Larger,
@@ -77,9 +77,8 @@ impl Parse for FontSizeSpec {
                     "large" => FontSizeSpec::Large,
                     "x-large" => FontSizeSpec::XLarge,
                     "xx-large" => FontSizeSpec::XXLarge,
-                )
+                )?)
             })
-            .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -102,22 +101,22 @@ pub enum FontWeightSpec {
 }
 
 impl Parse for FontWeightSpec {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<FontWeightSpec, crate::error::ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontWeightSpec, CssParseError<'i>> {
         parser
             .try_parse(|p| {
-                parse_identifiers!(
+                Ok(parse_identifiers!(
                     p,
                     "normal" => FontWeightSpec::Normal,
                     "bold" => FontWeightSpec::Bold,
                     "bolder" => FontWeightSpec::Bolder,
                     "lighter" => FontWeightSpec::Lighter,
-                )
-                .map_err(|_| ValueErrorKind::parse_error("parse error"))
+                )?)
             })
-            .or_else(|_| {
+            .or_else(|_: CssParseError| {
+                let loc = parser.current_source_location();
                 parser
                     .expect_integer()
-                    .map_err(|_| ValueErrorKind::parse_error("parse error"))
+                    .map_err(|e: BasicParseError| e.into())
                     .and_then(|i| match i {
                         100 => Ok(FontWeightSpec::W100),
                         200 => Ok(FontWeightSpec::W200),
@@ -128,7 +127,7 @@ impl Parse for FontWeightSpec {
                         700 => Ok(FontWeightSpec::W700),
                         800 => Ok(FontWeightSpec::W800),
                         900 => Ok(FontWeightSpec::W900),
-                        _ => Err(ValueErrorKind::parse_error("parse error")),
+                        _ => Err(loc.new_custom_error(ValueErrorKind::parse_error("parse error"))),
                     })
             })
     }
@@ -164,19 +163,16 @@ impl LetterSpacingSpec {
 }
 
 impl Parse for LetterSpacingSpec {
-    fn parse(
-        parser: &mut Parser<'_, '_>,
-    ) -> Result<LetterSpacingSpec, crate::error::ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LetterSpacingSpec, CssParseError<'i>> {
         parser
             .try_parse(|p| Length::<Horizontal>::parse(p))
             .and_then(|l| Ok(LetterSpacingSpec::Value(l)))
             .or_else(|_| {
-                parse_identifiers!(
+                Ok(parse_identifiers!(
                     parser,
                     "normal" => LetterSpacingSpec::Normal,
-                )
+                )?)
             })
-            .map_err(|_| ValueErrorKind::parse_error("parse error"))
     }
 }
 
@@ -185,29 +181,30 @@ impl Parse for LetterSpacingSpec {
 pub struct SingleFontFamily(pub String);
 
 impl Parse for SingleFontFamily {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<SingleFontFamily, ValueErrorKind> {
-        parse_single_font_family(parser)
-            .map_err(|_| ValueErrorKind::parse_error("expected font family"))
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SingleFontFamily, CssParseError<'i>> {
+        let loc = parser.current_source_location();
+
+        if let Ok(cow) = parser.try_parse(|p| p.expect_string_cloned()) {
+            if cow == "" {
+                return Err(loc.new_custom_error(ValueErrorKind::value_error(
+                    "empty string is not a valid font family name",
+                )));
+            }
+
+            return Ok(SingleFontFamily((*cow).to_owned()));
+        }
+
+        let first_ident = parser.expect_ident()?.clone();
+
+        let mut value = first_ident.as_ref().to_owned();
+
+        while let Ok(cow) = parser.try_parse(|p| p.expect_ident_cloned()) {
+            value.push(' ');
+            value.push_str(&cow);
+        }
+
+        Ok(SingleFontFamily(value))
     }
-}
-
-fn parse_single_font_family<'i>(
-    parser: &'i mut Parser<'_, '_>,
-) -> Result<SingleFontFamily, BasicParseError<'i>> {
-    if let Ok(cow) = parser.try_parse(|p| p.expect_string_cloned()) {
-        return Ok(SingleFontFamily((*cow).to_owned()));
-    }
-
-    let first_ident = parser.expect_ident()?.clone();
-
-    let mut value = first_ident.as_ref().to_owned();
-
-    while let Ok(cow) = parser.try_parse(|p| p.expect_ident_cloned()) {
-        value.push(' ');
-        value.push_str(&cow);
-    }
-
-    Ok(SingleFontFamily(value))
 }
 
 #[cfg(test)]
@@ -216,7 +213,7 @@ mod tests {
 
     #[test]
     fn detects_invalid_invalid_font_size() {
-        assert!(is_parse_error(&FontSizeSpec::parse_str("furlong")));
+        assert!(FontSizeSpec::parse_str("furlong").is_err());
     }
 
     #[test]
@@ -278,7 +275,7 @@ mod tests {
 
     #[test]
     fn detects_invalid_invalid_letter_spacing() {
-        assert!(is_parse_error(&LetterSpacingSpec::parse_str("furlong")));
+        assert!(LetterSpacingSpec::parse_str("furlong").is_err());
     }
 
     #[test]
@@ -307,9 +304,7 @@ mod tests {
     #[test]
     fn detects_invalid_font_family() {
         assert!(<SingleFontFamily as Parse>::parse_str("").is_err());
-
-        // assert!(<SingleFontFamily as Parse>::parse_str("''").is_err());
-
+        assert!(<SingleFontFamily as Parse>::parse_str("''").is_err());
         assert!(<SingleFontFamily as Parse>::parse_str("42").is_err());
     }
 }

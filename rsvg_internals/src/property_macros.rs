@@ -46,11 +46,11 @@ macro_rules! make_property {
         impl_property!($computed_values_type, $name, $inherits_automatically);
 
         impl crate::parsers::Parse for $name {
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
-                parse_identifiers!(
+            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::CssParseError<'i>> {
+                Ok(parse_identifiers!(
                     parser,
                     $($str_prop => $name::$variant,)+
-                ).map_err(|_| crate::error::ValueErrorKind::parse_error("parse error"))
+                )?)
             }
         }
     };
@@ -68,7 +68,7 @@ macro_rules! make_property {
         impl_property!($computed_values_type, $name, $inherits_automatically);
 
         impl crate::parsers::Parse for $name {
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
+            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::CssParseError<'i>> {
                 Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
             }
         }
@@ -88,7 +88,7 @@ macro_rules! make_property {
         $prop
 
         impl crate::parsers::Parse for $name {
-            fn parse(parser: &mut ::cssparser::Parser<'_, '_>) -> Result<$name, crate::error::ValueErrorKind> {
+            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::CssParseError<'i>> {
                 Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
             }
         }
@@ -179,7 +179,7 @@ mod tests {
     use cssparser::RGBA;
 
     #[test]
-    fn check_generated_property() {
+    fn check_identifiers_property() {
         make_property! {
             (),
             Foo,

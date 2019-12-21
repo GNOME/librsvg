@@ -96,14 +96,14 @@ impl SystemLanguage {
                     if have_match {
                         Ok(SystemLanguage(have_match))
                     } else {
-                        locale_accepts_language_tag(locale, &language_tag)
-                            .map(SystemLanguage)
+                        locale_accepts_language_tag(locale, &language_tag).map(SystemLanguage)
                     }
                 }
 
                 Err(e) => Err(ValueErrorKind::parse_error(&format!(
-                    "invalid language tag: \"{}\"", e)
-                )),
+                    "invalid language tag: \"{}\"",
+                    e
+                ))),
             },
         )
     }

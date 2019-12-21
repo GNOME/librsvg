@@ -1,6 +1,6 @@
 //! Definitions for CSS property types.
 
-use cssparser::{self, Parser};
+use cssparser::{self, Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
@@ -44,16 +44,16 @@ make_property!(
         impl Parse for BaselineShift {
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
-            fn parse(parser: &mut Parser<'_, '_>) -> Result<BaselineShift, crate::error::ValueErrorKind> {
+            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<BaselineShift, crate::error::CssParseError<'i>> {
                 parser.try_parse(|p| Ok(BaselineShift(Length::<Both>::parse(p)?)))
-                    .or_else(|_: ValueErrorKind| {
-                        parse_identifiers!(
+                    .or_else(|_: CssParseError| {
+                        Ok(parse_identifiers!(
                             parser,
                             "baseline" => BaselineShift(Length::<Both>::new(0.0, LengthUnit::Percent)),
                             "sub" => BaselineShift(Length::<Both>::new(-0.2, LengthUnit::Percent)),
 
                             "super" => BaselineShift(Length::<Both>::new(0.4, LengthUnit::Percent)),
-                        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+                        )?)
                     })
             }
         }
@@ -534,7 +534,7 @@ make_property!(
 
     parse_impl: {
         impl Parse for TextDecoration {
-            fn parse(parser: &mut Parser<'_, '_>) -> Result<TextDecoration, ValueErrorKind> {
+            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TextDecoration, CssParseError<'i>> {
                 let mut overline = false;
                 let mut underline = false;
                 let mut strike = false;
@@ -544,15 +544,14 @@ make_property!(
                 }
 
                 while !parser.is_exhausted() {
-                    let cow = parser.expect_ident().map_err(|_| {
-                        crate::error::ValueErrorKind::parse_error("expected identifier")
-                    })?;
+                    let loc = parser.current_source_location();
+                    let token = parser.next()?;
 
-                    match cow.as_ref() {
-                        "overline" => overline = true,
-                        "underline" => underline = true,
-                        "line-through" => strike = true,
-                        _ => return Err(ValueErrorKind::parse_error("invalid syntax")),
+                    match token {
+                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("overline") => overline = true,
+                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("underline") => underline = true,
+                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("line-through") => strike = true,
+                        _ => Err(loc.new_basic_unexpected_token_error(token.clone()))?,
                     }
                 }
 
@@ -690,9 +689,9 @@ make_property!(
     newtype: String,
     parse_impl: {
         impl Parse for XmlLang {
-            fn parse(
-                parser: &mut Parser<'_, '_>,
-            ) -> Result<XmlLang, ValueErrorKind> {
+            fn parse<'i>(
+                parser: &mut Parser<'i, '_>,
+            ) -> Result<XmlLang, CssParseError<'i>> {
                 Ok(XmlLang(parser.expect_ident()?.to_string()))
             }
         }

@@ -16,7 +16,7 @@ impl UnitInterval {
 }
 
 impl Parse for UnitInterval {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<UnitInterval, ValueErrorKind> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<UnitInterval, CssParseError<'i>> {
         let x = f64::parse(parser)?;
         Ok(UnitInterval::clamp(x))
     }
@@ -57,10 +57,10 @@ mod tests {
 
     #[test]
     fn errors_on_invalid_input() {
-        assert!(is_parse_error(&UnitInterval::parse_str("")));
-        assert!(is_parse_error(&UnitInterval::parse_str("foo")));
-        assert!(is_parse_error(&UnitInterval::parse_str("-x")));
-        assert!(is_parse_error(&UnitInterval::parse_str("0.0foo")));
+        assert!(UnitInterval::parse_str("").is_err());
+        assert!(UnitInterval::parse_str("foo").is_err());
+        assert!(UnitInterval::parse_str("-x").is_err());
+        assert!(UnitInterval::parse_str("0.0foo").is_err());
     }
 
     #[test]

@@ -1,12 +1,20 @@
 //! CSS properties, specified values, computed values.
 
-use cssparser::{self, DeclarationListParser, Parser, ParserInput};
+use cssparser::{
+    self,
+    BasicParseErrorKind,
+    DeclarationListParser,
+    ParseErrorKind,
+    Parser,
+    ParserInput,
+    ToCss,
+};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration};
 use crate::error::*;
-use crate::parsers::Parse;
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::*;
 use crate::property_macros::Property;
@@ -225,7 +233,7 @@ pub struct ComputedValues {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-pub fn parse_property(prop_name: &QualName, input: &mut Parser, accept_shorthands: bool) -> Result<ParsedProperty, ValueErrorKind> {
+pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, ParseError<'i>> {
     // please keep these sorted
     match prop_name.expanded() {
         expanded_name!(svg "baseline-shift") =>
@@ -298,7 +306,7 @@ pub fn parse_property(prop_name: &QualName, input: &mut Parser, accept_shorthand
             if accept_shorthands {
                 Ok(ParsedProperty::Marker(parse_input(input)?))
             } else {
-                Err(ValueErrorKind::UnknownProperty)
+                Err(ValueErrorKind::UnknownProperty)?
             }
         }
 
@@ -371,7 +379,7 @@ pub fn parse_property(prop_name: &QualName, input: &mut Parser, accept_shorthand
         expanded_name!(svg "writing-mode") =>
             Ok(ParsedProperty::WritingMode(parse_input(input)?)),
 
-        _ => Err(ValueErrorKind::UnknownProperty)
+        _ => Err(ValueErrorKind::UnknownProperty)?
     }
 }
 
@@ -535,19 +543,69 @@ impl SpecifiedValues {
             Ok(prop) => self.set_parsed_property(&prop),
 
             // not a presentation attribute
-            Err(ValueErrorKind::UnknownProperty) => (),
+            Err(ParseError::V(ValueErrorKind::UnknownProperty)) => (),
 
-            Err(e) => {
-                // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
-                // Ignore illegal values; don't set the whole node to be in error in that case.
-
+            // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
+            // For all the following cases, ignore illegal values; don't set the whole node to
+            // be in error in that case.
+            Err(ParseError::V(v)) => {
                 rsvg_log!(
-                    "(ignoring invalid presentation attribute {:?}\n    \
-                         value=\"{}\"\n    \
-                         {})",
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    {})",
                     attr.expanded(),
                     value,
-                    e
+                    v
+                );
+            }
+
+            Err(ParseError::P(CssParseError {
+                kind: ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken(ref t)),
+                ..
+            })) => {
+                let mut tok = String::new();
+
+                t.to_css(&mut tok).unwrap(); // FIXME: what do we do with a fmt::Error?
+                rsvg_log!(
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
+                     unexpected token '{}')",
+                    attr.expanded(),
+                    value,
+                    tok,
+                );
+            }
+
+            Err(ParseError::P(CssParseError {
+                kind: ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput),
+                ..
+            })) => {
+                rsvg_log!(
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
+                     unexpected end of input)",
+                    attr.expanded(),
+                    value,
+                );
+            }
+
+            Err(ParseError::P(CssParseError {
+                kind: ParseErrorKind::Basic(_),
+                ..
+            })) => {
+                rsvg_log!(
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
+                     unexpected error)",
+                    attr.expanded(),
+                    value,
+                );
+            }
+
+            Err(ParseError::P(CssParseError {
+                kind: ParseErrorKind::Custom(ref v),
+                ..
+            })) => {
+                rsvg_log!(
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    {})",
+                    attr.expanded(),
+                    value,
+                    v
                 );
             }
         }
@@ -565,16 +623,14 @@ impl SpecifiedValues {
                     // xml:lang is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.xml_lang =
-                        SpecifiedValue::Specified(XmlLang::parse_str(value).attribute(attr)?);
+                    self.xml_lang = SpecifiedValue::Specified(attr.parse(value)?);
                 }
 
                 expanded_name!(svg "xml:space") => {
                     // xml:space is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.xml_space =
-                        SpecifiedValue::Specified(XmlSpace::parse_str(value).attribute(attr)?);
+                    self.xml_space = SpecifiedValue::Specified(attr.parse(value)?);
                 }
 
                 _ => self.parse_one_presentation_attribute(attr, value)?,
@@ -617,7 +673,7 @@ impl SpecifiedValues {
 }
 
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
-fn parse_input<T>(input: &mut Parser) -> Result<SpecifiedValue<T>, ValueErrorKind>
+fn parse_input<'i, T>(input: &mut Parser<'i, '_>) -> Result<SpecifiedValue<T>, CssParseError<'i>>
 where
     T: Property<ComputedValues> + Clone + Default + Parse,
 {
