@@ -8,21 +8,21 @@ use std::str;
 use crate::error::*;
 
 /// Trait to parse values using `cssparser::Parser`.
-pub trait Parse: Sized {
+pub trait ParseToParseError: Sized {
     /// Parses a value out of the `parser`.
     ///
     /// All value types should implement this for composability.
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind>;
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>>;
 
     /// Convenience function to parse a value out of a `&str`.
     ///
     /// This is useful mostly for tests which want to avoid creating a
     /// `cssparser::Parser` by hand.
-    fn parse_str(s: &str) -> Result<Self, ValueErrorKind> {
+    fn parse_str_to_parse_error<'i>(s: &'i str) -> Result<Self, CssParseError<'i>> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
-        Self::parse(&mut parser).and_then(|r| {
+        Self::parse_to_parse_error(&mut parser).and_then(|r| {
             // FIXME: parser.expect_exhausted()?;
             Ok(r)
         })
@@ -39,20 +39,6 @@ pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
         Ok(n)
     } else {
         Err(ValueErrorKind::Value("expected finite number".to_string()))
-    }
-}
-
-pub trait ParseValue<T: Parse> {
-    /// Parses a `value` string into a type `T`.
-    fn parse(&self, value: &str) -> Result<T, NodeError>;
-}
-
-impl<T: Parse> ParseValue<T> for QualName {
-    fn parse(&self, value: &str) -> Result<T, NodeError> {
-        let mut input = ParserInput::new(value);
-        let mut parser = Parser::new(&mut input);
-
-        T::parse(&mut parser).attribute(self.clone())
     }
 }
 
@@ -87,19 +73,6 @@ impl<T: ParseToParseError> ParseValueToParseError<T> for QualName {
         let v = T::parse_to_parse_error(&mut parser).attribute(self.clone())?;
 
         validate(v).map_err(|e| parser.new_custom_error(e)).attribute(self.clone())
-    }
-}
-
-pub trait ParseToParseError: Sized {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>>;
-    fn parse_str_to_parse_error<'i>(s: &'i str) -> Result<Self, CssParseError<'i>> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
-        Self::parse_to_parse_error(&mut parser).and_then(|r| {
-            // FIXME: parser.expect_exhausted()?;
-            Ok(r)
-        })
     }
 }
 
