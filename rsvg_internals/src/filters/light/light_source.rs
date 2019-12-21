@@ -4,7 +4,7 @@ use nalgebra::Vector3;
 
 use crate::filters::context::FilterContext;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{ParseValue};
+use crate::parsers::ParseValueToParseError;
 use crate::property_bag::PropertyBag;
 use crate::util::clamp;
 
@@ -106,8 +106,8 @@ impl NodeTrait for FeDistantLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "azimuth") => self.azimuth = attr.parse(value)?,
-                expanded_name!(svg "elevation") => self.elevation = attr.parse(value)?,
+                expanded_name!(svg "azimuth") => self.azimuth = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "elevation") => self.elevation = attr.parse_to_parse_error(value)?,
                 _ => (),
             }
         }
@@ -138,9 +138,9 @@ impl NodeTrait for FePointLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
-                expanded_name!(svg "z") => self.z = attr.parse(value)?,
+                expanded_name!(svg "x") => self.x = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "z") => self.z = attr.parse_to_parse_error(value)?,
                 _ => (),
             }
         }
@@ -187,19 +187,19 @@ impl NodeTrait for FeSpotLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
-                expanded_name!(svg "z") => self.z = attr.parse(value)?,
-                expanded_name!(svg "pointsAtX") => self.points_at_x = attr.parse(value)?,
-                expanded_name!(svg "pointsAtY") => self.points_at_y = attr.parse(value)?,
-                expanded_name!(svg "pointsAtZ") => self.points_at_z = attr.parse(value)?,
+                expanded_name!(svg "x") => self.x = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "z") => self.z = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "pointsAtX") => self.points_at_x = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "pointsAtY") => self.points_at_y = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "pointsAtZ") => self.points_at_z = attr.parse_to_parse_error(value)?,
 
                 expanded_name!(svg "specularExponent") => {
-                    self.specular_exponent = attr.parse(value)?
+                    self.specular_exponent = attr.parse_to_parse_error(value)?
                 }
 
                 expanded_name!(svg "limitingConeAngle") => {
-                    self.limiting_cone_angle = Some(attr.parse(value)?)
+                    self.limiting_cone_angle = Some(attr.parse_to_parse_error(value)?)
                 }
 
                 _ => (),

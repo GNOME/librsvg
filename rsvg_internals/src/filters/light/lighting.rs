@@ -12,32 +12,19 @@ use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
     light::{
-        bottom_left_normal,
-        bottom_right_normal,
-        bottom_row_normal,
-        interior_normal,
-        left_column_normal,
-        light_source::FeDistantLight,
-        light_source::FePointLight,
-        light_source::FeSpotLight,
-        light_source::LightSource,
-        right_column_normal,
-        top_left_normal,
-        top_right_normal,
-        top_row_normal,
-        Normal,
+        bottom_left_normal, bottom_right_normal, bottom_row_normal, interior_normal,
+        left_column_normal, light_source::FeDistantLight, light_source::FePointLight,
+        light_source::FeSpotLight, light_source::LightSource, right_column_normal, top_left_normal,
+        top_right_normal, top_row_normal, Normal,
     },
-    FilterEffect,
-    FilterError,
-    PrimitiveWithInput,
+    FilterEffect, FilterError, PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers::{NumberOptionalNumber, Parse, ParseValue, ParseValueToParseError};
+use crate::parsers::{NumberOptionalNumber, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt,
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 
@@ -67,7 +54,9 @@ impl Common {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "surfaceScale") => self.surface_scale = attr.parse(value)?,
+                expanded_name!(svg "surfaceScale") => {
+                    self.surface_scale = attr.parse_to_parse_error(value)?
+                }
 
                 expanded_name!(svg "kernelUnitLength") => {
                     let NumberOptionalNumber(x, y) = attr.parse_to_parse_error_and_validate(
@@ -80,7 +69,7 @@ impl Common {
                                     "kernelUnitLength can't be less or equal to zero",
                                 ))
                             }
-                        }
+                        },
                     )?;
 
                     self.kernel_unit_length = Some((x, y));
@@ -117,17 +106,15 @@ impl NodeTrait for FeDiffuseLighting {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "diffuseConstant") => {
-                    self.diffuse_constant = f64::parse_str(value)
-                        .and_then(|x| {
-                            if x >= 0.0 {
-                                Ok(x)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "diffuseConstant can't be negative",
-                                ))
-                            }
-                        })
-                        .attribute(attr)?;
+                    self.diffuse_constant = attr.parse_to_parse_error_and_validate(value, |x| {
+                        if x >= 0.0 {
+                            Ok(x)
+                        } else {
+                            Err(ValueErrorKind::value_error(
+                                "diffuseConstant can't be negative",
+                            ))
+                        }
+                    })?;
                 }
                 _ => (),
             }
@@ -188,8 +175,8 @@ impl NodeTrait for FeSpecularLighting {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "specularConstant") => {
-                    self.specular_constant = f64::parse_str(value)
-                        .and_then(|x| {
+                    self.specular_constant =
+                        attr.parse_to_parse_error_and_validate(value, |x| {
                             if x >= 0.0 {
                                 Ok(x)
                             } else {
@@ -197,12 +184,11 @@ impl NodeTrait for FeSpecularLighting {
                                     "specularConstant can't be negative",
                                 ))
                             }
-                        })
-                        .attribute(attr)?;
+                        })?;
                 }
                 expanded_name!(svg "specularExponent") => {
-                    self.specular_exponent = f64::parse_str(value)
-                        .and_then(|x| {
+                    self.specular_exponent =
+                        attr.parse_to_parse_error_and_validate(value, |x| {
                             if x >= 1.0 && x <= 128.0 {
                                 Ok(x)
                             } else {
@@ -210,7 +196,7 @@ impl NodeTrait for FeSpecularLighting {
                                     "specularExponent should be between 1.0 and 128.0",
                                 ))
                             }
-                        }).attribute(attr)?;
+                        })?;
                 }
                 _ => (),
             }
@@ -299,7 +285,8 @@ macro_rules! impl_lighting_filter {
 
                 if let Some((ox, oy)) = scale {
                     // Scale the input surface to match kernel_unit_length.
-                    let (new_surface, new_bounds) = input_surface.scale(bounds, 1.0 / ox, 1.0 / oy)?;
+                    let (new_surface, new_bounds) =
+                        input_surface.scale(bounds, 1.0 / ox, 1.0 / oy)?;
 
                     input_surface = new_surface;
                     bounds = new_bounds;
@@ -338,7 +325,8 @@ macro_rules! impl_lighting_filter {
 
                             // compute the factor just once for the three colors
                             let factor = self.compute_factor(normal, light_vector);
-                            let compute = |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
+                            let compute =
+                                |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
 
                             let r = compute(light_color.red);
                             let g = compute(light_color.green);

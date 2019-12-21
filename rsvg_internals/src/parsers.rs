@@ -90,17 +90,6 @@ impl<T: ParseToParseError> ParseValueToParseError<T> for QualName {
     }
 }
 
-impl Parse for f64 {
-    /// Avoid infinities, and convert to `f64`.
-    /// https://www.w3.org/TR/SVG11/types.html#DataTypeNumber
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<f64, ValueErrorKind> {
-        parser
-            .expect_number()
-            .map_err(|_| ValueErrorKind::parse_error("parse error"))
-            .and_then(|n| Ok(f64::from(finite_f32(n)?)))
-    }
-}
-
 pub trait ParseToParseError: Sized {
     fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>>;
     fn parse_str_to_parse_error<'i>(s: &'i str) -> Result<Self, CssParseError<'i>> {
