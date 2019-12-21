@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{Parse, ParseValue};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
@@ -61,7 +61,7 @@ impl NodeTrait for FeColorMatrix {
             .iter()
             .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "type"))
         {
-            operation_type = attr.parse(value)?;
+            operation_type = attr.parse_to_parse_error(value)?;
         }
 
         // Now read the matrix correspondingly.
@@ -96,11 +96,14 @@ impl NodeTrait for FeColorMatrix {
                         matrix
                     }
                     OperationType::Saturate => {
-                        let s: f64 = attr.parse(value)?;
-                        if s < 0.0 || s > 1.0 {
-                            return Err(ValueErrorKind::value_error("expected value from 0 to 1"))
-                                .attribute(attr);
-                        }
+                        let s: f64 = attr.parse_to_parse_error_and_validate(
+                            value,
+                            |s| if s < 0.0 || s > 1.0 {
+                                Err(ValueErrorKind::value_error("expected value from 0 to 1"))
+                            } else {
+                                Ok(s)
+                            }
+                        )?;
 
                         #[cfg_attr(rustfmt, rustfmt_skip)]
                         Matrix5::new(
@@ -112,7 +115,7 @@ impl NodeTrait for FeColorMatrix {
                         )
                     }
                     OperationType::HueRotate => {
-                        let degrees: f64 = attr.parse(value)?;
+                        let degrees: f64 = attr.parse_to_parse_error(value)?;
                         let (sin, cos) = degrees.to_radians().sin_cos();
 
                         #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -224,15 +227,14 @@ impl FilterEffect for FeColorMatrix {
     }
 }
 
-impl Parse for OperationType {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for OperationType {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "matrix" => OperationType::Matrix,
             "saturate" => OperationType::Saturate,
             "hueRotate" => OperationType::HueRotate,
             "luminanceToAlpha" => OperationType::LuminanceToAlpha,
-        )
-        .map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
