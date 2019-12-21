@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{NumberOptionalNumber, Parse, ParseValue, ParseValueToParseError};
+use crate::parsers::{NumberOptionalNumber, ParseToParseError, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
@@ -73,7 +73,7 @@ impl NodeTrait for FeTurbulence {
                             } else {
                                 Err(ValueErrorKind::value_error("values can't be negative"))
                             }
-                        }
+                        },
                     )?;
 
                     self.base_frequency = (x, y);
@@ -83,18 +83,17 @@ impl NodeTrait for FeTurbulence {
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
                 expanded_name!(svg "seed") => {
-                    self.seed = f64::parse_str(value)
-                        .map(|x| {
-                            clamp(
-                                x.trunc(),
-                                f64::from(i32::min_value()),
-                                f64::from(i32::max_value()),
-                            ) as i32
-                        })
-                        .attribute(attr)?
+                    let v: f64 = attr.parse_to_parse_error(value)?;
+                    self.seed = clamp(
+                        v.trunc(),
+                        f64::from(i32::min_value()),
+                        f64::from(i32::max_value()),
+                    ) as i32;
                 }
-                expanded_name!(svg "stitchTiles") => self.stitch_tiles = attr.parse(value)?,
-                expanded_name!(svg "type") => self.type_ = attr.parse(value)?,
+                expanded_name!(svg "stitchTiles") => {
+                    self.stitch_tiles = attr.parse_to_parse_error(value)?
+                }
+                expanded_name!(svg "type") => self.type_ = attr.parse_to_parse_error(value)?,
                 _ => (),
             }
         }
@@ -423,25 +422,23 @@ impl FilterEffect for FeTurbulence {
     }
 }
 
-impl Parse for StitchTiles {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for StitchTiles {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "stitch" => StitchTiles::Stitch,
             "noStitch" => StitchTiles::NoStitch,
-        )
-        .map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 
-impl Parse for NoiseType {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for NoiseType {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "fractalNoise" => NoiseType::FractalNoise,
             "turbulence" => NoiseType::Turbulence,
-        )
-        .map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 
