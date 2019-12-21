@@ -8,7 +8,7 @@ use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::RenderingError;
 use crate::node::{CascadedValues, NodeDraw, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::ParseValue;
+use crate::parsers::ParseValueToParseError;
 use crate::property_bag::PropertyBag;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
@@ -73,7 +73,7 @@ impl NodeTrait for ClipPath {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "clipPathUnits") => self.units = attr.parse(value)?,
+                expanded_name!(svg "clipPathUnits") => self.units = attr.parse_to_parse_error(value)?,
                 _ => (),
             }
         }

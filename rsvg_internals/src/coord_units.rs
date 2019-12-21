@@ -1,9 +1,9 @@
 //! `userSpaceOnUse` or `objectBoundingBox` values.
 
-use cssparser::{BasicParseError, Parser};
+use cssparser::Parser;
 
 use crate::error::*;
-use crate::parsers::Parse;
+use crate::parsers::ParseToParseError;
 
 /// Defines the units to be used for things that can consider a
 /// coordinate system in terms of the current transformation, or in
@@ -14,13 +14,13 @@ pub enum CoordUnits {
     ObjectBoundingBox,
 }
 
-impl Parse for CoordUnits {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<CoordUnits, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for CoordUnits {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "userSpaceOnUse" => CoordUnits::UserSpaceOnUse,
             "objectBoundingBox" => CoordUnits::ObjectBoundingBox,
-        ).map_err(|_: BasicParseError| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 
@@ -50,11 +50,11 @@ macro_rules! coord_units {
             }
         }
 
-        impl $crate::parsers::Parse for $name {
-            fn parse(
-                parser: &mut ::cssparser::Parser<'_, '_>,
-            ) -> Result<Self, $crate::error::ValueErrorKind> {
-                Ok($name($crate::coord_units::CoordUnits::parse(parser)?))
+        impl $crate::parsers::ParseToParseError for $name {
+            fn parse_to_parse_error<'i>(
+                parser: &mut ::cssparser::Parser<'i, '_>,
+            ) -> Result<Self, $crate::error::CssParseError<'i>> {
+                Ok($name($crate::coord_units::CoordUnits::parse_to_parse_error(parser)?))
             }
         }
     };
@@ -68,18 +68,18 @@ mod tests {
 
     #[test]
     fn parsing_invalid_strings_yields_error() {
-        assert!(MyUnits::parse_str("").is_err());
-        assert!(MyUnits::parse_str("foo").is_err());
+        assert!(MyUnits::parse_str_to_parse_error("").is_err());
+        assert!(MyUnits::parse_str_to_parse_error("foo").is_err());
     }
 
     #[test]
     fn parses_paint_server_units() {
         assert_eq!(
-            MyUnits::parse_str("userSpaceOnUse"),
+            MyUnits::parse_str_to_parse_error("userSpaceOnUse"),
             Ok(MyUnits(CoordUnits::UserSpaceOnUse))
         );
         assert_eq!(
-            MyUnits::parse_str("objectBoundingBox"),
+            MyUnits::parse_str_to_parse_error("objectBoundingBox"),
             Ok(MyUnits(CoordUnits::ObjectBoundingBox))
         );
     }

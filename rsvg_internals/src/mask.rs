@@ -9,7 +9,7 @@ use crate::drawing_ctx::{CompositingAffines, DrawingCtx};
 use crate::error::RenderingError;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeDraw, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{ParseToParseError, ParseValue, ParseValueToParseError};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Opacity;
 use crate::rect::Rect;
@@ -146,8 +146,8 @@ impl NodeTrait for Mask {
                     self.height =
                         attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
-                expanded_name!(svg "maskUnits") => self.units = attr.parse(value)?,
-                expanded_name!(svg "maskContentUnits") => self.content_units = attr.parse(value)?,
+                expanded_name!(svg "maskUnits") => self.units = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "maskContentUnits") => self.content_units = attr.parse_to_parse_error(value)?,
                 _ => (),
             }
         }

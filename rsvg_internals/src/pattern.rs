@@ -120,9 +120,9 @@ impl NodeTrait for Pattern {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "patternUnits") => self.common.units = Some(attr.parse(value)?),
+                expanded_name!(svg "patternUnits") => self.common.units = Some(attr.parse_to_parse_error(value)?),
                 expanded_name!(svg "patternContentUnits") => {
-                    self.common.content_units = Some(attr.parse(value)?)
+                    self.common.content_units = Some(attr.parse_to_parse_error(value)?)
                 }
                 expanded_name!(svg "viewBox") => self.common.vbox = Some(Some(attr.parse_to_parse_error(value)?)),
                 expanded_name!(svg "preserveAspectRatio") => {

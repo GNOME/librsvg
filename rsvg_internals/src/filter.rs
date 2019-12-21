@@ -9,7 +9,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::ValueErrorKind;
 use crate::length::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{ParseToParseError, ParseValue, ParseValueToParseError};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
@@ -115,7 +115,7 @@ impl NodeTrait for Filter {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "filterUnits") => self.filterunits = attr.parse(value)?,
+                expanded_name!(svg "filterUnits") => self.filterunits = attr.parse_to_parse_error(value)?,
                 _ => (),
             }
         }
@@ -179,7 +179,7 @@ impl NodeTrait for Filter {
                         check_units_vertical_and_ensure_nonnegative,
                     )?
                 }
-                expanded_name!(svg "primitiveUnits") => self.primitiveunits = attr.parse(value)?,
+                expanded_name!(svg "primitiveUnits") => self.primitiveunits = attr.parse_to_parse_error(value)?,
                 _ => (),
             }
         }
