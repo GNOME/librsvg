@@ -8,7 +8,7 @@ use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleF
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
-use crate::parsers::{Parse, ParseToParseError};
+use crate::parsers::ParseToParseError;
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::unit_interval::UnitInterval;
@@ -688,10 +688,10 @@ make_property!(
     inherits_automatically: true,
     newtype: String,
     parse_impl: {
-        impl Parse for XmlLang {
-            fn parse(
-                parser: &mut Parser<'_, '_>,
-            ) -> Result<XmlLang, ValueErrorKind> {
+        impl ParseToParseError for XmlLang {
+            fn parse_to_parse_error<'i>(
+                parser: &mut Parser<'i, '_>,
+            ) -> Result<XmlLang, CssParseError<'i>> {
                 Ok(XmlLang(parser.expect_ident()?.to_string()))
             }
         }
@@ -702,11 +702,11 @@ make_property!(
 #[test]
 fn parses_xml_lang() {
     assert_eq!(
-        XmlLang::parse_str("es-MX").unwrap(),
+        XmlLang::parse_str_to_parse_error("es-MX").unwrap(),
         XmlLang("es-MX".to_string())
     );
 
-    assert!(XmlLang::parse_str("").is_err());
+    assert!(XmlLang::parse_str_to_parse_error("").is_err());
 }
 
 make_property!(

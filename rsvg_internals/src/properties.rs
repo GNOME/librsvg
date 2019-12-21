@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration};
 use crate::error::*;
-use crate::parsers::{Parse, ParseToParseError};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::*;
 use crate::property_macros::Property;
@@ -624,16 +624,14 @@ impl SpecifiedValues {
                     // xml:lang is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.xml_lang =
-                        SpecifiedValue::Specified(XmlLang::parse_str(value).attribute(attr)?);
+                    self.xml_lang = SpecifiedValue::Specified(attr.parse_to_parse_error(value)?);
                 }
 
                 expanded_name!(svg "xml:space") => {
                     // xml:space is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.xml_space =
-                        SpecifiedValue::Specified(XmlSpace::parse_str_to_parse_error(value).attribute(attr)?);
+                    self.xml_space = SpecifiedValue::Specified(attr.parse_to_parse_error(value)?);
                 }
 
                 _ => self.parse_one_presentation_attribute(attr, value)?,
