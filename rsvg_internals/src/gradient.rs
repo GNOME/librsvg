@@ -13,7 +13,7 @@ use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::paint_server::{AsPaintSource, PaintSource};
-use crate::parsers::{Parse, ParseToParseError, ParseValue, ParseValueToParseError};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
@@ -43,14 +43,14 @@ enum SpreadMethod {
     Repeat,
 }
 
-impl Parse for SpreadMethod {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<SpreadMethod, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for SpreadMethod {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "pad" => SpreadMethod::Pad,
             "reflect" => SpreadMethod::Reflect,
             "repeat" => SpreadMethod::Repeat,
-        ).map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 
@@ -550,7 +550,7 @@ impl Common {
             match attr.expanded() {
                 expanded_name!(svg "gradientUnits") => self.units = Some(attr.parse_to_parse_error(value)?),
                 expanded_name!(svg "gradientTransform") => self.affine = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "spreadMethod") => self.spread = Some(attr.parse(value)?),
+                expanded_name!(svg "spreadMethod") => self.spread = Some(attr.parse_to_parse_error(value)?),
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?)
                 }
@@ -781,13 +781,13 @@ mod tests {
 
     #[test]
     fn parses_spread_method() {
-        assert_eq!(SpreadMethod::parse_str("pad"), Ok(SpreadMethod::Pad));
+        assert_eq!(SpreadMethod::parse_str_to_parse_error("pad"), Ok(SpreadMethod::Pad));
         assert_eq!(
-            SpreadMethod::parse_str("reflect"),
+            SpreadMethod::parse_str_to_parse_error("reflect"),
             Ok(SpreadMethod::Reflect)
         );
-        assert_eq!(SpreadMethod::parse_str("repeat"), Ok(SpreadMethod::Repeat));
-        assert!(SpreadMethod::parse_str("foobar").is_err());
+        assert_eq!(SpreadMethod::parse_str_to_parse_error("repeat"), Ok(SpreadMethod::Repeat));
+        assert!(SpreadMethod::parse_str_to_parse_error("foobar").is_err());
     }
 
     fn assert_tuples_equal(a: &(f64, f64), b: &(f64, f64)) {
