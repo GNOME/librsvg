@@ -1,14 +1,20 @@
 //! CSS properties, specified values, computed values.
 
 use cssparser::{
-    self, BasicParseErrorKind, DeclarationListParser, ParseErrorKind, Parser, ParserInput, ToCss,
+    self,
+    BasicParseErrorKind,
+    DeclarationListParser,
+    ParseErrorKind,
+    Parser,
+    ParserInput,
+    ToCss,
 };
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration};
 use crate::error::*;
-use crate::parsers::{ParseToParseError, ParseValueToParseError};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::*;
 use crate::property_macros::Property;
@@ -231,147 +237,147 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
     // please keep these sorted
     match prop_name.expanded() {
         expanded_name!(svg "baseline-shift") =>
-            Ok(ParsedProperty::BaselineShift(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
 
         expanded_name!(svg "clip-path") =>
-            Ok(ParsedProperty::ClipPath(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::ClipPath(parse_input(input)?)),
 
         expanded_name!(svg "clip-rule") =>
-            Ok(ParsedProperty::ClipRule(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::ClipRule(parse_input(input)?)),
 
         expanded_name!(svg "color") =>
-            Ok(ParsedProperty::Color(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Color(parse_input(input)?)),
 
         expanded_name!(svg "color-interpolation-filters") =>
-            Ok(ParsedProperty::ColorInterpolationFilters(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::ColorInterpolationFilters(parse_input(input)?)),
 
         expanded_name!(svg "direction") =>
-            Ok(ParsedProperty::Direction(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Direction(parse_input(input)?)),
 
         expanded_name!(svg "display") =>
-            Ok(ParsedProperty::Display(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Display(parse_input(input)?)),
 
         expanded_name!(svg "enable-background") =>
-            Ok(ParsedProperty::EnableBackground(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::EnableBackground(parse_input(input)?)),
 
         expanded_name!(svg "fill") =>
-            Ok(ParsedProperty::Fill(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Fill(parse_input(input)?)),
 
         expanded_name!(svg "fill-opacity") =>
-            Ok(ParsedProperty::FillOpacity(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
 
         expanded_name!(svg "fill-rule") =>
-            Ok(ParsedProperty::FillRule(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FillRule(parse_input(input)?)),
 
         expanded_name!(svg "filter") =>
-            Ok(ParsedProperty::Filter(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Filter(parse_input(input)?)),
 
         expanded_name!(svg "flood-color") =>
-            Ok(ParsedProperty::FloodColor(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FloodColor(parse_input(input)?)),
 
         expanded_name!(svg "flood-opacity") =>
-            Ok(ParsedProperty::FloodOpacity(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
 
         expanded_name!(svg "font-family") =>
-            Ok(ParsedProperty::FontFamily(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FontFamily(parse_input(input)?)),
 
         expanded_name!(svg "font-size") =>
-            Ok(ParsedProperty::FontSize(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FontSize(parse_input(input)?)),
 
         expanded_name!(svg "font-stretch") =>
-            Ok(ParsedProperty::FontStretch(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FontStretch(parse_input(input)?)),
 
         expanded_name!(svg "font-style") =>
-            Ok(ParsedProperty::FontStyle(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FontStyle(parse_input(input)?)),
 
         expanded_name!(svg "font-variant") =>
-            Ok(ParsedProperty::FontVariant(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FontVariant(parse_input(input)?)),
 
         expanded_name!(svg "font-weight") =>
-            Ok(ParsedProperty::FontWeight(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::FontWeight(parse_input(input)?)),
 
         expanded_name!(svg "letter-spacing") =>
-            Ok(ParsedProperty::LetterSpacing(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::LetterSpacing(parse_input(input)?)),
 
         expanded_name!(svg "lighting-color") =>
-            Ok(ParsedProperty::LightingColor(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::LightingColor(parse_input(input)?)),
 
         expanded_name!(svg "marker") => {
             if accept_shorthands {
-                Ok(ParsedProperty::Marker(parse_input_to_parse_error(input)?))
+                Ok(ParsedProperty::Marker(parse_input(input)?))
             } else {
                 Err(ValueErrorKind::UnknownProperty)?
             }
         }
 
         expanded_name!(svg "marker-end") =>
-            Ok(ParsedProperty::MarkerEnd(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::MarkerEnd(parse_input(input)?)),
 
         expanded_name!(svg "marker-mid") =>
-            Ok(ParsedProperty::MarkerMid(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::MarkerMid(parse_input(input)?)),
 
         expanded_name!(svg "marker-start") =>
-            Ok(ParsedProperty::MarkerStart(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::MarkerStart(parse_input(input)?)),
 
         expanded_name!(svg "mask") =>
-            Ok(ParsedProperty::Mask(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Mask(parse_input(input)?)),
 
         expanded_name!(svg "opacity") =>
-            Ok(ParsedProperty::Opacity(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Opacity(parse_input(input)?)),
 
         expanded_name!(svg "overflow") =>
-            Ok(ParsedProperty::Overflow(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Overflow(parse_input(input)?)),
 
         expanded_name!(svg "shape-rendering") =>
-            Ok(ParsedProperty::ShapeRendering(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::ShapeRendering(parse_input(input)?)),
 
         expanded_name!(svg "stop-color") =>
-            Ok(ParsedProperty::StopColor(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::StopColor(parse_input(input)?)),
 
         expanded_name!(svg "stop-opacity") =>
-            Ok(ParsedProperty::StopOpacity(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::StopOpacity(parse_input(input)?)),
 
         expanded_name!(svg "stroke") =>
-            Ok(ParsedProperty::Stroke(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Stroke(parse_input(input)?)),
 
         expanded_name!(svg "stroke-dasharray") =>
-            Ok(ParsedProperty::StrokeDasharray(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::StrokeDasharray(parse_input(input)?)),
 
         expanded_name!(svg "stroke-dashoffset") =>
-            Ok(ParsedProperty::StrokeDashoffset(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
 
         expanded_name!(svg "stroke-linecap") =>
-            Ok(ParsedProperty::StrokeLinecap(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::StrokeLinecap(parse_input(input)?)),
 
         expanded_name!(svg "stroke-linejoin") =>
-            Ok(ParsedProperty::StrokeLinejoin(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::StrokeLinejoin(parse_input(input)?)),
 
         expanded_name!(svg "stroke-miterlimit") =>
-            Ok(ParsedProperty::StrokeMiterlimit(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
 
         expanded_name!(svg "stroke-opacity") =>
-            Ok(ParsedProperty::StrokeOpacity(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
 
         expanded_name!(svg "stroke-width") =>
-            Ok(ParsedProperty::StrokeWidth(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
 
         expanded_name!(svg "text-anchor") =>
-            Ok(ParsedProperty::TextAnchor(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
 
         expanded_name!(svg "text-decoration") =>
-            Ok(ParsedProperty::TextDecoration(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::TextDecoration(parse_input(input)?)),
 
         expanded_name!(svg "text-rendering") =>
-            Ok(ParsedProperty::TextRendering(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::TextRendering(parse_input(input)?)),
 
         expanded_name!(svg "unicode-bidi") =>
-            Ok(ParsedProperty::UnicodeBidi(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::UnicodeBidi(parse_input(input)?)),
 
         expanded_name!(svg "visibility") =>
-            Ok(ParsedProperty::Visibility(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::Visibility(parse_input(input)?)),
 
         expanded_name!(svg "writing-mode") =>
-            Ok(ParsedProperty::WritingMode(parse_input_to_parse_error(input)?)),
+            Ok(ParsedProperty::WritingMode(parse_input(input)?)),
 
         _ => Err(ValueErrorKind::UnknownProperty)?
     }
@@ -544,9 +550,7 @@ impl SpecifiedValues {
             // be in error in that case.
             Err(ParseError::V(v)) => {
                 rsvg_log!(
-                    "(ignoring invalid presentation attribute {:?}\n    \
-                     value=\"{}\"\n    \
-                     {})",
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    {})",
                     attr.expanded(),
                     value,
                     v
@@ -561,8 +565,7 @@ impl SpecifiedValues {
 
                 t.to_css(&mut tok).unwrap(); // FIXME: what do we do with a fmt::Error?
                 rsvg_log!(
-                    "(ignoring invalid presentation attribute {:?}\n    \
-                     value=\"{}\"\n    \
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected token '{}')",
                     attr.expanded(),
                     value,
@@ -575,8 +578,7 @@ impl SpecifiedValues {
                 ..
             })) => {
                 rsvg_log!(
-                    "(ignoring invalid presentation attribute {:?}\n    \
-                     value=\"{}\"\n    \
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected end of input)",
                     attr.expanded(),
                     value,
@@ -588,8 +590,7 @@ impl SpecifiedValues {
                 ..
             })) => {
                 rsvg_log!(
-                    "(ignoring invalid presentation attribute {:?}\n    \
-                     value=\"{}\"\n    \
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected error)",
                     attr.expanded(),
                     value,
@@ -601,9 +602,7 @@ impl SpecifiedValues {
                 ..
             })) => {
                 rsvg_log!(
-                    "(ignoring invalid presentation attribute {:?}\n    \
-                     value=\"{}\"\n    \
-                     {})",
+                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    {})",
                     attr.expanded(),
                     value,
                     v
@@ -624,14 +623,14 @@ impl SpecifiedValues {
                     // xml:lang is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.xml_lang = SpecifiedValue::Specified(attr.parse_to_parse_error(value)?);
+                    self.xml_lang = SpecifiedValue::Specified(attr.parse(value)?);
                 }
 
                 expanded_name!(svg "xml:space") => {
                     // xml:space is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.xml_space = SpecifiedValue::Specified(attr.parse_to_parse_error(value)?);
+                    self.xml_space = SpecifiedValue::Specified(attr.parse(value)?);
                 }
 
                 _ => self.parse_one_presentation_attribute(attr, value)?,
@@ -674,11 +673,9 @@ impl SpecifiedValues {
 }
 
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
-fn parse_input_to_parse_error<'i, T>(
-    input: &mut Parser<'i, '_>,
-) -> Result<SpecifiedValue<T>, CssParseError<'i>>
+fn parse_input<'i, T>(input: &mut Parser<'i, '_>) -> Result<SpecifiedValue<T>, CssParseError<'i>>
 where
-    T: Property<ComputedValues> + Clone + Default + ParseToParseError,
+    T: Property<ComputedValues> + Clone + Default + Parse,
 {
     if input
         .try_parse(|p| p.expect_ident_matching("inherit"))
@@ -686,6 +683,6 @@ where
     {
         Ok(SpecifiedValue::Inherit)
     } else {
-        ParseToParseError::parse_to_parse_error(input).map(SpecifiedValue::Specified)
+        Parse::parse(input).map(SpecifiedValue::Specified)
     }
 }

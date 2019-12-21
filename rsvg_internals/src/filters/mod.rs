@@ -13,7 +13,7 @@ use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers::ParseValueToParseError;
+use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
@@ -163,26 +163,26 @@ impl NodeTrait for Primitive {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "x") => {
-                    self.x = Some(attr.parse_to_parse_error_and_validate(value, check_units_horizontal)?)
+                    self.x = Some(attr.parse_and_validate(value, check_units_horizontal)?)
                 }
                 expanded_name!(svg "y") => {
-                    self.y = Some(attr.parse_to_parse_error_and_validate(value, check_units_vertical)?)
+                    self.y = Some(attr.parse_and_validate(value, check_units_vertical)?)
                 }
                 expanded_name!(svg "width") => {
                     self.width =
-                        Some(attr.parse_to_parse_error_and_validate(
+                        Some(attr.parse_and_validate(
                             value,
                             check_units_horizontal_and_ensure_nonnegative,
                         )?)
                 }
                 expanded_name!(svg "height") => {
                     self.height =
-                        Some(attr.parse_to_parse_error_and_validate(
+                        Some(attr.parse_and_validate(
                             value,
                             check_units_vertical_and_ensure_nonnegative,
                         )?)
                 }
-                expanded_name!(svg "result") => self.result = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "result") => self.result = Some(attr.parse(value)?),
                 _ => (),
             }
         }
@@ -218,7 +218,7 @@ impl NodeTrait for PrimitiveWithInput {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in") => self.in_ = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "in") => self.in_ = Some(attr.parse(value)?),
                 _ => (),
             }
         }
@@ -350,7 +350,7 @@ pub fn render(
 }
 
 impl From<ColorInterpolationFilters> for SurfaceType {
-   fn from(c: ColorInterpolationFilters) -> Self {
+    fn from(c: ColorInterpolationFilters) -> Self {
         match c {
             ColorInterpolationFilters::LinearRgb => SurfaceType::LinearRgb,
             _ => SurfaceType::SRgb,

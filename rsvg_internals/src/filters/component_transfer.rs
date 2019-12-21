@@ -8,10 +8,13 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{ParseToParseError, ParseValueToParseError};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
-    iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
+    iterators::Pixels,
+    shared_surface::SharedImageSurface,
+    ImageSurfaceDataExt,
+    Pixel,
 };
 use crate::util::clamp;
 
@@ -60,8 +63,8 @@ enum FunctionType {
     Gamma,
 }
 
-impl ParseToParseError for FunctionType {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+impl Parse for FunctionType {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "identity" => FunctionType::Identity,
@@ -208,19 +211,19 @@ macro_rules! func_x {
                 for (attr, value) in pbag.iter() {
                     match attr.expanded() {
                         expanded_name!(svg "type") => {
-                            self.function_type = attr.parse_to_parse_error(value)?
+                            self.function_type = attr.parse(value)?
                         }
                         expanded_name!(svg "tableValues") => {
                             let NumberList(v) =
-                                NumberList::parse_str_to_parse_error(value, NumberListLength::Unbounded)
+                                NumberList::parse_str(value, NumberListLength::Unbounded)
                                 .attribute(attr)?;
                             self.table_values = v;
                         }
-                        expanded_name!(svg "slope") => self.slope = attr.parse_to_parse_error(value)?,
-                        expanded_name!(svg "intercept") => self.intercept = attr.parse_to_parse_error(value)?,
-                        expanded_name!(svg "amplitude") => self.amplitude = attr.parse_to_parse_error(value)?,
-                        expanded_name!(svg "exponent") => self.exponent = attr.parse_to_parse_error(value)?,
-                        expanded_name!(svg "offset") => self.offset = attr.parse_to_parse_error(value)?,
+                        expanded_name!(svg "slope") => self.slope = attr.parse(value)?,
+                        expanded_name!(svg "intercept") => self.intercept = attr.parse(value)?,
+                        expanded_name!(svg "amplitude") => self.amplitude = attr.parse(value)?,
+                        expanded_name!(svg "exponent") => self.exponent = attr.parse(value)?,
+                        expanded_name!(svg "offset") => self.offset = attr.parse(value)?,
 
                         _ => (),
                     }

@@ -6,7 +6,7 @@ use crate::aspect_ratio::AspectRatio;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::ParseValueToParseError;
+use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -162,13 +162,13 @@ impl NodeTrait for FeImage {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
                 expanded_name!(xlink "href") | expanded_name!(svg "path") => {
-                    let href = Href::parse(value).map_err(|_| {
-                        ValueErrorKind::parse_error("could not parse href")
-                    }).attribute(attr)?;
+                    let href = Href::parse(value)
+                        .map_err(|_| ValueErrorKind::parse_error("could not parse href"))
+                        .attribute(attr)?;
 
                     self.href = Some(href);
                 }

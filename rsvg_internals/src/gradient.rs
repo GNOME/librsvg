@@ -13,7 +13,7 @@ use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::paint_server::{AsPaintSource, PaintSource};
-use crate::parsers::{ParseToParseError, ParseValueToParseError};
+use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
@@ -43,8 +43,8 @@ enum SpreadMethod {
     Repeat,
 }
 
-impl ParseToParseError for SpreadMethod {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, CssParseError<'i>> {
+impl Parse for SpreadMethod {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, CssParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "pad" => SpreadMethod::Pad,
@@ -114,9 +114,8 @@ fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64
 pub struct Stop {
     /// <stop offset="..."/>
     offset: UnitInterval,
-
-    // stop-color and stop-opacity are not attributes; they are properties, so
-    // they go into property_defs.rs
+    /* stop-color and stop-opacity are not attributes; they are properties, so
+     * they go into property_defs.rs */
 }
 
 fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind> {
@@ -134,7 +133,7 @@ impl NodeTrait for Stop {
             match attr.expanded() {
                 expanded_name!(svg "offset") => {
                     self.offset = attr
-                        .parse_to_parse_error_and_validate(value, validate_offset)
+                        .parse_and_validate(value, validate_offset)
                         .map(|l| UnitInterval::clamp(l.length))?
                 }
                 _ => (),
@@ -222,16 +221,31 @@ impl UnresolvedVariant {
 
     fn resolve_from_fallback(&self, fallback: &UnresolvedVariant) -> UnresolvedVariant {
         match (*self, *fallback) {
-            (UnresolvedVariant::Linear { x1, y1, x2, y2 },
-             UnresolvedVariant::Linear { x1: fx1, y1: fy1, x2: fx2, y2: fy2 }) => UnresolvedVariant::Linear {
+            (
+                UnresolvedVariant::Linear { x1, y1, x2, y2 },
+                UnresolvedVariant::Linear {
+                    x1: fx1,
+                    y1: fy1,
+                    x2: fx2,
+                    y2: fy2,
+                },
+            ) => UnresolvedVariant::Linear {
                 x1: x1.or(fx1),
                 y1: y1.or(fy1),
                 x2: x2.or(fx2),
                 y2: y2.or(fy2),
             },
 
-            (UnresolvedVariant::Radial { cx, cy, r, fx, fy },
-             UnresolvedVariant::Radial { cx: fcx, cy: fcy, r: fr, fx: ffx, fy: ffy }) => UnresolvedVariant::Radial {
+            (
+                UnresolvedVariant::Radial { cx, cy, r, fx, fy },
+                UnresolvedVariant::Radial {
+                    cx: fcx,
+                    cy: fcy,
+                    r: fr,
+                    fx: ffx,
+                    fy: ffy,
+                },
+            ) => UnresolvedVariant::Radial {
                 cx: cx.or(fcx),
                 cy: cy.or(fcy),
                 r: r.or(fr),
@@ -248,23 +262,23 @@ impl UnresolvedVariant {
     fn resolve_from_defaults(&self) -> UnresolvedVariant {
         match self {
             UnresolvedVariant::Linear { x1, y1, x2, y2 } => UnresolvedVariant::Linear {
-                x1: x1.or_else(|| Some(Length::<Horizontal>::parse_str_to_parse_error("0%").unwrap())),
-                y1: y1.or_else(|| Some(Length::<Vertical>::parse_str_to_parse_error("0%").unwrap())),
-                x2: x2.or_else(|| Some(Length::<Horizontal>::parse_str_to_parse_error("100%").unwrap())),
-                y2: y2.or_else(|| Some(Length::<Vertical>::parse_str_to_parse_error("0%").unwrap())),
+                x1: x1.or_else(|| Some(Length::<Horizontal>::parse_str("0%").unwrap())),
+                y1: y1.or_else(|| Some(Length::<Vertical>::parse_str("0%").unwrap())),
+                x2: x2.or_else(|| Some(Length::<Horizontal>::parse_str("100%").unwrap())),
+                y2: y2.or_else(|| Some(Length::<Vertical>::parse_str("0%").unwrap())),
             },
 
             UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
-                let cx = cx.or_else(|| Some(Length::<Horizontal>::parse_str_to_parse_error("50%").unwrap()));
-                let cy = cy.or_else(|| Some(Length::<Vertical>::parse_str_to_parse_error("50%").unwrap()));
-                let r = r.or_else(|| Some(Length::<Both>::parse_str_to_parse_error("50%").unwrap()));
+                let cx = cx.or_else(|| Some(Length::<Horizontal>::parse_str("50%").unwrap()));
+                let cy = cy.or_else(|| Some(Length::<Vertical>::parse_str("50%").unwrap()));
+                let r = r.or_else(|| Some(Length::<Both>::parse_str("50%").unwrap()));
 
                 // fx and fy fall back to the presentational value of cx and cy
                 let fx = fx.or(cx);
                 let fy = fy.or(cy);
 
                 UnresolvedVariant::Radial { cx, cy, r, fx, fy }
-            },
+            }
         }
     }
 }
@@ -472,7 +486,13 @@ impl UnresolvedGradient {
         let stops = self.stops.clone().or_else(|| fallback.stops.clone());
         let variant = self.variant.resolve_from_fallback(&fallback.variant);
 
-        UnresolvedGradient { units, affine, spread, stops, variant }
+        UnresolvedGradient {
+            units,
+            affine,
+            spread,
+            stops,
+            variant,
+        }
     }
 
     fn resolve_from_defaults(&self) -> UnresolvedGradient {
@@ -482,7 +502,13 @@ impl UnresolvedGradient {
         let stops = self.stops.clone().or_else(|| Some(Vec::<ColorStop>::new()));
         let variant = self.variant.resolve_from_defaults();
 
-        UnresolvedGradient { units, affine, spread, stops, variant }
+        UnresolvedGradient {
+            units,
+            affine,
+            spread,
+            stops,
+            variant,
+        }
     }
 }
 
@@ -539,7 +565,7 @@ macro_rules! impl_get_unresolved {
                 }
             }
         }
-    }
+    };
 }
 impl_get_unresolved!(LinearGradient);
 impl_get_unresolved!(RadialGradient);
@@ -548,9 +574,9 @@ impl Common {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "gradientUnits") => self.units = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "gradientTransform") => self.affine = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "spreadMethod") => self.spread = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "gradientUnits") => self.units = Some(attr.parse(value)?),
+                expanded_name!(svg "gradientTransform") => self.affine = Some(attr.parse(value)?),
+                expanded_name!(svg "spreadMethod") => self.spread = Some(attr.parse(value)?),
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?)
                 }
@@ -568,10 +594,10 @@ impl NodeTrait for LinearGradient {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x1") => self.x1 = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "y1") => self.y1 = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "x2") => self.x2 = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "y2") => self.y2 = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "x1") => self.x1 = Some(attr.parse(value)?),
+                expanded_name!(svg "y1") => self.y1 = Some(attr.parse(value)?),
+                expanded_name!(svg "x2") => self.x2 = Some(attr.parse(value)?),
+                expanded_name!(svg "y2") => self.y2 = Some(attr.parse(value)?),
 
                 _ => (),
             }
@@ -587,11 +613,11 @@ impl NodeTrait for RadialGradient {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "cx") => self.cx = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "cy") => self.cy = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "r") => self.r = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "fx") => self.fx = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "fy") => self.fy = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "cx") => self.cx = Some(attr.parse(value)?),
+                expanded_name!(svg "cy") => self.cy = Some(attr.parse(value)?),
+                expanded_name!(svg "r") => self.r = Some(attr.parse(value)?),
+                expanded_name!(svg "fx") => self.fx = Some(attr.parse(value)?),
+                expanded_name!(svg "fy") => self.fy = Some(attr.parse(value)?),
 
                 _ => (),
             }
@@ -616,7 +642,10 @@ macro_rules! impl_paint_source {
                     return Ok(gradient.clone());
                 }
 
-                let Unresolved { mut gradient, mut fallback } = self.get_unresolved(node);
+                let Unresolved {
+                    mut gradient,
+                    mut fallback,
+                } = self.get_unresolved(node);
 
                 let mut stack = NodeStack::new();
 
@@ -641,7 +670,7 @@ macro_rules! impl_paint_source {
                                 a_gradient.get_unresolved(&acquired_node)
                             }
 
-                            _ => unreachable!()
+                            _ => unreachable!(),
                         };
 
                         gradient = gradient.resolve_from_fallback(&unresolved.gradient);
@@ -661,7 +690,7 @@ macro_rules! impl_paint_source {
                 Ok(gradient)
             }
         }
-    }
+    };
 }
 
 impl_paint_source!(
@@ -769,25 +798,28 @@ fn acquire_gradient<'a>(
     draw_ctx: &'a mut DrawingCtx,
     fragment: &Fragment,
 ) -> Result<AcquiredNode, AcquireError> {
-    draw_ctx.acquire_node(fragment, &[NodeType::LinearGradient, NodeType::RadialGradient])
+    draw_ctx.acquire_node(
+        fragment,
+        &[NodeType::LinearGradient, NodeType::RadialGradient],
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use markup5ever::{namespace_url, ns, QualName};
     use crate::float_eq_cairo::ApproxEqCairo;
     use crate::node::{NodeData, NodeType, RsvgNode};
+    use markup5ever::{namespace_url, ns, QualName};
 
     #[test]
     fn parses_spread_method() {
-        assert_eq!(SpreadMethod::parse_str_to_parse_error("pad"), Ok(SpreadMethod::Pad));
+        assert_eq!(SpreadMethod::parse_str("pad"), Ok(SpreadMethod::Pad));
         assert_eq!(
-            SpreadMethod::parse_str_to_parse_error("reflect"),
+            SpreadMethod::parse_str("reflect"),
             Ok(SpreadMethod::Reflect)
         );
-        assert_eq!(SpreadMethod::parse_str_to_parse_error("repeat"), Ok(SpreadMethod::Repeat));
-        assert!(SpreadMethod::parse_str_to_parse_error("foobar").is_err());
+        assert_eq!(SpreadMethod::parse_str("repeat"), Ok(SpreadMethod::Repeat));
+        assert!(SpreadMethod::parse_str("foobar").is_err());
     }
 
     fn assert_tuples_equal(a: &(f64, f64), b: &(f64, f64)) {
@@ -814,7 +846,7 @@ mod tests {
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
             None,
             None,
-            Box::new(LinearGradient::default())
+            Box::new(LinearGradient::default()),
         ));
 
         let borrow = node.borrow();
@@ -828,7 +860,7 @@ mod tests {
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
             None,
             None,
-            Box::new(RadialGradient::default())
+            Box::new(RadialGradient::default()),
         ));
 
         let borrow = node.borrow();

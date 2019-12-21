@@ -15,7 +15,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
 use crate::paint_server::{AsPaintSource, PaintSource};
-use crate::parsers::ParseValueToParseError;
+use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
@@ -120,30 +120,30 @@ impl NodeTrait for Pattern {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "patternUnits") => self.common.units = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "patternUnits") => self.common.units = Some(attr.parse(value)?),
                 expanded_name!(svg "patternContentUnits") => {
-                    self.common.content_units = Some(attr.parse_to_parse_error(value)?)
+                    self.common.content_units = Some(attr.parse(value)?)
                 }
-                expanded_name!(svg "viewBox") => self.common.vbox = Some(Some(attr.parse_to_parse_error(value)?)),
+                expanded_name!(svg "viewBox") => self.common.vbox = Some(Some(attr.parse(value)?)),
                 expanded_name!(svg "preserveAspectRatio") => {
-                    self.common.preserve_aspect_ratio = Some(attr.parse_to_parse_error(value)?)
+                    self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
                 expanded_name!(svg "patternTransform") => {
-                    self.common.affine = Some(attr.parse_to_parse_error(value)?)
+                    self.common.affine = Some(attr.parse(value)?)
                 }
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?);
                 }
-                expanded_name!(svg "x") => self.common.x = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "y") => self.common.y = Some(attr.parse_to_parse_error(value)?),
+                expanded_name!(svg "x") => self.common.x = Some(attr.parse(value)?),
+                expanded_name!(svg "y") => self.common.y = Some(attr.parse(value)?),
                 expanded_name!(svg "width") => {
                     self.common.width = Some(
-                        attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
                     )
                 }
                 expanded_name!(svg "height") => {
                     self.common.height =
-                        Some(attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?)
+                        Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
                 }
                 _ => (),
             }
@@ -314,10 +314,8 @@ impl AsPaintSource for ResolvedPattern {
         // Create the pattern contents coordinate system
         let _params = if let Some(vbox) = vbox {
             // If there is a vbox, use that
-            let r = preserve_aspect_ratio.compute(
-                &vbox,
-                &Rect::from_size(scaled_width, scaled_height),
-            );
+            let r =
+                preserve_aspect_ratio.compute(&vbox, &Rect::from_size(scaled_width, scaled_height));
 
             let sw = r.width() / vbox.0.width();
             let sh = r.height() / vbox.0.height();

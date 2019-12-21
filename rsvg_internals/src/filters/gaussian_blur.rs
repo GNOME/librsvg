@@ -7,7 +7,7 @@ use nalgebra::{DMatrix, Dynamic, VecStorage};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{NumberOptionalNumber, ParseValueToParseError};
+use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -49,16 +49,14 @@ impl NodeTrait for FeGaussianBlur {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "stdDeviation") => {
-                    let NumberOptionalNumber(x, y) = attr.parse_to_parse_error_and_validate(
-                        value,
-                        |v: NumberOptionalNumber<f64>| {
+                    let NumberOptionalNumber(x, y) =
+                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
                             if v.0 >= 0.0 && v.1 >= 0.0 {
                                 Ok(v)
                             } else {
                                 Err(ValueErrorKind::value_error("values can't be negative"))
                             }
-                        },
-                    )?;
+                        })?;
 
                     self.std_deviation = (x, y);
                 }

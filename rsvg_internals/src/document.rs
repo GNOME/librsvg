@@ -32,7 +32,6 @@ pub struct Document {
     // The following two require interior mutability because we load the extern
     // resources all over the place.  Eventually we'll be able to do this
     // once, at loading time, and keep this immutable.
-
     /// SVG documents referenced from this document.
     externs: RefCell<Resources>,
 

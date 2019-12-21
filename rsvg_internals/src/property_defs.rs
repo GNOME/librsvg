@@ -8,7 +8,7 @@ use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, SingleF
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
-use crate::parsers::ParseToParseError;
+use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::unit_interval::UnitInterval;
@@ -17,7 +17,7 @@ use crate::unit_interval::UnitInterval;
 make_property!(
     ComputedValues,
     BaselineShift,
-    default: Length::<Both>::parse_str_to_parse_error("0.0").unwrap(),
+    default: Length::<Both>::parse_str("0.0").unwrap(),
     newtype: Length<Both>,
     property_impl: {
         impl Property<ComputedValues> for BaselineShift {
@@ -41,11 +41,11 @@ make_property!(
         }
     },
     parse_impl: {
-        impl ParseToParseError for BaselineShift {
+        impl Parse for BaselineShift {
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
-            fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<BaselineShift, crate::error::CssParseError<'i>> {
-                parser.try_parse(|p| Ok(BaselineShift(Length::<Both>::parse_to_parse_error(p)?)))
+            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<BaselineShift, crate::error::CssParseError<'i>> {
+                parser.try_parse(|p| Ok(BaselineShift(Length::<Both>::parse(p)?)))
                     .or_else(|_: CssParseError| {
                         Ok(parse_identifiers!(
                             parser,
@@ -66,7 +66,7 @@ make_property!(
     ClipPath,
     default: IRI::None,
     inherits_automatically: false,
-    newtype_parse_to_parse_error: IRI,
+    newtype_parse: IRI,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#ClipRuleProperty
@@ -93,7 +93,7 @@ make_property!(
     // surrounding text.
     default: cssparser::RGBA::new(0, 0, 0, 0xff),
     inherits_automatically: true,
-    newtype_parse_to_parse_error: cssparser::RGBA,
+    newtype_parse: cssparser::RGBA,
 );
 
 // https://www.w3.org/TR/SVG11/painting.html#ColorInterpolationProperty
@@ -164,9 +164,9 @@ make_property!(
 make_property!(
     ComputedValues,
     Fill,
-    default: PaintServer::parse_str_to_parse_error("#000").unwrap(),
+    default: PaintServer::parse_str("#000").unwrap(),
     inherits_automatically: true,
-    newtype_parse_to_parse_error: PaintServer,
+    newtype_parse: PaintServer,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#FillOpacityProperty
@@ -175,7 +175,7 @@ make_property!(
     FillOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
-    newtype_parse_to_parse_error: UnitInterval,
+    newtype_parse: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#FillRuleProperty
@@ -196,7 +196,7 @@ make_property!(
     Filter,
     default: IRI::None,
     inherits_automatically: false,
-    newtype_parse_to_parse_error: IRI,
+    newtype_parse: IRI,
 );
 
 // https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
@@ -205,7 +205,7 @@ make_property!(
     FloodColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
     inherits_automatically: false,
-    newtype_parse_to_parse_error: cssparser::Color,
+    newtype_parse: cssparser::Color,
 );
 
 // https://www.w3.org/TR/SVG/filters.html#FloodOpacityProperty
@@ -214,7 +214,7 @@ make_property!(
     FloodOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
-    newtype_parse_to_parse_error: UnitInterval,
+    newtype_parse: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
@@ -223,14 +223,14 @@ make_property!(
     FontFamily,
     default: SingleFontFamily("Times New Roman".to_string()),
     inherits_automatically: true,
-    newtype_parse_to_parse_error: SingleFontFamily,
+    newtype_parse: SingleFontFamily,
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontSizeProperty
 make_property!(
     ComputedValues,
     FontSize,
-    default: FontSizeSpec::Value(Length::<Both>::parse_str_to_parse_error("12.0").unwrap()),
+    default: FontSizeSpec::Value(Length::<Both>::parse_str("12.0").unwrap()),
     newtype_parse: FontSizeSpec,
     property_impl: {
         impl Property<ComputedValues> for FontSize {
@@ -297,7 +297,7 @@ make_property!(
     FontWeight,
     default: FontWeightSpec::Normal,
     inherits_automatically: true,
-    newtype_parse_to_parse_error: FontWeightSpec,
+    newtype_parse: FontWeightSpec,
 );
 
 // https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty
@@ -325,7 +325,7 @@ make_property!(
     LightingColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
     inherits_automatically: false,
-    newtype_parse_to_parse_error: cssparser::Color,
+    newtype_parse: cssparser::Color,
 );
 
 make_property!(
@@ -333,7 +333,7 @@ make_property!(
     Marker,
     default: IRI::None,
     inherits_automatically: true,
-    newtype_parse_to_parse_error: IRI,
+    newtype_parse: IRI,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerEndProperty
@@ -342,7 +342,7 @@ make_property!(
     MarkerEnd,
     default: IRI::None,
     inherits_automatically: true,
-    newtype_parse_to_parse_error: IRI,
+    newtype_parse: IRI,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerMidProperty
@@ -351,7 +351,7 @@ make_property!(
     MarkerMid,
     default: IRI::None,
     inherits_automatically: true,
-    newtype_parse_to_parse_error: IRI,
+    newtype_parse: IRI,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerStartProperty
@@ -360,7 +360,7 @@ make_property!(
     MarkerStart,
     default: IRI::None,
     inherits_automatically: true,
-    newtype_parse_to_parse_error: IRI,
+    newtype_parse: IRI,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#MaskProperty
@@ -369,7 +369,7 @@ make_property!(
     Mask,
     default: IRI::None,
     inherits_automatically: false,
-    newtype_parse_to_parse_error: IRI,
+    newtype_parse: IRI,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#OpacityProperty
@@ -378,7 +378,7 @@ make_property!(
     Opacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
-    newtype_parse_to_parse_error: UnitInterval,
+    newtype_parse: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#OverflowProperty
@@ -415,7 +415,7 @@ make_property!(
     StopColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
-    newtype_parse_to_parse_error: cssparser::Color,
+    newtype_parse: cssparser::Color,
 );
 
 // https://www.w3.org/TR/SVG/pservers.html#StopOpacityProperty
@@ -424,7 +424,7 @@ make_property!(
     StopOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
-    newtype_parse_to_parse_error: UnitInterval,
+    newtype_parse: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeProperty
@@ -433,7 +433,7 @@ make_property!(
     Stroke,
     default: PaintServer::None,
     inherits_automatically: true,
-    newtype_parse_to_parse_error: PaintServer,
+    newtype_parse: PaintServer,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeDasharrayProperty
@@ -442,7 +442,7 @@ make_property!(
     StrokeDasharray,
     default: Dasharray::default(),
     inherits_automatically: true,
-    newtype_parse_to_parse_error: Dasharray,
+    newtype_parse: Dasharray,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeDashoffsetProperty
@@ -451,7 +451,7 @@ make_property!(
     StrokeDashoffset,
     default: Length::<Both>::default(),
     inherits_automatically: true,
-    newtype_parse_to_parse_error: Length<Both>,
+    newtype_parse: Length<Both>,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeLinecapProperty
@@ -486,7 +486,7 @@ make_property!(
     StrokeMiterlimit,
     default: 4f64,
     inherits_automatically: true,
-    newtype_parse_to_parse_error: f64,
+    newtype_parse: f64,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeOpacityProperty
@@ -495,16 +495,16 @@ make_property!(
     StrokeOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
-    newtype_parse_to_parse_error: UnitInterval,
+    newtype_parse: UnitInterval,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeWidthProperty
 make_property!(
     ComputedValues,
     StrokeWidth,
-    default: Length::<Both>::parse_str_to_parse_error("1.0").unwrap(),
+    default: Length::<Both>::parse_str("1.0").unwrap(),
     inherits_automatically: true,
-    newtype_parse_to_parse_error: Length::<Both>,
+    newtype_parse: Length::<Both>,
 );
 
 // https://www.w3.org/TR/SVG/text.html#TextAnchorProperty
@@ -533,8 +533,8 @@ make_property!(
     }
 
     parse_impl: {
-        impl ParseToParseError for TextDecoration {
-            fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<TextDecoration, CssParseError<'i>> {
+        impl Parse for TextDecoration {
+            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TextDecoration, CssParseError<'i>> {
                 let mut overline = false;
                 let mut underline = false;
                 let mut strike = false;
@@ -569,7 +569,7 @@ make_property!(
 #[test]
 fn parses_text_decoration() {
     assert_eq!(
-        TextDecoration::parse_str_to_parse_error("none").unwrap(),
+        TextDecoration::parse_str("none").unwrap(),
         TextDecoration {
             overline: false,
             underline: false,
@@ -578,7 +578,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str_to_parse_error("overline").unwrap(),
+        TextDecoration::parse_str("overline").unwrap(),
         TextDecoration {
             overline: true,
             underline: false,
@@ -587,7 +587,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str_to_parse_error("underline").unwrap(),
+        TextDecoration::parse_str("underline").unwrap(),
         TextDecoration {
             overline: false,
             underline: true,
@@ -596,7 +596,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str_to_parse_error("line-through").unwrap(),
+        TextDecoration::parse_str("line-through").unwrap(),
         TextDecoration {
             overline: false,
             underline: false,
@@ -605,7 +605,7 @@ fn parses_text_decoration() {
     );
 
     assert_eq!(
-        TextDecoration::parse_str_to_parse_error("underline overline").unwrap(),
+        TextDecoration::parse_str("underline overline").unwrap(),
         TextDecoration {
             overline: true,
             underline: true,
@@ -613,7 +613,7 @@ fn parses_text_decoration() {
         }
     );
 
-    assert!(TextDecoration::parse_str_to_parse_error("airline").is_err())
+    assert!(TextDecoration::parse_str("airline").is_err())
 }
 
 // https://www.w3.org/TR/SVG/painting.html#TextRenderingProperty
@@ -688,8 +688,8 @@ make_property!(
     inherits_automatically: true,
     newtype: String,
     parse_impl: {
-        impl ParseToParseError for XmlLang {
-            fn parse_to_parse_error<'i>(
+        impl Parse for XmlLang {
+            fn parse<'i>(
                 parser: &mut Parser<'i, '_>,
             ) -> Result<XmlLang, CssParseError<'i>> {
                 Ok(XmlLang(parser.expect_ident()?.to_string()))
@@ -702,11 +702,11 @@ make_property!(
 #[test]
 fn parses_xml_lang() {
     assert_eq!(
-        XmlLang::parse_str_to_parse_error("es-MX").unwrap(),
+        XmlLang::parse_str("es-MX").unwrap(),
         XmlLang("es-MX".to_string())
     );
 
-    assert!(XmlLang::parse_str_to_parse_error("").is_err());
+    assert!(XmlLang::parse_str("").is_err());
 }
 
 make_property!(

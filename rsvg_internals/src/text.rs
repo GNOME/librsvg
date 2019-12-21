@@ -15,7 +15,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeightSpec;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers::ParseValueToParseError;
+use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::{
@@ -602,10 +602,10 @@ impl NodeTrait for Text {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "dx") => self.dx = attr.parse_to_parse_error(value).map(Some)?,
-                expanded_name!(svg "dy") => self.dy = attr.parse_to_parse_error(value).map(Some)?,
+                expanded_name!(svg "x") => self.x = attr.parse(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value)?,
+                expanded_name!(svg "dx") => self.dx = attr.parse(value).map(Some)?,
+                expanded_name!(svg "dy") => self.dy = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
@@ -762,10 +762,10 @@ impl NodeTrait for TSpan {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse_to_parse_error(value).map(Some)?,
-                expanded_name!(svg "y") => self.y = attr.parse_to_parse_error(value).map(Some)?,
-                expanded_name!(svg "dx") => self.dx = attr.parse_to_parse_error(value).map(Some)?,
-                expanded_name!(svg "dy") => self.dy = attr.parse_to_parse_error(value).map(Some)?,
+                expanded_name!(svg "x") => self.x = attr.parse(value).map(Some)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value).map(Some)?,
+                expanded_name!(svg "dx") => self.dx = attr.parse(value).map(Some)?,
+                expanded_name!(svg "dy") => self.dy = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }

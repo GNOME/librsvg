@@ -34,7 +34,7 @@ impl<'i> From<CssParseError<'i>> for ParseError<'i> {
 }
 
 impl<'i> From<ValueErrorKind> for ParseError<'i> {
-    fn from (v: ValueErrorKind) -> ParseError<'i> {
+    fn from(v: ValueErrorKind) -> ParseError<'i> {
         ParseError::V(v)
     }
 }
@@ -219,16 +219,16 @@ impl<'i, O> AttributeResultExt<O> for Result<O, CssParseError<'i>> {
                         attr,
                         err: ValueErrorKind::Parse(s),
                     }
-                },
+                }
 
                 ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput) => NodeError {
                     attr,
                     err: ValueErrorKind::parse_error("unexpected end of input"),
                 },
 
-                ParseErrorKind::Basic(_) => unreachable!(
-                    "attribute parsers should not return errors for CSS rules"
-                ),
+                ParseErrorKind::Basic(_) => {
+                    unreachable!("attribute parsers should not return errors for CSS rules")
+                }
 
                 ParseErrorKind::Custom(err) => NodeError { attr, err },
             }

@@ -5,7 +5,7 @@ use std::f64::consts::*;
 use cssparser::{Parser, Token};
 
 use crate::error::*;
-use crate::parsers::{finite_f32, ParseToParseError};
+use crate::parsers::{finite_f32, Parse};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Angle(f64);
@@ -61,8 +61,8 @@ impl Angle {
 //
 // angle ::= number ("deg" | "grad" | "rad")?
 //
-impl ParseToParseError for Angle {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Angle, CssParseError<'i>> {
+impl Parse for Angle {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Angle, CssParseError<'i>> {
         let angle = {
             let loc = parser.current_source_location();
 
@@ -107,18 +107,18 @@ mod tests {
 
     #[test]
     fn parses_angle() {
-        assert_eq!(Angle::parse_str_to_parse_error("0"), Ok(Angle::new(0.0)));
-        assert_eq!(Angle::parse_str_to_parse_error("15"), Ok(Angle::from_degrees(15.0)));
-        assert_eq!(Angle::parse_str_to_parse_error("180.5deg"), Ok(Angle::from_degrees(180.5)));
-        assert_eq!(Angle::parse_str_to_parse_error("1rad"), Ok(Angle::new(1.0)));
+        assert_eq!(Angle::parse_str("0"), Ok(Angle::new(0.0)));
+        assert_eq!(Angle::parse_str("15"), Ok(Angle::from_degrees(15.0)));
+        assert_eq!(Angle::parse_str("180.5deg"), Ok(Angle::from_degrees(180.5)));
+        assert_eq!(Angle::parse_str("1rad"), Ok(Angle::new(1.0)));
         assert_eq!(
-            Angle::parse_str_to_parse_error("-400grad"),
+            Angle::parse_str("-400grad"),
             Ok(Angle::from_degrees(-360.0))
         );
 
-        assert!(Angle::parse_str_to_parse_error("").is_err());
-        assert!(Angle::parse_str_to_parse_error("foo").is_err());
-        assert!(Angle::parse_str_to_parse_error("300foo").is_err());
+        assert!(Angle::parse_str("").is_err());
+        assert!(Angle::parse_str("foo").is_err());
+        assert!(Angle::parse_str("300foo").is_err());
     }
 
     fn test_bisection_angle(

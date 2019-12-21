@@ -7,12 +7,10 @@ use std::f64::consts::*;
 use cssparser::{self, Parser, Token};
 
 use crate::error::*;
-use crate::parsers::{optional_comma, ParseToParseError};
+use crate::parsers::{optional_comma, Parse};
 
-impl ParseToParseError for cairo::Matrix {
-    fn parse_to_parse_error<'i>(
-        parser: &mut Parser<'i, '_>,
-    ) -> Result<cairo::Matrix, CssParseError<'i>> {
+impl Parse for cairo::Matrix {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
         let loc = parser.current_source_location();
 
         let matrix = parse_transform_list(parser)?;
@@ -86,22 +84,22 @@ fn parse_transform_function<'i>(
 
 fn parse_matrix_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
-        let xx = f64::parse_to_parse_error(p)?;
+        let xx = f64::parse(p)?;
         optional_comma(p);
 
-        let yx = f64::parse_to_parse_error(p)?;
+        let yx = f64::parse(p)?;
         optional_comma(p);
 
-        let xy = f64::parse_to_parse_error(p)?;
+        let xy = f64::parse(p)?;
         optional_comma(p);
 
-        let yy = f64::parse_to_parse_error(p)?;
+        let yy = f64::parse(p)?;
         optional_comma(p);
 
-        let x0 = f64::parse_to_parse_error(p)?;
+        let x0 = f64::parse(p)?;
         optional_comma(p);
 
-        let y0 = f64::parse_to_parse_error(p)?;
+        let y0 = f64::parse(p)?;
 
         Ok(cairo::Matrix::new(xx, yx, xy, yy, x0, y0))
     })
@@ -111,12 +109,12 @@ fn parse_translate_args<'i>(
     parser: &mut Parser<'i, '_>,
 ) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
-        let tx = f64::parse_to_parse_error(p)?;
+        let tx = f64::parse(p)?;
 
         let ty = p
             .try_parse(|p| {
                 optional_comma(p);
-                f64::parse_to_parse_error(p)
+                f64::parse(p)
             })
             .unwrap_or(0.0);
 
@@ -126,12 +124,12 @@ fn parse_translate_args<'i>(
 
 fn parse_scale_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
-        let x = f64::parse_to_parse_error(p)?;
+        let x = f64::parse(p)?;
 
         let y = p
             .try_parse(|p| {
                 optional_comma(p);
-                f64::parse_to_parse_error(p)
+                f64::parse(p)
             })
             .unwrap_or(x);
 
@@ -141,15 +139,15 @@ fn parse_scale_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, Cs
 
 fn parse_rotate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
-        let angle = f64::parse_to_parse_error(p)? * PI / 180.0;
+        let angle = f64::parse(p)? * PI / 180.0;
 
         let (tx, ty) = p
             .try_parse(|p| -> Result<_, CssParseError> {
                 optional_comma(p);
-                let tx = f64::parse_to_parse_error(p)?;
+                let tx = f64::parse(p)?;
 
                 optional_comma(p);
-                let ty = f64::parse_to_parse_error(p)?;
+                let ty = f64::parse(p)?;
 
                 Ok((tx, ty))
             })
@@ -167,14 +165,14 @@ fn parse_rotate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, C
 
 fn parse_skewx_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
-        let a = f64::parse_to_parse_error(p)? * PI / 180.0;
+        let a = f64::parse(p)? * PI / 180.0;
         Ok(cairo::Matrix::new(1.0, 0.0, a.tan(), 1.0, 0.0, 0.0))
     })
 }
 
 fn parse_skewy_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, CssParseError<'i>> {
     parser.parse_nested_block(|p| {
-        let a = f64::parse_to_parse_error(p)? * PI / 180.0;
+        let a = f64::parse(p)? * PI / 180.0;
         Ok(cairo::Matrix::new(1.0, a.tan(), 0.0, 1.0, 0.0, 0.0))
     })
 }
@@ -200,7 +198,7 @@ mod tests {
     use std::f64;
 
     fn parse_transform(s: &str) -> Result<cairo::Matrix, CssParseError> {
-        cairo::Matrix::parse_str_to_parse_error(s)
+        cairo::Matrix::parse_str(s)
     }
 
     fn assert_matrix_eq(a: &cairo::Matrix, b: &cairo::Matrix) {

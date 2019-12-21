@@ -7,10 +7,13 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{ParseToParseError, ParseValueToParseError};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
-    iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
+    iterators::Pixels,
+    shared_surface::SharedImageSurface,
+    ImageSurfaceDataExt,
+    Pixel,
 };
 use crate::util::clamp;
 
@@ -61,7 +64,7 @@ impl NodeTrait for FeColorMatrix {
             .iter()
             .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "type"))
         {
-            operation_type = attr.parse_to_parse_error(value)?;
+            operation_type = attr.parse(value)?;
         }
 
         // Now read the matrix correspondingly.
@@ -85,25 +88,22 @@ impl NodeTrait for FeColorMatrix {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
-                        let NumberList(v) = NumberList::parse_str_to_parse_error(
-                            value,
-                            NumberListLength::Exact(20),
-                        )
-                        .attribute(attr)?;
+                        let NumberList(v) =
+                            NumberList::parse_str(value, NumberListLength::Exact(20))
+                                .attribute(attr)?;
                         let matrix = Matrix4x5::from_row_slice(&v);
                         let mut matrix = matrix.fixed_resize(0.0);
                         matrix[(4, 4)] = 1.0;
                         matrix
                     }
                     OperationType::Saturate => {
-                        let s: f64 = attr.parse_to_parse_error_and_validate(
-                            value,
-                            |s| if s < 0.0 || s > 1.0 {
+                        let s: f64 = attr.parse_and_validate(value, |s| {
+                            if s < 0.0 || s > 1.0 {
                                 Err(ValueErrorKind::value_error("expected value from 0 to 1"))
                             } else {
                                 Ok(s)
                             }
-                        )?;
+                        })?;
 
                         #[cfg_attr(rustfmt, rustfmt_skip)]
                         Matrix5::new(
@@ -115,7 +115,7 @@ impl NodeTrait for FeColorMatrix {
                         )
                     }
                     OperationType::HueRotate => {
-                        let degrees: f64 = attr.parse_to_parse_error(value)?;
+                        let degrees: f64 = attr.parse(value)?;
                         let (sin, cos) = degrees.to_radians().sin_cos();
 
                         #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -227,8 +227,8 @@ impl FilterEffect for FeColorMatrix {
     }
 }
 
-impl ParseToParseError for OperationType {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+impl Parse for OperationType {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "matrix" => OperationType::Matrix,

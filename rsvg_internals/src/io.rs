@@ -63,7 +63,9 @@ pub fn get_input_stream_for_loading(
     let num_read = buffered.fill(2, cancellable)?;
     if num_read < 2 {
         // FIXME: this string was localized in the original; localize it
-        return Err(LoadingError::XmlParseError(String::from("Input file is too short")));
+        return Err(LoadingError::XmlParseError(String::from(
+            "Input file is too short",
+        )));
     }
 
     let buf = buffered.peek_buffer();
@@ -87,13 +89,13 @@ pub fn acquire_stream(
     if uri.starts_with("data:") {
         let BinaryData { data, .. } = decode_data_uri(uri)?;
 
-//        {
-//            use std::fs::File;
-//            use std::io::prelude::*;
-//
-//            let mut file = File::create("data.bin").unwrap();
-//            file.write_all(&data).unwrap();
-//        }
+        //        {
+        //            use std::fs::File;
+        //            use std::io::prelude::*;
+        //
+        //            let mut file = File::create("data.bin").unwrap();
+        //            file.write_all(&data).unwrap();
+        //        }
 
         let stream = MemoryInputStream::new_from_bytes(&GBytes::from_owned(data));
         Ok(stream.upcast::<InputStream>())

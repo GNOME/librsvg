@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{ParseToParseError, ParseValueToParseError};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -66,12 +66,12 @@ impl NodeTrait for FeComposite {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in2") => self.in2 = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "operator") => self.operator = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "k1") => self.k1 = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "k2") => self.k2 = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "k3") => self.k3 = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "k4") => self.k4 = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "in2") => self.in2 = Some(attr.parse(value)?),
+                expanded_name!(svg "operator") => self.operator = attr.parse(value)?,
+                expanded_name!(svg "k1") => self.k1 = attr.parse(value)?,
+                expanded_name!(svg "k2") => self.k2 = attr.parse(value)?,
+                expanded_name!(svg "k3") => self.k3 = attr.parse(value)?,
+                expanded_name!(svg "k4") => self.k4 = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -211,8 +211,8 @@ impl FilterEffect for FeComposite {
     }
 }
 
-impl ParseToParseError for Operator {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+impl Parse for Operator {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "over" => Operator::Over,

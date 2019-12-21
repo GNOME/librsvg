@@ -23,7 +23,12 @@ use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::Pattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule, FillRule, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
+    ClipRule,
+    FillRule,
+    ShapeRendering,
+    StrokeDasharray,
+    StrokeLinecap,
+    StrokeLinejoin,
 };
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -1070,8 +1075,8 @@ impl AcquiredNodes {
             // Maybe we should have the following stages:
             //   - load main SVG XML
             //
-            //   - load secondary SVG XML and other files like images;
-            //     all document::Resources and document::Images loaded
+            //   - load secondary SVG XML and other files like images; all document::Resources and
+            //     document::Images loaded
             //
             //   - Now that all files are loaded, resolve URL references
             AcquireError::LinkNotFound(fragment.clone())

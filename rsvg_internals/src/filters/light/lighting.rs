@@ -12,19 +12,32 @@ use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
     light::{
-        bottom_left_normal, bottom_right_normal, bottom_row_normal, interior_normal,
-        left_column_normal, light_source::FeDistantLight, light_source::FePointLight,
-        light_source::FeSpotLight, light_source::LightSource, right_column_normal, top_left_normal,
-        top_right_normal, top_row_normal, Normal,
+        bottom_left_normal,
+        bottom_right_normal,
+        bottom_row_normal,
+        interior_normal,
+        left_column_normal,
+        light_source::FeDistantLight,
+        light_source::FePointLight,
+        light_source::FeSpotLight,
+        light_source::LightSource,
+        right_column_normal,
+        top_left_normal,
+        top_right_normal,
+        top_row_normal,
+        Normal,
     },
-    FilterEffect, FilterError, PrimitiveWithInput,
+    FilterEffect,
+    FilterError,
+    PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
-use crate::parsers::{NumberOptionalNumber, ParseValueToParseError};
+use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt, Pixel,
+    ImageSurfaceDataExt,
+    Pixel,
 };
 use crate::util::clamp;
 
@@ -54,14 +67,11 @@ impl Common {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "surfaceScale") => {
-                    self.surface_scale = attr.parse_to_parse_error(value)?
-                }
+                expanded_name!(svg "surfaceScale") => self.surface_scale = attr.parse(value)?,
 
                 expanded_name!(svg "kernelUnitLength") => {
-                    let NumberOptionalNumber(x, y) = attr.parse_to_parse_error_and_validate(
-                        value,
-                        |v: NumberOptionalNumber<f64>| {
+                    let NumberOptionalNumber(x, y) =
+                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
                             if v.0 > 0.0 && v.1 > 0.0 {
                                 Ok(v)
                             } else {
@@ -69,8 +79,7 @@ impl Common {
                                     "kernelUnitLength can't be less or equal to zero",
                                 ))
                             }
-                        },
-                    )?;
+                        })?;
 
                     self.kernel_unit_length = Some((x, y));
                 }
@@ -106,7 +115,7 @@ impl NodeTrait for FeDiffuseLighting {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "diffuseConstant") => {
-                    self.diffuse_constant = attr.parse_to_parse_error_and_validate(value, |x| {
+                    self.diffuse_constant = attr.parse_and_validate(value, |x| {
                         if x >= 0.0 {
                             Ok(x)
                         } else {
@@ -175,28 +184,26 @@ impl NodeTrait for FeSpecularLighting {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "specularConstant") => {
-                    self.specular_constant =
-                        attr.parse_to_parse_error_and_validate(value, |x| {
-                            if x >= 0.0 {
-                                Ok(x)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "specularConstant can't be negative",
-                                ))
-                            }
-                        })?;
+                    self.specular_constant = attr.parse_and_validate(value, |x| {
+                        if x >= 0.0 {
+                            Ok(x)
+                        } else {
+                            Err(ValueErrorKind::value_error(
+                                "specularConstant can't be negative",
+                            ))
+                        }
+                    })?;
                 }
                 expanded_name!(svg "specularExponent") => {
-                    self.specular_exponent =
-                        attr.parse_to_parse_error_and_validate(value, |x| {
-                            if x >= 1.0 && x <= 128.0 {
-                                Ok(x)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "specularExponent should be between 1.0 and 128.0",
-                                ))
-                            }
-                        })?;
+                    self.specular_exponent = attr.parse_and_validate(value, |x| {
+                        if x >= 1.0 && x <= 128.0 {
+                            Ok(x)
+                        } else {
+                            Err(ValueErrorKind::value_error(
+                                "specularExponent should be between 1.0 and 128.0",
+                            ))
+                        }
+                    })?;
                 }
                 _ => (),
             }
@@ -294,8 +301,8 @@ macro_rules! impl_lighting_filter {
 
                 let (bounds_w, bounds_h) = bounds.size();
 
-                // Check if the surface is too small for normal computation. This case is unspecified;
-                // WebKit doesn't render anything in this case.
+                // Check if the surface is too small for normal computation. This case is
+                // unspecified; WebKit doesn't render anything in this case.
                 if bounds_w < 2 || bounds_h < 2 {
                     return Err(FilterError::LightingInputTooSmall);
                 }

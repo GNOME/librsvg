@@ -75,8 +75,9 @@ impl<'a> PropertyBag<'a> {
                     // of https://www.w3.org/TR/xml-names11/
                     QualName::new(
                         prefix.map(Prefix::from),
-                        uri.map(Namespace::from).unwrap_or_else(|| element_ns.clone()),
-                        LocalName::from(localname)
+                        uri.map(Namespace::from)
+                            .unwrap_or_else(|| element_ns.clone()),
+                        LocalName::from(localname),
                     )
                 };
 
@@ -135,20 +136,24 @@ mod tests {
     #[test]
     fn property_bag_with_namespaces() {
         let attrs = [
-            (CString::new("rx").unwrap(),
-             CString::new("svg").unwrap(),
-             CString::new("http://www.w3.org/2000/svg").unwrap(),
-             CString::new("1").unwrap()),
-
-            (CString::new("ry").unwrap(),
-             CString::new("svg").unwrap(),
-             CString::new("http://www.w3.org/2000/svg").unwrap(),
-             CString::new("2").unwrap()),
-
-            (CString::new("empty").unwrap(),
-             CString::new("svg").unwrap(),
-             CString::new("http://www.w3.org/2000/svg").unwrap(),
-             CString::new("").unwrap()),
+            (
+                CString::new("rx").unwrap(),
+                CString::new("svg").unwrap(),
+                CString::new("http://www.w3.org/2000/svg").unwrap(),
+                CString::new("1").unwrap(),
+            ),
+            (
+                CString::new("ry").unwrap(),
+                CString::new("svg").unwrap(),
+                CString::new("http://www.w3.org/2000/svg").unwrap(),
+                CString::new("2").unwrap(),
+            ),
+            (
+                CString::new("empty").unwrap(),
+                CString::new("svg").unwrap(),
+                CString::new("http://www.w3.org/2000/svg").unwrap(),
+                CString::new("").unwrap(),
+            ),
         ];
 
         let mut v: Vec<*const libc::c_char> = Vec::new();

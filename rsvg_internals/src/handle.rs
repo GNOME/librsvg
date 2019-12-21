@@ -35,7 +35,8 @@ pub struct LoadOptions {
     /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces.
     pub keep_image_data: bool,
 
-    /// The environment's locale, used for the `<switch>` element and the `systemLanguage` attribute.
+    /// The environment's locale, used for the `<switch>` element and the `systemLanguage`
+    /// attribute.
     locale: Locale,
 }
 
@@ -206,7 +207,11 @@ impl Handle {
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Handle, LoadingError> {
         Ok(Handle {
-            document: Rc::new(Document::load_from_stream(load_options, stream, cancellable)?),
+            document: Rc::new(Document::load_from_stream(
+                load_options,
+                stream,
+                cancellable,
+            )?),
         })
     }
 
@@ -318,7 +323,10 @@ impl Handle {
         let ink_rect = bbox.ink_rect.unwrap_or_default();
         let logical_rect = bbox.rect.unwrap_or_default();
 
-        Ok((cairo::Rectangle::from(ink_rect), cairo::Rectangle::from(logical_rect)))
+        Ok((
+            cairo::Rectangle::from(ink_rect),
+            cairo::Rectangle::from(logical_rect),
+        ))
     }
 
     /// Returns (ink_rect, logical_rect)

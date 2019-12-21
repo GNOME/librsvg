@@ -13,7 +13,6 @@
 //! }
 //!
 //! #baz { stroke-width: 42; }
-//!
 //! ```
 //! The example contains three **rules**, the first one is an **at-rule*,
 //! the other two are **qualified rules**.
@@ -122,8 +121,8 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         input: &mut Parser<'i, 't>,
     ) -> Result<Declaration, CssParseError<'i>> {
         let prop_name = QualName::new(None, ns!(svg), LocalName::from(name.as_ref()));
-        let property =
-            parse_property(&prop_name, input, true).map_err(|_| input.new_custom_error(ValueErrorKind::parse_error("parse error")))?;
+        let property = parse_property(&prop_name, input, true)
+            .map_err(|_| input.new_custom_error(ValueErrorKind::parse_error("parse error")))?;
 
         let important = input.try_parse(parse_important).is_ok();
 
@@ -265,8 +264,10 @@ impl<'i> AtRuleParser<'i> for RuleParser {
         &mut self,
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
-    ) -> Result<AtRuleType<Self::PreludeNoBlock, Self::PreludeBlock>, cssparser::ParseError<'i, Self::Error>>
-    {
+    ) -> Result<
+        AtRuleType<Self::PreludeNoBlock, Self::PreludeBlock>,
+        cssparser::ParseError<'i, Self::Error>,
+    > {
         match_ignore_ascii_case! { &name,
             "import" => {
                 // FIXME: at the moment we ignore media queries

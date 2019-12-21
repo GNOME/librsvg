@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{ParseToParseError, ParseValueToParseError};
+use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 
@@ -62,9 +62,9 @@ impl NodeTrait for FeBlend {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "in2") => {
-                    self.in2 = Some(attr.parse_to_parse_error(value)?);
+                    self.in2 = Some(attr.parse(value)?);
                 }
-                expanded_name!(svg "mode") => self.mode = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "mode") => self.mode = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -133,8 +133,8 @@ impl FilterEffect for FeBlend {
     }
 }
 
-impl ParseToParseError for Mode {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+impl Parse for Mode {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "normal" => Mode::Normal,

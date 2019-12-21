@@ -3,7 +3,7 @@
 use cssparser::Parser;
 
 use crate::error::*;
-use crate::parsers::ParseToParseError;
+use crate::parsers::Parse;
 use crate::util;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, PartialOrd)]
@@ -15,9 +15,9 @@ impl UnitInterval {
     }
 }
 
-impl ParseToParseError for UnitInterval {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<UnitInterval, CssParseError<'i>> {
-        let x = f64::parse_to_parse_error(parser)?;
+impl Parse for UnitInterval {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<UnitInterval, CssParseError<'i>> {
+        let x = f64::parse(parser)?;
         Ok(UnitInterval::clamp(x))
     }
 }
@@ -44,23 +44,23 @@ mod tests {
 
     #[test]
     fn parses_number() {
-        assert_eq!(UnitInterval::parse_str_to_parse_error("0"), Ok(UnitInterval(0.0)));
-        assert_eq!(UnitInterval::parse_str_to_parse_error("1"), Ok(UnitInterval(1.0)));
-        assert_eq!(UnitInterval::parse_str_to_parse_error("0.5"), Ok(UnitInterval(0.5)));
+        assert_eq!(UnitInterval::parse_str("0"), Ok(UnitInterval(0.0)));
+        assert_eq!(UnitInterval::parse_str("1"), Ok(UnitInterval(1.0)));
+        assert_eq!(UnitInterval::parse_str("0.5"), Ok(UnitInterval(0.5)));
     }
 
     #[test]
     fn parses_out_of_range_number() {
-        assert_eq!(UnitInterval::parse_str_to_parse_error("-10"), Ok(UnitInterval(0.0)));
-        assert_eq!(UnitInterval::parse_str_to_parse_error("10"), Ok(UnitInterval(1.0)));
+        assert_eq!(UnitInterval::parse_str("-10"), Ok(UnitInterval(0.0)));
+        assert_eq!(UnitInterval::parse_str("10"), Ok(UnitInterval(1.0)));
     }
 
     #[test]
     fn errors_on_invalid_input() {
-        assert!(UnitInterval::parse_str_to_parse_error("").is_err());
-        assert!(UnitInterval::parse_str_to_parse_error("foo").is_err());
-        assert!(UnitInterval::parse_str_to_parse_error("-x").is_err());
-        assert!(UnitInterval::parse_str_to_parse_error("0.0foo").is_err());
+        assert!(UnitInterval::parse_str("").is_err());
+        assert!(UnitInterval::parse_str("foo").is_err());
+        assert!(UnitInterval::parse_str("-x").is_err());
+        assert!(UnitInterval::parse_str("0.0foo").is_err());
     }
 
     #[test]

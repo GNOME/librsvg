@@ -11,7 +11,7 @@ use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
-use crate::parsers::ParseValueToParseError;
+use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
@@ -30,15 +30,15 @@ impl NodeTrait for Image {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "x") => self.x = attr.parse(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value)?,
                 expanded_name!(svg "width") => {
-                    self.w = attr.parse_to_parse_error_and_validate(value, Length::check_nonnegative)?
+                    self.w = attr.parse_and_validate(value, Length::check_nonnegative)?
                 }
                 expanded_name!(svg "height") => {
-                    self.h = attr.parse_to_parse_error_and_validate(value, Length::check_nonnegative)?
+                    self.h = attr.parse_and_validate(value, Length::check_nonnegative)?
                 }
-                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
                 expanded_name!(xlink "href") | expanded_name!(svg "path") => {

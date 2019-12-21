@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::ParseValueToParseError;
+use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 
@@ -37,8 +37,8 @@ impl NodeTrait for FeOffset {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "dx") => self.dx = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "dy") => self.dy = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "dx") => self.dx = attr.parse(value)?,
+                expanded_name!(svg "dy") => self.dy = attr.parse(value)?,
                 _ => (),
             }
         }

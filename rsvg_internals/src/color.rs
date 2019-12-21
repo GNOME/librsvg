@@ -4,26 +4,22 @@ use cssparser::{self, Parser};
 use libc;
 
 use crate::error::*;
-use crate::parsers::ParseToParseError;
+use crate::parsers::Parse;
 use crate::util::utf8_cstr;
 
 pub use cssparser::Color;
 
-impl ParseToParseError for cssparser::Color {
-    fn parse_to_parse_error<'i>(
-        parser: &mut Parser<'i, '_>,
-    ) -> Result<cssparser::Color, CssParseError<'i>> {
+impl Parse for cssparser::Color {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, CssParseError<'i>> {
         Ok(cssparser::Color::parse(parser)?)
     }
 }
 
-impl ParseToParseError for cssparser::RGBA {
-    fn parse_to_parse_error<'i>(
-        parser: &mut Parser<'i, '_>,
-    ) -> Result<cssparser::RGBA, CssParseError<'i>> {
+impl Parse for cssparser::RGBA {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::RGBA, CssParseError<'i>> {
         let loc = parser.current_source_location();
 
-        match cssparser::Color::parse_to_parse_error(parser)? {
+        match cssparser::Color::parse(parser)? {
             cssparser::Color::RGBA(rgba) => Ok(rgba),
             cssparser::Color::CurrentColor => Err(loc.new_custom_error(ValueErrorKind::Value(
                 "currentColor is not allowed here".to_string(),
@@ -106,7 +102,7 @@ pub extern "C" fn rsvg_css_parse_color(string: *const libc::c_char) -> ColorSpec
             argb: 0,
         }
     } else {
-        ColorSpec::from(<Color as ParseToParseError>::parse_str_to_parse_error(s).map(Some))
+        ColorSpec::from(<Color as Parse>::parse_str(s).map(Some))
     }
 }
 

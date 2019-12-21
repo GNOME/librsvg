@@ -47,7 +47,7 @@ use std::marker::PhantomData;
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
-use crate::parsers::{finite_f32, ParseToParseError};
+use crate::parsers::{finite_f32, Parse};
 use crate::properties::ComputedValues;
 
 /// Units for length values.
@@ -226,10 +226,8 @@ const CM_PER_INCH: f64 = 2.54;
 const MM_PER_INCH: f64 = 25.4;
 const PICA_PER_INCH: f64 = 6.0;
 
-impl<N: Normalize> ParseToParseError for Length<N> {
-    fn parse_to_parse_error<'i>(
-        parser: &mut Parser<'i, '_>,
-    ) -> Result<Length<N>, CssParseError<'i>> {
+impl<N: Normalize> Parse for Length<N> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Length<N>, CssParseError<'i>> {
         let length = {
             let token = parser.next()?.clone();
 
@@ -394,12 +392,12 @@ mod tests {
     #[test]
     fn parses_default() {
         assert_eq!(
-            Length::<Horizontal>::parse_str_to_parse_error("42"),
+            Length::<Horizontal>::parse_str("42"),
             Ok(Length::<Horizontal>::new(42.0, LengthUnit::Px))
         );
 
         assert_eq!(
-            Length::<Horizontal>::parse_str_to_parse_error("-42px"),
+            Length::<Horizontal>::parse_str("-42px"),
             Ok(Length::<Horizontal>::new(-42.0, LengthUnit::Px))
         );
     }
@@ -407,7 +405,7 @@ mod tests {
     #[test]
     fn parses_percent() {
         assert_eq!(
-            Length::<Horizontal>::parse_str_to_parse_error("50.0%"),
+            Length::<Horizontal>::parse_str("50.0%"),
             Ok(Length::<Horizontal>::new(0.5, LengthUnit::Percent))
         );
     }
@@ -415,7 +413,7 @@ mod tests {
     #[test]
     fn parses_font_em() {
         assert_eq!(
-            Length::<Vertical>::parse_str_to_parse_error("22.5em"),
+            Length::<Vertical>::parse_str("22.5em"),
             Ok(Length::<Vertical>::new(22.5, LengthUnit::Em))
         );
     }
@@ -423,7 +421,7 @@ mod tests {
     #[test]
     fn parses_font_ex() {
         assert_eq!(
-            Length::<Vertical>::parse_str_to_parse_error("22.5ex"),
+            Length::<Vertical>::parse_str("22.5ex"),
             Ok(Length::<Vertical>::new(22.5, LengthUnit::Ex))
         );
     }
@@ -431,51 +429,51 @@ mod tests {
     #[test]
     fn parses_physical_units() {
         assert_eq!(
-            Length::<Both>::parse_str_to_parse_error("72pt"),
+            Length::<Both>::parse_str("72pt"),
             Ok(Length::<Both>::new(72.0, LengthUnit::Pt))
         );
 
         assert_eq!(
-            Length::<Both>::parse_str_to_parse_error("-22.5in"),
+            Length::<Both>::parse_str("-22.5in"),
             Ok(Length::<Both>::new(-22.5, LengthUnit::In))
         );
 
         assert_eq!(
-            Length::<Both>::parse_str_to_parse_error("-254cm"),
+            Length::<Both>::parse_str("-254cm"),
             Ok(Length::<Both>::new(-254.0, LengthUnit::Cm))
         );
 
         assert_eq!(
-            Length::<Both>::parse_str_to_parse_error("254mm"),
+            Length::<Both>::parse_str("254mm"),
             Ok(Length::<Both>::new(254.0, LengthUnit::Mm))
         );
 
         assert_eq!(
-            Length::<Both>::parse_str_to_parse_error("60pc"),
+            Length::<Both>::parse_str("60pc"),
             Ok(Length::<Both>::new(60.0, LengthUnit::Pc))
         );
     }
 
     #[test]
     fn empty_length_yields_error() {
-        assert!(Length::<Both>::parse_str_to_parse_error("").is_err());
+        assert!(Length::<Both>::parse_str("").is_err());
     }
 
     #[test]
     fn invalid_unit_yields_error() {
-        assert!(Length::<Both>::parse_str_to_parse_error("8furlong").is_err());
+        assert!(Length::<Both>::parse_str("8furlong").is_err());
     }
 
     #[test]
     fn check_nonnegative_works() {
         // and_then with anonymous function
-        assert!(Length::<Both>::parse_str_to_parse_error("0")
+        assert!(Length::<Both>::parse_str("0")
             .unwrap()
             .check_nonnegative()
             .is_ok());
 
         // and_then with named function
-        assert!(Length::<Both>::parse_str_to_parse_error("-10")
+        assert!(Length::<Both>::parse_str("-10")
             .unwrap()
             .check_nonnegative()
             .is_err());

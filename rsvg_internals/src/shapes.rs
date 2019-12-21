@@ -3,8 +3,8 @@
 
 use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use std::rc::Rc;
 use std::ops::Deref;
+use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
@@ -12,7 +12,7 @@ use crate::error::*;
 use crate::length::*;
 use crate::marker;
 use crate::node::*;
-use crate::parsers::{optional_comma, ParseToParseError, ParseValueToParseError};
+use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::*;
 use crate::path_parser;
 use crate::properties::ComputedValues;
@@ -65,10 +65,7 @@ pub struct Shape {
 
 impl Shape {
     fn new(builder: Rc<PathBuilder>, markers: Markers) -> Shape {
-        Shape {
-            builder,
-            markers,
-        }
+        Shape { builder, markers }
     }
 
     fn draw(
@@ -177,8 +174,7 @@ impl NodeTrait for Path {
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(builder) = self.builder.as_ref() {
             let values = cascaded.get();
-            Shape::new(builder.clone(), Markers::Yes)
-                .draw(node, values, draw_ctx, clipping)
+            Shape::new(builder.clone(), Markers::Yes).draw(node, values, draw_ctx, clipping)
         } else {
             Ok(draw_ctx.empty_bbox())
         }
@@ -198,14 +194,14 @@ impl Deref for Points {
 
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
-impl ParseToParseError for Points {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Points, CssParseError<'i>> {
+impl Parse for Points {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Points, CssParseError<'i>> {
         let mut v = Vec::new();
 
         loop {
-            let x = f64::parse_to_parse_error(parser)?;
+            let x = f64::parse(parser)?;
             optional_comma(parser);
-            let y = f64::parse_to_parse_error(parser)?;
+            let y = f64::parse(parser)?;
 
             v.push((x, y));
 
@@ -252,7 +248,7 @@ impl NodeTrait for Polygon {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "points") {
-                self.points = attr.parse_to_parse_error(value).map(Some)?;
+                self.points = attr.parse(value).map(Some)?;
             }
         }
 
@@ -281,7 +277,7 @@ impl NodeTrait for Polyline {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "points") {
-                self.points = attr.parse_to_parse_error(value).map(Some)?;
+                self.points = attr.parse(value).map(Some)?;
             }
         }
 
@@ -296,8 +292,11 @@ impl NodeTrait for Polyline {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(make_poly(self.points.as_ref(), false)), Markers::Yes)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(make_poly(self.points.as_ref(), false)),
+            Markers::Yes,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
@@ -313,10 +312,10 @@ impl NodeTrait for Line {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x1") => self.x1 = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "y1") => self.y1 = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "x2") => self.x2 = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "y2") => self.y2 = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "x1") => self.x1 = attr.parse(value)?,
+                expanded_name!(svg "y1") => self.y1 = attr.parse(value)?,
+                expanded_name!(svg "x2") => self.x2 = attr.parse(value)?,
+                expanded_name!(svg "y2") => self.y2 = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -332,17 +331,16 @@ impl NodeTrait for Line {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::Yes)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(self.make_path_builder(values, draw_ctx)),
+            Markers::Yes,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
 impl Line {
-    fn make_path_builder(
-        &self,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
         let mut builder = PathBuilder::new();
 
         let params = draw_ctx.get_view_params();
@@ -375,24 +373,24 @@ impl NodeTrait for Rect {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "x") => self.x = attr.parse(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value)?,
                 expanded_name!(svg "width") => {
                     self.w =
-                        attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "height") => {
                     self.h =
-                        attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 expanded_name!(svg "rx") => {
                     self.rx = attr
-                        .parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)
+                        .parse_and_validate(value, Length::<Horizontal>::check_nonnegative)
                         .map(Some)?
                 }
                 expanded_name!(svg "ry") => {
                     self.ry = attr
-                        .parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)
+                        .parse_and_validate(value, Length::<Vertical>::check_nonnegative)
                         .map(Some)?
                 }
                 _ => (),
@@ -410,17 +408,16 @@ impl NodeTrait for Rect {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::No)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(self.make_path_builder(values, draw_ctx)),
+            Markers::No,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
 impl Rect {
-    fn make_path_builder(
-        &self,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let x = self.x.normalize(values, &params);
@@ -603,10 +600,10 @@ impl NodeTrait for Circle {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "cx") => self.cx = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "cy") => self.cy = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "cx") => self.cx = attr.parse(value)?,
+                expanded_name!(svg "cy") => self.cy = attr.parse(value)?,
                 expanded_name!(svg "r") => {
-                    self.r = attr.parse_to_parse_error_and_validate(value, Length::<Both>::check_nonnegative)?
+                    self.r = attr.parse_and_validate(value, Length::<Both>::check_nonnegative)?
                 }
                 _ => (),
             }
@@ -623,17 +620,16 @@ impl NodeTrait for Circle {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::No)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(self.make_path_builder(values, draw_ctx)),
+            Markers::No,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
 impl Circle {
-    fn make_path_builder(
-        &self,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -656,15 +652,15 @@ impl NodeTrait for Ellipse {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "cx") => self.cx = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "cy") => self.cy = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "cx") => self.cx = attr.parse(value)?,
+                expanded_name!(svg "cy") => self.cy = attr.parse(value)?,
                 expanded_name!(svg "rx") => {
                     self.rx =
-                        attr.parse_to_parse_error_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
                 expanded_name!(svg "ry") => {
                     self.ry =
-                        attr.parse_to_parse_error_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 _ => (),
             }
@@ -681,17 +677,16 @@ impl NodeTrait for Ellipse {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path_builder(values, draw_ctx)), Markers::No)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(
+            Rc::new(self.make_path_builder(values, draw_ctx)),
+            Markers::No,
+        )
+        .draw(node, values, draw_ctx, clipping)
     }
 }
 
 impl Ellipse {
-    fn make_path_builder(
-        &self,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-    ) -> PathBuilder {
+    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -709,32 +704,32 @@ mod tests {
 
     #[test]
     fn parses_points() {
-        assert_eq!(Points::parse_str_to_parse_error(" 1 2 "), Ok(Points(vec![(1.0, 2.0)])));
+        assert_eq!(Points::parse_str(" 1 2 "), Ok(Points(vec![(1.0, 2.0)])));
         assert_eq!(
-            Points::parse_str_to_parse_error("1 2 3 4"),
+            Points::parse_str("1 2 3 4"),
             Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str_to_parse_error("1,2,3,4"),
+            Points::parse_str("1,2,3,4"),
             Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str_to_parse_error("1,2 3,4"),
+            Points::parse_str("1,2 3,4"),
             Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str_to_parse_error("1,2 -3,4"),
+            Points::parse_str("1,2 -3,4"),
             Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str_to_parse_error("1,2,-3,4"),
+            Points::parse_str("1,2,-3,4"),
             Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
         );
     }
 
     #[test]
     fn errors_on_invalid_points() {
-        assert!(Points::parse_str_to_parse_error("-1-2-3-4").is_err());
-        assert!(Points::parse_str_to_parse_error("1 2-3,-4").is_err());
+        assert!(Points::parse_str("-1-2-3-4").is_err());
+        assert!(Points::parse_str("1 2-3,-4").is_err());
     }
 }

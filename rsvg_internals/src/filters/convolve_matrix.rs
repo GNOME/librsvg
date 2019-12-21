@@ -7,13 +7,15 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{NumberOptionalNumber, ParseToParseError, ParseValueToParseError};
+use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::SharedImageSurface,
-    EdgeMode, ImageSurfaceDataExt, Pixel,
+    EdgeMode,
+    ImageSurfaceDataExt,
+    Pixel,
 };
 use crate::util::clamp;
 
@@ -62,20 +64,18 @@ impl NodeTrait for FeConvolveMatrix {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "order") => {
-                    let NumberOptionalNumber(x, y) = attr.parse_to_parse_error_and_validate(
-                        value,
-                        |v: NumberOptionalNumber<i32>| {
+                    let NumberOptionalNumber(x, y) =
+                        attr.parse_and_validate(value, |v: NumberOptionalNumber<i32>| {
                             if v.0 > 0 && v.1 > 0 {
                                 Ok(v)
                             } else {
                                 Err(ValueErrorKind::value_error("values must be greater than 0"))?
                             }
-                        },
-                    )?;
+                        })?;
                     self.order = (x as u32, y as u32);
                 }
                 expanded_name!(svg "divisor") => {
-                    self.divisor = Some(attr.parse_to_parse_error_and_validate(value, |x| {
+                    self.divisor = Some(attr.parse_and_validate(value, |x| {
                         if x != 0.0 {
                             Ok(x)
                         } else {
@@ -83,11 +83,11 @@ impl NodeTrait for FeConvolveMatrix {
                         }
                     })?)
                 }
-                expanded_name!(svg "bias") => self.bias = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "edgeMode") => self.edge_mode = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "bias") => self.bias = attr.parse(value)?,
+                expanded_name!(svg "edgeMode") => self.edge_mode = attr.parse(value)?,
                 expanded_name!(svg "kernelUnitLength") => {
                     let NumberOptionalNumber(x, y) =
-                        attr.parse_to_parse_error_and_validate(value, |v: NumberOptionalNumber<f64>| {
+                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
                             if v.0 > 0.0 && v.1 > 0.0 {
                                 Ok(v)
                             } else {
@@ -99,7 +99,7 @@ impl NodeTrait for FeConvolveMatrix {
 
                     self.kernel_unit_length = Some((x, y))
                 }
-                expanded_name!(svg "preserveAlpha") => self.preserve_alpha = attr.parse_to_parse_error(value)?,
+                expanded_name!(svg "preserveAlpha") => self.preserve_alpha = attr.parse(value)?,
 
                 _ => (),
             }
@@ -110,7 +110,7 @@ impl NodeTrait for FeConvolveMatrix {
             match attr.expanded() {
                 expanded_name!(svg "targetX") => {
                     self.target_x = {
-                        let v = attr.parse_to_parse_error_and_validate(value, |v: i32| {
+                        let v = attr.parse_and_validate(value, |v: i32| {
                             if v >= 0 && v < self.order.0 as i32 {
                                 Ok(v)
                             } else {
@@ -124,7 +124,7 @@ impl NodeTrait for FeConvolveMatrix {
                 }
                 expanded_name!(svg "targetY") => {
                     self.target_y = {
-                        let v = attr.parse_to_parse_error_and_validate(value, |v: i32| {
+                        let v = attr.parse_and_validate(value, |v: i32| {
                             if v >= 0 && v < self.order.1 as i32 {
                                 Ok(v)
                             } else {
@@ -158,9 +158,8 @@ impl NodeTrait for FeConvolveMatrix {
 
                 // #352: Parse as an unbounded list rather than exact length to prevent aborts due
                 //       to huge allocation attempts by underlying Vec::with_capacity().
-                let NumberList(v) =
-                    NumberList::parse_str_to_parse_error(value, NumberListLength::Unbounded)
-                        .attribute(attr.clone())?;
+                let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
+                    .attribute(attr.clone())?;
 
                 if v.len() != number_of_elements {
                     return Err(ValueErrorKind::value_error(&format!(
@@ -337,8 +336,8 @@ impl FilterEffect for FeConvolveMatrix {
     }
 }
 
-impl ParseToParseError for EdgeMode {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+impl Parse for EdgeMode {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "duplicate" => EdgeMode::Duplicate,
@@ -349,8 +348,8 @@ impl ParseToParseError for EdgeMode {
 }
 
 // Used for the preserveAlpha attribute
-impl ParseToParseError for bool {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+impl Parse for bool {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "false" => false,

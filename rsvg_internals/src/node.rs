@@ -25,7 +25,7 @@ use crate::css::Declaration;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filters::FilterEffect;
-use crate::parsers::ParseToParseError;
+use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
@@ -155,7 +155,7 @@ impl NodeData {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "transform") => {
-                    return Matrix::parse_str_to_parse_error(value).attribute(attr).and_then(|affine| {
+                    return Matrix::parse_str(value).attribute(attr).and_then(|affine| {
                         self.transform = affine;
                         Ok(())
                     });

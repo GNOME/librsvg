@@ -25,7 +25,7 @@ use std::ops::Deref;
 use cairo;
 
 use crate::error::*;
-use crate::parsers::ParseToParseError;
+use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 use cssparser::{BasicParseError, Parser};
@@ -221,17 +221,15 @@ fn parse_fit_mode<'i>(parser: &mut Parser<'i, '_>) -> Result<FitMode, BasicParse
     )
 }
 
-impl ParseToParseError for AspectRatio {
-    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<AspectRatio, CssParseError<'i>> {
+impl Parse for AspectRatio {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<AspectRatio, CssParseError<'i>> {
         let defer = parser
             .try_parse(|p| p.expect_ident_matching("defer"))
             .is_ok();
 
         let align_xy = parser.try_parse(|p| parse_align_xy(p))?;
 
-        let fit = parser
-            .try_parse(|p| parse_fit_mode(p))
-            .unwrap_or_default();
+        let fit = parser.try_parse(|p| parse_fit_mode(p)).unwrap_or_default();
 
         parser.expect_exhausted()?;
 
@@ -248,18 +246,18 @@ mod tests {
 
     #[test]
     fn parsing_invalid_strings_yields_error() {
-        assert!(AspectRatio::parse_str_to_parse_error("").is_err());
-        assert!(AspectRatio::parse_str_to_parse_error("defer").is_err());
-        assert!(AspectRatio::parse_str_to_parse_error("defer foo").is_err());
-        assert!(AspectRatio::parse_str_to_parse_error("defer xMidYMid foo").is_err());
-        assert!(AspectRatio::parse_str_to_parse_error("xMidYMid foo").is_err());
-        assert!(AspectRatio::parse_str_to_parse_error("defer xMidYMid meet foo").is_err());
+        assert!(AspectRatio::parse_str("").is_err());
+        assert!(AspectRatio::parse_str("defer").is_err());
+        assert!(AspectRatio::parse_str("defer foo").is_err());
+        assert!(AspectRatio::parse_str("defer xMidYMid foo").is_err());
+        assert!(AspectRatio::parse_str("xMidYMid foo").is_err());
+        assert!(AspectRatio::parse_str("defer xMidYMid meet foo").is_err());
     }
 
     #[test]
     fn parses_valid_strings() {
         assert_eq!(
-            AspectRatio::parse_str_to_parse_error("defer none"),
+            AspectRatio::parse_str("defer none"),
             Ok(AspectRatio {
                 defer: true,
                 align: None,
@@ -267,7 +265,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str_to_parse_error("xMidYMid"),
+            AspectRatio::parse_str("xMidYMid"),
             Ok(AspectRatio {
                 defer: false,
                 align: Some(Align {
@@ -279,7 +277,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str_to_parse_error("defer xMidYMid"),
+            AspectRatio::parse_str("defer xMidYMid"),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -291,7 +289,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str_to_parse_error("defer xMinYMax"),
+            AspectRatio::parse_str("defer xMinYMax"),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -303,7 +301,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str_to_parse_error("defer xMaxYMid meet"),
+            AspectRatio::parse_str("defer xMaxYMid meet"),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -315,7 +313,7 @@ mod tests {
         );
 
         assert_eq!(
-            AspectRatio::parse_str_to_parse_error("defer xMinYMax slice"),
+            AspectRatio::parse_str("defer xMinYMax slice"),
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
@@ -338,75 +336,75 @@ mod tests {
     fn aligns() {
         let viewbox = ViewBox(Rect::from_size(1.0, 10.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMinYMin meet").unwrap();
+        let foo = AspectRatio::parse_str("xMinYMin meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::from_size(0.1, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMinYMin slice").unwrap();
+        let foo = AspectRatio::parse_str("xMinYMin slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::from_size(10.0, 100.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMinYMid meet").unwrap();
+        let foo = AspectRatio::parse_str("xMinYMid meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::from_size(0.1, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMinYMid slice").unwrap();
+        let foo = AspectRatio::parse_str("xMinYMid slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(0.0, -49.5, 10.0, 100.0 - 49.5));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMinYMax meet").unwrap();
+        let foo = AspectRatio::parse_str("xMinYMax meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::from_size(0.1, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMinYMax slice").unwrap();
+        let foo = AspectRatio::parse_str("xMinYMax slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(0.0, -99.0, 10.0, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMidYMin meet").unwrap();
+        let foo = AspectRatio::parse_str("xMidYMin meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(4.95, 0.0, 4.95 + 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMidYMin slice").unwrap();
+        let foo = AspectRatio::parse_str("xMidYMin slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::from_size(10.0, 100.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMidYMid meet").unwrap();
+        let foo = AspectRatio::parse_str("xMidYMid meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(4.95, 0.0, 4.95 + 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMidYMid slice").unwrap();
+        let foo = AspectRatio::parse_str("xMidYMid slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(0.0, -49.5, 10.0, 100.0 - 49.5));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMidYMax meet").unwrap();
+        let foo = AspectRatio::parse_str("xMidYMax meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(4.95, 0.0, 4.95 + 0.1, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMidYMax slice").unwrap();
+        let foo = AspectRatio::parse_str("xMidYMax slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(0.0, -99.0, 10.0, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMaxYMin meet").unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMin meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(9.9, 0.0, 10.0, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMaxYMin slice").unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMin slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::from_size(10.0, 100.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMaxYMid meet").unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMid meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(9.9, 0.0, 10.0, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMaxYMid slice").unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMid slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(0.0, -49.5, 10.0, 100.0 - 49.5));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMaxYMax meet").unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMax meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(9.9, 0.0, 10.0, 1.0));
 
-        let foo = AspectRatio::parse_str_to_parse_error("xMaxYMax slice").unwrap();
+        let foo = AspectRatio::parse_str("xMaxYMax slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(0.0, -99.0, 10.0, 1.0));
     }
