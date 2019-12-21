@@ -12,7 +12,7 @@ use crate::error::*;
 use crate::length::*;
 use crate::marker;
 use crate::node::*;
-use crate::parsers::{optional_comma, Parse, ParseValue, ParseValueToParseError};
+use crate::parsers::{optional_comma, ParseToParseError, ParseValueToParseError};
 use crate::path_builder::*;
 use crate::path_parser;
 use crate::properties::ComputedValues;
@@ -198,14 +198,14 @@ impl Deref for Points {
 
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
-impl Parse for Points {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Points, ValueErrorKind> {
+impl ParseToParseError for Points {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Points, CssParseError<'i>> {
         let mut v = Vec::new();
 
         loop {
-            let x = f64::parse(parser)?;
+            let x = f64::parse_to_parse_error(parser)?;
             optional_comma(parser);
-            let y = f64::parse(parser)?;
+            let y = f64::parse_to_parse_error(parser)?;
 
             v.push((x, y));
 
@@ -252,7 +252,7 @@ impl NodeTrait for Polygon {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "points") {
-                self.points = attr.parse(value.trim()).map(Some)?;
+                self.points = attr.parse_to_parse_error(value).map(Some)?;
             }
         }
 
@@ -281,7 +281,7 @@ impl NodeTrait for Polyline {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "points") {
-                self.points = attr.parse(value.trim()).map(Some)?;
+                self.points = attr.parse_to_parse_error(value).map(Some)?;
             }
         }
 
@@ -709,32 +709,32 @@ mod tests {
 
     #[test]
     fn parses_points() {
-        assert_eq!(Points::parse_str(" 1 2 "), Ok(Points(vec![(1.0, 2.0)])));
+        assert_eq!(Points::parse_str_to_parse_error(" 1 2 "), Ok(Points(vec![(1.0, 2.0)])));
         assert_eq!(
-            Points::parse_str("1 2 3 4"),
+            Points::parse_str_to_parse_error("1 2 3 4"),
             Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str("1,2,3,4"),
+            Points::parse_str_to_parse_error("1,2,3,4"),
             Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str("1,2 3,4"),
+            Points::parse_str_to_parse_error("1,2 3,4"),
             Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str("1,2 -3,4"),
+            Points::parse_str_to_parse_error("1,2 -3,4"),
             Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
         );
         assert_eq!(
-            Points::parse_str("1,2,-3,4"),
+            Points::parse_str_to_parse_error("1,2,-3,4"),
             Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
         );
     }
 
     #[test]
     fn errors_on_invalid_points() {
-        assert!(Points::parse_str("-1-2-3-4").is_err());
-        assert!(Points::parse_str("1 2-3,-4").is_err());
+        assert!(Points::parse_str_to_parse_error("-1-2-3-4").is_err());
+        assert!(Points::parse_str_to_parse_error("1 2-3,-4").is_err());
     }
 }
