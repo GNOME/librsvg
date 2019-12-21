@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{Parse, ParseValue};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 
 /// Represents the syntax used in the <style> node.
@@ -19,14 +19,10 @@ pub enum StyleType {
     TextCss,
 }
 
-impl Parse for StyleType {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<StyleType, ValueErrorKind> {
-        parser
-            .expect_ident_matching("text/css")
-            .and_then(|_| Ok(StyleType::TextCss))
-            .map_err(|_| {
-                ValueErrorKind::parse_error("only the \"text/css\" style type is supported")
-            })
+impl ParseToParseError for StyleType {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<StyleType, CssParseError<'i>> {
+        parser.expect_ident_matching("text/css")?;
+        Ok(StyleType::TextCss)
     }
 }
 
@@ -49,7 +45,7 @@ impl NodeTrait for Style {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!(svg "type") {
-                self.type_ = Some(attr.parse(value)?);
+                self.type_ = Some(attr.parse_to_parse_error(value)?);
             }
         }
 
