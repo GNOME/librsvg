@@ -11,7 +11,7 @@ use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
-use crate::parsers::{ParseValue, ParseValueToParseError};
+use crate::parsers::ParseValueToParseError;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
@@ -38,7 +38,7 @@ impl NodeTrait for Image {
                 expanded_name!(svg "height") => {
                     self.h = attr.parse_to_parse_error_and_validate(value, Length::check_nonnegative)?
                 }
-                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
+                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse_to_parse_error(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
                 expanded_name!(xlink "href") | expanded_name!(svg "path") => {

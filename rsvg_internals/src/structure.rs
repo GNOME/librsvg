@@ -11,7 +11,7 @@ use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
-use crate::parsers::{ParseToParseError, ParseValue, ParseValueToParseError};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
@@ -184,7 +184,7 @@ impl NodeTrait for Svg {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "preserveAspectRatio") => {
-                    self.preserve_aspect_ratio = attr.parse(value)?
+                    self.preserve_aspect_ratio = attr.parse_to_parse_error(value)?
                 }
                 expanded_name!(svg "x") if is_inner_svg => self.x = Some(attr.parse_to_parse_error(value)?),
                 expanded_name!(svg "y") if is_inner_svg => self.y = Some(attr.parse_to_parse_error(value)?),
@@ -427,7 +427,7 @@ impl NodeTrait for Symbol {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "preserveAspectRatio") => {
-                    self.preserve_aspect_ratio = attr.parse(value)?
+                    self.preserve_aspect_ratio = attr.parse_to_parse_error(value)?
                 }
                 expanded_name!(svg "viewBox") => self.vbox = attr.parse_to_parse_error(value).map(Some)?,
                 _ => (),

@@ -16,7 +16,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
 use crate::length::*;
 use crate::node::*;
-use crate::parsers::{Parse, ParseToParseError, ParseValue, ParseValueToParseError};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::path_builder::*;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
@@ -36,14 +36,13 @@ impl Default for MarkerUnits {
     }
 }
 
-impl Parse for MarkerUnits {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<MarkerUnits, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for MarkerUnits {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerUnits, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "userSpaceOnUse" => MarkerUnits::UserSpaceOnUse,
             "strokeWidth" => MarkerUnits::StrokeWidth,
-        )
-        .map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 
@@ -184,7 +183,7 @@ impl NodeTrait for Marker {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "markerUnits") => self.units = attr.parse(value)?,
+                expanded_name!(svg "markerUnits") => self.units = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "refX") => self.ref_x = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "refY") => self.ref_y = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "markerWidth") => {
@@ -200,7 +199,7 @@ impl NodeTrait for Marker {
                     )?
                 }
                 expanded_name!(svg "orient") => self.orient = attr.parse_to_parse_error(value)?,
-                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
+                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse_to_parse_error(value)?,
                 expanded_name!(svg "viewBox") => {
                     self.vbox = Some(attr.parse_to_parse_error(value)?)
                 }
@@ -813,18 +812,18 @@ mod parser_tests {
 
     #[test]
     fn parsing_invalid_marker_units_yields_error() {
-        assert!(MarkerUnits::parse_str("").is_err());
-        assert!(MarkerUnits::parse_str("foo").is_err());
+        assert!(MarkerUnits::parse_str_to_parse_error("").is_err());
+        assert!(MarkerUnits::parse_str_to_parse_error("foo").is_err());
     }
 
     #[test]
     fn parses_marker_units() {
         assert_eq!(
-            MarkerUnits::parse_str("userSpaceOnUse"),
+            MarkerUnits::parse_str_to_parse_error("userSpaceOnUse"),
             Ok(MarkerUnits::UserSpaceOnUse)
         );
         assert_eq!(
-            MarkerUnits::parse_str("strokeWidth"),
+            MarkerUnits::parse_str_to_parse_error("strokeWidth"),
             Ok(MarkerUnits::StrokeWidth)
         );
     }

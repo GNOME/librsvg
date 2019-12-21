@@ -15,7 +15,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
 use crate::paint_server::{AsPaintSource, PaintSource};
-use crate::parsers::{ParseValue, ParseValueToParseError};
+use crate::parsers::ParseValueToParseError;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
@@ -126,7 +126,7 @@ impl NodeTrait for Pattern {
                 }
                 expanded_name!(svg "viewBox") => self.common.vbox = Some(Some(attr.parse_to_parse_error(value)?)),
                 expanded_name!(svg "preserveAspectRatio") => {
-                    self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
+                    self.common.preserve_aspect_ratio = Some(attr.parse_to_parse_error(value)?)
                 }
                 expanded_name!(svg "patternTransform") => {
                     self.common.affine = Some(attr.parse_to_parse_error(value)?)
