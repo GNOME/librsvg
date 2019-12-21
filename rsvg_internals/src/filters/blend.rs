@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{Parse, ParseValue, ParseValueToParseError};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 
@@ -64,7 +64,7 @@ impl NodeTrait for FeBlend {
                 expanded_name!(svg "in2") => {
                     self.in2 = Some(attr.parse_to_parse_error(value)?);
                 }
-                expanded_name!(svg "mode") => self.mode = attr.parse(value)?,
+                expanded_name!(svg "mode") => self.mode = attr.parse_to_parse_error(value)?,
                 _ => (),
             }
         }
@@ -133,9 +133,9 @@ impl FilterEffect for FeBlend {
     }
 }
 
-impl Parse for Mode {
-    fn parse(parser: &mut Parser<'_, '_>) -> Result<Self, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for Mode {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "normal" => Mode::Normal,
             "multiply" => Mode::Multiply,
@@ -153,8 +153,7 @@ impl Parse for Mode {
             "saturation" => Mode::HslSaturation,
             "color" => Mode::HslColor,
             "luminosity" => Mode::HslLuminosity,
-        )
-        .map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
 
