@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{Parse, ParseValue, ParseValueToParseError};
+use crate::parsers::{ParseToParseError, ParseValueToParseError};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
 
@@ -53,14 +53,14 @@ impl NodeTrait for FeDisplacementMap {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "in2") => self.in2 = Some(attr.parse_to_parse_error(value)?),
-                expanded_name!(svg "scale") => self.scale = attr.parse(value)?,
+                expanded_name!(svg "scale") => self.scale = attr.parse_to_parse_error(value)?,
 
                 expanded_name!(svg "xChannelSelector") => {
-                    self.x_channel_selector = attr.parse(value)?
+                    self.x_channel_selector = attr.parse_to_parse_error(value)?
                 }
 
                 expanded_name!(svg "yChannelSelector") => {
-                    self.y_channel_selector = attr.parse(value)?
+                    self.y_channel_selector = attr.parse_to_parse_error(value)?
                 }
                 _ => (),
             }
@@ -146,15 +146,14 @@ impl FilterEffect for FeDisplacementMap {
     }
 }
 
-impl Parse for ColorChannel {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<ColorChannel, ValueErrorKind> {
-        parse_identifiers!(
+impl ParseToParseError for ColorChannel {
+    fn parse_to_parse_error<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+        Ok(parse_identifiers!(
             parser,
             "R" => ColorChannel::R,
             "G" => ColorChannel::G,
             "B" => ColorChannel::B,
             "A" => ColorChannel::A,
-        )
-        .map_err(|_| ValueErrorKind::parse_error("parse error"))
+        )?)
     }
 }
