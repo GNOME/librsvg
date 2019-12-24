@@ -35,7 +35,7 @@ phf = "0.7.21"
 rayon = "1"
 rctree = "0.3.3"
 regex = "1"
-selectors = { path="../servo_crates/selectors" }
+selectors = "0.22.0"
 url = "2"
 xml-rs = "0.8.0"
 

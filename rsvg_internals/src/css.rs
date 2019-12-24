@@ -312,6 +312,10 @@ impl selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
     fn is_user_action_state(&self) -> bool {
         false
     }
+
+    fn has_zero_specificity(&self) -> bool {
+        false
+    }
 }
 
 /// Dummy type required by the SelectorImpl trait
@@ -511,6 +515,16 @@ impl selectors::Element for RsvgElement {
                     .any(|class| case_sensitivity.eq(class.as_bytes(), name.as_bytes()))
             })
             .unwrap_or(false)
+    }
+
+    fn exported_part(&self, _name: &LocalName) -> Option<LocalName> {
+        // unsupported
+        None
+    }
+
+    fn imported_part(&self, _name: &LocalName) -> Option<LocalName> {
+        // unsupported
+        None
     }
 
     fn is_part(&self, _name: &LocalName) -> bool {
