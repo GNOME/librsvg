@@ -12,12 +12,16 @@ pub struct BoundingBox {
 }
 
 impl BoundingBox {
-    pub fn new(affine: &cairo::Matrix) -> BoundingBox {
+    pub fn new() -> BoundingBox {
         BoundingBox {
-            affine: *affine,
+            affine: cairo::Matrix::identity(),
             rect: None,
             ink_rect: None,
         }
+    }
+
+    pub fn with_affine(self, affine: cairo::Matrix) -> BoundingBox {
+        BoundingBox { affine, ..self }
     }
 
     pub fn with_rect(self, rect: Rect) -> BoundingBox {
