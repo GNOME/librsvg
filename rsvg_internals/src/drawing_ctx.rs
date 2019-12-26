@@ -487,12 +487,16 @@ impl DrawingCtx {
                     if let Some(fragment) = mask {
                         if let Ok(acquired) = dc.acquire_node(fragment, &[NodeType::Mask]) {
                             let mask_node = acquired.get();
+                            let mask_affine = cairo::Matrix::multiply(
+                                &mask_node.borrow().get_transform(),
+                                &affines.for_temporary_surface,
+                            );
 
                             res = res.and_then(|bbox| {
                                 mask_node
                                     .borrow()
                                     .get_impl::<Mask>()
-                                    .generate_cairo_mask(&mask_node, &affines, dc, &bbox)
+                                    .generate_cairo_mask(&mask_node, mask_affine, dc, &bbox)
                                     .and_then(|mask_surf| {
                                         if let Some(surf) = mask_surf {
                                             dc.cr.set_matrix(affines.compositing);
@@ -886,7 +890,7 @@ impl DrawingCtx {
 }
 
 #[derive(Debug)]
-pub struct CompositingAffines {
+struct CompositingAffines {
     pub outside_temporary_surface: cairo::Matrix,
     pub initial: cairo::Matrix,
     pub for_temporary_surface: cairo::Matrix,
