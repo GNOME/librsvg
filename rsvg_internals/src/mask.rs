@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::{CompositingAffines, DrawingCtx};
+use crate::drawing_ctx::DrawingCtx;
 use crate::error::RenderingError;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeDraw, NodeResult, NodeTrait, RsvgNode};
@@ -47,7 +47,7 @@ impl Mask {
     pub fn generate_cairo_mask(
         &self,
         mask_node: &RsvgNode,
-        affines: &CompositingAffines,
+        affine: cairo::Matrix,
         draw_ctx: &mut DrawingCtx,
         bbox: &BoundingBox,
     ) -> Result<Option<cairo::ImageSurface>, RenderingError> {
@@ -88,8 +88,7 @@ impl Mask {
         // reference to the surface before we access the pixels
         {
             let mask_cr = cairo::Context::new(&mask_content_surface);
-            mask_cr.set_matrix(affines.for_temporary_surface);
-            mask_cr.transform(mask_node.borrow().get_transform());
+            mask_cr.set_matrix(affine);
 
             draw_ctx.push_cairo_context(mask_cr);
 
