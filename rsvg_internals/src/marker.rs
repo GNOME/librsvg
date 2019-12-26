@@ -1120,14 +1120,14 @@ mod marker_tests {
 
         assert!(emit_markers_for_path_builder(
             &builder,
-            BoundingBox::new(&cairo::Matrix::identity()),
+            BoundingBox::new(),
             &mut |marker_type: MarkerType,
                   x: f64,
                   y: f64,
                   computed_angle: Angle|
              -> Result<BoundingBox, RenderingError> {
                 v.push((marker_type, x, y, computed_angle));
-                Ok(BoundingBox::new(&cairo::Matrix::identity()))
+                Ok(BoundingBox::new())
             }
         )
         .is_ok());
@@ -1156,14 +1156,14 @@ mod marker_tests {
 
         assert!(emit_markers_for_path_builder(
             &builder,
-            BoundingBox::new(&cairo::Matrix::identity()),
+            BoundingBox::new(),
             &mut |marker_type: MarkerType,
                   x: f64,
                   y: f64,
                   computed_angle: Angle|
              -> Result<BoundingBox, RenderingError> {
                 v.push((marker_type, x, y, computed_angle));
-                Ok(BoundingBox::new(&cairo::Matrix::identity()))
+                Ok(BoundingBox::new())
             }
         )
         .is_ok());
