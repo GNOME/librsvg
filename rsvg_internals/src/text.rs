@@ -286,7 +286,7 @@ impl PositionedSpan {
             let affine = cr.get_matrix();
 
             let gravity = self.layout.get_context().unwrap().get_gravity();
-            let bbox = self.compute_text_bbox(&affine, gravity);
+            let bbox = self.compute_text_bbox(affine, gravity);
             if bbox.is_none() {
                 return Ok(dc.empty_bbox());
             }
@@ -355,7 +355,7 @@ impl PositionedSpan {
                     if !clipping {
                         let (x0, y0, x1, y1) = cr.stroke_extents();
                         let r = Rect::new(x0, y0, x1, y1);
-                        let ib = BoundingBox::new(&affine).with_ink_rect(r);
+                        let ib = BoundingBox::new().with_affine(affine).with_ink_rect(r);
                         cr.stroke();
                         bbox.insert(&ib);
                     }
@@ -368,7 +368,7 @@ impl PositionedSpan {
 
     fn compute_text_bbox(
         &self,
-        affine: &cairo::Matrix,
+        affine: cairo::Matrix,
         gravity: pango::Gravity,
     ) -> Option<BoundingBox> {
         let (ink, _) = self.layout.get_extents();
@@ -400,7 +400,10 @@ impl PositionedSpan {
         };
 
         let r = Rect::new(x, y, x + w, y + h);
-        let bbox = BoundingBox::new(affine).with_rect(r).with_ink_rect(r);
+        let bbox = BoundingBox::new()
+            .with_affine(affine)
+            .with_rect(r)
+            .with_ink_rect(r);
 
         Some(bbox)
     }

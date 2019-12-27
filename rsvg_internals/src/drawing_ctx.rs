@@ -186,7 +186,7 @@ impl DrawingCtx {
     }
 
     pub fn empty_bbox(&self) -> BoundingBox {
-        BoundingBox::new(&self.cr.get_matrix())
+        BoundingBox::new().with_affine(self.cr.get_matrix())
     }
 
     // FIXME: Usage of this function is more less a hack... The caller
@@ -454,7 +454,7 @@ impl DrawingCtx {
                     let bbox = if let Ok(ref bbox) = res {
                         *bbox
                     } else {
-                        BoundingBox::new(&affines.for_temporary_surface)
+                        BoundingBox::new().with_affine(affines.for_temporary_surface)
                     };
 
                     // Filter
@@ -487,12 +487,16 @@ impl DrawingCtx {
                     if let Some(fragment) = mask {
                         if let Ok(acquired) = dc.acquire_node(fragment, &[NodeType::Mask]) {
                             let mask_node = acquired.get();
+                            let mask_affine = cairo::Matrix::multiply(
+                                &mask_node.borrow().get_transform(),
+                                &affines.for_temporary_surface,
+                            );
 
                             res = res.and_then(|bbox| {
                                 mask_node
                                     .borrow()
                                     .get_impl::<Mask>()
-                                    .generate_cairo_mask(&mask_node, &affines, dc, &bbox)
+                                    .generate_cairo_mask(&mask_node, mask_affine, dc, &bbox)
                                     .and_then(|mask_surf| {
                                         if let Some(surf) = mask_surf {
                                             dc.cr.set_matrix(affines.compositing);
@@ -552,7 +556,7 @@ impl DrawingCtx {
         self.cr.set_matrix(matrix);
 
         if let Ok(bbox) = res {
-            let mut orig_matrix_bbox = BoundingBox::new(&matrix);
+            let mut orig_matrix_bbox = BoundingBox::new().with_affine(matrix);
             orig_matrix_bbox.insert(&bbox);
             Ok(orig_matrix_bbox)
         } else {
@@ -886,7 +890,7 @@ impl DrawingCtx {
 }
 
 #[derive(Debug)]
-pub struct CompositingAffines {
+struct CompositingAffines {
     pub outside_temporary_surface: cairo::Matrix,
     pub initial: cairo::Matrix,
     pub for_temporary_surface: cairo::Matrix,
@@ -943,7 +947,7 @@ impl CompositingAffines {
 fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> BoundingBox {
     let affine = cr.get_matrix();
 
-    let mut bbox = BoundingBox::new(&affine);
+    let mut bbox = BoundingBox::new().with_affine(affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
@@ -960,21 +964,27 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     // rectangle's extents, even when it has no fill nor stroke.
 
     let (x0, y0, x1, y1) = cr.fill_extents();
-    let fb = BoundingBox::new(&affine).with_ink_rect(Rect::new(x0, y0, x1, y1));
+    let fb = BoundingBox::new()
+        .with_affine(affine)
+        .with_ink_rect(Rect::new(x0, y0, x1, y1));
     bbox.insert(&fb);
 
     // Bounding box for stroke
 
     if values.stroke.0 != PaintServer::None {
         let (x0, y0, x1, y1) = cr.stroke_extents();
-        let sb = BoundingBox::new(&affine).with_ink_rect(Rect::new(x0, y0, x1, y1));
+        let sb = BoundingBox::new()
+            .with_affine(affine)
+            .with_ink_rect(Rect::new(x0, y0, x1, y1));
         bbox.insert(&sb);
     }
 
     // objectBoundingBox
 
     let (x0, y0, x1, y1) = cr.path_extents();
-    let ob = BoundingBox::new(&affine).with_rect(Rect::new(x0, y0, x1, y1));
+    let ob = BoundingBox::new()
+        .with_affine(affine)
+        .with_rect(Rect::new(x0, y0, x1, y1));
     bbox.insert(&ob);
 
     // restore tolerance
