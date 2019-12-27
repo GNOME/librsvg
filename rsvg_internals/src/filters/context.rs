@@ -184,14 +184,6 @@ impl FilterContext {
         &self.source_surface
     }
 
-    /// Returns the surface containing the source graphic alpha.
-    #[inline]
-    pub fn source_alpha(&self, bounds: IRect) -> Result<SharedImageSurface, FilterError> {
-        self.source_surface
-            .extract_alpha(bounds)
-            .map_err(FilterError::CairoError)
-    }
-
     /// Returns the surface corresponding to the background image snapshot.
     pub fn background_image(
         &self,
@@ -232,18 +224,6 @@ impl FilterContext {
             .as_ref()
             .map(|surf| surf.clone())
             .map_err(|&s| s)
-    }
-
-    /// Returns the surface containing the background image snapshot alpha.
-    #[inline]
-    pub fn background_alpha(
-        &self,
-        draw_ctx: &DrawingCtx,
-        bounds: IRect,
-    ) -> Result<SharedImageSurface, FilterError> {
-        self.background_image(draw_ctx)?
-            .extract_alpha(bounds)
-            .map_err(FilterError::CairoError)
     }
 
     /// Converts this `FilterContext` into the surface corresponding to the output of the filter
@@ -369,14 +349,24 @@ impl FilterContext {
 
         match *in_.unwrap() {
             Input::SourceGraphic => Ok(FilterInput::StandardInput(self.source_graphic().clone())),
+
             Input::SourceAlpha => self
-                .source_alpha(self.effects_region().rect.unwrap().into())
+                .source_graphic()
+                .extract_alpha(self.effects_region().rect.unwrap().into())
+                .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
+
             Input::BackgroundImage => self
                 .background_image(draw_ctx)
                 .map(FilterInput::StandardInput),
+
             Input::BackgroundAlpha => self
-                .background_alpha(draw_ctx, self.effects_region().rect.unwrap().into())
+                .background_image(draw_ctx)
+                .and_then(|surface| {
+                    surface
+                        .extract_alpha(self.effects_region().rect.unwrap().into())
+                        .map_err(FilterError::CairoError)
+                })
                 .map(FilterInput::StandardInput),
 
             Input::FillPaint => self
@@ -387,6 +377,7 @@ impl FilterContext {
                         .map_err(FilterError::CairoError)
                 })
                 .map(FilterInput::StandardInput),
+
             Input::StrokePaint => self
                 .get_paint_server_surface(draw_ctx, &values.stroke.0, values.stroke_opacity.0)
                 .map_err(FilterError::CairoError)
