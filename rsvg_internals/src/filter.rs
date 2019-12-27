@@ -59,7 +59,7 @@ impl Filter {
         // Filters use the properties of the target node.
         let values = computed_from_target_node;
 
-        let mut bbox = BoundingBox::new(&cairo::Matrix::identity());
+        let mut bbox = BoundingBox::new();
 
         // affine is set up in FilterContext::new() in such a way that for
         // filterunits == ObjectBoundingBox affine includes scaling to correct width, height and
@@ -95,7 +95,7 @@ impl Filter {
         };
 
         let rect = Rect::new(x, y, x + w, y + h);
-        let other_bbox = BoundingBox::new(&affine).with_rect(rect);
+        let other_bbox = BoundingBox::new().with_affine(affine).with_rect(rect);
 
         // At this point all of the previous viewbox and matrix business gets converted to pixel
         // coordinates in the final surface, because bbox is created with an identity affine.
@@ -103,7 +103,7 @@ impl Filter {
 
         // Finally, clip to the width and height of our surface.
         let rect = Rect::from_size(width, height);
-        let other_bbox = BoundingBox::new(&cairo::Matrix::identity()).with_rect(rect);
+        let other_bbox = BoundingBox::new().with_rect(rect);
         bbox.clip(&other_bbox);
 
         bbox
