@@ -5,9 +5,10 @@ use criterion::{black_box, Criterion};
 use cairo;
 use rsvg_internals;
 
-use rsvg_internals::filters::composite::composite_arithmetic;
 use rsvg_internals::rect::IRect;
-use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg_internals::surface_utils::shared_surface::{
+    composite_arithmetic, SharedImageSurface, SurfaceType,
+};
 
 const SURFACE_SIDE: i32 = 512;
 const BOUNDS: IRect = IRect {

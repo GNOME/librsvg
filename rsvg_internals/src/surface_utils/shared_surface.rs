@@ -16,9 +16,7 @@ use crate::util::clamp;
 
 use super::{
     iterators::{PixelRectangle, Pixels},
-    EdgeMode,
-    ImageSurfaceDataExt,
-    Pixel,
+    EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 
 /// Types of pixel data in a `SharedImageSurface`.
@@ -33,6 +31,25 @@ pub enum SurfaceType {
     /// A number of methods are optimized for alpha-only surfaces. For example, linearization and
     /// unlinearization have no effect for alpha-only surfaces.
     AlphaOnly,
+}
+
+impl SurfaceType {
+    /// Combines surface types
+    ///
+    /// If combining two alpha-only surfaces, the result is alpha-only.
+    /// If one is alpha-only, the result is the other.
+    /// If none is alpha-only, the types should be the same.
+    ///
+    /// # Panics
+    /// Panics if the surface types are not alpha-only and differ.
+    pub fn combine(self, other: SurfaceType) -> SurfaceType {
+        match (self, other) {
+            (SurfaceType::AlphaOnly, t) => t,
+            (t, SurfaceType::AlphaOnly) => t,
+            (t1, t2) if t1 == t2 => t1,
+            _ => panic!(),
+        }
+    }
 }
 
 /// Wrapper for a Cairo image surface that allows shared access.
@@ -886,6 +903,65 @@ impl SharedImageSurface {
         SharedImageSurface::new(output_surface, self.surface_type)
     }
 
+    /// Performs the combination of two input surfaces using Porter-Duff
+    /// compositing operators
+    ///
+    /// # Panics
+    /// Panics if the two surface types are not compatible.
+    #[inline]
+    pub fn compose(
+        &self,
+        other: &SharedImageSurface,
+        bounds: IRect,
+        operator: cairo::Operator,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let output_surface = other.copy_surface(bounds)?;
+
+        {
+            let cr = cairo::Context::new(&output_surface);
+            let r = cairo::Rectangle::from(bounds);
+            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.clip();
+
+            self.set_as_source_surface(&cr, 0.0, 0.0);
+            cr.set_operator(operator);
+            cr.paint();
+        }
+
+        SharedImageSurface::new(
+            output_surface,
+            self.surface_type.combine(other.surface_type),
+        )
+    }
+
+    /// Performs the combination of two input surfaces.
+    ///
+    /// Each pixel of the resulting image is computed using the following formula:
+    /// `res = k1*i1*i2 + k2*i1 + k3*i2 + k4`
+    ///
+    /// # Panics
+    /// Panics if the two surface types are not compatible.
+    #[inline]
+    pub fn compose_arithmetic(
+        &self,
+        other: &SharedImageSurface,
+        bounds: IRect,
+        k1: f64,
+        k2: f64,
+        k3: f64,
+        k4: f64,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let mut output_surface =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        composite_arithmetic(self, other, &mut output_surface, bounds, k1, k2, k3, k4);
+
+        SharedImageSurface::new(
+            output_surface,
+            self.surface_type.combine(other.surface_type),
+        )
+    }
+
     /// Returns a raw pointer to the underlying surface.
     ///
     /// # Safety
@@ -893,6 +969,55 @@ impl SharedImageSurface {
     #[inline]
     pub unsafe fn to_glib_none(&self) -> Stash<'_, *mut cairo_sys::cairo_surface_t, ImageSurface> {
         self.surface.to_glib_none()
+    }
+}
+
+/// Performs the arithmetic composite operation. Public for benchmarking.
+#[inline]
+pub fn composite_arithmetic(
+    surface1: &SharedImageSurface,
+    surface2: &SharedImageSurface,
+    output_surface: &mut cairo::ImageSurface,
+    bounds: IRect,
+    k1: f64,
+    k2: f64,
+    k3: f64,
+    k4: f64,
+) {
+    let output_stride = output_surface.get_stride() as usize;
+    {
+        let mut output_data = output_surface.get_data().unwrap();
+
+        for (x, y, pixel, pixel_2) in
+            Pixels::new(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
+        {
+            let i1a = f64::from(pixel.a) / 255f64;
+            let i2a = f64::from(pixel_2.a) / 255f64;
+            let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
+            let oa = clamp(oa, 0f64, 1f64);
+
+            // Contents of image surfaces are transparent by default, so if the resulting pixel is
+            // transparent there's no need to do anything.
+            if oa > 0f64 {
+                let compute = |i1, i2| {
+                    let i1 = f64::from(i1) / 255f64;
+                    let i2 = f64::from(i2) / 255f64;
+
+                    let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
+                    let o = clamp(o, 0f64, oa);
+
+                    ((o * 255f64) + 0.5) as u8
+                };
+
+                let output_pixel = Pixel {
+                    r: compute(pixel.r, pixel_2.r),
+                    g: compute(pixel.g, pixel_2.g),
+                    b: compute(pixel.b, pixel_2.b),
+                    a: ((oa * 255f64) + 0.5) as u8,
+                };
+                output_data.set_pixel(output_stride, output_pixel, x, y);
+            }
+        }
     }
 }
 
