@@ -1,4 +1,3 @@
-use cairo;
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
@@ -7,7 +6,6 @@ use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
-use crate::surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::input::Input;
@@ -89,41 +87,14 @@ impl FilterEffect for FeBlend {
             .add_input(&input_2)
             .into_irect(draw_ctx);
 
-        // If we're combining two alpha-only surfaces, the result is alpha-only. Otherwise the
-        // result is whatever the non-alpha-only type we're working on (which can be either sRGB or
-        // linear sRGB depending on color-interpolation-filters).
-        let surface_type = if input.surface().is_alpha_only() {
-            input_2.surface().surface_type()
-        } else {
-            if !input_2.surface().is_alpha_only() {
-                // All surface types should match (this is enforced by get_input()).
-                assert_eq!(
-                    input_2.surface().surface_type(),
-                    input.surface().surface_type()
-                );
-            }
-
-            input.surface().surface_type()
-        };
-
-        let output_surface = input_2.surface().copy_surface(bounds)?;
-        {
-            let cr = cairo::Context::new(&output_surface);
-            let r = cairo::Rectangle::from(bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
-            cr.clip();
-
-            input.surface().set_as_source_surface(&cr, 0f64, 0f64);
-            cr.set_operator(self.mode.into());
-            cr.paint();
-        }
+        let surface =
+            input
+                .surface()
+                .compose(input_2.surface(), bounds, cairo::Operator::from(self.mode))?;
 
         Ok(FilterResult {
             name: self.base.result.clone(),
-            output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface, surface_type)?,
-                bounds,
-            },
+            output: FilterOutput { surface, bounds },
         })
     }
 
