@@ -69,39 +69,11 @@ impl FeMergeNode {
         if output_surface.is_none() {
             return Ok(input.surface().clone());
         }
-        let output_surface = output_surface.unwrap();
 
-        // If we're combining two alpha-only surfaces, the result is alpha-only. Otherwise the
-        // result is whatever the non-alpha-only type we're working on (which can be either sRGB or
-        // linear sRGB depending on color-interpolation-filters).
-        let surface_type = if input.surface().is_alpha_only() {
-            output_surface.surface_type()
-        } else {
-            if !output_surface.is_alpha_only() {
-                // All surface types should match (this is enforced by get_input()).
-                assert_eq!(
-                    output_surface.surface_type(),
-                    input.surface().surface_type()
-                );
-            }
-
-            input.surface().surface_type()
-        };
-
-        let output_surface = output_surface.into_image_surface()?;
-
-        {
-            let cr = cairo::Context::new(&output_surface);
-            let r = cairo::Rectangle::from(bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
-            cr.clip();
-
-            input.surface().set_as_source_surface(&cr, 0f64, 0f64);
-            cr.set_operator(cairo::Operator::Over);
-            cr.paint();
-        }
-
-        Ok(SharedImageSurface::new(output_surface, surface_type)?)
+        input
+            .surface()
+            .compose(&output_surface.unwrap(), bounds, cairo::Operator::Over)
+            .map_err(FilterError::CairoError)
     }
 }
 
