@@ -106,13 +106,11 @@ impl NodeTrait for Image {
             dc.with_saved_cr(&mut |dc| {
                 let image_width = f64::from(image_width);
                 let image_height = f64::from(image_height);
+                let vbox = ViewBox(Rect::from_size(image_width, image_height));
 
-                if let Some(_params) = dc.push_new_viewport(
-                    Some(ViewBox(Rect::from_size(image_width, image_height))),
-                    Rect::new(x, y, x + w, y + h),
-                    self.aspect,
-                    clip_mode,
-                ) {
+                if let Some(_params) =
+                    dc.push_new_viewport(Some(vbox), rect, self.aspect, clip_mode)
+                {
                     let cr = dc.get_cairo_context();
 
                     // We need to set extend appropriately, so can't use cr.set_source_surface().
