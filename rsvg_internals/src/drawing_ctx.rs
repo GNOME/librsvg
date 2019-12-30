@@ -294,10 +294,8 @@ impl DrawingCtx {
         preserve_aspect_ratio: AspectRatio,
         clip_mode: Option<ClipMode>,
     ) -> Option<ViewParams> {
-        if let Some(ref clip) = clip_mode {
-            if *clip == ClipMode::ClipToViewport {
-                self.clip(viewport);
-            }
+        if let Some(ClipMode::ClipToViewport) = clip_mode {
+            self.clip(viewport);
         }
 
         preserve_aspect_ratio
@@ -306,10 +304,8 @@ impl DrawingCtx {
                 self.cr.transform(matrix);
 
                 if let Some(vbox) = vbox {
-                    if let Some(ref clip) = clip_mode {
-                        if *clip == ClipMode::ClipToVbox {
-                            self.clip(vbox.0);
-                        }
+                    if let Some(ClipMode::ClipToVbox) = clip_mode {
+                        self.clip(vbox.0);
                     }
 
                     Some(self.push_view_box(vbox.0.width(), vbox.0.height()))
