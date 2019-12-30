@@ -104,8 +104,6 @@ impl NodeTrait for Image {
             let bbox = dc.empty_bbox().with_rect(rect);
 
             dc.with_saved_cr(&mut |dc| {
-                let cr = dc.get_cairo_context();
-
                 let image_width = f64::from(image_width);
                 let image_height = f64::from(image_height);
 
@@ -115,6 +113,8 @@ impl NodeTrait for Image {
                     self.aspect,
                     clip_mode,
                 ) {
+                    let cr = dc.get_cairo_context();
+
                     // We need to set extend appropriately, so can't use cr.set_source_surface().
                     //
                     // If extend is left at its default value (None), then bilinear scaling uses
