@@ -89,10 +89,6 @@ pub struct DrawingCtx {
     rect: Rect,
     dpi: Dpi,
 
-    // This is a mitigation for SVG files that try to instance a huge number of
-    // elements via <use>, recursive patterns, etc.  See limits.rs for details.
-    num_elements_acquired: usize,
-
     cr_stack: Vec<cairo::Context>,
     cr: cairo::Context,
 
@@ -152,7 +148,6 @@ impl DrawingCtx {
             initial_affine,
             rect,
             dpi,
-            num_elements_acquired: 0,
             cr_stack: Vec::new(),
             cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
@@ -337,12 +332,6 @@ impl DrawingCtx {
         fragment: &Fragment,
         node_types: &[NodeType],
     ) -> Result<AcquiredNode, AcquireError> {
-        self.num_elements_acquired += 1;
-
-        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
-            return Err(AcquireError::MaxReferencesExceeded);
-        }
-
         self.acquired_nodes.acquire(fragment, node_types)
     }
 
@@ -1055,6 +1044,7 @@ impl AcquiredNode {
 
 struct AcquiredNodes {
     document: Rc<Document>,
+    num_elements_acquired: usize,
     node_stack: Rc<RefCell<NodeStack>>,
 }
 
@@ -1062,6 +1052,7 @@ impl AcquiredNodes {
     fn new(document: Rc<Document>) -> AcquiredNodes {
         AcquiredNodes {
             document,
+            num_elements_acquired: 0,
             node_stack: Rc::new(RefCell::new(NodeStack::new())),
         }
     }
@@ -1096,10 +1087,18 @@ impl AcquiredNodes {
     }
 
     fn acquire(
-        &self,
+        &mut self,
         fragment: &Fragment,
         node_types: &[NodeType],
     ) -> Result<AcquiredNode, AcquireError> {
+        self.num_elements_acquired += 1;
+
+        // This is a mitigation for SVG files that try to instance a huge number of
+        // elements via <use>, recursive patterns, etc.  See limits.rs for details.
+        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            return Err(AcquireError::MaxReferencesExceeded);
+        }
+
         let node = self.lookup_node(fragment, node_types)?;
 
         if node_is_accessed_by_reference(&node) {
