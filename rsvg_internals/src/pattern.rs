@@ -355,7 +355,7 @@ impl AsPaintSource for ResolvedPattern {
 
         let surface = cr_save
             .get_target()
-            .create_similar(cairo::Content::ColorAlpha, pw, ph);
+            .create_similar(cairo::Content::ColorAlpha, pw, ph)?;
 
         let cr_pattern = cairo::Context::new(&surface);
 

@@ -395,22 +395,22 @@ impl ObjectImpl for CHandle {
 
         match *prop {
             subclass::Property("flags", ..) => {
-                let v: HandleFlags = value.get().expect("flags value has incorrect type");
+                let v: HandleFlags = value.get_some().expect("flags value has incorrect type");
                 self.set_flags(v);
             }
 
             subclass::Property("dpi-x", ..) => {
-                let dpi_x: f64 = value.get().expect("dpi-x value has incorrect type");
+                let dpi_x: f64 = value.get_some().expect("dpi-x value has incorrect type");
                 self.set_dpi_x(dpi_x);
             }
 
             subclass::Property("dpi-y", ..) => {
-                let dpi_y: f64 = value.get().expect("dpi-y value has incorrect type");
+                let dpi_y: f64 = value.get_some().expect("dpi-y value has incorrect type");
                 self.set_dpi_y(dpi_y);
             }
 
             subclass::Property("base-uri", ..) => {
-                let v: Option<String> = value.get();
+                let v: Option<String> = value.get().expect("base-uri value has incorrect type");
 
                 // rsvg_handle_set_base_uri() expects non-NULL URI strings,
                 // but the "base-uri" property can be set to NULL due to a missing
