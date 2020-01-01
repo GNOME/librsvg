@@ -172,12 +172,6 @@ impl FilterContext {
         &self.computed_from_node_being_filtered
     }
 
-    /// Returns the surface corresponding to the last filter primitive's result.
-    #[inline]
-    pub fn last_result(&self) -> Option<&FilterOutput> {
-        self.last_result.as_ref()
-    }
-
     /// Returns the surface corresponding to the source graphic.
     #[inline]
     pub fn source_graphic(&self) -> &SharedImageSurface {
@@ -338,8 +332,8 @@ impl FilterContext {
             // No value => use the last result.
             // As per the SVG spec, if the filter primitive is the first in the chain, return the
             // source graphic.
-            if let Some(output) = self.last_result().cloned() {
-                return Ok(FilterInput::PrimitiveOutput(output));
+            if let Some(output) = self.last_result.as_ref() {
+                return Ok(FilterInput::PrimitiveOutput(output.clone()));
             } else {
                 return Ok(FilterInput::StandardInput(self.source_graphic().clone()));
             }
