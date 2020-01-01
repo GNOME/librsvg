@@ -64,12 +64,10 @@ impl Mask {
         let cascaded = CascadedValues::new_from_node(mask_node);
         let values = cascaded.get();
 
-        let mask_content_surface = draw_ctx.create_surface_for_toplevel_viewport()?;
-
         let mask_units = CoordUnits::from(self.units);
         let content_units = CoordUnits::from(self.content_units);
 
-        let (x, y, w, h) = {
+        let mask_rect = {
             let params = if mask_units == CoordUnits::ObjectBoundingBox {
                 draw_ctx.push_view_box(1.0, 1.0)
             } else {
@@ -81,8 +79,16 @@ impl Mask {
             let w = self.width.normalize(&values, &params);
             let h = self.height.normalize(&values, &params);
 
-            (x, y, w, h)
+            let (x, y, w, h) = if mask_units == CoordUnits::ObjectBoundingBox {
+                (x * bb_w + bb_x, y * bb_h + bb_y, w * bb_w, h * bb_h)
+            } else {
+                (x, y, w, h)
+            };
+
+            Rect::new(x, y, x + w, y + h)
         };
+
+        let mask_content_surface = draw_ctx.create_surface_for_toplevel_viewport()?;
 
         // Use a scope because mask_cr needs to release the
         // reference to the surface before we access the pixels
@@ -92,13 +98,7 @@ impl Mask {
 
             draw_ctx.push_cairo_context(mask_cr);
 
-            let (x, y, w, h) = if mask_units == CoordUnits::ObjectBoundingBox {
-                (x * bb_w + bb_x, y * bb_h + bb_y, w * bb_w, h * bb_h)
-            } else {
-                (x, y, w, h)
-            };
-
-            draw_ctx.clip(Rect::new(x, y, x + w, y + h));
+            draw_ctx.clip(mask_rect);
 
             {
                 let _params = if content_units == CoordUnits::ObjectBoundingBox {
