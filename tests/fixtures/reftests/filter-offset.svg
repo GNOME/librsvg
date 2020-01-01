@@ -2,13 +2,32 @@
   viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg"
   xmlns:xlink="http://www.w3.org/1999/xlink">
 
-  <filter id="objectbbox" primitiveUnits="objectBoundingBox">
+  <!-- normal offset -->
+  <filter id="offset1" primitiveUnits="objectBoundingBox">
     <feOffset dx="0.5" dy="0.1"/>
+  </filter>
+
+  <!-- zero offset -->
+  <filter id="offset2" primitiveUnits="objectBoundingBox">
+    <feOffset dx="0" dy="0"/>
+  </filter>
+
+  <!-- offset larger than the source (no intersection) -->
+  <filter id="offset3" primitiveUnits="objectBoundingBox">
+    <feOffset dx="100" dy="100"/>
   </filter>
 
   <g transform="translate(30 20)">
     <rect fill="green" x="1" y="1" width="50" height="50"/>
-    <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#objectbbox)"/>
-    <rect fill="red" x="1" y="57" width="50" height="50"/>
+    <rect fill="red" x="60" y="1" width="50" height="50"/>
+
+    <rect fill="green" x="1" y="60" width="50" height="50"/>
+    <rect fill="red" x="1" y="60" width="50" height="50" filter="url(#offset1)"/>
+
+    <rect fill="green" x="1" y="120" width="50" height="50"/>
+    <rect fill="red" x="1" y="120" width="50" height="50" filter="url(#offset2)"/>
+
+    <rect fill="green" x="1" y="180" width="50" height="50"/>
+    <rect fill="red" x="1" y="180" width="50" height="50" filter="url(#offset3)"/>
   </g>
 </svg>
