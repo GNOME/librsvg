@@ -223,25 +223,21 @@ impl FilterEffect for FeGaussianBlur {
         // channels.
 
         // Horizontal convolution.
-        let horiz_result_surface = if std_x != 0.0 {
+        let horiz_result_surface = if std_x >= 2.0 {
             // The spec says for deviation >= 2.0 three box blurs can be used as an optimization.
-            if std_x >= 2.0 {
-                three_box_blurs::<Horizontal>(input.surface(), bounds, std_x)?
-            } else {
-                gaussian_blur(input.surface(), bounds, std_x, false)?
-            }
+            three_box_blurs::<Horizontal>(input.surface(), bounds, std_x)?
+        } else if std_x != 0.0 {
+            gaussian_blur(input.surface(), bounds, std_x, false)?
         } else {
             input.surface().clone()
         };
 
         // Vertical convolution.
-        let output_surface = if std_y != 0.0 {
+        let output_surface = if std_y >= 2.0 {
             // The spec says for deviation >= 2.0 three box blurs can be used as an optimization.
-            if std_y >= 2.0 {
-                three_box_blurs::<Vertical>(&horiz_result_surface, bounds, std_y)?
-            } else {
-                gaussian_blur(&horiz_result_surface, bounds, std_y, true)?
-            }
+            three_box_blurs::<Vertical>(&horiz_result_surface, bounds, std_y)?
+        } else if std_y != 0.0 {
+            gaussian_blur(&horiz_result_surface, bounds, std_y, true)?
         } else {
             horiz_result_surface
         };
