@@ -10,7 +10,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
-use crate::clip_path::ClipPath;
 use crate::filters::{
     blend::FeBlend,
     color_matrix::FeColorMatrix,
@@ -40,12 +39,11 @@ use crate::gradient::{LinearGradient, RadialGradient, Stop};
 use crate::image::Image;
 use crate::link::Link;
 use crate::marker::Marker;
-use crate::mask::Mask;
 use crate::node::*;
 use crate::pattern::Pattern;
 use crate::property_bag::PropertyBag;
 use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
-use crate::structure::{Group, NonRendering, Svg, Switch, Symbol, Use};
+use crate::structure::{ClipPath, Group, Mask, NonRendering, Svg, Switch, Symbol, Use};
 use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 
