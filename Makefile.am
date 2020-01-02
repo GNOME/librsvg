@@ -26,7 +26,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/angle.rs				\
 	rsvg_internals/src/aspect_ratio.rs			\
 	rsvg_internals/src/bbox.rs				\
-	rsvg_internals/src/clip_path.rs				\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
 	rsvg_internals/src/coord_units.rs			\
@@ -73,7 +72,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/log.rs				\
 	rsvg_internals/src/link.rs				\
 	rsvg_internals/src/marker.rs				\
-	rsvg_internals/src/mask.rs				\
 	rsvg_internals/src/node.rs				\
 	rsvg_internals/src/number_list.rs			\
 	rsvg_internals/src/paint_server.rs			\

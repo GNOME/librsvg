@@ -8,7 +8,6 @@ use std::rc::{Rc, Weak};
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
-use crate::clip_path::ClipPath;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::Document;
@@ -17,7 +16,6 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{LinearGradient, RadialGradient};
 use crate::limits;
-use crate::mask::Mask;
 use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::Pattern;
@@ -27,6 +25,7 @@ use crate::property_defs::{
 };
 use crate::rect::{Rect, TransformRect};
 use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
+use crate::structure::{ClipPath, Mask};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
