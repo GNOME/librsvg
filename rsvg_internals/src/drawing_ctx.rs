@@ -193,13 +193,13 @@ impl DrawingCtx {
     }
 
     // Temporary hack while we unify surface/cr/affine creation
-    pub fn push_cairo_context(&mut self, cr: cairo::Context) {
+    fn push_cairo_context(&mut self, cr: cairo::Context) {
         self.cr_stack.push(self.cr.clone());
         self.cr = cr;
     }
 
     // Temporary hack while we unify surface/cr/affine creation
-    pub fn pop_cairo_context(&mut self) {
+    fn pop_cairo_context(&mut self) {
         self.cr = self.cr_stack.pop().unwrap();
     }
 
