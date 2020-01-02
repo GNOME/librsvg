@@ -365,9 +365,45 @@ impl DrawingCtx {
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
         if let Some(node) = clip_node {
-            let node_data = node.borrow();
-            let clip_path = node_data.get_impl::<ClipPath>();
-            clip_path.to_cairo_context(&node, self, &bbox)
+            let units = node.borrow().get_impl::<ClipPath>().get_units();
+
+            if units == CoordUnits::ObjectBoundingBox && bbox.rect.is_none() {
+                // The node being clipped is empty / doesn't have a
+                // bounding box, so there's nothing to clip!
+                return Ok(());
+            }
+
+            let cascaded = CascadedValues::new_from_node(node);
+
+            self
+                .with_saved_matrix(&mut |dc| {
+                    let cr = dc.get_cairo_context();
+
+                    if units == CoordUnits::ObjectBoundingBox {
+                        let bbox_rect = bbox.rect.as_ref().unwrap();
+
+                        cr.transform(cairo::Matrix::new(
+                            bbox_rect.width(),
+                            0.0,
+                            0.0,
+                            bbox_rect.height(),
+                            bbox_rect.x0,
+                            bbox_rect.y0,
+                        ))
+                    }
+
+                    // here we don't push a layer because we are clipping
+                    let res = node.draw_children(&cascaded, dc, true);
+
+                    cr.clip();
+
+                    res
+                })
+                .and_then(|_bbox|
+                          // Clipping paths do not contribute to bounding boxes (they should,
+                          // but we need Real Computational Geometry(tm), so ignore the
+                          // bbox from the clip path.
+                          Ok(()))
         } else {
             Ok(())
         }
