@@ -23,15 +23,10 @@ use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::Pattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule,
-    FillRule,
-    ShapeRendering,
-    StrokeDasharray,
-    StrokeLinecap,
-    StrokeLinejoin,
+    ClipRule, FillRule, Opacity, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
 };
-use crate::rect::Rect;
-use crate::surface_utils::shared_surface::SharedImageSurface;
+use crate::rect::{Rect, TransformRect};
+use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
@@ -409,6 +404,83 @@ impl DrawingCtx {
         }
     }
 
+    fn generate_cairo_mask(
+        &mut self,
+        mask: &Mask,
+        mask_node: &RsvgNode,
+        affine: cairo::Matrix,
+        bbox: &BoundingBox,
+    ) -> Result<Option<cairo::ImageSurface>, RenderingError> {
+        if bbox.rect.is_none() {
+            // The node being masked is empty / doesn't have a
+            // bounding box, so there's nothing to mask!
+            return Ok(None);
+        }
+
+        let bbox_rect = bbox.rect.as_ref().unwrap();
+        let (bb_x, bb_y) = (bbox_rect.x0, bbox_rect.y0);
+        let (bb_w, bb_h) = bbox_rect.size();
+
+        let cascaded = CascadedValues::new_from_node(mask_node);
+        let values = cascaded.get();
+
+        let mask_units = mask.get_units();
+
+        let mask_rect = {
+            let params = if mask_units == CoordUnits::ObjectBoundingBox {
+                self.push_view_box(1.0, 1.0)
+            } else {
+                self.get_view_params()
+            };
+
+            mask.get_rect(&values, &params)
+        };
+
+        let mask_affine = cairo::Matrix::multiply(&mask_node.borrow().get_transform(), &affine);
+
+        let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
+
+        // Use a scope because mask_cr needs to release the
+        // reference to the surface before we access the pixels
+        {
+            let mask_cr = cairo::Context::new(&mask_content_surface);
+            mask_cr.set_matrix(mask_affine);
+
+            let bbtransform = cairo::Matrix::new(bb_w, 0.0, 0.0, bb_h, bb_x, bb_y);
+
+            self.push_cairo_context(mask_cr);
+
+            if mask_units == CoordUnits::ObjectBoundingBox {
+                self.clip(bbtransform.transform_rect(&mask_rect));
+            } else {
+                self.clip(mask_rect);
+            }
+
+            let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
+                self.get_cairo_context().transform(bbtransform);
+                self.push_view_box(1.0, 1.0)
+            } else {
+                self.get_view_params()
+            };
+
+            let res = self.with_discrete_layer(mask_node, values, false, &mut |dc| {
+                mask_node.draw_children(&cascaded, dc, false)
+            });
+
+            self.pop_cairo_context();
+
+            res?;
+        }
+
+        let Opacity(opacity) = values.opacity;
+
+        let mask = SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?
+            .to_mask(u8::from(opacity))?
+            .into_image_surface()?;
+
+        Ok(Some(mask))
+    }
+
     pub fn with_discrete_layer(
         &mut self,
         node: &RsvgNode,
@@ -508,24 +580,22 @@ impl DrawingCtx {
                     if let Some(fragment) = mask {
                         if let Ok(acquired) = dc.acquire_node(fragment, &[NodeType::Mask]) {
                             let mask_node = acquired.get();
-                            let mask_affine = cairo::Matrix::multiply(
-                                &mask_node.borrow().get_transform(),
-                                &affines.for_temporary_surface,
-                            );
 
                             res = res.and_then(|bbox| {
-                                mask_node
-                                    .borrow()
-                                    .get_impl::<Mask>()
-                                    .generate_cairo_mask(&mask_node, mask_affine, dc, &bbox)
-                                    .and_then(|mask_surf| {
-                                        if let Some(surf) = mask_surf {
-                                            dc.cr.set_matrix(affines.compositing);
-                                            dc.cr.mask_surface(&surf, 0.0, 0.0);
-                                        }
-                                        Ok(())
-                                    })
-                                    .map(|_: ()| bbox)
+                                dc.generate_cairo_mask(
+                                    &mask_node.borrow().get_impl::<Mask>(),
+                                    &mask_node,
+                                    affines.for_temporary_surface,
+                                    &bbox,
+                                )
+                                .and_then(|mask_surf| {
+                                    if let Some(surf) = mask_surf {
+                                        dc.cr.set_matrix(affines.compositing);
+                                        dc.cr.mask_surface(&surf, 0.0, 0.0);
+                                    }
+                                    Ok(())
+                                })
+                                .map(|_: ()| bbox)
                             });
                         } else {
                             rsvg_log!(
