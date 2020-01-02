@@ -372,21 +372,23 @@ impl DrawingCtx {
 
             let cascaded = CascadedValues::new_from_node(node);
 
-            self.with_saved_matrix(&mut |dc| {
+            let matrix = if units == CoordUnits::ObjectBoundingBox {
+                let bbox_rect = bbox.rect.as_ref().unwrap();
+
+                Some(cairo::Matrix::new(
+                    bbox_rect.width(),
+                    0.0,
+                    0.0,
+                    bbox_rect.height(),
+                    bbox_rect.x0,
+                    bbox_rect.y0,
+                ))
+            } else {
+                None
+            };
+
+            self.with_saved_matrix(matrix, &mut |dc| {
                 let cr = dc.get_cairo_context();
-
-                if units == CoordUnits::ObjectBoundingBox {
-                    let bbox_rect = bbox.rect.as_ref().unwrap();
-
-                    cr.transform(cairo::Matrix::new(
-                        bbox_rect.width(),
-                        0.0,
-                        0.0,
-                        bbox_rect.height(),
-                        bbox_rect.x0,
-                        bbox_rect.y0,
-                    ))
-                }
 
                 // here we don't push a layer because we are clipping
                 let res = node.draw_children(&cascaded, dc, true);
@@ -633,7 +635,8 @@ impl DrawingCtx {
         initial_with_offset
     }
 
-    /// Saves the current Cairo matrix, runs the draw_fn, and restores the matrix
+    /// Saves the current Cairo matrix, applies a transform if specified,
+    /// runs the draw_fn, and restores the original matrix
     ///
     /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
     /// pair, but more importantly, it does not reset the whole
@@ -641,10 +644,17 @@ impl DrawingCtx {
     /// was set by the `draw_fn`.
     pub fn with_saved_matrix(
         &mut self,
+        transform: Option<cairo::Matrix>,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
         let matrix = self.cr.get_matrix();
+
+        if let Some(t) = transform {
+            self.cr.transform(t);
+        }
+
         let res = draw_fn(self);
+
         self.cr.set_matrix(matrix);
 
         if let Ok(bbox) = res {
