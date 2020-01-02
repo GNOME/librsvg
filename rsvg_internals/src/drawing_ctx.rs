@@ -1,6 +1,9 @@
 //! The main context structure which drives the drawing process.
 
 use cairo;
+use once_cell::sync::Lazy;
+use regex::{Captures, Regex};
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::{Rc, Weak};
@@ -665,6 +668,26 @@ impl DrawingCtx {
         res
     }
 
+    /// Wraps the draw_fn in a link to the given target
+    pub fn with_link_tag(
+        &mut self,
+        link_target: &str,
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
+    ) -> Result<BoundingBox, RenderingError> {
+        const CAIRO_TAG_LINK: &str = "Link";
+
+        let attributes = format!("uri='{}'", escape_link_target(link_target));
+
+        let cr = self.get_cairo_context();
+        cr.tag_begin(CAIRO_TAG_LINK, &attributes);
+
+        let res = draw_fn(self);
+
+        cr.tag_end(CAIRO_TAG_LINK);
+
+        res
+    }
+
     fn run_filter(
         &mut self,
         filter_uri: &Fragment,
@@ -1075,6 +1098,19 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     cr.set_tolerance(backup_tolerance);
 
     bbox
+}
+
+/// escape quotes and backslashes with backslash
+fn escape_link_target(value: &str) -> Cow<'_, str> {
+    static REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"['\\]").unwrap());
+
+    REGEX.replace_all(value, |caps: &Captures<'_>| {
+        match caps.get(0).unwrap().as_str() {
+            "'" => "\\'".to_owned(),
+            "\\" => "\\\\".to_owned(),
+            _ => unreachable!(),
+        }
+    })
 }
 
 impl From<StrokeLinejoin> for cairo::LineJoin {

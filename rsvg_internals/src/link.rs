@@ -1,9 +1,6 @@
 //! The `link` element.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use once_cell::sync::Lazy;
-use regex::{Captures, Regex};
-use std::borrow::Cow;
 
 use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
@@ -40,34 +37,9 @@ impl NodeTrait for Link {
 
         draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| match self.link.as_ref() {
             Some(l) if !l.is_empty() => {
-                const CAIRO_TAG_LINK: &str = "Link";
-
-                let attributes = format!("uri='{}'", escape_value(l));
-
-                let cr = dc.get_cairo_context();
-
-                cr.tag_begin(CAIRO_TAG_LINK, &attributes);
-
-                let res = node.draw_children(&cascaded, dc, clipping);
-
-                cr.tag_end(CAIRO_TAG_LINK);
-
-                res
+                dc.with_link_tag(l, &mut |dc| node.draw_children(&cascaded, dc, clipping))
             }
             _ => node.draw_children(&cascaded, dc, clipping),
         })
     }
-}
-
-/// escape quotes and backslashes with backslash
-fn escape_value(value: &str) -> Cow<'_, str> {
-    static REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"['\\]").unwrap());
-
-    REGEX.replace_all(value, |caps: &Captures<'_>| {
-        match caps.get(0).unwrap().as_str() {
-            "'" => "\\'".to_owned(),
-            "\\" => "\\\\".to_owned(),
-            _ => unreachable!(),
-        }
-    })
 }
