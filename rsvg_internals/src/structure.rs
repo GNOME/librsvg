@@ -1,10 +1,11 @@
-//! Structural elements in SVG: the `g`, `switch`, `svg`, `use`, `symbol` elements.
+//! Structural elements in SVG: the `g`, `switch`, `svg`, `use`, `symbol`, `clip_path`, `mask`, `link` elements.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
+use crate::coord_units::CoordUnits;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::*;
@@ -440,5 +441,138 @@ impl NodeTrait for Symbol {
 
     fn overflow_hidden(&self) -> bool {
         true
+    }
+}
+
+coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
+
+#[derive(Default)]
+pub struct ClipPath {
+    units: ClipPathUnits,
+}
+
+impl ClipPath {
+    pub fn get_units(&self) -> CoordUnits {
+        CoordUnits::from(self.units)
+    }
+}
+
+impl NodeTrait for ClipPath {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr.expanded() {
+                expanded_name!(svg "clipPathUnits") => self.units = attr.parse(value)?,
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
+coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
+
+pub struct Mask {
+    x: Length<Horizontal>,
+    y: Length<Vertical>,
+    width: Length<Horizontal>,
+    height: Length<Vertical>,
+
+    units: MaskUnits,
+    content_units: MaskContentUnits,
+}
+
+impl Default for Mask {
+    fn default() -> Mask {
+        Mask {
+            // these values are per the spec
+            x: Length::<Horizontal>::parse_str("-10%").unwrap(),
+            y: Length::<Vertical>::parse_str("-10%").unwrap(),
+            width: Length::<Horizontal>::parse_str("120%").unwrap(),
+            height: Length::<Vertical>::parse_str("120%").unwrap(),
+
+            units: MaskUnits::default(),
+            content_units: MaskContentUnits::default(),
+        }
+    }
+}
+
+impl Mask {
+    pub fn get_units(&self) -> CoordUnits {
+        CoordUnits::from(self.content_units)
+    }
+
+    pub fn get_content_units(&self) -> CoordUnits {
+        CoordUnits::from(self.content_units)
+    }
+
+    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
+        let x = self.x.normalize(&values, &params);
+        let y = self.y.normalize(&values, &params);
+        let w = self.width.normalize(&values, &params);
+        let h = self.height.normalize(&values, &params);
+
+        Rect::new(x, y, x + w, y + h)
+    }
+}
+
+impl NodeTrait for Mask {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr.expanded() {
+                expanded_name!(svg "x") => self.x = attr.parse(value)?,
+                expanded_name!(svg "y") => self.y = attr.parse(value)?,
+                expanded_name!(svg "width") => {
+                    self.width =
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
+                }
+                expanded_name!(svg "height") => {
+                    self.height =
+                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
+                }
+                expanded_name!(svg "maskUnits") => self.units = attr.parse(value)?,
+                expanded_name!(svg "maskContentUnits") => self.content_units = attr.parse(value)?,
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Default)]
+pub struct Link {
+    link: Option<String>,
+}
+
+impl NodeTrait for Link {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+        for (attr, value) in pbag.iter() {
+            match attr.expanded() {
+                expanded_name!(xlink "href") => self.link = Some(value.to_owned()),
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+
+    fn draw(
+        &self,
+        node: &RsvgNode,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        let cascaded = CascadedValues::new(cascaded, node);
+        let values = cascaded.get();
+
+        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| match self.link.as_ref() {
+            Some(l) if !l.is_empty() => {
+                dc.with_link_tag(l, &mut |dc| node.draw_children(&cascaded, dc, clipping))
+            }
+            _ => node.draw_children(&cascaded, dc, clipping),
+        })
     }
 }
