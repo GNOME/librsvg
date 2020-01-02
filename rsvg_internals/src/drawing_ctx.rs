@@ -8,7 +8,7 @@ use std::rc::{Rc, Weak};
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
-use crate::clip_path::{ClipPath, ClipPathUnits};
+use crate::clip_path::ClipPath;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::Document;
@@ -349,13 +349,11 @@ impl DrawingCtx {
             .and_then(|acquired| {
                 let clip_node = acquired.get().clone();
 
-                let ClipPathUnits(units) = clip_node.borrow().get_impl::<ClipPath>().get_units();
+                let units = clip_node.borrow().get_impl::<ClipPath>().get_units();
 
-                if units == CoordUnits::UserSpaceOnUse {
-                    Some((Some(clip_node), None))
-                } else {
-                    assert!(units == CoordUnits::ObjectBoundingBox);
-                    Some((None, Some(clip_node)))
+                match units {
+                    CoordUnits::UserSpaceOnUse => Some((Some(clip_node), None)),
+                    CoordUnits::ObjectBoundingBox => Some((None, Some(clip_node))),
                 }
             })
             .unwrap_or((None, None))

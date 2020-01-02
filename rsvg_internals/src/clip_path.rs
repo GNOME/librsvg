@@ -19,8 +19,8 @@ pub struct ClipPath {
 }
 
 impl ClipPath {
-    pub fn get_units(&self) -> ClipPathUnits {
-        self.units
+    pub fn get_units(&self) -> CoordUnits {
+        CoordUnits::from(self.units)
     }
 
     pub fn to_cairo_context(
