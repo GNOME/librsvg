@@ -24,10 +24,11 @@ use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::Pattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule, FillRule, Opacity, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
+    ClipRule, FillRule, Opacity, Overflow, ShapeRendering, StrokeDasharray, StrokeLinecap,
+    StrokeLinejoin,
 };
 use crate::rect::{Rect, TransformRect};
-use crate::structure::{ClipPath, Mask};
+use crate::structure::{ClipPath, Mask, Symbol, Use};
 use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
@@ -332,7 +333,7 @@ impl DrawingCtx {
         self.acquired_nodes.acquire(fragment, node_types)
     }
 
-    pub fn acquire_node_ref(&mut self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
+    fn acquire_node_ref(&mut self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
         self.acquired_nodes.push_node_ref(node)
     }
 
@@ -1001,6 +1002,108 @@ impl DrawingCtx {
         }
 
         res
+    }
+
+    pub fn draw_from_use_node(
+        &mut self,
+        node: &RsvgNode,
+        cascaded: &CascadedValues<'_>,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        let node_data = node.borrow();
+        let use_ = node_data.get_impl::<Use>();
+
+        // <use> is an element that is used directly, unlike
+        // <pattern>, which is used through a fill="url(#...)"
+        // reference.  However, <use> will always reference another
+        // element, potentially itself or an ancestor of itself (or
+        // another <use> which references the first one, etc.).  So,
+        // we acquire the <use> element itself so that circular
+        // references can be caught.
+        let _self_acquired = self.acquire_node_ref(node).map_err(|e| {
+            if let AcquireError::CircularReference(_) = e {
+                rsvg_log!("circular reference in element {}", node);
+                RenderingError::CircularReference
+            } else {
+                unreachable!();
+            }
+        })?;
+
+        let link = use_.get_link();
+        if link.is_none() {
+            return Ok(self.empty_bbox());
+        }
+
+        let acquired = match self.acquire_node(link.unwrap(), &[]) {
+            Ok(acquired) => acquired,
+
+            Err(AcquireError::CircularReference(node)) => {
+                rsvg_log!("circular reference in element {}", node);
+                return Err(RenderingError::CircularReference);
+            }
+
+            Err(AcquireError::MaxReferencesExceeded) => {
+                return Err(RenderingError::InstancingLimit);
+            }
+
+            Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
+
+            Err(AcquireError::LinkNotFound(fragment)) => {
+                rsvg_log!("element {} references nonexistent \"{}\"", node, fragment);
+                return Ok(self.empty_bbox());
+            }
+        };
+
+        let values = cascaded.get();
+        let params = self.get_view_params();
+        let use_rect = use_.get_rect(values, &params);
+
+        // width or height set to 0 disables rendering of the element
+        // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
+        if use_rect.is_empty() {
+            return Ok(self.empty_bbox());
+        }
+
+        let child = acquired.get();
+
+        if child.borrow().get_type() != NodeType::Symbol {
+            let cr = self.get_cairo_context();
+            cr.translate(use_rect.x0, use_rect.y0);
+
+            self.with_discrete_layer(node, values, clipping, &mut |dc| {
+                dc.draw_node_from_stack(
+                    &CascadedValues::new_from_values(&child, values),
+                    &child,
+                    clipping,
+                )
+            })
+        } else {
+            let node_data = child.borrow();
+            let symbol = node_data.get_impl::<Symbol>();
+
+            let clip_mode = if !values.is_overflow()
+                || (values.overflow == Overflow::Visible && child.borrow().is_overflow())
+            {
+                Some(ClipMode::ClipToVbox)
+            } else {
+                None
+            };
+
+            self.with_discrete_layer(node, values, clipping, &mut |dc| {
+                let _params = dc.push_new_viewport(
+                    symbol.get_viewbox(),
+                    use_rect,
+                    symbol.get_preserve_aspect_ratio(),
+                    clip_mode,
+                );
+
+                child.draw_children(
+                    &CascadedValues::new_from_values(&child, values),
+                    dc,
+                    clipping,
+                )
+            })
+        }
     }
 }
 

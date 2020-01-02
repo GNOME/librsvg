@@ -9,13 +9,11 @@ use crate::coord_units::CoordUnits;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::*;
-use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
-use crate::property_defs::Overflow;
 use crate::rect::Rect;
 use crate::viewbox::*;
 
@@ -273,6 +271,33 @@ pub struct Use {
     h: Option<Length<Vertical>>,
 }
 
+impl Use {
+    pub fn get_link(&self) -> Option<&Fragment> {
+        self.link.as_ref()
+    }
+
+    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
+        let x = self.x.normalize(values, &params);
+        let y = self.y.normalize(values, &params);
+
+        // If attributes ‘width’ and/or ‘height’ are not specified,
+        // [...] use values of '100%' for these attributes.
+        // From https://www.w3.org/TR/SVG/struct.html#UseElement in
+        // "If the ‘use’ element references a ‘symbol’ element"
+
+        let w = self
+            .w
+            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap())
+            .normalize(values, &params);
+        let h = self
+            .h
+            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap())
+            .normalize(values, &params);
+
+        Rect::new(x, y, x + w, y + h)
+    }
+}
+
 impl NodeTrait for Use {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
@@ -306,115 +331,7 @@ impl NodeTrait for Use {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-
-        if self.link.is_none() {
-            return Ok(draw_ctx.empty_bbox());
-        }
-
-        let link = self.link.as_ref().unwrap();
-
-        // <use> is an element that is used directly, unlike
-        // <pattern>, which is used through a fill="url(#...)"
-        // reference.  However, <use> will always reference another
-        // element, potentially itself or an ancestor of itself (or
-        // another <use> which references the first one, etc.).  So,
-        // we acquire the <use> element itself so that circular
-        // references can be caught.
-        let _self_acquired = draw_ctx.acquire_node_ref(node).map_err(|e| {
-            if let AcquireError::CircularReference(_) = e {
-                rsvg_log!("circular reference in element {}", node);
-                RenderingError::CircularReference
-            } else {
-                unreachable!();
-            }
-        })?;
-
-        let acquired = match draw_ctx.acquire_node(link, &[]) {
-            Ok(acquired) => acquired,
-
-            Err(AcquireError::CircularReference(node)) => {
-                rsvg_log!("circular reference in element {}", node);
-                return Err(RenderingError::CircularReference);
-            }
-
-            Err(AcquireError::MaxReferencesExceeded) => {
-                return Err(RenderingError::InstancingLimit);
-            }
-
-            Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
-
-            Err(AcquireError::LinkNotFound(fragment)) => {
-                rsvg_log!("element {} references nonexistent \"{}\"", node, fragment);
-                return Ok(draw_ctx.empty_bbox());
-            }
-        };
-
-        let child = acquired.get();
-
-        let params = draw_ctx.get_view_params();
-
-        let nx = self.x.normalize(values, &params);
-        let ny = self.y.normalize(values, &params);
-
-        // If attributes ‘width’ and/or ‘height’ are not specified,
-        // [...] use values of '100%' for these attributes.
-        // From https://www.w3.org/TR/SVG/struct.html#UseElement in
-        // "If the ‘use’ element references a ‘symbol’ element"
-
-        let nw = self
-            .w
-            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap())
-            .normalize(values, &params);
-        let nh = self
-            .h
-            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap())
-            .normalize(values, &params);
-
-        // width or height set to 0 disables rendering of the element
-        // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
-        if nw.approx_eq_cairo(0.0) || nh.approx_eq_cairo(0.0) {
-            return Ok(draw_ctx.empty_bbox());
-        }
-
-        if child.borrow().get_type() != NodeType::Symbol {
-            let cr = draw_ctx.get_cairo_context();
-            cr.translate(nx, ny);
-
-            draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-                dc.draw_node_from_stack(
-                    &CascadedValues::new_from_values(&child, values),
-                    &child,
-                    clipping,
-                )
-            })
-        } else {
-            let node_data = child.borrow();
-            let symbol = node_data.get_impl::<Symbol>();
-
-            let clip_mode = if !values.is_overflow()
-                || (values.overflow == Overflow::Visible && child.borrow().is_overflow())
-            {
-                Some(ClipMode::ClipToVbox)
-            } else {
-                None
-            };
-
-            draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-                let _params = dc.push_new_viewport(
-                    symbol.vbox,
-                    Rect::new(nx, ny, nx + nw, ny + nh),
-                    symbol.preserve_aspect_ratio,
-                    clip_mode,
-                );
-
-                child.draw_children(
-                    &CascadedValues::new_from_values(&child, values),
-                    dc,
-                    clipping,
-                )
-            })
-        }
+        draw_ctx.draw_from_use_node(node, cascaded, clipping)
     }
 }
 
@@ -422,6 +339,16 @@ impl NodeTrait for Use {
 pub struct Symbol {
     preserve_aspect_ratio: AspectRatio,
     vbox: Option<ViewBox>,
+}
+
+impl Symbol {
+    pub fn get_viewbox(&self) -> Option<ViewBox> {
+        self.vbox
+    }
+
+    pub fn get_preserve_aspect_ratio(&self) -> AspectRatio {
+        self.preserve_aspect_ratio
+    }
 }
 
 impl NodeTrait for Symbol {
