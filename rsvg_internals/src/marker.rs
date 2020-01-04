@@ -61,14 +61,9 @@ impl Default for MarkerOrient {
 
 impl Parse for MarkerOrient {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerOrient, CssParseError<'i>> {
-        if parser
-            .try_parse(|p| p.expect_ident_matching("auto"))
-            .is_ok()
-        {
-            Ok(MarkerOrient::Auto)
-        } else {
-            Angle::parse(parser).map(MarkerOrient::Angle)
-        }
+        parser
+            .try_parse(|p| p.expect_ident_matching("auto").map(|_| MarkerOrient::Auto))
+            .or_else(|_| Angle::parse(parser).map(MarkerOrient::Angle))
     }
 }
 
