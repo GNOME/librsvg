@@ -18,7 +18,6 @@ rsvg_internals/src/allowed_url.rs
 rsvg_internals/src/aspect_ratio.rs
 rsvg_internals/src/attributes.rs
 rsvg_internals/src/bbox.rs
-rsvg_internals/src/clip_path.rs
 rsvg_internals/src/color.rs
 rsvg_internals/src/cond.rs
 rsvg_internals/src/coord_units.rs
@@ -58,10 +57,8 @@ rsvg_internals/src/io.rs
 rsvg_internals/src/iri.rs
 rsvg_internals/src/length.rs
 rsvg_internals/src/lib.rs
-rsvg_internals/src/link.rs
 rsvg_internals/src/log.rs
 rsvg_internals/src/marker.rs
-rsvg_internals/src/mask.rs
 rsvg_internals/src/node.rs
 rsvg_internals/src/paint_server.rs
 rsvg_internals/src/parsers.rs

@@ -1,6 +1,9 @@
 //! The main context structure which drives the drawing process.
 
 use cairo;
+use once_cell::sync::Lazy;
+use regex::{Captures, Regex};
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::{Rc, Weak};
@@ -8,7 +11,6 @@ use std::rc::{Rc, Weak};
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
-use crate::clip_path::{ClipPath, ClipPathUnits};
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::Document;
@@ -17,21 +19,16 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{LinearGradient, RadialGradient};
 use crate::limits;
-use crate::mask::Mask;
 use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::pattern::Pattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule,
-    FillRule,
-    ShapeRendering,
-    StrokeDasharray,
-    StrokeLinecap,
-    StrokeLinejoin,
+    ClipRule, FillRule, Opacity, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
 };
-use crate::rect::Rect;
-use crate::surface_utils::shared_surface::SharedImageSurface;
+use crate::rect::{Rect, TransformRect};
+use crate::structure::{ClipPath, Mask};
+use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
@@ -349,13 +346,11 @@ impl DrawingCtx {
             .and_then(|acquired| {
                 let clip_node = acquired.get().clone();
 
-                let ClipPathUnits(units) = clip_node.borrow().get_impl::<ClipPath>().get_units();
+                let units = clip_node.borrow().get_impl::<ClipPath>().get_units();
 
-                if units == CoordUnits::UserSpaceOnUse {
-                    Some((Some(clip_node), None))
-                } else {
-                    assert!(units == CoordUnits::ObjectBoundingBox);
-                    Some((None, Some(clip_node)))
+                match units {
+                    CoordUnits::UserSpaceOnUse => Some((Some(clip_node), None)),
+                    CoordUnits::ObjectBoundingBox => Some((None, Some(clip_node))),
                 }
             })
             .unwrap_or((None, None))
@@ -367,12 +362,126 @@ impl DrawingCtx {
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
         if let Some(node) = clip_node {
-            let node_data = node.borrow();
-            let clip_path = node_data.get_impl::<ClipPath>();
-            clip_path.to_cairo_context(&node, self, &bbox)
+            let units = node.borrow().get_impl::<ClipPath>().get_units();
+
+            if units == CoordUnits::ObjectBoundingBox && bbox.rect.is_none() {
+                // The node being clipped is empty / doesn't have a
+                // bounding box, so there's nothing to clip!
+                return Ok(());
+            }
+
+            let cascaded = CascadedValues::new_from_node(node);
+
+            let matrix = if units == CoordUnits::ObjectBoundingBox {
+                let bbox_rect = bbox.rect.as_ref().unwrap();
+
+                Some(cairo::Matrix::new(
+                    bbox_rect.width(),
+                    0.0,
+                    0.0,
+                    bbox_rect.height(),
+                    bbox_rect.x0,
+                    bbox_rect.y0,
+                ))
+            } else {
+                None
+            };
+
+            self.with_saved_matrix(matrix, &mut |dc| {
+                let cr = dc.get_cairo_context();
+
+                // here we don't push a layer because we are clipping
+                let res = node.draw_children(&cascaded, dc, true);
+
+                cr.clip();
+
+                res
+            })
+            .and_then(|_bbox|
+                // Clipping paths do not contribute to bounding boxes (they should,
+                // but we need Real Computational Geometry(tm), so ignore the
+                // bbox from the clip path.
+                Ok(()))
         } else {
             Ok(())
         }
+    }
+
+    fn generate_cairo_mask(
+        &mut self,
+        mask: &Mask,
+        mask_node: &RsvgNode,
+        affine: cairo::Matrix,
+        bbox: &BoundingBox,
+    ) -> Result<Option<cairo::ImageSurface>, RenderingError> {
+        if bbox.rect.is_none() {
+            // The node being masked is empty / doesn't have a
+            // bounding box, so there's nothing to mask!
+            return Ok(None);
+        }
+
+        let bbox_rect = bbox.rect.as_ref().unwrap();
+        let (bb_x, bb_y) = (bbox_rect.x0, bbox_rect.y0);
+        let (bb_w, bb_h) = bbox_rect.size();
+
+        let cascaded = CascadedValues::new_from_node(mask_node);
+        let values = cascaded.get();
+
+        let mask_units = mask.get_units();
+
+        let mask_rect = {
+            let params = if mask_units == CoordUnits::ObjectBoundingBox {
+                self.push_view_box(1.0, 1.0)
+            } else {
+                self.get_view_params()
+            };
+
+            mask.get_rect(&values, &params)
+        };
+
+        let mask_affine = cairo::Matrix::multiply(&mask_node.borrow().get_transform(), &affine);
+
+        let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
+
+        // Use a scope because mask_cr needs to release the
+        // reference to the surface before we access the pixels
+        {
+            let mask_cr = cairo::Context::new(&mask_content_surface);
+            mask_cr.set_matrix(mask_affine);
+
+            let bbtransform = cairo::Matrix::new(bb_w, 0.0, 0.0, bb_h, bb_x, bb_y);
+
+            self.push_cairo_context(mask_cr);
+
+            if mask_units == CoordUnits::ObjectBoundingBox {
+                self.clip(bbtransform.transform_rect(&mask_rect));
+            } else {
+                self.clip(mask_rect);
+            }
+
+            let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
+                self.get_cairo_context().transform(bbtransform);
+                self.push_view_box(1.0, 1.0)
+            } else {
+                self.get_view_params()
+            };
+
+            let res = self.with_discrete_layer(mask_node, values, false, &mut |dc| {
+                mask_node.draw_children(&cascaded, dc, false)
+            });
+
+            self.pop_cairo_context();
+
+            res?;
+        }
+
+        let Opacity(opacity) = values.opacity;
+
+        let mask = SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?
+            .to_mask(u8::from(opacity))?
+            .into_image_surface()?;
+
+        Ok(Some(mask))
     }
 
     pub fn with_discrete_layer(
@@ -474,24 +583,22 @@ impl DrawingCtx {
                     if let Some(fragment) = mask {
                         if let Ok(acquired) = dc.acquire_node(fragment, &[NodeType::Mask]) {
                             let mask_node = acquired.get();
-                            let mask_affine = cairo::Matrix::multiply(
-                                &mask_node.borrow().get_transform(),
-                                &affines.for_temporary_surface,
-                            );
 
                             res = res.and_then(|bbox| {
-                                mask_node
-                                    .borrow()
-                                    .get_impl::<Mask>()
-                                    .generate_cairo_mask(&mask_node, mask_affine, dc, &bbox)
-                                    .and_then(|mask_surf| {
-                                        if let Some(surf) = mask_surf {
-                                            dc.cr.set_matrix(affines.compositing);
-                                            dc.cr.mask_surface(&surf, 0.0, 0.0);
-                                        }
-                                        Ok(())
-                                    })
-                                    .map(|_: ()| bbox)
+                                dc.generate_cairo_mask(
+                                    &mask_node.borrow().get_impl::<Mask>(),
+                                    &mask_node,
+                                    affines.for_temporary_surface,
+                                    &bbox,
+                                )
+                                .and_then(|mask_surf| {
+                                    if let Some(surf) = mask_surf {
+                                        dc.cr.set_matrix(affines.compositing);
+                                        dc.cr.mask_surface(&surf, 0.0, 0.0);
+                                    }
+                                    Ok(())
+                                })
+                                .map(|_: ()| bbox)
                             });
                         } else {
                             rsvg_log!(
@@ -528,7 +635,8 @@ impl DrawingCtx {
         initial_with_offset
     }
 
-    /// Saves the current Cairo matrix, runs the draw_fn, and restores the matrix
+    /// Saves the current Cairo matrix, applies a transform if specified,
+    /// runs the draw_fn, and restores the original matrix
     ///
     /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
     /// pair, but more importantly, it does not reset the whole
@@ -536,10 +644,17 @@ impl DrawingCtx {
     /// was set by the `draw_fn`.
     pub fn with_saved_matrix(
         &mut self,
+        transform: Option<cairo::Matrix>,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
         let matrix = self.cr.get_matrix();
+
+        if let Some(t) = transform {
+            self.cr.transform(t);
+        }
+
         let res = draw_fn(self);
+
         self.cr.set_matrix(matrix);
 
         if let Ok(bbox) = res {
@@ -559,6 +674,26 @@ impl DrawingCtx {
         self.cr.save();
         let res = draw_fn(self);
         self.cr.restore();
+        res
+    }
+
+    /// Wraps the draw_fn in a link to the given target
+    pub fn with_link_tag(
+        &mut self,
+        link_target: &str,
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
+    ) -> Result<BoundingBox, RenderingError> {
+        const CAIRO_TAG_LINK: &str = "Link";
+
+        let attributes = format!("uri='{}'", escape_link_target(link_target));
+
+        let cr = self.get_cairo_context();
+        cr.tag_begin(CAIRO_TAG_LINK, &attributes);
+
+        let res = draw_fn(self);
+
+        cr.tag_end(CAIRO_TAG_LINK);
+
         res
     }
 
@@ -972,6 +1107,19 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     cr.set_tolerance(backup_tolerance);
 
     bbox
+}
+
+/// escape quotes and backslashes with backslash
+fn escape_link_target(value: &str) -> Cow<'_, str> {
+    static REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"['\\]").unwrap());
+
+    REGEX.replace_all(value, |caps: &Captures<'_>| {
+        match caps.get(0).unwrap().as_str() {
+            "'" => "\\'".to_owned(),
+            "\\" => "\\\\".to_owned(),
+            _ => unreachable!(),
+        }
+    })
 }
 
 impl From<StrokeLinejoin> for cairo::LineJoin {

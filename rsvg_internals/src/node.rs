@@ -502,10 +502,8 @@ impl NodeDraw for RsvgNode {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if !self.borrow().is_in_error() {
-            draw_ctx.with_saved_matrix(&mut |dc| {
-                let cr = dc.get_cairo_context();
-                cr.transform(self.borrow().get_transform());
-
+            let transform = self.borrow().get_transform();
+            draw_ctx.with_saved_matrix(Some(transform), &mut |dc| {
                 self.borrow()
                     .get_node_trait()
                     .draw(self, cascaded, dc, clipping)
