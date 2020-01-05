@@ -61,14 +61,9 @@ impl Default for MarkerOrient {
 
 impl Parse for MarkerOrient {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerOrient, CssParseError<'i>> {
-        if parser
-            .try_parse(|p| p.expect_ident_matching("auto"))
-            .is_ok()
-        {
-            Ok(MarkerOrient::Auto)
-        } else {
-            Angle::parse(parser).map(MarkerOrient::Angle)
-        }
+        parser
+            .try_parse(|p| p.expect_ident_matching("auto").map(|_| MarkerOrient::Auto))
+            .or_else(|_| Angle::parse(parser).map(MarkerOrient::Angle))
     }
 }
 
@@ -508,19 +503,18 @@ impl<'a> From<&'a PathBuilder> for Segments {
 // segment's start and end points to align with the positive x-axis
 // in user space.
 impl Segments {
-    fn find_incoming_directionality_backwards(&self, start_index: usize) -> (bool, f64, f64) {
+    fn find_incoming_angle_backwards(&self, start_index: usize) -> Option<Angle> {
         // "go backwards ... within the current subpath until ... segment which has directionality
         // at its end point"
         for segment in self[..=start_index].iter().rev() {
             match *segment {
                 Segment::Degenerate { .. } => {
-                    return (false, 0.0, 0.0); // reached the beginning of the subpath as we ran into
-                                              // a standalone point
+                    return None; // reached the beginning of the subpath as we ran into a standalone point
                 }
 
                 Segment::LineOrCurve { .. } => match segment.get_directionalities() {
                     Some((_, _, v2x, v2y)) => {
-                        return (true, v2x, v2y);
+                        return Some(Angle::from_vector(v2x, v2y));
                     }
                     None => {
                         continue;
@@ -529,22 +523,21 @@ impl Segments {
             }
         }
 
-        (false, 0.0, 0.0)
+        None
     }
 
-    fn find_outgoing_directionality_forwards(&self, start_index: usize) -> (bool, f64, f64) {
+    fn find_outgoing_angle_forwards(&self, start_index: usize) -> Option<Angle> {
         // "go forwards ... within the current subpath until ... segment which has directionality at
         // its start point"
         for segment in &self[start_index..] {
             match *segment {
                 Segment::Degenerate { .. } => {
-                    return (false, 0.0, 0.0); // reached the end of a subpath as we ran into a
-                                              // standalone point
+                    return None; // reached the end of a subpath as we ran into a standalone point
                 }
 
                 Segment::LineOrCurve { .. } => match segment.get_directionalities() {
                     Some((v1x, v1y, _, _)) => {
-                        return (true, v1x, v1y);
+                        return Some(Angle::from_vector(v1x, v1y));
                     }
                     None => {
                         continue;
@@ -553,7 +546,7 @@ impl Segments {
             }
         }
 
-        (false, 0.0, 0.0)
+        None
     }
 }
 
@@ -687,13 +680,14 @@ where
                     assert!(i > 0);
 
                     // Got a lone point after a subpath; render the subpath's end marker first
-                    let (_, incoming_vx, incoming_vy) =
-                        segments.find_incoming_directionality_backwards(i - 1);
+                    let angle = segments
+                        .find_incoming_angle_backwards(i - 1)
+                        .unwrap_or_else(|| Angle::new(0.0));
                     let marker_bbox = emit_marker(
                         &segments[i - 1],
                         MarkerEndpoint::End,
                         MarkerType::End,
-                        Angle::from_vector(incoming_vx, incoming_vy),
+                        angle,
                         emit_fn,
                     )?;
                     bbox.insert(&marker_bbox);
@@ -716,13 +710,14 @@ where
                 // Not a degenerate segment
                 match subpath_state {
                     SubpathState::NoSubpath => {
-                        let (_, outgoing_vx, outgoing_vy) =
-                            segments.find_outgoing_directionality_forwards(i);
+                        let angle = segments
+                            .find_outgoing_angle_forwards(i)
+                            .unwrap_or_else(|| Angle::new(0.0));
                         let marker_bbox = emit_marker(
                             segment,
                             MarkerEndpoint::Start,
                             MarkerType::Start,
-                            Angle::from_vector(outgoing_vx, outgoing_vy),
+                            angle,
                             emit_fn,
                         )?;
                         bbox.insert(&marker_bbox);
@@ -733,25 +728,15 @@ where
                     SubpathState::InSubpath => {
                         assert!(i > 0);
 
-                        let (has_incoming, incoming_vx, incoming_vy) =
-                            segments.find_incoming_directionality_backwards(i - 1);
-                        let (has_outgoing, outgoing_vx, outgoing_vy) =
-                            segments.find_outgoing_directionality_forwards(i);
+                        let incoming = segments.find_incoming_angle_backwards(i - 1);
+                        let outgoing = segments.find_outgoing_angle_forwards(i);
 
-                        let incoming = Angle::from_vector(incoming_vx, incoming_vy);
-                        let outgoing = Angle::from_vector(outgoing_vx, outgoing_vy);
-
-                        let angle: Angle;
-
-                        if has_incoming && has_outgoing {
-                            angle = incoming.bisect(outgoing);
-                        } else if has_incoming {
-                            angle = incoming;
-                        } else if has_outgoing {
-                            angle = outgoing;
-                        } else {
-                            angle = Angle::new(0.0);
-                        }
+                        let angle = match (incoming, outgoing) {
+                            (Some(incoming), Some(outgoing)) => incoming.bisect(outgoing),
+                            (Some(incoming), _) => incoming,
+                            (_, Some(outgoing)) => outgoing,
+                            _ => Angle::new(0.0),
+                        };
 
                         let marker_bbox = emit_marker(
                             segment,
@@ -771,18 +756,18 @@ where
     if !segments.is_empty() {
         let segment = &segments[segments.len() - 1];
         if let Segment::LineOrCurve { .. } = *segment {
-            let (_, incoming_vx, incoming_vy) =
-                segments.find_incoming_directionality_backwards(segments.len() - 1);
+            let incoming = segments
+                .find_incoming_angle_backwards(segments.len() - 1)
+                .unwrap_or_else(|| Angle::new(0.0));
 
             let angle = {
                 if let PathCommand::ClosePath = builder.get_path_commands()[segments.len()] {
-                    let (_, outgoing_vx, outgoing_vy) =
-                        segments.find_outgoing_directionality_forwards(0);
-                    let incoming = Angle::from_vector(incoming_vx, incoming_vy);
-                    let outgoing = Angle::from_vector(outgoing_vx, outgoing_vy);
+                    let outgoing = segments
+                        .find_outgoing_angle_forwards(0)
+                        .unwrap_or_else(|| Angle::new(0.0));
                     incoming.bisect(outgoing)
                 } else {
-                    Angle::from_vector(incoming_vx, incoming_vy)
+                    incoming
                 }
             };
 
