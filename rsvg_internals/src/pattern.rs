@@ -9,7 +9,7 @@ use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::{DrawingCtx, NodeStack};
+use crate::drawing_ctx::{DrawingCtx, NodeStack, ViewParams};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
@@ -243,20 +243,13 @@ impl AsPaintSource for ResolvedPattern {
         let vbox = self.vbox;
         let preserve_aspect_ratio = self.preserve_aspect_ratio;
 
-        let (pattern_x, pattern_y, pattern_width, pattern_height) = {
-            let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
-                draw_ctx.push_view_box(1.0, 1.0)
-            } else {
-                draw_ctx.get_view_params()
-            };
-
-            let pattern_x = self.x.normalize(values, &params);
-            let pattern_y = self.y.normalize(values, &params);
-            let pattern_width = self.width.normalize(values, &params);
-            let pattern_height = self.height.normalize(values, &params);
-
-            (pattern_x, pattern_y, pattern_width, pattern_height)
+        let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
+            draw_ctx.push_view_box(1.0, 1.0)
+        } else {
+            draw_ctx.get_view_params()
         };
+
+        let pattern_rect = self.get_rect(values, &params);
 
         // Work out the size of the rectangle so it takes into account the object bounding box
 
@@ -272,11 +265,11 @@ impl AsPaintSource for ResolvedPattern {
         let mut scwscale = (taffine.xx * taffine.xx + taffine.xy * taffine.xy).sqrt();
         let mut schscale = (taffine.yx * taffine.yx + taffine.yy * taffine.yy).sqrt();
 
-        let pw: i32 = (pattern_width * bbwscale * scwscale) as i32;
-        let ph: i32 = (pattern_height * bbhscale * schscale) as i32;
+        let scaled_width = pattern_rect.width() * bbwscale;
+        let scaled_height = pattern_rect.height() * bbhscale;
 
-        let scaled_width = pattern_width * bbwscale;
-        let scaled_height = pattern_height * bbhscale;
+        let pw: i32 = (scaled_width * scwscale) as i32;
+        let ph: i32 = (scaled_height * schscale) as i32;
 
         if scaled_width.abs() < f64::EPSILON
             || scaled_height.abs() < f64::EPSILON
@@ -289,20 +282,20 @@ impl AsPaintSource for ResolvedPattern {
         scwscale = f64::from(pw) / scaled_width;
         schscale = f64::from(ph) / scaled_height;
 
-        let mut affine: cairo::Matrix = cairo::Matrix::identity();
+        let mut affine = cairo::Matrix::identity();
 
         // Create the pattern coordinate system
         match units {
             PatternUnits(CoordUnits::ObjectBoundingBox) => {
                 let bbrect = bbox.rect.unwrap();
                 affine.translate(
-                    bbrect.x0 + pattern_x * bbrect.width(),
-                    bbrect.y0 + pattern_y * bbrect.height(),
+                    bbrect.x0 + pattern_rect.x0 * bbrect.width(),
+                    bbrect.y0 + pattern_rect.y0 * bbrect.height(),
                 );
             }
 
             PatternUnits(CoordUnits::UserSpaceOnUse) => {
-                affine.translate(pattern_x, pattern_y);
+                affine.translate(pattern_rect.x0, pattern_rect.y0);
             }
         }
 
@@ -556,6 +549,17 @@ impl Children {
             Children::Empty => None,
             Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
         }
+    }
+}
+
+impl ResolvedPattern {
+    fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
+        let x = self.x.normalize(&values, &params);
+        let y = self.y.normalize(&values, &params);
+        let w = self.width.normalize(&values, &params);
+        let h = self.height.normalize(&values, &params);
+
+        Rect::new(x, y, x + w, y + h)
     }
 }
 
