@@ -1,7 +1,6 @@
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::property_bag::PropertyBag;
-use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive};
@@ -39,12 +38,6 @@ impl FilterEffect for FeFlood {
     ) -> Result<FilterResult, FilterError> {
         let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);
 
-        let output_surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            ctx.source_graphic().width(),
-            ctx.source_graphic().height(),
-        )?;
-
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
@@ -52,29 +45,17 @@ impl FilterEffect for FeFlood {
             cssparser::Color::CurrentColor => values.color.0,
             cssparser::Color::RGBA(rgba) => rgba,
         };
-        let opacity = (values.flood_opacity.0).0;
+        let opacity = values.flood_opacity.0;
 
-        if opacity > 0f64 {
-            let cr = cairo::Context::new(&output_surface);
-            let r = cairo::Rectangle::from(bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
-            cr.clip();
-
-            cr.set_source_rgba(
-                f64::from(color.red) / 255f64,
-                f64::from(color.green) / 255f64,
-                f64::from(color.blue) / 255f64,
-                opacity,
-            );
-            cr.paint();
-        }
+        let surface = ctx.source_graphic().flood(
+            bounds,
+            color,
+            opacity,
+        )?;
 
         Ok(FilterResult {
             name: self.base.result.clone(),
-            output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
-                bounds,
-            },
+            output: FilterOutput { surface, bounds },
         })
     }
 

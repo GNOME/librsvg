@@ -903,6 +903,35 @@ impl SharedImageSurface {
         SharedImageSurface::new(output_surface, self.surface_type)
     }
 
+    /// Fills the with a specified color.
+    #[inline]
+    pub fn flood(
+        &self,
+        bounds: IRect,
+        color: cssparser::RGBA,
+        opacity: UnitInterval,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let output_surface =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        if opacity.0 > 0.0 {
+            let cr = cairo::Context::new(&output_surface);
+            let r = cairo::Rectangle::from(bounds);
+            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.clip();
+
+            cr.set_source_rgba(
+                f64::from(color.red) / 255f64,
+                f64::from(color.green) / 255f64,
+                f64::from(color.blue) / 255f64,
+                opacity.0,
+            );
+            cr.paint();
+        }
+
+        SharedImageSurface::new(output_surface, self.surface_type)
+    }
+
     /// Performs the combination of two input surfaces using Porter-Duff
     /// compositing operators
     ///
