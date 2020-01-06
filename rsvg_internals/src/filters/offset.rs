@@ -4,7 +4,6 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
-use crate::surface_utils::shared_surface::SharedImageSurface;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
@@ -60,35 +59,13 @@ impl FilterEffect for FeOffset {
             .add_input(&input)
             .into_irect(draw_ctx);
 
-        let (ox, oy) = ctx.paffine().transform_distance(self.dx, self.dy);
+        let (dx, dy) = ctx.paffine().transform_distance(self.dx, self.dy);
 
-        let output_surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            ctx.source_graphic().width(),
-            ctx.source_graphic().height(),
-        )?;
-
-        // output_bounds contains all pixels within bounds,
-        // for which (x - ox) and (y - oy) also lie within bounds.
-        if let Some(output_bounds) = bounds
-            .translate((ox as i32, oy as i32))
-            .intersection(&bounds)
-        {
-            let cr = cairo::Context::new(&output_surface);
-            let r = cairo::Rectangle::from(output_bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
-            cr.clip();
-
-            input.surface().set_as_source_surface(&cr, ox, oy);
-            cr.paint();
-        }
+        let surface = input.surface().offset(bounds, dx, dy)?;
 
         Ok(FilterResult {
             name: self.base.result.clone(),
-            output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface, input.surface().surface_type())?,
-                bounds,
-            },
+            output: FilterOutput { surface, bounds },
         })
     }
 

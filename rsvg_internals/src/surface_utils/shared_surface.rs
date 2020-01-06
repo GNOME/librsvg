@@ -932,6 +932,35 @@ impl SharedImageSurface {
         SharedImageSurface::new(output_surface, self.surface_type)
     }
 
+    /// Offsets the image of the specified amount.
+    #[inline]
+    pub fn offset(
+        &self,
+        bounds: IRect,
+        dx: f64,
+        dy: f64
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let output_surface =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        // output_bounds contains all pixels within bounds,
+        // for which (x - ox) and (y - oy) also lie within bounds.
+        if let Some(output_bounds) = bounds
+            .translate((dx as i32, dy as i32))
+            .intersection(&bounds)
+        {
+            let cr = cairo::Context::new(&output_surface);
+            let r = cairo::Rectangle::from(output_bounds);
+            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.clip();
+
+            self.set_as_source_surface(&cr, dx, dy);
+            cr.paint();
+        }
+
+        SharedImageSurface::new(output_surface, self.surface_type)
+    }
+
     /// Performs the combination of two input surfaces using Porter-Duff
     /// compositing operators
     ///
