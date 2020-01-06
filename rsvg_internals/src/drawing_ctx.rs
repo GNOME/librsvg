@@ -35,7 +35,6 @@ use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::S
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
-
 /// Holds values that are required to normalize `Length` values to a current viewport.
 ///
 /// This struct is created by calling `DrawingCtx::push_view_box()` or
@@ -340,26 +339,6 @@ impl DrawingCtx {
         self.acquired_nodes.push_node_ref(node)
     }
 
-    // Returns (clip_in_user_space, clip_in_object_space), both Option<RsvgNode>
-    fn get_clip_in_user_and_object_space(
-        &mut self,
-        clip_uri: Option<&Fragment>,
-    ) -> (Option<RsvgNode>, Option<RsvgNode>) {
-        clip_uri
-            .and_then(|fragment| self.acquire_node(fragment, &[NodeType::ClipPath]).ok())
-            .and_then(|acquired| {
-                let clip_node = acquired.get().clone();
-
-                let units = clip_node.borrow().get_impl::<ClipPath>().get_units();
-
-                match units {
-                    CoordUnits::UserSpaceOnUse => Some((Some(clip_node), None)),
-                    CoordUnits::ObjectBoundingBox => Some((None, Some(clip_node))),
-                }
-            })
-            .unwrap_or((None, None))
-    }
-
     fn clip_to_node(
         &mut self,
         clip_node: &Option<RsvgNode>,
@@ -514,7 +493,7 @@ impl DrawingCtx {
                 let affine_at_start = dc.cr.get_matrix();
 
                 let (clip_in_user_space, clip_in_object_space) =
-                    dc.get_clip_in_user_and_object_space(clip_uri);
+                    get_clip_in_user_and_object_space(&mut dc.acquired_nodes, clip_uri);
 
                 // Here we are clipping in user space, so the bbox doesn't matter
                 dc.clip_to_node(&clip_in_user_space, &dc.empty_bbox())?;
@@ -759,17 +738,6 @@ impl DrawingCtx {
         );
     }
 
-    fn acquire_paint_server(&mut self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
-        self.acquire_node(
-            fragment,
-            &[
-                NodeType::LinearGradient,
-                NodeType::RadialGradient,
-                NodeType::Pattern,
-            ],
-        )
-    }
-
     pub fn set_source_paint_server(
         &mut self,
         ps: &PaintServer,
@@ -784,7 +752,7 @@ impl DrawingCtx {
             } => {
                 let mut had_paint_server = false;
 
-                match self.acquire_paint_server(iri) {
+                match acquire_paint_server(&mut self.acquired_nodes, iri) {
                     Ok(acquired) => {
                         let node = acquired.get();
 
@@ -1196,6 +1164,40 @@ impl CompositingAffines {
             for_snapshot,
         }
     }
+}
+
+// Returns (clip_in_user_space, clip_in_object_space), both Option<RsvgNode>
+fn get_clip_in_user_and_object_space(
+    acquired_nodes: &mut AcquiredNodes,
+    clip_uri: Option<&Fragment>,
+) -> (Option<RsvgNode>, Option<RsvgNode>) {
+    clip_uri
+        .and_then(|fragment| acquired_nodes.acquire(fragment, &[NodeType::ClipPath]).ok())
+        .and_then(|acquired| {
+            let clip_node = acquired.get().clone();
+
+            let units = clip_node.borrow().get_impl::<ClipPath>().get_units();
+
+            match units {
+                CoordUnits::UserSpaceOnUse => Some((Some(clip_node), None)),
+                CoordUnits::ObjectBoundingBox => Some((None, Some(clip_node))),
+            }
+        })
+        .unwrap_or((None, None))
+}
+
+fn acquire_paint_server(
+    acquired_nodes: &mut AcquiredNodes,
+    fragment: &Fragment,
+) -> Result<AcquiredNode, AcquireError> {
+    acquired_nodes.acquire(
+        fragment,
+        &[
+            NodeType::LinearGradient,
+            NodeType::RadialGradient,
+            NodeType::Pattern,
+        ],
+    )
 }
 
 fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> BoundingBox {
