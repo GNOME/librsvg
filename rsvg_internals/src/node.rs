@@ -13,6 +13,7 @@
 //! [`create_node`]: ../create_node/index.html
 
 use downcast_rs::*;
+use locale_config::Locale;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::cell::Ref;
 use std::collections::HashSet;
@@ -28,8 +29,6 @@ use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
-use locale_config::Locale;
-use rctree;
 
 /// Strong reference to an element in the SVG tree.
 ///
