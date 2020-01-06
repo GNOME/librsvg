@@ -350,6 +350,12 @@ impl AsPaintSource for ResolvedPattern {
             .get_target()
             .create_similar(cairo::Content::ColorAlpha, pw, ph);
 
+        // FIXME: remove this once we update cairo-rs
+        let status = surface.status();
+        if status != cairo::Status::Success {
+            return Err(RenderingError::Cairo(status));
+        }
+
         let cr_pattern = cairo::Context::new(&surface);
 
         draw_ctx.set_cairo_context(&cr_pattern);
