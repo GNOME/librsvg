@@ -5,12 +5,12 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::allowed_url::Href;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
-use crate::drawing_ctx::{ClipMode, DrawingCtx};
+use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::*;
-use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
 use crate::node::*;
 use crate::parsers::ParseValue;
+use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
@@ -19,8 +19,8 @@ use crate::viewbox::ViewBox;
 pub struct Image {
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    w: Length<Horizontal>,
-    h: Length<Vertical>,
+    width: Length<Horizontal>,
+    height: Length<Vertical>,
     aspect: AspectRatio,
     href: Option<Href>,
 }
@@ -32,10 +32,10 @@ impl NodeTrait for Image {
                 expanded_name!(svg "x") => self.x = attr.parse(value)?,
                 expanded_name!(svg "y") => self.y = attr.parse(value)?,
                 expanded_name!(svg "width") => {
-                    self.w = attr.parse_and_validate(value, Length::check_nonnegative)?
+                    self.width = attr.parse_and_validate(value, Length::check_nonnegative)?
                 }
                 expanded_name!(svg "height") => {
-                    self.h = attr.parse_and_validate(value, Length::check_nonnegative)?
+                    self.height = attr.parse_and_validate(value, Length::check_nonnegative)?
                 }
                 expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
@@ -69,12 +69,9 @@ impl NodeTrait for Image {
         let values = cascaded.get();
         let params = draw_ctx.get_view_params();
 
-        let x = self.x.normalize(values, &params);
-        let y = self.y.normalize(values, &params);
-        let w = self.w.normalize(values, &params);
-        let h = self.h.normalize(values, &params);
+        let rect = self.get_rect(values, &params);
 
-        if w.approx_eq_cairo(0.0) || h.approx_eq_cairo(0.0) {
+        if rect.is_empty() {
             return Ok(draw_ctx.empty_bbox());
         }
 
@@ -96,11 +93,6 @@ impl NodeTrait for Image {
             if clipping || image_width == 0 || image_height == 0 {
                 return Ok(dc.empty_bbox());
             }
-
-            // The bounding box for <image> is decided by the values of x, y, w, h and not by
-            // the final computed image bounds.
-            let rect = Rect::new(x, y, x + w, y + h);
-            let bbox = dc.empty_bbox().with_rect(rect);
 
             dc.with_saved_cr(&mut |dc| {
                 let image_width = f64::from(image_width);
@@ -130,8 +122,21 @@ impl NodeTrait for Image {
                     cr.paint();
                 }
 
-                Ok(bbox)
+                // The bounding box for <image> is decided by the values of x, y, w, h
+                // and not by the final computed image bounds.
+                Ok(dc.empty_bbox().with_rect(rect))
             })
         })
+    }
+}
+
+impl Image {
+    fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
+        let x = self.x.normalize(&values, &params);
+        let y = self.y.normalize(&values, &params);
+        let w = self.width.normalize(&values, &params);
+        let h = self.height.normalize(&values, &params);
+
+        Rect::new(x, y, x + w, y + h)
     }
 }
