@@ -9,7 +9,7 @@ use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
 
 use crate::rect::IRect;
-use crate::srgb;
+use crate::surface_utils::srgb;
 use crate::unit_interval::UnitInterval;
 use crate::util::clamp;
 

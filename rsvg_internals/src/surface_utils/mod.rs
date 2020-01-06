@@ -4,6 +4,7 @@ use std::ops::DerefMut;
 
 pub mod iterators;
 pub mod shared_surface;
+pub mod srgb;
 
 /// A pixel consisting of R, G, B and A values.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]

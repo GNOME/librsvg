@@ -114,7 +114,6 @@ mod property_defs;
 pub mod rect;
 mod shapes;
 mod space;
-pub mod srgb;
 mod structure;
 mod style;
 pub mod surface_utils;
