@@ -47,11 +47,7 @@ impl FilterEffect for FeFlood {
         };
         let opacity = values.flood_opacity.0;
 
-        let surface = ctx.source_graphic().flood(
-            bounds,
-            color,
-            opacity,
-        )?;
+        let surface = ctx.source_graphic().flood(bounds, color, opacity)?;
 
         Ok(FilterResult {
             name: self.base.result.clone(),
