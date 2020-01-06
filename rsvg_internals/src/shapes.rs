@@ -40,13 +40,7 @@ impl Shape {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.draw_path(
-            &self.builder,
-            node,
-            values,
-            self.markers,
-            clipping,
-        )
+        draw_ctx.draw_path(&self.builder, node, values, self.markers, clipping)
     }
 }
 
