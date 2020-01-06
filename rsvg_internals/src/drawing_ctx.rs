@@ -18,8 +18,10 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{LinearGradient, RadialGradient};
 use crate::limits;
+use crate::marker;
 use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
+use crate::path_builder::*;
 use crate::pattern::Pattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
@@ -27,10 +29,12 @@ use crate::property_defs::{
     StrokeLinejoin,
 };
 use crate::rect::{Rect, TransformRect};
+use crate::shapes::Markers;
 use crate::structure::{ClipPath, Mask, Symbol, Use};
 use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
+
 
 /// Holds values that are required to normalize `Length` values to a current viewport.
 ///
@@ -905,6 +909,39 @@ impl DrawingCtx {
         cr.new_path();
 
         res.and_then(|_: ()| Ok(bbox))
+    }
+
+    pub fn draw_path(
+        &mut self,
+        builder: &PathBuilder,
+        node: &RsvgNode,
+        values: &ComputedValues,
+        markers: Markers,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        if !builder.is_empty() {
+            let bbox = self.with_discrete_layer(node, values, clipping, &mut |dc| {
+                let cr = dc.get_cairo_context();
+
+                builder.to_cairo(&cr)?;
+
+                if clipping {
+                    cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
+                    Ok(dc.empty_bbox())
+                } else {
+                    cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
+                    dc.stroke_and_fill(&cr, values)
+                }
+            })?;
+
+            if markers == Markers::Yes {
+                marker::render_markers_for_path_builder(builder, self, values, clipping)?;
+            }
+
+            Ok(bbox)
+        } else {
+            Ok(self.empty_bbox())
+        }
     }
 
     pub fn clip(&self, rect: Rect) {

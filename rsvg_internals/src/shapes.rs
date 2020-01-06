@@ -9,7 +9,6 @@ use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::length::*;
-use crate::marker;
 use crate::node::*;
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::*;
@@ -17,39 +16,6 @@ use crate::path_parser;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use cssparser::{Parser, Token};
-
-fn render_path_builder(
-    builder: &PathBuilder,
-    draw_ctx: &mut DrawingCtx,
-    node: &RsvgNode,
-    values: &ComputedValues,
-    markers: Markers,
-    clipping: bool,
-) -> Result<BoundingBox, RenderingError> {
-    if !builder.is_empty() {
-        let bbox = draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-            let cr = dc.get_cairo_context();
-
-            builder.to_cairo(&cr)?;
-
-            if clipping {
-                cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
-                Ok(dc.empty_bbox())
-            } else {
-                cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
-                dc.stroke_and_fill(&cr, values)
-            }
-        })?;
-
-        if markers == Markers::Yes {
-            marker::render_markers_for_path_builder(builder, draw_ctx, values, clipping)?;
-        }
-
-        Ok(bbox)
-    } else {
-        Ok(draw_ctx.empty_bbox())
-    }
-}
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum Markers {
@@ -74,9 +40,8 @@ impl Shape {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        render_path_builder(
+        draw_ctx.draw_path(
             &self.builder,
-            draw_ctx,
             node,
             values,
             self.markers,
